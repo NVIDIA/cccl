@@ -118,7 +118,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).segme
     int num_segments,
     ReductionOpT reduction_op,
     InitT init,
-    size_t max_segment_size)
+    size_t max_segment_size = 0)
 {
   static constexpr segmented_reduce_policy full_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
 

@@ -181,9 +181,6 @@ struct DispatchSegmentedReduce
 
   int ptx_version;
 
-  // Optional max guaranteed segment size
-  size_t max_segment_size;
-
   // Source getter
   KernelSource kernel_source;
 
@@ -206,7 +203,6 @@ struct DispatchSegmentedReduce
     InitT init,
     cudaStream_t stream,
     int ptx_version,
-    size_t max_segment_size                = 0,
     KernelSource kernel_source             = {},
     KernelLauncherFactory launcher_factory = {})
       : d_temp_storage(d_temp_storage)
@@ -220,7 +216,6 @@ struct DispatchSegmentedReduce
       , init(init)
       , stream(stream)
       , ptx_version(ptx_version)
-      , max_segment_size(max_segment_size)
       , kernel_source(kernel_source)
       , launcher_factory(launcher_factory)
   {}
@@ -292,15 +287,7 @@ struct DispatchSegmentedReduce
         // Invoke DeviceSegmentedReduceKernel
         launcher_factory(
           static_cast<::cuda::std::uint32_t>(num_current_segments), policy.SegmentedReduce().BlockThreads(), 0, stream)
-          .doit(segmented_reduce_kernel,
-                d_in,
-                d_out,
-                d_begin_offsets,
-                d_end_offsets,
-                static_cast<int>(num_current_segments),
-                reduction_op,
-                init,
-                max_segment_size);
+          .doit(segmented_reduce_kernel, d_in, d_out, d_begin_offsets, d_end_offsets, reduction_op, init);
 
         // Check for failure to launch
         error = CubDebug(cudaPeekAtLastError());
@@ -383,11 +370,6 @@ struct DispatchSegmentedReduce
    * @param[in] stream
    *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
-   *
-   * @param[in] max_segment_size
-   *   **[optional]** Maximum guaranteed segment size, which will be used by
-   *   to select more efficient code paths when small and medium segments are guaranteed.
-   *   Default is 0, which indicates no known maximum, performing block wise segmented reduction
    */
   template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
@@ -401,7 +383,6 @@ struct DispatchSegmentedReduce
     ReductionOpT reduction_op,
     InitT init,
     cudaStream_t stream,
-    size_t max_segment_size                = 0,
     KernelSource kernel_source             = {},
     KernelLauncherFactory launcher_factory = {},
     MaxPolicyT max_policy                  = {})
@@ -436,7 +417,6 @@ struct DispatchSegmentedReduce
         init,
         stream,
         ptx_version,
-        max_segment_size,
         kernel_source,
         launcher_factory);
 
@@ -507,9 +487,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   EndOffsetIteratorT d_end_offsets,
   ReductionOpT reduction_op,
   InitT init,
+  size_t max_segment_size,
   cudaStream_t stream,
   PolicySelector policy_selector         = {},
-  size_t max_segment_size                = 0,
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
@@ -535,16 +515,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   // Compute segments_per_block based on max_segment_size hint
   int segments_per_block = 1;
-  if (max_segment_size != 0 && max_segment_size <= static_cast<size_t>(active_policy.small_reduce.items_per_tile()))
+  if (max_segment_size != 0)
   {
-    segments_per_block = active_policy.small_reduce.segments_per_block();
+    if (max_segment_size <= static_cast<size_t>(active_policy.small_reduce.items_per_tile()))
+    {
+      segments_per_block = active_policy.small_reduce.segments_per_block();
+    }
+    else if (max_segment_size <= static_cast<size_t>(active_policy.medium_reduce.items_per_tile()))
+    {
+      segments_per_block = active_policy.medium_reduce.segments_per_block();
+    }
   }
-  else if (max_segment_size != 0
-           && max_segment_size <= static_cast<size_t>(active_policy.medium_reduce.items_per_tile()))
-  {
-    segments_per_block = active_policy.medium_reduce.segments_per_block();
-  }
-
   if (d_temp_storage == nullptr)
   {
     temp_storage_bytes = 1;

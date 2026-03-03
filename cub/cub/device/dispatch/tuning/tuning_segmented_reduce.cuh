@@ -22,7 +22,7 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::segmented_reduce
 {
-// Runtime representation of a warp-level reduce agent policy (small/medium segments)
+// for small/medium segments
 struct agent_warp_reduce_policy
 {
   int block_threads;
@@ -41,14 +41,16 @@ struct agent_warp_reduce_policy
     return block_threads / warp_threads;
   }
 
-  _CCCL_API constexpr friend bool operator==(const agent_warp_reduce_policy& lhs, const agent_warp_reduce_policy& rhs)
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator==(const agent_warp_reduce_policy& lhs, const agent_warp_reduce_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.warp_threads == rhs.warp_threads
         && lhs.items_per_thread == rhs.items_per_thread && lhs.vector_load_length == rhs.vector_load_length
         && lhs.load_modifier == rhs.load_modifier;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const agent_warp_reduce_policy& lhs, const agent_warp_reduce_policy& rhs)
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator!=(const agent_warp_reduce_policy& lhs, const agent_warp_reduce_policy& rhs)
   {
     return !(lhs == rhs);
   }
@@ -93,6 +95,50 @@ struct segmented_reduce_policy
 template <typename T>
 concept segmented_reduce_policy_selector = policy_selector<T, segmented_reduce_policy>;
 #endif // _CCCL_HAS_CONCEPTS()
+
+struct policy_selector
+{
+  type_t accum_t;
+  op_kind_t operation_t;
+  int offset_size;
+  int accum_size;
+
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> segmented_reduce_policy
+  {
+    constexpr int small_threads_per_warp  = 1;
+    constexpr int medium_threads_per_warp = 32;
+    constexpr int threads_per_block       = 256;
+    constexpr int items_per_thread        = 16;
+    constexpr int items_per_vec_load      = 4;
+
+    auto [scaled_items, scaled_threads] = scale_mem_bound(threads_per_block, items_per_thread, accum_size);
+    const auto rp                       = reduce::agent_reduce_policy{
+      scaled_threads, scaled_items, items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
+
+    return segmented_reduce_policy{
+      rp,
+      agent_warp_reduce_policy{
+        rp.block_threads, small_threads_per_warp, items_per_thread, items_per_vec_load, rp.load_modifier},
+      agent_warp_reduce_policy{
+        rp.block_threads, medium_threads_per_warp, items_per_thread, items_per_vec_load, rp.load_modifier}};
+  }
+};
+
+#if _CCCL_HAS_CONCEPTS()
+static_assert(segmented_reduce_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
+
+// stateless version which can be passed to kernels
+template <typename AccumT, typename OffsetT, typename ReductionOpT>
+struct policy_selector_from_types
+{
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> segmented_reduce_policy
+  {
+    constexpr auto policies =
+      policy_selector{classify_type<AccumT>, classify_op<ReductionOpT>, int{sizeof(OffsetT)}, int{sizeof(AccumT)}};
+    return policies(arch);
+  }
+};
 
 template <typename PolicyT, typename = void>
 struct FixedSizeSegmentedReducePolicyWrapper : PolicyT
@@ -199,46 +245,6 @@ struct policy_hub
   };
 
   using MaxPolicy = Policy500;
-};
-
-struct policy_selector
-{
-  type_t accum_t;
-  op_kind_t operation_t;
-  int offset_size;
-  int accum_size;
-
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> segmented_reduce_policy
-  {
-    constexpr int threads_per_block  = 256;
-    constexpr int items_per_thread   = 16;
-    constexpr int items_per_vec_load = 4;
-
-    auto [scaled_items, scaled_threads] = scale_mem_bound(threads_per_block, items_per_thread, accum_size);
-    const auto rp                       = reduce::agent_reduce_policy{
-      scaled_threads, scaled_items, items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
-
-    return segmented_reduce_policy{
-      rp,
-      agent_warp_reduce_policy{rp.block_threads, 1, items_per_thread, items_per_vec_load, rp.load_modifier},
-      agent_warp_reduce_policy{rp.block_threads, 32, items_per_thread, items_per_vec_load, rp.load_modifier}};
-  }
-};
-
-#if _CCCL_HAS_CONCEPTS()
-static_assert(segmented_reduce_policy_selector<policy_selector>);
-#endif // _CCCL_HAS_CONCEPTS()
-
-// stateless version which can be passed to kernels
-template <typename AccumT, typename OffsetT, typename ReductionOpT>
-struct policy_selector_from_types
-{
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> segmented_reduce_policy
-  {
-    constexpr auto policies =
-      policy_selector{classify_type<AccumT>, classify_op<ReductionOpT>, int{sizeof(OffsetT)}, int{sizeof(AccumT)}};
-    return policies(arch);
-  }
 };
 } // namespace detail::segmented_reduce
 
