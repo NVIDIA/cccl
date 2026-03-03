@@ -36,7 +36,7 @@
 //! allocates pinned memory.
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-#  if _CCCL_CTK_AT_LEAST(12, 6)
+#  if _CCCL_CTK_AT_LEAST(12, 9)
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
@@ -205,7 +205,7 @@ static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_acc
 
 _CCCL_DIAG_POP
 
-#  endif // _CCCL_CTK_AT_LEAST(12, 6)
+#  endif // _CCCL_CTK_AT_LEAST(12, 9)
 
 _CCCL_END_NAMESPACE_CUDA
 

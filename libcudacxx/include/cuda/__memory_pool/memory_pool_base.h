@@ -178,7 +178,7 @@ inline bool __is_host_memory_pool_supported()
   // of the default pool just to be sure
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   return ::cuda::device_attributes::host_memory_pools_supported(cuda::device_ref{0});
-#  elif _CCCL_CTK_AT_LEAST(12, 6)
+#  elif _CCCL_CTK_AT_LEAST(12, 9)
   return ::cuda::device_attributes::host_numa_memory_pools_supported(cuda::device_ref{0});
 #  else
   return false;
@@ -206,12 +206,12 @@ inline void __verify_device_supports_stream_ordered_allocations(
     ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "managed memory pools are not supported");
   }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
-#  if _CCCL_CTK_AT_LEAST(12, 6)
+#  if _CCCL_CTK_AT_LEAST(12, 9)
   if (__location.type == ::CU_MEM_LOCATION_TYPE_HOST && !__is_host_memory_pool_supported())
   {
     ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "host memory pools are not supported");
   }
-#  endif // _CCCL_CTK_AT_LEAST(12, 6)
+#  endif // _CCCL_CTK_AT_LEAST(12, 9)
 }
 
 //! @brief Check whether the specified `cudaMemAllocationHandleType` is
@@ -228,7 +228,7 @@ inline void __verify_device_supports_export_handle_type(
     return;
   }
   if (__location.type != ::CU_MEM_LOCATION_TYPE_DEVICE
-#  if _CCCL_CTK_AT_LEAST(12, 6)
+#  if _CCCL_CTK_AT_LEAST(12, 9)
       && __location.type != ::CU_MEM_LOCATION_TYPE_HOST_NUMA
 #  endif
   )
