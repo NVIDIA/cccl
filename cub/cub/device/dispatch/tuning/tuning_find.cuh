@@ -31,12 +31,14 @@ struct find_policy
 {
   int block_threads;
   int items_per_thread;
+  bool attempt_block_load_to_shared;
   int vector_load_length;
   CacheLoadModifier load_modifier;
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const find_policy& lhs, const find_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.attempt_block_load_to_shared == rhs.attempt_block_load_to_shared
         && lhs.vector_load_length == rhs.vector_load_length && lhs.load_modifier == rhs.load_modifier;
   }
 
@@ -49,6 +51,7 @@ struct find_policy
   friend ::std::ostream& operator<<(::std::ostream& os, const find_policy& p)
   {
     return os << "find_policy { .block_threads = " << p.block_threads << ", .items_per_thread = " << p.items_per_thread
+              << ", .attempt_block_load_to_shared = " << p.attempt_block_load_to_shared
               << ", .vector_load_length = " << p.vector_load_length << ", .load_modifier = " << p.load_modifier << " }";
   }
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -67,7 +70,7 @@ struct policy_selector
   {
     // FindPolicy (GTX670: 154.0 @ 48M 4B items) - single policy for all arches
     const auto scaled = scale_mem_bound(128, 16, input_type_size);
-    return find_policy{scaled.block_threads, scaled.items_per_thread, 4, LOAD_LDG};
+    return find_policy{scaled.block_threads, scaled.items_per_thread, true, 4, LOAD_LDG};
   }
 };
 
