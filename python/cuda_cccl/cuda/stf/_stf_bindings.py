@@ -63,45 +63,36 @@ globals().update(bindings_module.__dict__)
 
 # Build-time path helpers (for downstream packages that compile against the STF C API).
 # Defined after update() so the extension cannot overwrite them.
+# Uses importlib.resources (same approach as cuda.cccl.headers.include_paths).
 from functools import lru_cache
+from importlib.resources import as_file, files
 from pathlib import Path
-import sys as _sys
 
 
 @lru_cache()
-def get_include_path():
-    """Return the path to CUDASTF C API and cudax headers. See cuda.stf.get_include_path."""
-    pkg_dir = Path(__file__).resolve().parent
-    include_dir = pkg_dir / "include"
-    if include_dir.is_dir():
-        return include_dir
-    for sp in _sys.path:
-        candidate = Path(sp) / "cuda" / "stf" / "include"
-        if candidate.is_dir():
-            return candidate
-    raise RuntimeError(
-        "Cannot locate cuda.stf include directory. Run the cuda-cccl build first "
-        "(pip install -e . or build the wheel); the build copies headers into cuda/stf/include."
-    )
+def get_include_path() -> Path:
+    """Return the path to the CUDASTF C API and cudax headers.
+
+    The ``cuda.stf.include`` sub-package is a Python package whose directory
+    contains the installed header trees.  ``importlib.resources`` resolves this
+    correctly for wheel installs, editable installs, and zip-imported packages.
+    """
+    with as_file(files("cuda.stf.include")) as p:
+        return Path(p)
 
 
 @lru_cache()
-def get_library_path():
-    """Return the path to the directory containing libcccl.c.experimental.stf.so."""
-    lib_name = "libcccl.c.experimental.stf.so"
-    # Prefer directory next to the loaded extension (works for installed and editable)
+def get_library_path() -> Path:
+    """Return the directory containing ``libcccl.c.experimental.stf.so``.
+
+    The shared library is installed next to the versioned extension module
+    (e.g. ``cuda/stf/cu13/cccl/``).
+    """
     ext_dir = Path(bindings_module.__file__).resolve().parent
     lib_dir = ext_dir / "cccl"
+    lib_name = "libcccl.c.experimental.stf.so"
     if (lib_dir / lib_name).exists():
         return lib_dir
-    pkg_dir = Path(__file__).resolve().parent
-    lib_dir = pkg_dir / extra_name / "cccl"
-    if (lib_dir / lib_name).exists():
-        return lib_dir
-    for sp in _sys.path:
-        candidate = Path(sp) / "cuda" / "stf" / extra_name / "cccl"
-        if (candidate / lib_name).exists():
-            return candidate
     raise RuntimeError(
         f"Cannot locate {lib_name} for CUDA {cuda_version}. "
         "The cuda-cccl package may not have been installed correctly."

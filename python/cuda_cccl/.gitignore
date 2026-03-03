@@ -22,8 +22,9 @@ wheels/
 build.log
 .python-version
 
-# Generated headers copied into package for get_include_path() (editable installs)
-cuda/stf/include/
+# Headers copied into cuda/stf/include/ at build time (keep __init__.py tracked)
+cuda/stf/include/cccl/
+cuda/stf/include/cuda/
 
 # CMake
 CMakeFiles/
