@@ -194,13 +194,13 @@ struct dispatch_helper
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION cudaError_t Invoke()
   {
-    thresholds = {ActivePolicyT::SmallReducePolicy::ITEMS_PER_TILE,
-                  ActivePolicyT::MediumReducePolicy::ITEMS_PER_TILE,
-                  ActivePolicyT::ReducePolicy::BLOCK_THREADS * ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD};
+    thresholds = {+ActivePolicyT::SmallReducePolicy::ITEMS_PER_TILE,
+                  +ActivePolicyT::MediumReducePolicy::ITEMS_PER_TILE,
+                  +ActivePolicyT::ReducePolicy::BLOCK_THREADS * +ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD};
     return cudaSuccess;
   }
 
-  static __host__ tuple_t get_thresholds()
+  static tuple_t get_thresholds()
   {
     // Get PTX version
     int ptx_version = 0;

@@ -34,10 +34,13 @@ enum class __pstl_algorithm
 {
   __copy_if,
   __copy_n,
+  __exclusive_scan,
   __find_if,
   __for_each_n,
   __generate_n,
+  __inclusive_scan,
   __reduce,
+  __remove_if,
   __transform,
   __transform_reduce,
 };
