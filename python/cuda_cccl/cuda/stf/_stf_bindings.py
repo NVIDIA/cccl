@@ -58,17 +58,46 @@ if cuda_version not in [12, 13]:
 extra_name = get_recommended_extra(cuda_version)
 module_suffix = f".{extra_name}._stf_bindings_impl"
 
-_BINDINGS_AVAILABLE = False
+bindings_module = importlib.import_module(module_suffix, __package__)
+globals().update(bindings_module.__dict__)
 
-try:
-    bindings_module = importlib.import_module(module_suffix, __package__)
-    # Import all symbols from the module
-    globals().update(bindings_module.__dict__)
-    _BINDINGS_AVAILABLE = True
-except ImportError as e:
-    import warnings
+# Build-time path helpers (for downstream packages that compile against the STF C API).
+# Defined after update() so the extension cannot overwrite them.
+from functools import lru_cache
+from pathlib import Path
+import sys as _sys
 
-    warnings.warn(
-        f"CUDASTF bindings for CUDA {cuda_version} not available: {e}",
-        RuntimeWarning,
+
+@lru_cache()
+def get_include_path():
+    """Return the path to CUDASTF C API and cudax headers. See cuda.stf.get_include_path."""
+    pkg_dir = Path(__file__).resolve().parent
+    include_dir = pkg_dir / "include"
+    if include_dir.is_dir():
+        return include_dir
+    for sp in _sys.path:
+        candidate = Path(sp) / "cuda" / "stf" / "include"
+        if candidate.is_dir():
+            return candidate
+    raise RuntimeError(
+        "Cannot locate cuda.stf include directory. "
+        "The cuda-cccl package may not have been installed correctly."
+    )
+
+
+@lru_cache()
+def get_library_path():
+    """Return the path to the directory containing libcccl.c.experimental.stf.so."""
+    lib_name = "libcccl.c.experimental.stf.so"
+    pkg_dir = Path(__file__).resolve().parent
+    lib_dir = pkg_dir / extra_name / "cccl"
+    if (lib_dir / lib_name).exists():
+        return lib_dir
+    for sp in _sys.path:
+        candidate = Path(sp) / "cuda" / "stf" / extra_name / "cccl"
+        if (candidate / lib_name).exists():
+            return candidate
+    raise RuntimeError(
+        f"Cannot locate {lib_name} for CUDA {cuda_version}. "
+        "The cuda-cccl package may not have been installed correctly."
     )
