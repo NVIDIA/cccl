@@ -61,35 +61,46 @@ module_suffix = f".{extra_name}._stf_bindings_impl"
 bindings_module = importlib.import_module(module_suffix, __package__)
 globals().update(bindings_module.__dict__)
 
-# Build-time path helpers (for downstream packages that compile against the STF C API).
-# Defined after update() so the extension cannot overwrite them.
-# Uses importlib.resources (same approach as cuda.cccl.headers.include_paths).
+# ---------------------------------------------------------------------------
+# Build-time path helpers for downstream packages that compile against CUDASTF.
+#
+# Both helpers anchor from `bindings_module.__file__` — the compiled Cython
+# extension (.so).  The extension is always a real file on disk (shared
+# libraries cannot be zip-imported) and pip always places it in site-packages,
+# even for editable installs.  The installed layout is:
+#
+#   cuda/stf/
+#   ├── include/          <- C API + cudax headers
+#   └── <cu12|cu13>/
+#       ├── _stf_bindings_impl.so
+#       └── cccl/
+#           └── libcccl.c.experimental.stf.so
+# ---------------------------------------------------------------------------
 from functools import lru_cache
-from importlib.resources import as_file, files
 from pathlib import Path
+
+# Directory that contains the compiled extension (e.g. .../cuda/stf/cu13/)
+_ext_dir = Path(bindings_module.__file__).resolve().parent
+# Parent is .../cuda/stf/
+_stf_pkg_dir = _ext_dir.parent
 
 
 @lru_cache()
 def get_include_path() -> Path:
-    """Return the path to the CUDASTF C API and cudax headers.
-
-    The ``cuda.stf.include`` sub-package is a Python package whose directory
-    contains the installed header trees.  ``importlib.resources`` resolves this
-    correctly for wheel installs, editable installs, and zip-imported packages.
-    """
-    with as_file(files("cuda.stf.include")) as p:
-        return Path(p)
+    """Return the path to the CUDASTF C API and cudax headers."""
+    include_dir = _stf_pkg_dir / "include"
+    if include_dir.is_dir():
+        return include_dir
+    raise RuntimeError(
+        "Cannot locate cuda.stf include directory. "
+        "The cuda-cccl package may not have been installed correctly."
+    )
 
 
 @lru_cache()
 def get_library_path() -> Path:
-    """Return the directory containing ``libcccl.c.experimental.stf.so``.
-
-    The shared library is installed next to the versioned extension module
-    (e.g. ``cuda/stf/cu13/cccl/``).
-    """
-    ext_dir = Path(bindings_module.__file__).resolve().parent
-    lib_dir = ext_dir / "cccl"
+    """Return the directory containing ``libcccl.c.experimental.stf.so``."""
+    lib_dir = _ext_dir / "cccl"
     lib_name = "libcccl.c.experimental.stf.so"
     if (lib_dir / lib_name).exists():
         return lib_dir
