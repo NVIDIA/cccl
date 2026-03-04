@@ -46,25 +46,13 @@ struct AgentReducePolicy
 };
 
 template <int ItemsPerThread, int BlockSize>
-struct hub_t
+struct custom_policy_selector
 {
-  struct Policy : cub::ChainedPolicy<300, Policy, Policy>
+  _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> cub::detail::reduce::reduce_policy
   {
-    constexpr static int ITEMS_PER_THREAD = ItemsPerThread;
-
-    using ReducePolicy = AgentReducePolicy<BlockSize, ItemsPerThread>;
-
-    // SingleTilePolicy
-    using SingleTilePolicy = ReducePolicy;
-
-    // SegmentedReducePolicy
-    using SegmentedReducePolicy = ReducePolicy;
-
-    // ReduceNondeterministicPolicy
-    using ReduceNondeterministicPolicy = ReducePolicy;
-  };
-
-  using MaxPolicy = Policy;
+    auto rp = cub::detail::reduce::agent_reduce_policy{BlockSize, ItemsPerThread};
+    return {rp, rp, rp};
+  }
 };
 
 C2H_TEST("Nondeterministic Device reduce works with float and double on gpu",
@@ -157,11 +145,11 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   c2h::device_vector<type> d_output_p1(1);
   c2h::device_vector<type> d_output_p2(1);
 
-  auto env1 = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed), cuda::execution::__tune(hub_t<1, 128>{})};
+  auto env1 = cuda::std::execution::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
+                                        cuda::execution::__tune(custom_policy_selector<1, 128>{})};
 
-  auto env2 = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed), cuda::execution::__tune(hub_t<2, 256>{})};
+  auto env2 = cuda::std::execution::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
+                                        cuda::execution::__tune(custom_policy_selector<2, 256>{})};
 
   REQUIRE(
     cudaSuccess == cub::DeviceReduce::Reduce(d_input.begin(), d_output_p1.begin(), num_items, min_op, init, env1));
