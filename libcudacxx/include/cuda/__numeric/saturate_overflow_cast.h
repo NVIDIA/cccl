@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___NUMERIC_SATURATE_CAST_H
-#define _CUDA_STD___NUMERIC_SATURATE_CAST_H
+#ifndef _CUDA___NUMERIC_SATURATE_CAST_H
+#define _CUDA___NUMERIC_SATURATE_CAST_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,23 +20,34 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__numeric/saturate_overflow_cast.h>
+#include <cuda/__numeric/overflow_result.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_integer.h>
+#include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__utility/cmp.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_CUDA_STD
+_CCCL_BEGIN_NAMESPACE_CUDA
 
 _CCCL_TEMPLATE(class _Up, class _Tp)
-_CCCL_REQUIRES(__cccl_is_integer_v<_Up> _CCCL_AND __cccl_is_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Up saturate_cast(_Tp __x) noexcept
+_CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Up> _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Tp>)
+[[nodiscard]] _CCCL_API constexpr overflow_result<_Up> saturate_overflow_cast(_Tp __x) noexcept
 {
-  return ::cuda::saturate_overflow_cast<_Up>(__x).value;
+  if (::cuda::std::cmp_less(__x, ::cuda::std::numeric_limits<_Up>::min()))
+  {
+    return {::cuda::std::numeric_limits<_Up>::min(), true};
+  }
+  if (::cuda::std::cmp_greater(__x, ::cuda::std::numeric_limits<_Up>::max()))
+  {
+    return {::cuda::std::numeric_limits<_Up>::max(), true};
+  }
+  return {static_cast<_Up>(__x), false};
 }
 
-_CCCL_END_NAMESPACE_CUDA_STD
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___NUMERIC_SATURATE_CAST_H
+#endif // _CUDA___NUMERIC_SATURATE_CAST_H
