@@ -492,47 +492,26 @@ TEST_CASE("Device segmented argmax uses custom stream", "[segmented_reduce][devi
 }
 
 template <int BlockThreads>
-struct reduce_tuning : cub::detail::reduce::tuning<reduce_tuning<BlockThreads>>
+struct reduce_tuning
 {
-  template <class /* AccumT */, class /* Offset */, class /* OpT */>
-  struct fn
+  _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> cub::detail::reduce::reduce_policy
   {
-    struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
-    {
-      struct ReducePolicy
-      {
-        static constexpr int VECTOR_LOAD_LENGTH = 1;
-
-        static constexpr cub::BlockReduceAlgorithm BLOCK_ALGORITHM = cub::BLOCK_REDUCE_WARP_REDUCTIONS;
-
-        static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_DEFAULT;
-
-        static constexpr int ITEMS_PER_THREAD = 1;
-        static constexpr int BLOCK_THREADS    = BlockThreads;
-      };
-
-      using SingleTilePolicy      = ReducePolicy;
-      using SegmentedReducePolicy = ReducePolicy;
-    };
-
-    using MaxPolicy = Policy500;
-  };
+    auto rp = cub::detail::reduce::agent_reduce_policy{
+      BlockThreads, 1, 1, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_DEFAULT};
+    return {rp, rp, rp};
+  }
 };
 
-struct get_scan_tuning_query_t
+struct unrelated_policy
 {};
 
-struct scan_tuning
+struct unrelated_tuning
 {
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const get_scan_tuning_query_t&) const noexcept
+  // should never be called
+  auto operator()(cuda::arch_id /*arch*/) const -> unrelated_policy
   {
-    return *this;
+    throw 1337;
   }
-
-  // Make sure this is not used
-  template <class /* AccumT */, class /* Offset */, class /* OpT */>
-  struct fn
-  {};
 };
 
 using block_sizes = c2h::type_list<cuda::std::integral_constant<int, 32>, cuda::std::integral_constant<int, 64>>;
@@ -547,8 +526,8 @@ C2H_TEST("Device segmented sum can be tuned", "[segmented_reduce][device]", bloc
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
   thrust::device_vector<int> d_out(3);
 
-  // We are expecting that `scan_tuning` is ignored
-  auto env = cuda::execution::__tune(reduce_tuning<target_block_size>{}, scan_tuning{});
+  // We are expecting that `unrelated_tuning` is ignored
+  auto env = cuda::execution::__tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
 
   auto error =
     cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);

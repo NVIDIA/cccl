@@ -59,24 +59,6 @@ inline constexpr bool is_non_deterministic_v =
 
 namespace reduce
 {
-struct get_tuning_query_t
-{};
-
-template <class Derived>
-struct tuning
-{
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const get_tuning_query_t&) const noexcept -> Derived
-  {
-    return static_cast<const Derived&>(*this);
-  }
-};
-
-struct default_rfa_tuning : tuning<default_rfa_tuning>
-{
-  template <class AccumT, class Offset, class OpT>
-  using fn = detail::rfa::policy_selector_from_types<AccumT>;
-};
-
 template <typename ExtremumOutIteratorT, typename IndexOutIteratorT>
 struct unzip_and_write_arg_extremum_op
 {
@@ -145,10 +127,9 @@ private:
     using offset_t = detail::choose_offset_t<NumItemsT>;
     using accum_t  = ::cuda::std::
       __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
-    using reduce_tuning_t = ::cuda::std::execution::__query_result_or_t<
-      TuningEnvT,
-      detail::reduce::get_tuning_query_t,
-      detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>>;
+    using default_policy_selector = detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
+    using policy_selector =
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::reduce::reduce_policy, default_policy_selector>;
 
     return detail::reduce::dispatch<accum_t>(
       d_temp_storage,
@@ -160,7 +141,7 @@ private:
       init,
       stream,
       transform_op,
-      reduce_tuning_t{});
+      policy_selector{});
   }
 
   template <typename TuningEnvT,
@@ -183,16 +164,22 @@ private:
     cudaStream_t stream)
   {
     using offset_t = detail::choose_offset_t<NumItemsT>;
-
-    using reduce_tuning_t = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_rfa_tuning>;
-
-    using accum_t = ::cuda::std::
+    using accum_t  = ::cuda::std::
       __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
-    using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
+    using default_policy_selector = detail::rfa::policy_selector_from_types<accum_t>;
+    using policy_selector =
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::rfa::rfa_policy, default_policy_selector>;
 
-    return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t, policy_t>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream, transform_op);
+    return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      static_cast<offset_t>(num_items),
+      init,
+      stream,
+      transform_op,
+      policy_selector{});
   }
 
   template <typename TuningEnvT,
@@ -214,13 +201,11 @@ private:
     ::cuda::execution::determinism::not_guaranteed_t,
     cudaStream_t stream)
   {
-    using offset_t = detail::choose_offset_t<NumItemsT>;
-    using accum_t  = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
-
-    using reduce_tuning_t = ::cuda::std::execution::__query_result_or_t<
-      TuningEnvT,
-      detail::reduce::get_tuning_query_t,
-      detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>>;
+    using offset_t                = detail::choose_offset_t<NumItemsT>;
+    using accum_t                 = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
+    using default_policy_selector = detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
+    using policy_selector =
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::reduce::reduce_policy, default_policy_selector>;
 
     return detail::reduce::dispatch_nondeterministic<accum_t>(
       d_temp_storage,
@@ -232,7 +217,7 @@ private:
       init,
       stream,
       transform_op,
-      reduce_tuning_t{});
+      policy_selector{});
   }
 
   //! @brief Internal implementation shared by Reduce and TransformReduce env overloads
