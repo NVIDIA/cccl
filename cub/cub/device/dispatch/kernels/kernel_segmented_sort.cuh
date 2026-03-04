@@ -141,25 +141,25 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_seg
     EndOffsetIteratorT d_end_offsets)
 {
   static constexpr segmented_sort_policy active_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
-
-  using LargeSegmentPolicyT = AgentRadixSortDownsweepPolicy<
-    0,
-    0,
-    void,
-    active_policy.large_segment.load_algorithm,
-    active_policy.large_segment.load_modifier,
-    active_policy.large_segment.rank_algorithm,
-    active_policy.large_segment.scan_algorithm,
-    active_policy.large_segment.radix_bits,
-    NoScaling<active_policy.large_segment.block_threads, active_policy.large_segment.items_per_thread>>;
-
+  static constexpr auto large_policy                   = active_policy.large_segment;
+  using LargeSegmentPolicyT                            = AgentRadixSortDownsweepPolicy<
+                               0,
+                               0,
+                               void,
+                               large_policy.load_algorithm,
+                               large_policy.load_modifier,
+                               large_policy.rank_algorithm,
+                               large_policy.scan_algorithm,
+                               large_policy.radix_bits,
+                               NoScaling<large_policy.block_threads, large_policy.items_per_thread>>;
+  static constexpr auto medium_policy = active_policy.medium_segment;
   using MediumPolicyT =
-    AgentSubWarpMergeSortPolicy<active_policy.medium_segment.block_threads,
-                                active_policy.medium_segment.warp_threads,
-                                active_policy.medium_segment.items_per_thread,
-                                active_policy.medium_segment.load_algorithm,
-                                active_policy.medium_segment.load_modifier,
-                                active_policy.medium_segment.store_algorithm>;
+    AgentSubWarpMergeSortPolicy<medium_policy.block_threads,
+                                medium_policy.warp_threads,
+                                medium_policy.items_per_thread,
+                                medium_policy.load_algorithm,
+                                medium_policy.load_modifier,
+                                medium_policy.store_algorithm>;
 
   const auto segment_id = static_cast<local_segment_index_t>(blockIdx.x);
   OffsetT segment_begin = d_begin_offsets[segment_id];
@@ -346,22 +346,22 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).small_seg
   const local_segment_index_t bid = blockIdx.x;
 
   static constexpr segmented_sort_policy active_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
-
+  static constexpr auto small_policy                   = active_policy.small_segment;
   using SmallPolicyT =
-    AgentSubWarpMergeSortPolicy<active_policy.small_segment.block_threads,
-                                active_policy.small_segment.warp_threads,
-                                active_policy.small_segment.items_per_thread,
-                                active_policy.small_segment.load_algorithm,
-                                active_policy.small_segment.load_modifier,
-                                active_policy.small_segment.store_algorithm>;
-
+    AgentSubWarpMergeSortPolicy<small_policy.block_threads,
+                                small_policy.warp_threads,
+                                small_policy.items_per_thread,
+                                small_policy.load_algorithm,
+                                small_policy.load_modifier,
+                                small_policy.store_algorithm>;
+  static constexpr auto medium_policy = active_policy.medium_segment;
   using MediumPolicyT =
-    AgentSubWarpMergeSortPolicy<active_policy.medium_segment.block_threads,
-                                active_policy.medium_segment.warp_threads,
-                                active_policy.medium_segment.items_per_thread,
-                                active_policy.medium_segment.load_algorithm,
-                                active_policy.medium_segment.load_modifier,
-                                active_policy.medium_segment.store_algorithm>;
+    AgentSubWarpMergeSortPolicy<medium_policy.block_threads,
+                                medium_policy.warp_threads,
+                                medium_policy.items_per_thread,
+                                medium_policy.load_algorithm,
+                                medium_policy.load_modifier,
+                                medium_policy.store_algorithm>;
 
   constexpr auto threads_per_medium_segment = static_cast<local_segment_index_t>(MediumPolicyT::WARP_THREADS);
   constexpr auto threads_per_small_segment  = static_cast<local_segment_index_t>(SmallPolicyT::WARP_THREADS);
@@ -476,17 +476,18 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_seg
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets)
 {
-  static constexpr segmented_sort_policy active_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
-  using LargeSegmentPolicyT                            = AgentRadixSortDownsweepPolicy<
-                               0,
-                               0,
-                               void,
-                               active_policy.large_segment.load_algorithm,
-                               active_policy.large_segment.load_modifier,
-                               active_policy.large_segment.rank_algorithm,
-                               active_policy.large_segment.scan_algorithm,
-                               active_policy.large_segment.radix_bits,
-                               NoScaling<active_policy.large_segment.block_threads, active_policy.large_segment.items_per_thread>>;
+  static constexpr segmented_radix_sort_policy large_policy =
+    PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_segment;
+  using LargeSegmentPolicyT = AgentRadixSortDownsweepPolicy<
+    0,
+    0,
+    void,
+    large_policy.load_algorithm,
+    large_policy.load_modifier,
+    large_policy.rank_algorithm,
+    large_policy.scan_algorithm,
+    large_policy.radix_bits,
+    NoScaling<large_policy.block_threads, large_policy.items_per_thread>>;
 
   using local_segment_index_t = local_segment_index_t;
 

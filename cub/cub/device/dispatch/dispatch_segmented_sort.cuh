@@ -307,7 +307,7 @@ struct policy_selector_from_hub
     using mp = typename ap::MediumSegmentPolicy;
 
     return segmented_sort_policy{
-      radix_sort_policy{
+      segmented_radix_sort_policy{
         lp::BLOCK_THREADS,
         lp::ITEMS_PER_THREAD,
         lp::LOAD_ALGORITHM,
