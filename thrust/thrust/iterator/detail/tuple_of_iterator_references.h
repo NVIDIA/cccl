@@ -28,7 +28,89 @@ namespace detail
 template <typename... Ts>
 class tuple_of_iterator_references;
 
-template <class U, class T>
+// is_compatible_normalize:
+//   device_reference<T> --> T
+//   tuple_of_iterator_references<Ts...> --> tuple<T...>
+//   T& --> T
+
+template <typename T>
+struct is_compatible_normalize
+{
+  using type = T;
+};
+
+template <typename... Ts>
+struct is_compatible_normalize<tuple_of_iterator_references<Ts...>>
+{
+  using type = ::cuda::std::tuple<Ts...>;
+};
+
+template <typename T>
+struct is_compatible_normalize<thrust::device_reference<T>>
+{
+  using type = T;
+};
+
+template <typename T>
+struct is_compatible_normalize<T&>
+{
+  using type = T;
+};
+
+// is_compatible:
+//  - checks if the tuple structure matches
+//  - rather than just testing the top-level size, this handles nesting with length-1 tuples,
+
+// is_compatible: default case of two non-tuple types are compatible
+template <typename U, typename T>
+struct is_compatible
+{
+  static constexpr auto value = true;
+};
+
+// is_compatible_helper: verifies that the outer-most tuple_size matches prior to recursing further
+template <typename U, typename T, bool viable>
+struct is_compatible_helper;
+
+// is_compatible_helper: case 1: non-viable, sizes don't even match, do not recurse
+template <typename U, typename T>
+struct is_compatible_helper<U, T, false>
+{
+  static constexpr auto value = false;
+};
+
+// is_compatible_helper: case 2: viable, sizes match, recurse further
+template <typename... Ts, typename... Us>
+struct is_compatible_helper<::cuda::std::tuple<Us...>, ::cuda::std::tuple<Ts...>, true>
+{
+  static constexpr auto value =
+    (...
+     && is_compatible<typename is_compatible_normalize<Us>::type, typename is_compatible_normalize<Ts>::type>::value);
+};
+
+// is_compatible: recurse via is_compatible_helper to see if the two tuples are compatible
+template <typename... Us, typename... Ts>
+struct is_compatible<::cuda::std::tuple<Us...>, ::cuda::std::tuple<Ts...>>
+{
+  static constexpr auto value = is_compatible_helper < ::cuda::std::tuple<Us...>, ::cuda::std::tuple<Ts...>,
+                        sizeof...(Us) == sizeof...(Ts) > ::value;
+};
+
+// is_compatible: one tuple and one non-tuple are not compatible
+template <typename... Us, typename T>
+struct is_compatible<::cuda::std::tuple<Us...>, T>
+{
+  static constexpr auto value = false;
+};
+
+// is_compatible: one non-tuple and one tuple are not compatible
+template <typename U, typename... Ts>
+struct is_compatible<U, ::cuda::std::tuple<Ts...>>
+{
+  static constexpr auto value = false;
+};
+
+template <class U, class T, class Enable = void>
 struct maybe_unwrap_nested
 {
   _CCCL_HOST_DEVICE U operator()(const T& t) const
@@ -38,7 +120,10 @@ struct maybe_unwrap_nested
 };
 
 template <class... Us, class... Ts>
-struct maybe_unwrap_nested<::cuda::std::tuple<Us...>, tuple_of_iterator_references<Ts...>>
+struct maybe_unwrap_nested<
+  ::cuda::std::tuple<Us...>,
+  tuple_of_iterator_references<Ts...>,
+  ::cuda::std::enable_if_t<is_compatible<::cuda::std::tuple<Us...>, ::cuda::std::tuple<Ts...>>::value, int>>
 {
   _CCCL_HOST_DEVICE ::cuda::std::tuple<Us...> operator()(const tuple_of_iterator_references<Ts...>& t) const
   {
@@ -98,7 +183,8 @@ public:
     return *this;
   }
 
-  template <class... Us, ::cuda::std::enable_if_t<sizeof...(Us) == sizeof...(Ts), int> = 0>
+  template <class... Us,
+            ::cuda::std::enable_if_t<is_compatible<::cuda::std::tuple<Us...>, ::cuda::std::tuple<Ts...>>::value, int> = 0>
   _CCCL_HOST_DEVICE constexpr operator ::cuda::std::tuple<Us...>() const
   {
     return __to_tuple<Us...>(typename ::cuda::std::__make_tuple_indices<sizeof...(Ts)>::type{});
@@ -112,7 +198,9 @@ public:
     x.swap(y);
   }
 
-  template <class... Us, size_t... Id>
+  template <class... Us,
+            size_t... Id,
+            ::cuda::std::enable_if_t<is_compatible<::cuda::std::tuple<Us...>, ::cuda::std::tuple<Ts...>>::value, int> = 0>
   _CCCL_HOST_DEVICE constexpr ::cuda::std::tuple<Us...> __to_tuple(::cuda::std::__tuple_indices<Id...>) const
   {
     return {maybe_unwrap_nested<Us, Ts>{}(::cuda::std::get<Id>(*this))...};
