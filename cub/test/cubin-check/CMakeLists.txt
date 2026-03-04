@@ -34,6 +34,8 @@ function(cub_add_cubin_check_test source)
     ${target_name}
     PROPERTIES #
       CUDA_CUBIN_COMPILATION ON
+      # Some of our presets specify multiple architectures, so the hope here is to make the compilation a little faster.
+      # Given that empty kernel doesn't depend on the arch, that should be fine.
       CUDA_ARCHITECTURES "80-real"
   )
 
