@@ -105,6 +105,9 @@ inline constexpr bool __valid_virtcall = sizeof...(_Interface) == 1;
 template <auto _Mbr, class _Interface>
 inline constexpr bool __valid_virtcall<_Mbr, __ireference<_Interface const>> = __virtual_fn<_Mbr>::__const_fn;
 
+// GCC cannot prove __vptr is non-null (the type-erasure invariant guarantees it)
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wnull-dereference")
 template <auto _Mbr, class _Interface, class _Super, class _Self, class... _Args>
 _CCCL_API auto __virtcall(_Self* __self, _Args&&... __args) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
@@ -114,12 +117,10 @@ _CCCL_API auto __virtcall(_Self* __self, _Args&&... __args) //
   auto* __obj  = __basic_any_access::__get_optr(*__self);
   // map the member function pointer to the correct one if necessary
   using __virtual_fn_t = __virtual_fn_for<_Mbr, _Interface, _Super>;
-  // GCC cannot prove __vptr is non-null (the type-erasure invariant guarantees it)
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_GCC("-Wnull-dereference")
+
   return __vptr->__virtual_fn_t::__fn_(__obj, static_cast<_Args&&>(__args)...);
-  _CCCL_DIAG_POP
 }
+_CCCL_DIAG_POP
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class _Super, class... _Args)
 _CCCL_REQUIRES(__valid_virtcall<_Mbr, _Super>)
