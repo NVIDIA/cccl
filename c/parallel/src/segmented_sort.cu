@@ -530,7 +530,9 @@ try
     template_id<user_operation_traits>(), small_selector_op, selector_result_t, selector_input_t);
 
   const auto policy_sel = cub::detail::segmented_sort::policy_selector{
-    static_cast<int>(keys_in_it.value_type.size), static_cast<int>(values_in_it.value_type.size), keys_only};
+    static_cast<int>(keys_in_it.value_type.size),
+    keys_only ? int{sizeof(cub::NullType)} : static_cast<int>(values_in_it.value_type.size),
+    keys_only};
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream segmented_sort_policy_sel_str;
@@ -581,7 +583,7 @@ using device_three_way_partition_policy = {13}::MaxPolicy;
 #include <cub/detail/ptx-json/json.cuh>
 __device__ consteval auto& three_way_partition_policy_generator() {{
   return ptx_json::id<ptx_json::string("device_three_way_partition_policy")>()
-    = cub::detail::three_way_partition::ThreeWayPartitionPolicyWrapper<device_three_way_partition_policy>::EncodedPolicy();
+    = cub::detail::three_way_partition::ThreeWayPartitionPolicyWrapper<device_three_way_partition_policy::ActivePolicy>::EncodedPolicy();
 }}
 )XXX",
     jit_template_header_contents, // 0
@@ -671,7 +673,7 @@ __device__ consteval auto& three_way_partition_policy_generator() {{
       ->get_name({three_way_partition_init_kernel_name, three_way_partition_init_kernel_lowered_name})
       ->get_name({three_way_partition_kernel_name, three_way_partition_kernel_lowered_name})
       ->link_program()
-      ->add_link_list(std::move(linkable_list))
+      ->add_link_list(linkable_list)
       ->finalize_program();
 
   // populate build struct members
@@ -796,6 +798,7 @@ CUresult cccl_device_segmented_sort_impl(
     cub::DoubleBuffer<indirect_arg_t> d_values_double_buffer(
       *static_cast<indirect_arg_t**>(&val_arg_in), *static_cast<indirect_arg_t**>(&val_arg_out));
 
+    // TODO(bgruber): remove all template arguments except the first two (the others can be deduced)
     auto exec_status = cub::detail::segmented_sort::dispatch<
       Order,
       OffsetT, // OffsetT
@@ -805,26 +808,24 @@ CUresult cccl_device_segmented_sort_impl(
       indirect_iterator_t, // EndOffsetIteratorT
       cub::detail::segmented_sort::policy_selector, // PolicySelector
       segmented_sort::segmented_sort_kernel_source, // KernelSource
-      segmented_sort::partition_runtime_tuning_policy, // PartitionPolicyHub
-      segmented_sort::partition_kernel_source, // PartitionKernelSource
-      cub::detail::CudaDriverLauncherFactory>( // KernelLaunchFactory
-      d_temp_storage,
-      *temp_storage_bytes,
-      d_keys_double_buffer,
-      d_values_double_buffer,
-      num_items,
-      num_segments,
-      start_offset_in,
-      end_offset_in,
-      is_overwrite_okay,
-      stream,
-      /* policy_selector */
-      *static_cast<cub::detail::segmented_sort::policy_selector*>(build.runtime_policy),
-      /* kernel_source */ {build},
-      /* partition_kernel_source */ {build},
-      /* launcher_factory */ cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-      /* partition_max_policy */
-      *reinterpret_cast<segmented_sort::partition_runtime_tuning_policy*>(build.partition_runtime_policy));
+      segmented_sort::partition_runtime_tuning_policy // PartitionPolicyHub
+      >(d_temp_storage,
+        *temp_storage_bytes,
+        d_keys_double_buffer,
+        d_values_double_buffer,
+        num_items,
+        num_segments,
+        indirect_iterator_t{start_offset_in},
+        indirect_iterator_t{end_offset_in},
+        is_overwrite_okay,
+        stream,
+        /* policy_selector */
+        *static_cast<cub::detail::segmented_sort::policy_selector*>(build.runtime_policy),
+        /* kernel_source */ segmented_sort::segmented_sort_kernel_source{build},
+        /* partition_kernel_source */ segmented_sort::partition_kernel_source{build},
+        /* launcher_factory */ cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
+        /* partition_max_policy */
+        *static_cast<segmented_sort::partition_runtime_tuning_policy*>(build.partition_runtime_policy));
 
     *selector = d_keys_double_buffer.selector;
     error     = static_cast<CUresult>(exec_status);
