@@ -54,11 +54,6 @@ Memory
      - CCCL 3.1.0
      - CUDA 13.1
 
-   * - :ref:`ptr_alignment <libcudacxx-extended-api-memory-ptr_alignment>`
-     - Get the alignment of a pointer
-     - CCCL 3.3.0
-     - CUDA 13.3
-
    * - :ref:`align_up <libcudacxx-extended-api-memory-align_up>`
      - Align up a pointer to the specified alignment
      - CCCL 3.1.0
