@@ -269,8 +269,12 @@ struct policy_hub
                      default_reduce_by_key_delay_constructor_t<DelayConstructorKey, int>>;
   };
 
+  // TODO(bgruber): I think we want `LengthT` instead of `int`
+  // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy500
+  using DefaultPolicy500 = DefaultPolicy<BLOCK_LOAD_DIRECT, int, LOAD_LDG>;
+
   struct Policy500
-      : DefaultPolicy<BLOCK_LOAD_DIRECT, int, LOAD_LDG> // TODO(bgruber): I think we want `LengthT` instead of `int`
+      : DefaultPolicy500
       , ChainedPolicy<500, Policy500, Policy500>
   {};
 
@@ -293,8 +297,12 @@ struct policy_hub
     using RleSweepPolicyT = decltype(select_agent_policy<sm80_tuning<LengthT, KeyT>>(0));
   };
 
+  // TODO(bgruber): I think we want `LengthT` instead of `int`
+  // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy860
+  using DefaultPolicy860 = DefaultPolicy<BLOCK_LOAD_DIRECT, int, LOAD_LDG>;
+
   struct Policy860
-      : DefaultPolicy<BLOCK_LOAD_DIRECT, int, LOAD_LDG> // TODO(bgruber): I think we want `LengthT` instead of `int`
+      : DefaultPolicy860
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 

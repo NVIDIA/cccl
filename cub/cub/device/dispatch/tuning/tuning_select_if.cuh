@@ -1487,8 +1487,11 @@ struct policy_hub
                           detail::fixed_delay_constructor_t<350, 450>>;
   };
 
+  // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy500
+  using DefaultPolicy500 = DefaultPolicy<may_alias ? LOAD_CA : LOAD_LDG>;
+
   struct Policy500
-      : DefaultPolicy<may_alias ? LOAD_CA : LOAD_LDG>
+      : DefaultPolicy500
       , ChainedPolicy<500, Policy500, Policy500>
   {};
 
@@ -1515,8 +1518,11 @@ struct policy_hub
                                                classify_input_size<InputT>()>>(0));
   };
 
+  // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy860
+  using DefaultPolicy860 = DefaultPolicy<may_alias ? LOAD_CA : LOAD_LDG>;
+
   struct Policy860
-      : DefaultPolicy<may_alias ? LOAD_CA : LOAD_LDG>
+      : DefaultPolicy860
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
