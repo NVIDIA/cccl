@@ -14,7 +14,6 @@ Memory
    memory/get_device_address
    memory/is_address_from
    memory/is_aligned
-   memory/ptr_alignment
    memory/ptr_rebind
    memory/ptr_in_range
    memory/ranges_overlap
