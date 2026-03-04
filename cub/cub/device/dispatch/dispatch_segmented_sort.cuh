@@ -914,10 +914,10 @@ private:
                 small_segments_indices.get(),
                 stream,
                 launcher_factory,
-                wrapped_policy.large_segment.BlockThreads(),
-                wrapped_policy.small_segment.BlockThreads(),
-                wrapped_policy.medium_segment.SegmentsPerBlock(),
-                wrapped_policy.small_segment.SegmentsPerBlock()))
+                wrapped_policy.LargeSegment().BlockThreads(),
+                wrapped_policy.SmallSegment().BlockThreads(),
+                wrapped_policy.SegmentsPerMediumBlock(),
+                wrapped_policy.SegmentsPerSmallBlock()))
           {
             return error;
           }
