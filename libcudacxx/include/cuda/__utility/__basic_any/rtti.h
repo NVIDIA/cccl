@@ -224,8 +224,13 @@ template <class _SrcInterface, class _DstInterface>
   else
   {
     //! Slow down-casts and cross-casts:
+    // GCC cannot prove __query_interface(__iunknown()) is non-null when inlined
+    // (the __iunknown interface is always registered; the design guarantees non-null here)
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_GCC("-Wnull-dereference")
     __rtti const* rtti = __src_vptr->__query_interface(__iunknown());
     return rtti->__query_interface(_DstInterface());
+    _CCCL_DIAG_POP
   }
 }
 

@@ -348,9 +348,13 @@ public:
   {
     if (auto __vptr = __get_vptr())
     {
+      // GCC cannot prove __query_interface returns non-null for __iunknown (the invariant guarantees it)
+      _CCCL_DIAG_PUSH
+      _CCCL_DIAG_SUPPRESS_GCC("-Wnull-dereference")
       _CCCL_ASSERT(__vptr->__query_interface(__iunknown())->__cookie_ == 0xDEADBEEF,
                    "query_interface returned a bad pointer to the __iunknown vtable");
       __vptr->__query_interface(__iunknown())->__dtor_(__buffer_, __in_situ());
+      _CCCL_DIAG_POP
       __release_();
     }
   }
@@ -361,9 +365,13 @@ public:
   {
     if (auto __vptr = __get_vptr())
     {
+      // GCC cannot prove __query_interface returns non-null for __iunknown (the invariant guarantees it)
+      _CCCL_DIAG_PUSH
+      _CCCL_DIAG_SUPPRESS_GCC("-Wnull-dereference")
       _CCCL_ASSERT(__vptr->__query_interface(__iunknown())->__cookie_ == 0xDEADBEEF,
                    "query_interface returned a bad pointer to the __iunknown vtable");
       return *__vptr->__query_interface(__iunknown())->__object_info_->__object_typeid_;
+      _CCCL_DIAG_POP
     }
     return _CCCL_TYPEID(void);
   }
