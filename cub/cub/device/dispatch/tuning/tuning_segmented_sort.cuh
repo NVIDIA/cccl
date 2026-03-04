@@ -191,8 +191,8 @@ struct policy_selector
       const int small_itp    = scale_items(large_items ? 7 : 9);
       const int medium_itp   = scale_items(large_items ? 9 : 7);
       return segmented_sort_policy{
-        segmented_radix_sort_policy{
-          256, 23, BLOCK_LOAD_TRANSPOSE, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_WARP_SCANS, radix_bits},
+        __make_scaled_segmented_radix_sort_policy(
+          256, 23, BLOCK_LOAD_TRANSPOSE, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_WARP_SCANS, radix_bits),
         sub_warp_merge_sort_policy{
           256, large_items ? 8 : 2, small_itp, WARP_LOAD_TRANSPOSE, WARP_STORE_TRANSPOSE, LOAD_LDG},
         sub_warp_merge_sort_policy{256, 16, medium_itp, WARP_LOAD_TRANSPOSE, WARP_STORE_TRANSPOSE, LOAD_LDG},
