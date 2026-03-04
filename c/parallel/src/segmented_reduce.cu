@@ -185,7 +185,6 @@ try
     }
 
     const int offset_size = int{sizeof(OffsetT)};
-
     return cub::detail::segmented_reduce::policy_selector{
       accum_type, operation_t, offset_size, static_cast<int>(accum_t.size)};
   }();

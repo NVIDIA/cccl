@@ -208,7 +208,7 @@ struct DeviceSegmentedReduce
         d_end_offsets,
         reduction_op,
         initial_value, // zero-initialize
-        0,
+        0, // max_segment_size
         stream);
     }
     _CCCL_UNREACHABLE();

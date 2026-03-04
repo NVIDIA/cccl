@@ -73,14 +73,14 @@ struct policy_selector_from_hub
   // this is only called in device code, so we can ignore the arch parameter
   _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> segmented_reduce_policy
   {
-    using p  = typename PolicyHub::MaxPolicy::ActivePolicy::SegmentedReducePolicy;
-    using fs = typename segmented_reduce::policy_hub<AccumT, OffsetT, ReductionOpT>::MaxPolicy;
-    using sp = typename fs::SmallReducePolicy;
-    using mp = typename fs::MediumReducePolicy;
+    using rp  = typename PolicyHub::MaxPolicy::ActivePolicy::SegmentedReducePolicy;
+    using srp = typename segmented_reduce::policy_hub<AccumT, OffsetT, ReductionOpT>::MaxPolicy;
+    using sp  = typename srp::SmallReducePolicy;
+    using mp  = typename srp::MediumReducePolicy;
     return segmented_reduce_policy{
-      {p::BLOCK_THREADS, p::ITEMS_PER_THREAD, p::VECTOR_LOAD_LENGTH, p::BLOCK_ALGORITHM, p::LOAD_MODIFIER},
-      {p::BLOCK_THREADS, sp::WARP_THREADS, sp::ITEMS_PER_THREAD, sp::VECTOR_LOAD_LENGTH, sp::LOAD_MODIFIER},
-      {p::BLOCK_THREADS, mp::WARP_THREADS, mp::ITEMS_PER_THREAD, mp::VECTOR_LOAD_LENGTH, mp::LOAD_MODIFIER}};
+      {rp::BLOCK_THREADS, rp::ITEMS_PER_THREAD, rp::VECTOR_LOAD_LENGTH, rp::BLOCK_ALGORITHM, rp::LOAD_MODIFIER},
+      {rp::BLOCK_THREADS, sp::WARP_THREADS, rp::ITEMS_PER_THREAD, rp::VECTOR_LOAD_LENGTH, rp::LOAD_MODIFIER},
+      {rp::BLOCK_THREADS, mp::WARP_THREADS, rp::ITEMS_PER_THREAD, rp::VECTOR_LOAD_LENGTH, rp::LOAD_MODIFIER}};
   }
 };
 } // namespace detail::segmented_reduce
@@ -287,7 +287,15 @@ struct DispatchSegmentedReduce
         // Invoke DeviceSegmentedReduceKernel
         launcher_factory(
           static_cast<::cuda::std::uint32_t>(num_current_segments), policy.SegmentedReduce().BlockThreads(), 0, stream)
-          .doit(segmented_reduce_kernel, d_in, d_out, d_begin_offsets, d_end_offsets, reduction_op, init);
+          .doit(segmented_reduce_kernel,
+                d_in,
+                d_out,
+                d_begin_offsets,
+                d_end_offsets,
+                static_cast<int>(num_current_segments),
+                reduction_op,
+                init,
+                0);
 
         // Check for failure to launch
         error = CubDebug(cudaPeekAtLastError());
@@ -535,7 +543,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   // Init kernel configuration (computes kernel occupancy)
   [[maybe_unused]] int sm_occupancy{};
   if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
-        sm_occupancy, kernel_source.SegmentedReduceKernel(), active_policy.segmented_reduce.block_threads)))
+        sm_occupancy, kernel_source.SegmentedReduceKernel(), active_policy.large_reduce.block_threads)))
   {
     return error;
   }
@@ -554,9 +562,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     _CubLog("Invoking SegmentedDeviceReduceKernel<<<%ld, %d, 0, %lld>>>(), "
             "%d items per thread, %d SM occupancy\n",
             num_current_segments,
-            active_policy.segmented_reduce.block_threads,
+            active_policy.large_reduce.block_threads,
             (long long) stream,
-            active_policy.segmented_reduce.items_per_thread,
+            active_policy.large_reduce.items_per_thread,
             sm_occupancy);
 #endif // CUB_DEBUG_LOG
 
@@ -565,7 +573,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       ::cuda::ceil_div(num_current_segments, static_cast<::cuda::std::int64_t>(segments_per_block));
     if (const auto error = CubDebug(
           launcher_factory(
-            static_cast<::cuda::std::uint32_t>(num_blocks), active_policy.segmented_reduce.block_threads, 0, stream)
+            static_cast<::cuda::std::uint32_t>(num_blocks), active_policy.large_reduce.block_threads, 0, stream)
             .doit(kernel_source.SegmentedReduceKernel(),
                   d_in,
                   d_out,

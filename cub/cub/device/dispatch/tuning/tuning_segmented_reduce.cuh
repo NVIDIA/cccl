@@ -67,13 +67,13 @@ struct agent_warp_reduce_policy
 
 struct segmented_reduce_policy
 {
-  reduce::agent_reduce_policy segmented_reduce;
+  reduce::agent_reduce_policy large_reduce;
   agent_warp_reduce_policy small_reduce;
   agent_warp_reduce_policy medium_reduce;
 
   _CCCL_API constexpr friend bool operator==(const segmented_reduce_policy& lhs, const segmented_reduce_policy& rhs)
   {
-    return lhs.segmented_reduce == rhs.segmented_reduce && lhs.small_reduce == rhs.small_reduce
+    return lhs.large_reduce == rhs.large_reduce && lhs.small_reduce == rhs.small_reduce
         && lhs.medium_reduce == rhs.medium_reduce;
   }
 
@@ -85,7 +85,7 @@ struct segmented_reduce_policy
 #if !_CCCL_COMPILER(NVRTC)
   friend ::std::ostream& operator<<(::std::ostream& os, const segmented_reduce_policy& p)
   {
-    return os << "segmented_reduce_policy { .segmented_reduce = " << p.segmented_reduce
+    return os << "segmented_reduce_policy { .large_reduce = " << p.large_reduce
               << ", .small_reduce = " << p.small_reduce << ", .medium_reduce = " << p.medium_reduce << " }";
   }
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -103,24 +103,19 @@ struct policy_selector
   int offset_size;
   int accum_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> segmented_reduce_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> segmented_reduce_policy
   {
     constexpr int small_threads_per_warp  = 1;
     constexpr int medium_threads_per_warp = 32;
-    constexpr int threads_per_block       = 256;
-    constexpr int items_per_thread        = 16;
-    constexpr int items_per_vec_load      = 4;
 
-    auto [scaled_items, scaled_threads] = scale_mem_bound(threads_per_block, items_per_thread, accum_size);
-    const auto rp                       = reduce::agent_reduce_policy{
-      scaled_threads, scaled_items, items_per_vec_load, BLOCK_REDUCE_WARP_REDUCTIONS, LOAD_LDG};
+    const auto rp = reduce::policy_selector{accum_t, operation_t, offset_size, accum_size}(arch).reduce;
 
     return segmented_reduce_policy{
       rp,
       agent_warp_reduce_policy{
-        rp.block_threads, small_threads_per_warp, items_per_thread, items_per_vec_load, rp.load_modifier},
+        rp.block_threads, small_threads_per_warp, rp.items_per_thread, rp.vector_load_length, rp.load_modifier},
       agent_warp_reduce_policy{
-        rp.block_threads, medium_threads_per_warp, items_per_thread, items_per_vec_load, rp.load_modifier}};
+        rp.block_threads, medium_threads_per_warp, rp.items_per_thread, rp.vector_load_length, rp.load_modifier}};
   }
 };
 
@@ -139,67 +134,6 @@ struct policy_selector_from_types
     return policies(arch);
   }
 };
-
-template <typename PolicyT, typename = void>
-struct FixedSizeSegmentedReducePolicyWrapper : PolicyT
-{
-  _CCCL_HOST_DEVICE FixedSizeSegmentedReducePolicyWrapper(PolicyT base)
-      : PolicyT(base)
-  {}
-};
-
-template <typename StaticPolicyT>
-struct FixedSizeSegmentedReducePolicyWrapper<StaticPolicyT,
-                                             ::cuda::std::void_t<typename StaticPolicyT::ReducePolicy,
-                                                                 typename StaticPolicyT::SmallReducePolicy,
-                                                                 typename StaticPolicyT::MediumReducePolicy>>
-    : StaticPolicyT
-{
-  _CCCL_HOST_DEVICE FixedSizeSegmentedReducePolicyWrapper(StaticPolicyT base)
-      : StaticPolicyT(base)
-  {}
-
-  CUB_DEFINE_SUB_POLICY_GETTER(Reduce)
-  CUB_DEFINE_SUB_POLICY_GETTER(SmallReduce)
-  CUB_DEFINE_SUB_POLICY_GETTER(MediumReduce)
-
-  _CCCL_HOST_DEVICE static constexpr int SmallReduceItemsPerTile()
-  {
-    return StaticPolicyT::SmallReducePolicy::ITEMS_PER_TILE;
-  }
-
-  _CCCL_HOST_DEVICE static constexpr int MediumReduceItemsPerTile()
-  {
-    return StaticPolicyT::MediumReducePolicy::ITEMS_PER_TILE;
-  }
-
-  _CCCL_HOST_DEVICE static constexpr int SmallReduceSegmentsPerBlock()
-  {
-    return StaticPolicyT::SmallReducePolicy::SEGMENTS_PER_BLOCK;
-  }
-
-  _CCCL_HOST_DEVICE static constexpr int MediumReduceSegmentsPerBlock()
-  {
-    return StaticPolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK;
-  }
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedPolicy()
-  {
-    using namespace ptx_json;
-    return object<key<"ReducePolicy">()       = Reduce().EncodedPolicy(),
-                  key<"SmallReducePolicy">()  = SmallReduce().EncodedPolicy(),
-                  key<"MediumReducePolicy">() = MediumReduce().EncodedPolicy()>();
-  }
-#endif
-};
-
-template <typename PolicyT>
-_CCCL_HOST_DEVICE FixedSizeSegmentedReducePolicyWrapper<PolicyT>
-MakeFixedSizeSegmentedReducePolicyWrapper(PolicyT policy)
-{
-  return FixedSizeSegmentedReducePolicyWrapper<PolicyT>{policy};
-}
 
 template <typename AccumT, typename OffsetT, typename ReductionOpT>
 struct policy_hub
