@@ -1173,6 +1173,23 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
   return cudaSuccess;
 }
 
+template <bool KeysOnly, typename PolicyGetter>
+CUB_RUNTIME_FUNCTION void check_policy(PolicyGetter policy_getter)
+{
+  [[maybe_unused]] CUB_DETAIL_CONSTEXPR_ISH segmented_sort_policy active_policy = policy_getter();
+
+  CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.large_segment.load_modifier != CacheLoadModifier::LOAD_LDG,
+                               "The memory consistency model does not apply to texture accesses");
+  CUB_DETAIL_STATIC_ISH_ASSERT(
+    KeysOnly || active_policy.large_segment.load_algorithm != BLOCK_LOAD_STRIPED
+      || active_policy.medium_segment.load_algorithm != WARP_LOAD_STRIPED
+      || active_policy.small_segment.load_algorithm != WARP_LOAD_STRIPED,
+    "Striped load will make this algorithm unstable");
+  CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.medium_segment.store_algorithm != WARP_STORE_STRIPED
+                                 || active_policy.small_segment.store_algorithm != WARP_STORE_STRIPED,
+                               "Striped stores will produce unsorted results");
+}
+
 template <typename KeyT,
           typename ValueT,
           typename FallbackKernelT,
@@ -1279,7 +1296,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   KernelLauncherFactory launcher_factory                      = {},
   typename PartitionPolicyHub::MaxPolicy partition_max_policy = {}) -> cudaError_t
 {
-  constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
+  static constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
   const auto get_num_passes = [&](int radix_bits) {
     const int num_bits   = static_cast<int>(kernel_source.KeySize()) * CHAR_BIT;
@@ -1307,18 +1324,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   return detail::dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) -> cudaError_t {
+    check_policy<keys_only>(policy_getter); // MSVC fails to evaluate static_asserts inside this lambda, so move them to
+                                            // a function
     CUB_DETAIL_CONSTEXPR_ISH const segmented_sort_policy active_policy = policy_getter();
-
-    CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.large_segment.load_modifier != CacheLoadModifier::LOAD_LDG,
-                                 "The memory consistency model does not apply to texture accesses");
-    CUB_DETAIL_STATIC_ISH_ASSERT(
-      keys_only || active_policy.large_segment.load_algorithm != BLOCK_LOAD_STRIPED
-        || active_policy.medium_segment.load_algorithm != WARP_LOAD_STRIPED
-        || active_policy.small_segment.load_algorithm != WARP_LOAD_STRIPED,
-      "Striped load will make this algorithm unstable");
-    CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.medium_segment.store_algorithm != WARP_STORE_STRIPED
-                                   || active_policy.small_segment.store_algorithm != WARP_STORE_STRIPED,
-                                 "Striped stores will produce unsorted results");
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(
