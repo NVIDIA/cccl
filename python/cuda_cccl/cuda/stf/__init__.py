@@ -12,6 +12,7 @@ from ._stf_bindings import (
     dep,
     exec_place,
     exec_place_grid,
+    get_compile_flags,
     get_include_path,
     get_library_path,
 )
@@ -54,6 +55,7 @@ class DataPlaceLike(Protocol):
 __all__ = [
     "ExecPlaceLike",
     "DataPlaceLike",
+    "get_compile_flags",
     "get_include_path",
     "get_library_path",
     "context",

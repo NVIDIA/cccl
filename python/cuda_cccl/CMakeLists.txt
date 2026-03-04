@@ -72,18 +72,16 @@ endif()
 file(MAKE_DIRECTORY "cuda/compute/${CUDA_VERSION_DIR}/cccl")
 if (CCCL_ENABLE_C_EXPERIMENTAL_STF)
   file(MAKE_DIRECTORY "cuda/stf/${CUDA_VERSION_DIR}/cccl")
-  # Copy STF and cudax headers into the package tree so get_include_path() works
-  # for both wheel and editable installs (single canonical location).
+  # Copy all headers needed to compile against STF into the package tree.
+  # This makes cuda.stf.get_include_path() self-contained: downstream packages
+  # get version-consistent headers from a single -I path.
   set(_stf_include_dest "${CMAKE_CURRENT_SOURCE_DIR}/cuda/stf/include")
   file(MAKE_DIRECTORY "${_stf_include_dest}")
-  file(
-    COPY ${_cccl_root}/c/experimental/stf/include/
-    DESTINATION ${_stf_include_dest}
-  )
-  file(
-    COPY ${_cccl_root}/cudax/include/
-    DESTINATION ${_stf_include_dest}
-  )
+  file(COPY ${_cccl_root}/c/experimental/stf/include/  DESTINATION ${_stf_include_dest})
+  file(COPY ${_cccl_root}/cudax/include/               DESTINATION ${_stf_include_dest})
+  file(COPY ${_cccl_root}/libcudacxx/include/           DESTINATION ${_stf_include_dest})
+  file(COPY ${_cccl_root}/cub/cub/                      DESTINATION ${_stf_include_dest}/cub)
+  file(COPY ${_cccl_root}/thrust/thrust/                DESTINATION ${_stf_include_dest}/thrust)
 endif()
 
 # Install version-specific binaries
@@ -99,6 +97,33 @@ if (CCCL_ENABLE_C_EXPERIMENTAL_STF)
     DIRECTORY ${_stf_include_dest}/
     DESTINATION cuda/stf/include
   )
+
+  # Generate build config so downstream packages can compile with matching flags.
+  # Queried at runtime via cuda.stf.get_compile_flags().
+  get_target_property(_stf_cuda_std cccl.c.experimental.stf CUDA_STANDARD)
+  get_target_property(_stf_cxx_std  cccl.c.experimental.stf CXX_STANDARD)
+  get_target_property(_stf_cuda_archs cccl.c.experimental.stf CUDA_ARCHITECTURES)
+  if (NOT _stf_cuda_archs)
+    set(_stf_cuda_archs "${CMAKE_CUDA_ARCHITECTURES}")
+  endif()
+  string(REPLACE ";" "," _stf_cuda_archs_csv "${_stf_cuda_archs}")
+  set(_stf_build_config "{
+  \"cuda_standard\": ${_stf_cuda_std},
+  \"cxx_standard\": ${_stf_cxx_std},
+  \"cuda_architectures\": \"${_stf_cuda_archs_csv}\",
+  \"cuda_toolkit_version\": \"${CUDAToolkit_VERSION}\",
+  \"defines\": [\"CCCL_C_EXPERIMENTAL\"],
+  \"nvcc_flags\": [\"--expt-relaxed-constexpr\", \"--extended-lambda\"]
+}
+")
+  set(_stf_build_config_path "${CMAKE_CURRENT_BINARY_DIR}/stf_build_config.json")
+  file(WRITE "${_stf_build_config_path}" "${_stf_build_config}")
+  install(
+    FILES "${_stf_build_config_path}"
+    DESTINATION cuda/stf/${CUDA_VERSION_DIR}
+  )
+  # Also copy into source tree for editable installs
+  file(COPY "${_stf_build_config_path}" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/cuda/stf/${CUDA_VERSION_DIR}")
 endif()
 
 install(

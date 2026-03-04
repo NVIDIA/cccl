@@ -70,9 +70,10 @@ globals().update(bindings_module.__dict__)
 # even for editable installs.  The installed layout is:
 #
 #   cuda/stf/
-#   ├── include/          <- C API + cudax headers
+#   ├── include/              <- C API + cudax + libcudacxx headers
 #   └── <cu12|cu13>/
 #       ├── _stf_bindings_impl.so
+#       ├── stf_build_config.json   <- compile flags used for this build
 #       └── cccl/
 #           └── libcccl.c.experimental.stf.so
 # ---------------------------------------------------------------------------
@@ -108,3 +109,31 @@ def get_library_path() -> Path:
         f"Cannot locate {lib_name} for CUDA {cuda_version}. "
         "The cuda-cccl package may not have been installed correctly."
     )
+
+
+@lru_cache()
+def get_compile_flags() -> dict:
+    """Return the compile flags used to build ``libcccl.c.experimental.stf.so``.
+
+    Downstream packages that compile C++ code against the STF headers should
+    use these flags to ensure ABI compatibility.  The returned dict contains::
+
+        {
+            "cuda_standard":        20,
+            "cxx_standard":         20,
+            "cuda_architectures":   "75-real,80-real,...",
+            "cuda_toolkit_version": "13.2.35",
+            "defines":              ["CCCL_C_EXPERIMENTAL"],
+            "nvcc_flags":           ["--expt-relaxed-constexpr", "--extended-lambda"],
+        }
+    """
+    import json
+
+    config_path = _ext_dir / "stf_build_config.json"
+    if not config_path.exists():
+        raise RuntimeError(
+            "Cannot locate stf_build_config.json. "
+            "The cuda-cccl package may not have been installed correctly."
+        )
+    with open(config_path) as f:
+        return json.load(f)
