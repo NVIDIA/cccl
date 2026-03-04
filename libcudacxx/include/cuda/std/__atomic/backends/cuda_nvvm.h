@@ -1,4 +1,3 @@
-
 //===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
@@ -9,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___ATOMIC_BACKENDS_CUDA_INTRINSICS_H
-#  define _CUDA_STD___ATOMIC_BACKENDS_CUDA_INTRINSICS_H
+#ifndef _CUDA_STD___ATOMIC_BACKENDS_CUDA_NVVM_H
+#  define _CUDA_STD___ATOMIC_BACKENDS_CUDA_NVVM_H
 
 #  include <cuda/std/detail/__config>
 
@@ -24,6 +23,7 @@
 
 #  include <cuda/std/__atomic/backends/common.h>
 #  include <cuda/std/__atomic/backends/cuda_local.h>
+#  include <cuda/std/__atomic/backends/cuda_nvvm_wrapped.h>
 #  include <cuda/std/__atomic/backends/cuda_supported_atomics_helper.h>
 #  include <cuda/std/__atomic/order.h>
 #  include <cuda/std/__atomic/scopes.h>
@@ -37,33 +37,12 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#  if _CCCL_HAS_CUDA_COMPILER()
-
-constexpr _CCCL_DEVICE int __atomic_scope_tag_to_nvvm_scope(::cuda::std::__thread_scope_system_tag)
-{
-  return ::__NV_THREAD_SCOPE_SYSTEM;
-}
-constexpr _CCCL_DEVICE int __atomic_scope_tag_to_nvvm_scope(::cuda::std::__thread_scope_device_tag)
-{
-  return ::__NV_THREAD_SCOPE_DEVICE;
-}
-constexpr _CCCL_DEVICE int __atomic_scope_tag_to_nvvm_scope(::cuda::std::__thread_scope_cluster_tag)
-{
-  return ::__NV_THREAD_SCOPE_CLUSTER;
-}
-constexpr _CCCL_DEVICE int __atomic_scope_tag_to_nvvm_scope(::cuda::std::__thread_scope_block_tag)
-{
-  return ::__NV_THREAD_SCOPE_BLOCK;
-}
-constexpr _CCCL_DEVICE int __atomic_scope_tag_to_nvvm_scope(::cuda::std::__thread_scope_thread_tag)
-{
-  return ::__NV_THREAD_SCOPE_THREAD;
-}
+#  if _CCCL_CUDA_COMPILATION()
 
 template <typename _Sco>
 static inline _CCCL_DEVICE void __atomic_thread_fence_cuda(int __memorder, _Sco)
 {
-  // __nv_atomic_thread_fence(__memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  // nv_atomic_thread_fence_nvvm_dispatch(__memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 
 template <>
@@ -81,7 +60,7 @@ static inline _CCCL_DEVICE void __atomic_load_cuda(const _Type* __ptr, _Type& __
   {
     return;
   }
-  __nv_atomic_load(__ptr_proxy, __dst_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  __atomic_load_nvvm_dispatch(__ptr_proxy, __dst_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 template <class _Type, class _Sco>
 static inline _CCCL_DEVICE void __atomic_load_cuda(const _Type volatile* __ptr, _Type& __dst, int __memorder, _Sco)
@@ -94,7 +73,7 @@ static inline _CCCL_DEVICE void __atomic_load_cuda(const _Type volatile* __ptr, 
   {
     return;
   }
-  __nv_atomic_load(__ptr_proxy, __dst_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  __atomic_load_nvvm_dispatch(__ptr_proxy, __dst_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 
 template <class _Type, class _Sco>
@@ -108,7 +87,7 @@ static inline _CCCL_DEVICE void __atomic_store_cuda(_Type* __ptr, _Type& __val, 
   {
     return;
   }
-  __nv_atomic_store(__ptr_proxy, __val_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  __atomic_store_nvvm_dispatch(__ptr_proxy, __val_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 template <class _Type, class _Sco>
 static inline _CCCL_DEVICE void __atomic_store_cuda(_Type volatile* __ptr, _Type& __val, int __memorder, _Sco)
@@ -121,7 +100,7 @@ static inline _CCCL_DEVICE void __atomic_store_cuda(_Type volatile* __ptr, _Type
   {
     return;
   }
-  __nv_atomic_store(__ptr_proxy, __val_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  __atomic_store_nvvm_dispatch(__ptr_proxy, __val_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 
 template <class _Type, class _Sco>
@@ -138,7 +117,7 @@ static inline _CCCL_DEVICE bool __atomic_compare_exchange_cuda(
   {
     return __res;
   }
-  return __nv_atomic_compare_exchange(
+  return __nv_atomic_compare_exchange_nvvm_dispatch(
     __ptr_proxy,
     __exp_proxy,
     __des_proxy,
@@ -161,7 +140,7 @@ static inline _CCCL_DEVICE bool __atomic_compare_exchange_cuda(
   {
     return __res;
   }
-  return __nv_atomic_compare_exchange(
+  return __nv_atomic_compare_exchange_nvvm_dispatch(
     __ptr_proxy,
     __exp_proxy,
     __des_proxy,
@@ -183,7 +162,7 @@ static inline _CCCL_DEVICE void __atomic_exchange_cuda(_Type* __ptr, _Type& __ol
   {
     return;
   }
-  return __nv_atomic_exchange(
+  __atomic_exchange_nvvm_dispatch(
     __ptr_proxy, __old_proxy, __new_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 template <class _Type, class _Sco>
@@ -199,17 +178,15 @@ __atomic_exchange_cuda(_Type volatile* __ptr, _Type& __old, _Type __new, int __m
   {
     return;
   }
-  return __nv_atomic_exchange(
+  __atomic_exchange_nvvm_dispatch(
     __ptr_proxy, __old_proxy, __new_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
 static inline _CCCL_DEVICE _Type __atomic_fetch_and_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
 {
-  constexpr auto __skip_v = 1;
-  __op                    = __op * __skip_v;
-  using __proxy_t         = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
-  using __proxy_tag       = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
+  using __proxy_t   = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
+  using __proxy_tag = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
   _Type __dst{};
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
@@ -218,15 +195,14 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_and_cuda(_Type* __ptr, _Up __op,
   {
     return __dst;
   }
-  return __nv_atomic_fetch_and(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __nv_atomic_fetch_and_nvvm_dispatch(
+    __ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
 static inline _CCCL_DEVICE _Type __atomic_fetch_and_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
 {
-  constexpr auto __skip_v = 1;
-  __op                    = __op * __skip_v;
-  using __proxy_t         = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
-  using __proxy_tag       = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
+  using __proxy_t   = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
+  using __proxy_tag = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
   _Type __dst{};
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(const_cast<_Type*>(__ptr));
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
@@ -235,16 +211,15 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_and_cuda(_Type volatile* __ptr, 
   {
     return __dst;
   }
-  return __nv_atomic_fetch_and(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __nv_atomic_fetch_and_nvvm_dispatch(
+    __ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_minmax<_Type> = 0>
 static inline _CCCL_DEVICE _Type __atomic_fetch_max_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
 {
-  constexpr auto __skip_v = 1;
-  __op                    = __op * __skip_v;
-  using __proxy_t         = typename __atomic_cuda_deduce_minmax<_Type>::__type;
-  using __proxy_tag       = typename __atomic_cuda_deduce_minmax<_Type>::__tag;
+  using __proxy_t   = typename __atomic_cuda_deduce_minmax<_Type>::__type;
+  using __proxy_tag = typename __atomic_cuda_deduce_minmax<_Type>::__tag;
   _Type __dst{};
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
@@ -253,15 +228,14 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_max_cuda(_Type* __ptr, _Up __op,
   {
     return __dst;
   }
-  return __nv_atomic_fetch_max(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __nv_atomic_fetch_max_nvvm_dispatch(
+    __ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_minmax<_Type> = 0>
 static inline _CCCL_DEVICE _Type __atomic_fetch_max_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
 {
-  constexpr auto __skip_v = 1;
-  __op                    = __op * __skip_v;
-  using __proxy_t         = typename __atomic_cuda_deduce_minmax<_Type>::__type;
-  using __proxy_tag       = typename __atomic_cuda_deduce_minmax<_Type>::__tag;
+  using __proxy_t   = typename __atomic_cuda_deduce_minmax<_Type>::__type;
+  using __proxy_tag = typename __atomic_cuda_deduce_minmax<_Type>::__tag;
   _Type __dst{};
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(const_cast<_Type*>(__ptr));
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
@@ -270,16 +244,15 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_max_cuda(_Type volatile* __ptr, 
   {
     return __dst;
   }
-  return __nv_atomic_fetch_max(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __nv_atomic_fetch_max_nvvm_dispatch(
+    __ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_minmax<_Type> = 0>
 static inline _CCCL_DEVICE _Type __atomic_fetch_min_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
 {
-  constexpr auto __skip_v = 1;
-  __op                    = __op * __skip_v;
-  using __proxy_t         = typename __atomic_cuda_deduce_minmax<_Type>::__type;
-  using __proxy_tag       = typename __atomic_cuda_deduce_minmax<_Type>::__tag;
+  using __proxy_t   = typename __atomic_cuda_deduce_minmax<_Type>::__type;
+  using __proxy_tag = typename __atomic_cuda_deduce_minmax<_Type>::__tag;
   _Type __dst{};
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
@@ -288,15 +261,14 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_min_cuda(_Type* __ptr, _Up __op,
   {
     return __dst;
   }
-  return __nv_atomic_fetch_min(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __nv_atomic_fetch_min_nvvm_dispatch(
+    __ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_minmax<_Type> = 0>
 static inline _CCCL_DEVICE _Type __atomic_fetch_min_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
 {
-  constexpr auto __skip_v = 1;
-  __op                    = __op * __skip_v;
-  using __proxy_t         = typename __atomic_cuda_deduce_minmax<_Type>::__type;
-  using __proxy_tag       = typename __atomic_cuda_deduce_minmax<_Type>::__tag;
+  using __proxy_t   = typename __atomic_cuda_deduce_minmax<_Type>::__type;
+  using __proxy_tag = typename __atomic_cuda_deduce_minmax<_Type>::__tag;
   _Type __dst{};
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(const_cast<_Type*>(__ptr));
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
@@ -305,16 +277,15 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_min_cuda(_Type volatile* __ptr, 
   {
     return __dst;
   }
-  return __nv_atomic_fetch_min(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __nv_atomic_fetch_min_nvvm_dispatch(
+    __ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
 static inline _CCCL_DEVICE _Type __atomic_fetch_or_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
 {
-  constexpr auto __skip_v = 1;
-  __op                    = __op * __skip_v;
-  using __proxy_t         = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
-  using __proxy_tag       = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
+  using __proxy_t   = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
+  using __proxy_tag = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
   _Type __dst{};
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
@@ -323,15 +294,14 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_or_cuda(_Type* __ptr, _Up __op, 
   {
     return __dst;
   }
-  return __nv_atomic_fetch_or(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __nv_atomic_fetch_or_nvvm_dispatch(
+    __ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
 static inline _CCCL_DEVICE _Type __atomic_fetch_or_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
 {
-  constexpr auto __skip_v = 1;
-  __op                    = __op * __skip_v;
-  using __proxy_t         = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
-  using __proxy_tag       = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
+  using __proxy_t   = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
+  using __proxy_tag = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
   _Type __dst{};
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(const_cast<_Type*>(__ptr));
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
@@ -340,16 +310,15 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_or_cuda(_Type volatile* __ptr, _
   {
     return __dst;
   }
-  return __nv_atomic_fetch_or(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __nv_atomic_fetch_or_nvvm_dispatch(
+    __ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
 static inline _CCCL_DEVICE _Type __atomic_fetch_xor_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
 {
-  constexpr auto __skip_v = 1;
-  __op                    = __op * __skip_v;
-  using __proxy_t         = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
-  using __proxy_tag       = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
+  using __proxy_t   = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
+  using __proxy_tag = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
   _Type __dst{};
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
@@ -358,10 +327,28 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_xor_cuda(_Type* __ptr, _Up __op,
   {
     return __dst;
   }
-  return __nv_atomic_fetch_xor(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __nv_atomic_fetch_xor_nvvm_dispatch(
+    __ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
 static inline _CCCL_DEVICE _Type __atomic_fetch_xor_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
+{
+  using __proxy_t   = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
+  using __proxy_tag = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
+  _Type __dst{};
+  __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(const_cast<_Type*>(__ptr));
+  __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
+  __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
+  if (__cuda_fetch_xor_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy))
+  {
+    return __dst;
+  }
+  return __nv_atomic_fetch_xor_nvvm_dispatch(
+    __ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+}
+
+template <class _Type, class _Up, class _Sco>
+static inline _CCCL_DEVICE _Type __atomic_fetch_add_cuda(_Type* __ptr, _Up __op, int __memorder, _Sco)
 {
   constexpr auto __skip_v = 1;
   __op                    = __op * __skip_v;
@@ -371,11 +358,30 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_xor_cuda(_Type volatile* __ptr, 
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(const_cast<_Type*>(__ptr));
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
   __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
-  if (__cuda_fetch_xor_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy))
+  if (__cuda_fetch_add_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy))
   {
     return __dst;
   }
-  return __nv_atomic_fetch_xor(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __nv_atomic_fetch_add_nvvm_dispatch(
+    __ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+}
+template <class _Type, class _Up, class _Sco>
+static inline _CCCL_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type* __ptr, _Up __op, int __memorder, _Sco)
+{
+  constexpr auto __skip_v = 1;
+  __op                    = __op * __skip_v;
+  using __proxy_t         = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
+  using __proxy_tag       = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
+  _Type __dst{};
+  __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(const_cast<_Type*>(__ptr));
+  __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
+  __proxy_t* __op_proxy  = reinterpret_cast<__proxy_t*>(&__op);
+  if (__cuda_fetch_add_weak_if_local(__ptr_proxy, *__op_proxy, __dst_proxy))
+  {
+    return __dst;
+  }
+  return __nv_atomic_fetch_add_nvvm_dispatch(
+    __ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 
 template <class _Type, class _Up, class _Sco>
@@ -395,6 +401,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___ATOMIC_BACKENDS_CUDA_INTRINSICS_H
+#endif // _CUDA_STD___ATOMIC_BACKENDS_CUDA_NVVM_H
 
 // clang-format on
