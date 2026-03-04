@@ -84,15 +84,19 @@ private:
   _Fn& __func_;
   _Index __index_;
 
-public:
   _CCCL_API constexpr explicit __tabulate_proxy(_Fn& __func, _Index __index) noexcept
       : __func_(__func)
       , __index_(__index)
   {}
 
+public:
+  _CCCL_HIDE_FROM_ABI __tabulate_proxy(const __tabulate_proxy&)            = default;
+  _CCCL_HIDE_FROM_ABI __tabulate_proxy& operator=(const __tabulate_proxy&) = default;
+  _CCCL_HIDE_FROM_ABI __tabulate_proxy(__tabulate_proxy&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __tabulate_proxy& operator=(__tabulate_proxy&&)      = default;
+
   _CCCL_TEMPLATE(class _Arg)
-  _CCCL_REQUIRES(::cuda::std::is_invocable_v<_Fn&, _Index, _Arg> _CCCL_AND(
-    !::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Arg>, __tabulate_proxy>))
+  _CCCL_REQUIRES(::cuda::std::is_invocable_v<_Fn&, _Index, _Arg>)
   _CCCL_API constexpr const __tabulate_proxy&
   operator=(_Arg&& __arg) noexcept(::cuda::std::is_nothrow_invocable_v<_Fn&, _Index, _Arg>)
   {
@@ -101,8 +105,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Arg)
-  _CCCL_REQUIRES(::cuda::std::is_invocable_v<const _Fn&, _Index, _Arg> _CCCL_AND(
-    !::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Arg>, __tabulate_proxy>))
+  _CCCL_REQUIRES(::cuda::std::is_invocable_v<const _Fn&, _Index, _Arg>)
   _CCCL_API constexpr const __tabulate_proxy& operator=(_Arg&& __arg) const
     noexcept(::cuda::std::is_nothrow_invocable_v<const _Fn&, _Index, _Arg>)
   {
@@ -188,7 +191,7 @@ public:
   //! @returns A proxy that applies the stored function and index on assignment
   [[nodiscard]] _CCCL_API constexpr auto operator[](difference_type __n) const noexcept
   {
-    return __tabulate_proxy<_Fn, _Index>{const_cast<_Fn&>(__func()), __index() + __n};
+    return __tabulate_proxy<_Fn, _Index>{const_cast<_Fn&>(__func()), static_cast<difference_type>(__index() + __n)};
   }
 
   //! @brief Subscripts the @c tabulate_output_iterator with a given offset
@@ -196,7 +199,7 @@ public:
   //! @returns A proxy that applies the stored function and index on assignment
   [[nodiscard]] _CCCL_API constexpr auto operator[](difference_type __n) noexcept
   {
-    return __tabulate_proxy<_Fn, _Index>{__func(), __index() + __n};
+    return __tabulate_proxy<_Fn, _Index>{__func(), static_cast<difference_type>(__index() + __n)};
   }
 
   //! @brief Increments the @c tabulate_output_iterator by incrementing the stored index
@@ -238,7 +241,7 @@ public:
   operator+(const tabulate_output_iterator& __iter, difference_type __n) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
-    return tabulate_output_iterator{__iter.__func(), __iter.__index() + __n};
+    return tabulate_output_iterator{__iter.__func(), static_cast<difference_type>(__iter.__index() + __n)};
   }
 
   //! @brief Returns a copy of a @c tabulate_output_iterator advanced a given number of elements
@@ -249,7 +252,7 @@ public:
   operator+(difference_type __n, const tabulate_output_iterator& __iter) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
-    return tabulate_output_iterator{__iter.__func(), __iter.__index() + __n};
+    return tabulate_output_iterator{__iter.__func(), static_cast<difference_type>(__iter.__index() + __n)};
   }
 
   //! @brief Advances the @c tabulate_output_iterator by a given number of elements
@@ -267,7 +270,7 @@ public:
   operator-(const tabulate_output_iterator& __iter, difference_type __n) //
     noexcept(::cuda::std::is_nothrow_copy_constructible_v<_Fn>)
   {
-    return tabulate_output_iterator{__iter.__func(), __iter.__index() - __n};
+    return tabulate_output_iterator{__iter.__func(), static_cast<difference_type>(__iter.__index() - __n)};
   }
 
   //! @brief Returns the distance between two @c tabulate_output_iterator 's

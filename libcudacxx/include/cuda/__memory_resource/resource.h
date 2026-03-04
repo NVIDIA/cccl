@@ -30,7 +30,6 @@
 #  include <cuda/std/__concepts/convertible_to.h>
 #  include <cuda/std/__concepts/equality_comparable.h>
 #  include <cuda/std/__concepts/same_as.h>
-#  include <cuda/std/__tuple_dir/sfinae_helpers.h>
 #  include <cuda/std/__type_traits/decay.h>
 #  include <cuda/std/__type_traits/fold.h>
 #  include <cuda/std/__type_traits/is_same.h>
@@ -88,7 +87,7 @@ _CCCL_CONCEPT resource = _CCCL_REQUIRES_EXPR(
 template <class _Resource, class... _Properties>
 _CCCL_CONCEPT synchronous_resource_with = _CCCL_REQUIRES_EXPR((_Resource, variadic _Properties))(
   requires(synchronous_resource<_Resource>),
-  requires(::cuda::std::__all<has_property<_Resource, _Properties>...>::value));
+  requires(::cuda::std::__fold_and_v<has_property<_Resource, _Properties>...>));
 
 //! @brief The \c resource_with concept verifies that a type Resource satisfies the `resource`
 //! concept and also satisfies all the provided Properties
@@ -97,7 +96,7 @@ _CCCL_CONCEPT synchronous_resource_with = _CCCL_REQUIRES_EXPR((_Resource, variad
 // We cannot use fold expressions here due to a nvcc bug
 template <class _Resource, class... _Properties>
 _CCCL_CONCEPT resource_with = _CCCL_REQUIRES_EXPR((_Resource, variadic _Properties))(
-  requires(resource<_Resource>), requires(::cuda::std::__all<has_property<_Resource, _Properties>...>::value));
+  requires(resource<_Resource>), requires(::cuda::std::__fold_and_v<has_property<_Resource, _Properties>...>));
 
 template <bool _Convertible>
 struct __different_resource__

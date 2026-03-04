@@ -34,8 +34,8 @@ __global__ void kernel(InputPointerT input, OutputIteratorT output, int num_item
   constexpr int num_copies               = Mode == test_mode::single_copy ? 1 : 2;
   constexpr int num_buffers              = (Mode == test_mode::multi_copy_single_phase) ? 2 : 1;
   constexpr int max_num_items_first_copy = cuda::ceil_div(tile_size, num_copies);
-  constexpr int buffer_align             = block_load2sh_t::template SharedBufferAlignBytes<input_t>();
-  constexpr int buffer_size = block_load2sh_t::template SharedBufferSizeBytes<input_t>(max_num_items_first_copy);
+  constexpr int buffer_align             = cub::detail::LoadToSharedBufferAlignBytes<input_t>();
+  constexpr int buffer_size              = cub::detail::LoadToSharedBufferSizeBytes<input_t>(max_num_items_first_copy);
   alignas(buffer_align) __shared__ char buffer[num_buffers][buffer_size];
   cuda::std::span<const input_t> src{input, static_cast<cuda::std::size_t>(num_items)};
   cuda::std::span<char> dst_buff{buffer[0]};
@@ -105,8 +105,8 @@ void test_block_load(const c2h::device_vector<T>& d_input, InputPointerT input)
   constexpr int num_copies               = Mode == test_mode::single_copy ? 1 : 2;
   constexpr int num_buffers              = (Mode == test_mode::multi_copy_single_phase) ? 2 : 1;
   constexpr int max_num_items_first_copy = cuda::ceil_div(tile_size, num_copies);
-  constexpr int buffer_align             = block_load2sh_t::template SharedBufferAlignBytes<T>();
-  constexpr int buffer_size              = block_load2sh_t::template SharedBufferSizeBytes<T>(max_num_items_first_copy);
+  constexpr int buffer_align             = cub::detail::LoadToSharedBufferAlignBytes<T>();
+  constexpr int buffer_size              = cub::detail::LoadToSharedBufferSizeBytes<T>(max_num_items_first_copy);
   constexpr int total_smem = ::cuda::round_up(int{sizeof(storage_t)}, buffer_align) + num_buffers * buffer_size;
   constexpr bool sufficient_resources = total_smem <= cub::detail::max_smem_per_block;
   if constexpr (sufficient_resources)
@@ -132,9 +132,9 @@ __global__ void kernel_dyn_smem_dst(InputPointerT input, OutputIteratorT output,
   __shared__ storage_t storage;
   block_load2sh_t block_load2sh{storage};
 
-  static_assert(alignof(input_t) <= block_load2sh_t::template SharedBufferAlignBytes<char>());
+  static_assert(alignof(input_t) <= cub::detail::LoadToSharedBufferAlignBytes<char>());
   extern __shared__ char smem_buff[];
-  assert(cuda::is_aligned(smem_buff, block_load2sh_t::template SharedBufferAlignBytes<input_t>()));
+  assert(cuda::is_aligned(smem_buff, cub::detail::LoadToSharedBufferAlignBytes<input_t>()));
 
   constexpr int ThreadsInBlock = ThreadsInBlockX * ThreadsInBlockY * ThreadsInBlockZ;
 
@@ -162,7 +162,7 @@ void test_block_load_dyn_smem_dst(const c2h::device_vector<T>& d_input, InputPoi
   constexpr int block_dim_z = 2;
   using block_load2sh_t     = cub::detail::BlockLoadToShared<block_dim_x, block_dim_y, block_dim_z>;
   constexpr int tile_size   = ItemsPerThread * ThreadsInBlock;
-  constexpr int buffer_size = block_load2sh_t::template SharedBufferSizeBytes<T>(tile_size);
+  constexpr int buffer_size = cub::detail::LoadToSharedBufferSizeBytes<T>(tile_size);
   CAPTURE(ThreadsInBlock, ItemsPerThread, c2h::type_name<T>());
 
   c2h::device_vector<T> d_output(d_input.size());

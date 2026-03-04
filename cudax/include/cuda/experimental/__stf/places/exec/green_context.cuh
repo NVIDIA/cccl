@@ -74,7 +74,7 @@ public:
         , view_ptr_(mv(view_ptr))
     {}
 
-    exec_place get_affine_exec_place() const override;
+    exec_place affine_exec_place() const override;
 
     int get_device_ordinal() const override
     {
@@ -283,11 +283,8 @@ public:
         // Create a green context
         cuda_safe_call(cuGreenCtxCreate(&ctxs[i], localdesc, device, CU_GREEN_CTX_DEFAULT_STREAM));
 
-        CUcontext green_primary;
-        cuda_safe_call(cuCtxFromGreenCtx(&green_primary, ctxs[i]));
-
-        // Store pool in the helper
-        pools.push_back(::std::make_shared<stream_pool>(async_resources_handle::pool_size, devid, green_primary));
+        // Store pool in the helper; streams are created via next(place) with place activation
+        pools.push_back(::std::make_shared<stream_pool>(async_resources_handle::pool_size));
       }
     }
   }
@@ -498,7 +495,7 @@ inline ::std::shared_ptr<green_context_helper> async_resources_handle::get_gc_he
   return h;
 }
 
-inline exec_place green_ctx_data_place::extension::get_affine_exec_place() const
+inline exec_place green_ctx_data_place::extension::affine_exec_place() const
 {
   if (view_ptr_)
   {
