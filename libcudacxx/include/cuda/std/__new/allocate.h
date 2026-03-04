@@ -22,10 +22,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__cstdlib/aligned_alloc.h>
 #include <cuda/std/__fwd/new.h>
 #include <cuda/std/__host_stdlib/new>
-#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__cstddef/types.h>
 
 #if __cpp_sized_deallocation >= 201309L
