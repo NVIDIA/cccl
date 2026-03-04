@@ -193,7 +193,7 @@ __atomic_exchange_nvvm_dispatch(_Type* __atom, _Type* __val, _Type* __ret, int _
 
 template <class _Type>
 _CCCL_ARTIFICIAL static inline _CCCL_DEVICE _Type
-__atomic_fetch_max_nvvm_dispatch(_Type* __ptr, _Type* __op, int __memorder, int __sco)
+__atomic_fetch_max_nvvm_dispatch(_Type* __ptr, _Type __op, int __memorder, int __sco)
 {
   _CCCL_PP_EXPAND(
     __ATOMIC_NVVM_BUILTIN(return __nv_atomic_fetch_max, __memorder, __ATOMIC_EXCHANGE_CASES, __sco, __ptr, __op));
@@ -203,7 +203,7 @@ __atomic_fetch_max_nvvm_dispatch(_Type* __ptr, _Type* __op, int __memorder, int 
 
 template <class _Type>
 _CCCL_ARTIFICIAL static inline _CCCL_DEVICE _Type
-__atomic_fetch_min_nvvm_dispatch(_Type* __ptr, _Type* __op, int __memorder, int __sco)
+__atomic_fetch_min_nvvm_dispatch(_Type* __ptr, _Type __op, int __memorder, int __sco)
 {
   _CCCL_PP_EXPAND(
     __ATOMIC_NVVM_BUILTIN(return __nv_atomic_fetch_min, __memorder, __ATOMIC_EXCHANGE_CASES, __sco, __ptr, __op));
@@ -213,7 +213,7 @@ __atomic_fetch_min_nvvm_dispatch(_Type* __ptr, _Type* __op, int __memorder, int 
 
 template <class _Type>
 _CCCL_ARTIFICIAL static inline _CCCL_DEVICE _Type
-__atomic_fetch_and_nvvm_dispatch(_Type* __ptr, _Type* __op, int __memorder, int __sco)
+__atomic_fetch_and_nvvm_dispatch(_Type* __ptr, _Type __op, int __memorder, int __sco)
 {
   _CCCL_PP_EXPAND(
     __ATOMIC_NVVM_BUILTIN(return __nv_atomic_fetch_and, __memorder, __ATOMIC_EXCHANGE_CASES, __sco, __ptr, __op));
@@ -223,7 +223,7 @@ __atomic_fetch_and_nvvm_dispatch(_Type* __ptr, _Type* __op, int __memorder, int 
 
 template <class _Type>
 _CCCL_ARTIFICIAL static inline _CCCL_DEVICE _Type
-__atomic_fetch_or_nvvm_dispatch(_Type* __ptr, _Type* __op, int __memorder, int __sco)
+__atomic_fetch_or_nvvm_dispatch(_Type* __ptr, _Type __op, int __memorder, int __sco)
 {
   _CCCL_PP_EXPAND(
     __ATOMIC_NVVM_BUILTIN(return __nv_atomic_fetch_or, __memorder, __ATOMIC_EXCHANGE_CASES, __sco, __ptr, __op));
@@ -233,7 +233,7 @@ __atomic_fetch_or_nvvm_dispatch(_Type* __ptr, _Type* __op, int __memorder, int _
 
 template <class _Type>
 _CCCL_ARTIFICIAL static inline _CCCL_DEVICE _Type
-__atomic_fetch_xor_nvvm_dispatch(_Type* __ptr, _Type* __op, int __memorder, int __sco)
+__atomic_fetch_xor_nvvm_dispatch(_Type* __ptr, _Type __op, int __memorder, int __sco)
 {
   _CCCL_PP_EXPAND(
     __ATOMIC_NVVM_BUILTIN(return __nv_atomic_fetch_xor, __memorder, __ATOMIC_EXCHANGE_CASES, __sco, __ptr, __op));
@@ -243,7 +243,7 @@ __atomic_fetch_xor_nvvm_dispatch(_Type* __ptr, _Type* __op, int __memorder, int 
 
 template <class _Type>
 _CCCL_ARTIFICIAL static inline _CCCL_DEVICE _Type
-__atomic_fetch_add_nvvm_dispatch(_Type* __ptr, _Type* __op, int __memorder, int __sco)
+__atomic_fetch_add_nvvm_dispatch(_Type* __ptr, _Type __op, int __memorder, int __sco)
 {
   _CCCL_PP_EXPAND(
     __ATOMIC_NVVM_BUILTIN(return __nv_atomic_fetch_add, __memorder, __ATOMIC_EXCHANGE_CASES, __sco, __ptr, __op));

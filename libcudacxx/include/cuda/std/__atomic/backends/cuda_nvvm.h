@@ -216,7 +216,8 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_and_cuda(_Type* __ptr, _Up __op,
   {
     return __dst;
   }
-  return __atomic_fetch_and_nvvm_dispatch(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __atomic_fetch_and_nvvm_dispatch(
+    __ptr_proxy, *__op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
 static inline _CCCL_DEVICE _Type __atomic_fetch_and_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
@@ -231,7 +232,8 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_and_cuda(_Type volatile* __ptr, 
   {
     return __dst;
   }
-  return __atomic_fetch_and_nvvm_dispatch(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __atomic_fetch_and_nvvm_dispatch(
+    __ptr_proxy, *__op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_minmax<_Type> = 0>
@@ -247,7 +249,8 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_max_cuda(_Type* __ptr, _Up __op,
   {
     return __dst;
   }
-  return __atomic_fetch_max_nvvm_dispatch(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __atomic_fetch_max_nvvm_dispatch(
+    __ptr_proxy, *__op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_minmax<_Type> = 0>
 static inline _CCCL_DEVICE _Type __atomic_fetch_max_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
@@ -262,7 +265,8 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_max_cuda(_Type volatile* __ptr, 
   {
     return __dst;
   }
-  return __atomic_fetch_max_nvvm_dispatch(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __atomic_fetch_max_nvvm_dispatch(
+    __ptr_proxy, *__op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_minmax<_Type> = 0>
@@ -278,7 +282,8 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_min_cuda(_Type* __ptr, _Up __op,
   {
     return __dst;
   }
-  return __atomic_fetch_min_nvvm_dispatch(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __atomic_fetch_min_nvvm_dispatch(
+    __ptr_proxy, *__op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_minmax<_Type> = 0>
 static inline _CCCL_DEVICE _Type __atomic_fetch_min_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
@@ -293,7 +298,8 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_min_cuda(_Type volatile* __ptr, 
   {
     return __dst;
   }
-  return __atomic_fetch_min_nvvm_dispatch(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __atomic_fetch_min_nvvm_dispatch(
+    __ptr_proxy, *__op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
@@ -309,7 +315,7 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_or_cuda(_Type* __ptr, _Up __op, 
   {
     return __dst;
   }
-  return __atomic_fetch_or_nvvm_dispatch(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __atomic_fetch_or_nvvm_dispatch(__ptr_proxy, *__op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
 static inline _CCCL_DEVICE _Type __atomic_fetch_or_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
@@ -324,7 +330,7 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_or_cuda(_Type volatile* __ptr, _
   {
     return __dst;
   }
-  return __atomic_fetch_or_nvvm_dispatch(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __atomic_fetch_or_nvvm_dispatch(__ptr_proxy, *__op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
@@ -340,7 +346,8 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_xor_cuda(_Type* __ptr, _Up __op,
   {
     return __dst;
   }
-  return __atomic_fetch_xor_nvvm_dispatch(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __atomic_fetch_xor_nvvm_dispatch(
+    __ptr_proxy, *__op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 template <class _Type, class _Up, class _Sco, __atomic_enable_if_native_bitwise<_Type> = 0>
 static inline _CCCL_DEVICE _Type __atomic_fetch_xor_cuda(_Type volatile* __ptr, _Up __op, int __memorder, _Sco)
@@ -355,7 +362,8 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_xor_cuda(_Type volatile* __ptr, 
   {
     return __dst;
   }
-  return __atomic_fetch_xor_nvvm_dispatch(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __atomic_fetch_xor_nvvm_dispatch(
+    __ptr_proxy, *__op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 
 template <class _Type, class _Up, class _Sco>
@@ -373,7 +381,8 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_add_cuda(_Type* __ptr, _Up __op,
   {
     return __dst;
   }
-  return __atomic_fetch_add_nvvm_dispatch(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __atomic_fetch_add_nvvm_dispatch(
+    __ptr_proxy, *__op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 template <class _Type, class _Up, class _Sco>
 static inline _CCCL_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type* __ptr, _Up __op, int __memorder, _Sco)
@@ -390,7 +399,8 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type* __ptr, 
   {
     return __dst;
   }
-  return __atomic_fetch_add_nvvm_dispatch(__ptr_proxy, __op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  return __atomic_fetch_add_nvvm_dispatch(
+    __ptr_proxy, *__op_proxy, __memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
 
 template <class _Type, class _Up, class _Sco>
