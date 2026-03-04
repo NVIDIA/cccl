@@ -235,6 +235,7 @@ __launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContin
     small_segments_per_block));
 }
 #endif // CUB_RDC_ENABLED
+
 template <typename PolicySelector,
           SortOrder Order,
           typename KeyT,
@@ -332,6 +333,9 @@ struct policy_selector_from_hub
       ap::PARTITIONING_THRESHOLD};
   }
 };
+
+// Partition selects large and small groups. The middle group is not selected.
+static constexpr size_t num_selected_groups = 2;
 } // namespace detail::segmented_sort
 
 // TODO(bgruber): deprecate when we make the tuning API public and remove in CCCL 4.0
@@ -376,7 +380,7 @@ struct DispatchSegmentedSort
   static constexpr int KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
   // Partition selects large and small groups. The middle group is not selected.
-  static constexpr size_t num_selected_groups = 2;
+  static constexpr size_t num_selected_groups = detail::segmented_sort::num_selected_groups;
 
   /**
    * Device-accessible allocation of temporary storage. When `nullptr`, the
@@ -874,18 +878,24 @@ private:
     }
 #endif // CUB_RDC_ENABLED
 
-      NV_IF_TARGET(
+      NV_IF_ELSE_TARGET(
         NV_IS_HOST,
-        (
+        ({
           local_segment_index_t h_group_sizes[num_selected_groups];
           if (const auto error = CubDebug(launcher_factory.MemcpyAsync(
                 h_group_sizes,
                 group_sizes.get(),
                 num_selected_groups * sizeof(local_segment_index_t),
                 cudaMemcpyDeviceToHost,
-                stream))) { return error; }
+                stream)))
+          {
+            return error;
+          }
 
-          if (const auto error = CubDebug(SyncStream(stream))) { return error; }
+          if (const auto error = CubDebug(SyncStream(stream)))
+          {
+            return error;
+          }
 
           if (const auto error = detail::segmented_sort::device_segmented_sort_continuation(
                 large_kernel,
@@ -907,7 +917,11 @@ private:
                 wrapped_policy.large_segment.BlockThreads(),
                 wrapped_policy.small_segment.BlockThreads(),
                 wrapped_policy.medium_segment.SegmentsPerBlock(),
-                wrapped_policy.small_segment.SegmentsPerBlock())) { return error; }),
+                wrapped_policy.small_segment.SegmentsPerBlock()))
+          {
+            return error;
+          }
+        }),
         // NV_IS_DEVICE:
         (CUB_TEMP_DEVICE_CODE));
     }
@@ -962,6 +976,258 @@ private:
 
 namespace detail::segmented_sort
 {
+template <typename PartitionPolicyHub,
+          typename KeyT,
+          typename ValueT,
+          typename BeginOffsetIteratorT,
+          typename EndOffsetIteratorT,
+          typename KernelSource,
+          typename PartitionKernelSource,
+          typename KernelLauncherFactory,
+          typename GetFinalOutputOp>
+CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_with_partitioning(
+  global_segment_offset_t num_segments,
+  ::cuda::std::int64_t num_items,
+  BeginOffsetIteratorT d_begin_offsets,
+  EndOffsetIteratorT d_end_offsets,
+  cudaStream_t stream,
+  size_t three_way_partition_temp_storage_bytes,
+  DoubleBuffer<KeyT>& d_keys,
+  DoubleBuffer<ValueT>& d_values,
+  device_double_buffer<KeyT>& d_keys_double_buffer,
+  device_double_buffer<ValueT>& d_values_double_buffer,
+  typename KernelSource::LargeSegmentsSelectorT& large_segments_selector,
+  typename KernelSource::SmallSegmentsSelectorT& small_segments_selector,
+  temporary_storage::alias<uint8_t>& device_partition_temp_storage,
+  temporary_storage::alias<local_segment_index_t>& large_and_medium_segments_indices,
+  temporary_storage::alias<local_segment_index_t>& small_segments_indices,
+  temporary_storage::alias<local_segment_index_t>& group_sizes,
+  KernelSource& kernel_source,
+  PartitionKernelSource& partition_kernel_source,
+  KernelLauncherFactory& launcher_factory,
+  typename PartitionPolicyHub::MaxPolicy partition_max_policy,
+  const segmented_sort_policy& active_policy,
+  GetFinalOutputOp&& get_final_output)
+{
+  constexpr auto num_segments_per_invocation_limit =
+    static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
+
+  const global_segment_offset_t num_invocations =
+    ::cuda::ceil_div(static_cast<global_segment_offset_t>(num_segments), num_segments_per_invocation_limit);
+  for (global_segment_offset_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
+  {
+    const global_segment_offset_t current_seg_offset = invocation_index * num_segments_per_invocation_limit;
+    const local_segment_index_t current_num_segments =
+      (invocation_index == (num_invocations - 1))
+        ? static_cast<local_segment_index_t>(num_segments - current_seg_offset)
+        : num_segments_per_invocation_limit;
+
+    kernel_source.SetSegmentOffset(large_segments_selector, current_seg_offset);
+    kernel_source.SetSegmentOffset(small_segments_selector, current_seg_offset);
+
+    BeginOffsetIteratorT current_begin_offset = d_begin_offsets;
+    EndOffsetIteratorT current_end_offset     = d_end_offsets;
+    current_begin_offset += current_seg_offset;
+    current_end_offset += current_seg_offset;
+
+    auto medium_indices_iterator =
+      ::cuda::std::make_reverse_iterator(large_and_medium_segments_indices.get() + current_num_segments);
+
+    using ChooseOffsetT                = choose_signed_offset<global_segment_offset_t>;
+    using PartitionOffsetT             = typename ChooseOffsetT::type;
+    using DispatchThreeWayPartitionIfT = cub::DispatchThreeWayPartitionIf<
+      THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>,
+      decltype(large_and_medium_segments_indices.get()),
+      decltype(small_segments_indices.get()),
+      decltype(medium_indices_iterator),
+      decltype(group_sizes.get()),
+      decltype(large_segments_selector),
+      decltype(small_segments_selector),
+      PartitionOffsetT,
+      PartitionPolicyHub,
+      PartitionKernelSource,
+      KernelLauncherFactory>;
+
+    if (const auto error = ChooseOffsetT::is_exceeding_offset_type(num_items))
+    {
+      return error;
+    }
+
+    if (const auto error = DispatchThreeWayPartitionIfT::Dispatch(
+          device_partition_temp_storage.get(),
+          three_way_partition_temp_storage_bytes,
+          THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>(0),
+          large_and_medium_segments_indices.get(),
+          small_segments_indices.get(),
+          medium_indices_iterator,
+          group_sizes.get(),
+          large_segments_selector,
+          small_segments_selector,
+          current_num_segments,
+          stream,
+          partition_kernel_source,
+          launcher_factory,
+          partition_max_policy))
+    {
+      return error;
+    }
+
+    [[maybe_unused]] auto device_path = [&] {
+#ifdef CUB_RDC_ENABLED
+      if (const auto error = CubDebug(
+            launcher_factory(1, 1, 0, stream)
+              .doit(
+                detail::segmented_sort::DeviceSegmentedSortContinuationKernel<
+                  decltype(kernel_source.SegmentedSortKernelLarge()),
+                  decltype(kernel_source.SegmentedSortKernelSmall()),
+                  KeyT,
+                  ValueT,
+                  BeginOffsetIteratorT,
+                  EndOffsetIteratorT,
+                  KernelLauncherFactory>,
+                kernel_source.SegmentedSortKernelLarge(),
+                kernel_source.SegmentedSortKernelSmall(),
+                current_num_segments,
+                d_keys.Current(),
+                get_final_output(d_keys, active_policy.large_segment.radix_bits),
+                d_keys_double_buffer,
+                d_values.Current(),
+                get_final_output(d_values, active_policy.large_segment.radix_bits),
+                d_values_double_buffer,
+                current_begin_offset,
+                current_end_offset,
+                group_sizes.get(),
+                large_and_medium_segments_indices.get(),
+                small_segments_indices.get(),
+                launcher_factory,
+                active_policy.large_segment.block_threads,
+                active_policy.small_segment.block_threads,
+                active_policy.medium_segment.segments_per_block(),
+                active_policy.small_segment.segments_per_block())))
+      {
+        return error;
+      }
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      {
+        return error;
+      }
+#endif // CUB_RDC_ENABLED
+      return cudaSuccess;
+    };
+
+    NV_IF_TARGET(NV_IS_HOST,
+                 ({
+                   local_segment_index_t h_group_sizes[num_selected_groups];
+                   if (const auto error = CubDebug(launcher_factory.MemcpyAsync(
+                         h_group_sizes,
+                         group_sizes.get(),
+                         num_selected_groups * sizeof(local_segment_index_t),
+                         cudaMemcpyDeviceToHost,
+                         stream)))
+                   {
+                     return error;
+                   }
+
+                   if (const auto error = CubDebug(SyncStream(stream)))
+                   {
+                     return error;
+                   }
+
+                   if (const auto error = detail::segmented_sort::device_segmented_sort_continuation(
+                         kernel_source.SegmentedSortKernelLarge(),
+                         kernel_source.SegmentedSortKernelSmall(),
+                         current_num_segments,
+                         d_keys.Current(),
+                         get_final_output(d_keys, active_policy.large_segment.radix_bits),
+                         d_keys_double_buffer,
+                         d_values.Current(),
+                         get_final_output(d_values, active_policy.large_segment.radix_bits),
+                         d_values_double_buffer,
+                         current_begin_offset,
+                         current_end_offset,
+                         h_group_sizes,
+                         large_and_medium_segments_indices.get(),
+                         small_segments_indices.get(),
+                         stream,
+                         launcher_factory,
+                         active_policy.large_segment.block_threads,
+                         active_policy.small_segment.block_threads,
+                         active_policy.medium_segment.segments_per_block(),
+                         active_policy.small_segment.segments_per_block()))
+                   {
+                     return error;
+                   }
+                 }),
+                 ({
+                   if (const auto error = device_path())
+                   {
+                     return error;
+                   }
+                 }));
+  }
+
+  return cudaSuccess;
+}
+
+template <typename KeyT,
+          typename ValueT,
+          typename BeginOffsetIteratorT,
+          typename EndOffsetIteratorT,
+          typename KernelSource,
+          typename KernelLauncherFactory,
+          typename GetFinalOutputOp>
+CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_without_partitioning(
+  global_segment_offset_t num_segments,
+  BeginOffsetIteratorT d_begin_offsets,
+  EndOffsetIteratorT d_end_offsets,
+  cudaStream_t stream,
+  DoubleBuffer<KeyT>& d_keys,
+  DoubleBuffer<ValueT>& d_values,
+  device_double_buffer<KeyT>& d_keys_double_buffer,
+  device_double_buffer<ValueT>& d_values_double_buffer,
+  KernelSource& kernel_source,
+  KernelLauncherFactory& launcher_factory,
+  const segmented_sort_policy& active_policy,
+  GetFinalOutputOp&& get_final_output)
+{
+  const auto blocks_in_grid   = static_cast<local_segment_index_t>(num_segments);
+  const auto threads_in_block = static_cast<unsigned int>(active_policy.large_segment.block_threads);
+#ifdef CUB_DEBUG_LOG
+  _CubLog("Invoking DeviceSegmentedSortFallbackKernel<<<%d, %d, 0, %lld>>>(), %d items per thread, bit_grain %d\n",
+          blocks_in_grid,
+          threads_in_block,
+          (long long) stream,
+          active_policy.large_segment.items_per_thread,
+          active_policy.large_segment.radix_bits);
+#endif // CUB_DEBUG_LOG
+
+  if (const auto error = CubDebug(
+        launcher_factory(blocks_in_grid, threads_in_block, 0, stream)
+          .doit(kernel_source.SegmentedSortFallbackKernel(),
+                d_keys.Current(),
+                get_final_output(d_keys, active_policy.large_segment.radix_bits),
+                d_keys_double_buffer,
+                d_values.Current(),
+                get_final_output(d_values, active_policy.large_segment.radix_bits),
+                d_values_double_buffer,
+                d_begin_offsets,
+                d_end_offsets)))
+  {
+    return error;
+  }
+
+  if (const auto error = CubDebug(cudaPeekAtLastError()))
+  {
+    return error;
+  }
+  if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+  {
+    return error;
+  }
+
+  return cudaSuccess;
+}
+
 template <
   SortOrder Order,
   typename OffsetT,
@@ -974,7 +1240,7 @@ template <
     DeviceSegmentedSortKernelSource<PolicySelector, Order, KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>,
   typename PartitionPolicyHub = detail::three_way_partition::policy_hub<
     cub::detail::it_value_t<THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>>,
-    detail::three_way_partition::per_partition_offset_t>,
+    three_way_partition::per_partition_offset_t>,
   typename PartitionKernelSource = detail::three_way_partition::DeviceThreeWayPartitionKernelSource<
     typename PartitionPolicyHub::MaxPolicy,
     THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>,
@@ -982,12 +1248,12 @@ template <
     local_segment_index_t*,
     ::cuda::std::reverse_iterator<local_segment_index_t*>,
     local_segment_index_t*,
-    detail::three_way_partition::ScanTileStateT,
+    three_way_partition::ScanTileStateT,
     LargeSegmentsSelectorT<OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>,
     SmallSegmentsSelectorT<OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>,
-    detail::three_way_partition::per_partition_offset_t,
-    detail::three_way_partition::streaming_context_t<global_segment_offset_t>,
-    detail::choose_signed_offset<global_segment_offset_t>::type>,
+    three_way_partition::per_partition_offset_t,
+    three_way_partition::streaming_context_t<global_segment_offset_t>,
+    choose_signed_offset<global_segment_offset_t>::type>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_sort_policy_selector<PolicySelector>
@@ -1009,8 +1275,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   KernelLauncherFactory launcher_factory                      = {},
   typename PartitionPolicyHub::MaxPolicy partition_max_policy = {}) -> cudaError_t
 {
-  constexpr bool keys_only             = ::cuda::std::is_same_v<ValueT, NullType>;
-  constexpr size_t num_selected_groups = 2;
+  constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
   const auto get_num_passes = [&](int radix_bits) {
     const int num_bits   = static_cast<int>(kernel_source.KeySize()) * CHAR_BIT;
@@ -1227,201 +1492,48 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
     if (partition_segments)
     {
-      // Partition input segments into size groups and assign specialized
-      // kernels for each of them.
-
-      constexpr auto num_segments_per_invocation_limit =
-        static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
-
-      const global_segment_offset_t num_invocations =
-        ::cuda::ceil_div(static_cast<global_segment_offset_t>(num_segments), num_segments_per_invocation_limit);
-      for (global_segment_offset_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
+      if (const auto error = sort_with_partitioning<PartitionPolicyHub>(
+            num_segments,
+            num_items,
+            d_begin_offsets,
+            d_end_offsets,
+            stream,
+            three_way_partition_temp_storage_bytes,
+            d_keys,
+            d_values,
+            d_keys_double_buffer,
+            d_values_double_buffer,
+            large_segments_selector,
+            small_segments_selector,
+            device_partition_temp_storage,
+            large_and_medium_segments_indices,
+            small_segments_indices,
+            group_sizes,
+            kernel_source,
+            partition_kernel_source,
+            launcher_factory,
+            partition_max_policy,
+            active_policy,
+            get_final_output))
       {
-        const global_segment_offset_t current_seg_offset = invocation_index * num_segments_per_invocation_limit;
-        const local_segment_index_t current_num_segments =
-          (invocation_index == (num_invocations - 1))
-            ? static_cast<local_segment_index_t>(num_segments - current_seg_offset)
-            : num_segments_per_invocation_limit;
-
-        kernel_source.SetSegmentOffset(large_segments_selector, current_seg_offset);
-        kernel_source.SetSegmentOffset(small_segments_selector, current_seg_offset);
-
-        BeginOffsetIteratorT current_begin_offset = d_begin_offsets;
-        EndOffsetIteratorT current_end_offset     = d_end_offsets;
-        current_begin_offset += current_seg_offset;
-        current_end_offset += current_seg_offset;
-
-        auto medium_indices_iterator =
-          ::cuda::std::make_reverse_iterator(large_and_medium_segments_indices.get() + current_num_segments);
-
-        using ChooseOffsetT                = detail::choose_signed_offset<global_segment_offset_t>;
-        using PartitionOffsetT             = typename ChooseOffsetT::type;
-        using DispatchThreeWayPartitionIfT = cub::DispatchThreeWayPartitionIf<
-          THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>,
-          decltype(large_and_medium_segments_indices.get()),
-          decltype(small_segments_indices.get()),
-          decltype(medium_indices_iterator),
-          decltype(group_sizes.get()),
-          decltype(large_segments_selector),
-          decltype(small_segments_selector),
-          PartitionOffsetT,
-          PartitionPolicyHub,
-          PartitionKernelSource,
-          KernelLauncherFactory>;
-
-        if (const auto error = ChooseOffsetT::is_exceeding_offset_type(num_items))
-        {
-          return error;
-        }
-
-        if (const auto error = DispatchThreeWayPartitionIfT::Dispatch(
-              device_partition_temp_storage.get(),
-              three_way_partition_temp_storage_bytes,
-              THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>(0),
-              large_and_medium_segments_indices.get(),
-              small_segments_indices.get(),
-              medium_indices_iterator,
-              group_sizes.get(),
-              large_segments_selector,
-              small_segments_selector,
-              current_num_segments,
-              stream,
-              partition_kernel_source,
-              launcher_factory,
-              partition_max_policy))
-        {
-          return error;
-        }
-
-#ifdef CUB_RDC_ENABLED
-        auto rdc_device_path = [&] {
-          if (const auto error = CubDebug(
-                launcher_factory(1, 1, 0, stream)
-                  .doit(
-                    detail::segmented_sort::DeviceSegmentedSortContinuationKernel<
-                      decltype(kernel_source.SegmentedSortKernelLarge()),
-                      decltype(kernel_source.SegmentedSortKernelSmall()),
-                      KeyT,
-                      ValueT,
-                      BeginOffsetIteratorT,
-                      EndOffsetIteratorT,
-                      KernelLauncherFactory>,
-                    kernel_source.SegmentedSortKernelLarge(),
-                    kernel_source.SegmentedSortKernelSmall(),
-                    current_num_segments,
-                    d_keys.Current(),
-                    get_final_output(d_keys, active_policy.large_segment.radix_bits),
-                    d_keys_double_buffer,
-                    d_values.Current(),
-                    get_final_output(d_values, active_policy.large_segment.radix_bits),
-                    d_values_double_buffer,
-                    current_begin_offset,
-                    current_end_offset,
-                    group_sizes.get(),
-                    large_and_medium_segments_indices.get(),
-                    small_segments_indices.get(),
-                    launcher_factory,
-                    active_policy.large_segment.block_threads,
-                    active_policy.small_segment.block_threads,
-                    active_policy.medium_segment.segments_per_block(),
-                    active_policy.small_segment.segments_per_block())))
-          {
-            return error;
-          }
-          if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
-          {
-            return error;
-          }
-          return cudaSuccess;
-        };
-#  define CUB_TEMP_DEVICE_CODE return rdc_device_path();
-#else
-#  define CUB_TEMP_DEVICE_CODE
-#endif // CUB_RDC_ENABLED
-
-        NV_IF_TARGET(NV_IS_HOST,
-                     ({
-                       local_segment_index_t h_group_sizes[num_selected_groups];
-                       if (const auto error = CubDebug(launcher_factory.MemcpyAsync(
-                             h_group_sizes,
-                             group_sizes.get(),
-                             num_selected_groups * sizeof(local_segment_index_t),
-                             cudaMemcpyDeviceToHost,
-                             stream)))
-                       {
-                         return error;
-                       }
-
-                       if (const auto error = CubDebug(SyncStream(stream)))
-                       {
-                         return error;
-                       }
-
-                       if (const auto error = detail::segmented_sort::device_segmented_sort_continuation(
-                             kernel_source.SegmentedSortKernelLarge(),
-                             kernel_source.SegmentedSortKernelSmall(),
-                             current_num_segments,
-                             d_keys.Current(),
-                             get_final_output(d_keys, active_policy.large_segment.radix_bits),
-                             d_keys_double_buffer,
-                             d_values.Current(),
-                             get_final_output(d_values, active_policy.large_segment.radix_bits),
-                             d_values_double_buffer,
-                             current_begin_offset,
-                             current_end_offset,
-                             h_group_sizes,
-                             large_and_medium_segments_indices.get(),
-                             small_segments_indices.get(),
-                             stream,
-                             launcher_factory,
-                             active_policy.large_segment.block_threads,
-                             active_policy.small_segment.block_threads,
-                             active_policy.medium_segment.segments_per_block(),
-                             active_policy.small_segment.segments_per_block()))
-                       {
-                         return error;
-                       }
-                     }),
-                     (CUB_TEMP_DEVICE_CODE));
-#undef CUB_TEMP_DEVICE_CODE
+        return error;
       }
     }
     else
     {
-      // If there are not enough segments, there's no reason to spend time
-      // on extra partitioning steps.
-
-      const auto blocks_in_grid   = static_cast<local_segment_index_t>(num_segments);
-      const auto threads_in_block = static_cast<unsigned int>(active_policy.large_segment.block_threads);
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking DeviceSegmentedSortFallbackKernel<<<%d, %d, 0, %lld>>>(), %d items per thread, bit_grain %d\n",
-              blocks_in_grid,
-              threads_in_block,
-              (long long) stream,
-              active_policy.large_segment.items_per_thread,
-              active_policy.large_segment.radix_bits);
-#endif // CUB_DEBUG_LOG
-
-      if (const auto error = CubDebug(
-            launcher_factory(blocks_in_grid, threads_in_block, 0, stream)
-              .doit(kernel_source.SegmentedSortFallbackKernel(),
-                    d_keys.Current(),
-                    get_final_output(d_keys, active_policy.large_segment.radix_bits),
-                    d_keys_double_buffer,
-                    d_values.Current(),
-                    get_final_output(d_values, active_policy.large_segment.radix_bits),
-                    d_values_double_buffer,
-                    d_begin_offsets,
-                    d_end_offsets)))
-      {
-        return error;
-      }
-
-      if (const auto error = CubDebug(cudaPeekAtLastError()))
-      {
-        return error;
-      }
-      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      if (const auto error = sort_without_partitioning(
+            num_segments,
+            d_begin_offsets,
+            d_end_offsets,
+            stream,
+            d_keys,
+            d_values,
+            d_keys_double_buffer,
+            d_values_double_buffer,
+            kernel_source,
+            launcher_factory,
+            active_policy,
+            get_final_output))
       {
         return error;
       }
