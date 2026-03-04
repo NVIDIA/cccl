@@ -112,7 +112,7 @@ _CCCL_HOST_DEVICE inline constexpr int __atomic_order_to_int(memory_order __orde
   switch (__order)
   {
     default:
-      __ATOMIC_CONSUME;
+      return __ATOMIC_CONSUME;
     case memory_order_relaxed:
       return __ATOMIC_RELAXED;
     case memory_order_acquire:
@@ -134,7 +134,7 @@ _CCCL_HOST_DEVICE inline constexpr int __atomic_failure_order_to_int(memory_orde
   switch (__order)
   {
     default:
-      __ATOMIC_CONSUME;
+      return __ATOMIC_CONSUME;
     case memory_order_relaxed:
       return __ATOMIC_RELAXED;
     case memory_order_acquire:
