@@ -977,6 +977,8 @@ private:
 namespace detail::segmented_sort
 {
 template <typename PartitionPolicyHub,
+          typename LargeKernelT,
+          typename SmallKernelT,
           typename KeyT,
           typename ValueT,
           typename BeginOffsetIteratorT,
@@ -986,6 +988,8 @@ template <typename PartitionPolicyHub,
           typename KernelLauncherFactory,
           typename GetFinalOutputOp>
 CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_with_partitioning(
+  LargeKernelT large_kernel,
+  SmallKernelT small_kernel,
   global_segment_offset_t num_segments,
   ::cuda::std::int64_t num_items,
   BeginOffsetIteratorT d_begin_offsets,
@@ -1078,15 +1082,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
             launcher_factory(1, 1, 0, stream)
               .doit(
                 detail::segmented_sort::DeviceSegmentedSortContinuationKernel<
-                  decltype(kernel_source.SegmentedSortKernelLarge()),
-                  decltype(kernel_source.SegmentedSortKernelSmall()),
+                  LargeKernelT,
+                  SmallKernelT,
                   KeyT,
                   ValueT,
                   BeginOffsetIteratorT,
                   EndOffsetIteratorT,
                   KernelLauncherFactory>,
-                kernel_source.SegmentedSortKernelLarge(),
-                kernel_source.SegmentedSortKernelSmall(),
+                large_kernel,
+                small_kernel,
                 current_num_segments,
                 d_keys.Current(),
                 get_final_output(d_keys, active_policy.large_segment.radix_bits),
@@ -1134,8 +1138,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
                    }
 
                    if (const auto error = detail::segmented_sort::device_segmented_sort_continuation(
-                         kernel_source.SegmentedSortKernelLarge(),
-                         kernel_source.SegmentedSortKernelSmall(),
+                         large_kernel,
+                         small_kernel,
                          current_num_segments,
                          d_keys.Current(),
                          get_final_output(d_keys, active_policy.large_segment.radix_bits),
@@ -1171,12 +1175,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
 
 template <typename KeyT,
           typename ValueT,
+          typename FallbackKernelT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
-          typename KernelSource,
           typename KernelLauncherFactory,
           typename GetFinalOutputOp>
 CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_without_partitioning(
+  FallbackKernelT fallback_kernel,
   global_segment_offset_t num_segments,
   BeginOffsetIteratorT d_begin_offsets,
   EndOffsetIteratorT d_end_offsets,
@@ -1185,7 +1190,6 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
   DoubleBuffer<ValueT>& d_values,
   device_double_buffer<KeyT>& d_keys_double_buffer,
   device_double_buffer<ValueT>& d_values_double_buffer,
-  KernelSource& kernel_source,
   KernelLauncherFactory& launcher_factory,
   const segmented_sort_policy& active_policy,
   GetFinalOutputOp&& get_final_output)
@@ -1203,7 +1207,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
 
   if (const auto error = CubDebug(
         launcher_factory(blocks_in_grid, threads_in_block, 0, stream)
-          .doit(kernel_source.SegmentedSortFallbackKernel(),
+          .doit(fallback_kernel,
                 d_keys.Current(),
                 get_final_output(d_keys, active_policy.large_segment.radix_bits),
                 d_keys_double_buffer,
@@ -1490,9 +1494,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       : (is_num_passes_odd) ? values_allocation.get()
                             : d_values.Alternate());
 
+    const auto segmented_sort_fallback_kernel = kernel_source.SegmentedSortFallbackKernel();
+    const auto segmented_sort_kernel_small    = kernel_source.SegmentedSortKernelSmall();
+    const auto segmented_sort_kernel_large    = kernel_source.SegmentedSortKernelLarge();
+
     if (partition_segments)
     {
       if (const auto error = sort_with_partitioning<PartitionPolicyHub>(
+            segmented_sort_kernel_large,
+            segmented_sort_kernel_small,
             num_segments,
             num_items,
             d_begin_offsets,
@@ -1522,6 +1532,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     else
     {
       if (const auto error = sort_without_partitioning(
+            segmented_sort_fallback_kernel,
             num_segments,
             d_begin_offsets,
             d_end_offsets,
@@ -1530,7 +1541,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
             d_values,
             d_keys_double_buffer,
             d_values_double_buffer,
-            kernel_source,
             launcher_factory,
             active_policy,
             get_final_output))
