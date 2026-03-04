@@ -25,3 +25,16 @@ TEST_CASE("shared_memory 2D transpose", "[shared_memory][2d]")
   auto dst_layout     = make_layout(make_shape(N, N), make_stride(N, 1));
   test_impl<int>(alloc, 0, src_layout, alloc, 0, dst_layout);
 }
+
+// 2D transpose with partial tiles: extents (50, 37) are not divisible by tile size 32.
+// Full-tile blocks cover [0,32)x[0,32). Boundary blocks handle the remainder.
+TEST_CASE("shared_memory 2D partial tiles", "[shared_memory][2d][partial]")
+{
+  using namespace cute;
+  constexpr int M     = 50;
+  constexpr int N     = 37;
+  constexpr int alloc = M * N;
+  auto src_layout     = make_layout(make_shape(M, N), make_stride(1, M));
+  auto dst_layout     = make_layout(make_shape(M, N), make_stride(N, 1));
+  test_impl<int>(alloc, 0, src_layout, alloc, 0, dst_layout);
+}

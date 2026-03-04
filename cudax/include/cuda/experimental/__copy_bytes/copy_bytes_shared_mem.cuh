@@ -29,6 +29,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__algorithm/stable_sort.h>
 #include <cuda/std/__cstdlib/abs.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
@@ -38,6 +39,10 @@
 #include <cuda/experimental/__copy_bytes/layout_optimization.cuh>
 //
 #include <cuda/std/__cccl/prologue.h>
+
+#ifndef _CUDAX_COPY_BYTES_HANDLE_PARTIAL_TILES
+#  define _CUDAX_COPY_BYTES_HANDLE_PARTIAL_TILES
+#endif
 
 namespace cuda::experimental
 {
@@ -77,8 +82,9 @@ _CCCL_DEVICE auto __linear_to_offset(
 //!
 //! Each block processes one R-dimensional tile. Threads cooperatively iterate
 //! over tile elements with a stride loop (blockDim.x may be smaller than the tile).
-//! Phase 1 loads from global source into shared memory using a src-coalesced thread mapping.
-//! Phase 2 stores from shared memory to global destination using a dst-coalesced thread mapping.
+//! Full (interior) tiles use a two-phase shared-memory transpose.
+//! Partial (boundary) tiles copy elements directly when
+//! `_CUDAX_COPY_BYTES_HANDLE_PARTIAL_TILES` is defined.
 //!
 //! @tparam _MaxRank  Maximum supported tensor rank
 //! @tparam _Tp       Element type
@@ -95,12 +101,18 @@ __global__ void __copy_bytes_shared_mem_kernel(
   const ::cuda::std::array<unsigned, _MaxRank> __tile_sizes,
   const ::cuda::std::array<_Sp, _MaxRank> __dst_strides,
   const int __rank,
-  const int __tile_total_size)
+  const int __tile_total_size
+#ifdef _CUDAX_COPY_BYTES_HANDLE_PARTIAL_TILES
+  ,
+  const ::cuda::std::array<::cuda::std::make_unsigned_t<_Ep>, _MaxRank> __extents,
+  const ::cuda::std::array<_Sp, _MaxRank> __src_strides
+#endif
+)
 {
   namespace cudax = ::cuda::experimental;
   extern __shared__ char __smem_bytes[];
   _Tp* __smem = reinterpret_cast<_Tp*>(__smem_bytes);
-
+  // auto smem = cuda::dynamic_shared_memory(conf);
   const int __tid    = static_cast<int>(threadIdx.x);
   const int __stride = static_cast<int>(blockDim.x);
 
@@ -109,20 +121,75 @@ __global__ void __copy_bytes_shared_mem_kernel(
   const auto __dst_base =
     cudax::__linear_to_offset(static_cast<int>(blockIdx.x), __grid_tile_sizes, __grid_tile_dst_strides, __rank);
 
-  for (int __i = __tid; __i < __tile_total_size; __i += __stride)
+#ifdef _CUDAX_COPY_BYTES_HANDLE_PARTIAL_TILES
+  using _UEp = ::cuda::std::make_unsigned_t<_Ep>;
+  ::cuda::std::array<_UEp, _MaxRank> __block_starts{};
+  int __bidx = static_cast<int>(blockIdx.x);
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int __k = 0; __k < int{_MaxRank}; ++__k)
   {
-    const auto __src_elem = cudax::__linear_to_offset(__i, __src_perm_sizes, __src_perm_src_strides, __rank);
-    const auto __smem_idx = cudax::__linear_to_offset(__i, __src_perm_sizes, __src_perm_smem_strides, __rank);
-    __smem[__smem_idx]    = __src_ptr[__src_base + __src_elem];
+    if (__k < __rank)
+    {
+      __block_starts[__k] = static_cast<_UEp>(__bidx % __grid_tile_sizes[__k]) * __tile_sizes[__k];
+      __bidx /= __grid_tile_sizes[__k];
+    }
   }
 
-  __syncthreads();
-
-  for (int __i = __tid; __i < __tile_total_size; __i += __stride)
+  bool __is_full_tile = true;
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int __k = 0; __k < int{_MaxRank}; ++__k)
   {
-    const auto __dst_elem              = cudax::__linear_to_offset(__i, __tile_sizes, __dst_strides, __rank);
-    __dst_ptr[__dst_base + __dst_elem] = __smem[__i];
+    if (__k < __rank && __block_starts[__k] + __tile_sizes[__k] > __extents[__k])
+    {
+      __is_full_tile = false;
+    }
   }
+
+  if (__is_full_tile)
+  {
+#endif // _CUDAX_COPY_BYTES_HANDLE_PARTIAL_TILES
+
+    // === Full-tile shared-memory transpose ===
+    for (int __i = __tid; __i < __tile_total_size; __i += __stride)
+    {
+      const auto __src_elem = cudax::__linear_to_offset(__i, __src_perm_sizes, __src_perm_src_strides, __rank);
+      const auto __smem_idx = cudax::__linear_to_offset(__i, __src_perm_sizes, __src_perm_smem_strides, __rank);
+      __smem[__smem_idx]    = __src_ptr[__src_base + __src_elem];
+    }
+
+    __syncthreads();
+
+    for (int __i = __tid; __i < __tile_total_size; __i += __stride)
+    {
+      const auto __dst_elem              = cudax::__linear_to_offset(__i, __tile_sizes, __dst_strides, __rank);
+      __dst_ptr[__dst_base + __dst_elem] = __smem[__i];
+    }
+
+#ifdef _CUDAX_COPY_BYTES_HANDLE_PARTIAL_TILES
+  }
+  else
+  {
+    // === Boundary direct-copy (no shared memory) ===
+    ::cuda::std::array<unsigned, _MaxRank> __actual_sizes{};
+    int __actual_total = 1;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int __k = 0; __k < int{_MaxRank}; ++__k)
+    {
+      if (__k < __rank)
+      {
+        __actual_sizes[__k] = static_cast<unsigned>(
+          ::cuda::std::min(static_cast<_UEp>(__tile_sizes[__k]), __extents[__k] - __block_starts[__k]));
+        __actual_total *= __actual_sizes[__k];
+      }
+    }
+    for (int __i = __tid; __i < __actual_total; __i += __stride)
+    {
+      const auto __src_off              = cudax::__linear_to_offset(__i, __actual_sizes, __src_strides, __rank);
+      const auto __dst_off              = cudax::__linear_to_offset(__i, __actual_sizes, __dst_strides, __rank);
+      __dst_ptr[__dst_base + __dst_off] = __src_ptr[__src_base + __src_off];
+    }
+  }
+#endif // _CUDAX_COPY_BYTES_HANDLE_PARTIAL_TILES
 }
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -217,7 +284,8 @@ __find_shared_mem_tiling(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor, 
 //! @pre `__src.__rank >= 2`
 //! @pre `__dst.__strides[0] == 1`
 //! @pre `__src.__strides[0] != 1`
-//! @pre Tile sizes evenly divide tensor shapes (assumed for this prototype)
+//! @note When `_CUDAX_COPY_BYTES_HANDLE_PARTIAL_TILES` is defined, boundary blocks
+//!       that span beyond tensor extents use a direct-copy path instead of shared memory.
 template <typename _Ep, typename _Sp, typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
 _CCCL_HOST_API void copy_bytes_shared_mem(
   const __raw_tensor<_Ep, _Sp, _TpSrc, _MaxRank>& __src,
@@ -238,7 +306,6 @@ _CCCL_HOST_API void copy_bytes_shared_mem(
   const int __thread_block_size = cudax::__find_thread_block_size(__tile_total_size * sizeof(__value_type));
 
   cuda::std::array<unsigned, _MaxRank> __tile_sizes = __tiling.__extents;
-
   //--------------------------------------------------------------------------------------------------------------------
   // Grid sizes and strides for block index decomposition
   ::cuda::std::array<_Ep, _MaxRank> __grid_tile_sizes{};
@@ -247,7 +314,11 @@ _CCCL_HOST_API void copy_bytes_shared_mem(
   size_t __grid_size = 1;
   for (size_t __i = 0; __i < __rank; ++__i)
   {
-    __grid_tile_sizes[__i]       = __src.__extents[__i] / __tile_sizes[__i];
+#  ifdef _CUDAX_COPY_BYTES_HANDLE_PARTIAL_TILES
+    __grid_tile_sizes[__i] = ::cuda::ceil_div(__src.__extents[__i], __tile_sizes[__i]);
+#  else
+    __grid_tile_sizes[__i] = __src.__extents[__i] / __tile_sizes[__i];
+#  endif
     __grid_tile_src_strides[__i] = static_cast<_Sp>(__tile_sizes[__i]) * __src.__strides[__i];
     __grid_tile_dst_strides[__i] = static_cast<_Sp>(__tile_sizes[__i]) * __dst.__strides[__i];
     __grid_size *= __grid_tile_sizes[__i];
@@ -285,7 +356,7 @@ _CCCL_HOST_API void copy_bytes_shared_mem(
   const auto __config = ::cuda::make_config(
     ::cuda::block_dims(static_cast<unsigned>(__thread_block_size)),
     ::cuda::grid_dims(__grid_size),
-    ::cuda::dynamic_shared_memory<__value_type[]>(__tile_total_size));
+    ::cuda::dynamic_shared_memory<__value_type[]>(__tile_total_size, ::cuda::non_portable));
   const auto __kernel = cudax::__copy_bytes_shared_mem_kernel<static_cast<int>(_MaxRank), __value_type, _Ep, _Sp>;
   ::cuda::launch(
     __stream,
@@ -302,7 +373,13 @@ _CCCL_HOST_API void copy_bytes_shared_mem(
     __tile_sizes,
     __dst.__strides,
     static_cast<int>(__rank),
-    static_cast<int>(__tile_total_size));
+    static_cast<int>(__tile_total_size)
+#  ifdef _CUDAX_COPY_BYTES_HANDLE_PARTIAL_TILES
+      ,
+    __dst.__extents,
+    __src.__strides
+#  endif
+  );
 }
 
 #endif // !_CCCL_COMPILER(NVRTC)

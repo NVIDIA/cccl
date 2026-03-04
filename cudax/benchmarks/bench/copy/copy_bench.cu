@@ -186,16 +186,16 @@ void flatten_one(nvbench::state& state)
 {
   using namespace cute;
   // clang-format off
-  auto dst_layout = make_layout(
-    make_shape(4, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2),
-    make_stride(1 << 19, 1 << 18, 1 << 17, 1 << 16, 1 << 15, 1 << 14, 1 << 13, 1 << 12,
-                1 << 11, 1 << 10, 1 <<  9, 1 <<  8, 1 <<  7, 1 <<  6, 1 <<  5, 1 <<  4,
-                1 <<  3, 1 <<  2, 1 <<  1, 1 <<  0));
   auto src_layout = make_layout(
     make_shape(4, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2),
     make_stride(5, 1 << 4, 1 << 5, 1 << 6, 1 << 7, 1 << 8, 1 << 9, 1 << 10,
                 1 << 11, 1 << 12, 1 << 13, 1 << 14, 1 << 15, 1 << 16, 1 << 17, 1 << 18,
                 1 << 19, 1 << 20, 1 << 21, 1 << 22));
+  auto dst_layout = make_layout(
+    make_shape(4, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2),
+    make_stride(1 << 19, 1 << 18, 1 << 17, 1 << 16, 1 << 15, 1 << 14, 1 << 13, 1 << 12,
+                1 << 11, 1 << 10, 1 <<  9, 1 <<  8, 1 <<  7, 1 <<  6, 1 <<  5, 1 <<  4,
+                1 <<  3, 1 <<  2, 1 <<  1, 1 <<  0));
   // clang-format on
   bench_copy(state, state.get_string("Impl"), 0, src_layout, 0, dst_layout);
 }
@@ -212,8 +212,8 @@ void sliced_vec(nvbench::state& state)
 {
   using namespace cute;
   constexpr int src_offset = 240;
-  auto dst_layout          = make_layout(make_shape(35, 255, 10, 24), make_stride(61200, 240, 24, 1));
   auto src_layout          = make_layout(make_shape(35, 255, 10, 24), make_stride(61440, 240, 24, 1));
+  auto dst_layout          = make_layout(make_shape(35, 255, 10, 24), make_stride(61200, 240, 24, 1));
   bench_copy(state, state.get_string("Impl"), src_offset, src_layout, 0, dst_layout);
 }
 NVBENCH_BENCH(sliced_vec).set_name("sliced_vec").add_string_axis("Impl", {"naive", "registers"});
@@ -225,22 +225,37 @@ void sliced_vec_2(nvbench::state& state)
 {
   using namespace cute;
   constexpr int src_offset = 12;
-  auto dst_layout          = make_layout(make_shape(355, 255, 4, 3), make_stride(3060, 12, 3, 1));
   auto src_layout          = make_layout(make_shape(355, 255, 4, 3), make_stride(3072, 12, 3, 1));
+  auto dst_layout          = make_layout(make_shape(355, 255, 4, 3), make_stride(3060, 12, 3, 1));
   bench_copy(state, state.get_string("Impl"), src_offset, src_layout, 0, dst_layout);
 }
 NVBENCH_BENCH(sliced_vec_2).set_name("sliced_vec_2").add_string_axis("Impl", {"naive", "registers"});
 
 // sliced_unaligned_ptr: misaligned pointer due to slicing (offset=205) --> vec=1
 //
-// src: (10, 5, 8925):(1, 20, 600)    // contiguous
+// src: (10, 5, 8925):(1, 20, 600)
 // dst: (10, 5, 8925):(1, 10, 50)     // contiguous
 void sliced_unaligned_ptr(nvbench::state& state)
 {
   using namespace cute;
   constexpr int src_offset = 205;
-  auto dst_layout          = make_layout(make_shape(35, 255, 5, 10), make_stride(12750, 50, 10, 1));
   auto src_layout          = make_layout(make_shape(35, 255, 5, 10), make_stride(153000, 600, 20, 1));
+  auto dst_layout          = make_layout(make_shape(35, 255, 5, 10), make_stride(12750, 50, 10, 1));
   bench_copy(state, state.get_string("Impl"), src_offset, src_layout, 0, dst_layout);
 }
 NVBENCH_BENCH(sliced_unaligned_ptr).set_name("sliced_unaligned_ptr").add_string_axis("Impl", {"naive", "registers"});
+
+/***********************************************************************************************************************
+ * Transpose
+ **********************************************************************************************************************/
+
+// src: (8192, 8192):(8192, 1)
+// dst: (8192, 8192):(1, 8192)
+void transpose(nvbench::state& state)
+{
+  using namespace cute;
+  auto src_layout = make_layout(make_shape(8192, 8192), make_stride(8192, 1));
+  auto dst_layout = make_layout(make_shape(8192, 8192), make_stride(1, 8192));
+  bench_copy(state, state.get_string("Impl"), 0, src_layout, 0, dst_layout);
+}
+NVBENCH_BENCH(transpose).set_name("transpose").add_string_axis("Impl", {"naive", "registers"});

@@ -29,6 +29,7 @@
 #include <cuda/__launch/launch.h>
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/devices>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__host_stdlib/stdexcept>
@@ -75,8 +76,9 @@ __global__ void __copy_bytes_kernel(
   _CCCL_GRID_CONSTANT const _IndexT __inner_size,
   _CCCL_GRID_CONSTANT const unsigned __tiles_per_row)
 {
-  const auto __src            = ::cuda::experimental::__make_gmem_tensor(__src_ptr, __src_layout);
-  auto __dst                  = ::cuda::experimental::__make_gmem_tensor(__dst_ptr, __dst_layout);
+  namespace cudax             = ::cuda::experimental;
+  const auto __src            = cudax::__make_gmem_tensor(__src_ptr, __src_layout);
+  auto __dst                  = cudax::__make_gmem_tensor(__dst_ptr, __dst_layout);
   constexpr int __num_threads = ::cuda::gpu_thread.count(::cuda::block, __config);
   const auto __thread_id      = ::cuda::gpu_thread.rank_as<_IndexT>(::cuda::block, __config);
   const auto __block_id       = ::cuda::block.rank_as<int>(::cuda::grid, __config);
@@ -89,10 +91,10 @@ __global__ void __copy_bytes_kernel(
   if (__remaining >= _TileSize)
   {
     constexpr int __elems_per_thread = _TileSize / __num_threads;
-    const auto __thr_layout          = ::cute::make_layout(::cute::Int<__elems_per_thread>{});
     const auto __thr_offset          = __flat_offset + __thread_id * __elems_per_thread;
-    const auto __thr_src             = ::cuda::experimental::__make_gmem_tensor(&__src(__thr_offset), __thr_layout);
-    auto __thr_dst                   = ::cuda::experimental::__make_gmem_tensor(&__dst(__thr_offset), __thr_layout);
+    const auto __thr_layout          = ::cute::make_layout(::cute::Int<__elems_per_thread>{});
+    const auto __thr_src             = cudax::__make_gmem_tensor(&__src(__thr_offset), __thr_layout);
+    auto __thr_dst                   = cudax::__make_gmem_tensor(&__dst(__thr_offset), __thr_layout);
     ::cute::copy(::cute::AutoVectorizingCopyWithAssumedAlignment<_VectorBits>{}, __thr_src, __thr_dst);
   }
   else
@@ -106,37 +108,54 @@ __global__ void __copy_bytes_kernel(
 
 #if !_CCCL_COMPILER(NVRTC)
 
-inline constexpr int __block_size = 256;
+inline constexpr int __block_size       = 256;
+inline constexpr int __max_vector_bytes = 32;
+
+//! @brief Compute the tile size (number of recast elements per block) for a given vector width.
+//!
+//! Each thread copies `max(1, __max_vector_bytes / __vector_bytes)` vector elements,
+//! so the tile contains at least `__block_size` elements even for wide vector types.
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::size_t __tile_size(::cuda::std::size_t __vector_bytes) noexcept
+{
+  const auto __elems_per_thread = __max_vector_bytes / __vector_bytes;
+  return __block_size * ::cuda::std::max(::cuda::std::size_t{1}, __elems_per_thread);
+}
 
 //! @brief Launch the tiled copy kernel with pre-built (recast) tensors.
 //!
 //! Computes tile size, inner/outer dimensions from the tensor and _VectorBits, then decomposes each CuTe tensor into
 //! its raw pointer and layout.
-template <int _VectorBits, typename _SrcTensor, typename _DstTensor>
+template <int _VectorBytes, typename _SrcTensor, typename _DstTensor>
 _CCCL_HOST_API void
 __launch_copy_bytes_kernel(const _SrcTensor& __src_tensor, const _DstTensor& __dst_tensor, ::cuda::stream_ref __stream)
 {
-  constexpr int __max_vector_bytes = 32;
   using ::cuda::std::size_t;
   const auto __src_ptr    = ::cute::raw_pointer_cast(__src_tensor.data());
   const auto __dst_ptr    = ::cute::raw_pointer_cast(__dst_tensor.data());
   const auto __src_layout = __src_tensor.layout();
   const auto __dst_layout = __dst_tensor.layout();
 
-  constexpr size_t __vec_bytes   = _VectorBits / CHAR_BIT;
-  constexpr size_t __tile_size   = __block_size * (__max_vector_bytes / __vec_bytes);
-  const auto __inner_size        = static_cast<size_t>(::cute::size<0>(__src_tensor));
-  const auto __outer_size        = static_cast<size_t>(::cute::size(__src_tensor)) / __inner_size;
-  const unsigned __tiles_per_row = ::cuda::ceil_div(__inner_size, __tile_size);
-  const auto __grid_size         = __tiles_per_row * __outer_size;
+  constexpr size_t __vec_bits        = _VectorBytes * CHAR_BIT;
+  constexpr size_t __tile_size_value = ::cuda::experimental::__tile_size(_VectorBytes);
+  const auto __inner_size            = static_cast<size_t>(::cute::size<0>(__src_tensor));
+  const auto __outer_size            = static_cast<size_t>(::cute::size(__src_tensor)) / __inner_size;
+  const unsigned __tiles_per_row     = ::cuda::ceil_div(__inner_size, __tile_size_value);
+  const auto __grid_size             = __tiles_per_row * __outer_size;
   const auto __config = ::cuda::make_config(::cuda::block_dims<__block_size>(), ::cuda::grid_dims(__grid_size));
 
   using __src_t        = ::cuda::std::remove_cv_t<::cuda::std::remove_pointer_t<decltype(__src_ptr)>>;
   using __dst_t        = ::cuda::std::remove_pointer_t<decltype(__dst_ptr)>;
   using __src_layout_t = decltype(__src_layout);
   using __dst_layout_t = decltype(__dst_layout);
-  const auto __kernel  = ::cuda::experimental::
-    __copy_bytes_kernel<decltype(__config), int, __src_t, __src_layout_t, __dst_t, __dst_layout_t, __tile_size, _VectorBits>;
+  const auto __kernel  = ::cuda::experimental::__copy_bytes_kernel<
+    decltype(__config),
+    int,
+    __src_t,
+    __src_layout_t,
+    __dst_t,
+    __dst_layout_t,
+    __tile_size_value,
+    __vec_bits>;
 
   ::cuda::launch(
     __stream, __config, __kernel, __src_ptr, __src_layout, __dst_ptr, __dst_layout, __inner_size, __tiles_per_row);
@@ -160,25 +179,23 @@ using __vector_access_t = typename __vector_access<_VectorBytes>::type;
 
 //! @brief Dispatch a vectorized copy kernel based on the common vector size in bytes.
 //!
-//! Recasts the source and destination tensors to the appropriate vector type
-//! and launches the unified tiled copy kernel.
+//! Recasts the source and destination tensors to the appropriate vector type and launches the tiled copy kernel.
 //!
 //! @param[in] __stream              CUDA stream to launch on
-//! @param[in] __src_ptr                 Source CuTe tensor
-//! @param[in] __dst_ptr                 Destination CuTe tensor
+//! @param[in] __src_ptr             Source CuTe tensor
+//! @param[in] __dst_ptr             Destination CuTe tensor
 //! @param[in] __common_vector_bytes Common vectorization width in bytes (1, 2, 4, 8, or 16)
 template <typename _SrcTensor, typename _DstTensor>
 _CCCL_HOST_API void __dispatch_vectorized_copy(
   const _SrcTensor& __src_ptr, const _DstTensor& __dst_ptr, int __common_vector_bytes, ::cuda::stream_ref __stream)
 {
-  auto __launch = [&](auto __vec_c) {
+  const auto __launch = [&](auto __vec_c) {
     constexpr int __vec_bytes    = decltype(__vec_c)::value;
     constexpr int __vec_bits_int = __vec_bytes * CHAR_BIT;
     using __vec_type             = __vector_access_t<__vec_bytes>;
-
-    const auto __src_recast = ::cute::recast<__vec_type>(__src_ptr);
-    const auto __dst_recast = ::cute::recast<__vec_type>(__dst_ptr);
-    ::cuda::experimental::__launch_copy_bytes_kernel<__vec_bits_int>(__src_recast, __dst_recast, __stream);
+    const auto __src_recast      = ::cute::recast<__vec_type>(__src_ptr);
+    const auto __dst_recast      = ::cute::recast<__vec_type>(__dst_ptr);
+    ::cuda::experimental::__launch_copy_bytes_kernel<__vec_bytes>(__src_recast, __dst_recast, __stream);
   };
   switch (__common_vector_bytes)
   {
@@ -216,11 +233,6 @@ struct __naive_dispatch_tag
 
 //! @brief Recursively dispatch a rank-dependent copy on two raw tensors.
 //!
-//! Tries ranks `_Np`, `_Np+1`, ... up to `min(_MaxRank, 5)`. When the runtime
-//! rank matches, builds CuTe layouts and dispatches via the tag-selected path:
-//! - @ref __vectorized_dispatch_tag : contiguous layouts + vectorized kernel
-//! - @ref __naive_dispatch_tag      : general layouts + naive kernel
-//!
 //! @tparam _Np   Starting candidate rank
 //! @param[in] __tag    Dispatch tag (carries extra parameters for the vectorized path)
 //! @param[in] __src    Source raw tensor
@@ -247,28 +259,29 @@ template <::cuda::std::size_t _Np,
   }
   else
   {
+    namespace cudax = ::cuda::experimental;
     if (__src.__rank == _Np)
     {
       constexpr auto __seq = ::cuda::std::make_index_sequence<_Np - 1>{};
       if constexpr (_Tag::__vectorized)
       {
-        const auto __src_layout = ::cuda::experimental::__to_cute_layout_contiguous(__src, __seq);
-        const auto __dst_layout = ::cuda::experimental::__to_cute_layout_contiguous(__dst, __seq);
-        ::cuda::experimental::__dispatch_vectorized_copy(
-          ::cuda::experimental::__make_gmem_tensor(__src.__data, __src_layout),
-          ::cuda::experimental::__make_gmem_tensor(__dst.__data, __dst_layout),
+        const auto __src_layout = cudax::__to_cute_layout_contiguous(__src, __seq);
+        const auto __dst_layout = cudax::__to_cute_layout_contiguous(__dst, __seq);
+        cudax::__dispatch_vectorized_copy(
+          cudax::__make_gmem_tensor(__src.__data, __src_layout),
+          cudax::__make_gmem_tensor(__dst.__data, __dst_layout),
           __tag.__common_vector_bytes,
           __stream);
       }
       else
       {
-        const auto __src_layout = ::cuda::experimental::__to_cute_layout(__src, __seq);
-        const auto __dst_layout = ::cuda::experimental::__to_cute_layout(__dst, __seq);
-        ::cuda::experimental::copy_bytes_naive(__src.__data, __src_layout, __dst.__data, __dst_layout, __stream);
+        const auto __src_layout = cudax::__to_cute_layout(__src, __seq);
+        const auto __dst_layout = cudax::__to_cute_layout(__dst, __seq);
+        cudax::copy_bytes_naive(__src.__data, __src_layout, __dst.__data, __dst_layout, __stream);
       }
       return true;
     }
-    return ::cuda::experimental::__dispatch_by_rank<_Np + 1>(__tag, __src, __dst, __stream);
+    return cudax::__dispatch_by_rank<_Np + 1>(__tag, __src, __dst, __stream);
   }
 }
 
@@ -290,12 +303,12 @@ _CCCL_HOST_API void copy_bytes_registers(
   const _DstLayout& __dst_layout,
   ::cuda::stream_ref __stream)
 {
-  namespace cudax          = cuda::experimental;
+  namespace cudax          = ::cuda::experimental;
   constexpr int __src_rank = decltype(::cute::rank(__src_layout))::value;
   constexpr int __dst_rank = decltype(::cute::rank(__dst_layout))::value;
   static_assert(__src_rank == __dst_rank, "Source and destination layouts must have the same rank");
-  auto __src_raw = cudax::__to_raw_tensor<__src_rank>(__src_ptr, __src_layout, cudax::__remove_extent1_mode);
-  auto __dst_raw = cudax::__to_raw_tensor<__dst_rank>(__dst_ptr, __dst_layout, cudax::__remove_extent1_mode);
+  auto __src_raw = cudax::__to_raw_tensor<__src_rank>(__src_ptr, __src_layout, __remove_extent1_mode);
+  auto __dst_raw = cudax::__to_raw_tensor<__dst_rank>(__dst_ptr, __dst_layout, __remove_extent1_mode);
   _CCCL_ASSERT(__src_raw.__rank == __dst_raw.__rank, "Source and destination layouts must have the same rank");
   if (__src_raw.__extents != __dst_raw.__extents)
   {
@@ -341,11 +354,13 @@ _CCCL_HOST_API void copy_bytes_registers(
     const auto __dev_id                  = ::cuda::__driver::__cudevice_to_ordinal(::cuda::__driver::__ctxGetDevice());
     const auto __dev                     = ::cuda::devices[__dev_id];
     const auto __major                   = __dev.attribute<::cudaDevAttrComputeCapabilityMajor>();
-    const size_t __max_access_size_bytes = (__major >= 9) ? 32 : 16;
+    const size_t __max_access_size_bytes = 16; //(__major >= 9) ? 32 : 16;
     const auto __common_vector_bytes =
       ::cuda::std::min({__src_vector_bytes, __dst_vector_bytes, __max_access_size_bytes});
+    const auto __recast_inner_extent =
+      static_cast<::cuda::std::size_t>(__src_raw.__extents[0]) * sizeof(_Tp) / __common_vector_bytes;
     const auto __vector_tag = cudax::__vectorized_dispatch_tag{__common_vector_bytes};
-    if (__common_vector_bytes > sizeof(_Tp)
+    if (__recast_inner_extent >= cudax::__tile_size(__common_vector_bytes)
         && cudax::__dispatch_by_rank<2>(__vector_tag, __src_raw, __dst_raw, __stream))
     {
       return;
