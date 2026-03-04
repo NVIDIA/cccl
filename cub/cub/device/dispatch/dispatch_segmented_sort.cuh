@@ -1307,7 +1307,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   return detail::dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) -> cudaError_t {
-    CUB_DETAIL_CONSTEXPR_ISH segmented_sort_policy active_policy = policy_getter();
+    CUB_DETAIL_CONSTEXPR_ISH const segmented_sort_policy active_policy = policy_getter();
 
     CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.large_segment.load_modifier != CacheLoadModifier::LOAD_LDG,
                                  "The memory consistency model does not apply to texture accesses");
