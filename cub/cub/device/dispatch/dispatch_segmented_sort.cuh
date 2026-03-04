@@ -175,8 +175,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t device_segmented_sort_c
  * Continuation kernel is used only in the CDP mode. It's used to
  * launch device_segmented_sort_continuation as a separate kernel.
  */
-template <typename WrappedPolicyT,
-          typename LargeKernelT,
+template <typename LargeKernelT,
           typename SmallKernelT,
           typename KeyT,
           typename ValueT,
@@ -199,7 +198,10 @@ __launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContin
   local_segment_index_t* large_and_medium_segments_indices,
   local_segment_index_t* small_segments_indices,
   KernelLauncherFactory launcher_factory,
-  WrappedPolicyT wrapped_policy)
+  int large_block_threads,
+  int small_block_threads,
+  int medium_segments_per_block,
+  int small_segments_per_block)
 {
   // In case of CDP:
   // 1. each CTA has a different main stream
@@ -210,25 +212,27 @@ __launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContin
   //
   // Due to (4, 5), we can't pass the user-provided stream in the continuation.
   // Due to (1, 2, 3) it's safe to pass the main stream.
-  [[maybe_unused]] const auto error =
-    CubDebug(detail::segmented_sort::device_segmented_sort_continuation<WrappedPolicyT>(
-      large_kernel,
-      small_kernel,
-      num_segments,
-      d_current_keys,
-      d_final_keys,
-      d_keys_double_buffer,
-      d_current_values,
-      d_final_values,
-      d_values_double_buffer,
-      d_begin_offsets,
-      d_end_offsets,
-      group_sizes,
-      large_and_medium_segments_indices,
-      small_segments_indices,
-      0, // always launching on the main stream (see motivation above)
-      launcher_factory,
-      wrapped_policy));
+  [[maybe_unused]] const auto error = CubDebug(detail::segmented_sort::device_segmented_sort_continuation(
+    large_kernel,
+    small_kernel,
+    num_segments,
+    d_current_keys,
+    d_final_keys,
+    d_keys_double_buffer,
+    d_current_values,
+    d_final_values,
+    d_values_double_buffer,
+    d_begin_offsets,
+    d_end_offsets,
+    group_sizes,
+    large_and_medium_segments_indices,
+    small_segments_indices,
+    0, // always launching on the main stream (see motivation above)
+    launcher_factory,
+    large_block_threads,
+    small_block_threads,
+    medium_segments_per_block,
+    small_segments_per_block));
 }
 #endif // CUB_RDC_ENABLED
 template <typename PolicySelector,
@@ -1036,15 +1040,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   return detail::dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) -> cudaError_t {
     CUB_DETAIL_CONSTEXPR_ISH segmented_sort_policy active_policy = policy_getter();
 
-    CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.large_segment.LoadModifier() != CacheLoadModifier::LOAD_LDG,
+    CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.large_segment.load_modifier != CacheLoadModifier::LOAD_LDG,
                                  "The memory consistency model does not apply to texture accesses");
     CUB_DETAIL_STATIC_ISH_ASSERT(
-      keys_only || active_policy.large_segment.LoadAlgorithm() != BLOCK_LOAD_STRIPED
-        || active_policy.medium_segment.LoadAlgorithm() != WARP_LOAD_STRIPED
-        || active_policy.small_segment.LoadAlgorithm() != WARP_LOAD_STRIPED,
+      keys_only || active_policy.large_segment.load_algorithm != BLOCK_LOAD_STRIPED
+        || active_policy.medium_segment.load_algorithm != WARP_LOAD_STRIPED
+        || active_policy.small_segment.load_algorithm != WARP_LOAD_STRIPED,
       "Striped load will make this algorithm unstable");
-    CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.medium_segment.StoreAlgorithm() != WARP_STORE_STRIPED
-                                   || active_policy.small_segment.StoreAlgorithm() != WARP_STORE_STRIPED,
+    CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.medium_segment.store_algorithm != WARP_STORE_STRIPED
+                                   || active_policy.small_segment.store_algorithm != WARP_STORE_STRIPED,
                                  "Striped stores will produce unsorted results");
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
@@ -1295,7 +1299,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                 launcher_factory(1, 1, 0, stream)
                   .doit(
                     detail::segmented_sort::DeviceSegmentedSortContinuationKernel<
-                      decltype(active_policy),
                       decltype(kernel_source.SegmentedSortKernelLarge()),
                       decltype(kernel_source.SegmentedSortKernelSmall()),
                       KeyT,
@@ -1307,10 +1310,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                     kernel_source.SegmentedSortKernelSmall(),
                     current_num_segments,
                     d_keys.Current(),
-                    get_final_output(d_keys, active_policy.large_segment.RadixBits()),
+                    get_final_output(d_keys, active_policy.large_segment.radix_bits),
                     d_keys_double_buffer,
                     d_values.Current(),
-                    get_final_output(d_values, active_policy.large_segment.RadixBits()),
+                    get_final_output(d_values, active_policy.large_segment.radix_bits),
                     d_values_double_buffer,
                     current_begin_offset,
                     current_end_offset,
