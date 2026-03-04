@@ -108,6 +108,22 @@ See the `NVBench documentation <https://github.com/NVIDIA/nvbench/blob/main/docs
 for more information on how to specify the axis values.
 If the specified axis does not exist, the benchmark will terminate with an error.
 
+If you want to plot the benchmark results, you can use the following script:
+
+.. code-block:: bash
+
+    PYTHONPATH=./_deps/nvbench-src/scripts ./_deps/nvbench-src/scripts/nvbench_plot_bwutil.py base.json
+
+The `-a` option is supported to restrict the values for some axes as well,
+which is useful if you want to plot only a subset of workloads.
+Use the `-b` option to select a specific benchmark by name
+in case your JSON file contains results for multiple benchmarks.
+Multiple benchmarks are selected by repeating the `-b` option.
+
+.. code-block:: bash
+
+    PYTHONPATH=./_deps/nvbench-src/scripts ./_deps/nvbench-src/scripts/nvbench_plot_bwutil.py \
+        -b base -a Elements{io}[pow2]=28 base.json
 
 .. _cub-benchmarking-comparing:
 
@@ -143,6 +159,15 @@ NVBench reports the noise of the measurements,
 which corresponds to the relative standard deviation.
 It then reports with statistical significance in the `Status` column
 how the runtime changed from the base to the new version.
+
+You can also plot the comparison by adding the `--plot` argument.
+It's reasonable to combine this with the `-a` option again
+to restrict the values for some axes.
+
+.. code-block:: bash
+
+    PYTHONPATH=./_deps/nvbench-src/scripts ./_deps/nvbench-src/scripts/nvbench_compare.py \
+        -a Elements{io}[pow2]=28 --plot base.json new.json
 
 
 Running all benchmarks directly from the command line
