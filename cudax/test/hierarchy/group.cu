@@ -21,6 +21,10 @@
 
 #include <cuda/experimental/hierarchy.cuh>
 
+#if _CCCL_HAS_COOPERATIVE_GROUPS()
+#  include <cooperative_groups.h>
+#endif // _CCCL_HAS_COOPERATIVE_GROUPS()
+
 #include "testing.cuh"
 
 template <class... GArgs, class T, cuda::std::size_t N>
@@ -166,6 +170,220 @@ C2H_TEST("Hierarchy groups", "[hierarchy]")
   const auto config = cuda::make_config(cuda::grid_dims<2>(), cuda::block_dims<32>(), cuda::cooperative_launch{});
 
   cuda::launch(stream, config, TestKernel{});
+
+  stream.sync();
+}
+
+struct ThreadGroupKernel
+{
+  template <class Config>
+  __device__ void operator()(const Config& config)
+  {
+    // 1. This thread
+    {
+      auto group = cudax::this_thread(config);
+      group.sync();
+      CUDAX_REQUIRE(group.is_part_of(cuda::gpu_thread));
+    }
+
+    // 2. Thread groups in warp
+    {
+      // a. Group by
+      {
+        cudax::thread_group group{cuda::warp, cudax::group_by<4>, config};
+        group.sync();
+        CUDAX_REQUIRE(group.is_part_of(cuda::gpu_thread));
+      }
+
+      // b. Group as
+      {
+        constexpr unsigned mapping[]{1, 4, 4, 1};
+        cudax::thread_group group{cuda::warp, cudax::group_as{mapping}, config};
+        group.sync();
+        CUDAX_REQUIRE(group.is_part_of(cuda::gpu_thread) == (cuda::gpu_thread.rank(cuda::warp) < 10));
+      }
+
+      // c. Generic group with default rank
+      {
+        cudax::thread_group group{
+          cuda::warp,
+          8,
+          [](unsigned thread_rank) {
+            return (thread_rank % 8 + 1) % 8;
+          },
+          config};
+        group.sync();
+        CUDAX_REQUIRE(group.is_part_of(cuda::gpu_thread));
+      }
+
+      // d. Generic group with manual rank
+      {
+        cudax::thread_group group{
+          cuda::warp,
+          8,
+          [](unsigned thread_rank) {
+            return cuda::std::tuple{(thread_rank % 8 + 1) % 8, (thread_rank / 8 + 1) % 4};
+          },
+          config};
+        group.sync();
+        CUDAX_REQUIRE(group.is_part_of(cuda::gpu_thread));
+      }
+
+      // e. Generic group with optionals and default rank
+      {
+        cudax::thread_group group{
+          cuda::warp,
+          7,
+          [](unsigned thread_rank) {
+            const auto grank = (thread_rank % 8 + 1) % 8;
+            return (grank != 0) ? cuda::std::optional{grank} : cuda::std::nullopt;
+          },
+          config};
+        group.sync();
+
+        const auto is_part_of = ((cuda::gpu_thread.rank(cuda::warp) % 8 + 1) % 8 != 0);
+        CUDAX_REQUIRE(group.is_part_of(cuda::gpu_thread) == is_part_of);
+      }
+
+      // f. Generic group with optionals and manual rank
+      {
+        cudax::thread_group group{
+          cuda::warp,
+          7,
+          [](unsigned thread_rank) {
+            const auto grank = (thread_rank % 8 + 1) % 8;
+            const auto rank  = (thread_rank / 8 + 1) % 4;
+            return (grank != 0) ? cuda::std::optional{cuda::std::tuple{grank, rank}} : cuda::std::nullopt;
+          },
+          config};
+        group.sync();
+
+        const auto is_part_of = ((cuda::gpu_thread.rank(cuda::warp) % 8 + 1) % 8 != 0);
+        CUDAX_REQUIRE(group.is_part_of(cuda::gpu_thread) == is_part_of);
+      }
+    }
+
+    // 3. Thread groups in block
+    {
+      // a. Group by
+      {
+        using Barriers = cuda::barrier<cuda::thread_scope_block>[2];
+        __shared__ alignas(Barriers) unsigned char barriers_storage[sizeof(Barriers)];
+
+        Barriers& barriers = reinterpret_cast<Barriers&>(barriers_storage);
+
+        cudax::thread_group group{cuda::block, cudax::group_by<32>, barriers, config};
+        group.sync();
+        CUDAX_REQUIRE(group.is_part_of(cuda::gpu_thread));
+      }
+
+      // b. Group as
+      {
+        using Barriers = cuda::barrier<cuda::thread_scope_block>[4];
+        __shared__ alignas(Barriers) unsigned char barriers_storage[sizeof(Barriers)];
+
+        Barriers& barriers = reinterpret_cast<Barriers&>(barriers_storage);
+
+        constexpr unsigned mapping[]{10, 10, 10, 10};
+
+        cudax::thread_group group{cuda::block, cudax::group_as{mapping}, barriers, config};
+        group.sync();
+        CUDAX_REQUIRE(group.is_part_of(cuda::gpu_thread) == (cuda::gpu_thread.rank(cuda::block) < 40));
+      }
+
+      // c. Generic group with manual rank
+      {
+        using Barriers = cuda::barrier<cuda::thread_scope_block>[8];
+        __shared__ alignas(Barriers) unsigned char barriers_storage[sizeof(Barriers)];
+
+        Barriers& barriers = reinterpret_cast<Barriers&>(barriers_storage);
+
+        cudax::thread_group group{
+          cuda::block,
+          8,
+          [](unsigned thread_rank) {
+            return cuda::std::tuple{thread_rank % 8, 8, thread_rank / 8};
+          },
+          barriers,
+          config};
+        group.sync();
+        CUDAX_REQUIRE(group.is_part_of(cuda::gpu_thread));
+      }
+
+      // d. Generic group with optionals and manual rank
+      {
+        using Barriers = cuda::barrier<cuda::thread_scope_block>[8];
+        __shared__ alignas(Barriers) unsigned char barriers_storage[sizeof(Barriers)];
+
+        Barriers& barriers = reinterpret_cast<Barriers&>(barriers_storage);
+
+        cudax::thread_group group{
+          cuda::block,
+          7,
+          [](unsigned thread_rank) {
+            const auto grank = thread_rank % 8;
+            const auto rank  = thread_rank / 8;
+            return (grank != 0) ? cuda::std::optional{cuda::std::tuple{grank, 8, rank}} : cuda::std::nullopt;
+          },
+          barriers,
+          config};
+        group.sync();
+
+        const auto is_part_of = (cuda::gpu_thread.rank(cuda::block) % 8 != 0);
+        CUDAX_REQUIRE(group.is_part_of(cuda::gpu_thread) == is_part_of);
+      }
+    }
+  }
+};
+
+C2H_TEST("Thread groups", "[hierarchy][thread_group]")
+{
+  const auto device = cuda::devices[0];
+
+  const cuda::stream stream{device};
+
+  const auto config = cuda::make_config(cuda::grid_dims<2>(), cuda::block_dims<64>(), cuda::cooperative_launch{});
+
+  cuda::launch(stream, config, ThreadGroupKernel{});
+
+  stream.sync();
+}
+
+struct InteropKernel
+{
+  template <class Config>
+  __device__ void operator()(const Config& config)
+  {
+    {
+      cudax::thread_group g{cooperative_groups::this_thread()};
+      g.sync();
+    }
+    {
+      cudax::block_group g{cooperative_groups::this_thread_block()};
+      g.sync();
+    }
+#if _CCCL_HAS_COOPERATIVE_GROUPS() && defined(_CG_HAS_CLUSTER_GROUP)
+    {
+      cudax::cluster_group g{cooperative_groups::this_cluster()};
+      g.sync();
+    }
+#endif // _CCCL_HAS_COOPERATIVE_GROUPS() && _CG_HAS_CLUSTER_GROUP
+    {
+      cudax::grid_group g{cooperative_groups::this_grid()};
+      g.sync();
+    }
+  }
+};
+
+C2H_TEST("Groups interoperability with coopertive groups", "[hierarchy][cg_interop]")
+{
+  const auto device = cuda::devices[0];
+
+  const cuda::stream stream{device};
+
+  const auto config = cuda::make_config(cuda::grid_dims<2>(), cuda::block_dims<64>(), cuda::cooperative_launch{});
+
+  cuda::launch(stream, config, InteropKernel{});
 
   stream.sync();
 }
