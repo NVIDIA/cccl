@@ -814,7 +814,7 @@ cdef class task:
         if d.dplace is None:
             stf_task_add_dep(self._t, ldata._ld, mode_ce)
         else:
-            dp = <data_place> d.dplace
+            dp = _to_data_place(d.dplace)
             stf_task_add_dep_with_dplace(self._t, ldata._ld, mode_ce, &dp._c_place)
 
         self._lds_args.append(ldata)
