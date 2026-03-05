@@ -160,6 +160,14 @@ which corresponds to the relative standard deviation.
 It then reports with statistical significance in the `Status` column
 how the runtime changed from the base to the new version.
 
+You can reduce the output to runs with larger differences using the `--threshold-diff` option,
+passing the minimum percentage for a run to be shown, e.g., `0.05` for 5%.
+
+.. code-block:: bash
+
+    PYTHONPATH=./_deps/nvbench-src/scripts ./_deps/nvbench-src/scripts/nvbench_compare.py \
+        --threshold-diff 0.05 base.json new.json
+
 You can also plot the comparison by adding the `--plot` argument.
 It's reasonable to combine this with the `-a` option again
 to restrict the values for some axes.
