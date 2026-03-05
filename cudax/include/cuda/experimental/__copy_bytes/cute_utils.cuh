@@ -26,6 +26,7 @@
 #include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/experimental/__copy/types.cuh>
+#include <cuda/experimental/__copy/utils.cuh>
 
 #include <cute/layout.hpp>
 #include <cute/pointer.hpp>
@@ -110,9 +111,6 @@ template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank
   return ::cute::make_layout(::cute::make_shape(__raw_tensor.__extents[0], __raw_tensor.__extents[_Is + 1]...),
                              ::cute::make_stride(__raw_tensor.__strides[0], __raw_tensor.__strides[_Is + 1]...));
 }
-
-//! @brief Tag constant used to enable extent-1 mode removal in @ref __to_raw_tensor.
-inline constexpr auto __remove_extent1_mode = ::cuda::std::true_type{};
 
 //! @brief Construct a __raw_tensor from a pointer and a CuTe layout.
 //!

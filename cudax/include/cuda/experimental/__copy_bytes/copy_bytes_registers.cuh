@@ -307,8 +307,8 @@ _CCCL_HOST_API void copy_bytes_registers(
   constexpr int __src_rank = decltype(::cute::rank(__src_layout))::value;
   constexpr int __dst_rank = decltype(::cute::rank(__dst_layout))::value;
   static_assert(__src_rank == __dst_rank, "Source and destination layouts must have the same rank");
-  auto __src_raw = cudax::__to_raw_tensor<__src_rank>(__src_ptr, __src_layout, __remove_extent1_mode);
-  auto __dst_raw = cudax::__to_raw_tensor<__dst_rank>(__dst_ptr, __dst_layout, __remove_extent1_mode);
+  auto __src_raw = cudax::__to_raw_tensor<__src_rank>(__src_ptr, __src_layout, __remove_extent1);
+  auto __dst_raw = cudax::__to_raw_tensor<__dst_rank>(__dst_ptr, __dst_layout, __remove_extent1);
   _CCCL_ASSERT(__src_raw.__rank == __dst_raw.__rank, "Source and destination layouts must have the same rank");
   if (__src_raw.__extents != __dst_raw.__extents)
   {

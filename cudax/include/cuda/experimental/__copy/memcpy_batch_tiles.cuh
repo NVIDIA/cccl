@@ -59,6 +59,7 @@ __get_memcpy_attributes(__copy_direction __direction, const void* __src_ptr, con
     ::CUmemLocation{::CU_MEM_LOCATION_TYPE_HOST, 0},
     0};
 }
+#  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 template <typename _SrcTileIterator, typename _DstTileIterator>
 _CCCL_HOST_API inline void __memcpy_batch_tiles(
@@ -66,12 +67,13 @@ _CCCL_HOST_API inline void __memcpy_batch_tiles(
   const _DstTileIterator& __dst_tiles_iterator,
   ::cuda::std::size_t __num_tiles,
   ::cuda::std::size_t __copy_bytes,
-  __copy_direction __direction,
-  const void* __src_data_handle,
-  void* __dst_data_handle,
+  [[maybe_unused]] __copy_direction __direction,
+  [[maybe_unused]] const void* __src_data_handle,
+  [[maybe_unused]] void* __dst_data_handle,
   ::cuda::stream_ref __stream)
 {
   using ::cuda::std::size_t;
+#  if _CCCL_CTK_AT_LEAST(13, 0)
   auto __memcpy_batch_async_lambda = [&](auto& __src_ptrs, auto& __dst_ptrs, auto& __sizes) {
     for (size_t __tile_idx = 0; __tile_idx < __num_tiles; ++__tile_idx)
     {
@@ -108,8 +110,15 @@ _CCCL_HOST_API inline void __memcpy_batch_tiles(
     ::cuda::std::array<size_t, __max_tiles> __sizes{};
     __memcpy_batch_async_lambda(__src_ptr_vector, __dst_ptr_vector, __sizes);
   }
-}
+#  else
+  for (size_t __tile_idx = 0; __tile_idx < __num_tiles; ++__tile_idx)
+  {
+    const auto __src_ptr = static_cast<const void*>(__src_tiles_iterator(__tile_idx));
+    const auto __dst_ptr = static_cast<void*>(__dst_tiles_iterator(__tile_idx));
+    ::cuda::__driver::__memcpyAsync(__dst_ptr, __src_ptr, __copy_bytes, __stream.get());
+  }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
+}
 } // namespace cuda::experimental
 
 #  include <cuda/std/__cccl/epilogue.h>

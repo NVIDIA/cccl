@@ -28,13 +28,14 @@
 #  include <cuda/__mdspan/traits.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__cstdlib/abs.h>
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
 
-#  include <cuda/experimental/__copy/coalesce_right.cuh>
 #  include <cuda/experimental/__copy/max_common_layout.cuh>
 #  include <cuda/experimental/__copy/memcpy_batch_tiles.cuh>
 #  include <cuda/experimental/__copy/utils.cuh>
+#  include <cuda/experimental/__copy_bytes/layout_optimization.cuh>
 
 #  include <stdexcept>
 
@@ -42,15 +43,37 @@
 
 namespace cuda::experimental
 {
-template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _Rank>
+template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
 struct __tile_pointer_iterator
+{
+  using _Ep1 = ::cuda::std::make_unsigned_t<_Ep>;
+
+  _Tp* __data;
+  ::cuda::std::size_t __outer_rank;
+  ::cuda::std::array<_Ep1, _MaxRank> __outer_extents;
+  ::cuda::std::array<_Sp, _MaxRank> __outer_strides;
+
+  [[nodiscard]] _CCCL_HOST_API _Tp* operator()(::cuda::std::size_t __tile_idx) const noexcept
+  {
+    _Sp __offset = 0;
+    for (::cuda::std::size_t __i = 0; __i < __outer_rank; ++__i)
+    {
+      __offset += static_cast<_Sp>(__tile_idx % __outer_extents[__i]) * __outer_strides[__i];
+      __tile_idx /= __outer_extents[__i];
+    }
+    return __data + __offset;
+  }
+};
+
+template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _Rank>
+struct __tile_pointer_iterator_independent
 {
   const __raw_tensor<_Ep, _Sp, _Tp, _Rank> __tensor_original_;
   const __raw_tensor_ordered<_Ep, _Sp, _Tp, _Rank> __tensor_sorted_;
   const ::cuda::std::size_t __contiguous_size_;
   const bool __use_stride_order_;
 
-  _CCCL_HOST_API explicit __tile_pointer_iterator(
+  _CCCL_HOST_API explicit __tile_pointer_iterator_independent(
     const __raw_tensor<_Ep, _Sp, _Tp, _Rank>& __tensor_original,
     const __raw_tensor_ordered<_Ep, _Sp, _Tp, _Rank>& __tensor_sorted,
     ::cuda::std::size_t __contiguous_size,
@@ -63,13 +86,12 @@ struct __tile_pointer_iterator
 
   [[nodiscard]] _CCCL_HOST_API _Tp* operator()(::cuda::std::size_t __tile_idx) const noexcept
   {
-    // TODO: potential optimizations: use fast_div_mod in tile iterator
     const auto& __extents        = __use_stride_order_ ? __tensor_sorted_.__extents : __tensor_original_.__extents;
     const auto& __strides        = __use_stride_order_ ? __tensor_sorted_.__strides : __tensor_original_.__strides;
-    const auto __rank            = static_cast<int>(__tensor_sorted_.__rank);
+    const auto __rank            = __tensor_sorted_.__rank;
     auto __index                 = __tile_idx * __contiguous_size_;
     ::cuda::std::size_t __offset = 0;
-    for (int __i = __rank - 1; __i >= 0; --__i)
+    for (::cuda::std::size_t __i = 0; __i < __rank; ++__i)
     {
       __offset += (__index % __extents[__i]) * __strides[__i];
       __index /= __extents[__i];
@@ -92,6 +114,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
   [[maybe_unused]] __copy_direction __direction,
   ::cuda::stream_ref __stream)
 {
+  namespace cudax = ::cuda::experimental;
   static_assert(::cuda::std::is_trivially_copyable_v<_TpIn>, "TpIn must be trivially copyable");
   static_assert(::cuda::std::is_trivially_copyable_v<_TpOut>, "TpOut must be trivially copyable");
   static_assert(!::cuda::std::is_const_v<_TpOut>, "TpOut must not be const");
@@ -109,7 +132,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
                 "AccessorPolicyOut must be convertible to cuda::std::default_accessor");
   if (__src.size() != __dst.size())
   {
-    _CCCL_THROW(std::invalid_argument, "mdspans must have the same size");
+    _CCCL_THROW(::std::invalid_argument, "mdspans must have the same size");
   }
   if (__src.size() == 0)
   {
@@ -117,56 +140,105 @@ _CCCL_HOST_API void __copy_bytes_impl(
   }
   if (__src.data_handle() == nullptr || __dst.data_handle() == nullptr)
   {
-    _CCCL_THROW(std::invalid_argument, "mdspan data handle must not be nullptr");
+    _CCCL_THROW(::std::invalid_argument, "mdspan data handle must not be nullptr");
   }
-  if constexpr (_ExtentsIn::rank() == 0) // scalar case
+  if (::cuda::experimental::__is_not_unique(__dst))
+  {
+    _CCCL_THROW(::std::invalid_argument, "destination mdspan must have unique layout");
+  }
+  if (__src.size() == 1)
   {
     ::cuda::__driver::__memcpyAsync(__dst.data_handle(), __src.data_handle(), sizeof(_TpIn), __stream.get());
+    return;
   }
-  else
+  if constexpr (_ExtentsIn::rank() > 0 && _ExtentsOut::rank() > 0)
   {
-    // __coalesce_right is not strictly needed. It is an optimization to reduce the number of modes.
     using ::cuda::std::size_t;
-    const auto __src1       = ::cuda::experimental::__to_raw_tensor(__src);
-    const auto __dst1       = ::cuda::experimental::__to_raw_tensor(__dst);
-    const auto __src2       = ::cuda::experimental::__coalesce_right(__src1);
-    const auto __dst2       = ::cuda::experimental::__coalesce_right(__dst1);
-    const auto __src_sorted = ::cuda::experimental::__sort_by_stride_desc(__src1);
-    const auto __dst_sorted = ::cuda::experimental::__sort_by_stride_desc(__dst1);
-    if (::cuda::experimental::__is_not_unique(__dst_sorted))
+    using __extent_t          = ::cuda::std::size_t;
+    using __stride_t          = ::cuda::std::int64_t;
+    constexpr auto __max_rank = ::cuda::std::max(_ExtentsIn::rank(), _ExtentsOut::rank());
+
+    // Simplify each tensor independently:
+    //   1. Remove extent-1 modes (safe: extent-1 modes don't affect data layout)
+    //   2. Widen to a common _MaxRank so the paired functions accept both
+    // NOTE: independent coalescing is NOT applied here because it would merge modes
+    // that correspond to different logical orderings, breaking the paired pipeline.
+    // The paired pipeline's own __coalesce_paired handles joint coalescing correctly.
+    auto __src_raw = cudax::__widen<__max_rank>(cudax::__to_raw_tensor(__src, ::cuda::std::true_type{}));
+    auto __dst_raw = cudax::__widen<__max_rank>(cudax::__to_raw_tensor(__dst, ::cuda::std::true_type{}));
+
+    // Compare simplified shapes
+    bool __same_shape = (__src_raw.__rank == __dst_raw.__rank);
+    for (size_t __i = 0; __same_shape && __i < __src_raw.__rank; ++__i)
     {
-      _CCCL_THROW(std::invalid_argument, "destination mdspan must have unique layout");
+      __same_shape = (__src_raw.__extents[__i] == __dst_raw.__extents[__i]);
     }
-    const auto __tile_size        = ::cuda::experimental::__max_common_contiguous_size(__src_sorted, __dst_sorted);
-    const auto __num_tiles        = static_cast<size_t>(__src.size() / __tile_size);
-    const auto __copy_bytes       = __tile_size * sizeof(_TpIn);
-    const auto __use_stride_order = ::cuda::experimental::__same_stride_order(__src_sorted, __dst_sorted);
-    using __ep_t = ::cuda::std::size_t;
-    using __sp_t = ::cuda::std::int64_t;
-    __tile_pointer_iterator<__ep_t, __sp_t, _TpIn, _ExtentsIn::rank()> __src_tiles_iterator(
-      __src1, __src_sorted, __tile_size, __use_stride_order);
-    __tile_pointer_iterator<__ep_t, __sp_t, _TpOut, _ExtentsOut::rank()> __dst_tiles_iterator(
-      __dst1, __dst_sorted, __tile_size, __use_stride_order);
-#  if _CCCL_CTK_AT_LEAST(13, 0)
-    // Use the memcpy batch API to copy all tiles in one call
-    ::cuda::experimental::__memcpy_batch_tiles(
-      __src_tiles_iterator,
-      __dst_tiles_iterator,
-      __num_tiles,
-      __copy_bytes,
-      __direction,
-      __src.data_handle(),
-      __dst.data_handle(),
-      __stream);
-#  else
-    // Use individual memcpy calls for each tile
-    for (size_t __tile_idx = 0; __tile_idx < __num_tiles; ++__tile_idx)
+
+    if (__same_shape)
     {
-      const auto __src_ptr = static_cast<const void*>(__src_tiles_iterator(__tile_idx));
-      const auto __dst_ptr = static_cast<void*>(__dst_tiles_iterator(__tile_idx));
-      ::cuda::__driver::__memcpyAsync(__dst_ptr, __src_ptr, __copy_bytes, __stream.get());
+      // ---- Paired pipeline: simplified tensors have the same shape ----
+      // Extents already match and no extent-1 modes remain.
+      // Sort both by dst's ascending absolute stride (same permutation to both)
+      cudax::__sort_by_stride_paired(__src_raw, __dst_raw);
+      cudax::__flip_negative_strides_paired(__src_raw, __dst_raw);
+      cudax::__coalesce_paired(__src_raw, __dst_raw);
+
+      const bool __both_stride1  = (__src_raw.__strides[0] == 1) && (__dst_raw.__strides[0] == 1);
+      const auto __tile_size     = __both_stride1 ? static_cast<size_t>(__src_raw.__extents[0]) : size_t{1};
+      const auto __num_tiles     = static_cast<size_t>(__src.size() / __tile_size);
+      const auto __copy_bytes    = __tile_size * sizeof(_TpIn);
+      const size_t __outer_start = __both_stride1 ? size_t{1} : size_t{0};
+      const size_t __outer_rank  = __src_raw.__rank - __outer_start;
+
+      __tile_pointer_iterator<__extent_t, __stride_t, _TpIn, __max_rank> __src_iter{};
+      __src_iter.__data       = __src_raw.__data;
+      __src_iter.__outer_rank = __outer_rank;
+      __tile_pointer_iterator<__extent_t, __stride_t, _TpOut, __max_rank> __dst_iter{};
+      __dst_iter.__data       = __dst_raw.__data;
+      __dst_iter.__outer_rank = __outer_rank;
+      for (size_t __i = 0; __i < __outer_rank; ++__i)
+      {
+        __src_iter.__outer_extents[__i] = __src_raw.__extents[__i + __outer_start];
+        __src_iter.__outer_strides[__i] = __src_raw.__strides[__i + __outer_start];
+        __dst_iter.__outer_extents[__i] = __dst_raw.__extents[__i + __outer_start];
+        __dst_iter.__outer_strides[__i] = __dst_raw.__strides[__i + __outer_start];
+      }
+
+      ::cuda::experimental::__memcpy_batch_tiles(
+        __src_iter,
+        __dst_iter,
+        __num_tiles,
+        __copy_bytes,
+        __direction,
+        __src.data_handle(),
+        __dst.data_handle(),
+        __stream);
     }
-#  endif // _CCCL_CTK_AT_LEAST(13, 0)
+    else
+    {
+      // ---- Independent pipeline: simplified shapes differ ----
+      const auto __src_orig         = ::cuda::experimental::__to_raw_tensor(__src);
+      const auto __dst_orig         = ::cuda::experimental::__to_raw_tensor(__dst);
+      const auto __src_sorted       = ::cuda::experimental::__sort_by_stride(__src_orig);
+      const auto __dst_sorted       = ::cuda::experimental::__sort_by_stride(__dst_orig);
+      const auto __tile_size        = ::cuda::experimental::__max_common_contiguous_size(__src_sorted, __dst_sorted);
+      const auto __num_tiles        = static_cast<size_t>(__src.size() / __tile_size);
+      const auto __copy_bytes       = __tile_size * sizeof(_TpIn);
+      const auto __use_stride_order = ::cuda::experimental::__same_stride_order(__src_sorted, __dst_sorted);
+      __tile_pointer_iterator_independent<__extent_t, __stride_t, _TpIn, _ExtentsIn::rank()> __src_tiles_iterator(
+        __src_orig, __src_sorted, __tile_size, __use_stride_order);
+      __tile_pointer_iterator_independent<__extent_t, __stride_t, _TpOut, _ExtentsOut::rank()> __dst_tiles_iterator(
+        __dst_orig, __dst_sorted, __tile_size, __use_stride_order);
+      ::cuda::experimental::__memcpy_batch_tiles(
+        __src_tiles_iterator,
+        __dst_tiles_iterator,
+        __num_tiles,
+        __copy_bytes,
+        __direction,
+        __src.data_handle(),
+        __dst.data_handle(),
+        __stream);
+    }
   }
 }
 
