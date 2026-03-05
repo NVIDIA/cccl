@@ -211,6 +211,12 @@ static_assert(
     policy_selector_expr, // 10
     policy_sel_str.view()); // 11
 
+#if false // CCCL_DEBUGGING_SWITCH
+  fflush(stderr);
+  printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", final_src.c_str());
+  fflush(stdout);
+#endif
+
   std::string three_way_partition_init_kernel_name =
     three_way_partition::get_three_way_partition_init_kernel_name(d_num_selected_out_iterator_name);
   std::string three_way_partition_kernel_name = three_way_partition::get_three_way_partition_kernel_name(

@@ -748,33 +748,24 @@ CUresult cccl_device_segmented_sort_impl(
       *static_cast<indirect_arg_t**>(&val_arg_in), *static_cast<indirect_arg_t**>(&val_arg_out));
 
     // TODO(bgruber): remove all template arguments except the first two (the others can be deduced)
-    auto exec_status = cub::detail::segmented_sort::dispatch<
-      Order,
-      OffsetT, // OffsetT
-      indirect_arg_t, // KeyT
-      indirect_arg_t, // ValueT
-      indirect_iterator_t, // BeginOffsetIteratorT
-      indirect_iterator_t, // EndOffsetIteratorT
-      cub::detail::segmented_sort::policy_selector, // PolicySelector
-      segmented_sort::segmented_sort_kernel_source, // KernelSource
-      cub::detail::three_way_partition::policy_selector // PartitionPolicySelector
-      >(d_temp_storage,
-        *temp_storage_bytes,
-        d_keys_double_buffer,
-        d_values_double_buffer,
-        num_items,
-        num_segments,
-        indirect_iterator_t{start_offset_in},
-        indirect_iterator_t{end_offset_in},
-        is_overwrite_okay,
-        stream,
-        /* policy_selector */
-        *static_cast<cub::detail::segmented_sort::policy_selector*>(build.runtime_policy),
-        /* kernel_source */ segmented_sort::segmented_sort_kernel_source{build},
-        /* partition_kernel_source */ segmented_sort::partition_kernel_source{build},
-        /* launcher_factory */ cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-        /* partition_policy_selector */
-        *static_cast<cub::detail::three_way_partition::policy_selector*>(build.partition_runtime_policy));
+    auto exec_status = cub::detail::segmented_sort::dispatch<Order, OffsetT>(
+      d_temp_storage,
+      *temp_storage_bytes,
+      d_keys_double_buffer,
+      d_values_double_buffer,
+      num_items,
+      num_segments,
+      indirect_iterator_t{start_offset_in},
+      indirect_iterator_t{end_offset_in},
+      is_overwrite_okay,
+      stream,
+      /* policy_selector */
+      *static_cast<cub::detail::segmented_sort::policy_selector*>(build.runtime_policy),
+      /* kernel_source */ segmented_sort::segmented_sort_kernel_source{build},
+      /* partition_kernel_source */ segmented_sort::partition_kernel_source{build},
+      /* launcher_factory */ cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
+      /* partition_policy_selector */
+      *static_cast<cub::detail::three_way_partition::policy_selector*>(build.partition_runtime_policy));
 
     *selector = d_keys_double_buffer.selector;
     error     = static_cast<CUresult>(exec_status);
