@@ -428,39 +428,6 @@ public:
   }
 };
 
-//! @brief Registers a user-provided CUDA stream with asynchronous resources
-//!
-//! @details Creates a decorated_stream that encapsulates the stream handle,
-//! its unique ID from the CUDA driver (cuStreamGetId), and the associated device ID.
-//!
-//! @param[in,out] async_resources Handle to asynchronous resources manager
-//! @param[in] user_stream Raw CUDA stream to register. Must be a valid stream.
-//!
-//! @return decorated_stream Object containing the stream, its native ID, and device ID.
-//!
-//! @pre `user_stream` must be a valid CUDA stream created with `cudaStreamCreate` or equivalent
-inline decorated_stream register_stream(async_resources_handle& async_resources, cudaStream_t user_stream)
-{
-  (void) async_resources;
-  const unsigned long long id    = get_stream_id(user_stream);
-  const int dev_id = get_device_from_stream(user_stream);
-  return decorated_stream(user_stream, id, dev_id);
-}
-
-//! @brief Unregisters a decorated CUDA stream from asynchronous resources
-//!
-//! @details Invalidates the decorated stream's id so it is no longer considered registered.
-//!
-//! @param[in,out] async_resources Handle to asynchronous resources manager
-//! @param[in,out] dstream Decorated stream to unregister. Its `id` will be set to 0.
-//!
-//! @post `dstream.id == k_no_stream_id`
-inline void unregister_stream(async_resources_handle& async_resources, decorated_stream& dstream)
-{
-  (void) async_resources;
-  dstream.id = k_no_stream_id;
-}
-
 #ifdef UNITTESTED_FILE
 /*
  * This test ensures that the async_resources_handle type is default
