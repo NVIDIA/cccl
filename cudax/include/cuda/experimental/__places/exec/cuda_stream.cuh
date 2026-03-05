@@ -25,7 +25,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/utility/stream_to_dev.cuh>
 
 namespace cuda::experimental::stf
