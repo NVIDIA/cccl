@@ -55,14 +55,6 @@ def bench_histogram_even(state: bench.State):
             state.skip("Number of bins exceeds what SampleT can represent")
             return
 
-    if (
-        dtype in (np.float32, np.float64)
-        and num_bins >= 2048
-        and entropy_str == "0.201"
-    ):
-        state.skip("Skipping: Generates cudaErrorIllegalAddress")
-        return
-
     num_levels = num_bins + 1
     lower_level = dtype(0)
     upper_level = get_upper_level(dtype, num_bins, num_elements)
