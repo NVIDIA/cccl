@@ -661,7 +661,7 @@ struct policy_hub
         // based on cub.bench.scan.exclusive.custom.base, cap items per thread if we don't know the scan op
         if (is_primitive_op<ScanOpT>() == primitive_op::no && ::cuda::std::is_arithmetic_v<InputValueT>)
         {
-          if (sizeof(InputValueT) == 4 || sizeof(InputValueT) == 8)
+          if constexpr (sizeof(InputValueT) == 4 || sizeof(InputValueT) == 8)
           {
             return 127;
           }
