@@ -25,7 +25,6 @@
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
-#include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -1262,7 +1261,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::FlaggedIf");
 
-    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using offset_t = ::cuda::std::int64_t;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
@@ -1361,7 +1360,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Unique");
 
-    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using offset_t = ::cuda::std::int64_t;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
@@ -1486,7 +1485,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::UniqueByKey");
 
-    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using offset_t = ::cuda::std::int64_t;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
