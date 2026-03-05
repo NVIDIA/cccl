@@ -48,7 +48,7 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator, class _BinaryOp = ::cuda::std::minus<>)
 _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator> _CCCL_AND
                  is_execution_policy_v<_Policy>)
-[[nodiscard]] _CCCL_HOST_API _OutputIterator adjacent_difference(
+_CCCL_HOST_API _OutputIterator adjacent_difference(
   [[maybe_unused]] const _Policy& __policy,
   _InputIterator __first,
   _InputIterator __last,

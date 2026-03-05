@@ -52,7 +52,7 @@ _CCCL_TEMPLATE(class _Policy,
                class _InputIterator,
                class _BinaryPredicate = ::cuda::std::equal_to<iter_value_t<_InputIterator>>)
 _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND is_execution_policy_v<_Policy>)
-_CCCL_HOST_API _InputIterator adjacent_find(
+[[nodiscard]] _CCCL_HOST_API _InputIterator adjacent_find(
   [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _BinaryPredicate __pred = {})
 {
   [[maybe_unused]] auto __dispatch =
