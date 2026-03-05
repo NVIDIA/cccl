@@ -37,7 +37,6 @@
 
 namespace cuda::experimental::stf
 {
-
 template <auto... spec>
 template <typename Fun>
 interpreted_execution_policy<spec...>::interpreted_execution_policy(
@@ -217,5 +216,4 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     static_assert(pdepth == 3);
   }
 }
-
 } // end namespace cuda::experimental::stf
