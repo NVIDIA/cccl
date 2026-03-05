@@ -725,11 +725,16 @@ cdef class exec_place_grid(exec_place):
         return g
 
     @staticmethod
-    def create(places, grid_dims=None):
+    def create(places, grid_dims=None, mapper=None):
         """
         Create a grid from a list of exec_place(-like) objects and optional shape.
+
         places: list of exec_place or objects with _as_stf_exec_place()
         grid_dims: optional (x, y, z, t) tuple; if None, linear grid (len(places), 1, 1, 1).
+        mapper: optional callable (data_coords, data_dims, grid_dims) -> (x, y, z, t).
+            If provided, a composite data place is created from this partitioner
+            and set as the grid's affine data place. This allows dependencies
+            with data_place::affine() (the default) to resolve automatically.
         """
         cdef stf_exec_place c_places[64]
         cdef stf_dim4 dims
@@ -755,6 +760,9 @@ cdef class exec_place_grid(exec_place):
         else:
             g._handle = stf_exec_place_grid_create(c_places, n, NULL)
         g._c_place = make_exec_place_from_grid(g._handle)
+        if mapper is not None:
+            dplace = data_place.composite(g, mapper)
+            g.set_affine_data_place(dplace)
         return g
 
     def set_affine_data_place(self, data_place dplace):
@@ -852,6 +860,18 @@ cdef class task:
         if stf_task_get_custream_at_index(self._t, place_index, &s) != 0:
             raise RuntimeError("task is not on a grid or place_index out of range")
         return <uintptr_t> s
+
+    def get_stream_ptrs(self):
+        """Return a list of raw CUstream pointers (as ints), one per place in the grid.
+
+        Convenience for grid tasks. Returns [stream_ptr()] (length 1) for non-grid tasks.
+        Call after start().
+        """
+        dims = self.get_grid_dims()
+        if dims is None:
+            return [self.stream_ptr()]
+        cdef size_t n = dims[0] * dims[1] * dims[2] * dims[3]
+        return [self.get_stream_at_index(i) for i in range(n)]
 
     def get_arg(self, index) -> int:
         if self._lds_args[index]._is_token:
