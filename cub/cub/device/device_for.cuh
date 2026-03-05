@@ -567,7 +567,7 @@ public:
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <class ShapeT, class OpT, class EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t Bulk(ShapeT shape, OpT op, EnvT env = {})
+  CUB_RUNTIME_FUNCTION static cudaError_t Bulk(ShapeT shape, OpT op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::Bulk");
     static_assert(::cuda::std::is_integral_v<ShapeT>, "ShapeT must be an integral type");
@@ -657,7 +657,7 @@ public:
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <class RandomAccessIteratorT, class NumItemsT, class OpT, class EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachN");
@@ -723,7 +723,7 @@ public:
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <class RandomAccessIteratorT, class OpT, class EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  CUB_RUNTIME_FUNCTION static cudaError_t
   ForEach(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEach");
@@ -809,7 +809,7 @@ public:
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <class RandomAccessIteratorT, class NumItemsT, class OpT, class EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachCopyN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopyN");
@@ -878,7 +878,7 @@ public:
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <class RandomAccessIteratorT, class OpT, class EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachCopy(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopy");
@@ -1043,7 +1043,7 @@ public:
   //! @return cudaError_t
   //!   error status
   template <typename IndexType, size_t... Extents, typename OpType, typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, EnvT env = {})
   {
     using extents_type = ::cuda::std::extents<IndexType, Extents...>;
@@ -1134,7 +1134,7 @@ public:
   //!   error status
   _CCCL_TEMPLATE(typename LayoutMapping, typename OpType, typename EnvT = ::cuda::std::execution::env<>)
   _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping>)
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachInLayout(const LayoutMapping& layout_mapping, OpType op, EnvT env = {})
   {
     using namespace cub::detail;
