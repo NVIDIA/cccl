@@ -30,7 +30,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   in[mismatch_point] = in[mismatch_point + 1];
 
   state.add_element_count(elements);
-  state.add_global_memory_reads<T>(elements);
+  state.add_global_memory_reads<T>(mismatch_point);
   state.add_global_memory_writes<T>(0);
 
   caching_allocator_t alloc;
@@ -58,7 +58,7 @@ static void with_comp(nvbench::state& state, nvbench::type_list<T>)
   in[mismatch_point] = in[mismatch_point + 1];
 
   state.add_element_count(elements);
-  state.add_global_memory_reads<T>(elements);
+  state.add_global_memory_reads<T>(mismatch_point);
   state.add_global_memory_writes<T>(0);
 
   caching_allocator_t alloc;

@@ -32,6 +32,7 @@
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/next.h>
+#  include <cuda/std/__iterator/prev.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
@@ -68,7 +69,7 @@ _CCCL_HOST_API _InputIterator adjacent_find(
     auto __zipped_ret = __dispatch(
       __policy,
       ::cuda::zip_iterator{__first, ::cuda::std::next(__first)},
-      ::cuda::zip_iterator{__last, __last},
+      ::cuda::zip_iterator{::cuda::std::prev(__last), __last},
       ::cuda::zip_function{::cuda::std::move(__pred)});
     return ::cuda::std::get<0>(__zipped_ret.__iterators());
   }
