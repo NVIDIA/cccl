@@ -1296,7 +1296,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   KernelLauncherFactory launcher_factory                      = {},
   typename PartitionPolicyHub::MaxPolicy partition_max_policy = {}) -> cudaError_t
 {
-  static constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
+  [[maybe_unused]] static constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
   const auto get_num_passes = [&](int radix_bits) {
     const int num_bits   = static_cast<int>(kernel_source.KeySize()) * CHAR_BIT;
