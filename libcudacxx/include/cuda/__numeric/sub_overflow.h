@@ -299,8 +299,8 @@ _CCCL_API constexpr overflow_result<_ActualResult> sub_overflow(const _Lhs __lhs
   // Host fallback + device implementation.
 #if _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_SUB_OVERFLOW) || (_CCCL_COMPILER(NVHPC) && _CCCL_HAS_INT128())
   using ::cuda::std::common_type_t;
-  using ::cuda::std::is_unsigned_v;
   using ::cuda::std::is_signed_v;
+  using ::cuda::std::is_unsigned_v;
   using ::cuda::std::make_signed_t;
   using ::cuda::std::make_unsigned_t;
   using ::cuda::std::numeric_limits;
