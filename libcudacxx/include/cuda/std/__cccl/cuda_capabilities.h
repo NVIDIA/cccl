@@ -90,6 +90,17 @@
 #  define _CCCL_LAUNCH_BOUNDS(...)
 #endif // ^^^ no launch bounds attribute ^^^
 
+// __block_size__ attribute is available for nvcc and nvrtc 12.9+ for hopper+ architectures. For older nvcc and nvrtc,
+// we can fallback to __cluster_dims__ attribute only specifying the ncta per cluster.
+// This attribute should be used only for cluster launches.
+#if (_CCCL_CUDA_COMPILER(NVCC, >=, 12, 9) || _CCCL_CUDA_COMPILER(NVRTC, >=, 12, 9)) && _CCCL_PTX_ARCH >= 900
+#  define _CCCL_BLOCK_SIZE(_NTID, _NCTA_PER_CLUSTER) __block_size__(_NTID, )
+#elif (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)) && _CCCL_PTX_ARCH >= 900
+#  define _CCCL_BLOCK_SIZE(_NTID, _NCTA_PER_CLUSTER) __cluster_dims__ _NCTA_PER_CLUSTER
+#else // ^^ has __block_size__ attribute ^^^ / vvv no __block_size__ attribute vvv
+#  define _CCCL_BLOCK_SIZE(_NTID, _NCTA_PER_CLUSTER)
+#endif // ^^^ no __block_size__ attribute ^^^
+
 #if _CCCL_HAS_CDP()
 #  ifdef CUDA_FORCE_CDP1_IF_SUPPORTED
 #    error "CUDA Dynamic Parallelism 1 is no longer supported. Please undefine CUDA_FORCE_CDP1_IF_SUPPORTED."

@@ -31,6 +31,7 @@
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__pstl/dispatch.h>
+#  include <cuda/std/__pstl/remove.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_comparable.h>
@@ -47,23 +48,6 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
-
-template <class _Tp>
-struct __remove_compare_not_eq
-{
-  _Tp __val_;
-
-  _CCCL_API constexpr __remove_compare_not_eq(const _Tp& __val) noexcept(is_nothrow_copy_constructible_v<_Tp>)
-      : __val_(__val)
-  {}
-
-  template <class _Up>
-  [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE constexpr bool operator()(const _Up& __rhs) const
-    noexcept(__is_cpp17_nothrow_equality_comparable_v<_Tp, _Up>)
-  {
-    return !static_cast<bool>(__val_ == __rhs);
-  }
-};
 
 _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator, class _Tp)
 _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator> _CCCL_AND

@@ -32,11 +32,17 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
 enum class __pstl_algorithm
 {
+  __adjacent_difference,
   __copy_if,
+  __copy_n,
+  __exclusive_scan,
   __find_if,
   __for_each_n,
   __generate_n,
+  __inclusive_scan,
+  __merge,
   __reduce,
+  __remove_if,
   __transform,
   __transform_reduce,
 };

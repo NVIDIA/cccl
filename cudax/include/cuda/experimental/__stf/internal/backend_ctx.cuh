@@ -909,7 +909,8 @@ public:
   // execution place
   auto pick_dstream()
   {
-    return default_exec_place().get_stream_pool(async_resources(), true).next();
+    exec_place p = default_exec_place();
+    return p.get_stream_pool(async_resources(), true).next(p);
   }
   cudaStream_t pick_stream()
   {

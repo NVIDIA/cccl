@@ -646,13 +646,6 @@ template <typename T>
 concept scan_policy_selector = policy_selector<T, scan_policy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
-constexpr _CCCL_HOST_DEVICE delay_constructor_policy default_delay_constructor_policy(primitive_accum primitive)
-{
-  return primitive == primitive_accum::yes
-         ? delay_constructor_policy{delay_constructor_kind::fixed_delay, 350, 450}
-         : delay_constructor_policy{delay_constructor_kind::no_delay, 0, 450};
-}
-
 constexpr _CCCL_HOST_DEVICE scan_warpspeed_policy
 get_warpspeed_policy(::cuda::arch_id arch, int input_value_size, int accum_size)
 {
@@ -733,7 +726,7 @@ struct policy_selector
       large_values ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : BLOCK_LOAD_WARP_TRANSPOSE;
     const BlockStoreAlgorithm scan_transposed_store =
       large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
-    const auto default_delay = default_delay_constructor_policy(primitive_accum_t);
+    const auto default_delay = default_delay_constructor_policy(primitive_accum_t == primitive_accum::yes);
 
     const auto warpspeed_policy = get_warpspeed_policy(arch, input_value_size, accum_size);
 
