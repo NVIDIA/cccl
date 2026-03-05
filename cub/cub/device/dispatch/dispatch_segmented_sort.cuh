@@ -1291,10 +1291,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   bool is_overwrite_okay,
   cudaStream_t stream,
   PolicySelector policy_selector                              = {},
+  typename PartitionPolicyHub::MaxPolicy partition_max_policy = {},
   KernelSource kernel_source                                  = {},
   PartitionKernelSource partition_kernel_source               = {},
-  KernelLauncherFactory launcher_factory                      = {},
-  typename PartitionPolicyHub::MaxPolicy partition_max_policy = {}) -> cudaError_t
+  KernelLauncherFactory launcher_factory                      = {}) -> cudaError_t
 {
   [[maybe_unused]] static constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 

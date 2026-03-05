@@ -821,11 +821,11 @@ CUresult cccl_device_segmented_sort_impl(
         stream,
         /* policy_selector */
         *static_cast<cub::detail::segmented_sort::policy_selector*>(build.runtime_policy),
+        /* partition_max_policy */
+        *static_cast<segmented_sort::partition_runtime_tuning_policy*>(build.partition_runtime_policy),
         /* kernel_source */ segmented_sort::segmented_sort_kernel_source{build},
         /* partition_kernel_source */ segmented_sort::partition_kernel_source{build},
-        /* launcher_factory */ cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-        /* partition_max_policy */
-        *static_cast<segmented_sort::partition_runtime_tuning_policy*>(build.partition_runtime_policy));
+        /* launcher_factory */ cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
 
     *selector = d_keys_double_buffer.selector;
     error     = static_cast<CUresult>(exec_status);
