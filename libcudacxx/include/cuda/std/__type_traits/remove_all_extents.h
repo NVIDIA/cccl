@@ -24,9 +24,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(remove_all_extents)
+#  define _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(...) __remove_all_extents(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(remove_all_extents)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_REMOVE_ALL_EXTENTS) && !defined(_LIBCUDACXX_USE_REMOVE_ALL_EXTENTS_FALLBACK)
+#if defined(_CCCL_BUILTIN_REMOVE_ALL_EXTENTS)
+
 template <class _Tp>
 struct remove_all_extents
 {
@@ -36,7 +41,7 @@ struct remove_all_extents
 template <class _Tp>
 using remove_all_extents_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(_Tp);
 
-#else
+#else // ^^^ _CCCL_BUILTIN_REMOVE_ALL_EXTENTS ^^^ / vvv !_CCCL_BUILTIN_REMOVE_ALL_EXTENTS vvv
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_all_extents
@@ -57,7 +62,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_all_extents<_Tp[_Np]>
 template <class _Tp>
 using remove_all_extents_t _CCCL_NODEBUG_ALIAS = typename remove_all_extents<_Tp>::type;
 
-#endif // defined(_CCCL_BUILTIN_REMOVE_ALL_EXTENTS) && !defined(_LIBCUDACXX_USE_REMOVE_ALL_EXTENTS_FALLBACK)
+#endif // ^^^ !_CCCL_BUILTIN_REMOVE_ALL_EXTENTS ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

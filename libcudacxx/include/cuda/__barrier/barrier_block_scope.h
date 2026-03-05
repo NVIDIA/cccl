@@ -56,7 +56,7 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
-[[nodiscard]] _CCCL_DEVICE ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b);
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b);
 _CCCL_END_NAMESPACE_CUDA_DEVICE
 
 _CCCL_BEGIN_NAMESPACE_CUDA
@@ -71,10 +71,10 @@ class barrier<thread_scope_block, ::cuda::std::__empty_completion> : public __bl
   using __barrier_base = ::cuda::std::__barrier_base<::cuda::std::__empty_completion, thread_scope_block>;
   __barrier_base __barrier;
 
-  _CCCL_DEVICE friend ::cuda::std::uint64_t* ::cuda::device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle(
+  _CCCL_DEVICE_API friend ::cuda::std::uint64_t* ::cuda::device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle(
     barrier<thread_scope_block>& __b);
 
-  [[nodiscard]] _CCCL_DEVICE ::cuda::std::uint64_t* __native_handle() const
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint64_t* __native_handle() const
   {
     return ::cuda::device::barrier_native_handle(const_cast<barrier&>(*this));
   }
@@ -527,7 +527,7 @@ _CCCL_END_NAMESPACE_CUDA
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
-[[nodiscard]] _CCCL_DEVICE inline ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b)
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b)
 {
   return reinterpret_cast<::cuda::std::uint64_t*>(&__b.__barrier);
 }

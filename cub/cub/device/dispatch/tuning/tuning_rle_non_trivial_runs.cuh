@@ -25,10 +25,7 @@
 
 #include <cuda/__device/arch_id.h>
 #include <cuda/std/__algorithm/clamp.h>
-
-#if _CCCL_HAS_CONCEPTS()
-#  include <cuda/std/concepts>
-#endif // _CCCL_HAS_CONCEPTS()
+#include <cuda/std/concepts>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
@@ -272,8 +269,12 @@ struct policy_hub
                      default_reduce_by_key_delay_constructor_t<DelayConstructorKey, int>>;
   };
 
+  // TODO(bgruber): I think we want `LengthT` instead of `int`
+  // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy500
+  using DefaultPolicy500 = DefaultPolicy<BLOCK_LOAD_DIRECT, int, LOAD_LDG>;
+
   struct Policy500
-      : DefaultPolicy<BLOCK_LOAD_DIRECT, int, LOAD_LDG> // TODO(bgruber): I think we want `LengthT` instead of `int`
+      : DefaultPolicy500
       , ChainedPolicy<500, Policy500, Policy500>
   {};
 
@@ -296,8 +297,12 @@ struct policy_hub
     using RleSweepPolicyT = decltype(select_agent_policy<sm80_tuning<LengthT, KeyT>>(0));
   };
 
+  // TODO(bgruber): I think we want `LengthT` instead of `int`
+  // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy860
+  using DefaultPolicy860 = DefaultPolicy<BLOCK_LOAD_DIRECT, int, LOAD_LDG>;
+
   struct Policy860
-      : DefaultPolicy<BLOCK_LOAD_DIRECT, int, LOAD_LDG> // TODO(bgruber): I think we want `LengthT` instead of `int`
+      : DefaultPolicy860
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
@@ -377,6 +382,7 @@ struct policy_selector
   type_t key_type;
   bool length_is_primitive;
   bool key_is_primitive; // TODO(bgruber): can probably be derived from key_type
+  bool key_is_trivially_copyable;
 
   _CCCL_API constexpr auto
   make_default_policy(BlockLoadAlgorithm block_load_alg, int delay_ctor_key_size, CacheLoadModifier load_mod) const
@@ -391,7 +397,8 @@ struct policy_selector
       load_mod,
       true,
       BLOCK_SCAN_WARP_SCANS,
-      default_reduce_by_key_delay_constructor_policy(delay_ctor_key_size, sizeof(int), true)};
+      default_reduce_by_key_delay_constructor_policy(
+        delay_ctor_key_size, sizeof(int), key_is_primitive || key_is_trivially_copyable, true)};
   }
 
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> rle_non_trivial_runs_policy
@@ -603,7 +610,12 @@ struct policy_selector_from_types
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> rle_non_trivial_runs_policy
   {
     constexpr policy_selector selector{
-      sizeof(LengthT), int{sizeof(KeyT)}, classify_type<KeyT>, is_primitive_v<LengthT>, is_primitive_v<KeyT>};
+      sizeof(LengthT),
+      int{sizeof(KeyT)},
+      classify_type<KeyT>,
+      is_primitive_v<LengthT>,
+      is_primitive_v<KeyT>,
+      ::cuda::std::is_trivially_copyable_v<KeyT>};
     return selector(arch);
   }
 };

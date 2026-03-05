@@ -21,7 +21,7 @@
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
-#include "test_resources.h"
+#include <test_resources.h>
 
 // Default data to compare against
 
@@ -189,11 +189,11 @@ struct extract_properties<cuda::buffer<T, Properties...>>
   {
     if constexpr (cuda::mr::__is_host_accessible<Properties...>)
     {
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 9)
       return offset_by_alignment_resource(cuda::pinned_default_memory_pool());
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^ / vvv _CCCL_CTK_BELOW(12, 9) vvv
       throw std::runtime_error("Host accessible memory pools are not supported");
-#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
+#endif // ^^^ _CCCL_CTK_BELOW(12, 9) ^^^
     }
     else
     {
@@ -220,12 +220,12 @@ struct extract_properties<cuda::buffer<T, Properties...>>
   using matching_resource = memory_resource_wrapper<other_property, Properties...>;
 };
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 9)
 using test_types = c2h::type_list<cuda::buffer<int, cuda::mr::host_accessible>,
                                   cuda::buffer<unsigned long long, cuda::mr::device_accessible>,
                                   cuda::buffer<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^ / vvv _CCCL_CTK_BELOW(12, 9) vvv
 using test_types = c2h::type_list<cuda::buffer<int, cuda::mr::device_accessible>>;
-#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
+#endif // ^^^ _CCCL_CTK_BELOW(12, 9) ^^^
 
 #endif // CUDA_TEST_CONTAINER_VECTOR_HELPER_H

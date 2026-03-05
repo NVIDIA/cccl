@@ -12,7 +12,7 @@
 
 #include <cuda/memory_pool>
 #include <cuda/std/__pstl_algorithm>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include "nvbench_helper.cuh"
 
@@ -38,9 +38,10 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   caching_allocator_t alloc{};
 
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    do_not_optimize(cuda::std::count_if(cuda_policy(alloc, launch), in.begin(), in.end(), equal_to_42{}));
-  });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               do_not_optimize(cuda::std::count_if(cuda_policy(alloc, launch), in.begin(), in.end(), equal_to_42{}));
+             });
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))

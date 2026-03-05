@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef CUDA_TEST_CONTAINER_VECTOR_TEST_RESOURCES_H
-#define CUDA_TEST_CONTAINER_VECTOR_TEST_RESOURCES_H
+#ifndef CUDA_TEST_CONTAINERS_TEST_RESOURCES_H
+#define CUDA_TEST_CONTAINERS_TEST_RESOURCES_H
 
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/memory_resource>
@@ -29,9 +29,9 @@ struct other_property
 // make the cudax resources have that property for tests
 inline void get_property(const cuda::device_memory_pool_ref&, other_property) {}
 inline void get_property(const cuda::mr::legacy_pinned_memory_resource&, other_property) {}
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 9)
 inline void get_property(const cuda::pinned_memory_pool_ref&, other_property) {}
-#endif // _CCCL_CTK_AT_LEAST(12, 6)
+#endif // _CCCL_CTK_AT_LEAST(12, 9)
 
 //! @brief Simple wrapper around a memory resource to ensure that it compares
 //! differently and we can test those code paths
@@ -75,8 +75,11 @@ struct memory_resource_wrapper
   friend void get_property(const memory_resource_wrapper&, other_property) noexcept {}
 };
 
-// Adapter that offsets the pointer by the alignment to enable testing that the resource was passed the correct
-// alignment.
+//! @brief Resource adapter for alignment testing.
+//! Allocates \c size + alignment from the upstream resource, then returns a pointer offset by
+//! \c alignment so that the returned pointer has the requested alignment. Use this to verify that
+//! containers pass the correct alignment to allocate: check that the returned pointer satisfies
+//! \c is_pointer_aligned(ptr, expected_alignment).
 template <typename Resource>
 struct offset_by_alignment_resource
     : ::cuda::mr::__copy_default_queries<Resource>
@@ -138,4 +141,11 @@ struct offset_by_alignment_resource
   }
 };
 
-#endif // CUDA_TEST_CONTAINER_VECTOR_TEST_RESOURCES_H
+//! @brief Returns true if \p ptr is aligned to \p alignment (power-of-two).
+template <typename T>
+inline bool is_pointer_aligned(const T* ptr, ::cuda::std::size_t alignment) noexcept
+{
+  return ptr != nullptr && (reinterpret_cast<std::uintptr_t>(ptr) % alignment == 0);
+}
+
+#endif // CUDA_TEST_CONTAINERS_TEST_RESOURCES_H

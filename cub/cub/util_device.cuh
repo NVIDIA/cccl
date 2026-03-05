@@ -273,12 +273,13 @@ public:
 /**
  * \brief Retrieves the PTX version that will be used on the current device (major * 100 + minor * 10).
  */
-CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
+template <class T = void>
+CUB_RUNTIME_FUNCTION cudaError_t PtxVersionUncached(int& ptx_version)
 {
   // Instantiate `EmptyKernel<void>` in both host and device code to ensure
   // it can be called.
   using EmptyKernelPtr                         = void (*)();
-  [[maybe_unused]] EmptyKernelPtr empty_kernel = detail::EmptyKernel<void>;
+  [[maybe_unused]] EmptyKernelPtr empty_kernel = detail::EmptyKernel<T>;
 
   // Define a temporary macro that expands to the current target ptx version
   // in device code.
@@ -316,10 +317,11 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
 /**
  * \brief Retrieves the PTX version that will be used on \p device (major * 100 + minor * 10).
  */
-_CCCL_HOST inline cudaError_t PtxVersionUncached(int& ptx_version, int device)
+template <class T = void>
+_CCCL_HOST cudaError_t PtxVersionUncached(int& ptx_version, int device)
 {
   [[maybe_unused]] SwitchDevice sd(device);
-  return PtxVersionUncached(ptx_version);
+  return PtxVersionUncached<T>(ptx_version);
 }
 
 template <typename Tag>
@@ -341,14 +343,15 @@ struct SmVersionCacheTag
  * \note This function may cache the result internally.
  * \note This function is thread safe.
  */
-_CCCL_HOST inline cudaError_t PtxVersion(int& ptx_version, int device)
+template <class T = void>
+_CCCL_HOST cudaError_t PtxVersion(int& ptx_version, int device)
 {
   // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
   // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
   auto const payload = GetPerDeviceAttributeCache<PtxVersionCacheTag>()(
     // If this call fails, then we get the error code back in the payload, which we check with `CubDebug` below.
     [=](int& pv) {
-      return PtxVersionUncached(pv, device);
+      return PtxVersionUncached<T>(pv, device);
     },
     device);
 
@@ -366,25 +369,27 @@ _CCCL_HOST inline cudaError_t PtxVersion(int& ptx_version, int device)
  * \note This function may cache the result internally.
  * \note This function is thread safe.
  */
-CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersion(int& ptx_version)
+template <class T = void>
+CUB_RUNTIME_FUNCTION cudaError_t PtxVersion(int& ptx_version)
 {
   // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
   // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
   cudaError_t result = cudaErrorUnknown;
   NV_IF_TARGET(NV_IS_HOST,
-               (result = PtxVersion(ptx_version, CurrentDevice());),
+               (result = PtxVersion<T>(ptx_version, CurrentDevice());),
                ( // NV_IS_DEVICE:
-                 result = PtxVersionUncached(ptx_version);));
+                 result = PtxVersionUncached<T>(ptx_version);));
   return result;
 }
 
 namespace detail
 {
 //! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the current device.
-CUB_RUNTIME_FUNCTION inline cudaError_t ptx_arch_id(::cuda::arch_id& arch_id)
+template <class T = void>
+CUB_RUNTIME_FUNCTION cudaError_t ptx_arch_id(::cuda::arch_id& arch_id)
 {
   int ptx_version = 0;
-  if (const auto error = PtxVersion(ptx_version))
+  if (const auto error = PtxVersion<T>(ptx_version))
   {
     return error;
   }
@@ -393,10 +398,11 @@ CUB_RUNTIME_FUNCTION inline cudaError_t ptx_arch_id(::cuda::arch_id& arch_id)
 }
 
 //! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the given device.
-_CCCL_HOST_API inline cudaError_t ptx_arch_id(::cuda::arch_id& arch_id, int device)
+template <class T = void>
+_CCCL_HOST_API cudaError_t ptx_arch_id(::cuda::arch_id& arch_id, int device)
 {
   int ptx_version = 0;
-  if (const auto error = PtxVersion(ptx_version, device))
+  if (const auto error = PtxVersion<T>(ptx_version, device))
   {
     return error;
   }
@@ -598,6 +604,47 @@ MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, i
 }
 
 #endif // !_CCCL_COMPILER(NVRTC)
+
+/******************************************************************************
+ * Bulk copy helpers
+ ******************************************************************************/
+namespace detail
+{
+// This should stay an implementation detail even when below functions become public.
+inline constexpr int bulk_copy_min_align = 16;
+
+//! @brief Returns the alignment needed for the shared memory destination buffer of BlockLoadToShared.
+//! @tparam T
+//!   Value type to be loaded.
+template <typename T>
+_CCCL_HOST_DEVICE constexpr int LoadToSharedBufferAlignBytes()
+{
+  return (::cuda::std::max) (int{alignof(T)}, detail::bulk_copy_min_align);
+}
+
+//! @brief Returns the size needed for the shared memory destination buffer of BlockLoadToShared.
+//! @tparam T
+//!   Value type to be loaded.
+//! @tparam GmemAlign
+//!   Guaranteed alignment in bytes of the source range (both begin and end) in global memory
+//! @param[in] num_items
+//!   Size of the source range in global memory
+template <typename T, int GmemAlign = alignof(T)>
+_CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t num_items)
+{
+  static_assert(::cuda::std::has_single_bit(unsigned{GmemAlign}));
+  static_assert(GmemAlign >= int{alignof(T)});
+  _CCCL_ASSERT(num_items <= ::cuda::std::size_t{::cuda::std::numeric_limits<int>::max()},
+               "num_items must fit into an int");
+  const int num_bytes = static_cast<int>(num_items) * int{sizeof(T)};
+  if constexpr (GmemAlign >= detail::bulk_copy_min_align)
+  {
+    return num_bytes;
+  }
+  const int extra_space = (num_bytes == 0) ? 0 : detail::bulk_copy_min_align;
+  return ::cuda::round_up(num_bytes, detail::bulk_copy_min_align) + extra_space;
+}
+} // namespace detail
 
 /******************************************************************************
  * Policy management

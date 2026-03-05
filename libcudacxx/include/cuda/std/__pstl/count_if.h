@@ -24,6 +24,7 @@
 #if !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__iterator/transform_iterator.h>
+#  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/count_if.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>
@@ -60,6 +61,7 @@ _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND is_execution_po
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__reduce, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::count_if");
     const auto __count = ::cuda::std::distance(__first, __last);
     return __dispatch(
       __policy,

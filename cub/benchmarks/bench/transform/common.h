@@ -26,36 +26,48 @@
 #include <nvbench_helper.cuh>
 
 #if !TUNE_BASE
-struct policy_selector
+// TODO(bgruber): can we get by without the base class?
+struct policy_selector : cub::detail::transform::tuning<policy_selector>
 {
   _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::transform::transform_policy
   {
     const int min_bytes_in_flight =
       cub::detail::transform::arch_to_min_bytes_in_flight(::cuda::arch_id{__CUDA_ARCH_LIST__ / 10}) + TUNE_BIF_BIAS;
-#  if TUNE_ALGORITHM == 0
-    constexpr auto algorithm = cub::detail::transform::Algorithm::prefetch;
-    constexpr auto policy    = cub::detail::transform::prefetch_policy{
-      TUNE_THREADS
+#  if TUNE_ALGORITHM == 0 || TUNE_ALGORITHM == 1
+    // setup prefetch, since it's either used directly or the fallback to vectorized
+    auto algorithm            = cub::detail::transform::Algorithm::prefetch;
+    auto pref_policy          = cub::detail::transform::prefetch_policy{};
+    pref_policy.block_threads = TUNE_THREADS;
+    pref_policy.unroll_factor = TUNE_UNROLL_FACTOR;
+#    ifdef TUNE_PREFETCH_MULT
+    pref_policy.prefetch_byte_stride = 32 * TUNE_PREFETCH_MULT;
+#    endif //  TUNE_PREFETCH_MULT
 #    ifdef TUNE_ITEMS_PER_THREAD_NO_INPUT
-      ,
-      TUNE_ITEMS_PER_THREAD_NO_INPUT
+    pref_policy.items_per_thread_no_input = TUNE_ITEMS_PER_THREAD_NO_INPUT;
 #    endif // TUNE_ITEMS_PER_THREAD_NO_INPUT
-    };
-    return {min_bytes_in_flight, algorithm, policy, {}, {}};
-#  elif TUNE_ALGORITHM == 1
-    constexpr auto algorithm = cub::detail::transform::Algorithm::vectorized;
-    constexpr auto policy    = cub::detail::transform::vectorized_policy{
-      TUNE_THREADS, (1 << TUNE_VEC_SIZE_POW2) * TUNE_VECTORS_PER_THREAD, (1 << TUNE_VEC_SIZE_POW2)};
-    return {min_bytes_in_flight, algorithm, {}, policy, {}};
+
+    // setup vectorized if requested
+    auto vec_policy = cub::detail::transform::vectorized_policy{};
+#    if TUNE_ALGORITHM == 1
+    algorithm                   = cub::detail::transform::Algorithm::vectorized;
+    vec_policy.block_threads    = TUNE_THREADS;
+    vec_policy.vec_size         = (1 << TUNE_VEC_SIZE_POW2);
+    vec_policy.items_per_thread = policy.vec_size * TUNE_UNROLL_FACTOR;
+#    endif
+    return {min_bytes_in_flight, algorithm, pref_policy, vec_policy, {}};
 #  elif TUNE_ALGORITHM == 2
-    constexpr auto algorithm = cub::detail::transform::Algorithm::memcpy_async;
-    constexpr auto policy =
-      cub::detail::transform::async_copy_policy{TUNE_THREADS, cub::detail::transform::ldgsts_size_and_align};
+    constexpr auto algorithm   = cub::detail::transform::Algorithm::memcpy_async;
+    auto policy                = cub::detail::transform::async_copy_policy{};
+    policy.block_threads       = TUNE_THREADS;
+    policy.bulk_copy_alignment = cub::detail::transform::ldgsts_size_and_align;
+    policy.unroll_factor       = TUNE_UNROLL_FACTOR;
     return {min_bytes_in_flight, algorithm, {}, {}, policy};
 #  elif TUNE_ALGORITHM == 3
-    constexpr auto algorithm = cub::detail::transform::Algorithm::ublkcp;
-    constexpr auto policy    = cub::detail::transform::async_copy_policy{
-      TUNE_THREADS, cub::detail::transform::bulk_copy_alignment(::cuda::arch_id{__CUDA_ARCH_LIST__ / 10})};
+    constexpr auto algorithm   = cub::detail::transform::Algorithm::ublkcp;
+    auto policy                = cub::detail::transform::async_copy_policy{};
+    policy.block_threads       = TUNE_THREADS;
+    policy.bulk_copy_alignment = cub::detail::transform::bulk_copy_alignment(::cuda::arch_id{__CUDA_ARCH_LIST__ / 10});
+    policy.unroll_factor       = TUNE_UNROLL_FACTOR;
     return {min_bytes_in_flight, algorithm, {}, {}, policy};
 #  else // TUNE_ALGORITHM
 #    error Policy hub does not yet implement the specified value for algorithm
@@ -72,17 +84,16 @@ void bench_transform(nvbench::state& state,
                      TransformOp transform_op)
 {
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](const nvbench::launch& launch) {
-    cub::detail::transform::dispatch<cub::detail::transform::requires_stable_address::no>(
+    cub::DeviceTransform::Transform(
       inputs,
       output,
       num_items,
-      cub::detail::transform::always_true_predicate{},
       transform_op,
-      launch.get_stream()
+      cuda::std::execution::env{::cuda::stream_ref{launch.get_stream().get_stream()}
 #if !TUNE_BASE
-        ,
-      policy_selector{}
+                                ,
+                                cuda::execution::__tune(policy_selector{})
 #endif // !TUNE_BASE
-    );
+      });
   });
 }

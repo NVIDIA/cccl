@@ -83,7 +83,7 @@ template <class _Full>
 #if _CCCL_CUDA_COMPILATION()
 
 template <class _Tp>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __byteswap_impl_device(_Tp __val) noexcept
+[[nodiscard]] _CCCL_DEVICE_API _Tp __byteswap_impl_device(_Tp __val) noexcept
 {
   if constexpr (sizeof(_Tp) == sizeof(uint16_t))
   {
