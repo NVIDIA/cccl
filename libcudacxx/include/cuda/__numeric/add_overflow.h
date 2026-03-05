@@ -256,7 +256,7 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
 [[nodiscard]]
 _CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
 {
-  using ::cuda::std::is_signed_v;
+  using ::cuda::std::is_same_v;
 
   // We want to use __builtin_add_overflow only in host code. When compiling CUDA source file, we cannot use it in
   // constant expressions, because it doesn't work before nvcc 13.1 and is buggy in 13.1. When compiling C++ source
@@ -269,7 +269,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs
     // nvc++ doesn't support overflow builtins for 128-bit integers of different signedness.
 #  if _CCCL_COMPILER(NVHPC)
     if constexpr ((sizeof(_ActualResult) != 16 && sizeof(_Lhs) != 16 && sizeof(_Rhs) != 16)
-                  || (is_signed_v<_ActualResult> == is_signed_v<_Lhs> == is_signed_v<_Rhs>) )
+                  || (is_same_v<_ActualResult, _Lhs> && is_same_v<_ActualResult, _Rhs>) )
 #  endif // _CCCL_COMPILER(NVHPC)
     {
       NV_IF_TARGET(NV_IS_HOST, ({
@@ -286,7 +286,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs
   using ::cuda::std::__make_nbit_int_t;
   using ::cuda::std::__make_nbit_uint_t;
   using ::cuda::std::__num_bits_v;
-  using ::cuda::std::is_same_v;
+  using ::cuda::std::is_signed_v;
   using ::cuda::std::is_unsigned_v;
   using _CommonAll                             = ::cuda::std::common_type_t<_Common, _ActualResult>;
   [[maybe_unused]] const bool __is_lhs_ge_zero = is_unsigned_v<_Lhs> || __lhs >= 0;
