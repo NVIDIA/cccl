@@ -54,15 +54,7 @@ def bench_merge_sort_pairs(state: bench.State):
     )
 
     with alloc_stream:
-        if np.issubdtype(value_dtype, np.integer):
-            info = np.iinfo(value_dtype)
-            d_in_values = cp.random.randint(
-                int(info.min), int(info.max) + 1, size=num_elements, dtype=np.int64
-            ).astype(value_dtype)
-        else:
-            d_in_values = cp.random.uniform(-1, 1, size=num_elements).astype(
-                value_dtype
-            )
+        d_in_values = cp.zeros(num_elements, dtype=value_dtype)
 
         d_out_keys = cp.empty(num_elements, dtype=key_dtype)
         d_out_values = cp.empty(num_elements, dtype=value_dtype)
