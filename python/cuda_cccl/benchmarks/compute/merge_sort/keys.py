@@ -74,7 +74,7 @@ def bench_merge_sort_keys(state: bench.State):
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
     state.add_element_count(num_elements)
-    state.add_global_memory_reads(num_elements * d_in_keys.dtype.itemsize)
+    state.add_global_memory_reads(num_elements * d_in_keys.dtype.itemsize, "Size")
     state.add_global_memory_writes(num_elements * d_out_keys.dtype.itemsize)
 
     def launcher(launch: bench.Launch):
