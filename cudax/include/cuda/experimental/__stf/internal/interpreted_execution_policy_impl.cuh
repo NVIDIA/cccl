@@ -32,7 +32,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
-#include <cuda/experimental/__stf/places/places.cuh>
+#include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
 
 namespace cuda::experimental::stf

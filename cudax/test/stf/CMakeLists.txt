@@ -194,7 +194,6 @@ set(
   cuda/experimental/__stf/internal/thread_hierarchy.cuh
   cuda/experimental/__stf/places/cyclic_shape.cuh
   cuda/experimental/__stf/places/inner_shape.cuh
-  cuda/experimental/__stf/places/places.cuh
   cuda/experimental/__stf/places/tiled_partition.cuh
   cuda/experimental/__stf/stream/stream_ctx.cuh
   cuda/experimental/__stf/utility/cartesian_iterator.cuh
