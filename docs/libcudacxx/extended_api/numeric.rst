@@ -58,7 +58,7 @@ Numeric
      - CCCL 3.3.0
      - CUDA 13.3
 
-   * - :ref:`cuda::saturating_overflow_cast <libcudacxx-extended-api-numeric-saturating_overflow_cast>`
+   * - :ref:`cuda::saturate_overflow_cast <libcudacxx-extended-api-numeric-saturate_overflow_cast>`
      - Performs saturating cast of a value with overflow checking
      - CCCL 3.4.0
      - CUDA 13.4
