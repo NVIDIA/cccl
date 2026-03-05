@@ -75,13 +75,15 @@ inline unsigned long long get_stream_id(cudaStream_t stream)
  */
 struct decorated_stream
 {
-  decorated_stream(cudaStream_t stream = nullptr, unsigned long long id = k_no_stream_id, int dev_id = -1)
+  decorated_stream() = default;
+
+  decorated_stream(cudaStream_t stream, unsigned long long id, int dev_id = -1)
       : stream(stream)
       , id(id)
       , dev_id(dev_id)
   {}
 
-  /** Construct from stream only; id and dev_id are computed (id via cuStreamGetId, dev_id left -1). */
+  /** Construct from stream only; id is from cuStreamGetId, dev_id is -1 (filled lazily when needed). */
   explicit decorated_stream(cudaStream_t stream)
       : stream(stream)
       , id(get_stream_id(stream))
