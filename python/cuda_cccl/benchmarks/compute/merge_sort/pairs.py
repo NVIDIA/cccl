@@ -43,10 +43,6 @@ def bench_merge_sort_pairs(state: bench.State):
     num_elements = int(state.get_int64("Elements{io}"))
     entropy_str = state.get_string("Entropy")
 
-    if key_dtype.itemsize == 8 and num_elements >= 2**28:
-        state.skip("Skipping: large 64-bit key sizes hit allocator limits")
-        return
-
     alloc_stream = as_cupy_stream(state.get_stream())
 
     d_in_keys = generate_data_with_entropy(
@@ -78,9 +74,6 @@ def bench_merge_sort_pairs(state: bench.State):
         op=OpKind.LESS,
         num_items=num_elements,
     )
-    if temp_storage_bytes <= 0:
-        state.skip("Skipping: invalid temp storage size")
-        return
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 

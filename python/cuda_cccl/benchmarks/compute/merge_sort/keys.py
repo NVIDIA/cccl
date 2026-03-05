@@ -34,10 +34,6 @@ def bench_merge_sort_keys(state: bench.State):
     num_elements = int(state.get_int64("Elements{io}"))
     entropy_str = state.get_string("Entropy")
 
-    if dtype.itemsize == 8 and num_elements >= 2**28:
-        state.skip("Skipping: large 64-bit key sizes hit allocator limits")
-        return
-
     alloc_stream = as_cupy_stream(state.get_stream())
 
     d_in_keys = generate_data_with_entropy(

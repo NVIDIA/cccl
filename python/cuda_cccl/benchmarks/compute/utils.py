@@ -20,15 +20,6 @@ SIGNED_TYPES = {k: ALL_TYPES[k] for k in ("I8", "I16", "I32", "I64", "F32", "F64
 INTEGER_TYPES = {k: ALL_TYPES[k] for k in ("I8", "I16", "I32", "I64")}
 FLOAT_TYPES = {k: ALL_TYPES[k] for k in ("F32", "F64")}
 
-ENTROPY_TO_PROB = {
-    "1.000": 1.0,
-    "0.811": 0.811,
-    "0.544": 0.544,
-    "0.337": 0.337,
-    "0.201": 0.201,
-    "0.000": 0.0,
-}
-
 ENTROPY_TO_STEPS = {
     "1.000": 0,
     "0.811": 1,
