@@ -727,21 +727,31 @@ _CCCL_HOST_API inline void __eventSynchronize(::CUevent __evnt)
 
 // Library management
 
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__kernelGetAttributeNoThrow(int& __value, ::CUfunction_attribute __attr, ::CUkernel __kernel, ::CUdevice __device)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuKernelGetAttribute);
+  return static_cast<::cudaError_t>(__driver_fn(&__value, __attr, __kernel, __device));
+}
+
+[[nodiscard]] _CCCL_HOST_API inline int
+__kernelGetAttribute(::CUfunction_attribute __attr, ::CUkernel __kernel, ::CUdevice __device)
+{
+  int __value;
+  const auto __status = ::cuda::__driver::__kernelGetAttributeNoThrow(__value, __attr, __kernel, __device);
+  if (__status != ::cudaSuccess)
+  {
+    _CCCL_THROW(::cuda::cuda_error, __status, "Failed to synchronize a stream");
+  }
+  return __value;
+}
+
 [[nodiscard]] _CCCL_HOST_API inline ::CUfunction __kernelGetFunction(::CUkernel __kernel)
 {
   static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuKernelGetFunction);
   ::CUfunction __result;
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get kernel function", &__result, __kernel);
   return __result;
-}
-
-[[nodiscard]] _CCCL_HOST_API inline int
-__kernelGetAttribute(::CUfunction_attribute __attr, ::CUkernel __kernel, ::CUdevice __dev)
-{
-  int __value;
-  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuKernelGetAttribute);
-  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to get kernel attribute", &__value, __attr, __kernel, __dev);
-  return __value;
 }
 
 #  if _CCCL_CTK_AT_LEAST(12, 3)
@@ -753,6 +763,13 @@ __kernelGetAttribute(::CUfunction_attribute __attr, ::CUkernel __kernel, ::CUdev
   return __name;
 }
 #  endif // _CCCL_CTK_AT_LEAST(12, 3)
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__kernelSetAttributeNoThrow(::CUfunction_attribute __attr, int __value, ::CUkernel __kernel, ::CUdevice __dev)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuKernelSetAttribute);
+  return static_cast<::cudaError_t>(__driver_fn(__attr, __value, __kernel, __dev));
+}
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUlibrary __libraryLoadData(
   const void* __code,
