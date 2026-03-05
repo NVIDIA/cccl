@@ -95,11 +95,7 @@ TEST_CASE("Device radix sort keys descending works with default environment", "[
 
   REQUIRE(cudaSuccess
           == cub::DeviceRadixSort::SortKeysDescending(
-            keys_in.data().get(),
-            keys_out.data().get(),
-            static_cast<int>(keys_in.size()),
-            0,
-            static_cast<int>(static_cast<int>(sizeof(int) * 8))));
+            keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size())));
 
   c2h::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
 
@@ -194,13 +190,7 @@ C2H_TEST("Device radix sort keys uses environment", "[radix_sort][device]")
   REQUIRE(
     cudaSuccess
     == cub::DeviceRadixSort::SortKeys(
-      nullptr,
-      expected_bytes_allocated,
-      keys_in.data().get(),
-      keys_out.data().get(),
-      static_cast<int>(keys_in.size()),
-      0,
-      static_cast<int>(static_cast<int>(sizeof(int) * 8))));
+      nullptr, expected_bytes_allocated, keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size())));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -351,13 +341,7 @@ TEST_CASE("Device radix sort keys uses custom stream", "[radix_sort][device]")
   REQUIRE(
     cudaSuccess
     == cub::DeviceRadixSort::SortKeys(
-      nullptr,
-      expected_bytes_allocated,
-      keys_in.data().get(),
-      keys_out.data().get(),
-      static_cast<int>(keys_in.size()),
-      0,
-      static_cast<int>(static_cast<int>(sizeof(int) * 8))));
+      nullptr, expected_bytes_allocated, keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size())));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
@@ -388,13 +372,7 @@ TEST_CASE("Device radix sort keys descending uses custom stream", "[radix_sort][
   REQUIRE(
     cudaSuccess
     == cub::DeviceRadixSort::SortKeysDescending(
-      nullptr,
-      expected_bytes_allocated,
-      keys_in.data().get(),
-      keys_out.data().get(),
-      static_cast<int>(keys_in.size()),
-      0,
-      static_cast<int>(static_cast<int>(sizeof(int) * 8))));
+      nullptr, expected_bytes_allocated, keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size())));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
