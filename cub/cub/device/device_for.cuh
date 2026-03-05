@@ -544,6 +544,23 @@ public:
   //!     :start-after: example-begin bulk-wo-temp-storage
   //!     :end-before: example-end bulk-wo-temp-storage
   //!
+  //! Environment Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use Bulk with a custom stream via an environment.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin bulk-square-env-t
+  //!     :end-before: example-end bulk-square-env-t
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin bulk-env
+  //!     :end-before: example-end bulk-env
+  //!
   //! @endrst
   //!
   //! @tparam ShapeT
@@ -628,6 +645,23 @@ public:
   //!     :start-after: example-begin for-each-n-wo-temp-storage
   //!     :end-before: example-end for-each-n-wo-temp-storage
   //!
+  //! Environment Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use `ForEachN` with a custom stream via an environment.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin square-ref-env-t
+  //!     :end-before: example-end square-ref-env-t
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-n-env
+  //!     :end-before: example-end for-each-n-env
+  //!
   //! @endrst
   //!
   //! @tparam RandomAccessIteratorT
@@ -696,6 +730,23 @@ public:
   //!     :dedent:
   //!     :start-after: example-begin for-each-wo-temp-storage
   //!     :end-before: example-end for-each-wo-temp-storage
+  //!
+  //! Environment Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use `ForEach` with a custom stream via an environment.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin square-ref-env-t
+  //!     :end-before: example-end square-ref-env-t
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-env
+  //!     :end-before: example-end for-each-env
   //!
   //! @endrst
   //!
@@ -780,6 +831,23 @@ public:
   //!     :start-after: example-begin for-each-copy-n-wo-temp-storage
   //!     :end-before: example-end for-each-copy-n-wo-temp-storage
   //!
+  //! Environment Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use `ForEachCopyN` with a custom stream via an environment.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin odd-count-env-t
+  //!     :end-before: example-end odd-count-env-t
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-copy-n-env
+  //!     :end-before: example-end for-each-copy-n-env
+  //!
   //! @endrst
   //!
   //! @tparam RandomAccessIteratorT
@@ -851,6 +919,23 @@ public:
   //!     :dedent:
   //!     :start-after: example-begin for-each-copy-wo-temp-storage
   //!     :end-before: example-end for-each-copy-wo-temp-storage
+  //!
+  //! Environment Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use `ForEachCopy` with a custom stream via an environment.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin odd-count-env-t
+  //!     :end-before: example-end odd-count-env-t
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-copy-env
+  //!     :end-before: example-end for-each-copy-env
   //!
   //! @endrst
   //!
