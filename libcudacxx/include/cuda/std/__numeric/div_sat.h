@@ -20,10 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__numeric/div_sat_overflow.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__type_traits/is_signed.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -33,15 +32,7 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp div_sat(_Tp __x, _Tp __y) noexcept
 {
-  _CCCL_ASSERT(__y != _Tp{0}, "division by zero");
-  if constexpr (is_signed_v<_Tp>)
-  {
-    if (__x == numeric_limits<_Tp>::min() && __y == _Tp{-1})
-    {
-      return numeric_limits<_Tp>::max();
-    }
-  }
-  return static_cast<_Tp>(__x / __y);
+  return ::cuda::div_sat_overflow(__x, __y).value;
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

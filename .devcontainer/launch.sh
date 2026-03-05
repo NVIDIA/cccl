@@ -41,6 +41,22 @@ parse_options() {
     local -;
     set -euo pipefail;
 
+    # Must disable set -e temporarily. Per man getopt:
+    #
+    # [getopt -T] generates no output, and sets the error status to 4. Other
+    # implementations of getopt(1), and this version if the environment variable
+    # GETOPT_COMPATIBLE is set, will return '--' and error status 0.
+    set +e
+    getopt -T 2>&1 > /dev/null
+    getopt_ret=$?
+    set -e
+
+    if [[ "${getopt_ret}" != '4' ]]; then
+      echo "Must use enhanced (GNU) version of getopt which understand long options to use this script."
+      echo "Either your version of getopt does not support them or you have GETOPT_COMPATIBLE set."
+      exit 1
+    fi
+
     # Read the name of the variable in which to return unparsed arguments
     local UNPARSED="${!#}";
     # Splice the unparsed arguments variable name from the arguments list
