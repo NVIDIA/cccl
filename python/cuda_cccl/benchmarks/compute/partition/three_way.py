@@ -41,9 +41,7 @@ def bench_three_way_partition(state: bench.State):
 
     if np.issubdtype(dtype, np.integer):
         info = np.iinfo(dtype)
-        min_val = (
-            0  # C++ uses min_val{} which is 0 for unsigned, could be min for signed
-        )
+        min_val = 0
         max_val = info.max
     else:
         info = np.finfo(dtype)
