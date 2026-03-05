@@ -36,10 +36,6 @@ def bench_radix_sort_keys(state: bench.State):
     num_elements = int(state.get_int64("Elements{io}"))
     entropy_str = state.get_string("Entropy")
 
-    if dtype in (np.int32, np.float32) and num_elements >= 2**28:
-        state.skip("Skipping: Generates cudaErrorIllegalAddress")
-        return
-
     alloc_stream = as_cupy_stream(state.get_stream())
 
     d_in_keys = generate_data_with_entropy(

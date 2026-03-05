@@ -63,9 +63,6 @@ def bench_merge_sort_keys(state: bench.State):
         op=OpKind.LESS,
         num_items=num_elements,
     )
-    if temp_storage_bytes <= 0:
-        state.skip("Skipping: invalid temp storage size")
-        return
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
