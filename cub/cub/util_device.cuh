@@ -82,7 +82,7 @@ CUB_RUNTIME_FUNCTION inline int CurrentDevice()
 
 //! @brief RAII helper which saves the current device and switches to the specified device on construction and switches
 //! to the saved device on destruction.
-class SwitchDevice
+class [[maybe_unused]] SwitchDevice
 {
   int target_device_;
   int original_device_;
@@ -278,39 +278,16 @@ CUB_RUNTIME_FUNCTION cudaError_t PtxVersionUncached(int& ptx_version)
 {
   // Instantiate `EmptyKernel<void>` in both host and device code to ensure
   // it can be called.
-  using EmptyKernelPtr                         = void (*)();
-  [[maybe_unused]] EmptyKernelPtr empty_kernel = detail::EmptyKernel<T>;
-
-  // Define a temporary macro that expands to the current target ptx version
-  // in device code.
-  // <nv/target> may provide an abstraction for this eventually. For now,
-  // we have to keep this usage of __CUDA_ARCH__.
-#  if _CCCL_CUDA_COMPILER(NVHPC)
-#    define CUB_TEMP_GET_PTX __builtin_current_device_sm()
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
-#    define CUB_TEMP_GET_PTX _CCCL_PTX_ARCH()
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
+  [[maybe_unused]] const auto empty_kernel = detail::EmptyKernel<T>;
 
   cudaError_t result = cudaSuccess;
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (cudaFuncAttributes empty_kernel_attrs;
-
-     result = CubDebug(cudaFuncGetAttributes(&empty_kernel_attrs, reinterpret_cast<void*>(empty_kernel)));
-
-     ptx_version = empty_kernel_attrs.ptxVersion * 10;),
-    // NV_IS_DEVICE
-    (
-      // This is necessary to ensure instantiation of EmptyKernel in device
-      // code. The `reinterpret_cast` is necessary to suppress a
-      // set-but-unused warnings. This is a meme now:
-      // https://twitter.com/blelbach/status/1222391615576100864
-      (void) reinterpret_cast<EmptyKernelPtr>(empty_kernel);
-
-      ptx_version = CUB_TEMP_GET_PTX;));
-
-#  undef CUB_TEMP_GET_PTX
-
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    ({
+                      cudaFuncAttributes empty_kernel_attrs;
+                      result      = CubDebug(cudaFuncGetAttributes(&empty_kernel_attrs, (const void*) empty_kernel));
+                      ptx_version = empty_kernel_attrs.ptxVersion * 10;
+                    }),
+                    ({ ptx_version = ::cuda::device::current_compute_capability().get() * 10; }));
   return result;
 }
 
@@ -320,7 +297,7 @@ CUB_RUNTIME_FUNCTION cudaError_t PtxVersionUncached(int& ptx_version)
 template <class T = void>
 _CCCL_HOST cudaError_t PtxVersionUncached(int& ptx_version, int device)
 {
-  [[maybe_unused]] SwitchDevice sd(device);
+  SwitchDevice sd(device);
   return PtxVersionUncached<T>(ptx_version);
 }
 
