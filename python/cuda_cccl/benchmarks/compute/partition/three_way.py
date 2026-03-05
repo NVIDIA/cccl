@@ -71,19 +71,10 @@ def bench_three_way_partition(state: bench.State):
 
     alloc_stream.synchronize()
 
-    # Items where select_first_op(x) is true go to first partition
-    # Items where select_second_op(x) is true (and first is false) go to second partition
-    # Items where both are false go to unselected
-    #
-    # In C++ the predicates are:
-    #   select_op_1: x < left_border (selects first partition)
-    #   select_op_2: x < right_border (combined with !select_op_1, selects second partition)
-
     # Convert borders to the correct type for closure capture
     left_thresh = dtype(left_border)
     right_thresh = dtype(right_border)
 
-    # Use regular Python functions - cuda.compute JIT-compiles them internally
     def select_first_part(x):
         return x < left_thresh
 
