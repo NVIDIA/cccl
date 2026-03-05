@@ -202,7 +202,7 @@ public:
       return cudaSuccess;
     }
 
-    return Bulk(shape, op, ::cuda::std::execution::env{::cuda::stream_ref{stream}});
+    return Bulk(shape, op, stream);
   }
 
   //! @rst
@@ -278,7 +278,7 @@ public:
       return cudaSuccess;
     }
 
-    return ForEachN(first, num_items, op, ::cuda::std::execution::env{::cuda::stream_ref{stream}});
+    return ForEachN(first, num_items, op, stream);
   }
 
   //! @rst
@@ -351,7 +351,7 @@ public:
       return cudaSuccess;
     }
 
-    return ForEach(first, last, op, ::cuda::std::execution::env{::cuda::stream_ref{stream}});
+    return ForEach(first, last, op, stream);
   }
 
   //! @rst
@@ -430,7 +430,7 @@ public:
       return cudaSuccess;
     }
 
-    return ForEachCopyN(first, num_items, op, ::cuda::std::execution::env{::cuda::stream_ref{stream}});
+    return ForEachCopyN(first, num_items, op, stream);
   }
 
   //! @rst
@@ -506,7 +506,7 @@ public:
       return cudaSuccess;
     }
 
-    return ForEachCopy(first, last, op, ::cuda::std::execution::env{::cuda::stream_ref{stream}});
+    return ForEachCopy(first, last, op, stream);
   }
 
   //! @rst
@@ -971,7 +971,7 @@ public:
       temp_storage_bytes = 1;
       return cudaSuccess;
     }
-    return ForEachInExtents(extents, op, ::cuda::std::execution::env{::cuda::stream_ref{stream}});
+    return ForEachInExtents(extents, op, stream);
   }
 
   //! @rst
@@ -1134,8 +1134,7 @@ public:
   //!   error status
   _CCCL_TEMPLATE(typename LayoutMapping, typename OpType, typename EnvT = ::cuda::std::execution::env<>)
   _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping>)
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachInLayout(const LayoutMapping& layout_mapping, OpType op, EnvT env = {})
+  CUB_RUNTIME_FUNCTION static cudaError_t ForEachInLayout(const LayoutMapping& layout_mapping, OpType op, EnvT env = {})
   {
     using namespace cub::detail;
     using extents_type      = typename LayoutMapping::extents_type;
@@ -1168,7 +1167,7 @@ public:
       temp_storage_bytes = 1;
       return cudaSuccess;
     }
-    return ForEachInLayout(layout_mapping, op, ::cuda::std::execution::env{::cuda::stream_ref{stream}});
+    return ForEachInLayout(layout_mapping, op, stream);
   }
 
 #endif // !_CCCL_DOXYGEN_INVOKED
