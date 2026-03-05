@@ -114,7 +114,7 @@ C2H_TEST("Device for each n works with temporary storage", "[for_each][device]")
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // 3) Perform for each n operation
-  auto result = cub::DeviceFor::ForEachN(d_temp_storage, temp_storage_bytes, vec.begin(), vec.size(), op);
+  result = cub::DeviceFor::ForEachN(d_temp_storage, temp_storage_bytes, vec.begin(), vec.size(), op);
   if (result != cudaSuccess)
   {
     std::cerr << "ForEachN operation failed with error code: " << result << std::endl;

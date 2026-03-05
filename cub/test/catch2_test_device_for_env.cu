@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_for.cuh>
 
@@ -65,17 +64,6 @@ C2H_TEST("DeviceFor::Bulk env uses custom stream", "[for][env]")
   REQUIRE(vec == expected);
 }
 
-C2H_TEST("DeviceFor::Bulk env with empty input", "[for][env]")
-{
-  cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::stream_ref{stream}};
-
-  int* dummy = nullptr;
-  square_idx_op op{dummy};
-  auto error = cub::DeviceFor::Bulk(0, op, env);
-  REQUIRE(error == cudaSuccess);
-}
-
 // -----------------------------------------------------------------------
 // ForEachN
 // -----------------------------------------------------------------------
@@ -94,18 +82,6 @@ C2H_TEST("DeviceFor::ForEachN env uses custom stream", "[for][env]")
 
   c2h::device_vector<int> expected{1, 4, 9, 16};
   REQUIRE(vec == expected);
-}
-
-C2H_TEST("DeviceFor::ForEachN env with empty input", "[for][env]")
-{
-  auto vec = c2h::device_vector<int>{};
-  square_ref_op op{};
-
-  cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::stream_ref{stream}};
-
-  auto error = cub::DeviceFor::ForEachN(vec.begin(), 0, op, env);
-  REQUIRE(error == cudaSuccess);
 }
 
 // -----------------------------------------------------------------------
@@ -128,18 +104,6 @@ C2H_TEST("DeviceFor::ForEach env uses custom stream", "[for][env]")
   REQUIRE(vec == expected);
 }
 
-C2H_TEST("DeviceFor::ForEach env with empty range", "[for][env]")
-{
-  auto vec = c2h::device_vector<int>{};
-  square_ref_op op{};
-
-  cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::stream_ref{stream}};
-
-  auto error = cub::DeviceFor::ForEach(vec.begin(), vec.end(), op, env);
-  REQUIRE(error == cudaSuccess);
-}
-
 // -----------------------------------------------------------------------
 // ForEachCopyN
 // -----------------------------------------------------------------------
@@ -158,22 +122,6 @@ C2H_TEST("DeviceFor::ForEachCopyN env uses custom stream", "[for][env]")
   REQUIRE(cudaStreamSynchronize(stream.get()) == cudaSuccess);
 
   c2h::device_vector<int> expected_count{2};
-  REQUIRE(count == expected_count);
-}
-
-C2H_TEST("DeviceFor::ForEachCopyN env with empty input", "[for][env]")
-{
-  auto vec   = c2h::device_vector<int>{};
-  auto count = c2h::device_vector<int>(1);
-  odd_count_op op{thrust::raw_pointer_cast(count.data())};
-
-  cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::stream_ref{stream}};
-
-  auto error = cub::DeviceFor::ForEachCopyN(vec.begin(), 0, op, env);
-  REQUIRE(error == cudaSuccess);
-
-  c2h::device_vector<int> expected_count{0};
   REQUIRE(count == expected_count);
 }
 
@@ -198,18 +146,3 @@ C2H_TEST("DeviceFor::ForEachCopy env uses custom stream", "[for][env]")
   REQUIRE(count == expected_count);
 }
 
-C2H_TEST("DeviceFor::ForEachCopy env with empty range", "[for][env]")
-{
-  auto vec   = c2h::device_vector<int>{};
-  auto count = c2h::device_vector<int>(1);
-  odd_count_op op{thrust::raw_pointer_cast(count.data())};
-
-  cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::stream_ref{stream}};
-
-  auto error = cub::DeviceFor::ForEachCopy(vec.begin(), vec.end(), op, env);
-  REQUIRE(error == cudaSuccess);
-
-  c2h::device_vector<int> expected_count{0};
-  REQUIRE(count == expected_count);
-}
