@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__pstl/adjacent_difference.h>
+#include <cuda/std/__pstl/adjacent_find.h>
 #include <cuda/std/__pstl/all_of.h>
 #include <cuda/std/__pstl/any_of.h>
 #include <cuda/std/__pstl/copy.h>
