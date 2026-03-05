@@ -18,7 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
-from utils import TYPE_MAP as _ALL_TYPES
+from utils import ALL_TYPES as _ALL_TYPES
 from utils import as_cupy_stream
 
 import cuda.bench as bench

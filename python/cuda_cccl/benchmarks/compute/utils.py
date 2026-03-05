@@ -3,7 +3,7 @@ import numpy as np
 
 import cuda.bench as bench
 
-TYPE_MAP = {
+ALL_TYPES = {
     "I8": np.int8,
     "I16": np.int16,
     "I32": np.int32,
@@ -16,9 +16,9 @@ TYPE_MAP = {
     "F64": np.float64,
 }
 
-SIGNED_TYPES = {k: TYPE_MAP[k] for k in ("I8", "I16", "I32", "I64", "F32", "F64")}
-INTEGER_TYPES = {k: TYPE_MAP[k] for k in ("I8", "I16", "I32", "I64")}
-FLOAT_TYPES = {k: TYPE_MAP[k] for k in ("F32", "F64")}
+SIGNED_TYPES = {k: ALL_TYPES[k] for k in ("I8", "I16", "I32", "I64", "F32", "F64")}
+INTEGER_TYPES = {k: ALL_TYPES[k] for k in ("I8", "I16", "I32", "I64")}
+FLOAT_TYPES = {k: ALL_TYPES[k] for k in ("F32", "F64")}
 
 ENTROPY_TO_PROB = {
     "1.000": 1.0,

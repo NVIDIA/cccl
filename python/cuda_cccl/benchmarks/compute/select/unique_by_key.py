@@ -23,13 +23,13 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
 import numpy as np
-from utils import INTEGER_TYPES, TYPE_MAP, as_cupy_stream, generate_key_segments
+from utils import ALL_TYPES, INTEGER_TYPES, as_cupy_stream, generate_key_segments
 
 import cuda.bench as bench
 from cuda.compute import OpKind, make_unique_by_key
 
 KEY_TYPE_MAP = INTEGER_TYPES
-VALUE_TYPE_MAP = TYPE_MAP
+VALUE_TYPE_MAP = ALL_TYPES
 
 
 def bench_unique_by_key(state: bench.State):

@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import cupy as cp
 import numpy as np
-from utils import TYPE_MAP, as_cupy_stream, generate_data_with_entropy
+from utils import ALL_TYPES, as_cupy_stream, generate_data_with_entropy
 
 import cuda.bench as bench
 from cuda.compute import make_three_way_partition
@@ -33,7 +33,7 @@ from cuda.compute import make_three_way_partition
 
 def bench_three_way_partition(state: bench.State):
     type_str = state.get_string("T")
-    dtype = TYPE_MAP[type_str]
+    dtype = ALL_TYPES[type_str]
     num_elements = int(state.get_int64("Elements{io}"))
     entropy_str = state.get_string("Entropy")
 
@@ -142,7 +142,7 @@ if __name__ == "__main__":
     b = bench.register(bench_three_way_partition)
     b.set_name("base")
 
-    b.add_string_axis("T", list(TYPE_MAP.keys()))
+    b.add_string_axis("T", list(ALL_TYPES.keys()))
     b.add_int64_power_of_two_axis("Elements{io}", range(16, 29, 4))
     b.add_string_axis("Entropy", ["1.000", "0.544", "0.000"])
     # Note: OffsetT axis from C++ is not exposed in Python API
