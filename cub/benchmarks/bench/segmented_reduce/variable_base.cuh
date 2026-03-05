@@ -49,9 +49,7 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
   // Generate input data
   thrust::device_vector<T> in = generate(elements);
 
-  using output_vector_init_t =
-    cuda::std::conditional_t<(is_argmin || is_argmax), thrust::default_init_t, thrust::no_init_t>;
-  thrust::device_vector<output_t> out(num_segments, output_vector_init_t{});
+  thrust::device_vector<output_t> out(num_segments, thrust::default_init);
 
   raw_input_it_t d_raw_in           = thrust::raw_pointer_cast(in.data());
   output_it_t d_out                 = thrust::raw_pointer_cast(out.data());

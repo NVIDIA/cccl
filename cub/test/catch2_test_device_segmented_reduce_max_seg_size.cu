@@ -16,35 +16,6 @@
 using full_type_list = c2h::type_list<uint8_t, int16_t, uint32_t, int64_t>;
 using offsets        = c2h::type_list<std::int32_t, std::uint64_t>;
 
-template <typename PolicyHub>
-struct dispatch_helper
-{
-  using tuple_t = cuda::std::tuple<int, int, int>;
-  tuple_t thresholds{};
-
-  template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION cudaError_t Invoke()
-  {
-    thresholds = {ActivePolicyT::SmallReducePolicy::ITEMS_PER_TILE,
-                  ActivePolicyT::MediumReducePolicy::ITEMS_PER_TILE,
-                  ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD * ActivePolicyT::ReducePolicy::BLOCK_THREADS};
-    return cudaSuccess;
-  }
-
-  static __host__ tuple_t get_thresholds()
-  {
-    // Get PTX version
-    int ptx_version = 0;
-    cudaError error = cub::PtxVersion(ptx_version);
-    REQUIRE(error == cudaSuccess);
-
-    dispatch_helper dispatch{};
-    error = PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
-    REQUIRE(error == cudaSuccess);
-    return dispatch.thresholds;
-  }
-};
-
 C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
          "[segmented][reduce][device]",
          full_type_list,
@@ -58,13 +29,13 @@ C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
   using accum_t = cuda::std::__accumulator_t<op_t, input_t, output_t>;
   using init_t  = input_t;
 
-  using policy_hub_t = cub::detail::segmented_reduce::policy_hub<accum_t, offset_t, op_t>;
+  cuda::arch_id arch_id{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id));
+  auto full_policy = cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{}(arch_id);
 
-  // Get small and medium segment size thresholds from dispatch helper
-  const cuda::std::tuple<int, int, int> thresholds = dispatch_helper<policy_hub_t>::get_thresholds();
-  const int small_segment_size                     = cuda::std::get<0>(thresholds);
-  const int medium_segment_size                    = cuda::std::get<1>(thresholds);
-  const int large_segment_size                     = cuda::std::get<2>(thresholds);
+  const int small_segment_size  = full_policy.small_reduce.items_per_tile();
+  const int medium_segment_size = full_policy.medium_reduce.items_per_tile();
+  const int large_segment_size  = full_policy.large_reduce.block_threads * full_policy.large_reduce.items_per_thread;
 
   constexpr int min_items = 1;
   constexpr int max_items = 10000;
