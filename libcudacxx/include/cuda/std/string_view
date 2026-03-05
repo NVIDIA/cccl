@@ -822,8 +822,7 @@ _CCCL_HOST_DEVICE basic_string_view(_Range&&) -> basic_string_view<::cuda::std::
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _CharT, class _Alloc>
-basic_string_view(::std::basic_string<_CharT, ::std::char_traits<_CharT>, _Alloc>)
-  -> basic_string_view<_CharT>;
+basic_string_view(::std::basic_string<_CharT, ::std::char_traits<_CharT>, _Alloc>) -> basic_string_view<_CharT>;
 
 template <class _CharT, class _Traits, class _Alloc>
 basic_string_view(::std::basic_string<_CharT, _Traits, _Alloc>) -> basic_string_view<_CharT, _Traits>;
