@@ -33,6 +33,8 @@
 #include <cuda/experimental/__stf/utility/stream_to_dev.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
+#include <cuda.h>
+
 #include <atomic>
 #include <mutex>
 #include <unordered_map>
@@ -44,26 +46,51 @@ class green_context_helper;
 // Needed to set/get affinity
 class exec_place;
 
+/** Sentinel for "no stream" / empty slot. Distinct from any value returned by cuStreamGetId. */
+inline constexpr unsigned long long k_no_stream_id = static_cast<unsigned long long>(-1);
+
 /**
- * @brief A class to store a CUDA stream along with a few information to avoid CUDA queries
+ * @brief Returns the unique stream ID from the CUDA driver (cuStreamGetId).
+ * @param stream A valid CUDA stream, or nullptr.
+ * @return The stream's unique ID, or k_no_stream_id if stream is nullptr.
+ */
+inline unsigned long long get_stream_id(cudaStream_t stream)
+{
+  if (!stream)
+  {
+    return k_no_stream_id;
+  }
+  unsigned long long id = 0;
+  cuda_safe_call(cuStreamGetId(reinterpret_cast<CUstream>(stream), &id));
+  return id;
+}
+
+/**
+ * @brief A class to store a CUDA stream along with metadata
  *
  * It contains
  *  - the stream itself,
- *  - a unique id (proper to CUDASTF, and only valid for streams in our pool, or equal to -1),
- *  - the pool associated to the unique ID, when valid
- *  - the device index in which the stream is
+ *  - the stream's unique ID from the CUDA driver (cuStreamGetId), or k_no_stream_id if no stream,
+ *  - the device index in which the stream resides
  */
 struct decorated_stream
 {
-  decorated_stream(cudaStream_t stream = nullptr, ::std::ptrdiff_t id = -1, int dev_id = -1)
+  decorated_stream(cudaStream_t stream = nullptr, unsigned long long id = k_no_stream_id, int dev_id = -1)
       : stream(stream)
       , id(id)
       , dev_id(dev_id)
   {}
 
+  /** Construct from stream only; id and dev_id are computed (id via cuStreamGetId, dev_id left -1). */
+  explicit decorated_stream(cudaStream_t stream)
+      : stream(stream)
+      , id(get_stream_id(stream))
+      , dev_id(-1)
+  {}
+
   cudaStream_t stream = nullptr;
-  // Unique ID (-1 if this is not part of our pool)
-  ::std::ptrdiff_t id = -1;
+  // Unique ID from cuStreamGetId (k_no_stream_id if no stream)
+  unsigned long long id = k_no_stream_id;
   // Device in which this stream resides
   int dev_id = -1;
 };
@@ -90,10 +117,10 @@ struct stream_pool
    * @brief stream_pool constructor taking a number of slots.
    *
    * Streams are created lazily only via next(place), which activates the place and calls place.create_stream().
-   * Slot dev_id is set from the created stream; the pool does not store a device id.
+   * Slot dev_id and id are set when the stream is created in next().
    */
   explicit stream_pool(size_t n)
-      : payload(n, decorated_stream(nullptr, -1, -1))
+      : payload(n, decorated_stream(nullptr, k_no_stream_id, -1))
   {}
 
   stream_pool(stream_pool&& rhs)
@@ -157,36 +184,6 @@ public:
 
 private:
   /**
-   * @brief A helper class to maintain a set of available IDs, and attributes IDs
-   */
-  class id_pool
-  {
-  public:
-    ~id_pool()
-    {
-      assert(released.load() == current.load());
-    }
-
-    ::std::ptrdiff_t get_unique_id(size_t cnt = 1)
-    {
-      // Use fetch_add to atomically increment current and return the previous value
-      return current.fetch_add(cnt);
-    }
-
-    void release_unique_id(::std::ptrdiff_t /* id */, size_t cnt = 1)
-    {
-      // Use fetch_add to atomically increment released
-      released.fetch_add(cnt);
-    }
-
-  private:
-    // next available ID
-    ::std::atomic<::std::ptrdiff_t> current{0};
-    // Number of IDs released, for bookkeeping
-    ::std::atomic<::std::ptrdiff_t> released{0};
-  };
-
-  /**
    * @brief This class implements a matrix to keep track of the previous
    * synchronization that occurred between each pair of streams in our pools.
    *
@@ -195,7 +192,7 @@ private:
    * ID) is implied by the previous synchronization, so it can be skipped thanks
    * to stream-ordering of operations.
    *
-   * This is implemented as a hash table where keys are pairs of IDs.
+   * Keys are pairs of stream IDs from cuStreamGetId.
    */
   class last_event_per_stream
   {
@@ -204,10 +201,10 @@ private:
     // located on stream "from" to stream "dst" (stream dst waits for the
     // event)
     // Returned value : boolean indicating if we can skip the synchronization
-    bool validate_sync_and_update(::std::ptrdiff_t dst, ::std::ptrdiff_t src, int event_id)
+    bool validate_sync_and_update(unsigned long long dst, unsigned long long src, int event_id)
     {
-      // If either of the streams is not from the pool, do not skip
-      if (dst == -1 || src == -1)
+      // If either of the streams has no valid id, do not skip
+      if (dst == k_no_stream_id || src == k_no_stream_id)
       {
         return false;
       }
@@ -232,10 +229,10 @@ private:
     }
 
   private:
-    // For each pair of unique IDs, we keep the last event id
-    ::std::unordered_map<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>,
+    // For each pair of stream IDs (from cuStreamGetId), we keep the last event id
+    ::std::unordered_map<::std::pair<unsigned long long, unsigned long long>,
                          int,
-                         cuda::experimental::stf::hash<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>>>
+                         cuda::experimental::stf::hash<::std::pair<unsigned long long, unsigned long long>>>
       interactions;
 
     ::std::mutex mtx;
@@ -295,7 +292,7 @@ private:
       for (auto i : each(n))
       {
         ::std::ignore = i;
-        new_payload.emplace_back(nullptr, ids.get_unique_id(), dev_id);
+        new_payload.emplace_back(nullptr, k_no_stream_id, dev_id);
       }
 
       ::std::lock_guard<::std::mutex> locker(p.mtx);
@@ -312,7 +309,6 @@ private:
       // Clean up outside the critical section
       for (auto& e : goner)
       {
-        ids.release_unique_id(e.id);
         if (e.stream)
         {
           cuda_safe_call(cudaStreamDestroy(e.stream));
@@ -321,8 +317,6 @@ private:
     }
 
   public:
-    // These are constructed and destroyed in reversed order
-    id_pool ids;
 
     // This memorize what was the last event used to synchronize a pair of streams
     last_event_per_stream cached_syncs;
@@ -359,19 +353,7 @@ public:
     return pimpl->get_device_stream_pool(dev_id, for_computation);
   }
 
-  ::std::ptrdiff_t get_unique_id(size_t cnt = 1)
-  {
-    assert(pimpl);
-    return pimpl->ids.get_unique_id(cnt);
-  }
-
-  void release_unique_id(::std::ptrdiff_t id, size_t cnt = 1)
-  {
-    assert(pimpl);
-    return pimpl->ids.release_unique_id(id, cnt);
-  }
-
-  bool validate_sync_and_update(::std::ptrdiff_t dst, ::std::ptrdiff_t src, int event_id)
+  bool validate_sync_and_update(unsigned long long dst, unsigned long long src, int event_id)
   {
     assert(pimpl);
     return pimpl->cached_syncs.validate_sync_and_update(dst, src, event_id);
@@ -448,50 +430,35 @@ public:
 
 //! @brief Registers a user-provided CUDA stream with asynchronous resources
 //!
-//! @details This optimization records a CUDA stream in the provided asynchronous resources handle,
-//! creating a decorated_stream object that encapsulates:
-//! - The original stream handle
-//! - A unique identifier for stream tracking
-//! - The associated device ID
+//! @details Creates a decorated_stream that encapsulates the stream handle,
+//! its unique ID from the CUDA driver (cuStreamGetId), and the associated device ID.
 //!
 //! @param[in,out] async_resources Handle to asynchronous resources manager
 //! @param[in] user_stream Raw CUDA stream to register. Must be a valid stream.
 //!
-//! @return decorated_stream Object containing:
-//!         - Original stream handle
-//!         - Unique ID from async_resources
-//!         - Device ID associated with the stream
+//! @return decorated_stream Object containing the stream, its native ID, and device ID.
 //!
 //! @pre `user_stream` must be a valid CUDA stream created with `cudaStreamCreate` or equivalent
-//! @note This registration is an optimization to avoid repeated stream metadata lookups
-//!       in performance-critical code paths
 inline decorated_stream register_stream(async_resources_handle& async_resources, cudaStream_t user_stream)
 {
-  // Get a unique ID
-  const auto id    = async_resources.get_unique_id();
+  (void) async_resources;
+  const unsigned long long id    = get_stream_id(user_stream);
   const int dev_id = get_device_from_stream(user_stream);
-
   return decorated_stream(user_stream, id, dev_id);
 }
 
 //! @brief Unregisters a decorated CUDA stream from asynchronous resources
 //!
-//! @details Performs cleanup operations to release resources associated with a previously
-//! registered stream. This includes:
-//! - Releasing the unique ID back to the resource manager
-//! - Invalidating the decorated stream's internal ID
+//! @details Invalidates the decorated stream's id so it is no longer considered registered.
 //!
 //! @param[in,out] async_resources Handle to asynchronous resources manager
-//! @param[in,out] dstream Decorated stream to unregister. Its `id` will be set to -1.
+//! @param[in,out] dstream Decorated stream to unregister. Its `id` will be set to 0.
 //!
-//! @pre `dstream.id` must be valid (≥ 0) before calling this function
-//! @post `dstream.id == -1` and associated resources are released
-//! @note Should be paired with register_stream() for proper resource management
+//! @post `dstream.id == k_no_stream_id`
 inline void unregister_stream(async_resources_handle& async_resources, decorated_stream& dstream)
 {
-  async_resources.release_unique_id(dstream.id);
-  // reset the decorated stream
-  dstream.id = -1;
+  (void) async_resources;
+  dstream.id = k_no_stream_id;
 }
 
 #ifdef UNITTESTED_FILE
