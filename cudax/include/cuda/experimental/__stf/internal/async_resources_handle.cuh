@@ -33,11 +33,11 @@
 #include <cuda/experimental/__stf/utility/stream_to_dev.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
-#include <cuda.h>
-
 #include <atomic>
 #include <mutex>
 #include <unordered_map>
+
+#include <cuda.h>
 
 namespace cuda::experimental::stf
 {
@@ -317,7 +317,6 @@ private:
     }
 
   public:
-
     // This memorize what was the last event used to synchronize a pair of streams
     last_event_per_stream cached_syncs;
 
