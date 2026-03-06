@@ -24,6 +24,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_HOST_STD_LIB(STL)
+template <class _Tp, size_t _Size>
+class array;
+#else // ^^^ _CCCL_HOST_STD_LIB(STL) ^^^ / vvv !_CCCL_HOST_STD_LIB(STL) vvv
+template <class _Tp, size_t _Size>
+struct array;
+#endif // !_CCCL_HOST_STD_LIB(STL)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp, size_t _Size>
@@ -34,6 +42,11 @@ inline constexpr bool __is_cuda_std_array_v = false;
 
 template <class _Tp, size_t _Sz>
 inline constexpr bool __is_cuda_std_array_v<array<_Tp, _Sz>> = true;
+
+#if _CCCL_HOST_STD_LIB(STL)
+template <class _Tp, size_t _Sz>
+inline constexpr bool __is_std_array_v<::std::array<_Tp, _Sz>> = true;
+#endif // _CCCL_HOST_STD_LIB(STL)
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
