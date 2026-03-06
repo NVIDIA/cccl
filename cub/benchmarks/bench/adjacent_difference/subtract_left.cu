@@ -59,7 +59,7 @@ void left(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 #endif // TUNE_BASE
     );
 
-  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
   std::uint8_t* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
