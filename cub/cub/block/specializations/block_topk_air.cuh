@@ -40,6 +40,18 @@ struct compare_key_prefix_op
   }
 };
 
+//! @brief Block-level top-k by radix selection.
+//!
+//! Selects the smallest (or largest) @p k keys from a tile of keys in registers, without
+//! fully sorting. The algorithm has two stages: (1) Radix selection determines the bit-prefix
+//! of the k-th key by processing bits MSB to LSB in passes of @p RadixBits. In each pass, a
+//! histogram over the current digit is built over candidates only (keys matching the prefix so
+//! far), then a prefix sum identifies the bucket containing the k-th item. Items in earlier
+//! buckets are guaranteed top-k; items in later buckets are discarded; the chosen bucket
+//! becomes the candidate set for the next pass. No data movement occurs during this stage—only
+//! the histogram in shared memory is updated. (2) Partitioning scatters the top-k items (key
+//! prefix <= k-th prefix) into shared memory via atomic counters, then each thread reads back
+//! its portion. Supports key-only and key-value selection.
 template <typename KeyT, int BlockThreads, int ItemsPerThread, typename ValueT = NullType, int RadixBits = 8>
 class block_topk_air
 {

@@ -202,7 +202,7 @@ struct agent_batched_topk_worker_per_segment
     // Perform Block Top-K
     if constexpr (is_keys_only)
     {
-      const bool is_successful_dispatch = detail::params::dispatch_discrete(
+      const bool is_successful_dispatch = cub::detail::params::dispatch_discrete(
         select_directions, segment_id, [this, &thread_keys, k, segment_size](auto direction_tag) {
           if constexpr (decltype(direction_tag)::value == detail::topk::select::max)
           {
@@ -218,7 +218,7 @@ struct agent_batched_topk_worker_per_segment
     else
     {
       // Pass both keys and values
-      const bool is_successful_dispatch = detail::params::dispatch_discrete(
+      const bool is_successful_dispatch = cub::detail::params::dispatch_discrete(
         select_directions, segment_id, [this, &thread_keys, &thread_values, k, segment_size](auto direction_tag) {
           if constexpr (decltype(direction_tag)::value == detail::topk::select::max)
           {
