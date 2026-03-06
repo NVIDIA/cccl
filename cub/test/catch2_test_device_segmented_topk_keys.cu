@@ -20,7 +20,7 @@
 
 struct is_minus_zero
 {
-  bool operator()(float x) const
+  __device__ bool operator()(float x) const
   {
     return x == 0.0f && cuda::std::signbit(x);
   }
@@ -203,7 +203,6 @@ C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segment
     cub::detail::batched_topk::num_segments_uniform<>{num_segments},
     cub::detail::batched_topk::total_num_items_guarantee{num_segments * segment_size});
 
-  c2h::host_vector<float> keys_out(d_keys_out);
-  const int num_minus_zero = thrust::count_if(keys_out.begin(), keys_out.end(), is_minus_zero{});
+  const int num_minus_zero = static_cast<int>(thrust::count_if(d_keys_out.begin(), d_keys_out.end(), is_minus_zero{}));
   REQUIRE(num_minus_zero >= 1);
 }
