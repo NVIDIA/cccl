@@ -229,26 +229,27 @@ private:
 
 public:
   // For large values, use timesliced loads/stores to fit shared memory.
-  static constexpr BlockLoadAlgorithm scan_transposed_load =
+  static constexpr BlockLoadAlgorithm scan_transposed_blockload =
     large_values ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr BlockStoreAlgorithm scan_transposed_store =
+  static constexpr BlockStoreAlgorithm scan_transposed_blockstore =
     large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
 
   struct default_policy
   {
     using block_segmented_scan_policy_t = agent_segmented_scan_policy_t<
       128,
-      7,
+      9,
       AccumT,
-      scan_transposed_load,
+      scan_transposed_blockload,
       LOAD_DEFAULT,
-      scan_transposed_store,
-      BLOCK_SCAN_WARP_SCANS>;
+      scan_transposed_blockstore,
+      BLOCK_SCAN_WARP_SCANS,
+      512>;
 
     using warp_segmented_scan_policy_t =
-      agent_warp_segmented_scan_policy_t<128, 4, AccumT, WARP_LOAD_TRANSPOSE, LOAD_DEFAULT, WARP_STORE_TRANSPOSE>;
+      agent_warp_segmented_scan_policy_t<128, 9, AccumT, WARP_LOAD_TRANSPOSE, LOAD_DEFAULT, WARP_STORE_TRANSPOSE, 128>;
 
-    using thread_segmented_scan_policy_t = agent_thread_segmented_scan_policy_t<128, 4, AccumT, LOAD_DEFAULT>;
+    using thread_segmented_scan_policy_t = agent_thread_segmented_scan_policy_t<128, 9, AccumT, LOAD_DEFAULT>;
   };
 
   struct policy_500
