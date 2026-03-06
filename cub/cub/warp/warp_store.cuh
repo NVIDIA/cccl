@@ -149,36 +149,65 @@ enum WarpStoreAlgorithm
 //! that memory references will be efficiently coalesced using a warp-striped
 //! access pattern.
 //!
-//! .. code-block:: c++
+//! .. tab-set-code::
 //!
-//!    #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_store.cuh>
+//!    .. code-block:: c++
 //!
-//!    __global__ void ExampleKernel(int *d_data, ...)
-//!    {
-//!        constexpr int warp_threads = 16;
-//!        constexpr int block_threads = 256;
-//!        constexpr int items_per_thread = 4;
+//!        #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_store.cuh>
 //!
-//!        // Specialize WarpStore for a virtual warp of 16 threads owning 4 integer items each
-//!        using WarpStoreT = WarpStore<int,
-//!                                     items_per_thread,
-//!                                     cub::WARP_STORE_TRANSPOSE,
-//!                                     warp_threads>;
+//!        __global__ void ExampleKernel(int *d_data, ...)
+//!        {
+//!            constexpr int warp_threads = 16;
+//!            constexpr int block_threads = 256;
+//!            constexpr int items_per_thread = 4;
 //!
-//!        constexpr int warps_in_block = block_threads / warp_threads;
-//!        constexpr int tile_size = items_per_thread * warp_threads;
-//!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
+//!            // Specialize WarpStore for a virtual warp of 16 threads owning 4 integer items each
+//!            using WarpStoreT = WarpStore<int,
+//!                                         items_per_thread,
+//!                                         cub::WARP_STORE_TRANSPOSE,
+//!                                         warp_threads>;
 //!
-//!        // Allocate shared memory for WarpStore
-//!        __shared__ typename WarpStoreT::TempStorage temp_storage[warps_in_block];
+//!            constexpr int warps_in_block = block_threads / warp_threads;
+//!            constexpr int tile_size = items_per_thread * warp_threads;
+//!            const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
 //!
-//!        // Obtain a segment of consecutive items that are blocked across threads
-//!        int thread_data[4];
-//!        ...
+//!            // Allocate shared memory for WarpStore
+//!            __shared__ typename WarpStoreT::TempStorage temp_storage[warps_in_block];
 //!
-//!        // Store items to linear memory
-//!        WarpStoreT(temp_storage[warp_id]).Store(d_data + warp_id * tile_size, thread_data);
-//!    }
+//!            // Obtain a segment of consecutive items that are blocked across threads
+//!            int thread_data[4];
+//!            ...
+//!
+//!            // Store items to linear memory
+//!            WarpStoreT(temp_storage[warp_id]).Store(d_data + warp_id * tile_size, thread_data);
+//!        }
+//!
+//!    .. code-block:: python
+//!
+//!        from numba import cuda
+//!        from cuda import coop
+//!
+//!        warp_threads = 16
+//!        items_per_thread = 4
+//!
+//!        @cuda.jit
+//!        def kernel(d_in, d_out):
+//!            temp_storage = coop.TempStorage()
+//!            thread_data = coop.ThreadData(items_per_thread)
+//!            coop.warp.load(
+//!                d_in,
+//!                thread_data,
+//!                threads_in_warp=warp_threads,
+//!                algorithm=coop.WarpLoadAlgorithm.DIRECT,
+//!            )
+//!            coop.warp.store[temp_storage](
+//!                d_out,
+//!                thread_data,
+//!                threads_in_warp=warp_threads,
+//!                algorithm=coop.WarpStoreAlgorithm.TRANSPOSE,
+//!            )
+//!
+//!        # Launch with one logical warp.
 //!
 //! Suppose the set of ``thread_data`` across the warp threads is
 //! ``{ [0,1,2,3], [4,5,6,7], ..., [60,61,62,63] }``.
@@ -389,35 +418,69 @@ public:
   //! that memory references will be efficiently coalesced using a warp-striped
   //! access pattern.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_store.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(int *d_data, ...)
-  //!    {
-  //!        constexpr int warp_threads = 16;
-  //!        constexpr int block_threads = 256;
-  //!        constexpr int items_per_thread = 4;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_store.cuh>
   //!
-  //!        // Specialize WarpStore for a virtual warp of 16 threads owning 4 integer items each
-  //!        using WarpStoreT = WarpStore<int,
-  //!                                     items_per_thread,
-  //!                                     cub::WARP_STORE_TRANSPOSE,
-  //!                                     warp_threads>;
+  //!        __global__ void ExampleKernel(int *d_data, ...)
+  //!        {
+  //!            constexpr int warp_threads = 16;
+  //!            constexpr int block_threads = 256;
+  //!            constexpr int items_per_thread = 4;
   //!
-  //!        constexpr int warps_in_block = block_threads / warp_threads;
-  //!        constexpr int tile_size = items_per_thread * warp_threads;
-  //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
+  //!            // Specialize WarpStore for a virtual warp of 16 threads owning 4 integer items each
+  //!            using WarpStoreT = WarpStore<int,
+  //!                                         items_per_thread,
+  //!                                         cub::WARP_STORE_TRANSPOSE,
+  //!                                         warp_threads>;
   //!
-  //!        // Allocate shared memory for WarpStore
-  //!        __shared__ typename WarpStoreT::TempStorage temp_storage[warps_in_block];
+  //!            constexpr int warps_in_block = block_threads / warp_threads;
+  //!            constexpr int tile_size = items_per_thread * warp_threads;
+  //!            const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for WarpStore
+  //!            __shared__ typename WarpStoreT::TempStorage temp_storage[warps_in_block];
   //!
-  //!        // Store items to linear memory
-  //!        WarpStoreT(temp_storage[warp_id]).Store(d_data + warp_id * tile_size, thread_data);
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
+  //!
+  //!            // Store items to linear memory
+  //!            WarpStoreT(temp_storage[warp_id]).Store(d_data + warp_id * tile_size, thread_data);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 16
+  //!        items_per_thread = 4
+  //!        threads_per_block = 256
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_out):
+  //!            warp_id = cuda.threadIdx.x // warp_threads
+  //!            tile_offset = warp_id * warp_threads * items_per_thread
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!
+  //!            # Load blocked per-thread values, then store with transposed writes.
+  //!            coop.warp.load(
+  //!                d_in[tile_offset:],
+  //!                thread_data,
+  //!                threads_in_warp=warp_threads,
+  //!                algorithm=coop.WarpLoadAlgorithm.DIRECT,
+  //!            )
+  //!            coop.warp.store[temp_storage](
+  //!                d_out[tile_offset:],
+  //!                thread_data,
+  //!                threads_in_warp=warp_threads,
+  //!                algorithm=coop.WarpStoreAlgorithm.TRANSPOSE,
+  //!            )
+  //!
   //!
   //! Suppose the set of ``thread_data`` across the warp threads is
   //! ``{ [0,1,2,3], [4,5,6,7], ..., [60,61,62,63] }``.
@@ -450,36 +513,70 @@ public:
   //! that memory references will be efficiently coalesced using a warp-striped
   //! access pattern.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_store.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(int *d_data, int valid_items ...)
-  //!    {
-  //!        constexpr int warp_threads = 16;
-  //!        constexpr int block_threads = 256;
-  //!        constexpr int items_per_thread = 4;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/warp/warp_store.cuh>
   //!
-  //!        // Specialize WarpStore for a virtual warp of 16 threads owning 4 integer items each
-  //!        using WarpStoreT = WarpStore<int,
-  //!                                     items_per_thread,
-  //!                                     cub::WARP_STORE_TRANSPOSE,
-  //!                                     warp_threads>;
+  //!        __global__ void ExampleKernel(int *d_data, int valid_items ...)
+  //!        {
+  //!            constexpr int warp_threads = 16;
+  //!            constexpr int block_threads = 256;
+  //!            constexpr int items_per_thread = 4;
   //!
-  //!        constexpr int warps_in_block = block_threads / warp_threads;
-  //!        constexpr int tile_size = items_per_thread * warp_threads;
-  //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
+  //!            // Specialize WarpStore for a virtual warp of 16 threads owning 4 integer items each
+  //!            using WarpStoreT = WarpStore<int,
+  //!                                         items_per_thread,
+  //!                                         cub::WARP_STORE_TRANSPOSE,
+  //!                                         warp_threads>;
   //!
-  //!        // Allocate shared memory for WarpStore
-  //!        __shared__ typename WarpStoreT::TempStorage temp_storage[warps_in_block];
+  //!            constexpr int warps_in_block = block_threads / warp_threads;
+  //!            constexpr int tile_size = items_per_thread * warp_threads;
+  //!            const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for WarpStore
+  //!            __shared__ typename WarpStoreT::TempStorage temp_storage[warps_in_block];
   //!
-  //!        // Store items to linear memory
-  //!        WarpStoreT(temp_storage[warp_id]).Store(
-  //!          d_data + warp_id * tile_size, thread_data, valid_items);
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
+  //!
+  //!            // Store items to linear memory
+  //!            WarpStoreT(temp_storage[warp_id]).Store(
+  //!              d_data + warp_id * tile_size, thread_data, valid_items);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        warp_threads = 16
+  //!        items_per_thread = 4
+  //!        threads_per_block = 256
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_out, valid_items):
+  //!            warp_id = cuda.threadIdx.x // warp_threads
+  //!            tile_offset = warp_id * warp_threads * items_per_thread
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!
+  //!            coop.warp.load(
+  //!                d_in[tile_offset:],
+  //!                thread_data,
+  //!                threads_in_warp=warp_threads,
+  //!                algorithm=coop.WarpLoadAlgorithm.DIRECT,
+  //!            )
+  //!            coop.warp.store[temp_storage](
+  //!                d_out[tile_offset:],
+  //!                thread_data,
+  //!                threads_in_warp=warp_threads,
+  //!                algorithm=coop.WarpStoreAlgorithm.TRANSPOSE,
+  //!                num_valid_items=valid_items,
+  //!            )
+  //!
   //!
   //! Suppose the set of ``thread_data`` across the warp threads is
   //! ``{ [0,1,2,3], [4,5,6,7], ..., [60,61,62,63] }`` and ``valid_items``

@@ -8,6 +8,9 @@ from datetime import datetime
 # Add extension directory to path
 sys.path.insert(0, os.path.abspath("_ext"))
 
+# Use doc-only stubs for cuda.coop API rendering.
+os.environ.setdefault("CCCL_COOP_DOCS", "1")
+
 # Add Python CCCL package to path for autodoc
 python_package_path = os.path.abspath("../python/cuda_cccl")
 if os.path.exists(python_package_path):

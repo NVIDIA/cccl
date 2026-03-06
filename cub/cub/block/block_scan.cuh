@@ -756,56 +756,95 @@ public:
   //! prefix functor to maintain a running total between block-wide scans.
   //! Each tile consists of 128 integer items that are partitioned across 128 threads.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    // A stateful callback functor that maintains a running prefix to be applied
-  //!    // during consecutive scan operations.
-  //!    struct BlockPrefixCallbackOp
-  //!    {
-  //!        // Running prefix
-  //!        int running_total;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
   //!
-  //!        // Constructor
-  //!        __device__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
-  //!
-  //!        // Callback operator to be entered by the first warp of threads in the block.
-  //!        // Thread-0 is responsible for returning a value for seeding the block-wide scan.
-  //!        __device__ int operator()(int block_aggregate)
+  //!        // A stateful callback functor that maintains a running prefix to be applied
+  //!        // during consecutive scan operations.
+  //!        struct BlockPrefixCallbackOp
   //!        {
-  //!            int old_prefix = running_total;
-  //!            running_total = (block_aggregate > old_prefix) ? block_aggregate : old_prefix;
-  //!            return old_prefix;
-  //!        }
-  //!    };
+  //!            // Running prefix
+  //!            int running_total;
   //!
-  //!    __global__ void ExampleKernel(int *d_data, int num_items, ...)
-  //!    {
-  //!        // Specialize BlockScan for a 1D block of 128 threads
-  //!        using BlockScan = cub::BlockScan<int, 128>;
+  //!            // Constructor
+  //!            __device__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
   //!
-  //!        // Allocate shared memory for BlockScan
-  //!        __shared__ typename BlockScan::TempStorage temp_storage;
+  //!            // Callback operator to be entered by the first warp of threads in the block.
+  //!            // Thread-0 is responsible for returning a value for seeding the block-wide scan.
+  //!            __device__ int operator()(int block_aggregate)
+  //!            {
+  //!                int old_prefix = running_total;
+  //!                running_total = (block_aggregate > old_prefix) ? block_aggregate : old_prefix;
+  //!                return old_prefix;
+  //!            }
+  //!        };
   //!
-  //!        // Initialize running total
-  //!        BlockPrefixCallbackOp prefix_op(INT_MIN);
-  //!
-  //!        // Have the block iterate over segments of items
-  //!        for (int block_offset = 0; block_offset < num_items; block_offset += 128)
+  //!        __global__ void ExampleKernel(int *d_data, int num_items, ...)
   //!        {
-  //!            // Load a segment of consecutive items that are blocked across threads
-  //!            int thread_data = d_data[block_offset + threadIdx.x];
+  //!            // Specialize BlockScan for a 1D block of 128 threads
+  //!            using BlockScan = cub::BlockScan<int, 128>;
   //!
-  //!            // Collectively compute the block-wide exclusive prefix max scan
-  //!            BlockScan(temp_storage).ExclusiveScan(
-  //!                thread_data, thread_data, INT_MIN, cuda::maximum<>{}, prefix_op);
-  //!            __syncthreads();
+  //!            // Allocate shared memory for BlockScan
+  //!            __shared__ typename BlockScan::TempStorage temp_storage;
   //!
-  //!            // Store scanned items to output segment
-  //!            d_data[block_offset + threadIdx.x] = thread_data;
+  //!            // Initialize running total
+  //!            BlockPrefixCallbackOp prefix_op(INT_MIN);
+  //!
+  //!            // Have the block iterate over segments of items
+  //!            for (int block_offset = 0; block_offset < num_items; block_offset += 128)
+  //!            {
+  //!                // Load a segment of consecutive items that are blocked across threads
+  //!                int thread_data = d_data[block_offset + threadIdx.x];
+  //!
+  //!                // Collectively compute the block-wide exclusive prefix max scan
+  //!                BlockScan(temp_storage).ExclusiveScan(
+  //!                    thread_data, thread_data, INT_MIN, cuda::maximum<>{}, prefix_op);
+  //!                __syncthreads();
+  //!
+  //!                // Store scanned items to output segment
+  //!                d_data[block_offset + threadIdx.x] = thread_data;
+  //!            }
   //!        }
-  //!    }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        items_per_thread = 1
+  //!
+  //!        # Prefix callback type/model declarations are omitted for brevity.
+  //!        # See tests/coop/test_block_scan.py for a complete definition.
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, num_items):
+  //!            temp_storage = coop.TempStorage()
+  //!            block_prefix_callback_op = coop.local.array(
+  //!                1, dtype=block_prefix_callback_op_type
+  //!            )
+  //!            block_prefix_callback_op[0] = BlockPrefixCallbackOp(-2**31)
+  //!
+  //!            items_per_block = cuda.blockDim.x * items_per_thread
+  //!            for block_offset in range(0, num_items, items_per_block):
+  //!                thread_data = coop.ThreadData(items_per_thread)
+  //!                coop.block.load(d_data[block_offset:], thread_data)
+  //!
+  //!                coop.block.scan[temp_storage](
+  //!                    thread_data,
+  //!                    thread_data,
+  //!                    mode="exclusive",
+  //!                    scan_op="max",
+  //!                    block_prefix_callback_op=block_prefix_callback_op,
+  //!                )
+  //!                cuda.syncthreads()
+  //!
+  //!                coop.block.store(d_data[block_offset:], thread_data)
+  //!                cuda.syncthreads()
+  //!
+  //!        # Launch with one block of 128 threads.
   //!
   //! Suppose the input ``d_data`` is ``0, -1, 2, -3, 4, -5, ...``.
   //! The corresponding output for the first segment will be ``INT_MIN, 0, 0, 2, ..., 124, 126``.
@@ -860,7 +899,7 @@ public:
   //! +++++++
   //!
   //! The code snippet below illustrates an exclusive prefix max scan of 512 integer
-  //! items that are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3)
+  //! items that are partitioned in a `blocked arrangement <../index.html#sec5sec3>`_
   //! across 128 threads where each thread owns 4 consecutive items.
   //!
   //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
@@ -930,26 +969,59 @@ public:
   //! a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads where each thread owns
   //! 4 consecutive items.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        using BlockScan = cub::BlockScan<int, 128>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
   //!
-  //!        // Allocate shared memory for BlockScan
-  //!        __shared__ typename BlockScan::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockScan for a 1D block of 128 threads of type int
+  //!            using BlockScan = cub::BlockScan<int, 128>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockScan
+  //!            __shared__ typename BlockScan::TempStorage temp_storage;
   //!
-  //!        // Collectively compute the block-wide exclusive prefix max scan
-  //!        int block_aggregate;
-  //!        BlockScan(temp_storage).ExclusiveScan(
-  //!            thread_data, thread_data, INT_MIN, cuda::maximum<>{}, block_aggregate);
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
+  //!
+  //!            // Collectively compute the block-wide exclusive prefix max scan
+  //!            int block_aggregate;
+  //!            BlockScan(temp_storage).ExclusiveScan(
+  //!                thread_data, thread_data, INT_MIN, cuda::maximum<>{}, block_aggregate);
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_block_aggregates):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            block_aggregate = coop.local.array(1, dtype=d_data.dtype)
+  //!
+  //!            block_offset = cuda.blockIdx.x * cuda.blockDim.x * items_per_thread
+  //!            coop.block.load(d_data[block_offset:], thread_data)
+  //!
+  //!            coop.block.scan[temp_storage](
+  //!                thread_data,
+  //!                thread_data,
+  //!                mode="exclusive",
+  //!                scan_op="max",
+  //!                initial_value=-2**31,
+  //!                block_aggregate=block_aggregate,
+  //!            )
+  //!
+  //!            coop.block.store(d_data[block_offset:], thread_data)
+  //!            if cuda.threadIdx.x == 0:
+  //!                d_block_aggregates[cuda.blockIdx.x] = block_aggregate[0]
+  //!
+  //!        # Launch with one block of 128 threads.
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,-1,2,-3], [4,-5,6,-7], ..., [508,-509,510,-511] }``.
@@ -1350,55 +1422,94 @@ public:
   //! prefix functor to maintain a running total between block-wide scans.
   //! Each tile consists of 128 integer items that are partitioned across 128 threads.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    // A stateful callback functor that maintains a running prefix to be applied
-  //!    // during consecutive scan operations.
-  //!    struct BlockPrefixCallbackOp
-  //!    {
-  //!        // Running prefix
-  //!        int running_total;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
   //!
-  //!        // Constructor
-  //!        __device__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
-  //!
-  //!        // Callback operator to be entered by the first warp of threads in the block.
-  //!        // Thread-0 is responsible for returning a value for seeding the block-wide scan.
-  //!        __device__ int operator()(int block_aggregate)
+  //!        // A stateful callback functor that maintains a running prefix to be applied
+  //!        // during consecutive scan operations.
+  //!        struct BlockPrefixCallbackOp
   //!        {
-  //!            int old_prefix = running_total;
-  //!            running_total += block_aggregate;
-  //!            return old_prefix;
-  //!        }
-  //!    };
+  //!            // Running prefix
+  //!            int running_total;
   //!
-  //!    __global__ void ExampleKernel(int *d_data, int num_items, ...)
-  //!    {
-  //!        // Specialize BlockScan for a 1D block of 128 threads
-  //!        using BlockScan = cub::BlockScan<int, 128>;
+  //!            // Constructor
+  //!            __device__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
   //!
-  //!        // Allocate shared memory for BlockScan
-  //!        __shared__ typename BlockScan::TempStorage temp_storage;
+  //!            // Callback operator to be entered by the first warp of threads in the block.
+  //!            // Thread-0 is responsible for returning a value for seeding the block-wide scan.
+  //!            __device__ int operator()(int block_aggregate)
+  //!            {
+  //!                int old_prefix = running_total;
+  //!                running_total += block_aggregate;
+  //!                return old_prefix;
+  //!            }
+  //!        };
   //!
-  //!        // Initialize running total
-  //!        BlockPrefixCallbackOp prefix_op(0);
-  //!
-  //!        // Have the block iterate over segments of items
-  //!        for (int block_offset = 0; block_offset < num_items; block_offset += 128)
+  //!        __global__ void ExampleKernel(int *d_data, int num_items, ...)
   //!        {
-  //!            // Load a segment of consecutive items that are blocked across threads
-  //!            int thread_data = d_data[block_offset + threadIdx.x];
+  //!            // Specialize BlockScan for a 1D block of 128 threads
+  //!            using BlockScan = cub::BlockScan<int, 128>;
   //!
-  //!            // Collectively compute the block-wide inclusive prefix sum
-  //!            BlockScan(temp_storage).InclusiveSum(
-  //!                thread_data, thread_data, prefix_op);
-  //!            __syncthreads();
+  //!            // Allocate shared memory for BlockScan
+  //!            __shared__ typename BlockScan::TempStorage temp_storage;
   //!
-  //!            // Store scanned items to output segment
-  //!            d_data[block_offset + threadIdx.x] = thread_data;
-  //!        }
+  //!            // Initialize running total
+  //!            BlockPrefixCallbackOp prefix_op(0);
+  //!
+  //!            // Have the block iterate over segments of items
+  //!            for (int block_offset = 0; block_offset < num_items; block_offset += 128)
+  //!            {
+  //!                // Load a segment of consecutive items that are blocked across threads
+  //!                int thread_data = d_data[block_offset + threadIdx.x];
+  //!
+  //!                // Collectively compute the block-wide inclusive prefix sum
+  //!                BlockScan(temp_storage).InclusiveSum(
+  //!                    thread_data, thread_data, prefix_op);
+  //!                __syncthreads();
+  //!
+  //!                // Store scanned items to output segment
+  //!                d_data[block_offset + threadIdx.x] = thread_data;
+  //!            }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        items_per_thread = 1
+  //!
+  //!        # Prefix callback type/model declarations are omitted for brevity.
+  //!        # See tests/coop/test_block_scan.py for a complete definition.
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, num_items):
+  //!            temp_storage = coop.TempStorage()
+  //!            block_prefix_callback_op = coop.local.array(
+  //!                1, dtype=block_prefix_callback_op_type
+  //!            )
+  //!            block_prefix_callback_op[0] = BlockPrefixCallbackOp(0)
+  //!
+  //!            items_per_block = cuda.blockDim.x * items_per_thread
+  //!            for block_offset in range(0, num_items, items_per_block):
+  //!                thread_data = coop.ThreadData(items_per_thread)
+  //!                coop.block.load(d_data[block_offset:], thread_data)
+  //!
+  //!                coop.block.scan[temp_storage](
+  //!                    thread_data,
+  //!                    thread_data,
+  //!                    mode="inclusive",
+  //!                    scan_op="+",
+  //!                    block_prefix_callback_op=block_prefix_callback_op,
+  //!                )
+  //!                cuda.syncthreads()
+  //!
+  //!                coop.block.store(d_data[block_offset:], thread_data)
+  //!                cuda.syncthreads()
+  //!
+  //!        # Launch with one block of 128 threads.
   //!
   //! Suppose the input ``d_data`` is ``1, 1, 1, 1, 1, 1, 1, 1, ...``.
   //! The corresponding output for the first segment will be ``1, 2, ..., 128``.
@@ -1707,25 +1818,57 @@ public:
   //! The code snippet below illustrates an inclusive prefix max scan of 128
   //! integer items that are partitioned across 128 threads.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        using BlockScan = cub::BlockScan<int, 128>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
   //!
-  //!        // Allocate shared memory for BlockScan
-  //!        __shared__ typename BlockScan::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockScan for a 1D block of 128 threads of type int
+  //!            using BlockScan = cub::BlockScan<int, 128>;
   //!
-  //!        // Obtain input item for each thread
-  //!        int thread_data;
-  //!        ...
+  //!            // Allocate shared memory for BlockScan
+  //!            __shared__ typename BlockScan::TempStorage temp_storage;
   //!
-  //!        // Collectively compute the block-wide inclusive prefix max scan
-  //!        int block_aggregate;
-  //!        BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, cuda::maximum<>{}, block_aggregate);
+  //!            // Obtain input item for each thread
+  //!            int thread_data;
+  //!            ...
+  //!
+  //!            // Collectively compute the block-wide inclusive prefix max scan
+  //!            int block_aggregate;
+  //!            BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, cuda::maximum<>{}, block_aggregate);
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        items_per_thread = 1
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_block_aggregates):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            block_aggregate = coop.local.array(1, dtype=d_data.dtype)
+  //!
+  //!            block_offset = cuda.blockIdx.x * cuda.blockDim.x * items_per_thread
+  //!            coop.block.load(d_data[block_offset:], thread_data)
+  //!
+  //!            coop.block.scan[temp_storage](
+  //!                thread_data,
+  //!                thread_data,
+  //!                mode="inclusive",
+  //!                scan_op="max",
+  //!                block_aggregate=block_aggregate,
+  //!            )
+  //!
+  //!            coop.block.store(d_data[block_offset:], thread_data)
+  //!            if cuda.threadIdx.x == 0:
+  //!                d_block_aggregates[cuda.blockIdx.x] = block_aggregate[0]
+  //!
+  //!        # Launch with one block of 128 threads.
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``0, -1, 2, -3, ..., 126, -127``. The corresponding output ``thread_data``
@@ -1846,7 +1989,7 @@ public:
   //! +++++++
   //!
   //! The code snippet below illustrates an inclusive prefix max scan of 512 integer items that
-  //! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
+  //! are partitioned in a `blocked arrangement <../index.html#sec5sec3>`_ across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
   //! .. literalinclude:: ../../../cub/examples/block/example_block_scan.cu
@@ -1972,28 +2115,60 @@ public:
   //! +++++++
   //!
   //! The code snippet below illustrates an inclusive prefix max scan of 512 integer items that
-  //! are partitioned in a [<em>blocked arrangement</em>](../index.html#sec5sec3) across 128 threads
+  //! are partitioned in a `blocked arrangement <../index.html#sec5sec3>`_ across 128 threads
   //! where each thread owns 4 consecutive items.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockScan for a 1D block of 128 threads of type int
-  //!        using BlockScan = cub::BlockScan<int, 128>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
   //!
-  //!        // Allocate shared memory for BlockScan
-  //!        __shared__ typename BlockScan::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockScan for a 1D block of 128 threads of type int
+  //!            using BlockScan = cub::BlockScan<int, 128>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockScan
+  //!            __shared__ typename BlockScan::TempStorage temp_storage;
   //!
-  //!        // Collectively compute the block-wide inclusive prefix max scan
-  //!        int block_aggregate;
-  //!        BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, cuda::maximum<>{}, block_aggregate);
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
+  //!
+  //!            // Collectively compute the block-wide inclusive prefix max scan
+  //!            int block_aggregate;
+  //!            BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, cuda::maximum<>{}, block_aggregate);
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_block_aggregates):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            block_aggregate = coop.local.array(1, dtype=d_data.dtype)
+  //!
+  //!            block_offset = cuda.blockIdx.x * cuda.blockDim.x * items_per_thread
+  //!            coop.block.load(d_data[block_offset:], thread_data)
+  //!
+  //!            coop.block.scan[temp_storage](
+  //!                thread_data,
+  //!                thread_data,
+  //!                mode="inclusive",
+  //!                scan_op="max",
+  //!                block_aggregate=block_aggregate,
+  //!            )
+  //!
+  //!            coop.block.store(d_data[block_offset:], thread_data)
+  //!            if cuda.threadIdx.x == 0:
+  //!                d_block_aggregates[cuda.blockIdx.x] = block_aggregate[0]
+  //!
+  //!        # Launch with one block of 128 threads.
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,-1,2,-3], [4,-5,6,-7], ..., [508,-509,510,-511] }``.
@@ -2136,64 +2311,112 @@ public:
   //! prefix functor to maintain a running total between block-wide scans.  Each tile consists
   //! of 128 integer items that are partitioned across 128 threads.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    // A stateful callback functor that maintains a running prefix to be applied
-  //!    // during consecutive scan operations.
-  //!    struct BlockPrefixCallbackOp
-  //!    {
-  //!        // Running prefix
-  //!        int running_total;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_scan.cuh>
   //!
-  //!        // Constructor
-  //!        __device__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
-  //!
-  //!        // Callback operator to be entered by the first warp of threads in the block.
-  //!        // Thread-0 is responsible for returning a value for seeding the block-wide scan.
-  //!        __device__ int operator()(int block_aggregate)
+  //!        // A stateful callback functor that maintains a running prefix to be applied
+  //!        // during consecutive scan operations.
+  //!        struct BlockPrefixCallbackOp
   //!        {
-  //!            int old_prefix = running_total;
-  //!            running_total = (block_aggregate > old_prefix) ? block_aggregate : old_prefix;
-  //!            return old_prefix;
-  //!        }
-  //!    };
+  //!            // Running prefix
+  //!            int running_total;
   //!
-  //!    __global__ void ExampleKernel(int *d_data, int num_items, ...)
-  //!    {
-  //!        // Specialize BlockLoad, BlockStore, and BlockScan for a 1D block of 128 threads, 4 ints per thread
-  //!        using BlockLoad = cub::BlockLoad<int*, 128, 4, BLOCK_LOAD_TRANSPOSE>  ;
-  //!        using BlockStore = cub::BlockStore<int, 128, 4, BLOCK_STORE_TRANSPOSE> ;
-  //!        using BlockScan = cub::BlockScan<int, 128>                            ;
+  //!            // Constructor
+  //!            __device__ BlockPrefixCallbackOp(int running_total) : running_total(running_total) {}
   //!
-  //!        // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
-  //!        __shared__ union {
-  //!            typename BlockLoad::TempStorage     load;
-  //!            typename BlockScan::TempStorage     scan;
-  //!            typename BlockStore::TempStorage    store;
-  //!        } temp_storage;
+  //!            // Callback operator to be entered by the first warp of threads in the block.
+  //!            // Thread-0 is responsible for returning a value for seeding the block-wide scan.
+  //!            __device__ int operator()(int block_aggregate)
+  //!            {
+  //!                int old_prefix = running_total;
+  //!                running_total = (block_aggregate > old_prefix) ? block_aggregate : old_prefix;
+  //!                return old_prefix;
+  //!            }
+  //!        };
   //!
-  //!        // Initialize running total
-  //!        BlockPrefixCallbackOp prefix_op(0);
-  //!
-  //!        // Have the block iterate over segments of items
-  //!        for (int block_offset = 0; block_offset < num_items; block_offset += 128 * 4)
+  //!        __global__ void ExampleKernel(int *d_data, int num_items, ...)
   //!        {
-  //!            // Load a segment of consecutive items that are blocked across threads
-  //!            int thread_data[4];
-  //!            BlockLoad(temp_storage.load).Load(d_data + block_offset, thread_data);
-  //!            __syncthreads();
+  //!            // Specialize BlockLoad, BlockStore, and BlockScan for a 1D block of 128 threads, 4 ints per thread
+  //!            using BlockLoad = cub::BlockLoad<int*, 128, 4, BLOCK_LOAD_TRANSPOSE>  ;
+  //!            using BlockStore = cub::BlockStore<int, 128, 4, BLOCK_STORE_TRANSPOSE> ;
+  //!            using BlockScan = cub::BlockScan<int, 128>                            ;
   //!
-  //!            // Collectively compute the block-wide inclusive prefix max scan
-  //!            BlockScan(temp_storage.scan).InclusiveScan(
-  //!                thread_data, thread_data, cuda::maximum<>{}, prefix_op);
-  //!            __syncthreads();
+  //!            // Allocate aliased shared memory for BlockLoad, BlockStore, and BlockScan
+  //!            __shared__ union {
+  //!                typename BlockLoad::TempStorage     load;
+  //!                typename BlockScan::TempStorage     scan;
+  //!                typename BlockStore::TempStorage    store;
+  //!            } temp_storage;
   //!
-  //!            // Store scanned items to output segment
-  //!            BlockStore(temp_storage.store).Store(d_data + block_offset, thread_data);
-  //!            __syncthreads();
-  //!        }
+  //!            // Initialize running total
+  //!            BlockPrefixCallbackOp prefix_op(0);
+  //!
+  //!            // Have the block iterate over segments of items
+  //!            for (int block_offset = 0; block_offset < num_items; block_offset += 128 * 4)
+  //!            {
+  //!                // Load a segment of consecutive items that are blocked across threads
+  //!                int thread_data[4];
+  //!                BlockLoad(temp_storage.load).Load(d_data + block_offset, thread_data);
+  //!                __syncthreads();
+  //!
+  //!                // Collectively compute the block-wide inclusive prefix max scan
+  //!                BlockScan(temp_storage.scan).InclusiveScan(
+  //!                    thread_data, thread_data, cuda::maximum<>{}, prefix_op);
+  //!                __syncthreads();
+  //!
+  //!                // Store scanned items to output segment
+  //!                BlockStore(temp_storage.store).Store(d_data + block_offset, thread_data);
+  //!                __syncthreads();
+  //!            }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        items_per_thread = 4
+  //!
+  //!        # Prefix callback type/model declarations are omitted for brevity.
+  //!        # See tests/coop/test_block_scan.py for a complete definition.
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, num_items):
+  //!            temp_storage = coop.TempStorage()
+  //!            block_prefix_callback_op = coop.local.array(
+  //!                1, dtype=block_prefix_callback_op_type
+  //!            )
+  //!            block_prefix_callback_op[0] = BlockPrefixCallbackOp(0)
+  //!
+  //!            items_per_block = cuda.blockDim.x * items_per_thread
+  //!            for block_offset in range(0, num_items, items_per_block):
+  //!                thread_data = coop.ThreadData(items_per_thread)
+  //!                coop.block.load[temp_storage](
+  //!                    d_data[block_offset:],
+  //!                    thread_data,
+  //!                    algorithm=coop.BlockLoadAlgorithm.TRANSPOSE,
+  //!                )
+  //!                cuda.syncthreads()
+  //!
+  //!                coop.block.scan[temp_storage](
+  //!                    thread_data,
+  //!                    thread_data,
+  //!                    mode="inclusive",
+  //!                    scan_op="max",
+  //!                    block_prefix_callback_op=block_prefix_callback_op,
+  //!                )
+  //!                cuda.syncthreads()
+  //!
+  //!                coop.block.store[temp_storage](
+  //!                    d_data[block_offset:],
+  //!                    thread_data,
+  //!                    algorithm=coop.BlockStoreAlgorithm.TRANSPOSE,
+  //!                )
+  //!                cuda.syncthreads()
+  //!
+  //!        # Launch with one block of 128 threads.
   //!
   //! Suppose the input ``d_data`` is ``0, -1, 2, -3, 4, -5, ...``.
   //! The corresponding output for the first segment will be

@@ -3,10 +3,19 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import re
+import time
+from collections import OrderedDict
+from dataclasses import dataclass, field
+from functools import cached_property
 from io import StringIO
 from textwrap import dedent
-from types import FunctionType as PyFunctionType
-from typing import BinaryIO, Literal, Sequence
+from types import (
+    FunctionType as PyFunctionType,
+)
+from types import (
+    SimpleNamespace,
+)
+from typing import TYPE_CHECKING, Any, BinaryIO, List, Literal, Optional, Sequence
 
 import numba
 from llvmlite import ir
@@ -14,6 +23,7 @@ from numba import cuda, types
 from numba.core import cgutils
 from numba.core.extending import intrinsic, overload
 from numba.core.typing import signature
+from numba.cuda import LTOIR
 
 try:
     from cuda.core import Linker, LinkerOptions, ObjectCode
@@ -21,9 +31,72 @@ except ImportError:
     from cuda.core.experimental import Linker, LinkerOptions, ObjectCode
 
 from . import _nvrtc as nvrtc
-from ._common import find_unsigned
+from ._common import (
+    find_unsigned,
+    find_unsigned_ints_in_ptx_by_suffix,
+    make_binary_tempfile,
+    normalize_dtype_param,
+)
+from ._numba_extension import (
+    _get_source_code_rewriter,
+)
+
+PRINT_SOURCE = False
+
+
+def maybe_print_src(src: str, name: str):
+    """
+    Print the source code if PRINT_SOURCE is True.
+    """
+    if PRINT_SOURCE:
+        print(f"----- BEGIN Source code for {name}:")
+        print(src)
+        print(f"----- END Source code for {name}")
+
+
+class ElapsedTimer:
+    """
+    Context manager and reusable timer to measure elapsed time.
+
+    Example:
+        timer = elapsed_timer()
+        with timer:
+            do_something()
+        print(f'Elapsed: {timer.elapsed:.3f}')
+
+        # Re-enterable:
+        with timer:
+            do_something_else()
+        print(f'Elapsed: {timer.elapsed:.3f}')
+    """
+
+    def __init__(self):
+        self.start = None
+        self._elapsed = None
+
+    def __enter__(self):
+        self.start = time.perf_counter()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._elapsed = time.perf_counter() - self.start
+
+    @property
+    def elapsed(self):
+        """
+        Return the elapsed time for the most recent context.
+        """
+        if self._elapsed is None:
+            raise ValueError("Timer has not been used in a context yet.")
+        return self._elapsed
+
+
+if TYPE_CHECKING:
+    from ._rewrite import CoopNode
 
 NUMBA_TYPES_TO_CPP = {
+    types.void: "void",
+    types.voidptr: "void",
     types.boolean: "bool",
     types.int8: "::cuda::std::int8_t",
     types.int16: "::cuda::std::int16_t",
@@ -39,8 +112,53 @@ NUMBA_TYPES_TO_CPP = {
 }
 
 
-def numba_type_to_cpp(numba_type):
-    return NUMBA_TYPES_TO_CPP.get(numba_type, "storage_t")
+def _cuda_vector_type_to_cpp(numba_type):
+    user_facing_object = getattr(numba_type, "user_facing_object", None)
+    if user_facing_object is None:
+        return None
+
+    aliases = getattr(user_facing_object, "aliases", None)
+    if aliases:
+        return aliases[0]
+
+    name = getattr(numba_type, "name", "")
+    match = re.fullmatch(r"(int|uint|float)(8|16|32|64)x([1-4])", name or "")
+    if match is None:
+        return None
+
+    base_name = f"{match.group(1)}{match.group(2)}"
+    count = match.group(3)
+    base_alias = {
+        "int8": "char",
+        "int16": "short",
+        "int32": "int",
+        "int64": "longlong",
+        "uint8": "uchar",
+        "uint16": "ushort",
+        "uint32": "uint",
+        "uint64": "ulonglong",
+        "float32": "float",
+        "float64": "double",
+    }.get(base_name)
+    if base_alias is None:
+        return None
+    return f"{base_alias}{count}"
+
+
+def numba_type_to_cpp(numba_type, default="storage_t"):
+    vector_cpp = _cuda_vector_type_to_cpp(numba_type)
+    if vector_cpp is not None:
+        return vector_cpp
+
+    if isinstance(numba_type, (types.Tuple, types.UniTuple)):
+        elem_cpp = []
+        for elem in numba_type:
+            cpp_type = numba_type_to_cpp(elem, default=None)
+            if cpp_type is None or cpp_type == "storage_t":
+                return default
+            elem_cpp.append(cpp_type)
+        return f"::cuda::std::tuple<{', '.join(elem_cpp)}>"
+    return NUMBA_TYPES_TO_CPP.get(numba_type, default)
 
 
 def method_to_signature(numba_type, method):
@@ -95,12 +213,16 @@ class TypeWrapper:
         self.code = buf.getvalue()
 
         for method in methods:
-            lto_fn, _ = cuda.compile(
+            ltoir_blob, _ = cuda.compile(
                 methods[method],
                 sig=method_to_signature(numba_type, method),
                 output="ltoir",
             )
-            self.lto_irs.append(lto_fn)
+            ltoir = LTOIR(
+                name=f"udt_{numba_type!s}_{method}",
+                data=ltoir_blob,
+            )
+            self.lto_irs.append(ltoir)
 
 
 def numba_type_to_wrapper(
@@ -114,13 +236,7 @@ def numba_type_to_wrapper(
     return TypeWrapper(numba_type, methods)
 
 
-class Parameter:
-    def __init__(self, is_output=False):
-        self.is_output = is_output
-
-    def __repr__(self) -> str:
-        return f"Parameter(out={self.is_output})"
-
+class ParameterMixin:
     def specialize(self, _):
         return self
 
@@ -128,13 +244,11 @@ class Parameter:
         return not self.is_output
 
 
-class Value(Parameter):
-    def __init__(self, value_type, is_output=False):
-        self.value_type = value_type
-        super().__init__(is_output)
-
-    def __repr__(self) -> str:
-        return f"Value(dtype={self.value_type}, out={self.is_output})"
+@dataclass
+class Value(ParameterMixin):
+    value_type: numba.types.Type
+    is_output: bool = False
+    name: Optional[str] = None
 
     def dtype(self):
         return self.value_type
@@ -146,43 +260,91 @@ class Value(Parameter):
         return f"{self.value_type}"
 
 
-class Pointer(Parameter):
-    def __init__(self, value_dtype, is_output=False):
-        self.value_dtype = value_dtype
-        super().__init__(is_output)
+@dataclass
+class DependentValue(Value):
+    value_type: Any
 
-    def __repr__(self) -> str:
-        return f"Pointer(dtype={self.value_dtype}, out={self.is_output})"
+    def specialize(self, template_arguments):
+        return Value(
+            self.value_type.resolve(template_arguments),
+            is_output=self.is_output,
+            name=self.name,
+        )
 
+
+class PointerMixin:
     def cpp_decl(self, name):
-        return numba_type_to_cpp(self.value_dtype) + "* " + name
+        var_name = name
+        type_name = self.type_name or numba_type_to_cpp(self.value_dtype)
+        restrict = "__restrict__" if self.restrict else ""
+        return f"{type_name}* {restrict} {var_name}"
 
     def dtype(self):
-        return numba.types.Array(self.value_dtype, 1, "A")
+        if self.is_array_pointer:
+            return numba.types.Array(self.value_dtype, 1, "A")
+        else:
+            return numba.types.CPointer(self.value_dtype)
 
     def mangled_name(self):
         return f"P{self.value_dtype}"
 
 
-class DependentPointer(Parameter):
-    def __init__(self, value_dtype, is_output=False):
-        self.value_dtype = value_dtype
-        super().__init__(is_output)
+@dataclass
+class Pointer(ParameterMixin, PointerMixin):
+    value_dtype: numba.types.Type
+    type_name: Optional[str] = None
+    restrict: bool = False
+    is_array_pointer: bool = False
+    is_output: bool = False
+    name: Optional[str] = None
 
-    def __repr__(self) -> str:
-        return f"DependentPointer(dep={self.value_dtype}, out={self.is_output})"
+
+@dataclass
+class TempStoragePointer(Pointer):
+    pass
+
+
+@dataclass
+class DependentPointer(Pointer):
+    def specialize(self, template_arguments):
+        value_dtype = self.value_dtype.resolve(template_arguments)
+        return Pointer(
+            value_dtype,
+            type_name=self.type_name,
+            restrict=self.restrict,
+            is_array_pointer=self.is_array_pointer,
+            is_output=self.is_output,
+            name=self.name,
+        )
+
+
+@dataclass
+class PointerReference(Pointer):
+    deref_on_call: bool = True
+
+
+@dataclass
+class DependentPointerReference(DependentPointer):
+    deref_on_call: bool = True
 
     def specialize(self, template_arguments):
-        return Pointer(self.value_dtype.resolve(template_arguments), self.is_output)
+        value_dtype = self.value_dtype.resolve(template_arguments)
+        return PointerReference(
+            value_dtype,
+            type_name=self.type_name,
+            restrict=self.restrict,
+            is_array_pointer=self.is_array_pointer,
+            is_output=self.is_output,
+            name=self.name,
+            deref_on_call=self.deref_on_call,
+        )
 
 
-class Reference(Parameter):
-    def __init__(self, value_dtype, is_output=False):
-        self.value_dtype = value_dtype
-        super().__init__(is_output)
-
-    def __repr__(self) -> str:
-        return f"Reference(dtype={self.value_dtype}, out={self.is_output})"
+@dataclass
+class Reference(ParameterMixin):
+    value_dtype: numba.types.Type
+    is_output: bool = False
+    name: Optional[str] = None
 
     def cpp_decl(self, name):
         return numba_type_to_cpp(self.value_dtype) + "& " + name
@@ -194,27 +356,27 @@ class Reference(Parameter):
         return f"R{self.value_dtype}"
 
 
-class DependentReference(Parameter):
-    def __init__(self, value_dtype, is_output=False):
-        self.value_dtype = value_dtype
-        super().__init__(is_output)
-
-    def __repr__(self) -> str:
-        return f"DependentReference(dep={self.value_dtype}, out={self.is_output})"
+@dataclass
+class DependentReference(Reference):
+    value_dtype: numba.types.Type
 
     def specialize(self, template_arguments):
-        return Reference(self.value_dtype.resolve(template_arguments), self.is_output)
-
-
-class Array(Pointer):
-    def __init__(self, value_dtype, size, is_output=False):
-        self.size = size
-        super().__init__(value_dtype, is_output)
-
-    def __repr__(self) -> str:
-        return (
-            f"Array(dtype={self.value_dtype}, size={self.size}, out={self.is_output})"
+        return Reference(
+            self.value_dtype.resolve(template_arguments),
+            self.is_output,
+            name=self.name,
         )
+
+
+@dataclass
+class Array(ParameterMixin):
+    value_dtype: numba.types.Type
+    size: int
+    type_name: Optional[str] = None
+    restrict: bool = False
+    is_array_pointer: bool = False
+    is_output: bool = False
+    name: Optional[str] = None
 
     def cpp_decl(self, name):
         return f"{numba_type_to_cpp(self.value_dtype)} (&{name})[{self.size}]"
@@ -232,9 +394,9 @@ class SubstitutionFailure(Exception):
         super().__init__(self.message)
 
 
+@dataclass
 class Dependency:
-    def __init__(self, dep):
-        self.dep = dep
+    dep: str
 
     def resolve(self, template_arguments):
         if self.dep not in template_arguments:
@@ -244,28 +406,37 @@ class Dependency:
         return template_arguments[self.dep]
 
 
+@dataclass
 class Constant:
-    def __init__(self, val):
-        self.val = val
+    val: Any
 
     def resolve(self, _):
         return self.val
 
 
+@dataclass
 class StatefulFunction:
-    def __init__(self, op, dtype):
-        self.op = op
-        self.dtype = dtype
+    op: Any
+    dtype: numba.types.Type
+    name: Optional[str]
+    is_output: bool = False
 
 
+@dataclass
+class Decomposer:
+    op: Any
+    ret_dtype: numba.types.Type
+
+
+@dataclass
 class StatefulOperator:
-    def __init__(self, mangled_name, op_type, ret_cpp_type, arg_cpp_types, ltoir):
-        self.op_type = op_type
-        self.name = mangled_name
-        self.ltoir = ltoir
-        self.ret_cpp_type = ret_cpp_type
-        self.arg_cpp_types = arg_cpp_types
-        self.is_output = False
+    name: str
+    op_type: numba.types.Type
+    ret_cpp_type: str
+    arg_cpp_types: List[str]
+    ltoir: LTOIR
+    op_name: Optional[str] = None
+    is_output: bool = False
 
     def mangled_name(self):
         return f"{self.name}"
@@ -312,18 +483,20 @@ class StatefulOperator:
             w(f"        {state_name}, {param_refs_csv});\n")
         w("};\n")
         src = buf.getvalue()
+        maybe_print_src(src, f"StatefulOperator {self.name!r}")
         return src
 
     def is_provided_by_user(self):
         return True
 
 
+@dataclass
 class StatelessOperator:
-    def __init__(self, mangled_name, ret_cpp_type, arg_cpp_types, ltoir):
-        self.name = mangled_name
-        self.ltoir = ltoir
-        self.ret_cpp_type = ret_cpp_type
-        self.arg_cpp_types = arg_cpp_types
+    name: str
+    ret_cpp_type: str
+    arg_cpp_types: List[str]
+    ltoir: LTOIR
+    op_name: Optional[str]
 
     def mangled_name(self):
         return f"{self.name}"
@@ -364,20 +537,24 @@ class StatelessOperator:
             w(f"    return {mangled_name}({param_refs_csv});\n")
         w("};\n")
         src = buf.getvalue()
+        maybe_print_src(src, f"StatelessOperator {self.name!r}")
         return src
 
     def is_provided_by_user(self):
         return False
 
 
+@dataclass
 class DependentPythonOperator:
-    def __init__(self, ret_dtype, arg_dtypes, op):
-        self.ret_dtype = ret_dtype
-        self.arg_dtypes = arg_dtypes
-        self.op = op
+    ret_dtype: numba.types.Type
+    arg_dtypes: List[numba.types.Type]
+    op: Any
+    name: Optional[str]
 
     def specialize(self, template_arguments):
         op = self.op.resolve(template_arguments)
+        if not isinstance(op, StatefulFunction) and hasattr(op, "py_func"):
+            op = op.py_func
         ret_dtype = self.ret_dtype.resolve(template_arguments)
         ret_cpp_type = numba_type_to_cpp(ret_dtype)
         ret_numba_type = (
@@ -397,7 +574,12 @@ class DependentPythonOperator:
 
         if isinstance(op, StatefulFunction):
             binary_op = op.op.__call__
-            mangled_name = f"F{binary_op.__name__}_{ret_dtype}__" + "_".join(arg_dtypes)
+            ret_mangled = internal_mangle_cpp(str(ret_dtype))
+            arg_mangled = [internal_mangle_cpp(dtype) for dtype in arg_dtypes]
+            mangled_name = f"F{binary_op.__name__}_{ret_mangled}__" + "_".join(
+                arg_mangled
+            )
+            # name = f"F{op.name}"
             if ret_cpp_type == "storage_t":
                 binary_op_signature = signature(
                     types.void,
@@ -410,15 +592,31 @@ class DependentPythonOperator:
                     ret_numba_type, types.CPointer(op.dtype), *arg_numba_types
                 )
             abi_info = {"abi_name": mangled_name}
-            ltoir, _ = cuda.compile(
+            # abi_info = {"abi_name": name}
+            ltoir_blob, _ = cuda.compile(
                 binary_op, sig=binary_op_signature, output="ltoir", abi_info=abi_info
             )
+            ltoir = LTOIR(
+                name=f"udf_{mangled_name}",
+                # name=f"{name}",
+                data=ltoir_blob,
+            )
             return StatefulOperator(
-                mangled_name, op.dtype, ret_cpp_type, arg_cpp_types, ltoir
+                mangled_name,
+                op.dtype,
+                ret_cpp_type,
+                arg_cpp_types,
+                ltoir,
+                op_name=self.name,
             )
         else:
             binary_op = op
-            mangled_name = f"F{binary_op.__name__}_{ret_dtype}__" + "_".join(arg_dtypes)
+            ret_mangled = internal_mangle_cpp(str(ret_dtype))
+            arg_mangled = [internal_mangle_cpp(dtype) for dtype in arg_dtypes]
+            mangled_name = f"F{binary_op.__name__}_{ret_mangled}__" + "_".join(
+                arg_mangled
+            )
+            # name = f'F{op.name}'
             if ret_cpp_type == "storage_t":
                 binary_op_signature = signature(
                     types.void, *arg_numba_types, ret_numba_type
@@ -426,17 +624,31 @@ class DependentPythonOperator:
             else:
                 binary_op_signature = signature(ret_numba_type, *arg_numba_types)
             abi_info = {"abi_name": mangled_name}
-            ltoir, _ = cuda.compile(
+            # abi_info = {"abi_name": name}
+            ltoir_blob, _ = cuda.compile(
                 binary_op, sig=binary_op_signature, output="ltoir", abi_info=abi_info
             )
-            return StatelessOperator(mangled_name, ret_cpp_type, arg_cpp_types, ltoir)
+            ltoir = LTOIR(
+                name=f"udf_{mangled_name}",
+                # name=f"udf_{name}",
+                # name=f"{name}",
+                data=ltoir_blob,
+            )
+            return StatelessOperator(
+                mangled_name,
+                # name,
+                ret_cpp_type,
+                arg_cpp_types,
+                ltoir,
+                op_name=self.name,
+            )
 
 
-class CxxFunction(Parameter):
-    def __init__(self, cpp, func_dtype):
-        super().__init__()
-        self.cpp = cpp
-        self.func_dtype = func_dtype
+@dataclass
+class CxxFunction(ParameterMixin):
+    cpp: str
+    func_dtype: numba.types.Type
+    name: Optional[str] = None
 
     def __repr__(self) -> str:
         return f"CxxFunction(cpp={self.cpp})"
@@ -451,10 +663,11 @@ class CxxFunction(Parameter):
         return False
 
 
+@dataclass
 class DependentCxxOperator:
-    def __init__(self, dep: Dependency, cpp: str):
-        self.dep = dep
-        self.cpp = cpp
+    dep: Dependency
+    cpp: str
+    name: Optional[str]
 
     def specialize(self, template_arguments):
         dtype = self.dep.resolve(template_arguments)
@@ -462,32 +675,37 @@ class DependentCxxOperator:
         source = f"<{self.dep.dep}>"
         target = f"<{dtype_cpp}>"
         cpp = self.cpp.replace(source, target)
-        return CxxFunction(cpp=f"{cpp}{{}}", func_dtype=dtype)
-
-
-class DependentArray(Parameter):
-    def __init__(self, value_dtype, size, is_output=False):
-        self.value_dtype = value_dtype
-        self.size = size
-        super().__init__(is_output)
-
-    def __repr__(self) -> str:
-        return f"DependentArray(dep={self.value_dtype}, out={self.is_output})"
-
-    def specialize(self, template_arguments):
-        return Array(
-            self.value_dtype.resolve(template_arguments),
-            self.size.resolve(template_arguments),
-            self.is_output,
+        return CxxFunction(
+            cpp=f"{cpp}{{}}",
+            func_dtype=dtype,
+            name=self.name,
         )
 
 
+@dataclass
+class DependentArray(ParameterMixin):
+    value_dtype: numba.types.Type
+    size: int
+    is_output: bool = field(default=False)
+    name: Optional[str] = field(default=None)
+
+    def specialize(self, template_arguments):
+        value_dtype = self.value_dtype.resolve(template_arguments)
+        size = self.size.resolve(template_arguments)
+        return Array(
+            value_dtype,
+            size,
+            is_output=self.is_output,
+            name=self.name,
+        )
+
+
+@dataclass
 class TemplateParameter:
-    def __init__(self, name):
-        self.name = name
+    name: str
 
     def __repr__(self) -> str:
-        return f"{self.name}"
+        return self.name
 
 
 def internal_mangle_cpp(cpp_name: str):
@@ -546,8 +764,12 @@ class Algorithm:
         includes,
         template_parameters,
         parameters,
+        primitive,
         type_definitions=None,
         fake_return=False,
+        threads=None,
+        unique_id=None,
+        temp_storage=None,
     ):
         self.struct_name = struct_name
         self.method_name = method_name
@@ -555,37 +777,152 @@ class Algorithm:
         self.includes = includes
         self.template_parameters = template_parameters
         self.parameters = parameters
+        self.primitive = primitive
         self.type_definitions = type_definitions
         self.fake_return = fake_return
-        self._temp_storage_bytes = None
-        self._temp_storage_alignment = None
+        self.mangled_names = []
+        self.mangled_names_alloc = []
+        self._lto_irs = []
+        self.threads = threads
+        self._unique_id = None
+        self.unique_id = unique_id
+        self.temp_storage = temp_storage
+
+        if not template_parameters:
+            # We're dealing with a specialized instance.
+            if primitive.is_parent:
+                # Inject the void *addr and size parameters for structs.
+                injected = [
+                    Pointer(
+                        # numba.types.voidptr,
+                        numba.types.int8,
+                        name="addr",
+                        restrict=True,
+                        is_array_pointer=False,
+                    ),
+                    Value(numba.types.uint32, name="size"),
+                ]
+                if not self.parameters:
+                    self.parameters = [injected]
+                else:
+                    # Insert the injected parameters at the beginning of each
+                    # method's parameters.
+                    for method in self.parameters:
+                        method[:0] = injected
+            elif primitive.is_child:
+                # Inject the typed pointer to the parent instance type as
+                # the first parameter.
+                parent_node = primitive.parent.node
+                parent_instance_type = parent_node.return_type
+                parent_algo = parent_node.instance.specialization
+                parent_names = parent_algo.names
+                injected = [
+                    Pointer(
+                        parent_instance_type,
+                        name="algorithm",
+                        type_name=parent_names.algorithm_t,
+                        restrict=True,
+                        is_array_pointer=False,
+                    )
+                ]
+                if not self.parameters:
+                    self.parameters = [injected]
+                else:
+                    # Insert the injected parameter at the beginning of each
+                    # method's parameters.
+                    for method in self.parameters:
+                        method[:0] = injected
+
+            if False:
+                # Collect any LTO-IRs that may already be present.
+                for method in self.parameters:
+                    for param in method:
+                        try:
+                            ltoir = param.ltoir
+                        except AttributeError:
+                            continue
+                        self._lto_irs.append(ltoir)
 
     def __repr__(self) -> str:
-        return f"{self.struct_name}::{self.method_name}{self.template_parameters}: {self.parameters}"
+        if self.template_parameters:
+            template_params = ", ".join(
+                [f"{tp.name}" for tp in self.template_parameters]
+            )
+            template_params = f"<{template_params}>:"
+        else:
+            template_params = ""
 
-    def mangled_name(self, parameters):
-        return mangle_symbol(self.c_name, parameters)
+        return (
+            f"{self.struct_name}::{self.method_name}"
+            f"{template_params}({self.parameters})"
+        )
+
+    @property
+    def unique_id(self):
+        return self._unique_id
+
+    @unique_id.setter
+    def unique_id(self, value):
+        if value is None or not isinstance(value, int):
+            return
+        if self._unique_id == value:
+            return
+        self._unique_id = value
+        # Invalidate cached LTO-IR and derived size/alignment info because
+        # symbol names depend on the unique_id.
+        self._lto_irs = []
+        if "lto_irs" in self.__dict__:
+            del self.__dict__["lto_irs"]
+        self._temp_storage_bytes = None
+        self._temp_storage_alignment = None
+        self._algorithm_struct_size = None
+        self._algorithm_struct_alignment = None
+
+    @property
+    def unique_name(self):
+        unique_id = self._unique_id
+        unique_name = self.c_name
+        if unique_id is not None:
+            unique_name += f"_{unique_id}"
+        return unique_name
 
     def specialize(self, template_arguments):
         # No partial specializations for now
         template_list = []
+        template_names = []
         for template_parameter in self.template_parameters:
             if template_parameter.name not in template_arguments:
                 raise ValueError(
                     f"Template argument {template_parameter.name} not provided"
                 )
             template_argument = template_arguments[template_parameter.name]
+            template_names.append(template_parameter.name)
             if isinstance(template_argument, int):
                 template_list.append(str(template_argument))
             elif isinstance(template_argument, str):
                 template_list.append(template_argument)
             else:
-                template_list.append(numba_type_to_cpp(template_argument))
-        template_list = ", ".join(template_list)
+                try:
+                    int_val = int(template_argument)
+                    template_list.append(str(int_val))
+                except TypeError:
+                    template_list.append(numba_type_to_cpp(template_argument))
 
-        # '::cuda::std::int32_t, 32' -> __cuda__std__int32_t__32
-        mangle = internal_mangle_cpp(template_list)
+        # Purely aesthetic tweaks: put each template on a new line, and add
+        # a trailing comment indicating the corresponding template parameter
+        # name.
+        assert len(template_list) == len(template_names)
+        commas = ([","] * (len(template_list) - 1)) + [""]
+        template_list_pretty = "\n".join(
+            f"    {template}{comma} // {name}"
+            for (template, name, comma) in zip(
+                template_list,
+                template_names,
+                commas,
+            )
+        )
 
+        assert len(self.parameters) in (0, 1)
         specialized_parameters = []
         for method in self.parameters:
             specialized_signature = []
@@ -598,37 +935,118 @@ class Algorithm:
             except SubstitutionFailure:
                 pass  # Substitution failure is not an error
 
-        specialized_name = f"{self.struct_name}<{template_list}>"
+        specialized_name = f"{self.struct_name}<\n{template_list_pretty}\n>"
         return Algorithm(
             specialized_name,
             self.method_name,
-            self.c_name + mangle,
+            # self.c_name + mangle,
+            self.c_name,
             self.includes,
             [],
             specialized_parameters,
+            primitive=self.primitive,
+            unique_id=self.unique_id,
             type_definitions=self.type_definitions,
             fake_return=self.fake_return,
+            threads=self.threads,
         )
 
     @property
+    def size_and_alignment_source_code(self):
+        algorithm_name = self.struct_name
+        includes = self.includes or []
+        type_definitions = self.type_definitions or []
+
+        buf = StringIO()
+        w = buf.write
+
+        w("#include <cuda/std/cstdint>\n")
+        for include in includes:
+            w(f"#include <{include}>\n")
+        for type_definition in type_definitions:
+            w(f"{type_definition.code}\n")
+
+        w(f"using algorithm_t = cub::{algorithm_name};\n")
+        prefix = "__device__ constexpr unsigned algorithm_struct_"
+        w(f"{prefix}size = sizeof(algorithm_t);\n")
+        w(f"{prefix}alignment = alignof(algorithm_t);\n")
+
+        w("using temp_storage_t = typename algorithm_t::TempStorage;\n")
+        prefix = "__device__ constexpr unsigned temp_storage_"
+        w(f"{prefix}bytes = sizeof(temp_storage_t);\n")
+        w(f"{prefix}alignment = alignof(temp_storage_t);\n")
+
+        src = buf.getvalue()
+
+        return src
+
+    def get_size_and_alignment_info(self):
+        src = self.size_and_alignment_source_code
+        rewriter = _get_source_code_rewriter()
+        if rewriter is not None:
+            src = rewriter(src, self)
+        device = cuda.get_current_device()
+        cc_major, cc_minor = device.compute_capability
+        cc = cc_major * 10 + cc_minor
+        _, ptx = nvrtc.compile(cpp=src, cc=cc, rdc=True, code="ptx")
+
+        algorithm_struct_size = find_unsigned("algorithm_struct_size", ptx)
+        algorithm_struct_alignment = find_unsigned("algorithm_struct_alignment", ptx)
+
+        temp_storage_bytes = find_unsigned("temp_storage_bytes", ptx)
+        temp_storage_alignment = find_unsigned("temp_storage_alignment", ptx)
+
+        return SimpleNamespace(
+            algorithm_struct_size=algorithm_struct_size,
+            algorithm_struct_alignment=algorithm_struct_alignment,
+            temp_storage_bytes=temp_storage_bytes,
+            temp_storage_alignment=temp_storage_alignment,
+        )
+
+    @cached_property
+    def _size_and_alignment_info(self):
+        return self.get_size_and_alignment_info()
+
+    @property
+    def algorithm_struct_size(self):
+        return self._size_and_alignment_info.algorithm_struct_size
+
+    @property
+    def algorithm_struct_alignment(self):
+        return self._size_and_alignment_info.algorithm_struct_alignment
+
+    @property
     def temp_storage_bytes(self):
-        if self._temp_storage_bytes is None:
-            raise RuntimeError(
-                "Temporary storage bytes not computed yet.  Call get_lto_ir() first."
-            )
-        return self._temp_storage_bytes
+        return self._size_and_alignment_info.temp_storage_bytes
 
     @property
     def temp_storage_alignment(self):
-        if self._temp_storage_alignment is None:
-            raise RuntimeError(
-                "Temporary storage alignment not computed yet.  "
-                "Call get_lto_ir() first."
-            )
-        return self._temp_storage_alignment
+        return self._size_and_alignment_info.temp_storage_alignment
 
-    def get_lto_ir(self, threads=None):
-        lto_irs = []
+    @property
+    def source_code(self):
+        if len(self.template_parameters):
+            raise ValueError("Cannot generate source for a template")
+
+        primitive = self.primitive
+        if primitive.is_one_shot:
+            src = self.source_code_one_shot
+        elif primitive.is_parent:
+            src = self.source_code_parent
+        elif primitive.is_child:
+            src = self.source_code_child
+        else:
+            raise RuntimeError("Invalid primitive state: {primitive!r}")
+
+        maybe_print_src(src, f"Algorithm {self!r}")
+        return src
+
+    @property
+    def source_code_one_shot(self):
+        assert self.primitive.is_one_shot
+        assert not self.template_parameters
+
+        lto_irs = self._lto_irs
 
         if self.type_definitions:
             for type_definition in self.type_definitions:
@@ -645,7 +1063,8 @@ class Algorithm:
                         udf_declarations[param.name] = param.forward_decl()
                         lto_irs.append(param.ltoir)
 
-        algorithm_name = self.struct_name
+        self.udf_declarations = udf_declarations
+
         includes = self.includes or []
         type_definitions = self.type_definitions or []
 
@@ -659,15 +1078,27 @@ class Algorithm:
             w(f"{type_definition.code}\n")
 
         w("\n")
-        for decl in udf_declarations.values():
-            w(f"{decl}\n")
-        w("\n")
 
-        w(f"using algorithm_t = cub::{algorithm_name};\n")
-        w("using temp_storage_t = typename algorithm_t::TempStorage;\n")
-        prefix = "__device__ constexpr unsigned temp_storage_"
-        w(f"{prefix}bytes = sizeof(temp_storage_t);\n")
-        w(f"{prefix}alignment = alignof(temp_storage_t);\n")
+        if udf_declarations:
+            w("\n")
+            for decl in udf_declarations.values():
+                w(f"{decl}\n")
+            w("\n")
+
+        n = self.names
+
+        # Write the algorithm instantiation with template specialization,
+        # and then corresponding size and alignment information.
+        w(f"using {n.algorithm_t} = cub::{n.algorithm_name};\n")
+        prefix = "__device__ constexpr unsigned int "
+        w(f"{prefix}{n.algorithm_struct_size} = sizeof({n.algorithm_t});\n")
+        w(f"{prefix}{n.algorithm_struct_alignment} = alignof({n.algorithm_t});\n\n")
+
+        # Write the temporary storage type and size/alignment information.
+        w(f"using {n.temp_storage_t} = typename {n.algorithm_t}::TempStorage;\n")
+        prefix = "__device__ constexpr unsigned int "
+        w(f"{prefix}{n.temp_storage_bytes} = sizeof({n.temp_storage_t});\n")
+        w(f"{prefix}{n.temp_storage_alignment} = alignof({n.temp_storage_t});\n\n")
 
         src = buf.getvalue()
 
@@ -678,93 +1109,477 @@ class Algorithm:
             func_decls = []
             param_args = []
             out_param = None
+            param_names = []
+            used_names = set()
 
-            for pid, param in enumerate(method[1:]):
+            for pid, param in enumerate(method):
+                if isinstance(param, TempStoragePointer):
+                    # Handled separately in the explicit temp storage path.
+                    continue
                 if isinstance(param, StatelessOperator):
-                    func_decls.append(param.wrap_decl(f"param_{pid}"))
-                    param_args.append(f"param_{pid}")
+                    param_name = _unique_param_name(
+                        param.op_name or f"param_{pid}",
+                        used_names,
+                    )
+                    param_names.append(param_name)
+                    func_decls.append(param.wrap_decl(param_name))
+                    param_args.append(param_name)
                 elif isinstance(param, StatefulOperator):
-                    name = f"param_{pid}"
-                    func_decls.append(param.wrap_decl(name))
-                    param_args.append(name)
-                    param_decls.append(param.cpp_decl(name))
+                    param_name = _unique_param_name(
+                        param.op_name or f"param_{pid}",
+                        used_names,
+                    )
+                    param_names.append(param_name)
+                    func_decls.append(param.wrap_decl(param_name))
+                    param_args.append(param_name)
+                    param_decls.append(param.cpp_decl(param_name))
                 elif isinstance(param, CxxFunction):
+                    param_name = _pick_param_name(param, pid, used_names)
+                    param_names.append(param_name)
                     param_args.append(param.cpp)
                 else:
-                    name = f"param_{pid}"
-                    param_decls.append(param.cpp_decl(name))
+                    param_name = _pick_param_name(param, pid, used_names)
+                    param_names.append(param_name)
+                    param_decls.append(param.cpp_decl(param_name))
                     if not self.fake_return and param.is_output:
                         if out_param is not None:
                             raise ValueError("Multiple output parameters not supported")
-                        out_param = name
+                        out_param = param_name
                     else:
-                        param_args.append(name)
+                        if getattr(param, "deref_on_call", False):
+                            param_args.append(f"*{param_name}")
+                        else:
+                            param_args.append(param_name)
 
             if self.struct_name.startswith("Warp"):
+                threads = self.threads
                 if threads is None:
                     raise ValueError("Warp algorithm must specify number of threads")
-                # sub hw warps require computing masks for syncwarp, which is not supported
-                # allocate temporary storage explicitly
-                provide_alloc_version = threads == 32
-
-                # pessimistic temporary storage allocation for 1024 threads
+                # Pessimistic temporary storage allocation for a 1024-thread block.
                 storage = (
-                    "__shared__ temp_storage_t temp_storages"
+                    f"__shared__ {n.temp_storage_t} temp_storages"
                     f"[1024 / {threads}];\n"
-                    "    temp_storage_t &temp_storage = temp_storages"
+                    f"    {n.temp_storage_t} &temp_storage = temp_storages"
                     f"[threadIdx.x / {threads}];\n"
                 )
                 sync = "__syncwarp();"
             elif self.struct_name.startswith("Block"):
-                provide_alloc_version = True
-                storage = "__shared__ temp_storage_t temp_storage;"
+                storage = f"__shared__ {n.temp_storage_t} temp_storage;"
                 sync = "__syncthreads();"
 
             buf = StringIO()
             w = buf.write
 
-            mangled_name = self.mangled_name(method)
+            unique_name = self.unique_name
             param_decls_csv = ", ".join(param_decls)
             param_args_csv = ", ".join(param_args)
 
-            if provide_alloc_version:
-                w(f'extern "C" __device__ void {mangled_name}_alloc(')
+            w(f'extern "C" __device__ void {unique_name}(')
+
+            if self.implicit_temp_storage:
                 w(f"{param_decls_csv}) {{\n")
                 w(f"    {storage}\n")
                 for decl in func_decls:
                     w(f"    {decl}\n")
-                if out_param:
-                    w(f"    {out_param} = ")
-                else:
-                    w("    ")
-                w("algorithm_t(temp_storage).")
+                w("    ")
+                if out_param and not self.fake_return:
+                    w(f"{out_param} = ")
+                w(f"{n.algorithm_t}(temp_storage).")
                 w(f"{method_name}({param_args_csv});\n")
                 w(f"    {sync}\n")
                 w("}\n")
-
-            w(f'extern "C" __device__ void {mangled_name}(')
-            w("temp_storage_t *temp_storage, ")
-            w(f"{param_decls_csv}) {{\n")
-            for decl in func_decls:
-                w(f"    {decl}\n")
-            if out_param:
-                w(f"    {out_param} = ")
             else:
-                w("    ")
-            w("algorithm_t(*temp_storage).")
-            w(f"{method_name}({param_args_csv});\n")
-            w("}\n\n")
+                temp_storage_decl = "::cuda::std::uint8_t *temp_storage"
+                if param_decls_csv:
+                    w(f"{temp_storage_decl}, {param_decls_csv}) {{\n")
+                else:
+                    w(f"{temp_storage_decl}) {{\n")
+                for decl in func_decls:
+                    w(f"    {decl}\n")
+                w(
+                    "    auto &temp_storage_ref = *reinterpret_cast"
+                    f"<{n.temp_storage_t} *>(temp_storage);\n"
+                )
+                if out_param and not self.fake_return:
+                    w(f"    {out_param} = ")
+                else:
+                    w("    ")
+                w(f"{n.algorithm_t}(temp_storage_ref).")
+                w(f"{method_name}({param_args_csv});\n")
+                w("}\n\n")
 
             chunk = buf.getvalue()
             src += chunk
 
+        return src
+
+    @property
+    def names(self):
+        node = self.primitive.node
+        try:
+            target = node.target
+            target_name = node.symbol_name or f"{target.name}"
+            if "$" in target_name:
+                target_name = self.c_name if node.symbol_name is None else target_name
+            if self.unique_id is not None:
+                target_name += f"_{self.unique_id}"
+        except AttributeError:
+            target_name = self.unique_name
+        assert "$" not in target_name, target_name
+        assert not target_name[0].isdigit(), target_name
+        algorithm_t = f"{target_name}_t"
+        algorithm_struct_size = f"{algorithm_t}_struct_size"
+        algorithm_struct_alignment = f"{algorithm_t}_struct_alignment"
+        algorithm_temp_storage_size = f"{algorithm_t}_temp_storage_size"
+        algorithm_temp_storage_alignment = f"{algorithm_t}_temp_storage_alignment"
+        temp_storage_t = f"{target_name}_temp_storage_t"
+        temp_storage_bytes = f"{temp_storage_t}_bytes"
+        temp_storage_alignment = f"{temp_storage_t}_alignment"
+        if self.primitive.is_parent:
+            constructor_name = f"{target_name}_construct"
+            destructor_name = f"{target_name}_destruct"
+        else:
+            constructor_name = None
+            destructor_name = None
+
+        return SimpleNamespace(
+            target_name=target_name,
+            algorithm_name=self.struct_name,
+            algorithm_t=algorithm_t,
+            algorithm_struct_size=algorithm_struct_size,
+            algorithm_struct_alignment=algorithm_struct_alignment,
+            algorithm_temp_storage_size=algorithm_temp_storage_size,
+            algorithm_temp_storage_alignment=algorithm_temp_storage_alignment,
+            temp_storage_t=temp_storage_t,
+            temp_storage_bytes=temp_storage_bytes,
+            temp_storage_alignment=temp_storage_alignment,
+            constructor_name=constructor_name,
+            destructor_name=destructor_name,
+        )
+
+    @property
+    def source_code_parent(self):
+        assert self.primitive.is_parent
+        assert not self.template_parameters
+
+        lto_irs = self._lto_irs
+
+        if self.type_definitions:
+            for type_definition in self.type_definitions:
+                lto_irs.extend(type_definition.lto_irs)
+
+        udf_declarations = {}
+
+        for method in self.parameters:
+            for param in method:
+                if isinstance(param, StatelessOperator) or isinstance(
+                    param, StatefulOperator
+                ):
+                    if param.name not in udf_declarations:
+                        udf_declarations[param.name] = param.forward_decl()
+                        lto_irs.append(param.ltoir)
+
+        self.udf_declarations = udf_declarations
+
+        includes = self.includes or []
+        type_definitions = self.type_definitions or []
+
+        buf = StringIO()
+        w = buf.write
+
+        w("#include <cuda/std/cstdint>\n")
+        for include in includes:
+            w(f"#include <{include}>\n")
+        for type_definition in type_definitions:
+            w(f"{type_definition.code}\n")
+
+        w("\n")
+
+        if udf_declarations:
+            w("\n")
+            for decl in udf_declarations.values():
+                w(f"{decl}\n")
+            w("\n")
+
+        n = self.names
+
+        # Write the algorithm instantiation with template specialization,
+        # and then corresponding size and alignment information.
+        w(f"using {n.algorithm_t} = cub::{n.algorithm_name};\n")
+        prefix = "__device__ constexpr unsigned int "
+        w(f"{prefix}{n.algorithm_struct_size} = sizeof({n.algorithm_t});\n")
+        w(f"{prefix}{n.algorithm_struct_alignment} = alignof({n.algorithm_t});\n\n")
+
+        # Write the temporary storage type and size/alignment information.
+        w(f"using {n.temp_storage_t} = typename {n.algorithm_t}::TempStorage;\n")
+        prefix = "__device__ constexpr unsigned int "
+        w(f"{prefix}{n.temp_storage_bytes} = sizeof({n.temp_storage_t});\n")
+        w(f"{prefix}{n.temp_storage_alignment} = alignof({n.temp_storage_t});\n\n")
+
+        src = buf.getvalue()
+
+        parameters = self.parameters
+        num_params = len(parameters)
+        assert num_params in (0, 1), (
+            f"Expected 0 or 1 parameters, got {num_params}. Parameters: {parameters}"
+        )
+
+        method = [] if not parameters else parameters[0]
+
+        param_decls = []
+        func_decls = []
+        param_args = []
+        param_names = []
+        out_param = None
+        used_names = set()
+
+        for pid, param in enumerate(method):
+            if isinstance(param, StatelessOperator):
+                param_name = _unique_param_name(
+                    param.op_name or f"param_{pid}", used_names
+                )
+                param_names.append(param_name)
+                func_decls.append(param.wrap_decl(param_name))
+                param_args.append(param_name)
+            elif isinstance(param, StatefulOperator):
+                param_name = _unique_param_name(
+                    param.op_name or f"param_{pid}", used_names
+                )
+                param_names.append(param_name)
+                func_decls.append(param.wrap_decl(param_name))
+                param_args.append(param_name)
+                param_decls.append(param.cpp_decl(param_name))
+            elif isinstance(param, CxxFunction):
+                param_name = _pick_param_name(param, pid, used_names)
+                param_names.append(param_name)
+                param_args.append(param.cpp)
+            else:
+                param_name = _pick_param_name(param, pid, used_names)
+                param_names.append(param_name)
+                param_decls.append(param.cpp_decl(param_name))
+                # XXX: I think we can remove this for parent source.
+                if not self.fake_return and param.is_output:
+                    if out_param is not None:
+                        raise ValueError("Multiple output parameters not supported")
+                    out_param = param_name
+                else:
+                    # Skip the first two parameters, which were our injected
+                    # addr/size parameters.
+                    if pid == 0:
+                        assert param_name == "addr", param_name
+                        continue
+                    elif pid == 1:
+                        assert param_name == "size", param_name
+                        continue
+                    if isinstance(param, TempStoragePointer):
+                        param_args.append(
+                            f"*reinterpret_cast<{n.temp_storage_t} *>({param_name})"
+                        )
+                    elif getattr(param, "deref_on_call", False):
+                        param_args.append(f"*{param_name}")
+                    else:
+                        param_args.append(param_name)
+
+        buf = StringIO()
+        w = buf.write
+
+        param_decls_csv = ",\n".join(f"    {p}" for p in param_decls)
+        param_args_csv = ", ".join(param_args)
+
+        # Constructor.
+        w("// Constructor\n")
+        w(f'extern "C" __device__ {n.algorithm_t}* {n.constructor_name}(\n')
+        w(f"{param_decls_csv}\n    )\n{{\n")
+        w(f"    if (size < sizeof({n.algorithm_t})) {{\n")
+        w("        return nullptr;\n")
+        w("    }\n")
+        addr_cast = "reinterpret_cast<uintptr_t>(addr)"
+        w(f"    if ({addr_cast} % alignof({n.algorithm_t}) != 0) {{\n")
+        w("         return nullptr;\n")
+        w("    }\n")
+        w(f"    return new (addr) {n.algorithm_t}({param_args_csv});\n")
+        w("}\n\n")
+
+        # Destructor.
+        w("// Destructor\n")
+        w(f'extern "C" __device__ void {n.destructor_name}(\n')
+        w(f"    {n.algorithm_t}* __restrict__ algorithm\n    )\n{{\n")
+        w("    if (algorithm != nullptr) {\n")
+        w(f"        algorithm->~{n.algorithm_t}();\n")
+        w("    }\n")
+        w("}\n\n")
+
+        chunk = buf.getvalue()
+        src += chunk
+
+        return src
+
+    @property
+    def source_code_child(self):
+        assert self.primitive.is_child
+        assert not self.template_parameters
+
+        lto_irs = self._lto_irs
+
+        if self.type_definitions:
+            for type_definition in self.type_definitions:
+                lto_irs.extend(type_definition.lto_irs)
+
+        udf_declarations = {}
+
+        for method in self.parameters:
+            for param in method:
+                if isinstance(param, StatelessOperator) or isinstance(
+                    param, StatefulOperator
+                ):
+                    if param.name not in udf_declarations:
+                        udf_declarations[param.name] = param.forward_decl()
+                        lto_irs.append(param.ltoir)
+
+        self.udf_declarations = udf_declarations
+
+        type_definitions = self.type_definitions or []
+
+        buf = StringIO()
+        w = buf.write
+
+        for type_definition in type_definitions:
+            w(f"{type_definition.code}\n")
+
+        if udf_declarations:
+            w("\n")
+            for decl in udf_declarations.values():
+                w(f"{decl}\n")
+            w("\n")
+
+        src = buf.getvalue()
+
+        # method_name = self.method_name
+
+        assert len(self.parameters) == 1
+
+        method = self.parameters[0]
+
+        param_decls = []
+        func_decls = []
+        param_args = []
+        param_names = []
+        out_param = None
+        used_names = set()
+
+        for pid, param in enumerate(method):
+            if isinstance(param, StatelessOperator):
+                param_name = _unique_param_name(
+                    param.op_name or f"param_{pid}", used_names
+                )
+                param_names.append(param_name)
+                func_decls.append(param.wrap_decl(param_name))
+                param_args.append(param_name)
+            elif isinstance(param, StatefulOperator):
+                param_name = _unique_param_name(
+                    param.op_name or f"param_{pid}", used_names
+                )
+                param_names.append(param_name)
+                func_decls.append(param.wrap_decl(param_name))
+                param_args.append(param_name)
+                param_decls.append(param.cpp_decl(param_name))
+            elif isinstance(param, CxxFunction):
+                param_name = _pick_param_name(param, pid, used_names)
+                param_names.append(param_name)
+                param_args.append(param.cpp)
+            else:
+                param_name = _pick_param_name(param, pid, used_names)
+                param_names.append(param_name)
+                param_decls.append(param.cpp_decl(param_name))
+                # XXX: I think we can remove this for parent source.
+                if not self.fake_return and param.is_output:
+                    if out_param is not None:
+                        raise ValueError("Multiple output parameters not supported")
+                    out_param = param_name
+                else:
+                    # Skip the first parameter, which was our injected
+                    # parent pointer.
+                    if pid == 0:
+                        assert param_name == "algorithm", param_name
+                        continue
+                    if getattr(param, "deref_on_call", False):
+                        param_args.append(f"*{param_name}")
+                    else:
+                        param_args.append(param_name)
+
+        buf = StringIO()
+        w = buf.write
+
+        primitive = self.primitive
+        node = primitive.node
+        parent_node = node.parent_node
+        parent_algo = parent_node.instance.specialization
+        names = parent_algo.names
+        target_name = names.target_name
+        c_name = primitive.c_name
+        func_name = f"{target_name}_{c_name}"
+        self.c_name = func_name
+
+        param_decls_csv = ",\n".join(f"    {p}" for p in param_decls)
+        param_args_csv = ",\n".join(f"        {p}" for p in param_args)
+
+        w(f"// {self.method_name}\n")
+        w(f'extern "C" __device__ void {func_name}(\n')
+        w(f"{param_decls_csv}\n    )\n{{\n")
+        w(f"    algorithm->{self.method_name}(\n{param_args_csv}\n    );\n")
+        w("}\n\n")
+
+        chunk = buf.getvalue()
+        src += chunk
+
+        return src
+
+    def get_lto_ir(self, threads=None):
+        # Compatibility with original two-phase API.
+        if threads is not None:
+            self.threads = threads
+        return self.lto_irs
+
+    @cached_property
+    def lto_irs(self):
         device = cuda.get_current_device()
         cc_major, cc_minor = device.compute_capability
         cc = cc_major * 10 + cc_minor
-        # N.B. Uncomment this to immediately print generated source to stdout.
-        # print(src)
-        _, blob = nvrtc.compile(cpp=src, cc=cc, rdc=True, code="lto")
-        lto_irs.append(blob)
+        src = self.source_code
+
+        primitive = self.primitive
+        if primitive.is_parent:
+            children = primitive.node.children
+            if children:
+                seen = set()
+                child_sources = []
+                for child in children:
+                    child_algo = child.instance.specialization
+                    key = child_algo.c_name
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    child_sources.append(child_algo.source_code)
+                src += "\n".join(child_sources)
+
+        rewriter = _get_source_code_rewriter()
+        if rewriter is not None:
+            src = rewriter(src, self)
+
+        lto_irs = self._lto_irs
+
+        maybe_print_src(src, f"Algorithm {self!r}")
+        _, blob = nvrtc.compile(
+            cpp=src,
+            cc=cc,
+            rdc=True,
+            code="lto",
+        )
+        obj = LTOIR(
+            name=self.c_name,
+            data=blob,
+        )
+        lto_irs.append(obj)
 
         # Convert the LTO into PTX in order to extract the size and alignment
         # variables.
@@ -777,55 +1592,164 @@ class Algorithm:
         linker = Linker(ltoir_obj, options=linker_options)
         linked_ptx = linker.link("ptx")
         ptx = linked_ptx.code.decode("utf-8")
-        self._temp_storage_bytes = find_unsigned("temp_storage_bytes", ptx)
-        self._temp_storage_alignment = find_unsigned("temp_storage_alignment", ptx)
+        suffixes = (
+            "temp_storage_t_bytes",
+            "temp_storage_t_alignment",
+            "t_struct_size",
+            "t_struct_alignment",
+        )
+        ui = find_unsigned_ints_in_ptx_by_suffix(suffixes, ptx)
+        self._temp_storage_bytes = ui.temp_storage_t_bytes
+        self._temp_storage_alignment = ui.temp_storage_t_alignment
+        self._algorithm_struct_size = ui.t_struct_size
+        self._algorithm_struct_alignment = ui.t_struct_alignment
 
         return lto_irs
 
-    def codegen(self, func_to_overload):
+    def _load_unsigned_ints_from_ptx(self, ptx, names):
+        """
+        Helper function to find unsigned integers in the PTX code.
+        """
+        found = {}
+        for name in names:
+            value = find_unsigned(name, ptx)
+            if value is not None:
+                found[name] = value
+        return found
+
+    def create_codegens(self, parameters=None, func_to_overload=None):
         if len(self.template_parameters):
             raise ValueError("Cannot generate codegen for a template")
 
-        for method in self.parameters:
-            self.codegen_method(func_to_overload, method, self.mangled_name(method))
-            self.codegen_method(
-                func_to_overload, method[1:], self.mangled_name(method) + "_alloc"
+        results = []
+
+        if parameters is None:
+            parameters = self.parameters
+        else:
+            if not isinstance(parameters, (list, tuple)):
+                parameters = [parameters]
+            # Ensure all parameters are ones we know about.
+            given_parameters = set(tuple(p) for p in parameters)
+            known_parameters = set(tuple(p) for p in self.parameters)
+            if not given_parameters.issubset(known_parameters):
+                raise ValueError(
+                    "Given parameters do not match known parameters: "
+                    f"{given_parameters - known_parameters}"
+                )
+
+        def is_temp_storage_param(param):
+            if isinstance(param, TempStoragePointer):
+                return True
+            if (
+                isinstance(param, Pointer)
+                and getattr(param, "name", None) == "temp_storage"
+            ):
+                first_dtype = normalize_dtype_param(param.value_dtype)
+                return (
+                    isinstance(first_dtype, numba.types.Integer)
+                    and first_dtype.bitwidth == 8
+                )
+            return False
+
+        num_params = len(parameters)
+        assert num_params in (0, 1), (
+            f"Expected 0 or 1 parameters, got {num_params}. Parameters: {parameters}"
+        )
+
+        unique_name = self.unique_name
+        if not parameters:
+            parameters = [[]]
+        for method in parameters:
+            params = method
+            if (
+                method
+                and is_temp_storage_param(method[0])
+                and self.implicit_temp_storage
+            ):
+                params = method[1:]
+            results.append(
+                self.create_codegen_method(
+                    params,
+                    unique_name,
+                    func_to_overload=func_to_overload,
+                )
             )
 
-    def codegen_method(self, func_to_overload, method, mangled_name):
+        return results
+
+    @property
+    def implicit_temp_storage(self):
+        return self.primitive.temp_storage is None
+
+    def create_codegen_method(self, method, unique_name, func_to_overload=None):
         if len(self.template_parameters):
             raise ValueError("Cannot generate codegen for a template")
 
-        def ignore_param(param):
+        def ignore_param(param, pid):
             # Stateless operators and C++ functions do not require any
             # additional argument handling or code generation, so we can
             # safely ignore them during this code gen phase.
-            ignore = isinstance(param, StatelessOperator) or isinstance(
-                param, CxxFunction
+            primitive = self.primitive
+            ignore = (
+                isinstance(param, StatelessOperator)
+                or isinstance(param, CxxFunction)
+                or (
+                    (primitive.is_parent and pid in (0, 1))
+                    or (primitive.is_child and pid == 0)
+                )
             )
             return ignore
 
-        def intrinsic_impl(*args):
+        def intrinsic_impl(*outer_args):
             def codegen(context, builder, sig, args):
                 types = []
                 arguments = []
                 ret = None
                 arg_id = 0
-                for param in method:
-                    if ignore_param(param):
+                primitive = self.primitive
+                for pid, param in enumerate(method):
+                    if ignore_param(param, pid):
                         continue
 
                     dtype = param.dtype()
                     if isinstance(param, StatefulOperator):
+                        # Dereference the local array of 1 element.
+                        # if isinstance(dtype, numba.types.Array):
+                        #    dtype = dtype.dtype
+
                         arg = args[arg_id]
-                        state_ptr = cgutils.create_struct_proxy(dtype)(
-                            context, builder, arg
-                        ).data
-                        void_ptr = builder.bitcast(
-                            state_ptr, ir.PointerType(ir.IntType(8))
-                        )
-                        types.append(ir.PointerType(ir.IntType(8)))
-                        arguments.append(void_ptr)
+
+                        try:
+                            state_ptr_proxy = cgutils.create_struct_proxy(dtype)(
+                                context, builder, arg
+                            )
+                        except AssertionError:
+                            dtype = dtype.dtype
+                            state_ptr_proxy = cgutils.create_struct_proxy(dtype)(
+                                context, builder, arg
+                            )
+
+                        is_data_ptr = None
+                        try:
+                            state_ptr = state_ptr_proxy.data
+                            is_data_ptr = True
+                        except KeyError:
+                            state_ptr = state_ptr_proxy._getpointer()
+                            is_data_ptr = False
+
+                        if is_data_ptr:
+                            void_ptr = builder.bitcast(
+                                state_ptr, ir.PointerType(ir.IntType(8))
+                            )
+                            types.append(ir.PointerType(ir.IntType(8)))
+                            arguments.append(void_ptr)
+                        else:
+                            void_ptr = builder.bitcast(
+                                state_ptr, ir.PointerType(ir.IntType(8))
+                            )
+                            types.append(ir.PointerType(ir.IntType(8)))
+                            arguments.append(void_ptr)
+
                     elif isinstance(param, Reference):
                         if param.is_output:
                             ptr = cgutils.alloca_once(
@@ -850,13 +1774,20 @@ class Algorithm:
                         if param.is_output:
                             raise ValueError("Output arrays not supported")
                         arg = args[arg_id]
-                        data_type = context.get_value_type(dtype.dtype)
+                        element_dtype = getattr(dtype, "dtype", None)
+                        data_type = context.get_value_type(element_dtype)
+                        data_ptr = cgutils.create_struct_proxy(dtype)(
+                            context, builder, arg
+                        ).data
+                        if element_dtype == numba.types.boolean:
+                            # Numba boolean arrays are byte-addressed; use i8*
+                            # to avoid i1* mismatches in LLVM calls.
+                            data_type = context.get_value_type(numba.types.uint8)
+                            data_ptr = builder.bitcast(
+                                data_ptr, ir.PointerType(data_type)
+                            )
                         types.append(ir.PointerType(data_type))
-                        arguments.append(
-                            cgutils.create_struct_proxy(dtype)(
-                                context, builder, arg
-                            ).data
-                        )
+                        arguments.append(data_ptr)
                     else:
                         if param.is_output:
                             raise ValueError("Output values not supported")
@@ -868,25 +1799,98 @@ class Algorithm:
                     if not param.is_output:
                         arg_id += 1
 
-                function_type = ir.FunctionType(ir.VoidType(), types)
-                function = cgutils.get_or_insert_function(
-                    builder.module, function_type, mangled_name
-                )
-                builder.call(function, arguments)
+                if primitive.is_one_shot:
+                    function_type = ir.FunctionType(ir.VoidType(), types)
+                    function = cgutils.get_or_insert_function(
+                        builder.module, function_type, unique_name
+                    )
+                    builder.call(function, arguments)
+                    if ret is not None:
+                        return builder.load(ret)
+                elif primitive.is_parent:
+                    assert ret is None
+                    # We need to stack-alloc sufficient space for the struct
+                    # and then call the constructor shim with the addr and
+                    # size parameters injected as the first two arguments.
+                    primitive = self.primitive
+                    node = primitive.node
+                    algo = node.instance.specialization
+                    names = algo.names
+                    struct_size = primitive.algorithm_struct_size
+                    struct_alignment = primitive.algorithm_struct_alignment
+                    buf_name = f"{names.target_name}_buf"
+                    buf = cgutils.alloca_once(
+                        builder,
+                        ir.IntType(8),
+                        size=struct_size,
+                        name=buf_name,
+                    )
+                    buf.align = struct_alignment
+                    addr_ty = ir.PointerType(ir.IntType(8))
+                    addr = builder.bitcast(buf, addr_ty)
+                    size_ty = ir.IntType(32)
+                    size = ir.Constant(size_ty, struct_size)
+                    # Inject our addr and size parameters as the first two
+                    # arguments to the intrinsic.  Ditto for the types.
+                    arguments[:0] = [addr, size]
+                    types[:0] = [addr_ty, size_ty]
 
-                if ret is not None:
-                    return builder.load(ret)
+                    function_type = ir.FunctionType(addr_ty, types)
+                    function = cgutils.get_or_insert_function(
+                        builder.module, function_type, names.constructor_name
+                    )
+                    result = builder.call(function, arguments)
+                    node.cg_details = SimpleNamespace(
+                        buf=buf,
+                        addr=addr,
+                        size=size,
+                        arguments=arguments,
+                        types=types,
+                        result=result,
+                    )
+                    return result
+                elif primitive.is_child:
+                    assert ret is None
+                    primitive = self.primitive
+                    node = primitive.node
+                    parent_node = node.parent_node
+                    parent_cg_details = parent_node.cg_details
+                    parent_algo = parent_node.instance.specialization
+                    func_name = f"{parent_algo.names.target_name}_{primitive.c_name}"
+
+                    parent_ptr = parent_cg_details.result
+                    arguments.insert(0, parent_ptr)
+                    ptr_ty = ir.PointerType(parent_ptr.type.pointee)
+                    types.insert(0, ptr_ty)
+
+                    function_type = ir.FunctionType(ir.VoidType(), types)
+                    function = cgutils.get_or_insert_function(
+                        builder.module, function_type, func_name
+                    )
+                    builder.call(function, arguments)
+                    return None
+                else:
+                    raise RuntimeError("Invalid primitive state: {primitive!r}")
 
             params = []
-            ret = numba.types.void
-            for param in method:
-                if ignore_param(param):
+            primitive = self.primitive
+            # For two-phase invocables created outside the kernel, there may
+            # be no CoopNode attached yet. Default to void in that case.
+            if primitive.node is None:
+                ret = numba.types.void
+            else:
+                ret = primitive.node.return_type
+
+            for pid, param in enumerate(method):
+                if ignore_param(param, pid):
                     continue
 
                 if param.is_output:
                     if ret is not numba.types.void:
-                        raise ValueError("Multiple output parameters not supported")
-                    ret = param.dtype()
+                        if ret != param.dtype():
+                            raise ValueError("Multiple output parameters not supported")
+                    else:
+                        ret = param.dtype()
                 else:
                     params.append(param.dtype())
 
@@ -905,21 +1909,352 @@ class Algorithm:
         wrapped_algorithm_impl = war_introspection(
             algorithm_impl, num_user_provided_params
         )
-        overload(func_to_overload, target="cuda")(wrapped_algorithm_impl)
+
+        if func_to_overload is not None:
+            overload(func_to_overload, target="cuda")(
+                wrapped_algorithm_impl,
+            )
+            return
+
+        cg = SimpleNamespace(
+            method=method,
+            unique_name=unique_name,
+            intrinsic_impl=intrinsic_impl,
+            numba_intrinsic=numba_intrinsic,
+            algorithm_impl=algorithm_impl,
+            wrapped_algorithm_impl=wrapped_algorithm_impl,
+        )
+
+        return cg
+
+    def codegen(self, func_to_overload):
+        self.create_codegens(func_to_overload=func_to_overload)
+
+
+def _dedupe_ltoirs(ltoirs):
+    seen = set()
+    result = []
+    for ltoir in ltoirs:
+        key = (ltoir.name, hash(ltoir.data))
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(ltoir)
+    return result
+
+
+def _collect_udf_decls(algo):
+    udf_decls = OrderedDict()
+    for method in algo.parameters:
+        for param in method:
+            if isinstance(param, (StatelessOperator, StatefulOperator)):
+                if param.name not in udf_decls:
+                    udf_decls[param.name] = param.forward_decl()
+    return udf_decls
+
+
+def _collect_extra_ltoirs(algo):
+    extras = []
+    if algo.type_definitions:
+        for type_definition in algo.type_definitions:
+            extras.extend(getattr(type_definition, "lto_irs", []))
+    for method in algo.parameters:
+        for param in method:
+            ltoir = getattr(param, "ltoir", None)
+            if ltoir is not None:
+                extras.append(ltoir)
+    return _dedupe_ltoirs(extras)
+
+
+def _unique_param_name(base, used):
+    if base not in used:
+        used.add(base)
+        return base
+    idx = 1
+    while True:
+        name = f"{base}_{idx}"
+        if name not in used:
+            used.add(name)
+            return name
+        idx += 1
+
+
+def _pick_param_name(param, pid, used):
+    base = param.name or f"param_{pid}"
+    if getattr(param, "is_output", False):
+        if param.name is None or base.startswith("param_"):
+            is_output_array = isinstance(param, Array) or (
+                isinstance(param, Pointer) and getattr(param, "is_array_pointer", False)
+            )
+            if is_output_array:
+                preferred = ("output", "result")
+            else:
+                preferred = ("result", "output")
+            for candidate in preferred:
+                if candidate not in used:
+                    return _unique_param_name(candidate, used)
+            return _unique_param_name(preferred[0], used)
+    return _unique_param_name(base, used)
+
+
+def _param_coalesce_key(param):
+    if isinstance(param, Array):
+        return (
+            "Array",
+            str(param.value_dtype),
+            param.size,
+            param.is_output,
+            param.is_array_pointer,
+            param.restrict,
+        )
+    if isinstance(param, Pointer):
+        return (
+            "Pointer",
+            str(param.value_dtype),
+            param.type_name,
+            param.is_output,
+            param.is_array_pointer,
+            param.restrict,
+            getattr(param, "deref_on_call", False),
+        )
+    if isinstance(param, Reference):
+        return ("Reference", str(param.value_dtype), param.is_output)
+    if isinstance(param, Value):
+        return ("Value", str(param.value_type), param.is_output)
+    if isinstance(param, StatelessOperator):
+        return (
+            "StatelessOperator",
+            param.name,
+            param.ret_cpp_type,
+            tuple(param.arg_cpp_types),
+            hash(param.ltoir.data),
+        )
+    if isinstance(param, StatefulOperator):
+        return (
+            "StatefulOperator",
+            param.name,
+            str(param.op_type),
+            param.ret_cpp_type,
+            tuple(param.arg_cpp_types),
+            hash(param.ltoir.data),
+        )
+    if isinstance(param, CxxFunction):
+        return ("CxxFunction", param.cpp, str(param.func_dtype))
+    return (type(param).__name__, repr(param))
+
+
+def algo_coalesce_key(algo, *, include_target_name: bool = True):
+    """
+    Return a hashable key describing the algorithm specialization without
+    including per-node unique IDs or variable names.
+    """
+    type_defs = []
+    for type_definition in getattr(algo, "type_definitions", None) or []:
+        code = getattr(type_definition, "code", None) or ""
+        ltoirs = getattr(type_definition, "lto_irs", []) or []
+        ltoir_hashes = tuple(hash(ltoir.data) for ltoir in ltoirs)
+        type_defs.append((code, ltoir_hashes))
+
+    params_key = tuple(
+        tuple(_param_coalesce_key(param) for param in method)
+        for method in getattr(algo, "parameters", [])
+    )
+
+    target_name = None
+    if include_target_name:
+        names = getattr(algo, "names", None)
+        target_name = getattr(names, "target_name", None)
+
+    struct_name = getattr(algo, "struct_name", None)
+    method_name = getattr(algo, "method_name", None)
+    c_name = getattr(algo, "c_name", None)
+    threads = getattr(algo, "threads", None)
+    fake_return = getattr(algo, "fake_return", None)
+    implicit_temp_storage = getattr(algo, "implicit_temp_storage", None)
+    primitive = getattr(algo, "primitive", None)
+    is_one_shot = getattr(primitive, "is_one_shot", None)
+    is_parent = getattr(primitive, "is_parent", None)
+    is_child = getattr(primitive, "is_child", None)
+
+    return (
+        target_name,
+        struct_name,
+        method_name,
+        c_name,
+        tuple(getattr(algo, "includes", None) or []),
+        tuple(type_defs),
+        params_key,
+        threads,
+        fake_return,
+        is_one_shot,
+        is_parent,
+        is_child,
+        implicit_temp_storage,
+    )
+
+
+def _strip_source_preamble(src, algo, udf_decls):
+    body = src
+    body = body.replace("#include <cuda/std/cstdint>\n", "", 1)
+    includes = algo.includes or []
+    for include in includes:
+        body = body.replace(f"#include <{include}>\n", "", 1)
+    type_definitions = algo.type_definitions or []
+    for type_definition in type_definitions:
+        code = getattr(type_definition, "code", "")
+        if code:
+            body = body.replace(f"{code}\n", "", 1)
+    for decl in udf_decls.values():
+        body = body.replace(f"{decl}\n", "", 1)
+    return body.lstrip()
+
+
+def prepare_ltoir_bundle(algorithms, *, bundle_name=None, allow_single=False):
+    if not algorithms:
+        return None
+
+    rewriter = _get_source_code_rewriter()
+    deduped_by_id = OrderedDict()
+    for algo in algorithms:
+        deduped_by_id[id(algo)] = algo
+    all_algos = list(deduped_by_id.values())
+
+    deduped_by_key = OrderedDict()
+    for algo in all_algos:
+        key = algo_coalesce_key(algo)
+        if key not in deduped_by_key:
+            deduped_by_key[key] = algo
+    algos = list(deduped_by_key.values())
+
+    if len(algos) < 2 and not allow_single:
+        return None
+
+    per_algo_udf_decls = {}
+    includes = OrderedDict()
+    type_defs = OrderedDict()
+    udf_decls = OrderedDict()
+
+    for algo in algos:
+        per_algo_udf_decls[algo] = _collect_udf_decls(algo)
+        for include in algo.includes or []:
+            includes.setdefault(include, None)
+        for type_definition in algo.type_definitions or []:
+            code = getattr(type_definition, "code", "")
+            if code:
+                type_defs.setdefault(code, None)
+        for decl in per_algo_udf_decls[algo].values():
+            udf_decls.setdefault(decl, None)
+
+    buf = StringIO()
+    w = buf.write
+    w("#include <cuda/std/cstdint>\n")
+    for include in includes.keys():
+        w(f"#include <{include}>\n")
+    for code in type_defs.keys():
+        w(f"{code}\n")
+    w("\n")
+    if udf_decls:
+        w("\n")
+        for decl in udf_decls.keys():
+            w(f"{decl}\n")
+        w("\n")
+
+    bodies = []
+    for algo in algos:
+        src = algo.source_code
+        if rewriter is not None:
+            src = rewriter(src, algo)
+        body = _strip_source_preamble(src, algo, per_algo_udf_decls[algo])
+        body = body.rstrip() + "\n"
+        bodies.append(body)
+
+    src = buf.getvalue() + "\n".join(bodies)
+
+    device = cuda.get_current_device()
+    cc_major, cc_minor = device.compute_capability
+    cc = cc_major * 10 + cc_minor
+
+    if bundle_name is None:
+        bundle_name = f"cuda_coop_bundle_{abs(hash(src))}"
+
+    _, blob = nvrtc.compile(
+        cpp=src,
+        cc=cc,
+        rdc=True,
+        code="lto",
+    )
+    bundle_ltoir = LTOIR(
+        name=bundle_name,
+        data=blob,
+    )
+
+    ltoir_obj = ObjectCode.from_ltoir(blob, name=bundle_name)
+    linker_options = LinkerOptions(
+        arch=f"sm_{cc}",
+        link_time_optimization=True,
+        ptx=True,
+    )
+    linker = Linker(ltoir_obj, options=linker_options)
+    linked_ptx = linker.link("ptx")
+    ptx = linked_ptx.code.decode("utf-8")
+
+    for algo in all_algos:
+        extras = _collect_extra_ltoirs(algo)
+        algo._lto_irs = extras
+        algo.__dict__["lto_irs"] = [bundle_ltoir] + extras
+
+        if algo.primitive.is_child:
+            continue
+
+        names = algo.names
+        temp_storage_bytes = find_unsigned(names.temp_storage_bytes, ptx)
+        temp_storage_alignment = find_unsigned(names.temp_storage_alignment, ptx)
+        algorithm_struct_size = find_unsigned(names.algorithm_struct_size, ptx)
+        algorithm_struct_alignment = find_unsigned(
+            names.algorithm_struct_alignment, ptx
+        )
+
+        algo._temp_storage_bytes = temp_storage_bytes
+        algo._temp_storage_alignment = temp_storage_alignment
+        algo._algorithm_struct_size = algorithm_struct_size
+        algo._algorithm_struct_alignment = algorithm_struct_alignment
+        algo.__dict__["_size_and_alignment_info"] = SimpleNamespace(
+            algorithm_struct_size=algorithm_struct_size,
+            algorithm_struct_alignment=algorithm_struct_alignment,
+            temp_storage_bytes=temp_storage_bytes,
+            temp_storage_alignment=temp_storage_alignment,
+        )
+
+    return bundle_ltoir
 
 
 class Invocable:
     def __init__(
         self,
-        temp_files: Sequence[BinaryIO],
-        temp_storage_bytes: int,
-        temp_storage_alignment: int,
-        algorithm: Algorithm,
+        temp_files: Sequence[BinaryIO] = None,
+        ltoir_files: Sequence[LTOIR] = None,
+        temp_storage_bytes: int = None,
+        temp_storage_alignment: int = None,
+        algorithm: Algorithm = None,
     ):
-        self._temp_files = temp_files
+        if temp_files and ltoir_files:
+            raise RuntimeError("Cannot specify both temp_files and ltoir_files.")
+        self._temp_files = temp_files or []
+        self._lto_irs = ltoir_files or []
         self._temp_storage_bytes = temp_storage_bytes
         self._temp_storage_alignment = temp_storage_alignment
-        algorithm.codegen(self)
+        self.node = None
+        if algorithm:
+            # Keep the specialization so invocables can participate in the
+            # same rewrite/type-inference paths as primitive instances.
+            self.specialization = algorithm
+            primitive = getattr(algorithm, "primitive", None)
+            if primitive is not None:
+                for key, value in primitive.__dict__.items():
+                    if key in ("node", "temp_storage"):
+                        continue
+                    self.__dict__.setdefault(key, value)
+            algorithm.codegen(self)
 
     @property
     def temp_storage_bytes(self):
@@ -929,11 +2264,142 @@ class Invocable:
     def temp_storage_alignment(self):
         return self._temp_storage_alignment
 
-    @property
+    @cached_property
     def files(self):
+        if self._temp_files:
+            return [v.name for v in self._temp_files]
+
+        # Until numba-cuda supports LTOIR objects in the jit decorator, we
+        # need to dump the binary data to a temp file first.
+        self._temp_files = [
+            make_binary_tempfile(ltoir.data, ".ltoir") for ltoir in self._lto_irs
+        ]
         return [v.name for v in self._temp_files]
 
     def __call__(self, *args):
         raise Exception(
             "__call__ should not be called directly outside of a numba.cuda.jit(...) kernel."
         )
+
+
+class BasePrimitive:
+    # Runtime reference to the corresponding CoopNode created for this
+    # primitive as part of rewriting.
+    node: "CoopNode" = None
+
+    # When true, indicates this is a parent primitive (i.e. the constructor
+    # call for the corresponding primitive's struct).
+    is_parent: bool = False
+
+    # When true, indicates this is a child primitive (i.e. a method call
+    # against an instance of the primitive's struct) of the parent captured
+    # by the `parent` field.  Invariant: `is_parent` and `is_child` can
+    # never be both set.
+    is_child: bool = False
+
+    # When true, indicates that this is a "one-shot" primitive with no
+    # persistent struct state that needs to be maintained (and thus, no
+    # capturing of a struct constructor call is required).  Mutually
+    # exclusive with both `is_parent` and `is_child` flags.
+    #
+    # N.B. The vast majority of coop primitives are one-shot.
+    is_one_shot: bool = False
+
+    # If this is a constructor/struct, the `children` field will point to
+    # zero or more instances of base primitives for subsequent method
+    # invocations against this primitive's struct.
+    children: List["BasePrimitive"] = None
+
+    # If this is a method invocation against an instance of a primitive's
+    # struct, the `parent` field points to the containing struct's base
+    # primitive instance.
+    parent = None
+
+    @property
+    def temp_storage_bytes(self):
+        return self.specialization.temp_storage_bytes
+
+    @property
+    def temp_storage_alignment(self):
+        return self.specialization.temp_storage_alignment
+
+    @property
+    def algorithm_struct_size(self):
+        return self.specialization.algorithm_struct_size
+
+    @property
+    def algorithm_struct_alignment(self):
+        return self.specialization.algorithm_struct_alignment
+
+    @cached_property
+    def lto_irs(self):
+        return self.specialization.lto_irs
+
+    @cached_property
+    def invocable(self):
+        return Invocable()
+
+    def resolve_cub_algorithm(self, algorithm_arg):
+        """
+        Returns a tuple of (algorithm_cub, algorithm_enum), where the former
+        is a string reflecting the CUB C++ algorithm name, and the later is
+        the corresponding cuda.coop algorithm enum value.
+
+        The `algorithm_arg` can be a string, integer, or enum value.
+
+        Requires subclasses to define `cub_algorithm_map` (which maps the
+        friendly algorithm Python string names to C++ counterparts), and
+        `default_algorithm`, which is the default algorithm enum value to
+        use if `algorithm_arg` is None.
+        """
+        try:
+            cub_map = self.cub_algorithm_map
+        except AttributeError:
+            cub_map = None
+        algorithm_enum = None
+        if algorithm_arg is not None:
+            enum_class = self.default_algorithm.__class__
+            if isinstance(algorithm_arg, str):
+                if not cub_map:
+                    msg = f"Invalid algorithm for {self!r}: {algorithm_arg}"
+                    raise ValueError(msg)
+                try:
+                    algorithm_cub = cub_map[algorithm_arg]
+                except KeyError as exc:
+                    msg = f"Invalid algorithm for {self!r}: {algorithm_arg}"
+                    raise ValueError(msg) from exc
+            elif isinstance(algorithm_arg, int):
+                algorithm_enum = enum_class(algorithm_arg)
+                algorithm_cub = str(algorithm_enum)
+            else:
+                enum_class = self.default_algorithm.__class__
+                if not isinstance(algorithm_arg, enum_class):
+                    msg = f"Invalid algorithm for {self!r}: {algorithm_arg}"
+                    raise ValueError(msg)
+                algorithm_cub = str(algorithm_arg)
+        else:
+            algorithm_cub = str(self.default_algorithm)
+
+        return (algorithm_cub, algorithm_enum)
+
+
+class TempStorage:
+    def __init__(
+        self,
+        size_in_bytes: int = None,
+        alignment: int = None,
+        auto_sync: bool = None,
+        sharing: Literal["shared", "exclusive"] = "shared",
+    ):
+        self.size_in_bytes = size_in_bytes
+        self.alignment = alignment
+        self.auto_sync = auto_sync
+        self.sharing = sharing
+
+
+class ThreadData:
+    def __init__(self, items_per_thread: int, dtype=None):
+        if items_per_thread <= 0:
+            raise ValueError("items_per_thread must be a positive integer")
+        self.items_per_thread = items_per_thread
+        self.dtype = dtype

@@ -791,22 +791,43 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadAlgorithm algo)
 //! ``BLOCK_LOAD_WARP_TRANSPOSE``, meaning memory references are efficiently coalesced using a warp-striped access
 //! pattern (after which items are locally reordered among threads).
 //!
-//! .. code-block:: c++
+//! .. tab-set-code::
 //!
-//!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_load.cuh>
+//!    .. code-block:: c++
 //!
-//!    __global__ void ExampleKernel(int *d_data, ...)
-//!    {
-//!        // Specialize BlockLoad for a 1D block of 128 threads owning 4 integer items each
-//!        using BlockLoad = cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE>;
+//!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_load.cuh>
 //!
-//!        // Allocate shared memory for BlockLoad
-//!        __shared__ typename BlockLoad::TempStorage temp_storage;
+//!        __global__ void ExampleKernel(int *d_data, ...)
+//!        {
+//!            // Specialize BlockLoad for a 1D block of 128 threads owning 4 integer items each
+//!            using BlockLoad = cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE>;
 //!
-//!        // Load a segment of consecutive items that are blocked across threads
-//!        int thread_data[4];
-//!        BlockLoad(temp_storage).Load(d_data, thread_data);
-//!    }
+//!            // Allocate shared memory for BlockLoad
+//!            __shared__ typename BlockLoad::TempStorage temp_storage;
+//!
+//!            // Load a segment of consecutive items that are blocked across threads
+//!            int thread_data[4];
+//!            BlockLoad(temp_storage).Load(d_data, thread_data);
+//!        }
+//!
+//!    .. code-block:: python
+//!
+//!        from numba import cuda
+//!        from cuda import coop
+//!
+//!        threads_per_block = 128
+//!        items_per_thread = 4
+//!
+//!        @cuda.jit
+//!        def kernel(d_data):
+//!            temp_storage = coop.TempStorage()
+//!            thread_data = coop.ThreadData(items_per_thread)
+//!            coop.block.load[temp_storage](
+//!                d_data,
+//!                thread_data,
+//!                algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+//!            )
+//!
 //!
 //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, ...``. The set of ``thread_data`` across the block of threads in
 //! those threads will be ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }``.
@@ -1158,22 +1179,43 @@ public:
   //! ``BLOCK_LOAD_WARP_TRANSPOSE``, meaning memory references are efficiently coalesced using a warp-striped access
   //! pattern (after which items are locally reordered among threads).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_load.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(int *d_data, ...)
-  //!    {
-  //!        // Specialize BlockLoad for a 1D block of 128 threads owning 4 integer items each
-  //!        using BlockLoad = cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_load.cuh>
   //!
-  //!        // Allocate shared memory for BlockLoad
-  //!        __shared__ typename BlockLoad::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(int *d_data, ...)
+  //!        {
+  //!            // Specialize BlockLoad for a 1D block of 128 threads owning 4 integer items each
+  //!            using BlockLoad = cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE>;
   //!
-  //!        // Load a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        BlockLoad(temp_storage).Load(d_data, thread_data);
-  //!    }
+  //!            // Allocate shared memory for BlockLoad
+  //!            __shared__ typename BlockLoad::TempStorage temp_storage;
+  //!
+  //!            // Load a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            BlockLoad(temp_storage).Load(d_data, thread_data);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            coop.block.load[temp_storage](
+  //!                d_data,
+  //!                thread_data,
+  //!                algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+  //!            )
+  //!
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, ...``. The set of ``thread_data`` across the block of threads
   //! in those threads will be ``{ [0,1,2,3], [4,5,6,7], ..., [508,509,510,511] }``.
@@ -1208,22 +1250,44 @@ public:
   //! ``BLOCK_LOAD_WARP_TRANSPOSE``, meaning memory references are efficiently coalesced using a warp-striped access
   //! pattern (after which items are locally reordered among threads).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_load.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(int *d_data, int block_items_end, ...)
-  //!    {
-  //!        // Specialize BlockLoad for a 1D block of 128 threads owning 4 integer items each
-  //!        using BlockLoad = cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_load.cuh>
   //!
-  //!        // Allocate shared memory for BlockLoad
-  //!        __shared__ typename BlockLoad::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(int *d_data, int block_items_end, ...)
+  //!        {
+  //!            // Specialize BlockLoad for a 1D block of 128 threads owning 4 integer items each
+  //!            using BlockLoad = cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE>;
   //!
-  //!        // Load a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        BlockLoad(temp_storage).Load(d_data, thread_data, block_items_end);
-  //!    }
+  //!            // Allocate shared memory for BlockLoad
+  //!            __shared__ typename BlockLoad::TempStorage temp_storage;
+  //!
+  //!            // Load a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            BlockLoad(temp_storage).Load(d_data, thread_data, block_items_end);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, block_items_end):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            coop.block.load[temp_storage](
+  //!                d_data,
+  //!                thread_data,
+  //!                algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+  //!                num_valid_items=block_items_end,
+  //!            )
+  //!
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, 6...`` and ``block_items_end`` is ``5``. The set of
   //! ``thread_data`` across the block of threads in those threads will be ``{ [0,1,2,3], [4,?,?,?], ..., [?,?,?,?] }``,
@@ -1264,22 +1328,45 @@ public:
   //! ``BLOCK_LOAD_WARP_TRANSPOSE``, meaning memory references are efficiently coalesced using a warp-striped access
   //! pattern (after which items are locally reordered among threads).
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_load.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(int *d_data, int block_items_end, ...)
-  //!    {
-  //!        // Specialize BlockLoad for a 1D block of 128 threads owning 4 integer items each
-  //!        using BlockLoad = cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_load.cuh>
   //!
-  //!        // Allocate shared memory for BlockLoad
-  //!        __shared__ typename BlockLoad::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(int *d_data, int block_items_end, ...)
+  //!        {
+  //!            // Specialize BlockLoad for a 1D block of 128 threads owning 4 integer items each
+  //!            using BlockLoad = cub::BlockLoad<int, 128, 4, BLOCK_LOAD_WARP_TRANSPOSE>;
   //!
-  //!        // Load a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        BlockLoad(temp_storage).Load(d_data, thread_data, block_items_end, -1);
-  //!    }
+  //!            // Allocate shared memory for BlockLoad
+  //!            __shared__ typename BlockLoad::TempStorage temp_storage;
+  //!
+  //!            // Load a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            BlockLoad(temp_storage).Load(d_data, thread_data, block_items_end, -1);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, block_items_end):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            coop.block.load[temp_storage](
+  //!                d_data,
+  //!                thread_data,
+  //!                algorithm=coop.BlockLoadAlgorithm.WARP_TRANSPOSE,
+  //!                num_valid_items=block_items_end,
+  //!                oob_default=-1,
+  //!            )
+  //!
   //!
   //! Suppose the input ``d_data`` is ``0, 1, 2, 3, 4, 5, 6...``, ``block_items_end`` is ``5``, and the out-of-bounds
   //! default is ``-1``. The set of ``thread_data`` across the block of threads in those threads will be

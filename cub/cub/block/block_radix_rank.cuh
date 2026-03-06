@@ -146,33 +146,60 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 //!
 //! - @granularity
 //!
-//! .. code-block:: c++
+//! .. tab-set-code::
 //!
-//!    #include <cub/cub.cuh>
+//!    .. code-block:: c++
 //!
-//!    __global__ void ExampleKernel(...)
-//!    {
-//!      constexpr int block_threads = 2;
-//!      constexpr int radix_bits = 5;
+//!        #include <cub/cub.cuh>
 //!
-//!      // Specialize BlockRadixRank for a 1D block of 2 threads
-//!      using block_radix_rank = cub::BlockRadixRank<block_threads, radix_bits, false>;
-//!      using storage_t = typename block_radix_rank::TempStorage;
+//!        __global__ void ExampleKernel(...)
+//!        {
+//!          constexpr int block_threads = 2;
+//!          constexpr int radix_bits = 5;
 //!
-//!      // Allocate shared memory for BlockRadixRank
-//!      __shared__ storage_t temp_storage;
+//!          // Specialize BlockRadixRank for a 1D block of 2 threads
+//!          using block_radix_rank = cub::BlockRadixRank<block_threads, radix_bits, false>;
+//!          using storage_t = typename block_radix_rank::TempStorage;
 //!
-//!      // Obtain a segment of consecutive items that are blocked across threads
-//!      unsigned int keys[2];
-//!      int ranks[2];
-//!      ...
+//!          // Allocate shared memory for BlockRadixRank
+//!          __shared__ storage_t temp_storage;
 //!
-//!      // Extract the lowest radix_bits from each key
-//!      cub::BFEDigitExtractor<unsigned> extractor(0, radix_bits);
-//!      block_radix_rank(temp_storage).RankKeys(keys, ranks, extractor);
+//!          // Obtain a segment of consecutive items that are blocked across threads
+//!          unsigned int keys[2];
+//!          int ranks[2];
+//!          ...
 //!
-//!      ...
-//!    }
+//!          // Extract the lowest radix_bits from each key
+//!          cub::BFEDigitExtractor<unsigned> extractor(0, radix_bits);
+//!          block_radix_rank(temp_storage).RankKeys(keys, ranks, extractor);
+//!
+//!          ...
+//!        }
+//!
+//!    .. code-block:: python
+//!
+//!        from numba import cuda
+//!        from cuda import coop
+//!
+//!        threads_per_block = 2
+//!        items_per_thread = 2
+//!        radix_bits = 5
+//!
+//!        @cuda.jit
+//!        def kernel(d_keys, d_ranks):
+//!            temp_storage = coop.TempStorage()
+//!            keys = coop.ThreadData(items_per_thread)
+//!            ranks = coop.ThreadData(items_per_thread)
+//!
+//!            coop.block.load(d_keys, keys)
+//!            coop.block.radix_rank[temp_storage](
+//!                keys,
+//!                ranks,
+//!                begin_bit=0,
+//!                end_bit=radix_bits,
+//!            )
+//!            coop.block.store(d_ranks, ranks)
+//!
 //!
 //! Suppose the set of input ``keys`` across the block of threads is ``{ [16,10], [9,11] }``.
 //! The extractor will rank only the lowest 5 bits: ``{ [16,10], [9,11] }`` (bits 0-4).
