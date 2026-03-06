@@ -27,7 +27,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
 #include <cuda/experimental/__stf/places/data_place_extension.cuh>
 #include <cuda/experimental/__stf/places/exec/green_ctx_view.cuh>
@@ -50,6 +49,9 @@
 
 namespace cuda::experimental::stf
 {
+template <typename T>
+class place_indexed_container;
+
 class exec_place;
 class exec_place_host;
 class exec_place_grid;
@@ -336,7 +338,7 @@ public:
     return ::std::hash<int>()(devid);
   }
 
-  decorated_stream getDataStream(async_resources_handle& async_resources) const;
+  decorated_stream getDataStream(place_indexed_container<::std::pair<stream_pool, stream_pool>>& stream_pools) const;
 
 private:
   /**
@@ -710,23 +712,19 @@ public:
       return device_ordinal(affine) < device_ordinal(rhs.affine);
     }
 
-    /* Return the pool associated to this place
+    /* Return a pointer to a locally-owned stream pool, or nullptr.
      *
-     * If the stream is expected to perform computation, the
-     * for_computation should be true. If we plan to use this stream for data
-     * transfers, or other means (graph capture) we set the value to false. (This
-     * flag is intended for performance matters, not correctness)
+     * If this place owns its own stream pool (e.g. green contexts, CUDA stream
+     * places), the override returns a non-null pointer.  Otherwise the base
+     * implementation returns nullptr, which tells exec_place::get_stream_pool to
+     * fall back to a container-based lookup.
+     *
+     * @param for_computation  true for a computation pool, false for data transfer
+     * @return A pointer to the locally-owned pool, or nullptr.
      */
-    virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const
+    virtual stream_pool* get_local_stream_pool(bool) const
     {
-      if (!affine.is_device())
-      {
-        fprintf(stderr, "Error: get_stream_pool virtual method is not implemented for this exec place.\n");
-        abort();
-      }
-
-      int dev_id = device_ordinal(affine);
-      return async_resources.get_device_stream_pool(dev_id, for_computation);
+      return nullptr;
     }
 
     /**
@@ -868,10 +866,8 @@ public:
     pimpl->set_affine_data_place(mv(place));
   }
 
-  stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const
-  {
-    return pimpl->get_stream_pool(async_resources, for_computation);
-  }
+  stream_pool& get_stream_pool(place_indexed_container<::std::pair<stream_pool, stream_pool>>& pools,
+                               bool for_computation) const;
 
   /**
    * @brief Get a decorated stream from the stream pool associated to this execution place.
@@ -880,19 +876,16 @@ public:
    * a CUDASTF context. This is useful when you want to use CUDASTF's place abstractions
    * (devices, green contexts) for stream management without the full task-based model.
    *
-   * @note If you are using a CUDASTF context, use `ctx.async_resources()` to ensure the
-   *       same stream pools are shared between your code and the context's internal operations.
-   *
-   * @param async_resources Handle managing the stream pools. Create a standalone
-   *        `async_resources_handle` for context-free usage, or use `ctx.async_resources()`
-   *        when working alongside a CUDASTF context.
+   * @param stream_pools Container mapping each place to a pair of stream pools
+   *        (computation pool, data transfer pool).
    * @param for_computation Hint for selecting which pool to use. When true, returns a stream
    *        from the computation pool; when false, returns a stream from the data transfer pool.
    *        Using separate pools for computation and transfers can improve overlapping.
    *        This is a performance hint and does not affect correctness.
    * @return A decorated_stream containing the CUDA stream and metadata (device ID, pool index)
    */
-  decorated_stream getStream(async_resources_handle& async_resources, bool for_computation) const;
+  decorated_stream getStream(place_indexed_container<::std::pair<stream_pool, stream_pool>>& stream_pools,
+                             bool for_computation) const;
 
   /**
    * @brief Create a stream valid for execution on this place.
@@ -914,49 +907,38 @@ public:
    * a CUDASTF context. This is useful when you want to use CUDASTF's place abstractions
    * (devices, green contexts) for stream management without the full task-based model.
    *
-   * Example usage without a context:
-   * @code
-   * async_resources_handle resources;
-   * exec_place place = exec_place::device(0);
-   * cudaStream_t stream = place.pick_stream(resources);
-   * myKernel<<<grid, block, 0, stream>>>(...);
-   * @endcode
-   *
    * Example usage with a context (sharing resources):
    * @code
    * stream_ctx ctx;
    * exec_place place = exec_place::device(0);
-   * cudaStream_t stream = place.pick_stream(ctx.async_resources());
-   * // Stream comes from the same pool used by ctx internally
+   * cudaStream_t stream = place.pick_stream(ctx.async_resources().stream_pools());
    * @endcode
    *
-   * @note If you are using a CUDASTF context, use `ctx.async_resources()` to ensure the
-   *       same stream pools are shared between your code and the context's internal operations.
-   *
-   * @param async_resources Handle managing the stream pools. Create a standalone
-   *        `async_resources_handle` for context-free usage, or use `ctx.async_resources()`
-   *        when working alongside a CUDASTF context.
+   * @param stream_pools Container mapping each place to a pair of stream pools
+   *        (computation pool, data transfer pool).
    * @param for_computation Hint for selecting which pool to use. When true, returns a stream
    *        from the computation pool; when false, returns a stream from the data transfer pool.
    *        Using separate pools for computation and transfers can improve overlapping.
    *        This is a performance hint and does not affect correctness. Defaults to true.
    * @return A CUDA stream associated with this execution place
    */
-  cudaStream_t pick_stream(async_resources_handle& async_resources, bool for_computation = true) const
+  cudaStream_t pick_stream(place_indexed_container<::std::pair<stream_pool, stream_pool>>& stream_pools,
+                           bool for_computation = true) const
   {
-    return getStream(async_resources, for_computation).stream;
+    return getStream(stream_pools, for_computation).stream;
   }
 
   /**
    * @brief Get the number of streams available in the pool for this execution place.
    *
-   * @param async_resources Handle managing the stream pools
+   * @param pools Container mapping each place to a pair of stream pools
    * @param for_computation Hint for selecting which pool to query (computation or transfer pool)
    * @return The number of stream slots in the pool
    */
-  size_t stream_pool_size(async_resources_handle& async_resources, bool for_computation = true) const
+  size_t stream_pool_size(place_indexed_container<::std::pair<stream_pool, stream_pool>>& pools,
+                          bool for_computation = true) const
   {
-    return get_stream_pool(async_resources, for_computation).size();
+    return get_stream_pool(pools, for_computation).size();
   }
 
   /**
@@ -966,14 +948,14 @@ public:
    * created lazily, so calling this method will create any streams that haven't been
    * created yet.
    *
-   * @param async_resources Handle managing the stream pools
+   * @param pools Container mapping each place to a pair of stream pools
    * @param for_computation Hint for selecting which pool to use (computation or transfer pool)
    * @return A vector of CUDA streams from the pool
    */
-  ::std::vector<cudaStream_t>
-  pick_all_streams(async_resources_handle& async_resources, bool for_computation = true) const
+  ::std::vector<cudaStream_t> pick_all_streams(place_indexed_container<::std::pair<stream_pool, stream_pool>>& pools,
+                                               bool for_computation = true) const
   {
-    auto& pool = get_stream_pool(async_resources, for_computation);
+    auto& pool = get_stream_pool(pools, for_computation);
     ::std::vector<cudaStream_t> result;
     result.reserve(pool.size());
     for (size_t i = 0; i < pool.size(); ++i)
@@ -1231,9 +1213,10 @@ inline decorated_stream stream_pool::next(const exec_place& place)
   return result;
 }
 
-inline decorated_stream exec_place::getStream(async_resources_handle& async_resources, bool for_computation) const
+inline decorated_stream exec_place::getStream(
+  place_indexed_container<::std::pair<stream_pool, stream_pool>>& stream_pools, bool for_computation) const
 {
-  return get_stream_pool(async_resources, for_computation).next(*this);
+  return get_stream_pool(stream_pools, for_computation).next(*this);
 }
 
 /**
@@ -1265,12 +1248,6 @@ public:
     virtual const data_place affine_data_place() const override
     {
       return data_place::host();
-    }
-    virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const override
-    {
-      // There is no pool attached to the host itself, so we use the pool attached to the execution place of the
-      // current device
-      return exec_place::current_device().get_stream_pool(async_resources, for_computation);
     }
   };
 
@@ -1572,17 +1549,6 @@ public:
     const exec_place& get_place(size_t p_index) const
     {
       return coords_to_place(p_index);
-    }
-
-    virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const override
-    {
-      // We "arbitrarily" select a pool from one of the place in the
-      // grid, which can be suffiicent for a data transfer, but we do not
-      // want to allow this for computation where we expect a more
-      // accurate placement.
-      assert(!for_computation);
-      assert(places.size() > 0);
-      return places[0].get_stream_pool(async_resources, for_computation);
     }
 
   private:
@@ -1967,9 +1933,10 @@ inline exec_place data_place::affine_exec_place() const
   return exec_place::device(devid);
 }
 
-inline decorated_stream data_place::getDataStream(async_resources_handle& async_resources) const
+inline decorated_stream
+data_place::getDataStream(place_indexed_container<::std::pair<stream_pool, stream_pool>>& stream_pools) const
 {
-  return affine_exec_place().getStream(async_resources, false);
+  return affine_exec_place().getStream(stream_pools, false);
 }
 
 inline const exec_place_grid& data_place::get_grid() const
@@ -2328,6 +2295,29 @@ struct hash<exec_place>
     return k.hash();
   }
 };
+
+#include <cuda/experimental/__stf/places/place_indexed_container.cuh>
+
+// We need the implementation of exec_place_grid, exec_place_device, ...
+inline stream_pool& exec_place::get_stream_pool(place_indexed_container<::std::pair<stream_pool, stream_pool>>& pools,
+                                                bool for_computation) const
+{
+  if (auto* local_pool = pimpl->get_local_stream_pool(for_computation))
+  {
+    return *local_pool;
+  }
+  if (pimpl->is_host())
+  {
+    return exec_place::current_device().get_stream_pool(pools, for_computation);
+  }
+  if (pimpl->is_grid())
+  {
+    const auto& places = as_grid().get_places();
+    _CCCL_ASSERT(places.size() > 0, "exec_place_grid has no places");
+    return places[0].get_stream_pool(pools, for_computation);
+  }
+  return for_computation ? pools[*this].first : pools[*this].second;
+}
 
 #ifdef UNITTESTED_FILE
 UNITTEST("Data place as unordered_map key")
