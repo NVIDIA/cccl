@@ -28,6 +28,38 @@ namespace detail
 template <typename... Ts>
 class tuple_of_iterator_references;
 
+// is_compatible_tuple_normalize:
+//   device_reference<T> --> T
+//   tuple_of_iterator_references<Ts...> --> tuple<Ts...>
+//   T& --> T
+
+template <typename T>
+struct is_compatible_tuple_normalize
+{
+  using type = T;
+};
+
+template <typename... Ts>
+struct is_compatible_tuple_normalize<tuple_of_iterator_references<Ts...>>
+{
+  using type = ::cuda::std::tuple<Ts...>;
+};
+
+template <typename T>
+struct is_compatible_tuple_normalize<thrust::device_reference<T>>
+{
+  using type = T;
+};
+
+template <typename T>
+struct is_compatible_tuple_normalize<T&>
+{
+  using type = T;
+};
+
+template <typename T>
+using is_compatible_tuple_normalize_t = typename is_compatible_tuple_normalize<T>::type;
+
 // is_compatible_tuple_v:
 //  - checks if the tuple structure matches
 //  - rather than just testing the top-level size, this handles nesting with length-1 tuples,
@@ -46,7 +78,7 @@ inline constexpr bool is_compatible_tuple_helper_v = false;
 // is_compatible_tuple_helper_v: viable, sizes match, recurse further but unwrap references
 template <template <class...> class Tuple1, template <class...> class Tuple2, typename... Ts, typename... Us>
 inline constexpr bool is_compatible_tuple_helper_v<Tuple1<Us...>, Tuple2<Ts...>, true> =
-  (is_compatible_tuple_v<detail::raw_reference_t<Us>, detail::raw_reference_t<Ts>> && ...);
+  (is_compatible_tuple_v<is_compatible_tuple_normalize_t<Us>, is_compatible_tuple_normalize_t<Ts>> && ...);
 
 // is_compatible_tuple_v: recurse via is_compatible_tuple_helper_v to see if the two tuples are compatible
 template <template <class...> class Tuple1, template <class...> class Tuple2, typename... Ts, typename... Us>
