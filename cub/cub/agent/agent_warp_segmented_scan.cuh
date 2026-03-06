@@ -452,7 +452,16 @@ private:
         warp_scan_aug_t scanner(temp_storage.reused.scan_aug[warp_id]);
         if (chunk_id == 0)
         {
-          const auto augmented_init_value = multi_segment_helpers::make_value_flag(initial_value, false);
+          const auto augmented_init_value = [&]() {
+            if constexpr (has_init)
+            {
+              return multi_segment_helpers::make_value_flag(initial_value, false);
+            }
+            else
+            {
+              return multi_segment_helpers::make_value_flag(AccumT{}, false);
+            }
+          }();
           // Initialize exclusive_prefix, referenced from prefix_op
           scan_first_tile(scanner, thread_flag_values, augmented_init_value, augmented_scan_op, exclusive_prefix);
         }

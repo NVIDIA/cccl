@@ -323,7 +323,7 @@ public:
     }
   };
 
-  //! @brief Scan dynamically given number of segment of values
+  //! @brief Scan dynamically given number of segments of values
   template <typename InputBeginOffsetIteratorT,
             typename InputEndOffsetIteratorT,
             typename OutputBeginOffsetIteratorT,
@@ -420,9 +420,9 @@ public:
     else
     {
       // Branchless search is faster
-      constexpr bool use_brachless = true;
+      constexpr bool use_branchless = true;
 
-      if constexpr (use_brachless)
+      if constexpr (use_branchless)
       {
         /*
 ## varying_size_segments
@@ -538,7 +538,16 @@ private:
         block_scan_aug_t scanner(temp_storage.reused.scan_aug);
         if (chunk_id == 0)
         {
-          const auto augmented_init_value = multi_segment_helpers::make_value_flag(initial_value, false);
+          const auto augmented_init_value = [&]() {
+            if constexpr (has_init)
+            {
+              return multi_segment_helpers::make_value_flag(initial_value, false);
+            }
+            else
+            {
+              return multi_segment_helpers::make_value_flag(AccumT{}, false);
+            }
+          }();
           // Initialize exclusive_prefix, referenced from prefix_op
           scan_first_tile(scanner, thread_flag_values, augmented_init_value, augmented_scan_op, exclusive_prefix);
         }
