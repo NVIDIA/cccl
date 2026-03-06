@@ -28,12 +28,6 @@ if (CCCL_USE_LIBCXX)
   list(APPEND public_host_header_cxx_compile_options "-stdlib=libc++")
 endif()
 
-if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-  set(cudart_name NVHPC::CUDART)
-else()
-  set(cudart_name CUDA::cudart)
-endif()
-
 function(libcudacxx_create_public_header_test_host header_name headertest_src)
   # Create the default target for that file
   add_library(
