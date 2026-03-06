@@ -61,7 +61,7 @@ public:
   void*
   allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
-    auto dstream = memory_node.getDataStream(ctx.async_resources());
+    auto dstream = memory_node.getDataStream(ctx.async_resources().stream_pools());
 
     if (!memory_node.allocation_is_stream_ordered())
     {
@@ -83,7 +83,7 @@ public:
   void deallocate(
     backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
-    auto dstream = memory_node.getDataStream(ctx.async_resources());
+    auto dstream = memory_node.getDataStream(ctx.async_resources().stream_pools());
 
     if (!memory_node.allocation_is_stream_ordered())
     {

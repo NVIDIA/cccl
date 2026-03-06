@@ -27,11 +27,12 @@
 
 #include <cuda/experimental/__stf/internal/exec_affinity.cuh>
 #include <cuda/experimental/__stf/internal/executable_graph_cache.cuh>
+#include <cuda/experimental/__stf/places/decorated_stream.cuh>
 #include <cuda/experimental/__stf/places/places.cuh>
+#include <cuda/experimental/__stf/places/stream_to_dev.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh> // for ::std::hash<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>>
-#include <cuda/experimental/__stf/utility/stream_to_dev.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <atomic>
@@ -46,54 +47,6 @@ class green_context_helper;
 
 // Needed to set/get affinity
 class exec_place;
-
-/** Sentinel for "no stream" / empty slot. Distinct from any value returned by cuStreamGetId. */
-inline constexpr unsigned long long k_no_stream_id = static_cast<unsigned long long>(-1);
-
-/**
- * @brief Returns the unique stream ID from the CUDA driver (cuStreamGetId).
- * @param stream A valid CUDA stream, or nullptr.
- * @return The stream's unique ID, or k_no_stream_id if stream is nullptr.
- */
-inline unsigned long long get_stream_id(cudaStream_t stream)
-{
-  unsigned long long id = 0;
-  cuda_safe_call(cuStreamGetId(reinterpret_cast<CUstream>(stream), &id));
-  _CCCL_ASSERT(id != k_no_stream_id, "Internal error: cuStreamGetId returned k_no_stream_id");
-  return id;
-}
-
-/**
- * @brief A class to store a CUDA stream along with metadata
- *
- * It contains
- *  - the stream itself,
- *  - the stream's unique ID from the CUDA driver (cuStreamGetId), or k_no_stream_id if no stream,
- *  - the device index in which the stream resides
- */
-struct decorated_stream
-{
-  decorated_stream() = default;
-
-  decorated_stream(cudaStream_t stream, unsigned long long id, int dev_id = -1)
-      : stream(stream)
-      , id(id)
-      , dev_id(dev_id)
-  {}
-
-  /** Construct from stream only; id is from cuStreamGetId, dev_id is -1 (filled lazily when needed). */
-  explicit decorated_stream(cudaStream_t stream)
-      : stream(stream)
-      , id(get_stream_id(stream))
-      , dev_id(-1)
-  {}
-
-  cudaStream_t stream = nullptr;
-  // Unique ID from cuStreamGetId (k_no_stream_id if no stream)
-  unsigned long long id = k_no_stream_id;
-  // Device in which this stream resides
-  int dev_id = -1;
-};
 
 class async_resources_handle;
 

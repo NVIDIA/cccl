@@ -39,11 +39,11 @@
 #  include <map>
 #endif
 #include <cuda/experimental/__stf/internal/stream_pool.cuh>
+#include <cuda/experimental/__stf/places/place_indexed_container.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
 #include <cuda/experimental/__stf/utility/scope_guard.cuh>
-#include <cuda/experimental/__stf/utility/stream_to_dev.cuh>
 
 // Sync only will not move data....
 // Data place none?

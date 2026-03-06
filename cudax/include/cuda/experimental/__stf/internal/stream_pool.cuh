@@ -29,6 +29,8 @@
 #  pragma system_header
 #endif
 
+#include <cuda/experimental/__stf/places/decorated_stream.cuh>
+
 #include <mutex>
 #include <vector>
 
@@ -37,29 +39,6 @@
 namespace cuda::experimental::stf
 {
 class exec_place;
-
-/**
- * @brief A class to store a CUDA stream along with a few information to avoid CUDA queries
- *
- * It contains
- *  - the stream itself,
- *  - a unique id (proper to CUDASTF, and only valid for streams in our pool, or equal to -1),
- *  - the device index in which the stream is
- */
-struct decorated_stream
-{
-  decorated_stream(cudaStream_t stream = nullptr, ::std::ptrdiff_t id = -1, int dev_id = -1)
-      : stream(stream)
-      , id(id)
-      , dev_id(dev_id)
-  {}
-
-  cudaStream_t stream = nullptr;
-  // Unique ID (-1 if this is not part of our pool)
-  ::std::ptrdiff_t id = -1;
-  // Device in which this stream resides
-  int dev_id = -1;
-};
 
 /**
  * @brief A stream_pool object stores a set of streams associated to a specific
@@ -80,7 +59,7 @@ struct stream_pool
    * Streams are created lazily only via next(place), which activates the place and calls place.create_stream().
    */
   explicit stream_pool(size_t n)
-      : payload(n, decorated_stream(nullptr, -1, -1))
+      : payload(n, decorated_stream(nullptr, k_no_stream_id, -1))
   {}
 
   stream_pool(stream_pool&& rhs)
