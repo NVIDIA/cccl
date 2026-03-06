@@ -219,7 +219,7 @@ public:
     decorated_stream dstream =
       (user_dstream.has_value())
         ? user_dstream.value()
-        : exec_place::current_device().getStream(async_resources(), true /* stream for computation */);
+        : exec_place::current_device().getStream(async_resources().stream_pools(), true /* stream for computation */);
 
     auto prereqs = get_state().insert_fence(*get_dot());
 

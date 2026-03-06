@@ -59,7 +59,9 @@ public:
       return exec_place::device(dstream.dev_id).deactivate(prev);
     }
 
-    stream_pool& get_stream_pool(async_resources_handle&, bool) const override
+    // This is a place type were we choose not to use a container to get the
+    // pools, and store it directly in the place object.
+    stream_pool& get_stream_pool(place_indexed_container<::std::pair<stream_pool, stream_pool>>&, bool) const override
     {
       return dummy_pool;
     }

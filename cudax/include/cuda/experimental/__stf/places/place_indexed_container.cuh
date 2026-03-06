@@ -33,16 +33,19 @@
 #  pragma system_header
 #endif
 
-#include <cuda/experimental/__stf/places/places.cuh>
-
-#include <cuda_runtime.h>
+// place_indexed_container is intended to be included from places.cuh after data_place, exec_place,
+// and their hash specializations are defined. When UNITTESTED_FILE is set, include places.cuh for tests.
+#ifdef UNITTESTED_FILE
+#  include <cuda/experimental/__stf/places/places.cuh>
+#endif
 
 #include <unordered_map>
 #include <vector>
 
+#include <cuda_runtime.h>
+
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Stores one instance of T per place, with vector storage for device places (positive devid).
  *
@@ -63,7 +66,7 @@ public:
     ndevices_ = static_cast<size_t>(ndev);
     device_storage_.resize(ndevices_);
   }
-  
+
   /** @return Reference to the value for the given data_place; inserts a default T in the map if needed. */
   T& operator[](const data_place& p)
   {
@@ -139,7 +142,7 @@ UNITTEST("place_indexed_container device_count and data_place access")
   EXPECT(c[data_place::device(0)] == 42);
   EXPECT(c.at(data_place::device(0)) == 42);
 
-  c[data_place::host()] = 10;
+  c[data_place::host()]    = 10;
   c[data_place::managed()] = 20;
   EXPECT(c[data_place::host()] == 10);
   EXPECT(c[data_place::managed()] == 20);
@@ -195,7 +198,7 @@ UNITTEST("place_indexed_container at throws for missing map key")
 {
   place_indexed_container<int> c;
   c[data_place::device(0)] = 1;
-  bool threw = false;
+  bool threw               = false;
   try
   {
     (void) c.at(data_place::host());
@@ -207,5 +210,4 @@ UNITTEST("place_indexed_container at throws for missing map key")
   EXPECT(threw);
 };
 #endif // UNITTESTED_FILE
-
 } // namespace cuda::experimental::stf
