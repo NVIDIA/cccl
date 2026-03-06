@@ -419,7 +419,7 @@ private:
         if constexpr (has_init)
         {
           // If initial value is provided, it should be applied to segment's head value
-          const packer_iv<ScanOpT, AccumT> packer_op{scan_op, static_cast<AccumT>(initial_value)};
+          const packer_iv<ScanOpT, AccumT> packer_op{scan_op, initial_value};
           multi_segmented_iterator it_in{d_in, chunk_begin, searcher, inp_idx_begin_it, packer_op, projection_op};
 
           if (chunk_size == tile_items)
@@ -494,7 +494,7 @@ private:
         }
         else
         {
-          const projector_iv<AccumT> projector_op{static_cast<AccumT>(initial_value)};
+          const projector_iv<AccumT> projector_op{initial_value};
           multi_segmented_iterator it_out{d_out, out_offset, searcher, out_idx_begin_it, packer_op, projector_op};
           if (chunk_size == tile_items)
           {
