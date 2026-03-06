@@ -31,6 +31,7 @@
 #include <cuda/std/__mdspan/layout_right.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/array>
 
@@ -583,7 +584,10 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <class ShapeT, class OpT, class EnvT = ::cuda::std::execution::env<>>
+  template <class ShapeT,
+            class OpT,
+            class EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t Bulk(ShapeT shape, OpT op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::Bulk");
@@ -592,9 +596,18 @@ public:
     {
       return cudaSuccess;
     }
-    auto stream    = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
-    using offset_t = ShapeT;
-    return detail::for_each::dispatch<offset_t, OpT>(static_cast<offset_t>(shape), op, stream.get());
+    auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
+    return detail::for_each::dispatch</* OffsetT */ ShapeT, OpT>(shape, op, stream.get());
+  }
+
+  // we need this so the previous overload is not ambiguous with the next one
+  static_assert(!::cuda::std::is_convertible_v<::cuda::stream_ref, cudaStream_t>);
+
+  // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <class ShapeT, class OpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t Bulk(ShapeT shape, OpT op, cudaStream_t stream)
+  {
+    return Bulk(shape, op, ::cuda::stream_ref{stream});
   }
 
 private:
@@ -690,13 +703,25 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <class RandomAccessIteratorT, class NumItemsT, class OpT, class EnvT = ::cuda::std::execution::env<>>
+  template <class RandomAccessIteratorT,
+            class NumItemsT,
+            class OpT,
+            class EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachN");
     auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
     return ForEachNNoNVTX(first, num_items, op, stream.get());
+  }
+
+  // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream)
+  {
+    return ForEachN(first, num_items, op, ::cuda::stream_ref{stream});
   }
 
   //! @rst
@@ -773,7 +798,10 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <class RandomAccessIteratorT, class OpT, class EnvT = ::cuda::std::execution::env<>>
+  template <class RandomAccessIteratorT,
+            class OpT,
+            class EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEach(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, EnvT env = {})
   {
@@ -782,6 +810,14 @@ public:
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
     const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
     return ForEachNNoNVTX(first, num_items, op, stream.get());
+  }
+
+  // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <class RandomAccessIteratorT, class OpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEach(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, cudaStream_t stream)
+  {
+    return ForEach(first, last, op, ::cuda::stream_ref{stream});
   }
 
 private:
@@ -876,13 +912,25 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <class RandomAccessIteratorT, class NumItemsT, class OpT, class EnvT = ::cuda::std::execution::env<>>
+  template <class RandomAccessIteratorT,
+            class NumItemsT,
+            class OpT,
+            class EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachCopyN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopyN");
     auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
     return ForEachCopyNNoNVTX(first, num_items, op, stream.get());
+  }
+
+  // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachCopyN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream)
+  {
+    return ForEachCopyN(first, num_items, op, ::cuda::stream_ref{stream});
   }
 
   //! @rst
@@ -962,7 +1010,10 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <class RandomAccessIteratorT, class OpT, class EnvT = ::cuda::std::execution::env<>>
+  template <class RandomAccessIteratorT,
+            class OpT,
+            class EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachCopy(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, EnvT env = {})
   {
@@ -971,6 +1022,14 @@ public:
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
     const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
     return ForEachCopyNNoNVTX(first, num_items, op, stream.get());
+  }
+
+  // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <class RandomAccessIteratorT, class OpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachCopy(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, cudaStream_t stream)
+  {
+    return ForEachCopy(first, last, op, ::cuda::stream_ref{stream});
   }
 
   /*********************************************************************************************************************
@@ -1127,12 +1186,25 @@ public:
   //!
   //! @return cudaError_t
   //!   error status
-  template <typename IndexType, size_t... Extents, typename OpType, typename EnvT = ::cuda::std::execution::env<>>
+  template <typename IndexType,
+            size_t... Extents,
+            typename OpType,
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<EnvT, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, EnvT env = {})
   {
     using extents_type = ::cuda::std::extents<IndexType, Extents...>;
     return cub::DeviceFor::ForEachInLayout(::cuda::std::layout_right::mapping<extents_type>{extents}, op, env);
+  }
+
+  // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <typename IndexType, size_t... Extents, typename OpType>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream)
+  {
+    using extents_type = ::cuda::std::extents<IndexType, Extents...>;
+    return cub::DeviceFor::ForEachInLayout(::cuda::std::layout_right::mapping<extents_type>{extents}, op, stream);
   }
 
   /*********************************************************************************************************************
@@ -1218,7 +1290,8 @@ public:
   //! @return cudaError_t
   //!   error status
   _CCCL_TEMPLATE(typename LayoutMapping, typename OpType, typename EnvT = ::cuda::std::execution::env<>)
-  _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping>)
+  _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping>
+                   _CCCL_AND !::cuda::std::is_convertible_v<EnvT, cudaStream_t>)
   CUB_RUNTIME_FUNCTION static cudaError_t ForEachInLayout(const LayoutMapping& layout_mapping, OpType op, EnvT env = {})
   {
     using namespace cub::detail;
@@ -1234,6 +1307,15 @@ public:
     for_each::op_wrapper_extents_t<OpType, extents_type, is_layout_right, fast_mod_array_t> op_wrapper{
       op, extents, sub_sizes_div_array, extents_div_array};
     return Bulk(static_cast<implicit_prom_t<extent_index_type>>(cub::detail::size(extents)), op_wrapper, env);
+  }
+
+  // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  _CCCL_TEMPLATE(typename LayoutMapping, typename OpType)
+  _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping>)
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachInLayout(const LayoutMapping& layout_mapping, OpType op, cudaStream_t stream)
+  {
+    return ForEachInLayout(layout_mapping, op, ::cuda::stream_ref{stream});
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED
