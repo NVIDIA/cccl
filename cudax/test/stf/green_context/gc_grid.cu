@@ -4,11 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 #include <cuda/experimental/__stf/places/exec/green_context.cuh>
+#include <cuda/experimental/__stf/places/place_partition.cuh>
 #include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
@@ -57,11 +58,7 @@ int main()
 #if _CCCL_CTK_BELOW(12, 4)
   fprintf(stderr, "Green contexts are not supported by this version of CUDA: skipping test.\n");
   return 0;
-#else // ^^^ _CCCL_CTK_BELOW(12, 4) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 4) vvv
-  int ndevs;
-  const int num_sms = 8;
-  cuda_safe_call(cudaGetDeviceCount(&ndevs));
-
+#else
   stream_ctx ctx;
 
   int NITER   = 8;
@@ -79,32 +76,25 @@ int main()
   auto handle_X = ctx.logical_data(make_slice(&X[0], n));
   auto handle_Y = ctx.logical_data(make_slice(&Y[0], n));
 
-  std::vector<exec_place> places;
+  auto where =
+    exec_place::all_devices().partition_by_scope(ctx.async_resources(), place_partition_scope::green_context);
 
-  // The green_context_helper class automates the creation of green context views
-  std::vector<green_context_helper> gc(ndevs);
-  for (int devid = 0; devid < ndevs; devid++)
-  {
-    gc[devid] = green_context_helper(num_sms, devid);
-
-    auto& g_ctx = gc[devid];
-    auto cnt    = g_ctx.get_count();
-    for (size_t i = 0; i < cnt; i++)
-    {
-      places.push_back(exec_place::green_ctx(g_ctx.get_view(i)));
-    }
-  }
-
-  auto where = make_grid(places);
+  comm_matrix_tracer tr;
+  tr.init(where.size());
 
   for (int iter = 0; iter < NITER; iter++)
   {
     ctx.parallel_for(blocked_partition(), where, handle_X.shape(), handle_X.rw(), handle_Y.read())
-        ->*[] __device__(size_t i, auto x, auto y) {
-              x(i) += y(i);
+        ->*[tr] __device__(size_t i, auto x, auto y) {
+              x(i) += (y((i + n - 1) % n) + y((i + n + 1) % n)) / 2;
+              tr.mark_access(pos4(i), shape(x), blocked_partition(), 1);
+              tr.mark_access(pos4((i + n - 1) % n), shape(y), blocked_partition(), 1);
+              tr.mark_access(pos4((i + n + 1) % n), shape(y), blocked_partition(), 1);
             };
   }
 
   ctx.finalize();
-#endif // ^^^ _CCCL_CTK_AT_LEAST(12, 4) ^^^
+
+  tr.dump();
+#endif // _CCCL_CTK_BELOW(12, 4)
 }
