@@ -25,15 +25,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/std/__cccl/assert.h>
+
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
 
 namespace cuda::experimental::stf
 {
-
 /** Sentinel for "no stream" / empty slot. Distinct from any value returned by cuStreamGetId. */
 inline constexpr unsigned long long k_no_stream_id = static_cast<unsigned long long>(-1);
 
@@ -81,5 +81,4 @@ struct decorated_stream
   // Device in which this stream resides
   int dev_id = -1;
 };
-
 } // namespace cuda::experimental::stf
