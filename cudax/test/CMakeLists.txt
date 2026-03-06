@@ -85,6 +85,10 @@ cudax_add_catch2_test(test_target cuco
     cuco/utility/test_hashers.cu
 )
 
+cudax_add_catch2_test(test_target cuco_static_map ${cudax_target}
+    cuco/static_map/test_static_map.cu
+)
+
 cudax_add_catch2_test(test_target cuco_hyperloglog ${cudax_target}
   cuco/hyperloglog/test_hyperloglog.cu
 )
