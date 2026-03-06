@@ -13,7 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/block/block_exchange.cuh>
+
 #include <cub/block/block_scan.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
@@ -96,7 +96,7 @@ private:
   TempStorage_& storage;
 
   /// Linear thread index
-  unsigned int linear_tid;
+  int linear_tid;
 
   // Initialize histogram bins to zero
   _CCCL_DEVICE _CCCL_FORCEINLINE void init_histograms()
@@ -128,7 +128,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < items_per_thread; ++i)
     {
-      const auto item_index      = static_cast<int>(linear_tid) * items_per_thread + i;
+      const auto item_index      = linear_tid * items_per_thread + i;
       const bit_ordered_type key = unsigned_keys[i];
       if ((IsFullTile || item_index < num_valid) && filter_op(key))
       {
@@ -142,7 +142,7 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void compute_bin_offsets()
   {
     histo_counter_t thread_buckets[buckets_per_thread]{};
-    const int base = static_cast<int>(linear_tid) * buckets_per_thread;
+    const int base = linear_tid * buckets_per_thread;
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < buckets_per_thread; ++i)
@@ -172,7 +172,7 @@ private:
   // Identify the bucket that the k-th item falls into
   _CCCL_DEVICE _CCCL_FORCEINLINE void choose_bucket(histo_counter_t k)
   {
-    const int base = static_cast<int>(linear_tid) * buckets_per_thread;
+    const int base = linear_tid * buckets_per_thread;
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < buckets_per_thread; ++i)
@@ -365,7 +365,7 @@ private:
     {
       const bit_ordered_type key_prefix = unsigned_keys[i] & prefix_mask;
 
-      const bool is_valid     = (IsFullTile || static_cast<int>(linear_tid) * items_per_thread + i < num_valid);
+      const bool is_valid     = (IsFullTile || linear_tid * items_per_thread + i < num_valid);
       const bool is_selected  = key_prefix < kth_prefix;
       const bool is_candidate = key_prefix == kth_prefix;
 
@@ -397,7 +397,7 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < items_per_thread; ++i)
     {
-      const int buffer_idx = static_cast<int>(linear_tid) * items_per_thread + i;
+      const int buffer_idx = linear_tid * items_per_thread + i;
       if (buffer_idx < k)
       {
         keys[i] = storage.stage.select.exchange.keys[buffer_idx];
@@ -424,7 +424,7 @@ private:
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < items_per_thread; ++i)
       {
-        const int buffer_idx = static_cast<int>(linear_tid) * items_per_thread + i;
+        const int buffer_idx = linear_tid * items_per_thread + i;
         if (buffer_idx < k)
         {
           values[i] = storage.stage.select.exchange.values[buffer_idx];

@@ -1,9 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-
-//! @file
-//! The @c cub::detail::block_topk class provides a :ref:`collective <collective-primitives>` method for selecting the
-//! top-k elements from a set of items within a CUDA thread block.
 
 #pragma once
 
@@ -17,24 +13,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/block/block_exchange.cuh>
-#include <cub/block/block_radix_sort.cuh>
-#include <cub/block/block_scan.cuh>
 #include <cub/block/specializations/block_topk_air.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
-#include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
-
-#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-enum class block_topk_algorithm
-{
-  air_top_k
-};
 
 // TODO (elstehle): Add documentation
 template <typename KeyT, int BlockDimX, int ItemsPerThread, typename ValueT = NullType>
