@@ -156,7 +156,7 @@ public:
               auto se                    = reserved::handle<stream_and_event>(e, reserved::use_static_cast);
               decorated_stream candidate = se->get_decorated_stream();
 
-              if (candidate.id != -1)
+              if (candidate.id != k_no_stream_id)
               {
                 for (const decorated_stream& pool_s : pool)
                 {

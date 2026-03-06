@@ -114,7 +114,7 @@ public:
 inline exec_place_cuda_stream exec_place::cuda_stream(cudaStream_t stream)
 {
   int devid = get_device_from_stream(stream);
-  return exec_place_cuda_stream(decorated_stream(stream, -1, devid));
+  return exec_place_cuda_stream(decorated_stream(stream, get_stream_id(stream), devid));
 }
 
 inline exec_place_cuda_stream exec_place::cuda_stream(const decorated_stream& dstream)
