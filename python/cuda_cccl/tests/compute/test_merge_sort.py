@@ -344,7 +344,7 @@ def test_merge_sort_large_temp_storage_not_negative():
         num_items=num_items,
     )
 
-    np.testing.assert_greater(temp_storage_bytes, 0)
+    assert temp_storage_bytes > 0
 
 
 def test_merge_sort_with_values_well_known():
