@@ -57,7 +57,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   static ::cuda::std::__undefined<_LetTag> __set_tag;
 
   template <class _LetTag>
-  using __set_tag_for_t = decltype(_LIBCUDACXX_AUTO_CAST(__set_tag<_LetTag>));
+  using __set_tag_for_t = decltype(_CCCL_AUTO_CAST(__set_tag<_LetTag>));
 
   //! @brief Computes the type of a variant of tuples to hold the results of the
   //! predecessor sender.
@@ -337,7 +337,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
 
     template <class... _Ts>
     using __call _CCCL_NODEBUG_ALIAS = ::cuda::std::bool_constant<
-      (noexcept(_LIBCUDACXX_AUTO_CAST(declval<_Ts>())) && ...)
+      (noexcept(_CCCL_AUTO_CAST(declval<_Ts>())) && ...)
       && noexcept(execution::connect(declval<_Fn>()(declval<decay_t<_Ts>&>()...), __receiver_archetype<__env2_t>()))>;
   };
 
