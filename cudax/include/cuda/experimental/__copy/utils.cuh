@@ -237,6 +237,7 @@ template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_
 [[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor_ordered<_ExtentT, _StrideT, _Tp, _MaxRank>
 __sort_by_stride(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
 {
+  namespace cudax = ::cuda::experimental;
   __raw_tensor_ordered<_ExtentT, _StrideT, _Tp, _MaxRank> __result{__tensor.__data, __tensor.__rank};
   auto& __input_strides = __tensor.__strides;
   auto& __orders        = __result.__orders;
@@ -247,8 +248,7 @@ __sort_by_stride(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor
     __orders[__i] = __i;
   }
   ::cuda::std::stable_sort(__orders.begin(), __orders.begin() + __tensor.__rank, [&](auto __a, auto __b) {
-    return ::cuda::experimental::__abs_integer(__input_strides[__a])
-         < ::cuda::experimental::__abs_integer(__input_strides[__b]);
+    return cudax::__abs_integer(__input_strides[__a]) < cudax::__abs_integer(__input_strides[__b]);
   });
   for (::cuda::std::size_t __i = 0; __i < __tensor.__rank; ++__i)
   {
@@ -349,13 +349,16 @@ template <typename _ExtentT,
 __same_stride_order(const __raw_tensor_ordered<_ExtentT, _StrideT, _TpIn, _MaxRankA>& __tensor_a,
                     const __raw_tensor_ordered<_ExtentT, _StrideT, _TpOut, _MaxRankB>& __tensor_b) noexcept
 {
-  const auto __rank_a       = __tensor_a.__rank;
-  const auto __rank_b       = __tensor_b.__rank;
-  const auto __rank_uniform = ::cuda::std::max(__rank_a, __rank_b);
-  for (::cuda::std::size_t __i = 0; __i < __rank_uniform; ++__i)
+  const auto __rank_a = __tensor_a.__rank;
+  const auto __rank_b = __tensor_b.__rank;
+  if (__rank_a != __rank_b)
   {
-    const auto __order_a = __i < __rank_a ? __tensor_a.__orders[__i] : __i;
-    const auto __order_b = __i < __rank_b ? __tensor_b.__orders[__i] : __i;
+    return false;
+  }
+  for (::cuda::std::size_t __i = 0; __i < __rank_a; ++__i)
+  {
+    const auto __order_a = __tensor_a.__orders[__i];
+    const auto __order_b = __tensor_b.__orders[__i];
     if (__order_a != __order_b)
     {
       return false;

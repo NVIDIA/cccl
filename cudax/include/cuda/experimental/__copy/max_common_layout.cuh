@@ -39,7 +39,7 @@ namespace cuda::experimental
  * @brief Computes the largest contiguous tile size shared by two ordered tensors.
  *
  * @par Algorithm
- * 1. Starting from the innermost mode (rightmost), this scans both tensors while:
+ * 1. Starting from the innermost mode (index 0), this scans both tensors while:
  *    - permutation entries match (`__orders`),
  *    - each stride is either the expected contiguous stride.
  * 2. The running contiguous extents from both tensors are accumulated independently and the returned tile size is
@@ -59,7 +59,7 @@ template <typename _Ep, typename _Sp, typename _TpA, typename _TpB, ::cuda::std:
   const auto& __orders_b       = __tensor_b.__orders;
   ::cuda::std::size_t __curr_a = 1;
   ::cuda::std::size_t __curr_b = 1;
-  for (int __i = static_cast<int>(__tensor_a.__rank) - 1; __i >= 0; --__i)
+  for (::cuda::std::size_t __i = 0; __i < __tensor_a.__rank; ++__i)
   {
     if (__orders_a[__i] != __orders_b[__i] //
         || (__strides_a[__i] != static_cast<_Sp>(__curr_a)) //

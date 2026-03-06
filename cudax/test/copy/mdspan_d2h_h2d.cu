@@ -419,6 +419,31 @@ TEST_CASE("copy_bytes 2D strided, padded column-major", "[copy_bytes][2d][stride
   test_impl_stride(input_data, input_data, extents(), extents(), strides, strides);
 }
 
+// tensorA:      (2,3):(1,2)
+// tensorB:      (3,2):(1,3)
+// stride order: true
+// tile size:    6
+// num tiles:    1
+TEST_CASE("copy_bytes 2D strided, independent path with tile_size > 1", "[copy_bytes][2d][stride][tile]")
+{
+  // Both layouts are column-major and fully contiguous, but the swapped extents keep
+  // them on the independent path after simplification. Since the innermost stride
+  // order still matches, the full storage remains one common contiguous tile.
+  constexpr int M = 2;
+  constexpr int N = 3;
+  constexpr int K = M * N;
+  thrust::host_vector<int> input_data(K);
+  for (int i = 0; i < K; ++i)
+  {
+    input_data[i] = i;
+  }
+  using src_extents                        = cuda::std::extents<int, M, N>;
+  using dst_extents                        = cuda::std::extents<int, N, M>;
+  cuda::std::array<int, 2> src_strides    = {1, M};
+  cuda::std::array<int, 2> dst_strides    = {1, N};
+  test_impl_stride(input_data, input_data, src_extents(), dst_extents(), src_strides, dst_strides);
+}
+
 // tensorA:      (2,3,4):(12,4,1)
 // tensorB:      (2,3,4):(1,8,2)
 // stride order: false
