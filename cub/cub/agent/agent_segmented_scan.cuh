@@ -27,6 +27,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/span>
@@ -350,8 +351,10 @@ public:
 
     // cooperatively compute inclusive scan of sizes of segments to be processed by this block
     {
+      const auto tid = threadIdx.x;
+
       // assume all segments have the same size
-      if (threadIdx.x == 0)
+      if (tid == 0)
       {
         temp_storage.fixed_size_mask = 1u;
       }
@@ -365,7 +368,7 @@ public:
 
       for (unsigned chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
       {
-        const unsigned work_id = chunk_id * block_threads + threadIdx.x;
+        const unsigned work_id = chunk_id * block_threads + tid;
 
         // TODO: use BlockLoad to load
         const OffsetT input_segment_begin = (work_id < n_segments) ? inp_idx_begin_it[work_id] : 0;
@@ -389,7 +392,7 @@ public:
         const unsigned int fixed_size_check =
           ((work_id >= n_segments) || (prefix == (work_id + 1) * temp_storage.logical_segment_offsets[0])) ? 1u : 0u;
         const unsigned int block_fixed_size_check = min_reducer.Reduce(fixed_size_check, min_op);
-        if (threadIdx.x == 0)
+        if (tid == 0)
         {
           temp_storage.fixed_size_mask = min_op(temp_storage.fixed_size_mask, block_fixed_size_check);
         }
@@ -416,9 +419,47 @@ public:
     }
     else
     {
-      // searcher locates segment_id using linear/binary search in cum_sizes
-      const multi_segment_helpers::bag_of_segments searcher{cum_sizes};
-      consume_ranges_chunked_impl(searcher, inp_idx_begin_it, out_idx_begin_it, items_per_block);
+      // Branchless search is faster
+      constexpr bool use_brachless = true;
+
+      if constexpr (use_brachless)
+      {
+        /*
+## varying_size_segments
+
+### [0] NVIDIA RTX A6000
+
+| T{ct} | OffsetT{ct} | Elements{io} | #Seg{io} | $Seg/Worker{io} | Worker{io} | Samples | BWUtil |
+|-------|-------------|--------------|----------|-----------------|------------|---------|--------|
+|   I32 |         I32 |    2^27      |       57 |             216 |      block |    672x | 51.97% |
+|   I32 |         I32 |    2^27      |       57 |              18 |       warp |   2832x | 86.45% |
+|   I64 |         I32 |    2^27      |       57 |             216 |      block |    720x | 76.07% |
+|   I64 |         I32 |    2^27      |       57 |              18 |       warp |    784x | 86.95% |
+         */
+        // searcher locates segment_id using branchless linear/binary search in cum_sizes
+        const auto searcher = multi_segment_helpers::make_statically_bound_bag_of_segments<NumSegments>(cum_sizes);
+        consume_ranges_chunked_impl(searcher, inp_idx_begin_it, out_idx_begin_it, items_per_block);
+      }
+      else
+      {
+        /*
+## varying_size_segments
+
+### [0] NVIDIA RTX A6000
+
+| T{ct} | OffsetT{ct} | Elements{io} | #Seg{io} | #Seg/Worker{io} | Worker{io} | Samples | BWUtil |
+|-------|-------------|--------------|----------|-----------------|------------|---------|--------|
+|   I32 |         I32 |     2^27     |       57 |             117 |      block |    944x | 39.85% |
+|   I32 |         I32 |     2^27     |       57 |              18 |       warp |   2821x | 86.41% |
+|   I64 |         I32 |     2^27     |       57 |             117 |      block |    544x | 53.11% |
+|   I64 |         I32 |     2^27     |       57 |              18 |       warp |    752x | 86.90% |
+         */
+
+        // searcher locates segment_id using linear/binary search in cum_sizes
+        // binary search is using while-loop based cub::std::upper_bound
+        multi_segment_helpers::bag_of_segments searcher{cum_sizes};
+        consume_ranges_chunked_impl(searcher, inp_idx_begin_it, out_idx_begin_it, items_per_block);
+      }
     }
   }
 
