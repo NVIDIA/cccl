@@ -80,7 +80,7 @@ function(
   )
   target_link_libraries(
     public_headers_host_only_with_ctk_${header_name}
-    PUBLIC libcudacxx.compiler_interface cudart_name
+    PUBLIC CUDA::cudart
   )
   add_dependencies(
     libcudacxx.test.public_headers_host_only_with_ctk
