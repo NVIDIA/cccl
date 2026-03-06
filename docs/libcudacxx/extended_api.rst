@@ -14,6 +14,7 @@ Extended API
    extended_api/synchronization_primitives
    extended_api/asynchronous_operations
    extended_api/memory_access_properties
+   extended_api/data_movement
    extended_api/functional
    extended_api/iterators
    extended_api/type_traits
