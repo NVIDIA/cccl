@@ -370,6 +370,9 @@ struct dispatch_segmented_scan
       return error;
     }
 
+    // Clamp to produce a positive integer
+    num_segments_per_worker = (::cuda::std::max) (num_segments_per_worker, 1);
+
     dispatch_segmented_scan dispatch{
       d_temp_storage,
       temp_storage_bytes,
