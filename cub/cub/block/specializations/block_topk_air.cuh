@@ -358,7 +358,6 @@ private:
       for (int i = 0; i < items_per_thread; ++i)
       {
         unsigned_keys[i] = bit_ordered_conversion::to_bit_ordered(decomposer, unsigned_keys[i]);
-        unsigned_keys[i] = BaseDigitExtractor<KeyT>::ProcessFloatMinusZero(unsigned_keys[i]);
         if constexpr (SelectDirection == detail::topk::select::max)
         {
           unsigned_keys[i] = bit_ordered_inversion::inverse(decomposer, unsigned_keys[i]);

@@ -6,19 +6,25 @@
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/sort.h>
 #include <thrust/count.h>
+#include <thrust/detail/raw_pointer_cast.h>
 
 #include <cuda/iterator>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/type_traits>
 
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
 #include <catch2/generators/catch_generators.hpp>
+
+struct is_minus_zero
+{
+  bool operator()(float x) const
+  {
+    return x == 0.0f && cuda::std::signbit(x);
+  }
+};
 
 template <typename KeyInputItItT,
           typename KeyOutputItItT,
@@ -180,8 +186,7 @@ C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segment
   constexpr cuda::std::size_t max_segment_size = 64;
 
   // Input: one segment containing -0.0f and +0.0f; top-5 min should include both zeros.
-  constexpr float keys_in[] = {3.0f, -0.0f, 1.0f, 2.0f, 0.0f, -1.0f, 4.0f, 5.0f};
-  c2h::device_vector<float> d_keys_in(keys_in, keys_in + segment_size);
+  c2h::device_vector<float> d_keys_in{3.0f, -0.0f, 1.0f, 2.0f, 0.0f, -1.0f, 4.0f, 5.0f};
   c2h::device_vector<float> d_keys_out(k, thrust::no_init);
 
   auto d_keys_in_it =
@@ -199,8 +204,6 @@ C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segment
     cub::detail::batched_topk::total_num_items_guarantee{num_segments * segment_size});
 
   c2h::host_vector<float> keys_out(d_keys_out);
-  const int num_minus_zero = thrust::count_if(keys_out.begin(), keys_out.end(), [](float x) {
-    return x == 0.0f && std::signbit(x);
-  });
+  const int num_minus_zero = thrust::count_if(keys_out.begin(), keys_out.end(), is_minus_zero{});
   REQUIRE(num_minus_zero >= 1);
 }
