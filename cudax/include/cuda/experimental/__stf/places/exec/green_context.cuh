@@ -414,11 +414,9 @@ public:
            + ")";
     }
 
-    // This is a place type were we choose not to use a container to get the
-    // pools, and store it directly in the place object.
-    stream_pool& get_stream_pool(place_indexed_container<::std::pair<stream_pool, stream_pool>>&, bool) const override
+    stream_pool* get_local_stream_pool(bool) const override
     {
-      return *pool;
+      return pool.get();
     }
 
     bool operator==(const exec_place::impl& rhs) const override

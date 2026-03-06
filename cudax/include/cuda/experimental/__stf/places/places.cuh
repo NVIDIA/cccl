@@ -713,20 +713,20 @@ public:
       return device_ordinal(affine) < device_ordinal(rhs.affine);
     }
 
-    /* Return the pool associated to this place
+    /* Return a pointer to a locally-owned stream pool, or nullptr.
      *
-     * If the stream is expected to perform computation, the
-     * for_computation should be true. If we plan to use this stream for data
-     * transfers, or other means (graph capture) we set the value to false. (This
-     * flag is intended for performance matters, not correctness)
+     * If this place owns its own stream pool (e.g. green contexts, CUDA stream
+     * places), the override returns a non-null pointer.  Otherwise the base
+     * implementation returns nullptr, which tells exec_place::get_stream_pool to
+     * fall back to a container-based lookup.
      *
-     * Note that some implementations of the place abstraction may decide not to
-     * use the container to store the stream_pool, and store the stream_pool within
-     * the place object itself. This is why we have this virtual method, and not just a free function based on the
-     * container.
+     * @param for_computation  true for a computation pool, false for data transfer
+     * @return A pointer to the locally-owned pool, or nullptr.
      */
-    virtual stream_pool&
-    get_stream_pool(place_indexed_container<::std::pair<stream_pool, stream_pool>>& pools, bool for_computation) const;
+    virtual stream_pool* get_local_stream_pool(bool) const
+    {
+      return nullptr;
+    }
 
     /**
      * @brief Create a stream valid for execution on this place.
@@ -868,10 +868,7 @@ public:
   }
 
   stream_pool& get_stream_pool(place_indexed_container<::std::pair<stream_pool, stream_pool>>& pools,
-                               bool for_computation) const
-  {
-    return pimpl->get_stream_pool(pools, for_computation);
-  }
+                               bool for_computation) const;
 
   /**
    * @brief Get a decorated stream from the stream pool associated to this execution place.
@@ -1251,13 +1248,6 @@ public:
     {
       return data_place::host();
     }
-    virtual stream_pool& get_stream_pool(place_indexed_container<::std::pair<stream_pool, stream_pool>>& stream_pools,
-                                         bool for_computation) const override
-    {
-      // There is no pool attached to the host itself, so we use the pool attached to the execution place of the
-      // current device
-      return exec_place::current_device().get_stream_pool(stream_pools, for_computation);
-    }
   };
 
   static ::std::shared_ptr<impl> make()
@@ -1558,18 +1548,6 @@ public:
     const exec_place& get_place(size_t p_index) const
     {
       return coords_to_place(p_index);
-    }
-
-    virtual stream_pool& get_stream_pool(place_indexed_container<::std::pair<stream_pool, stream_pool>>& stream_pools,
-                                         bool for_computation) const override
-    {
-      // We "arbitrarily" select a pool from one of the place in the
-      // grid, which can be suffiicent for a data transfer, but we do not
-      // want to allow this for computation where we expect a more
-      // accurate placement.
-      assert(!for_computation);
-      assert(places.size() > 0);
-      return places[0].get_stream_pool(stream_pools, for_computation);
     }
 
   private:
@@ -2318,11 +2296,26 @@ struct hash<exec_place>
 
 #include <cuda/experimental/__stf/places/place_indexed_container.cuh>
 
-inline stream_pool& exec_place::impl::get_stream_pool(
+// We need the implementation of exec_place_grid, exec_place_device, ...
+inline stream_pool& exec_place::get_stream_pool(
   place_indexed_container<::std::pair<stream_pool, stream_pool>>& pools, bool for_computation) const
 {
-  exec_place place(affine);
-  return for_computation ? pools[place].first : pools[place].second;
+  if (auto* local_pool = pimpl->get_local_stream_pool(for_computation))
+  {
+    return *local_pool;
+  }
+  if (pimpl->is_host())
+  {
+    return exec_place::current_device().get_stream_pool(pools, for_computation);
+  }
+  if (pimpl->is_grid())
+  {
+    assert(!for_computation);
+    const auto& places = as_grid().get_places();
+    assert(places.size() > 0);
+    return places[0].get_stream_pool(pools, for_computation);
+  }
+  return for_computation ? pools[*this].first : pools[*this].second;
 }
 
 #ifdef UNITTESTED_FILE
