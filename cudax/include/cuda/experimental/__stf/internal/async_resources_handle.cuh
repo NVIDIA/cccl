@@ -56,12 +56,9 @@ inline constexpr unsigned long long k_no_stream_id = static_cast<unsigned long l
  */
 inline unsigned long long get_stream_id(cudaStream_t stream)
 {
-  if (!stream)
-  {
-    return k_no_stream_id;
-  }
   unsigned long long id = 0;
   cuda_safe_call(cuStreamGetId(reinterpret_cast<CUstream>(stream), &id));
+  _CCCL_ASSERT(id != k_no_stream_id, "Internal error: cuStreamGetId returned k_no_stream_id");
   return id;
 }
 
