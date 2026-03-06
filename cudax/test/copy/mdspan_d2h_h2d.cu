@@ -219,6 +219,9 @@ TEST_CASE("copy_bytes 2D swapped extents", "[copy_bytes][2d][swapped]")
   // stride order: false
   // tile size:    1
   // num tiles:    32
+  // Regression note:
+  // Same total size is not enough to use the paired path here. Swapped extents
+  // must stay on the independent path and preserve the original logical indexing.
   test_impl<cuda::std::layout_right, cuda::std::layout_left>(host_data, expected, src_extents(), dst_extents());
 }
 
@@ -247,6 +250,9 @@ TEST_CASE("copy_bytes 2D mixed ranks", "[copy_bytes][2d][ranks]")
   using src_extents = cuda::std::extents<int, M, N>; // 2D
   using dst_extents = cuda::std::extents<int, M * N>; // 1D
   // row major to row major
+  // Regression note:
+  // Right-coalescing may expose an equivalent 1D shape here, so this case can use
+  // the paired path after simplification.
   test_impl(host_data, host_data, src_extents(), dst_extents());
   // column major to column major
   thrust::host_vector<int> expected(M * N);
@@ -257,6 +263,10 @@ TEST_CASE("copy_bytes 2D mixed ranks", "[copy_bytes][2d][ranks]")
       expected[i * N + j] = i + j * M;
     }
   }
+  // Regression note:
+  // This case must not be collapsed by the left-coalescing fallback. The logical
+  // column-major ordering still differs from the 1D destination and must remain
+  // on the independent path.
   test_impl<cuda::std::layout_left, cuda::std::layout_left>(host_data, expected, src_extents(), dst_extents());
 }
 

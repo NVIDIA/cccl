@@ -32,20 +32,20 @@
 namespace cuda::experimental
 {
 /// @brief Raw tensor with dynamic extents and strides
-template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
+template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
 struct __raw_tensor
 {
-  using _Ep1 = ::cuda::std::make_unsigned_t<_Ep>;
+  using __unsigned_extent_t = ::cuda::std::make_unsigned_t<_ExtentT>;
 
   _Tp* __data;
   ::cuda::std::size_t __rank;
-  ::cuda::std::array<_Ep1, _MaxRank> __extents;
-  ::cuda::std::array<_Sp, _MaxRank> __strides;
+  ::cuda::std::array<__unsigned_extent_t, _MaxRank> __extents;
+  ::cuda::std::array<_StrideT, _MaxRank> __strides;
 };
 
 /// @brief Raw tensor with dynamic extents and strides, ordered by stride in descending order
-template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
-struct __raw_tensor_ordered : __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>
+template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
+struct __raw_tensor_ordered : __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>
 {
   ::cuda::std::array<::cuda::std::size_t, _MaxRank> __orders;
 };

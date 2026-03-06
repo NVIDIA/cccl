@@ -26,10 +26,13 @@
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/stable_sort.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__cstdlib/abs.h>
 #  include <cuda/std/__mdspan/mdspan.h>
+#  include <cuda/std/__type_traits/common_type.h>
+#  include <cuda/std/__type_traits/make_signed.h>
+#  include <cuda/std/__type_traits/void_t.h>
 #  include <cuda/std/cstdint>
 
+#  include <cuda/experimental/__copy/abs_integer.cuh>
 #  include <cuda/experimental/__copy/types.cuh>
 
 #  include <cstdio>
@@ -41,30 +44,118 @@ namespace cuda::experimental
 //! @brief Tag constant used to enable extent-1 mode removal in @ref __to_raw_tensor.
 inline constexpr auto __remove_extent1 = ::cuda::std::true_type{};
 
+template <typename _Mapping, typename = void>
+struct __mapping_stride_type
+{
+  using type = typename _Mapping::index_type;
+};
+
+template <typename _Mapping>
+struct __mapping_stride_type<_Mapping, ::cuda::std::void_t<typename _Mapping::stride_type>>
+{
+  using type = typename _Mapping::stride_type;
+};
+
+template <typename _Extents, typename _LayoutPolicy>
+using __mdspan_stride_t = typename __mapping_stride_type<typename _LayoutPolicy::template mapping<_Extents>>::type;
+
+template <::cuda::std::size_t _MaxRank, typename _Tp, typename _Extents, typename _LayoutPolicy>
+using __to_raw_tensor_t =
+  __raw_tensor<typename _Extents::index_type, __mdspan_stride_t<_Extents, _LayoutPolicy>, _Tp, _MaxRank>;
+
+/**
+ * @brief Converts an mdspan view to a raw tensor descriptor using its native extent and stride types.
+ *
+ * The descriptor stores data pointer, rank, extents, and strides in arrays to use them at runtime.
+ */
+template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _AccessorPolicy, bool _RemoveExtent1 = false>
+[[nodiscard]]
+_CCCL_HOST_API constexpr __to_raw_tensor_t<_Extents::rank(), _Tp, _Extents, _LayoutPolicy>
+__to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _AccessorPolicy>& __mdspan,
+                ::cuda::std::bool_constant<_RemoveExtent1> = {}) noexcept
+{
+  using __raw_tensor_t = __to_raw_tensor_t<_Extents::rank(), _Tp, _Extents, _LayoutPolicy>;
+  using __extent_t     = typename __raw_tensor_t::__unsigned_extent_t;
+  using __stride_t     = __mdspan_stride_t<_Extents, _LayoutPolicy>;
+  using __rank_t       = typename _Extents::rank_type;
+  __raw_tensor_t __result{__mdspan.data_handle(), 0, {}, {}};
+  if constexpr (_Extents::rank() > 0)
+  {
+    ::cuda::std::size_t __r = 0;
+    for (::cuda::std::size_t __i = 0; __i < _Extents::rank(); ++__i)
+    {
+      const auto __rank   = static_cast<__rank_t>(__i);
+      const auto __extent = static_cast<__extent_t>(__mdspan.extent(__rank));
+      if (!_RemoveExtent1 || __extent != 1)
+      {
+        __result.__extents[__r] = __extent;
+        __result.__strides[__r] = static_cast<__stride_t>(__mdspan.stride(__rank));
+        ++__r;
+      }
+    }
+    __result.__rank = __r;
+  }
+  return __result;
+}
+
 /**
  * @brief Converts an mdspan view to a raw tensor descriptor.
  *
  * The descriptor stores data pointer, rank, extents, and strides in arrays to use them at runtime.
  */
-template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _AccessorPolicy, bool _RemoveExtent1 = false>
-[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor<::cuda::std::size_t, ::cuda::std::int64_t, _Tp, _Extents::rank()>
+template <typename _ExtentT,
+          typename _StrideT,
+          ::cuda::std::size_t _MaxRank,
+          typename _Tp,
+          typename _Extents,
+          typename _LayoutPolicy,
+          typename _AccessorPolicy,
+          bool _RemoveExtent1 = false>
+[[nodiscard]]
+_CCCL_HOST_API constexpr __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>
 __to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _AccessorPolicy>& __mdspan,
                 ::cuda::std::bool_constant<_RemoveExtent1> = {}) noexcept
 {
-  __raw_tensor<::cuda::std::size_t, ::cuda::std::int64_t, _Tp, _Extents::rank()> __result{
-    __mdspan.data_handle(), 0, {}, {}};
-  ::cuda::std::size_t __r = 0;
-  for (::cuda::std::size_t __i = 0; __i < _Extents::rank(); ++__i)
+  using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
+  using __extent_t     = typename __raw_tensor_t::__unsigned_extent_t;
+  using __rank_t       = typename _Extents::rank_type;
+  __raw_tensor_t __result{__mdspan.data_handle(), 0, {}, {}};
+  if constexpr (_Extents::rank() > 0)
   {
-    const auto __extent = static_cast<::cuda::std::size_t>(__mdspan.extent(__i));
-    if (!_RemoveExtent1 || __extent != 1)
+    ::cuda::std::size_t __r = 0;
+    for (::cuda::std::size_t __i = 0; __i < _Extents::rank(); ++__i)
     {
-      __result.__extents[__r] = __extent;
-      __result.__strides[__r] = static_cast<::cuda::std::int64_t>(__mdspan.stride(__i));
-      ++__r;
+      const auto __rank   = static_cast<__rank_t>(__i);
+      const auto __extent = static_cast<__extent_t>(__mdspan.extent(__rank));
+      if (!_RemoveExtent1 || __extent != 1)
+      {
+        __result.__extents[__r] = __extent;
+        __result.__strides[__r] = static_cast<_StrideT>(__mdspan.stride(__rank));
+        ++__r;
+      }
     }
+    __result.__rank = __r;
   }
-  __result.__rank = __r;
+  return __result;
+}
+
+template <typename _ExtentOut,
+          typename _StrideOut,
+          typename _Tp,
+          ::cuda::std::size_t _MaxRank,
+          typename _ExtentIn,
+          typename _StrideIn>
+[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor<_ExtentOut, _StrideOut, _Tp, _MaxRank>
+__cast_raw_tensor(const __raw_tensor<_ExtentIn, _StrideIn, _Tp, _MaxRank>& __src) noexcept
+{
+  using __raw_tensor_out_t = __raw_tensor<_ExtentOut, _StrideOut, _Tp, _MaxRank>;
+  using __extent_out_t     = typename __raw_tensor_out_t::__unsigned_extent_t;
+  __raw_tensor_out_t __result{__src.__data, __src.__rank, {}, {}};
+  for (::cuda::std::size_t __i = 0; __i < __src.__rank; ++__i)
+  {
+    __result.__extents[__i] = static_cast<__extent_out_t>(__src.__extents[__i]);
+    __result.__strides[__i] = static_cast<_StrideOut>(__src.__strides[__i]);
+  }
   return __result;
 }
 
@@ -156,7 +247,8 @@ __sort_by_stride(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor
     __orders[__i] = __i;
   }
   ::cuda::std::stable_sort(__orders.begin(), __orders.begin() + __tensor.__rank, [&](auto __a, auto __b) {
-    return ::cuda::std::abs(__input_strides[__a]) < ::cuda::std::abs(__input_strides[__b]);
+    return ::cuda::experimental::__abs_integer(__input_strides[__a])
+         < ::cuda::experimental::__abs_integer(__input_strides[__b]);
   });
   for (::cuda::std::size_t __i = 0; __i < __tensor.__rank; ++__i)
   {
@@ -194,21 +286,24 @@ __append(const __raw_tensor_ordered<_ExtentT, _StrideT, _Tp, _MaxRankIn>& __tens
 }
 
 /**
- * @brief Conservative uniqueness check for tensor layouts.
+ * @brief Conservative check for interleaved stride order in tensor layouts.
  *
  * Sorts modes by ascending absolute stride, then verifies two conditions:
  * 1. No mode with extent > 1 has stride == 0 (broadcast)
- * 2. No mode's span (extent * |stride|) exceeds the next mode's |stride| (overlap)
+ * 2. No mode's span (extent * |stride|) exceeds the next mode's |stride|
  *
- * Returns true when non-uniqueness is detected, meaning multiple logical indices may map to the same address.
+ * Returns true when the layout fails this non-interleaving rule. This is stronger than
+ * a mathematical injectivity check and may reject some layouts with distinct offsets.
  */
 template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
 [[nodiscard]] _CCCL_HOST_API constexpr bool
-__is_not_unique(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
+__has_interleaved_stride_order(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
 {
   if constexpr (_MaxRank > 0)
   {
-    const auto __sorted   = ::cuda::experimental::__sort_by_stride(__tensor);
+    using __stride_t      = ::cuda::std::common_type_t<::cuda::std::int64_t, ::cuda::std::make_signed_t<_StrideT>>;
+    const auto __tensor_s = ::cuda::experimental::__cast_raw_tensor<_ExtentT, __stride_t>(__tensor);
+    const auto __sorted   = ::cuda::experimental::__sort_by_stride(__tensor_s);
     const auto& __extents = __sorted.__extents;
     const auto& __strides = __sorted.__strides;
     for (::cuda::std::size_t __i = 0; __i < __sorted.__rank; ++__i)
@@ -220,8 +315,8 @@ __is_not_unique(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor)
     }
     for (::cuda::std::size_t __i = 0; __i + 1 < __sorted.__rank; ++__i)
     {
-      if (static_cast<_StrideT>(__extents[__i]) * ::cuda::std::abs(__strides[__i])
-          > ::cuda::std::abs(__strides[__i + 1]))
+      if (static_cast<__stride_t>(__extents[__i]) * ::cuda::experimental::__abs_integer(__strides[__i])
+          > ::cuda::experimental::__abs_integer(__strides[__i + 1]))
       {
         return true;
       }
@@ -234,39 +329,13 @@ __is_not_unique(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor)
   }
 }
 
-/// @brief Convenience overload: converts an mdspan to a raw tensor, then checks uniqueness.
+/// @brief Convenience overload: converts an mdspan to a raw tensor, then checks stride interleaving.
 template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _AccessorPolicy>
-[[nodiscard]] _CCCL_HOST_API constexpr bool
-__is_not_unique(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _AccessorPolicy>& __mdspan) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr bool __has_interleaved_stride_order(
+  const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _AccessorPolicy>& __mdspan) noexcept
 {
-  if constexpr (_Extents::rank() > 0)
-  {
-    using __stride_t      = ::cuda::std::int64_t; // TODO: generalize
-    const auto __tensor   = ::cuda::experimental::__to_raw_tensor(__mdspan, __remove_extent1);
-    const auto __sorted   = ::cuda::experimental::__sort_by_stride(__tensor);
-    const auto& __extents = __sorted.__extents;
-    const auto& __strides = __sorted.__strides;
-    for (::cuda::std::size_t __i = 0; __i < __sorted.__rank; ++__i)
-    {
-      if (__strides[__i] == 0)
-      {
-        return true;
-      }
-    }
-    for (::cuda::std::size_t __i = 0; __i + 1 < __sorted.__rank; ++__i)
-    {
-      const auto __extent = static_cast<__stride_t>(__extents[__i]);
-      if (__extent * ::cuda::std::abs(__strides[__i]) > ::cuda::std::abs(__strides[__i + 1]))
-      {
-        return true;
-      }
-    }
-    return false;
-  }
-  else
-  {
-    return false;
-  }
+  return ::cuda::experimental::__has_interleaved_stride_order(
+    ::cuda::experimental::__to_raw_tensor(__mdspan, __remove_extent1));
 }
 
 /// @brief Checks whether two tensors have the same stride-based mode order.
@@ -288,6 +357,32 @@ __same_stride_order(const __raw_tensor_ordered<_ExtentT, _StrideT, _TpIn, _MaxRa
     const auto __order_a = __i < __rank_a ? __tensor_a.__orders[__i] : __i;
     const auto __order_b = __i < __rank_b ? __tensor_b.__orders[__i] : __i;
     if (__order_a != __order_b)
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename _ExtentTIn,
+          typename _StrideTIn,
+          typename _TpIn,
+          ::cuda::std::size_t _MaxRankIn,
+          typename _ExtentTOut,
+          typename _StrideTOut,
+          typename _TpOut,
+          ::cuda::std::size_t _MaxRankOut>
+[[nodiscard]] _CCCL_HOST_API constexpr bool
+__same_shape(const __raw_tensor<_ExtentTIn, _StrideTIn, _TpIn, _MaxRankIn>& __tensor_in,
+             const __raw_tensor<_ExtentTOut, _StrideTOut, _TpOut, _MaxRankOut>& __tensor_out) noexcept
+{
+  if (__tensor_in.__rank != __tensor_out.__rank)
+  {
+    return false;
+  }
+  for (::cuda::std::size_t __i = 0; __i < __tensor_in.__rank; ++__i)
+  {
+    if (__tensor_in.__extents[__i] != __tensor_out.__extents[__i])
     {
       return false;
     }

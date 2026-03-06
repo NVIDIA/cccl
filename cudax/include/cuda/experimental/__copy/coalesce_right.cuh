@@ -26,8 +26,6 @@
 #  include <cuda/std/__algorithm/fill.h>
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/cstdint>
-
 #  include <cuda/experimental/__copy/types.cuh>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -37,7 +35,7 @@ namespace cuda::experimental
 /**
  * @brief Runtime coalesce-right for dynamic shape/stride layouts.
  *
- * Merges right-adjacent contiguous modes and returns a compacted layout descriptor.
+ * Merges right-adjacent contiguous modes and compacts the descriptor in place.
  *
  * @par Algorithm
  * 1. Traverse modes right-to-left, skipping size-1 modes.
@@ -46,33 +44,32 @@ namespace cuda::experimental
  * 3. Compact valid modes to the beginning of the arrays.
  */
 template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
-[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>
-__coalesce_right(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor_input) noexcept
+_CCCL_HOST_API constexpr void __coalesce_right(__raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor) noexcept
 {
   using _Ep1 = ::cuda::std::make_unsigned_t<_Ep>;
-  __raw_tensor<_Ep, _Sp, _Tp, _MaxRank> __result{__tensor_input.__data};
+  __raw_tensor<_Ep, _Sp, _Tp, _MaxRank> __result{__tensor.__data};
   auto& __extents = __result.__extents;
   auto& __strides = __result.__strides;
   ::cuda::std::fill(__extents.begin(), __extents.end(), _Ep1{1});
   ::cuda::std::fill(__strides.begin(), __strides.end(), _Sp{0});
-  const auto __rank  = static_cast<int>(__tensor_input.__rank);
+  const auto __rank  = static_cast<int>(__tensor.__rank);
   int __out          = __rank - 1;
   _Sp __curr_stride = 0;
   for (int __i = __rank - 1; __i >= 0; --__i)
   {
-    if (__tensor_input.__extents[__i] == 1)
+    if (__tensor.__extents[__i] == 1)
     {
       continue;
     }
     // Merge contiguous modes
-    if (__out < __rank - 1 && __tensor_input.__strides[__i] == __curr_stride)
+    if (__out < __rank - 1 && __tensor.__strides[__i] == __curr_stride)
     {
-      __result.__extents[__out + 1] *= __tensor_input.__extents[__i];
+      __result.__extents[__out + 1] *= __tensor.__extents[__i];
     }
     else
     {
-      __result.__extents[__out] = __tensor_input.__extents[__i];
-      __result.__strides[__out] = __tensor_input.__strides[__i];
+      __result.__extents[__out] = __tensor.__extents[__i];
+      __result.__strides[__out] = __tensor.__strides[__i];
       --__out;
     }
     __curr_stride = __result.__strides[__out + 1] * static_cast<_Sp>(__result.__extents[__out + 1]);
@@ -85,8 +82,14 @@ __coalesce_right(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor_input) no
     __result.__extents[__j] = __result.__extents[__first_valid + __j];
     __result.__strides[__j] = __result.__strides[__first_valid + __j];
   }
+  const auto __rank_out_sz = static_cast<::cuda::std::size_t>(__rank_out);
+  for (::cuda::std::size_t __j = __rank_out_sz; __j < _MaxRank; ++__j)
+  {
+    __result.__extents[__j] = _Ep1{1};
+    __result.__strides[__j] = _Sp{0};
+  }
   __result.__rank = ::cuda::std::max(__rank_out, 1);
-  return __result;
+  __tensor         = __result;
 }
 } // namespace cuda::experimental
 

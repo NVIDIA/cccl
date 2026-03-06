@@ -24,11 +24,11 @@
 #include <cuda/__utility/in_range.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__algorithm/stable_sort.h>
-#include <cuda/std/__cstdlib/abs.h>
 #include <cuda/std/__numeric/gcd_lcm.h>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
 
+#include <cuda/experimental/__copy/abs_integer.cuh>
 #include <cuda/experimental/__copy/raw_tensor_utils.cuh>
 #include <cuda/experimental/__copy/types.cuh>
 //
@@ -88,6 +88,7 @@ _CCCL_HOST_API void __remove_extent1_modes_paired(__raw_tensor<_Ep, _Sp, _TpSrc,
   __dst.__extents = __src.__extents;
 }
 
+
 //! @brief Sort modes of a src/dst tensor pair by dst's ascending absolute stride.
 //!
 //! The same permutation is applied to both tensors, so shapes remain identical after sorting.
@@ -103,6 +104,7 @@ _CCCL_HOST_API void __sort_by_stride_paired(__raw_tensor<_Ep, _Sp, _TpSrc, _MaxR
                                             __raw_tensor<_Ep, _Sp, _TpDst, _MaxRank>& __dst) noexcept
 {
   using ::cuda::std::size_t;
+  namespace cudax = ::cuda::experimental;
   _CCCL_ASSERT(::cuda::in_range(__src.__rank, size_t{1}, _MaxRank), "Invalid tensor rank");
   _CCCL_ASSERT(__src.__rank == __dst.__rank, "Source and destination ranks must be equal");
   _CCCL_ASSERT(__src.__extents == __dst.__extents, "Source and destination extents must be identical");
@@ -118,7 +120,7 @@ _CCCL_HOST_API void __sort_by_stride_paired(__raw_tensor<_Ep, _Sp, _TpSrc, _MaxR
     __modes[__i] = {__src.__extents[__i], __src.__strides[__i], __dst.__strides[__i]};
   }
   ::cuda::std::stable_sort(__modes.begin(), __modes.begin() + __src.__rank, [](auto __a, auto __b) {
-    return ::cuda::std::abs(__a.__dst_stride) < ::cuda::std::abs(__b.__dst_stride);
+    return cudax::__abs_integer(__a.__dst_stride) < cudax::__abs_integer(__b.__dst_stride);
   });
   for (size_t __i = 0; __i < __src.__rank; ++__i)
   {
@@ -231,6 +233,7 @@ template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank
 __max_vector_size_bytes(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor) noexcept
 {
   using ::cuda::std::size_t;
+  namespace cudax = ::cuda::experimental;
   _CCCL_ASSERT(::cuda::in_range(__tensor.__rank, size_t{1}, _MaxRank), "Invalid tensor rank");
   _CCCL_ASSERT(::cuda::experimental::__has_no_extent1_modes(__tensor), "All extents must be different from 1");
   const auto& __extents = __tensor.__extents;
@@ -244,7 +247,7 @@ __max_vector_size_bytes(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor) n
   // (2) alignment over all strides
   for (size_t __i = 0; __i < __tensor.__rank; ++__i)
   {
-    const auto __stride = ::cuda::std::abs(__strides[__i]);
+    const auto __stride = cudax::__abs_integer(__strides[__i]);
     if (__stride != 1)
     {
       const auto __stride_bytes = static_cast<size_t>(__stride) * sizeof(_Tp);

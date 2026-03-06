@@ -27,8 +27,8 @@
 #  include <cuda/std/__algorithm/all_of.h>
 #  include <cuda/std/__algorithm/is_sorted.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__cstdlib/abs.h>
 
+#  include <cuda/experimental/__copy/abs_integer.cuh>
 #  include <cuda/experimental/__copy/types.cuh>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -44,10 +44,11 @@ namespace cuda::experimental
 template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
 [[nodiscard]] _CCCL_HOST_API bool __has_sorted_strides(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor) noexcept
 {
+  namespace cudax = ::cuda::experimental;
   _CCCL_ASSERT(::cuda::in_range(__tensor.__rank, ::cuda::std::size_t{0}, _MaxRank), "Invalid tensor rank");
   return ::cuda::std::is_sorted(
     __tensor.__strides.cbegin(), __tensor.__strides.cbegin() + __tensor.__rank, [](auto __a, auto __b) {
-      return ::cuda::std::abs(__a) < ::cuda::std::abs(__b);
+      return cudax::__abs_integer(__a) < cudax::__abs_integer(__b);
     });
 }
 

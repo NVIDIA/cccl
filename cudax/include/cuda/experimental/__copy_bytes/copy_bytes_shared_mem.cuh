@@ -28,12 +28,12 @@
 #include <cuda/devices>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__algorithm/stable_sort.h>
-#include <cuda/std/__cstdlib/abs.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
 
+#include <cuda/experimental/__copy/abs_integer.cuh>
 #include <cuda/experimental/__copy/types.cuh>
 #include <cuda/experimental/__copy/utils.cuh>
 #include <cuda/experimental/__copy_bytes/layout_optimization.cuh>
@@ -331,7 +331,7 @@ _CCCL_HOST_API void copy_bytes_shared_mem(
     __src_perm[__i] = __i;
   }
   ::cuda::std::stable_sort(__src_perm.begin(), __src_perm.begin() + __rank, [&](size_t __a, size_t __b) {
-    return ::cuda::std::abs(__src.__strides[__a]) < ::cuda::std::abs(__src.__strides[__b]);
+    return cudax::__abs_integer(__src.__strides[__a]) < cudax::__abs_integer(__src.__strides[__b]);
   });
   //--------------------------------------------------------------------------------------------------------------------
   // Reordered arrays for loading src to shared memory (src-coalesced thread decomposition)
