@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/upper_bound.h>
+#include <cuda/std/__bit/integral.h>
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__cccl/visibility.h>
 #include <cuda/std/__iterator/iterator_traits.h>
@@ -191,6 +192,97 @@ private:
     return {segment_id, shifted_offset};
   }
 };
+
+template <typename SpanT, unsigned int MaxBagSize, unsigned int LinearBinarySearchThreshold = 16>
+struct statically_bound_bag_of_segments
+{
+private:
+  SpanT m_offsets;
+
+public:
+  using logical_offset_t = typename SpanT::value_type;
+  using segment_id_t     = typename SpanT::size_type;
+  using search_data_t    = ::cuda::std::tuple<segment_id_t, logical_offset_t>;
+
+  static constexpr segment_id_t max_offset_size = MaxBagSize;
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE
+  statically_bound_bag_of_segments(SpanT cum_sizes, ::cuda::std::integral_constant<unsigned int, MaxBagSize>)
+      : m_offsets(cum_sizes)
+  {}
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE search_data_t find(logical_offset_t elem_id) const
+  {
+    if constexpr (max_offset_size < LinearBinarySearchThreshold)
+    {
+      return locate_linear_search(elem_id);
+    }
+    else
+    {
+      return locate_binary_search(elem_id);
+    }
+  }
+
+private:
+  _CCCL_DEVICE _CCCL_FORCEINLINE bool
+  is_it_past_this_segment(logical_offset_t offset, segment_id_t segment_id, segment_id_t size) const
+  {
+    return ((segment_id < size) && (m_offsets[segment_id] <= offset));
+  }
+
+  // Given ordinal logical position in the sequence of input segments comprising several segments,
+  // searcher returns the segment the element is a part of, and its relative position within that segment.
+
+  // This comment applies to both linear_search and binary search functions below:
+  //    m_offsets views into array of non-negative non-decreasing values, obtained as
+  //    prefix sum of segment sizes. Expectation: 0 <= pos < last element of m_offsets
+
+  // Linear search
+  _CCCL_DEVICE _CCCL_FORCEINLINE search_data_t locate_linear_search(logical_offset_t pos) const
+  {
+    const auto n_offsets = m_offsets.size();
+
+    segment_id_t segment_id = 0;
+
+    _CCCL_PRAGMA_UNROLL()
+    for (segment_id_t i = 0; i < max_offset_size; ++i)
+    {
+      segment_id += is_it_past_this_segment(pos, i, n_offsets);
+    }
+
+    const logical_offset_t relative_offset = (segment_id == 0) ? pos : pos - m_offsets[segment_id - 1];
+    return {segment_id, relative_offset};
+  }
+
+  // Branchless binary search
+  _CCCL_DEVICE _CCCL_FORCEINLINE search_data_t locate_binary_search(logical_offset_t pos) const
+  {
+    constexpr segment_id_t start = ::cuda::std::bit_ceil(max_offset_size) >> 1;
+
+    const auto offset_size = m_offsets.size();
+
+    segment_id_t segment_id{0};
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (segment_id_t step = start; step > 0; step >>= 1)
+    {
+      const segment_id_t new_segment_id = segment_id + (step - 1);
+      const segment_id_t cond           = is_it_past_this_segment(pos, new_segment_id, offset_size);
+
+      segment_id += cond * step;
+    }
+
+    const logical_offset_t relative_offset = (segment_id == 0) ? pos : pos - m_offsets[segment_id - 1];
+
+    return {segment_id, relative_offset};
+  }
+};
+
+template <unsigned int MaxBagSize, typename SpanT>
+_CCCL_DEVICE _CCCL_FORCEINLINE auto make_statically_bound_bag_of_segments(SpanT span)
+{
+  return statically_bound_bag_of_segments<SpanT, MaxBagSize>{span, {}};
+}
 
 template <typename SizeT>
 struct bag_of_fixed_size_segments
