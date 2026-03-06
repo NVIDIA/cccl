@@ -8,6 +8,7 @@
 
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/sort.h>
+#include <thrust/count.h>
 
 #include <cuda/iterator>
 #include <cuda/std/__algorithm/min.h>
@@ -168,4 +169,38 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
   segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
 
   REQUIRE(expected_keys == keys_out_buffer);
+}
+
+// Regression test: top-k must preserve -0.0f in the output (not normalize to +0.0f).
+C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segmented][topk][device][float]")
+{
+  constexpr cuda::std::int64_t segment_size    = 8;
+  constexpr cuda::std::int64_t k               = 5;
+  constexpr cuda::std::int64_t num_segments    = 1;
+  constexpr cuda::std::size_t max_segment_size = 64;
+
+  // Input: one segment containing -0.0f and +0.0f; top-5 min should include both zeros.
+  constexpr float keys_in[] = {3.0f, -0.0f, 1.0f, 2.0f, 0.0f, -1.0f, 4.0f, 5.0f};
+  c2h::device_vector<float> d_keys_in(keys_in, keys_in + segment_size);
+  c2h::device_vector<float> d_keys_out(k, thrust::no_init);
+
+  auto d_keys_in_it =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(d_keys_in.data())), segment_size);
+  auto d_keys_out_it =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(d_keys_out.data())), k);
+
+  batched_topk_keys(
+    d_keys_in_it,
+    d_keys_out_it,
+    cub::detail::batched_topk::segment_size_uniform<1, max_segment_size>{segment_size},
+    cub::detail::batched_topk::k_uniform<1, static_cast<cuda::std::size_t>(k)>{k},
+    cub::detail::batched_topk::select_direction_uniform{cub::detail::topk::select::min},
+    cub::detail::batched_topk::num_segments_uniform<>{num_segments},
+    cub::detail::batched_topk::total_num_items_guarantee{num_segments * segment_size});
+
+  c2h::host_vector<float> keys_out(d_keys_out);
+  const int num_minus_zero = thrust::count_if(keys_out.begin(), keys_out.end(), [](float x) {
+    return x == 0.0f && std::signbit(x);
+  });
+  REQUIRE(num_minus_zero >= 1);
 }

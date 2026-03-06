@@ -327,16 +327,42 @@ private:
     // TODO (elstehle): Add support for custom decomposers
     identity_decomposer_t decomposer;
 
-    // Get bit-twiddled sortkeys
+    // Get bit-twiddled sortkeys. For float keys, track which were -0.0 (normalized to +0.0 for ranking) so we can
+    // restore -0.0 in the output via a bitvector; no extra key buffer.
     bit_ordered_type(&unsigned_keys)[ItemsPerThread] = reinterpret_cast<bit_ordered_type(&)[ItemsPerThread]>(keys);
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < items_per_thread; ++i)
+    constexpr int flip_back_num_words                = ::cuda::ceil_div(items_per_thread, 32);
+    [[maybe_unused]] ::cuda::std::uint32_t flip_back_bits[flip_back_num_words] = {};
+    if constexpr (::cuda::is_floating_point_v<KeyT>)
     {
-      unsigned_keys[i] = bit_ordered_conversion::to_bit_ordered(decomposer, unsigned_keys[i]);
-      unsigned_keys[i] = BaseDigitExtractor<KeyT>::ProcessFloatMinusZero(unsigned_keys[i]);
-      if constexpr (SelectDirection == detail::topk::select::max)
+      const bit_ordered_type twiddled_minus_zero =
+        Traits<KeyT>::TwiddleIn(bit_ordered_type(1) << (8 * sizeof(bit_ordered_type) - 1));
+      const bit_ordered_type twiddled_zero = Traits<KeyT>::TwiddleIn(0);
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int i = 0; i < items_per_thread; ++i)
       {
-        unsigned_keys[i] = bit_ordered_inversion::inverse(decomposer, unsigned_keys[i]);
+        unsigned_keys[i] = bit_ordered_conversion::to_bit_ordered(decomposer, unsigned_keys[i]);
+        if (unsigned_keys[i] == twiddled_minus_zero)
+        {
+          flip_back_bits[i / 32] |= (1u << (i % 32));
+          unsigned_keys[i] = twiddled_zero;
+        }
+        if constexpr (SelectDirection == detail::topk::select::max)
+        {
+          unsigned_keys[i] = bit_ordered_inversion::inverse(decomposer, unsigned_keys[i]);
+        }
+      }
+    }
+    else
+    {
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int i = 0; i < items_per_thread; ++i)
+      {
+        unsigned_keys[i] = bit_ordered_conversion::to_bit_ordered(decomposer, unsigned_keys[i]);
+        unsigned_keys[i] = BaseDigitExtractor<KeyT>::ProcessFloatMinusZero(unsigned_keys[i]);
+        if constexpr (SelectDirection == detail::topk::select::max)
+        {
+          unsigned_keys[i] = bit_ordered_inversion::inverse(decomposer, unsigned_keys[i]);
+        }
       }
     }
 
@@ -412,7 +438,15 @@ private:
       if (is_valid && (is_selected || is_candidate))
       {
         const histo_counter_t selected_offset = atomicAdd(&storage.stage.select.selected_offset[item_class], 1);
-        storage.stage.select.exchange.keys[selected_offset] = ::cuda::std::bit_cast<KeyT>(unsigned_keys[i]);
+        if constexpr (::cuda::is_floating_point_v<KeyT>)
+        {
+          storage.stage.select.exchange.keys[selected_offset] =
+            (flip_back_bits[i / 32] & (1u << (i % 32))) ? KeyT(-0.0) : ::cuda::std::bit_cast<KeyT>(unsigned_keys[i]);
+        }
+        else
+        {
+          storage.stage.select.exchange.keys[selected_offset] = ::cuda::std::bit_cast<KeyT>(unsigned_keys[i]);
+        }
         if constexpr (!keys_only)
         {
           scatter_indices[i] = selected_offset;
