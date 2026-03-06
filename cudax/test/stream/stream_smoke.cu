@@ -151,20 +151,34 @@ C2H_CCCLRT_TEST("Stream ID", "[stream]")
   auto id2 = stream2.id();
 
   // Test that different streams have different IDs
+#if _CCCL_COMPILER(NVHPC, <, 25, 11)
+  CUDAX_REQUIRE(cuda::std::to_underlying(id1) != cuda::std::to_underlying(id2));
+#else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 11) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 11) vvv
   CUDAX_REQUIRE(id1 != id2);
+#endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
 
   // Test that the same stream returns the same ID when called multiple times
+#if _CCCL_COMPILER(NVHPC, <, 25, 11)
+  CUDAX_REQUIRE(cuda::std::to_underlying(stream1.id()) == cuda::std::to_underlying(id1));
+  CUDAX_REQUIRE(cuda::std::to_underlying(stream2.id()) == cuda::std::to_underlying(id2));
+#else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 11) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 11) vvv
   CUDAX_REQUIRE(stream1.id() == id1);
   CUDAX_REQUIRE(stream2.id() == id2);
+#endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
 
   {
     // Test that stream_ref also supports id()
     // NULL stream needs a device to be set
-    cudax::__ensure_current_device guard(cuda::device_ref{0});
-    cudax::stream_ref ref1(cudaStream_t{});
-    cudax::stream_ref ref2(stream1);
+    cuda::__ensure_current_context guard(cuda::device_ref{0});
+    cuda::stream_ref ref1(::cudaStream_t{});
+    cuda::stream_ref ref2(stream1);
 
+#if _CCCL_COMPILER(NVHPC, <, 25, 11)
+    CUDAX_REQUIRE(cuda::std::to_underlying(ref1.id()) != cuda::std::to_underlying(ref2.id()));
+    CUDAX_REQUIRE(cuda::std::to_underlying(ref2.id()) == cuda::std::to_underlying(id1));
+#else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 11) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 11) vvv
     CUDAX_REQUIRE(ref1.id() != ref2.id());
     CUDAX_REQUIRE(ref2.id() == id1);
+#endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
   }
 }
