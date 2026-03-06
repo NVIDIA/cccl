@@ -360,9 +360,20 @@ public:
     }
     else
     {
-      // searcher locates segment_id using linear/binary search in cum_sizes
-      const multi_segment_helpers::bag_of_segments searcher{cum_sizes};
-      consume_ranges_chunked_impl(searcher, inp_idx_begin_it, out_idx_begin_it, items_per_warp);
+      constexpr bool use_branchless = true;
+
+      if constexpr (use_branchless)
+      {
+        // searcher locates segment_id using branchless linear/binary search in cum_sizes
+        const auto searcher = multi_segment_helpers::make_statically_bound_bag_of_segments<MaxNumSegments>(cum_sizes);
+        consume_ranges_chunked_impl(searcher, inp_idx_begin_it, out_idx_begin_it, items_per_warp);
+      }
+      else
+      {
+        // searcher locates segment_id using linear/binary search in cum_sizes
+        const multi_segment_helpers::bag_of_segments searcher{cum_sizes};
+        consume_ranges_chunked_impl(searcher, inp_idx_begin_it, out_idx_begin_it, items_per_warp);
+      }
     }
   }
 
