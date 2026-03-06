@@ -186,10 +186,11 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
 #  endif // _CCCL_CUDA_COMPILATION()
   {
-    // nvc++ doesn't fully support 128-bit ints with __builtin_mul_overflow.
-#  if _CCCL_COMPILER(NVHPC)
+    // nvc++ doesn't fully support 128-bit ints with __builtin_mul_overflow. On ARM64, using the builtin with 128-bit
+    // ints result in `undefined reference to __muloti4` with nvc++ and clang < 20.
+#  if _CCCL_COMPILER(NVHPC) || (_CCCL_ARCH(ARM64) && _CCCL_COMPILER(CLANG, <, 20))
     if constexpr (sizeof(_ActResult) != 16 && sizeof(_Lhs) != 16 && sizeof(_Rhs) != 16)
-#  endif // _CCCL_COMPILER(NVHPC)
+#  endif // _CCCL_COMPILER(NVHPC) || (_CCCL_ARCH(ARM64) && _CCCL_COMPILER(CLANG, <, 20))
     {
       NV_IF_TARGET(NV_IS_HOST, ({
                      overflow_result<_ActResult> __result{};
@@ -201,16 +202,22 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
 #endif // _CCCL_BUILTIN_MUL_OVERFLOW
 
   // Host fallback + device implementation.
-#if _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_MUL_OVERFLOW)
-  if constexpr (::cuda::std::is_same_v<_ActResult, _Lhs> && ::cuda::std::is_same_v<_Lhs, _Rhs>)
+#if _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_MUL_OVERFLOW) || (_CCCL_HAS_INT128() && _CCCL_COMPILER(NVHPC) || (_CCCL_ARCH(ARM64) && _CCCL_COMPILER(CLANG, <, 20)))
+  using ::cuda::std::is_signed_v;
+
+  // If we would check for is_same_v, we would get slow path for e. g. long and long long, even though they represent
+  // the same range.
+  constexpr auto __all_same_size = sizeof(_ActResult) == sizeof(_Lhs) && sizeof(_ActResult) == sizeof(_Rhs);
+  constexpr auto __all_same_sign = is_signed_v<_ActResult> == is_signed_v<_Lhs> && is_signed_v<_ActResult> == is_signed_v<_Rhs>;
+  if constexpr (__all_same_size && __all_same_sign)
   {
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      NV_IF_TARGET(NV_IS_HOST, (return ::cuda::__mul_overflow_host(__lhs, __rhs);))
+      NV_IF_TARGET(NV_IS_HOST, (return ::cuda::__mul_overflow_host(static_cast<_ActResult>(__lhs), static_cast<_ActResult>(__rhs));))
     }
   }
   return ::cuda::__mul_overflow_generic<_ActResult>(__lhs, __rhs);
-#endif // _CCCL_CUDA_COMPILATION() || !_CCCL_BUILTIN_MUL_OVERFLOW
+#endif // needs fallback
 }
 
 _CCCL_TEMPLATE(class _Result, class _Lhs, class _Rhs)
