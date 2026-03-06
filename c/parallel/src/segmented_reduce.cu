@@ -27,6 +27,7 @@
 #include "jit_templates/templates/operation.h"
 #include "jit_templates/templates/output_iterator.h"
 #include "jit_templates/traits.h"
+#include "util/cubin_loader.h"
 #include <cccl/c/segmented_reduce.h>
 #include <cccl/c/types.h> // cccl_type_info
 #include <nvrtc/command_list.h>
@@ -285,16 +286,21 @@ static_assert(
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  // populate build struct members
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(cuLibraryGetKernel(
-    &build_ptr->segmented_reduce_kernel, build_ptr->library, segmented_reduce_kernel_lowered_name.c_str()));
+  cccl_try_load_for_device(
+    &build_ptr->library,
+    result.data.get(),
+    &build_ptr->segmented_reduce_kernel,
+    segmented_reduce_kernel_lowered_name.c_str());
 
   build_ptr->cc               = cc_major * 10 + cc_minor;
   build_ptr->cubin            = (void*) result.data.release();
   build_ptr->cubin_size       = result.size;
   build_ptr->accumulator_size = accum_t.size;
-  build_ptr->runtime_policy   = new cub::detail::segmented_reduce::policy_selector{policy_sel};
+  static_assert(std::is_trivially_copyable_v<cub::detail::segmented_reduce::policy_selector>);
+  build_ptr->runtime_policy      = std::malloc(sizeof(cub::detail::segmented_reduce::policy_selector));
+  build_ptr->runtime_policy_size = sizeof(cub::detail::segmented_reduce::policy_selector);
+  std::memcpy(build_ptr->runtime_policy, &policy_sel, sizeof(cub::detail::segmented_reduce::policy_selector));
+  build_ptr->segmented_reduce_kernel_lowered_name = strdup(segmented_reduce_kernel_lowered_name.c_str());
 
   return CUDA_SUCCESS;
 }
@@ -405,9 +411,12 @@ try
 
   // allocation behind cubin is owned by unique_ptr with delete[] deleter now
   std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-  std::unique_ptr<cub::detail::segmented_reduce::policy_selector> policy(
-    static_cast<cub::detail::segmented_reduce::policy_selector*>(build_ptr->runtime_policy));
-  check(cuLibraryUnload(build_ptr->library));
+  std::free(build_ptr->runtime_policy);
+  std::free(build_ptr->segmented_reduce_kernel_lowered_name);
+  if (build_ptr->library != nullptr)
+  {
+    check(cuLibraryUnload(build_ptr->library));
+  }
 
   return CUDA_SUCCESS;
 }

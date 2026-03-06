@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+from os import PathLike
+
 from ... import _bindings, types
 from ... import _cccl_interop as cccl
 from ..._caching import cache_with_registered_key_functions
@@ -37,6 +39,7 @@ class _MergeSort:
         d_out_keys: DeviceArrayLike,
         d_out_items: DeviceArrayLike | None,
         op: OpAdapter,
+        cc=None,
     ):
         present_in_values = d_in_items is not None
         present_out_values = d_out_items is not None
@@ -59,6 +62,7 @@ class _MergeSort:
             self.d_out_keys_cccl,
             self.d_out_items_cccl,
             self.op_cccl,
+            cc=cc,
         )
 
     def __call__(
@@ -75,6 +79,16 @@ class _MergeSort:
         present_in_values = d_in_items is not None
         present_out_values = d_out_items is not None
         assert present_in_values == present_out_values
+
+        if self.d_in_keys_cccl is None:
+            # Lazy init for deserialized sorters
+            self.d_in_keys_cccl = cccl.to_cccl_input_iter(d_in_keys)
+            self.d_in_items_cccl = cccl.to_cccl_input_iter(d_in_items)
+            self.d_out_keys_cccl = cccl.to_cccl_output_iter(d_out_keys)
+            self.d_out_items_cccl = cccl.to_cccl_output_iter(d_out_items)
+            value_type = cccl.get_value_type(d_in_keys)
+            self.op_adapter = make_op_adapter(op)
+            self.op_cccl = self.op_adapter.compile((value_type, value_type), types.int8)
 
         set_cccl_iterator_state(self.d_in_keys_cccl, d_in_keys)
         if present_in_values:
@@ -110,6 +124,30 @@ class _MergeSort:
 
         return temp_storage_bytes
 
+    def save(self, path: str | PathLike) -> None:
+        """Serialize this sorter to a file. Reload with ``cuda.compute.load_algorithm(path)``."""
+        from pathlib import Path as _Path
+
+        from ..._binary_format import write_cclb
+
+        data = self.build_result._serialize()
+        cubin = data.pop("cubin")
+        write_cclb(_Path(path), "merge_sort", data, cubin)
+
+    @classmethod
+    def _from_serialized(cls, data: dict) -> "_MergeSort":
+        """Reconstruct from a flat build dict (as produced by ``_serialize()``)."""
+        obj = cls.__new__(cls)
+        build = _bindings.DeviceMergeSortBuildResult._deserialize(data)
+        obj.build_result = build
+        obj.d_in_keys_cccl = None  # type: ignore[assignment]
+        obj.d_in_items_cccl = None  # type: ignore[assignment]
+        obj.d_out_keys_cccl = None  # type: ignore[assignment]
+        obj.d_out_items_cccl = None  # type: ignore[assignment]
+        obj.op_adapter = None  # type: ignore[assignment]
+        obj.op_cccl = None  # type: ignore[assignment]
+        return obj
+
 
 @cache_with_registered_key_functions
 def make_merge_sort(
@@ -118,6 +156,7 @@ def make_merge_sort(
     d_out_keys: DeviceArrayLike,
     d_out_items: DeviceArrayLike | None,
     op: Operator,
+    cc=None,
 ):
     """Implements a device-wide merge sort using ``d_in_keys`` and the comparison operator ``op``.
 
@@ -147,7 +186,7 @@ def make_merge_sort(
       follow the required semantics can lead to incorrect results, silent memory corruption, or crashes.
     """
     op_adapter = make_op_adapter(op)
-    return _MergeSort(d_in_keys, d_in_items, d_out_keys, d_out_items, op_adapter)
+    return _MergeSort(d_in_keys, d_in_items, d_out_keys, d_out_items, op_adapter, cc=cc)
 
 
 def merge_sort(

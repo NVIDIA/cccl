@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from os import PathLike
+
 import numpy as np
 
 from .. import _bindings, types
@@ -47,6 +49,7 @@ class _BinarySearch:
         d_out: DeviceArrayLike,
         comp: OpAdapter,
         mode: _bindings.BinarySearchMode,
+        cc=None,
     ):
         if not protocols.is_device_array(d_data):
             raise ValueError("d_data must be a device array for index outputs.")
@@ -78,6 +81,7 @@ class _BinarySearch:
             self.d_values_cccl,
             self.d_out_cccl,
             self.op_cccl,
+            cc=cc,
         )
 
     def __call__(
@@ -90,6 +94,17 @@ class _BinarySearch:
         num_values: int,
         stream=None,
     ):
+        if self.d_data_cccl is None:
+            # Lazy init for deserialized objects
+            self.d_data_cccl = cccl.to_cccl_input_iter(d_data)
+            self.d_values_cccl = cccl.to_cccl_input_iter(d_values)
+            data_value_type = cccl.get_value_type(d_data)
+            self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
+            comp_adapter_init = _normalize_comp(comp)
+            self.op_cccl = comp_adapter_init.compile(
+                (data_value_type, data_value_type), types.uint8
+            )
+
         set_cccl_iterator_state(self.d_data_cccl, d_data)
         set_cccl_iterator_state(self.d_values_cccl, d_values)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
@@ -111,6 +126,29 @@ class _BinarySearch:
             stream_handle,
         )
 
+    def save(self, path: str | PathLike) -> None:
+        """Serialize this binary searcher to a file. Reload with ``cuda.compute.load_algorithm(path)``."""
+        from pathlib import Path as _Path
+
+        from .._binary_format import write_cclb
+
+        data = self.build_result._serialize()
+        cubin = data.pop("cubin")
+        write_cclb(_Path(path), "binary_search", data, cubin)
+
+    @classmethod
+    def _from_serialized(cls, data: dict) -> "_BinarySearch":
+        """Reconstruct from a flat build dict (as produced by ``_serialize()``)."""
+        obj = cls.__new__(cls)
+        obj.build_result = _bindings.DeviceBinarySearchBuildResult._deserialize(data)
+        obj.d_data_cccl = None  # type: ignore[assignment]
+        obj.d_values_cccl = None  # type: ignore[assignment]
+        obj.d_out_cccl = None  # type: ignore[assignment]
+        obj.op_cccl = None  # type: ignore[assignment]
+        obj.data_ptr = 0
+        obj.out_ptr = 0
+        return obj
+
 
 @cache_with_registered_key_functions
 def _make_binary_search(
@@ -121,9 +159,10 @@ def _make_binary_search(
     mode: _bindings.BinarySearchMode,
     data_ptr: int,
     out_ptr: int,
+    cc=None,
 ):
     """Cached factory for _BinarySearch."""
-    return _BinarySearch(d_data, d_values, d_out, comp, mode)
+    return _BinarySearch(d_data, d_values, d_out, comp, mode, cc=cc)
 
 
 def make_lower_bound(
@@ -131,6 +170,7 @@ def make_lower_bound(
     d_values: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike,
     comp: Operator | None = None,
+    cc=None,
 ):
     """
     Create a lower_bound object that can be called to find insertion positions.
@@ -161,6 +201,7 @@ def make_lower_bound(
         _bindings.BinarySearchMode.LOWER_BOUND,
         protocols.get_data_pointer(d_data),
         protocols.get_data_pointer(d_out),
+        cc=cc,
     )
 
 
@@ -169,6 +210,7 @@ def make_upper_bound(
     d_values: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike,
     comp: Operator | None = None,
+    cc=None,
 ):
     """
     Create an upper_bound object that can be called to find insertion positions.
@@ -199,6 +241,7 @@ def make_upper_bound(
         _bindings.BinarySearchMode.UPPER_BOUND,
         protocols.get_data_pointer(d_data),
         protocols.get_data_pointer(d_out),
+        cc=cc,
     )
 
 

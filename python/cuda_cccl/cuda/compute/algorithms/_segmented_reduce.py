@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from os import PathLike
 from typing import Callable
 
 import numpy as np
@@ -46,6 +47,7 @@ class _SegmentedReduce:
         end_offsets_in: DeviceArrayLike | IteratorT,
         op: OpAdapter,
         h_init: np.ndarray | GpuStruct,
+        cc=None,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
@@ -66,6 +68,7 @@ class _SegmentedReduce:
             self.end_offsets_in_cccl,
             self.op_cccl,
             self.h_init_cccl,
+            cc=cc,
         )
 
     def __call__(
@@ -84,6 +87,17 @@ class _SegmentedReduce:
             raise RuntimeError(
                 "Segmented sort does not currently support more than 2^31-1 segments."
             )
+        if self.d_in_cccl is None:
+            # Lazy init for deserialized objects
+            self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
+            self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
+            self.start_offsets_in_cccl = cccl.to_cccl_input_iter(start_offsets_in)
+            self.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
+            self.h_init_cccl = cccl.to_cccl_value(h_init)
+            value_type = get_value_type(h_init)
+            op_adapter_init = make_op_adapter(op)
+            self.op_cccl = op_adapter_init.compile((value_type, value_type), value_type)
+
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
         set_cccl_iterator_state(self.start_offsets_in_cccl, start_offsets_in)
@@ -117,6 +131,29 @@ class _SegmentedReduce:
         )
         return temp_storage_bytes
 
+    def save(self, path: str | PathLike) -> None:
+        """Serialize this segmented reducer to a file. Reload with ``cuda.compute.load_algorithm(path)``."""
+        from pathlib import Path as _Path
+
+        from .._binary_format import write_cclb
+
+        data = self.build_result._serialize()
+        cubin = data.pop("cubin")
+        write_cclb(_Path(path), "segmented_reduce", data, cubin)
+
+    @classmethod
+    def _from_serialized(cls, data: dict) -> "_SegmentedReduce":
+        """Reconstruct from a flat build dict (as produced by ``_serialize()``)."""
+        obj = cls.__new__(cls)
+        obj.build_result = _bindings.DeviceSegmentedReduceBuildResult._deserialize(data)
+        obj.d_in_cccl = None  # type: ignore[assignment]
+        obj.d_out_cccl = None  # type: ignore[assignment]
+        obj.start_offsets_in_cccl = None  # type: ignore[assignment]
+        obj.end_offsets_in_cccl = None  # type: ignore[assignment]
+        obj.h_init_cccl = None  # type: ignore[assignment]
+        obj.op_cccl = None  # type: ignore[assignment]
+        return obj
+
 
 @cache_with_registered_key_functions
 def make_segmented_reduce(
@@ -126,6 +163,7 @@ def make_segmented_reduce(
     end_offsets_in: DeviceArrayLike | IteratorT,
     op: Operator,
     h_init: np.ndarray | GpuStruct,
+    cc=None,
 ):
     """Computes a device-wide segmented reduction using the specified binary ``op`` and initial value ``init``.
 
@@ -152,7 +190,7 @@ def make_segmented_reduce(
     """
     op_adapter = make_op_adapter(op)
     return _SegmentedReduce(
-        d_in, d_out, start_offsets_in, end_offsets_in, op_adapter, h_init
+        d_in, d_out, start_offsets_in, end_offsets_in, op_adapter, h_init, cc=cc
     )
 
 

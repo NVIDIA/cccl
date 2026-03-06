@@ -7,10 +7,9 @@
 from __future__ import annotations
 
 import ctypes
-import sys
 from textwrap import dedent
 
-from .._bindings import Op, OpKind
+from .._bindings import IteratorState, Op, OpKind
 from .._cpp_compile import compile_cpp_to_ltoir, cpp_type_from_descriptor
 from .._utils.protocols import get_data_pointer, get_dtype
 from ..types import from_numpy_dtype
@@ -25,6 +24,12 @@ class PointerIterator(IteratorBase):
     Supports both input (reading) and output (writing) operations.
     Handles both scalar types (using typed C++ code) and struct types
     (using byte-level memcpy).
+
+    The data pointer is read lazily from the wrapped array each time
+    ``state`` is accessed, so passing a :class:`~cuda.compute.ProxyArray`
+    is safe: the null pointer is only materialised at the point where the
+    CCCL interop layer actually needs the state bytes (build time), and the
+    real pointer is supplied at call time by ``set_cccl_iterator_state``.
     """
 
     def __init__(self, array):
@@ -32,25 +37,22 @@ class PointerIterator(IteratorBase):
         Create a pointer iterator from a device array.
 
         Args:
-            array: Device array with __cuda_array_interface__
+            array: Device array with ``__cuda_array_interface__``, or a
+                :class:`~cuda.compute.ProxyArray` for ahead-of-time
+                compilation without real GPU memory.
         """
-        # Get pointer and dtype from array
-        ptr = get_data_pointer(array)
         dtype = get_dtype(array)
         value_type = from_numpy_dtype(dtype)
-
-        # State is just the pointer
-        state_bytes = ctypes.c_void_p(ptr)
-        state_bytes_buffer = (ctypes.c_char * 8)()
-        ctypes.memmove(state_bytes_buffer, ctypes.byref(state_bytes), 8)
-        state_bytes = bytes(state_bytes_buffer)
 
         self._cpp_type = cpp_type_from_descriptor(value_type)  # None for struct types
         self._element_size = value_type.info.size
         self._array = array  # Keep reference to prevent GC
+        # None means "derive from self._array on demand"; set by _clone_with_pointer
+        # when the pointer differs from the array's current address.
+        self._override_ptr: int | None = None
 
         super().__init__(
-            state_bytes=state_bytes,
+            state_bytes=b"\x00" * 8,  # placeholder — state property is overridden
             state_alignment=8,  # pointer alignment
             value_type=value_type,
         )
@@ -58,6 +60,14 @@ class PointerIterator(IteratorBase):
     @property
     def array(self):
         return self._array
+
+    @property
+    def state(self) -> IteratorState:
+        """Lazily compute pointer state from the wrapped array."""
+        ptr = self._current_pointer()
+        buf = (ctypes.c_char * 8)()
+        ctypes.memmove(buf, ctypes.byref(ctypes.c_void_p(ptr)), 8)
+        return IteratorState(bytes(buf))
 
     def _make_advance_op(self) -> Op:
         symbol = self._make_advance_symbol()
@@ -163,15 +173,18 @@ class PointerIterator(IteratorBase):
         return self._clone_with_pointer(offset_ptr)
 
     def _current_pointer(self) -> int:
-        return int.from_bytes(self._state_bytes, sys.byteorder, signed=False)
+        if self._override_ptr is not None:
+            return self._override_ptr
+        from .._proxy import ProxyArray
+
+        if isinstance(self._array, ProxyArray):
+            return 0  # NULL pointer at build time; real pointer supplied at call time
+        return get_data_pointer(self._array)
 
     def _clone_with_pointer(self, pointer_value: int):
         """Clone this iterator with a different pointer value."""
         clone = PointerIterator(self._array)
-        state_bytes_buffer = (ctypes.c_char * 8)()
-        ptr_obj = ctypes.c_void_p(pointer_value)
-        ctypes.memmove(state_bytes_buffer, ctypes.byref(ptr_obj), 8)
-        clone._state_bytes = bytes(state_bytes_buffer)
+        clone._override_ptr = pointer_value
         clone._uid_cached = None
         return clone
 

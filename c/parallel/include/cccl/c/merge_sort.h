@@ -34,6 +34,11 @@ typedef struct cccl_device_merge_sort_build_result_t
   CUkernel partition_kernel;
   CUkernel merge_kernel;
   void* runtime_policy;
+  size_t runtime_policy_size;
+  // Lowered (mangled) kernel names, heap-allocated, freed by cccl_device_merge_sort_cleanup():
+  char* block_sort_kernel_lowered_name;
+  char* partition_kernel_lowered_name;
+  char* merge_kernel_lowered_name;
 } cccl_device_merge_sort_build_result_t;
 
 CCCL_C_API CUresult cccl_device_merge_sort_build(

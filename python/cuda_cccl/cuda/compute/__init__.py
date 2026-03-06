@@ -15,7 +15,9 @@ if not _BINDINGS_AVAILABLE:
             "This typically means you're running on a CPU-only machine without CUDA drivers installed."
         )
 else:
-    from ._caching import clear_all_caches
+    from ._caching import clear_all_caches, set_cache_dir
+    from ._proxy import ProxyArray, ProxyValue
+    from ._serialization import load_algorithm
     from .algorithms import (
         DoubleBuffer,
         SortOrder,
@@ -70,6 +72,10 @@ else:
         "_BINDINGS_AVAILABLE",
         "binary_transform",
         "clear_all_caches",
+        "load_algorithm",
+        "ProxyArray",
+        "ProxyValue",
+        "set_cache_dir",
         "CacheModifiedInputIterator",
         "ConstantIterator",
         "CountingIterator",

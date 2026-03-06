@@ -13,6 +13,7 @@ import numpy as np
 import cuda.compute
 from cuda.compute import (
     OpKind,
+    ProxyArray,
 )
 
 # Prepare the input and output arrays.
@@ -24,7 +25,9 @@ d_input = cp.asarray(h_input)
 d_output = cp.empty(1, dtype=dtype)
 
 # Create a reducer object.
-reducer = cuda.compute.make_reduce_into(d_input, d_output, OpKind.PLUS, h_init)
+reducer = cuda.compute.make_reduce_into(
+    ProxyArray(dtype), ProxyArray(dtype), OpKind.PLUS, h_init
+)
 
 # Get the temporary storage size.
 temp_storage_size = reducer(None, d_input, d_output, OpKind.PLUS, len(h_input), h_init)

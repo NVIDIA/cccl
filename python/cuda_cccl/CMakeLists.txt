@@ -43,6 +43,14 @@ install(
   DESTINATION cuda/compute/${CUDA_VERSION_DIR}/cccl
 )
 
+# Install C parallel public headers alongside the other CCCL headers so that
+# downstream compilers (e.g. the .so exporter) can find <cccl/c/reduce.h> via
+# the path returned by cuda.cccl.headers.include_paths.get_include_paths().
+install(
+  DIRECTORY ${_cccl_root}/c/parallel/include/
+  DESTINATION cuda/cccl/headers/include
+)
+
 # Build and install Cython extension
 find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 
@@ -117,6 +125,7 @@ python3_add_library(
   "${_generated_extension_src}"
 )
 add_dependencies(_bindings_impl cythonize_bindings_impl)
+target_include_directories(_bindings_impl PRIVATE ${_cccl_root}/c/parallel/src)
 target_link_libraries(
   _bindings_impl
   PRIVATE #

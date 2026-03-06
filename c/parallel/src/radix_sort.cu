@@ -19,6 +19,7 @@
 #include "cub/util_type.cuh"
 #include "kernels/operators.h"
 #include "util/context.h"
+#include "util/cubin_loader.h"
 #include "util/indirect_arg.h"
 #include "util/types.h"
 #include <cccl/c/radix_sort.h>
@@ -349,28 +350,41 @@ static_assert(device_radix_sort_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) =
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(
-    cuLibraryGetKernel(&build_ptr->single_tile_kernel, build_ptr->library, single_tile_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(&build_ptr->upsweep_kernel, build_ptr->library, upsweep_kernel_lowered_name.c_str()));
-  check(
-    cuLibraryGetKernel(&build_ptr->alt_upsweep_kernel, build_ptr->library, alt_upsweep_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(&build_ptr->scan_bins_kernel, build_ptr->library, scan_bins_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(&build_ptr->downsweep_kernel, build_ptr->library, downsweep_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(
-    &build_ptr->alt_downsweep_kernel, build_ptr->library, alt_downsweep_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(&build_ptr->histogram_kernel, build_ptr->library, histogram_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(
-    &build_ptr->exclusive_sum_kernel, build_ptr->library, exclusive_sum_kernel_lowered_name.c_str()));
-  check(cuLibraryGetKernel(&build_ptr->onesweep_kernel, build_ptr->library, onesweep_kernel_lowered_name.c_str()));
+  if (cccl_try_load_for_device(
+        &build_ptr->library, result.data.get(), &build_ptr->single_tile_kernel, single_tile_kernel_lowered_name.c_str()))
+  {
+    check(cuLibraryGetKernel(&build_ptr->upsweep_kernel, build_ptr->library, upsweep_kernel_lowered_name.c_str()));
+    check(
+      cuLibraryGetKernel(&build_ptr->alt_upsweep_kernel, build_ptr->library, alt_upsweep_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->scan_bins_kernel, build_ptr->library, scan_bins_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->downsweep_kernel, build_ptr->library, downsweep_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(
+      &build_ptr->alt_downsweep_kernel, build_ptr->library, alt_downsweep_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->histogram_kernel, build_ptr->library, histogram_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(
+      &build_ptr->exclusive_sum_kernel, build_ptr->library, exclusive_sum_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->onesweep_kernel, build_ptr->library, onesweep_kernel_lowered_name.c_str()));
+  }
 
-  build_ptr->cc             = cc_major * 10 + cc_minor;
-  build_ptr->cubin          = (void*) result.data.release();
-  build_ptr->cubin_size     = result.size;
-  build_ptr->key_type       = input_keys_it.value_type;
-  build_ptr->value_type     = input_values_it.value_type;
-  build_ptr->order          = sort_order;
-  build_ptr->runtime_policy = new cub::detail::radix_sort::policy_selector{policy_sel};
+  build_ptr->cc         = cc_major * 10 + cc_minor;
+  build_ptr->cubin      = (void*) result.data.release();
+  build_ptr->cubin_size = result.size;
+  build_ptr->key_type   = input_keys_it.value_type;
+  build_ptr->value_type = input_values_it.value_type;
+  build_ptr->order      = sort_order;
+  static_assert(std::is_trivially_copyable_v<cub::detail::radix_sort::policy_selector>);
+  build_ptr->runtime_policy      = std::malloc(sizeof(cub::detail::radix_sort::policy_selector));
+  build_ptr->runtime_policy_size = sizeof(cub::detail::radix_sort::policy_selector);
+  std::memcpy(build_ptr->runtime_policy, &policy_sel, sizeof(cub::detail::radix_sort::policy_selector));
+  build_ptr->single_tile_kernel_lowered_name   = strdup(single_tile_kernel_lowered_name.c_str());
+  build_ptr->upsweep_kernel_lowered_name       = strdup(upsweep_kernel_lowered_name.c_str());
+  build_ptr->alt_upsweep_kernel_lowered_name   = strdup(alt_upsweep_kernel_lowered_name.c_str());
+  build_ptr->scan_bins_kernel_lowered_name     = strdup(scan_bins_kernel_lowered_name.c_str());
+  build_ptr->downsweep_kernel_lowered_name     = strdup(downsweep_kernel_lowered_name.c_str());
+  build_ptr->alt_downsweep_kernel_lowered_name = strdup(alt_downsweep_kernel_lowered_name.c_str());
+  build_ptr->histogram_kernel_lowered_name     = strdup(histogram_kernel_lowered_name.c_str());
+  build_ptr->exclusive_sum_kernel_lowered_name = strdup(exclusive_sum_kernel_lowered_name.c_str());
+  build_ptr->onesweep_kernel_lowered_name      = strdup(onesweep_kernel_lowered_name.c_str());
 
   return CUDA_SUCCESS;
 }
@@ -541,8 +555,20 @@ try
 
   using namespace cub::detail::radix_sort;
   std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-  std::unique_ptr<policy_selector> policy(static_cast<policy_selector*>(build_ptr->runtime_policy));
-  check(cuLibraryUnload(build_ptr->library));
+  std::free(build_ptr->runtime_policy);
+  std::free(build_ptr->single_tile_kernel_lowered_name);
+  std::free(build_ptr->upsweep_kernel_lowered_name);
+  std::free(build_ptr->alt_upsweep_kernel_lowered_name);
+  std::free(build_ptr->scan_bins_kernel_lowered_name);
+  std::free(build_ptr->downsweep_kernel_lowered_name);
+  std::free(build_ptr->alt_downsweep_kernel_lowered_name);
+  std::free(build_ptr->histogram_kernel_lowered_name);
+  std::free(build_ptr->exclusive_sum_kernel_lowered_name);
+  std::free(build_ptr->onesweep_kernel_lowered_name);
+  if (build_ptr->library != nullptr)
+  {
+    check(cuLibraryUnload(build_ptr->library));
+  }
 
   return CUDA_SUCCESS;
 }
