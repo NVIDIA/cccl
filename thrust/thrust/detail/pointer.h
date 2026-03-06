@@ -394,14 +394,12 @@ public:
 
 THRUST_NAMESPACE_END
 
-_CCCL_BEGIN_NAMESPACE_CUDA_STD
-
 // Specialize pointer traits for everything that has the raw_pointer alias
 template <typename Pointer>
-struct pointer_traits<Pointer, void_t<typename Pointer::raw_pointer>>
+struct ::cuda::std::pointer_traits<Pointer, ::cuda::std::void_t<typename Pointer::raw_pointer>>
 {
   using pointer         = Pointer;
-  using element_type    = remove_pointer_t<typename Pointer::raw_pointer>;
+  using element_type    = ::cuda::std::remove_pointer_t<typename Pointer::raw_pointer>;
   using difference_type = ptrdiff_t;
 
   template <typename U>
@@ -414,7 +412,9 @@ struct pointer_traits<Pointer, void_t<typename Pointer::raw_pointer>>
   using raw_pointer = typename pointer::raw_pointer;
 
   // Thrust historically provided a non-standard pointer_to for pointer<void>
-  template <class T, enable_if_t<(is_void_v<element_type> || is_same_v<T, element_type>), int> = 0>
+  template <
+    class T,
+    ::cuda::std::enable_if_t<(::cuda::std::is_void_v<element_type> || ::cuda::std::is_same_v<T, element_type>), int> = 0>
   [[nodiscard]] _CCCL_API inline static pointer pointer_to(T& r) noexcept(noexcept(::cuda::std::addressof(r)))
   {
     return static_cast<element_type*>(::cuda::std::addressof(r));
@@ -428,4 +428,3 @@ struct pointer_traits<Pointer, void_t<typename Pointer::raw_pointer>>
     return iter.get();
   }
 };
-_CCCL_END_NAMESPACE_CUDA_STD
