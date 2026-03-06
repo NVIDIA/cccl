@@ -8,7 +8,9 @@ source "$ci_dir/pyenv_helper.sh"
 # Parse common arguments
 source "$ci_dir/util/python/common_arg_parser.sh"
 parse_python_args "$@"
-cuda_major_version=$(nvcc --version | grep release | awk '{print $6}' | tr -d ',' | cut -d '.' -f 1 | cut -d 'V' -f 2)
+cuda_version=$(nvcc --version | grep release | awk '{print $6}' | tr -d ',' | cut -d 'V' -f 2)
+cuda_major_version=$(echo "${cuda_version}" | cut -d '.' -f 1)
+cuda_minor_version=$(echo "${cuda_version}" | cut -d '.' -f 2)
 
 # Setup Python environment
 setup_python_env "${py_version}"
@@ -24,6 +26,11 @@ fi
 # Install cuda_cccl
 CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
 python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]"
+
+# On CUDA 12.0, install cuda-toolkit components to supplement the environment
+if [[ "${cuda_major_version}" == "12" && "${cuda_minor_version}" == "0" ]]; then
+  python -m pip install "cuda-toolkit[cudart,nvcc,nvrtc,nvjitlink]==12.0.*"
+fi
 
 # Run tests for parallel module
 cd "/home/coder/cccl/python/cuda_cccl/tests/"
