@@ -794,6 +794,9 @@ template <typename Dimensions, typename... Options>
 
 #  if _CCCL_CUDA_COMPILATION()
 
+template <class _Tp>
+extern __shared__ _Tp __cccl_device_dyn_smem[];
+
 template <class _Dims, class... _Opts>
 _CCCL_DEVICE_API decltype(auto) dynamic_shared_memory(const kernel_config<_Dims, _Opts...>& __config) noexcept
 {
@@ -801,8 +804,7 @@ _CCCL_DEVICE_API decltype(auto) dynamic_shared_memory(const kernel_config<_Dims,
   using _Opt  = ::cuda::std::remove_reference_t<decltype(__opt)>;
   static_assert(!::cuda::std::is_same_v<_Opt, __detail::option_not_found>,
                 "Dynamic shared memory option not found in the kernel configuration");
-  extern __shared__ unsigned char __cccl_device_dyn_smem[];
-  return __opt.__make_view(reinterpret_cast<typename _Opt::value_type*>(__cccl_device_dyn_smem));
+  return __opt.__make_view(__cccl_device_dyn_smem<typename _Opt::value_type>);
 }
 
 #  endif // _CCCL_CUDA_COMPILATION()
