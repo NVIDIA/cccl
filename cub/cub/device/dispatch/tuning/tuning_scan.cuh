@@ -655,7 +655,8 @@ struct policy_hub
 
     struct WarpspeedPolicy : Policy1000::WarpspeedPolicy
     {
-      static constexpr int items_per_thread = [] {
+      static _CCCL_API constexpr auto __compute_ipt()
+      {
         auto ipt = Policy1000::WarpspeedPolicy::items_per_thread;
 
         // based on cub.bench.scan.exclusive.custom.base, cap items per thread if we don't know the scan op
@@ -671,9 +672,10 @@ struct policy_hub
         }
 
         return ipt;
-      }();
+      }
 
-      static constexpr int tile_size = items_per_thread * Policy1000::WarpspeedPolicy::squad_reduce_thread_count;
+      static constexpr int items_per_thread = __compute_ipt();
+      static constexpr int tile_size        = items_per_thread * Policy1000::WarpspeedPolicy::squad_reduce_thread_count;
     };
   };
 
