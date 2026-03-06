@@ -255,7 +255,7 @@ public:
     return dstream;
   }
 
-  ::std::ptrdiff_t get_stream_id() const
+  unsigned long long get_stream_id() const
   {
     return dstream.id;
   }
@@ -397,7 +397,7 @@ private:
     for (const auto& e : prereq_in)
     {
       cudaStream_t stream;
-      ::std::ptrdiff_t stream_id = -1;
+      unsigned long long stream_id = 0;
       auto se   = reserved::handle<stream_and_event, reserved::handle_flags::non_null>(e, reserved::use_static_cast);
       stream    = se->get_stream();
       stream_id = se->get_stream_id();
@@ -415,7 +415,7 @@ private:
       if (stream_dev == devid)
       {
         //    fprintf(stderr, "Found matching device %d with stream %p\n", devid, stream);
-        return decorated_stream(stream, stream_id, devid);
+        return decorated_stream(stream, stream_id, static_cast<int>(stream_dev));
       }
     }
 

@@ -1218,6 +1218,7 @@ inline decorated_stream stream_pool::next(const exec_place& place)
   {
     exec_place_guard guard(place);
     result.stream = place.create_stream();
+    result.id     = get_stream_id(result.stream);
     result.dev_id = get_device_from_stream(result.stream);
   }
 
