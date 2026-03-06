@@ -29,10 +29,10 @@
 #  pragma system_header
 #endif
 
-#include <cuda_runtime.h>
-
 #include <mutex>
 #include <vector>
+
+#include <cuda_runtime.h>
 
 namespace cuda::experimental::stf
 {
@@ -86,7 +86,7 @@ struct stream_pool
   stream_pool(stream_pool&& rhs)
   {
     ::std::lock_guard<::std::mutex> locker(rhs.mtx);
-    payload  = ::std::move(rhs.payload);
+    payload = ::std::move(rhs.payload);
     rhs.payload.clear();
     index = rhs.index;
   }

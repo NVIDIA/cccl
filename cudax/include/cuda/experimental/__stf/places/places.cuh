@@ -38,11 +38,11 @@
 #ifdef UNITTESTED_FILE
 #  include <map>
 #endif
+#include <cuda/experimental/__stf/internal/stream_pool.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
 #include <cuda/experimental/__stf/utility/scope_guard.cuh>
-#include <cuda/experimental/__stf/internal/stream_pool.cuh>
 #include <cuda/experimental/__stf/utility/stream_to_dev.cuh>
 
 // Sync only will not move data....
@@ -885,7 +885,8 @@ public:
    *        This is a performance hint and does not affect correctness.
    * @return A decorated_stream containing the CUDA stream and metadata (device ID, pool index)
    */
-  decorated_stream getStream(place_indexed_container<::std::pair<stream_pool, stream_pool>>& stream_pools, bool for_computation) const;
+  decorated_stream getStream(place_indexed_container<::std::pair<stream_pool, stream_pool>>& stream_pools,
+                             bool for_computation) const;
 
   /**
    * @brief Create a stream valid for execution on this place.
@@ -922,7 +923,8 @@ public:
    *        This is a performance hint and does not affect correctness. Defaults to true.
    * @return A CUDA stream associated with this execution place
    */
-  cudaStream_t pick_stream(place_indexed_container<::std::pair<stream_pool, stream_pool>>& stream_pools, bool for_computation = true) const
+  cudaStream_t pick_stream(place_indexed_container<::std::pair<stream_pool, stream_pool>>& stream_pools,
+                           bool for_computation = true) const
   {
     return getStream(stream_pools, for_computation).stream;
   }
@@ -1933,7 +1935,8 @@ inline exec_place data_place::affine_exec_place() const
   return exec_place::device(devid);
 }
 
-inline decorated_stream data_place::getDataStream(place_indexed_container<::std::pair<stream_pool, stream_pool>>& stream_pools) const
+inline decorated_stream
+data_place::getDataStream(place_indexed_container<::std::pair<stream_pool, stream_pool>>& stream_pools) const
 {
   return affine_exec_place().getStream(stream_pools, false);
 }
@@ -2298,8 +2301,8 @@ struct hash<exec_place>
 #include <cuda/experimental/__stf/places/place_indexed_container.cuh>
 
 // We need the implementation of exec_place_grid, exec_place_device, ...
-inline stream_pool& exec_place::get_stream_pool(
-  place_indexed_container<::std::pair<stream_pool, stream_pool>>& pools, bool for_computation) const
+inline stream_pool& exec_place::get_stream_pool(place_indexed_container<::std::pair<stream_pool, stream_pool>>& pools,
+                                                bool for_computation) const
 {
   if (auto* local_pool = pimpl->get_local_stream_pool(for_computation))
   {
