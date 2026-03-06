@@ -13,13 +13,14 @@
 #  pragma system_header
 #endif // no system header
 
-
 #include <cub/block/block_scan.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -29,6 +30,8 @@ namespace detail
 template <typename SortKeyT>
 struct compare_key_prefix_op
 {
+  static_assert(::cuda::std::is_unsigned_v<SortKeyT>, "SortKeyT must be an unsigned type");
+
   SortKeyT prefix_mask;
   SortKeyT key_prefix;
   [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE constexpr bool operator()(SortKeyT sort_key) const noexcept
@@ -48,7 +51,7 @@ private:
   static constexpr int block_threads    = BlockThreads;
   static constexpr int items_per_thread = ItemsPerThread;
   static constexpr int tile_items       = block_threads * items_per_thread;
-  static constexpr int num_buckets      = (1 << RadixBits);
+  static constexpr int num_buckets      = int{1u << RadixBits};
 
   // Calculate number of buckets processed per thread
   static constexpr int buckets_per_thread = ::cuda::ceil_div(num_buckets, block_threads);
@@ -121,7 +124,7 @@ private:
   template <bool IsFullTile, typename DigitExtractorT, typename FilterOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void compute_histograms(
     const bit_ordered_type (&unsigned_keys)[items_per_thread],
-    int num_valid,
+    int valid_items,
     DigitExtractorT digit_extractor,
     FilterOpT filter_op)
   {
@@ -130,7 +133,7 @@ private:
     {
       const auto item_index      = linear_tid * items_per_thread + i;
       const bit_ordered_type key = unsigned_keys[i];
-      if ((IsFullTile || item_index < num_valid) && filter_op(key))
+      if ((IsFullTile || item_index < valid_items) && filter_op(key))
       {
         const auto digit = digit_extractor.Digit(key);
         atomicAdd(&storage.stage.passes.histogram[digit], histo_counter_t{1});
@@ -165,8 +168,6 @@ private:
         storage.stage.passes.histogram[bin_idx] = thread_buckets[i];
       }
     }
-
-    __syncthreads();
   }
 
   // Identify the bucket that the k-th item falls into
@@ -197,7 +198,7 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void get_kth_key_prefix(
     bit_ordered_type (&unsigned_keys)[items_per_thread],
     int k,
-    int num_valid,
+    int valid_items,
     int begin_bit,
     int end_bit,
     int& total_selected,
@@ -206,6 +207,16 @@ private:
     bit_ordered_type& prefix_mask,
     DecomposerT decomposer = DecomposerT{})
   {
+    // Preconditions
+    static constexpr int max_bit = int(sizeof(KeyT) * 8);
+    _CCCL_ASSERT(k > 0 && k <= tile_items, "k must be in (0, tile_items]");
+    if constexpr (!IsFullTile)
+    {
+      _CCCL_ASSERT(valid_items > 0 && valid_items <= tile_items, "valid_items must be in [1, tile_items]");
+    }
+    _CCCL_ASSERT(begin_bit >= 0 && begin_bit < max_bit, "begin_bit must be in [0, max_bit)");
+    _CCCL_ASSERT(end_bit > begin_bit && end_bit <= max_bit, "end_bit must be in (begin_bit, max_bit]");
+
     // We only consider candidates identified in the previous pass, i.e., ((sortkey & prefix_mask) == kth_prefix)
     // With each pass, we identify a wider prefix of the splitter key
     kth_key_prefix = 0;
@@ -214,13 +225,13 @@ private:
     // The total number of selected items
     total_selected = 0;
 
-    const int total_bits = end_bit - begin_bit;
-    const int num_passes = (total_bits > 0) ? ::cuda::ceil_div(total_bits, RadixBits) : 0;
+    const int total_bits = ::max(end_bit - begin_bit, 0);
+    const int num_passes = ::cuda::ceil_div(total_bits, RadixBits);
     for (int pass = 0; pass < num_passes; ++pass)
     {
       // Bit-range & mask of the current pass
       const int pass_end_bit           = end_bit - pass * RadixBits;
-      const int pass_begin_bit         = ::cuda::std::max(pass_end_bit - RadixBits, begin_bit);
+      const int pass_begin_bit         = ::max(pass_end_bit - RadixBits, begin_bit);
       const int pass_bits              = pass_end_bit - pass_begin_bit;
       const bit_ordered_type pass_mask = ::cuda::bitmask<bit_ordered_type>(pass_begin_bit, pass_bits);
 
@@ -232,7 +243,7 @@ private:
       auto filter_op = compare_key_prefix_op<bit_ordered_type>{prefix_mask, kth_key_prefix};
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(pass_begin_bit, pass_bits, decomposer);
-      compute_histograms<IsFullTile>(unsigned_keys, num_valid, digit_extractor, filter_op);
+      compute_histograms<IsFullTile>(unsigned_keys, valid_items, digit_extractor, filter_op);
       __syncthreads();
 
       // Compute prefix sum over buckets
@@ -249,7 +260,7 @@ private:
       total_selected += storage.stage.passes.pass_state.selected;
 
       // Update the kth_key_prefix and prefix_mask for the next pass
-      // Basically, we will have num_valid candidates with the prefix kth_key_prefix
+      // Basically, we will have valid_items candidates with the prefix kth_key_prefix
       kth_key_prefix |= bit_ordered_type(storage.stage.passes.pass_state.bucket) << pass_begin_bit;
       prefix_mask |= pass_mask;
 
@@ -266,8 +277,18 @@ private:
 
   template <detail::topk::select SelectDirection, bool IsFullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void select_topk(
-    KeyT (&keys)[items_per_thread], ValueT (&values)[items_per_thread], int k, int num_valid, int begin_bit, int end_bit)
+    KeyT (&keys)[items_per_thread],
+    ValueT (&values)[items_per_thread],
+    int k,
+    int valid_items,
+    int begin_bit,
+    int end_bit)
   {
+    if constexpr (!IsFullTile)
+    {
+      _CCCL_ASSERT(valid_items > 0 && valid_items <= tile_items, "valid_items must be in [1, tile_items]");
+    }
+
     // TODO (elstehle): Short-circuit if k is constrained to be positive
     if (k <= 0)
     {
@@ -275,10 +296,7 @@ private:
     }
 
     // TODO (elstehle): Short-circuit if begin_bit is constrained to be non-negative
-    if (begin_bit < 0)
-    {
-      begin_bit = 0;
-    }
+    begin_bit = ::max(begin_bit, 0);
 
     // TODO (elstehle): Short-circuit if end_bit is constrained to be less than the maximum number of bits in the key
     // type
@@ -289,7 +307,7 @@ private:
     }
 
     // TODO (elstehle): Short-circuit if k is greater than the number of items in the tile
-    if ((!IsFullTile && k >= num_valid) || k >= tile_items)
+    if ((!IsFullTile && k >= valid_items) || k >= tile_items)
     {
       return;
     }
@@ -318,13 +336,13 @@ private:
     // are guaranteed to be selected)
     int total_selected{};
     // The number of candidates that compare equal to the k-th key's prefix
-    auto num_candidates = IsFullTile ? tile_items : num_valid;
+    auto num_candidates = IsFullTile ? tile_items : valid_items;
 
     // Identify the prefix of the k-th key
     get_kth_key_prefix<SelectDirection, IsFullTile>(
       unsigned_keys,
       k,
-      num_valid,
+      valid_items,
       begin_bit,
       end_bit,
       total_selected,
@@ -365,7 +383,7 @@ private:
     {
       const bit_ordered_type key_prefix = unsigned_keys[i] & prefix_mask;
 
-      const bool is_valid     = (IsFullTile || linear_tid * items_per_thread + i < num_valid);
+      const bool is_valid     = (IsFullTile || linear_tid * items_per_thread + i < valid_items);
       const bool is_selected  = key_prefix < kth_prefix;
       const bool is_candidate = key_prefix == kth_prefix;
 
@@ -382,7 +400,7 @@ private:
       if (is_valid && (is_selected || is_candidate))
       {
         const histo_counter_t selected_offset = atomicAdd(&storage.stage.select.selected_offset[item_class], 1);
-        reinterpret_cast<bit_ordered_type*>(storage.stage.select.exchange.keys)[selected_offset] = unsigned_keys[i];
+        storage.stage.select.exchange.keys[selected_offset] = ::cuda::std::bit_cast<KeyT>(unsigned_keys[i]);
         if constexpr (!keys_only)
         {
           scatter_indices[i] = selected_offset;
@@ -444,10 +462,10 @@ public:
 
   template <detail::topk::select SelectDirection, bool IsFullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  select_keys(KeyT (&keys)[items_per_thread], int k, int num_valid, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
+  select_keys(KeyT (&keys)[items_per_thread], int k, int valid_items, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     NullType values[ItemsPerThread];
-    select_topk<SelectDirection, IsFullTile>(keys, values, k, num_valid, begin_bit, end_bit);
+    select_topk<SelectDirection, IsFullTile>(keys, values, k, valid_items, begin_bit, end_bit);
   }
 
   template <detail::topk::select SelectDirection, bool IsFullTile>
@@ -455,11 +473,11 @@ public:
     KeyT (&keys)[items_per_thread],
     ValueT (&values)[items_per_thread],
     int k,
-    int num_valid,
+    int valid_items,
     int begin_bit = 0,
     int end_bit   = sizeof(KeyT) * 8)
   {
-    select_topk<SelectDirection, IsFullTile>(keys, values, k, num_valid, begin_bit, end_bit);
+    select_topk<SelectDirection, IsFullTile>(keys, values, k, valid_items, begin_bit, end_bit);
   }
 };
 } // namespace detail

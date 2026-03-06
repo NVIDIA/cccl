@@ -21,7 +21,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 // TODO (elstehle): Add documentation
 template <typename KeyT, int BlockDimX, int ItemsPerThread, typename ValueT = NullType>
 class block_topk
