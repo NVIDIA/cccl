@@ -43,6 +43,10 @@ export CXX="$(which g++)"
 export CUDACXX="$(which nvcc)"
 export CUDAHOSTCXX="$(which g++)"
 
+if ${set_git_safe_directory:-false}; then
+    git config --global --add safe.directory /workspace
+fi
+
 # Build the wheel
 python -m pip wheel --no-deps --verbose --wheel-dir dist .
 

@@ -61,9 +61,13 @@ parse_options() {
     local UNPARSED="${!#}";
     # Splice the unparsed arguments variable name from the arguments list
     set -- "${@:1:$#-1}";
+    # Read the name of the variable in which to return docker run arguments
+    local RUN_ARGS="${!#}";
+    # Splice the docker run arguments variable name from the arguments list
+    set -- "${@:1:$#-1}";
 
     local OPTIONS=c:e:H:dhv:
-    local LONG_OPTIONS=cuda:,cuda-ext,env:,host:,gpus:,volume:,docker,help
+    local LONG_OPTIONS=cuda:,cuda-ext,env:,host:,gpus:,volume:,ulimit:,docker,help
     # shellcheck disable=SC2155
     local PARSED_OPTIONS="$(getopt -n "$0" -o "${OPTIONS}" --long "${LONG_OPTIONS}" -- "$@")"
 
@@ -73,6 +77,8 @@ parse_options() {
     fi
 
     eval set -- "${PARSED_OPTIONS}"
+
+    local -a DOCKER_RUN_ARGS=();
 
     while true; do
         case "$1" in
@@ -108,6 +114,10 @@ parse_options() {
                 volumes+=("$1" "$2")
                 shift 2
                 ;;
+            --ulimit)
+                DOCKER_RUN_ARGS+=("$1" "$2")
+                shift 2
+                ;;
             --)
                 shift
                 _upvar "${UNPARSED}" "${@}"
@@ -120,6 +130,8 @@ parse_options() {
                 ;;
         esac
     done
+
+    _upvar "${RUN_ARGS}" "${DOCKER_RUN_ARGS[@]}"
 }
 
 # shellcheck disable=SC2155
@@ -202,6 +214,7 @@ launch_docker() {
             set -x
         fi
         exec docker run \
+          "${run_args[@]}" \
           "${RUN_ARGS[@]}" \
           "${ENV_VARS[@]}" \
           "${MOUNTS[@]}" \
@@ -250,8 +263,9 @@ launch_vscode() {
 }
 
 main() {
+    local -a run_args;
     local -a unparsed;
-    parse_options "$@" unparsed;
+    parse_options "$@" run_args unparsed;
     set -- "${unparsed[@]}";
 
     # If no CTK/Host compiler are provided, just use the default environment

@@ -95,11 +95,17 @@ runs:
         AWS_ACCESS_KEY_ID: "${{env.AWS_ACCESS_KEY_ID}}"
         AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
         AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
+        # Retry intermittent failures
+        SCCACHE_DIST_MAX_RETRIES: "inf"
+        # Never fallback to building locally, fail instead
+        SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE: "false"
+        SCCACHE_IDLE_TIMEOUT: 0
       run: |
         cat <<'EOF' > ci.sh
         #! /usr/bin/env bash
 
         set -euo pipefail
+        ulimit -n $(ulimit -Hn)
 
         # Need this for git to trust the docker-mounted workspace:
         git config --global --add safe.directory "$(pwd)"
@@ -108,7 +114,10 @@ runs:
         echo -e "\e[1;34mMock with: ci/util/create_mock_job_env.sh $GITHUB_RUN_ID $JOB_ID\e[0m"
         echo -e "\e[1;34m${COMMAND}\e[0m"
         exit_code=0
-        eval "${COMMAND}" || exit_code=$?
+        # kill 10m early so we have time to upload artifacts for debugging hung builds
+        START_T="${JOB_START_TIME:-$(date -u '+%s')}"
+        TIMEOUT="$((21000 - ($(date -u '+%s') - START_T)))"
+        eval timeout --preserve-status --kill-after=1m --verbose "${TIMEOUT}s" ${COMMAND} || exit_code=$?
         if [[ "$exit_code" -ne 0 ]]; then
           echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
           echo "::error:: To replicate this failure locally, follow the steps below:"
@@ -121,9 +130,10 @@ runs:
           echo "For additional information, see:"
           echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
           echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
+          echo -e "::endgroup::"
         fi
 
-        ci/upload_job_result_artifacts.sh "${{inputs.id}}" $exit_code > /dev/null
+        ci/upload_job_result_artifacts.sh "${{inputs.id}}" $exit_code
 
         exit $exit_code
         EOF
@@ -132,7 +142,8 @@ runs:
 
         # The devcontainer will mount this path to the home directory:
         readonly aws_dir="${{github.workspace}}/.aws"
-        mkdir -p "${aws_dir}"
+        readonly cfg_dir="${{github.workspace}}/.config"
+        mkdir -p "${aws_dir}" "${cfg_dir}/sccache";
 
         cat <<EOF > "${aws_dir}/config"
         [default]
@@ -150,57 +161,87 @@ runs:
         chmod 0600 "${aws_dir}/credentials"
         chmod 0664 "${aws_dir}/config"
 
-        # Clear the ARN when using the pre-minted aws creds on the main repo.
-        if [[ "$GITHUB_REPOSITORY" == "NVIDIA/cccl" ]]; then
-          set aws_arn="--env AWS_ROLE_ARN="
+        declare -a extra_launch_args=(
+          --env "JOB_START_TIME=$(date -u '+%s')"
+        )
+
+        # if grep -q '"./ci/build_' <<< "$COMMAND"; then
+        #   extra_launch_args+=(
+        #     # Repopulate the cache
+        #     --env "SCCACHE_RECACHE=1"
+        #     # Do not cache build products
+        #     # --env "SCCACHE_NO_CACHE=1"
+        #   )
+        # fi
+
+        # Over-subscribe -j to keep the build cluster busy if _not_ ClangCUDA.
+        # ClangCUDA can use the build cluster for C++ files, but _not_ CUDA,
+        # and we'll OOM if we try to compile too many at once.
+        if ! grep -q '\-cuda "clang' <<< "$COMMAND"; then
+          if ! grep -q '_python.sh' <<< "$COMMAND"; then
+            extra_launch_args+=(
+              --env "PARALLEL_LEVEL=$(($(nproc) * 4))"
+            )
+          fi
         fi
 
-        declare -a gpu_request=()
+        # Clear the ARN when using the pre-minted aws creds on the main repo.
+        if [[ "$GITHUB_REPOSITORY" == "NVIDIA/cccl" ]]; then
+          extra_launch_args+=(--env "AWS_ROLE_ARN=")
+        fi
 
         # Explicitly pass which GPU to use if on a GPU runner
         if [[ "${JOB_RUNNER}" = *"-gpu-"* ]]; then
-          gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES:-}")
+          extra_launch_args+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES}")
         fi
 
         # If the image contains "cudaXX.Yext"...
         if [[ "${JOB_IMAGE}" =~ cuda[0-9.]+ext ]]; then
-          cuda_ext_request="--cuda-ext"
+          extra_launch_args+=(--cuda-ext)
         fi
 
         # Initialize artifact paths, vars, etc shared with the devcontainer:
         source ci/util/artifacts/common.sh
         source ci/util/workflow/common.sh
 
+        exit_code=0
+
         # Launch this container using the host's docker daemon
-        ( # Subshell to contain the set -x log
-          set -x
-          .devcontainer/launch.sh \
-            --docker \
-            --cuda $JOB_CUDA \
-            --host $JOB_HOST \
-            ${cuda_ext_request:-} \
-            "${gpu_request[@]}" \
-            ${aws_arn:-} \
-            --env "CI=true" \
-            --env "COMMAND=$COMMAND" \
-            --env "GH_TOKEN=$GH_TOKEN" \
-            --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
-            --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
-            --env "GITHUB_RUN_ID=$GITHUB_RUN_ID" \
-            --env "GITHUB_SHA=$GITHUB_SHA" \
-            --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
-            --env "HOST_WORKSPACE=${{github.workspace}}" \
-            --env "JOB_ID=$JOB_ID" \
-            --env "NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-}" \
-            --env "RUNNER_TEMP=$RUNNER_TEMP" \
-            --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
-            --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \
-            --volume "${WORKFLOW_DIR}:${WORKFLOW_DIR}" \
-            -- ./ci.sh
-        )
+        { set -x; } 2>/dev/null
+        .devcontainer/launch.sh \
+          --docker \
+          --cuda $JOB_CUDA \
+          --host $JOB_HOST \
+          "${extra_launch_args[@]}" \
+          --env "CI=true" \
+          --env "COMMAND=$COMMAND" \
+          --env "GH_TOKEN=$GH_TOKEN" \
+          --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
+          --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
+          --env "GITHUB_RUN_ID=$GITHUB_RUN_ID" \
+          --env "GITHUB_SHA=$GITHUB_SHA" \
+          --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
+          --env "HOST_WORKSPACE=${{github.workspace}}" \
+          --env "JOB_ID=$JOB_ID" \
+          --env "NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-}" \
+          --env "RUNNER_TEMP=$RUNNER_TEMP" \
+          --env "SCCACHE_DIST_AUTH_TOKEN=$(
+            curl -fsSL -H "Authorization: Bearer $(
+              curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+                "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=token.rapids.nvidia.com" \
+            | jq -r '.value'
+            )" https://token.rapids.nvidia.com/gh/token/exchange \
+          | jq -r '.token')" \
+          --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
+          --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \
+          --volume "${WORKFLOW_DIR}:${WORKFLOW_DIR}" \
+          -- ./ci.sh || exit_code=$?
+        { set +x; } 2>/dev/null
 
         # Dump artifact matrix for upload step:
         printf "ARTIFACTS=%s\n" "$(ci/util/artifacts/upload/print_matrix.sh)" >> "${GITHUB_OUTPUT}"
+
+        exit $exit_code
 
     - name: Upload job artifacts
       if: ${{ always() && steps.run.outputs.ARTIFACTS != '' && fromJson(steps.run.outputs.ARTIFACTS)[0] != null }}

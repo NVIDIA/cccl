@@ -138,11 +138,19 @@ C2H_CCCLRT_TEST("Stream ID", "[stream]")
   auto id2 = stream2.id();
 
   // Test that different streams have different IDs
+#if _CCCL_COMPILER(NVHPC, <, 25, 11)
+  CCCLRT_REQUIRE(static_cast<unsigned long long>(id1) != static_cast<unsigned long long>(id2));
+
+  // Test that the same stream returns the same ID when called multiple times
+  CCCLRT_REQUIRE(static_cast<unsigned long long>(stream1.id()) == static_cast<unsigned long long>(id1));
+  CCCLRT_REQUIRE(static_cast<unsigned long long>(stream2.id()) == static_cast<unsigned long long>(id2));
+#else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 11) ^^^ / vvv _CCCL_COMPILER(NVHPC, >=, 25, 11) vvv
   CCCLRT_REQUIRE(id1 != id2);
 
   // Test that the same stream returns the same ID when called multiple times
   CCCLRT_REQUIRE(stream1.id() == id1);
   CCCLRT_REQUIRE(stream2.id() == id2);
+#endif // _CCCL_COMPILER(NVHPC, >=, 25, 11)
 
   {
     // Test that stream_ref also supports id()
@@ -151,8 +159,13 @@ C2H_CCCLRT_TEST("Stream ID", "[stream]")
     cuda::stream_ref ref1(::cudaStream_t{});
     cuda::stream_ref ref2(stream1);
 
+#if _CCCL_COMPILER(NVHPC, <, 25, 11)
+    CCCLRT_REQUIRE(static_cast<unsigned long long>(ref1.id()) != static_cast<unsigned long long>(ref2.id()));
+    CCCLRT_REQUIRE(static_cast<unsigned long long>(ref2.id()) == static_cast<unsigned long long>(id1));
+#else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 11) ^^^ / vvv _CCCL_COMPILER(NVHPC, >=, 25, 11) vvv
     CCCLRT_REQUIRE(ref1.id() != ref2.id());
     CCCLRT_REQUIRE(ref2.id() == id1);
+#endif // _CCCL_COMPILER(NVHPC, >=, 25, 11)
   }
 }
 
