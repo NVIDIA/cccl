@@ -13,7 +13,6 @@
 #include <thrust/tabulate.h>
 
 #include <cstdint>
-#include <numeric>
 #include <tuple>
 #include <type_traits> // std::integral_constant
 #include <vector>
@@ -73,7 +72,8 @@ template <typename T>
 constexpr unsigned int get_max_elems()
 {
   constexpr unsigned int max_input_bytes = (static_cast<unsigned int>(1) << 19);
-  return cuda::ceil_div(max_input_bytes, sizeof(T));
+  constexpr auto elem_bytes              = static_cast<unsigned int>(sizeof(T));
+  return cuda::ceil_div(max_input_bytes, elem_bytes);
 }
 
 using integral_types = c2h::type_list<std::int32_t, std::int64_t, std::uint32_t, std::uint64_t>;
@@ -633,9 +633,14 @@ std::tuple<std::vector<OffsetT>, std::vector<OffsetT>> make_in_out_offsets(const
 
   std::size_t segment_count = sizes.size();
 
+  static constexpr OffsetT zero{0};
+
   offsets.resize(segment_count + 1);
-  offsets[0] = OffsetT{0};
-  std::inclusive_scan(sizes.begin(), sizes.end(), offsets.begin() + 1);
+  offsets[0] = zero;
+
+  cuda::std::plus<> plus_t{};
+
+  compute_inclusive_scan_reference(sizes.begin(), sizes.end(), offsets.begin() + 1, plus_t, zero);
 
   std::vector<OffsetT> sizes_with_gaps;
   sizes_with_gaps.resize(segment_count);
@@ -647,8 +652,9 @@ std::tuple<std::vector<OffsetT>, std::vector<OffsetT>> make_in_out_offsets(const
 
   std::vector<OffsetT> offsets_with_gaps;
   offsets_with_gaps.resize(segment_count + 1);
-  offsets_with_gaps[0] = OffsetT{0};
-  std::inclusive_scan(sizes_with_gaps.begin(), sizes_with_gaps.end(), offsets_with_gaps.begin() + 1);
+  offsets_with_gaps[0] = zero;
+  compute_inclusive_scan_reference(
+    sizes_with_gaps.begin(), sizes_with_gaps.end(), offsets_with_gaps.begin() + 1, plus_t, zero);
 
   return {offsets, offsets_with_gaps};
 }
