@@ -375,27 +375,34 @@ template <class _Kernel, class _Config, class... _Args>
 #  endif // _CCCL_CUDA_COMPILATION()
 
 template <class... _Args>
-[[nodiscard]] _CCCL_HOST_API ::CUfunction __get_cufunction_of(void (*__kernel)(_Args...))
+[[nodiscard]] _CCCL_HOST_API __cccl_cukernel_handle __get_cukernel_handle_of(stream_ref __stream, void (*__kernel)(_Args...))
 {
-  ::cudaFunction_t __kernel_cufunction{};
+  __cccl_cukernel_handle __ret{};
+#if _CCCL_CTK_AT_LEAST(13, 0)
   _CCCL_TRY_CUDA_API(
-    ::cudaGetFuncBySymbol, "Failed to get function from symbol", &__kernel_cufunction, (const void*) __kernel);
-  return (::CUfunction) __kernel_cufunction;
+    ::cudaGetKernel, "Failed to get kernel from symbol", &__ret.__kernel_, (const void*) __kernel);
+  __ret.__device_ = ::cuda::__driver::__deviceGet(__stream.device().get());
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+  __ensure_current_context __dev_setter{__submitter};
+  _CCCL_TRY_CUDA_API(
+    ::cudaGetFuncBySymbol, "Failed to get function from symbol", &__ret.__kernel_, (const void*) __kernel);
+#endif // ^^^ _CCCL_CTK_BELOW(13, 0)  
+  return __ret;
 }
 
 _CCCL_HOST_API void inline __do_launch(
-  ::cuda::stream_ref __stream, ::CUlaunchConfig& __config, ::CUfunction __kernel, void** __args_ptrs)
+  ::cuda::stream_ref __stream, ::CUlaunchConfig& __config, __cccl_cukernel_handle __kernel_handle, void** __args_ptrs)
 {
   __config.hStream = __stream.get();
 #  if defined(_CCCLRT_LAUNCH_CONFIG_TEST)
-  test_launch_kernel_replacement(__config, __kernel, __args_ptrs);
+  test_launch_kernel_replacement(__config, (::CUfunction)__kernel_handle.__kernel_, __args_ptrs);
 #  else // ^^^ _CUDAX_LAUNCH_CONFIG_TEST ^^^ / vvv !_CUDAX_LAUNCH_CONFIG_TEST vvv
-  ::cuda::__driver::__launchKernel(__config, __kernel, __args_ptrs);
+  ::cuda::__driver::__launchKernel(__config, (::CUfunction)__kernel_handle.__kernel_, __args_ptrs);
 #  endif // ^^^ !_CUDAX_LAUNCH_CONFIG_TEST ^^^
 }
 
 template <typename... _ExpTypes, typename _Dst, typename _Config>
-_CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __kernel, _ExpTypes... __args)
+_CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, __cccl_cukernel_handle __kernel_handle, _ExpTypes... __args)
 {
   static_assert(!::cuda::std::is_same_v<decltype(__conf.hierarchy()), no_init_t>,
                 "Can't launch a configuration without hierarchy dimensions");
@@ -409,7 +416,7 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __k
   __config.attrs    = &__attrs[0];
   __config.numAttrs = 0;
 
-  ::cudaError_t __status = __detail::apply_kernel_config(__conf, __config, __kernel);
+  ::cudaError_t __status = __detail::apply_kernel_config(__conf, __config, __kernel_handle);
   if (__status != ::cudaSuccess)
   {
     _CCCL_THROW(::cuda::cuda_error, __status, "Failed to prepare a launch configuration");
@@ -433,7 +440,7 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, ::CUfunction __k
   }
 
   const void* __pArgs[(sizeof...(__args) > 0) ? sizeof...(__args) : 1]{::cuda::std::addressof(__args)...};
-  return ::cuda::__do_launch(::cuda::std::forward<_Dst>(__dst), __config, __kernel, const_cast<void**>(__pArgs));
+  return ::cuda::__do_launch(::cuda::std::forward<_Dst>(__dst), __config, __kernel_handle, const_cast<void**>(__pArgs));
 }
 
 _CCCL_HOST_API ::cuda::stream_ref inline __stream_or_invalid(::cuda::stream_ref __stream)
@@ -503,18 +510,19 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            const _Kernel& __kernel,
                            _Args&&... __args)
 {
-  __ensure_current_context __dev_setter{__submitter};
+  stream_ref __stream{::cuda::std::forward<_Submitter>(__submitter)};
+
   auto __combined = __conf.combine_with_default(__kernel);
   auto __launcher = ::cuda::__get_kernel_launcher<_Kernel,
                                                   decltype(__combined),
                                                   ::cuda::std::decay_t<transformed_device_argument_t<_Args>>...>();
   return ::cuda::__launch_impl(
-    cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)),
+    __stream,
     __combined,
-    ::cuda::__get_cufunction_of(__launcher),
+    ::cuda::__get_cukernel_handle_of(__stream, __launcher),
     __combined,
     __kernel,
-    launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_Args>(__args))...);
+    launch_transform(__stream, ::cuda::std::forward<_Args>(__args))...);
 }
 
 #  endif // _CCCL_CUDA_COMPILATION()
@@ -566,14 +574,14 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            void (*__kernel)(kernel_config<_Dimensions, _Config...>, _ExpArgs...),
                            _ActArgs&&... __args)
 {
-  __ensure_current_context __dev_setter{__submitter};
+  stream_ref __stream{::cuda::std::forward<_Submitter>(__submitter)};
   return ::cuda::__launch_impl<kernel_config<_Dimensions, _Config...>,
                                _ExpArgs...>(
-    cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
+    __stream,
     __conf,
-    ::cuda::__get_cufunction_of(__kernel),
+    ::cuda::__get_cukernel_handle_of(__stream, __kernel),
     __conf,
-    launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);
+    launch_transform(__stream, ::cuda::std::forward<_ActArgs>(__args))...);
 }
 
 //! @brief Launch a kernel function with specified configuration and arguments
@@ -622,12 +630,12 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
                            void (*__kernel)(_ExpArgs...),
                            _ActArgs&&... __args)
 {
-  __ensure_current_context __dev_setter{__submitter};
+  stream_ref __stream{::cuda::std::forward<_Submitter>(__submitter)};
   return ::cuda::__launch_impl<_ExpArgs...>(
-    cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)), //
+    __stream,
     __conf,
-    ::cuda::__get_cufunction_of(__kernel),
-    launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);
+    ::cuda::__get_cukernel_handle_of(__stream, __kernel),
+    launch_transform(__stream, ::cuda::std::forward<_ActArgs>(__args))...);
 }
 
 _CCCL_END_NAMESPACE_CUDA
