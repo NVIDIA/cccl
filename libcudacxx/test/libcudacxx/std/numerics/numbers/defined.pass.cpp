@@ -7,6 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: windows
+
 // ADDITIONAL_COMPILE_OPTIONS_HOST: -fext-numeric-literals
 // ADDITIONAL_COMPILE_DEFINITIONS: CCCL_GCC_HAS_EXTENDED_NUMERIC_LITERALS
 
@@ -69,15 +71,19 @@ __host__ __device__ constexpr bool test()
 #if _CCCL_HAS_LONG_DOUBLE()
   test_type<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
-#if _LIBCUDACXX_HAS_NVFP16()
-  test_type<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
-  test_type<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16()
 #if _CCCL_HAS_FLOAT128()
   test_type<__float128>();
 #endif // _CCCL_HAS_FLOAT128()
+
+  // Disable on Windows because of "error: A __device__ variable template cannot have a const qualified type on Windows"
+#if !_CCCL_OS(WINDOWS)
+#  if _CCCL_HAS_NVFP16()
+  test_type<__half>();
+#  endif // _CCCL_HAS_NVFP16()
+#  if _CCCL_HAS_NVBF16()
+  test_type<__nv_bfloat16>();
+#  endif // _CCCL_HAS_NVBF16()
+#endif // !_CCCL_OS(WINDOWS)
 
   return true;
 }
@@ -90,7 +96,6 @@ __global__ void test_kernel()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
-
+  static_assert(test());
   return 0;
 }

@@ -81,14 +81,14 @@ template <class _Tp>
   // A slightly more efficient way of doing
   //    __j = round(__r * L2E)
   constexpr float __round_shift = 12582912.0f; // 1.5 * 2^23;
-  constexpr float __log2_e      = ::cuda::std::numbers::log2e_v<float>;
+  constexpr float __log2_e      = __numbers<float>::__log2e();
   float __j                     = ::cuda::std::fmaf(__r, __log2_e, __round_shift);
   __j                           = __j - __round_shift;
 
   // exp() range reduction. Constants taken from:
   // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
   float __r_reduced;
-  __r_reduced = ::cuda::std::fmaf(-__j, 0.693147182464599609375f, __r);
+  __r_reduced = ::cuda::std::fmaf(-__j, __numbers<float>::__ln2(), __r);
   __r_reduced = ::cuda::std::fmaf(-__j, -1.904652435769094154e-9f, __r_reduced);
 
   // __r_reduced is in [log(sqrt(0.5)), log(sqrt(2))].
@@ -111,14 +111,14 @@ template <class _Tp>
   // A slightly more efficient way of doing
   //    __j = round(__r * L2E)
   constexpr double __round_shift = 6.755399441055744e15; // 1.5 * 2^52;
-  constexpr double __log2_e      = ::cuda::std::numbers::log2e_v<double>;
+  constexpr double __log2_e      = __numbers<double>::__log2e();
   double __j                     = ::cuda::std::fma(__r, __log2_e, __round_shift);
   __j                            = __j - __round_shift;
 
   // exp() range reduction. Constants taken from:
   // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
   double __r_reduced;
-  __r_reduced = ::cuda::std::fma(-__j, 0.6931471805599453972491, __r);
+  __r_reduced = ::cuda::std::fma(-__j, __numbers<double>::__ln2(), __r);
   __r_reduced = ::cuda::std::fma(-__j, -8.78318343240526554e-17, __r_reduced);
 
   // __r_reduced is in [log(sqrt(0.5)), log(sqrt(2))].
