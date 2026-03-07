@@ -13,6 +13,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Enable or disable relocatable device code (RDC) for a given target.
+function(cccl_set_rdc target_name rdc_enabled)
+  if (rdc_enabled)
+    set_target_properties(
+      ${target_name}
+      PROPERTIES #
+        CUDA_SEPARABLE_COMPILATION ON
+        CUDA_RESOLVE_DEVICE_SYMBOLS ON
+        POSITION_INDEPENDENT_CODE ON
+    )
+  else()
+    set_target_properties(
+      ${target_name}
+      PROPERTIES CUDA_SEPARABLE_COMPILATION OFF
+    )
+  endif()
+
+  # SM87 doesn't support RDC:
+  if (rdc_enabled AND CMAKE_CUDA_ARCHITECTURES MATCHES "87")
+    set(rdc_arches)
+    foreach (arch IN LISTS CMAKE_CUDA_ARCHITECTURES)
+      if (NOT arch MATCHES "^87(-|$)")
+        list(APPEND rdc_arches ${arch})
+      endif()
+    endforeach()
+    set_target_properties(
+      ${target_name}
+      PROPERTIES CUDA_ARCHITECTURES "${rdc_arches}"
+    )
+  endif()
+endfunction()
+
 # Passes all args directly to execute_process while setting up the following
 # results variables and propagating them to the caller's scope:
 #
