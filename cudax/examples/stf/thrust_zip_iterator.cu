@@ -27,17 +27,6 @@
 
 using namespace cuda::experimental::stf;
 
-// Functor to apply the transformation
-struct my_transform_functor
-{
-  __host__ __device__ int operator()(const cuda::std::tuple<int, char>& t) const
-  {
-    int a  = cuda::std::get<0>(t);
-    char b = cuda::std::get<1>(t);
-    return a + static_cast<int>(b); // Example operation
-  }
-};
-
 /*
  * How to use CUDASTF to manipulate data originally created using Thrust
  */
@@ -72,7 +61,12 @@ void thrust_algorithm(context& ctx, ZippedIt& first, ZippedIt& last, OutIt& outp
     // Create a device pointer from the raw pointer
     thrust::device_ptr<int> dout = thrust::device_pointer_cast(dC.data_handle());
 
-    thrust::transform(thrust::cuda::par_nosync.on(stream), dfirst, dlast, dout, my_transform_functor());
+    // Lambda to apply the transformation
+    thrust::transform(
+      thrust::cuda::par_nosync.on(stream), dfirst, dlast, dout, [] __device__(const thrust::tuple<int, char>& t) {
+        const auto [a, b] = t;
+        return a + static_cast<int>(b); // Example operation
+      });
   };
 }
 

@@ -16,24 +16,12 @@
 // implements the operation with a single transformation
 // and represents "best practice".
 
-struct saxpy_functor
-{
-  const float a;
-
-  saxpy_functor(float _a)
-      : a(_a)
-  {}
-
-  __host__ __device__ float operator()(const float& x, const float& y) const
-  {
-    return a * x + y;
-  }
-};
-
 void saxpy_fast(float A, thrust::device_vector<float>& X, thrust::device_vector<float>& Y)
 {
   // Y <- A * X + Y
-  thrust::transform(X.begin(), X.end(), Y.begin(), Y.begin(), saxpy_functor(A));
+  thrust::transform(X.begin(), X.end(), Y.begin(), Y.begin(), [A] __device__(const float& x, const float& y) {
+    return A * x + y;
+  });
 }
 
 void saxpy_slow(float A, thrust::device_vector<float>& X, thrust::device_vector<float>& Y)

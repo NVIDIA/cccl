@@ -12,48 +12,21 @@
 // This example computes a summed area table using segmented scan
 // http://en.wikipedia.org/wiki/Summed_area_table
 
-// convert a linear index to a linear index in the transpose
-struct transpose_index
-{
-  size_t m, n;
-
-  __host__ __device__ transpose_index(size_t _m, size_t _n)
-      : m(_m)
-      , n(_n)
-  {}
-
-  __host__ __device__ size_t operator()(size_t linear_index)
-  {
-    size_t i = linear_index / n;
-    size_t j = linear_index % n;
-
-    return m * j + i;
-  }
-};
-
-// convert a linear index to a row index
-struct row_index
-{
-  size_t n;
-
-  __host__ __device__ row_index(size_t _n)
-      : n(_n)
-  {}
-
-  __host__ __device__ size_t operator()(size_t i)
-  {
-    return i / n;
-  }
-};
-
 // transpose an M-by-N array
 template <typename T>
 void transpose(size_t m, size_t n, thrust::device_vector<T>& src, thrust::device_vector<T>& dst)
 {
   thrust::counting_iterator<size_t> indices(0);
 
-  thrust::gather(thrust::make_transform_iterator(indices, transpose_index(n, m)),
-                 thrust::make_transform_iterator(indices, transpose_index(n, m)) + dst.size(),
+  // lambda to convert a linear index to a linear index in the transpose
+  auto transpose_index = [m, n] __device__(size_t linear_index) {
+    size_t i = linear_index / n;
+    size_t j = linear_index % n;
+    return m * j + i;
+  };
+
+  thrust::gather(thrust::make_transform_iterator(indices, transpose_index),
+                 thrust::make_transform_iterator(indices, transpose_index) + dst.size(),
                  src.begin(),
                  dst.begin());
 }
@@ -64,9 +37,14 @@ void scan_horizontally(size_t n, thrust::device_vector<T>& d_data)
 {
   thrust::counting_iterator<size_t> indices(0);
 
+  // lambda to convert a linear index to a row index
+  auto row_index = [n] __device__(size_t i) {
+    return i / n;
+  };
+
   thrust::inclusive_scan_by_key(
-    thrust::make_transform_iterator(indices, row_index(n)),
-    thrust::make_transform_iterator(indices, row_index(n)) + d_data.size(),
+    thrust::make_transform_iterator(indices, row_index),
+    thrust::make_transform_iterator(indices, row_index) + d_data.size(),
     d_data.begin(),
     d_data.begin());
 }
