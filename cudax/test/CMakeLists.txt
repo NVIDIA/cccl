@@ -81,6 +81,10 @@ cudax_add_catch2_test(test_target containers
     containers/uninitialized_buffer.cu
 )
 
+cudax_add_catch2_test(test_target copy
+    copy/mdspan_d2h_h2d.cu
+)
+
 cudax_add_catch2_test(test_target cuco
     cuco/utility/test_hashers.cu
 )
@@ -108,6 +112,34 @@ cudax_add_catch2_test(test_target library
 cudax_add_catch2_test(test_target algorithm
     algorithm/fill.cu
     algorithm/copy.cu
+)
+
+cudax_add_catch2_test(test_target copy_bytes
+    copy_bytes/copy_bytes.cu
+)
+
+cudax_add_catch2_test(test_target copy_bytes.edge_cases
+    copy_bytes/copy_bytes_edge_cases.cu
+)
+
+cudax_add_catch2_test(test_target copy_bytes.vectorize
+    copy_bytes/vectorize.cu
+)
+
+cudax_add_catch2_test(test_target copy_bytes.nvmath
+    copy_bytes/nvmath.cu
+)
+
+cudax_add_catch2_test(test_target copy_bytes.nvmath_transpose
+    copy_bytes/nvmath_transpose.cu
+)
+
+cudax_add_catch2_test(test_target copy_bytes.shared_memory
+    copy_bytes/shared_memory.cu
+)
+
+cudax_add_catch2_test(test_target copy_bytes.llm
+    copy_bytes/llm.cu
 )
 
 cudax_add_catch2_test(test_target hierarchy_groups

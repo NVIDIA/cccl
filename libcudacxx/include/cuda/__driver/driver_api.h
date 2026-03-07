@@ -341,6 +341,31 @@ _CCCL_HOST_API inline void __memcpyAsyncWithAttributes(
     1,
     __stream);
 }
+
+_CCCL_HOST_API inline void __memcpyBatchAsync(
+  void** __dsts,
+  const void** __srcs,
+  const ::cuda::std::size_t* __sizes,
+  ::cuda::std::size_t __count,
+  ::CUmemcpyAttributes* __attributes,
+  ::cuda::std::size_t* __attribute_indices,
+  ::cuda::std::size_t __num_attributes,
+  ::CUstream __stream)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuMemcpyBatchAsync, cuMemcpyBatchAsync, 13, 0);
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn,
+    "Failed to perform a memcpy with attributes",
+    reinterpret_cast<::CUdeviceptr*>(__dsts),
+    reinterpret_cast<::CUdeviceptr*>(__srcs),
+    const_cast<::cuda::std::size_t*>(__sizes),
+    __count,
+    __attributes,
+    __attribute_indices,
+    __num_attributes,
+    __stream);
+}
+
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
 template <typename _Tp>
@@ -547,6 +572,18 @@ __pointerGetAttributeNoThrow(__pointer_attribute_value_type_t<_Attr>& __result, 
       static_cast<::cudaError_t>(__driver_fn((void*) &__result, _Attr, reinterpret_cast<::CUdeviceptr>(__ptr)));
   }
   return __status;
+}
+
+template <::CUpointer_attribute _Attr>
+[[nodiscard]] _CCCL_HOST_API __pointer_attribute_value_type_t<_Attr> __pointerGetAttribute(const void* __ptr)
+{
+  __pointer_attribute_value_type_t<_Attr> __result;
+  const auto __status = ::cuda::__driver::__pointerGetAttributeNoThrow<_Attr>(__result, __ptr);
+  if (__status != ::cudaSuccess)
+  {
+    _CCCL_THROW(::cuda::cuda_error, __status, "Failed to get attribute of a pointer");
+  }
+  return __result;
 }
 
 template <::cuda::std::size_t _Np>

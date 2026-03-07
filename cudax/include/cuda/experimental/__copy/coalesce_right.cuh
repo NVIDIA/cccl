@@ -1,0 +1,99 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef __CUDAX_COPY_COALESCE_RIGHT_H
+#define __CUDAX_COPY_COALESCE_RIGHT_H
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#if !_CCCL_COMPILER(NVRTC)
+
+#  include <cuda/std/__algorithm/fill.h>
+#  include <cuda/std/__algorithm/max.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/experimental/__copy/types.cuh>
+
+#  include <cuda/std/__cccl/prologue.h>
+
+namespace cuda::experimental
+{
+/**
+ * @brief Runtime coalesce-right for dynamic shape/stride layouts.
+ *
+ * Merges right-adjacent contiguous modes and compacts the descriptor in place.
+ *
+ * @par Algorithm
+ * 1. Traverse modes right-to-left, skipping size-1 modes.
+ * 2. Merge into the previous output mode when `stride[i] == curr_stride`,
+ *    where `curr_stride = out_stride * out_shape` of the most recent mode.
+ * 3. Compact valid modes to the beginning of the arrays.
+ */
+template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
+_CCCL_HOST_API constexpr void __coalesce_right(__raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor) noexcept
+{
+  using _Ep1 = ::cuda::std::make_unsigned_t<_Ep>;
+  __raw_tensor<_Ep, _Sp, _Tp, _MaxRank> __result{__tensor.__data};
+  auto& __extents = __result.__extents;
+  auto& __strides = __result.__strides;
+  ::cuda::std::fill(__extents.begin(), __extents.end(), _Ep1{1});
+  ::cuda::std::fill(__strides.begin(), __strides.end(), _Sp{0});
+  const auto __rank  = static_cast<int>(__tensor.__rank);
+  int __out          = __rank - 1;
+  _Sp __curr_stride = 0;
+  for (int __i = __rank - 1; __i >= 0; --__i)
+  {
+    if (__tensor.__extents[__i] == 1)
+    {
+      continue;
+    }
+    // Merge contiguous modes
+    if (__out < __rank - 1 && __tensor.__strides[__i] == __curr_stride)
+    {
+      __result.__extents[__out + 1] *= __tensor.__extents[__i];
+    }
+    else
+    {
+      __result.__extents[__out] = __tensor.__extents[__i];
+      __result.__strides[__out] = __tensor.__strides[__i];
+      --__out;
+    }
+    __curr_stride = __result.__strides[__out + 1] * static_cast<_Sp>(__result.__extents[__out + 1]);
+  }
+  // shift/compact the result at the beginning of the array
+  const auto __first_valid = __out + 1;
+  const auto __rank_out    = __rank - __first_valid;
+  for (int __j = 0; __j < __rank_out; ++__j)
+  {
+    __result.__extents[__j] = __result.__extents[__first_valid + __j];
+    __result.__strides[__j] = __result.__strides[__first_valid + __j];
+  }
+  const auto __rank_out_sz = static_cast<::cuda::std::size_t>(__rank_out);
+  for (::cuda::std::size_t __j = __rank_out_sz; __j < _MaxRank; ++__j)
+  {
+    __result.__extents[__j] = _Ep1{1};
+    __result.__strides[__j] = _Sp{0};
+  }
+  __result.__rank = ::cuda::std::max(__rank_out, 1);
+  __tensor         = __result;
+}
+} // namespace cuda::experimental
+
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // !_CCCL_COMPILER(NVRTC)
+#endif // __CUDAX_COPY_COALESCE_RIGHT_H
