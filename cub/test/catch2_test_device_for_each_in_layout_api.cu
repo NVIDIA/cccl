@@ -6,23 +6,20 @@
 
 #include <cub/config.cuh>
 
-// MSVC doesn't support __device__ lambdas
-#if !_CCCL_COMPILER(MSVC)
+#include <cub/device/device_for.cuh>
 
-#  include <cub/device/device_for.cuh>
+#include <thrust/device_vector.h>
+#include <thrust/equal.h>
+#include <thrust/fill.h>
+#include <thrust/host_vector.h>
 
-#  include <thrust/device_vector.h>
-#  include <thrust/equal.h>
-#  include <thrust/fill.h>
-#  include <thrust/host_vector.h>
+#include <cuda/std/array>
+#include <cuda/std/span>
 
-#  include <cuda/std/array>
-#  include <cuda/std/span>
+#include <cstdlib>
+#include <iostream>
 
-#  include <cstdlib>
-#  include <iostream>
-
-#  include <c2h/catch2_test_helper.h>
+#include <c2h/catch2_test_helper.h>
 
 // example-begin for-each-in-layout-op
 struct layout_store_3D
@@ -55,6 +52,7 @@ C2H_TEST("Device ForEachInLayout", "[ForEachInLayout][device]")
                                             {0, 0, 1}, {1, 0, 1}, {2, 0, 1},
                                             {0, 1, 1}, {1, 1, 1}, {2, 1, 1}};
 
+#if __CUDACC_EXTENDED_LAMBDA__
   auto status = cub::DeviceFor::ForEachInLayout(mapping_left_type{extents},
                                                 [=] __device__ (int idx, int x, int y, int z) {
     d_output_raw[idx] = {x, y, z};
@@ -70,6 +68,7 @@ C2H_TEST("Device ForEachInLayout", "[ForEachInLayout][device]")
     std::cerr << "error: h_output != expected" << std::endl;
     std::exit(EXIT_FAILURE);
   }
+#endif // __CUDACC_EXTENDED_LAMBDA__
 
   thrust::fill(d_output.begin(), d_output.end(), data_t{});
   status = cub::DeviceFor::ForEachInLayout(mapping_left_type{extents}, layout_store_3D{d_output_raw});
@@ -87,5 +86,3 @@ C2H_TEST("Device ForEachInLayout", "[ForEachInLayout][device]")
   // example-end for-each-in-layout-example
 }
 // clang-format on
-
-#endif // !_CCCL_COMPILER(MSVC)
