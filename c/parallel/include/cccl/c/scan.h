@@ -34,6 +34,7 @@ typedef struct cccl_device_scan_build_result_t
   CUkernel scan_kernel;
   bool force_inclusive;
   cccl_init_kind_t init_kind;
+  bool use_warpspeed;
   size_t description_bytes_per_tile;
   size_t payload_bytes_per_tile;
   void* runtime_policy;

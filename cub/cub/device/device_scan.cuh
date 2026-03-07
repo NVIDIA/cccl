@@ -53,7 +53,7 @@ struct tuning
 struct default_tuning : tuning<default_tuning>
 {
   template <typename InputValueT, typename OutputValueT, typename AccumT, typename OffsetT, typename ScanOpT>
-  using fn = policy_hub<InputValueT, OutputValueT, AccumT, OffsetT, ScanOpT>;
+  using selector = policy_selector_from_types<InputValueT, OutputValueT, AccumT, OffsetT, ScanOpT>;
 };
 } // namespace detail::scan
 
@@ -137,14 +137,23 @@ struct DeviceScan
                                                     cub::detail::it_value_t<InputIteratorT>,
                                                     typename InitValueT::value_type>>;
 
-    using policy_t = typename scan_tuning_t::
-      template fn<detail::it_value_t<InputIteratorT>, detail::it_value_t<OutputIteratorT>, accum_t, offset_t, ScanOpT>;
+    using policy_selector_t = typename scan_tuning_t::template selector<
+      detail::it_value_t<InputIteratorT>,
+      detail::it_value_t<OutputIteratorT>,
+      accum_t,
+      offset_t,
+      ScanOpT>;
 
-    using dispatch_t =
-      DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, offset_t, accum_t, EnforceInclusive, policy_t>;
-
-    return dispatch_t::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init, static_cast<offset_t>(num_items), stream);
+    return detail::scan::dispatch<EnforceInclusive>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      scan_op,
+      init,
+      static_cast<offset_t>(num_items),
+      stream,
+      policy_selector_t{});
   }
 
   template <ForceInclusive EnforceInclusive = ForceInclusive::No,
@@ -303,15 +312,15 @@ struct DeviceScan
     // Initial value
     InitT init_value{};
 
-    return DispatchScan<InputIteratorT, OutputIteratorT, ::cuda::std::plus<>, detail::InputValue<InitT>, OffsetT>::
-      Dispatch(d_temp_storage,
-               temp_storage_bytes,
-               d_in,
-               d_out,
-               ::cuda::std::plus<>{},
-               detail::InputValue<InitT>(init_value),
-               num_items,
-               stream);
+    return detail::scan::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      ::cuda::std::plus<>{},
+      detail::InputValue<InitT>(init_value),
+      static_cast<OffsetT>(num_items),
+      stream);
   }
 
   //! @rst
@@ -595,14 +604,14 @@ struct DeviceScan
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, detail::InputValue<InitValueT>, OffsetT>::Dispatch(
+    return detail::scan::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       scan_op,
       detail::InputValue<InitValueT>(init_value),
-      num_items,
+      static_cast<OffsetT>(num_items),
       stream);
   }
 
@@ -937,14 +946,14 @@ struct DeviceScan
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, detail::InputValue<InitValueT>, OffsetT>::Dispatch(
+    return detail::scan::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       scan_op,
       detail::InputValue<InitValueT>(init_value),
-      num_items,
+      static_cast<OffsetT>(num_items),
       stream);
   }
 
@@ -1166,8 +1175,15 @@ struct DeviceScan
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return DispatchScan<InputIteratorT, OutputIteratorT, ::cuda::std::plus<>, NullType, OffsetT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, ::cuda::std::plus<>{}, NullType{}, num_items, stream);
+    return detail::scan::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      ::cuda::std::plus<>{},
+      NullType{},
+      static_cast<OffsetT>(num_items),
+      stream);
   }
 
   //! @rst
@@ -1363,8 +1379,8 @@ struct DeviceScan
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, NullType, OffsetT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, NullType(), num_items, stream);
+    return detail::scan::dispatch(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, NullType(), static_cast<OffsetT>(num_items), stream);
   }
 
   //! @rst
@@ -1454,23 +1470,16 @@ struct DeviceScan
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using AccumT  = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
 
-    return DispatchScan<
-      InputIteratorT,
-      OutputIteratorT,
-      ScanOpT,
-      detail::InputValue<InitValueT>,
-      OffsetT,
-      AccumT,
-      ForceInclusive::Yes>::Dispatch(d_temp_storage,
-                                     temp_storage_bytes,
-                                     d_in,
-                                     d_out,
-                                     scan_op,
-                                     detail::InputValue<InitValueT>(init_value),
-                                     num_items,
-                                     stream);
+    return detail::scan::dispatch<ForceInclusive::Yes>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      scan_op,
+      detail::InputValue<InitValueT>(init_value),
+      static_cast<OffsetT>(num_items),
+      stream);
   }
 
   //! @rst
