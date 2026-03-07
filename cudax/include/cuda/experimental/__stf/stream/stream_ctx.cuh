@@ -38,6 +38,7 @@
 #include <cuda/experimental/__stf/stream/interfaces/slice.cuh> // For implicit logical_data_untyped constructors
 #include <cuda/experimental/__stf/stream/interfaces/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/stream_task.cuh>
+#include <cuda/experimental/__stf/utility/cub_algorithm.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh> // for reserved::counter
 
 namespace cuda::experimental::stf
@@ -562,6 +563,18 @@ public:
     };
 
     return out;
+  }
+
+  template <typename shape_t, typename OutT, typename... Args>
+  auto transform_reduce(shape_t s, OutT init_val, const cuda::experimental::stf::logical_data<Args>&... args)
+  {
+    return reserved::stf_transform_reduce_scope(*this, mv(s), mv(init_val), args...);
+  }
+
+  template <typename shape_t, typename OutT, typename... Args>
+  auto transform_exclusive_scan(shape_t s, OutT init_val, const cuda::experimental::stf::logical_data<Args>&... args)
+  {
+    return reserved::stf_transform_exclusive_scan_scope(*this, mv(s), mv(init_val), args...);
   }
 
 private:
