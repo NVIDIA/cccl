@@ -229,7 +229,8 @@ try
   const auto policy_sel = cub::detail::radix_sort::policy_selector{
     static_cast<int>(input_keys_it.value_type.size),
     // FIXME(bgruber): input_values_it.value_type.size is 4 when it represents cub::NullType, which is very odd
-    keys_only ? 0 : static_cast<int>(input_values_it.value_type.size),
+    keys_only ? 0 : static_cast<int>(input_values_it.value_type.size), // TODO(bgruber): instead of 0 we should probably
+                                                                       // use int{sizeof(cub::NullType)}
     int{sizeof(OffsetT)},
     key_type};
 
