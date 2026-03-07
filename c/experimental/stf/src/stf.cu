@@ -64,6 +64,12 @@ static data_place to_data_place(stf_data_place* data_p)
       return data_place::composite(cpp_mapper, *grid_ptr);
     }
 
+    case STF_DATA_PLACE_OPAQUE: {
+      auto* dp = static_cast<data_place*>(data_p->u.opaque);
+      _CCCL_ASSERT(dp != nullptr, "opaque data_place handle must not be null");
+      return *dp;
+    }
+
     default:
       _CCCL_ASSERT(false, "Invalid data place kind");
       return data_place::invalid(); // invalid data_place
@@ -193,6 +199,18 @@ exec_place to_exec_place(stf_exec_place* exec_p)
     case STF_EXEC_PLACE_DEVICE:
       return exec_place::device(exec_p->u.device.dev_id);
 
+    case STF_EXEC_PLACE_GRID: {
+      auto* grid_ptr = static_cast<exec_place_grid*>(exec_p->u.grid);
+      _CCCL_ASSERT(grid_ptr != nullptr, "grid handle must not be null");
+      return static_cast<const exec_place&>(*grid_ptr);
+    }
+
+    case STF_EXEC_PLACE_OPAQUE: {
+      auto* ep = static_cast<exec_place*>(exec_p->u.opaque);
+      _CCCL_ASSERT(ep != nullptr, "opaque exec_place handle must not be null");
+      return *ep;
+    }
+
     default:
       _CCCL_ASSERT(false, "Invalid execution place kind");
       return exec_place{}; // invalid exec_place
@@ -287,6 +305,41 @@ CUstream stf_task_get_custream(stf_task_handle t)
 
   auto* task_ptr = static_cast<context::unified_task<>*>(t);
   return static_cast<CUstream>(task_ptr->get_stream());
+}
+
+int stf_task_get_grid_dims(stf_task_handle t, stf_dim4* out_dims)
+{
+  if (t == nullptr || out_dims == nullptr)
+  {
+    return -1;
+  }
+  auto* task_ptr = static_cast<context::unified_task<>*>(t);
+  dim4 d;
+  if (!task_ptr->get_grid_dims(&d))
+  {
+    return -1; // task exec place is not a grid
+  }
+  out_dims->x = static_cast<uint64_t>(d.x);
+  out_dims->y = static_cast<uint64_t>(d.y);
+  out_dims->z = static_cast<uint64_t>(d.z);
+  out_dims->t = static_cast<uint64_t>(d.t);
+  return 0;
+}
+
+int stf_task_get_custream_at_index(stf_task_handle t, size_t place_index, CUstream* out_stream)
+{
+  if (t == nullptr || out_stream == nullptr)
+  {
+    return -1;
+  }
+  auto* task_ptr = static_cast<context::unified_task<>*>(t);
+  cudaStream_t s = task_ptr->get_stream(place_index);
+  if (s == nullptr)
+  {
+    return -1; // e.g. graph_task has no per-index streams, or not a grid
+  }
+  *out_stream = static_cast<CUstream>(s);
+  return 0;
 }
 
 void stf_task_destroy(stf_task_handle t)
@@ -454,6 +507,26 @@ void stf_exec_place_grid_destroy(stf_exec_place_grid_handle grid)
   }
 }
 
+void stf_exec_place_grid_get_dims(stf_exec_place_grid_handle grid, stf_dim4* out_dims)
+{
+  assert(grid != nullptr);
+  assert(out_dims != nullptr);
+  const exec_place_grid* g = static_cast<const exec_place_grid*>(grid);
+  dim4 d                   = g->get_dims();
+  out_dims->x              = static_cast<uint64_t>(d.x);
+  out_dims->y              = static_cast<uint64_t>(d.y);
+  out_dims->z              = static_cast<uint64_t>(d.z);
+  out_dims->t              = static_cast<uint64_t>(d.t);
+}
+
+void stf_exec_place_grid_set_affine_data_place(stf_exec_place_grid_handle grid, const stf_data_place* dplace)
+{
+  _CCCL_ASSERT(grid != nullptr, "grid handle must not be null");
+  _CCCL_ASSERT(dplace != nullptr, "dplace must not be null");
+  exec_place_grid* g = static_cast<exec_place_grid*>(grid);
+  g->set_affine_data_place(to_data_place(const_cast<stf_data_place*>(dplace)));
+}
+
 void stf_make_composite_data_place(stf_data_place* out, stf_exec_place_grid_handle grid, stf_get_executor_fn mapper)
 {
   _CCCL_ASSERT(out != nullptr, "output data_place pointer must not be null");
@@ -462,6 +535,130 @@ void stf_make_composite_data_place(stf_data_place* out, stf_exec_place_grid_hand
   out->kind               = STF_DATA_PLACE_COMPOSITE;
   out->u.composite.grid   = grid;
   out->u.composite.mapper = mapper;
+}
+
+// -----------------------------------------------------------------------------
+// Opaque place handles (extensibility for custom C++ exec_place / data_place)
+// -----------------------------------------------------------------------------
+
+void* stf_exec_place_opaque_wrap(const void* cpp_exec_place)
+{
+  _CCCL_ASSERT(cpp_exec_place != nullptr, "cpp_exec_place must not be null");
+  const auto* src = static_cast<const exec_place*>(cpp_exec_place);
+  return new exec_place(*src);
+}
+
+void stf_exec_place_opaque_destroy(void* handle)
+{
+  if (handle != nullptr)
+  {
+    delete static_cast<exec_place*>(handle);
+  }
+}
+
+void* stf_data_place_opaque_wrap(const void* cpp_data_place)
+{
+  _CCCL_ASSERT(cpp_data_place != nullptr, "cpp_data_place must not be null");
+  const auto* src = static_cast<const data_place*>(cpp_data_place);
+  return new data_place(*src);
+}
+
+void stf_data_place_opaque_destroy(void* handle)
+{
+  if (handle != nullptr)
+  {
+    delete static_cast<data_place*>(handle);
+  }
+}
+
+void* stf_exec_place_to_opaque(const stf_exec_place* c_place)
+{
+  _CCCL_ASSERT(c_place != nullptr, "c_place must not be null");
+  exec_place ep = to_exec_place(const_cast<stf_exec_place*>(c_place));
+  return new exec_place(ep);
+}
+
+void* stf_data_place_to_opaque(const stf_data_place* c_place)
+{
+  _CCCL_ASSERT(c_place != nullptr, "c_place must not be null");
+  data_place dp = to_data_place(const_cast<stf_data_place*>(c_place));
+  return new data_place(dp);
+}
+
+// -----------------------------------------------------------------------------
+// Dummy exec_place (test/reference for opaque extensibility)
+// -----------------------------------------------------------------------------
+
+namespace
+{
+class exec_place_dummy : public exec_place
+{
+public:
+  class impl : public exec_place::impl
+  {
+  public:
+    explicit impl(int dev_id)
+        : exec_place::impl(data_place::device(dev_id))
+        , dev_id_(dev_id)
+    {}
+
+    exec_place activate() const override
+    {
+      fprintf(stderr, "[dummy_place] activate device %d\n", dev_id_);
+      return exec_place::device(dev_id_).activate();
+    }
+
+    void deactivate(const exec_place& prev) const override
+    {
+      fprintf(stderr, "[dummy_place] deactivate device %d\n", dev_id_);
+      exec_place::device(dev_id_).deactivate(prev);
+    }
+
+    ::std::string to_string() const override
+    {
+      return "dummy(" + ::std::to_string(dev_id_) + ")";
+    }
+
+    bool operator==(const exec_place::impl& rhs) const override
+    {
+      if (typeid(*this) != typeid(rhs))
+      {
+        return false;
+      }
+      return dev_id_ == static_cast<const impl&>(rhs).dev_id_;
+    }
+
+    size_t hash() const override
+    {
+      return ::std::hash<int>{}(dev_id_) ^ ::std::hash<::std::string>{}("dummy");
+    }
+
+    bool operator<(const exec_place::impl& rhs) const override
+    {
+      if (typeid(*this) != typeid(rhs))
+      {
+        return typeid(*this).before(typeid(rhs));
+      }
+      return dev_id_ < static_cast<const impl&>(rhs).dev_id_;
+    }
+
+  private:
+    int dev_id_;
+  };
+
+  explicit exec_place_dummy(int dev_id)
+      : exec_place(::std::make_shared<impl>(dev_id))
+  {
+    static_assert(sizeof(exec_place_dummy) <= sizeof(exec_place),
+                  "exec_place_dummy cannot add state; it would be sliced away.");
+  }
+};
+} // anonymous namespace
+
+void* stf_exec_place_dummy_create(int dev_id)
+{
+  exec_place_dummy dummy(dev_id);
+  return new exec_place(static_cast<const exec_place&>(dummy));
 }
 
 } // extern "C"

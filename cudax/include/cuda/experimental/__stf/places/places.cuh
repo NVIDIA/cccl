@@ -61,7 +61,7 @@ class exec_place_green_ctx;
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
 //! Function type for computing executor placement from data coordinates
-using get_executor_func_t = pos4 (*)(pos4, dim4, dim4);
+using get_executor_func_t = void (*)(pos4*, pos4, dim4, dim4);
 
 /**
  * @brief Designates where data will be stored (CPU memory vs. on device 0 (first GPU), device 1 (second GPU), ...)
@@ -1438,6 +1438,12 @@ public:
       return true;
     }
 
+    /* Return the affine data place (default invalid; set via set_affine_data_place on the exec_place). */
+    virtual const data_place affine_data_place() const override
+    {
+      return affine;
+    }
+
     bool operator==(const exec_place::impl& rhs) const override
     {
       // First, check if rhs is of type exec_place_grid::impl
@@ -1970,6 +1976,9 @@ inline exec_place data_place::affine_exec_place() const
 
 inline decorated_stream data_place::getDataStream(async_resources_handle& async_resources) const
 {
+  EXPECT(!is_invalid(),
+         "getDataStream called on invalid data_place. Ensure the task's exec place provides a valid "
+         "affine data place (e.g. exec_place_grid uses the first place in the grid).");
   return affine_exec_place().getStream(async_resources, false);
 }
 
