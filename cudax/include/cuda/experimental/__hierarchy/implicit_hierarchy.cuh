@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL_HIERARCHY
-#define _CUDA_EXPERIMENTAL_HIERARCHY
+#ifndef _CUDA_EXPERIMENTAL___HIERARCHY_IMPLICIT_HIERARCHY_CUH
+#define _CUDA_EXPERIMENTAL___HIERARCHY_IMPLICIT_HIERARCHY_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -21,9 +21,25 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__hierarchy/fwd.cuh>
-#include <cuda/experimental/__hierarchy/grid_sync.cuh>
-#include <cuda/experimental/__hierarchy/group.cuh>
-#include <cuda/experimental/__hierarchy/thread_group.cuh>
+#include <cuda/hierarchy>
 
-#endif // _CUDA_EXPERIMENTAL_HIERARCHY
+#include <cuda/std/__cccl/prologue.h>
+
+namespace cuda::experimental
+{
+
+[[nodiscard]] _CCCL_DEVICE_API auto __implicit_hierarchy() noexcept
+{
+  return ::cuda::hierarchy{
+    cuda::gpu_thread,
+    hierarchy_level_desc<grid_level, decltype(cluster.extents(grid))>{cluster.extents(grid)},
+    hierarchy_level_desc<cluster_level, decltype(block.extents(cluster))>{block.extents(cluster)},
+    hierarchy_level_desc<block_level, decltype(gpu_thread.extents(block))>{gpu_thread.extents(block)}
+};
+}
+
+} // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA_EXPERIMENTAL___HIERARCHY_FWD_CUH
