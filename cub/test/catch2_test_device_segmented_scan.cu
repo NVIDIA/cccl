@@ -201,8 +201,9 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
 
   SECTION("inclusive scan")
   {
-    using op_t    = ::cuda::std::plus<>;
-    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t           = ::cuda::std::plus<>;
+    using actual_input_t = typename cuda::std::iterator_traits<decltype(unwrap_it(d_in_it))>::value_type;
+    using accum_t        = cuda::std::__accumulator_t<op_t, actual_input_t, actual_input_t>;
 
     // Scan operator
     auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
@@ -246,8 +247,9 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
 
   SECTION("inclusive segmented scan with init")
   {
-    using op_t    = cuda::std::plus<>;
-    using accum_t = cuda::std::__accumulator_t<op_t, input_t, input_t>;
+    using op_t           = cuda::std::plus<>;
+    using actual_input_t = typename cuda::std::iterator_traits<decltype(unwrap_it(d_in_it))>::value_type;
+    using accum_t        = cuda::std::__accumulator_t<op_t, actual_input_t, actual_input_t>;
 
     INFO("Accum type: " << typeid(accum_t).name());
 
