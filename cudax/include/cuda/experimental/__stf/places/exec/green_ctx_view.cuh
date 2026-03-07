@@ -25,7 +25,8 @@
  * @brief Implementation of green context views
  */
 
-#include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
+#include <cuda/experimental/__stf/internal/stream_pool.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
 #if _CCCL_CTK_AT_LEAST(12, 4)

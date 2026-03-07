@@ -235,7 +235,7 @@ private:
 
     if (place.is_device() && scope == place_partition_scope::cuda_stream)
     {
-      auto& pool = place.get_stream_pool(handle, true);
+      auto& pool = place.get_stream_pool(handle.stream_pools(), true);
       for (size_t i = 0; i < pool.size(); i++)
       {
         // As a side effect, this will populate the pool

@@ -26,7 +26,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
-#include <cuda/experimental/__stf/utility/stream_to_dev.cuh>
+#include <cuda/experimental/__stf/places/stream_to_dev.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -59,9 +59,9 @@ public:
       return exec_place::device(dstream.dev_id).deactivate(prev);
     }
 
-    stream_pool& get_stream_pool(async_resources_handle&, bool) const override
+    stream_pool* get_local_stream_pool(bool) const override
     {
-      return dummy_pool;
+      return &dummy_pool;
     }
 
     ::std::string to_string() const override

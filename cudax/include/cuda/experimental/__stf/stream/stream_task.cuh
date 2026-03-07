@@ -138,7 +138,7 @@ public:
       if (automatic_stream)
       {
         bool found = false;
-        auto& pool = e_place.get_stream_pool(ctx.async_resources(), true);
+        auto& pool = e_place.get_stream_pool(ctx.async_resources().stream_pools(), true);
 
         // To avoid creating inter stream dependencies when this is not
         // necessary, we try to reuse streams which belong to the pool,
@@ -377,7 +377,7 @@ public:
 private:
   decorated_stream get_stream_from_pool(const exec_place& e_place)
   {
-    return e_place.getStream(ctx.async_resources(), true);
+    return e_place.getStream(ctx.async_resources().stream_pools(), true);
   }
 
   // Make all streams depend on streams[0]
