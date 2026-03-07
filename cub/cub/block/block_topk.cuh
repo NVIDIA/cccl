@@ -38,12 +38,12 @@ private:
   TempStorage& storage;
 
 public:
-  _CCCL_DEVICE _CCCL_FORCEINLINE block_topk(TempStorage& storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE block_topk(TempStorage& storage)
       : storage(storage)
   {}
 
   template <bool IsFullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void max_pairs(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void max_pairs(
     KeyT (&keys)[ItemsPerThread],
     ValueT (&values)[ItemsPerThread],
     int k,
@@ -56,7 +56,7 @@ public:
   }
 
   template <bool IsFullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   max_keys(KeyT (&keys)[ItemsPerThread], int k, int num_valid, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     internal_block_topk_t(storage.topk_storage)
@@ -64,7 +64,7 @@ public:
   }
 
   template <bool IsFullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void min_pairs(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void min_pairs(
     KeyT (&keys)[ItemsPerThread],
     ValueT (&values)[ItemsPerThread],
     int k,
@@ -77,7 +77,7 @@ public:
   }
 
   template <bool IsFullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   min_keys(KeyT (&keys)[ItemsPerThread], int k, int num_valid, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     internal_block_topk_t(storage.topk_storage)

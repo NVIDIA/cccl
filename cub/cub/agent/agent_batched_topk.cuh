@@ -112,7 +112,7 @@ struct agent_batched_topk_worker_per_segment
   // -------------------------------------------------------------------------
   // Constructor
   // -------------------------------------------------------------------------
-  _CCCL_DEVICE _CCCL_FORCEINLINE agent_batched_topk_worker_per_segment(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE agent_batched_topk_worker_per_segment(
     TempStorage& temp_storage,
     KeyInputItItT d_key_segments_it,
     KeyOutputItItT d_key_segments_out_it,
@@ -133,7 +133,7 @@ struct agent_batched_topk_worker_per_segment
       , num_segments(num_segments)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Process()
   {
     // Identify Segment
     const int segment_id = static_cast<int>(blockIdx.x);

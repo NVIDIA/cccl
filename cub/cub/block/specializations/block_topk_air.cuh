@@ -114,7 +114,7 @@ private:
   int linear_tid;
 
   // Initialize histogram bins to zero
-  _CCCL_DEVICE _CCCL_FORCEINLINE void init_histograms()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void init_histograms()
   {
     // Initialize histogram bin counts to zeros
     int histo_offset = 0;
@@ -134,7 +134,7 @@ private:
 
   // Compute histogram over keys
   template <bool IsFullTile, typename DigitExtractorT, typename FilterOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void compute_histograms(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void compute_histograms(
     const bit_ordered_type (&unsigned_keys)[items_per_thread],
     int valid_items,
     DigitExtractorT digit_extractor,
@@ -154,7 +154,7 @@ private:
   }
 
   // Compute prefix sum over buckets
-  _CCCL_DEVICE _CCCL_FORCEINLINE void compute_bin_offsets()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void compute_bin_offsets()
   {
     histo_counter_t thread_buckets[buckets_per_thread]{};
     const int base = linear_tid * buckets_per_thread;
@@ -183,7 +183,7 @@ private:
   }
 
   // Identify the bucket that the k-th item falls into
-  _CCCL_DEVICE _CCCL_FORCEINLINE void choose_bucket(histo_counter_t k)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void choose_bucket(histo_counter_t k)
   {
     const int base = linear_tid * buckets_per_thread;
 
@@ -207,7 +207,7 @@ private:
   }
 
   template <typename detail::topk::select SelectDirection, bool IsFullTile, typename DecomposerT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void get_kth_key_prefix(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void get_kth_key_prefix(
     bit_ordered_type (&unsigned_keys)[items_per_thread],
     int k,
     int valid_items,
@@ -220,7 +220,7 @@ private:
     DecomposerT decomposer = DecomposerT{})
   {
     // Preconditions
-    static constexpr int max_bit = int(sizeof(KeyT) * 8);
+    [[maybe_unused]] constexpr int max_bit = int(sizeof(KeyT) * 8);
     _CCCL_ASSERT(k > 0 && k <= tile_items, "k must be in (0, tile_items]");
     if constexpr (!IsFullTile)
     {
@@ -288,7 +288,7 @@ private:
   }
 
   template <detail::topk::select SelectDirection, bool IsFullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void select_topk(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void select_topk(
     KeyT (&keys)[items_per_thread],
     ValueT (&values)[items_per_thread],
     int k,
@@ -500,13 +500,13 @@ public:
   struct TempStorage : Uninitialized<TempStorage_>
   {};
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE block_topk_air(TempStorage& storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE block_topk_air(TempStorage& storage)
       : storage(storage.Alias())
       , linear_tid(RowMajorTid(BlockThreads, 1, 1))
   {}
 
   template <detail::topk::select SelectDirection, bool IsFullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   select_keys(KeyT (&keys)[items_per_thread], int k, int valid_items, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8)
   {
     NullType values[ItemsPerThread];
@@ -514,7 +514,7 @@ public:
   }
 
   template <detail::topk::select SelectDirection, bool IsFullTile>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void select_pairs(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void select_pairs(
     KeyT (&keys)[items_per_thread],
     ValueT (&values)[items_per_thread],
     int k,
