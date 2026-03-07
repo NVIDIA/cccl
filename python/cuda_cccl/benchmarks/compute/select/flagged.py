@@ -1,0 +1,104 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""
+Python benchmark for select flagged using cuda.compute.select.
+
+C++ equivalent: cub/benchmarks/bench/select/flagged.cu
+
+Notes:
+- Uses a boolean flag array to select elements
+- Entropy controls the selection probability
+- Migration: Python samples flags independently; C++ uses the same generator for input/flags.
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+import cupy as cp
+import numpy as np
+from utils import ENTROPY_TO_PROB, as_cupy_stream, generate_data_with_entropy
+from utils import SIGNED_TYPES as TYPE_MAP
+
+import cuda.bench as bench
+from cuda.compute import ZipIterator, make_select
+
+
+def bench_select_flagged(state: bench.State):
+    type_str = state.get_string("T")
+    dtype = TYPE_MAP[type_str]
+    num_elements = int(state.get_int64("Elements{io}"))
+    entropy_str = state.get_string("Entropy")
+
+    probability = ENTROPY_TO_PROB[entropy_str]
+
+    alloc_stream = as_cupy_stream(state.get_stream())
+    d_in = generate_data_with_entropy(num_elements, dtype, entropy_str, alloc_stream)
+    with alloc_stream:
+        flags = (cp.random.random(num_elements) < probability).astype(np.uint8)
+
+        zip_it = ZipIterator(d_in, flags)
+        selected_elements = int(cp.count_nonzero(flags).get())
+        d_out = cp.empty(selected_elements, dtype=dtype)
+        d_out_flags = cp.empty(selected_elements, dtype=np.uint8)
+        d_num_selected = cp.empty(1, dtype=np.uint64)
+
+    def flag_predicate(pair):
+        return np.uint8(pair[1] != 0)
+
+    flag_predicate.__annotations__ = {
+        "pair": zip_it.value_type,
+        "return": np.uint8,
+    }
+
+    d_out_it = ZipIterator(d_out, d_out_flags)
+
+    selector = make_select(
+        d_in=zip_it,
+        d_out=d_out_it,
+        d_num_selected_out=d_num_selected,
+        cond=flag_predicate,
+    )
+
+    temp_storage_bytes = selector(
+        temp_storage=None,
+        d_in=zip_it,
+        d_out=d_out_it,
+        d_num_selected_out=d_num_selected,
+        cond=flag_predicate,
+        num_items=num_elements,
+    )
+    with alloc_stream:
+        temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+
+    state.add_element_count(num_elements)
+    state.add_global_memory_reads(num_elements * d_in.dtype.itemsize)
+    state.add_global_memory_reads(num_elements * flags.dtype.itemsize)
+    state.add_global_memory_writes(selected_elements * d_out.dtype.itemsize)
+    state.add_global_memory_writes(selected_elements * d_out_flags.dtype.itemsize)
+    state.add_global_memory_writes(d_num_selected.dtype.itemsize)
+
+    def launcher(launch: bench.Launch):
+        selector(
+            temp_storage=temp_storage,
+            d_in=zip_it,
+            d_out=d_out_it,
+            d_num_selected_out=d_num_selected,
+            cond=flag_predicate,
+            num_items=num_elements,
+            stream=launch.get_stream(),
+        )
+
+    state.exec(launcher, batched=False)
+
+
+if __name__ == "__main__":
+    b = bench.register(bench_select_flagged)
+    b.set_name("base")
+    b.add_string_axis("T", list(TYPE_MAP.keys()))
+    b.add_int64_power_of_two_axis("Elements{io}", range(16, 29, 4))
+    b.add_string_axis("Entropy", ["1.000", "0.544", "0.000"])
+    bench.run_all_benchmarks(sys.argv)

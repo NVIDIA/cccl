@@ -1,0 +1,26 @@
+name: cuda-compute-bench
+channels:
+  - nvidia
+  - conda-forge
+dependencies:
+  - python >=3.12,<3.14
+  - cuda-toolkit >=12,<13
+
+  - gcc >=14,<15
+  - gxx >=14,<15
+  - gcc_linux-64 >=14,<15
+  - gxx_linux-64 >=14,<15
+
+  # nvbench
+  - cmake
+  - ninja
+  - fmt
+
+  - pip
+  - pip:
+    - cuda-bench[cu12]>=0.2.0
+    - cuda-cccl[cu12]
+    - cupy-cuda12x
+    - jsondiff
+    - tabulate
+    - colorama

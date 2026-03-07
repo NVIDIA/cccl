@@ -1,0 +1,15 @@
+# Build artifacts
+build/
+bin/
+*.o
+*.so
+*.a
+compile_commands.json
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Benchmark results
+results*/
