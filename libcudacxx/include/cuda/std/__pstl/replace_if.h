@@ -58,16 +58,17 @@ _CCCL_HOST_API void replace_if(
   static_assert(indirect_unary_predicate<_UnaryPred, _InputIterator>,
                 "cuda::std::replace_if: UnaryPred must satisfy indirect_unary_predicate<InputIterator>");
 
-  if (__first == __last)
-  {
-    return;
-  }
-
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__transform, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
     _CCCL_NVTX_RANGE_SCOPE("cuda::std::replace_if");
+
+    if (__first == __last)
+    {
+      return;
+    }
+
     (void) __dispatch(
       __policy,
       __first,
