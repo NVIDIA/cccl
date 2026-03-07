@@ -113,6 +113,7 @@ TEST_CASE("Device scan exclusive sum works with default environment", "[sum][dev
   REQUIRE(d_out[0] == value_t{0});
 }
 
+// TODO(bgruber): convert to the new tuning API
 template <int BlockThreads>
 struct scan_tuning : cub::detail::scan::tuning<scan_tuning<BlockThreads>>
 {
@@ -143,24 +144,16 @@ struct scan_tuning : cub::detail::scan::tuning<scan_tuning<BlockThreads>>
   };
 };
 
-struct get_reduce_tuning_query_t
+struct unrelated_policy
 {};
 
-struct reduce_tuning
+struct unrelated_tuning
 {
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const get_reduce_tuning_query_t&) const noexcept
+  // should never be called
+  auto operator()(cuda::arch_id /*arch*/) const -> unrelated_policy
   {
-    return *this;
+    throw 1337;
   }
-
-  // Make sure this is not used
-  template <class /* InputValueT */,
-            class /* OutputValueT */,
-            class /* AccumT */,
-            class /* Offset */,
-            class /* ScanOpT */>
-  struct fn
-  {};
 };
 
 using block_sizes = c2h::type_list<cuda::std::integral_constant<int, 32>, cuda::std::integral_constant<int, 64>>;
@@ -175,8 +168,8 @@ C2H_TEST("Device scan exclusive-scan can be tuned", "[scan][device]", block_size
   auto d_in      = cuda::constant_iterator(1);
   auto d_out     = thrust::device_vector<int>(num_items);
 
-  // We are expecting that `reduce_tuning` is ignored
-  auto env = cuda::execution::__tune(scan_tuning<target_block_size>{}, reduce_tuning{});
+  // We are expecting that `unrelated_tuning` is ignored
+  auto env = cuda::execution::__tune(scan_tuning<target_block_size>{}, unrelated_tuning{});
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveScan(d_in, d_out.begin(), block_size_check, 0, num_items, env));
 
@@ -195,8 +188,8 @@ C2H_TEST("Device scan exclusive-sum can be tuned", "[scan][device]", block_sizes
   auto d_in      = cuda::constant_iterator(1);
   auto d_out     = thrust::device_vector<int>(num_items);
 
-  // We are expecting that `reduce_tuning` is ignored
-  auto env = cuda::execution::__tune(scan_tuning<target_block_size>{}, reduce_tuning{});
+  // We are expecting that `unrelated_tuning` is ignored
+  auto env = cuda::execution::__tune(scan_tuning<target_block_size>{}, unrelated_tuning{});
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(d_in, d_out.begin(), num_items, env));
 
@@ -248,8 +241,8 @@ C2H_TEST("Device scan inclusive-scan can be tuned", "[scan][device]", block_size
   auto d_in      = cuda::constant_iterator(1);
   auto d_out     = thrust::device_vector<int>(num_items);
 
-  // We are expecting that `reduce_tuning` is ignored
-  auto env = cuda::execution::__tune(scan_tuning<target_block_size>{}, reduce_tuning{});
+  // We are expecting that `unrelated_tuning` is ignored
+  auto env = cuda::execution::__tune(scan_tuning<target_block_size>{}, unrelated_tuning{});
 
   REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScan(d_in, d_out.begin(), block_size_check, num_items, env));
 
@@ -291,8 +284,8 @@ C2H_TEST("Device scan inclusive-scan-init can be tuned", "[scan][device]", block
 
   int init{10};
 
-  // We are expecting that `reduce_tuning` is ignored
-  auto env = cuda::execution::__tune(scan_tuning<target_block_size>{}, reduce_tuning{});
+  // We are expecting that `unrelated_tuning` is ignored
+  auto env = cuda::execution::__tune(scan_tuning<target_block_size>{}, unrelated_tuning{});
 
   REQUIRE(
     cudaSuccess == cub::DeviceScan::InclusiveScanInit(d_in, d_out.begin(), block_size_check, init, num_items, env));
