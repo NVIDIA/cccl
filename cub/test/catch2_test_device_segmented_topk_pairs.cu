@@ -104,9 +104,11 @@ using max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 4 * 1024>;
 // Segment size: static, uniform
 using max_num_k_list = c2h::enum_type_list<cuda::std::size_t, 32, 4 * 1024>;
 
-using key_types = c2h::type_list< // cuda::std::uint8_t,
-  float,
-  cuda::std::uint64_t
+// %PARAM% TEST_TYPES 0:1:2:3
+
+#if TEST_TYPES == 0
+using key_types =
+  c2h::type_list<cuda::std::uint8_t
 // clang-format off
   #if TEST_HALF_T()
   , half_t
@@ -116,6 +118,11 @@ using key_types = c2h::type_list< // cuda::std::uint8_t,
   #endif // TEST_BF_T()
   >;
 // clang-format on
+#elif TEST_TYPES == 1
+using key_types = c2h::type_list<float>;
+#elif TEST_TYPES == 2
+using key_types = c2h::type_list<cuda::std::uint64_t>;
+#endif
 
 // Unsigned integer types used for the radix-pass boundary distribution test
 using uint_key_types = c2h::type_list<cuda::std::uint8_t, cuda::std::uint16_t, cuda::std::uint64_t>;
@@ -167,30 +174,20 @@ bool verify_unique_indices(const c2h::device_vector<ValueT>& values_compacted,
     cub::detail::topk::select::min);
 
   auto num_items = sorted_values.size();
-  if (num_items <= 1)
-  {
-    return true;
-  }
 
   // Generate segment ids via scatter + inclusive_scan: scatter a 1 at each interior segment
   // boundary, then prefix-sum to produce monotonic group ids
   c2h::device_vector<OffsetT> segment_ids(num_items, OffsetT{0});
-  if (num_segments > 1)
-  {
     thrust::scatter(cuda::constant_iterator<OffsetT>(1),
                     cuda::constant_iterator<OffsetT>(1) + (num_segments - 1),
                     compacted_offsets.cbegin() + 1,
                     segment_ids.begin());
     thrust::inclusive_scan(segment_ids.begin(), segment_ids.end(), segment_ids.begin());
-  }
 
-  auto d_sorted  = thrust::raw_pointer_cast(sorted_values.data());
-  auto d_seg_ids = thrust::raw_pointer_cast(segment_ids.data());
-
-  flag_intra_segment_duplicates<ValueT*, OffsetT*> flag_op{d_sorted, d_seg_ids};
+  flag_intra_segment_duplicates flag_op{sorted_values.cbegin(), segment_ids.cbegin()};
 
   auto num_duplicates =
-    thrust::count_if(thrust::make_counting_iterator(size_t{0}), thrust::make_counting_iterator(num_items - 1), flag_op);
+    thrust::count_if(cuda::make_counting_iterator(size_t{0}), cuda::make_counting_iterator(num_items - 1), flag_op);
 
   return num_duplicates == 0;
 }
@@ -335,7 +332,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small variable-size segmen
   const segment_index_t num_segments = static_cast<segment_index_t>(segment_offsets.size() - 1);
   auto segment_offsets_it            = thrust::raw_pointer_cast(segment_offsets.data());
   auto segment_size_it               = cuda::make_transform_iterator(
-    cuda::make_counting_iterator(segment_index_t{0}), segment_size_op<segment_size_t*>(segment_offsets_it));
+    cuda::make_counting_iterator(segment_index_t{0}), segment_size_op<segment_size_t*>{segment_offsets_it});
 
   // Set the k value
   const segment_size_t k =
@@ -356,7 +353,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small variable-size segmen
   auto compacted_output_sizes_it = cuda::make_transform_iterator(
     cuda::make_counting_iterator(segment_index_t{0}),
     get_output_size_op{segment_offsets.cbegin(), cuda::constant_iterator(k)});
-  c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1);
+  c2h::device_vector<segment_size_t> compacted_offsets(num_segments + 1, thrust::no_init);
   thrust::exclusive_scan(
     compacted_output_sizes_it, compacted_output_sizes_it + num_segments + 1, compacted_offsets.begin());
   segment_size_t total_output_size = compacted_offsets.back();
