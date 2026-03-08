@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <cub/device/device_copy.cuh>
 #include <cub/device/device_segmented_sort.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh> // topk::select::{min, max}
 
@@ -41,58 +40,6 @@ struct inc_t
   __host__ __device__ T operator()(IndexT x)
   {
     return static_cast<T>(value_increment * x);
-  }
-};
-
-template <typename OffsetItT>
-struct segment_size_op
-{
-  OffsetItT d_offsets;
-
-  segment_size_op(OffsetItT d_offsets)
-      : d_offsets(d_offsets)
-  {}
-
-  template <typename IndexT>
-  __host__ __device__ __forceinline__ auto operator()(IndexT segment_id) const
-  {
-    return d_offsets[segment_id + 1] - d_offsets[segment_id];
-  }
-};
-
-template <typename OffsetItT, typename KSizesItT>
-struct get_output_size_op
-{
-  OffsetItT offset_it;
-  KSizesItT k_it;
-
-  get_output_size_op(OffsetItT offset_it, KSizesItT k_it)
-      : offset_it(offset_it)
-      , k_it(k_it)
-  {}
-
-  __device__ __forceinline__ cuda::std::int64_t operator()(cuda::std::int64_t segment_id) const
-  {
-    const auto segment_size = offset_it[segment_id + 1] - offset_it[segment_id];
-    return ::cuda::std::min(static_cast<cuda::std::int64_t>(k_it[segment_id]), segment_size);
-  }
-};
-
-template <typename IteratorT, typename OffsetItT>
-struct offset_iterator_op
-{
-  IteratorT base_it;
-  OffsetItT offset_it;
-
-  offset_iterator_op(IteratorT base_it, OffsetItT offset_it)
-      : base_it(base_it)
-      , offset_it(offset_it)
-  {}
-
-  template <typename IndexT>
-  __device__ __forceinline__ IteratorT operator()(IndexT segment_id) const
-  {
-    return base_it + offset_it[segment_id];
   }
 };
 
@@ -234,53 +181,13 @@ void compact_sorted_keys_to_topk(
   d_keys_in.resize(new_end - d_keys_in.begin());
 }
 
-// Stream-compacts each segment to only contain the top-k elements
-template <typename KeyT, typename OffsetT>
-c2h::device_vector<KeyT> compact_to_topk_batched(
-  c2h::device_vector<KeyT>& d_keys_in, const c2h::device_vector<OffsetT>& d_offsets, cuda::std::int64_t k)
-{
-  // Expect
-  const auto num_segments = d_offsets.size() - 1;
-
-  // Maps segments to source pointers: d_keys_in.data() + offset[i]
-  auto src_ptrs_it = cuda::make_transform_iterator(
-    cuda::make_counting_iterator(0), offset_iterator_op{d_keys_in.cbegin(), d_offsets.cbegin()});
-
-  // Calculates the output sizes (if segment size is smaller than k, then output size is segment size, otherwise k)
-  auto copy_sizes_it = cuda::make_transform_iterator(
-    cuda::make_counting_iterator(0), get_output_size_op{d_offsets.cbegin(), cuda::constant_iterator(k)});
-
-  // Calculate destination offsets via prefix sum
-  c2h::device_vector<OffsetT> d_output_offsets(num_segments + 1);
-  thrust::exclusive_scan(copy_sizes_it, copy_sizes_it + num_segments + 1, d_output_offsets.begin());
-
-  OffsetT total_compacted_size = d_output_offsets.back();
-  c2h::device_vector<KeyT> d_keys_out(total_compacted_size);
-
-  // Map segments to destination pointers: d_keys_out.data() + new_offset[i]
-  auto dst_ptrs_it = cuda::make_transform_iterator(
-    cuda::make_counting_iterator(0), offset_iterator_op{d_keys_out.begin(), d_output_offsets.cbegin()});
-
-  // Query temporary storage size
-  void* d_temp_storage      = nullptr;
-  size_t temp_storage_bytes = 0;
-  cub::DeviceCopy::Batched(d_temp_storage, temp_storage_bytes, src_ptrs_it, dst_ptrs_it, copy_sizes_it, num_segments);
-  c2h::device_vector<cuda::std::uint8_t> d_temp(temp_storage_bytes);
-  d_temp_storage = thrust::raw_pointer_cast(d_temp.data());
-
-  // Run batched copy to compact top-k elements of each segment to the front of the input buffer
-  cub::DeviceCopy::Batched(d_temp_storage, temp_storage_bytes, src_ptrs_it, dst_ptrs_it, copy_sizes_it, num_segments);
-
-  return d_keys_out;
-}
-
 template <typename KeyT, typename OffsetItT>
 void segmented_sort_keys(
   c2h::device_vector<KeyT>& d_keys_in,
-  cuda::std::int64_t num_segments,
+                         cuda::std::int64_t num_segments,
   OffsetItT d_segment_offsets_begin_it,
   OffsetItT d_segment_offsets_end_it,
-  cub::detail::topk::select direction)
+                         cub::detail::topk::select direction)
 {
   cuda::std::int64_t num_items = d_keys_in.size();
 
