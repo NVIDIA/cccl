@@ -277,7 +277,7 @@ struct dispatch_batched_topk
       SelectDirectionParameterT,
       NumSegmentsParameterT>;
 
-    // Currently, we only support fixed-size segments that fit into shared memory
+    // Currently, we only support segments that fit into shared memory
     // TODO (elstehle): extend support for variable-size segments
     static_assert(find_smallest_covering_policy_t::supports_one_worker_per_segment,
                   "Currently only small segments are supported, where each segment can be processed by a single thread "
