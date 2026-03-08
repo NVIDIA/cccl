@@ -93,15 +93,15 @@ using max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 4 * 1024>;
 using max_num_k_list = c2h::enum_type_list<cuda::std::size_t, 32, 4 * 1024>;
 
 using key_types = c2h::type_list< // cuda::std::uint8_t,
-  float //,
-  //                  cuda::std::uint64_t
-  // // clang-format off
-  // #if TEST_HALF_T()
-  //                 , half_t
-  // #endif // TEST_HALF_T()
-  // #if TEST_BF_T()
-  //                 , bfloat16_t
-  // #endif // TEST_BF_T()
+  float,
+  cuda::std::uint64_t
+// clang-format off
+  #if TEST_HALF_T()
+  , half_t
+  #endif // TEST_HALF_T()
+  #if TEST_BF_T()
+  , bfloat16_t
+  #endif // TEST_BF_T()
   >;
 // clang-format on
 
