@@ -25,7 +25,7 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
-#endif
+#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
