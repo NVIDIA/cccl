@@ -28,7 +28,7 @@
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/places/exec/cuda_stream.cuh>
-#include <cuda/experimental/__stf/places/inner_shape.cuh>
+#include <cuda/experimental/__stf/internal/inner_shape.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
 #include <map>
