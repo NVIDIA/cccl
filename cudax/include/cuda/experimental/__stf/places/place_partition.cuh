@@ -25,6 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #include <cuda/experimental/__stf/internal/exec_affinity.cuh>
 #include <cuda/experimental/__stf/places/exec/cuda_stream.cuh>
 #include <cuda/experimental/__stf/places/exec/green_context.cuh>
@@ -235,7 +236,7 @@ private:
 
     if (place.is_device() && scope == place_partition_scope::cuda_stream)
     {
-      auto& pool = place.get_stream_pool(handle, true);
+      auto& pool = place.get_stream_pool(true);
       for (size_t i = 0; i < pool.size(); i++)
       {
         // As a side effect, this will populate the pool

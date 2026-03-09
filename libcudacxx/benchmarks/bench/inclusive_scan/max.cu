@@ -16,11 +16,6 @@
 
 #include "nvbench_helper.cuh"
 
-NVBENCH_BENCH_TYPES(range_iter, NVBENCH_TYPE_AXES(fundamental_types))
-  .set_name("range_iter")
-  .set_type_axes_names({"T{ct}"})
-  .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
-
 template <typename T>
 static void range_iter_op(nvbench::state& state, nvbench::type_list<T>)
 {

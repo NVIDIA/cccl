@@ -69,16 +69,17 @@ fill([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIte
   static_assert(indirectly_writable<_InputIterator, const _Tp&>,
                 "cuda::std::fill requires InputIterator to be indirectly writable with const T&");
 
-  if (__first == __last)
-  {
-    return;
-  }
-
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__generate_n, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
     _CCCL_NVTX_RANGE_SCOPE("cuda::std::fill");
+
+    if (__first == __last)
+    {
+      return;
+    }
+
     // We do not want actually load anything, so pass a counting iterator instead
     const auto __count = ::cuda::std::distance(__first, __last);
     (void) __dispatch(__policy, ::cuda::std::move(__first), __count, __fill_constant_value{__value});
