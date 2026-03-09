@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-License-Identifier: BSD-3-Clause
 
 // Should precede any includes
 struct stream_registry_factory_t;
@@ -186,6 +186,50 @@ TEST_CASE("DeviceRunLengthEncode::Encode uses custom stream", "[run_length_encod
   d_counts_out.resize(d_num_runs_out[0]);
   REQUIRE(d_unique_out == expected_unique);
   REQUIRE(d_counts_out == expected_counts);
+
+  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+}
+
+TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns uses custom stream", "[run_length_encode][device]")
+{
+  auto d_in           = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto d_offsets_out  = c2h::device_vector<int>(8);
+  auto d_lengths_out  = c2h::device_vector<int>(8);
+  auto d_num_runs_out = c2h::device_vector<int>(1);
+  int num_items       = static_cast<int>(d_in.size());
+
+  cudaStream_t custom_stream;
+  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceRunLengthEncode::NonTrivialRuns(
+      nullptr,
+      expected_bytes_allocated,
+      d_in.begin(),
+      d_offsets_out.begin(),
+      d_lengths_out.begin(),
+      d_num_runs_out.begin(),
+      num_items));
+
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
+
+  non_trivial_runs_env(
+    d_in.begin(), d_offsets_out.begin(), d_lengths_out.begin(), d_num_runs_out.begin(), num_items, env);
+
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+
+  c2h::device_vector<int> expected_offsets{1, 4};
+  c2h::device_vector<int> expected_lengths{2, 3};
+  c2h::device_vector<int> expected_num_runs{2};
+
+  REQUIRE(d_num_runs_out == expected_num_runs);
+  d_offsets_out.resize(d_num_runs_out[0]);
+  d_lengths_out.resize(d_num_runs_out[0]);
+  REQUIRE(d_offsets_out == expected_offsets);
+  REQUIRE(d_lengths_out == expected_lengths);
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }

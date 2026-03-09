@@ -301,19 +301,13 @@ struct DeviceRunLengthEncode
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceRunLengthEncode::Encode");
 
-    using equality_op  = ::cuda::std::equal_to<>;
-    using reduction_op = ::cuda::std::plus<>;
-
-    using offset_t = detail::choose_signed_offset_t<NumItemsT>;
-
-    using length_t = cub::detail::non_void_value_t<LengthsOutputIteratorT, offset_t>;
-
+    using equality_op              = ::cuda::std::equal_to<>;
+    using reduction_op             = ::cuda::std::plus<>;
+    using offset_t                 = detail::choose_signed_offset_t<NumItemsT>;
+    using length_t                 = cub::detail::non_void_value_t<LengthsOutputIteratorT, offset_t>;
     using lengths_input_iterator_t = THRUST_NS_QUALIFIER::constant_iterator<length_t, offset_t>;
-
-    using accum_t = ::cuda::std::__accumulator_t<reduction_op, length_t, length_t>;
-
+    using accum_t                  = ::cuda::std::__accumulator_t<reduction_op, length_t, length_t>;
     using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
-
     using policy_selector_t = detail::rle::encode::policy_selector_from_types<accum_t, key_t>;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
