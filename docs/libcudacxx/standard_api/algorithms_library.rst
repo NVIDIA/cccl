@@ -22,6 +22,8 @@ Extensions
 
   - All supported algorithms are available from C++17 onwards.
   - All supported algorithms are constexpr, except the allocating ones.
+  - Because `<cuda/std/algorithm>` is a huge header with a considerable compile-time cost, we provide each algorithm
+    through a minimal subheader named e.g `<cuda/std/algorithm.find.h>`
 
 Restrictions
 ------------
@@ -32,7 +34,7 @@ Restrictions
     * ``inplace_merge``
     * ``nth_element``
     * ``sort``
-    * ``stable_partiin``
+    * ``stable_partition``
     * ``stable_sort``
 
 Parallel standard algorithms
