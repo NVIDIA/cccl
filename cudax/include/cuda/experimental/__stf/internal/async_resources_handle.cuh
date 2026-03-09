@@ -27,14 +27,13 @@
 
 #include <cuda/experimental/__stf/internal/exec_affinity.cuh>
 #include <cuda/experimental/__stf/internal/executable_graph_cache.cuh>
+#include <cuda/experimental/__stf/places/stream_pool.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh> // for ::std::hash<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>>
-#include <cuda/experimental/__stf/utility/stream_to_dev.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <atomic>
-#include <mutex>
 #include <unordered_map>
 
 #include <cuda.h>
@@ -42,139 +41,6 @@
 namespace cuda::experimental::stf
 {
 class green_context_helper;
-
-// Needed to set/get affinity
-class exec_place;
-
-/** Sentinel for "no stream" / empty slot. Distinct from any value returned by cuStreamGetId. */
-inline constexpr unsigned long long k_no_stream_id = static_cast<unsigned long long>(-1);
-
-/**
- * @brief Returns the unique stream ID from the CUDA driver (cuStreamGetId).
- * @param stream A valid CUDA stream, or nullptr.
- * @return The stream's unique ID, or k_no_stream_id if stream is nullptr.
- */
-inline unsigned long long get_stream_id(cudaStream_t stream)
-{
-  unsigned long long id = 0;
-  cuda_safe_call(cuStreamGetId(reinterpret_cast<CUstream>(stream), &id));
-  _CCCL_ASSERT(id != k_no_stream_id, "Internal error: cuStreamGetId returned k_no_stream_id");
-  return id;
-}
-
-/**
- * @brief A class to store a CUDA stream along with metadata
- *
- * It contains
- *  - the stream itself,
- *  - the stream's unique ID from the CUDA driver (cuStreamGetId), or k_no_stream_id if no stream,
- *  - the device index in which the stream resides
- */
-struct decorated_stream
-{
-  decorated_stream() = default;
-
-  decorated_stream(cudaStream_t stream, unsigned long long id, int dev_id = -1)
-      : stream(stream)
-      , id(id)
-      , dev_id(dev_id)
-  {}
-
-  /** Construct from stream only; id is from cuStreamGetId, dev_id is -1 (filled lazily when needed). */
-  explicit decorated_stream(cudaStream_t stream)
-      : stream(stream)
-      , id(get_stream_id(stream))
-      , dev_id(-1)
-  {}
-
-  cudaStream_t stream = nullptr;
-  // Unique ID from cuStreamGetId (k_no_stream_id if no stream)
-  unsigned long long id = k_no_stream_id;
-  // Device in which this stream resides
-  int dev_id = -1;
-};
-
-class async_resources_handle;
-
-/**
- * @brief A stream_pool object stores a set of streams associated to a specific
- * CUDA context (device, green context, ...)
- *
- * This class uses a PIMPL idiom so that it is copyable and movable with shared
- * semantics: copies refer to the same underlying pool of streams.
- *
- * When a slot is empty, next(place) activates the place (RAII guard) and calls
- * place.create_stream(). Defined in places.cuh.
- */
-class stream_pool
-{
-  struct impl
-  {
-    explicit impl(size_t n)
-        : payload(n, decorated_stream(nullptr, k_no_stream_id, -1))
-    {}
-    mutable ::std::mutex mtx;
-    ::std::vector<decorated_stream> payload;
-    size_t index = 0;
-  };
-
-  ::std::shared_ptr<impl> pimpl;
-
-public:
-  stream_pool() = default;
-
-  explicit stream_pool(size_t n)
-      : pimpl(::std::make_shared<impl>(n))
-  {}
-
-  stream_pool(const stream_pool&)            = default;
-  stream_pool(stream_pool&&)                 = default;
-  stream_pool& operator=(const stream_pool&) = default;
-  stream_pool& operator=(stream_pool&&)      = default;
-
-  /**
-   * @brief Get the next stream in the pool; when a slot is empty, activate the place (RAII guard) and call
-   * place.create_stream(). Defined in places.cuh so the pool can use exec_place_guard and exec_place::create_stream().
-   */
-  decorated_stream next(const exec_place& place);
-
-  using iterator = ::std::vector<decorated_stream>::iterator;
-  iterator begin()
-  {
-    return pimpl->payload.begin();
-  }
-  iterator end()
-  {
-    return pimpl->payload.end();
-  }
-
-  /**
-   * @brief Number of streams in the pool
-   *
-   * CUDA streams are initialized lazily, so this gives the number of slots
-   * available in the pool, not the number of streams initialized.
-   */
-  size_t size() const
-  {
-    ::std::lock_guard<::std::mutex> locker(pimpl->mtx);
-    return pimpl->payload.size();
-  }
-
-  explicit operator bool() const
-  {
-    return pimpl != nullptr;
-  }
-
-  bool operator==(const stream_pool& other) const
-  {
-    return pimpl == other.pimpl;
-  }
-
-  bool operator<(const stream_pool& other) const
-  {
-    return pimpl < other.pimpl;
-  }
-};
 
 /**
  * @brief A handle which stores resources useful for an efficient asynchronous
