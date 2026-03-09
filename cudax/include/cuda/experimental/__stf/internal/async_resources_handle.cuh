@@ -100,35 +100,37 @@ class async_resources_handle;
  * @brief A stream_pool object stores a set of streams associated to a specific
  * CUDA context (device, green context, ...)
  *
- * Usage:
- *   pool = get_stream_pool(async_resources, place);
- *   stream = pool.next(place).
+ * This class uses a PIMPL idiom so that it is copyable and movable with shared
+ * semantics: copies refer to the same underlying pool of streams.
  *
  * When a slot is empty, next(place) activates the place (RAII guard) and calls
- * place.create_stream().
+ * place.create_stream(). Defined in places.cuh.
  */
-struct stream_pool
+class stream_pool
 {
-  stream_pool()  = default;
-  ~stream_pool() = default;
+  struct impl
+  {
+    explicit impl(size_t n)
+        : payload(n, decorated_stream(nullptr, k_no_stream_id, -1))
+    {}
+    mutable ::std::mutex mtx;
+    ::std::vector<decorated_stream> payload;
+    size_t index = 0;
+  };
 
-  /**
-   * @brief stream_pool constructor taking a number of slots.
-   *
-   * Streams are created lazily only via next(place), which activates the place and calls place.create_stream().
-   * Slot dev_id and id are set when the stream is created in next().
-   */
+  ::std::shared_ptr<impl> pimpl;
+
+public:
+  stream_pool() = default;
+
   explicit stream_pool(size_t n)
-      : payload(n, decorated_stream(nullptr, k_no_stream_id, -1))
+      : pimpl(::std::make_shared<impl>(n))
   {}
 
-  stream_pool(stream_pool&& rhs)
-  {
-    ::std::lock_guard<::std::mutex> locker(rhs.mtx);
-    payload = mv(rhs.payload);
-    rhs.payload.clear();
-    index = mv(rhs.index);
-  }
+  stream_pool(const stream_pool&)            = default;
+  stream_pool(stream_pool&&)                 = default;
+  stream_pool& operator=(const stream_pool&) = default;
+  stream_pool& operator=(stream_pool&&)      = default;
 
   /**
    * @brief Get the next stream in the pool; when a slot is empty, activate the place (RAII guard) and call
@@ -136,15 +138,14 @@ struct stream_pool
    */
   decorated_stream next(const exec_place& place);
 
-  // To iterate over all entries of the pool
   using iterator = ::std::vector<decorated_stream>::iterator;
   iterator begin()
   {
-    return payload.begin();
+    return pimpl->payload.begin();
   }
   iterator end()
   {
-    return payload.end();
+    return pimpl->payload.end();
   }
 
   /**
@@ -155,14 +156,24 @@ struct stream_pool
    */
   size_t size() const
   {
-    ::std::lock_guard<::std::mutex> locker(mtx);
-    return payload.size();
+    ::std::lock_guard<::std::mutex> locker(pimpl->mtx);
+    return pimpl->payload.size();
   }
 
-  // ATTENTION: see move ctor
-  mutable ::std::mutex mtx;
-  ::std::vector<decorated_stream> payload;
-  size_t index = 0;
+  explicit operator bool() const
+  {
+    return pimpl != nullptr;
+  }
+
+  bool operator==(const stream_pool& other) const
+  {
+    return pimpl == other.pimpl;
+  }
+
+  bool operator<(const stream_pool& other) const
+  {
+    return pimpl < other.pimpl;
+  }
 };
 
 /**
@@ -243,76 +254,33 @@ private:
   public:
     impl()
     {
-      // Save current device so that this goes unnoticed
       const int ndevices = cuda_try<cudaGetDeviceCount>();
       assert(ndevices > 0);
       assert(pool_size > 0);
       assert(data_pool_size > 0);
 
-      pool.resize(ndevices);
       per_device_gc_helper.resize(ndevices, nullptr);
       /* For every device, we keep two pools, one dedicated to computation,
        * the other for auxiliary methods such as data transfers. This is intended to
        * improve overlapping of transfers and computation, for example. */
+      pool.reserve(ndevices);
       for (auto d : each(ndevices))
       {
-        stream_pool_init_internal(pool[d].first, d, pool_size);
-        stream_pool_init_internal(pool[d].second, d, data_pool_size);
+        ::std::ignore = d;
+        pool.emplace_back(stream_pool(pool_size), stream_pool(data_pool_size));
       }
     }
 
     ~impl()
     {
-      // Release the resources for each device (for each device, there is a
-      // stream_pool class to store CUDA streams for computation and another
-      // for data transfers)
-      for (auto& p : pool)
-      {
-        stream_pool_cleanup_internal(p.first);
-        stream_pool_cleanup_internal(p.second);
-      }
+      // stream_pool uses shared_ptr internally; streams are destroyed
+      // when the last copy of each pool goes away.
     }
 
     stream_pool& get_device_stream_pool(int dev_id, bool for_computation)
     {
       assert(dev_id < int(pool.size()));
       return for_computation ? pool[dev_id].first : pool[dev_id].second;
-    }
-
-  private:
-    // Initialize a stream pool for the dev_id CUDA device with n slots which will be populated lazily
-    void stream_pool_init_internal(stream_pool& p, int dev_id, size_t n)
-    {
-      assert(n > 0);
-
-      // Do most of the work outside the critical section
-      ::std::vector<decorated_stream> new_payload;
-      new_payload.reserve(n);
-      for (auto i : each(n))
-      {
-        ::std::ignore = i;
-        new_payload.emplace_back(nullptr, k_no_stream_id, dev_id);
-      }
-
-      ::std::lock_guard<::std::mutex> locker(p.mtx);
-      p.payload = std::move(new_payload);
-    }
-
-    void stream_pool_cleanup_internal(stream_pool& p)
-    {
-      ::std::vector<decorated_stream> goner;
-      {
-        ::std::lock_guard<::std::mutex> locker(p.mtx);
-        p.payload.swap(goner);
-      }
-      // Clean up outside the critical section
-      for (auto& e : goner)
-      {
-        if (e.stream)
-        {
-          cuda_safe_call(cudaStreamDestroy(e.stream));
-        }
-      }
     }
 
   public:
