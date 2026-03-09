@@ -231,11 +231,12 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   using pair_t   = typename op_t::pair_t;
   using offset_t = unsigned int;
 
-  constexpr int items_per_thread       = 4;
-  constexpr int block_size             = 128;
-  constexpr int warps_in_block         = block_size / 32;
-  constexpr int max_segments_per_block = 256;
-  constexpr int max_segments_per_warp  = max_segments_per_block / (warps_in_block);
+  // WAR for MS VS which incorrectly concludes that these variables are declared, but unused
+  [[maybe_unused]] static constexpr int items_per_thread       = 4;
+  [[maybe_unused]] static constexpr int block_size             = 128;
+  [[maybe_unused]] static constexpr int warps_in_block         = block_size / 32;
+  [[maybe_unused]] static constexpr int max_segments_per_block = 256;
+  [[maybe_unused]] static constexpr int max_segments_per_warp  = max_segments_per_block / (warps_in_block);
   using policy_t = policy_hub_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp, pair_t>;
 
   unsigned num_items = block_size * items_per_thread * 101 + 1;
@@ -369,11 +370,12 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
   thrust::tabulate(input.begin(), input.end(), init_op<value_t>{});
   c2h::device_vector<value_t> output(input.size());
 
-  constexpr int items_per_thread       = 11;
-  constexpr int block_size             = 128;
-  constexpr int warps_in_block         = block_size / 32;
-  constexpr int max_segments_per_block = 16;
-  constexpr int max_segments_per_warp  = max_segments_per_block / warps_in_block;
+  // WAR for MS VS which incorrectly concludes that these variables are declared, but unused
+  [[maybe_unused]] static constexpr int items_per_thread       = 11;
+  [[maybe_unused]] static constexpr int block_size             = 128;
+  [[maybe_unused]] static constexpr int warps_in_block         = block_size / 32;
+  [[maybe_unused]] static constexpr int max_segments_per_block = 16;
+  [[maybe_unused]] static constexpr int max_segments_per_warp  = max_segments_per_block / warps_in_block;
 
   using policy_t = policy_hub_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp, value_t>;
 
@@ -447,14 +449,15 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
   using op_t     = numeric_op<value_t>;
   using offset_t = unsigned int;
 
-  constexpr int items_per_thread       = 4;
-  constexpr int block_size             = 128;
-  constexpr int warps_in_block         = block_size / 32;
-  constexpr int max_segments_per_block = 256;
-  constexpr int max_segments_per_warp  = max_segments_per_block / warps_in_block;
+  // WAR for MS VS which incorrectly concludes that these variables are declared, but unused
+  [[maybe_unused]] static constexpr int items_per_thread       = 4;
+  [[maybe_unused]] static constexpr int block_size             = 128;
+  [[maybe_unused]] static constexpr int warps_in_block         = block_size / 32;
+  [[maybe_unused]] static constexpr int max_segments_per_block = 256;
+  [[maybe_unused]] static constexpr int max_segments_per_warp  = max_segments_per_block / warps_in_block;
   using policy_t = policy_hub_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp, value_t>;
 
-  unsigned num_items = block_size * items_per_thread * 132;
+  const unsigned num_items = block_size * items_per_thread * 132;
   c2h::device_vector<offset_t> offsets{0, num_items / 4, num_items / 2, num_items - (num_items / 4), num_items};
   size_t num_segments = offsets.size() - 1;
 
@@ -551,11 +554,12 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
   thrust::tabulate(input.begin(), input.end(), init_op<value_t>{});
   c2h::device_vector<value_t> output(input.size());
 
-  constexpr int items_per_thread       = 4;
-  constexpr int block_size             = 128;
-  constexpr int warps_in_block         = block_size / 32;
-  constexpr int max_segments_per_block = 256;
-  constexpr int max_segments_per_warp  = max_segments_per_block / warps_in_block;
+  // WAR for MS VS which incorrectly concludes that these variables are declared, but unused
+  [[maybe_unused]] static constexpr int items_per_thread       = 4;
+  [[maybe_unused]] static constexpr int block_size             = 128;
+  [[maybe_unused]] static constexpr int warps_in_block         = block_size / 32;
+  [[maybe_unused]] static constexpr int max_segments_per_block = 256;
+  [[maybe_unused]] static constexpr int max_segments_per_warp  = max_segments_per_block / warps_in_block;
   using policy_t = policy_hub_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp, value_t>;
 
   using d_init_t                       = cub::detail::InputValue<value_t>;
@@ -665,14 +669,14 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
   using value_t  = unsigned int;
   using offset_t = unsigned int;
 
-  constexpr int items_per_thread       = c2h::get<0, TestType>{};
-  constexpr int block_size             = 128;
-  constexpr int warps_in_block         = block_size / 32;
-  constexpr int max_segments_per_block = 256;
-  constexpr int max_segments_per_warp  = max_segments_per_block / warps_in_block;
+  [[maybe_unused]] static constexpr int items_per_thread       = c2h::get<0, TestType>{};
+  [[maybe_unused]] static constexpr int block_size             = 128;
+  [[maybe_unused]] static constexpr int warps_in_block         = block_size / 32;
+  [[maybe_unused]] static constexpr int max_segments_per_block = 256;
+  [[maybe_unused]] static constexpr int max_segments_per_warp  = max_segments_per_block / warps_in_block;
   using policy_t = policy_hub_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp, value_t>;
 
-  const auto canary = value_t{0xDEADBEEF};
+  static constexpr auto canary = value_t{0xDEADBEEF};
 
   const offset_t gap                        = 4;
   const std::vector<offset_t> segment_sizes = {4, 13, 0, 46, 0, 33, 28, 0, 6, 17};
