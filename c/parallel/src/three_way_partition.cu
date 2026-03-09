@@ -193,6 +193,7 @@ struct __align__({2}) storage_t {{
 {9}
 using device_three_way_partition_policy_selector = {10};
 using namespace cub;
+using namespace cub::detail;
 using namespace cub::detail::three_way_partition;
 static_assert(
   device_three_way_partition_policy_selector()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {11},
