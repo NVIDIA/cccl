@@ -41,7 +41,7 @@ struct flag_intra_segment_duplicates
   __device__ bool operator()(IndexT idx) const
   {
     return d_segment_ids[idx] == d_segment_ids[idx + 1] && d_sorted_items[idx] == d_sorted_items[idx + 1];
-    }
+  }
 };
 
 template <typename ItemItT, typename SegIdItT>
@@ -178,11 +178,11 @@ bool verify_unique_indices(const c2h::device_vector<ValueT>& values_compacted,
   // Generate segment ids via scatter + inclusive_scan: scatter a 1 at each interior segment
   // boundary, then prefix-sum to produce monotonic group ids
   c2h::device_vector<OffsetT> segment_ids(num_items, OffsetT{0});
-    thrust::scatter(cuda::constant_iterator<OffsetT>(1),
-                    cuda::constant_iterator<OffsetT>(1) + (num_segments - 1),
-                    compacted_offsets.cbegin() + 1,
-                    segment_ids.begin());
-    thrust::inclusive_scan(segment_ids.begin(), segment_ids.end(), segment_ids.begin());
+  thrust::scatter(cuda::constant_iterator<OffsetT>(1),
+                  cuda::constant_iterator<OffsetT>(1) + (num_segments - 1),
+                  compacted_offsets.cbegin() + 1,
+                  segment_ids.begin());
+  thrust::inclusive_scan(segment_ids.begin(), segment_ids.end(), segment_ids.begin());
 
   flag_intra_segment_duplicates flag_op{sorted_values.cbegin(), segment_ids.cbegin()};
 
