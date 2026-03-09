@@ -525,11 +525,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   int segments_per_block = 1;
   if (max_segment_size != 0)
   {
-    if (max_segment_size <= static_cast<size_t>(active_policy.small_reduce.items_per_tile()))
+    if (::cuda::in_range(
+          max_segment_size, static_cast<size_t>(1), static_cast<size_t>(active_policy.small_reduce.items_per_tile())))
     {
       segments_per_block = active_policy.small_reduce.segments_per_block();
     }
-    else if (max_segment_size <= static_cast<size_t>(active_policy.medium_reduce.items_per_tile()))
+    else if (::cuda::in_range(max_segment_size,
+                              static_cast<size_t>(1),
+                              static_cast<size_t>(active_policy.medium_reduce.items_per_tile())))
     {
       segments_per_block = active_policy.medium_reduce.segments_per_block();
     }

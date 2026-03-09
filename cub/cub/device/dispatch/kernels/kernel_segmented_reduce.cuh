@@ -128,13 +128,13 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_red
 
   // TODO(bgruber): pass policy directly as template argument to AgentReduce in C++20
   using large_agent_policy_t =
-    AgentReducePolicy<large_pol.block_threads,
-                      large_pol.items_per_thread,
-                      AccumT,
+    AgentReducePolicy<0,
+                      0,
+                      void,
                       large_pol.vector_load_length,
                       large_pol.block_algorithm,
                       large_pol.load_modifier,
-                      NoScaling<large_pol.block_threads, large_pol.items_per_thread, AccumT>>;
+                      NoScaling<large_pol.block_threads, large_pol.items_per_thread>>;
   using AgentReduceT = reduce::AgentReduce<large_agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
 
   // Medium segment agent (one warp per segment)
