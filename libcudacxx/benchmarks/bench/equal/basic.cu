@@ -26,8 +26,8 @@ static void range_iter(nvbench::state& state, nvbench::type_list<T>)
   const auto mismatch_point = static_cast<std::size_t>(elements * common_prefix);
 
   thrust::device_vector<T> dinput(elements, thrust::no_init);
-  cuda::std::fill(cuda::execution::__cub_par_unseq, dinput.begin(), dinput.begin() + mismatch_point, T{0});
-  cuda::std::fill(cuda::execution::__cub_par_unseq, dinput.begin() + mismatch_point, dinput.end(), val);
+  cuda::std::fill(cuda::execution::gpu, dinput.begin(), dinput.begin() + mismatch_point, T{0});
+  cuda::std::fill(cuda::execution::gpu, dinput.begin() + mismatch_point, dinput.end(), val);
 
   state.add_global_memory_reads<T>(mismatch_point + 1);
   state.add_global_memory_writes<size_t>(1);
@@ -56,8 +56,8 @@ static void range_range(nvbench::state& state, nvbench::type_list<T>)
   const auto mismatch_point = static_cast<std::size_t>(elements * common_prefix);
 
   thrust::device_vector<T> dinput(elements, thrust::no_init);
-  cuda::std::fill(cuda::execution::__cub_par_unseq, dinput.begin(), dinput.begin() + mismatch_point, T{0});
-  cuda::std::fill(cuda::execution::__cub_par_unseq, dinput.begin() + mismatch_point, dinput.end(), val);
+  cuda::std::fill(cuda::execution::gpu, dinput.begin(), dinput.begin() + mismatch_point, T{0});
+  cuda::std::fill(cuda::execution::gpu, dinput.begin() + mismatch_point, dinput.end(), val);
 
   state.add_global_memory_reads<T>(mismatch_point + 1);
   state.add_global_memory_writes<size_t>(1);

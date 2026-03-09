@@ -137,26 +137,26 @@ C2H_TEST("cuda::std::merge", "[parallel algorithm]")
 
   cuda::strided_iterator iter1{cuda::counting_iterator{2 * size1 - 2}, -2}; // [2 * size1 - 2, 2 * size1 - 4,..., 0]
   cuda::strided_iterator iter2{cuda::counting_iterator{2 * size2 - 1}, -2}; // [2 * size2 - 1, 2 * size2 - 3,..., 1]
-  cuda::std::copy_n(cuda::execution::__cub_par_unseq, iter1, size1, in1.begin());
-  cuda::std::copy_n(cuda::execution::__cub_par_unseq, iter2, size2, in2.begin());
+  cuda::std::copy_n(cuda::execution::gpu, iter1, size1, in1.begin());
+  cuda::std::copy_n(cuda::execution::gpu, iter2, size2, in2.begin());
 
   SECTION("with default stream")
   {
-    const auto policy = cuda::execution::__cub_par_unseq;
+    const auto policy = cuda::execution::gpu;
     test_merge(policy, in1, in2, out);
   }
 
   SECTION("with provided stream")
   {
     cuda::stream stream{cuda::device_ref{0}};
-    const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream);
+    const auto policy = cuda::execution::gpu.with_stream(stream);
     test_merge(policy, in1, in2, out);
   }
 
   SECTION("with provided memory_resource")
   {
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
-    const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
+    const auto policy                            = cuda::execution::gpu.with_memory_resource(device_resource);
     test_merge(policy, in1, in2, out);
   }
 
@@ -164,7 +164,7 @@ C2H_TEST("cuda::std::merge", "[parallel algorithm]")
   {
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
-    const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource).with_stream(stream);
+    const auto policy = cuda::execution::gpu.with_memory_resource(device_resource).with_stream(stream);
     test_merge(policy, in1, in2, out);
   }
 }
