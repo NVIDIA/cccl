@@ -390,3 +390,162 @@ TEST_CASE("Device radix sort keys descending uses custom stream", "[radix_sort][
   REQUIRE(keys_out == expected_keys);
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
+
+// using different block sizes yields to different temporary storage sizes, so use a custom policy to influence that
+template <typename KeyT, typename ValueT, int BlockThreads>
+struct tiny_onesweep_policy_selector
+{
+  _CCCL_API constexpr auto operator()(cuda::arch_id arch) const -> cub::detail::radix_sort::radix_sort_policy
+  {
+    using default_selector_t         = cub::detail::radix_sort::policy_selector_from_types<KeyT, ValueT, int>;
+    auto policy                      = default_selector_t{}(arch);
+    policy.use_onesweep              = true;
+    policy.onesweep.block_threads    = BlockThreads;
+    policy.onesweep.items_per_thread = 1;
+    return policy;
+  }
+};
+
+template <typename CallableT, typename PolicySelector>
+std::size_t measure_allocated_bytes(CallableT&& run, PolicySelector policy_selector)
+{
+  cuda::stream_ref stream{cudaStream_t{}};
+  size_t bytes_allocated   = 0;
+  size_t bytes_deallocated = 0;
+  auto env                 = stdexec::env{
+    cuda::std::execution::prop{cuda::mr::__get_memory_resource_t{},
+                               device_memory_resource{{}, stream.get(), &bytes_allocated, &bytes_deallocated}},
+    cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}},
+    cuda::execution::__tune(policy_selector)};
+  REQUIRE(cudaSuccess == run(env));
+  stream.sync();
+  CHECK(bytes_allocated > 0);
+  CHECK(bytes_allocated == bytes_deallocated);
+  return bytes_allocated;
+}
+
+TEST_CASE("DeviceRadixSort::SortPairs can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto data = c2h::device_vector<int>(10'000); // must be larger than the single tile path
+    return cub::DeviceRadixSort::SortPairs(
+      data.data().get(),
+      data.data().get(),
+      data.data().get(),
+      data.data().get(),
+      static_cast<int>(data.size()),
+      0,
+      32,
+      env);
+  };
+
+  auto default_bytes = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  auto tuned_bytes   = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 64>{});
+
+  CHECK(default_bytes != tuned_bytes);
+}
+
+TEST_CASE("DeviceRadixSort::SortPairs DoubleBuffer can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto data = c2h::device_vector<int>(10'000); // must be larger than the single tile path
+    cub::DoubleBuffer<int> double_buf(data.data().get(), data.data().get());
+    return cub::DeviceRadixSort::SortPairs(double_buf, double_buf, static_cast<int>(data.size()), 0, 32, env);
+  };
+
+  auto default_bytes = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  auto tuned_bytes   = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 64>{});
+
+  CHECK(default_bytes != tuned_bytes);
+}
+
+TEST_CASE("DeviceRadixSort::SortPairsDescending can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto data = c2h::device_vector<int>(10'000); // must be larger than the single tile path
+    return cub::DeviceRadixSort::SortPairsDescending(
+      data.data().get(),
+      data.data().get(),
+      data.data().get(),
+      data.data().get(),
+      static_cast<int>(data.size()),
+      0,
+      32,
+      env);
+  };
+
+  auto default_bytes = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  auto tuned_bytes   = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 64>{});
+
+  CHECK(default_bytes != tuned_bytes);
+}
+
+TEST_CASE("DeviceRadixSort::SortPairsDescending DoubleBuffer can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto data = c2h::device_vector<int>(10'000); // must be larger than the single tile path
+    cub::DoubleBuffer<int> double_buf(data.data().get(), data.data().get());
+    return cub::DeviceRadixSort::SortPairsDescending(double_buf, double_buf, static_cast<int>(data.size()), 0, 32, env);
+  };
+
+  auto default_bytes = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
+  auto tuned_bytes   = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 64>{});
+
+  CHECK(default_bytes != tuned_bytes);
+}
+
+TEST_CASE("DeviceRadixSort::SortKeys can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto data = c2h::device_vector<int>(10'000); // must be larger than the single tile path
+    return cub::DeviceRadixSort::SortKeys(
+      data.data().get(), data.data().get(), static_cast<int>(data.size()), 0, 32, env);
+  };
+
+  auto default_bytes = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  auto tuned_bytes   = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 64>{});
+
+  CHECK(default_bytes != tuned_bytes);
+}
+
+TEST_CASE("DeviceRadixSort::SortKeys DoubleBuffer can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto data = c2h::device_vector<int>(10'000); // must be larger than the single tile path
+    cub::DoubleBuffer<int> double_buf(data.data().get(), data.data().get());
+    return cub::DeviceRadixSort::SortKeys(double_buf, static_cast<int>(data.size()), 0, 32, env);
+  };
+
+  auto default_bytes = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  auto tuned_bytes   = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 64>{});
+
+  CHECK(default_bytes != tuned_bytes);
+}
+
+TEST_CASE("DeviceRadixSort::SortKeysDescending can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto data = c2h::device_vector<int>(10'000); // must be larger than the single tile path
+    return cub::DeviceRadixSort::SortKeysDescending(
+      data.data().get(), data.data().get(), static_cast<int>(data.size()), 0, 32, env);
+  };
+
+  auto default_bytes = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  auto tuned_bytes   = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 64>{});
+
+  CHECK(default_bytes != tuned_bytes);
+}
+
+TEST_CASE("DeviceRadixSort::SortKeysDescending DoubleBuffer can be tuned", "[radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto data = c2h::device_vector<int>(10'000); // must be larger than the single tile path
+    cub::DoubleBuffer<int> double_buf(data.data().get(), data.data().get());
+    return cub::DeviceRadixSort::SortKeysDescending(double_buf, static_cast<int>(data.size()), 0, 32, env);
+  };
+
+  auto default_bytes = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 32>{});
+  auto tuned_bytes   = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, cub::NullType, 64>{});
+
+  CHECK(default_bytes != tuned_bytes);
+}
