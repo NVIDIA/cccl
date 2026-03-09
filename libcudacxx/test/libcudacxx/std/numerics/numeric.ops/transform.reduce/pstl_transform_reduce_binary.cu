@@ -26,7 +26,6 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
-#include <thrust/fill.h>
 #include <thrust/sequence.h>
 
 #include <cuda/iterator>
@@ -107,9 +106,8 @@ void test_transform_reduce(const Policy policy, const thrust::device_vector<int>
 C2H_TEST("cuda::std::transform_reduce(Iter1, Iter1, Iter2, Init)", "[parallel algorithm]")
 {
   thrust::device_vector<int> input1(size, thrust::no_init);
-  thrust::device_vector<int> input2(size, thrust::no_init);
+  thrust::device_vector<int> input2(size, 1);
   thrust::sequence(input1.begin(), input1.end(), 1);
-  thrust::fill(input2.begin(), input2.end(), 1);
 
   SECTION("with default stream")
   {

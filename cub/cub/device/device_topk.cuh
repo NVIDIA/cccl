@@ -39,7 +39,7 @@ template <topk::select SelectDirection,
           typename NumItemsT,
           typename NumOutItemsT,
           typename EnvT>
-CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
+CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   KeyInputIteratorT d_keys_in,
@@ -81,22 +81,16 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_hub(
   // Query relevant properties from the environment
   auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
 
-  return topk::DispatchTopK<
-    KeyInputIteratorT,
-    KeyOutputIteratorT,
-    ValueInputIteratorT,
-    ValueOutputIteratorT,
-    offset_t,
-    out_offset_t,
-    SelectDirection>::Dispatch(d_temp_storage,
-                               temp_storage_bytes,
-                               d_keys_in,
-                               d_keys_out,
-                               d_values_in,
-                               d_values_out,
-                               static_cast<offset_t>(num_items),
-                               static_cast<out_offset_t>(k),
-                               stream.get());
+  return topk::dispatch<SelectDirection>(
+    d_temp_storage,
+    temp_storage_bytes,
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    static_cast<offset_t>(num_items),
+    static_cast<out_offset_t>(k),
+    stream.get());
 }
 } // namespace detail
 
@@ -237,7 +231,7 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxPairs");
 
-    return detail::dispatch_topk_hub<detail::topk::select::max>(
+    return detail::dispatch_topk<detail::topk::select::max>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -346,7 +340,7 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinPairs");
 
-    return detail::dispatch_topk_hub<detail::topk::select::min>(
+    return detail::dispatch_topk<detail::topk::select::min>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -438,7 +432,7 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxKeys");
 
-    return detail::dispatch_topk_hub<detail::topk::select::max>(
+    return detail::dispatch_topk<detail::topk::select::max>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -530,7 +524,7 @@ struct DeviceTopK
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinKeys");
 
-    return detail::dispatch_topk_hub<detail::topk::select::min>(
+    return detail::dispatch_topk<detail::topk::select::min>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,

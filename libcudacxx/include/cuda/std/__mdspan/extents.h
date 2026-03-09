@@ -609,35 +609,6 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 };
 
-// Recursive helper classes to implement dextents alias for extents
-namespace __mdspan_detail
-{
-template <class _IndexType, size_t _Rank, class _Extents = extents<_IndexType>>
-struct __make_dextents;
-
-template <class _IndexType, size_t _Rank, class _Extents = extents<_IndexType>>
-using __make_dextents_t = typename __make_dextents<_IndexType, _Rank, _Extents>::type;
-
-template <class _IndexType, size_t _Rank, size_t... _ExtentsPack>
-struct __make_dextents<_IndexType, _Rank, extents<_IndexType, _ExtentsPack...>>
-{
-  using type = __make_dextents_t<_IndexType, _Rank - 1, extents<_IndexType, dynamic_extent, _ExtentsPack...>>;
-};
-
-template <class _IndexType, size_t... _ExtentsPack>
-struct __make_dextents<_IndexType, 0, extents<_IndexType, _ExtentsPack...>>
-{
-  using type = extents<_IndexType, _ExtentsPack...>;
-};
-} // end namespace __mdspan_detail
-
-// [mdspan.extents.dextents], alias template
-template <class _IndexType, size_t _Rank>
-using dextents = __mdspan_detail::__make_dextents_t<_IndexType, _Rank>;
-
-template <size_t _Rank, class _IndexType = size_t>
-using dims = dextents<_IndexType, _Rank>;
-
 // nvcc cannot handle type conversions without this workaround
 struct __to_dynamic_extent
 {

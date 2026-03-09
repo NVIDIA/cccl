@@ -103,7 +103,7 @@ public:
     if (is_capture_enabled())
     {
       // Select a stream from the pool
-      capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
+      capture_stream = get_exec_place().getStream(true).stream;
       // Use relaxed capture mode to allow capturing workloads that lazily initialize
       // resources (e.g., set up memory pools)
       cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeRelaxed));
@@ -366,7 +366,7 @@ public:
       //
 
       // Get a stream from the pool associated to the execution place
-      capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
+      capture_stream = get_exec_place().getStream(true).stream;
 
       cudaGraph_t childGraph = nullptr;
       // Use relaxed capture mode to allow capturing workloads that lazily initialize
@@ -628,7 +628,7 @@ public:
       auto lock = lock_ctx_graph();
 
       // Get a stream from the pool associated to the execution place
-      cudaStream_t capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
+      cudaStream_t capture_stream = get_exec_place().getStream(true).stream;
 
       cudaGraph_t childGraph = nullptr;
       // Use relaxed capture mode to allow capturing workloads that lazily initialize
