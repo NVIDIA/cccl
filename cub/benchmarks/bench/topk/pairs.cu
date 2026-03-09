@@ -39,11 +39,7 @@ struct policy_selector_t
 template <typename KeyT, typename ValueT, typename OffsetT, typename OutOffsetT>
 void topk_pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT, OutOffsetT>)
 {
-  using key_input_it_t    = const KeyT*;
-  using key_output_it_t   = KeyT*;
-  using value_input_it_t  = const ValueT*;
-  using value_output_it_t = ValueT*;
-  using offset_t          = cub::detail::choose_offset_t<OffsetT>;
+  using offset_t = cub::detail::choose_offset_t<OffsetT>;
   using out_offset_t =
     cuda::std::conditional_t<sizeof(offset_t) < sizeof(cub::detail::choose_offset_t<OutOffsetT>),
                              offset_t,
@@ -66,10 +62,10 @@ void topk_pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT,
   thrust::device_vector<KeyT> out_keys(selected_elements, thrust::no_init);
   thrust::device_vector<ValueT> out_values(selected_elements, thrust::no_init);
 
-  key_input_it_t d_keys_in       = thrust::raw_pointer_cast(in_keys.data());
-  key_output_it_t d_keys_out     = thrust::raw_pointer_cast(out_keys.data());
-  value_input_it_t d_values_in   = thrust::raw_pointer_cast(in_values.data());
-  value_output_it_t d_values_out = thrust::raw_pointer_cast(out_values.data());
+  const KeyT* d_keys_in     = thrust::raw_pointer_cast(in_keys.data());
+  KeyT* d_keys_out          = thrust::raw_pointer_cast(out_keys.data());
+  const ValueT* d_values_in = thrust::raw_pointer_cast(in_values.data());
+  ValueT* d_values_out      = thrust::raw_pointer_cast(out_values.data());
 
   state.add_element_count(elements, "NumElements");
   state.add_element_count(selected_elements, "NumSelectedElements");

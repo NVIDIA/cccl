@@ -39,9 +39,7 @@ struct policy_selector_t
 template <typename KeyT, typename OffsetT, typename OutOffsetT>
 void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffsetT>)
 {
-  using key_input_it_t  = const KeyT*;
-  using key_output_it_t = KeyT*;
-  using offset_t        = cub::detail::choose_offset_t<OffsetT>;
+  using offset_t = cub::detail::choose_offset_t<OffsetT>;
   using out_offset_t =
     cuda::std::conditional_t<sizeof(offset_t) < sizeof(cub::detail::choose_offset_t<OutOffsetT>),
                              offset_t,
@@ -62,8 +60,8 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
 
   thrust::device_vector<KeyT> in_keys = generate(elements, entropy);
   thrust::device_vector<KeyT> out_keys(selected_elements, thrust::no_init);
-  key_input_it_t d_keys_in   = thrust::raw_pointer_cast(in_keys.data());
-  key_output_it_t d_keys_out = thrust::raw_pointer_cast(out_keys.data());
+  const KeyT* d_keys_in = thrust::raw_pointer_cast(in_keys.data());
+  KeyT* d_keys_out      = thrust::raw_pointer_cast(out_keys.data());
 
   state.add_element_count(elements, "NumElements");
   state.add_element_count(selected_elements, "NumSelectedElements");
@@ -77,7 +75,7 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
     temp_size,
     d_keys_in,
     d_keys_out,
-    static_cast<cub::NullType*>(nullptr),
+    static_cast<const cub::NullType*>(nullptr),
     static_cast<cub::NullType*>(nullptr),
     static_cast<offset_t>(elements),
     static_cast<out_offset_t>(selected_elements),
@@ -97,6 +95,7 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
       temp_size,
       d_keys_in,
       d_keys_out,
+      static_cast<const cub::NullType*>(nullptr),
       static_cast<cub::NullType*>(nullptr),
       static_cast<offset_t>(elements),
       static_cast<out_offset_t>(selected_elements),
