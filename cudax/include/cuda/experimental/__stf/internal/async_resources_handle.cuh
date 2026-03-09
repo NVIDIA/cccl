@@ -137,12 +137,6 @@ private:
       }
     }
 
-    ~impl()
-    {
-      // stream_pool uses shared_ptr internally; streams are destroyed
-      // when the last copy of each pool goes away.
-    }
-
     stream_pool& get_device_stream_pool(int dev_id, bool for_computation)
     {
       assert(dev_id < int(pool.size()));
