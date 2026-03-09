@@ -18,6 +18,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_topk.cuh>
+#include <cub/detail/arch_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_topk.cuh>
 #include <cub/util_device.cuh>
@@ -269,251 +270,264 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-  const topk_policy active_policy = policy_selector(arch_id);
-  using key_in_t                  = it_value_t<KeyInputIteratorT>;
-  static constexpr bool keys_only = ::cuda::std::is_same_v<ValueInputIteratorT, NullType*>;
+  return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
+    static constexpr topk_policy active_policy = policy_getter();
+    using key_in_t                             = it_value_t<KeyInputIteratorT>;
+    static constexpr bool keys_only            = ::cuda::std::is_same_v<ValueInputIteratorT, NullType*>;
 
-  // atomicAdd does not implement overloads for all integer types, so we limit OffsetT to uint32_t or unsigned long long
-  static_assert(
-    ::cuda::std::is_same_v<OffsetT, ::cuda::std::uint32_t> || ::cuda::std::is_same_v<OffsetT, unsigned long long>,
-    "The top-k algorithm is limited to unsigned offset types retrieved from choose_offset_t<T>.");
+    // atomicAdd does not implement overloads for all integer types, so we limit OffsetT to uint32_t or unsigned long
+    // long
+    static_assert(
+      ::cuda::std::is_same_v<OffsetT, ::cuda::std::uint32_t> || ::cuda::std::is_same_v<OffsetT, unsigned long long>,
+      "The top-k algorithm is limited to unsigned offset types retrieved from choose_offset_t<T>.");
 
-  // atomicAdd does not implement overloads for all integer types, so we limit OffsetT to uint32_t or unsigned long long
-  static_assert(
-    ::cuda::std::is_same_v<OutOffsetT, ::cuda::std::uint32_t> || ::cuda::std::is_same_v<OutOffsetT, unsigned long long>,
-    "The top-k algorithm is limited to unsigned offset types retrieved from choose_offset_t<T>.");
+    // atomicAdd does not implement overloads for all integer types, so we limit OffsetT to uint32_t or unsigned long
+    // long
+    static_assert(::cuda::std::is_same_v<OutOffsetT, ::cuda::std::uint32_t>
+                    || ::cuda::std::is_same_v<OutOffsetT, unsigned long long>,
+                  "The top-k algorithm is limited to unsigned offset types retrieved from choose_offset_t<T>.");
 
-  // TODO (elstehle): consider making this part of the env-based API
-  // The algorithm allocates a double-buffer for intermediate results of size num_items/coefficient_for_candidate_buffer
-  static constexpr OffsetT coefficient_for_candidate_buffer = 128;
-  const int block_threads                                   = active_policy.block_threads;
-  const int items_per_thread                                = active_policy.items_per_thread;
-  const int bits_per_pass                                   = active_policy.bits_per_pass;
-  const int tile_size                                       = block_threads * items_per_thread;
-  const auto num_tiles  = static_cast<unsigned int>(::cuda::ceil_div(num_items, tile_size));
-  const int num_passes  = ::cuda::ceil_div<int>(sizeof(key_in_t) * 8, bits_per_pass);
-  const int num_buckets = 1 << bits_per_pass;
+    // TODO (elstehle): consider making this part of the env-based API
+    // The algorithm allocates a double-buffer for intermediate results of size
+    // num_items/coefficient_for_candidate_buffer
+    static constexpr OffsetT coefficient_for_candidate_buffer = 128;
+    constexpr int block_threads                               = active_policy.block_threads;
+    constexpr int items_per_thread                            = active_policy.items_per_thread;
+    constexpr int bits_per_pass                               = active_policy.bits_per_pass;
+    constexpr int tile_size                                   = block_threads * items_per_thread;
+    const auto num_tiles      = static_cast<unsigned int>(::cuda::ceil_div(num_items, tile_size));
+    constexpr int num_passes  = calc_num_passes<key_in_t>(bits_per_pass);
+    constexpr int num_buckets = 1 << bits_per_pass;
 
-  // Keep launch-time and compile-time policy in sync. The kernels are instantiated from PolicySelector at compile time.
-  static constexpr int kernel_bits_per_pass = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).bits_per_pass;
-  _CCCL_ASSERT(bits_per_pass == kernel_bits_per_pass, "TopK runtime and kernel policy mismatch");
+    // Define operators
+    using identify_candidates_op = identify_candidates_op_t<key_in_t, SelectDirection, active_policy.bits_per_pass>;
+    using extract_bin_op         = extract_bin_op_t<key_in_t, SelectDirection, active_policy.bits_per_pass>;
 
-  // Define operators
-  using identify_candidates_op = identify_candidates_op_t<key_in_t, SelectDirection, kernel_bits_per_pass>;
-  using extract_bin_op         = extract_bin_op_t<key_in_t, SelectDirection, kernel_bits_per_pass>;
+    // We are capping k at a maximum of num_items
+    using common_offset_t = ::cuda::std::common_type_t<OffsetT, OutOffsetT>;
+    k = static_cast<OutOffsetT>(::cuda::std::min(common_offset_t{k}, static_cast<common_offset_t>(num_items)));
 
-  auto topk_first_pass_kernel = DeviceTopKKernel<
-    PolicySelector,
-    KeyInputIteratorT,
-    KeyOutputIteratorT,
-    ValueInputIteratorT,
-    ValueOutputIteratorT,
-    OffsetT,
-    OutOffsetT,
-    key_in_t,
-    extract_bin_op,
-    identify_candidates_op,
-    true>;
-  auto topk_kernel = DeviceTopKKernel<
-    PolicySelector,
-    KeyInputIteratorT,
-    KeyOutputIteratorT,
-    ValueInputIteratorT,
-    ValueOutputIteratorT,
-    OffsetT,
-    OutOffsetT,
-    key_in_t,
-    extract_bin_op,
-    identify_candidates_op,
-    false>;
-  auto topk_last_filter_kernel = DeviceTopKLastFilterKernel<
-    PolicySelector,
-    KeyInputIteratorT,
-    KeyOutputIteratorT,
-    ValueInputIteratorT,
-    ValueOutputIteratorT,
-    OffsetT,
-    OutOffsetT,
-    key_in_t,
-    identify_candidates_op>;
+    // Specify temporary storage allocation requirements
+    const size_t size_counter             = sizeof(Counter<key_in_t, OffsetT, OutOffsetT>);
+    const size_t size_histogram           = num_buckets * sizeof(OffsetT);
+    const OffsetT candidate_buffer_length = ::cuda::std::max(OffsetT{1}, num_items / coefficient_for_candidate_buffer);
 
-  // We are capping k at a maximum of num_items
-  using common_offset_t = ::cuda::std::common_type_t<OffsetT, OutOffsetT>;
-  k = static_cast<OutOffsetT>(::cuda::std::min(common_offset_t{k}, static_cast<common_offset_t>(num_items)));
+    constexpr int allocations_array_size            = keys_only ? 4 : 6;
+    size_t allocation_sizes[allocations_array_size] = {
+      size_counter,
+      size_histogram,
+      candidate_buffer_length * sizeof(key_in_t),
+      candidate_buffer_length * sizeof(key_in_t)};
+    if constexpr (!keys_only)
+    {
+      allocation_sizes[4] = candidate_buffer_length * sizeof(OffsetT);
+      allocation_sizes[5] = candidate_buffer_length * sizeof(OffsetT);
+    }
 
-  // Specify temporary storage allocation requirements
-  const size_t size_counter             = sizeof(Counter<key_in_t, OffsetT, OutOffsetT>);
-  const size_t size_histogram           = num_buckets * sizeof(OffsetT);
-  const OffsetT candidate_buffer_length = ::cuda::std::max(OffsetT{1}, num_items / coefficient_for_candidate_buffer);
+    // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
+    void* allocations[allocations_array_size] = {};
+    if (const auto error =
+          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+    {
+      return error;
+    }
 
-  constexpr int allocations_array_size            = keys_only ? 4 : 6;
-  size_t allocation_sizes[allocations_array_size] = {
-    size_counter,
-    size_histogram,
-    candidate_buffer_length * sizeof(key_in_t),
-    candidate_buffer_length * sizeof(key_in_t)};
-  if constexpr (!keys_only)
-  {
-    allocation_sizes[4] = candidate_buffer_length * sizeof(OffsetT);
-    allocation_sizes[5] = candidate_buffer_length * sizeof(OffsetT);
-  }
+    if (d_temp_storage == nullptr)
+    {
+      // Return if the caller is simply requesting the size of the storage allocation
+      return cudaSuccess;
+    }
 
-  // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
-  void* allocations[allocations_array_size] = {};
-  if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
-  {
-    return error;
-  }
+    // Init the buffer for descriptor and histogram
+    if (const auto error = CubDebug(launcher_factory.MemsetAsync(
+          allocations[0], 0, static_cast<char*>(allocations[2]) - static_cast<char*>(allocations[0]), stream)))
+    {
+      return error;
+    }
 
-  if (d_temp_storage == nullptr)
-  {
-    return cudaSuccess;
-  }
+    // Get grid size for scanning tiles
+    int num_sms = 0;
+    if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(num_sms)))
+    {
+      return error;
+    }
 
-  // Init the buffer for descriptor and histogram
-  if (const auto error = CubDebug(launcher_factory.MemsetAsync(
-        allocations[0], 0, static_cast<char*>(allocations[2]) - static_cast<char*>(allocations[0]), stream)))
-  {
-    return error;
-  }
+    auto topk_kernel = DeviceTopKKernel<
+      PolicySelector,
+      KeyInputIteratorT,
+      KeyOutputIteratorT,
+      ValueInputIteratorT,
+      ValueOutputIteratorT,
+      OffsetT,
+      OutOffsetT,
+      key_in_t,
+      extract_bin_op,
+      identify_candidates_op,
+      false>;
 
-  int num_sms = 0;
-  if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(num_sms)))
-  {
-    return error;
-  }
-
-  int main_kernel_blocks_per_sm = 0;
-  if (const auto error =
-        CubDebug(launcher_factory.MaxSmOccupancy(main_kernel_blocks_per_sm, topk_kernel, block_threads)))
-  {
-    return error;
-  }
-  const auto main_kernel_max_occupancy = static_cast<unsigned int>(main_kernel_blocks_per_sm * num_sms);
-  const auto topk_grid_size            = ::cuda::std::min(main_kernel_max_occupancy, num_tiles);
+    int main_kernel_blocks_per_sm = 0;
+    if (const auto error =
+          CubDebug(launcher_factory.MaxSmOccupancy(main_kernel_blocks_per_sm, topk_kernel, block_threads)))
+    {
+      return error;
+    }
+    const auto main_kernel_max_occupancy = static_cast<unsigned int>(main_kernel_blocks_per_sm * num_sms);
+    const auto topk_grid_size            = ::cuda::std::min(main_kernel_max_occupancy, num_tiles);
 
 // Log topk_kernel configuration @todo check the kernel launch
 #ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking topk_kernel<<<%d, %d, 0, "
-          "%lld>>>(), %d items per thread, %d SM occupancy\n",
-          topk_grid_size,
-          block_threads,
-          (long long) stream,
-          items_per_thread,
-          main_kernel_blocks_per_sm);
+    _CubLog("Invoking topk_kernel<<<%d, %d, 0, "
+            "%lld>>>(), %d items per thread, %d SM occupancy\n",
+            topk_grid_size,
+            block_threads,
+            (long long) stream,
+            items_per_thread,
+            main_kernel_blocks_per_sm);
 #endif // CUB_DEBUG_LOG
 
-  Counter<key_in_t, OffsetT, OutOffsetT>* counter = static_cast<decltype(counter)>(allocations[0]);
-  OffsetT* histogram                              = static_cast<decltype(histogram)>(allocations[1]);
-  key_in_t* in_buf                                = nullptr;
-  key_in_t* out_buf                               = nullptr;
-  OffsetT* in_idx_buf                             = nullptr;
-  OffsetT* out_idx_buf                            = nullptr;
-  int pass                                        = 0;
-  for (; pass < num_passes; pass++)
-  {
-    extract_bin_op extract_op(pass);
+    // Initialize address variables
+    Counter<key_in_t, OffsetT, OutOffsetT>* counter = static_cast<decltype(counter)>(allocations[0]);
+    OffsetT* histogram                              = static_cast<decltype(histogram)>(allocations[1]);
+    key_in_t* in_buf                                = nullptr;
+    key_in_t* out_buf                               = nullptr;
+    OffsetT* in_idx_buf                             = nullptr;
+    OffsetT* out_idx_buf                            = nullptr;
+    int pass                                        = 0;
+    for (; pass < num_passes; pass++)
+    {
+      // Set operator
+      extract_bin_op extract_op(pass);
+      identify_candidates_op identify_op(&counter->kth_key_bits, pass);
+
+      // Initialize address variables
+      in_buf  = static_cast<key_in_t*>(pass % 2 == 0 ? allocations[2] : allocations[3]);
+      out_buf = pass == 0 ? nullptr : static_cast<key_in_t*>(pass % 2 == 0 ? allocations[3] : allocations[2]);
+      if constexpr (!keys_only)
+      {
+        in_idx_buf  = pass <= 1 ? nullptr : static_cast<OffsetT*>(pass % 2 == 0 ? allocations[4] : allocations[5]);
+        out_idx_buf = pass == 0 ? nullptr : static_cast<OffsetT*>(pass % 2 == 0 ? allocations[5] : allocations[4]);
+      }
+
+      // Invoke kernel
+      if (pass == 0)
+      {
+        auto topk_first_pass_kernel = DeviceTopKKernel<
+          PolicySelector,
+          KeyInputIteratorT,
+          KeyOutputIteratorT,
+          ValueInputIteratorT,
+          ValueOutputIteratorT,
+          OffsetT,
+          OutOffsetT,
+          key_in_t,
+          extract_bin_op,
+          identify_candidates_op,
+          true>;
+
+        // Compute grid size for the histogram kernel of the first pass
+        int first_pass_kernel_blocks_per_sm = 0;
+        if (const auto error = CubDebug(
+              launcher_factory.MaxSmOccupancy(first_pass_kernel_blocks_per_sm, topk_first_pass_kernel, block_threads)))
+        {
+          return error;
+        }
+        const auto first_pass_kernel_max_occupancy =
+          static_cast<unsigned int>(first_pass_kernel_blocks_per_sm * num_sms);
+        const auto topk_first_pass_grid_size = ::cuda::std::min(first_pass_kernel_max_occupancy, num_tiles);
+
+        // Compute histogram of the first pass
+        if (const auto error = CubDebug(
+              launcher_factory(topk_first_pass_grid_size, block_threads, 0, stream)
+                .doit(topk_first_pass_kernel,
+                      d_keys_in,
+                      d_keys_out,
+                      d_values_in,
+                      d_values_out,
+                      in_buf,
+                      in_idx_buf,
+                      out_buf,
+                      out_idx_buf,
+                      counter,
+                      histogram,
+                      num_items,
+                      k,
+                      candidate_buffer_length,
+                      extract_op,
+                      identify_op,
+                      pass)))
+        {
+          return error;
+        }
+      }
+      else
+      {
+        if (const auto error = CubDebug(
+              launcher_factory(topk_grid_size, block_threads, 0, stream)
+                .doit(topk_kernel,
+                      d_keys_in,
+                      d_keys_out,
+                      d_values_in,
+                      d_values_out,
+                      in_buf,
+                      in_idx_buf,
+                      out_buf,
+                      out_idx_buf,
+                      counter,
+                      histogram,
+                      num_items,
+                      k,
+                      candidate_buffer_length,
+                      extract_op,
+                      identify_op,
+                      pass)))
+        {
+          return error;
+        }
+      }
+    }
+
+    auto topk_last_filter_kernel = DeviceTopKLastFilterKernel<
+      PolicySelector,
+      KeyInputIteratorT,
+      KeyOutputIteratorT,
+      ValueInputIteratorT,
+      ValueOutputIteratorT,
+      OffsetT,
+      OutOffsetT,
+      key_in_t,
+      identify_candidates_op>;
+
     identify_candidates_op identify_op(&counter->kth_key_bits, pass);
-
-    in_buf  = static_cast<key_in_t*>(pass % 2 == 0 ? allocations[2] : allocations[3]);
-    out_buf = pass == 0 ? nullptr : static_cast<key_in_t*>(pass % 2 == 0 ? allocations[3] : allocations[2]);
-    if constexpr (!keys_only)
+    int last_filter_kernel_blocks_per_sm = 0;
+    if (const auto error = CubDebug(
+          launcher_factory.MaxSmOccupancy(last_filter_kernel_blocks_per_sm, topk_last_filter_kernel, block_threads)))
     {
-      in_idx_buf  = pass <= 1 ? nullptr : static_cast<OffsetT*>(pass % 2 == 0 ? allocations[4] : allocations[5]);
-      out_idx_buf = pass == 0 ? nullptr : static_cast<OffsetT*>(pass % 2 == 0 ? allocations[5] : allocations[4]);
+      return error;
+    }
+    const auto last_filter_kernel_max_occupancy = static_cast<unsigned int>(last_filter_kernel_blocks_per_sm * num_sms);
+    const auto last_filter_grid_size            = ::cuda::std::min(last_filter_kernel_max_occupancy, num_tiles);
+    if (const auto error = CubDebug(
+          launcher_factory(last_filter_grid_size, block_threads, 0, stream)
+            .doit(topk_last_filter_kernel,
+                  d_keys_in,
+                  d_keys_out,
+                  d_values_in,
+                  d_values_out,
+                  out_buf,
+                  out_idx_buf,
+                  counter,
+                  num_items,
+                  k,
+                  candidate_buffer_length,
+                  identify_op,
+                  pass)))
+    {
+      return error;
     }
 
-    if (pass == 0)
-    {
-      int first_pass_kernel_blocks_per_sm = 0;
-      if (const auto error = CubDebug(
-            launcher_factory.MaxSmOccupancy(first_pass_kernel_blocks_per_sm, topk_first_pass_kernel, block_threads)))
-      {
-        return error;
-      }
-      const auto first_pass_kernel_max_occupancy = static_cast<unsigned int>(first_pass_kernel_blocks_per_sm * num_sms);
-      const auto topk_first_pass_grid_size       = ::cuda::std::min(first_pass_kernel_max_occupancy, num_tiles);
-
-      if (const auto error = CubDebug(
-            launcher_factory(topk_first_pass_grid_size, block_threads, 0, stream)
-              .doit(topk_first_pass_kernel,
-                    d_keys_in,
-                    d_keys_out,
-                    d_values_in,
-                    d_values_out,
-                    in_buf,
-                    in_idx_buf,
-                    out_buf,
-                    out_idx_buf,
-                    counter,
-                    histogram,
-                    num_items,
-                    k,
-                    candidate_buffer_length,
-                    extract_op,
-                    identify_op,
-                    pass)))
-      {
-        return error;
-      }
-    }
-    else
-    {
-      if (const auto error = CubDebug(
-            launcher_factory(topk_grid_size, block_threads, 0, stream)
-              .doit(topk_kernel,
-                    d_keys_in,
-                    d_keys_out,
-                    d_values_in,
-                    d_values_out,
-                    in_buf,
-                    in_idx_buf,
-                    out_buf,
-                    out_idx_buf,
-                    counter,
-                    histogram,
-                    num_items,
-                    k,
-                    candidate_buffer_length,
-                    extract_op,
-                    identify_op,
-                    pass)))
-      {
-        return error;
-      }
-    }
-  }
-
-  identify_candidates_op identify_op(&counter->kth_key_bits, pass);
-  int last_filter_kernel_blocks_per_sm = 0;
-  if (const auto error = CubDebug(
-        launcher_factory.MaxSmOccupancy(last_filter_kernel_blocks_per_sm, topk_last_filter_kernel, block_threads)))
-  {
-    return error;
-  }
-  const auto last_filter_kernel_max_occupancy = static_cast<unsigned int>(last_filter_kernel_blocks_per_sm * num_sms);
-  const auto last_filter_grid_size            = ::cuda::std::min(last_filter_kernel_max_occupancy, num_tiles);
-  if (const auto error = CubDebug(
-        launcher_factory(last_filter_grid_size, block_threads, 0, stream)
-          .doit(topk_last_filter_kernel,
-                d_keys_in,
-                d_keys_out,
-                d_values_in,
-                d_values_out,
-                out_buf,
-                out_idx_buf,
-                counter,
-                num_items,
-                k,
-                candidate_buffer_length,
-                identify_op,
-                pass)))
-  {
-    return error;
-  }
-
-  return cudaSuccess;
+    // pass==num_passes to align with the usage of identify_candidates_op in previous passes.
+    return cudaSuccess;
+  });
 }
 } // namespace detail::topk
 
