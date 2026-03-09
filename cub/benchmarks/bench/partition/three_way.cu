@@ -72,10 +72,10 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_writes<offset_t>(1);
 
   std::size_t temp_size{};
-  auto dispatch = [&](void* temp_storage, size_t& storage_size, cudaStream_t stream) {
+  auto dispatch = [&](void* temp_storage, cudaStream_t stream) {
     return cub::detail::three_way_partition::dispatch(
       temp_storage,
-      storage_size,
+      temp_size,
       d_in,
       d_out_1,
       d_out_2,

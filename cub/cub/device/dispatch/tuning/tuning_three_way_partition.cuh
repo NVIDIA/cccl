@@ -469,35 +469,13 @@ template <typename T>
 concept three_way_partition_policy_selector = policy_selector<T, three_way_partition_policy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
-_CCCL_HOST_DEVICE constexpr bool is_input_type_primitive_or_trivially_copyable(type_t input_t)
-{
-  switch (input_t)
-  {
-    case type_t::int8:
-    case type_t::int16:
-    case type_t::int32:
-    case type_t::int64:
-    case type_t::int128:
-    case type_t::uint8:
-    case type_t::uint16:
-    case type_t::uint32:
-    case type_t::uint64:
-    case type_t::uint128:
-    case type_t::float32:
-    case type_t::float64:
-      return true;
-    default:
-      return false;
-  }
-}
-
 struct policy_selector
 {
   type_t input_type;
   int input_size;
   int offset_size;
 
-  // TODO(bgruber): this is just the smae as policy500, remove it
+  // TODO(bgruber): this is just the same as policy500, remove it before merging
   _CCCL_HOST_DEVICE constexpr auto __delay_constructor_for_accumulator_pack_t() const -> delay_constructor_policy
   {
     return default_delay_constructor_policy(true); // we assume that the OffsetT is trivially copyable

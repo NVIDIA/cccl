@@ -33,7 +33,7 @@
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 #  include <sstream>
-#endif
+#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
 CUB_NAMESPACE_BEGIN
 
@@ -78,6 +78,7 @@ struct policy_selector_from_hub
 {
   _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> three_way_partition_policy
   {
+    // this is only used in device code, so we can use ::ActivePolicy directly
     using active_policy = typename PolicyHub::MaxPolicy::ActivePolicy::ThreeWayPartitionPolicy;
     return three_way_partition_policy{
       active_policy::BLOCK_THREADS,
@@ -468,8 +469,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     fake_hub,
     KernelSource,
     KernelLauncherFactory>;
-
-  return dispatch_t{
+  auto dispatch = dispatch_t{
     d_temp_storage,
     temp_storage_bytes,
     d_in,
@@ -482,11 +482,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     num_items,
     stream,
     kernel_source,
-    launcher_factory}
-    .__invoke(active_policy.block_threads,
-              active_policy.items_per_thread,
-              kernel_source.ThreeWayPartitionInitKernel(),
-              kernel_source.ThreeWayPartitionKernel());
+    launcher_factory};
+  return dispatch.__invoke(
+    active_policy.block_threads,
+    active_policy.items_per_thread,
+    kernel_source.ThreeWayPartitionInitKernel(),
+    kernel_source.ThreeWayPartitionKernel());
 }
 } // namespace detail::three_way_partition
 
