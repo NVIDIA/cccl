@@ -98,6 +98,49 @@ void test_impl_stride(
   }
 }
 
+template <typename T, typename I, size_t... SrcExtents, size_t... DstExtents>
+void test_impl_stride_offset(
+  const thrust::host_vector<T>& input,
+  const thrust::host_vector<T>& initial_output,
+  const thrust::host_vector<T>& expected_data,
+  cuda::std::extents<I, SrcExtents...> src_extents,
+  cuda::std::extents<I, DstExtents...> dst_extents,
+  const cuda::std::array<I, sizeof...(SrcExtents)>& src_strides,
+  const cuda::std::array<I, sizeof...(DstExtents)>& dst_strides,
+  size_t src_offset,
+  size_t dst_offset)
+{
+  using src_extents_t = cuda::std::extents<I, SrcExtents...>;
+  using dst_extents_t = cuda::std::extents<I, DstExtents...>;
+  using src_mapping_t = cuda::std::layout_stride::mapping<src_extents_t>;
+  using dst_mapping_t = cuda::std::layout_stride::mapping<dst_extents_t>;
+  thrust::device_vector<T> device_data(initial_output.begin(), initial_output.end());
+  {
+    // host to device
+    using host_mdspan_t   = cuda::host_mdspan<const T, src_extents_t, cuda::std::layout_stride>;
+    using device_mdspan_t = cuda::device_mdspan<T, dst_extents_t, cuda::std::layout_stride>;
+    host_mdspan_t host_md(input.data() + src_offset, src_mapping_t(src_extents, src_strides));
+    device_mdspan_t device_md(
+      thrust::raw_pointer_cast(device_data.data()) + dst_offset, dst_mapping_t(dst_extents, dst_strides));
+    cuda::experimental::copy_bytes(host_md, device_md, stream);
+    stream.sync();
+    CUDAX_REQUIRE(thrust::host_vector<T>(device_data) == expected_data);
+  }
+  {
+    // device to host
+    using device_mdspan_t = cuda::device_mdspan<const T, src_extents_t, cuda::std::layout_stride>;
+    using host_mdspan_t   = cuda::host_mdspan<T, dst_extents_t, cuda::std::layout_stride>;
+    thrust::host_vector<T> host_data = initial_output;
+    device_data                      = input;
+    device_mdspan_t device_md(
+      thrust::raw_pointer_cast(device_data.data()) + src_offset, src_mapping_t(src_extents, src_strides));
+    host_mdspan_t host_md(host_data.data() + dst_offset, dst_mapping_t(dst_extents, dst_strides));
+    cuda::experimental::copy_bytes(device_md, host_md, stream);
+    stream.sync();
+    CUDAX_REQUIRE(host_data == expected_data);
+  }
+}
+
 /***********************************************************************************************************************
  * 1D Tests
  **********************************************************************************************************************/
@@ -232,9 +275,9 @@ TEST_CASE("copy_bytes 2D swapped extents", "[copy_bytes][2d][swapped]")
 // tile size:    32
 // num tiles:    1
 // --------------------------------
-// column major to column major
+// column major to row major
 // tensorA:      (4,8):(1,4)
-// tensorB:      (32):(1)
+// tensorB:      (32):(1)     -> (4,8):(8,1)
 // stride order: false
 // tile size:    1
 // num tiles:    32
@@ -251,8 +294,8 @@ TEST_CASE("copy_bytes 2D mixed ranks", "[copy_bytes][2d][ranks]")
   using dst_extents = cuda::std::extents<int, M * N>; // 1D
   // row major to row major
   // Regression note:
-  // Right-coalescing may expose an equivalent 1D shape here, so this case can use
-  // the paired path after simplification.
+  // The simplified prototype no longer relies on an early coalescing fallback here.
+  // This still needs to preserve the same 2D -> 1D logical ordering.
   test_impl(host_data, host_data, src_extents(), dst_extents());
   // column major to column major
   thrust::host_vector<int> expected(M * N);
@@ -264,10 +307,139 @@ TEST_CASE("copy_bytes 2D mixed ranks", "[copy_bytes][2d][ranks]")
     }
   }
   // Regression note:
-  // This case must not be collapsed by the left-coalescing fallback. The logical
-  // column-major ordering still differs from the 1D destination and must remain
-  // on the independent path.
+  // Differing productive shapes must still preserve the original logical ordering
+  // when the prototype falls back to original-order tile enumeration.
   test_impl<cuda::std::layout_left, cuda::std::layout_left>(host_data, expected, src_extents(), dst_extents());
+}
+
+TEST_CASE("copy_bytes singleton dimensions", "[copy_bytes][singleton]")
+{
+  constexpr int M = 2;
+  constexpr int N = 4;
+  thrust::host_vector<int> host_data(M * N);
+  for (int i = 0; i < M * N; ++i)
+  {
+    host_data[i] = i;
+  }
+  using src_extents = cuda::std::extents<int, M, 1, N>;
+  using dst_extents = cuda::std::extents<int, M, N>;
+  test_impl(host_data, host_data, src_extents(), dst_extents());
+  test_impl<cuda::std::layout_left, cuda::std::layout_left>(host_data, host_data, src_extents(), dst_extents());
+}
+
+TEST_CASE("copy_bytes 1D to 2D mixed ranks", "[copy_bytes][2d][ranks][padding]")
+{
+  constexpr int M = 4;
+  constexpr int N = 8;
+  thrust::host_vector<int> host_data(M * N);
+  for (int i = 0; i < M * N; ++i)
+  {
+    host_data[i] = i;
+  }
+  using src_extents = cuda::std::extents<int, M * N>;
+  using dst_extents = cuda::std::extents<int, M, N>;
+  // Padding the 1D source introduces an identity stride-1 mode that ties with the
+  // real contiguous mode after pair-sorting. Stable ordering must keep the copy valid.
+  test_impl(host_data, host_data, src_extents(), dst_extents());
+}
+
+TEST_CASE("copy_bytes 1D to 2D mixed ranks column major fallback", "[copy_bytes][2d][ranks][column]")
+{
+  constexpr int M = 4;
+  constexpr int N = 8;
+  thrust::host_vector<int> host_data(M * N);
+  for (int i = 0; i < M * N; ++i)
+  {
+    host_data[i] = i;
+  }
+  thrust::host_vector<int> expected(M * N);
+  for (int i = 0; i < M; ++i)
+  {
+    for (int j = 0; j < N; ++j)
+    {
+      expected[i + j * M] = i * N + j;
+    }
+  }
+  using src_extents = cuda::std::extents<int, M * N>;
+  using dst_extents = cuda::std::extents<int, M, N>;
+  test_impl<cuda::std::layout_right, cuda::std::layout_left>(host_data, expected, src_extents(), dst_extents());
+}
+
+TEST_CASE("copy_bytes 1D to 2D strided row-major mixed ranks", "[copy_bytes][2d][ranks][stride][row]")
+{
+  constexpr int M     = 4;
+  constexpr int N     = 8;
+  constexpr int Ld    = 16;
+  constexpr int Alloc = M * Ld;
+  thrust::host_vector<int> input_data(Alloc, -1);
+  thrust::host_vector<int> expected(Alloc, 0);
+  for (int i = 0; i < M * N; ++i)
+  {
+    input_data[i] = i;
+  }
+  for (int i = 0; i < M; ++i)
+  {
+    for (int j = 0; j < N; ++j)
+    {
+      expected[i * Ld + j] = i * N + j;
+    }
+  }
+  using src_extents                     = cuda::std::extents<int, M * N>;
+  using dst_extents                     = cuda::std::extents<int, M, N>;
+  cuda::std::array<int, 1> src_strides = {1};
+  cuda::std::array<int, 2> dst_strides = {Ld, 1};
+  test_impl_stride(input_data, expected, src_extents(), dst_extents(), src_strides, dst_strides);
+}
+
+TEST_CASE("copy_bytes 1D to 2D strided column-major fallback", "[copy_bytes][2d][ranks][stride][column]")
+{
+  constexpr int M     = 4;
+  constexpr int N     = 8;
+  constexpr int Ld    = 16;
+  constexpr int Alloc = Ld * N;
+  thrust::host_vector<int> input_data(Alloc, -1);
+  thrust::host_vector<int> expected(Alloc, 0);
+  for (int i = 0; i < M * N; ++i)
+  {
+    input_data[i] = i;
+  }
+  for (int i = 0; i < M; ++i)
+  {
+    for (int j = 0; j < N; ++j)
+    {
+      expected[i + j * Ld] = i * N + j;
+    }
+  }
+  using src_extents                     = cuda::std::extents<int, M * N>;
+  using dst_extents                     = cuda::std::extents<int, M, N>;
+  cuda::std::array<int, 1> src_strides = {1};
+  cuda::std::array<int, 2> dst_strides = {1, Ld};
+  test_impl_stride(input_data, expected, src_extents(), dst_extents(), src_strides, dst_strides);
+}
+
+TEST_CASE("copy_bytes 2D strided to 1D mixed ranks", "[copy_bytes][2d][ranks][stride]")
+{
+  constexpr int M     = 4;
+  constexpr int N     = 8;
+  constexpr int Ld    = 16;
+  constexpr int Alloc = M * Ld;
+  thrust::host_vector<int> input_data(Alloc, -1);
+  thrust::host_vector<int> expected(Alloc, 0);
+  int value = 0;
+  for (int i = 0; i < M; ++i)
+  {
+    for (int j = 0; j < N; ++j)
+    {
+      input_data[i * Ld + j] = value;
+      expected[value]        = value;
+      ++value;
+    }
+  }
+  using src_extents                     = cuda::std::extents<int, M, N>;
+  using dst_extents                     = cuda::std::extents<int, M * N>;
+  cuda::std::array<int, 2> src_strides = {Ld, 1};
+  cuda::std::array<int, 1> dst_strides = {1};
+  test_impl_stride(input_data, expected, src_extents(), dst_extents(), src_strides, dst_strides);
 }
 
 // row major to row major
@@ -523,4 +695,33 @@ TEST_CASE("copy_bytes 3D strided, tile_size > 1 with different stride order", "[
   cuda::std::array<int, 3> src_strides = {D1 * D2, D2, 1};
   cuda::std::array<int, 3> dst_strides = {8, 16, 1};
   test_impl_stride(input_data, expected, extents(), extents(), src_strides, dst_strides);
+}
+
+TEST_CASE("copy_bytes strided subviews with offsets", "[copy_bytes][stride][offset]")
+{
+  constexpr int M         = 2;
+  constexpr int N         = 3;
+  constexpr int SrcLd     = 5;
+  constexpr int DstLd     = 4;
+  constexpr int SrcOffset = 2;
+  constexpr int DstOffset = 3;
+  constexpr int Alloc     = 16;
+  thrust::host_vector<int> input(Alloc, -1);
+  thrust::host_vector<int> initial_output(Alloc, -1);
+  thrust::host_vector<int> expected(Alloc, -1);
+  int value = 0;
+  for (int i = 0; i < M; ++i)
+  {
+    for (int j = 0; j < N; ++j)
+    {
+      input[SrcOffset + i * SrcLd + j] = value;
+      expected[DstOffset + i + j * DstLd] = value;
+      ++value;
+    }
+  }
+  using extents = cuda::std::extents<int, M, N>;
+  cuda::std::array<int, 2> src_strides = {SrcLd, 1};
+  cuda::std::array<int, 2> dst_strides = {1, DstLd};
+  test_impl_stride_offset(
+    input, initial_output, expected, extents(), extents(), src_strides, dst_strides, SrcOffset, DstOffset);
 }

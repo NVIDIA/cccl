@@ -36,6 +36,39 @@
 namespace cuda::experimental
 {
 /**
+ * @brief Computes the largest contiguous tile size shared by two tensors already expressed in one common mode order.
+ *
+ * @par Algorithm
+ * 1. Starting from the innermost mode (index 0), this scans both tensors while each stride matches the expected
+ *    contiguous stride on its own tensor.
+ * 2. The running contiguous extents from both tensors are accumulated independently and the returned tile size is
+ *    `gcd(curr_a, curr_b)`.
+ */
+template <typename _Ep, typename _Sp, typename _TpA, typename _TpB, ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::size_t __max_common_contiguous_size_pair_sorted(
+  const __raw_tensor<_Ep, _Sp, _TpA, _MaxRank>& __tensor_a,
+  const __raw_tensor<_Ep, _Sp, _TpB, _MaxRank>& __tensor_b) noexcept
+{
+  _CCCL_ASSERT(__tensor_a.__rank == __tensor_b.__rank, "The ranks of the tensors must be the same");
+  const auto& __extents_a      = __tensor_a.__extents;
+  const auto& __strides_a      = __tensor_a.__strides;
+  const auto& __extents_b      = __tensor_b.__extents;
+  const auto& __strides_b      = __tensor_b.__strides;
+  ::cuda::std::size_t __curr_a = 1;
+  ::cuda::std::size_t __curr_b = 1;
+  for (::cuda::std::size_t __i = 0; __i < __tensor_a.__rank; ++__i)
+  {
+    if ((__strides_a[__i] != static_cast<_Sp>(__curr_a)) || (__strides_b[__i] != static_cast<_Sp>(__curr_b)))
+    {
+      break;
+    }
+    __curr_a *= __extents_a[__i];
+    __curr_b *= __extents_b[__i];
+  }
+  return ::cuda::std::gcd(__curr_a, __curr_b);
+}
+
+/**
  * @brief Computes the largest contiguous tile size shared by two ordered tensors.
  *
  * @par Algorithm

@@ -376,8 +376,8 @@ template <typename _ExtentTIn,
           typename _TpOut,
           ::cuda::std::size_t _MaxRankOut>
 [[nodiscard]] _CCCL_HOST_API constexpr bool
-__same_shape(const __raw_tensor<_ExtentTIn, _StrideTIn, _TpIn, _MaxRankIn>& __tensor_in,
-             const __raw_tensor<_ExtentTOut, _StrideTOut, _TpOut, _MaxRankOut>& __tensor_out) noexcept
+__same_extents(const __raw_tensor<_ExtentTIn, _StrideTIn, _TpIn, _MaxRankIn>& __tensor_in,
+               const __raw_tensor<_ExtentTOut, _StrideTOut, _TpOut, _MaxRankOut>& __tensor_out) noexcept
 {
   if (__tensor_in.__rank != __tensor_out.__rank)
   {
