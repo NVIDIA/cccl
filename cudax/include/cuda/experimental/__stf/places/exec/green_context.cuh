@@ -237,7 +237,7 @@ public:
         // Create a green context
         cuda_safe_call(cuGreenCtxCreate(&ctxs[i], localdesc, device, CU_GREEN_CTX_DEFAULT_STREAM));
 
-        pools.emplace_back(async_resources_handle::pool_size);
+        pools.emplace_back(exec_place::impl::pool_size);
       }
     }
   }
