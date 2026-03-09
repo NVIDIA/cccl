@@ -27,7 +27,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
 #include <cuda/experimental/__stf/places/data_place_extension.cuh>
 #include <cuda/experimental/__stf/places/exec/green_ctx_view.cuh>
@@ -334,7 +333,7 @@ public:
     return ::std::hash<int>()(devid);
   }
 
-  decorated_stream getDataStream(async_resources_handle& async_resources) const;
+  decorated_stream getDataStream() const;
 
 private:
   /**
@@ -711,19 +710,12 @@ public:
     /**
      * @brief Get the stream pool for this execution place.
      *
-     * The base implementation looks up the pool from async_resources_handle
-     * by device id. Subclasses (green contexts, CUDA stream places) override
-     * to return their own pool.
+     * The base implementation returns pool_compute or pool_data stored
+     * directly on the impl.
      */
-    virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const
+    virtual stream_pool& get_stream_pool(bool for_computation) const
     {
-      if (!affine.is_device())
-      {
-        fprintf(stderr, "Error: get_stream_pool virtual method is not implemented for this exec place.\n");
-        abort();
-      }
-      int dev_id = device_ordinal(affine);
-      return async_resources.get_device_stream_pool(dev_id, for_computation);
+      return for_computation ? pool_compute : pool_data;
     }
 
     /**
@@ -741,12 +733,14 @@ public:
       return stream;
     }
 
+    static constexpr size_t pool_size      = 4;
+    static constexpr size_t data_pool_size = 4;
+
   protected:
     friend class exec_place;
-    explicit impl(int devid)
-        : affine(data_place::device(devid))
-    {}
     data_place affine = data_place::invalid();
+    mutable stream_pool pool_compute;
+    mutable stream_pool pool_data;
   };
 
   exec_place() = default;
@@ -865,15 +859,15 @@ public:
     pimpl->set_affine_data_place(mv(place));
   }
 
-  stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const
+  stream_pool& get_stream_pool(bool for_computation) const
   {
-    return pimpl->get_stream_pool(async_resources, for_computation);
+    return pimpl->get_stream_pool(for_computation);
   }
 
   /**
    * @brief Get a decorated stream from the stream pool associated to this execution place.
    */
-  decorated_stream getStream(async_resources_handle& async_resources, bool for_computation) const;
+  decorated_stream getStream(bool for_computation) const;
 
   /**
    * @brief Create a stream valid for execution on this place.
@@ -888,9 +882,9 @@ public:
     return pimpl->create_stream();
   }
 
-  cudaStream_t pick_stream(async_resources_handle& async_resources, bool for_computation = true) const
+  cudaStream_t pick_stream(bool for_computation = true) const
   {
-    return getStream(async_resources, for_computation).stream;
+    return getStream(for_computation).stream;
   }
 
   // TODO make protected !
@@ -1141,9 +1135,9 @@ inline decorated_stream stream_pool::next(const exec_place& place)
   return result;
 }
 
-inline decorated_stream exec_place::getStream(async_resources_handle& async_resources, bool for_computation) const
+inline decorated_stream exec_place::getStream(bool for_computation) const
 {
-  return get_stream_pool(async_resources, for_computation).next(*this);
+  return get_stream_pool(for_computation).next(*this);
 }
 
 /**
@@ -1176,9 +1170,9 @@ public:
     {
       return data_place::host();
     }
-    virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const override
+    stream_pool& get_stream_pool(bool for_computation) const override
     {
-      return exec_place::current_device().get_stream_pool(async_resources, for_computation);
+      return exec_place::current_device().get_stream_pool(for_computation);
     }
   };
 
@@ -1220,22 +1214,39 @@ UNITTEST("exec_place_host::operator->*")
   EXPECT(witness);
 };
 
+/**
+ * @brief Designates execution that is to run on a specific CUDA device.
+ */
+class exec_place_device : public exec_place
+{
+public:
+  class impl : public exec_place::impl
+  {
+  public:
+    explicit impl(int devid)
+        : exec_place::impl(data_place::device(devid))
+    {
+      pool_compute = stream_pool(pool_size);
+      pool_data    = stream_pool(data_pool_size);
+    }
+  };
+};
+
 inline exec_place exec_place::device(int devid)
 {
-  // Create a static vector of impls - there's exactly one per device.
   static int ndevices;
-  static impl* impls = [] {
+  static exec_place_device::impl* impls = [] {
     cuda_safe_call(cudaGetDeviceCount(&ndevices));
-    auto result = static_cast<impl*>(::operator new[](ndevices * sizeof(impl)));
+    auto result = static_cast<exec_place_device::impl*>(::operator new[](ndevices * sizeof(exec_place_device::impl)));
     for (int i : each(ndevices))
     {
-      new (result + i) impl(i);
+      new (result + i) exec_place_device::impl(i);
     }
     return result;
   }();
-  assert(devid >= 0);
-  assert(devid < ndevices);
-  return ::std::shared_ptr<impl>(&impls[devid], [](impl*) {}); // no-op deleter
+  _CCCL_ASSERT(devid >= 0, "invalid device id");
+  _CCCL_ASSERT(devid < ndevices, "invalid device id");
+  return ::std::shared_ptr<exec_place::impl>(&impls[devid], [](exec_place::impl*) {}); // no-op deleter
 }
 
 #ifdef UNITTESTED_FILE
@@ -1401,12 +1412,12 @@ public:
       return places;
     }
 
-    virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const override
+    stream_pool& get_stream_pool(bool for_computation) const override
     {
       assert(!for_computation);
       const auto& v = get_places();
       assert(v.size() > 0);
-      return v[0].get_stream_pool(async_resources, for_computation);
+      return v[0].get_stream_pool(for_computation);
     }
 
     exec_place grid_activate(size_t i) const
@@ -1872,9 +1883,9 @@ inline exec_place data_place::affine_exec_place() const
   return exec_place::device(devid);
 }
 
-inline decorated_stream data_place::getDataStream(async_resources_handle& async_resources) const
+inline decorated_stream data_place::getDataStream() const
 {
-  return affine_exec_place().getStream(async_resources, false);
+  return affine_exec_place().getStream(false);
 }
 
 inline const exec_place_grid& data_place::get_grid() const
