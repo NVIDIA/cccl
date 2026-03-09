@@ -25,8 +25,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
-#include <cuda/experimental/__stf/internal/exec_affinity.cuh>
 #include <cuda/experimental/__stf/places/exec/cuda_stream.cuh>
 #include <cuda/experimental/__stf/places/exec/green_context.cuh>
 #include <cuda/experimental/__stf/places/places.cuh>
