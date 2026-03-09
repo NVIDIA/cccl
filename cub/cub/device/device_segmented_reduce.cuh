@@ -1814,7 +1814,11 @@ public:
 
     static_assert(::cuda::std::is_same_v<int, output_key_t>, "Output key type must be int.");
 
-    auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
+    using arg_index_input_iterator_t = THRUST_NS_QUALIFIER::transform_iterator<
+      detail::reduce::generate_idx_value<InputIteratorT, output_value_t>,
+      THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>>;
+
+    arg_index_input_iterator_t d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
       THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>{0},
       detail::reduce::generate_idx_value<InputIteratorT, output_value_t>(d_in, segment_size));
 
@@ -1823,7 +1827,7 @@ public:
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::reduce::DispatchFixedSizeSegmentedReduce<
-          decltype(d_indexed_in),
+          arg_index_input_iterator_t,
           OutputIteratorT,
           int,
           cub::detail::arg_min,
@@ -2683,7 +2687,11 @@ public:
 
     static_assert(::cuda::std::is_same_v<int, output_key_t>, "Output key type must be int.");
 
-    auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
+    using arg_index_input_iterator_t = THRUST_NS_QUALIFIER::transform_iterator<
+      detail::reduce::generate_idx_value<InputIteratorT, output_value_t>,
+      THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>>;
+
+    arg_index_input_iterator_t d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
       THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>{0},
       detail::reduce::generate_idx_value<InputIteratorT, output_value_t>(d_in, segment_size));
 
@@ -2692,7 +2700,7 @@ public:
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::reduce::DispatchFixedSizeSegmentedReduce<
-          decltype(d_indexed_in),
+          arg_index_input_iterator_t,
           OutputIteratorT,
           int,
           detail::arg_max,
