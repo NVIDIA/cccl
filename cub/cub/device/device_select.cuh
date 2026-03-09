@@ -1485,7 +1485,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::UniqueByKey");
 
-    using offset_t = ::cuda::std::int64_t;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
