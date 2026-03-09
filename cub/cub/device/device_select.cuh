@@ -1168,7 +1168,7 @@ public:
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
   //! .. versionadded:: 3.4.0
-  //!    First appears in CUDA Toolkit 12.4.
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -1285,7 +1285,7 @@ public:
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
   //! .. versionadded:: 3.4.0
-  //!    First appears in CUDA Toolkit 12.4.
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -1385,7 +1385,7 @@ public:
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
   //! .. versionadded:: 3.4.0
-  //!    First appears in CUDA Toolkit 12.4.
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
