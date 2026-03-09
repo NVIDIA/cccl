@@ -114,10 +114,12 @@ private:
     {
       return detail::dispatch_with_env(
         env, [&](auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-          using segmented_reduce_tuning_t = ::cuda::__call_result_or_t<
-            detail::segmented_reduce::get_tuning_query_t,
-            detail::segmented_reduce::policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
-            decltype(tuning)>;
+          using default_policy_selector_t =
+            detail::segmented_reduce::policy_selector_from_types<AccumT, OffsetT, ReductionOpT>;
+          using policy_selector_t =
+            ::cuda::std::execution::__query_result_or_t<decltype(tuning),
+                                                        detail::segmented_reduce::get_tuning_query_t,
+                                                        default_policy_selector_t>;
           return detail::segmented_reduce::dispatch<AccumT, OffsetT>(
             d_temp_storage,
             temp_storage_bytes,
@@ -130,7 +132,7 @@ private:
             initial_value,
             0, // max_segment_size
             stream,
-            segmented_reduce_tuning_t{});
+            default_policy_selector_t{});
         });
     }
     _CCCL_UNREACHABLE();
@@ -576,17 +578,16 @@ public:
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::reduce::
-          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, int, ReductionOpT, T>::Dispatch(
-            d_temp_storage,
-            temp_storage_bytes,
-            d_in,
-            d_out,
-            num_segments,
-            segment_size,
-            reduction_op,
-            initial_value,
-            stream);
+        return detail::reduce::DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, int, ReductionOpT, T>::
+          Dispatch(d_temp_storage,
+                   temp_storage_bytes,
+                   d_in,
+                   d_out,
+                   num_segments,
+                   segment_size,
+                   reduction_op,
+                   initial_value,
+                   stream);
       });
   }
 
@@ -959,9 +960,16 @@ public:
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::reduce::
-          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, int, ::cuda::std::plus<>, output_t>::
-            Dispatch(
-              d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, ::cuda::std::plus{}, output_t{}, stream);
+          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, int, ::cuda::std::plus<>, output_t>::Dispatch(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_in,
+            d_out,
+            num_segments,
+            segment_size,
+            ::cuda::std::plus{},
+            output_t{},
+            stream);
       });
   }
 
@@ -1814,9 +1822,9 @@ public:
 
     static_assert(::cuda::std::is_same_v<int, output_key_t>, "Output key type must be int.");
 
-    using arg_index_input_iterator_t = THRUST_NS_QUALIFIER::transform_iterator<
-      detail::reduce::generate_idx_value<InputIteratorT, output_value_t>,
-      THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>>;
+    using arg_index_input_iterator_t =
+      THRUST_NS_QUALIFIER::transform_iterator<detail::reduce::generate_idx_value<InputIteratorT, output_value_t>,
+                                              THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>>;
 
     arg_index_input_iterator_t d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
       THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>{0},
@@ -2687,9 +2695,9 @@ public:
 
     static_assert(::cuda::std::is_same_v<int, output_key_t>, "Output key type must be int.");
 
-    using arg_index_input_iterator_t = THRUST_NS_QUALIFIER::transform_iterator<
-      detail::reduce::generate_idx_value<InputIteratorT, output_value_t>,
-      THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>>;
+    using arg_index_input_iterator_t =
+      THRUST_NS_QUALIFIER::transform_iterator<detail::reduce::generate_idx_value<InputIteratorT, output_value_t>,
+                                              THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>>;
 
     arg_index_input_iterator_t d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
       THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>{0},
