@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/block/block_load.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
 
