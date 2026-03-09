@@ -19,6 +19,7 @@
 #include <cub/iterator/arg_index_input_iterator.cuh>
 
 #include <cuda/__device/arch_id.h>
+#include <cuda/__utility/in_range.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -109,7 +110,7 @@ template <typename PolicySelector,
   requires segmented_reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 CUB_DETAIL_KERNEL_ATTRIBUTES
-__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_reduce.block_threads)) //
+__launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_reduce.block_threads) //
   void DeviceSegmentedReduceKernel(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -214,7 +215,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large
       }
     };
 
-  if (max_segment_size != 0 && max_segment_size <= static_cast<size_t>(small_items_per_tile))
+  if (::cuda::in_range(max_segment_size, static_cast<size_t>(1), static_cast<size_t>(small_items_per_tile)))
   {
     small_medium_seg_reduction(
       ::cuda::std::type_identity<AgentSmallReduceT>{},
@@ -222,7 +223,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large
       ::cuda::std::integral_constant<int, small_threads_per_warp>{},
       ::cuda::std::integral_constant<int, segments_per_small_block>{});
   }
-  else if (max_segment_size != 0 && max_segment_size <= static_cast<size_t>(medium_items_per_tile))
+  else if (::cuda::in_range(max_segment_size, static_cast<size_t>(1), static_cast<size_t>(medium_items_per_tile)))
   {
     small_medium_seg_reduction(
       ::cuda::std::type_identity<AgentMediumReduceT>{},

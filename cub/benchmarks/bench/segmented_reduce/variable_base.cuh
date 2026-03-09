@@ -10,6 +10,18 @@
 
 #include <nvbench_helper.cuh>
 
+#if TUNE_T
+using value_types = nvbench::type_list<TUNE_T>;
+#else
+using value_types = nvbench::type_list<int32_t, int64_t, float, double>;
+#endif
+
+#ifdef TUNE_OffsetT
+using some_offset_types = nvbench::type_list<TUNE_OffsetT>;
+#else
+using some_offset_types = nvbench::type_list<int32_t>;
+#endif
+
 template <typename T, typename OffsetT>
 void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
@@ -94,8 +106,7 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
     op_t{},
     init_t{},
     guaranteed_max_seg_size,
-    0 /* stream */,
-    cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{});
+    0 /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
@@ -112,8 +123,7 @@ void variable_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Offs
       op_t{},
       init_t{},
       guaranteed_max_seg_size,
-      launch.get_stream(),
-      cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{});
+      launch.get_stream());
   });
 }
 
