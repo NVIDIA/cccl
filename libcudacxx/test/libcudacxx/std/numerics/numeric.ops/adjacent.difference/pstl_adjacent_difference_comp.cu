@@ -17,7 +17,6 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
-#include <thrust/fill.h>
 #include <thrust/sequence.h>
 
 #include <cuda/iterator>
