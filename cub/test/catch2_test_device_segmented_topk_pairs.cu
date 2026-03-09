@@ -104,7 +104,7 @@ using max_segment_size_list = c2h::enum_type_list<cuda::std::size_t, 4 * 1024>;
 // Segment size: static, uniform
 using max_num_k_list = c2h::enum_type_list<cuda::std::size_t, 32, 4 * 1024>;
 
-// %PARAM% TEST_TYPES 0:1:2:3
+// %PARAM% TEST_TYPES types 0:1:2
 
 #if TEST_TYPES == 0
 using key_types =
