@@ -12,7 +12,7 @@
 #include <cub/detail/launcher/cuda_driver.cuh> // cub::detail::CudaDriverLauncherFactory
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh> // cub::DispatchSegmentedSort
 #include <cub/device/dispatch/kernels/kernel_segmented_sort.cuh> // DeviceSegmentedSort kernels
-#include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh> // policy_selector
+#include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
 #include <cub/thread/thread_load.cuh> // cub::LoadModifier
 
 #include <exception> // std::exception
@@ -747,7 +747,6 @@ CUresult cccl_device_segmented_sort_impl(
     cub::DoubleBuffer<indirect_arg_t> d_values_double_buffer(
       *static_cast<indirect_arg_t**>(&val_arg_in), *static_cast<indirect_arg_t**>(&val_arg_out));
 
-    // TODO(bgruber): remove all template arguments except the first two (the others can be deduced)
     auto exec_status = cub::detail::segmented_sort::dispatch<Order, OffsetT>(
       d_temp_storage,
       *temp_storage_bytes,
