@@ -136,70 +136,6 @@ private:
     _CCCL_UNREACHABLE();
   }
 
-  template <typename AccumT = void,
-            typename InputIteratorT,
-            typename OutputIteratorT,
-            typename OffsetT,
-            typename ReductionOpT,
-            typename InitT,
-            typename EnvT>
-  CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_segmented_reduce_impl(
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    ::cuda::std::int64_t num_segments,
-    OffsetT segment_size,
-    ReductionOpT reduction_op,
-    InitT initial_value,
-    EnvT env)
-  {
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t,
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
-
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
-                  "gpu_to_gpu determinism is not supported for device segmented reductions ");
-
-    // We cannot explicitly pass void as AccumT because it would propagate as the literal accumulator
-    // type into the policy hub and kernel source, failing to compile. Instead, we omit it.
-    if constexpr (::cuda::std::is_same_v<AccumT, void>)
-    {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-          return detail::reduce::
-            DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT>::Dispatch(
-              d_temp_storage,
-              temp_storage_bytes,
-              d_in,
-              d_out,
-              num_segments,
-              segment_size,
-              reduction_op,
-              initial_value,
-              stream);
-        });
-    }
-    else
-    {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-          return detail::reduce::
-            DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT>::
-              Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       d_out,
-                       num_segments,
-                       segment_size,
-                       reduction_op,
-                       initial_value,
-                       stream);
-        });
-    }
-  }
-
 public:
   //! @rst
   //! Computes a device-wide segmented reduction using the specified
@@ -628,7 +564,30 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedReduce::Reduce");
 
-    return fixed_size_segmented_reduce_impl(d_in, d_out, num_segments, segment_size, reduction_op, initial_value, env);
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requested_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t,
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+                  "gpu_to_gpu determinism is not supported for device segmented reductions ");
+
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        return detail::reduce::
+          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, int, ReductionOpT, T>::Dispatch(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_in,
+            d_out,
+            num_segments,
+            segment_size,
+            reduction_op,
+            initial_value,
+            stream);
+      });
   }
 
   //! @rst
@@ -987,8 +946,23 @@ public:
 
     using output_t = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
 
-    return fixed_size_segmented_reduce_impl(
-      d_in, d_out, num_segments, segment_size, ::cuda::std::plus{}, output_t{}, env);
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requested_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t,
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+                  "gpu_to_gpu determinism is not supported for device segmented reductions ");
+
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        return detail::reduce::
+          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, int, ::cuda::std::plus<>, output_t>::
+            Dispatch(
+              d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, ::cuda::std::plus{}, output_t{}, stream);
+      });
   }
 
   //! @rst
@@ -1357,8 +1331,30 @@ public:
 
     using input_t = detail::it_value_t<InputIteratorT>;
 
-    return fixed_size_segmented_reduce_impl(
-      d_in, d_out, num_segments, segment_size, ::cuda::minimum<>{}, ::cuda::std::numeric_limits<input_t>::max(), env);
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requested_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t,
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+                  "gpu_to_gpu determinism is not supported for device segmented reductions ");
+
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        return detail::reduce::
+          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, int, ::cuda::minimum<>, input_t>::Dispatch(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_in,
+            d_out,
+            num_segments,
+            segment_size,
+            ::cuda::minimum<>{},
+            ::cuda::std::numeric_limits<input_t>::max(),
+            stream);
+      });
   }
 
   //! @rst
@@ -1806,6 +1802,16 @@ public:
     using output_key_t   = typename output_tuple_t::first_type;
     using output_value_t = typename output_tuple_t::second_type;
 
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requested_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t,
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+                  "gpu_to_gpu determinism is not supported for device segmented reductions ");
+
     static_assert(::cuda::std::is_same_v<int, output_key_t>, "Output key type must be int.");
 
     auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
@@ -1814,8 +1820,24 @@ public:
 
     init_t initial_value{accum_t(1, ::cuda::std::numeric_limits<input_value_t>::max())};
 
-    return fixed_size_segmented_reduce_impl<accum_t>(
-      d_indexed_in, d_out, num_segments, segment_size, cub::detail::arg_min(), initial_value, env);
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        return detail::reduce::DispatchFixedSizeSegmentedReduce<
+          decltype(d_indexed_in),
+          OutputIteratorT,
+          int,
+          cub::detail::arg_min,
+          init_t,
+          accum_t>::Dispatch(d_temp_storage,
+                             temp_storage_bytes,
+                             d_indexed_in,
+                             d_out,
+                             num_segments,
+                             segment_size,
+                             cub::detail::arg_min(),
+                             initial_value,
+                             stream);
+      });
   }
 
   //! @rst
@@ -2180,8 +2202,30 @@ public:
 
     using input_t = detail::it_value_t<InputIteratorT>;
 
-    return fixed_size_segmented_reduce_impl(
-      d_in, d_out, num_segments, segment_size, ::cuda::maximum<>{}, ::cuda::std::numeric_limits<input_t>::lowest(), env);
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requested_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t,
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+                  "gpu_to_gpu determinism is not supported for device segmented reductions ");
+
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        return detail::reduce::
+          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, int, ::cuda::maximum<>, input_t>::Dispatch(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_in,
+            d_out,
+            num_segments,
+            segment_size,
+            ::cuda::maximum<>{},
+            ::cuda::std::numeric_limits<input_t>::lowest(),
+            stream);
+      });
   }
 
   //! @rst
@@ -2627,6 +2671,16 @@ public:
     using output_key_t   = typename output_tuple_t::first_type;
     using output_value_t = typename output_tuple_t::second_type;
 
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requested_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t,
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+                  "gpu_to_gpu determinism is not supported for device segmented reductions ");
+
     static_assert(::cuda::std::is_same_v<int, output_key_t>, "Output key type must be int.");
 
     auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
@@ -2635,8 +2689,24 @@ public:
 
     init_t initial_value{accum_t(1, ::cuda::std::numeric_limits<input_value_t>::lowest())};
 
-    return fixed_size_segmented_reduce_impl<accum_t>(
-      d_indexed_in, d_out, num_segments, segment_size, detail::arg_max(), initial_value, env);
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        return detail::reduce::DispatchFixedSizeSegmentedReduce<
+          decltype(d_indexed_in),
+          OutputIteratorT,
+          int,
+          detail::arg_max,
+          init_t,
+          accum_t>::Dispatch(d_temp_storage,
+                             temp_storage_bytes,
+                             d_indexed_in,
+                             d_out,
+                             num_segments,
+                             segment_size,
+                             detail::arg_max(),
+                             initial_value,
+                             stream);
+      });
   }
 };
 
