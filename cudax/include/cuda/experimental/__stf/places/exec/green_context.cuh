@@ -25,11 +25,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #include <cuda/experimental/__stf/places/data_place_extension.cuh>
 #include <cuda/experimental/__stf/places/exec/green_ctx_view.cuh>
 #include <cuda/experimental/__stf/places/places.cuh>
-#include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
 // Used only for unit tests, not in the actual implementation
@@ -420,19 +418,6 @@ inline exec_place exec_place::green_ctx(const green_ctx_view& gc_view, bool use_
   return exec_place_green_ctx(gc_view, use_green_ctx_data_place);
 }
 
-// Implementation of async_resources_handle::get_gc_helper moved here to avoid circular dependencies
-inline ::std::shared_ptr<green_context_helper> async_resources_handle::get_gc_helper(int dev_id, int sm_count)
-{
-  assert(pimpl);
-  assert(dev_id < int(pimpl->per_device_gc_helper.size()));
-  auto& h = pimpl->per_device_gc_helper[dev_id];
-  if (!h)
-  {
-    h = ::std::make_shared<green_context_helper>(sm_count, dev_id);
-  }
-  return h;
-}
-
 inline exec_place green_ctx_data_place::extension::affine_exec_place() const
 {
   return exec_place::green_ctx(view_);
@@ -446,17 +431,16 @@ inline data_place data_place::green_ctx(const green_ctx_view& gc_view)
 #  ifdef UNITTESTED_FILE
 UNITTEST("green context exec_place equality")
 {
-  async_resources_handle handle;
-  auto gc_helper = handle.get_gc_helper(0, 8); // 8 SMs per green context
+  green_context_helper gc_helper(8, 0); // 8 SMs per green context
 
   // Need at least 2 green contexts for the test
-  if (gc_helper->get_count() < 2)
+  if (gc_helper.get_count() < 2)
   {
     return;
   }
 
-  auto gc0_view = gc_helper->get_view(0);
-  auto gc1_view = gc_helper->get_view(1);
+  auto gc0_view = gc_helper.get_view(0);
+  auto gc1_view = gc_helper.get_view(1);
 
   // Create exec_places from different green contexts (default: use_green_ctx_data_place=false)
   auto p0a = exec_place::green_ctx(gc0_view);
@@ -479,16 +463,15 @@ UNITTEST("green context exec_place equality")
 
 UNITTEST("green context data_place equality")
 {
-  async_resources_handle handle;
-  auto gc_helper = handle.get_gc_helper(0, 8);
+  green_context_helper gc_helper(8, 0);
 
-  if (gc_helper->get_count() < 2)
+  if (gc_helper.get_count() < 2)
   {
     return;
   }
 
-  auto gc0_view = gc_helper->get_view(0);
-  auto gc1_view = gc_helper->get_view(1);
+  auto gc0_view = gc_helper.get_view(0);
+  auto gc1_view = gc_helper.get_view(1);
 
   // Create green context data places
   auto dp0a = data_place::green_ctx(gc0_view);
@@ -515,16 +498,15 @@ UNITTEST("green context data_place equality")
 
 UNITTEST("green context exec_place equality with green_ctx_data_place flag")
 {
-  async_resources_handle handle;
-  auto gc_helper = handle.get_gc_helper(0, 8);
+  green_context_helper gc_helper(8, 0);
 
-  if (gc_helper->get_count() < 2)
+  if (gc_helper.get_count() < 2)
   {
     return;
   }
 
-  auto gc0_view = gc_helper->get_view(0);
-  auto gc1_view = gc_helper->get_view(1);
+  auto gc0_view = gc_helper.get_view(0);
+  auto gc1_view = gc_helper.get_view(1);
 
   // Create exec_places with use_green_ctx_data_place=true
   auto p0a = exec_place::green_ctx(gc0_view, true);
@@ -543,16 +525,15 @@ UNITTEST("green context exec_place equality with green_ctx_data_place flag")
 
 UNITTEST("green context exec_place and data_place with different data place modes")
 {
-  async_resources_handle handle;
-  auto gc_helper = handle.get_gc_helper(0, 8);
+  green_context_helper gc_helper(8, 0);
 
-  if (gc_helper->get_count() < 2)
+  if (gc_helper.get_count() < 2)
   {
     return;
   }
 
-  auto gc0_view = gc_helper->get_view(0);
-  auto gc1_view = gc_helper->get_view(1);
+  auto gc0_view = gc_helper.get_view(0);
+  auto gc1_view = gc_helper.get_view(1);
 
   // Create exec_places for same green context with different use_green_ctx_data_place settings
   auto ep0_device_affine = exec_place::green_ctx(gc0_view, false); // affine = device data place
@@ -592,16 +573,15 @@ UNITTEST("green context exec_place and data_place with different data place mode
 
 UNITTEST("green context data_place as unordered_map key")
 {
-  async_resources_handle handle;
-  auto gc_helper = handle.get_gc_helper(0, 8);
+  green_context_helper gc_helper(8, 0);
 
-  if (gc_helper->get_count() < 2)
+  if (gc_helper.get_count() < 2)
   {
     return;
   }
 
-  auto gc0_view = gc_helper->get_view(0);
-  auto gc1_view = gc_helper->get_view(1);
+  auto gc0_view = gc_helper.get_view(0);
+  auto gc1_view = gc_helper.get_view(1);
 
   // Create green context-specific data places (the kind used when
   // use_green_ctx_data_place = true). These are distinct from data_place::device(0).
@@ -640,16 +620,15 @@ UNITTEST("green context data_place as unordered_map key")
 
 UNITTEST("green context exec_place as unordered_map key")
 {
-  async_resources_handle handle;
-  auto gc_helper = handle.get_gc_helper(0, 8);
+  green_context_helper gc_helper(8, 0);
 
-  if (gc_helper->get_count() < 2)
+  if (gc_helper.get_count() < 2)
   {
     return;
   }
 
-  auto gc0_view = gc_helper->get_view(0);
-  auto gc1_view = gc_helper->get_view(1);
+  auto gc0_view = gc_helper.get_view(0);
+  auto gc1_view = gc_helper.get_view(1);
 
   // Create exec_places without use_green_ctx_data_place flag (default).
   // Their affine data_place is data_place::device(0), not a green context-specific one.
@@ -689,16 +668,15 @@ UNITTEST("green context exec_place as unordered_map key")
 
 UNITTEST("green context data_place as std::map key")
 {
-  async_resources_handle handle;
-  auto gc_helper = handle.get_gc_helper(0, 8);
+  green_context_helper gc_helper(8, 0);
 
-  if (gc_helper->get_count() < 2)
+  if (gc_helper.get_count() < 2)
   {
     return;
   }
 
-  auto gc0_view = gc_helper->get_view(0);
-  auto gc1_view = gc_helper->get_view(1);
+  auto gc0_view = gc_helper.get_view(0);
+  auto gc1_view = gc_helper.get_view(1);
 
   auto dp0 = data_place::green_ctx(gc0_view);
   auto dp1 = data_place::green_ctx(gc1_view);
@@ -730,16 +708,15 @@ UNITTEST("green context data_place as std::map key")
 
 UNITTEST("green context exec_place as std::map key")
 {
-  async_resources_handle handle;
-  auto gc_helper = handle.get_gc_helper(0, 8);
+  green_context_helper gc_helper(8, 0);
 
-  if (gc_helper->get_count() < 2)
+  if (gc_helper.get_count() < 2)
   {
     return;
   }
 
-  auto gc0_view = gc_helper->get_view(0);
-  auto gc1_view = gc_helper->get_view(1);
+  auto gc0_view = gc_helper.get_view(0);
+  auto gc1_view = gc_helper.get_view(1);
 
   auto ep0 = exec_place::green_ctx(gc0_view);
   auto ep1 = exec_place::green_ctx(gc1_view);
