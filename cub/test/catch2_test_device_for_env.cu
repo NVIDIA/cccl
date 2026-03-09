@@ -145,4 +145,3 @@ C2H_TEST("DeviceFor::ForEachCopy env uses custom stream", "[for][env]")
   c2h::device_vector<int> expected_count{2};
   REQUIRE(count == expected_count);
 }
-

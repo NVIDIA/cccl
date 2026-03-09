@@ -1290,8 +1290,8 @@ public:
   //! @return cudaError_t
   //!   error status
   _CCCL_TEMPLATE(typename LayoutMapping, typename OpType, typename EnvT = ::cuda::std::execution::env<>)
-  _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping>
-                   _CCCL_AND (!::cuda::std::is_convertible_v<EnvT, cudaStream_t>))
+  _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping> _CCCL_AND(
+    !::cuda::std::is_convertible_v<EnvT, cudaStream_t>))
   CUB_RUNTIME_FUNCTION static cudaError_t ForEachInLayout(const LayoutMapping& layout_mapping, OpType op, EnvT env = {})
   {
     using namespace cub::detail;
