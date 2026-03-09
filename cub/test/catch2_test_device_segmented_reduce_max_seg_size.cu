@@ -11,6 +11,8 @@
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 
+// only lid 0 is enabled, as this test only tests max_segment_size functionality through dispatch directly
+
 // %PARAM% TEST_LAUNCH lid 0
 
 using full_type_list = c2h::type_list<uint8_t, int16_t, uint32_t, int64_t>;
