@@ -403,7 +403,7 @@ template <typename InputIteratorT,
           typename SelectFirstPartOp,
           typename SelectSecondPartOp,
           typename OffsetT,
-          typename PolicySelector = policy_selector_from_types<cub::detail::it_value_t<InputIteratorT>, OffsetT>,
+          typename PolicySelector = policy_selector_from_types<it_value_t<InputIteratorT>, per_partition_offset_t>,
           typename KernelSource   = DeviceThreeWayPartitionKernelSource<
               PolicySelector,
               InputIteratorT,
