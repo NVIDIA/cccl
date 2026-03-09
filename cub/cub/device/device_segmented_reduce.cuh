@@ -372,6 +372,12 @@ public:
   //!     :start-after: example-begin segmented-reduce-reduce-env
   //!     :end-before: example-end segmented-reduce-reduce-env
   //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-reduce-reduce-env-determinism
+  //!     :end-before: example-end segmented-reduce-reduce-env-determinism
+  //!
   //! @endrst
   //!
   //! @tparam InputIteratorT
