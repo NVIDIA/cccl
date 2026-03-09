@@ -29,28 +29,17 @@ using float_type_list =
 #endif
                  >;
 
-template <int NOMINAL_BLOCK_THREADS_4B, int NOMINAL_ITEMS_PER_THREAD_4B>
-struct AgentReducePolicy
-{
-  /// Number of items per vectorized load
-  static constexpr int VECTOR_LOAD_LENGTH = 4;
-
-  /// Cooperative block-wide reduction algorithm to use
-  static constexpr cub::BlockReduceAlgorithm BLOCK_ALGORITHM =
-    cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
-
-  /// Cache load modifier for reading input elements
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::CacheLoadModifier::LOAD_DEFAULT;
-  constexpr static int ITEMS_PER_THREAD                 = NOMINAL_ITEMS_PER_THREAD_4B;
-  constexpr static int BLOCK_THREADS                    = NOMINAL_BLOCK_THREADS_4B;
-};
-
 template <int ItemsPerThread, int BlockSize>
 struct custom_policy_selector
 {
   _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> cub::detail::reduce::reduce_policy
   {
-    auto rp = cub::detail::reduce::agent_reduce_policy{BlockSize, ItemsPerThread};
+    auto rp = cub::detail::reduce::agent_reduce_policy{
+      BlockSize,
+      ItemsPerThread,
+      4,
+      cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+      cub::CacheLoadModifier::LOAD_DEFAULT};
     return {rp, rp, rp};
   }
 };
