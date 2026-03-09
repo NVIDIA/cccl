@@ -13,7 +13,6 @@
 // template<class ExecutionPolicy, class ForwardIterator, class UnaryPredicate>
 // void none_of(ExecutionPolicy&& exec, ForwardIterator first, ForwardIterator last, UnaryPredicate pred);
 
-#include <cuda/std/__pstl_algorithm>
 #include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 
