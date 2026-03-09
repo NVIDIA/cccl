@@ -56,7 +56,7 @@ public:
       return exec_place::device(dstream.dev_id).deactivate(prev);
     }
 
-    stream_pool& get_stream_pool(async_resources_handle&, bool) const override
+    stream_pool& get_stream_pool(bool) const override
     {
       return dummy_pool;
     }

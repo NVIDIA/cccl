@@ -27,7 +27,6 @@
 
 #include <cuda/experimental/__stf/internal/exec_affinity.cuh>
 #include <cuda/experimental/__stf/internal/executable_graph_cache.cuh>
-#include <cuda/experimental/__stf/places/stream_pool.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh> // for ::std::hash<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>>
@@ -52,12 +51,6 @@ class green_context_helper;
  */
 class async_resources_handle
 {
-  // TODO: optimize based on measurements
-
-public:
-  static constexpr size_t pool_size      = 4;
-  static constexpr size_t data_pool_size = 4;
-
 private:
   /**
    * @brief This class implements a matrix to keep track of the previous
@@ -122,40 +115,12 @@ private:
     {
       const int ndevices = cuda_try<cudaGetDeviceCount>();
       assert(ndevices > 0);
-      assert(pool_size > 0);
-      assert(data_pool_size > 0);
-
       per_device_gc_helper.resize(ndevices, nullptr);
-      /* For every device, we keep two pools, one dedicated to computation,
-       * the other for auxiliary methods such as data transfers. This is intended to
-       * improve overlapping of transfers and computation, for example. */
-      pool.reserve(ndevices);
-      for (auto d : each(ndevices))
-      {
-        ::std::ignore = d;
-        pool.emplace_back(stream_pool(pool_size), stream_pool(data_pool_size));
-      }
-    }
-
-    ~impl()
-    {
-      // stream_pool uses shared_ptr internally; streams are destroyed
-      // when the last copy of each pool goes away.
-    }
-
-    stream_pool& get_device_stream_pool(int dev_id, bool for_computation)
-    {
-      assert(dev_id < int(pool.size()));
-      return for_computation ? pool[dev_id].first : pool[dev_id].second;
     }
 
   public:
     // This memorize what was the last event used to synchronize a pair of streams
     last_event_per_stream cached_syncs;
-
-    // For each device, a pair of stream_pool objects, each stream_pool objects
-    // stores a pool of streams on this device
-    ::std::vector<::std::pair<stream_pool, stream_pool>> pool;
 
     /* Store previously instantiated graphs, indexed by the number of edges and nodes */
     executable_graph_cache cached_graphs;
@@ -177,12 +142,6 @@ public:
   explicit operator bool() const
   {
     return pimpl != nullptr;
-  }
-
-  stream_pool& get_device_stream_pool(int dev_id, bool for_computation) const
-  {
-    assert(pimpl);
-    return pimpl->get_device_stream_pool(dev_id, for_computation);
   }
 
   bool validate_sync_and_update(unsigned long long dst, unsigned long long src, int event_id)

@@ -365,7 +365,7 @@ public:
            + ")";
     }
 
-    stream_pool& get_stream_pool(async_resources_handle&, bool) const override
+    stream_pool& get_stream_pool(bool) const override
     {
       return pool;
     }
