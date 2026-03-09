@@ -84,32 +84,6 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceAdjacentDifference
 {
-private:
-  template <MayAlias AliasOpt,
-            ReadOption ReadOpt,
-            typename NumItemsT,
-            typename InputIteratorT,
-            typename OutputIteratorT,
-            typename DifferenceOpT>
-  static CUB_RUNTIME_FUNCTION cudaError_t AdjacentDifference(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_input,
-    OutputIteratorT d_output,
-    NumItemsT num_items,
-    DifferenceOpT difference_op,
-    cudaStream_t stream)
-  {
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
-    using DispatchT =
-      DispatchAdjacentDifference<InputIteratorT, OutputIteratorT, DifferenceOpT, OffsetT, AliasOpt, ReadOpt>;
-
-    return DispatchT::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_input, d_output, static_cast<OffsetT>(num_items), difference_op, stream);
-  }
-
-public:
   //! @rst
   //! Subtracts the left element of each adjacent pair of elements residing within device-accessible memory
   //!
@@ -234,9 +208,9 @@ public:
     cudaStream_t stream         = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeftCopy");
-
-    return AdjacentDifference<MayAlias::No, ReadOption::Left>(
-      d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Left>(
+      d_temp_storage, temp_storage_bytes, d_input, d_output, static_cast<OffsetT>(num_items), difference_op, stream);
   }
 
   //! @rst
@@ -345,9 +319,9 @@ public:
     cudaStream_t stream         = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeft");
-
-    return AdjacentDifference<MayAlias::Yes, ReadOption::Left>(
-      d_temp_storage, temp_storage_bytes, d_input, d_input, num_items, difference_op, stream);
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
+      d_temp_storage, temp_storage_bytes, d_input, d_input, static_cast<OffsetT>(num_items), difference_op, stream);
   }
 
   //! @rst
@@ -475,9 +449,9 @@ public:
     cudaStream_t stream         = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRightCopy");
-
-    return AdjacentDifference<MayAlias::No, ReadOption::Right>(
-      d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    return detail::adjacent_difference::dispatch<MayAlias::No, ReadOption::Right>(
+      d_temp_storage, temp_storage_bytes, d_input, d_output, static_cast<OffsetT>(num_items), difference_op, stream);
   }
 
   //! @rst
@@ -575,9 +549,9 @@ public:
     cudaStream_t stream         = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRight");
-
-    return AdjacentDifference<MayAlias::Yes, ReadOption::Right>(
-      d_temp_storage, temp_storage_bytes, d_input, d_input, num_items, difference_op, stream);
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
+      d_temp_storage, temp_storage_bytes, d_input, d_input, static_cast<OffsetT>(num_items), difference_op, stream);
   }
 };
 

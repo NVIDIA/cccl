@@ -313,12 +313,12 @@ struct DispatchAdjacentDifference
 
 namespace detail::adjacent_difference
 {
-template <typename InputIteratorT,
-          typename OutputIteratorT,
-          typename DifferenceOpT,
-          typename OffsetT,
-          MayAlias AliasOpt,
+template <MayAlias AliasOpt,
           ReadOption ReadOpt,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename DifferenceOpT,
           typename PolicySelector        = policy_selector_from_types<InputIteratorT, AliasOpt == MayAlias::Yes>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
