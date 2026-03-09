@@ -94,6 +94,16 @@ struct DeviceRadixSortKernelSource
   {
     return sizeof(ValueT);
   }
+
+  CUB_RUNTIME_FUNCTION static constexpr KeyT* AdvanceKeys(KeyT* ptr, OffsetT offset)
+  {
+    return ptr + offset;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr ValueT* AdvanceValues(ValueT* ptr, OffsetT offset)
+  {
+    return ptr + offset;
+  }
 };
 } // namespace detail::radix_sort
 
@@ -714,9 +724,9 @@ private:
                   portion < num_portions - 1 ? d_bins + ((portion + 1) * num_passes + pass) * RADIX_DIGITS : nullptr,
                   d_bins + (portion * num_passes + pass) * RADIX_DIGITS,
                   d_keys.Alternate(),
-                  d_keys.Current() + portion * PORTION_SIZE,
+                  kernel_source.AdvanceKeys(d_keys.Current(), portion * PORTION_SIZE),
                   d_values.Alternate(),
-                  d_values.Current() + portion * PORTION_SIZE,
+                  kernel_source.AdvanceValues(d_values.Current(), portion * PORTION_SIZE),
                   portion_num_items,
                   current_bit,
                   num_bits,

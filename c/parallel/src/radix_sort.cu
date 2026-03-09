@@ -180,6 +180,16 @@ struct radix_sort_kernel_source
   {
     return build.value_type.size;
   }
+
+  indirect_arg_t* AdvanceKeys(indirect_arg_t* ptr, OffsetT offset) const
+  {
+    return reinterpret_cast<indirect_arg_t*>(reinterpret_cast<char*>(ptr) + offset * build.key_type.size);
+  }
+
+  indirect_arg_t* AdvanceValues(indirect_arg_t* ptr, OffsetT offset) const
+  {
+    return reinterpret_cast<indirect_arg_t*>(reinterpret_cast<char*>(ptr) + offset * build.value_type.size);
+  }
 };
 } // namespace radix_sort
 
