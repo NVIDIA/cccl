@@ -65,15 +65,6 @@ public:
         : view_(mv(view))
     {}
 
-    /**
-     * @brief Construct from a shared pointer to a green context view
-     * @param view_ptr Shared pointer to the green context view
-     */
-    explicit extension(::std::shared_ptr<green_ctx_view> view_ptr)
-        : view_(*view_ptr)
-        , view_ptr_(mv(view_ptr))
-    {}
-
     exec_place affine_exec_place() const override;
 
     int get_device_ordinal() const override
@@ -88,7 +79,7 @@ public:
 
     size_t hash() const override
     {
-      return hash_all(view_.g_ctx, view_.pool, view_.devid);
+      return hash_all(view_.g_ctx, view_.devid);
     }
 
     bool operator==(const data_place_extension& other) const override
@@ -120,17 +111,6 @@ public:
     }
 
     /**
-     * @brief Get shared pointer to the view (if constructed with one)
-     */
-    const ::std::shared_ptr<green_ctx_view>& get_view_ptr() const
-    {
-      return view_ptr_;
-    }
-
-    // mem_create uses default implementation (cuMemCreate on the device)
-    // Green contexts don't need special memory allocation
-
-    /**
      * @brief Allocate memory for green context (uses cudaMallocAsync on the device)
      */
     void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
@@ -149,11 +129,8 @@ public:
       cuda_safe_call(cudaFreeAsync(ptr, stream));
     }
 
-    // allocation_is_stream_ordered() uses default (true) since we use cudaMallocAsync
-
   private:
     green_ctx_view view_;
-    ::std::shared_ptr<green_ctx_view> view_ptr_; // Optional, for lifetime management
   };
 
   /**
@@ -167,18 +144,6 @@ public:
     auto ext = ::std::make_shared<extension>(gc_view);
     return data_place::from_extension(mv(ext));
   }
-
-  /**
-   * @brief Create a green context data place
-   *
-   * @param gc_view_ptr Shared pointer to the green context view
-   * @return data_place for the green context
-   */
-  static data_place create(::std::shared_ptr<green_ctx_view> gc_view_ptr)
-  {
-    auto ext = ::std::make_shared<extension>(mv(gc_view_ptr));
-    return data_place::from_extension(mv(ext));
-  }
 };
 
 /**
@@ -190,17 +155,6 @@ public:
 inline data_place make_green_ctx_data_place(const green_ctx_view& gc_view)
 {
   return green_ctx_data_place::create(gc_view);
-}
-
-/**
- * @brief Create a green context data place using the extension mechanism
- *
- * @param gc_view_ptr Shared pointer to the green context view
- * @return data_place for the green context
- */
-inline data_place make_green_ctx_data_place(::std::shared_ptr<green_ctx_view> gc_view_ptr)
-{
-  return green_ctx_data_place::create(mv(gc_view_ptr));
 }
 
 /* Get the unique ID associated with a context (overloaded) */
@@ -283,8 +237,7 @@ public:
         // Create a green context
         cuda_safe_call(cuGreenCtxCreate(&ctxs[i], localdesc, device, CU_GREEN_CTX_DEFAULT_STREAM));
 
-        // Store pool in the helper; streams are created via next(place) with place activation
-        pools.push_back(::std::make_shared<stream_pool>(async_resources_handle::pool_size));
+        pools.emplace_back(async_resources_handle::pool_size);
       }
     }
   }
@@ -307,11 +260,10 @@ public:
     return green_ctx_view(ctxs[id], pools[id], devid);
   }
 
-  // Get stream pool by green context ID
-  stream_pool& get_pool(size_t gc_id) const
+  stream_pool& get_pool(size_t gc_id)
   {
     assert(gc_id < pools.size());
-    return *pools[gc_id];
+    return pools[gc_id];
   }
 
   size_t get_count() const
@@ -325,8 +277,7 @@ private:
   // resources to define how we split the device(s) into green contexts
   ::std::vector<CUdevResource> resources;
 
-  // Pools of CUDA streams associated to each green context (lazily created streams)
-  ::std::vector<::std::shared_ptr<stream_pool>> pools;
+  ::std::vector<stream_pool> pools;
 
   CUdevResource remainder = {};
   int devid               = -1;
@@ -416,7 +367,7 @@ public:
 
     stream_pool& get_stream_pool(async_resources_handle&, bool) const override
     {
-      return *pool;
+      return pool;
     }
 
     bool operator==(const exec_place::impl& rhs) const override
@@ -452,7 +403,7 @@ public:
     // a context created from the green context (or used to store an existing context to implement
     // activate/deactivate)
     mutable CUcontext driver_context = {};
-    ::std::shared_ptr<stream_pool> pool;
+    mutable stream_pool pool;
   };
 
 public:
@@ -462,24 +413,11 @@ public:
     static_assert(sizeof(exec_place_green_ctx) <= sizeof(exec_place),
                   "exec_place_green_ctx cannot add state; it would be sliced away.");
   }
-
-  exec_place_green_ctx(::std::shared_ptr<green_ctx_view> gc_view_ptr, bool use_green_ctx_data_place = false)
-      : exec_place(::std::make_shared<impl>(*gc_view_ptr, use_green_ctx_data_place))
-  {
-    static_assert(sizeof(exec_place_green_ctx) <= sizeof(exec_place),
-                  "exec_place_green_ctx cannot add state; it would be sliced away.");
-  }
 };
 
 inline exec_place exec_place::green_ctx(const green_ctx_view& gc_view, bool use_green_ctx_data_place)
 {
   return exec_place_green_ctx(gc_view, use_green_ctx_data_place);
-}
-
-inline exec_place
-exec_place::green_ctx(const ::std::shared_ptr<green_ctx_view>& gc_view_ptr, bool use_green_ctx_data_place)
-{
-  return exec_place_green_ctx(gc_view_ptr, use_green_ctx_data_place);
 }
 
 // Implementation of async_resources_handle::get_gc_helper moved here to avoid circular dependencies
@@ -497,21 +435,12 @@ inline ::std::shared_ptr<green_context_helper> async_resources_handle::get_gc_he
 
 inline exec_place green_ctx_data_place::extension::affine_exec_place() const
 {
-  if (view_ptr_)
-  {
-    return exec_place::green_ctx(view_ptr_);
-  }
   return exec_place::green_ctx(view_);
 }
 
 inline data_place data_place::green_ctx(const green_ctx_view& gc_view)
 {
   return make_green_ctx_data_place(gc_view);
-}
-
-inline data_place data_place::green_ctx(::std::shared_ptr<green_ctx_view> gc_view_ptr)
-{
-  return make_green_ctx_data_place(mv(gc_view_ptr));
 }
 
 #  ifdef UNITTESTED_FILE

@@ -18,7 +18,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
 #include <thrust/execution_policy.h>
-#include <thrust/fill.h>
 
 #include <cuda/iterator>
 #include <cuda/memory_pool>
@@ -49,21 +48,21 @@ void test_transform(const Policy& policy, thrust::device_vector<int>& output)
   }
 
   { // same type
-    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::fill(policy, output.begin(), output.end(), 0);
     cuda::std::transform(
       policy, cuda::counting_iterator{42}, cuda::counting_iterator{size + 42}, output.begin(), minus_five{});
     CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{37}));
   }
 
   { // convertible transform arg
-    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::fill(policy, output.begin(), output.end(), 0);
     cuda::std::transform(
       policy, cuda::counting_iterator{42}, cuda::counting_iterator{size + 42}, output.begin(), minus_five<short>{});
     CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{37}));
   }
 
   { // convertible type
-    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::fill(policy, output.begin(), output.end(), 0);
     cuda::std::transform(
       policy,
       cuda::counting_iterator<short>{42},

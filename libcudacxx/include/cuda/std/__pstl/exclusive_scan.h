@@ -65,6 +65,7 @@ _CCCL_HOST_API _OutputIterator exclusive_scan(
     {
       return __result;
     }
+
     return __dispatch(
       __policy,
       ::cuda::std::move(__first),

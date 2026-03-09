@@ -26,7 +26,6 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
-#include <cuda/experimental/__stf/utility/stream_to_dev.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -43,10 +42,8 @@ public:
     impl(const decorated_stream& _dstream)
         : exec_place::impl(data_place::device(_dstream.dev_id))
         , dstream(_dstream)
-    {
-      // Create a dummy pool
-      dummy_pool.payload.push_back(dstream);
-    }
+        , dummy_pool(_dstream)
+    {}
 
     /* We set the current device to be the device on which the CUDA stream was created */
     exec_place activate() const override
@@ -114,7 +111,7 @@ public:
 inline exec_place_cuda_stream exec_place::cuda_stream(cudaStream_t stream)
 {
   int devid = get_device_from_stream(stream);
-  return exec_place_cuda_stream(decorated_stream(stream, -1, devid));
+  return exec_place_cuda_stream(decorated_stream(stream, get_stream_id(stream), devid));
 }
 
 inline exec_place_cuda_stream exec_place::cuda_stream(const decorated_stream& dstream)
