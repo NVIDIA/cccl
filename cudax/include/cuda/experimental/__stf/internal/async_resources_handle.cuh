@@ -27,7 +27,7 @@
 
 #include <cuda/experimental/__stf/internal/exec_affinity.cuh>
 #include <cuda/experimental/__stf/internal/executable_graph_cache.cuh>
-#include <cuda/experimental/__stf/places/stream_pool.cuh>
+#include <cuda/experimental/__stf/places/exec/green_context.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh> // for ::std::hash<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>>
@@ -40,8 +40,6 @@
 
 namespace cuda::experimental::stf
 {
-class green_context_helper;
-
 /**
  * @brief A handle which stores resources useful for an efficient asynchronous
  * execution. For example this will store the pools of CUDA streams.
@@ -112,12 +110,14 @@ private:
   class impl
   {
   public:
+#if _CCCL_CTK_AT_LEAST(12, 4)
     impl()
     {
       const int ndevices = cuda_try<cudaGetDeviceCount>();
       assert(ndevices > 0);
       per_device_gc_helper.resize(ndevices, nullptr);
     }
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   public:
     // This memorize what was the last event used to synchronize a pair of streams
@@ -126,7 +126,9 @@ private:
     /* Store previously instantiated graphs, indexed by the number of edges and nodes */
     executable_graph_cache cached_graphs;
 
+#if _CCCL_CTK_AT_LEAST(12, 4)
     ::std::vector<::std::shared_ptr<green_context_helper>> per_device_gc_helper;
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
     mutable exec_affinity affinity;
   };
@@ -158,6 +160,7 @@ public:
     return pimpl->cached_graphs.query(nnodes, nedges, mv(g));
   }
 
+#if _CCCL_CTK_AT_LEAST(12, 4)
   // Get the green context helper cached for this device (or let the user initialize it)
   auto& gc_helper(int dev_id)
   {
@@ -167,7 +170,17 @@ public:
   }
 
   // Get green context helper with lazy initialization
-  ::std::shared_ptr<green_context_helper> get_gc_helper(int dev_id, int sm_count);
+  ::std::shared_ptr<green_context_helper> get_gc_helper(int dev_id, int sm_count)
+  {
+    assert(pimpl);
+    assert(dev_id < int(pimpl->per_device_gc_helper.size()));
+    auto& h = pimpl->per_device_gc_helper[dev_id];
+    if (!h)
+    {
+      h = ::std::make_shared<green_context_helper>(sm_count, dev_id);
+    }
+    return h;
+  }
 
   // Register an external green context helper
   void register_gc_helper(int dev_id, ::std::shared_ptr<green_context_helper> helper)
@@ -176,6 +189,7 @@ public:
     assert(dev_id < int(pimpl->per_device_gc_helper.size()));
     pimpl->per_device_gc_helper[dev_id] = ::std::move(helper);
   }
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   exec_affinity& get_affinity()
   {
