@@ -47,13 +47,13 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _InputIterator>
-struct __reverse_transform
+struct __reverse_fn
 {
   _InputIterator __first_;
   ::cuda::std::reverse_iterator<_InputIterator> __last_;
   iter_difference_t<_InputIterator> __count_;
 
-  _CCCL_HOST_API constexpr __reverse_transform(
+  _CCCL_HOST_API constexpr __reverse_fn(
     _InputIterator __first,
     _InputIterator __last,
     iter_difference_t<_InputIterator> __count) noexcept(is_nothrow_move_constructible_v<_InputIterator>)
@@ -89,7 +89,7 @@ _CCCL_HOST_API void reverse([[maybe_unused]] const _Policy& __policy, _InputIter
     (void) __dispatch(__policy,
                       ::cuda::counting_iterator<iter_difference_t<_InputIterator>>{0},
                       static_cast<iter_difference_t<_InputIterator>>(__count / 2),
-                      __reverse_transform{::cuda::std::move(__first), ::cuda::std::move(__last), __count});
+                      __reverse_fn{::cuda::std::move(__first), ::cuda::std::move(__last), __count});
   }
   else
   {

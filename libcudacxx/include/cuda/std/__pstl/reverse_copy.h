@@ -63,8 +63,10 @@ _CCCL_HOST_API _OutputIterator reverse_copy(
     }
 
     const auto __count = ::cuda::std::distance(__first, __last);
-    return __dispatch(
-      __policy, ::cuda::std::reverse_iterator{::cuda::std::move(__last)}, __count, ::cuda::std::move(__result));
+    return __dispatch(__policy,
+                      ::cuda::std::move(__first),
+                      __count,
+                      ::cuda::std::reverse_iterator{::cuda::std::move(__result + __count)});
   }
   else
   {
