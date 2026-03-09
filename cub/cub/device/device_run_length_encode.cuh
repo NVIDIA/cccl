@@ -188,7 +188,7 @@ struct DeviceRunLengthEncode
 
     using policy_selector_t = detail::rle::encode::policy_selector_from_types<accum_t, key_t>;
 
-    return detail::reduce_by_key::dispatch_streaming_reduce_by_key</* OverrideAccumT */ accum_t>(
+    return detail::reduce_by_key::dispatch_streaming</* OverrideAccumT */ accum_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
