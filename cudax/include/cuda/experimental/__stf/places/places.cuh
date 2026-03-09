@@ -333,7 +333,7 @@ public:
     return ::std::hash<int>()(devid);
   }
 
-  decorated_stream getDataStream() const;
+  decorated_stream get_data_stream() const;
 
 private:
   /**
@@ -867,13 +867,13 @@ public:
   /**
    * @brief Get a decorated stream from the stream pool associated to this execution place.
    */
-  decorated_stream getStream(bool for_computation) const;
+  decorated_stream get_stream(bool for_computation) const;
 
   /**
    * @brief Create a stream valid for execution on this place.
    *
    * Call only when the place is already activated (e.g. inside exec_place_guard).
-   * For getting a stream from the pool, use getStream() / pick_stream() instead.
+   * For getting a stream from the pool, use get_stream() / pick_stream() instead.
    *
    * @return A CUDA stream valid for this execution place
    */
@@ -884,7 +884,7 @@ public:
 
   cudaStream_t pick_stream(bool for_computation = true) const
   {
-    return getStream(for_computation).stream;
+    return get_stream(for_computation).stream;
   }
 
   // TODO make protected !
@@ -1135,7 +1135,7 @@ inline decorated_stream stream_pool::next(const exec_place& place)
   return result;
 }
 
-inline decorated_stream exec_place::getStream(bool for_computation) const
+inline decorated_stream exec_place::get_stream(bool for_computation) const
 {
   return get_stream_pool(for_computation).next(*this);
 }
@@ -1883,9 +1883,9 @@ inline exec_place data_place::affine_exec_place() const
   return exec_place::device(devid);
 }
 
-inline decorated_stream data_place::getDataStream() const
+inline decorated_stream data_place::get_data_stream() const
 {
-  return affine_exec_place().getStream(false);
+  return affine_exec_place().get_stream(false);
 }
 
 inline const exec_place_grid& data_place::get_grid() const

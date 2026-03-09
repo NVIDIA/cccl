@@ -298,7 +298,7 @@ public:
     {
       // We did not select a stream yet, so we take one in the pools in
       // the async_resource_handle object associated to the context
-      dstream = place.getDataStream();
+      dstream = place.get_data_stream();
     }
 
     // Note that if we had stream_dev_id = -1 (eg. host memory), the device

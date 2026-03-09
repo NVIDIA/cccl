@@ -50,13 +50,13 @@ int main()
   }
 
   // ==========================================================================
-  // Test exec_place::getStream() - returns decorated_stream with metadata
+  // Test exec_place::get_stream() - returns decorated_stream with metadata
   // ==========================================================================
   {
     exec_place place = exec_place::current_device();
 
-    // getStream() returns a decorated_stream with additional metadata
-    decorated_stream dstream = place.getStream(resources, true);
+    // get_stream() returns a decorated_stream with additional metadata
+    decorated_stream dstream = place.get_stream(resources, true);
     EXPECT(dstream.stream != nullptr);
     EXPECT(dstream.dev_id == current_device);
     EXPECT(get_device_from_stream(dstream.stream) == current_device);
@@ -99,8 +99,8 @@ int main()
       EXPECT(stream != nullptr);
       EXPECT(get_device_from_stream(stream) == test_device);
 
-      // getStream returns more metadata
-      decorated_stream dstream = dev_place.getStream(resources, true);
+      // get_stream returns more metadata
+      decorated_stream dstream = dev_place.get_stream(resources, true);
       EXPECT(dstream.stream != nullptr);
       EXPECT(dstream.dev_id == test_device);
     }

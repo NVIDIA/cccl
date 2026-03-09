@@ -110,8 +110,8 @@ int main()
       EXPECT(gc_stream != gc_stream1);
     }
 
-    // getStream() provides additional metadata if needed
-    decorated_stream dstream = gc_place0.getStream(resources, true);
+    // get_stream() provides additional metadata if needed
+    decorated_stream dstream = gc_place0.get_stream(resources, true);
     EXPECT(dstream.stream != nullptr);
     EXPECT(dstream.dev_id == current_device);
 
