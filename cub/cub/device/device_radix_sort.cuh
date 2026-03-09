@@ -32,24 +32,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::radix_sort
-{
-struct get_tuning_query_t
-{};
-
-template <class Derived>
-struct tuning
-{
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_tuning_query_t&) const noexcept -> Derived
-  {
-    return static_cast<const Derived&>(*this);
-  }
-};
-
-struct default_tuning : tuning<default_tuning>
-{};
-} // namespace detail::radix_sort
-
 //! @rst
 //! DeviceRadixSort provides device-wide, parallel operations for
 //! computing a radix sort across a sequence of data items residing
@@ -429,8 +411,8 @@ public:
   template <typename KeyT,
             typename ValueT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            typename ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairs(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -445,14 +427,28 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    // Dispatch with environment - handles all boilerplate
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::radix_sort::dispatch<SortOrder::Ascending>(
-        storage, bytes, d_keys, d_values, static_cast<offset_t>(num_items), begin_bit, end_bit, false, stream);
-    });
+    // Dispatch with environment - handles all boilerplate
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, offset_t>;
+        using policy_selector_t         = ::cuda::std::execution::
+          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
+        return detail::radix_sort::dispatch<SortOrder::Ascending>(
+          storage,
+          bytes,
+          d_keys,
+          d_values,
+          static_cast<offset_t>(num_items),
+          begin_bit,
+          end_bit,
+          false,
+          stream,
+          {},
+          policy_selector_t{});
+      });
   }
 
   //! @rst
@@ -963,8 +959,8 @@ public:
   template <typename KeyT,
             typename ValueT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            typename ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairs(
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
@@ -977,10 +973,24 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::radix_sort::dispatch<SortOrder::Ascending>(
-        storage, bytes, d_keys, d_values, static_cast<offset_t>(num_items), begin_bit, end_bit, true, stream);
-    });
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, offset_t>;
+        using policy_selector_t         = ::cuda::std::execution::
+          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
+        return detail::radix_sort::dispatch<SortOrder::Ascending>(
+          storage,
+          bytes,
+          d_keys,
+          d_values,
+          static_cast<offset_t>(num_items),
+          begin_bit,
+          end_bit,
+          true,
+          stream,
+          {},
+          policy_selector_t{});
+      });
   }
 
   //! @rst
@@ -1494,8 +1504,8 @@ public:
   template <typename KeyT,
             typename ValueT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            typename ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairsDescending(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -1513,10 +1523,24 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::radix_sort::dispatch<SortOrder::Descending>(
-        storage, bytes, d_keys, d_values, static_cast<offset_t>(num_items), begin_bit, end_bit, false, stream);
-    });
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, offset_t>;
+        using policy_selector_t         = ::cuda::std::execution::
+          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
+        return detail::radix_sort::dispatch<SortOrder::Descending>(
+          storage,
+          bytes,
+          d_keys,
+          d_values,
+          static_cast<offset_t>(num_items),
+          begin_bit,
+          end_bit,
+          false,
+          stream,
+          {},
+          policy_selector_t{});
+      });
   }
 
   //! @rst
@@ -2031,8 +2055,8 @@ public:
   template <typename KeyT,
             typename ValueT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            typename ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairsDescending(
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
@@ -2045,10 +2069,24 @@ public:
 
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::radix_sort::dispatch<SortOrder::Descending>(
-        storage, bytes, d_keys, d_values, static_cast<offset_t>(num_items), begin_bit, end_bit, true, stream);
-    });
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, ValueT, offset_t>;
+        using policy_selector_t         = ::cuda::std::execution::
+          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
+        return detail::radix_sort::dispatch<SortOrder::Descending>(
+          storage,
+          bytes,
+          d_keys,
+          d_values,
+          static_cast<offset_t>(num_items),
+          begin_bit,
+          end_bit,
+          true,
+          stream,
+          {},
+          policy_selector_t{});
+      });
   }
 
   //! @rst
@@ -2540,8 +2578,8 @@ public:
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename KeyT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            typename ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeys(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -2558,10 +2596,24 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::radix_sort::dispatch<SortOrder::Ascending>(
-        storage, bytes, d_keys, d_values, static_cast<offset_t>(num_items), begin_bit, end_bit, false, stream);
-    });
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, NullType, offset_t>;
+        using policy_selector_t         = ::cuda::std::execution::
+          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
+        return detail::radix_sort::dispatch<SortOrder::Ascending>(
+          storage,
+          bytes,
+          d_keys,
+          d_values,
+          static_cast<offset_t>(num_items),
+          begin_bit,
+          end_bit,
+          false,
+          stream,
+          {},
+          policy_selector_t{});
+      });
   }
 
   //! @rst
@@ -3036,8 +3088,8 @@ public:
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename KeyT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            typename ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeys(
     DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8, EnvT env = {})
   {
@@ -3047,10 +3099,24 @@ public:
 
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::radix_sort::dispatch<SortOrder::Ascending>(
-        storage, bytes, d_keys, d_values, static_cast<offset_t>(num_items), begin_bit, end_bit, true, stream);
-    });
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, NullType, offset_t>;
+        using policy_selector_t         = ::cuda::std::execution::
+          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
+        return detail::radix_sort::dispatch<SortOrder::Ascending>(
+          storage,
+          bytes,
+          d_keys,
+          d_values,
+          static_cast<offset_t>(num_items),
+          begin_bit,
+          end_bit,
+          true,
+          stream,
+          {},
+          policy_selector_t{});
+      });
   }
 
   //! @rst
@@ -3512,8 +3578,8 @@ public:
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename KeyT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            typename ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysDescending(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -3530,10 +3596,24 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::radix_sort::dispatch<SortOrder::Descending>(
-        storage, bytes, d_keys, d_values, static_cast<offset_t>(num_items), begin_bit, end_bit, false, stream);
-    });
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, NullType, offset_t>;
+        using policy_selector_t         = ::cuda::std::execution::
+          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
+        return detail::radix_sort::dispatch<SortOrder::Descending>(
+          storage,
+          bytes,
+          d_keys,
+          d_values,
+          static_cast<offset_t>(num_items),
+          begin_bit,
+          end_bit,
+          false,
+          stream,
+          {},
+          policy_selector_t{});
+      });
   }
 
   //! @rst
@@ -4006,8 +4086,8 @@ public:
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   template <typename KeyT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            typename ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
+            typename EnvT                                                        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysDescending(
     DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8, EnvT env = {})
   {
@@ -4017,10 +4097,24 @@ public:
 
     DoubleBuffer<NullType> d_values;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::radix_sort::dispatch<SortOrder::Descending>(
-        storage, bytes, d_keys, d_values, static_cast<offset_t>(num_items), begin_bit, end_bit, true, stream);
-    });
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        using default_policy_selector_t = detail::radix_sort::policy_selector_from_types<KeyT, NullType, offset_t>;
+        using policy_selector_t         = ::cuda::std::execution::
+          __query_result_or_t<decltype(tuning_env), detail::radix_sort::radix_sort_policy, default_policy_selector_t>;
+        return detail::radix_sort::dispatch<SortOrder::Descending>(
+          storage,
+          bytes,
+          d_keys,
+          d_values,
+          static_cast<offset_t>(num_items),
+          begin_bit,
+          end_bit,
+          true,
+          stream,
+          {},
+          policy_selector_t{});
+      });
   }
 
   //! @rst
