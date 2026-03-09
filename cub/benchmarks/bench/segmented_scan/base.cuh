@@ -276,6 +276,8 @@ static void varying_segment_size_bench(nvbench::state& state, nvbench::type_list
   return bench_impl<1, T, OffsetT>(state, tl);
 }
 
+// WAR for excessive time CTK 12.0 CICC takes to compile these benchmarks
+#if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0))
 NVBENCH_BENCH_TYPES(fixed_segment_size_bench, NVBENCH_TYPE_AXES(all_types, offset_types))
   .set_name("fixed_size_segments")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
@@ -291,3 +293,4 @@ NVBENCH_BENCH_TYPES(varying_segment_size_bench, NVBENCH_TYPE_AXES(all_types, off
   .add_int64_axis("SegmentSize{io}", {51, 123, 233, 513, 1337, 4417})
   .add_int64_axis("SegmentsPerWorker{io}", {1})
   .add_string_axis("Worker{io}", {"block"});
+#endif
