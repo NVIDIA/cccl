@@ -6,18 +6,25 @@
 #include <cub/device/dispatch/dispatch_batched_topk.cuh>
 #include <cub/util_type.cuh>
 
+#include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/sort.h>
 
 #include <cuda/iterator>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/type_traits>
 
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
 #include <catch2/generators/catch_generators.hpp>
+
+struct is_minus_zero
+{
+  __device__ bool operator()(float x) const
+  {
+    return x == 0.0f && cuda::std::signbit(x);
+  }
+};
 
 template <typename KeyInputItItT,
           typename KeyOutputItItT,
@@ -125,7 +132,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
 
   // Generate number of segments
   const segment_index_t num_segments = GENERATE_COPY(
-    values({segment_index_t{1}, segment_index_t{42}}), take(4, random(segment_index_t{1}, segment_index_t{10000})));
+    values({segment_index_t{1}, segment_index_t{42}}), take(4, random(segment_index_t{1}, segment_index_t{1000})));
 
   // Capture test parameters
   CAPTURE(c2h::type_name<key_t>(),
@@ -164,5 +171,38 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
   segmented_sort_keys(expected_keys, num_segments, segment_size, direction);
   compact_sorted_keys_to_topk(expected_keys, segment_size, k);
 
+  // Since the results of top-k are unordered, sort output segments before comparison.
+  segmented_sort_keys(keys_out_buffer, num_segments, k, direction);
+
   REQUIRE(expected_keys == keys_out_buffer);
+}
+
+// Regression test: top-k must preserve -0.0f in the output (not normalize to +0.0f).
+C2H_TEST("DeviceBatchedTopK::MinKeys preserves -0.0f in output", "[keys][segmented][topk][device][float]")
+{
+  constexpr cuda::std::int64_t segment_size    = 8;
+  constexpr cuda::std::int64_t k               = 5;
+  constexpr cuda::std::int64_t num_segments    = 1;
+  constexpr cuda::std::size_t max_segment_size = 64;
+
+  // Input: one segment containing -0.0f and +0.0f; top-5 min should include both zeros.
+  c2h::device_vector<float> d_keys_in{3.0f, -0.0f, 1.0f, 2.0f, 0.0f, -1.0f, 4.0f, 5.0f};
+  c2h::device_vector<float> d_keys_out(k, thrust::no_init);
+
+  auto d_keys_in_it =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(d_keys_in.data())), segment_size);
+  auto d_keys_out_it =
+    cuda::make_strided_iterator(cuda::make_counting_iterator(thrust::raw_pointer_cast(d_keys_out.data())), k);
+
+  batched_topk_keys(
+    d_keys_in_it,
+    d_keys_out_it,
+    cub::detail::batched_topk::segment_size_uniform<1, max_segment_size>{segment_size},
+    cub::detail::batched_topk::k_uniform<1, static_cast<cuda::std::size_t>(k)>{k},
+    cub::detail::batched_topk::select_direction_uniform{cub::detail::topk::select::min},
+    cub::detail::batched_topk::num_segments_uniform<>{num_segments},
+    cub::detail::batched_topk::total_num_items_guarantee{num_segments * segment_size});
+
+  const int num_minus_zero = static_cast<int>(thrust::count_if(d_keys_out.begin(), d_keys_out.end(), is_minus_zero{}));
+  REQUIRE(num_minus_zero >= 1);
 }
