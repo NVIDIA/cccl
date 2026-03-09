@@ -706,6 +706,24 @@ public:
     }
 
     /**
+     * @brief Get the stream pool for this execution place.
+     *
+     * The base implementation looks up the pool from async_resources_handle
+     * by device id. Subclasses (green contexts, CUDA stream places) override
+     * to return their own pool.
+     */
+    virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const
+    {
+      if (!affine.is_device())
+      {
+        fprintf(stderr, "Error: get_stream_pool virtual method is not implemented for this exec place.\n");
+        abort();
+      }
+      int dev_id = device_ordinal(affine);
+      return async_resources.get_device_stream_pool(dev_id, for_computation);
+    }
+
+    /**
      * @brief Create a stream valid for execution on this place.
      *
      * Expected to be called with this exec place already activated (e.g. from
@@ -844,6 +862,16 @@ public:
     pimpl->set_affine_data_place(mv(place));
   }
 
+  stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const
+  {
+    return pimpl->get_stream_pool(async_resources, for_computation);
+  }
+
+  /**
+   * @brief Get a decorated stream from the stream pool associated to this execution place.
+   */
+  decorated_stream getStream(async_resources_handle& async_resources, bool for_computation) const;
+
   /**
    * @brief Create a stream valid for execution on this place.
    *
@@ -855,6 +883,11 @@ public:
   cudaStream_t create_stream() const
   {
     return pimpl->create_stream();
+  }
+
+  cudaStream_t pick_stream(async_resources_handle& async_resources, bool for_computation = true) const
+  {
+    return getStream(async_resources, for_computation).stream;
   }
 
   // TODO make protected !
@@ -1105,6 +1138,11 @@ inline decorated_stream stream_pool::next(const exec_place& place)
   return result;
 }
 
+inline decorated_stream exec_place::getStream(async_resources_handle& async_resources, bool for_computation) const
+{
+  return get_stream_pool(async_resources, for_computation).next(*this);
+}
+
 /**
  * @brief Designates execution that is to run on the host.
  *
@@ -1134,6 +1172,10 @@ public:
     virtual const data_place affine_data_place() const override
     {
       return data_place::host();
+    }
+    virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const override
+    {
+      return exec_place::current_device().get_stream_pool(async_resources, for_computation);
     }
   };
 
@@ -1354,6 +1396,14 @@ public:
     const ::std::vector<exec_place>& get_places() const
     {
       return places;
+    }
+
+    virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const override
+    {
+      assert(!for_computation);
+      const auto& v = get_places();
+      assert(v.size() > 0);
+      return v[0].get_stream_pool(async_resources, for_computation);
     }
 
     exec_place grid_activate(size_t i) const
