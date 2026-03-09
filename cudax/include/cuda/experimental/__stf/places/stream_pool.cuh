@@ -128,6 +128,12 @@ class stream_pool
     explicit impl(size_t n)
         : payload(n, decorated_stream(nullptr, k_no_stream_id, -1))
     {}
+
+    // Construct from a decorated stream, this is used to create a stream pool with a single stream.
+    explicit impl(decorated_stream ds)
+        : payload(1, mv(ds))
+    {}
+
     mutable ::std::mutex mtx;
     ::std::vector<decorated_stream> payload;
     size_t index = 0;
@@ -140,6 +146,11 @@ public:
 
   explicit stream_pool(size_t n)
       : pimpl(::std::make_shared<impl>(n))
+  {}
+
+  // Construct from a decorated stream, this is used to create a stream pool with a single stream.
+  explicit stream_pool(decorated_stream ds)
+      : pimpl(::std::make_shared<impl>(mv(ds)))
   {}
 
   stream_pool(const stream_pool&)            = default;

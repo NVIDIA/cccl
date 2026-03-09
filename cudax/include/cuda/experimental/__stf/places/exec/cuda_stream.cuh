@@ -42,10 +42,8 @@ public:
     impl(const decorated_stream& _dstream)
         : exec_place::impl(data_place::device(_dstream.dev_id))
         , dstream(_dstream)
-    {
-      // Create a dummy pool
-      dummy_pool.payload.push_back(dstream);
-    }
+        , dummy_pool(_dstream)
+    {}
 
     /* We set the current device to be the device on which the CUDA stream was created */
     exec_place activate() const override

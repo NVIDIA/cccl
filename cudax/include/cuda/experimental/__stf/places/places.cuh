@@ -27,6 +27,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
 #include <cuda/experimental/__stf/places/data_place_extension.cuh>
 #include <cuda/experimental/__stf/places/exec/green_ctx_view.cuh>
@@ -332,6 +333,8 @@ public:
     // For simple places, hash the devid directly
     return ::std::hash<int>()(devid);
   }
+
+  decorated_stream getDataStream(async_resources_handle& async_resources) const;
 
 private:
   /**
@@ -1867,6 +1870,11 @@ inline exec_place data_place::affine_exec_place() const
 
   // This must be a device
   return exec_place::device(devid);
+}
+
+inline decorated_stream data_place::getDataStream(async_resources_handle& async_resources) const
+{
+  return affine_exec_place().getStream(async_resources, false);
 }
 
 inline const exec_place_grid& data_place::get_grid() const
