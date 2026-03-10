@@ -67,11 +67,7 @@
           "**/include/cuda/*.*": true,
           "**/include/cuda/std/*.*": true
         },
-        "files.trimTrailingWhitespace": true,
-        "search.exclude": {
-          "**/include/cuda/*.*": true,
-          "**/include/cuda/std/*.*": true
-        }
+        "files.trimTrailingWhitespace": true
       }
     }
   },
