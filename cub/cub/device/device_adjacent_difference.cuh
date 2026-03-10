@@ -628,7 +628,8 @@ struct DeviceAdjacentDifference
             typename OutputIteratorT,
             typename DifferenceOpT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SubtractLeftCopy(
     InputIteratorT d_input, OutputIteratorT d_output, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
   {
@@ -704,7 +705,8 @@ struct DeviceAdjacentDifference
   template <typename RandomAccessIteratorT,
             typename DifferenceOpT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<RandomAccessIteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   SubtractLeft(RandomAccessIteratorT d_input, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
   {
@@ -791,7 +793,8 @@ struct DeviceAdjacentDifference
             typename OutputIteratorT,
             typename DifferenceOpT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SubtractRightCopy(
     InputIteratorT d_input, OutputIteratorT d_output, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
   {
@@ -867,7 +870,8 @@ struct DeviceAdjacentDifference
   template <typename RandomAccessIteratorT,
             typename DifferenceOpT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<RandomAccessIteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   SubtractRight(RandomAccessIteratorT d_input, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
   {
