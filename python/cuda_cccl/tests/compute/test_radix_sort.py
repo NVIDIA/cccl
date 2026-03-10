@@ -416,6 +416,37 @@ def test_radix_sort_pairs_double_buffer_bit_window(dtype, num_items, monkeypatch
         np.testing.assert_array_equal(h_out_values, h_in_values)
 
 
+@pytest.mark.large
+@pytest.mark.parametrize("dtype", [np.int32, np.float32])
+def test_radix_sort_large_num_items(dtype):
+    """Regression test for https://github.com/NVIDIA/cccl/issues/7938.
+
+    Radix sort produces incorrect output for large inputs that require
+    multiple "portions" internally (roughly >= 2**28 elements, depending
+    on the tuning policy chosen for the current GPU).
+    """
+    num_items = 2**28
+
+    h_in_keys = np.arange(num_items - 1, -1, -1, dtype=dtype)
+
+    d_in_keys = cp.asarray(h_in_keys)
+    d_out_keys = cp.empty(num_items, dtype=dtype)
+
+    cuda.compute.radix_sort(
+        d_in_keys,
+        d_out_keys,
+        None,
+        None,
+        SortOrder.ASCENDING,
+        num_items,
+    )
+
+    h_out_keys = d_out_keys.get()
+    h_expected, _ = host_sort(h_in_keys, None, SortOrder.ASCENDING)
+
+    np.testing.assert_array_equal(h_out_keys, h_expected)
+
+
 def test_radix_sort_with_stream(cuda_stream):
     cp_stream = cp.cuda.ExternalStream(cuda_stream.ptr)
     num_items = 10000

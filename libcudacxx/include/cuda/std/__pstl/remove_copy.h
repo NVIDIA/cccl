@@ -31,6 +31,7 @@
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__pstl/dispatch.h>
+#  include <cuda/std/__pstl/remove.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_comparable.h>
@@ -48,23 +49,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
-template <class _Tp>
-struct __remove_compare_not_eq
-{
-  _Tp __val_;
-
-  _CCCL_API constexpr __remove_compare_not_eq(const _Tp& __val) noexcept(is_nothrow_copy_constructible_v<_Tp>)
-      : __val_(__val)
-  {}
-
-  template <class _Up>
-  [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE constexpr bool operator()(const _Up& __rhs) const
-    noexcept(__is_cpp17_nothrow_equality_comparable_v<_Tp, _Up>)
-  {
-    return !static_cast<bool>(__val_ == __rhs);
-  }
-};
-
 _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _OutputIterator, class _Tp)
 _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator> _CCCL_AND
                  is_execution_policy_v<_Policy>)
@@ -75,16 +59,17 @@ _CCCL_HOST_API _OutputIterator remove_copy(
   _OutputIterator __result,
   const _Tp& __value)
 {
-  if (__first == __last)
-  {
-    return __result;
-  }
-
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__copy_if, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
     _CCCL_NVTX_RANGE_SCOPE("cuda::std::remove_copy");
+
+    if (__first == __last)
+    {
+      return __result;
+    }
+
     const auto __count = ::cuda::std::distance(__first, __last);
     return __dispatch(
       __policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__result), __remove_compare_not_eq{__value});

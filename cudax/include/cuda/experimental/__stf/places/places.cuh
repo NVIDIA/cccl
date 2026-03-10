@@ -27,8 +27,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
-#include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
 #include <cuda/experimental/__stf/places/data_place_extension.cuh>
 #include <cuda/experimental/__stf/places/exec/green_ctx_view.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
@@ -49,7 +47,6 @@
 
 namespace cuda::experimental::stf
 {
-class backend_ctx_untyped;
 class exec_place;
 class exec_place_host;
 class exec_place_grid;
@@ -154,7 +151,6 @@ public:
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
   static data_place green_ctx(const green_ctx_view& gc_view);
-  static data_place green_ctx(::std::shared_ptr<green_ctx_view> gc_view_ptr);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   bool operator==(const data_place& rhs) const;
@@ -336,7 +332,7 @@ public:
     return ::std::hash<int>()(devid);
   }
 
-  decorated_stream getDataStream(async_resources_handle& async_resources) const;
+  decorated_stream getDataStream() const;
 
 private:
   /**
@@ -710,35 +706,40 @@ public:
       return device_ordinal(affine) < device_ordinal(rhs.affine);
     }
 
-    /* Return the pool associated to this place
+    /**
+     * @brief Get the stream pool for this execution place.
      *
-     * If the stream is expected to perform computation, the
-     * for_computation should be true. If we plan to use this stream for data
-     * transfers, or other means (graph capture) we set the value to false. (This
-     * flag is intended for performance matters, not correctness */
-    virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const
+     * The base implementation returns pool_compute or pool_data stored
+     * directly on the impl.
+     */
+    virtual stream_pool& get_stream_pool(bool for_computation) const
     {
-      if (!affine.is_device())
-      {
-        fprintf(stderr, "Error: get_stream_pool virtual method is not implemented for this exec place.\n");
-        abort();
-      }
-
-      int dev_id = device_ordinal(affine);
-      return async_resources.get_device_stream_pool(dev_id, for_computation);
+      return for_computation ? pool_compute : pool_data;
     }
 
-    decorated_stream getStream(async_resources_handle& async_resources, bool for_computation) const
+    /**
+     * @brief Create a stream valid for execution on this place.
+     *
+     * Expected to be called with this exec place already activated (e.g. from
+     * stream_pool::next(place) which uses exec_place_guard). Creates a new stream
+     * in the current context via cudaStreamCreateWithFlags(..., cudaStreamNonBlocking).
+     * The caller (e.g. stream_pool::next) builds a decorated_stream from the result.
+     */
+    cudaStream_t create_stream() const
     {
-      return get_stream_pool(async_resources, for_computation).next();
+      cudaStream_t stream = nullptr;
+      cuda_safe_call(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+      return stream;
     }
+
+    static constexpr size_t pool_size      = 4;
+    static constexpr size_t data_pool_size = 4;
 
   protected:
     friend class exec_place;
-    explicit impl(int devid)
-        : affine(data_place::device(devid))
-    {}
     data_place affine = data_place::invalid();
+    mutable stream_pool pool_compute;
+    mutable stream_pool pool_data;
   };
 
   exec_place() = default;
@@ -857,109 +858,32 @@ public:
     pimpl->set_affine_data_place(mv(place));
   }
 
-  stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const
+  stream_pool& get_stream_pool(bool for_computation) const
   {
-    return pimpl->get_stream_pool(async_resources, for_computation);
+    return pimpl->get_stream_pool(for_computation);
   }
 
   /**
    * @brief Get a decorated stream from the stream pool associated to this execution place.
-   *
-   * This method can be used to obtain CUDA streams from execution places without requiring
-   * a CUDASTF context. This is useful when you want to use CUDASTF's place abstractions
-   * (devices, green contexts) for stream management without the full task-based model.
-   *
-   * @note If you are using a CUDASTF context, use `ctx.async_resources()` to ensure the
-   *       same stream pools are shared between your code and the context's internal operations.
-   *
-   * @param async_resources Handle managing the stream pools. Create a standalone
-   *        `async_resources_handle` for context-free usage, or use `ctx.async_resources()`
-   *        when working alongside a CUDASTF context.
-   * @param for_computation Hint for selecting which pool to use. When true, returns a stream
-   *        from the computation pool; when false, returns a stream from the data transfer pool.
-   *        Using separate pools for computation and transfers can improve overlapping.
-   *        This is a performance hint and does not affect correctness.
-   * @return A decorated_stream containing the CUDA stream and metadata (device ID, pool index)
    */
-  decorated_stream getStream(async_resources_handle& async_resources, bool for_computation) const
-  {
-    return pimpl->getStream(async_resources, for_computation);
-  }
+  decorated_stream getStream(bool for_computation) const;
 
   /**
-   * @brief Get a CUDA stream from the stream pool associated to this execution place.
+   * @brief Create a stream valid for execution on this place.
    *
-   * This method can be used to obtain CUDA streams from execution places without requiring
-   * a CUDASTF context. This is useful when you want to use CUDASTF's place abstractions
-   * (devices, green contexts) for stream management without the full task-based model.
+   * Call only when the place is already activated (e.g. inside exec_place_guard).
+   * For getting a stream from the pool, use getStream() / pick_stream() instead.
    *
-   * Example usage without a context:
-   * @code
-   * async_resources_handle resources;
-   * exec_place place = exec_place::device(0);
-   * cudaStream_t stream = place.pick_stream(resources);
-   * myKernel<<<grid, block, 0, stream>>>(...);
-   * @endcode
-   *
-   * Example usage with a context (sharing resources):
-   * @code
-   * stream_ctx ctx;
-   * exec_place place = exec_place::device(0);
-   * cudaStream_t stream = place.pick_stream(ctx.async_resources());
-   * // Stream comes from the same pool used by ctx internally
-   * @endcode
-   *
-   * @note If you are using a CUDASTF context, use `ctx.async_resources()` to ensure the
-   *       same stream pools are shared between your code and the context's internal operations.
-   *
-   * @param async_resources Handle managing the stream pools. Create a standalone
-   *        `async_resources_handle` for context-free usage, or use `ctx.async_resources()`
-   *        when working alongside a CUDASTF context.
-   * @param for_computation Hint for selecting which pool to use. When true, returns a stream
-   *        from the computation pool; when false, returns a stream from the data transfer pool.
-   *        Using separate pools for computation and transfers can improve overlapping.
-   *        This is a performance hint and does not affect correctness. Defaults to true.
-   * @return A CUDA stream associated with this execution place
+   * @return A CUDA stream valid for this execution place
    */
-  cudaStream_t pick_stream(async_resources_handle& async_resources, bool for_computation = true) const
+  cudaStream_t create_stream() const
   {
-    return getStream(async_resources, for_computation).stream;
+    return pimpl->create_stream();
   }
 
-  /**
-   * @brief Get the number of streams available in the pool for this execution place.
-   *
-   * @param async_resources Handle managing the stream pools
-   * @param for_computation Hint for selecting which pool to query (computation or transfer pool)
-   * @return The number of stream slots in the pool
-   */
-  size_t stream_pool_size(async_resources_handle& async_resources, bool for_computation = true) const
+  cudaStream_t pick_stream(bool for_computation = true) const
   {
-    return get_stream_pool(async_resources, for_computation).size();
-  }
-
-  /**
-   * @brief Get all streams from the pool associated to this execution place.
-   *
-   * This method returns a vector containing all CUDA streams in the pool. Streams are
-   * created lazily, so calling this method will create any streams that haven't been
-   * created yet.
-   *
-   * @param async_resources Handle managing the stream pools
-   * @param for_computation Hint for selecting which pool to use (computation or transfer pool)
-   * @return A vector of CUDA streams from the pool
-   */
-  ::std::vector<cudaStream_t>
-  pick_all_streams(async_resources_handle& async_resources, bool for_computation = true) const
-  {
-    auto& pool = get_stream_pool(async_resources, for_computation);
-    ::std::vector<cudaStream_t> result;
-    result.reserve(pool.size());
-    for (size_t i = 0; i < pool.size(); ++i)
-    {
-      result.push_back(pool.next().stream);
-    }
-    return result;
+    return getStream(for_computation).stream;
   }
 
   // TODO make protected !
@@ -1035,8 +959,6 @@ public:
    *        affine data place. If false (default), use a regular device data place instead.
    */
   static exec_place green_ctx(const green_ctx_view& gc_view, bool use_green_ctx_data_place = false);
-  static exec_place green_ctx(const ::std::shared_ptr<green_ctx_view>& gc_view_ptr,
-                              bool use_green_ctx_data_place = false);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   static exec_place_cuda_stream cuda_stream(cudaStream_t stream);
@@ -1186,6 +1108,37 @@ private:
   exec_place prev_;
 };
 
+inline decorated_stream stream_pool::next(const exec_place& place)
+{
+  _CCCL_ASSERT(pimpl, "stream_pool::next called on empty pool");
+  ::std::lock_guard<::std::mutex> locker(pimpl->mtx);
+  _CCCL_ASSERT(pimpl->index < pimpl->payload.size(), "stream_pool::next index out of range");
+
+  auto& result = pimpl->payload.at(pimpl->index);
+
+  if (!result.stream)
+  {
+    exec_place_guard guard(place);
+    result.stream = place.create_stream();
+    result.id     = get_stream_id(result.stream);
+    result.dev_id = get_device_from_stream(result.stream);
+  }
+
+  _CCCL_ASSERT(result.stream != nullptr && result.dev_id != -1, "stream_pool slot invalid after creation");
+
+  if (++pimpl->index >= pimpl->payload.size())
+  {
+    pimpl->index = 0;
+  }
+
+  return result;
+}
+
+inline decorated_stream exec_place::getStream(bool for_computation) const
+{
+  return get_stream_pool(for_computation).next(*this);
+}
+
 /**
  * @brief Designates execution that is to run on the host.
  *
@@ -1216,11 +1169,9 @@ public:
     {
       return data_place::host();
     }
-    virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const override
+    stream_pool& get_stream_pool(bool for_computation) const override
     {
-      // There is no pool attached to the host itself, so we use the pool attached to the execution place of the
-      // current device
-      return exec_place::current_device().get_stream_pool(async_resources, for_computation);
+      return exec_place::current_device().get_stream_pool(for_computation);
     }
   };
 
@@ -1262,22 +1213,39 @@ UNITTEST("exec_place_host::operator->*")
   EXPECT(witness);
 };
 
+/**
+ * @brief Designates execution that is to run on a specific CUDA device.
+ */
+class exec_place_device : public exec_place
+{
+public:
+  class impl : public exec_place::impl
+  {
+  public:
+    explicit impl(int devid)
+        : exec_place::impl(data_place::device(devid))
+    {
+      pool_compute = stream_pool(pool_size);
+      pool_data    = stream_pool(data_pool_size);
+    }
+  };
+};
+
 inline exec_place exec_place::device(int devid)
 {
-  // Create a static vector of impls - there's exactly one per device.
   static int ndevices;
-  static impl* impls = [] {
+  static exec_place_device::impl* impls = [] {
     cuda_safe_call(cudaGetDeviceCount(&ndevices));
-    auto result = static_cast<impl*>(::operator new[](ndevices * sizeof(impl)));
+    auto result = static_cast<exec_place_device::impl*>(::operator new[](ndevices * sizeof(exec_place_device::impl)));
     for (int i : each(ndevices))
     {
-      new (result + i) impl(i);
+      new (result + i) exec_place_device::impl(i);
     }
     return result;
   }();
-  assert(devid >= 0);
-  assert(devid < ndevices);
-  return ::std::shared_ptr<impl>(&impls[devid], [](impl*) {}); // no-op deleter
+  _CCCL_ASSERT(devid >= 0, "invalid device id");
+  _CCCL_ASSERT(devid < ndevices, "invalid device id");
+  return ::std::shared_ptr<exec_place::impl>(&impls[devid], [](exec_place::impl*) {}); // no-op deleter
 }
 
 #ifdef UNITTESTED_FILE
@@ -1443,6 +1411,14 @@ public:
       return places;
     }
 
+    stream_pool& get_stream_pool(bool for_computation) const override
+    {
+      assert(!for_computation);
+      const auto& v = get_places();
+      assert(v.size() > 0);
+      return v[0].get_stream_pool(for_computation);
+    }
+
     exec_place grid_activate(size_t i) const
     {
       const auto& v = get_places();
@@ -1522,17 +1498,6 @@ public:
     const exec_place& get_place(size_t p_index) const
     {
       return coords_to_place(p_index);
-    }
-
-    virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const override
-    {
-      // We "arbitrarily" select a pool from one of the place in the
-      // grid, which can be suffiicent for a data transfer, but we do not
-      // want to allow this for computation where we expect a more
-      // accurate placement.
-      assert(!for_computation);
-      assert(places.size() > 0);
-      return places[0].get_stream_pool(async_resources, for_computation);
     }
 
   private:
@@ -1917,9 +1882,9 @@ inline exec_place data_place::affine_exec_place() const
   return exec_place::device(devid);
 }
 
-inline decorated_stream data_place::getDataStream(async_resources_handle& async_resources) const
+inline decorated_stream data_place::getDataStream() const
 {
-  return affine_exec_place().getStream(async_resources, false);
+  return affine_exec_place().getStream(false);
 }
 
 inline const exec_place_grid& data_place::get_grid() const
@@ -2072,186 +2037,6 @@ UNITTEST("dim4 very large total size calculation")
 };
 
 #endif // UNITTESTED_FILE
-
-template <auto... spec>
-template <typename Fun>
-interpreted_execution_policy<spec...>::interpreted_execution_policy(
-  const thread_hierarchy_spec<spec...>& p, const exec_place& where, const Fun& f)
-{
-  constexpr size_t pdepth = sizeof...(spec) / 2;
-
-  if (where == exec_place::host())
-  {
-    // XXX this may not match the type of the spec if we are not using the default spec ...
-    for (size_t d = 0; d < pdepth; d++)
-    {
-      this->add_level({::std::make_pair(hw_scope::thread, 1)});
-    }
-    return;
-  }
-
-  size_t ndevs = where.size();
-
-  if constexpr (pdepth == 1)
-  {
-    size_t l0_size = p.get_width(0);
-    bool l0_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<0>;
-
-    size_t shared_mem_bytes = 0;
-
-    auto kernel_limits = reserved::compute_kernel_limits(f, shared_mem_bytes, l0_sync);
-
-    int grid_size = 0;
-    int block_size;
-
-    if (l0_size == 0)
-    {
-      grid_size = kernel_limits.min_grid_size;
-      // Maximum occupancy without exceeding limits
-      block_size = ::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
-      l0_size    = ndevs * grid_size * block_size;
-    }
-    else
-    {
-      // Find grid_size and block_size such that grid_size*block_size = l0_size and block_size <= max_block_size
-      for (block_size = kernel_limits.max_block_size; block_size >= 1; block_size--)
-      {
-        if (l0_size % block_size == 0)
-        {
-          grid_size = l0_size / block_size;
-          break;
-        }
-      }
-    }
-
-    // Make sure we have computed the width if that was implicit
-    assert(l0_size > 0);
-
-    assert(grid_size > 0);
-    assert(block_size <= kernel_limits.max_block_size);
-
-    assert(l0_size % ndevs == 0);
-    assert(l0_size % (ndevs * block_size) == 0);
-
-    assert(ndevs * grid_size * block_size == l0_size);
-
-    this->add_level({::std::make_pair(hw_scope::device, ndevs),
-                     ::std::make_pair(hw_scope::block, grid_size),
-                     ::std::make_pair(hw_scope::thread, block_size)});
-    this->set_level_mem(0, size_t(p.get_mem(0)));
-    this->set_level_sync(0, l0_sync);
-  }
-  else if constexpr (pdepth == 2)
-  {
-    size_t l0_size = p.get_width(0);
-    size_t l1_size = p.get_width(1);
-    bool l0_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<0>;
-    bool l1_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<1>;
-
-    /* level 1 will be mapped on threads, level 0 on blocks and above */
-    size_t shared_mem_bytes = size_t(p.get_mem(1));
-    auto kernel_limits      = reserved::compute_kernel_limits(f, shared_mem_bytes, l0_sync);
-
-    // For implicit widths, use sizes suggested by CUDA occupancy calculator
-    if (l1_size == 0)
-    {
-      // Maximum occupancy without exceeding limits
-      l1_size = ::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
-    }
-    else
-    {
-      if (int(l1_size) > kernel_limits.block_size_limit)
-      {
-        fprintf(stderr,
-                "Unsatisfiable spec: Maximum block size %d threads, requested %zu (level 1)\n",
-                kernel_limits.block_size_limit,
-                l1_size);
-        abort();
-      }
-    }
-
-    if (l0_size == 0)
-    {
-      l0_size = kernel_limits.min_grid_size * ndevs;
-    }
-
-    // Enforce the resource limits in the number of threads per block
-    assert(int(l1_size) <= kernel_limits.block_size_limit);
-
-    assert(l0_size % ndevs == 0);
-
-    /* Merge blocks and devices */
-    this->add_level({::std::make_pair(hw_scope::device, ndevs), ::std::make_pair(hw_scope::block, l0_size / ndevs)});
-    this->set_level_mem(0, size_t(p.get_mem(0)));
-    this->set_level_sync(0, l0_sync);
-
-    this->add_level({::std::make_pair(hw_scope::thread, l1_size)});
-    this->set_level_mem(1, size_t(p.get_mem(1)));
-    this->set_level_sync(1, l1_sync);
-  }
-  else if constexpr (pdepth == 3)
-  {
-    size_t l0_size = p.get_width(0);
-    size_t l1_size = p.get_width(1);
-    size_t l2_size = p.get_width(2);
-    bool l0_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<0>;
-    bool l1_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<1>;
-    bool l2_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<2>;
-
-    /* level 2 will be mapped on threads, level 1 on blocks, level 0 on devices */
-    size_t shared_mem_bytes = size_t(p.get_mem(2));
-    auto kernel_limits      = reserved::compute_kernel_limits(f, shared_mem_bytes, l0_sync || l1_sync);
-
-    // For implicit widths, use sizes suggested by CUDA occupancy calculator
-    if (l2_size == 0)
-    {
-      // Maximum occupancy without exceeding limits
-      l2_size = ::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
-    }
-    else
-    {
-      if (int(l2_size) > kernel_limits.block_size_limit)
-      {
-        fprintf(stderr,
-                "Unsatisfiable spec: Maximum block size %d threads, requested %zu (level 2)\n",
-                kernel_limits.block_size_limit,
-                l2_size);
-        abort();
-      }
-    }
-
-    if (l1_size == 0)
-    {
-      l1_size = kernel_limits.min_grid_size;
-    }
-
-    if (l0_size == 0)
-    {
-      l0_size = ndevs;
-    }
-
-    // Enforce the resource limits in the number of threads per block
-    assert(int(l2_size) <= kernel_limits.block_size_limit);
-    assert(int(l0_size) <= ndevs);
-
-    /* Merge blocks and devices */
-    this->add_level({::std::make_pair(hw_scope::device, l0_size)});
-    this->set_level_mem(0, size_t(p.get_mem(0)));
-    this->set_level_sync(0, l0_sync);
-
-    this->add_level({::std::make_pair(hw_scope::block, l1_size)});
-    this->set_level_mem(1, size_t(p.get_mem(1)));
-    this->set_level_sync(1, l1_sync);
-
-    this->add_level({::std::make_pair(hw_scope::thread, l2_size)});
-    this->set_level_mem(2, size_t(p.get_mem(2)));
-    this->set_level_sync(2, l2_sync);
-  }
-  else
-  {
-    static_assert(pdepth == 3);
-  }
-}
 
 /**
  * @brief Specialization of `std::hash` for `cuda::experimental::stf::data_place` to allow it to be used as a key in

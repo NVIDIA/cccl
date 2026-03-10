@@ -16,7 +16,7 @@ For the full memory resource model and property system, see
 .. _libcudacxx-memory-resource-legacy-pinned-memory-resource:
 
 Provides pinned (page-locked) host allocations using ``cudaMallocHost`` and ``cudaFreeHost``. This resource is
-*synchronous-only* and is intended as a compatibility fallback. For CUDA 12.6 and later, prefer
+*synchronous-only* and is intended as a compatibility fallback. For CUDA 12.9 and later, prefer
 ``cuda::pinned_memory_resource``.
 
 .. code:: cpp

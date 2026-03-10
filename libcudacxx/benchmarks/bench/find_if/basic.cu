@@ -27,19 +27,19 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   const auto mismatch_point = static_cast<std::size_t>(elements * common_prefix);
 
   thrust::device_vector<T> dinput(elements, thrust::no_init);
-  thrust::fill(dinput.begin(), dinput.begin() + mismatch_point, T{0});
-  thrust::fill(dinput.begin() + mismatch_point, dinput.end(), val);
+  cuda::std::fill(cuda::execution::__cub_par_unseq, dinput.begin(), dinput.begin() + mismatch_point, T{0});
+  cuda::std::fill(cuda::execution::__cub_par_unseq, dinput.begin() + mismatch_point, dinput.end(), val);
 
   state.add_global_memory_reads<T>(mismatch_point + 1);
   state.add_global_memory_writes<size_t>(1);
 
   caching_allocator_t alloc{};
 
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
-             [&](nvbench::launch& launch) {
-               do_not_optimize(
-                 cuda::std::find_if(cuda_policy(alloc, launch), dinput.begin(), dinput.end(), cuda::equal_to_val{val}));
-             });
+  state.exec(
+    nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+      do_not_optimize(
+        cuda::std::find_if(cuda_policy(alloc, launch), dinput.begin(), dinput.end(), cuda::equal_to_value{val}));
+    });
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))

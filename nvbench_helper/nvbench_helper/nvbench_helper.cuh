@@ -23,13 +23,7 @@
 
 #include <nvbench/nvbench.cuh>
 
-#if defined(_MSC_VER)
-#  define NVBENCH_HELPER_HAS_I128 0
-#else
-#  define NVBENCH_HELPER_HAS_I128 1
-#endif
-
-#if NVBENCH_HELPER_HAS_I128
+#if _CCCL_HAS_INT128()
 using int128_t  = __int128_t;
 using uint128_t = __uint128_t;
 
@@ -103,7 +97,7 @@ using fundamental_types =
                      int16_t,
                      int32_t,
                      int64_t,
-#  if NVBENCH_HELPER_HAS_I128
+#  if _CCCL_HAS_INT128()
                      int128_t,
 #  endif
                      float,
@@ -114,7 +108,7 @@ using all_types =
                      int16_t,
                      int32_t,
                      int64_t,
-#  if NVBENCH_HELPER_HAS_I128
+#  if _CCCL_HAS_INT128()
                      int128_t,
 #  endif
                      float,

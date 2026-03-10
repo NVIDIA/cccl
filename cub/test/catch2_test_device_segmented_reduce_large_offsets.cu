@@ -194,13 +194,13 @@ struct dispatch_helper
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION cudaError_t Invoke()
   {
-    thresholds = {ActivePolicyT::SmallReducePolicy::ITEMS_PER_TILE,
-                  ActivePolicyT::MediumReducePolicy::ITEMS_PER_TILE,
-                  ActivePolicyT::ReducePolicy::BLOCK_THREADS * ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD};
+    thresholds = {+ActivePolicyT::SmallReducePolicy::ITEMS_PER_TILE,
+                  +ActivePolicyT::MediumReducePolicy::ITEMS_PER_TILE,
+                  +ActivePolicyT::ReducePolicy::BLOCK_THREADS * +ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD};
     return cudaSuccess;
   }
 
-  static __host__ tuple_t get_thresholds()
+  static tuple_t get_thresholds()
   {
     // Get PTX version
     int ptx_version = 0;
@@ -228,7 +228,7 @@ void test_fixed_size_segmented_reduce(
   using offset_t       = SegmentIdxT;
   using segment_size_t = int;
 
-  using policy_hub_t = cub::detail::fixed_size_segmented_reduce::policy_hub<AccumT, offset_t, OpT>;
+  using policy_hub_t = cub::detail::segmented_reduce::policy_hub<AccumT, offset_t, OpT>;
 
   // Get small and medium segment size thresholds from dispatch helper
   const cuda::std::tuple<int, int, int> thresholds = dispatch_helper<policy_hub_t>::get_thresholds();
