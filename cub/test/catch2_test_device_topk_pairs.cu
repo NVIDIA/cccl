@@ -43,7 +43,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_pairs(
 
   auto env = cuda::std::execution::env{stream_env, requirements};
 
-  return cub::detail::dispatch_topk_hub<SelectDirection>(
+  return cub::detail::dispatch_topk<SelectDirection>(
     d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, k, env);
 }
 

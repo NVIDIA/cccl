@@ -923,8 +923,11 @@ struct policy_hub
                            default_reduce_by_key_delay_constructor_t<DelayConstructurValueT, int>>;
   };
 
+  // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy520
+  using DefaultPolicy520 = DefaultPolicy<LOAD_CA, AccumT>;
+
   struct Policy520
-      : DefaultPolicy<LOAD_CA, AccumT>
+      : DefaultPolicy520
       , ChainedPolicy<520, Policy520, Policy500>
   {};
 
@@ -948,8 +951,11 @@ struct policy_hub
     using ScanByKeyPolicyT = decltype(select_agent_policy<sm80_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
   };
 
+  // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy860
+  using DefaultPolicy860 = DefaultPolicy<LOAD_CA, AccumT>;
+
   struct Policy860
-      : DefaultPolicy<LOAD_CA, AccumT>
+      : DefaultPolicy860
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 

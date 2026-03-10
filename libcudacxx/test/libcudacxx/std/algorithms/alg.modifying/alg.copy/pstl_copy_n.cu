@@ -17,7 +17,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
 #include <thrust/execution_policy.h>
-#include <thrust/fill.h>
 #include <thrust/sequence.h>
 
 #include <cuda/cmath>
@@ -42,13 +41,13 @@ C2H_TEST("cuda::std::copy_n", "[parallel algorithm]")
   {
     const auto policy = cuda::execution::__cub_par_unseq;
 
-    thrust::fill(output.begin(), output.end(), -1);
+    cuda::std::fill(policy, output.begin(), output.end(), -1);
     { // With non-contiguous iterator
       cuda::std::copy_n(policy, cuda::counting_iterator{0}, size, output.begin());
       CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{0}));
     }
 
-    thrust::fill(output.begin(), output.end(), -1);
+    cuda::std::fill(policy, output.begin(), output.end(), -1);
     { // With contiguous iterator
       cuda::std::copy_n(policy, input.begin(), size, output.begin());
       CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{0}));
@@ -60,13 +59,13 @@ C2H_TEST("cuda::std::copy_n", "[parallel algorithm]")
     cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream);
 
-    thrust::fill(output.begin(), output.end(), -1);
+    cuda::std::fill(policy, output.begin(), output.end(), -1);
     { // With non-contiguous iterator
       cuda::std::copy_n(policy, cuda::counting_iterator{0}, size, output.begin());
       CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{0}));
     }
 
-    thrust::fill(output.begin(), output.end(), -1);
+    cuda::std::fill(policy, output.begin(), output.end(), -1);
     { // With contiguous iterator
       cuda::std::copy_n(policy, input.begin(), size, output.begin());
       CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{0}));
@@ -78,13 +77,13 @@ C2H_TEST("cuda::std::copy_n", "[parallel algorithm]")
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
     const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
 
-    thrust::fill(output.begin(), output.end(), -1);
+    cuda::std::fill(policy, output.begin(), output.end(), -1);
     { // With non-contiguous iterator
       cuda::std::copy_n(policy, cuda::counting_iterator{0}, size, output.begin());
       CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{0}));
     }
 
-    thrust::fill(output.begin(), output.end(), -1);
+    cuda::std::fill(policy, output.begin(), output.end(), -1);
     { // With contiguous iterator
       cuda::std::copy_n(policy, input.begin(), size, output.begin());
       CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{0}));
@@ -97,13 +96,13 @@ C2H_TEST("cuda::std::copy_n", "[parallel algorithm]")
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource).with_stream(stream);
 
-    thrust::fill(output.begin(), output.end(), -1);
+    cuda::std::fill(policy, output.begin(), output.end(), -1);
     { // With non-contiguous iterator
       cuda::std::copy_n(policy, cuda::counting_iterator{0}, size, output.begin());
       CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{0}));
     }
 
-    thrust::fill(output.begin(), output.end(), -1);
+    cuda::std::fill(policy, output.begin(), output.end(), -1);
     { // With contiguous iterator
       cuda::std::copy_n(policy, input.begin(), size, output.begin());
       CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{0}));

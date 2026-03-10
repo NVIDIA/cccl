@@ -81,11 +81,11 @@ public:
 //! @brief  Returns the default ``cudaMemPool_t`` from the specified device.
 //! @throws cuda_error if retrieving the default ``cudaMemPool_t`` fails.
 //! @returns The default memory pool of the specified device.
-[[nodiscard]] inline device_memory_pool_ref device_default_memory_pool(::cuda::device_ref __device)
+[[nodiscard]] inline device_memory_pool_ref& device_default_memory_pool(::cuda::device_ref __device)
 {
-  static ::cudaMemPool_t __pool = ::cuda::__get_default_memory_pool(
-    ::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __device.get()}, ::CU_MEM_ALLOCATION_TYPE_PINNED);
-  return device_memory_pool_ref(__pool);
+  static device_memory_pool_ref __pool{::cuda::__get_default_memory_pool(
+    ::CUmemLocation{::CU_MEM_LOCATION_TYPE_DEVICE, __device.get()}, ::CU_MEM_ALLOCATION_TYPE_PINNED)};
+  return __pool;
 }
 
 //! @rst

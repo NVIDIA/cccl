@@ -59,6 +59,7 @@ copy_n([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _Size _
     {
       return __result;
     }
+
     return __dispatch(__policy,
                       ::cuda::std::move(__first),
                       static_cast<iter_difference_t<_InputIterator>>(__count),

@@ -119,7 +119,7 @@ public:
     if (e_place.is_grid())
     {
       // We have currently no way to pass an array of per-place streams
-      assert(automatic_stream);
+      _CCCL_ASSERT(automatic_stream, "automatic stream is not enabled");
 
       // Note: we store grid in a variable to avoid dangling references
       // because the compiler does not know we are making a reference to
@@ -128,7 +128,7 @@ public:
       const auto& places = grid.get_places();
       for (const exec_place& p : places)
       {
-        stream_grid.push_back(get_stream_from_pool(p));
+        stream_grid.push_back(p.getStream(true));
       }
 
       EXPECT(stream_grid.size() > 0UL);
@@ -138,7 +138,7 @@ public:
       if (automatic_stream)
       {
         bool found = false;
-        auto& pool = e_place.get_stream_pool(ctx.async_resources(), true);
+        auto& pool = e_place.get_stream_pool(true);
 
         // To avoid creating inter stream dependencies when this is not
         // necessary, we try to reuse streams which belong to the pool,
@@ -156,7 +156,7 @@ public:
               auto se                    = reserved::handle<stream_and_event>(e, reserved::use_static_cast);
               decorated_stream candidate = se->get_decorated_stream();
 
-              if (candidate.id != -1)
+              if (candidate.id != k_no_stream_id)
               {
                 for (const decorated_stream& pool_s : pool)
                 {
@@ -180,7 +180,7 @@ public:
 
         if (!found)
         {
-          dstream = get_stream_from_pool(e_place);
+          dstream = e_place.getStream(true);
           //    fprintf(stderr, "COULD NOT REUSE ... selected stream ID %ld\n", dstream.id);
         }
       }
@@ -375,11 +375,6 @@ public:
   }
 
 private:
-  decorated_stream get_stream_from_pool(const exec_place& e_place)
-  {
-    return e_place.getStream(ctx.async_resources(), true);
-  }
-
   // Make all streams depend on streams[0]
   static void insert_dependencies(::std::vector<decorated_stream>& streams)
   {
