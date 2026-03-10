@@ -80,6 +80,7 @@ _CCCL_HOST_API constexpr __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>
 __to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _AccessorPolicy>& __mdspan,
                 ::cuda::std::bool_constant<_RemoveExtent1> = {}) noexcept
 {
+  static_assert(_MaxRank >= _Extents::rank(), "_MaxRank must be at least _Extents::rank()");
   using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
   using __extent_t     = typename __raw_tensor_t::__unsigned_extent_t;
   using __rank_t       = typename _Extents::rank_type;

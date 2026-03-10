@@ -36,8 +36,8 @@ namespace cuda::experimental
 //! @brief Prints a raw tensor's extents and strides to stdout in the format `(extents):(strides)`.
 //!
 //! @param[in] __tensor Raw tensor to print
-template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _Rank>
-_CCCL_HOST_API void __println(const __raw_tensor<_ExtentT, _StrideT, _Tp, _Rank>& __tensor)
+template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
+_CCCL_HOST_API void __println(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor)
 {
   const auto __rank = static_cast<int>(__tensor.__rank);
   ::printf("(");

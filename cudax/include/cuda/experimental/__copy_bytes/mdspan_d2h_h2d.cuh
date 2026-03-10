@@ -166,7 +166,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
 //! CUDA stream. Two overloads are provided: host-to-device and device-to-host.
 //!
 //! - Source and destination must have the same total number of elements and identical extents
-//!   (after removing extent-1 dimensions). 
+//!   (after removing extent-1 dimensions).
 //! - The implementation supports any stride value independently for source and destination mdspans.
 //! - Element types must be trivially copyable and (ignoring cv-qualification) the same type.
 //! - Layout policies must be one of the predefined ``cuda::std`` layout policies.

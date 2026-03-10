@@ -152,15 +152,15 @@ _CCCL_HOST_API inline void __memcpy_batch_tiles(
       __dst_ptrs[__tile_idx] = __dst_tiles_iterator(__tile_idx);
       __sizes[__tile_idx]    = __copy_size_bytes;
     }
-    size_t __num_attributes = 0;
+    size_t __attribute_indices = 0;
     ::cuda::__driver::__memcpyBatchAsync(
       __dst_ptrs.data(),
       __src_ptrs.data(),
       __sizes.data(),
       __num_tiles,
       &__attributes,
-      &__num_attributes,
-      1,
+      &__attribute_indices,
+      1, // __num_attributes
       __stream.get());
   };
   constexpr size_t __max_tiles = 16;
