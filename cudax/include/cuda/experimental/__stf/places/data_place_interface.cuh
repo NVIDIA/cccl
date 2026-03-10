@@ -170,13 +170,8 @@ public:
 
   /**
    * @brief Compute a hash value for this place
-   *
-   * Default implementation uses device ordinal.
    */
-  virtual size_t hash() const
-  {
-    return ::std::hash<int>()(get_device_ordinal());
-  }
+  virtual size_t hash() const = 0;
 
   /**
    * @brief Check equality with another place

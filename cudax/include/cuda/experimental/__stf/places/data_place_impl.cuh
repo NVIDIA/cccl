@@ -55,6 +55,11 @@ public:
     return "invalid";
   }
 
+  size_t hash() const override
+  {
+    return ::std::hash<int>()(data_place_ordinals::invalid);
+  }
+
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
     throw ::std::logic_error("Cannot allocate from invalid data_place");
@@ -90,6 +95,11 @@ public:
   ::std::string to_string() const override
   {
     return "host";
+  }
+
+  size_t hash() const override
+  {
+    return ::std::hash<int>()(data_place_ordinals::host);
   }
 
   void* allocate(::std::ptrdiff_t size, cudaStream_t) const override
@@ -146,6 +156,11 @@ public:
     return "managed";
   }
 
+  size_t hash() const override
+  {
+    return ::std::hash<int>()(data_place_ordinals::managed);
+  }
+
   void* allocate(::std::ptrdiff_t size, cudaStream_t) const override
   {
     void* result = nullptr;
@@ -189,6 +204,11 @@ public:
   ::std::string to_string() const override
   {
     return "dev" + ::std::to_string(device_id_);
+  }
+
+  size_t hash() const override
+  {
+    return ::std::hash<int>()(device_id_);
   }
 
   void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
@@ -272,6 +292,11 @@ public:
     return "affine";
   }
 
+  size_t hash() const override
+  {
+    return ::std::hash<int>()(data_place_ordinals::affine);
+  }
+
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
   {
     throw ::std::logic_error("Cannot allocate from affine data_place directly");
@@ -307,6 +332,11 @@ public:
   ::std::string to_string() const override
   {
     return "auto";
+  }
+
+  size_t hash() const override
+  {
+    return ::std::hash<int>()(data_place_ordinals::device_auto);
   }
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
