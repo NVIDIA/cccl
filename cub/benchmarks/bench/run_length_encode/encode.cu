@@ -69,7 +69,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   const offset_t num_items = static_cast<offset_t>(elements);
 
   auto dispatch_on_stream = [&](cudaStream_t stream) {
-    return cub::detail::reduce_by_key::dispatch_streaming_reduce_by_key</* OverrideAccumT */ accum_t>(
+    return cub::detail::reduce_by_key::dispatch_streaming</* OverrideAccumT */ accum_t>(
       d_temp_storage,
       temp_storage_bytes,
       d_in_keys,

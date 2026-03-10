@@ -27,144 +27,19 @@
 
 #include <cuda/experimental/__stf/internal/exec_affinity.cuh>
 #include <cuda/experimental/__stf/internal/executable_graph_cache.cuh>
+#include <cuda/experimental/__stf/places/exec/green_context.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh> // for ::std::hash<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>>
-#include <cuda/experimental/__stf/utility/stream_to_dev.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <atomic>
-#include <mutex>
 #include <unordered_map>
 
 #include <cuda.h>
 
 namespace cuda::experimental::stf
 {
-class green_context_helper;
-
-// Needed to set/get affinity
-class exec_place;
-
-/** Sentinel for "no stream" / empty slot. Distinct from any value returned by cuStreamGetId. */
-inline constexpr unsigned long long k_no_stream_id = static_cast<unsigned long long>(-1);
-
-/**
- * @brief Returns the unique stream ID from the CUDA driver (cuStreamGetId).
- * @param stream A valid CUDA stream, or nullptr.
- * @return The stream's unique ID, or k_no_stream_id if stream is nullptr.
- */
-inline unsigned long long get_stream_id(cudaStream_t stream)
-{
-  unsigned long long id = 0;
-  cuda_safe_call(cuStreamGetId(reinterpret_cast<CUstream>(stream), &id));
-  _CCCL_ASSERT(id != k_no_stream_id, "Internal error: cuStreamGetId returned k_no_stream_id");
-  return id;
-}
-
-/**
- * @brief A class to store a CUDA stream along with metadata
- *
- * It contains
- *  - the stream itself,
- *  - the stream's unique ID from the CUDA driver (cuStreamGetId), or k_no_stream_id if no stream,
- *  - the device index in which the stream resides
- */
-struct decorated_stream
-{
-  decorated_stream() = default;
-
-  decorated_stream(cudaStream_t stream, unsigned long long id, int dev_id = -1)
-      : stream(stream)
-      , id(id)
-      , dev_id(dev_id)
-  {}
-
-  /** Construct from stream only; id is from cuStreamGetId, dev_id is -1 (filled lazily when needed). */
-  explicit decorated_stream(cudaStream_t stream)
-      : stream(stream)
-      , id(get_stream_id(stream))
-      , dev_id(-1)
-  {}
-
-  cudaStream_t stream = nullptr;
-  // Unique ID from cuStreamGetId (k_no_stream_id if no stream)
-  unsigned long long id = k_no_stream_id;
-  // Device in which this stream resides
-  int dev_id = -1;
-};
-
-class async_resources_handle;
-
-/**
- * @brief A stream_pool object stores a set of streams associated to a specific
- * CUDA context (device, green context, ...)
- *
- * Usage:
- *   pool = get_stream_pool(async_resources, place);
- *   stream = pool.next(place).
- *
- * When a slot is empty, next(place) activates the place (RAII guard) and calls
- * place.create_stream().
- */
-struct stream_pool
-{
-  stream_pool()  = default;
-  ~stream_pool() = default;
-
-  /**
-   * @brief stream_pool constructor taking a number of slots.
-   *
-   * Streams are created lazily only via next(place), which activates the place and calls place.create_stream().
-   * Slot dev_id and id are set when the stream is created in next().
-   */
-  explicit stream_pool(size_t n)
-      : payload(n, decorated_stream(nullptr, k_no_stream_id, -1))
-  {}
-
-  stream_pool(stream_pool&& rhs)
-  {
-    ::std::lock_guard<::std::mutex> locker(rhs.mtx);
-    payload = mv(rhs.payload);
-    rhs.payload.clear();
-    index = mv(rhs.index);
-  }
-
-  /**
-   * @brief Get the next stream in the pool; when a slot is empty, activate the place (RAII guard) and call
-   * place.create_stream(). Defined in places.cuh so the pool can use exec_place_guard and exec_place::create_stream().
-   */
-  decorated_stream next(const exec_place& place);
-
-  // To iterate over all entries of the pool
-  using iterator = ::std::vector<decorated_stream>::iterator;
-  iterator begin()
-  {
-    return payload.begin();
-  }
-  iterator end()
-  {
-    return payload.end();
-  }
-
-  /**
-   * @brief Number of streams in the pool
-   *
-   * CUDA streams are initialized lazily, so this gives the number of slots
-   * available in the pool, not the number of streams initialized.
-   */
-  size_t size() const
-  {
-    ::std::lock_guard<::std::mutex> locker(mtx);
-    return payload.size();
-  }
-
-  // ATTENTION: see move ctor
-  mutable ::std::mutex mtx;
-  ::std::vector<decorated_stream> payload;
-  size_t index = 0;
-};
-
 /**
  * @brief A handle which stores resources useful for an efficient asynchronous
  * execution. For example this will store the pools of CUDA streams.
@@ -175,12 +50,6 @@ struct stream_pool
  */
 class async_resources_handle
 {
-  // TODO: optimize based on measurements
-
-public:
-  static constexpr size_t pool_size      = 4;
-  static constexpr size_t data_pool_size = 4;
-
 private:
   /**
    * @brief This class implements a matrix to keep track of the previous
@@ -241,92 +110,25 @@ private:
   class impl
   {
   public:
+#if _CCCL_CTK_AT_LEAST(12, 4)
     impl()
     {
-      // Save current device so that this goes unnoticed
       const int ndevices = cuda_try<cudaGetDeviceCount>();
-      assert(ndevices > 0);
-      assert(pool_size > 0);
-      assert(data_pool_size > 0);
-
-      pool.resize(ndevices);
+      _CCCL_ASSERT(ndevices > 0, "invalid device count");
       per_device_gc_helper.resize(ndevices, nullptr);
-      /* For every device, we keep two pools, one dedicated to computation,
-       * the other for auxiliary methods such as data transfers. This is intended to
-       * improve overlapping of transfers and computation, for example. */
-      for (auto d : each(ndevices))
-      {
-        stream_pool_init_internal(pool[d].first, d, pool_size);
-        stream_pool_init_internal(pool[d].second, d, data_pool_size);
-      }
     }
-
-    ~impl()
-    {
-      // Release the resources for each device (for each device, there is a
-      // stream_pool class to store CUDA streams for computation and another
-      // for data transfers)
-      for (auto& p : pool)
-      {
-        stream_pool_cleanup_internal(p.first);
-        stream_pool_cleanup_internal(p.second);
-      }
-    }
-
-    stream_pool& get_device_stream_pool(int dev_id, bool for_computation)
-    {
-      assert(dev_id < int(pool.size()));
-      return for_computation ? pool[dev_id].first : pool[dev_id].second;
-    }
-
-  private:
-    // Initialize a stream pool for the dev_id CUDA device with n slots which will be populated lazily
-    void stream_pool_init_internal(stream_pool& p, int dev_id, size_t n)
-    {
-      assert(n > 0);
-
-      // Do most of the work outside the critical section
-      ::std::vector<decorated_stream> new_payload;
-      new_payload.reserve(n);
-      for (auto i : each(n))
-      {
-        ::std::ignore = i;
-        new_payload.emplace_back(nullptr, k_no_stream_id, dev_id);
-      }
-
-      ::std::lock_guard<::std::mutex> locker(p.mtx);
-      p.payload = std::move(new_payload);
-    }
-
-    void stream_pool_cleanup_internal(stream_pool& p)
-    {
-      ::std::vector<decorated_stream> goner;
-      {
-        ::std::lock_guard<::std::mutex> locker(p.mtx);
-        p.payload.swap(goner);
-      }
-      // Clean up outside the critical section
-      for (auto& e : goner)
-      {
-        if (e.stream)
-        {
-          cuda_safe_call(cudaStreamDestroy(e.stream));
-        }
-      }
-    }
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   public:
     // This memorize what was the last event used to synchronize a pair of streams
     last_event_per_stream cached_syncs;
 
-    // For each device, a pair of stream_pool objects, each stream_pool objects
-    // stores a pool of streams on this device
-    ::std::vector<::std::pair<stream_pool, stream_pool>> pool;
-
     /* Store previously instantiated graphs, indexed by the number of edges and nodes */
     executable_graph_cache cached_graphs;
 
+#if _CCCL_CTK_AT_LEAST(12, 4)
     ::std::vector<::std::shared_ptr<green_context_helper>> per_device_gc_helper;
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
     mutable exec_affinity affinity;
   };
@@ -345,12 +147,6 @@ public:
     return pimpl != nullptr;
   }
 
-  stream_pool& get_device_stream_pool(int dev_id, bool for_computation) const
-  {
-    assert(pimpl);
-    return pimpl->get_device_stream_pool(dev_id, for_computation);
-  }
-
   bool validate_sync_and_update(unsigned long long dst, unsigned long long src, int event_id)
   {
     assert(pimpl);
@@ -364,6 +160,7 @@ public:
     return pimpl->cached_graphs.query(nnodes, nedges, mv(g));
   }
 
+#if _CCCL_CTK_AT_LEAST(12, 4)
   // Get the green context helper cached for this device (or let the user initialize it)
   auto& gc_helper(int dev_id)
   {
@@ -373,7 +170,17 @@ public:
   }
 
   // Get green context helper with lazy initialization
-  ::std::shared_ptr<green_context_helper> get_gc_helper(int dev_id, int sm_count);
+  ::std::shared_ptr<green_context_helper> get_gc_helper(int dev_id, int sm_count)
+  {
+    assert(pimpl);
+    assert(dev_id < int(pimpl->per_device_gc_helper.size()));
+    auto& h = pimpl->per_device_gc_helper[dev_id];
+    if (!h)
+    {
+      h = ::std::make_shared<green_context_helper>(sm_count, dev_id);
+    }
+    return h;
+  }
 
   // Register an external green context helper
   void register_gc_helper(int dev_id, ::std::shared_ptr<green_context_helper> helper)
@@ -382,6 +189,7 @@ public:
     assert(dev_id < int(pimpl->per_device_gc_helper.size()));
     pimpl->per_device_gc_helper[dev_id] = ::std::move(helper);
   }
+#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
   exec_affinity& get_affinity()
   {
