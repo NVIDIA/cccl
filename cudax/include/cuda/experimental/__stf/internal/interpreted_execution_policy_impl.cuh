@@ -89,15 +89,15 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     }
 
     // Make sure we have computed the width if that was implicit
-    assert(l0_size > 0);
+    _CCCL_ASSERT(l0_size > 0, "invalid level 0 size");
 
-    assert(grid_size > 0);
-    assert(block_size <= kernel_limits.max_block_size);
+    _CCCL_ASSERT(grid_size > 0, "invalid grid size");
+    _CCCL_ASSERT(block_size <= kernel_limits.max_block_size, "invalid block size");
 
-    assert(l0_size % ndevs == 0);
-    assert(l0_size % (ndevs * block_size) == 0);
+    _CCCL_ASSERT(l0_size % ndevs == 0, "invalid level 0 size");
+    _CCCL_ASSERT(l0_size % (ndevs * block_size) == 0, "invalid level 0 size");
 
-    assert(ndevs * grid_size * block_size == l0_size);
+    _CCCL_ASSERT(ndevs * grid_size * block_size == l0_size, "invalid level 0 size");
 
     this->add_level({::std::make_pair(hw_scope::device, ndevs),
                      ::std::make_pair(hw_scope::block, grid_size),
@@ -140,9 +140,8 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     }
 
     // Enforce the resource limits in the number of threads per block
-    assert(int(l1_size) <= kernel_limits.block_size_limit);
-
-    assert(l0_size % ndevs == 0);
+    _CCCL_ASSERT(int(l1_size) <= kernel_limits.block_size_limit, "invalid level 1 size");
+    _CCCL_ASSERT(l0_size % ndevs == 0, "invalid level 0 size");
 
     /* Merge blocks and devices */
     this->add_level({::std::make_pair(hw_scope::device, ndevs), ::std::make_pair(hw_scope::block, l0_size / ndevs)});
@@ -195,8 +194,8 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     }
 
     // Enforce the resource limits in the number of threads per block
-    assert(int(l2_size) <= kernel_limits.block_size_limit);
-    assert(int(l0_size) <= ndevs);
+    _CCCL_ASSERT(int(l2_size) <= kernel_limits.block_size_limit, "invalid level 2 size");
+    _CCCL_ASSERT(int(l0_size) <= ndevs, "invalid level 0 size");
 
     /* Merge blocks and devices */
     this->add_level({::std::make_pair(hw_scope::device, l0_size)});
