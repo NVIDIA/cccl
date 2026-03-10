@@ -227,11 +227,7 @@ struct DeviceCopy
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIt,
-            typename OutputIt,
-            typename SizeIteratorT,
-            typename EnvT                                                          = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIt, void*>, int> = 0>
+  template <typename InputIt, typename OutputIt, typename SizeIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Batched(InputIt input_it, OutputIt output_it, SizeIteratorT sizes, ::cuda::std::int64_t num_ranges, EnvT env = {})
   {
@@ -457,6 +453,7 @@ struct DeviceCopy
       auto in_end    = in_start + mdspan_in.mapping().required_span_size();
       auto out_start = mdspan_out.data_handle();
       auto out_end   = out_start + mdspan_out.mapping().required_span_size();
+      // TODO(fbusato): replace with __are_ptrs_overlapping
       _CCCL_ASSERT(!(in_end >= out_start && out_end >= in_start), "mdspan memory ranges must not overlap");
     }
 
