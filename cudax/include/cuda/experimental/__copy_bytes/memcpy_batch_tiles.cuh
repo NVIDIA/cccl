@@ -30,7 +30,7 @@
 #  include <cuda/std/__numeric/exclusive_scan.h>
 #  include <cuda/std/array>
 
-#  include <cuda/experimental/__copy/types.cuh>
+#  include <cuda/experimental/__copy_bytes/types.cuh>
 
 #  include <vector>
 

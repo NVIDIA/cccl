@@ -25,8 +25,8 @@
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
-#include <cuda/experimental/__copy/types.cuh>
-#include <cuda/experimental/__copy/utils.cuh>
+#include <cuda/experimental/__copy_bytes/tensor_query.cuh>
+#include <cuda/experimental/__copy_bytes/types.cuh>
 
 #include <cute/layout.hpp>
 #include <cute/pointer.hpp>

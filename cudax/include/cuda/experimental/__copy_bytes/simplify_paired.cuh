@@ -29,7 +29,7 @@
 #  include <cuda/std/array>
 #  include <cuda/std/tuple>
 
-#  include <cuda/experimental/__copy/utils.cuh>
+#  include <cuda/experimental/__copy_bytes/tensor_query.cuh>
 
 #  include <cuda/std/__cccl/prologue.h>
 

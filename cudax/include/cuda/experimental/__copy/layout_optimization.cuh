@@ -28,9 +28,9 @@
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
 
-#include <cuda/experimental/__copy/abs_integer.cuh>
-#include <cuda/experimental/__copy/raw_tensor_utils.cuh>
-#include <cuda/experimental/__copy/types.cuh>
+#include <cuda/experimental/__copy_bytes/abs_integer.cuh>
+#include <cuda/experimental/__copy_bytes/raw_tensor_utils.cuh>
+#include <cuda/experimental/__copy_bytes/types.cuh>
 //
 #include <cuda/std/__cccl/prologue.h>
 

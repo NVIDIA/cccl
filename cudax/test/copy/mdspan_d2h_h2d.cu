@@ -14,7 +14,7 @@
 #include <cuda/std/mdspan>
 #include <cuda/stream>
 
-#include <cuda/experimental/__copy/mdspan_d2h_h2d.cuh>
+#include <cuda/experimental/__copy_bytes/mdspan_d2h_h2d.cuh>
 
 #include "testing.cuh"
 

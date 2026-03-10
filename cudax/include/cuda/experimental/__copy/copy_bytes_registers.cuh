@@ -39,11 +39,11 @@
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 
-#include <cuda/experimental/__copy/utils.cuh>
-#include <cuda/experimental/__copy_bytes/copy_bytes_naive.cuh>
-#include <cuda/experimental/__copy_bytes/copy_bytes_shared_mem.cuh>
-#include <cuda/experimental/__copy_bytes/cute_utils.cuh>
-#include <cuda/experimental/__copy_bytes/layout_optimization.cuh>
+#include <cuda/experimental/__copy_bytes/tensor_query.cuh>
+#include <cuda/experimental/__copy/copy_bytes_naive.cuh>
+#include <cuda/experimental/__copy/copy_bytes_shared_mem.cuh>
+#include <cuda/experimental/__copy/cute_utils.cuh>
+#include <cuda/experimental/__copy/layout_optimization.cuh>
 
 #include <cute/algorithm/copy.hpp>
 #include <cute/tensor_impl.hpp>

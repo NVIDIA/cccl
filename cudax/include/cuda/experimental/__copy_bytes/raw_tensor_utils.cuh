@@ -28,8 +28,8 @@
 #  include <cuda/std/__algorithm/is_sorted.h>
 #  include <cuda/std/__cstddef/types.h>
 
-#  include <cuda/experimental/__copy/abs_integer.cuh>
-#  include <cuda/experimental/__copy/types.cuh>
+#  include <cuda/experimental/__copy_bytes/abs_integer.cuh>
+#  include <cuda/experimental/__copy_bytes/types.cuh>
 
 #  include <cuda/std/__cccl/prologue.h>
 

@@ -11,6 +11,6 @@
 #ifndef __CUDAX_COPY_BYTES___
 #define __CUDAX_COPY_BYTES___
 
-#include <cuda/experimental/__copy_bytes/copy_bytes.cuh>
+#include <cuda/experimental/__copy/copy_bytes.cuh>
 
 #endif // __CUDAX_COPY_BYTES___

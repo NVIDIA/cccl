@@ -33,10 +33,10 @@
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
 
-#include <cuda/experimental/__copy/abs_integer.cuh>
-#include <cuda/experimental/__copy/types.cuh>
-#include <cuda/experimental/__copy/utils.cuh>
-#include <cuda/experimental/__copy_bytes/layout_optimization.cuh>
+#include <cuda/experimental/__copy_bytes/abs_integer.cuh>
+#include <cuda/experimental/__copy_bytes/tensor_query.cuh>
+#include <cuda/experimental/__copy_bytes/types.cuh>
+#include <cuda/experimental/__copy/layout_optimization.cuh>
 //
 #include <cuda/std/__cccl/prologue.h>
 

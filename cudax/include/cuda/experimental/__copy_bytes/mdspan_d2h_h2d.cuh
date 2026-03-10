@@ -35,9 +35,9 @@
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
 
-#  include <cuda/experimental/__copy/memcpy_batch_tiles.cuh>
-#  include <cuda/experimental/__copy/simplify_paired.cuh>
-#  include <cuda/experimental/__copy/utils.cuh>
+#  include <cuda/experimental/__copy_bytes/memcpy_batch_tiles.cuh>
+#  include <cuda/experimental/__copy_bytes/simplify_paired.cuh>
+#  include <cuda/experimental/__copy_bytes/tensor_query.cuh>
 
 #  include <cuda/std/__cccl/prologue.h>
 

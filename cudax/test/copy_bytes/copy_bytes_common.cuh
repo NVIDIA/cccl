@@ -16,8 +16,8 @@
 
 #include <cuda/stream>
 
-#include <cuda/experimental/__copy_bytes/copy_bytes_naive.cuh>
-#include <cuda/experimental/__copy_bytes/copy_bytes_registers.cuh>
+#include <cuda/experimental/__copy/copy_bytes_naive.cuh>
+#include <cuda/experimental/__copy/copy_bytes_registers.cuh>
 
 #include "testing.cuh"
 #include <cute/layout.hpp>

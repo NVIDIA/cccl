@@ -24,7 +24,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/launch>
 
-#include <cuda/experimental/__copy_bytes/cute_utils.cuh>
+#include <cuda/experimental/__copy/cute_utils.cuh>
 
 #include <cute/tensor.hpp>
 //
