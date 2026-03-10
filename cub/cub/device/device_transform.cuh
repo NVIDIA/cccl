@@ -71,7 +71,6 @@ struct tuning
 //! sequences into an output sequence.
 struct DeviceTransform
 {
-private:
   template <detail::transform::requires_stable_address StableAddress = detail::transform::requires_stable_address::no,
             typename... RandomAccessIteratorsIn,
             typename RandomAccessIteratorOut,
@@ -79,7 +78,7 @@ private:
             typename Predicate,
             typename TransformOp,
             typename Env>
-  CUB_RUNTIME_FUNCTION static cudaError_t TransformInternal(
+  CUB_RUNTIME_FUNCTION static cudaError_t __transform_internal(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
     RandomAccessIteratorOut output,
     NumItemsT num_items,
@@ -130,7 +129,7 @@ private:
             typename Predicate,
             typename TransformOp,
             typename Env>
-  CUB_RUNTIME_FUNCTION static cudaError_t TransformInternal(
+  CUB_RUNTIME_FUNCTION static cudaError_t __transform_internal(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
     ::cuda::std::tuple<RandomAccessIteratorsOut...> outputs,
     NumItemsT num_items,
@@ -138,7 +137,7 @@ private:
     TransformOp transform_op,
     Env env)
   {
-    return TransformInternal<StableAddress>(
+    return __transform_internal<StableAddress>(
       ::cuda::std::move(inputs),
       ::cuda::make_zip_iterator(::cuda::std::move(outputs)),
       num_items,
@@ -147,7 +146,6 @@ private:
       ::cuda::std::move(env));
   }
 
-public:
   //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -192,7 +190,7 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Transform");
-    return TransformInternal(
+    return __transform_internal(
       ::cuda::std::move(inputs),
       ::cuda::std::move(outputs),
       num_items,
@@ -295,7 +293,7 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Transform");
-    return TransformInternal(
+    return __transform_internal(
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
@@ -459,7 +457,7 @@ public:
       "The return value of the generator's call operator must be assignable to the dereferenced output iterator");
 
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Generate");
-    return TransformInternal(
+    return __transform_internal(
       ::cuda::std::make_tuple(),
       ::cuda::std::move(output),
       num_items,
@@ -524,7 +522,7 @@ public:
                   "The passed value must be assignable to the dereferenced output iterator");
 
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Fill");
-    return TransformInternal(
+    return __transform_internal(
       ::cuda::std::make_tuple(),
       ::cuda::std::move(output),
       num_items,
@@ -614,7 +612,7 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformIf");
-    return TransformInternal(
+    return __transform_internal(
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
@@ -838,7 +836,7 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformStableArgumentAddresses");
-    return TransformInternal<detail::transform::requires_stable_address::yes>(
+    return __transform_internal<detail::transform::requires_stable_address::yes>(
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
@@ -986,7 +984,7 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformIfStableArgumentAddresses");
-    return TransformInternal<detail::transform::requires_stable_address::yes>(
+    return __transform_internal<detail::transform::requires_stable_address::yes>(
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
