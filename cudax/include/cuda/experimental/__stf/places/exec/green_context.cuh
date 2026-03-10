@@ -83,6 +83,20 @@ public:
       return hash_all(view_.g_ctx, view_.devid);
     }
 
+    int cmp(const data_place_interface& other) const override
+    {
+      if (typeid(*this) != typeid(other))
+      {
+        return typeid(*this).before(typeid(other)) ? -1 : 1;
+      }
+      const auto& o = static_cast<const extension&>(other);
+      if (view_ < o.view_)
+      {
+        return -1;
+      }
+      return (view_ == o.view_) ? 0 : 1;
+    }
+
     /**
      * @brief Get the underlying green context view
      */

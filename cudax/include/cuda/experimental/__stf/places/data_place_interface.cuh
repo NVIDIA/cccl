@@ -54,22 +54,6 @@ class dim4;
 using get_executor_func_t = pos4 (*)(pos4, dim4, dim4);
 
 /**
- * @brief Special device ordinal values for non-device places
- *
- * These constants define the device_ordinal() return values for places
- * that don't correspond to a specific CUDA device.
- */
-struct data_place_ordinals
-{
-  static constexpr int invalid     = ::std::numeric_limits<int>::min();
-  static constexpr int composite   = -5;
-  static constexpr int device_auto = -4;
-  static constexpr int affine      = -3;
-  static constexpr int managed     = -2;
-  static constexpr int host        = -1;
-};
-
-/**
  * @brief Abstract interface for data_place implementations
  *
  * All data_place types (host, managed, device, composite, extensions) implement
@@ -80,6 +64,22 @@ class data_place_interface
 {
 public:
   virtual ~data_place_interface() = default;
+
+  /**
+   * @brief Special device ordinal values for non-device places
+   *
+   * Returned by get_device_ordinal() for places that don't correspond
+   * to a specific CUDA device.
+   */
+  enum ord : int
+  {
+    invalid     = ::std::numeric_limits<int>::min(),
+    composite   = -5,
+    device_auto = -4,
+    affine      = -3,
+    managed     = -2,
+    host        = -1,
+  };
 
   // === Type identification ===
 
@@ -174,28 +174,11 @@ public:
   virtual size_t hash() const = 0;
 
   /**
-   * @brief Check equality with another place
+   * @brief Three-way comparison with another place
    *
-   * Default implementation compares types and device ordinals.
+   * @return -1 if *this < other, 0 if *this == other, 1 if *this > other
    */
-  virtual bool equals(const data_place_interface& other) const
-  {
-    return typeid(*this) == typeid(other) && get_device_ordinal() == other.get_device_ordinal();
-  }
-
-  /**
-   * @brief Compare ordering with another place
-   *
-   * Default implementation compares types first, then device ordinals.
-   */
-  virtual bool less_than(const data_place_interface& other) const
-  {
-    if (typeid(*this) != typeid(other))
-    {
-      return typeid(*this).before(typeid(other));
-    }
-    return get_device_ordinal() < other.get_device_ordinal();
-  }
+  virtual int cmp(const data_place_interface& other) const = 0;
 
   // === Memory allocation ===
 

@@ -78,18 +78,11 @@ class data_place
       : pimpl_(mv(impl))
   {}
 
-  // No-op deleter for static instances
-  struct nop_deleter
-  {
-    void operator()(data_place_interface*) const noexcept {}
-  };
-
-  // Helper to create a shared_ptr to a static instance
   template <typename T>
   static ::std::shared_ptr<data_place_interface> make_static_instance()
   {
     static T instance;
-    return ::std::shared_ptr<data_place_interface>(&instance, nop_deleter{});
+    return ::std::shared_ptr<data_place_interface>(&instance, [](data_place_interface*) {});
   }
 
 public:
@@ -141,21 +134,9 @@ public:
     return data_place(make_static_instance<data_place_device_auto>());
   }
 
-  /** @brief Data is placed on device with index dev_id. Two relaxations are allowed: -1 can be passed to create a
-   * placeholder for the host, and -2 can be used to create a placeholder for a managed device.
-   */
+  /** @brief Data is placed on device with index dev_id. */
   static data_place device(int dev_id = 0)
   {
-    // Handle special cases that map to other place types
-    if (dev_id == data_place_ordinals::host)
-    {
-      return host();
-    }
-    if (dev_id == data_place_ordinals::managed)
-    {
-      return managed();
-    }
-
     static int const ndevs = [] {
       int result;
       cuda_safe_call(cudaGetDeviceCount(&result));
@@ -164,8 +145,16 @@ public:
 
     EXPECT((dev_id >= 0 && dev_id < ndevs), "Invalid device ID ", dev_id);
 
-    // For device places, we create new instances (can't easily cache all possible device IDs)
-    return data_place(::std::make_shared<data_place_device>(dev_id));
+    static data_place_device* impls = [] {
+      auto* result =
+        static_cast<data_place_device*>(::operator new[](ndevs * sizeof(data_place_device)));
+      for (int i = 0; i < ndevs; ++i)
+      {
+        new (result + i) data_place_device(i);
+      }
+      return result;
+    }();
+    return data_place(::std::shared_ptr<data_place_interface>(&impls[dev_id], [](data_place_interface*) {}));
   }
 
   /**
@@ -193,8 +182,7 @@ public:
     {
       return true;
     }
-    // Delegate to interface
-    return pimpl_->equals(*rhs.pimpl_);
+    return pimpl_->cmp(*rhs.pimpl_) == 0;
   }
 
   bool operator!=(const data_place& rhs) const
@@ -207,7 +195,7 @@ public:
   {
     // Not implemented for composite places
     EXPECT((!is_composite() && !rhs.is_composite()), "Ordering of composite places is not implemented.");
-    return pimpl_->less_than(*rhs.pimpl_);
+    return pimpl_->cmp(*rhs.pimpl_) < 0;
   }
 
   bool operator>(const data_place& rhs) const
@@ -317,11 +305,7 @@ public:
     return pimpl_->hash();
   }
 
-  decorated_stream get_data_stream() const;
-  decorated_stream getDataStream() const
-  {
-    return get_data_stream();
-  }
+  decorated_stream getDataStream() const;
 
   /**
    * @brief Check if this data place has a custom extension
@@ -643,15 +627,11 @@ public:
   /**
    * @brief Get a decorated stream from the stream pool associated to this execution place.
    */
-  decorated_stream get_stream(bool for_computation) const;
-  decorated_stream getStream(bool for_computation) const
-  {
-    return get_stream(for_computation);
-  }
+  decorated_stream getStream(bool for_computation) const;
 
   cudaStream_t pick_stream(bool for_computation = true) const
   {
-    return get_stream(for_computation).stream;
+    return getStream(for_computation).stream;
   }
 
   // TODO make protected !
@@ -880,7 +860,7 @@ inline decorated_stream stream_pool::next(const exec_place& place)
   return result;
 }
 
-inline decorated_stream exec_place::get_stream(bool for_computation) const
+inline decorated_stream exec_place::getStream(bool for_computation) const
 {
   return get_stream_pool(for_computation).next(*this);
 }
@@ -1611,7 +1591,7 @@ public:
 
   int get_device_ordinal() const override
   {
-    return data_place_ordinals::composite;
+    return data_place_interface::composite;
   }
 
   ::std::string to_string() const override
@@ -1625,18 +1605,22 @@ public:
     throw ::std::logic_error("hash() not supported for composite data_place");
   }
 
-  bool equals(const data_place_interface& other) const override
+  int cmp(const data_place_interface& other) const override
   {
-    if (!other.is_composite())
+    if (typeid(*this) != typeid(other))
     {
-      return false;
+      return typeid(*this).before(typeid(other)) ? -1 : 1;
     }
-    return (get_grid() == other.get_grid() && get_partitioner() == other.get_partitioner());
-  }
-
-  bool less_than(const data_place_interface&) const override
-  {
-    throw ::std::logic_error("Ordering of composite places is not implemented.");
+    const auto& o = static_cast<const data_place_composite&>(other);
+    if (get_partitioner() != o.get_partitioner())
+    {
+      return (get_partitioner() > o.get_partitioner()) ? 1 : -1;
+    }
+    if (get_grid() == o.get_grid())
+    {
+      return 0;
+    }
+    throw ::std::logic_error("Ordering of composite places with the same partitioner is not implemented.");
   }
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
@@ -1681,9 +1665,9 @@ data_place data_place::composite(partitioner_t, const exec_place_grid& g)
   return data_place::composite(&partitioner_t::get_executor, g);
 }
 
-inline decorated_stream data_place::get_data_stream() const
+inline decorated_stream data_place::getDataStream() const
 {
-  return affine_exec_place().get_stream(false);
+  return affine_exec_place().getStream(false);
 }
 
 #ifdef UNITTESTED_FILE

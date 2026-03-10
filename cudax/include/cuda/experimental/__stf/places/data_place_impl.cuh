@@ -47,7 +47,7 @@ public:
 
   int get_device_ordinal() const override
   {
-    return data_place_ordinals::invalid;
+    return data_place_interface::invalid;
   }
 
   ::std::string to_string() const override
@@ -57,7 +57,16 @@ public:
 
   size_t hash() const override
   {
-    return ::std::hash<int>()(data_place_ordinals::invalid);
+    return ::std::hash<int>()(data_place_interface::invalid);
+  }
+
+  int cmp(const data_place_interface& other) const override
+  {
+    if (typeid(*this) != typeid(other))
+    {
+      return typeid(*this).before(typeid(other)) ? -1 : 1;
+    }
+    return 0;
   }
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
@@ -89,7 +98,7 @@ public:
 
   int get_device_ordinal() const override
   {
-    return data_place_ordinals::host;
+    return data_place_interface::host;
   }
 
   ::std::string to_string() const override
@@ -99,7 +108,16 @@ public:
 
   size_t hash() const override
   {
-    return ::std::hash<int>()(data_place_ordinals::host);
+    return ::std::hash<int>()(data_place_interface::host);
+  }
+
+  int cmp(const data_place_interface& other) const override
+  {
+    if (typeid(*this) != typeid(other))
+    {
+      return typeid(*this).before(typeid(other)) ? -1 : 1;
+    }
+    return 0;
   }
 
   void* allocate(::std::ptrdiff_t size, cudaStream_t) const override
@@ -148,7 +166,7 @@ public:
 
   int get_device_ordinal() const override
   {
-    return data_place_ordinals::managed;
+    return data_place_interface::managed;
   }
 
   ::std::string to_string() const override
@@ -158,7 +176,16 @@ public:
 
   size_t hash() const override
   {
-    return ::std::hash<int>()(data_place_ordinals::managed);
+    return ::std::hash<int>()(data_place_interface::managed);
+  }
+
+  int cmp(const data_place_interface& other) const override
+  {
+    if (typeid(*this) != typeid(other))
+    {
+      return typeid(*this).before(typeid(other)) ? -1 : 1;
+    }
+    return 0;
   }
 
   void* allocate(::std::ptrdiff_t size, cudaStream_t) const override
@@ -209,6 +236,16 @@ public:
   size_t hash() const override
   {
     return ::std::hash<int>()(device_id_);
+  }
+
+  int cmp(const data_place_interface& other) const override
+  {
+    if (typeid(*this) != typeid(other))
+    {
+      return typeid(*this).before(typeid(other)) ? -1 : 1;
+    }
+    return (device_id_ > static_cast<const data_place_device&>(other).device_id_)
+             - (device_id_ < static_cast<const data_place_device&>(other).device_id_);
   }
 
   void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
@@ -284,7 +321,7 @@ public:
 
   int get_device_ordinal() const override
   {
-    return data_place_ordinals::affine;
+    return data_place_interface::affine;
   }
 
   ::std::string to_string() const override
@@ -294,7 +331,16 @@ public:
 
   size_t hash() const override
   {
-    return ::std::hash<int>()(data_place_ordinals::affine);
+    return ::std::hash<int>()(data_place_interface::affine);
+  }
+
+  int cmp(const data_place_interface& other) const override
+  {
+    if (typeid(*this) != typeid(other))
+    {
+      return typeid(*this).before(typeid(other)) ? -1 : 1;
+    }
+    return 0;
   }
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
@@ -326,7 +372,7 @@ public:
 
   int get_device_ordinal() const override
   {
-    return data_place_ordinals::device_auto;
+    return data_place_interface::device_auto;
   }
 
   ::std::string to_string() const override
@@ -336,7 +382,16 @@ public:
 
   size_t hash() const override
   {
-    return ::std::hash<int>()(data_place_ordinals::device_auto);
+    return ::std::hash<int>()(data_place_interface::device_auto);
+  }
+
+  int cmp(const data_place_interface& other) const override
+  {
+    if (typeid(*this) != typeid(other))
+    {
+      return typeid(*this).before(typeid(other)) ? -1 : 1;
+    }
+    return 0;
   }
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
