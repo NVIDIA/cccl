@@ -562,7 +562,7 @@ struct DeviceAdjacentDifference
   //! Subtracts the left element of each adjacent pair of elements residing within device-accessible memory.
   //!
   //! .. versionadded:: 3.4.0
-  //!    First appears in CUDA Toolkit 12.4.
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -647,7 +647,7 @@ struct DeviceAdjacentDifference
   //! Subtracts the left element of each adjacent pair of elements in-place.
   //!
   //! .. versionadded:: 3.4.0
-  //!    First appears in CUDA Toolkit 12.4.
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -723,7 +723,7 @@ struct DeviceAdjacentDifference
   //! Subtracts the right element of each adjacent pair of elements residing within device-accessible memory.
   //!
   //! .. versionadded:: 3.4.0
-  //!    First appears in CUDA Toolkit 12.4.
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -810,7 +810,7 @@ struct DeviceAdjacentDifference
   //! Subtracts the right element of each adjacent pair of elements in-place.
   //!
   //! .. versionadded:: 3.4.0
-  //!    First appears in CUDA Toolkit 12.4.
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
