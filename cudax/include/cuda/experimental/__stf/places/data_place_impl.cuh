@@ -1,0 +1,329 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDASTF in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+/**
+ * @file
+ * @brief Concrete implementations of data_place_interface
+ *
+ * This file contains implementations for standard data place types:
+ * host, managed, device, invalid, affine, and device_auto.
+ */
+
+#pragma once
+
+#include <cuda/__cccl_config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/experimental/__stf/places/data_place_interface.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
+
+namespace cuda::experimental::stf
+{
+
+/**
+ * @brief Implementation for the invalid data place
+ */
+class data_place_invalid final : public data_place_interface
+{
+public:
+  bool is_invalid() const override
+  {
+    return true;
+  }
+
+  int get_device_ordinal() const override
+  {
+    return data_place_ordinals::invalid;
+  }
+
+  ::std::string to_string() const override
+  {
+    return "invalid";
+  }
+
+  void* allocate(::std::ptrdiff_t, cudaStream_t) const override
+  {
+    throw ::std::logic_error("Cannot allocate from invalid data_place");
+  }
+
+  void deallocate(void*, size_t, cudaStream_t) const override
+  {
+    throw ::std::logic_error("Cannot deallocate from invalid data_place");
+  }
+
+  bool allocation_is_stream_ordered() const override
+  {
+    return false;
+  }
+};
+
+/**
+ * @brief Implementation for the host (pinned memory) data place
+ */
+class data_place_host final : public data_place_interface
+{
+public:
+  bool is_host() const override
+  {
+    return true;
+  }
+
+  int get_device_ordinal() const override
+  {
+    return data_place_ordinals::host;
+  }
+
+  ::std::string to_string() const override
+  {
+    return "host";
+  }
+
+  void* allocate(::std::ptrdiff_t size, cudaStream_t) const override
+  {
+    void* result = nullptr;
+    cuda_safe_call(cudaMallocHost(&result, size));
+    return result;
+  }
+
+  void deallocate(void* ptr, size_t, cudaStream_t) const override
+  {
+    cuda_safe_call(cudaFreeHost(ptr));
+  }
+
+  bool allocation_is_stream_ordered() const override
+  {
+    return false;
+  }
+
+  CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const override
+  {
+#if _CCCL_CTK_AT_LEAST(12, 2)
+    CUmemAllocationProp prop = {};
+    prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
+    prop.location.type       = CU_MEM_LOCATION_TYPE_HOST;
+    prop.location.id         = 0;
+    return cuMemCreate(handle, size, &prop, 0);
+#else
+    (void) handle;
+    (void) size;
+    return CUDA_ERROR_NOT_SUPPORTED;
+#endif
+  }
+};
+
+/**
+ * @brief Implementation for managed memory data place
+ */
+class data_place_managed final : public data_place_interface
+{
+public:
+  bool is_managed() const override
+  {
+    return true;
+  }
+
+  int get_device_ordinal() const override
+  {
+    return data_place_ordinals::managed;
+  }
+
+  ::std::string to_string() const override
+  {
+    return "managed";
+  }
+
+  void* allocate(::std::ptrdiff_t size, cudaStream_t) const override
+  {
+    void* result = nullptr;
+    cuda_safe_call(cudaMallocManaged(&result, size));
+    return result;
+  }
+
+  void deallocate(void* ptr, size_t, cudaStream_t) const override
+  {
+    cuda_safe_call(cudaFree(ptr));
+  }
+
+  bool allocation_is_stream_ordered() const override
+  {
+    return false;
+  }
+};
+
+/**
+ * @brief Implementation for a specific CUDA device data place
+ */
+class data_place_device final : public data_place_interface
+{
+public:
+  explicit data_place_device(int device_id)
+      : device_id_(device_id)
+  {
+    _CCCL_ASSERT(device_id >= 0, "Device ID must be non-negative");
+  }
+
+  bool is_device() const override
+  {
+    return true;
+  }
+
+  int get_device_ordinal() const override
+  {
+    return device_id_;
+  }
+
+  ::std::string to_string() const override
+  {
+    return "dev" + ::std::to_string(device_id_);
+  }
+
+  void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
+  {
+    void* result       = nullptr;
+    const int prev_dev = cuda_try<cudaGetDevice>();
+
+    if (prev_dev != device_id_)
+    {
+      cuda_safe_call(cudaSetDevice(device_id_));
+    }
+
+    SCOPE(exit)
+    {
+      if (prev_dev != device_id_)
+      {
+        cuda_safe_call(cudaSetDevice(prev_dev));
+      }
+    };
+
+    cuda_safe_call(cudaMallocAsync(&result, size, stream));
+    return result;
+  }
+
+  void deallocate(void* ptr, size_t, cudaStream_t stream) const override
+  {
+    const int prev_dev = cuda_try<cudaGetDevice>();
+
+    if (prev_dev != device_id_)
+    {
+      cuda_safe_call(cudaSetDevice(device_id_));
+    }
+
+    SCOPE(exit)
+    {
+      if (prev_dev != device_id_)
+      {
+        cuda_safe_call(cudaSetDevice(prev_dev));
+      }
+    };
+
+    cuda_safe_call(cudaFreeAsync(ptr, stream));
+  }
+
+  bool allocation_is_stream_ordered() const override
+  {
+    return true;
+  }
+
+  CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const override
+  {
+    CUmemAllocationProp prop = {};
+    prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
+    prop.location.type       = CU_MEM_LOCATION_TYPE_DEVICE;
+    prop.location.id         = device_id_;
+    return cuMemCreate(handle, size, &prop, 0);
+  }
+
+private:
+  int device_id_;
+};
+
+/**
+ * @brief Implementation for the affine data place (uses exec_place's affine data place)
+ */
+class data_place_affine final : public data_place_interface
+{
+public:
+  bool is_affine() const override
+  {
+    return true;
+  }
+
+  int get_device_ordinal() const override
+  {
+    return data_place_ordinals::affine;
+  }
+
+  ::std::string to_string() const override
+  {
+    return "affine";
+  }
+
+  void* allocate(::std::ptrdiff_t, cudaStream_t) const override
+  {
+    throw ::std::logic_error("Cannot allocate from affine data_place directly");
+  }
+
+  void deallocate(void*, size_t, cudaStream_t) const override
+  {
+    throw ::std::logic_error("Cannot deallocate from affine data_place directly");
+  }
+
+  bool allocation_is_stream_ordered() const override
+  {
+    return false;
+  }
+};
+
+/**
+ * @brief Implementation for device_auto data place (auto-select device)
+ */
+class data_place_device_auto final : public data_place_interface
+{
+public:
+  bool is_device_auto() const override
+  {
+    return true;
+  }
+
+  int get_device_ordinal() const override
+  {
+    return data_place_ordinals::device_auto;
+  }
+
+  ::std::string to_string() const override
+  {
+    return "auto";
+  }
+
+  void* allocate(::std::ptrdiff_t, cudaStream_t) const override
+  {
+    throw ::std::logic_error("Cannot allocate from device_auto data_place directly");
+  }
+
+  void deallocate(void*, size_t, cudaStream_t) const override
+  {
+    throw ::std::logic_error("Cannot deallocate from device_auto data_place directly");
+  }
+
+  bool allocation_is_stream_ordered() const override
+  {
+    return true;
+  }
+};
+
+} // end namespace cuda::experimental::stf

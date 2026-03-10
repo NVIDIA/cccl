@@ -110,15 +110,16 @@ int main()
       EXPECT(gc_stream != gc_stream1);
     }
 
-    // getStream() provides additional metadata if needed
-    decorated_stream dstream = gc_place0.getStream(resources, true);
+    // get_stream() provides additional metadata if needed
+    decorated_stream dstream = gc_place0.get_stream(resources, true);
     EXPECT(dstream.stream != nullptr);
     EXPECT(dstream.dev_id == current_device);
 
-    // create_stream() returns cudaStream_t; call with place activated so the stream is in the green context
+    // Verify that streams created while a green context place is activated belong to that green context
     {
       exec_place_guard guard(gc_place0);
-      cudaStream_t created = gc_place0.create_stream();
+      cudaStream_t created = nullptr;
+      cuda_safe_call(cudaStreamCreateWithFlags(&created, cudaStreamNonBlocking));
       EXPECT(created != nullptr);
       EXPECT(get_device_from_stream(created) == current_device);
       verify_stream_green_context(created, view0.g_ctx);

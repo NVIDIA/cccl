@@ -128,7 +128,7 @@ public:
       const auto& places = grid.get_places();
       for (const exec_place& p : places)
       {
-        stream_grid.push_back(p.getStream(true));
+        stream_grid.push_back(p.get_stream(true));
       }
 
       EXPECT(stream_grid.size() > 0UL);
@@ -180,7 +180,7 @@ public:
 
         if (!found)
         {
-          dstream = e_place.getStream(true);
+          dstream = e_place.get_stream(true);
           //    fprintf(stderr, "COULD NOT REUSE ... selected stream ID %ld\n", dstream.id);
         }
       }
