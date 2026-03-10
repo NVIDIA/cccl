@@ -17,8 +17,8 @@
 C2H_TEST("cub::DeviceMerge::MergeKeys accepts env with stream", "[merge][env]")
 {
   // example-begin merge-keys-env
-  auto keys1 = thrust::device_vector<int>{0, 2, 5};
-  auto keys2 = thrust::device_vector<int>{0, 3, 3, 4};
+  auto keys1  = thrust::device_vector<int>{0, 2, 5};
+  auto keys2  = thrust::device_vector<int>{0, 3, 3, 4};
   auto result = thrust::device_vector<int>(7);
 
   cuda::stream stream{cuda::devices[0]};

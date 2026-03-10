@@ -32,13 +32,10 @@ TEST_CASE("DeviceMerge::MergeKeys works with default environment", "[merge][devi
   auto keys2  = c2h::device_vector<int>{0, 3, 3, 4};
   auto result = c2h::device_vector<int>(7);
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceMerge::MergeKeys(
-            keys1.begin(),
-            static_cast<int>(keys1.size()),
-            keys2.begin(),
-            static_cast<int>(keys2.size()),
-            result.begin()));
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceMerge::MergeKeys(
+      keys1.begin(), static_cast<int>(keys1.size()), keys2.begin(), static_cast<int>(keys2.size()), result.begin()));
 
   c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
   REQUIRE(result == expected);
@@ -54,16 +51,17 @@ TEST_CASE("DeviceMerge::MergePairs works with default environment", "[merge][dev
   auto result_keys   = c2h::device_vector<int>(7);
   auto result_values = c2h::device_vector<char>(7);
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceMerge::MergePairs(
-            keys1.begin(),
-            values1.begin(),
-            static_cast<int>(keys1.size()),
-            keys2.begin(),
-            values2.begin(),
-            static_cast<int>(keys2.size()),
-            result_keys.begin(),
-            result_values.begin()));
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceMerge::MergePairs(
+      keys1.begin(),
+      values1.begin(),
+      static_cast<int>(keys1.size()),
+      keys2.begin(),
+      values2.begin(),
+      static_cast<int>(keys2.size()),
+      result_keys.begin(),
+      result_values.begin()));
 
   c2h::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
   c2h::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
@@ -80,26 +78,26 @@ C2H_TEST("DeviceMerge::MergeKeys uses environment", "[merge][device]")
   auto result = c2h::device_vector<int>(7);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceMerge::MergeKeys(
-            nullptr,
-            expected_bytes_allocated,
-            keys1.begin(),
-            static_cast<int>(keys1.size()),
-            keys2.begin(),
-            static_cast<int>(keys2.size()),
-            result.begin()));
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceMerge::MergeKeys(
+      nullptr,
+      expected_bytes_allocated,
+      keys1.begin(),
+      static_cast<int>(keys1.size()),
+      keys2.begin(),
+      static_cast<int>(keys2.size()),
+      result.begin()));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
-  merge_keys(
-    keys1.begin(),
-    static_cast<int>(keys1.size()),
-    keys2.begin(),
-    static_cast<int>(keys2.size()),
-    result.begin(),
-    cuda::std::less<>{},
-    env);
+  merge_keys(keys1.begin(),
+             static_cast<int>(keys1.size()),
+             keys2.begin(),
+             static_cast<int>(keys2.size()),
+             result.begin(),
+             cuda::std::less<>{},
+             env);
 
   c2h::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
   REQUIRE(result == expected);
@@ -115,27 +113,27 @@ TEST_CASE("DeviceMerge::MergeKeys uses custom stream", "[merge][device]")
   REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceMerge::MergeKeys(
-            nullptr,
-            expected_bytes_allocated,
-            keys1.begin(),
-            static_cast<int>(keys1.size()),
-            keys2.begin(),
-            static_cast<int>(keys2.size()),
-            result.begin()));
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceMerge::MergeKeys(
+      nullptr,
+      expected_bytes_allocated,
+      keys1.begin(),
+      static_cast<int>(keys1.size()),
+      keys2.begin(),
+      static_cast<int>(keys2.size()),
+      result.begin()));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
-  merge_keys(
-    keys1.begin(),
-    static_cast<int>(keys1.size()),
-    keys2.begin(),
-    static_cast<int>(keys2.size()),
-    result.begin(),
-    cuda::std::less<>{},
-    env);
+  merge_keys(keys1.begin(),
+             static_cast<int>(keys1.size()),
+             keys2.begin(),
+             static_cast<int>(keys2.size()),
+             result.begin(),
+             cuda::std::less<>{},
+             env);
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
 
@@ -156,18 +154,19 @@ C2H_TEST("DeviceMerge::MergePairs uses environment", "[merge][device]")
   auto result_values = c2h::device_vector<char>(7);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceMerge::MergePairs(
-            nullptr,
-            expected_bytes_allocated,
-            keys1.begin(),
-            values1.begin(),
-            static_cast<int>(keys1.size()),
-            keys2.begin(),
-            values2.begin(),
-            static_cast<int>(keys2.size()),
-            result_keys.begin(),
-            result_values.begin()));
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceMerge::MergePairs(
+      nullptr,
+      expected_bytes_allocated,
+      keys1.begin(),
+      values1.begin(),
+      static_cast<int>(keys1.size()),
+      keys2.begin(),
+      values2.begin(),
+      static_cast<int>(keys2.size()),
+      result_keys.begin(),
+      result_values.begin()));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -203,18 +202,19 @@ TEST_CASE("DeviceMerge::MergePairs uses custom stream", "[merge][device]")
   REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
 
   size_t expected_bytes_allocated{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceMerge::MergePairs(
-            nullptr,
-            expected_bytes_allocated,
-            keys1.begin(),
-            values1.begin(),
-            static_cast<int>(keys1.size()),
-            keys2.begin(),
-            values2.begin(),
-            static_cast<int>(keys2.size()),
-            result_keys.begin(),
-            result_values.begin()));
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceMerge::MergePairs(
+      nullptr,
+      expected_bytes_allocated,
+      keys1.begin(),
+      values1.begin(),
+      static_cast<int>(keys1.size()),
+      keys2.begin(),
+      values2.begin(),
+      static_cast<int>(keys2.size()),
+      result_keys.begin(),
+      result_values.begin()));
 
   auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
