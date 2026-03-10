@@ -32,9 +32,9 @@ TEST_CASE("Device adjacent difference subtract left copy works with default envi
   auto input  = c2h::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
   auto output = c2h::device_vector<int>(8);
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceAdjacentDifference::SubtractLeftCopy(input.begin(), output.begin(), input.size(), cuda::std::minus{}));
+  REQUIRE(cudaSuccess
+          == cub::DeviceAdjacentDifference::SubtractLeftCopy(
+            input.begin(), output.begin(), input.size(), cuda::std::minus{}));
 
   c2h::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
   REQUIRE(output == expected);
@@ -56,10 +56,9 @@ TEST_CASE("Device adjacent difference subtract right copy works with default env
   auto input  = c2h::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
   auto output = c2h::device_vector<int>(8);
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceAdjacentDifference::SubtractRightCopy(
-      input.begin(), output.begin(), input.size(), cuda::std::minus{}));
+  REQUIRE(cudaSuccess
+          == cub::DeviceAdjacentDifference::SubtractRightCopy(
+            input.begin(), output.begin(), input.size(), cuda::std::minus{}));
 
   c2h::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
   REQUIRE(output == expected);
@@ -83,10 +82,9 @@ C2H_TEST("Device adjacent difference subtract left copy uses environment", "[adj
   auto output = c2h::device_vector<int>(8);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceAdjacentDifference::SubtractLeftCopy(
-      nullptr, expected_bytes_allocated, input.begin(), output.begin(), input.size(), cuda::std::minus{}));
+  REQUIRE(cudaSuccess
+          == cub::DeviceAdjacentDifference::SubtractLeftCopy(
+            nullptr, expected_bytes_allocated, input.begin(), output.begin(), input.size(), cuda::std::minus{}));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -101,10 +99,9 @@ C2H_TEST("Device adjacent difference subtract left uses environment", "[adjacent
   auto data = c2h::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceAdjacentDifference::SubtractLeft(
-      nullptr, expected_bytes_allocated, data.begin(), data.size(), cuda::std::minus{}));
+  REQUIRE(cudaSuccess
+          == cub::DeviceAdjacentDifference::SubtractLeft(
+            nullptr, expected_bytes_allocated, data.begin(), data.size(), cuda::std::minus{}));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -120,10 +117,9 @@ C2H_TEST("Device adjacent difference subtract right copy uses environment", "[ad
   auto output = c2h::device_vector<int>(8);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceAdjacentDifference::SubtractRightCopy(
-      nullptr, expected_bytes_allocated, input.begin(), output.begin(), input.size(), cuda::std::minus{}));
+  REQUIRE(cudaSuccess
+          == cub::DeviceAdjacentDifference::SubtractRightCopy(
+            nullptr, expected_bytes_allocated, input.begin(), output.begin(), input.size(), cuda::std::minus{}));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
@@ -138,10 +134,9 @@ C2H_TEST("Device adjacent difference subtract right uses environment", "[adjacen
   auto data = c2h::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceAdjacentDifference::SubtractRight(
-      nullptr, expected_bytes_allocated, data.begin(), data.size(), cuda::std::minus{}));
+  REQUIRE(cudaSuccess
+          == cub::DeviceAdjacentDifference::SubtractRight(
+            nullptr, expected_bytes_allocated, data.begin(), data.size(), cuda::std::minus{}));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
 
