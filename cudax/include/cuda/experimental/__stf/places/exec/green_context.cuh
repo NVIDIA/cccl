@@ -25,7 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/places/data_place_extension.cuh>
+#include <cuda/experimental/__stf/places/data_place_interface.cuh>
 #include <cuda/experimental/__stf/places/exec/green_ctx_view.cuh>
 #include <cuda/experimental/__stf/places/places.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
@@ -52,7 +52,7 @@ public:
   /**
    * @brief Extension implementation for green context data places
    */
-  class extension : public data_place_extension
+  class extension : public data_place_interface
   {
   public:
     /**
@@ -63,7 +63,10 @@ public:
         : view_(mv(view))
     {}
 
-    exec_place affine_exec_place() const override;
+    bool is_extension() const override
+    {
+      return true;
+    }
 
     int get_device_ordinal() const override
     {
@@ -78,26 +81,6 @@ public:
     size_t hash() const override
     {
       return hash_all(view_.g_ctx, view_.devid);
-    }
-
-    bool operator==(const data_place_extension& other) const override
-    {
-      if (typeid(*this) != typeid(other))
-      {
-        return false;
-      }
-      const auto& other_gc = static_cast<const extension&>(other);
-      return view_ == other_gc.view_;
-    }
-
-    bool operator<(const data_place_extension& other) const override
-    {
-      if (typeid(*this) != typeid(other))
-      {
-        return typeid(*this).before(typeid(other));
-      }
-      const auto& other_gc = static_cast<const extension&>(other);
-      return view_ < other_gc.view_;
     }
 
     /**
@@ -126,6 +109,14 @@ public:
     {
       cuda_safe_call(cudaFreeAsync(ptr, stream));
     }
+
+    bool allocation_is_stream_ordered() const override
+    {
+      return true;
+    }
+
+    // Provide affine exec place implementation for data_place::affine_exec_place()
+    ::std::shared_ptr<void> get_affine_exec_impl() const override;
 
   private:
     green_ctx_view view_;
@@ -418,9 +409,9 @@ inline exec_place exec_place::green_ctx(const green_ctx_view& gc_view, bool use_
   return exec_place_green_ctx(gc_view, use_green_ctx_data_place);
 }
 
-inline exec_place green_ctx_data_place::extension::affine_exec_place() const
+inline ::std::shared_ptr<void> green_ctx_data_place::extension::get_affine_exec_impl() const
 {
-  return exec_place::green_ctx(view_);
+  return exec_place::green_ctx(view_).get_impl();
 }
 
 inline data_place data_place::green_ctx(const green_ctx_view& gc_view)

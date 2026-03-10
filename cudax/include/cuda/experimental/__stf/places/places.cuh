@@ -27,7 +27,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/places/data_place_extension.cuh>
+#include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
+#include <cuda/experimental/__stf/places/data_place_impl.cuh>
 #include <cuda/experimental/__stf/places/exec/green_ctx_view.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 
@@ -60,31 +61,51 @@ class exec_place_green_ctx;
 //! Function type for computing executor placement from data coordinates
 using get_executor_func_t = pos4 (*)(pos4, dim4, dim4);
 
+// Forward declaration for composite implementation
+class data_place_composite;
+
 /**
  * @brief Designates where data will be stored (CPU memory vs. on device 0 (first GPU), device 1 (second GPU), ...)
  *
- * This typed `enum` is aligned with CUDA device ordinals but does not implicitly convert to `int`. See `device_ordinal`
- * below.
+ * This class uses a polymorphic design where all place types (host, managed, device,
+ * composite, extensions) implement a common data_place_interface. The data_place class
+ * holds a shared_ptr to this interface and delegates operations to it.
  */
 class data_place
 {
-  // Constructors and factory functions below forward to this.
-  explicit data_place(int devid)
-      : devid(devid)
+  // Private constructor from interface pointer
+  explicit data_place(::std::shared_ptr<data_place_interface> impl)
+      : pimpl_(mv(impl))
   {}
+
+  // No-op deleter for static instances
+  struct nop_deleter
+  {
+    void operator()(data_place_interface*) const noexcept {}
+  };
+
+  // Helper to create a shared_ptr to a static instance
+  template <typename T>
+  static ::std::shared_ptr<data_place_interface> make_static_instance()
+  {
+    static T instance;
+    return ::std::shared_ptr<data_place_interface>(&instance, nop_deleter{});
+  }
 
 public:
   /**
    * @brief Default constructor. The object is initialized as invalid.
    */
-  data_place() = default;
+  data_place()
+      : pimpl_(make_static_instance<data_place_invalid>())
+  {}
 
   /**
    * @brief Represents an invalid `data_place` object.
    */
   static data_place invalid()
   {
-    return data_place(invalid_devid);
+    return data_place(make_static_instance<data_place_invalid>());
   }
 
   /**
@@ -93,7 +114,7 @@ public:
    */
   static data_place host()
   {
-    return data_place(host_devid);
+    return data_place(make_static_instance<data_place_host>());
   }
 
   /**
@@ -101,14 +122,14 @@ public:
    */
   static data_place managed()
   {
-    return data_place(managed_devid);
+    return data_place(make_static_instance<data_place_managed>());
   }
 
   /// This actually does not define a data_place, but means that we should use
   /// the data place affine to the execution place
   static data_place affine()
   {
-    return data_place(affine_devid);
+    return data_place(make_static_instance<data_place_affine>());
   }
 
   /**
@@ -117,7 +138,7 @@ public:
    */
   static data_place device_auto()
   {
-    return data_place(device_auto_devid);
+    return data_place(make_static_instance<data_place_device_auto>());
   }
 
   /** @brief Data is placed on device with index dev_id. Two relaxations are allowed: -1 can be passed to create a
@@ -125,14 +146,26 @@ public:
    */
   static data_place device(int dev_id = 0)
   {
+    // Handle special cases that map to other place types
+    if (dev_id == data_place_ordinals::host)
+    {
+      return host();
+    }
+    if (dev_id == data_place_ordinals::managed)
+    {
+      return managed();
+    }
+
     static int const ndevs = [] {
       int result;
       cuda_safe_call(cudaGetDeviceCount(&result));
       return result;
     }();
 
-    EXPECT((dev_id >= managed_devid && dev_id < ndevs), "Invalid device ID ", dev_id);
-    return data_place(dev_id);
+    EXPECT((dev_id >= 0 && dev_id < ndevs), "Invalid device ID ", dev_id);
+
+    // For device places, we create new instances (can't easily cache all possible device IDs)
+    return data_place(::std::make_shared<data_place_device>(dev_id));
   }
 
   /**
@@ -153,7 +186,16 @@ public:
   static data_place green_ctx(const green_ctx_view& gc_view);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
-  bool operator==(const data_place& rhs) const;
+  bool operator==(const data_place& rhs) const
+  {
+    // Same pointer means same place
+    if (pimpl_.get() == rhs.pimpl_.get())
+    {
+      return true;
+    }
+    // Delegate to interface
+    return pimpl_->equals(*rhs.pimpl_);
+  }
 
   bool operator!=(const data_place& rhs) const
   {
@@ -164,23 +206,8 @@ public:
   bool operator<(const data_place& rhs) const
   {
     // Not implemented for composite places
-    EXPECT(!is_composite());
-    EXPECT(!rhs.is_composite());
-
-    // If both are extensions, delegate to the extension
-    if (is_extension() && rhs.is_extension())
-    {
-      return *extension < *rhs.extension;
-    }
-
-    // Extensions sort after non-extensions
-    if (is_extension() != rhs.is_extension())
-    {
-      return rhs.is_extension(); // non-extension < extension
-    }
-
-    // For simple places, compare devid
-    return devid < rhs.devid;
+    EXPECT((!is_composite() && !rhs.is_composite()), "Ordering of composite places is not implemented.");
+    return pimpl_->less_than(*rhs.pimpl_);
   }
 
   bool operator>(const data_place& rhs) const
@@ -201,80 +228,49 @@ public:
   /// checks if this data place is a composite data place
   bool is_composite() const
   {
-    // If the devid indicates composite_devid then we must have a descriptor
-    _CCCL_ASSERT(devid != composite_devid || composite_desc != nullptr, "invalid state");
-    return (devid == composite_devid);
+    return pimpl_->is_composite();
   }
 
   /// checks if this data place has an extension (green context, etc.)
   bool is_extension() const
   {
-    _CCCL_ASSERT(devid != extension_devid || extension != nullptr, "invalid state");
-    return (devid == extension_devid);
+    return pimpl_->is_extension();
   }
 
   bool is_invalid() const
   {
-    return devid == invalid_devid;
+    return pimpl_->is_invalid();
   }
 
   bool is_host() const
   {
-    return devid == host_devid;
+    return pimpl_->is_host();
   }
 
   bool is_managed() const
   {
-    return devid == managed_devid;
+    return pimpl_->is_managed();
   }
 
   bool is_affine() const
   {
-    return devid == affine_devid;
+    return pimpl_->is_affine();
   }
 
   /// checks if this data place corresponds to a specific device
   bool is_device() const
   {
-    // All other type of data places have a specific negative devid value.
-    return (devid >= 0);
+    return pimpl_->is_device();
   }
 
   bool is_device_auto() const
   {
-    return devid == device_auto_devid;
+    return pimpl_->is_device_auto();
   }
 
   ::std::string to_string() const
   {
-    if (devid == host_devid)
-    {
-      return "host";
-    }
-    if (devid == managed_devid)
-    {
-      return "managed";
-    }
-    if (devid == device_auto_devid)
-    {
-      return "auto";
-    }
-    if (devid == invalid_devid)
-    {
-      return "invalid";
-    }
-
-    if (is_extension())
-    {
-      return extension->to_string();
-    }
-
-    if (is_composite())
-    {
-      return "composite" + ::std::to_string(devid);
-    }
-
-    return "dev" + ::std::to_string(devid);
+    return pimpl_->to_string();
   }
 
   /**
@@ -283,10 +279,10 @@ public:
    */
   friend inline size_t to_index(const data_place& p)
   {
-    EXPECT(p.devid >= -2, "Data place with device id ", p.devid, " does not refer to a device.");
-    // This is not strictly a problem in this function, but it's not legit either. So let's assert.
-    assert(p.devid < cuda_try<cudaGetDeviceCount>());
-    return p.devid + 2;
+    int devid = p.pimpl_->get_device_ordinal();
+    EXPECT(devid >= -2, "Data place with device id ", devid, " does not refer to a device.");
+    _CCCL_ASSERT(devid < cuda_try<cudaGetDeviceCount>(), "Invalid device id");
+    return devid + 2;
   }
 
   /**
@@ -295,21 +291,20 @@ public:
    */
   friend inline int device_ordinal(const data_place& p)
   {
-    if (p.is_extension())
-    {
-      return p.extension->get_device_ordinal();
-    }
-
-    // TODO: restrict this function, i.e. sometimes it's called with invalid places.
-    // EXPECT(p != invalid, "Invalid device id ", p.devid, " for data place.");
-    //    EXPECT(p.devid >= -2, "Data place with device id ", p.devid, " does not refer to a device.");
-    //    assert(p.devid < cuda_try<cudaGetDeviceCount>());
-    return p.devid;
+    return p.pimpl_->get_device_ordinal();
   }
 
-  const exec_place_grid& get_grid() const;
-  const get_executor_func_t& get_partitioner() const;
+  const exec_place_grid& get_grid() const
+  {
+    return pimpl_->get_grid();
+  }
 
+  const get_executor_func_t& get_partitioner() const
+  {
+    return pimpl_->get_partitioner();
+  }
+
+  // Defined later after exec_place is complete
   exec_place affine_exec_place() const;
 
   /**
@@ -319,275 +314,74 @@ public:
    */
   size_t hash() const
   {
-    // Not implemented for composite places
-    EXPECT(!is_composite());
-
-    // Extensions provide their own hash
-    if (is_extension())
-    {
-      return extension->hash();
-    }
-
-    // For simple places, hash the devid directly
-    return ::std::hash<int>()(devid);
+    return pimpl_->hash();
   }
 
-  decorated_stream getDataStream() const;
+  decorated_stream get_data_stream() const;
 
-private:
-  /**
-   * @brief Store the fields specific to a composite data place
-   * Definition comes later to avoid cyclic dependencies.
-   */
-  class composite_state;
-
-  //{ state
-  int devid = invalid_devid; // invalid by default
-  // Stores the fields specific to composite data places
-  ::std::shared_ptr<composite_state> composite_desc;
-  // Extension for custom place types (green contexts, etc.)
-  ::std::shared_ptr<data_place_extension> extension;
-  //} state
-
-public:
   /**
    * @brief Check if this data place has a custom extension
    */
   bool has_extension() const
   {
-    return extension != nullptr;
+    return is_extension();
   }
 
   /**
-   * @brief Get the extension (may be nullptr for standard place types)
+   * @brief Get the underlying interface pointer
+   *
+   * This is primarily for internal use and backward compatibility.
    */
-  const ::std::shared_ptr<data_place_extension>& get_extension() const
+  const ::std::shared_ptr<data_place_interface>& get_impl() const
   {
-    return extension;
+    return pimpl_;
   }
 
   /**
    * @brief Create a data_place from an extension
    *
    * This factory method allows custom place types to be created from
-   * data_place_extension implementations.
+   * data_place_interface implementations that return true from is_extension().
    */
-  static data_place from_extension(::std::shared_ptr<data_place_extension> ext)
+  static data_place from_extension(::std::shared_ptr<data_place_interface> ext)
   {
-    data_place result(extension_devid);
-    result.extension = mv(ext);
-    return result;
+    return data_place(mv(ext));
   }
 
   /**
    * @brief Create a physical memory allocation for this place (VMM API)
-   *
-   * This method is used by localized arrays (composite_slice) to create physical
-   * memory segments that are then mapped into a contiguous virtual address space.
-   * It delegates to the extension's mem_create if present (enabling custom place
-   * types to override memory allocation), otherwise creates a standard pinned
-   * allocation on this place's device or host.
-   *
-   * Managed memory is not supported by the VMM API.
-   *
-   * @note For regular memory allocation (not VMM-based), use the allocate() method
-   *       instead, which provides stream-ordered allocation via cudaMallocAsync.
-   *
-   * @param handle Output parameter for the allocation handle
-   * @param size Size of the allocation in bytes
-   * @return CUresult indicating success or failure
-   *
-   * @see allocate() for regular memory allocation
    */
   CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const
   {
-    if (extension)
-    {
-      return extension->mem_create(handle, size);
-    }
-
-    int dev_ordinal = device_ordinal(*this);
-
-    CUmemAllocationProp prop = {};
-    prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
-    if (dev_ordinal >= 0)
-    {
-      // Device memory
-      prop.location.type = CU_MEM_LOCATION_TYPE_DEVICE;
-      prop.location.id   = dev_ordinal;
-    }
-#if _CCCL_CTK_AT_LEAST(12, 2)
-    else if (dev_ordinal == -1)
-    {
-      // Host memory (device ordinal -1)
-      // CU_MEM_LOCATION_TYPE_HOST requires CUDA 12.2+
-      prop.location.type = CU_MEM_LOCATION_TYPE_HOST;
-      prop.location.id   = 0;
-    }
-    else
-    {
-      // Managed memory (-2) is not supported by the VMM API
-      _CCCL_ASSERT(false, "mem_create: managed memory is not supported by the VMM API");
-      return CUDA_ERROR_NOT_SUPPORTED;
-    }
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 2) ^^^ / vvv _CCCL_CTK_BELOW(12, 2) vvv
-    else if (dev_ordinal == -1)
-    {
-      // Host VMM requires CU_MEM_LOCATION_TYPE_HOST which is only available in CUDA 12.2+
-      _CCCL_ASSERT(false, "mem_create: host VMM requires CUDA 12.2+ (CU_MEM_LOCATION_TYPE_HOST not available)");
-      return CUDA_ERROR_NOT_SUPPORTED;
-    }
-    else
-    {
-      // Managed memory (-2) is not supported by the VMM API
-      _CCCL_ASSERT(false, "mem_create: managed memory is not supported by the VMM API");
-      return CUDA_ERROR_NOT_SUPPORTED;
-    }
-#endif // _CCCL_CTK_AT_LEAST(12, 2)
-    return cuMemCreate(handle, size, &prop, 0);
+    return pimpl_->mem_create(handle, size);
   }
 
   /**
    * @brief Allocate memory at this data place (raw allocation)
-   *
-   * This is the low-level allocation interface that handles all place types:
-   * - For extensions: delegates to extension->allocate()
-   * - For host: uses cudaMallocHost (immediate, stream ignored)
-   * - For managed: uses cudaMallocManaged (immediate, stream ignored)
-   * - For device: uses cudaMallocAsync (stream-ordered)
-   *
-   * @param size Size of the allocation in bytes
-   * @param stream CUDA stream for stream-ordered allocations (ignored for immediate allocations, defaults to nullptr)
-   * @return Pointer to allocated memory
    */
   void* allocate(::std::ptrdiff_t size, cudaStream_t stream = nullptr) const
   {
-    // Delegate to extension if present
-    if (extension)
-    {
-      return extension->allocate(size, stream);
-    }
-
-    void* result = nullptr;
-
-    if (is_host())
-    {
-      cuda_safe_call(cudaMallocHost(&result, size));
-    }
-    else if (is_managed())
-    {
-      cuda_safe_call(cudaMallocManaged(&result, size));
-    }
-    else
-    {
-      // Device allocation
-      EXPECT(!is_composite(), "Composite places don't support direct allocation");
-      const int prev_dev   = cuda_try<cudaGetDevice>();
-      const int target_dev = devid;
-
-      if (prev_dev != target_dev)
-      {
-        cuda_safe_call(cudaSetDevice(target_dev));
-      }
-
-      SCOPE(exit)
-      {
-        if (prev_dev != target_dev)
-        {
-          cuda_safe_call(cudaSetDevice(prev_dev));
-        }
-      };
-
-      cuda_safe_call(cudaMallocAsync(&result, size, stream));
-    }
-
-    return result;
+    return pimpl_->allocate(size, stream);
   }
 
   /**
    * @brief Deallocate memory at this data place (raw deallocation)
-   *
-   * For immediate deallocations (host, managed), the stream is ignored.
-   * Note that cudaFree (used for managed memory) may introduce implicit synchronization.
-   *
-   * @param ptr Pointer to memory to deallocate
-   * @param size Size of the allocation
-   * @param stream CUDA stream for stream-ordered deallocations (ignored for immediate deallocations, defaults to
-   * nullptr)
    */
   void deallocate(void* ptr, size_t size, cudaStream_t stream = nullptr) const
   {
-    // Delegate to extension if present
-    if (extension)
-    {
-      extension->deallocate(ptr, size, stream);
-      return;
-    }
-
-    if (is_host())
-    {
-      cuda_safe_call(cudaFreeHost(ptr));
-    }
-    else if (is_managed())
-    {
-      cuda_safe_call(cudaFree(ptr));
-    }
-    else
-    {
-      // Device deallocation
-      const int prev_dev   = cuda_try<cudaGetDevice>();
-      const int target_dev = devid;
-
-      if (prev_dev != target_dev)
-      {
-        cuda_safe_call(cudaSetDevice(target_dev));
-      }
-
-      SCOPE(exit)
-      {
-        if (prev_dev != target_dev)
-        {
-          cuda_safe_call(cudaSetDevice(prev_dev));
-        }
-      };
-
-      cuda_safe_call(cudaFreeAsync(ptr, stream));
-    }
+    pimpl_->deallocate(ptr, size, stream);
   }
 
   /**
    * @brief Returns true if allocation/deallocation is stream-ordered
-   *
-   * When this returns true, the allocation uses stream-ordered APIs like
-   * cudaMallocAsync, and allocators should use stream_async_op to synchronize
-   * prerequisites before allocation.
-   *
-   * When this returns false, the allocation is immediate (like cudaMallocHost)
-   * and the stream parameter is ignored. Note that immediate deallocations
-   * (e.g., cudaFree) may introduce implicit synchronization.
    */
   bool allocation_is_stream_ordered() const
   {
-    if (extension)
-    {
-      return extension->allocation_is_stream_ordered();
-    }
-    // Host and managed are immediate (stream ignored), device is stream-ordered
-    return !is_host() && !is_managed();
+    return pimpl_->allocation_is_stream_ordered();
   }
 
 private:
-  /* Constants to implement data_place::invalid(), data_place::host(), etc. */
-  enum devid : int
-  {
-    invalid_devid     = ::std::numeric_limits<int>::min(),
-    extension_devid   = -6, // For any custom extension-based place
-    composite_devid   = -5,
-    device_auto_devid = -4,
-    affine_devid      = -3,
-    managed_devid     = -2,
-    host_devid        = -1,
-  };
+  ::std::shared_ptr<data_place_interface> pimpl_;
 };
 
 /**
@@ -616,19 +410,18 @@ public:
 
     virtual exec_place activate() const
     {
-      if (affine.is_device())
+      if (!affine.is_device())
       {
-        auto old_dev_id = cuda_try<cudaGetDevice>();
-        auto new_dev_id = device_ordinal(affine);
-        if (old_dev_id != new_dev_id)
-        {
-          cuda_safe_call(cudaSetDevice(new_dev_id));
-        }
-
-        auto old_dev = data_place::device(old_dev_id);
-        return exec_place(mv(old_dev));
+        return exec_place();
       }
-      return exec_place();
+      auto old_dev_id = cuda_try<cudaGetDevice>();
+      auto new_dev_id = device_ordinal(affine);
+      if (old_dev_id != new_dev_id)
+      {
+        cuda_safe_call(cudaSetDevice(new_dev_id));
+      }
+      auto old_dev = data_place::device(old_dev_id);
+      return exec_place(mv(old_dev));
     }
 
     virtual void deactivate(const exec_place& prev) const
@@ -684,11 +477,6 @@ public:
       return affine == rhs.affine;
     }
 
-    bool operator!=(const impl& rhs) const
-    {
-      return !(*this == rhs);
-    }
-
     virtual size_t hash() const
     {
       return affine.hash();
@@ -715,21 +503,6 @@ public:
     virtual stream_pool& get_stream_pool(bool for_computation) const
     {
       return for_computation ? pool_compute : pool_data;
-    }
-
-    /**
-     * @brief Create a stream valid for execution on this place.
-     *
-     * Expected to be called with this exec place already activated (e.g. from
-     * stream_pool::next(place) which uses exec_place_guard). Creates a new stream
-     * in the current context via cudaStreamCreateWithFlags(..., cudaStreamNonBlocking).
-     * The caller (e.g. stream_pool::next) builds a decorated_stream from the result.
-     */
-    cudaStream_t create_stream() const
-    {
-      cudaStream_t stream = nullptr;
-      cuda_safe_call(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
-      return stream;
     }
 
     static constexpr size_t pool_size      = 4;
@@ -866,24 +639,11 @@ public:
   /**
    * @brief Get a decorated stream from the stream pool associated to this execution place.
    */
-  decorated_stream getStream(bool for_computation) const;
-
-  /**
-   * @brief Create a stream valid for execution on this place.
-   *
-   * Call only when the place is already activated (e.g. inside exec_place_guard).
-   * For getting a stream from the pool, use getStream() / pick_stream() instead.
-   *
-   * @return A CUDA stream valid for this execution place
-   */
-  cudaStream_t create_stream() const
-  {
-    return pimpl->create_stream();
-  }
+  decorated_stream get_stream(bool for_computation) const;
 
   cudaStream_t pick_stream(bool for_computation = true) const
   {
-    return getStream(for_computation).stream;
+    return get_stream(for_computation).stream;
   }
 
   // TODO make protected !
@@ -1000,36 +760,7 @@ public:
    *
    */
   template <typename Fun>
-  auto operator->*(Fun&& fun) const
-  {
-    const int new_device = device_ordinal(pimpl->affine);
-    if (new_device >= 0)
-    {
-      // We're on a device
-      // Change device only if necessary.
-      const int old_device = cuda_try<cudaGetDevice>();
-      if (new_device != old_device)
-      {
-        cuda_safe_call(cudaSetDevice(new_device));
-      }
-
-      SCOPE(exit)
-      {
-        // It is the responsibility of the client to ensure that any change of the current device in this
-        // section was reverted.
-        if (new_device != old_device)
-        {
-          cuda_safe_call(cudaSetDevice(old_device));
-        }
-      };
-      return ::std::forward<Fun>(fun)();
-    }
-    else
-    {
-      // We're on the host, just call the function with no further ado.
-      return ::std::forward<Fun>(fun)();
-    }
-  }
+  auto operator->*(Fun&& fun) const;
 
 public:
   exec_place(::std::shared_ptr<impl> pimpl)
@@ -1108,6 +839,13 @@ private:
   exec_place prev_;
 };
 
+template <typename Fun>
+auto exec_place::operator->*(Fun&& fun) const
+{
+  exec_place_guard guard(*this);
+  return ::std::forward<Fun>(fun)();
+}
+
 inline decorated_stream stream_pool::next(const exec_place& place)
 {
   _CCCL_ASSERT(pimpl, "stream_pool::next called on empty pool");
@@ -1119,7 +857,7 @@ inline decorated_stream stream_pool::next(const exec_place& place)
   if (!result.stream)
   {
     exec_place_guard guard(place);
-    result.stream = place.create_stream();
+    cuda_safe_call(cudaStreamCreateWithFlags(&result.stream, cudaStreamNonBlocking));
     result.id     = get_stream_id(result.stream);
     result.dev_id = get_device_from_stream(result.stream);
   }
@@ -1134,7 +872,7 @@ inline decorated_stream stream_pool::next(const exec_place& place)
   return result;
 }
 
-inline decorated_stream exec_place::getStream(bool for_computation) const
+inline decorated_stream exec_place::get_stream(bool for_computation) const
 {
   return get_stream_pool(for_computation).next(*this);
 }
@@ -1413,9 +1151,9 @@ public:
 
     stream_pool& get_stream_pool(bool for_computation) const override
     {
-      assert(!for_computation);
+      _CCCL_ASSERT(!for_computation, "Expected data transfer stream pool");
       const auto& v = get_places();
-      assert(v.size() > 0);
+      _CCCL_ASSERT(v.size() > 0, "Grid must have at least one place");
       return v[0].get_stream_pool(for_computation);
     }
 
@@ -1596,7 +1334,7 @@ public:
 
   ::std::shared_ptr<impl> get_impl() const
   {
-    assert(::std::dynamic_pointer_cast<impl>(exec_place::get_impl()));
+    _CCCL_ASSERT(::std::dynamic_pointer_cast<impl>(exec_place::get_impl()), "Invalid exec_place_grid impl");
     return ::std::static_pointer_cast<impl>(exec_place::get_impl());
   }
 
@@ -1627,6 +1365,47 @@ inline exec_place_grid make_grid(::std::vector<exec_place> places)
   _CCCL_ASSERT(!places.empty(), "invalid places");
   auto grid_dim = dim4(places.size(), 1, 1, 1);
   return make_grid(mv(places), grid_dim);
+}
+
+// === data_place::affine_exec_place implementation ===
+// Defined here after exec_place_grid is complete
+
+inline exec_place data_place::affine_exec_place() const
+{
+  if (is_host())
+  {
+    return exec_place::host();
+  }
+
+  // Managed memory uses host exec_place (debatable but follows original behavior)
+  if (is_managed())
+  {
+    return exec_place::host();
+  }
+
+  if (is_composite())
+  {
+    // Return the grid of places associated to this composite data place
+    // exec_place_grid inherits from exec_place, so this works via slicing
+    return get_grid();
+  }
+
+  if (is_extension())
+  {
+    // Extensions provide their own affine exec_place via get_affine_exec_impl()
+    auto impl = pimpl_->get_affine_exec_impl();
+    _CCCL_ASSERT(impl != nullptr, "Extension must provide affine exec_place implementation");
+    return exec_place(::std::static_pointer_cast<exec_place::impl>(impl));
+  }
+
+  if (is_device())
+  {
+    // This must be a specific device
+    return exec_place::device(pimpl_->get_device_ordinal());
+  }
+
+  // For invalid, affine, device_auto - throw
+  throw ::std::logic_error("affine_exec_place() not meaningful for this data_place type");
 }
 
 /// Implementation deferred because we need the definition of exec_place_grid
@@ -1803,45 +1582,88 @@ inline exec_place_grid partition_tile(const exec_place_grid& e_place, dim4 tile_
   return make_grid(mv(places), size);
 }
 
-/*
- * This is defined here so that we avoid cyclic dependencies.
+/**
+ * @brief Implementation for composite data places
+ *
+ * Composite places represent data distributed across multiple devices,
+ * using a grid of execution places and a partitioner function.
  */
-class data_place::composite_state
+class data_place_composite final : public data_place_interface
 {
 public:
-  composite_state() = default;
-
-  composite_state(exec_place_grid grid, get_executor_func_t partitioner_func)
-      : grid(mv(grid))
-      , partitioner_func(mv(partitioner_func))
+  data_place_composite(exec_place_grid grid, get_executor_func_t partitioner_func)
+      : grid_(mv(grid))
+      , partitioner_func_(mv(partitioner_func))
   {}
 
-  const exec_place_grid& get_grid() const
+  bool is_composite() const override
   {
-    return grid;
+    return true;
   }
-  const get_executor_func_t& get_partitioner() const
+
+  int get_device_ordinal() const override
   {
-    return partitioner_func;
+    return data_place_ordinals::composite;
+  }
+
+  ::std::string to_string() const override
+  {
+    return "composite";
+  }
+
+  size_t hash() const override
+  {
+    // Composite places don't support hashing
+    throw ::std::logic_error("hash() not supported for composite data_place");
+  }
+
+  bool equals(const data_place_interface& other) const override
+  {
+    if (!other.is_composite())
+    {
+      return false;
+    }
+    return (get_grid() == other.get_grid() && get_partitioner() == other.get_partitioner());
+  }
+
+  bool less_than(const data_place_interface&) const override
+  {
+    throw ::std::logic_error("Ordering of composite places is not implemented.");
+  }
+
+  void* allocate(::std::ptrdiff_t, cudaStream_t) const override
+  {
+    throw ::std::logic_error("Composite places don't support direct allocation");
+  }
+
+  void deallocate(void*, size_t, cudaStream_t) const override
+  {
+    throw ::std::logic_error("Composite places don't support direct deallocation");
+  }
+
+  bool allocation_is_stream_ordered() const override
+  {
+    return false;
+  }
+
+  const exec_place_grid& get_grid() const override
+  {
+    return grid_;
+  }
+
+  const get_executor_func_t& get_partitioner() const override
+  {
+    return partitioner_func_;
   }
 
 private:
-  exec_place_grid grid;
-  get_executor_func_t partitioner_func;
+  exec_place_grid grid_;
+  get_executor_func_t partitioner_func_;
 };
 
 inline data_place data_place::composite(get_executor_func_t f, const exec_place_grid& grid)
 {
-  data_place result;
-
-  // Flags this is a composite data place
-  result.devid = composite_devid;
-
-  // Save the state that is specific to a composite data place into the
-  // data_place object.
-  result.composite_desc = ::std::make_shared<composite_state>(grid, f);
-
-  return result;
+  return data_place(::std::make_shared<data_place_composite>(grid, f));
 }
 
 // User-visible API when the same partitioner as the one of the grid
@@ -1851,76 +1673,11 @@ data_place data_place::composite(partitioner_t, const exec_place_grid& g)
   return data_place::composite(&partitioner_t::get_executor, g);
 }
 
-inline exec_place data_place::affine_exec_place() const
+inline decorated_stream data_place::get_data_stream() const
 {
-  //    EXPECT(*this != affine);
-  //    EXPECT(*this != data_place::invalid());
-
-  if (is_host())
-  {
-    return exec_place::host();
-  }
-
-  // This is debatable !
-  if (is_managed())
-  {
-    return exec_place::host();
-  }
-
-  if (is_composite())
-  {
-    // Return the grid of places associated to that composite data place
-    return get_grid();
-  }
-
-  if (is_extension())
-  {
-    return extension->affine_exec_place();
-  }
-
-  // This must be a device
-  return exec_place::device(devid);
+  return affine_exec_place().get_stream(false);
 }
 
-inline decorated_stream data_place::getDataStream() const
-{
-  return affine_exec_place().getStream(false);
-}
-
-inline const exec_place_grid& data_place::get_grid() const
-{
-  return composite_desc->get_grid();
-};
-inline const get_executor_func_t& data_place::get_partitioner() const
-{
-  return composite_desc->get_partitioner();
-}
-
-inline bool data_place::operator==(const data_place& rhs) const
-{
-  if (is_composite() != rhs.is_composite())
-  {
-    return false;
-  }
-
-  if (is_extension() != rhs.is_extension())
-  {
-    return false;
-  }
-
-  if (!is_composite() && !is_extension())
-  {
-    return devid == rhs.devid;
-  }
-
-  if (is_extension())
-  {
-    _CCCL_ASSERT(devid == extension_devid, "");
-    return (rhs.devid == extension_devid && *extension == *rhs.extension);
-  }
-
-  return (get_grid() == rhs.get_grid() && (get_partitioner() == rhs.get_partitioner()));
-}
 
 #ifdef UNITTESTED_FILE
 UNITTEST("Data place equality")
@@ -2037,6 +1794,186 @@ UNITTEST("dim4 very large total size calculation")
 };
 
 #endif // UNITTESTED_FILE
+
+template <auto... spec>
+template <typename Fun>
+interpreted_execution_policy<spec...>::interpreted_execution_policy(
+  const thread_hierarchy_spec<spec...>& p, const exec_place& where, const Fun& f)
+{
+  constexpr size_t pdepth = sizeof...(spec) / 2;
+
+  if (where == exec_place::host())
+  {
+    // XXX this may not match the type of the spec if we are not using the default spec ...
+    for (size_t d = 0; d < pdepth; d++)
+    {
+      this->add_level({::std::make_pair(hw_scope::thread, 1)});
+    }
+    return;
+  }
+
+  size_t ndevs = where.size();
+
+  if constexpr (pdepth == 1)
+  {
+    size_t l0_size = p.get_width(0);
+    bool l0_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<0>;
+
+    size_t shared_mem_bytes = 0;
+
+    auto kernel_limits = reserved::compute_kernel_limits(f, shared_mem_bytes, l0_sync);
+
+    int grid_size = 0;
+    int block_size;
+
+    if (l0_size == 0)
+    {
+      grid_size = kernel_limits.min_grid_size;
+      // Maximum occupancy without exceeding limits
+      block_size = ::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
+      l0_size    = ndevs * grid_size * block_size;
+    }
+    else
+    {
+      // Find grid_size and block_size such that grid_size*block_size = l0_size and block_size <= max_block_size
+      for (block_size = kernel_limits.max_block_size; block_size >= 1; block_size--)
+      {
+        if (l0_size % block_size == 0)
+        {
+          grid_size = l0_size / block_size;
+          break;
+        }
+      }
+    }
+
+    // Make sure we have computed the width if that was implicit
+    _CCCL_ASSERT(l0_size > 0, "Level 0 size must be positive");
+
+    _CCCL_ASSERT(grid_size > 0, "Grid size must be positive");
+    _CCCL_ASSERT(block_size <= kernel_limits.max_block_size, "Block size exceeds max block size");
+
+    _CCCL_ASSERT(l0_size % ndevs == 0, "Level 0 size must be divisible by number of devices");
+    _CCCL_ASSERT(l0_size % (ndevs * block_size) == 0, "Level 0 size must be divisible by ndevs * block_size");
+
+    _CCCL_ASSERT(ndevs * grid_size * block_size == l0_size, "Dimension mismatch: ndevs * grid_size * block_size != l0_size");
+
+    this->add_level({::std::make_pair(hw_scope::device, ndevs),
+                     ::std::make_pair(hw_scope::block, grid_size),
+                     ::std::make_pair(hw_scope::thread, block_size)});
+    this->set_level_mem(0, size_t(p.get_mem(0)));
+    this->set_level_sync(0, l0_sync);
+  }
+  else if constexpr (pdepth == 2)
+  {
+    size_t l0_size = p.get_width(0);
+    size_t l1_size = p.get_width(1);
+    bool l0_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<0>;
+    bool l1_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<1>;
+
+    /* level 1 will be mapped on threads, level 0 on blocks and above */
+    size_t shared_mem_bytes = size_t(p.get_mem(1));
+    auto kernel_limits      = reserved::compute_kernel_limits(f, shared_mem_bytes, l0_sync);
+
+    // For implicit widths, use sizes suggested by CUDA occupancy calculator
+    if (l1_size == 0)
+    {
+      // Maximum occupancy without exceeding limits
+      l1_size = ::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
+    }
+    else
+    {
+      if (int(l1_size) > kernel_limits.block_size_limit)
+      {
+        fprintf(stderr,
+                "Unsatisfiable spec: Maximum block size %d threads, requested %zu (level 1)\n",
+                kernel_limits.block_size_limit,
+                l1_size);
+        abort();
+      }
+    }
+
+    if (l0_size == 0)
+    {
+      l0_size = kernel_limits.min_grid_size * ndevs;
+    }
+
+    // Enforce the resource limits in the number of threads per block
+    _CCCL_ASSERT(int(l1_size) <= kernel_limits.block_size_limit, "Level 1 size exceeds block size limit");
+
+    _CCCL_ASSERT(l0_size % ndevs == 0, "Level 0 size must be divisible by number of devices");
+
+    /* Merge blocks and devices */
+    this->add_level({::std::make_pair(hw_scope::device, ndevs), ::std::make_pair(hw_scope::block, l0_size / ndevs)});
+    this->set_level_mem(0, size_t(p.get_mem(0)));
+    this->set_level_sync(0, l0_sync);
+
+    this->add_level({::std::make_pair(hw_scope::thread, l1_size)});
+    this->set_level_mem(1, size_t(p.get_mem(1)));
+    this->set_level_sync(1, l1_sync);
+  }
+  else if constexpr (pdepth == 3)
+  {
+    size_t l0_size = p.get_width(0);
+    size_t l1_size = p.get_width(1);
+    size_t l2_size = p.get_width(2);
+    bool l0_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<0>;
+    bool l1_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<1>;
+    bool l2_sync   = thread_hierarchy_spec<spec...>::template is_synchronizable<2>;
+
+    /* level 2 will be mapped on threads, level 1 on blocks, level 0 on devices */
+    size_t shared_mem_bytes = size_t(p.get_mem(2));
+    auto kernel_limits      = reserved::compute_kernel_limits(f, shared_mem_bytes, l0_sync || l1_sync);
+
+    // For implicit widths, use sizes suggested by CUDA occupancy calculator
+    if (l2_size == 0)
+    {
+      // Maximum occupancy without exceeding limits
+      l2_size = ::std::min(kernel_limits.max_block_size, kernel_limits.block_size_limit);
+    }
+    else
+    {
+      if (int(l2_size) > kernel_limits.block_size_limit)
+      {
+        fprintf(stderr,
+                "Unsatisfiable spec: Maximum block size %d threads, requested %zu (level 2)\n",
+                kernel_limits.block_size_limit,
+                l2_size);
+        abort();
+      }
+    }
+
+    if (l1_size == 0)
+    {
+      l1_size = kernel_limits.min_grid_size;
+    }
+
+    if (l0_size == 0)
+    {
+      l0_size = ndevs;
+    }
+
+    // Enforce the resource limits in the number of threads per block
+    _CCCL_ASSERT(int(l2_size) <= kernel_limits.block_size_limit, "Level 2 size exceeds block size limit");
+    _CCCL_ASSERT(int(l0_size) <= ndevs, "Level 0 size exceeds number of devices");
+
+    /* Merge blocks and devices */
+    this->add_level({::std::make_pair(hw_scope::device, l0_size)});
+    this->set_level_mem(0, size_t(p.get_mem(0)));
+    this->set_level_sync(0, l0_sync);
+
+    this->add_level({::std::make_pair(hw_scope::block, l1_size)});
+    this->set_level_mem(1, size_t(p.get_mem(1)));
+    this->set_level_sync(1, l1_sync);
+
+    this->add_level({::std::make_pair(hw_scope::thread, l2_size)});
+    this->set_level_mem(2, size_t(p.get_mem(2)));
+    this->set_level_sync(2, l2_sync);
+  }
+  else
+  {
+    static_assert(pdepth == 3);
+  }
+}
 
 /**
  * @brief Specialization of `std::hash` for `cuda::experimental::stf::data_place` to allow it to be used as a key in
