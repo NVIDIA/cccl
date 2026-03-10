@@ -1613,7 +1613,7 @@ public:
     const auto& o = static_cast<const data_place_composite&>(other);
     if (get_partitioner() != o.get_partitioner())
     {
-      return (get_partitioner() > o.get_partitioner()) ? 1 : -1;
+      return ::std::less<get_executor_func_t>{}(o.get_partitioner(), get_partitioner()) ? 1 : -1;
     }
     if (get_grid() == o.get_grid())
     {
