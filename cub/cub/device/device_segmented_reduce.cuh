@@ -1079,6 +1079,8 @@ public:
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
     using InputT  = detail::it_value_t<InputIteratorT>;
     using init_t  = InputT;
+    static_assert(::cuda::std::numeric_limits<init_t>::is_specialized,
+                  "numeric_limits must be specialized for the input value type");
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
@@ -1194,6 +1196,9 @@ public:
     using op_t    = ::cuda::minimum<>;
     using AccumT  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_t>;
 
+    static_assert(::cuda::std::numeric_limits<init_t>::is_specialized,
+                  "numeric_limits must be specialized for the input value type");
+
     return segmented_reduce_impl<AccumT, OffsetT>(
       d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, op_t{}, ::cuda::std::numeric_limits<init_t>::max(), env);
   }
@@ -1270,6 +1275,9 @@ public:
     // integral constant or larger integral types
     using offset_t = int;
     using input_t  = detail::it_value_t<InputIteratorT>;
+
+    static_assert(::cuda::std::numeric_limits<input_t>::is_specialized,
+                  "numeric_limits must be specialized for the input value type");
 
     return detail::reduce::
       DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::minimum<>, input_t>::Dispatch(
@@ -1348,6 +1356,9 @@ public:
 
     static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
                   "gpu_to_gpu determinism is not supported for device segmented reductions ");
+
+    static_assert(::cuda::std::numeric_limits<input_t>::is_specialized,
+                  "numeric_limits must be specialized for the input value type");
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
@@ -1484,6 +1495,8 @@ public:
     using InitT          = detail::reduce::empty_problem_init_t<OverrideAccumT>;
 
     static_assert(::cuda::std::is_same_v<int, OutputKeyT>, "Output key type must be int.");
+    static_assert(::cuda::std::numeric_limits<InputValueT>::is_specialized,
+                  "numeric_limits must be specialized for the input value type");
 
     // Wrapped input iterator to produce index-value <OverrideOffsetT, InputT> tuples
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OverrideOffsetT, OutputValueT>;
@@ -1620,6 +1633,8 @@ public:
     using InitT          = detail::reduce::empty_problem_init_t<OverrideAccumT>;
 
     static_assert(::cuda::std::is_same_v<int, OutputKeyT>, "Output key type must be int.");
+    static_assert(::cuda::std::numeric_limits<InputValueT>::is_specialized,
+                  "numeric_limits must be specialized for the input value type");
 
     // Wrapped input iterator to produce index-value <OverrideOffsetT, InputT> tuples
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OverrideOffsetT, OutputValueT>;
@@ -1718,6 +1733,8 @@ public:
     using output_value_t = typename output_tuple_t::second_type;
 
     static_assert(::cuda::std::is_same_v<int, output_key_t>, "Output key type must be int.");
+    static_assert(::cuda::std::numeric_limits<input_value_t>::is_specialized,
+                  "numeric_limits must be specialized for the input value type");
 
     // Wrapped input iterator to produce index-value <offset_t, InputT> tuples
     auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
@@ -1821,6 +1838,8 @@ public:
                   "gpu_to_gpu determinism is not supported for device segmented reductions ");
 
     static_assert(::cuda::std::is_same_v<int, output_key_t>, "Output key type must be int.");
+    static_assert(::cuda::std::numeric_limits<input_value_t>::is_specialized,
+                  "numeric_limits must be specialized for the input value type");
 
     using arg_index_input_iterator_t =
       THRUST_NS_QUALIFIER::transform_iterator<detail::reduce::generate_idx_value<InputIteratorT, output_value_t>,
@@ -1953,6 +1972,8 @@ public:
     using InputT  = cub::detail::it_value_t<InputIteratorT>;
     using init_t  = InputT;
 
+    static_assert(::cuda::std::numeric_limits<init_t>::is_specialized,
+                  "numeric_limits must be specialized for the input value type");
     static_assert(::cuda::std::is_integral_v<OffsetT>, "Offset iterator value type should be integral.");
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
@@ -2068,6 +2089,9 @@ public:
     using op_t    = ::cuda::maximum<>;
     using AccumT  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_t>;
 
+    static_assert(::cuda::std::numeric_limits<init_t>::is_specialized,
+                  "numeric_limits must be specialized for the input value type");
+
     return segmented_reduce_impl<AccumT, OffsetT>(
       d_in,
       d_out,
@@ -2146,6 +2170,9 @@ public:
     using offset_t = int;
     using input_t  = detail::it_value_t<InputIteratorT>;
 
+    static_assert(::cuda::std::numeric_limits<input_t>::is_specialized,
+                  "numeric_limits must be specialized for the input value type");
+
     return detail::reduce::
       DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::maximum<>, input_t>::Dispatch(
         d_temp_storage,
@@ -2223,6 +2250,8 @@ public:
 
     static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
                   "gpu_to_gpu determinism is not supported for device segmented reductions ");
+    static_assert(::cuda::std::numeric_limits<input_t>::is_specialized,
+                  "numeric_limits must be specialized for the input value type");
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
@@ -2362,6 +2391,8 @@ public:
     using OutputValueT   = typename OutputTupleT::Value;
 
     static_assert(::cuda::std::is_same_v<int, OutputKeyT>, "Output key type must be int.");
+    static_assert(::cuda::std::numeric_limits<InputValueT>::is_specialized,
+                  "numeric_limits must be specialized for the input value type");
 
     // Wrapped input iterator to produce index-value <OverrideOffsetT, InputT> tuples
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OverrideOffsetT, OutputValueT>;
@@ -2498,6 +2529,8 @@ public:
     using OutputValueT   = typename OutputTupleT::Value;
 
     static_assert(::cuda::std::is_same_v<int, OutputKeyT>, "Output key type must be int.");
+    static_assert(::cuda::std::numeric_limits<InputValueT>::is_specialized,
+                  "numeric_limits must be specialized for the input value type");
 
     // Wrapped input iterator to produce index-value <OverrideOffsetT, InputT> tuples
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OverrideOffsetT, OutputValueT>;
@@ -2593,6 +2626,8 @@ public:
     using output_value_t = typename output_tuple_t::second_type;
 
     static_assert(::cuda::std::is_same_v<int, output_key_t>, "Output key type must be int.");
+    static_assert(::cuda::std::numeric_limits<input_value_t>::is_specialized,
+                  "numeric_limits must be specialized for the input value type");
 
     // Wrapped input iterator to produce index-value <input_t, InputT> tuples
     auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
@@ -2694,6 +2729,8 @@ public:
                   "gpu_to_gpu determinism is not supported for device segmented reductions ");
 
     static_assert(::cuda::std::is_same_v<int, output_key_t>, "Output key type must be int.");
+    static_assert(::cuda::std::numeric_limits<input_value_t>::is_specialized,
+                  "numeric_limits must be specialized for the input value type");
 
     using arg_index_input_iterator_t =
       THRUST_NS_QUALIFIER::transform_iterator<detail::reduce::generate_idx_value<InputIteratorT, output_value_t>,
