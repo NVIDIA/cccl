@@ -183,10 +183,10 @@ struct DeviceAdjacentDifference
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
   //! @param[in] d_input
-  //!   Pointer to the input sequence
+  //!   Beginning of the input sequence
   //!
   //! @param[out] d_output
-  //!   Pointer to the output sequence
+  //!   Beginning of the output sequence
   //!
   //! @param[in] num_items
   //!   Number of items in the input sequence
@@ -301,7 +301,7 @@ struct DeviceAdjacentDifference
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
   //! @param[in,out] d_input
-  //!   Pointer to the input sequence and the result
+  //!   Beginning of the input sequence and the result
   //!
   //! @param[in] num_items
   //!   Number of items in the input sequence
@@ -424,10 +424,10 @@ struct DeviceAdjacentDifference
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
   //! @param[in] d_input
-  //!   Pointer to the input sequence
+  //!   Beginning of the input sequence
   //!
   //! @param[out] d_output
-  //!   Pointer to the output sequence
+  //!   Beginning of the output sequence
   //!
   //! @param[in] num_items
   //!   Number of items in the input sequence
@@ -531,7 +531,7 @@ struct DeviceAdjacentDifference
   //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
   //! @param[in,out] d_input
-  //!   Pointer to the input sequence
+  //!   Beginning of the input sequence
   //!
   //! @param[in] num_items
   //!   Number of items in the input sequence
@@ -609,10 +609,10 @@ struct DeviceAdjacentDifference
   //!   Supports customization of stream via ``cuda::get_stream``.
   //!
   //! @param[in] d_input
-  //!   Pointer to the input sequence
+  //!   Beginning of the input sequence
   //!
   //! @param[out] d_output
-  //!   Pointer to the output sequence
+  //!   Beginning of the output sequence
   //!
   //! @param[in] num_items
   //!   Number of items in the input sequence
@@ -629,8 +629,8 @@ struct DeviceAdjacentDifference
             typename DifferenceOpT,
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  SubtractLeftCopy(InputIteratorT d_input, OutputIteratorT d_output, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SubtractLeftCopy(
+    InputIteratorT d_input, OutputIteratorT d_output, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractLeftCopy");
 
@@ -638,8 +638,15 @@ struct DeviceAdjacentDifference
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, auto stream) {
-        return detail::adjacent_difference::dispatch<InputIteratorT, OutputIteratorT, DifferenceOpT, OffsetT, MayAlias::No, ReadOption::Left>(
-          d_temp_storage, temp_storage_bytes, d_input, d_output, static_cast<OffsetT>(num_items), difference_op, stream);
+        return detail::adjacent_difference::
+          dispatch<InputIteratorT, OutputIteratorT, DifferenceOpT, OffsetT, MayAlias::No, ReadOption::Left>(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_input,
+            d_output,
+            static_cast<OffsetT>(num_items),
+            difference_op,
+            stream);
       });
   }
 
@@ -689,7 +696,7 @@ struct DeviceAdjacentDifference
   //!   Supports customization of stream via ``cuda::get_stream``.
   //!
   //! @param[in,out] d_input
-  //!   Pointer to the input sequence and the result
+  //!   Beginning of the input sequence and the result
   //!
   //! @param[in] num_items
   //!   Number of items in the input sequence
@@ -714,8 +721,9 @@ struct DeviceAdjacentDifference
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, auto stream) {
-        return detail::adjacent_difference::dispatch<RandomAccessIteratorT, RandomAccessIteratorT, DifferenceOpT, OffsetT, MayAlias::Yes, ReadOption::Left>(
-          d_temp_storage, temp_storage_bytes, d_input, d_input, static_cast<OffsetT>(num_items), difference_op, stream);
+        return detail::adjacent_difference::
+          dispatch<RandomAccessIteratorT, RandomAccessIteratorT, DifferenceOpT, OffsetT, MayAlias::Yes, ReadOption::Left>(
+            d_temp_storage, temp_storage_bytes, d_input, d_input, static_cast<OffsetT>(num_items), difference_op, stream);
       });
   }
 
@@ -772,10 +780,10 @@ struct DeviceAdjacentDifference
   //!   Supports customization of stream via ``cuda::get_stream``.
   //!
   //! @param[in] d_input
-  //!   Pointer to the input sequence
+  //!   Beginning of the input sequence
   //!
   //! @param[out] d_output
-  //!   Pointer to the output sequence
+  //!   Beginning of the output sequence
   //!
   //! @param[in] num_items
   //!   Number of items in the input sequence
@@ -792,8 +800,8 @@ struct DeviceAdjacentDifference
             typename DifferenceOpT,
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  SubtractRightCopy(InputIteratorT d_input, OutputIteratorT d_output, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SubtractRightCopy(
+    InputIteratorT d_input, OutputIteratorT d_output, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractRightCopy");
 
@@ -801,8 +809,15 @@ struct DeviceAdjacentDifference
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, auto stream) {
-        return detail::adjacent_difference::dispatch<InputIteratorT, OutputIteratorT, DifferenceOpT, OffsetT, MayAlias::No, ReadOption::Right>(
-          d_temp_storage, temp_storage_bytes, d_input, d_output, static_cast<OffsetT>(num_items), difference_op, stream);
+        return detail::adjacent_difference::
+          dispatch<InputIteratorT, OutputIteratorT, DifferenceOpT, OffsetT, MayAlias::No, ReadOption::Right>(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_input,
+            d_output,
+            static_cast<OffsetT>(num_items),
+            difference_op,
+            stream);
       });
   }
 
@@ -852,7 +867,7 @@ struct DeviceAdjacentDifference
   //!   Supports customization of stream via ``cuda::get_stream``.
   //!
   //! @param[in,out] d_input
-  //!   Pointer to the input sequence
+  //!   Beginning of the input sequence
   //!
   //! @param[in] num_items
   //!   Number of items in the input sequence
@@ -877,8 +892,9 @@ struct DeviceAdjacentDifference
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, auto stream) {
-        return detail::adjacent_difference::dispatch<RandomAccessIteratorT, RandomAccessIteratorT, DifferenceOpT, OffsetT, MayAlias::Yes, ReadOption::Right>(
-          d_temp_storage, temp_storage_bytes, d_input, d_input, static_cast<OffsetT>(num_items), difference_op, stream);
+        return detail::adjacent_difference::
+          dispatch<RandomAccessIteratorT, RandomAccessIteratorT, DifferenceOpT, OffsetT, MayAlias::Yes, ReadOption::Right>(
+            d_temp_storage, temp_storage_bytes, d_input, d_input, static_cast<OffsetT>(num_items), difference_op, stream);
       });
   }
 };
