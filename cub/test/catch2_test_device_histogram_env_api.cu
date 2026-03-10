@@ -95,9 +95,9 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (1D)"
   int num_pixels = 2;
 
   // 5 levels per channel → 4 bins per channel: [0,1), [1,2), [2,3), [3,4)
-  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels                    = {5, 5, 5};
-  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level         = {0, 0, 0};
-  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> upper_level         = {4, 4, 4};
+  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
+  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
+  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> upper_level = {4, 4, 4};
 
   auto d_histogram_r = thrust::device_vector<int>(4, 0);
   auto d_histogram_g = thrust::device_vector<int>(4, 0);
@@ -149,9 +149,9 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (2D)"
   int num_rows            = 2;
   size_t row_stride_bytes = num_row_pixels * NUM_CHANNELS * sizeof(unsigned char);
 
-  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels                    = {5, 5, 5};
-  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level         = {0, 0, 0};
-  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> upper_level         = {4, 4, 4};
+  cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
+  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
+  cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> upper_level = {4, 4, 4};
 
   auto d_histogram_r = thrust::device_vector<int>(4, 0);
   auto d_histogram_g = thrust::device_vector<int>(4, 0);
@@ -207,8 +207,8 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (1D)
   int num_pixels = 2;
 
   // Custom bin boundaries per channel
-  auto d_levels_r = thrust::device_vector<unsigned char>{0, 2, 4};    // 2 bins: [0,2), [2,4)
-  auto d_levels_g = thrust::device_vector<unsigned char>{0, 3, 5};    // 2 bins: [0,3), [3,5)
+  auto d_levels_r = thrust::device_vector<unsigned char>{0, 2, 4}; // 2 bins: [0,2), [2,4)
+  auto d_levels_g = thrust::device_vector<unsigned char>{0, 3, 5}; // 2 bins: [0,3), [3,5)
   auto d_levels_b = thrust::device_vector<unsigned char>{0, 1, 2, 3}; // 3 bins: [0,1), [1,2), [2,3)
 
   cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels = {3, 3, 4};
@@ -268,8 +268,8 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (2D)
   int num_rows            = 2;
   size_t row_stride_bytes = num_row_pixels * NUM_CHANNELS * sizeof(unsigned char);
 
-  auto d_levels_r = thrust::device_vector<unsigned char>{0, 2, 4};    // 2 bins: [0,2), [2,4)
-  auto d_levels_g = thrust::device_vector<unsigned char>{0, 3, 5};    // 2 bins: [0,3), [3,5)
+  auto d_levels_r = thrust::device_vector<unsigned char>{0, 2, 4}; // 2 bins: [0,2), [2,4)
+  auto d_levels_g = thrust::device_vector<unsigned char>{0, 3, 5}; // 2 bins: [0,3), [3,5)
   auto d_levels_b = thrust::device_vector<unsigned char>{0, 1, 2, 3}; // 3 bins: [0,1), [1,2), [2,3)
 
   cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels = {3, 3, 4};

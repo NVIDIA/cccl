@@ -22,7 +22,6 @@
 #include <cub/device/dispatch/dispatch_histogram.cuh>
 
 #include <cuda/__execution/require.h>
-
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/remove_const.h>
@@ -1572,7 +1571,7 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT,
-            typename EnvT                                                                  = ::cuda::std::execution::env<>,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<SampleIteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
     SampleIteratorT d_samples,
@@ -1662,7 +1661,7 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT,
-            typename EnvT                                                                  = ::cuda::std::execution::env<>,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<SampleIteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
     SampleIteratorT d_samples,
@@ -1757,7 +1756,7 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT,
-            typename EnvT                                                                  = ::cuda::std::execution::env<>,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<SampleIteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
     SampleIteratorT d_samples,
@@ -1857,7 +1856,7 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT,
-            typename EnvT                                                                  = ::cuda::std::execution::env<>,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<SampleIteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
     SampleIteratorT d_samples,
@@ -1972,7 +1971,7 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT,
-            typename EnvT                                                                  = ::cuda::std::execution::env<>,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<SampleIteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t HistogramRange(
     SampleIteratorT d_samples,
@@ -2057,7 +2056,7 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT,
-            typename EnvT                                                                  = ::cuda::std::execution::env<>,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<SampleIteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t HistogramRange(
     SampleIteratorT d_samples,
@@ -2147,7 +2146,7 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT,
-            typename EnvT                                                                  = ::cuda::std::execution::env<>,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<SampleIteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
     SampleIteratorT d_samples,
@@ -2242,7 +2241,7 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT,
-            typename EnvT                                                                  = ::cuda::std::execution::env<>,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<SampleIteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
     SampleIteratorT d_samples,
