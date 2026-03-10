@@ -83,8 +83,8 @@ TEST_CASE("DeviceHistogram::HistogramRange works with default environment", "[hi
 
 TEST_CASE("DeviceHistogram::MultiHistogramEven works with default environment", "[histogram][device]")
 {
-  constexpr int NUM_CHANNELS        = 4;
-  constexpr int NUM_ACTIVE_CHANNELS = 3;
+  [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
+  [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
 
   // 2 pixels: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128)
   auto d_samples = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
@@ -117,8 +117,8 @@ TEST_CASE("DeviceHistogram::MultiHistogramEven works with default environment", 
 
 TEST_CASE("DeviceHistogram::MultiHistogramRange works with default environment", "[histogram][device]")
 {
-  constexpr int NUM_CHANNELS        = 4;
-  constexpr int NUM_ACTIVE_CHANNELS = 3;
+  [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
+  [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
 
   // 2 pixels: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128)
   auto d_samples = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
@@ -318,8 +318,8 @@ TEST_CASE("DeviceHistogram::HistogramRange uses custom stream", "[histogram][dev
 
 C2H_TEST("DeviceHistogram::MultiHistogramEven uses environment", "[histogram][device]")
 {
-  constexpr int NUM_CHANNELS        = 4;
-  constexpr int NUM_ACTIVE_CHANNELS = 3;
+  [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
+  [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
 
   auto d_samples = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
   int num_pixels = 2;
@@ -365,8 +365,8 @@ C2H_TEST("DeviceHistogram::MultiHistogramEven uses environment", "[histogram][de
 
 TEST_CASE("DeviceHistogram::MultiHistogramEven uses custom stream", "[histogram][device]")
 {
-  constexpr int NUM_CHANNELS        = 4;
-  constexpr int NUM_ACTIVE_CHANNELS = 3;
+  [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
+  [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
 
   auto d_samples = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
   int num_pixels = 2;
@@ -420,8 +420,8 @@ TEST_CASE("DeviceHistogram::MultiHistogramEven uses custom stream", "[histogram]
 
 C2H_TEST("DeviceHistogram::MultiHistogramRange uses environment", "[histogram][device]")
 {
-  constexpr int NUM_CHANNELS        = 4;
-  constexpr int NUM_ACTIVE_CHANNELS = 3;
+  [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
+  [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
 
   auto d_samples = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
   int num_pixels = 2;
@@ -473,8 +473,8 @@ C2H_TEST("DeviceHistogram::MultiHistogramRange uses environment", "[histogram][d
 
 TEST_CASE("DeviceHistogram::MultiHistogramRange uses custom stream", "[histogram][device]")
 {
-  constexpr int NUM_CHANNELS        = 4;
-  constexpr int NUM_ACTIVE_CHANNELS = 3;
+  [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
+  [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
 
   auto d_samples = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
   int num_pixels = 2;
