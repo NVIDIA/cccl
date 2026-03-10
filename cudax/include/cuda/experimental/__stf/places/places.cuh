@@ -146,8 +146,7 @@ public:
     EXPECT((dev_id >= 0 && dev_id < ndevs), "Invalid device ID ", dev_id);
 
     static data_place_device* impls = [] {
-      auto* result =
-        static_cast<data_place_device*>(::operator new[](ndevs * sizeof(data_place_device)));
+      auto* result = static_cast<data_place_device*>(::operator new[](ndevs * sizeof(data_place_device)));
       for (int i = 0; i < ndevs; ++i)
       {
         new (result + i) data_place_device(i);

@@ -245,7 +245,7 @@ public:
       return typeid(*this).before(typeid(other)) ? -1 : 1;
     }
     return (device_id_ > static_cast<const data_place_device&>(other).device_id_)
-             - (device_id_ < static_cast<const data_place_device&>(other).device_id_);
+         - (device_id_ < static_cast<const data_place_device&>(other).device_id_);
   }
 
   void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
