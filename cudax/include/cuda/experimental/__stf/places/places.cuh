@@ -273,6 +273,23 @@ public:
   }
 
   /**
+   * @brief Inverse of `to_index`: converts an index back to a `data_place`.
+   * Index 0 -> managed, 1 -> host, 2 -> device(0), 3 -> device(1), ...
+   */
+  friend inline data_place from_index(size_t n)
+  {
+    if (n == 0)
+    {
+      return data_place::managed();
+    }
+    if (n == 1)
+    {
+      return data_place::host();
+    }
+    return data_place::device(static_cast<int>(n - 2));
+  }
+
+  /**
    * @brief Returns the device ordinal (0 = first GPU, 1 = second GPU, ... and by convention the CPU is -1)
    * Requires that `p` is initialized.
    */
@@ -1619,7 +1636,8 @@ public:
     {
       return 0;
     }
-    throw ::std::logic_error("Ordering of composite places with the same partitioner is not implemented.");
+    // Grids differ: compare structurally (shape first, then element-by-element places)
+    return (get_grid() < o.get_grid()) ? -1 : 1;
   }
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
