@@ -219,6 +219,10 @@ private:
 
     token_impl(const token_impl&)            = delete;
     token_impl& operator=(const token_impl&) = delete;
+
+  public:
+    token_impl(token_impl&&)            = default;
+    token_impl& operator=(token_impl&&) = default;
   };
 
 public:

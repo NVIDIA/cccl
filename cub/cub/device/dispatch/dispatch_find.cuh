@@ -62,6 +62,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
   using agent_find_t =
     agent_t<policy.block_threads,
             policy.items_per_thread,
+            policy.attempt_block_load_to_shared,
             policy.vector_load_length,
             policy.load_modifier,
             IteratorT,
