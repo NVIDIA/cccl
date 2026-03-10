@@ -118,8 +118,8 @@ struct decorated_stream
  * This class uses a PIMPL idiom so that it is copyable and movable with shared
  * semantics: copies refer to the same underlying pool of streams.
  *
- * When a slot is empty, next(place) activates the place (RAII guard) and calls
- * place.create_stream(). Defined in places.cuh.
+ * When a slot is empty, next(place) activates the place (RAII guard) and creates
+ * a new stream. Defined in places.cuh.
  */
 class stream_pool
 {
@@ -159,8 +159,8 @@ public:
   stream_pool& operator=(stream_pool&&)      = default;
 
   /**
-   * @brief Get the next stream in the pool; when a slot is empty, activate the place (RAII guard) and call
-   * place.create_stream(). Defined in places.cuh so the pool can use exec_place_guard and exec_place::create_stream().
+   * @brief Get the next stream in the pool; when a slot is empty, activate the place (RAII guard) and create
+   * a new stream. Defined in places.cuh so the pool can use exec_place_guard.
    */
   decorated_stream next(const exec_place& place);
 

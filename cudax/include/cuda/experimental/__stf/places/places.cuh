@@ -165,19 +165,19 @@ public:
   bool operator<(const data_place& rhs) const
   {
     // Not implemented for composite places
-    EXPECT(!is_composite());
-    EXPECT(!rhs.is_composite());
-
-    // If both are extensions, delegate to the extension
-    if (is_extension() && rhs.is_extension())
-    {
-      return *extension < *rhs.extension;
-    }
+    EXPECT((!is_composite() && !rhs.is_composite()), "Ordering of composite places is not implemented.");
 
     // Extensions sort after non-extensions
     if (is_extension() != rhs.is_extension())
     {
       return rhs.is_extension(); // non-extension < extension
+    }
+
+    // If both are extensions, delegate to the extension
+    if (is_extension())
+    {
+      // rhs.is_extension() is true due to previous test
+      return *extension < *rhs.extension;
     }
 
     // For simple places, compare devid
@@ -204,14 +204,14 @@ public:
   {
     // If the devid indicates composite_devid then we must have a descriptor
     _CCCL_ASSERT(devid != composite_devid || composite_desc != nullptr, "invalid state");
-    return (devid == composite_devid);
+    return devid == composite_devid;
   }
 
   /// checks if this data place has an extension (green context, etc.)
   bool is_extension() const
   {
     _CCCL_ASSERT(devid != extension_devid || extension != nullptr, "invalid state");
-    return (devid == extension_devid);
+    return devid == extension_devid;
   }
 
   bool is_invalid() const
@@ -238,7 +238,7 @@ public:
   bool is_device() const
   {
     // All other type of data places have a specific negative devid value.
-    return (devid >= 0);
+    return devid >= 0;
   }
 
   bool is_device_auto() const
@@ -248,34 +248,13 @@ public:
 
   ::std::string to_string() const
   {
-    if (devid == host_devid)
-    {
-      return "host";
-    }
-    if (devid == managed_devid)
-    {
-      return "managed";
-    }
-    if (devid == device_auto_devid)
-    {
-      return "auto";
-    }
-    if (devid == invalid_devid)
-    {
-      return "invalid";
-    }
-
-    if (is_extension())
-    {
-      return extension->to_string();
-    }
-
-    if (is_composite())
-    {
-      return "composite" + ::std::to_string(devid);
-    }
-
-    return "dev" + ::std::to_string(devid);
+    return devid == host_devid         ? "host"
+           : devid == managed_devid    ? "managed"
+           : devid == device_auto_devid ? "auto"
+           : devid == invalid_devid    ? "invalid"
+           : is_extension()            ? extension->to_string()
+           : is_composite()            ? "composite" + ::std::to_string(devid)
+                                       : "dev" + ::std::to_string(devid);
   }
 
   /**
@@ -286,7 +265,7 @@ public:
   {
     EXPECT(p.devid >= -2, "Data place with device id ", p.devid, " does not refer to a device.");
     // This is not strictly a problem in this function, but it's not legit either. So let's assert.
-    assert(p.devid < cuda_try<cudaGetDeviceCount>());
+    _CCCL_ASSERT(p.devid < cuda_try<cudaGetDeviceCount>(), "Invalid device id");
     return p.devid + 2;
   }
 
@@ -617,19 +596,18 @@ public:
 
     virtual exec_place activate() const
     {
-      if (affine.is_device())
+      if (!affine.is_device())
       {
-        auto old_dev_id = cuda_try<cudaGetDevice>();
-        auto new_dev_id = device_ordinal(affine);
-        if (old_dev_id != new_dev_id)
-        {
-          cuda_safe_call(cudaSetDevice(new_dev_id));
-        }
-
-        auto old_dev = data_place::device(old_dev_id);
-        return exec_place(mv(old_dev));
+        return exec_place();
       }
-      return exec_place();
+      auto old_dev_id = cuda_try<cudaGetDevice>();
+      auto new_dev_id = device_ordinal(affine);
+      if (old_dev_id != new_dev_id)
+      {
+        cuda_safe_call(cudaSetDevice(new_dev_id));
+      }
+      auto old_dev = data_place::device(old_dev_id);
+      return exec_place(mv(old_dev));
     }
 
     virtual void deactivate(const exec_place& prev) const
@@ -685,11 +663,6 @@ public:
       return affine == rhs.affine;
     }
 
-    bool operator!=(const impl& rhs) const
-    {
-      return !(*this == rhs);
-    }
-
     virtual size_t hash() const
     {
       return affine.hash();
@@ -716,21 +689,6 @@ public:
     virtual stream_pool& get_stream_pool(bool for_computation) const
     {
       return for_computation ? pool_compute : pool_data;
-    }
-
-    /**
-     * @brief Create a stream valid for execution on this place.
-     *
-     * Expected to be called with this exec place already activated (e.g. from
-     * stream_pool::next(place) which uses exec_place_guard). Creates a new stream
-     * in the current context via cudaStreamCreateWithFlags(..., cudaStreamNonBlocking).
-     * The caller (e.g. stream_pool::next) builds a decorated_stream from the result.
-     */
-    cudaStream_t create_stream() const
-    {
-      cudaStream_t stream = nullptr;
-      cuda_safe_call(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
-      return stream;
     }
 
     static constexpr size_t pool_size      = 4;
@@ -869,19 +827,6 @@ public:
    */
   decorated_stream get_stream(bool for_computation) const;
 
-  /**
-   * @brief Create a stream valid for execution on this place.
-   *
-   * Call only when the place is already activated (e.g. inside exec_place_guard).
-   * For getting a stream from the pool, use get_stream() / pick_stream() instead.
-   *
-   * @return A CUDA stream valid for this execution place
-   */
-  cudaStream_t create_stream() const
-  {
-    return pimpl->create_stream();
-  }
-
   cudaStream_t pick_stream(bool for_computation = true) const
   {
     return get_stream(for_computation).stream;
@@ -1001,36 +946,7 @@ public:
    *
    */
   template <typename Fun>
-  auto operator->*(Fun&& fun) const
-  {
-    const int new_device = device_ordinal(pimpl->affine);
-    if (new_device >= 0)
-    {
-      // We're on a device
-      // Change device only if necessary.
-      const int old_device = cuda_try<cudaGetDevice>();
-      if (new_device != old_device)
-      {
-        cuda_safe_call(cudaSetDevice(new_device));
-      }
-
-      SCOPE(exit)
-      {
-        // It is the responsibility of the client to ensure that any change of the current device in this
-        // section was reverted.
-        if (new_device != old_device)
-        {
-          cuda_safe_call(cudaSetDevice(old_device));
-        }
-      };
-      return ::std::forward<Fun>(fun)();
-    }
-    else
-    {
-      // We're on the host, just call the function with no further ado.
-      return ::std::forward<Fun>(fun)();
-    }
-  }
+  auto operator->*(Fun&& fun) const;
 
 public:
   exec_place(::std::shared_ptr<impl> pimpl)
@@ -1109,6 +1025,13 @@ private:
   exec_place prev_;
 };
 
+template <typename Fun>
+auto exec_place::operator->*(Fun&& fun) const
+{
+  exec_place_guard guard(*this);
+  return ::std::forward<Fun>(fun)();
+}
+
 inline decorated_stream stream_pool::next(const exec_place& place)
 {
   _CCCL_ASSERT(pimpl, "stream_pool::next called on empty pool");
@@ -1120,7 +1043,7 @@ inline decorated_stream stream_pool::next(const exec_place& place)
   if (!result.stream)
   {
     exec_place_guard guard(place);
-    result.stream = place.create_stream();
+    cuda_safe_call(cudaStreamCreateWithFlags(&result.stream, cudaStreamNonBlocking));
     result.id     = get_stream_id(result.stream);
     result.dev_id = get_device_from_stream(result.stream);
   }
@@ -1414,9 +1337,9 @@ public:
 
     stream_pool& get_stream_pool(bool for_computation) const override
     {
-      assert(!for_computation);
+      _CCCL_ASSERT(!for_computation, "Expected data transfer stream pool");
       const auto& v = get_places();
-      assert(v.size() > 0);
+      _CCCL_ASSERT(v.size() > 0, "Grid must have at least one place");
       return v[0].get_stream_pool(for_computation);
     }
 
@@ -1597,7 +1520,7 @@ public:
 
   ::std::shared_ptr<impl> get_impl() const
   {
-    assert(::std::dynamic_pointer_cast<impl>(exec_place::get_impl()));
+    _CCCL_ASSERT(::std::dynamic_pointer_cast<impl>(exec_place::get_impl()), "Invalid exec_place_grid impl");
     return ::std::static_pointer_cast<impl>(exec_place::get_impl());
   }
 
@@ -2091,15 +2014,15 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     }
 
     // Make sure we have computed the width if that was implicit
-    assert(l0_size > 0);
+    _CCCL_ASSERT(l0_size > 0, "Level 0 size must be positive");
 
-    assert(grid_size > 0);
-    assert(block_size <= kernel_limits.max_block_size);
+    _CCCL_ASSERT(grid_size > 0, "Grid size must be positive");
+    _CCCL_ASSERT(block_size <= kernel_limits.max_block_size, "Block size exceeds max block size");
 
-    assert(l0_size % ndevs == 0);
-    assert(l0_size % (ndevs * block_size) == 0);
+    _CCCL_ASSERT(l0_size % ndevs == 0, "Level 0 size must be divisible by number of devices");
+    _CCCL_ASSERT(l0_size % (ndevs * block_size) == 0, "Level 0 size must be divisible by ndevs * block_size");
 
-    assert(ndevs * grid_size * block_size == l0_size);
+    _CCCL_ASSERT(ndevs * grid_size * block_size == l0_size, "Dimension mismatch: ndevs * grid_size * block_size != l0_size");
 
     this->add_level({::std::make_pair(hw_scope::device, ndevs),
                      ::std::make_pair(hw_scope::block, grid_size),
@@ -2142,9 +2065,9 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     }
 
     // Enforce the resource limits in the number of threads per block
-    assert(int(l1_size) <= kernel_limits.block_size_limit);
+    _CCCL_ASSERT(int(l1_size) <= kernel_limits.block_size_limit, "Level 1 size exceeds block size limit");
 
-    assert(l0_size % ndevs == 0);
+    _CCCL_ASSERT(l0_size % ndevs == 0, "Level 0 size must be divisible by number of devices");
 
     /* Merge blocks and devices */
     this->add_level({::std::make_pair(hw_scope::device, ndevs), ::std::make_pair(hw_scope::block, l0_size / ndevs)});
@@ -2197,8 +2120,8 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     }
 
     // Enforce the resource limits in the number of threads per block
-    assert(int(l2_size) <= kernel_limits.block_size_limit);
-    assert(int(l0_size) <= ndevs);
+    _CCCL_ASSERT(int(l2_size) <= kernel_limits.block_size_limit, "Level 2 size exceeds block size limit");
+    _CCCL_ASSERT(int(l0_size) <= ndevs, "Level 0 size exceeds number of devices");
 
     /* Merge blocks and devices */
     this->add_level({::std::make_pair(hw_scope::device, l0_size)});
