@@ -120,20 +120,20 @@ void test_impl_stride_offset(
     using host_mdspan_t   = cuda::host_mdspan<const T, src_extents_t, cuda::std::layout_stride>;
     using device_mdspan_t = cuda::device_mdspan<T, dst_extents_t, cuda::std::layout_stride>;
     host_mdspan_t host_md(input.data() + src_offset, src_mapping_t(src_extents, src_strides));
-    device_mdspan_t device_md(
-      thrust::raw_pointer_cast(device_data.data()) + dst_offset, dst_mapping_t(dst_extents, dst_strides));
+    device_mdspan_t device_md(thrust::raw_pointer_cast(device_data.data()) + dst_offset,
+                              dst_mapping_t(dst_extents, dst_strides));
     cuda::experimental::copy_bytes(host_md, device_md, stream);
     stream.sync();
     CUDAX_REQUIRE(thrust::host_vector<T>(device_data) == expected_data);
   }
   {
     // device to host
-    using device_mdspan_t = cuda::device_mdspan<const T, src_extents_t, cuda::std::layout_stride>;
-    using host_mdspan_t   = cuda::host_mdspan<T, dst_extents_t, cuda::std::layout_stride>;
+    using device_mdspan_t            = cuda::device_mdspan<const T, src_extents_t, cuda::std::layout_stride>;
+    using host_mdspan_t              = cuda::host_mdspan<T, dst_extents_t, cuda::std::layout_stride>;
     thrust::host_vector<T> host_data = initial_output;
     device_data                      = input;
-    device_mdspan_t device_md(
-      thrust::raw_pointer_cast(device_data.data()) + src_offset, src_mapping_t(src_extents, src_strides));
+    device_mdspan_t device_md(thrust::raw_pointer_cast(device_data.data()) + src_offset,
+                              src_mapping_t(src_extents, src_strides));
     host_mdspan_t host_md(host_data.data() + dst_offset, dst_mapping_t(dst_extents, dst_strides));
     cuda::experimental::copy_bytes(device_md, host_md, stream);
     stream.sync();
@@ -480,6 +480,11 @@ TEST_CASE("copy_bytes 3D strided, tile_size > 1 with different stride order", "[
   test_impl_stride(input_data, expected, extents(), extents(), src_strides, dst_strides);
 }
 
+// tensorA:      (2,3):(5,1)
+// tensorB:      (2,3):(1,4)
+// stride order: true
+// tile size:    1
+// num tiles:    16
 TEST_CASE("copy_bytes strided subviews with offsets", "[copy_bytes][stride][offset]")
 {
   constexpr int M         = 2;
@@ -497,12 +502,12 @@ TEST_CASE("copy_bytes strided subviews with offsets", "[copy_bytes][stride][offs
   {
     for (int j = 0; j < N; ++j)
     {
-      input[SrcOffset + i * SrcLd + j] = value;
+      input[SrcOffset + i * SrcLd + j]    = value;
       expected[DstOffset + i + j * DstLd] = value;
       ++value;
     }
   }
-  using extents = cuda::std::extents<int, M, N>;
+  using extents                        = cuda::std::extents<int, M, N>;
   cuda::std::array<int, 2> src_strides = {SrcLd, 1};
   cuda::std::array<int, 2> dst_strides = {1, DstLd};
   test_impl_stride_offset(

@@ -39,11 +39,11 @@
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 
-#include <cuda/experimental/__copy_bytes/tensor_query.cuh>
 #include <cuda/experimental/__copy/copy_bytes_naive.cuh>
 #include <cuda/experimental/__copy/copy_bytes_shared_mem.cuh>
 #include <cuda/experimental/__copy/cute_utils.cuh>
 #include <cuda/experimental/__copy/layout_optimization.cuh>
+#include <cuda/experimental/__copy_bytes/tensor_query.cuh>
 
 #include <cute/algorithm/copy.hpp>
 #include <cute/tensor_impl.hpp>
@@ -148,14 +148,14 @@ __launch_copy_bytes_kernel(const _SrcTensor& __src_tensor, const _DstTensor& __d
   using __src_layout_t = decltype(__src_layout);
   using __dst_layout_t = decltype(__dst_layout);
   const auto __kernel  = ::cuda::experimental::__copy_bytes_kernel<
-    decltype(__config),
-    int,
-    __src_t,
-    __src_layout_t,
-    __dst_t,
-    __dst_layout_t,
-    __tile_size_value,
-    __vec_bits>;
+     decltype(__config),
+     int,
+     __src_t,
+     __src_layout_t,
+     __dst_t,
+     __dst_layout_t,
+     __tile_size_value,
+     __vec_bits>;
 
   ::cuda::launch(
     __stream, __config, __kernel, __src_ptr, __src_layout, __dst_ptr, __dst_layout, __inner_size, __tiles_per_row);

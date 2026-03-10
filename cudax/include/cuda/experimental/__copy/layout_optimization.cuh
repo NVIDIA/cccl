@@ -22,14 +22,13 @@
 #endif // no system header
 
 #include <cuda/__utility/in_range.h>
-#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__algorithm/stable_sort.h>
 #include <cuda/std/__numeric/gcd_lcm.h>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
 
 #include <cuda/experimental/__copy_bytes/abs_integer.cuh>
-#include <cuda/experimental/__copy_bytes/raw_tensor_utils.cuh>
+#include <cuda/experimental/__copy_bytes/tensor_query.cuh>
 #include <cuda/experimental/__copy_bytes/types.cuh>
 //
 #include <cuda/std/__cccl/prologue.h>

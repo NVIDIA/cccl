@@ -23,6 +23,9 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__utility/in_range.h>
+#  include <cuda/std/__algorithm/all_of.h>
+#  include <cuda/std/__algorithm/is_sorted.h>
 #  include <cuda/std/__algorithm/stable_sort.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__mdspan/mdspan.h>
@@ -37,46 +40,114 @@
 
 namespace cuda::experimental
 {
-/**
- * @brief Reorders tensor modes by ascending absolute stride.
- *
- * After sorting, mode 0 has the smallest absolute stride (innermost) and mode rank-1 has the largest (outermost).
- */
+//! @brief Checks whether two raw tensors have the same rank and identical extents.
+//!
+//! @param[in] __tensor_in  First raw tensor
+//! @param[in] __tensor_out Second raw tensor
+//! @return true if rank and all extents match element-wise
+template <typename _ExtentTIn,
+          typename _StrideTIn,
+          typename _TpIn,
+          ::cuda::std::size_t _MaxRankIn,
+          typename _ExtentTOut,
+          typename _StrideTOut,
+          typename _TpOut,
+          ::cuda::std::size_t _MaxRankOut>
+[[nodiscard]] _CCCL_HOST_API constexpr bool
+__same_extents(const __raw_tensor<_ExtentTIn, _StrideTIn, _TpIn, _MaxRankIn>& __tensor_in,
+               const __raw_tensor<_ExtentTOut, _StrideTOut, _TpOut, _MaxRankOut>& __tensor_out) noexcept
+{
+  if (__tensor_in.__rank != __tensor_out.__rank)
+  {
+    return false;
+  }
+  for (::cuda::std::size_t __i = 0; __i < __tensor_in.__rank; ++__i)
+  {
+    if (__tensor_in.__extents[__i] != __tensor_out.__extents[__i])
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+//! @brief Check whether every active mode has shape strictly greater than 1.
+//!
+//! @pre `__tensor.__rank` is in [0, _MaxRank].
+//!
+//! @param[in] __tensor Raw tensor to inspect
+//! @return true if all shapes in [0, rank) are > 1; true for rank 0
+template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API bool __has_no_extent1_modes(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor) noexcept
+{
+  _CCCL_ASSERT(::cuda::in_range(__tensor.__rank, ::cuda::std::size_t{0}, _MaxRank), "Invalid tensor rank");
+  // clang-format off
+  return ::cuda::std::all_of(__tensor.__extents.cbegin(), __tensor.__extents.cbegin() + __tensor.__rank,
+    [](auto __extent) {
+      return __extent > 1;
+    }
+  ); // clang-format on
+}
+
+//! @brief Check whether the first `__rank` strides are in non-descending order.
+//!
+//! @pre `__tensor.__rank` is in [0, _MaxRank].
+//!
+//! @param[in] __tensor Raw tensor to inspect
+//! @return true if strides[0..rank) are non-descending
+template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API bool __has_sorted_strides(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor) noexcept
+{
+  namespace cudax = ::cuda::experimental;
+  _CCCL_ASSERT(::cuda::in_range(__tensor.__rank, ::cuda::std::size_t{0}, _MaxRank), "Invalid tensor rank");
+  return ::cuda::std::is_sorted(
+    __tensor.__strides.cbegin(), __tensor.__strides.cbegin() + __tensor.__rank, [](auto __a, auto __b) {
+      return cudax::__abs_integer(__a) < cudax::__abs_integer(__b);
+    });
+}
+
+//! @brief Reorders tensor modes by ascending absolute stride.
+//!
+//! After sorting, mode 0 has the smallest absolute stride (innermost) and mode rank-1 has the largest (outermost).
+//!
+//! @param[in] __tensor Raw tensor to sort
+//! @return Raw tensor with modes reordered by ascending absolute stride
 template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
-[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor_ordered<_ExtentT, _StrideT, _Tp, _MaxRank>
+[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>
 __sort_by_stride(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
 {
   namespace cudax = ::cuda::experimental;
   using ::cuda::std::size_t;
   using __unsigned_extent_t = typename __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>::__unsigned_extent_t;
-  using __mode_t            = ::cuda::std::tuple<__unsigned_extent_t, _StrideT, size_t>;
+  using __mode_t            = ::cuda::std::tuple<__unsigned_extent_t, _StrideT>;
   const auto __rank         = __tensor.__rank;
   ::cuda::std::array<__mode_t, _MaxRank> __modes{};
   for (size_t __i = 0; __i < __rank; ++__i)
   {
-    __modes[__i] = {__tensor.__extents[__i], __tensor.__strides[__i], __i};
+    __modes[__i] = {__tensor.__extents[__i], __tensor.__strides[__i]};
   }
   ::cuda::std::stable_sort(__modes.begin(), __modes.begin() + __rank, [](const __mode_t& __lhs, const __mode_t& __rhs) {
     return cudax::__abs_integer(::cuda::std::get<1>(__lhs)) < cudax::__abs_integer(::cuda::std::get<1>(__rhs));
   });
-  __raw_tensor_ordered<_ExtentT, _StrideT, _Tp, _MaxRank> __result{__tensor.__data, __rank};
+  __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank> __result{__tensor.__data, __rank};
   for (size_t __i = 0; __i < __rank; ++__i)
   {
-    ::cuda::std::tie(__result.__extents[__i], __result.__strides[__i], __result.__orders[__i]) = __modes[__i];
+    ::cuda::std::tie(__result.__extents[__i], __result.__strides[__i]) = __modes[__i];
   }
   return __result;
 }
 
-/**
- * @brief Conservative check for interleaved stride order in tensor layouts.
- *
- * Sorts modes by ascending absolute stride, then verifies two conditions:
- * 1. No mode with extent > 1 has stride == 0 (broadcast)
- * 2. No mode's span (extent * |stride|) exceeds the next mode's |stride|
- *
- * Returns true when the layout fails this non-interleaving rule. This is stronger than
- * a mathematical injectivity check and may reject some layouts with distinct offsets.
- */
+//! @brief Conservative check for interleaved stride order in tensor layouts.
+//!
+//! Sorts modes by ascending absolute stride, then verifies two conditions:
+//! 1. No mode with extent > 1 has stride == 0 (broadcast)
+//! 2. No mode's span (extent * |stride|) exceeds the next mode's |stride|
+//!
+//! Returns true when the layout fails this non-interleaving rule. This is stronger than a mathematical injectivity
+//! check and may reject some layouts with distinct offsets.
+//!
+//! @param[in] __mdspan Mdspan view to inspect
+//! @return true if the layout has interleaved strides
 template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _AccessorPolicy>
 [[nodiscard]] _CCCL_HOST_API constexpr bool __has_interleaved_stride_order(
   const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _AccessorPolicy>& __mdspan) noexcept
@@ -110,32 +181,6 @@ template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _Acc
   {
     return false;
   }
-}
-
-template <typename _ExtentTIn,
-          typename _StrideTIn,
-          typename _TpIn,
-          ::cuda::std::size_t _MaxRankIn,
-          typename _ExtentTOut,
-          typename _StrideTOut,
-          typename _TpOut,
-          ::cuda::std::size_t _MaxRankOut>
-[[nodiscard]] _CCCL_HOST_API constexpr bool
-__same_extents(const __raw_tensor<_ExtentTIn, _StrideTIn, _TpIn, _MaxRankIn>& __tensor_in,
-               const __raw_tensor<_ExtentTOut, _StrideTOut, _TpOut, _MaxRankOut>& __tensor_out) noexcept
-{
-  if (__tensor_in.__rank != __tensor_out.__rank)
-  {
-    return false;
-  }
-  for (::cuda::std::size_t __i = 0; __i < __tensor_in.__rank; ++__i)
-  {
-    if (__tensor_in.__extents[__i] != __tensor_out.__extents[__i])
-    {
-      return false;
-    }
-  }
-  return true;
 }
 } // namespace cuda::experimental
 

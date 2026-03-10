@@ -35,6 +35,12 @@
 
 namespace cuda::experimental
 {
+//! @brief Reverses the order of active modes in a raw tensor.
+//!
+//! This helps to get a single logic for __tile_iterator_linearized
+//!
+//! @param[in] __input Raw tensor whose modes are reversed
+//! @return New raw tensor with extents and strides in reversed mode order
 template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
 [[nodiscard]] _CCCL_HOST_API __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>
 __reverse_modes(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __input) noexcept
@@ -49,6 +55,14 @@ __reverse_modes(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __input) 
   return __result;
 }
 
+//! @brief Sorts a source/destination tensor pair by ascending absolute destination stride.
+//!
+//! Both tensors are reordered in lockstep so that corresponding modes remain paired.
+//!
+//! @pre @p __src and @p __dst must have the same extents
+//!
+//! @param[in,out] __src Source raw tensor (modes reordered in place)
+//! @param[in,out] __dst Destination raw tensor (modes reordered in place)
 template <typename _ExtentT, typename _StrideT, typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
 _CCCL_HOST_API void __sort_by_stride_paired(__raw_tensor<_ExtentT, _StrideT, _TpSrc, _MaxRank>& __src,
                                             __raw_tensor<_ExtentT, _StrideT, _TpDst, _MaxRank>& __dst) noexcept
@@ -74,6 +88,15 @@ _CCCL_HOST_API void __sort_by_stride_paired(__raw_tensor<_ExtentT, _StrideT, _Tp
   __dst.__extents = __src.__extents;
 }
 
+//! @brief Flips modes where both source and destination strides are negative.
+//!
+//! For each such mode, the base pointer is advanced to the last element and the stride is negated, yielding an
+//! equivalent tensor with positive strides.
+//!
+//! @pre @p __src and @p __dst must have the same extents
+//!
+//! @param[in,out] __src Source raw tensor (data pointer and strides may be modified)
+//! @param[in,out] __dst Destination raw tensor (data pointer and strides may be modified)
 template <typename _ExtentT, typename _StrideT, typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
 _CCCL_HOST_API void __flip_negative_strides_paired(__raw_tensor<_ExtentT, _StrideT, _TpSrc, _MaxRank>& __src,
                                                    __raw_tensor<_ExtentT, _StrideT, _TpDst, _MaxRank>& __dst) noexcept
@@ -95,6 +118,15 @@ _CCCL_HOST_API void __flip_negative_strides_paired(__raw_tensor<_ExtentT, _Strid
   }
 }
 
+//! @brief Merges adjacent modes that are contiguous in both source and destination tensors.
+//!
+//! Two consecutive modes are merged when `extent[i-1] * stride[i-1] == stride[i]` holds for both tensors.
+//! The resulting tensor pair has fewer modes but represents the same memory layout.
+//!
+//! @pre @p __src and @p __dst must have the same extents
+//!
+//! @param[in,out] __src Source raw tensor (rank and modes may be reduced)
+//! @param[in,out] __dst Destination raw tensor (rank and modes may be reduced)
 template <typename _ExtentT, typename _StrideT, typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
 _CCCL_HOST_API void __coalesce_paired(__raw_tensor<_ExtentT, _StrideT, _TpSrc, _MaxRank>& __src,
                                       __raw_tensor<_ExtentT, _StrideT, _TpDst, _MaxRank>& __dst) noexcept

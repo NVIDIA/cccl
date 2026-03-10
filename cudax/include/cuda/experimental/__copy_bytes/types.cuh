@@ -24,14 +24,14 @@
 #if !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__type_traits/make_unsigned.h>
 #  include <cuda/std/array>
-#  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
-/// @brief Raw tensor with dynamic extents and strides
+//! @brief Raw tensor descriptor with dynamic rank, extents, and strides.
 template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
 struct __raw_tensor
 {
@@ -43,13 +43,7 @@ struct __raw_tensor
   ::cuda::std::array<_StrideT, _MaxRank> __strides;
 };
 
-/// @brief Raw tensor with dynamic extents and strides, ordered by stride in descending order
-template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
-struct __raw_tensor_ordered : __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>
-{
-  ::cuda::std::array<::cuda::std::size_t, _MaxRank> __orders;
-};
-
+//! @brief Direction of an asynchronous memcpy operation.
 enum class __copy_direction
 {
   __host_to_device,

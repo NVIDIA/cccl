@@ -43,6 +43,15 @@
 
 namespace cuda::experimental
 {
+//! @brief Internal implementation of @ref copy_bytes for host/device mdspan transfers.
+//!
+//! Validates preconditions, converts mdspans to raw tensor descriptors, simplifies the paired layout
+//! (sort, flip negative strides, coalesce), then dispatches a batched asynchronous memcpy.
+//!
+//! @param[in]  __src       Source mdspan
+//! @param[out] __dst       Destination mdspan
+//! @param[in]  __direction Copy direction (host-to-device or device-to-host)
+//! @param[in]  __stream    CUDA stream for the asynchronous transfer
 template <typename _TpIn,
           typename _ExtentsIn,
           typename _LayoutPolicyIn,
@@ -147,6 +156,39 @@ _CCCL_HOST_API void __copy_bytes_impl(
  * Public API
  **********************************************************************************************************************/
 
+//! @rst
+//! .. _cudax-copy-bytes:
+//!
+//! Asynchronous byte-wise mdspan copy
+//! ------------------------------------
+//!
+//! ``copy_bytes`` asynchronously copies elements between a host ``mdspan`` and a device ``mdspan`` on the given
+//! CUDA stream. Two overloads are provided: host-to-device and device-to-host.
+//!
+//! - Source and destination must have the same total number of elements and identical extents
+//!   (after removing extent-1 dimensions). 
+//! - The implementation supports any stride value independently for source and destination mdspans.
+//! - Element types must be trivially copyable and (ignoring cv-qualification) the same type.
+//! - Layout policies must be one of the predefined ``cuda::std`` layout policies.
+//! - Accessor policies must be convertible to ``cuda::std::default_accessor``.
+//! - The destination must not have an interleaved stride order.
+//!
+//! The implementation is optimized to maximize the contiguous memory regions to copy and relies on batched asynchronous
+//! memcpy.
+//!
+//! .. code-block:: c++
+//!
+//!    #include <cuda/experimental/copy_bytes.cuh>
+//!
+//!      using extents_t = cuda::std::dims<2>;
+//!      cuda::host_mdspan<const float, extents_t> src(src_ptr, extents);
+//!      cuda::device_mdspan<float, extents_t>     dst(dst_ptr, extents);
+//!      cuda::experimental::copy_bytes(src, dst, stream);
+//!
+//! @endrst
+//! @param[in] __src Source mdspan
+//! @param[out] __dst Destination mdspan
+//! @param[in] __stream CUDA stream for the asynchronous transfer
 template <typename _TpIn,
           typename _ExtentsIn,
           typename _LayoutPolicyIn,
@@ -165,6 +207,11 @@ _CCCL_HOST_API void copy_bytes(::cuda::host_mdspan<_TpIn, _ExtentsIn, _LayoutPol
     static_cast<__src_type>(__src), static_cast<__dst_type>(__dst), __copy_direction::__host_to_device, __stream);
 }
 
+//! @brief Asynchronously copies bytes from a device mdspan to a host mdspan.
+//!
+//! @param[in] __src Source device mdspan
+//! @param[out] __dst Destination host mdspan
+//! @param[in] __stream CUDA stream for the asynchronous transfer
 template <typename _TpIn,
           typename _ExtentsIn,
           typename _LayoutPolicyIn,

@@ -33,6 +33,9 @@
 
 namespace cuda::experimental
 {
+//! @brief Prints a raw tensor's extents and strides to stdout in the format `(extents):(strides)`.
+//!
+//! @param[in] __tensor Raw tensor to print
 template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _Rank>
 _CCCL_HOST_API void __println(const __raw_tensor<_ExtentT, _StrideT, _Tp, _Rank>& __tensor)
 {
@@ -54,40 +57,6 @@ _CCCL_HOST_API void __println(const __raw_tensor<_ExtentT, _StrideT, _Tp, _Rank>
   if (__rank > 0)
   {
     ::printf("%lld", static_cast<long long>(__tensor.__strides[__rank - 1]));
-  }
-  ::printf(")\n");
-}
-
-template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _Rank>
-_CCCL_HOST_API void __println(const __raw_tensor_ordered<_ExtentT, _StrideT, _Tp, _Rank>& __tensor)
-{
-  const auto __rank = static_cast<int>(__tensor.__rank);
-  ::printf("(");
-  for (int __i = 0; __i < __rank - 1; ++__i)
-  {
-    ::printf("%llu, ", static_cast<unsigned long long>(__tensor.__extents[__i]));
-  }
-  if (__rank > 0)
-  {
-    ::printf("%llu", static_cast<unsigned long long>(__tensor.__extents[__rank - 1]));
-  }
-  ::printf("):(");
-  for (int __i = 0; __i < __rank - 1; ++__i)
-  {
-    ::printf("%lld, ", static_cast<long long>(__tensor.__strides[__i]));
-  }
-  if (__rank > 0)
-  {
-    ::printf("%lld", static_cast<long long>(__tensor.__strides[__rank - 1]));
-  }
-  ::printf(") perm:(");
-  for (int __i = 0; __i < __rank - 1; ++__i)
-  {
-    ::printf("%zu,", __tensor.__orders[__i]);
-  }
-  if (__rank > 0)
-  {
-    ::printf("%zu", __tensor.__orders[__rank - 1]);
   }
   ::printf(")\n");
 }

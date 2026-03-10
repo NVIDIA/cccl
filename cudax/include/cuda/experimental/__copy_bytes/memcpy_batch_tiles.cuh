@@ -38,6 +38,7 @@
 
 namespace cuda::experimental
 {
+//! @brief Iterator that maps a linear tile index to a pointer into a strided raw tensor.
 template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
 struct __tile_iterator_linearized
 {
@@ -47,12 +48,18 @@ struct __tile_iterator_linearized
   ::cuda::std::array<__unsigned_extent_t, _MaxRank> __extent_products_;
   const __unsigned_extent_t __contiguous_size_;
 
+  //! @brief Constructs the iterator from a raw tensor and contiguous tile size.
+  //!
+  //! @param[in] __tensor          Raw tensor descriptor
+  //! @param[in] __contiguous_size Number of contiguous elements per tile
   _CCCL_HOST_API explicit __tile_iterator_linearized(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor,
                                                      __unsigned_extent_t __contiguous_size) noexcept
       : __tensor_{__tensor}
       , __extent_products_{}
       , __contiguous_size_{__contiguous_size}
   {
+    // Precomputes exclusive prefix products of extents so that each `operator()` call decomposes a flat index into
+    // multi-dimensional coordinates and computes the corresponding byte offset.
     ::cuda::std::exclusive_scan(
       __tensor.__extents.data(),
       __tensor.__extents.data() + __tensor.__rank,
@@ -61,6 +68,10 @@ struct __tile_iterator_linearized
       ::cuda::std::multiplies<>{});
   }
 
+  //! @brief Returns a pointer to the first element of the tile at @p __tile_idx.
+  //!
+  //! @param[in] __tile_idx linear tile index
+  //! @return Pointer into the tensor at the computed multi-dimensional offset
   [[nodiscard]] _CCCL_HOST_API _Tp* operator()(__unsigned_extent_t __tile_idx) const noexcept
   {
     const auto __index = __tile_idx * __contiguous_size_;
@@ -76,6 +87,12 @@ struct __tile_iterator_linearized
 
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 
+//! @brief Builds the `CUmemcpyAttributes` descriptor for a batch async memcpy.
+//!
+//! @param[in] __direction Copy direction (host-to-device or device-to-host)
+//! @param[in] __src_ptr   Source pointer (used to query device ordinal for D2H)
+//! @param[in] __dst_ptr   Destination pointer (used to query device ordinal for H2D)
+//! @return Populated `CUmemcpyAttributes` struct
 [[nodiscard]] _CCCL_HOST_API inline ::CUmemcpyAttributes
 __get_memcpy_attributes(__copy_direction __direction, const void* __src_ptr, const void* __dst_ptr) noexcept
 {
@@ -100,6 +117,20 @@ __get_memcpy_attributes(__copy_direction __direction, const void* __src_ptr, con
 
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 
+//! @brief Submits an asynchronous batch memcpy for every tile.
+//!
+//! - Uses `cuMemcpyBatchAsync` on CTK 13.0+ with stack-allocated arrays for small tile counts,
+//!   falling back to heap allocation when the count exceeds a fixed threshold.
+//! - On older toolkits, issues individual `cuMemcpyAsync` calls per tile.
+//!
+//! @param[in] __src_tiles_iterator Tile iterator for the source tensor
+//! @param[in] __dst_tiles_iterator Tile iterator for the destination tensor
+//! @param[in] __num_tiles          Number of tiles to copy
+//! @param[in] __copy_size_bytes    Byte size of each tile
+//! @param[in] __direction          Copy direction
+//! @param[in] __src_data_handle    Source base pointer (for attribute query)
+//! @param[in] __dst_data_handle    Destination base pointer (for attribute query)
+//! @param[in] __stream             CUDA stream
 template <typename _SrcTileIterator, typename _DstTileIterator>
 _CCCL_HOST_API inline void __memcpy_batch_tiles(
   const _SrcTileIterator& __src_tiles_iterator,

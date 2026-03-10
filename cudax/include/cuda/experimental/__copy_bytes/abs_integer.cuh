@@ -32,6 +32,10 @@
 
 namespace cuda::experimental
 {
+//! @brief Returns the absolute value of an integer. Identity for unsigned types.
+//!
+//! @param[in] __value Integer value
+//! @return Absolute value of @p __value
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_HOST_API constexpr _Tp __abs_integer(_Tp __value) noexcept
