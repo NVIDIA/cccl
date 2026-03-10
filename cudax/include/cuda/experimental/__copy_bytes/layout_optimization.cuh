@@ -53,42 +53,6 @@ namespace cuda::experimental
   return static_cast<::cuda::std::size_t>(__addr & (~__addr + 1));
 }
 
-//! @brief Remove modes with extent == 1 from a src/dst tensor pair.
-//!
-//! Both tensors must share the same extents (mode-by-mode). Modes where
-//! shape == 1 contribute no iteration work and are compacted out so that
-//! downstream steps (sort, flip, coalesce) see only the productive modes.
-//!
-//! @pre `__src.__rank == __dst.__rank`, in [1, _MaxRank].
-//! @pre Both tensors must have the same shapes (mode-by-mode).
-//! @pre At least one mode must have extent > 1 (total size >= 2).
-//!
-//! @param[in,out] __src Source tensor (shapes, strides, and rank updated)
-//! @param[in,out] __dst Destination tensor (shapes, strides, and rank updated)
-template <typename _Ep, typename _Sp, typename _TpSrc, typename _TpDst, ::cuda::std::size_t _MaxRank>
-_CCCL_HOST_API void __remove_extent1_modes_paired(__raw_tensor<_Ep, _Sp, _TpSrc, _MaxRank>& __src,
-                                                  __raw_tensor<_Ep, _Sp, _TpDst, _MaxRank>& __dst) noexcept
-{
-  _CCCL_ASSERT(__src.__rank == __dst.__rank, "Source and destination ranks must be equal");
-  _CCCL_ASSERT(__src.__extents == __dst.__extents, "Source and destination extents must be identical");
-  ::cuda::std::size_t __out = 0;
-  for (::cuda::std::size_t __i = 0; __i < __src.__rank; ++__i)
-  {
-    if (__src.__extents[__i] != 1)
-    {
-      __src.__extents[__out] = __src.__extents[__i];
-      __src.__strides[__out] = __src.__strides[__i];
-      __dst.__strides[__out] = __dst.__strides[__i];
-      ++__out;
-    }
-  }
-  _CCCL_ASSERT(__out > 0, "At least one extent must be greater than 1");
-  __src.__rank    = __out;
-  __dst.__rank    = __out;
-  __dst.__extents = __src.__extents;
-}
-
-
 //! @brief Sort modes of a src/dst tensor pair by dst's ascending absolute stride.
 //!
 //! The same permutation is applied to both tensors, so shapes remain identical after sorting.

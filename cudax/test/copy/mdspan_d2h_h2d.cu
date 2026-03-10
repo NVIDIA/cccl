@@ -222,96 +222,6 @@ TEST_CASE("copy_bytes 2D", "[copy_bytes][2d][basic]")
   test_impl<cuda::std::layout_left, cuda::std::layout_right>(host_data, expected, extents(), extents());
 }
 
-TEST_CASE("copy_bytes 2D swapped extents", "[copy_bytes][2d][swapped]")
-{
-  constexpr int M = 4;
-  constexpr int N = 8;
-  thrust::host_vector<int> host_data(M * N);
-  for (int i = 0; i < M * N; ++i)
-  {
-    host_data[i] = i;
-  }
-  using src_extents = cuda::std::extents<int, M, N>;
-  using dst_extents = cuda::std::extents<int, N, M>;
-  // row major to row major
-  // tensorA:      (4,8):(8,1)
-  // tensorB:      (8,4):(4,1)
-  // stride order: true
-  // tile size:    32
-  // num tiles:    1
-  test_impl(host_data, host_data, src_extents(), dst_extents());
-  // column major to column major
-  // tensorA:      (4,8):(1,4)
-  // tensorB:      (8,4):(1,8)
-  // stride order: true
-  // tile size:    32
-  // num tiles:    1
-  test_impl<cuda::std::layout_left, cuda::std::layout_left>(host_data, host_data, src_extents(), dst_extents());
-  thrust::host_vector<int> expected(M * N);
-  // row major to column major (swapped extents)
-  for (int i = 0; i < N; ++i)
-  {
-    for (int j = 0; j < M; ++j)
-    {
-      expected[i + j * N] = i * M + j;
-    }
-  }
-  // row major to column major
-  // tensorA:      (4,8):(8,1)
-  // tensorB:      (8,4):(1,8)
-  // stride order: false
-  // tile size:    1
-  // num tiles:    32
-  // Regression note:
-  // Same total size is not enough to use the paired path here. Swapped extents
-  // must stay on the independent path and preserve the original logical indexing.
-  test_impl<cuda::std::layout_right, cuda::std::layout_left>(host_data, expected, src_extents(), dst_extents());
-}
-
-// row major to row major
-// tensorA:      (4,8):(8,1)
-// tensorB:      (32):(1)
-// stride order: true
-// tile size:    32
-// num tiles:    1
-// --------------------------------
-// column major to row major
-// tensorA:      (4,8):(1,4)
-// tensorB:      (32):(1)     -> (4,8):(8,1)
-// stride order: false
-// tile size:    1
-// num tiles:    32
-TEST_CASE("copy_bytes 2D mixed ranks", "[copy_bytes][2d][ranks]")
-{
-  constexpr int M = 4;
-  constexpr int N = 8;
-  thrust::host_vector<int> host_data(M * N);
-  for (int i = 0; i < static_cast<int>(M * N); ++i)
-  {
-    host_data[i] = i;
-  }
-  using src_extents = cuda::std::extents<int, M, N>; // 2D
-  using dst_extents = cuda::std::extents<int, M * N>; // 1D
-  // row major to row major
-  // Regression note:
-  // The simplified prototype no longer relies on an early coalescing fallback here.
-  // This still needs to preserve the same 2D -> 1D logical ordering.
-  test_impl(host_data, host_data, src_extents(), dst_extents());
-  // column major to column major
-  thrust::host_vector<int> expected(M * N);
-  for (int i = 0; i < M; ++i)
-  {
-    for (int j = 0; j < N; ++j)
-    {
-      expected[i * N + j] = i + j * M;
-    }
-  }
-  // Regression note:
-  // Differing productive shapes must still preserve the original logical ordering
-  // when the prototype falls back to original-order tile enumeration.
-  test_impl<cuda::std::layout_left, cuda::std::layout_left>(host_data, expected, src_extents(), dst_extents());
-}
-
 TEST_CASE("copy_bytes singleton dimensions", "[copy_bytes][singleton]")
 {
   constexpr int M = 2;
@@ -325,121 +235,6 @@ TEST_CASE("copy_bytes singleton dimensions", "[copy_bytes][singleton]")
   using dst_extents = cuda::std::extents<int, M, N>;
   test_impl(host_data, host_data, src_extents(), dst_extents());
   test_impl<cuda::std::layout_left, cuda::std::layout_left>(host_data, host_data, src_extents(), dst_extents());
-}
-
-TEST_CASE("copy_bytes 1D to 2D mixed ranks", "[copy_bytes][2d][ranks][padding]")
-{
-  constexpr int M = 4;
-  constexpr int N = 8;
-  thrust::host_vector<int> host_data(M * N);
-  for (int i = 0; i < M * N; ++i)
-  {
-    host_data[i] = i;
-  }
-  using src_extents = cuda::std::extents<int, M * N>;
-  using dst_extents = cuda::std::extents<int, M, N>;
-  // Padding the 1D source introduces an identity stride-1 mode that ties with the
-  // real contiguous mode after pair-sorting. Stable ordering must keep the copy valid.
-  test_impl(host_data, host_data, src_extents(), dst_extents());
-}
-
-TEST_CASE("copy_bytes 1D to 2D mixed ranks column major fallback", "[copy_bytes][2d][ranks][column]")
-{
-  constexpr int M = 4;
-  constexpr int N = 8;
-  thrust::host_vector<int> host_data(M * N);
-  for (int i = 0; i < M * N; ++i)
-  {
-    host_data[i] = i;
-  }
-  thrust::host_vector<int> expected(M * N);
-  for (int i = 0; i < M; ++i)
-  {
-    for (int j = 0; j < N; ++j)
-    {
-      expected[i + j * M] = i * N + j;
-    }
-  }
-  using src_extents = cuda::std::extents<int, M * N>;
-  using dst_extents = cuda::std::extents<int, M, N>;
-  test_impl<cuda::std::layout_right, cuda::std::layout_left>(host_data, expected, src_extents(), dst_extents());
-}
-
-TEST_CASE("copy_bytes 1D to 2D strided row-major mixed ranks", "[copy_bytes][2d][ranks][stride][row]")
-{
-  constexpr int M     = 4;
-  constexpr int N     = 8;
-  constexpr int Ld    = 16;
-  constexpr int Alloc = M * Ld;
-  thrust::host_vector<int> input_data(Alloc, -1);
-  thrust::host_vector<int> expected(Alloc, 0);
-  for (int i = 0; i < M * N; ++i)
-  {
-    input_data[i] = i;
-  }
-  for (int i = 0; i < M; ++i)
-  {
-    for (int j = 0; j < N; ++j)
-    {
-      expected[i * Ld + j] = i * N + j;
-    }
-  }
-  using src_extents                     = cuda::std::extents<int, M * N>;
-  using dst_extents                     = cuda::std::extents<int, M, N>;
-  cuda::std::array<int, 1> src_strides = {1};
-  cuda::std::array<int, 2> dst_strides = {Ld, 1};
-  test_impl_stride(input_data, expected, src_extents(), dst_extents(), src_strides, dst_strides);
-}
-
-TEST_CASE("copy_bytes 1D to 2D strided column-major fallback", "[copy_bytes][2d][ranks][stride][column]")
-{
-  constexpr int M     = 4;
-  constexpr int N     = 8;
-  constexpr int Ld    = 16;
-  constexpr int Alloc = Ld * N;
-  thrust::host_vector<int> input_data(Alloc, -1);
-  thrust::host_vector<int> expected(Alloc, 0);
-  for (int i = 0; i < M * N; ++i)
-  {
-    input_data[i] = i;
-  }
-  for (int i = 0; i < M; ++i)
-  {
-    for (int j = 0; j < N; ++j)
-    {
-      expected[i + j * Ld] = i * N + j;
-    }
-  }
-  using src_extents                     = cuda::std::extents<int, M * N>;
-  using dst_extents                     = cuda::std::extents<int, M, N>;
-  cuda::std::array<int, 1> src_strides = {1};
-  cuda::std::array<int, 2> dst_strides = {1, Ld};
-  test_impl_stride(input_data, expected, src_extents(), dst_extents(), src_strides, dst_strides);
-}
-
-TEST_CASE("copy_bytes 2D strided to 1D mixed ranks", "[copy_bytes][2d][ranks][stride]")
-{
-  constexpr int M     = 4;
-  constexpr int N     = 8;
-  constexpr int Ld    = 16;
-  constexpr int Alloc = M * Ld;
-  thrust::host_vector<int> input_data(Alloc, -1);
-  thrust::host_vector<int> expected(Alloc, 0);
-  int value = 0;
-  for (int i = 0; i < M; ++i)
-  {
-    for (int j = 0; j < N; ++j)
-    {
-      input_data[i * Ld + j] = value;
-      expected[value]        = value;
-      ++value;
-    }
-  }
-  using src_extents                     = cuda::std::extents<int, M, N>;
-  using dst_extents                     = cuda::std::extents<int, M * N>;
-  cuda::std::array<int, 2> src_strides = {Ld, 1};
-  cuda::std::array<int, 1> dst_strides = {1};
-  test_impl_stride(input_data, expected, src_extents(), dst_extents(), src_strides, dst_strides);
 }
 
 // row major to row major
@@ -539,6 +334,19 @@ TEST_CASE("copy_bytes size mismatch throws", "[copy_bytes][throw]")
   REQUIRE_THROWS_AS(cuda::experimental::copy_bytes(src, dst, stream), std::invalid_argument);
 }
 
+TEST_CASE("copy_bytes extent mismatch throws", "[copy_bytes][throw]")
+{
+  constexpr int M = 4;
+  constexpr int N = 8;
+  thrust::host_vector<int> host_data(M * N, 0);
+  thrust::device_vector<int> device_data(M * N, 0);
+  using src_extents = cuda::std::extents<int, M, N>;
+  using dst_extents = cuda::std::extents<int, N, M>;
+  cuda::host_mdspan<int, src_extents> src(host_data.data());
+  cuda::device_mdspan<int, dst_extents> dst(thrust::raw_pointer_cast(device_data.data()));
+  REQUIRE_THROWS_AS(cuda::experimental::copy_bytes(src, dst, stream), std::invalid_argument);
+}
+
 /***********************************************************************************************************************
  * Strided Layout Tests
  **********************************************************************************************************************/
@@ -589,31 +397,6 @@ TEST_CASE("copy_bytes 2D strided, padded column-major", "[copy_bytes][2d][stride
   using extents                    = cuda::std::extents<int, M, N>;
   cuda::std::array<int, 2> strides = {1, Ld};
   test_impl_stride(input_data, input_data, extents(), extents(), strides, strides);
-}
-
-// tensorA:      (2,3):(1,2)
-// tensorB:      (3,2):(1,3)
-// stride order: true
-// tile size:    6
-// num tiles:    1
-TEST_CASE("copy_bytes 2D strided, independent path with tile_size > 1", "[copy_bytes][2d][stride][tile]")
-{
-  // Both layouts are column-major and fully contiguous, but the swapped extents keep
-  // them on the independent path after simplification. Since the innermost stride
-  // order still matches, the full storage remains one common contiguous tile.
-  constexpr int M = 2;
-  constexpr int N = 3;
-  constexpr int K = M * N;
-  thrust::host_vector<int> input_data(K);
-  for (int i = 0; i < K; ++i)
-  {
-    input_data[i] = i;
-  }
-  using src_extents                        = cuda::std::extents<int, M, N>;
-  using dst_extents                        = cuda::std::extents<int, N, M>;
-  cuda::std::array<int, 2> src_strides    = {1, M};
-  cuda::std::array<int, 2> dst_strides    = {1, N};
-  test_impl_stride(input_data, input_data, src_extents(), dst_extents(), src_strides, dst_strides);
 }
 
 // tensorA:      (2,3,4):(12,4,1)

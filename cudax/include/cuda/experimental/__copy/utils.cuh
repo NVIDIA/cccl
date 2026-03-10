@@ -23,7 +23,6 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
-#  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/stable_sort.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__mdspan/mdspan.h>
@@ -160,75 +159,6 @@ __cast_raw_tensor(const __raw_tensor<_ExtentIn, _StrideIn, _Tp, _MaxRank>& __src
 }
 
 /**
- * @brief Promote a raw tensor to a larger compile-time capacity without changing its runtime content.
- *
- * Copies active modes (extents and strides) and zero-initializes the rest.
- */
-template <::cuda::std::size_t _TargetMaxRank,
-          typename _ExtentT,
-          typename _StrideT,
-          typename _Tp,
-          ::cuda::std::size_t _SrcMaxRank>
-[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor<_ExtentT, _StrideT, _Tp, _TargetMaxRank>
-__widen(const __raw_tensor<_ExtentT, _StrideT, _Tp, _SrcMaxRank>& __src) noexcept
-{
-  static_assert(_TargetMaxRank >= _SrcMaxRank, "Target max rank must be >= source max rank");
-  __raw_tensor<_ExtentT, _StrideT, _Tp, _TargetMaxRank> __result{__src.__data, __src.__rank, {}, {}};
-  for (::cuda::std::size_t __i = 0; __i < __src.__rank; ++__i)
-  {
-    __result.__extents[__i] = __src.__extents[__i];
-    __result.__strides[__i] = __src.__strides[__i];
-  }
-  return __result;
-}
-
-/**
- * @brief Coalesce adjacent contiguous modes of a raw tensor without reordering.
- *
- * Merges adjacent modes (i, i+1) that are contiguous in either direction:
- * - `extent[i] * stride[i] == stride[i+1]` (mode i is inner), or
- * - `stride[i] == extent[i+1] * stride[i+1]` (mode i+1 is inner).
- *
- * The merged mode keeps the inner stride and the product of extents.
- *
- * @pre All active extents must be > 1 (no degenerate modes).
- */
-template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
-[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>
-__coalesce_adjacent(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __input) noexcept
-{
-  if (__input.__rank <= 1)
-  {
-    return __input;
-  }
-  __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank> __result{__input.__data, 0, {}, {}};
-  __result.__extents[0]     = __input.__extents[0];
-  __result.__strides[0]     = __input.__strides[0];
-  ::cuda::std::size_t __out = 0;
-  for (::cuda::std::size_t __i = 1; __i < __input.__rank; ++__i)
-  {
-    const auto __prev_extent = static_cast<_StrideT>(__result.__extents[__out]);
-    if (__prev_extent * __result.__strides[__out] == __input.__strides[__i])
-    {
-      __result.__extents[__out] *= __input.__extents[__i];
-    }
-    else if (__result.__strides[__out] == static_cast<_StrideT>(__input.__extents[__i]) * __input.__strides[__i])
-    {
-      __result.__extents[__out] *= __input.__extents[__i];
-      __result.__strides[__out] = __input.__strides[__i];
-    }
-    else
-    {
-      ++__out;
-      __result.__extents[__out] = __input.__extents[__i];
-      __result.__strides[__out] = __input.__strides[__i];
-    }
-  }
-  __result.__rank = __out + 1;
-  return __result;
-}
-
-/**
  * @brief Reorders tensor modes by ascending absolute stride.
  *
  * After sorting, mode 0 has the smallest absolute stride (innermost) and mode rank-1 has the largest (outermost).
@@ -254,33 +184,6 @@ __sort_by_stride(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor
   {
     __extents[__i] = __tensor.__extents[__orders[__i]];
     __strides[__i] = __tensor.__strides[__orders[__i]];
-  }
-  return __result;
-}
-
-/**
- * @brief Appends identity modes up to a target rank.
- *
- * Extra modes are represented as shape=1, stride=1, order=i.
- */
-template <::cuda::std::size_t _MaxRankOut, typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRankIn>
-[[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor_ordered<_ExtentT, _StrideT, _Tp, _MaxRankOut>
-__append(const __raw_tensor_ordered<_ExtentT, _StrideT, _Tp, _MaxRankIn>& __tensor_in,
-         ::cuda::std::size_t __target_rank) noexcept
-{
-  static_assert(_MaxRankIn <= _MaxRankOut);
-  __raw_tensor_ordered<_ExtentT, _StrideT, _Tp, _MaxRankOut> __result{__tensor_in.__data, __target_rank};
-  for (::cuda::std::size_t __i = 0; __i < __tensor_in.__rank; ++__i)
-  {
-    __result.__extents[__i] = __tensor_in.__extents[__i];
-    __result.__strides[__i] = __tensor_in.__strides[__i];
-    __result.__orders[__i]  = __tensor_in.__orders[__i];
-  }
-  for (::cuda::std::size_t __i = __tensor_in.__rank; __i < __target_rank; ++__i)
-  {
-    __result.__extents[__i] = 1;
-    __result.__strides[__i] = 1;
-    __result.__orders[__i]  = __i;
   }
   return __result;
 }
@@ -336,35 +239,6 @@ template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _Acc
 {
   return ::cuda::experimental::__has_interleaved_stride_order(
     ::cuda::experimental::__to_raw_tensor(__mdspan, __remove_extent1));
-}
-
-/// @brief Checks whether two tensors have the same stride-based mode order.
-template <typename _ExtentT,
-          typename _StrideT,
-          typename _TpIn,
-          typename _TpOut,
-          ::cuda::std::size_t _MaxRankA,
-          ::cuda::std::size_t _MaxRankB>
-[[nodiscard]] _CCCL_HOST_API constexpr bool
-__same_stride_order(const __raw_tensor_ordered<_ExtentT, _StrideT, _TpIn, _MaxRankA>& __tensor_a,
-                    const __raw_tensor_ordered<_ExtentT, _StrideT, _TpOut, _MaxRankB>& __tensor_b) noexcept
-{
-  const auto __rank_a = __tensor_a.__rank;
-  const auto __rank_b = __tensor_b.__rank;
-  if (__rank_a != __rank_b)
-  {
-    return false;
-  }
-  for (::cuda::std::size_t __i = 0; __i < __rank_a; ++__i)
-  {
-    const auto __order_a = __tensor_a.__orders[__i];
-    const auto __order_b = __tensor_b.__orders[__i];
-    if (__order_a != __order_b)
-    {
-      return false;
-    }
-  }
-  return true;
 }
 
 template <typename _ExtentTIn,
