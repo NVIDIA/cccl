@@ -29,16 +29,17 @@ static void binary(nvbench::state& state, nvbench::type_list<T>)
 
   caching_allocator_t alloc{};
 
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    do_not_optimize(cuda::std::transform_reduce(
-      cuda_policy(alloc, launch),
-      in.begin(),
-      in.end(),
-      cuda::constant_iterator<int>{42},
-      42,
-      cuda::std::plus<T>{},
-      cuda::std::multiplies<T>{}));
-  });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               do_not_optimize(cuda::std::transform_reduce(
+                 cuda_policy(alloc, launch),
+                 in.begin(),
+                 in.end(),
+                 cuda::constant_iterator<int>{42},
+                 42,
+                 cuda::std::plus<T>{},
+                 cuda::std::multiplies<T>{}));
+             });
 }
 
 NVBENCH_BENCH_TYPES(binary, NVBENCH_TYPE_AXES(fundamental_types))

@@ -17,7 +17,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
 #include <thrust/execution_policy.h>
-#include <thrust/fill.h>
 
 #include <cuda/iterator>
 #include <cuda/memory_pool>
@@ -54,13 +53,13 @@ void test_generate(const Policy& policy, thrust::device_vector<int>& output)
   }
 
   { // same type
-    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::fill(policy, output.begin(), output.end(), 0);
     cuda::std::generate(policy, output.begin(), output.end(), gen_val{42});
     CHECK(thrust::equal(output.begin(), output.end(), cuda::constant_iterator{42}));
   }
 
   { // convertible type
-    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::fill(policy, output.begin(), output.end(), 0);
     cuda::std::generate(policy, output.begin(), output.end(), gen_val<short>{42});
     CHECK(thrust::equal(output.begin(), output.end(), cuda::constant_iterator{42}));
   }

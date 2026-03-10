@@ -49,14 +49,14 @@ void test_for_each_n(const Policy& policy, thrust::device_vector<bool>& res)
   }
 
   { // same type
-    thrust::fill(res.begin(), res.end(), false);
+    cuda::std::fill(policy, res.begin(), res.end(), false);
     const auto result = cuda::std::for_each_n(policy, cuda::counting_iterator{0}, size, fn);
     CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
     CHECK(result == cuda::counting_iterator{size});
   }
 
   { // convertible type
-    thrust::fill(res.begin(), res.end(), false);
+    cuda::std::fill(policy, res.begin(), res.end(), false);
     const auto result = cuda::std::for_each_n(policy, cuda::counting_iterator<short>{0}, size, fn);
     CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
     CHECK(result == cuda::counting_iterator<short>{size});

@@ -356,8 +356,11 @@ struct policy_hub
                                    DelayConstructor>;
   };
 
+  // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy500
+  using DefaultPolicy500 = DefaultPolicy<fixed_delay_constructor_t<350, 450>>;
+
   struct Policy500
-      : DefaultPolicy<fixed_delay_constructor_t<350, 450>>
+      : DefaultPolicy500
       , ChainedPolicy<500, Policy500, Policy500>
   {};
 
@@ -380,8 +383,11 @@ struct policy_hub
     using ThreeWayPartitionPolicy = decltype(select_agent_policy<sm80_tuning<InputT, OffsetT>>(0));
   };
 
+  // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy860
+  using DefaultPolicy860 = DefaultPolicy<fixed_delay_constructor_t<350, 450>>;
+
   struct Policy860
-      : DefaultPolicy<fixed_delay_constructor_t<350, 450>>
+      : DefaultPolicy860
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 

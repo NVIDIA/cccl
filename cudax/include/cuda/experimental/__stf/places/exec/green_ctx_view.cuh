@@ -25,7 +25,7 @@
  * @brief Implementation of green context views
  */
 
-#include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
+#include <cuda/experimental/__stf/places/stream_pool.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
@@ -39,19 +39,19 @@ namespace cuda::experimental::stf
 class green_ctx_view
 {
 public:
-  green_ctx_view(CUgreenCtx g_ctx, ::std::shared_ptr<stream_pool> pool, int devid)
+  green_ctx_view(CUgreenCtx g_ctx, stream_pool pool, int devid)
       : g_ctx(g_ctx)
       , pool(mv(pool))
       , devid(devid)
   {}
 
   CUgreenCtx g_ctx;
-  ::std::shared_ptr<stream_pool> pool;
+  stream_pool pool;
   int devid;
 
   bool operator==(const green_ctx_view& other) const
   {
-    return (g_ctx == other.g_ctx) && (pool.get() == other.pool.get()) && (devid == other.devid);
+    return (g_ctx == other.g_ctx) && (devid == other.devid);
   }
 
   bool operator<(const green_ctx_view& other) const
@@ -59,10 +59,6 @@ public:
     if (g_ctx != other.g_ctx)
     {
       return g_ctx < other.g_ctx;
-    }
-    if (pool.get() != other.pool.get())
-    {
-      return pool.get() < other.pool.get();
     }
     return devid < other.devid;
   }
@@ -73,7 +69,7 @@ struct hash<cuda::experimental::stf::green_ctx_view>
 {
   ::std::size_t operator()(const green_ctx_view& k) const
   {
-    return hash_all(k.g_ctx, k.pool, k.devid);
+    return hash_all(k.g_ctx, k.devid);
   }
 };
 } // end namespace cuda::experimental::stf

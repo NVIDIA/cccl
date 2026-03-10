@@ -50,7 +50,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_MR
 //! @tparam _Resource The resource type to hold.
 //! @endrst
 template <class _Resource>
-struct shared_resource : ::cuda::mr::__copy_default_queries<_Resource>
+struct shared_resource
+    : ::cuda::mr::__copy_default_queries<_Resource>
+    , ::cuda::forward_property<shared_resource<_Resource>, _Resource>
 {
   static_assert(::cuda::mr::synchronous_resource<_Resource>, "");
 
@@ -253,19 +255,6 @@ struct shared_resource : ::cuda::mr::__copy_default_queries<_Resource>
   [[nodiscard]] friend bool operator!=(const shared_resource& __lhs, const shared_resource& __rhs)
   {
     return !(__lhs == __rhs);
-  }
-
-  //! @brief Forwards the stateless properties
-  _CCCL_TEMPLATE(class _Property)
-  _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND(has_property<_Resource, _Property>))
-  friend void get_property(const shared_resource&, _Property) noexcept {}
-
-  //! @brief Forwards the stateful properties
-  _CCCL_TEMPLATE(class _Property)
-  _CCCL_REQUIRES(property_with_value<_Property> _CCCL_AND(has_property<_Resource, _Property>))
-  [[nodiscard]] friend __property_value_t<_Property> get_property(const shared_resource& __self, _Property) noexcept
-  {
-    return get_property(__self.__control_block->__resource, _Property{});
   }
 
 private:

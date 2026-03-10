@@ -18,7 +18,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
 #include <thrust/execution_policy.h>
-#include <thrust/fill.h>
 
 #include <cuda/cmath>
 #include <cuda/iterator>
@@ -51,7 +50,7 @@ void test_remove_copy_if(const Policy& policy, thrust::device_vector<int>& outpu
   }
 
   { // With matching predicate (copy odd elements)
-    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::fill(policy, output.begin(), output.end(), 0);
     const auto res = cuda::std::remove_copy_if(
       policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, output.begin(), is_even{});
     CHECK(thrust::equal(output.begin(), res, cuda::strided_iterator{cuda::counting_iterator{1}, 2}));
@@ -59,7 +58,7 @@ void test_remove_copy_if(const Policy& policy, thrust::device_vector<int>& outpu
   }
 
   { // With conversion for predicate
-    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::fill(policy, output.begin(), output.end(), 0);
     const auto res = cuda::std::remove_copy_if(
       policy,
       cuda::counting_iterator{0},

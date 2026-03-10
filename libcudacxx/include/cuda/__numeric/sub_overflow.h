@@ -271,7 +271,7 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
 [[nodiscard]]
 _CCCL_API constexpr overflow_result<_ActualResult> sub_overflow(const _Lhs __lhs, const _Rhs __rhs) noexcept
 {
-  using ::cuda::std::is_signed_v;
+  using ::cuda::std::is_same_v;
 
   // We want to use __builtin_sub_overflow only in host code. When compiling CUDA source file, we cannot use it in
   // constant expressions, because it doesn't work before nvcc 13.1 and is buggy in 13.1. When compiling C++ source
@@ -284,7 +284,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> sub_overflow(const _Lhs __lhs
     // nvc++ doesn't support overflow builtins for 128-bit integers of different signedness.
 #  if _CCCL_COMPILER(NVHPC)
     if constexpr ((sizeof(_ActualResult) != 16 && sizeof(_Lhs) != 16 && sizeof(_Rhs) != 16)
-                  || (is_signed_v<_ActualResult> == is_signed_v<_Lhs> == is_signed_v<_Rhs>) )
+                  || (is_same_v<_ActualResult, _Lhs> && is_same_v<_ActualResult, _Rhs>) )
 #  endif // _CCCL_COMPILER(NVHPC)
     {
       NV_IF_TARGET(NV_IS_HOST, ({
@@ -299,6 +299,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> sub_overflow(const _Lhs __lhs
   // Host fallback + device implementation.
 #if _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_SUB_OVERFLOW) || (_CCCL_COMPILER(NVHPC) && _CCCL_HAS_INT128())
   using ::cuda::std::common_type_t;
+  using ::cuda::std::is_signed_v;
   using ::cuda::std::is_unsigned_v;
   using ::cuda::std::make_signed_t;
   using ::cuda::std::make_unsigned_t;
