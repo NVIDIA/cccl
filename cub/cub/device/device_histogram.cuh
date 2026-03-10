@@ -1513,6 +1513,9 @@ public:
   //! @rst
   //! Computes an intensity histogram from a sequence of data samples using equal-width bins.
   //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
   //! This is an environment-based API that allows customization of:
   //!
   //! - Stream: Query via ``cuda::get_stream``
@@ -1597,6 +1600,9 @@ public:
 
   //! @rst
   //! Computes an intensity histogram from a 2D region of data samples using equal-width bins.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -1689,6 +1695,9 @@ public:
   //! @rst
   //! Computes per-channel intensity histograms from a sequence of multi-channel "pixel" data samples
   //! using equal-width bins.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -1783,6 +1792,9 @@ public:
   //! @rst
   //! Computes per-channel intensity histograms from a 2D region of multi-channel "pixel" data samples
   //! using equal-width bins.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -1916,6 +1928,9 @@ public:
   //! @rst
   //! Computes an intensity histogram from a sequence of data samples using the specified bin boundary levels.
   //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
   //! This is an environment-based API that allows customization of:
   //!
   //! - Stream: Query via ``cuda::get_stream``
@@ -1995,6 +2010,9 @@ public:
 
   //! @rst
   //! Computes an intensity histogram from a 2D region of data samples using the specified bin boundary levels.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -2082,6 +2100,9 @@ public:
   //! @rst
   //! Computes per-channel intensity histograms from a sequence of multi-channel "pixel" data samples
   //! using the specified bin boundary levels.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -2171,6 +2192,9 @@ public:
   //! @rst
   //! Computes per-channel intensity histograms from a 2D region of multi-channel "pixel" data samples
   //! using the specified bin boundary levels.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
