@@ -52,11 +52,12 @@ template <typename T_In,
           typename T_Out,
           typename E_Out,
           typename L_Out,
-          typename A_Out>
+          typename A_Out,
+          typename EnvT = ::cuda::std::execution::env<>>
 [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
 copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
      ::cuda::std::mdspan<T_Out, E_Out, L_Out, A_Out> mdspan_out,
-     ::cudaStream_t stream)
+     EnvT env = {})
 {
   if (mdspan_in.is_exhaustive() && mdspan_out.is_exhaustive()
       && detail::have_same_strides(mdspan_in.mapping(), mdspan_out.mapping()))
@@ -66,11 +67,11 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
       mdspan_out.data_handle(),
       mdspan_in.size(),
       ::cuda::proclaim_copyable_arguments(::cuda::std::identity{}),
-      stream);
+      env);
   }
   // TODO (fbusato): add ForEachInLayout when mdspan_in and mdspan_out have compatible layouts
   // Compatible layouts could use more efficient iteration patterns
-  return cub::DeviceFor::ForEachInExtents(mdspan_in.extents(), copy_mdspan_t{mdspan_in, mdspan_out}, stream);
+  return cub::DeviceFor::ForEachInExtents(mdspan_in.extents(), copy_mdspan_t{mdspan_in, mdspan_out}, env);
 }
 } // namespace detail::copy_mdspan
 
