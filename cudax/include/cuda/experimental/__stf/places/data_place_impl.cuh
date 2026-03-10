@@ -34,7 +34,6 @@
 
 namespace cuda::experimental::stf
 {
-
 /**
  * @brief Implementation for the invalid data place
  */
@@ -325,5 +324,4 @@ public:
     return true;
   }
 };
-
 } // end namespace cuda::experimental::stf

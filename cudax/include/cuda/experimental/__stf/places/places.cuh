@@ -1678,7 +1678,6 @@ inline decorated_stream data_place::get_data_stream() const
   return affine_exec_place().get_stream(false);
 }
 
-
 #ifdef UNITTESTED_FILE
 UNITTEST("Data place equality")
 {
@@ -1855,7 +1854,8 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     _CCCL_ASSERT(l0_size % ndevs == 0, "Level 0 size must be divisible by number of devices");
     _CCCL_ASSERT(l0_size % (ndevs * block_size) == 0, "Level 0 size must be divisible by ndevs * block_size");
 
-    _CCCL_ASSERT(ndevs * grid_size * block_size == l0_size, "Dimension mismatch: ndevs * grid_size * block_size != l0_size");
+    _CCCL_ASSERT(ndevs * grid_size * block_size == l0_size,
+                 "Dimension mismatch: ndevs * grid_size * block_size != l0_size");
 
     this->add_level({::std::make_pair(hw_scope::device, ndevs),
                      ::std::make_pair(hw_scope::block, grid_size),

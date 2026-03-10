@@ -44,7 +44,6 @@
 
 namespace cuda::experimental::stf
 {
-
 // Forward declarations
 class exec_place;
 class exec_place_grid;
@@ -164,7 +163,6 @@ public:
    */
   virtual int get_device_ordinal() const = 0;
 
-
   /**
    * @brief Get a string representation of this place
    */
@@ -279,5 +277,4 @@ public:
     throw ::std::logic_error("get_partitioner() called on non-composite data_place");
   }
 };
-
 } // end namespace cuda::experimental::stf
