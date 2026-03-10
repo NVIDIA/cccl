@@ -33,10 +33,9 @@ TEST_CASE("DeviceRunLengthEncode::Encode works with default environment", "[run_
   auto d_counts_out   = c2h::device_vector<int>(8);
   auto d_num_runs_out = c2h::device_vector<int>(1);
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceRunLengthEncode::Encode(
-      d_in.begin(), d_unique_out.begin(), d_counts_out.begin(), d_num_runs_out.begin(), (int) d_in.size()));
+  REQUIRE(cudaSuccess
+          == cub::DeviceRunLengthEncode::Encode(
+            d_in.begin(), d_unique_out.begin(), d_counts_out.begin(), d_num_runs_out.begin(), (int) d_in.size()));
 
   c2h::device_vector<int> expected_unique{0, 2, 9, 5, 8};
   c2h::device_vector<int> expected_counts{1, 2, 1, 3, 1};
@@ -56,10 +55,9 @@ TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns works with default environment"
   auto d_lengths_out  = c2h::device_vector<int>(8);
   auto d_num_runs_out = c2h::device_vector<int>(1);
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceRunLengthEncode::NonTrivialRuns(
-      d_in.begin(), d_offsets_out.begin(), d_lengths_out.begin(), d_num_runs_out.begin(), (int) d_in.size()));
+  REQUIRE(cudaSuccess
+          == cub::DeviceRunLengthEncode::NonTrivialRuns(
+            d_in.begin(), d_offsets_out.begin(), d_lengths_out.begin(), d_num_runs_out.begin(), (int) d_in.size()));
 
   c2h::device_vector<int> expected_offsets{1, 4};
   c2h::device_vector<int> expected_lengths{2, 3};

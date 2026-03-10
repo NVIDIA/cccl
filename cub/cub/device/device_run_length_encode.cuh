@@ -31,7 +31,6 @@
 
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
@@ -230,9 +229,6 @@ struct DeviceRunLengthEncode
   //!   - ``[d_counts_out, d_counts_out + *d_num_runs_out)``
   //!   - ``[d_num_runs_out, d_num_runs_out + 1)``
   //!   - ``[d_in, d_in + num_items)``
-  //!
-  //! - The algorithm is deterministic: it produces the same output for the same input across runs
-  //!   on the same or different GPUs. No determinism requirements need to be specified via the environment.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -479,9 +475,6 @@ struct DeviceRunLengthEncode
   //!   - ``[d_lengths_out, d_lengths_out + *d_num_runs_out)``
   //!   - ``[d_num_runs_out, d_num_runs_out + 1)``
   //!   - ``[d_in, d_in + num_items)``
-  //!
-  //! - The algorithm is deterministic: it produces the same output for the same input across runs
-  //!   on the same or different GPUs. No determinism requirements need to be specified via the environment.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
