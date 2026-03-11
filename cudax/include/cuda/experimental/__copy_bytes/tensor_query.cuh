@@ -160,7 +160,8 @@ template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _Acc
     using __stride_t      = decltype(__sorted.__strides[0]);
     const auto& __extents = __sorted.__extents;
     const auto& __strides = __sorted.__strides;
-    for (::cuda::std::size_t __i = 0; __i < __sorted.__rank; ++__i)
+    using __rank_t       = typename _Extents::rank_type;
+    for (__rank_t __i = 0; __i < __sorted.__rank; ++__i)
     {
       if (__extents[__i] > 1 && __strides[__i] == 0)
       {
