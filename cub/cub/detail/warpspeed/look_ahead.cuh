@@ -26,9 +26,9 @@
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__type_traits/underlying_type.h>
 
-#if !defined(_CUDACC_DEVICE_ATOMIC_BUILTINS__) || _CCCL_COMPILER(MSVC)
+#if !defined(__CUDACC_DEVICE_ATOMIC_BUILTINS__) || _CCCL_COMPILER(MSVC)
 #  include <cuda/atomic>
-#endif // !defined(_CUDACC_DEVICE_ATOMIC_BUILTINS__) || _CCCL_COMPILER(MSVC)
+#endif // !defined(__CUDACC_DEVICE_ATOMIC_BUILTINS__) || _CCCL_COMPILER(MSVC)
 
 #include <nv/target>
 
@@ -80,12 +80,12 @@ storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, Ac
     static_assert(::cuda::is_power_of_two(sizeof(tile_state_t<AccumT>)));
     tile_state_t<AccumT> tmp{scanState, sum};
 
-#  if defined(_CUDACC_DEVICE_ATOMIC_BUILTINS__) && !_CCCL_COMPILER(MSVC)
+#  if defined(__CUDACC_DEVICE_ATOMIC_BUILTINS__) && !_CCCL_COMPILER(MSVC)
     __nv_atomic_store(ptrTileStates + index, &tmp, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
-#  else // defined(_CUDACC_DEVICE_ATOMIC_BUILTINS__) && !_CCCL_COMPILER(MSVC)
+#  else // defined(__CUDACC_DEVICE_ATOMIC_BUILTINS__) && !_CCCL_COMPILER(MSVC)
     ::cuda::atomic_ref<tile_state_t<AccumT>, ::cuda::std::thread_scope_device>{ptrTileStates[index]}.store(
       tmp, ::cuda::std::memory_order_relaxed);
-#  endif // defined(_CUDACC_DEVICE_ATOMIC_BUILTINS__) && !_CCCL_COMPILER(MSVC)
+#  endif // defined(__CUDACC_DEVICE_ATOMIC_BUILTINS__) && !_CCCL_COMPILER(MSVC)
   }
   else
   {
@@ -106,12 +106,12 @@ _CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* pt
                 && ::cuda::std::is_trivially_copyable_v<tile_state_t<AccumT>>)
   {
     static_assert(::cuda::is_power_of_two(sizeof(tile_state_t<AccumT>)));
-#  if defined(_CUDACC_DEVICE_ATOMIC_BUILTINS__) && !_CCCL_COMPILER(MSVC)
+#  if defined(__CUDACC_DEVICE_ATOMIC_BUILTINS__) && !_CCCL_COMPILER(MSVC)
     __nv_atomic_load(ptrTileStates + index, &res, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
-#  else // defined(_CUDACC_DEVICE_ATOMIC_BUILTINS__) && !_CCCL_COMPILER(MSVC)
+#  else // defined(__CUDACC_DEVICE_ATOMIC_BUILTINS__) && !_CCCL_COMPILER(MSVC)
     res = ::cuda::atomic_ref<tile_state_t<AccumT>, ::cuda::std::thread_scope_device>{ptrTileStates[index]}.load(
       ::cuda::std::memory_order_relaxed);
-#  endif // defined(_CUDACC_DEVICE_ATOMIC_BUILTINS__) && !_CCCL_COMPILER(MSVC)
+#  endif // defined(__CUDACC_DEVICE_ATOMIC_BUILTINS__) && !_CCCL_COMPILER(MSVC)
   }
   else
   {
