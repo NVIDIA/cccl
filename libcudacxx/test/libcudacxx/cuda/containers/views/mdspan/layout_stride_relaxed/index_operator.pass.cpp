@@ -36,7 +36,8 @@ _CCCL_CONCEPT operator_constraints = _CCCL_REQUIRES_EXPR((Mapping, variadic Indi
   _Same_as(typename Mapping::index_type) m(idxs...));
 
 template <class Mapping, class... Indices>
-__host__ __device__ constexpr bool check_operator_constraints(Mapping m, Indices... idxs)
+__host__ __device__ constexpr bool
+check_operator_constraints([[maybe_unused]] Mapping m, [[maybe_unused]] Indices... idxs)
 {
   if constexpr (operator_constraints<Mapping, Indices...>)
   {
