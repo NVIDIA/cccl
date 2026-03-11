@@ -9,7 +9,6 @@
 //===----------------------------------------------------------------------===//
 
 #include <thrust/device_vector.h>
-#include <thrust/fill.h>
 
 #include <cuda/memory_pool>
 #include <cuda/std/__pstl_algorithm>
@@ -27,8 +26,8 @@ static void range_iter(nvbench::state& state, nvbench::type_list<T>)
   const auto mismatch_point = static_cast<std::size_t>(elements * common_prefix);
 
   thrust::device_vector<T> dinput(elements, thrust::no_init);
-  thrust::fill(dinput.begin(), dinput.begin() + mismatch_point, T{0});
-  thrust::fill(dinput.begin() + mismatch_point, dinput.end(), val);
+  cuda::std::fill(cuda::execution::__cub_par_unseq, dinput.begin(), dinput.begin() + mismatch_point, T{0});
+  cuda::std::fill(cuda::execution::__cub_par_unseq, dinput.begin() + mismatch_point, dinput.end(), val);
 
   state.add_global_memory_reads<T>(mismatch_point + 1);
   state.add_global_memory_writes<size_t>(1);
@@ -57,8 +56,8 @@ static void range_range(nvbench::state& state, nvbench::type_list<T>)
   const auto mismatch_point = static_cast<std::size_t>(elements * common_prefix);
 
   thrust::device_vector<T> dinput(elements, thrust::no_init);
-  thrust::fill(dinput.begin(), dinput.begin() + mismatch_point, T{0});
-  thrust::fill(dinput.begin() + mismatch_point, dinput.end(), val);
+  cuda::std::fill(cuda::execution::__cub_par_unseq, dinput.begin(), dinput.begin() + mismatch_point, T{0});
+  cuda::std::fill(cuda::execution::__cub_par_unseq, dinput.begin() + mismatch_point, dinput.end(), val);
 
   state.add_global_memory_reads<T>(mismatch_point + 1);
   state.add_global_memory_writes<size_t>(1);

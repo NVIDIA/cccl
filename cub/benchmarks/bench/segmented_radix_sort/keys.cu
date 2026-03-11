@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
+// This benchmark is only used for regression testing and not tuning
+
 #include <cub/device/device_segmented_radix_sort.cuh>
-#include <cub/device/dispatch/dispatch_common.cuh>
 
 #include <nvbench_helper.cuh>
 
@@ -17,10 +18,9 @@ void seg_radix_sort(nvbench::state& state,
   using offset_t          = OffsetT;
   using begin_offset_it_t = const offset_t*;
   using end_offset_it_t   = const offset_t*;
+  using segment_size_t    = offset_t;
   using key_t             = T;
   using value_t           = cub::NullType;
-  using dispatch_t        = cub::
-    DispatchSegmentedRadixSort<cub::SortOrder::Ascending, key_t, value_t, begin_offset_it_t, end_offset_it_t, offset_t>;
 
   constexpr int begin_bit = 0;
   constexpr int end_bit   = sizeof(key_t) * 8;
@@ -47,7 +47,7 @@ void seg_radix_sort(nvbench::state& state,
 
   std::size_t temp_storage_bytes{};
   std::uint8_t* d_temp_storage{};
-  dispatch_t::Dispatch(
+  cub::detail::radix_sort::dispatch<cub::SortOrder::Ascending, segment_size_t>(
     d_temp_storage,
     temp_storage_bytes,
     d_keys,
@@ -69,7 +69,7 @@ void seg_radix_sort(nvbench::state& state,
                cub::DoubleBuffer<key_t> keys     = d_keys;
                cub::DoubleBuffer<value_t> values = d_values;
 
-               dispatch_t::Dispatch(
+               cub::detail::radix_sort::dispatch<cub::SortOrder::Ascending, segment_size_t>(
                  d_temp_storage,
                  temp_storage_bytes,
                  keys,

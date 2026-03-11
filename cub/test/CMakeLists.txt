@@ -399,3 +399,4 @@ endforeach() # Source file
 
 add_subdirectory(cmake)
 add_subdirectory(ptx-json)
+add_subdirectory(cubin-check)

@@ -29,14 +29,16 @@ struct TripleChevronFactory
     return THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid, block, shared_mem, stream, dependent_launch);
   }
 
+  template <class T = void>
   CUB_RUNTIME_FUNCTION ::cudaError_t PtxVersion(int& version)
   {
-    return cub::PtxVersion(version);
+    return cub::PtxVersion<T>(version);
   }
 
+  template <class T = void>
   CUB_RUNTIME_FUNCTION ::cudaError_t PtxArchId(::cuda::arch_id& arch_id) const
   {
-    return ptx_arch_id(arch_id);
+    return ptx_arch_id<T>(arch_id);
   }
 
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t MultiProcessorCount(int& sm_count) const

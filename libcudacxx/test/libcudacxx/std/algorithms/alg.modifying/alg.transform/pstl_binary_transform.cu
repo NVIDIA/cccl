@@ -46,7 +46,7 @@ void test_transform(const Policy& policy, thrust::device_vector<int>& output)
   }
 
   { // same type
-    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::fill(policy, output.begin(), output.end(), 0);
     cuda::std::transform(
       policy,
       cuda::counting_iterator{1},
@@ -58,7 +58,7 @@ void test_transform(const Policy& policy, thrust::device_vector<int>& output)
   }
 
   { // convertible transform arg
-    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::fill(policy, output.begin(), output.end(), 0);
     cuda::std::transform(
       policy,
       cuda::counting_iterator{1},
@@ -70,7 +70,7 @@ void test_transform(const Policy& policy, thrust::device_vector<int>& output)
   }
 
   { // convertible type
-    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::fill(policy, output.begin(), output.end(), 0);
     cuda::std::transform(
       policy,
       cuda::counting_iterator<short>{1},
@@ -82,7 +82,7 @@ void test_transform(const Policy& policy, thrust::device_vector<int>& output)
   }
 
   { // convertible second range
-    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::fill(policy, output.begin(), output.end(), 0);
     cuda::std::transform(
       policy,
       cuda::counting_iterator{1},

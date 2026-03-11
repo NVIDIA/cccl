@@ -17,7 +17,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
 #include <thrust/execution_policy.h>
-#include <thrust/fill.h>
 #include <thrust/sequence.h>
 
 #include <cuda/cmath>
@@ -35,13 +34,13 @@ inline constexpr int size = 1000;
 template <class Policy>
 void test_copy(const Policy& policy, const thrust::device_vector<int>& input, thrust::device_vector<int>& output)
 {
-  thrust::fill(output.begin(), output.end(), -1);
+  cuda::std::fill(policy, output.begin(), output.end(), -1);
   { // With non-contiguous iterator
     cuda::std::copy(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, output.begin());
     CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{0}));
   }
 
-  thrust::fill(output.begin(), output.end(), -1);
+  cuda::std::fill(policy, output.begin(), output.end(), -1);
   { // With contiguous iterator
     cuda::std::copy(policy, input.begin(), input.end(), output.begin());
     CHECK(thrust::equal(output.begin(), output.end(), cuda::counting_iterator{0}));

@@ -65,6 +65,7 @@ none_of([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _
     {
       return true;
     }
+
     auto __res = __dispatch(__policy, ::cuda::std::move(__first), __last, ::cuda::std::move(__pred));
     return __res == __last;
   }
