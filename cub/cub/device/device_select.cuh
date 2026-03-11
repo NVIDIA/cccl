@@ -26,8 +26,10 @@
 #include <cuda/__execution/require.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -1500,6 +1502,138 @@ public:
         static_cast<offset_t>(num_items),
         stream);
     });
+  }
+
+  //! @rst
+  //! Given an input sequence ``d_in`` having runs of consecutive equal-valued keys,
+  //! only the first key from each run is selectively copied to ``d_out``.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - The user-provided equality operator, `equality_op`, is used to determine whether keys are equivalent
+  //! - Copies of the selected items are compacted into ``d_out`` and maintain their original relative ordering.
+  //! - | The range ``[d_out, d_out + *d_num_selected_out)`` shall not overlap
+  //!   | ``[d_in, d_in + num_items)`` nor ``d_num_selected_out`` in any way.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_select.cuh>
+  //!
+  //!    // Declare, allocate, and initialize device-accessible pointers
+  //!    // for input and output
+  //!    int  num_items;              // e.g., 8
+  //!    int  *d_in;                  // e.g., [0, 2, 2, 9, 5, 5, 5, 8]
+  //!    int  *d_out;                 // e.g., [ ,  ,  ,  ,  ,  ,  ,  ]
+  //!    int  *d_num_selected_out;    // e.g., [ ]
+  //!    ...
+  //!
+  //!    // Determine temporary device storage requirements
+  //!    void     *d_temp_storage = nullptr;
+  //!    size_t   temp_storage_bytes = 0;
+  //!    cub::DeviceSelect::Unique(
+  //!      d_temp_storage, temp_storage_bytes,
+  //!      d_in, d_out, d_num_selected_out, num_items, cuda::std::equal_to<>{});
+  //!
+  //!    // Allocate temporary storage
+  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
+  //!
+  //!    // Run selection
+  //!    cub::DeviceSelect::Unique(
+  //!      d_temp_storage, temp_storage_bytes,
+  //!      d_in, d_out, d_num_selected_out, num_items, cuda::std::equal_to<>{});
+  //!
+  //!    // d_out                 <-- [0, 2, 9, 5, 8]
+  //!    // d_num_selected_out    <-- [5]
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing selected items @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @tparam EqualityOpT
+  //!   **[inferred]** Type of equality_op
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output sequence of selected data items
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the output total number of items selected
+  //!   (i.e., length of `d_out`)
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_in`)
+  //!
+  //! @param[in] equality_op
+  //!   Binary predicate to determine equality
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename EqualityOpT,
+            ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<EqualityOpT, InputIteratorT, InputIteratorT>,
+                                     int> = 0>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumSelectedIteratorT d_num_selected_out,
+    ::cuda::std::int64_t num_items,
+    EqualityOpT equality_op,
+    cudaStream_t stream = 0)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
+
+    using OffsetT      = ::cuda::std::int64_t;
+    using FlagIterator = NullType*; // FlagT iterator type (not used)
+    using SelectOpT    = NullType; // Selection op (not used)
+
+    return DispatchSelectIf<
+      InputIteratorT,
+      FlagIterator,
+      OutputIteratorT,
+      NumSelectedIteratorT,
+      SelectOpT,
+      EqualityOpT,
+      OffsetT,
+      SelectImpl::Select>::Dispatch(d_temp_storage,
+                                    temp_storage_bytes,
+                                    d_in,
+                                    nullptr,
+                                    d_out,
+                                    d_num_selected_out,
+                                    SelectOpT(),
+                                    equality_op,
+                                    num_items,
+                                    stream);
   }
 
   //! @rst
