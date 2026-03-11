@@ -139,7 +139,7 @@ __host__ __device__ constexpr void test_conversion()
   test_conversion<idx_l_convertible, FromL, cuda::std::extents<T1, D, D, 8, 9, D>>(
                                             cuda::std::extents<T2, D, 7, 8, 9, 1>(5));
 
-  test_conversion<            false, FromL, cuda::std::extents<T1, 5, 7, 8, 9, 1>>(
+  test_conversion<idx_l_convertible, FromL, cuda::std::extents<T1, 5, 7, 8, 9, 1>>(
                                             cuda::std::extents<T2, 5, 7, 8, 9, 1>());
   // clang-format on
 }

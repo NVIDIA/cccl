@@ -31,11 +31,10 @@ using mapping_with_constant_offset =
 
 __host__ __device__ constexpr void test_basic_properties()
 {
-  using Extents         = cuda::std::extents<int, 4>;
-  constexpr auto Offset = 7;
-  using M               = mapping_with_constant_offset<Extents, Offset>;
-  static_assert(cuda::std::is_same_v<typename M::offset_type, contant_offset_t<Offset>>);
-  static_assert(M::offset_type::value == Offset);
+  using Extents        = cuda::std::extents<int, 4>;
+  constexpr int Offset = 7;
+  using M              = mapping_with_constant_offset<Extents, Offset>;
+  static_assert(cuda::std::is_same_v<typename M::offset_type, ptrdiff_t>);
   static_assert(cuda::std::is_copy_constructible_v<M>);
   static_assert(cuda::std::is_nothrow_move_constructible_v<M>);
   static_assert(cuda::std::is_nothrow_move_assignable_v<M>);
@@ -48,8 +47,7 @@ __host__ __device__ constexpr void test_explicit_construction_1d()
   using M               = mapping_with_constant_offset<Extents, Offset>;
   Extents ext{};
   typename M::strides_type strides(2);
-  typename M::offset_type offset{};
-  M m(ext, strides, offset);
+  M m(ext, strides);
   assert(m.offset() == Offset);
   assert(m.strides().stride(0) == 2);
 }
@@ -59,7 +57,7 @@ __host__ __device__ constexpr void test_access_1d()
   // backward access
   using E = cuda::std::extents<int, 5>;
   using M = mapping_with_constant_offset<E, 4>;
-  M m(E{}, typename M::strides_type(-1), typename M::offset_type{});
+  M m(E{}, typename M::strides_type(-1));
   assert(m.offset() == 4);
   assert(m(0) == 4);
   assert(m(1) == 3);
@@ -72,7 +70,7 @@ __host__ __device__ constexpr void test_required_span_size()
 {
   using E = cuda::std::extents<int, 4>;
   using M = mapping_with_constant_offset<E, 10>;
-  M m(E{}, typename M::strides_type(1), typename M::offset_type{});
+  M m(E{}, typename M::strides_type(1));
   assert(m.required_span_size() == 14); // 10 + 4 = 14
 }
 
@@ -80,7 +78,7 @@ __host__ __device__ constexpr void test_is_strided_zero_offset()
 {
   using E = cuda::std::extents<int, 4>;
   using M = mapping_with_constant_offset<E, 0>;
-  M m(E{}, typename M::strides_type(1), typename M::offset_type{});
+  M m(E{}, typename M::strides_type(1));
   assert(m.offset() == 0);
   assert(m.is_strided() == true);
   assert(m.is_always_strided() == true);
@@ -90,7 +88,7 @@ __host__ __device__ constexpr void test_is_strided_nonzero_offset()
 {
   using E = cuda::std::extents<int, 4>;
   using M = mapping_with_constant_offset<E, 10>;
-  M m(E{}, typename M::strides_type(1), typename M::offset_type{});
+  M m(E{}, typename M::strides_type(1));
   assert(m.offset() == 10);
   assert(m.is_strided() == false);
   assert(m.is_always_strided() == false);
