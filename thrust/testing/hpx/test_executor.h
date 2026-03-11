@@ -32,9 +32,7 @@ struct test_sync_executor
 
 namespace hpx::execution::experimental
 {
-
 template <>
 struct is_one_way_executor<test_sync_executor> : std::true_type
 {};
-
 } // namespace hpx::execution::experimental
