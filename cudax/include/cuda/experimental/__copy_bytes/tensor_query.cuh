@@ -122,7 +122,7 @@ __sort_by_stride(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor
   using __mode_t            = ::cuda::std::tuple<__unsigned_extent_t, _StrideT>;
   const auto __rank         = __tensor.__rank;
   ::cuda::std::array<__mode_t, _MaxRank> __modes{};
-  for (size_t __i = 0; __i < __rank; ++__i)
+  for (decltype(__rank) __i = 0; __i < __rank; ++__i)
   {
     __modes[__i] = {__tensor.__extents[__i], __tensor.__strides[__i]};
   }
