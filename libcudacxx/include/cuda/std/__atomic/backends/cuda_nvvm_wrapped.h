@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/backends/cuda_nvvm_fallbacks.h>
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
 
@@ -149,6 +150,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
         scope,                                                                                \
         __ATOMIC_SCOPE_CASES,                                                                 \
         __ATOMIC_NVVM_WRAP(__VA_ARGS__))}))
+
+template <class _Type>
+_CCCL_ARTIFICIAL static inline _CCCL_DEVICE void
+__atomic_thread_fence_nvvm_dispatch(const _Type* __ptr, _Type* __dst, int __memorder, int __sco)
+{
+  _CCCL_PP_EXPAND(__ATOMIC_NVVM_BUILTIN(__nv_atomic_thread_fence, __memorder, __ATOMIC_FENCE_CASES, __sco));
+}
 
 template <class _Type>
 _CCCL_ARTIFICIAL static inline _CCCL_DEVICE void

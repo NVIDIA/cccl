@@ -63,12 +63,8 @@ constexpr _CCCL_DEVICE int __atomic_scope_tag_to_nvvm_scope(::cuda::std::__threa
 template <typename _Sco>
 static inline _CCCL_DEVICE void __atomic_thread_fence_cuda(int __memorder, _Sco)
 {
-  // nv_atomic_thread_fence_nvvm_dispatch(__memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
+  __atomic_thread_fence_nvvm_dispatch(__memorder, __atomic_scope_tag_to_nvvm_scope(_Sco{}));
 }
-
-template <>
-inline _CCCL_DEVICE void __atomic_thread_fence_cuda(int __memorder, ::cuda::std::__thread_scope_thread_tag)
-{}
 
 template <class _Type, class _Sco>
 static inline _CCCL_DEVICE void __atomic_load_cuda(const _Type* __ptr, _Type& __dst, int __memorder, _Sco)
