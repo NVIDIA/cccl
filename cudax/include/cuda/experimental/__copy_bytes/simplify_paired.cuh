@@ -151,24 +151,24 @@ _CCCL_HOST_API void __coalesce_paired(__raw_tensor<_ExtentT, _StrideT, _TpSrc, _
   }
   using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _TpSrc, _MaxRank>;
   using __rank_t       = typename __raw_tensor_t::__rank_t;
-  __rank_t __out       = 1;
+  __rank_t __out_r     = 1;
   for (__rank_t __i = 1; __i < __src.__rank; ++__i)
   {
-    const auto __prev_extent    = static_cast<_StrideT>(__src.__extents[__out - 1]);
-    const bool __src_contiguous = (__prev_extent * __src.__strides[__out - 1] == __src.__strides[__i]);
-    const bool __dst_contiguous = (__prev_extent * __dst.__strides[__out - 1] == __dst.__strides[__i]);
+    const auto __prev_extent    = static_cast<_StrideT>(__src.__extents[__out_r - 1]);
+    const bool __src_contiguous = (__prev_extent * __src.__strides[__out_r - 1] == __src.__strides[__i]);
+    const bool __dst_contiguous = (__prev_extent * __dst.__strides[__out_r - 1] == __dst.__strides[__i]);
     if (__src_contiguous && __dst_contiguous)
     {
-      __src.__extents[__out - 1] *= __src.__extents[__i];
+      __src.__extents[__out_r - 1] *= __src.__extents[__i];
       continue;
     }
-    __src.__extents[__out] = __src.__extents[__i];
-    __src.__strides[__out] = __src.__strides[__i];
-    __dst.__strides[__out] = __dst.__strides[__i];
-    ++__out;
+    __src.__extents[__out_r] = __src.__extents[__i];
+    __src.__strides[__out_r] = __src.__strides[__i];
+    __dst.__strides[__out_r] = __dst.__strides[__i];
+    ++__out_r;
   }
-  __src.__rank    = __out;
-  __dst.__rank    = __out;
+  __src.__rank    = __out_r;
+  __dst.__rank    = __out_r;
   __dst.__extents = __src.__extents;
 }
 } // namespace cuda::experimental
