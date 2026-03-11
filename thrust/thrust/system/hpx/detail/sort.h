@@ -31,7 +31,7 @@ void stable_sort(execution_policy<DerivedPolicy>& exec [[maybe_unused]],
   // wrap comp
   hpx_wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
 
-  if constexpr (::hpx::traits::has_traversal_v<RandomAccessIterator, ::hpx::random_access_traversal_tag>)
+  if constexpr (::hpx::traits::is_random_access_iterator_v<RandomAccessIterator>)
   {
     return ::hpx::stable_sort(
       hpx::detail::to_hpx_execution_policy(exec),
