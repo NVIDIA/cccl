@@ -416,8 +416,6 @@ try
   const auto [end_offset_iterator_name, end_offset_iterator_src] =
     get_specialization<segmented_sort_end_offset_iterator_tag>(template_id<input_iterator_traits>(), end_offset_it);
 
-  const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
-
   const std::string key_t = cccl_type_enum_to_name(keys_in_it.value_type.type);
   const std::string value_t =
     keys_only ? "cub::NullType" : cccl_type_enum_to_name<items_storage_t>(values_in_it.value_type.type);
@@ -495,7 +493,7 @@ try
   const auto partition_policy_sel = cub::detail::three_way_partition::policy_selector{
     cub::detail::classify_type<cub::detail::segmented_sort::local_segment_index_t>,
     int{sizeof(cub::detail::segmented_sort::local_segment_index_t)},
-    int{sizeof(OffsetT)}};
+    int{sizeof(cub::detail::three_way_partition::per_partition_offset_t)}};
 
   // TODO(bgruber): drop this if tuning policies become formattable
   std::stringstream partition_policy_sel_str;
@@ -503,8 +501,7 @@ try
 
   const auto three_way_partition_policy_expr = std::format(
     "cub::detail::three_way_partition::policy_selector_from_types<cub::detail::segmented_sort::local_segment_index_t, "
-    "{}>",
-    offset_t);
+    "cub::detail::three_way_partition::per_partition_offset_t>");
 
   const std::string final_src = std::format(
     R"XXX(
