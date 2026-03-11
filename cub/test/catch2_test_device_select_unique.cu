@@ -7,6 +7,7 @@
 
 #include <cuda/cmath>
 #include <cuda/iterator>
+#include <cuda/stream>
 
 #include <algorithm>
 
@@ -100,8 +101,12 @@ C2H_TEST("DeviceSelect::Unique can run with empty input", "[device][select_uniqu
   c2h::device_vector<int> num_selected_out(1, 42);
   int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
+  // test overload without predicate
   select_unique(in.begin(), out.begin(), d_num_selected_out, num_items);
+  REQUIRE(num_selected_out[0] == 0);
 
+  // test overload with stream
+  select_unique(in.begin(), out.begin(), d_num_selected_out, num_items, fake_equal_to{});
   REQUIRE(num_selected_out[0] == 0);
 }
 
@@ -123,6 +128,14 @@ C2H_TEST("DeviceSelect::Unique handles none equal", "[device][select_unique]", t
   select_unique(
     cuda::counting_iterator<type>(0), cuda::discard_iterator(), d_first_num_selected_out, num_items, fake_equal_to{});
   REQUIRE(num_selected_out[0] == num_items);
+
+  // test against predicate that gives a different result
+  select_unique(cuda::counting_iterator<type>(0),
+                cuda::discard_iterator(),
+                d_first_num_selected_out,
+                num_items,
+                cuda::std::not_equal_to<>{});
+  REQUIRE(num_selected_out[0] == 1);
 }
 
 C2H_TEST("DeviceSelect::Unique handles all equal", "[device][select_unique]", types)
