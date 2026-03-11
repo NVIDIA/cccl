@@ -10,7 +10,8 @@ XML_OUTPUT             = xml
 XML_PROGRAMLISTING     = YES
 
 # Input directory - specific paths for cudax
-INPUT                  = ../../cudax/include/cuda/experimental/__container \
+INPUT                  = ../../cudax/include/cuda/experimental/__copy_bytes \
+                         ../../cudax/include/cuda/experimental/__container \
                          ../../cudax/include/cuda/experimental/__device \
                          ../../cudax/include/cuda/experimental/graph.cuh \
                          ../../cudax/include/cuda/experimental/__graph \
