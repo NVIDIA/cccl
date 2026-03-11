@@ -80,7 +80,7 @@ struct __pstl_dispatch<__pstl_algorithm::__merge, __execution_backend::__cuda>
     // Determine temporary device storage requirements for device_merge
     size_t __num_bytes = 0;
     _CCCL_TRY_CUDA_API(
-      ::cub::DeviceMerge::MergeKeys,
+      CUB_NS_QUALIFIER::DeviceMerge::MergeKeys,
       "__pstl_cuda_merge: determination of device storage for cub::DeviceMerge::MergeKeys failed",
       static_cast<void*>(nullptr),
       __num_bytes,
@@ -100,7 +100,7 @@ struct __pstl_dispatch<__pstl_algorithm::__merge, __execution_backend::__cuda>
 
       // Run the kernel
       _CCCL_TRY_CUDA_API(
-        ::cub::DeviceMerge::MergeKeys,
+        CUB_NS_QUALIFIER::DeviceMerge::MergeKeys,
         "__pstl_cuda_merge: kernel launch of cub::DeviceMerge::MergeKeys failed",
         __storage.__get_temp_storage(),
         __num_bytes,
