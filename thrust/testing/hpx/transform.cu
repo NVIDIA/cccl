@@ -14,7 +14,8 @@ void TestTransform(ExecutionPolicy exec)
     Vector output(3);
     Vector result{-1, 2, -3};
 
-    typename Vector::iterator iter = thrust::transform(exec, input.begin(), input.end(), output.begin(), thrust::negate<T>());
+    typename Vector::iterator iter =
+      thrust::transform(exec, input.begin(), input.end(), output.begin(), thrust::negate<T>());
 
     ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
     ASSERT_EQUAL(output, result);

@@ -28,28 +28,36 @@ void TestFind(ExecutionPolicy exec)
 
   // Test find_if with predicate
   {
-    auto is_greater_than_5 = [](T x) { return x > 5; };
+    auto is_greater_than_5 = [](T x) {
+      return x > 5;
+    };
     typename Vector::iterator result = thrust::find_if(exec, input.begin(), input.end(), is_greater_than_5);
     ASSERT_EQUAL(*result, 7); // First element > 5
   }
 
   // Test find_if with no match
   {
-    auto is_greater_than_10 = [](T x) { return x > 10; };
+    auto is_greater_than_10 = [](T x) {
+      return x > 10;
+    };
     typename Vector::iterator result = thrust::find_if(exec, input.begin(), input.end(), is_greater_than_10);
     ASSERT_EQUAL(result - input.begin(), input.end() - input.begin());
   }
 
   // Test find_if_not
   {
-    auto is_even = [](T x) { return x % 2 == 0; };
+    auto is_even = [](T x) {
+      return x % 2 == 0;
+    };
     typename Vector::iterator result = thrust::find_if_not(exec, input.begin(), input.end(), is_even);
     ASSERT_EQUAL(*result, 5); // First odd number
   }
 
   // Test find_if_not with no match
   {
-    auto is_single_digit = [](T x) { return x < 10; };
+    auto is_single_digit = [](T x) {
+      return x < 10;
+    };
     typename Vector::iterator result = thrust::find_if_not(exec, input.begin(), input.end(), is_single_digit);
     ASSERT_EQUAL(result - input.begin(), input.end() - input.begin());
   }
@@ -62,7 +70,7 @@ void TestFindWithDifferentTypes(ExecutionPolicy exec)
   {
     thrust::counting_iterator<int> first(0);
     thrust::counting_iterator<int> last(10);
-    
+
     auto result = thrust::find(exec, first, last, 5);
     ASSERT_EQUAL(*result, 5);
   }
@@ -71,7 +79,7 @@ void TestFindWithDifferentTypes(ExecutionPolicy exec)
   {
     thrust::counting_iterator<int> first(42);
     thrust::counting_iterator<int> last = first + 10;
-    
+
     auto result = thrust::find(exec, first, last, 42);
     ASSERT_EQUAL(result - first, 0);
   }
