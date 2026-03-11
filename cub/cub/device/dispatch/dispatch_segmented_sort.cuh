@@ -359,7 +359,7 @@ template <
     cub::detail::it_value_t<THRUST_NS_QUALIFIER::counting_iterator<cub::detail::segmented_sort::local_segment_index_t>>,
     detail::three_way_partition::per_partition_offset_t>,
   typename PartitionKernelSource = detail::three_way_partition::DeviceThreeWayPartitionKernelSource<
-    typename PartitionPolicyHub::MaxPolicy,
+    detail::three_way_partition::policy_selector_from_hub<PartitionPolicyHub>,
     THRUST_NS_QUALIFIER::counting_iterator<cub::detail::segmented_sort::local_segment_index_t>,
     cub::detail::segmented_sort::local_segment_index_t*,
     cub::detail::segmented_sort::local_segment_index_t*,
