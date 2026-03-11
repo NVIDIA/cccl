@@ -106,8 +106,16 @@ C2H_TEST("DeviceSelect::Unique handles none equal", "[device][select_unique]", t
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
+  // test overload without predicate
   select_unique(cuda::counting_iterator<type>(0), cuda::discard_iterator(), d_first_num_selected_out, num_items);
+  REQUIRE(num_selected_out[0] == num_items);
 
+  // test overload with predicate
+  select_unique(cuda::counting_iterator<type>(0),
+                cuda::discard_iterator(),
+                d_first_num_selected_out,
+                num_items,
+                cuda::std::equal_to<type>{});
   REQUIRE(num_selected_out[0] == num_items);
 }
 
@@ -123,7 +131,15 @@ C2H_TEST("DeviceSelect::Unique handles all equal", "[device][select_unique]", ty
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
+  // test overload without predicate
   select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items);
+
+  // At least one item is selected
+  REQUIRE(num_selected_out[0] == 1);
+  REQUIRE(out[0] == in[0]);
+
+  // test overload with predicate
+  select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items, cuda::std::equal_to<type>{});
 
   // At least one item is selected
   REQUIRE(num_selected_out[0] == 1);
@@ -146,8 +162,12 @@ C2H_TEST("DeviceSelect::Unique does not change input", "[device][select_unique]"
   // copy input first
   c2h::device_vector<type> reference = in;
 
+  // test overload without predicate
   select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items);
+  REQUIRE(reference == in);
 
+  // test overload with predicate
+  select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items, cuda::std::equal_to<type>{});
   REQUIRE(reference == in);
 }
 
@@ -164,15 +184,21 @@ C2H_TEST("DeviceSelect::Unique works with iterators", "[device][select_unique]",
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items);
-
   // Ensure that we create the same output as std
   c2h::host_vector<type> reference = in;
   const auto boundary              = std::unique(reference.begin(), reference.end());
-  REQUIRE((boundary - reference.begin()) == num_selected_out[0]);
+  const auto num_selected_std      = cuda::std::distance(reference.begin(), boundary);
 
+  // test overload without predicate
+  select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items);
+  REQUIRE(num_selected_std == num_selected_out[0]);
   out.resize(num_selected_out[0]);
   reference.resize(num_selected_out[0]);
+  REQUIRE(reference == out);
+
+  // test overload with predicate
+  select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items, cuda::std::equal_to<type>{});
+  REQUIRE(num_selected_std == num_selected_out[0]);
   REQUIRE(reference == out);
 }
 
@@ -189,16 +215,26 @@ C2H_TEST("DeviceSelect::Unique works with pointers", "[device][select_unique]", 
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_unique(
-    thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), d_first_num_selected_out, num_items);
-
   // Ensure that we create the same output as std
   c2h::host_vector<type> reference = in;
   const auto boundary              = std::unique(reference.begin(), reference.end());
-  REQUIRE((boundary - reference.begin()) == num_selected_out[0]);
+  const auto num_selected_std      = cuda::std::distance(reference.begin(), boundary);
 
+  // test overload without predicate
+  select_unique(
+    thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), d_first_num_selected_out, num_items);
+  REQUIRE(num_selected_std == num_selected_out[0]);
   out.resize(num_selected_out[0]);
   reference.resize(num_selected_out[0]);
+  REQUIRE(reference == out);
+
+  // test overload with predicate
+  select_unique(thrust::raw_pointer_cast(in.data()),
+                thrust::raw_pointer_cast(out.data()),
+                d_first_num_selected_out,
+                num_items,
+                cuda::std::equal_to<type>{});
+  REQUIRE(num_selected_std == num_selected_out[0]);
   REQUIRE(reference == out);
 }
 
@@ -235,15 +271,21 @@ C2H_TEST("DeviceSelect::Unique works with a different output type", "[device][se
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items);
-
   // Ensure that we create the same output as std
   c2h::host_vector<type> reference = in;
   const auto boundary              = std::unique(reference.begin(), reference.end());
-  REQUIRE((boundary - reference.begin()) == num_selected_out[0]);
+  const auto num_selected_std      = cuda::std::distance(reference.begin(), boundary);
 
+  // test overload without predicate
+  select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items);
+  REQUIRE(num_selected_std == num_selected_out[0]);
   out.resize(num_selected_out[0]);
   reference.resize(num_selected_out[0]);
+  REQUIRE(reference == out);
+
+  // test overload with predicate
+  select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items, cuda::std::equal_to<type>{});
+  REQUIRE(num_selected_std == num_selected_out[0]);
   REQUIRE(reference == out);
 }
 
@@ -283,8 +325,15 @@ try
     c2h::device_vector<offset_t> num_selected_out(1, 0);
     offset_t* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-    // Run test
+    // test overload without predicate
     select_unique(in, check_result_it, d_first_num_selected_out, num_items);
+
+    // Ensure that we created the correct output
+    REQUIRE(num_selected_out[0] == num_items);
+    check_result_helper.check_all_results_correct();
+
+    // test overload without predicate
+    select_unique(in, check_result_it, d_first_num_selected_out, num_items, cuda::std::equal_to<type>{});
 
     // Ensure that we created the correct output
     REQUIRE(num_selected_out[0] == num_items);
@@ -308,8 +357,15 @@ try
     c2h::device_vector<offset_t> num_selected_out(1, 0);
     offset_t* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-    // Run test
+    // test overload without predicate
     select_unique(in, check_result_it, d_first_num_selected_out, num_items);
+
+    // Ensure that we created the correct output
+    REQUIRE(num_selected_out[0] == expected_num_unique);
+    check_result_helper.check_all_results_correct();
+
+    // test overload with predicate
+    select_unique(in, check_result_it, d_first_num_selected_out, num_items, cuda::std::equal_to<type>{});
 
     // Ensure that we created the correct output
     REQUIRE(num_selected_out[0] == expected_num_unique);
