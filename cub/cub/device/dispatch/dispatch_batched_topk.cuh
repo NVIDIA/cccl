@@ -27,7 +27,7 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/cmath>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
