@@ -1,3 +1,8 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 import ctypes
 from enum import IntEnum
 from typing import Any, Optional
@@ -82,6 +87,7 @@ class Op:
         ltoir=None,
         state=None,
         state_alignment: int = 1,
+        extra_ltoirs=None,
     ): ...
     @property
     def state(self) -> bytes: ...
@@ -96,6 +102,8 @@ class Op:
     @property
     def state_typenum(self) -> int: ...
     def as_bytes(self) -> bytes: ...
+    @property
+    def extra_ltoirs(self) -> list: ...
 
 class TypeInfo:
     def __init__(self, size: int, alignment: int, type_enum: TypeEnum): ...

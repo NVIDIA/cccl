@@ -58,9 +58,9 @@ static_assert(models_totally_ordered<char const*>(), "");
 static_assert(models_totally_ordered<char volatile*>(), "");
 static_assert(models_totally_ordered<char const volatile*>(), "");
 static_assert(models_totally_ordered<wchar_t&>(), "");
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
 static_assert(models_totally_ordered<char8_t const&>(), "");
-#endif // TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#endif // _CCCL_HAS_CHAR8_T()
 static_assert(models_totally_ordered<char16_t volatile&>(), "");
 static_assert(models_totally_ordered<char32_t const volatile&>(), "");
 static_assert(models_totally_ordered<unsigned char&&>(), "");

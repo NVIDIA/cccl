@@ -12,11 +12,11 @@
 // template<class T>
 // struct iterator_traits<const T*>
 // {
-//   typedef ptrdiff_t                  difference_type;
-//   typedef T                          value_type;
-//   typedef const T*                   pointer;
-//   typedef const T&                   reference;
-//   typedef random_access_iterator_tag iterator_category;
+//   using difference_type   = ptrdiff_t;
+//   using value_type        = T;
+//   using pointer           = const T*;
+//   using reference         = const T&;
+//   using iterator_category = random_access_iterator_tag;
 // };
 
 #include <cuda/std/iterator>
@@ -29,7 +29,7 @@ struct A
 
 int main(int, char**)
 {
-  typedef cuda::std::iterator_traits<const A*> It;
+  using It = cuda::std::iterator_traits<const A*>;
   static_assert((cuda::std::is_same<It::difference_type, cuda::std::ptrdiff_t>::value), "");
   static_assert((cuda::std::is_same<It::value_type, A>::value), "");
   static_assert((cuda::std::is_same<It::pointer, const A*>::value), "");

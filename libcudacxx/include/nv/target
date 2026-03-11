@@ -41,7 +41,7 @@ namespace target
 {
 namespace detail
 {
-typedef unsigned long long base_int_t;
+using base_int_t = unsigned long long;
 
 // No host specialization
 constexpr base_int_t all_hosts = 1;

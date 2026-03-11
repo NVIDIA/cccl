@@ -62,22 +62,18 @@ template <class _Tp>
 #if _CCCL_HAS_LONG_DOUBLE()
   else if constexpr (is_same_v<_Tp, long double>)
   {
-    if (LDBL_MIN_EXP == -1021 && LDBL_MAX_EXP == 1024 && LDBL_MANT_DIG == 53)
-    {
-      return __fp_format::__binary64;
-    }
-    else if (LDBL_MIN_EXP == -16381 && LDBL_MAX_EXP == 16384 && LDBL_MANT_DIG == 64 && sizeof(long double) == 16)
-    {
-      return __fp_format::__fp80_x86;
-    }
-    else if (LDBL_MIN_EXP == -16381 && LDBL_MAX_EXP == 16384 && LDBL_MANT_DIG == 113)
-    {
-      return __fp_format::__binary128;
-    }
-    else // Unsupported long double format
-    {
-      return __fp_format::__invalid;
-    }
+#  if LDBL_MIN_EXP == -1021 && LDBL_MAX_EXP == 1024 && LDBL_MANT_DIG == 53
+    return __fp_format::__binary64;
+#  elif LDBL_MIN_EXP == -16381 && LDBL_MAX_EXP == 16384 && LDBL_MANT_DIG == 64
+    static_assert(sizeof(long double) == 16,
+                  "When the long double format is x86 80-bit extended floating point, CCCL requires the size of long "
+                  "double to be 16 bytes.");
+    return __fp_format::__fp80_x86;
+#  elif LDBL_MIN_EXP == -16381 && LDBL_MAX_EXP == 16384 && LDBL_MANT_DIG == 113
+    return __fp_format::__binary128;
+#  else
+#    error "Unknown long double format. Define CCCL_DISABLE_LONG_DOUBLE to disable long double support in CCCL."
+#  endif
   }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 #if _CCCL_HAS_NVFP16()

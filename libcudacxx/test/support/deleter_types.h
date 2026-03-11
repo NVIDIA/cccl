@@ -518,7 +518,7 @@ class PointerDeleter
   __host__ __device__ PointerDeleter& operator=(const PointerDeleter&);
 
 public:
-  typedef min_pointer<T, cuda::std::integral_constant<cuda::std::size_t, ID>> pointer;
+  using pointer = min_pointer<T, cuda::std::integral_constant<cuda::std::size_t, ID>>;
 
   TEST_CONSTEXPR_CXX23 PointerDeleter()                            = default;
   TEST_CONSTEXPR_CXX23 PointerDeleter(PointerDeleter&&)            = default;
@@ -551,7 +551,7 @@ class PointerDeleter<T[], ID>
   __host__ __device__ PointerDeleter& operator=(const PointerDeleter&);
 
 public:
-  typedef min_pointer<T, cuda::std::integral_constant<cuda::std::size_t, ID>> pointer;
+  using pointer = min_pointer<T, cuda::std::integral_constant<cuda::std::size_t, ID>>;
 
   TEST_CONSTEXPR_CXX23 PointerDeleter()                            = default;
   TEST_CONSTEXPR_CXX23 PointerDeleter(PointerDeleter&&)            = default;

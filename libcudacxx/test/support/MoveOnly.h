@@ -90,8 +90,8 @@ public:
 template <>
 struct cuda::std::hash<MoveOnly>
 {
-    typedef MoveOnly argument_type;
-    typedef size_t result_type;
+    using argument_type = MoveOnly;
+    using result_type = size_t;
     __host__ __device__ constexpr size_t operator()(const MoveOnly& x) const {return x.get();}
 };
 */

@@ -143,7 +143,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     // test that unique_ptr's specialized swap is disabled when the deleter
     // is non-swappable. Instead we should pick up the generic swap(T, T)
     // and perform 3 move constructions.
-    typedef NonSwappableDeleter<int> D;
+    using D = NonSwappableDeleter<int>;
     D d(42);
     int x = 42;
     int y = 43;

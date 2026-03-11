@@ -49,6 +49,8 @@ temp_storage_size = partitioner(
     d_second_part,
     d_unselected,
     d_num_selected,
+    less_than_op,
+    greater_than_equal_op,
     len(h_input),
 )
 d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
@@ -61,6 +63,8 @@ partitioner(
     d_second_part,
     d_unselected,
     d_num_selected,
+    less_than_op,
+    greater_than_equal_op,
     len(h_input),
 )
 

@@ -74,7 +74,7 @@ struct tuning
 struct default_rfa_tuning : tuning<default_rfa_tuning>
 {
   template <class AccumT, class Offset, class OpT>
-  using fn = detail::rfa::policy_hub<AccumT, Offset, OpT>;
+  using fn = detail::rfa::policy_selector_from_types<AccumT>;
 };
 
 template <typename ExtremumOutIteratorT, typename IndexOutIteratorT>
@@ -190,10 +190,8 @@ private:
     using accum_t = ::cuda::std::
       __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
     using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
-    using dispatch_t =
-      detail::rfa::dispatch_t<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t, policy_t>;
 
-    return dispatch_t::Dispatch(
+    return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t, policy_t>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream, transform_op);
   }
 
@@ -240,6 +238,9 @@ private:
 public:
   //! @rst
   //! Computes a device-wide reduction using the specified binary ``reduction_op`` functor and initial value ``init``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Does not support binary reduction operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
@@ -363,6 +364,9 @@ public:
 
   //! @rst
   //! Computes a device-wide reduction using the specified binary ``reduction_op`` functor and initial value ``init``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Does not support binary reduction operators that are non-commutative.
   //! - By default, provides "run-to-run" determinism for pseudo-associative reduction
@@ -510,6 +514,9 @@ public:
   //! @rst
   //! Computes a device-wide sum using the addition (``+``) operator.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Uses ``0`` as the initial value of the reduction.
   //! - Does not support ``+`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
@@ -619,6 +626,9 @@ public:
   //! @rst
   //! Computes a device-wide sum using the addition (``+``) operator.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Uses ``0`` as the initial value of the reduction.
   //! - Does not support ``+`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
@@ -723,6 +733,9 @@ public:
 
   //! @rst
   //! Computes a device-wide minimum using the less-than (``<``) operator.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction.
   //! - Does not support ``<`` operators that are non-commutative.
@@ -835,6 +848,9 @@ public:
   //! Computes a device-wide minimum using the less-than (``<``) operator. The result is written to the output
   //! iterator.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Uses ``cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction.
   //! - Provides determinism based on the environment's determinism requirements.
   //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
@@ -927,6 +943,9 @@ public:
 
   //! @rst
   //! Finds the first device-wide minimum using the less-than (``<``) operator and also returns the index of that item.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The minimum is written to ``d_min_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
@@ -1035,7 +1054,6 @@ public:
 
     // The value type used for the extremum
     using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
-    using InitT           = OutputExtremumT;
 
     // Reduction operation
     using ReduceOpT = cub::ArgMin;
@@ -1047,24 +1065,22 @@ public:
     auto out_it = ::cuda::make_tabulate_output_iterator(
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
 
-    return detail::reduce::dispatch_streaming_arg_reduce_t<
-      InputIteratorT,
-      decltype(out_it),
-      PerPartitionOffsetT,
-      GlobalOffsetT,
-      ReduceOpT,
-      InitT>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       out_it,
-                       static_cast<GlobalOffsetT>(num_items),
-                       ReduceOpT{},
-                       initial_value,
-                       stream);
+    return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      out_it,
+      static_cast<GlobalOffsetT>(num_items),
+      ReduceOpT{},
+      initial_value,
+      stream);
   }
 
   //! @rst
   //! Finds the first device-wide minimum using the less-than (``<``) operator and also returns the index of that item.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The minimum is written to ``d_min_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
@@ -1159,7 +1175,6 @@ public:
     using GlobalOffsetT       = ::cuda::std::int64_t;
 
     using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
-    using InitT           = OutputExtremumT;
 
     // Initial value
     OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::max()};
@@ -1169,50 +1184,39 @@ public:
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
 
     // Query the required temporary storage size
-    cudaError_t error = detail::reduce::dispatch_streaming_arg_reduce_t<
-      InputIteratorT,
-      decltype(out_it),
-      PerPartitionOffsetT,
-      GlobalOffsetT,
-      ReduceOpT,
-      InitT>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       out_it,
-                       static_cast<GlobalOffsetT>(num_items),
-                       ReduceOpT{},
-                       initial_value,
-                       stream.get());
-    if (error != cudaSuccess)
+    if (const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in,
+          out_it,
+          static_cast<GlobalOffsetT>(num_items),
+          ReduceOpT{},
+          initial_value,
+          stream.get()))
     {
       return error;
     }
 
     // TODO(gevtushenko): use uninitialized buffer when it's available
-    error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr));
-    if (error != cudaSuccess)
+    if (const auto error =
+          CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr)))
     {
       return error;
     }
 
     // Run the algorithm
-    error = detail::reduce::dispatch_streaming_arg_reduce_t<
-      InputIteratorT,
-      decltype(out_it),
-      PerPartitionOffsetT,
-      GlobalOffsetT,
-      ReduceOpT,
-      InitT>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       out_it,
-                       static_cast<GlobalOffsetT>(num_items),
-                       ReduceOpT{},
-                       initial_value,
-                       stream.get());
+    const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      out_it,
+      static_cast<GlobalOffsetT>(num_items),
+      ReduceOpT{},
+      initial_value,
+      stream.get());
 
     // Try to deallocate regardless of the error to avoid memory leaks
-    cudaError_t deallocate_error =
+    const auto deallocate_error =
       CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
 
     if (error != cudaSuccess)
@@ -1226,6 +1230,9 @@ public:
 
   //! @rst
   //! Finds the first device-wide minimum using the less-than (``<``) operator, also returning the index of that item.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The output value type of ``d_out`` is ``cub::KeyValuePair<int, T>``
   //!   (assuming the value type of ``d_in`` is ``T``)
@@ -1346,6 +1353,9 @@ public:
   //! @rst
   //! Computes a device-wide maximum using the greater-than (``>``) operator.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Uses ``cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
   //! - Does not support ``>`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
@@ -1455,6 +1465,9 @@ public:
   //! Computes a device-wide maximum using the greater-than (``>``) operator. The result is written to the output
   //! iterator.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - Uses ``cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
   //! - Provides determinism based on the environment's determinism requirements.
   //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
@@ -1549,6 +1562,9 @@ public:
   //! @rst
   //! Finds the first device-wide maximum using the greater-than (``>``) operator and also returns the index of that
   //! item.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The maximum is written to ``d_max_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
@@ -1656,7 +1672,6 @@ public:
 
     // The value type used for the extremum
     using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
-    using InitT           = OutputExtremumT;
 
     // Reduction operation
     using ReduceOpT = cub::ArgMax;
@@ -1668,25 +1683,23 @@ public:
     auto out_it = ::cuda::make_tabulate_output_iterator(
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_max_out, d_index_out});
 
-    return detail::reduce::dispatch_streaming_arg_reduce_t<
-      InputIteratorT,
-      decltype(out_it),
-      PerPartitionOffsetT,
-      GlobalOffsetT,
-      ReduceOpT,
-      InitT>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       out_it,
-                       static_cast<GlobalOffsetT>(num_items),
-                       ReduceOpT{},
-                       initial_value,
-                       stream);
+    return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      out_it,
+      static_cast<GlobalOffsetT>(num_items),
+      ReduceOpT{},
+      initial_value,
+      stream);
   }
 
   //! @rst
   //! Finds the first device-wide maximum using the greater-than (``>``)
   //! operator, also returning the index of that item
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The output value type of ``d_out`` is ``cub::KeyValuePair<int, T>``
   //!   (assuming the value type of ``d_in`` is ``T``)
@@ -1811,6 +1824,9 @@ public:
   //! Finds the first device-wide maximum using the greater-than (``>``) operator and also returns the index of that
   //! item.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The maximum is written to ``d_max_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
   //!   ``cuda::std::int64_t``.
@@ -1904,7 +1920,6 @@ public:
     using GlobalOffsetT       = ::cuda::std::int64_t;
 
     using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
-    using InitT           = OutputExtremumT;
 
     // Initial value
     OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::lowest()};
@@ -1914,50 +1929,39 @@ public:
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_max_out, d_index_out});
 
     // Query the required temporary storage size
-    cudaError_t error = detail::reduce::dispatch_streaming_arg_reduce_t<
-      InputIteratorT,
-      decltype(out_it),
-      PerPartitionOffsetT,
-      GlobalOffsetT,
-      ReduceOpT,
-      InitT>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       out_it,
-                       static_cast<GlobalOffsetT>(num_items),
-                       ReduceOpT{},
-                       initial_value,
-                       stream.get());
-    if (error != cudaSuccess)
+    if (const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in,
+          out_it,
+          static_cast<GlobalOffsetT>(num_items),
+          ReduceOpT{},
+          initial_value,
+          stream.get()))
     {
       return error;
     }
 
     // TODO(gevtushenko): use uninitialized buffer when it's available
-    error = CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr));
-    if (error != cudaSuccess)
+    if (const auto error =
+          CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr)))
     {
       return error;
     }
 
     // Run the algorithm
-    error = detail::reduce::dispatch_streaming_arg_reduce_t<
-      InputIteratorT,
-      decltype(out_it),
-      PerPartitionOffsetT,
-      GlobalOffsetT,
-      ReduceOpT,
-      InitT>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       out_it,
-                       static_cast<GlobalOffsetT>(num_items),
-                       ReduceOpT{},
-                       initial_value,
-                       stream.get());
+    const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      out_it,
+      static_cast<GlobalOffsetT>(num_items),
+      ReduceOpT{},
+      initial_value,
+      stream.get());
 
     // Try to deallocate regardless of the error to avoid memory leaks
-    cudaError_t deallocate_error =
+    const auto deallocate_error =
       CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
 
     if (error != cudaSuccess)
@@ -1971,6 +1975,9 @@ public:
 
   //! @rst
   //! Fuses transform and reduce operations
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Does not support binary reduction operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
@@ -2110,9 +2117,12 @@ public:
   //! @rst
   //! Reduces segments of values, where segments are demarcated by corresponding runs of identical keys.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! This operation computes segmented reductions within ``d_values_in`` using the specified binary ``reduction_op``
   //! functor. The segments are identified by "runs" of corresponding keys in `d_keys_in`, where runs are maximal
-  //! ranges of consecutive, identical keys. For the *i*\ :sup:`th` run encountered, the first key of the run and
+  //! ranges of consecutive, identical keys. For the *i*\ :sup:`th` run encountered, the last key of the run and
   //! the corresponding value aggregate of that run are written to ``d_unique_out[i]`` and ``d_aggregates_out[i]``,
   //! respectively. The total number of runs encountered is written to ``d_num_runs_out``.
   //!
@@ -2262,35 +2272,21 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ReduceByKey");
 
-    // Signed integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
-    // FlagT iterator type (not used)
-
-    // Selection op (not used)
-
-    // Default == operator
+    using OffsetT    = detail::choose_offset_t<NumItemsT>;
     using EqualityOp = ::cuda::std::equal_to<>;
 
-    return DispatchReduceByKey<
-      KeysInputIteratorT,
-      UniqueOutputIteratorT,
-      ValuesInputIteratorT,
-      AggregatesOutputIteratorT,
-      NumRunsOutputIteratorT,
-      EqualityOp,
-      ReductionOpT,
-      OffsetT>::Dispatch(d_temp_storage,
-                         temp_storage_bytes,
-                         d_keys_in,
-                         d_unique_out,
-                         d_values_in,
-                         d_aggregates_out,
-                         d_num_runs_out,
-                         EqualityOp(),
-                         reduction_op,
-                         static_cast<OffsetT>(num_items),
-                         stream);
+    return detail::reduce_by_key::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_unique_out,
+      d_values_in,
+      d_aggregates_out,
+      d_num_runs_out,
+      EqualityOp{},
+      reduction_op,
+      static_cast<OffsetT>(num_items),
+      stream);
   }
 };
 CUB_NAMESPACE_END

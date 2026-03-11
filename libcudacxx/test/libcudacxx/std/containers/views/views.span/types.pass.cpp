@@ -36,7 +36,7 @@
 template <typename S, typename Iter>
 __host__ __device__ void testIterator()
 {
-  typedef cuda::std::iterator_traits<Iter> ItT;
+  using ItT = cuda::std::iterator_traits<Iter>;
 
   static_assert(cuda::std::is_same_v<typename ItT::iterator_category, cuda::std::random_access_iterator_tag>);
   static_assert(cuda::std::is_same_v<typename ItT::value_type, typename S::value_type>);

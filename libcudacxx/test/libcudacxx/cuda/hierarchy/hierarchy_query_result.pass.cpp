@@ -19,7 +19,7 @@ template <class T>
 __host__ __device__ constexpr void test()
 {
   using HQR              = cuda::hierarchy_query_result<T>;
-  using Vec              = cuda::__vector_type_t<T, 3>;
+  using Vec              = cuda::vector_type_t<T, 3>;
   constexpr auto has_vec = !cuda::std::is_same_v<Vec, void>;
 
   // 1. Test value_type

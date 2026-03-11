@@ -24,11 +24,11 @@ d_output = cp.empty(len(h_input), dtype=dtype)
 
 # Create the scanner object and allocate temporary storage.
 scanner = cuda.compute.make_inclusive_scan(d_input, d_output, OpKind.PLUS, h_init)
-temp_storage_size = scanner(None, d_input, d_output, len(h_input), h_init)
+temp_storage_size = scanner(None, d_input, d_output, OpKind.PLUS, len(h_input), h_init)
 d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
 # Perform the inclusive scan.
-scanner(d_temp_storage, d_input, d_output, len(h_input), h_init)
+scanner(d_temp_storage, d_input, d_output, OpKind.PLUS, len(h_input), h_init)
 
 # Verify the result.
 expected_result = np.array([1, 3, 6, 10], dtype=dtype)

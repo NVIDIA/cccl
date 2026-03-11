@@ -32,16 +32,16 @@
 _CCCL_BEGIN_NAMESPACE_STD
 
 // libstdc++ puts basic_string to inline cxx11 namespace
-#  if _GLIBCXX_USE_CXX11_ABI
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_USE_CXX11_ABI
 inline _GLIBCXX_BEGIN_NAMESPACE_CXX11
-#  endif // _GLIBCXX_USE_CXX11_ABI
+#  endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_USE_CXX11_ABI
 
   template <class _CharT, class _Traits, class _Alloc>
   class basic_string;
 
-#  if _GLIBCXX_USE_CXX11_ABI
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_USE_CXX11_ABI
 _GLIBCXX_END_NAMESPACE_CXX11
-#  endif // _GLIBCXX_USE_CXX11_ABI
+#  endif // _CCCL_HOST_STD_LIB(LIBSTDCXX) && _GLIBCXX_USE_CXX11_ABI
 
 _CCCL_END_NAMESPACE_STD
 #endif // _CCCL_HAS_HOST_STD_LIB()

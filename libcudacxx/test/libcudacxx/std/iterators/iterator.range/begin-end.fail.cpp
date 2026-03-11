@@ -24,7 +24,7 @@ namespace Foo
 {
 struct FakeContainer
 {};
-typedef int FakeIter;
+using FakeIter = int;
 
 __host__ __device__ FakeIter begin(const FakeContainer&)
 {

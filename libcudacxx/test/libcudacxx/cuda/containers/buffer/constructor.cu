@@ -9,26 +9,22 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/buffer>
+#include <cuda/devices>
 #include <cuda/memory_resource>
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
+#include <cuda/std/cstddef>
 #include <cuda/std/initializer_list>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
 #include <stdexcept>
 
+#include <test_resources.h>
+
 #include "helper.h"
 #include "types.h"
-
-#if _CCCL_CTK_AT_LEAST(12, 6)
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessible>,
-                                  cuda::std::tuple<unsigned long long, cuda::mr::device_accessible>,
-                                  cuda::std::tuple<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
-#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
 
 // Checks if the offsetting resource wrapper correctly got passed the alignment by the buffer constructor.
 template <typename T>
@@ -38,15 +34,26 @@ bool check_offseted_pointer(const T* ptr)
       && (reinterpret_cast<std::uintptr_t>(ptr) % cuda::mr::default_cuda_malloc_alignment == alignof(T));
 }
 
+template <typename T>
+bool check_offseted_pointer_with_alignment(const T* ptr, ::cuda::std::size_t alignment)
+{
+  return (ptr != nullptr)
+      && (reinterpret_cast<std::uintptr_t>(ptr) % cuda::mr::default_cuda_malloc_alignment == alignment);
+}
+
 C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
 {
-  using TestT    = c2h::get<0, TestType>;
-  using Resource = typename extract_properties<TestT>::resource;
-  using Buffer   = typename extract_properties<TestT>::buffer;
+  using Buffer   = c2h::get<0, TestType>;
+  using Resource = typename extract_properties<Buffer>::resource;
   using T        = typename Buffer::value_type;
 
+  if (!extract_properties<Buffer>::is_resource_supported())
+  {
+    return;
+  }
+
   cuda::stream stream{cuda::device_ref{0}};
-  Resource resource = extract_properties<TestT>::get_resource();
+  Resource resource = extract_properties<Buffer>::get_resource();
 
   SECTION("Construction with explicit size")
   {
@@ -63,13 +70,13 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
     }
 
     {
-      const auto buf = cuda::make_buffer(stream, extract_properties<TestT>::get_resource(), 0, T{42});
+      const auto buf = cuda::make_buffer(stream, extract_properties<Buffer>::get_resource(), 0, T{42});
       CCCLRT_CHECK(buf.empty());
       CCCLRT_CHECK(buf.data() == nullptr);
     }
 
     {
-      const auto buf = cuda::make_buffer(stream, extract_properties<TestT>::get_resource(), 5, T{42});
+      const auto buf = cuda::make_buffer(stream, extract_properties<Buffer>::get_resource(), 5, T{42});
       CCCLRT_CHECK(check_offseted_pointer(buf.data()));
       CCCLRT_CHECK(buf.size() == 5);
       CCCLRT_CHECK(equal_size_value(buf, 5, T(42)));
@@ -97,6 +104,16 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
     {
       const auto buf = cuda::make_buffer<T>(stream, resource, 5, cuda::no_init);
       CCCLRT_CHECK(check_offseted_pointer(buf.data()));
+      CCCLRT_CHECK(buf.size() == 5);
+    }
+
+    { // from size with no_init and allocation_alignment env (offset_by_alignment_resource verifies alignment)
+      const ::cuda::std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment / 2;
+      const auto env                      = ::cuda::std::execution::prop{::cuda::allocation_alignment, alignment};
+      const Buffer buf{stream, resource, 5, cuda::no_init, env};
+      CCCLRT_CHECK(check_offseted_pointer_with_alignment(buf.data(), alignment));
+      CCCLRT_CHECK(buf.alignment() == alignment);
+      CCCLRT_CHECK(cuda::allocation_alignment(buf) == alignment);
       CCCLRT_CHECK(buf.size() == 5);
     }
   }
@@ -194,14 +211,30 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
       const Buffer input{stream, resource, 0, cuda::no_init};
       Buffer buf(input);
       CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.alignment() == input.alignment());
     }
 
     { // can be copy constructed from non-empty input
       const Buffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Buffer buf(input);
+      CCCLRT_CHECK(buf.alignment() == input.alignment());
+      CCCLRT_CHECK(is_pointer_aligned(buf.data(), buf.alignment()));
       CCCLRT_CHECK(check_offseted_pointer(buf.data()));
       CCCLRT_CHECK(!buf.empty());
       CCCLRT_CHECK(equal_range(buf));
+    }
+
+    { // copy construction preserves custom allocation_alignment
+      const ::cuda::std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment / 2;
+      const auto env                      = ::cuda::std::execution::prop{::cuda::allocation_alignment, alignment};
+      const Buffer input{stream, resource, 5, cuda::no_init, env};
+      Buffer buf(input);
+      CCCLRT_CHECK(buf.alignment() == alignment);
+      CCCLRT_CHECK(input.alignment() == alignment);
+      CCCLRT_CHECK(cuda::allocation_alignment(buf) == alignment);
+      CCCLRT_CHECK(cuda::allocation_alignment(input) == alignment);
+      CCCLRT_CHECK(is_pointer_aligned(buf.data(), alignment));
+      CCCLRT_CHECK(buf.size() == 5);
     }
   }
 
@@ -211,22 +244,41 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
 
     { // can be move constructed with empty input
       Buffer input{stream, resource, 0, cuda::no_init};
+      const auto expected_alignment = input.alignment();
       Buffer buf(cuda::std::move(input));
       CCCLRT_CHECK(buf.empty());
       CCCLRT_CHECK(input.empty());
+      CCCLRT_CHECK(buf.alignment() == expected_alignment);
     }
 
     { // can be move constructed from non-empty input
       Buffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      const auto expected_alignment = input.alignment();
 
       // ensure that we steal the data
       const auto* allocation = input.data();
       Buffer buf(cuda::std::move(input));
       CCCLRT_CHECK(buf.size() == 6);
       CCCLRT_CHECK(buf.data() == allocation);
+      CCCLRT_CHECK(buf.alignment() == expected_alignment);
+      CCCLRT_CHECK(is_pointer_aligned(buf.data(), expected_alignment));
       CCCLRT_CHECK(input.size() == 0);
       CCCLRT_CHECK(input.data() == nullptr);
       CCCLRT_CHECK(equal_range(buf));
+    }
+
+    { // move construction preserves custom allocation_alignment
+      const ::cuda::std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment / 2;
+      const auto env                      = ::cuda::std::execution::prop{::cuda::allocation_alignment, alignment};
+      Buffer input{stream, resource, 5, cuda::no_init, env};
+      const auto* allocation = input.data();
+      Buffer buf(cuda::std::move(input));
+      CCCLRT_CHECK(buf.alignment() == alignment);
+      CCCLRT_CHECK(cuda::allocation_alignment(buf) == alignment);
+      CCCLRT_CHECK(buf.data() == allocation);
+      CCCLRT_CHECK(is_pointer_aligned(buf.data(), alignment));
+      CCCLRT_CHECK(buf.size() == 5);
+      CCCLRT_CHECK(input.empty());
     }
   }
 
@@ -234,21 +286,26 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
   {
     { // can be move assigned with empty input
       Buffer input{stream, resource, 0, cuda::no_init};
+      const auto expected_alignment = input.alignment();
       Buffer buf{stream, resource, {T(1), T(42), T(1337)}};
       buf = cuda::std::move(input);
       CCCLRT_CHECK(buf.empty());
       CCCLRT_CHECK(input.empty());
+      CCCLRT_CHECK(buf.alignment() == expected_alignment);
     }
 
     { // can be move assigned from non-empty input
       Buffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Buffer buf{stream, resource, {T(99), T(88)}};
+      const auto expected_alignment = input.alignment();
 
       // ensure that we steal the data
       const auto* allocation = input.data();
       buf                    = cuda::std::move(input);
       CCCLRT_CHECK(buf.size() == 6);
       CCCLRT_CHECK(buf.data() == allocation);
+      CCCLRT_CHECK(buf.alignment() == expected_alignment);
+      CCCLRT_CHECK(is_pointer_aligned(buf.data(), expected_alignment));
       CCCLRT_CHECK(input.size() == 0);
       CCCLRT_CHECK(input.data() == nullptr);
       CCCLRT_CHECK(equal_range(buf));
@@ -257,23 +314,43 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
     { // can be move assigned to empty buffer
       Buffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Buffer buf{stream, resource, 0, cuda::no_init};
+      const auto expected_alignment = input.alignment();
 
       const auto* allocation = input.data();
       buf                    = cuda::std::move(input);
       CCCLRT_CHECK(buf.size() == 6);
       CCCLRT_CHECK(buf.data() == allocation);
+      CCCLRT_CHECK(buf.alignment() == expected_alignment);
+      CCCLRT_CHECK(is_pointer_aligned(buf.data(), expected_alignment));
       CCCLRT_CHECK(input.size() == 0);
       CCCLRT_CHECK(input.data() == nullptr);
       CCCLRT_CHECK(equal_range(buf));
+    }
+
+    { // move assignment preserves custom allocation_alignment
+      const ::cuda::std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment / 2;
+      const auto env                      = ::cuda::std::execution::prop{::cuda::allocation_alignment, alignment};
+      Buffer input{stream, resource, 5, cuda::no_init, env};
+      Buffer buf{stream, resource, 3, cuda::no_init};
+      const auto* allocation = input.data();
+      buf                    = cuda::std::move(input);
+      CCCLRT_CHECK(buf.alignment() == alignment);
+      CCCLRT_CHECK(cuda::allocation_alignment(buf) == alignment);
+      CCCLRT_CHECK(buf.data() == allocation);
+      CCCLRT_CHECK(is_pointer_aligned(buf.data(), alignment));
+      CCCLRT_CHECK(buf.size() == 5);
+      CCCLRT_CHECK(input.empty());
     }
 
     { // self move assignment
       Buffer buf{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       const auto* allocation = buf.data();
       const auto size        = buf.size();
+      const auto alignment   = buf.alignment();
       test::assign(buf, cuda::std::move(buf));
       CCCLRT_CHECK(buf.size() == size);
       CCCLRT_CHECK(buf.data() == allocation);
+      CCCLRT_CHECK(buf.alignment() == alignment);
       CCCLRT_CHECK(equal_range(buf));
     }
   }
@@ -388,9 +465,13 @@ C2H_CCCLRT_TEST("cuda::buffer constructors with legacy resource", "[container][b
   STATIC_CHECK(!decltype(buffer2)::properties_list::has_property(cuda::mr::device_accessible{}));
 }
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 9)
 C2H_CCCLRT_TEST("cuda::make_buffer narrowing properties", "[container][buffer]")
 {
+  if (!cuda::__is_host_memory_pool_supported())
+  {
+    return;
+  }
   auto resource = cuda::pinned_default_memory_pool();
   cuda::stream stream{cuda::device_ref{0}};
 
@@ -411,7 +492,7 @@ C2H_CCCLRT_TEST("cuda::make_buffer narrowing properties", "[container][buffer]")
   CCCLRT_CHECK(equal_range(buf_host));
   CCCLRT_CHECK(buf_device.size() == 2);
 }
-#endif // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^
+#endif // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^
 
 C2H_CCCLRT_TEST("cuda::make_buffer with memory_pool_ref", "[container][buffer]")
 {

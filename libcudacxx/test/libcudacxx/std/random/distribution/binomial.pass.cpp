@@ -13,8 +13,8 @@
 
 // class binomial_distribution
 
-#include <cuda/std/__random_>
 #include <cuda/std/cassert>
+#include <cuda/std/random>
 
 #include "random_utilities/test_distribution.h"
 #include "test_macros.h"

@@ -63,8 +63,8 @@ int main(int, char**)
   static_assert(!(cuda::std::is_nothrow_convertible_v<int[5], double[10]>), "");
   static_assert(!(cuda::std::is_nothrow_convertible_v<int[10], A[10]>), "");
 
-  typedef void V();
-  typedef int I();
+  using V = void();
+  using I = int();
   static_assert(!(cuda::std::is_nothrow_convertible_v<V, V>), "");
   static_assert(!(cuda::std::is_nothrow_convertible_v<V, I>), "");
 

@@ -21,8 +21,8 @@
 int main(int, char**)
 {
   {
-    typedef cuda::std::pair<int, short> P1;
-    P1 p1 = cuda::std::make_pair(3, static_cast<short>(4));
+    using P1 = cuda::std::pair<int, short>;
+    P1 p1    = cuda::std::make_pair(3, static_cast<short>(4));
     assert(p1.first == 3);
     assert(p1.second == 4);
   }
@@ -30,20 +30,20 @@ int main(int, char**)
   // cuda/std/memory not supported
   /*
   {
-      typedef cuda::std::pair<cuda::std::unique_ptr<int>, short> P1;
+      using P1 = cuda::std::pair<cuda::std::unique_ptr<int>, short>;
       P1 p1 = cuda::std::make_pair(cuda::std::unique_ptr<int>(new int(3)), static_cast<short>(4));
       assert(*p1.first == 3);
       assert(p1.second == 4);
   }
   {
-      typedef cuda::std::pair<cuda::std::unique_ptr<int>, short> P1;
+      using P1 = cuda::std::pair<cuda::std::unique_ptr<int>, short>;
       P1 p1 = cuda::std::make_pair(nullptr, static_cast<short>(4));
       assert(p1.first == nullptr);
       assert(p1.second == 4);
   }
   */
   {
-    typedef cuda::std::pair<int, short> P1;
+    using P1        = cuda::std::pair<int, short>;
     constexpr P1 p1 = cuda::std::make_pair(3, static_cast<short>(4));
     static_assert(p1.first == 3, "");
     static_assert(p1.second == 4, "");

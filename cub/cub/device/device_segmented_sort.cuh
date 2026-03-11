@@ -128,13 +128,11 @@ private:
 
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-    using DispatchT =
-      DispatchSegmentedSort<SortOrder::Ascending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DispatchT::Dispatch(
+    return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -154,6 +152,9 @@ public:
   //! @rst
   //! Sorts segments of keys into ascending order.
   //! Approximately ``num_items + 2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When the input is a contiguous sequence of segments, a single sequence
@@ -303,13 +304,11 @@ private:
 
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-    using DispatchT =
-      DispatchSegmentedSort<SortOrder::Descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DispatchT::Dispatch(
+    return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -326,6 +325,9 @@ public:
   //! @rst
   //! Sorts segments of keys into descending order. Approximately
   //! ``num_items + 2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When the input is a contiguous sequence of segments, a single sequence
@@ -471,12 +473,10 @@ private:
     constexpr bool is_overwrite_okay = true;
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-    using DispatchT =
-      DispatchSegmentedSort<SortOrder::Ascending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<NullType> d_values;
 
-    return DispatchT::Dispatch(
+    return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -492,6 +492,9 @@ private:
 public:
   //! @rst
   //! Sorts segments of keys into ascending order. Approximately ``2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
@@ -641,12 +644,10 @@ private:
     constexpr bool is_overwrite_okay = true;
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-    using DispatchT =
-      DispatchSegmentedSort<SortOrder::Descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<NullType> d_values;
 
-    return DispatchT::Dispatch(
+    return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -663,6 +664,9 @@ public:
   //! @rst
   //! Sorts segments of keys into descending order. Approximately
   //! ``2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
@@ -800,6 +804,9 @@ public:
   //! Sorts segments of keys into ascending order. Approximately
   //! ``num_items +  2 * num_segments`` auxiliary storage required.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When the input is a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
@@ -936,6 +943,9 @@ public:
   //! Sorts segments of keys into descending order.
   //! Approximately ``num_items + 2 * num_segments`` auxiliary storage required.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When the input is a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
@@ -1071,6 +1081,9 @@ public:
   //! @rst
   //! Sorts segments of keys into ascending order.
   //! Approximately ``2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
@@ -1209,6 +1222,9 @@ public:
   //! @rst
   //! Sorts segments of keys into descending order.
   //! Approximately ``2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
@@ -1363,13 +1379,11 @@ private:
 
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-    using DispatchT =
-      DispatchSegmentedSort<SortOrder::Ascending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DispatchT::Dispatch(
+    return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -1390,6 +1404,9 @@ public:
   //! @rst
   //! Sorts segments of key-value pairs into ascending order.
   //! Approximately ``2 * num_items + 2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When the input is a contiguous sequence of segments, a single sequence
@@ -1565,13 +1582,11 @@ private:
 
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-    using DispatchT =
-      DispatchSegmentedSort<SortOrder::Descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DispatchT::Dispatch(
+    return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -1588,6 +1603,9 @@ public:
   //! @rst
   //! Sorts segments of key-value pairs into descending order.
   //! Approximately ``2 * num_items + 2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When the input is a contiguous sequence of segments, a single sequence
@@ -1761,10 +1779,8 @@ private:
 
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-    using DispatchT =
-      DispatchSegmentedSort<SortOrder::Ascending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
-    return DispatchT::Dispatch(
+    return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -1781,6 +1797,9 @@ public:
   //! @rst
   //! Sorts segments of key-value pairs into ascending order.
   //! Approximately ``2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
@@ -1959,10 +1978,8 @@ private:
 
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-    using DispatchT =
-      DispatchSegmentedSort<SortOrder::Descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
-    return DispatchT::Dispatch(
+    return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -1979,6 +1996,9 @@ public:
   //! @rst
   //! Sorts segments of key-value pairs into descending order.
   //! Approximately ``2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers. Each pair is managed by a DoubleBuffer
@@ -2142,6 +2162,9 @@ public:
   //! Sorts segments of key-value pairs into ascending order.
   //! Approximately ``2 * num_items + 2 * num_segments`` auxiliary storage required.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When the input is a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
@@ -2300,6 +2323,9 @@ public:
   //! Sorts segments of key-value pairs into descending order.
   //! Approximately ``2 * num_items + 2 * num_segments`` auxiliary storage required.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When the input is a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
@@ -2457,6 +2483,9 @@ public:
   //! @rst
   //! Sorts segments of key-value pairs into ascending order.
   //! Approximately ``2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers. Each pair is managed by a DoubleBuffer
@@ -2621,6 +2650,9 @@ public:
   //! @rst
   //! Sorts segments of key-value pairs into descending order.
   //! Approximately ``2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer

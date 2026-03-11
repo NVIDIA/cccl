@@ -29,7 +29,7 @@ struct Dummy
 
 int main(int, char**)
 {
-  typedef cuda::std::pair<int, short> P;
+  using P = cuda::std::pair<int, short>;
   {
     static_assert(cuda::std::is_copy_constructible<P>::value, "");
     static_assert(cuda::std::is_trivially_copy_constructible<P>::value, "");

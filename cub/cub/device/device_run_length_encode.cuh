@@ -21,12 +21,17 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/env_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_rle.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce_by_key.cuh>
-#include <cub/device/dispatch/tuning/tuning_run_length_encode.cuh>
+#include <cub/device/dispatch/tuning/tuning_rle_encode.cuh>
 
 #include <thrust/iterator/constant_iterator.h>
+
+#include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -59,6 +64,9 @@ struct DeviceRunLengthEncode
 {
   //! @rst
   //! Computes a run-length encoding of the sequence ``d_in``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - For the *i*\ :sup:`th` run encountered, the first key of the run and
   //!   its length are written to ``d_unique_out[i]`` and ``d_counts_out[i]``, respectively.
@@ -183,34 +191,144 @@ struct DeviceRunLengthEncode
 
     using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
 
-    using policy_t = detail::rle::encode::policy_hub<accum_t, key_t>;
+    using policy_selector_t = detail::rle::encode::policy_selector_from_types<accum_t, key_t>;
 
-    return detail::reduce::DispatchStreamingReduceByKey<
-      InputIteratorT,
-      UniqueOutputIteratorT,
-      lengths_input_iterator_t,
-      LengthsOutputIteratorT,
-      NumRunsOutputIteratorT,
-      equality_op,
-      reduction_op,
-      offset_t,
-      accum_t,
-      policy_t>::Dispatch(d_temp_storage,
-                          temp_storage_bytes,
-                          d_in,
-                          d_unique_out,
-                          lengths_input_iterator_t((length_t) 1),
-                          d_counts_out,
-                          d_num_runs_out,
-                          equality_op(),
-                          reduction_op(),
-                          num_items,
-                          stream);
+    return detail::reduce_by_key::dispatch_streaming</* OverrideAccumT */ accum_t>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_unique_out,
+      lengths_input_iterator_t(length_t{1}),
+      d_counts_out,
+      d_num_runs_out,
+      equality_op{},
+      reduction_op{},
+      static_cast<offset_t>(num_items),
+      stream,
+      policy_selector_t{});
+  }
+
+  //! @rst
+  //! Computes a run-length encoding of the sequence ``d_in``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - For the *i*\ :sup:`th` run encountered, the first key of the run and
+  //!   its length are written to ``d_unique_out[i]`` and ``d_counts_out[i]``, respectively.
+  //! - The total number of runs encountered is written to ``d_num_runs_out``.
+  //! - The ``==`` equality operator is used to determine whether values are equivalent
+  //! - In-place operations are not supported. There must be no overlap between any of the provided ranges:
+  //!
+  //!   - ``[d_unique_out, d_unique_out + *d_num_runs_out)``
+  //!   - ``[d_counts_out, d_counts_out + *d_num_runs_out)``
+  //!   - ``[d_num_runs_out, d_num_runs_out + 1)``
+  //!   - ``[d_in, d_in + num_items)``
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the run-length encoding of a sequence of ``int`` values
+  //! using environment-based API:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_run_length_encode_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin encode-env
+  //!     :end-before: example-end encode-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam UniqueOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing unique output items @iterator
+  //!
+  //! @tparam LengthsOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing output counts @iterator
+  //!
+  //! @tparam NumRunsOutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of runs encountered @iterator
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of keys
+  //!
+  //! @param[out] d_unique_out
+  //!   Pointer to the output sequence of unique keys (one key per run)
+  //!
+  //! @param[out] d_counts_out
+  //!   Pointer to the output sequence of run-lengths (one count per run)
+  //!
+  //! @param[out] d_num_runs_out
+  //!   Pointer to total number of runs
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., the length of `d_in`)
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename UniqueOutputIteratorT,
+            typename LengthsOutputIteratorT,
+            typename NumRunsOutputIteratorT,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Encode(
+    InputIteratorT d_in,
+    UniqueOutputIteratorT d_unique_out,
+    LengthsOutputIteratorT d_counts_out,
+    NumRunsOutputIteratorT d_num_runs_out,
+    NumItemsT num_items,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceRunLengthEncode::Encode");
+
+    using equality_op              = ::cuda::std::equal_to<>;
+    using reduction_op             = ::cuda::std::plus<>;
+    using offset_t                 = detail::choose_signed_offset_t<NumItemsT>;
+    using length_t                 = cub::detail::non_void_value_t<LengthsOutputIteratorT, offset_t>;
+    using lengths_input_iterator_t = THRUST_NS_QUALIFIER::constant_iterator<length_t, offset_t>;
+    using accum_t                  = ::cuda::std::__accumulator_t<reduction_op, length_t, length_t>;
+    using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
+    using policy_selector_t = detail::rle::encode::policy_selector_from_types<accum_t, key_t>;
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return detail::reduce_by_key::dispatch_streaming<accum_t>(
+        storage,
+        bytes,
+        d_in,
+        d_unique_out,
+        lengths_input_iterator_t(length_t{1}),
+        d_counts_out,
+        d_num_runs_out,
+        equality_op{},
+        reduction_op{},
+        static_cast<offset_t>(num_items),
+        stream,
+        policy_selector_t{});
+    });
   }
 
   //! @rst
   //! Enumerates the starting offsets and lengths of all non-trivial runs
   //! (of ``length > 1``) of same-valued keys in the sequence ``d_in``.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - For the *i*\ :sup:`th` non-trivial run, the run's starting offset and
   //!   its length are written to ``d_offsets_out[i]`` and ``d_lengths_out[i]``, respectively.
@@ -321,25 +439,126 @@ struct DeviceRunLengthEncode
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::NonTrivialRuns");
 
-    // Offset type used for global offsets
-    using offset_t    = detail::choose_signed_offset_t<NumItemsT>;
-    using equality_op = ::cuda::std::equal_to<>;
+    using global_offset_t = detail::choose_signed_offset_t<NumItemsT>;
+    using equality_op     = ::cuda::std::equal_to<>;
+    return detail::rle::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_offsets_out,
+      d_lengths_out,
+      d_num_runs_out,
+      equality_op{},
+      static_cast<global_offset_t>(num_items),
+      stream);
+  }
 
-    return DeviceRleDispatch<
-      InputIteratorT,
-      OffsetsOutputIteratorT,
-      LengthsOutputIteratorT,
-      NumRunsOutputIteratorT,
-      equality_op,
-      offset_t>::Dispatch(d_temp_storage,
-                          temp_storage_bytes,
-                          d_in,
-                          d_offsets_out,
-                          d_lengths_out,
-                          d_num_runs_out,
-                          equality_op{},
-                          num_items,
-                          stream);
+  //! @rst
+  //! Enumerates the starting offsets and lengths of all non-trivial runs
+  //! (of ``length > 1``) of same-valued keys in the sequence ``d_in``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - For the *i*\ :sup:`th` non-trivial run, the run's starting offset and
+  //!   its length are written to ``d_offsets_out[i]`` and ``d_lengths_out[i]``, respectively.
+  //! - The total number of runs encountered is written to ``d_num_runs_out``.
+  //! - The ``==`` equality operator is used to determine whether values are equivalent
+  //! - In-place operations are not supported. There must be no overlap between any of the provided ranges:
+  //!
+  //!   - ``[d_offsets_out, d_offsets_out + *d_num_runs_out)``
+  //!   - ``[d_lengths_out, d_lengths_out + *d_num_runs_out)``
+  //!   - ``[d_num_runs_out, d_num_runs_out + 1)``
+  //!   - ``[d_in, d_in + num_items)``
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the identification of non-trivial runs
+  //! within a sequence of ``int`` values using environment-based API:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_run_length_encode_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin non-trivial-runs-env
+  //!     :end-before: example-end non-trivial-runs-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OffsetsOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing run-offset values @iterator
+  //!
+  //! @tparam LengthsOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing run-length values @iterator
+  //!
+  //! @tparam NumRunsOutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of runs encountered @iterator
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_in
+  //!   Pointer to input sequence of data items
+  //!
+  //! @param[out] d_offsets_out
+  //!   Pointer to output sequence of run-offsets
+  //!   (one offset per non-trivial run)
+  //!
+  //! @param[out] d_lengths_out
+  //!   Pointer to output sequence of run-lengths (one count per non-trivial run)
+  //!
+  //! @param[out] d_num_runs_out
+  //!   Pointer to total number of runs (i.e., length of `d_offsets_out`)
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., the length of `d_in`)
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OffsetsOutputIteratorT,
+            typename LengthsOutputIteratorT,
+            typename NumRunsOutputIteratorT,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t NonTrivialRuns(
+    InputIteratorT d_in,
+    OffsetsOutputIteratorT d_offsets_out,
+    LengthsOutputIteratorT d_lengths_out,
+    NumRunsOutputIteratorT d_num_runs_out,
+    NumItemsT num_items,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceRunLengthEncode::NonTrivialRuns");
+
+    using global_offset_t = detail::choose_signed_offset_t<NumItemsT>;
+    using equality_op     = ::cuda::std::equal_to<>;
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return detail::rle::dispatch(
+        storage,
+        bytes,
+        d_in,
+        d_offsets_out,
+        d_lengths_out,
+        d_num_runs_out,
+        equality_op{},
+        static_cast<global_offset_t>(num_items),
+        stream);
+    });
   }
 };
 

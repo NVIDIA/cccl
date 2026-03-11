@@ -16,11 +16,14 @@
 #include <cuda/memory_pool>
 #include <cuda/memory_resource>
 #include <cuda/std/cassert>
+#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/stream>
+
+#include <test_resources.h>
 
 #include "testing.cuh"
 
@@ -68,6 +71,14 @@ C2H_TEST_LIST(
       __uninitialized_async_buffer from_stream_count{resource, stream, 42};
       CCCLRT_CHECK(from_stream_count.data() != nullptr);
       CCCLRT_CHECK(from_stream_count.size() == 42);
+    }
+
+    {
+      const ::cuda::std::size_t alignment = 64;
+      offset_by_alignment_resource aligned_resource{resource};
+      __uninitialized_async_buffer from_stream_count{aligned_resource, stream, 42, alignment};
+      CCCLRT_CHECK(is_pointer_aligned(from_stream_count.data(), alignment));
+      CCCLRT_CHECK(from_stream_count.alignment() == alignment);
     }
 
     {

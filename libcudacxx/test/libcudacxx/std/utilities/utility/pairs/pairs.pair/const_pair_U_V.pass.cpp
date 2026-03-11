@@ -69,8 +69,8 @@ struct ImplicitT
 int main(int, char**)
 {
   {
-    typedef cuda::std::pair<int, int> P1;
-    typedef cuda::std::pair<double, long> P2;
+    using P1 = cuda::std::pair<int, int>;
+    using P2 = cuda::std::pair<double, long>;
     const P1 p1(3, 4);
     const P2 p2 = p1;
     assert(p2.first == 3);
@@ -164,8 +164,8 @@ int main(int, char**)
     test_pair_const<ExplicitTypes::ConvertingType, ExplicitTypes::ConvertingType&&, true, false>();
   }
   {
-    typedef cuda::std::pair<int, int> P1;
-    typedef cuda::std::pair<double, long> P2;
+    using P1 = cuda::std::pair<int, int>;
+    using P2 = cuda::std::pair<double, long>;
     constexpr P1 p1(3, 4);
     constexpr P2 p2 = p1;
     static_assert(p2.first == 3, "");

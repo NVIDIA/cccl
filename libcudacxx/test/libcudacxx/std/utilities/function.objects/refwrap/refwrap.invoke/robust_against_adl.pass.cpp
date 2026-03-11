@@ -20,7 +20,7 @@ struct Holder
 {
   T t;
 };
-typedef Holder<Incomplete>* Ptr;
+using Ptr = Holder<Incomplete>*;
 
 __host__ __device__ Ptr no_args()
 {

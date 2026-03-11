@@ -2,10 +2,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-/**
- * @file cub::AgentReduceByKey implements a stateful abstraction of CUDA thread
- *       blocks for participating in device-wide reduce-value-by-key.
- */
+//! @file
+//! cub::detail::reduce_by_key::AgentReduceByKey implements a stateful abstraction of CUDA thread blocks for
+//! participating in device-wide reduce-value-by-key.
 
 #pragma once
 
@@ -26,6 +25,7 @@
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -91,7 +91,7 @@ struct AgentReduceByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail::reduce
+namespace detail::reduce_by_key
 {
 /**
  * @brief AgentReduceByKey implements a stateful abstraction of CUDA thread
@@ -201,11 +201,6 @@ struct AgentReduceByKey
   static constexpr int ITEMS_PER_THREAD  = AgentReduceByKeyPolicyT::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS        = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr int TWO_PHASE_SCATTER = (ITEMS_PER_THREAD > 1);
-
-  // Whether or not the scan operation has a zero-valued identity value (true
-  // if we're performing addition on a primitive type)
-  static constexpr int HAS_IDENTITY_ZERO =
-    (::cuda::std::is_same_v<ReductionOpT, ::cuda::std::plus<>>) && (is_primitive<AccumT>::value);
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
   // for keys Wrap the native input pointer with
@@ -775,6 +770,6 @@ struct AgentReduceByKey
     }
   }
 };
-} // namespace detail::reduce
+} // namespace detail::reduce_by_key
 
 CUB_NAMESPACE_END

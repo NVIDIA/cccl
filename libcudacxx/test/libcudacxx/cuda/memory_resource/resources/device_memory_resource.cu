@@ -65,7 +65,7 @@ static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocation
   return allocation_handle == ::cudaMemHandleTypeNone ? status == ::cudaErrorInvalidValue : status == ::cudaSuccess;
 }
 
-C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
+C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
 {
   int current_device = 0;
   cuda::__ensure_current_context guard{cuda::device_ref{current_device}};
@@ -180,26 +180,30 @@ C2H_CCCLRT_TEST("device_memory_resource construction", "[memory_resource]")
 
   // Allocation handles are only supported after 11.2 and not on Windows
 #if !_CCCL_OS(WINDOWS)
-  SECTION("Construct with allocation handle")
+  if (cuda::devices[0].attribute(::cuda::device_attributes::memory_pool_supported_handle_types)
+      & ::cudaMemHandleTypePosixFileDescriptor)
   {
-    cuda::memory_pool_properties props = {
-      20,
-      42,
-      ::cudaMemHandleTypePosixFileDescriptor,
-    };
-    cuda::device_memory_pool with_allocation_handle{current_device, props};
+    SECTION("Construct with allocation handle")
+    {
+      cuda::memory_pool_properties props = {
+        20,
+        42,
+        ::cudaMemHandleTypePosixFileDescriptor,
+      };
+      cuda::device_memory_pool with_allocation_handle{current_device, props};
 
-    ::cudaMemPool_t get = with_allocation_handle.get();
-    CHECK(get != current_default_pool);
+      ::cudaMemPool_t get = with_allocation_handle.get();
+      CHECK(get != current_default_pool);
 
-    // Ensure we use the right release threshold
-    CHECK(ensure_release_threshold(get, props.release_threshold));
+      // Ensure we use the right release threshold
+      CHECK(ensure_release_threshold(get, props.release_threshold));
 
-    // Ensure that we disable reuse with unsupported drivers
-    CHECK(ensure_disable_reuse(get, driver_version));
+      // Ensure that we disable reuse with unsupported drivers
+      CHECK(ensure_disable_reuse(get, driver_version));
 
-    // Ensure that we disable export
-    CHECK(ensure_export_handle(get, props.allocation_handle_type));
+      // Ensure that we disable export
+      CHECK(ensure_export_handle(get, props.allocation_handle_type));
+    }
   }
 #endif // !_CCCL_OS(WINDOWS)
 }
@@ -213,7 +217,7 @@ static void ensure_device_ptr(void* ptr)
   CHECK(attributes.type == cudaMemoryTypeDevice);
 }
 
-C2H_CCCLRT_TEST("device_memory_resource allocation", "[memory_resource]")
+C2H_CCCLRT_TEST("device_memory_pool allocation", "[memory_resource]")
 {
   cudaStream_t raw_stream;
   {
@@ -328,7 +332,7 @@ C2H_CCCLRT_TEST("device_memory_resource allocation", "[memory_resource]")
   }
 }
 
-C2H_CCCLRT_TEST("device_memory_resource comparison", "[memory_resource]")
+C2H_CCCLRT_TEST("device_memory_pool comparison", "[memory_resource]")
 {
   int current_device = 0;
   cuda::__ensure_current_context guard{cuda::device_ref{current_device}};

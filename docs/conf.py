@@ -23,13 +23,17 @@ copyright = f"{datetime.now().year}, NVIDIA Corporation"
 author = "NVIDIA Corporation"
 
 # Version information
-try:
-    with open("VERSION.md", "r") as f:
-        version = f.read().strip()
-except Exception:
-    version = "latest"
+_env_version = os.environ.get("SPHINX_CCCL_VER")
+if _env_version:
+    release = _env_version
+else:
+    try:
+        with open("VERSION.md", "r", encoding="utf-8") as f:
+            release = f.read().strip()
+    except Exception:
+        release = "unstable"
 
-release = version
+version = release
 
 # -- General configuration ---------------------------------------------------
 
@@ -116,6 +120,12 @@ exclude_patterns = [
 html_theme = "nvidia_sphinx_theme"
 
 html_logo = "_static/nvidia-logo.png"
+
+html_baseurl = (
+    os.environ.get("CCCL_DOCS_BASE_URL", "https://nvidia.github.io/cccl/").rstrip("/")
+    + "/"
+)
+
 html_theme_options = {
     "icon_links": [
         {
@@ -133,6 +143,10 @@ html_theme_options = {
     "footer_end": ["sphinx-version"],
     "sidebar_includehidden": True,
     "collapse_navigation": False,
+    "switcher": {
+        "json_url": f"{html_baseurl}nv-versions.json",
+        "version_match": release,
+    },
 }
 
 html_static_path = ["_static"] if os.path.exists("_static") else []
@@ -183,8 +197,10 @@ autodoc_default_options = {
 }
 
 # Enable type hints to be shown in the documentation
-autodoc_typehints = "description"
-autodoc_type_aliases = {}
+autodoc_type_hints = "description"
+autodoc_type_aliases = {
+    "Operator": "Operator",
+}
 
 # Set Python domain primary for intersphinx
 primary_domain = "py"

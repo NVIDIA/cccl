@@ -28,7 +28,9 @@
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__ranges/compressed_movable_box.h>
 #include <cuda/std/__ranges/concepts.h>
@@ -74,12 +76,16 @@ private:
   {}
 
 public:
+  _CCCL_HIDE_FROM_ABI __transform_input_output_proxy(const __transform_input_output_proxy&)            = default;
+  _CCCL_HIDE_FROM_ABI __transform_input_output_proxy& operator=(const __transform_input_output_proxy&) = default;
+  _CCCL_HIDE_FROM_ABI __transform_input_output_proxy(__transform_input_output_proxy&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __transform_input_output_proxy& operator=(__transform_input_output_proxy&&)      = default;
+
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg)
-  _CCCL_REQUIRES(
-    (!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Arg>, __transform_input_output_proxy>)
-      _CCCL_AND ::cuda::std::is_invocable_v<_OutputFn&, _Arg> _CCCL_AND ::cuda::std::
-        is_assignable_v<::cuda::std::iter_reference_t<_Iter>, ::cuda::std::invoke_result_t<_OutputFn&, _Arg>>)
+  _CCCL_REQUIRES(::cuda::std::is_invocable_v<_OutputFn&, _Arg> //
+                   _CCCL_AND ::cuda::std::is_assignable_v<::cuda::std::iter_reference_t<_Iter>,
+                                                          ::cuda::std::invoke_result_t<_OutputFn&, _Arg>>)
   _CCCL_API constexpr __transform_input_output_proxy& operator=(_Arg&& __arg) noexcept(
     noexcept(*__iter_ = ::cuda::std::invoke(__output_func_, ::cuda::std::forward<_Arg>(__arg))))
   {
@@ -89,10 +95,9 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Arg)
-  _CCCL_REQUIRES((!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Arg>, __transform_input_output_proxy>)
-                   _CCCL_AND ::cuda::std::is_invocable_v<const _OutputFn&, _Arg>
-                     _CCCL_AND ::cuda::std::is_assignable_v<::cuda::std::iter_reference_t<const _Iter>,
-                                                            ::cuda::std::invoke_result_t<const _OutputFn&, _Arg>>)
+  _CCCL_REQUIRES(::cuda::std::is_invocable_v<const _OutputFn&, _Arg>
+                   _CCCL_AND ::cuda::std::is_assignable_v<::cuda::std::iter_reference_t<const _Iter>,
+                                                          ::cuda::std::invoke_result_t<const _OutputFn&, _Arg>>)
   _CCCL_API constexpr const __transform_input_output_proxy& operator=(_Arg&& __arg) const
     noexcept(noexcept(*__iter_ = ::cuda::std::invoke(__output_func_, ::cuda::std::forward<_Arg>(__arg))))
   {
@@ -506,12 +511,12 @@ public:
 #endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 };
 
-//! @brief make_transform_output_iterator creates a @c transform_output_iterator from an iterator, an input functor
-//! and an output functor
-//! @param __iter The iterator pointing to the input range of the newly created @c transform_output_iterator.
+//! @brief make_transform_output_iterator creates a @c transform_input_output_iterator from an iterator, an input
+//! functor and an output functor
+//! @param __iter The iterator pointing to the input range of the newly created @c transform_input_output_iterator.
 //! @param __input_fun The input functor used to transform the range when read
 //! @param __output_fun The output functor used to transform the range when written
-//! @relates transform_output_iterator
+//! @relates transform_input_output_iterator
 template <class _InputFn, class _OutputFn, class _Iter>
 [[nodiscard]] _CCCL_API constexpr auto
 make_transform_input_output_iterator(_Iter __iter, _InputFn __input_fun, _OutputFn __output_fun)
@@ -522,6 +527,52 @@ make_transform_input_output_iterator(_Iter __iter, _InputFn __input_fun, _Output
 //! @}
 
 _CCCL_END_NAMESPACE_CUDA
+
+#ifndef _CCCL_DOXYGEN_INVOKED
+#  if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+//! transform_input_output_iterator is a C++20 iterator, so it does not play well with legacy STL features like
+//! std::distance. To work around that specialize those functions for transform_input_output_iterator
+template <class _Diff, class _InputFn, class _OutputFn, class _Iter>
+_CCCL_HOST_API constexpr void
+advance(::cuda::transform_input_output_iterator<_InputFn, _OutputFn, _Iter>& __iter, _Diff __diff)
+{
+  ::cuda::std::advance(__iter, ::cuda::std::move(__diff));
+}
+
+template <class _InputFn, class _OutputFn, class _Iter>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::iter_difference_t<_Iter>
+distance(::cuda::transform_input_output_iterator<_InputFn, _OutputFn, _Iter> __first,
+         ::cuda::transform_input_output_iterator<_InputFn, _OutputFn, _Iter> __last)
+{
+  return ::cuda::std::distance(::cuda::std::move(__first), ::cuda::std::move(__last));
+}
+
+template <class _InputFn, class _OutputFn, class _Iter>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::transform_input_output_iterator<_InputFn, _OutputFn, _Iter>
+next(::cuda::transform_input_output_iterator<_InputFn, _OutputFn, _Iter> __iter,
+     ::cuda::std::iter_difference_t<_Iter> __n = 1)
+{
+  _CCCL_ASSERT(__n >= 0 || ::cuda::std::__has_bidirectional_traversal<_Iter>,
+               "Attempt to std::next(it, n) with negative n on a non-bidirectional iterator");
+  ::cuda::std::advance(__iter, __n);
+  return __iter;
+}
+
+template <class _InputFn, class _OutputFn, class _Iter>
+[[nodiscard]] _CCCL_HOST_API constexpr ::cuda::transform_input_output_iterator<_InputFn, _OutputFn, _Iter>
+prev(::cuda::transform_input_output_iterator<_InputFn, _OutputFn, _Iter> __iter,
+     ::cuda::std::iter_difference_t<_Iter> __n = 1)
+{
+  _CCCL_ASSERT(__n <= 0 || ::cuda::std::__has_bidirectional_traversal<_Iter>,
+               "Attempt to std::prev(it, +n) on a non-bidi iterator");
+  ::cuda::std::advance(__iter, -__n);
+  return __iter;
+}
+_CCCL_END_NAMESPACE_STD
+#  endif // _CCCL_HAS_HOST_STD_LIB()
+#endif // _CCCL_DOXYGEN_INVOKED
 
 #include <cuda/std/__cccl/epilogue.h>
 

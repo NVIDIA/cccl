@@ -113,13 +113,13 @@ public:
   {
     const auto& e_place = get_exec_place();
 
-    event_list prereqs = acquire(ctx);
+    event_list ready_prereqs = acquire(ctx);
 
     /* Select the stream(s) */
     if (e_place.is_grid())
     {
       // We have currently no way to pass an array of per-place streams
-      assert(automatic_stream);
+      _CCCL_ASSERT(automatic_stream, "automatic stream is not enabled");
 
       // Note: we store grid in a variable to avoid dangling references
       // because the compiler does not know we are making a reference to
@@ -128,7 +128,7 @@ public:
       const auto& places = grid.get_places();
       for (const exec_place& p : places)
       {
-        stream_grid.push_back(get_stream_from_pool(p));
+        stream_grid.push_back(p.getStream(true));
       }
 
       EXPECT(stream_grid.size() > 0UL);
@@ -138,7 +138,7 @@ public:
       if (automatic_stream)
       {
         bool found = false;
-        auto& pool = e_place.get_stream_pool(ctx.async_resources(), true);
+        auto& pool = e_place.get_stream_pool(true);
 
         // To avoid creating inter stream dependencies when this is not
         // necessary, we try to reuse streams which belong to the pool,
@@ -148,7 +148,7 @@ public:
         // multiple streams.
         if (!getenv("CUDASTF_DO_NOT_REUSE_STREAMS"))
         {
-          for (auto& e : prereqs)
+          for (auto& e : ready_prereqs)
           {
             // fprintf(stderr, "outbounds %d (%s)\n", e->outbound_deps.load(), e->get_symbol().c_str());
             if (e->outbound_deps == 0)
@@ -156,7 +156,7 @@ public:
               auto se                    = reserved::handle<stream_and_event>(e, reserved::use_static_cast);
               decorated_stream candidate = se->get_decorated_stream();
 
-              if (candidate.id != -1)
+              if (candidate.id != k_no_stream_id)
               {
                 for (const decorated_stream& pool_s : pool)
                 {
@@ -180,7 +180,7 @@ public:
 
         if (!found)
         {
-          dstream = get_stream_from_pool(e_place);
+          dstream = e_place.getStream(true);
           //    fprintf(stderr, "COULD NOT REUSE ... selected stream ID %ld\n", dstream.id);
         }
       }
@@ -190,7 +190,7 @@ public:
     auto& s0 = e_place.is_grid() ? stream_grid[0] : dstream;
 
     /* Ensure that stream depend(s) on prereqs */
-    submitted_events = stream_async_op(ctx, s0, prereqs);
+    submitted_events = stream_async_op(ctx, s0, ready_prereqs);
     if (ctx.generate_event_symbols())
     {
       submitted_events.set_symbol("Submitted" + get_symbol());
@@ -207,6 +207,8 @@ public:
     {
       dot->template add_vertex<task, logical_data_untyped>(*this);
     }
+
+    set_ready_prereqs(mv(ready_prereqs));
 
     return *this;
   }
@@ -373,11 +375,6 @@ public:
   }
 
 private:
-  decorated_stream get_stream_from_pool(const exec_place& e_place)
-  {
-    return e_place.getStream(ctx.async_resources(), true);
-  }
-
   // Make all streams depend on streams[0]
   static void insert_dependencies(::std::vector<decorated_stream>& streams)
   {

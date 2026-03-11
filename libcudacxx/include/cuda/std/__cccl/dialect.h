@@ -92,7 +92,7 @@
 
 // Some compilers turn on pack indexing in pre-C++26 code. We want to use it if it is
 // available.
-#if defined(__cpp_pack_indexing) && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(CLANG, <, 20)
+#if __cpp_pack_indexing >= 202311L && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(CLANG, <, 20)
 #  define _CCCL_HAS_PACK_INDEXING() 1
 #else // ^^^ has pack indexing ^^^ / vvv no pack indexing vvv
 #  define _CCCL_HAS_PACK_INDEXING() 0
@@ -188,10 +188,10 @@
 
 // Fixme: replace the condition with (!_CCCL_DEVICE_COMPILATION())
 // FIXME: Enable this for clang-cuda in a followup
-#if !_CCCL_CUDA_COMPILATION()
+#if !_CCCL_CUDA_COMPILATION() && !defined(CCCL_DISABLE_LONG_DOUBLE_SUPPORT)
 #  define _CCCL_HAS_LONG_DOUBLE() 1
-#else // ^^^ !_CCCL_CUDA_COMPILATION() ^^^ / vvv _CCCL_CUDA_COMPILATION() vvv
+#else // ^^^ has long double ^^^ / vvv no long double vvv
 #  define _CCCL_HAS_LONG_DOUBLE() 0
-#endif // ^^^ _CCCL_CUDA_COMPILATION() ^^^
+#endif // ^^^ no long double ^^^
 
 #endif // __CCCL_DIALECT_H

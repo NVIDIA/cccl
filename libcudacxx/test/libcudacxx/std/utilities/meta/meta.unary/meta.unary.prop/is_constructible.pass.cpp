@@ -159,8 +159,8 @@ static constexpr bool clang_disallows_valid_static_cast_bug = clang_disallows_va
 
 int main(int, char**)
 {
-  typedef Base B;
-  typedef Derived D;
+  using B = Base;
+  using D = Derived;
 
   test_is_constructible<int>();
   test_is_constructible<int, const int>();

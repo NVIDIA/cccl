@@ -26,7 +26,6 @@
 #  include <cuda/__memory_pool/memory_pool_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__exception/throw_error.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -78,11 +77,11 @@ public:
 //! @brief Returns the default managed memory pool.
 //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
 //! @returns The default managed memory pool.
-[[nodiscard]] inline managed_memory_pool_ref managed_default_memory_pool()
+[[nodiscard]] inline managed_memory_pool_ref& managed_default_memory_pool()
 {
-  static ::cudaMemPool_t __pool = ::cuda::__get_default_memory_pool(
-    ::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED);
-  return managed_memory_pool_ref(__pool);
+  static managed_memory_pool_ref __pool{::cuda::__get_default_memory_pool(
+    ::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED)};
+  return __pool;
 }
 
 //! @rst
@@ -131,10 +130,10 @@ struct managed_memory_pool : managed_memory_pool_ref
   }
 
   //! @brief Returns a \c managed_memory_pool_ref for this \c managed_memory_pool.
-  //! The result is the same as if this object was cast to a \c managed_memory_pool_ref.
-  [[nodiscard]] _CCCL_HOST_API managed_memory_pool_ref as_ref() noexcept
+  //! We return by reference to ensure that we can subsequently convert to a resource_ref
+  [[nodiscard]] _CCCL_HOST_API managed_memory_pool_ref& as_ref() noexcept
   {
-    return managed_memory_pool_ref(__pool_);
+    return static_cast<managed_memory_pool_ref&>(*this);
   }
 
   managed_memory_pool(const managed_memory_pool&)            = delete;

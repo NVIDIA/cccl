@@ -221,6 +221,11 @@ public:
   /**
    * @brief Collective constructor using a private static allocation of shared memory as temporary
    *        storage.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE BlockDiscontinuity()
       : temp_storage(PrivateStorage())
@@ -229,6 +234,11 @@ public:
 
   /**
    * @brief Collective constructor using the specified memory allocation as temporary storage.
+   *
+   * @rst
+   * .. versionadded:: 2.2.0
+   *    First appears in CUDA Toolkit 12.3.
+   * @endrst
    *
    * @param[in] temp_storage
    *   Reference to memory allocation having layout type TempStorage
@@ -327,6 +337,9 @@ public:
   //! Sets head flags indicating discontinuities between items partitioned across the thread
   //! block, for which the first item has no reference and is always flagged.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The flag ``head_flags[i]`` is set for item ``input[i]`` when ``flag_op(previous-item, input[i])`` returns
   //!   ``true`` (where ``previous-item`` is either the preceding item in the same thread or the last item in
   //!   the previous thread).
@@ -400,6 +413,9 @@ public:
 
   //! @rst
   //! Sets head flags indicating discontinuities between items partitioned across the thread block.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The flag ``head_flags[i]`` is set for item ``input[i]`` when ``flag_op(previous-item, input[i])``
   //!   returns ``true`` (where ``previous-item`` is either the preceding item in the same thread or the last item
@@ -490,6 +506,9 @@ public:
   //! Sets tail flags indicating discontinuities between items partitioned across the thread
   //! block, for which the last item has no reference and is always flagged.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The flag ``tail_flags[i]`` is set for item ``input[i]`` when
   //!   ``flag_op(input[i], next-item)``
   //!   returns ``true`` (where `next-item` is either the next item
@@ -578,6 +597,9 @@ public:
 
   //! @rst
   //! Sets tail flags indicating discontinuities between items partitioned across the thread block.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The flag ``tail_flags[i]`` is set for item ``input[i]`` when ``flag_op(input[i], next-item)``
   //!   returns ``true`` (where ``next-item`` is either the next item in the same thread or the first item in
@@ -681,6 +703,9 @@ public:
 
   //! @rst
   //! Sets both head and tail flags indicating discontinuities between items partitioned across the thread block.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The flag ``head_flags[i]`` is set for item ``input[i]`` when ``flag_op(previous-item, input[i])`` returns
   //!   ``true`` (where ``previous-item`` is either the preceding item in the same thread or the last item in
@@ -800,6 +825,9 @@ public:
 
   //! @rst
   //! Sets both head and tail flags indicating discontinuities between items partitioned across the thread block.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The flag ``head_flags[i]`` is set for item ``input[i]`` when
   //!   ``flag_op(previous-item, input[i])`` returns ``true`` (where ``previous-item`` is either the preceding item
@@ -931,6 +959,9 @@ public:
   //! @rst
   //! Sets both head and tail flags indicating discontinuities between items partitioned across the thread block.
   //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //!
   //! - The flag ``head_flags[i]`` is set for item ``input[i]`` when ``flag_op(previous-item, input[i])``
   //!   returns ``true`` (where ``previous-item`` is either the preceding item in the same thread or the last item
   //!   in the previous thread).
@@ -1060,6 +1091,9 @@ public:
 
   //! @rst
   //! Sets both head and tail flags indicating discontinuities between items partitioned across the thread block.
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The flag ``head_flags[i]`` is set for item ``input[i]`` when ``flag_op(previous-item, input[i])``
   //!   returns ``true`` (where ``previous-item`` is either the preceding item in the same thread or the last item in

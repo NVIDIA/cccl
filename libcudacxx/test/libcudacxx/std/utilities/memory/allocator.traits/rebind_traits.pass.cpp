@@ -28,12 +28,12 @@ struct ReboundA
 template <class T>
 struct A
 {
-  typedef T value_type;
+  using value_type = T;
 
   template <class U>
   struct rebind
   {
-    typedef ReboundA<U> other;
+    using other = ReboundA<U>;
   };
 };
 
@@ -44,36 +44,36 @@ struct ReboundB
 template <class T, class U>
 struct B
 {
-  typedef T value_type;
+  using value_type = T;
 
   template <class V>
   struct rebind
   {
-    typedef ReboundB<V, U> other;
+    using other = ReboundB<V, U>;
   };
 };
 
 template <class T>
 struct C
 {
-  typedef T value_type;
+  using value_type = T;
 };
 
 template <class T, class U>
 struct D
 {
-  typedef T value_type;
+  using value_type = T;
 };
 
 template <class T>
 struct E
 {
-  typedef T value_type;
+  using value_type = T;
 
   template <class U>
   struct rebind
   {
-    typedef ReboundA<U> otter;
+    using otter = ReboundA<U>;
   };
 };
 

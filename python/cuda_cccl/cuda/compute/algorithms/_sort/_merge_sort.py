@@ -1,13 +1,12 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable
 
-import numba
+from __future__ import annotations
 
-from ... import _bindings
+from ... import _bindings, types
 from ... import _cccl_interop as cccl
 from ..._caching import cache_with_registered_key_functions
 from ..._cccl_interop import call_build, set_cccl_iterator_state
@@ -16,9 +15,8 @@ from ..._utils.protocols import (
     validate_and_get_stream,
 )
 from ..._utils.temp_storage_buffer import TempStorageBuffer
-from ...iterators._iterators import IteratorBase
-from ...op import OpAdapter, OpKind, make_op_adapter
-from ...typing import DeviceArrayLike
+from ...op import OpAdapter, make_op_adapter
+from ...typing import DeviceArrayLike, IteratorT, Operator
 
 
 class _MergeSort:
@@ -34,8 +32,8 @@ class _MergeSort:
 
     def __init__(
         self,
-        d_in_keys: DeviceArrayLike | IteratorBase,
-        d_in_items: DeviceArrayLike | IteratorBase | None,
+        d_in_keys: DeviceArrayLike | IteratorT,
+        d_in_items: DeviceArrayLike | IteratorT | None,
         d_out_keys: DeviceArrayLike,
         d_out_items: DeviceArrayLike | None,
         op: OpAdapter,
@@ -52,7 +50,7 @@ class _MergeSort:
 
         # Compile the op - merge_sort expects int8 return (comparison)
         value_type = cccl.get_value_type(d_in_keys)
-        self.op_cccl = op.compile((value_type, value_type), numba.types.int8)
+        self.op_cccl = op.compile((value_type, value_type), types.int8)
 
         self.build_result = call_build(
             _bindings.DeviceMergeSortBuildResult,
@@ -66,10 +64,11 @@ class _MergeSort:
     def __call__(
         self,
         temp_storage,
-        d_in_keys: DeviceArrayLike | IteratorBase,
-        d_in_items: DeviceArrayLike | IteratorBase | None,
+        d_in_keys: DeviceArrayLike | IteratorT,
+        d_in_items: DeviceArrayLike | IteratorT | None,
         d_out_keys: DeviceArrayLike,
         d_out_items: DeviceArrayLike | None,
+        op: Operator,
         num_items: int,
         stream=None,
     ):
@@ -83,6 +82,9 @@ class _MergeSort:
         set_cccl_iterator_state(self.d_out_keys_cccl, d_out_keys)
         if present_out_values:
             set_cccl_iterator_state(self.d_out_items_cccl, d_out_items)
+
+        op_adapter = make_op_adapter(op)
+        self.op_cccl.state = op_adapter.get_state()
 
         stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
@@ -111,11 +113,11 @@ class _MergeSort:
 
 @cache_with_registered_key_functions
 def make_merge_sort(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase | None,
+    d_in_keys: DeviceArrayLike | IteratorT,
+    d_in_items: DeviceArrayLike | IteratorT | None,
     d_out_keys: DeviceArrayLike,
     d_out_items: DeviceArrayLike | None,
-    op: Callable | OpKind,
+    op: Operator,
 ):
     """Implements a device-wide merge sort using ``d_in_keys`` and the comparison operator ``op``.
 
@@ -132,21 +134,28 @@ def make_merge_sort(
         d_in_items: Optional device array or iterator that contains each key's corresponding item
         d_out_keys: Device array to store the sorted keys
         d_out_items: Device array to store the sorted items
-        op: Callable or OpKind representing the comparison operator
+        op: The comparison operator for sorting. The signature is  ``(T, T) -> int8``, where ``T`` is the input data type. See notes below.
 
     Returns:
         A callable object that can be used to perform the merge sort
+
+    .. important::
+
+      The provided comparison operator must follow `strict weak ordering <https://en.cppreference.com/w/cpp/concepts/strict_weak_order.html>`_
+      semantics. For example, the comparator ``lambda lhs, rhs: lhs < rhs``  follows strict weak ordering,  but the comparator
+      ``lambda lhs, rhs: rhs >= lhs`` does not, because it is reflexive: ``r(x, x) == True``. Providing a comparator that does not
+      follow the required semantics can lead to incorrect results, silent memory corruption, or crashes.
     """
     op_adapter = make_op_adapter(op)
     return _MergeSort(d_in_keys, d_in_items, d_out_keys, d_out_items, op_adapter)
 
 
 def merge_sort(
-    d_in_keys: DeviceArrayLike | IteratorBase,
-    d_in_items: DeviceArrayLike | IteratorBase | None,
+    d_in_keys: DeviceArrayLike | IteratorT,
+    d_in_items: DeviceArrayLike | IteratorT | None,
     d_out_keys: DeviceArrayLike,
     d_out_items: DeviceArrayLike | None,
-    op: Callable | OpKind,
+    op: Operator,
     num_items: int,
     stream=None,
 ):
@@ -162,21 +171,34 @@ def merge_sort(
             :language: python
             :start-after: # example-begin
 
-
     Args:
         d_in_keys: Device array or iterator containing the input sequence of keys
         d_in_items: Device array or iterator containing the input sequence of items (optional)
         d_out_keys: Device array to store the sorted keys
         d_out_items: Device array to store the sorted items (optional)
-        op: Comparison operator for sorting
+        op: The comparison operator for sorting. The signature is  ``(T, T) -> int8``, where ``T`` is the input data type. See notes below.
         num_items: Number of items to sort
         stream: CUDA stream for the operation (optional)
+
+    .. important::
+
+      The provided comparison operator must follow `strict weak ordering <https://en.cppreference.com/w/cpp/concepts/strict_weak_order.html>`_
+      semantics. For example, the comparator ``lambda lhs, rhs: lhs < rhs``  follows strict weak ordering,  but the comparator
+      ``lambda lhs, rhs: rhs >= lhs`` does not, because it is reflexive: ``r(x, x) == True``. Providing a comparator that does not
+      follow the required semantics can lead to incorrect results, silent memory corruption, or crashes.
     """
     sorter = make_merge_sort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
     tmp_storage_bytes = sorter(
-        None, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream
+        None, d_in_keys, d_in_items, d_out_keys, d_out_items, op, num_items, stream
     )
     tmp_storage = TempStorageBuffer(tmp_storage_bytes, stream)
     sorter(
-        tmp_storage, d_in_keys, d_in_items, d_out_keys, d_out_items, num_items, stream
+        tmp_storage,
+        d_in_keys,
+        d_in_items,
+        d_out_keys,
+        d_out_items,
+        op,
+        num_items,
+        stream,
     )

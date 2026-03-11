@@ -23,30 +23,25 @@
 #include "helper.h"
 #include "types.h"
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::host_accessible>,
-                                  cuda::std::tuple<unsigned long long, cuda::mr::device_accessible>,
-                                  cuda::std::tuple<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
-using test_types = c2h::type_list<cuda::std::tuple<int, cuda::mr::device_accessible>>;
-#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
-
 C2H_CCCLRT_TEST("cuda::buffer iterators", "[container][buffer]", test_types)
 {
-  using TestT     = c2h::get<0, TestType>;
-  using Resource  = typename extract_properties<TestT>::resource;
-  using Buffer    = typename extract_properties<TestT>::buffer;
-  using T         = typename Buffer::value_type;
-  using size_type = typename Buffer::size_type;
+  using Buffer   = c2h::get<0, TestType>;
+  using Resource = typename extract_properties<Buffer>::resource;
+  using T        = typename Buffer::value_type;
 
-  using iterator       = typename extract_properties<TestT>::iterator;
-  using const_iterator = typename extract_properties<TestT>::const_iterator;
+  using iterator       = typename Buffer::iterator;
+  using const_iterator = typename Buffer::const_iterator;
 
   using reverse_iterator       = cuda::std::reverse_iterator<iterator>;
   using const_reverse_iterator = cuda::std::reverse_iterator<const_iterator>;
 
+  if (!extract_properties<Buffer>::is_resource_supported())
+  {
+    return;
+  }
+
   cuda::stream stream{cuda::device_ref{0}};
-  Resource resource = extract_properties<TestT>::get_resource();
+  Resource resource = extract_properties<Buffer>::get_resource();
 
   SECTION("cuda::buffer::begin/end properties")
   {
@@ -77,7 +72,7 @@ C2H_CCCLRT_TEST("cuda::buffer iterators", "[container][buffer]", test_types)
 
   SECTION("cuda::buffer::begin/end no allocation")
   {
-    Buffer buf = make_buffer(stream, extract_properties<TestT>::get_resource(), 0, T());
+    Buffer buf = make_buffer(stream, extract_properties<Buffer>::get_resource(), 0, T());
     CCCLRT_CHECK(buf.begin() == iterator{nullptr});
     CCCLRT_CHECK(cuda::std::as_const(buf).begin() == const_iterator{nullptr});
     CCCLRT_CHECK(buf.cbegin() == const_iterator{nullptr});
@@ -130,7 +125,7 @@ C2H_CCCLRT_TEST("cuda::buffer iterators", "[container][buffer]", test_types)
 
   SECTION("cuda::buffer::rbegin/rend no allocation")
   {
-    Buffer buf = make_buffer(stream, extract_properties<TestT>::get_resource(), 0, T());
+    Buffer buf = make_buffer(stream, extract_properties<Buffer>::get_resource(), 0, T());
     CCCLRT_CHECK(buf.rbegin() == reverse_iterator{iterator{nullptr}});
     CCCLRT_CHECK(cuda::std::as_const(buf).rbegin() == const_reverse_iterator{const_iterator{nullptr}});
     CCCLRT_CHECK(buf.crbegin() == const_reverse_iterator{const_iterator{nullptr}});

@@ -32,14 +32,23 @@ reducer = cuda.compute.make_segmented_reduce(
 
 # Get the temporary storage size.
 temp_storage_size = reducer(
-    None, d_input, d_output, 2, start_offsets, end_offsets, h_init
+    None, d_input, d_output, OpKind.PLUS, 2, start_offsets, end_offsets, h_init
 )
 
 # Allocate the temporary storage.
 d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
 # Perform the segmented reduce.
-reducer(d_temp_storage, d_input, d_output, 2, start_offsets, end_offsets, h_init)
+reducer(
+    d_temp_storage,
+    d_input,
+    d_output,
+    OpKind.PLUS,
+    2,
+    start_offsets,
+    end_offsets,
+    h_init,
+)
 
 # Verify the result.
 expected_result = np.array([6, 15], dtype=dtype)

@@ -24,7 +24,7 @@ struct A
 
 struct B
 {
-  typedef int allocator_type;
+  using allocator_type = int;
 };
 
 #if !TEST_COMPILER(NVRTC)
@@ -45,7 +45,7 @@ struct D
 struct E
 {
 private:
-  typedef int allocator_type;
+  using allocator_type = int;
 };
 
 template <bool Expected, class T, class A>

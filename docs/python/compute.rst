@@ -38,7 +38,7 @@ API conventions
 
 * **Operators** — Many algorithms accept an ``op`` parameter. This can be a built-in
   :class:`OpKind <cuda.compute.op.OpKind>` value or a
-  :ref:`user-defined function <cuda.compute.user_defined_operations>`.
+  :ref:`user-defined operator <cuda.compute.user_defined_operators>`.
   When possible, prefer built-in operators (e.g., ``OpKind.PLUS``) over the equivalent
   user-defined operation (e.g., ``lambda a, b: a + b``) for better performance.
 
@@ -56,8 +56,8 @@ to compute the sum of a sequence of integers:
    :start-after: # example-begin
    :caption: Sum reduction example.
 
-Controlling temporary memory
-++++++++++++++++++++++++++++
+Object-based API (expert mode)
+++++++++++++++++++++++++++++++
 
 Many algorithms allocate temporary device memory for intermediate results. For finer
 control over allocation—or to reuse buffers across calls—use the object-based API.
@@ -70,19 +70,40 @@ returns a reusable reduction object that lets you manage memory explicitly.
    # create a reducer object:
    reducer = cuda.compute.make_reduce_into(d_in, d_out, op, h_init)
    # get the temporary storage size by passing None as the first argument:
-   temp_storage_bytes = reducer(None, d_in, d_out, num_items, h_init)
+   temp_storage_bytes = reducer(None, d_in, d_out, op, num_items, h_init)
    # allocate the temporary storage as any array-like object
    # (e.g., CuPy array, Torch tensor):
    temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
    # perform the reduction, passing the temporary storage as the first argument:
-   reducer(temp_storage, d_in, d_out, num_items, h_init)
+   reducer(temp_storage, d_in, d_out, op, num_items, h_init)
 
-.. _cuda.compute.user_defined_operations:
+The object-based API splits the algorithm invocation into three phases,
 
-User-Defined Operations
------------------------
+1. Constructing an algorithm object
+2. Determining the amount of temporary memory needed by the computation
+3. Performing the computation
 
-A powerful feature is the ability to use algorithms with user-defined operations.
+It is important that the type of arguments passed during construction (step 1) match
+those passed during invocation (step 2 and 3). Otherwise you may see unexpected errors
+or silent bugs.
+
+- Data types of arrays/iterators must match. If you pass an array of `int32` data type
+  as the `d_in=` argument during construction of a reducer object, you must pass
+  an array of dtype `int32` when invoking it. The array can be of a different size.
+
+- Bytecode instructions of functions must match. If you pass a function/lambda for
+  the operator during construction, you must pass a function with the same bytecode
+  instructions during invocation. This means you _can_ pass a different function
+  referencing different global/closures, but the operations within the functions
+  must be the same.
+
+
+.. _cuda.compute.user_defined_operators:
+
+User-Defined Operators
+----------------------
+
+A powerful feature is the ability to use algorithms with user-defined operators.
 For example, to compute the sum of only the even values in a sequence,
 we can use :func:`reduce_into <cuda.compute.algorithms.reduce_into>` with a custom binary operation:
 
@@ -94,20 +115,19 @@ we can use :func:`reduce_into <cuda.compute.algorithms.reduce_into>` with a cust
 Features and Restrictions
 +++++++++++++++++++++++++
 
-User-defined operations are compiled into device code using
+User-defined operations are just-in-time (JIT) compiled into device code using
 `Numba CUDA <https://nvidia.github.io/numba-cuda/>`_, so they inherit many
 of the same features and restrictions as Numba CUDA functions:
 
 * `Python features <https://nvidia.github.io/numba-cuda/user/cudapysupported.html>`_
   and `atomic operations <https://nvidia.github.io/numba-cuda/user/intrinsics.html>`_
-  supported by Numba CUDA are also supported within user-defined operations.
+  supported by Numba CUDA are also supported within user-defined operators.
 * Nested functions must be decorated with ``@numba.cuda.jit``.
 * Variables captured in closures or globals follow
   `Numba CUDA semantics <https://nvidia.github.io/numba-cuda/user/globals.html>`_:
   scalars and host arrays are captured by value (as constants),
   while device arrays are captured by reference.
 
-.. _cuda.compute.iterators:
 
 Iterators
 ---------
@@ -264,6 +284,54 @@ To clear all caches and free memory:
 
 This forces recompilation on the next algorithm invocation—useful for benchmarking
 compilation time or reclaiming memory.
+
+Externally Compiled Operators
+-----------------------------
+
+:class:`RawOp <cuda.compute.op.RawOp>` can be used to directly pass compiled device code
+(LTO-IR) implementing custom operators.
+
+This is useful for users who wish to use a different compilation pipeline than the default
+used by ``cuda.compute`` (JIT compilation of Python callables using Numba CUDA).
+
+The example below shows how to compile a C++ device function
+to LTO-IR using `cuda.core <https://nvidia.github.io/cuda-python/cuda-core/latest/>`_,
+
+:func:`reduce_into <cuda.compute.algorithms.reduce_into>`:
+
+.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/raw_op/cpp_stateless.py
+   :language: python
+   :start-after: # example-begin
+
+.. important::
+
+   **Required calling convention**: Compiled functions must use untyped pointers for
+   all parameters, with manual type casting inside the function. In C++, this means
+   all arguments (and the return value) must be passed as ``void*`` pointers:
+
+   .. code-block:: cpp
+
+      extern "C" __device__ void my_binary_op(void* a, void* b, void* result) {
+          *static_cast<int*>(result) = *static_cast<int*>(a) + *static_cast<int*>(b);
+      }
+
+   You must ensure that:
+
+   * All parameters are untyped pointers with manual casting in the function body
+   * Type casts match the actual data types passed at runtime
+   * For stateful operators, state is the first parameter (also an untyped pointer)
+   * State bytes have the correct layout and alignment
+
+   Type mismatches can cause crashes, memory corruption, or silent incorrect results.
+
+If you wish to use ``cuda.compute`` solely with externally compiled operators
+(i.e., without native JIT support), you can install a
+minimal version of the `cuda-cccl` package that ships without Numba/Numba CUDA dependencies:
+
+.. code-block:: bash
+
+   pip install cuda-cccl[minimal-cu13]  # or minimal-cu12
+
 
 Examples
 --------

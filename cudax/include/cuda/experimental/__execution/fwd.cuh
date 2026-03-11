@@ -136,13 +136,13 @@ _CCCL_API _CCCL_CONSTEVAL auto get_completion_signatures();
 template <class _Sndr, class... _Env>
 using completion_signatures_of_t _CCCL_NODEBUG_ALIAS = decltype(execution::get_completion_signatures<_Sndr, _Env...>());
 
-#if _CCCL_HAS_EXCEPTIONS() && __cpp_constexpr_exceptions >= 202411L // C++26, https://wg21.link/p3068
+#if _CCCL_HAS_CONSTEXPR_EXCEPTIONS()
 template <class... _What, class... _Values>
 _CCCL_API consteval auto invalid_completion_signature(_Values... __values) -> completion_signatures<>;
-#else // ^^^ constexpr exceptions ^^^ / vvv no constexpr exceptions vvv
+#else // ^^^ _CCCL_HAS_CONSTEXPR_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_CONSTEXPR_EXCEPTIONS() vvv
 template <class... _What, class... _Values>
 _CCCL_API _CCCL_CONSTEVAL auto invalid_completion_signature(_Values...);
-#endif // ^^^ no constexpr exceptions ^^^
+#endif // ^^^ !_CCCL_HAS_CONSTEXPR_EXCEPTIONS() ^^^
 
 // handy enumerations for keeping type names readable
 enum class __disposition : int8_t

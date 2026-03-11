@@ -13,7 +13,7 @@
 // class complex
 // {
 // public:
-//   typedef T value_type;
+//   using value_type = T;
 //   ...
 // };
 
@@ -25,7 +25,7 @@
 template <class T>
 __host__ __device__ void test()
 {
-  typedef cuda::std::complex<T> C;
+  using C = cuda::std::complex<T>;
   static_assert((cuda::std::is_same<typename C::value_type, T>::value), "");
 }
 

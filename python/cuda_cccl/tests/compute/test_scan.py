@@ -339,6 +339,7 @@ def test_reverse_input_iterator(monkeypatch):
     np.testing.assert_equal(d_output.get(), expected)
 
 
+@pytest.mark.no_verify_sass(reason="LDL/STL instructions emitted for this test.")
 def test_reverse_output_iterator():
     def add_op(a, b):
         return a + b
@@ -431,4 +432,22 @@ def test_inclusive_scan_with_lambda():
     )
 
     expected = np.array([1, 3, 6, 10, 15], dtype=np.int32)
+    np.testing.assert_array_equal(d_output.get(), expected)
+
+
+@pytest.mark.parametrize("force_inclusive", [True, False])
+def test_scan_bool_maximum(force_inclusive):
+    h_init = np.array([False], dtype=np.bool_)
+    d_input = cp.array([False, True, False, True], dtype=np.bool_)
+    d_output = cp.empty_like(d_input)
+
+    scan_device(
+        d_input, d_output, len(d_input), OpKind.MAXIMUM, h_init, force_inclusive
+    )
+
+    if force_inclusive:
+        expected = np.array([False, True, True, True], dtype=np.bool_)
+    else:
+        expected = np.array([False, False, True, True], dtype=np.bool_)
+
     np.testing.assert_array_equal(d_output.get(), expected)

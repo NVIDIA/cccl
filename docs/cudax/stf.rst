@@ -972,6 +972,46 @@ perform such accesses, which may depend on the hardware (NVLINK, UVM, …)
 and the OS (WSL has limited support and lower performance when accessing
 host memory from CUDA kernels, for example).
 
+Places as container keys
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Both ``exec_place`` and ``data_place`` can be used as keys in standard
+associative containers. The library provides the required comparison and
+hash support:
+
+- **``std::map``** and **``std::set``** use ``operator<`` (strict weak
+  ordering) for keys. Both place types implement ``operator<``, so they
+  can be used as ordered map or set keys.
+
+- **``std::unordered_map``** and **``std::unordered_set``** require a
+  hash function and equality. The library specializes ``cuda::experimental::stf::hash``
+  for both place types, and both implement ``operator==``.
+
+This allows, for example, maintaining per-place handles (e.g. CUBLAS or
+CUSOLVER handles keyed by ``exec_place``) or per-place caches keyed by
+``data_place``, using either ordered or hash-based containers as needed.
+The following snippet shows lazy creation of a CUBLAS handle per execution
+place using an ``std::unordered_map`` keyed by ``exec_place``:
+
+.. code:: c++
+
+   #include <cuda/experimental/stf.cuh>
+   #include <cublas_v2.h>
+
+   using namespace cuda::experimental::stf;
+
+   cublasHandle_t& get_cublas_handle(const exec_place& ep = exec_place::current_device())
+   {
+     static std::unordered_map<exec_place, cublasHandle_t, hash<exec_place>> handles;
+     auto& h = handles[ep];
+     if (h == cublasHandle_t{})
+     {
+       exec_place_guard guard(ep);
+       cuda_safe_call(cublasCreate(&h));
+     }
+     return h;
+   }
+
 Grid of places
 ^^^^^^^^^^^^^^
 
@@ -2161,6 +2201,23 @@ management:
     // ... GPU work runs with SM affinity ...
 
     gc_place.deactivate(prev);  // Restore original context
+
+**RAII guard for scoped activation:**
+
+For exception-safe code or when you want automatic restoration, use the
+``exec_place_guard`` RAII helper:
+
+.. code:: cpp
+
+    {
+        exec_place_guard guard(exec_place::device(1));
+        // Device 1 is now active
+        // ... perform operations on device 1 ...
+    }
+    // Previous device is automatically restored when guard goes out of scope
+
+The guard automatically restores the previous execution place when it goes out
+of scope, making it useful for exception-safe code.
 
 Memory allocation with data places
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

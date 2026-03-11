@@ -29,13 +29,13 @@
 template <class T>
 struct A
 {
-  typedef T value_type;
+  using value_type = T;
 };
 
 template <class T>
 struct Alloc
 {
-  typedef T value_type;
+  using value_type = T;
 
   __host__ __device__ TEST_CONSTEXPR_CXX20 Alloc() {}
 
@@ -53,7 +53,7 @@ struct Alloc
 template <class T>
 struct B
 {
-  typedef T value_type;
+  using value_type = T;
 
   __host__ __device__ TEST_CONSTEXPR_CXX20 B(int& count)
       : count_(count)
@@ -136,8 +136,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     alloc.deallocate(a2, 1);
   }
   {
-    typedef IncompleteHolder* VT;
-    typedef A<VT> Alloc2;
+    using VT     = IncompleteHolder*;
+    using Alloc2 = A<VT>;
     Alloc2 a;
     Alloc<VT> alloc;
     VT* vt = alloc.allocate(1);

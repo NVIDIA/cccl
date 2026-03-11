@@ -25,6 +25,8 @@
 
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__internal/namespaces.h>
 #  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -34,8 +36,6 @@
 #  else
 #    include <dlfcn.h>
 #  endif
-
-#  include <stdexcept>
 
 #  include <cuda.h>
 
@@ -62,12 +62,12 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
   static auto __driver_library = ::LoadLibraryExA("nvcuda.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
   if (__driver_library == nullptr)
   {
-    ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to load nvcuda.dll");
+    _CCCL_THROW(::cuda::cuda_error, ::cudaErrorUnknown, "Failed to load nvcuda.dll");
   }
   static void* __fn = ::GetProcAddress(__driver_library, __fn_name);
   if (__fn == nullptr)
   {
-    ::cuda::__throw_cuda_error(::cudaErrorInitializationError, "Failed to get cuGetProcAddress from nvcuda.dll");
+    _CCCL_THROW(::cuda::cuda_error, ::cudaErrorInitializationError, "Failed to get cuGetProcAddress from nvcuda.dll");
   }
 #  else // ^^^ _CCCL_OS(WINDOWS) ^^^ / vvv !_CCCL_OS(WINDOWS) vvv
 #    if _CCCL_OS(ANDROID)
@@ -78,12 +78,12 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
   static void* __driver_library = ::dlopen(__driver_library_name, RTLD_NOW);
   if (__driver_library == nullptr)
   {
-    ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to load libcuda.so.1");
+    _CCCL_THROW(::cuda::cuda_error, ::cudaErrorUnknown, "Failed to load libcuda.so.1");
   }
   static void* __fn = ::dlsym(__driver_library, __fn_name);
   if (__fn == nullptr)
   {
-    ::cuda::__throw_cuda_error(::cudaErrorInitializationError, "Failed to get cuGetProcAddress from libcuda.so.1");
+    _CCCL_THROW(::cuda::cuda_error, ::cudaErrorInitializationError, "Failed to get cuGetProcAddress from libcuda.so.1");
   }
 #  endif // ^^^ !_CCCL_OS(WINDOWS) ^^^
   return reinterpret_cast<decltype(cuGetProcAddress)*>(__fn);
@@ -120,15 +120,15 @@ _CCCL_SUPPRESS_DEPRECATED_POP
   {
     if (__status == ::CUDA_ERROR_INVALID_VALUE)
     {
-      ::cuda::__throw_cuda_error(::cudaErrorInvalidValue, "Driver version is too low to use this API", __name);
+      _CCCL_THROW(::cuda::cuda_error, ::cudaErrorInvalidValue, "Driver version is too low to use this API", __name);
     }
     if (__result == ::CU_GET_PROC_ADDRESS_VERSION_NOT_SUFFICIENT)
     {
-      ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "Driver does not support this API", __name);
+      _CCCL_THROW(::cuda::cuda_error, ::cudaErrorNotSupported, "Driver does not support this API", __name);
     }
     else
     {
-      ::cuda::__throw_cuda_error(::cudaErrorUnknown, "Failed to access driver API", __name);
+      _CCCL_THROW(::cuda::cuda_error, ::cudaErrorUnknown, "Failed to access driver API", __name);
     }
   }
   return __fn;
@@ -147,7 +147,7 @@ _CCCL_HOST_API inline void __call_driver_fn(Fn __fn, const char* __err_msg, Args
   ::CUresult __status = __fn(__args...);
   if (__status != ::CUDA_SUCCESS)
   {
-    ::cuda::__throw_cuda_error(static_cast<::cudaError_t>(__status), __err_msg);
+    _CCCL_THROW(::cuda::cuda_error, static_cast<::cudaError_t>(__status), __err_msg);
   }
 }
 
@@ -623,7 +623,7 @@ _CCCL_HOST_API inline void __streamSynchronize(::CUstream __stream)
   cudaError_t __status = __streamSynchronizeNoThrow(__stream);
   if (__status != cudaSuccess)
   {
-    ::cuda::__throw_cuda_error(__status, "Failed to synchronize a stream");
+    _CCCL_THROW(::cuda::cuda_error, __status, "Failed to synchronize a stream");
   }
 }
 
@@ -988,7 +988,7 @@ __cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType 
     case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT16:
       if (__num_items > __max_size / 2)
       {
-        _CCCL_THROW(std::invalid_argument, "Number of items must be less than or equal to 2^64 / 2");
+        _CCCL_THROW(::std::invalid_argument, "Number of items must be less than or equal to 2^64 / 2");
       }
       return __num_items * 2;
     case ::CU_TENSOR_MAP_DATA_TYPE_INT32:
@@ -999,7 +999,7 @@ __cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType 
     case ::CU_TENSOR_MAP_DATA_TYPE_TFLOAT32_FTZ:
       if (__num_items > __max_size / 4)
       {
-        _CCCL_THROW(std::invalid_argument, "Number of items must be less than or equal to 2^64 / 4");
+        _CCCL_THROW(::std::invalid_argument, "Number of items must be less than or equal to 2^64 / 4");
       }
       return __num_items * 4;
     case ::CU_TENSOR_MAP_DATA_TYPE_INT64:
@@ -1007,7 +1007,7 @@ __cutensormap_size_bytes(::cuda::std::size_t __num_items, ::CUtensorMapDataType 
     case ::CU_TENSOR_MAP_DATA_TYPE_FLOAT64:
       if (__num_items > __max_size / 8)
       {
-        _CCCL_THROW(std::invalid_argument, "Number of items must be less than or equal to 2^64 / 8");
+        _CCCL_THROW(::std::invalid_argument, "Number of items must be less than or equal to 2^64 / 8");
       }
       return __num_items * 8;
 #  if _CCCL_CTK_AT_LEAST(12, 8)

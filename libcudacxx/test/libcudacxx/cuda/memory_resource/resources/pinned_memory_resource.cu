@@ -19,11 +19,11 @@
 
 #include "common_tests.cuh"
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 9)
 #  define TEST_TYPES cuda::mr::legacy_pinned_memory_resource, cuda::pinned_memory_pool_ref
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^ / vvv _CCCL_CTK_BELOW(12, 9) vvv
 #  define TEST_TYPES cuda::mr::legacy_pinned_memory_resource
-#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
+#endif // ^^^ _CCCL_CTK_BELOW(12, 9) ^^^
 
 template <typename Resource>
 void resource_static_asserts()
@@ -42,20 +42,20 @@ void resource_static_asserts()
 }
 
 template void resource_static_asserts<cuda::mr::legacy_pinned_memory_resource>();
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 9)
 template void resource_static_asserts<cuda::pinned_memory_pool_ref>();
-#endif // _CCCL_CTK_AT_LEAST(12, 6)
+#endif // _CCCL_CTK_AT_LEAST(12, 9)
 
 template <class Resource>
 Resource get_resource()
 {
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 9)
   if constexpr (cuda::std::is_same_v<Resource, cuda::pinned_memory_pool_ref>)
   {
     return cuda::pinned_default_memory_pool();
   }
   else
-#endif // _CCCL_CTK_AT_LEAST(12, 6)
+#endif // _CCCL_CTK_AT_LEAST(12, 9)
   {
     return Resource{};
   }
@@ -76,7 +76,14 @@ static void ensure_pinned_ptr(void* ptr)
 C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", TEST_TYPES)
 {
   using pinned_resource = TestType;
-  pinned_resource res   = get_resource<pinned_resource>();
+
+#if _CCCL_CTK_AT_LEAST(12, 9)
+  if (!cuda::__is_host_memory_pool_supported() && cuda::std::is_same_v<pinned_resource, cuda::pinned_memory_pool_ref>)
+  {
+    return;
+  }
+#endif // _CCCL_CTK_AT_LEAST(12, 9)
+  pinned_resource res = get_resource<pinned_resource>();
   cuda::stream stream{cuda::device_ref{0}};
 
   { // allocate_sync / deallocate_sync
@@ -224,10 +231,10 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", T
   }
 }
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 9)
 C2H_CCCLRT_TEST("pinned_memory_resource async.deallocate_sync", "[memory_resource]")
 {
   cuda::pinned_memory_pool_ref resource = cuda::pinned_default_memory_pool();
   test_deallocate_async(resource);
 }
-#endif // _CCCL_CTK_AT_LEAST(12, 6)
+#endif // _CCCL_CTK_AT_LEAST(12, 9)

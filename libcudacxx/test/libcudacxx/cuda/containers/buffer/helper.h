@@ -14,13 +14,14 @@
 #include <thrust/equal.h>
 
 #include <cuda/buffer>
+#include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/memory_pool>
 #include <cuda/std/algorithm>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
-#include "test_resources.h"
+#include <test_resources.h>
 
 // Default data to compare against
 
@@ -182,17 +183,17 @@ template <class>
 struct extract_properties;
 
 template <class T, class... Properties>
-struct extract_properties<cuda::std::tuple<T, Properties...>>
+struct extract_properties<cuda::buffer<T, Properties...>>
 {
   static auto get_resource()
   {
     if constexpr (cuda::mr::__is_host_accessible<Properties...>)
     {
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 9)
       return offset_by_alignment_resource(cuda::pinned_default_memory_pool());
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
-      return offset_by_alignment_resource(cuda::device_default_memory_pool(cuda::device_ref{0}));
-#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^ / vvv _CCCL_CTK_BELOW(12, 9) vvv
+      throw std::runtime_error("Host accessible memory pools are not supported");
+#endif // ^^^ _CCCL_CTK_BELOW(12, 9) ^^^
     }
     else
     {
@@ -200,13 +201,31 @@ struct extract_properties<cuda::std::tuple<T, Properties...>>
     }
   }
 
-  using buffer         = cuda::buffer<T, Properties...>;
-  using resource       = decltype(get_resource());
-  using iterator       = cuda::heterogeneous_iterator<T, Properties...>;
-  using const_iterator = cuda::heterogeneous_iterator<const T, Properties...>;
+  static bool is_resource_supported()
+  {
+    if constexpr (cuda::mr::__is_host_accessible<Properties...>)
+    {
+      return cuda::__is_host_memory_pool_supported();
+    }
+    else
+    {
+      // Device memory pools are always supported
+      return true;
+    }
+  }
 
-  using matching_vector   = cuda::buffer<T, other_property, Properties...>;
+  using resource = decltype(get_resource());
+
+  using matching_buffer   = cuda::buffer<T, other_property, Properties...>;
   using matching_resource = memory_resource_wrapper<other_property, Properties...>;
 };
+
+#if _CCCL_CTK_AT_LEAST(12, 9)
+using test_types = c2h::type_list<cuda::buffer<int, cuda::mr::host_accessible>,
+                                  cuda::buffer<unsigned long long, cuda::mr::device_accessible>,
+                                  cuda::buffer<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^ / vvv _CCCL_CTK_BELOW(12, 9) vvv
+using test_types = c2h::type_list<cuda::buffer<int, cuda::mr::device_accessible>>;
+#endif // ^^^ _CCCL_CTK_BELOW(12, 9) ^^^
 
 #endif // CUDA_TEST_CONTAINER_VECTOR_HELPER_H

@@ -71,6 +71,8 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -200,14 +202,59 @@ typedef struct stf_data_place_affine
   char dummy; //!< Dummy field for standard C compatibility
 } stf_data_place_affine;
 
+//! \defgroup CompositePlace Composite data places (grid + partition)
+//! \brief Types for composite data places with a user-provided partition function
+//! \{
+
+//! \brief 4D position (coordinates) for partition mapping.
+//! Layout matches C++ pos4 for use as partition function arguments/result.
+typedef struct stf_pos4
+{
+  int64_t x; //!< Coordinate along first axis
+  int64_t y; //!< Coordinate along second axis
+  int64_t z; //!< Coordinate along third axis
+  int64_t t; //!< Coordinate along fourth axis
+} stf_pos4;
+
+//! \brief 4D dimensions (extents) for partition mapping.
+//! Layout matches C++ dim4 for use as partition function arguments.
+typedef struct stf_dim4
+{
+  uint64_t x; //!< Extent along first axis
+  uint64_t y; //!< Extent along second axis
+  uint64_t z; //!< Extent along third axis
+  uint64_t t; //!< Extent along fourth axis
+} stf_dim4;
+
+//! \brief Partition (mapper) function: data coordinates -> grid position.
+//! Can be implemented in C or provided from Python via ctypes/cffi.
+//! \param data_coords Logical position in the data space
+//! \param data_dims Full shape of the data
+//! \param grid_dims Shape of the execution place grid
+//! \return Position in the place grid (which place owns this data)
+typedef stf_pos4 (*stf_get_executor_fn)(stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims);
+
+//! \brief Opaque handle for an execution place grid (e.g. one place per stream).
+typedef void* stf_exec_place_grid_handle;
+
+//! \}
+
 //! \brief Data place type discriminator
 typedef enum stf_data_place_kind
 {
   STF_DATA_PLACE_DEVICE, //!< Data on specific device memory
   STF_DATA_PLACE_HOST, //!< Data on host (CPU) memory
   STF_DATA_PLACE_MANAGED, //!< Data in CUDA managed (unified) memory
-  STF_DATA_PLACE_AFFINE //!< Data follows execution place (default)
+  STF_DATA_PLACE_AFFINE, //!< Data follows execution place (default)
+  STF_DATA_PLACE_COMPOSITE //!< Data partitioned over a grid via a partition function
 } stf_data_place_kind;
+
+//! \brief Composite data place configuration (grid + partition function)
+typedef struct stf_data_place_composite
+{
+  stf_exec_place_grid_handle grid; //!< Grid of execution places
+  stf_get_executor_fn mapper; //!< Partition function (e.g. from Python)
+} stf_data_place_composite;
 
 //! \brief Data placement specification
 //!
@@ -222,6 +269,7 @@ typedef struct stf_data_place
     stf_data_place_host host; //!< Host placement configuration
     stf_data_place_managed managed; //!< Managed memory configuration
     stf_data_place_affine affine; //!< Affine placement configuration
+    stf_data_place_composite composite; //!< Composite (grid + partition function)
   } u; //!< Configuration union
 } stf_data_place;
 
@@ -301,6 +349,58 @@ static inline struct stf_data_place make_affine_data_place()
   p.u.affine.dummy = 0; /* to avoid uninitialized memory warnings */
   return p;
 }
+
+//! \brief Create a composite data place (grid + partition function).
+//!
+//! The partition function (\p mapper) maps data coordinates to a position in the
+//! place grid. It can be implemented in C or provided from Python (e.g. ctypes).
+//! \param[out] out Composite data place (kind = STF_DATA_PLACE_COMPOSITE)
+//! \param grid Grid of execution places (from stf_exec_place_grid_from_devices or stf_exec_place_grid_create)
+//! \param mapper Partition function: (data_coords, data_dims, grid_dims) -> grid position
+//!
+//! \par Example (C):
+//! \code
+//! stf_pos4 my_mapper(stf_pos4 coords, stf_dim4 data_dims, stf_dim4 grid_dims) {
+//!   stf_pos4 p = { coords.x / ((int64_t)data_dims.x / (int64_t)grid_dims.x), 0, 0, 0 };
+//!   return p;
+//! }
+//! int devs[] = { 0, 1 };
+//! stf_exec_place_grid_handle grid = stf_exec_place_grid_from_devices(devs, 2);
+//! // Or: stf_exec_place places[] = { make_device_place(0), make_device_place(1) };
+//! //      grid = stf_exec_place_grid_create(places, 2, nullptr);
+//! stf_data_place dplace;
+//! stf_make_composite_data_place(&dplace, grid, my_mapper);
+//! stf_task_add_dep_with_dplace(task, ld, STF_RW, &dplace);
+//! \endcode
+void stf_make_composite_data_place(stf_data_place* out, stf_exec_place_grid_handle grid, stf_get_executor_fn mapper);
+
+//! \}
+
+//! \defgroup ExecPlaceGrid Execution place grid
+//! \brief Create a grid of execution places for composite data places
+//! \{
+
+//! \brief Create an execution place grid from device IDs (one place per device).
+//! Convenience for the common case; equivalent to building an array of device places
+//! and calling stf_exec_place_grid_create(places, count, nullptr).
+//! \param device_ids Array of CUDA device IDs (0-based)
+//! \param count Number of devices (must be at least 1)
+//! \return Opaque grid handle; destroy with stf_exec_place_grid_destroy()
+stf_exec_place_grid_handle stf_exec_place_grid_from_devices(const int* device_ids, size_t count);
+
+//! \brief Create an execution place grid from an array of execution places.
+//! \param places Array of execution places (e.g. from make_device_place(), make_host_place())
+//! \param count Number of places
+//! \param grid_dims Optional grid shape; if NULL, uses (count, 1, 1, 1) for a linear grid.
+//!                  Product of dimensions should equal \p count.
+//! \return Opaque grid handle; destroy with stf_exec_place_grid_destroy()
+stf_exec_place_grid_handle
+stf_exec_place_grid_create(const stf_exec_place* places, size_t count, const stf_dim4* grid_dims);
+
+//! \brief Destroy an execution place grid created with stf_exec_place_grid_from_devices() or
+//! stf_exec_place_grid_create().
+//! \param grid Grid handle (may be NULL; no-op in that case)
+void stf_exec_place_grid_destroy(stf_exec_place_grid_handle grid);
 
 //! \}
 
@@ -456,35 +556,86 @@ cudaStream_t stf_fence(stf_ctx_handle ctx);
 //!
 //! \brief Create logical data from existing memory buffer
 //!
-//! Creates logical data handle from an existing host memory buffer.
-//! STF takes ownership of data management during task execution.
+//! Creates logical data handle from existing memory buffer, assuming host data place.
+//! This is a convenience wrapper around stf_logical_data_with_place() with host placement.
 //!
 //! \param ctx Context handle
 //! \param[out] ld Pointer to receive logical data handle
-//! \param addr Pointer to existing data buffer
+//! \param addr Pointer to existing data buffer (assumed to be host memory)
 //! \param sz Size of data in bytes
 //!
 //! \pre ctx must be valid context handle
 //! \pre ld must not be NULL
-//! \pre addr must not be NULL
+//! \pre addr must not be NULL and point to host-accessible memory
 //! \pre sz must be greater than 0
 //! \post *ld contains valid logical data handle
 //!
-//! \note Original data pointer should not be accessed during task execution
-//! \note Data will be written back when logical data is destroyed or context finalized
+//! \note This function assumes host memory. For device/managed memory, use stf_logical_data_with_place()
+//! \note Equivalent to: stf_logical_data_with_place(ctx, ld, addr, sz, make_host_data_place())
 //!
 //! \par Example:
 //! \code
 //! float data[1024];
 //! stf_logical_data_handle ld;
-//! stf_logical_data(ctx, &ld, data, sizeof(data));
+//! stf_logical_data(ctx, &ld, data, sizeof(data));  // Assumes host memory
 //! // ... use in tasks ...
 //! stf_logical_data_destroy(ld);
 //! \endcode
 //!
-//! \see stf_logical_data_empty(), stf_logical_data_destroy()
+//! \see stf_logical_data_with_place(), stf_logical_data_empty(), stf_logical_data_destroy()
 
 void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz);
+
+//!
+//! \brief Create logical data handle from address with data place specification
+//!
+//! Creates logical data handle from existing memory buffer, explicitly specifying where
+//! the memory is located (host, device, managed, etc.). This is the primary and recommended
+//! logical data creation function as it provides STF with essential memory location information
+//! for optimal data movement and placement strategies.
+//!
+//! \param ctx Context handle
+//! \param[out] ld Pointer to receive logical data handle
+//! \param addr Pointer to existing memory buffer
+//! \param sz Size of buffer in bytes
+//! \param dplace Data place specifying memory location
+//!
+//! \pre ctx must be valid context handle
+//! \pre ld must be valid pointer to logical data handle pointer
+//! \pre addr must point to valid memory of at least sz bytes
+//! \pre sz must be greater than 0
+//! \pre dplace must be valid data place (not invalid)
+//!
+//! \post *ld contains valid logical data handle on success
+//! \post Caller owns returned handle (must call stf_logical_data_destroy())
+//!
+//! \par Examples:
+//! \code
+//! // GPU device memory (recommended for CUDA arrays)
+//! float* device_ptr;
+//! cudaMalloc(&device_ptr, 1000 * sizeof(float));
+//! stf_data_place dplace = make_device_data_place(0);
+//! stf_logical_data_handle ld;
+//! stf_logical_data_with_place(ctx, &ld, device_ptr, 1000 * sizeof(float), dplace);
+//!
+//! // Host memory
+//! float* host_data = new float[1000];
+//! stf_data_place host_place = make_host_data_place();
+//! stf_logical_data_handle ld_host;
+//! stf_logical_data_with_place(ctx, &ld_host, host_data, 1000 * sizeof(float), host_place);
+//!
+//! // Managed memory
+//! float* managed_ptr;
+//! cudaMallocManaged(&managed_ptr, 1000 * sizeof(float));
+//! stf_data_place managed_place = make_managed_data_place();
+//! stf_logical_data_handle ld_managed;
+//! stf_logical_data_with_place(ctx, &ld_managed, managed_ptr, 1000 * sizeof(float), managed_place);
+//! \endcode
+//!
+//! \see make_device_data_place(), make_host_data_place(), make_managed_data_place()
+
+void stf_logical_data_with_place(
+  stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz, stf_data_place dplace);
 
 //!
 //! \brief Set symbolic name for logical data

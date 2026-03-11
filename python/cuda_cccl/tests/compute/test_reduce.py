@@ -628,6 +628,7 @@ def test_reduce_invalid_stream():
             None,
             d_in=d_in,
             d_out=d_out,
+            op=add_op,
             num_items=d_in.size,
             h_init=h_init,
             stream=Stream1(),
@@ -640,6 +641,7 @@ def test_reduce_invalid_stream():
             None,
             d_in=d_in,
             d_out=d_out,
+            op=add_op,
             num_items=d_in.size,
             h_init=h_init,
             stream=Stream2(),
@@ -650,6 +652,7 @@ def test_reduce_invalid_stream():
             None,
             d_in=d_in,
             d_out=d_out,
+            op=add_op,
             num_items=d_in.size,
             h_init=h_init,
             stream=Stream3(),
@@ -869,3 +872,15 @@ def test_reduce_with_not_guaranteed_determinism(floating_array):
         h_init,
         determinism=Determinism.NOT_GUARANTEED,
     )
+
+
+def test_reduce_bool():
+    h_init = np.array([False])
+    d_input = cp.array([True, False, True])
+    d_output = cp.empty_like(d_input, shape=(1,))
+
+    # Perform the reduction.
+    cuda.compute.reduce_into(d_input, d_output, OpKind.MAXIMUM, len(d_input), h_init)
+
+    expected = True
+    assert d_output.get()[0] == expected

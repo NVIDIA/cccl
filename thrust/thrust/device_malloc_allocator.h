@@ -1,18 +1,5 @@
-/*
- *  Copyright 2008-2018 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
 
 /*! \file
  *  \brief An allocator which allocates storage with \p device_malloc.
@@ -34,8 +21,10 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 
-#include <cuda/std/__new/bad_alloc.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/limits>
+
+#include <new>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -166,7 +155,7 @@ public:
   {
     if (cnt > this->max_size())
     {
-      ::cuda::std::__throw_bad_alloc();
+      _CCCL_THROW(::std::bad_alloc);
     } // end if
 
     return pointer(device_malloc<T>(cnt));

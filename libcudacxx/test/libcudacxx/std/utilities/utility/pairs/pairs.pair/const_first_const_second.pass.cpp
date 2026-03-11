@@ -60,13 +60,13 @@ __host__ __device__ void test_sfinae()
 int main(int, char**)
 {
   {
-    typedef cuda::std::pair<float, short*> P;
+    using P = cuda::std::pair<float, short*>;
     P p(3.5f, 0);
     assert(p.first == 3.5f);
     assert(p.second == nullptr);
   }
   {
-    typedef cuda::std::pair<ImplicitT, int> P;
+    using P = cuda::std::pair<ImplicitT, int>;
     P p(1, 2);
     assert(p.first.value == 1);
     assert(p.second == 2);
@@ -83,7 +83,7 @@ int main(int, char**)
   }
 
   {
-    typedef cuda::std::pair<float, short*> P;
+    using P = cuda::std::pair<float, short*>;
     constexpr P p(3.5f, 0);
     static_assert(p.first == 3.5f, "");
     static_assert(p.second == nullptr, "");

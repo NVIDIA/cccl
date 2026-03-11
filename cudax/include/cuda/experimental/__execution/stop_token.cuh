@@ -35,7 +35,7 @@
 
 #if __has_include(<stop_token>) && __cpp_lib_jthread >= 201911
 #  include <stop_token>
-#endif
+#endif // __has_include(<stop_token>) && __cpp_lib_jthread >= 201911
 
 #include <cuda/experimental/__execution/prologue.cuh>
 

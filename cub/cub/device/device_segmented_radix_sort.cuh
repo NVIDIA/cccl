@@ -18,8 +18,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/choose_offset.cuh>
-#include <cub/device/dispatch/dispatch_radix_sort.cuh>
+#include <cub/device/dispatch/dispatch_segmented_radix_sort.cuh>
 
 CUB_NAMESPACE_BEGIN
 
@@ -69,6 +68,9 @@ public:
 
   //! @rst
   //! Sorts segments of key-value pairs into ascending order. (``~2N`` auxiliary storage required)
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The contents of the input data are not altered by the sorting operation
   //! - When input a contiguous sequence of segments, a single sequence
@@ -223,28 +225,26 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DispatchSegmentedRadixSort<
-      SortOrder::Ascending,
-      KeyT,
-      ValueT,
-      BeginOffsetIteratorT,
-      EndOffsetIteratorT,
-      SegmentSizeT>::Dispatch(d_temp_storage,
-                              temp_storage_bytes,
-                              d_keys,
-                              d_values,
-                              num_items,
-                              num_segments,
-                              d_begin_offsets,
-                              d_end_offsets,
-                              begin_bit,
-                              end_bit,
-                              false,
-                              stream);
+    return detail::radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      begin_bit,
+      end_bit,
+      false,
+      stream);
   }
 
   //! @rst
   //! Sorts segments of key-value pairs into ascending order. (``~N`` auxiliary storage required)
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers. Each pair is managed by a DoubleBuffer
@@ -404,28 +404,26 @@ public:
     // Signed integer type for global offsets
     using SegmentSizeT = ::cuda::std::int32_t;
 
-    return DispatchSegmentedRadixSort<
-      SortOrder::Ascending,
-      KeyT,
-      ValueT,
-      BeginOffsetIteratorT,
-      EndOffsetIteratorT,
-      SegmentSizeT>::Dispatch(d_temp_storage,
-                              temp_storage_bytes,
-                              d_keys,
-                              d_values,
-                              num_items,
-                              num_segments,
-                              d_begin_offsets,
-                              d_end_offsets,
-                              begin_bit,
-                              end_bit,
-                              true,
-                              stream);
+    return detail::radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      begin_bit,
+      end_bit,
+      true,
+      stream);
   }
 
   //! @rst
   //! Sorts segments of key-value pairs into descending order. (``~2N`` auxiliary storage required).
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The contents of the input data are not altered by the sorting operation
   //! - When input a contiguous sequence of segments, a single sequence
@@ -585,28 +583,26 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DispatchSegmentedRadixSort<
-      SortOrder::Descending,
-      KeyT,
-      ValueT,
-      BeginOffsetIteratorT,
-      EndOffsetIteratorT,
-      SegmentSizeT>::Dispatch(d_temp_storage,
-                              temp_storage_bytes,
-                              d_keys,
-                              d_values,
-                              num_items,
-                              num_segments,
-                              d_begin_offsets,
-                              d_end_offsets,
-                              begin_bit,
-                              end_bit,
-                              false,
-                              stream);
+    return detail::radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      begin_bit,
+      end_bit,
+      false,
+      stream);
   }
 
   //! @rst
   //! Sorts segments of key-value pairs into descending order. (``~N`` auxiliary storage required).
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
@@ -770,24 +766,19 @@ public:
     // Signed integer type for global offsets
     using SegmentSizeT = ::cuda::std::int32_t;
 
-    return DispatchSegmentedRadixSort<
-      SortOrder::Descending,
-      KeyT,
-      ValueT,
-      BeginOffsetIteratorT,
-      EndOffsetIteratorT,
-      SegmentSizeT>::Dispatch(d_temp_storage,
-                              temp_storage_bytes,
-                              d_keys,
-                              d_values,
-                              num_items,
-                              num_segments,
-                              d_begin_offsets,
-                              d_end_offsets,
-                              begin_bit,
-                              end_bit,
-                              true,
-                              stream);
+    return detail::radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      begin_bit,
+      end_bit,
+      true,
+      stream);
   }
 
   //! @}
@@ -796,6 +787,9 @@ public:
 
   //! @rst
   //! Sorts segments of keys into ascending order. (``~2N`` auxiliary storage required)
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The contents of the input data are not altered by the sorting operation
   //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
@@ -938,28 +932,26 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DispatchSegmentedRadixSort<
-      SortOrder::Ascending,
-      KeyT,
-      NullType,
-      BeginOffsetIteratorT,
-      EndOffsetIteratorT,
-      SegmentSizeT>::Dispatch(d_temp_storage,
-                              temp_storage_bytes,
-                              d_keys,
-                              d_values,
-                              num_items,
-                              num_segments,
-                              d_begin_offsets,
-                              d_end_offsets,
-                              begin_bit,
-                              end_bit,
-                              false,
-                              stream);
+    return detail::radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      begin_bit,
+      end_bit,
+      false,
+      stream);
   }
 
   //! @rst
   //! Sorts segments of keys into ascending order. (``~N`` auxiliary storage required).
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
@@ -1111,28 +1103,26 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return DispatchSegmentedRadixSort<
-      SortOrder::Ascending,
-      KeyT,
-      NullType,
-      BeginOffsetIteratorT,
-      EndOffsetIteratorT,
-      SegmentSizeT>::Dispatch(d_temp_storage,
-                              temp_storage_bytes,
-                              d_keys,
-                              d_values,
-                              num_items,
-                              num_segments,
-                              d_begin_offsets,
-                              d_end_offsets,
-                              begin_bit,
-                              end_bit,
-                              true,
-                              stream);
+    return detail::radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      begin_bit,
+      end_bit,
+      true,
+      stream);
   }
 
   //! @rst
   //! Sorts segments of keys into descending order. (``~2N`` auxiliary storage required).
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The contents of the input data are not altered by the sorting operation
   //! - When input a contiguous sequence of segments, a single sequence
@@ -1275,28 +1265,26 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DispatchSegmentedRadixSort<
-      SortOrder::Descending,
-      KeyT,
-      NullType,
-      BeginOffsetIteratorT,
-      EndOffsetIteratorT,
-      SegmentSizeT>::Dispatch(d_temp_storage,
-                              temp_storage_bytes,
-                              d_keys,
-                              d_values,
-                              num_items,
-                              num_segments,
-                              d_begin_offsets,
-                              d_end_offsets,
-                              begin_bit,
-                              end_bit,
-                              false,
-                              stream);
+    return detail::radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      begin_bit,
+      end_bit,
+      false,
+      stream);
   }
 
   //! @rst
   //! Sorts segments of keys into descending order. (``~N`` auxiliary storage required).
+  //!
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
@@ -1446,24 +1434,19 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return DispatchSegmentedRadixSort<
-      SortOrder::Descending,
-      KeyT,
-      NullType,
-      BeginOffsetIteratorT,
-      EndOffsetIteratorT,
-      SegmentSizeT>::Dispatch(d_temp_storage,
-                              temp_storage_bytes,
-                              d_keys,
-                              d_values,
-                              num_items,
-                              num_segments,
-                              d_begin_offsets,
-                              d_end_offsets,
-                              begin_bit,
-                              end_bit,
-                              true,
-                              stream);
+    return detail::radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_values,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      begin_bit,
+      end_bit,
+      true,
+      stream);
   }
 
   //! @}
