@@ -15,6 +15,8 @@
 from __future__ import annotations
 
 import importlib
+from functools import lru_cache
+from pathlib import Path
 
 from cuda.cccl._cuda_version_utils import detect_cuda_version, get_recommended_extra
 from cuda.pathfinder import (  # type: ignore[import-not-found]
@@ -77,8 +79,6 @@ globals().update(bindings_module.__dict__)
 #       └── cccl/
 #           └── libcccl.c.experimental.stf.so
 # ---------------------------------------------------------------------------
-from functools import lru_cache
-from pathlib import Path
 
 # Directory that contains the compiled extension (e.g. .../cuda/stf/cu13/)
 _ext_dir = Path(bindings_module.__file__).resolve().parent
