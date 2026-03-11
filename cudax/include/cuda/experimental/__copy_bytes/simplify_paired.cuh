@@ -45,8 +45,11 @@ template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_
 [[nodiscard]] _CCCL_HOST_API __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>
 __reverse_modes(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __input) noexcept
 {
-  __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank> __result{__input.__data, __input.__rank, {}, {}};
-  for (::cuda::std::size_t __i = 0; __i < __input.__rank; ++__i)
+  using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
+  using __rank_t       = typename __raw_tensor_t::__rank_t;
+  __raw_tensor_t __result{__input.__data, __input.__rank, {}, {}};
+  _CCCL_ASSERT(__input.__rank > 0, "cudax::reverse_modes: input tensor must have rank > 0");
+  for (__rank_t __i = 0; __i < __input.__rank; ++__i)
   {
     const auto __j          = __input.__rank - 1 - __i;
     __result.__extents[__i] = __input.__extents[__j];
@@ -67,21 +70,28 @@ template <typename _ExtentT, typename _StrideT, typename _TpSrc, typename _TpDst
 _CCCL_HOST_API void __sort_by_stride_paired(__raw_tensor<_ExtentT, _StrideT, _TpSrc, _MaxRank>& __src,
                                             __raw_tensor<_ExtentT, _StrideT, _TpDst, _MaxRank>& __dst) noexcept
 {
-  namespace cudax = ::cuda::experimental;
-  using ::cuda::std::size_t;
-  using __unsigned_extent_t = ::cuda::std::make_unsigned_t<_ExtentT>;
+  namespace cudax           = ::cuda::experimental;
+  using __raw_tensor_t      = __raw_tensor<_ExtentT, _StrideT, _TpSrc, _MaxRank>;
+  using __unsigned_extent_t = typename __raw_tensor_t::__unsigned_extent_t;
+  using __rank_t            = typename __raw_tensor_t::__rank_t;
   using __mode_t            = ::cuda::std::tuple<__unsigned_extent_t, _StrideT, _StrideT>;
+  const auto __rank         = __src.__rank;
   _CCCL_ASSERT(cudax::__same_extents(__src, __dst), "Source and destination tensors must have the same extents");
   ::cuda::std::array<__mode_t, _MaxRank> __modes{};
-  const auto __rank = __src.__rank;
-  for (size_t __i = 0; __i < __rank; ++__i)
+  for (__rank_t __i = 0; __i < __rank; ++__i)
   {
     __modes[__i] = {__src.__extents[__i], __src.__strides[__i], __dst.__strides[__i]};
   }
   ::cuda::std::stable_sort(__modes.begin(), __modes.begin() + __rank, [](const __mode_t& __lhs, const __mode_t& __rhs) {
-    return cudax::__abs_integer(::cuda::std::get<2>(__lhs)) < cudax::__abs_integer(::cuda::std::get<2>(__rhs));
+    const auto __src_lhs = ::cuda::std::get<1>(__lhs);
+    const auto __src_rhs = ::cuda::std::get<1>(__rhs);
+    const auto __dst_lhs = ::cuda::std::get<2>(__lhs);
+    const auto __dst_rhs = ::cuda::std::get<2>(__rhs);
+    return cudax::__abs_integer(__src_lhs) < cudax::__abs_integer(__src_rhs)
+        || (cudax::__abs_integer(__src_lhs) == cudax::__abs_integer(__src_rhs)
+            && cudax::__abs_integer(__dst_lhs) < cudax::__abs_integer(__dst_rhs));
   });
-  for (size_t __i = 0; __i < __rank; ++__i)
+  for (__rank_t __i = 0; __i < __rank; ++__i)
   {
     ::cuda::std::tie(__src.__extents[__i], __src.__strides[__i], __dst.__strides[__i]) = __modes[__i];
   }
@@ -101,9 +111,11 @@ template <typename _ExtentT, typename _StrideT, typename _TpSrc, typename _TpDst
 _CCCL_HOST_API void __flip_negative_strides_paired(__raw_tensor<_ExtentT, _StrideT, _TpSrc, _MaxRank>& __src,
                                                    __raw_tensor<_ExtentT, _StrideT, _TpDst, _MaxRank>& __dst) noexcept
 {
+  using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _TpSrc, _MaxRank>;
+  using __rank_t       = typename __raw_tensor_t::__rank_t;
   _CCCL_ASSERT(::cuda::experimental::__same_extents(__src, __dst),
-               "Source and destination tensors must have the same extents");
-  for (::cuda::std::size_t __i = 0; __i < __src.__rank; ++__i)
+               "cudax::flip_negative_strides_paired: Source and destination tensors must have the same extents");
+  for (__rank_t __i = 0; __i < __src.__rank; ++__i)
   {
     if (__src.__strides[__i] < 0 && __dst.__strides[__i] < 0)
     {
@@ -137,24 +149,26 @@ _CCCL_HOST_API void __coalesce_paired(__raw_tensor<_ExtentT, _StrideT, _TpSrc, _
   {
     return;
   }
-  ::cuda::std::size_t __out = 1;
-  for (::cuda::std::size_t __i = 1; __i < __src.__rank; ++__i)
+  using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _TpSrc, _MaxRank>;
+  using __rank_t       = typename __raw_tensor_t::__rank_t;
+  __rank_t __out_r     = 1;
+  for (__rank_t __i = 1; __i < __src.__rank; ++__i)
   {
-    const auto __prev_extent    = static_cast<_StrideT>(__src.__extents[__out - 1]);
-    const bool __src_contiguous = (__prev_extent * __src.__strides[__out - 1] == __src.__strides[__i]);
-    const bool __dst_contiguous = (__prev_extent * __dst.__strides[__out - 1] == __dst.__strides[__i]);
+    const auto __prev_extent    = static_cast<_StrideT>(__src.__extents[__out_r - 1]);
+    const bool __src_contiguous = (__prev_extent * __src.__strides[__out_r - 1] == __src.__strides[__i]);
+    const bool __dst_contiguous = (__prev_extent * __dst.__strides[__out_r - 1] == __dst.__strides[__i]);
     if (__src_contiguous && __dst_contiguous)
     {
-      __src.__extents[__out - 1] *= __src.__extents[__i];
+      __src.__extents[__out_r - 1] *= __src.__extents[__i];
       continue;
     }
-    __src.__extents[__out] = __src.__extents[__i];
-    __src.__strides[__out] = __src.__strides[__i];
-    __dst.__strides[__out] = __dst.__strides[__i];
-    ++__out;
+    __src.__extents[__out_r] = __src.__extents[__i];
+    __src.__strides[__out_r] = __src.__strides[__i];
+    __dst.__strides[__out_r] = __dst.__strides[__i];
+    ++__out_r;
   }
-  __src.__rank    = __out;
-  __dst.__rank    = __out;
+  __src.__rank    = __out_r;
+  __dst.__rank    = __out_r;
   __dst.__extents = __src.__extents;
 }
 } // namespace cuda::experimental

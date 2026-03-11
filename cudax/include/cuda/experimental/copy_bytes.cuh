@@ -8,9 +8,19 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_COPY_BYTES___
-#define __CUDAX_COPY_BYTES___
+#ifndef __CUDAX_COPY_BYTES_CUH
+#define __CUDAX_COPY_BYTES_CUH
 
-#include <cuda/experimental/__copy/copy_bytes.cuh>
+#include <cuda/std/detail/__config>
 
-#endif // __CUDAX_COPY_BYTES___
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/experimental/__copy_bytes/mdspan_d2h_h2d.cuh>
+
+#endif // __CUDAX_COPY_BYTES_CUH

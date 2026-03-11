@@ -61,7 +61,9 @@ __same_extents(const __raw_tensor<_ExtentTIn, _StrideTIn, _TpIn, _MaxRankIn>& __
   {
     return false;
   }
-  for (::cuda::std::size_t __i = 0; __i < __tensor_in.__rank; ++__i)
+  using __raw_tensor_t = __raw_tensor<_ExtentTIn, _StrideTIn, _TpIn, _MaxRankIn>;
+  using __rank_t       = typename __raw_tensor_t::__rank_t;
+  for (__rank_t __i = 0; __i < __tensor_in.__rank; ++__i)
   {
     if (__tensor_in.__extents[__i] != __tensor_out.__extents[__i])
     {
@@ -80,7 +82,8 @@ __same_extents(const __raw_tensor<_ExtentTIn, _StrideTIn, _TpIn, _MaxRankIn>& __
 template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
 [[nodiscard]] _CCCL_HOST_API bool __has_no_extent1_modes(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor) noexcept
 {
-  _CCCL_ASSERT(::cuda::in_range(__tensor.__rank, ::cuda::std::size_t{0}, _MaxRank), "Invalid tensor rank");
+  _CCCL_ASSERT(::cuda::in_range(__tensor.__rank, ::cuda::std::size_t{0}, _MaxRank),
+               "cudax::has_no_extent1_modes: Invalid tensor rank");
   // clang-format off
   return ::cuda::std::all_of(__tensor.__extents.cbegin(), __tensor.__extents.cbegin() + __tensor.__rank,
     [](auto __extent) {
@@ -89,7 +92,7 @@ template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank
   ); // clang-format on
 }
 
-//! @brief Check whether the first `__rank` strides are in non-descending order.
+//! @brief Check whether the first `__rank` strides are in ascending order.
 //!
 //! @pre `__tensor.__rank` is in [0, _MaxRank].
 //!
@@ -116,13 +119,14 @@ template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_
 [[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>
 __sort_by_stride(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
 {
-  namespace cudax = ::cuda::experimental;
-  using ::cuda::std::size_t;
-  using __unsigned_extent_t = typename __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>::__unsigned_extent_t;
+  namespace cudax           = ::cuda::experimental;
+  using __raw_tensor_t      = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
+  using __unsigned_extent_t = typename __raw_tensor_t::__unsigned_extent_t;
+  using __rank_t            = typename __raw_tensor_t::__rank_t;
   using __mode_t            = ::cuda::std::tuple<__unsigned_extent_t, _StrideT>;
   const auto __rank         = __tensor.__rank;
   ::cuda::std::array<__mode_t, _MaxRank> __modes{};
-  for (size_t __i = 0; __i < __rank; ++__i)
+  for (__rank_t __i = 0; __i < __rank; ++__i)
   {
     __modes[__i] = {__tensor.__extents[__i], __tensor.__strides[__i]};
   }
@@ -130,7 +134,7 @@ __sort_by_stride(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor
     return cudax::__abs_integer(::cuda::std::get<1>(__lhs)) < cudax::__abs_integer(::cuda::std::get<1>(__rhs));
   });
   __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank> __result{__tensor.__data, __rank};
-  for (size_t __i = 0; __i < __rank; ++__i)
+  for (__rank_t __i = 0; __i < __rank; ++__i)
   {
     ::cuda::std::tie(__result.__extents[__i], __result.__strides[__i]) = __modes[__i];
   }
@@ -155,19 +159,21 @@ template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _Acc
   if constexpr (_Extents::rank() > 0)
   {
     namespace cudax       = ::cuda::experimental;
-    const auto __tensor   = cudax::__to_raw_tensor(__mdspan, __remove_extent1);
+    const auto __tensor   = cudax::__to_raw_tensor(__mdspan);
     const auto __sorted   = cudax::__sort_by_stride(__tensor);
     using __stride_t      = decltype(__sorted.__strides[0]);
+    using __rank_t        = typename _Extents::rank_type;
     const auto& __extents = __sorted.__extents;
     const auto& __strides = __sorted.__strides;
-    for (::cuda::std::size_t __i = 0; __i < __sorted.__rank; ++__i)
+    const auto __rank     = __sorted.__rank;
+    for (__rank_t __i = 0; __i < __rank; ++__i)
     {
       if (__extents[__i] > 1 && __strides[__i] == 0)
       {
         return true;
       }
     }
-    for (::cuda::std::size_t __i = 0; __i + 1 < __sorted.__rank; ++__i)
+    for (__rank_t __i = 0; __i + 1 < __rank; ++__i)
     {
       const auto __extent = static_cast<__stride_t>(__extents[__i]);
       if (__extent * cudax::__abs_integer(__strides[__i]) > cudax::__abs_integer(__strides[__i + 1]))

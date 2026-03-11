@@ -35,10 +35,11 @@ namespace cuda::experimental
 template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
 struct __raw_tensor
 {
+  using __rank_t            = ::cuda::std::size_t;
   using __unsigned_extent_t = ::cuda::std::make_unsigned_t<_ExtentT>;
 
   _Tp* __data;
-  ::cuda::std::size_t __rank;
+  __rank_t __rank;
   ::cuda::std::array<__unsigned_extent_t, _MaxRank> __extents;
   ::cuda::std::array<_StrideT, _MaxRank> __strides;
 };

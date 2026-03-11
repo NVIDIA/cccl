@@ -68,23 +68,28 @@ _CCCL_HOST_API void __copy_bytes_impl(
 {
   namespace cudax = ::cuda::experimental;
   static_assert(::cuda::std::is_same_v<::cuda::std::remove_cv_t<_TpIn>, ::cuda::std::remove_cv_t<_TpOut>>,
-                "TpIn and TpOut must be the same type");
+                "cudax::copy_bytes: TpIn and TpOut must be the same type");
   static_assert(::cuda::std::is_trivially_copyable_v<_TpIn>, "TpIn must be trivially copyable");
   static_assert(!::cuda::std::is_const_v<_TpOut>, "TpOut must not be const");
   static_assert(::cuda::__is_cuda_mdspan_layout_v<_LayoutPolicyIn>,
-                "LayoutPolicyIn must be a predefined layout policy");
+                "cudax::copy_bytes: LayoutPolicyIn must be a predefined layout policy");
   static_assert(::cuda::__is_cuda_mdspan_layout_v<_LayoutPolicyOut>,
-                "LayoutPolicyOut must be a predefined layout policy");
+                "cudax::copy_bytes: LayoutPolicyOut must be a predefined layout policy");
   using __default_accessor_in  = ::cuda::std::default_accessor<_TpIn>;
   using __default_accessor_out = ::cuda::std::default_accessor<_TpOut>;
   static_assert(::cuda::std::is_convertible_v<_AccessorPolicyIn, __default_accessor_in>,
-                "AccessorPolicyIn must be convertible to cuda::std::default_accessor");
+                "cudax::copy_bytes: AccessorPolicyIn must be convertible to cuda::std::default_accessor");
   static_assert(::cuda::std::is_convertible_v<_AccessorPolicyOut, __default_accessor_out>,
-                "AccessorPolicyOut must be convertible to cuda::std::default_accessor");
+                "cudax::copy_bytes: AccessorPolicyOut must be convertible to cuda::std::default_accessor");
+  if (__stream.get() == nullptr)
+  {
+    _CCCL_THROW(::std::invalid_argument, "cudax::copy_bytes: stream must not be nullptr");
+  }
   if (__src.size() != __dst.size())
   {
-    _CCCL_THROW(::std::invalid_argument, "mdspans must have the same size");
+    _CCCL_THROW(::std::invalid_argument, "cudax::copy_bytes: mdspans must have the same size");
   }
+
   const auto __tensor_size = __src.size();
   if (__tensor_size == 0)
   {
@@ -92,54 +97,59 @@ _CCCL_HOST_API void __copy_bytes_impl(
   }
   if (__src.data_handle() == nullptr || __dst.data_handle() == nullptr)
   {
-    _CCCL_THROW(::std::invalid_argument, "mdspan data handle must not be nullptr");
+    _CCCL_THROW(::std::invalid_argument, "cudax::copy_bytes: mdspan data handle must not be nullptr");
   }
   if (!::cuda::std::is_sufficiently_aligned<alignof(_TpIn)>(__src.data_handle()))
   {
-    _CCCL_THROW(::std::invalid_argument, "source mdspan must be sufficiently aligned");
+    _CCCL_THROW(::std::invalid_argument, "cudax::copy_bytes: source mdspan must be sufficiently aligned");
   }
   if (!::cuda::std::is_sufficiently_aligned<alignof(_TpOut)>(__dst.data_handle()))
   {
-    _CCCL_THROW(::std::invalid_argument, "destination mdspan must be sufficiently aligned");
+    _CCCL_THROW(::std::invalid_argument, "cudax::copy_bytes: destination mdspan must be sufficiently aligned");
   }
   if (cudax::__has_interleaved_stride_order(__dst))
   {
-    _CCCL_THROW(::std::invalid_argument, "destination mdspan must not have interleaved stride order");
+    _CCCL_THROW(::std::invalid_argument,
+                "cudax::copy_bytes: destination mdspan must not have interleaved stride order");
   }
-  if (__tensor_size == 1)
+
+  if (__tensor_size == 1) // rank == 0 also falls into this case
   {
     ::cuda::__driver::__memcpyAsync(__dst.data_handle(), __src.data_handle(), sizeof(_TpIn), __stream.get());
     return;
   }
   if constexpr (_ExtentsIn::rank() > 0 && _ExtentsOut::rank() > 0)
   {
-    using ::cuda::std::size_t;
     using __extent_t = ::cuda::std::common_type_t<typename _ExtentsIn::index_type, typename _ExtentsOut::index_type>;
     using __stride_t = ::cuda::std::common_type_t<cudax::__mdspan_stride_t<_ExtentsIn, _LayoutPolicyIn>,
                                                   cudax::__mdspan_stride_t<_ExtentsOut, _LayoutPolicyOut>>;
     constexpr auto __max_rank = ::cuda::std::max(_ExtentsIn::rank(), _ExtentsOut::rank());
-    const auto __src_raw      = cudax::__to_raw_tensor<__extent_t, __stride_t, __max_rank>(__src, __remove_extent1);
-    const auto __dst_raw      = cudax::__to_raw_tensor<__extent_t, __stride_t, __max_rank>(__dst, __remove_extent1);
+    const auto __src_raw      = cudax::__to_raw_tensor<__extent_t, __stride_t, __max_rank>(__src);
+    const auto __dst_raw      = cudax::__to_raw_tensor<__extent_t, __stride_t, __max_rank>(__dst);
     if (!cudax::__same_extents(__src_raw, __dst_raw))
     {
-      _CCCL_THROW(::std::invalid_argument, "mdspans must have the same extents (after removing singleton dimensions)");
+      _CCCL_THROW(::std::invalid_argument,
+                  "cudax::copy_bytes: mdspans must have the same extents (after removing singleton dimensions)");
     }
+
     auto __src_simplified = __src_raw;
     auto __dst_simplified = __dst_raw;
     cudax::__sort_by_stride_paired(__src_simplified, __dst_simplified);
     cudax::__flip_negative_strides_paired(__src_simplified, __dst_simplified);
     cudax::__coalesce_paired(__src_simplified, __dst_simplified);
+
     using __unsigned_extent_t = typename decltype(__src_simplified)::__unsigned_extent_t;
     const bool __both_stride1 = (__src_simplified.__strides[0] == 1) && (__dst_simplified.__strides[0] == 1);
     const __unsigned_extent_t __tile_size = __both_stride1 ? __src_simplified.__extents[0] : __unsigned_extent_t{1};
     const auto __src_iter                 = (__tile_size > 1) ? __src_simplified : cudax::__reverse_modes(__src_raw);
     const auto __dst_iter                 = (__tile_size > 1) ? __dst_simplified : cudax::__reverse_modes(__dst_raw);
 
-    const size_t __num_tiles  = __tensor_size / __tile_size;
-    const size_t __copy_bytes = __tile_size * sizeof(_TpIn);
-    _CCCL_ASSERT(__tensor_size % __tile_size == 0, "tensor size must be divisible by tile size");
+    const auto __num_tiles  = __tensor_size / __tile_size;
+    const auto __copy_bytes = __tile_size * sizeof(_TpIn);
+    _CCCL_ASSERT(__tensor_size % __tile_size == 0, "cudax::copy_bytes: tensor size must be divisible by tile size");
     __tile_iterator_linearized<__extent_t, __stride_t, _TpIn, __max_rank> __src_tiles_iterator(__src_iter, __tile_size);
     __tile_iterator_linearized<__extent_t, __stride_t, _TpOut, __max_rank> __dst_tiles_iterator(__dst_iter, __tile_size);
+
     cudax::__memcpy_batch_tiles(
       __src_tiles_iterator,
       __dst_tiles_iterator,
