@@ -31,8 +31,8 @@ bool equal(execution_policy<DerivedPolicy>& exec [[maybe_unused]],
            InputIterator1 last1,
            InputIterator2 first2)
 {
-  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator1, ::hpx::forward_traversal_tag>
-                && ::hpx::traits::belongs_to_iterator_traversal_v<InputIterator2, ::hpx::forward_traversal_tag>)
+  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator1>
+                && ::hpx::traits::is_forward_iterator_v<InputIterator2>)
   {
     return ::hpx::equal(hpx::detail::to_hpx_execution_policy(exec),
                         ::thrust::try_unwrap_contiguous_iterator(first1),
@@ -55,8 +55,8 @@ bool equal(execution_policy<DerivedPolicy>& exec [[maybe_unused]],
   // wrap pred
   hpx_wrapped_function<BinaryPredicate> wrapped_binary_pred{binary_pred};
 
-  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator1, ::hpx::forward_traversal_tag>
-                && ::hpx::traits::belongs_to_iterator_traversal_v<InputIterator2, ::hpx::forward_traversal_tag>)
+  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator1>
+                && ::hpx::traits::is_forward_iterator_v<InputIterator2>)
   {
     return ::hpx::equal(
       hpx::detail::to_hpx_execution_policy(exec),
