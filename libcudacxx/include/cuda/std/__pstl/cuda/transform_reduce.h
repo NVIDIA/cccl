@@ -82,7 +82,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform_reduce, __execution_backend
     void* __temp_storage = nullptr;
     size_t __num_bytes   = 0;
     _CCCL_TRY_CUDA_API(
-      ::cub::DeviceReduce::TransformReduce,
+      CUB_NS_QUALIFIER::DeviceReduce::TransformReduce,
       "__pstl_cuda_transform_reduce: determination of device storage for cub::DeviceReduce::TransformReduce failed",
       __temp_storage,
       __num_bytes,
@@ -103,7 +103,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform_reduce, __execution_backend
 
       // Run the reduction
       _CCCL_TRY_CUDA_API(
-        ::cub::DeviceReduce::TransformReduce,
+        CUB_NS_QUALIFIER::DeviceReduce::TransformReduce,
         "__pstl_cuda_transform_reduce: kernel launch of cub::DeviceReduce::TransformReduce failed",
         __storage.__get_temp_storage(),
         __num_bytes,
