@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-#include <cub/device/device_partition.cuh>
 #include <cub/device/dispatch/dispatch_three_way_partition.cuh>
 #include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
 
@@ -94,7 +93,7 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   dispatch(nullptr, 0);
 
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size);
+  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
