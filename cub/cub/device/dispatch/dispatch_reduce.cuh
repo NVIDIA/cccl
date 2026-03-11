@@ -534,7 +534,7 @@ struct DispatchReduce
   }
 };
 
-// TODO(bgruber): deprecate once we publish the tuning API
+// TODO(bgruber): deprecate once we publish the tuning API and drop in CCCL 4.0
 /**
  * @brief Utility class for dispatching the appropriately-tuned kernels for
  *        device-wide transform reduce

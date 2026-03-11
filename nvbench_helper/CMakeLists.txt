@@ -31,6 +31,11 @@ target_include_directories(
   PUBLIC "${CMAKE_CURRENT_LIST_DIR}/nvbench_helper"
 )
 
+# Old NVCC incorrectly infers the host device annotation of std::map::map() which calls a non-host device member
+if (CUDAToolkit_VERSION VERSION_LESS "12.5.0")
+  target_compile_options(cccl.nvbench_helper PUBLIC -diag-suppress 20011)
+endif()
+
 # Don't enable tests when pulled in as an internal dependency.
 # Require CCCL_ENABLE_NVBENCH_HELPER to be explicitly enabled.
 cmake_dependent_option(

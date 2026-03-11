@@ -39,42 +39,55 @@ CUB_BLOCK_STORE_ALGOS = {
 }
 
 
-def load(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
-    """Creates an operation that performs a block-wide load.
+def make_load(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
+    """
+    Creates a block-wide load primitive.
 
-    Returns a callable object that can be linked to and invoked from device code. It can be
-    invoked with the following signatures:
+    Returns a callable object that can be linked to and invoked from
+    device code. It can be invoked with the following signatures:
 
-    - `(src: numba.types.Array, dest: numba.types.Array) -> None`: Each thread loads
-        `items_per_thread` items from `src` into `dest`. `dest` must contain at least
-        `items_per_thread` items.
+    - `(src: numba.types.Array, dest: numba.types.Array) -> None`:
+      Each thread loads `items_per_thread` items from `src` into `dest`.
+      `dest` must contain at least `items_per_thread` items.
 
-    Different data movement strategies can be selected via the `algorithm` parameter:
+    Different data movement strategies can be selected via the
+    `algorithm` parameter:
 
-    - `algorithm="direct"` (default): A blocked arrangement of data is read directly from memory.
-    - `algorithm="striped"`: A striped arrangement of data is read directly from memory.
-    - `algorithm="vectorize"`: A blocked arrangement of data is read directly from memory using CUDA's built-in vectorized loads as a coalescing optimization.
-    - `algorithm="transpose"`: A striped arrangement of data is read directly from memory and is then locally transposed into a blocked arrangement.
-    - `algorithm="warp_transpose"`: A warp-striped arrangement of data is read directly from memory and is then locally transposed into a blocked arrangement.
-    - `algorithm="warp_transpose_timesliced"`: A warp-striped arrangement of data is read directly from memory and is then locally transposed into a blocked arrangement one warp at a time.
+    - `algorithm="direct"` (default): Reads blocked data directly.
+    - `algorithm="striped"`: Reads striped data directly.
+    - `algorithm="vectorize"`: Reads blocked data directly using
+      CUDA's built-in vectorized loads as a coalescing optimization.
+    - `algorithm="transpose"`: Reads striped data and then locally
+      transposes it into a blocked arrangement.
+    - `algorithm="warp_transpose"`: Reads warp-striped data and then
+      locally transposes it into a blocked arrangement.
+    - `algorithm="warp_transpose_timesliced"`: Reads warp-striped data
+      and then locally transposes it into a blocked arrangement one
+      warp at a time.
 
-    For more details, [read the corresponding CUB C++ documentation](https://nvidia.github.io/cccl/cub/api/classcub_1_1BlockLoad.html).
+    For more details, read the corresponding CUB C++ documentation:
+    https://nvidia.github.io/cccl/cub/api/classcub_1_1BlockLoad.html
 
     Args:
         dtype: Data type being loaded
-        threads_per_block: The number of threads in a block, either an integer or a tuple of 2 or 3 integers
+        threads_per_block: Number of threads in a block. Can be an
+            integer or a tuple of 2 or 3 integers.
         items_per_thread: The number of items each thread loads
         algorithm: The data movement algorithm to use
 
     Example:
-        The code snippet below illustrates a striped load and store of 128 integer items by 32 threads, with
-        each thread handling 4 integers.
+        The code snippet below illustrates a striped load and store of
+        128 integer items by 32 threads, with each thread handling
+        4 integers.
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
             :end-before: example-end imports
+
+        The following snippet shows how to invoke the returned
+        ``block_load`` and ``block_store`` primitives:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
             :language: python
@@ -127,42 +140,56 @@ def load(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
     )
 
 
-def store(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
-    """Creates an operation that performs a block-wide store.
+def make_store(dtype, threads_per_block, items_per_thread=1, algorithm="direct"):
+    """
+    Creates a block-wide store primitive.
 
-    Returns a callable object that can be linked to and invoked from device code. It can be
-    invoked with the following signatures:
+    Returns a callable object that can be linked to and invoked from
+    device code. It can be invoked with the following signatures:
 
-    - `(dest: numba.types.Array, src: numba.types.Array) -> None`: Each thread stores
-        `items_per_thread` items from `src` into `dest`. `src` must contain at least
-        `items_per_thread` items.
+    - `(dest: numba.types.Array, src: numba.types.Array) -> None`:
+      Each thread stores `items_per_thread` items from `src` into `dest`.
+      `src` must contain at least `items_per_thread` items.
 
-    Different data movement strategies can be selected via the `algorithm` parameter:
+    Different data movement strategies can be selected via the
+    `algorithm` parameter:
 
-    - `algorithm="direct"` (default): A blocked arrangement of data is written directly to memory.
-    - `algorithm="striped"`: A striped arrangement of data is written directly to memory.
-    - `algorithm="vectorize"`: A blocked arrangement of data is written directly to memory using CUDA's built-in vectorized stores as a coalescing optimization.
-    - `algorithm="transpose"`: A blocked arrangement is locally transposed into a striped arrangement which is then written to memory.
-    - `algorithm="warp_transpose"`: A blocked arrangement is locally transposed into a warp-striped arrangement which is then written to memory.
-    - `algorithm="warp_transpose_timesliced"`: A blocked arrangement is locally transposed into a warp-striped arrangement which is then written to memory. To reduce the shared memory requireent, only one warp’s worth of shared memory is provisioned and is subsequently time-sliced among warps.
+    - `algorithm="direct"` (default): Writes blocked data directly.
+    - `algorithm="striped"`: Writes striped data directly.
+    - `algorithm="vectorize"`: Writes blocked data directly using
+      CUDA's built-in vectorized stores as a coalescing optimization.
+    - `algorithm="transpose"`: Locally transposes blocked data into a
+      striped arrangement before writing to memory.
+    - `algorithm="warp_transpose"`: Locally transposes blocked data
+      into a warp-striped arrangement before writing to memory.
+    - `algorithm="warp_transpose_timesliced"`: Locally transposes
+      blocked data into a warp-striped arrangement before writing to
+      memory. To reduce shared memory requirements, only one warp's
+      worth of shared memory is provisioned and time-sliced across warps.
 
-    For more details, [read the corresponding CUB C++ documentation](https://nvidia.github.io/cccl/cub/api/classcub_1_1BlockStore.html).
+    For more details, read the corresponding CUB C++ documentation:
+    https://nvidia.github.io/cccl/cub/api/classcub_1_1BlockStore.html
 
     Args:
         dtype: Data type being stored
-        threads_per_block: The number of threads in a block, either an integer or a tuple of 2 or 3 integers
-        items_per_thread: The number of items each thread loads
+        threads_per_block: Number of threads in a block. Can be an
+            integer or a tuple of 2 or 3 integers.
+        items_per_thread: The number of items each thread stores
         algorithm: The data movement algorithm to use
 
     Example:
-        The code snippet below illustrates a striped load and store of 128 integer items by 32 threads, with
-        each thread handling 4 integers.
+        The code snippet below illustrates a striped load and store of
+        128 integer items by 32 threads, with each thread handling
+        4 integers.
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
             :language: python
             :dedent:
             :start-after: example-begin imports
             :end-before: example-end imports
+
+        The following snippet shows how to invoke the returned
+        ``block_load`` and ``block_store`` primitives:
 
         .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_load_store_api.py
             :language: python

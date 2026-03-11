@@ -85,19 +85,28 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu",
     cudaSuccess
     == cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env));
 
-  c2h::host_vector<type> h_input = d_input;
+  c2h::host_vector<type> h_input  = d_input;
+  c2h::host_vector<type> h_actual = d_output;
 
   c2h::host_vector<type> h_expected(1);
   // TODO: Use std::reduce once we drop support for GCC 7 and 8
   h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{}, cuda::std::plus<type>());
 
+  auto plus_abs = [](type a, type b) {
+    const type aa = cuda::std::fabs(a);
+    const type ab = cuda::std::fabs(b);
+    return cuda::std::plus<type>{}(aa, ab);
+  };
+  type sum_abs = std::accumulate(h_input.begin(), h_input.end(), type{}, plus_abs);
+
   // relative round-off error of recursive summation is proportional to n * type::epsilon,
   // see https://epubs.siam.org/doi/epdf/10.1137/19M1257780
 
-  type relative_err = std::min((num_items + 1) * std::numeric_limits<type>::epsilon(), static_cast<type>(1));
-  c2h::host_vector<type> h_actual = d_output;
+  constexpr type eps      = std::numeric_limits<type>::epsilon();
+  const type relative_err = (num_items + 1) * eps;
+  const type abs_err      = relative_err * sum_abs;
 
-  REQUIRE_APPROX_EQ_EPSILON(h_expected, h_actual, relative_err);
+  REQUIRE_APPROX_EQ_ABS(h_expected, h_actual, abs_err);
 }
 
 C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with NaN",

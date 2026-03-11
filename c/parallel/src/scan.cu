@@ -104,12 +104,27 @@ std::string get_output_iterator_name()
   return iterator_t;
 }
 
-std::string
-get_init_kernel_name(cccl_iterator_t input_it, cccl_iterator_t /*output_it*/, cccl_op_t op, cccl_type_info init)
+std::string get_init_kernel_name(cccl_iterator_t input_it, cccl_iterator_t output_it, cccl_op_t op, cccl_type_info init)
 {
+  std::string chained_policy_t;
+  check(cccl_type_name_from_nvrtc<device_scan_policy>(&chained_policy_t));
+
   const cccl_type_info accum_t  = scan::get_accumulator_type(op, input_it, init);
   const std::string accum_cpp_t = cccl_type_enum_to_name(accum_t.type);
-  return std::format("cub::detail::scan::DeviceScanInitKernel<cub::ScanTileState<{0}>>", accum_cpp_t);
+  const std::string input_iterator_t =
+    (input_it.type == cccl_iterator_kind_t::CCCL_POINTER //
+       ? cccl_type_enum_to_name(input_it.value_type.type, true) //
+       : scan::get_input_iterator_name());
+  const std::string output_iterator_t =
+    output_it.type == cccl_iterator_kind_t::CCCL_POINTER //
+      ? cccl_type_enum_to_name(output_it.value_type.type, true) //
+      : scan::get_output_iterator_name();
+  return std::format(
+    "cub::detail::scan::DeviceScanInitKernel<{0}, {1}, {2}, cub::ScanTileState<{3}>, {3}>",
+    chained_policy_t,
+    input_iterator_t,
+    output_iterator_t,
+    accum_cpp_t);
 }
 
 std::string get_scan_kernel_name(
@@ -207,6 +222,33 @@ struct scan_kernel_source
   scan_tile_state TileState()
   {
     return {build.description_bytes_per_tile, build.payload_bytes_per_tile};
+  }
+
+  std::size_t look_ahead_tile_state_size() const
+  {
+    return look_ahead_tile_state_alignment();
+  }
+
+  std::size_t look_ahead_tile_state_alignment() const
+  {
+    constexpr int state_size = alignof(cub::detail::warpspeed::scan_state);
+    return ::cuda::next_power_of_two(
+      ::cuda::round_up(state_size, build.accumulator_type.alignment) + build.accumulator_type.size);
+  }
+
+  static auto make_tile_state_kernel_arg(scan_tile_state ts)
+  {
+    cub::detail::scan::tile_state_kernel_arg_t<scan_tile_state, char> arg;
+    ::cuda::std::__construct_at(&arg.lookback, ::cuda::std::move(ts));
+    return arg;
+  }
+
+  static auto look_ahead_make_tile_state_kernel_arg(void* ts)
+  {
+    // we can ignore passing a wrong AccumT, since we only store a pointer, and the kernel will have the right type
+    cub::detail::scan::tile_state_kernel_arg_t<scan_tile_state, char> arg;
+    ::cuda::std::__construct_at(&arg.lookahead, static_cast<cub::detail::warpspeed::tile_state_t<char>*>(ts));
+    return arg;
   }
 };
 } // namespace scan

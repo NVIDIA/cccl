@@ -65,8 +65,10 @@
 
 #if _CCCL_COMPILER(MSVC)
 #  define _CCCL_FORCEINLINE __forceinline
+#  define _CCCL_FORCEINLINE_LAMBDA
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv _CCCL_COMPILER(MSVC) vvv
-#  define _CCCL_FORCEINLINE __inline__ __attribute__((__always_inline__))
+#  define _CCCL_FORCEINLINE        __inline__ __attribute__((__always_inline__))
+#  define _CCCL_FORCEINLINE_LAMBDA __attribute__((__always_inline__))
 #endif // !_CCCL_COMPILER(MSVC)
 
 #if _CCCL_HAS_ATTRIBUTE(__exclude_from_explicit_instantiation__)

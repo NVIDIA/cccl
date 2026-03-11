@@ -303,3 +303,95 @@ def test_histogram_even():
     h_expected_histogram = h_expected_histogram.astype("int32")
 
     np.testing.assert_array_equal(h_actual_histogram, h_expected_histogram)
+
+
+def test_histogram_cache_bug_crosses_256_bin_threshold():
+    # GH:#7622
+    # Regression test for a bug where the histogram build artifact for
+    # num_bins <= 256 would be reused for larger bin counts, resulting
+    # in invalid shared memory accesses, because a different shared
+    # memory strategy is used for num_bins > 256.
+    num_samples = 128
+    d_samples = cp.empty(num_samples, dtype=np.int32)
+    d_histogram = cp.empty(2048, dtype=np.int32)
+    h_num_output_levels = np.array([0], dtype=np.int32)
+    h_lower_level = np.array([0], dtype=np.int32)
+    h_upper_level = np.array([0], dtype=np.int32)
+
+    # First: 128 bins (uses shared memory, privatized_smem_bins=256)
+    num_bins_1 = 128
+    h_num_output_levels[0] = num_bins_1 + 1
+    h_lower_level[0] = 0
+    h_upper_level[0] = num_bins_1
+
+    d_samples[:] = cp.random.randint(0, num_bins_1, size=num_samples, dtype=np.int32)
+    d_histogram[:num_bins_1] = 0
+
+    hist = cuda.compute.make_histogram_even(
+        d_samples,
+        d_histogram[:num_bins_1],
+        h_num_output_levels,
+        h_lower_level,
+        h_upper_level,
+        num_samples,
+    )
+    temp_bytes = hist(
+        None,
+        d_samples,
+        d_histogram[:num_bins_1],
+        h_num_output_levels,
+        h_lower_level,
+        h_upper_level,
+        num_samples,
+    )
+    temp_storage = cp.empty(temp_bytes, dtype=np.uint8)
+    hist(
+        temp_storage,
+        d_samples,
+        d_histogram[:num_bins_1],
+        h_num_output_levels,
+        h_lower_level,
+        h_upper_level,
+        num_samples,
+    )
+    cp.cuda.Device().synchronize()
+    assert int(d_histogram[:num_bins_1].sum()) == num_samples
+
+    num_bins_2 = 2048
+    h_num_output_levels[0] = num_bins_2 + 1
+    h_lower_level[0] = 0
+    h_upper_level[0] = num_bins_2
+
+    d_samples[:] = cp.random.randint(0, num_bins_2, size=num_samples, dtype=np.int32)
+    d_histogram[:num_bins_2] = 0
+
+    hist2 = cuda.compute.make_histogram_even(
+        d_samples,
+        d_histogram[:num_bins_2],
+        h_num_output_levels,
+        h_lower_level,
+        h_upper_level,
+        num_samples,
+    )
+
+    temp_bytes2 = hist2(
+        None,
+        d_samples,
+        d_histogram[:num_bins_2],
+        h_num_output_levels,
+        h_lower_level,
+        h_upper_level,
+        num_samples,
+    )
+    temp_storage2 = cp.empty(temp_bytes2, dtype=np.uint8)
+    hist2(
+        temp_storage2,
+        d_samples,
+        d_histogram[:num_bins_2],
+        h_num_output_levels,
+        h_lower_level,
+        h_upper_level,
+        num_samples,
+    )
+    cp.cuda.Device().synchronize()
+    assert int(d_histogram[:num_bins_2].sum()) == num_samples

@@ -25,7 +25,6 @@
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/utility/getenv_cache.cuh>
 #include <cuda/experimental/__stf/utility/memory.cuh>
-#include <cuda/experimental/__stf/utility/stream_to_dev.cuh>
 #include <cuda/experimental/__stf/utility/unstable_unique.cuh>
 
 #include <mutex>
@@ -36,7 +35,11 @@ class stream_and_event;
 namespace reserved
 {
 inline event join_with_stream(
-  backend_ctx_untyped& bctx, decorated_stream dstream, event_list& prereq_in, ::std::string string, bool record_event);
+  const backend_ctx_untyped& bctx,
+  decorated_stream dstream,
+  event_list& prereq_in,
+  ::std::string string,
+  bool record_event);
 
 using stream_and_event_vector = small_vector<reserved::handle<stream_and_event>, 7>;
 } // namespace reserved
@@ -151,7 +154,7 @@ public:
   /**
    * @brief Remove implicit dependencies already induced by more recent events using the same stream.
    */
-  bool factorize(backend_ctx_untyped&, reserved::event_vector& events) override
+  bool factorize(const backend_ctx_untyped&, reserved::event_vector& events) override
   {
     assert(events.size() >= 2);
     assert([&] {
@@ -236,7 +239,7 @@ public:
     // return true;
   }
 
-  void sync_with_stream(backend_ctx_untyped& bctx, event_list& prereqs, cudaStream_t stream) const override
+  void sync_with_stream(const backend_ctx_untyped& bctx, event_list& prereqs, cudaStream_t stream) const override
   {
     reserved::join_with_stream(bctx, decorated_stream(stream), prereqs, "sync", false);
   }
@@ -251,7 +254,7 @@ public:
     return dstream;
   }
 
-  ::std::ptrdiff_t get_stream_id() const
+  unsigned long long get_stream_id() const
   {
     return dstream.id;
   }
@@ -295,7 +298,7 @@ public:
     {
       // We did not select a stream yet, so we take one in the pools in
       // the async_resource_handle object associated to the context
-      dstream = place.getDataStream(bctx.async_resources());
+      dstream = place.getDataStream();
     }
 
     // Note that if we had stream_dev_id = -1 (eg. host memory), the device
@@ -393,7 +396,7 @@ private:
     for (const auto& e : prereq_in)
     {
       cudaStream_t stream;
-      ::std::ptrdiff_t stream_id = -1;
+      unsigned long long stream_id = 0;
       auto se   = reserved::handle<stream_and_event, reserved::handle_flags::non_null>(e, reserved::use_static_cast);
       stream    = se->get_stream();
       stream_id = se->get_stream_id();
@@ -411,7 +414,7 @@ private:
       if (stream_dev == devid)
       {
         //    fprintf(stderr, "Found matching device %d with stream %p\n", devid, stream);
-        return decorated_stream(stream, stream_id, devid);
+        return decorated_stream(stream, stream_id, static_cast<int>(stream_dev));
       }
     }
 
@@ -429,7 +432,11 @@ namespace reserved
 {
 /* This creates a synchronization point between all entries of the prereq_in list, and a CUDA stream */
 inline event join_with_stream(
-  backend_ctx_untyped& bctx, decorated_stream dstream, event_list& prereq_in, ::std::string string, bool record_event)
+  const backend_ctx_untyped& bctx,
+  decorated_stream dstream,
+  event_list& prereq_in,
+  ::std::string string,
+  bool record_event)
 {
   // Make sure we reduce the number of resulting stream/event synchronization
   // API calls to a minimum. If the list was already optimized, this will be a no-op

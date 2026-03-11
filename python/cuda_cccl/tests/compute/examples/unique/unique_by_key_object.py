@@ -43,6 +43,7 @@ temp_storage_size = uniquer(
     d_output_keys,
     d_output_values,
     d_num_selected,
+    OpKind.EQUAL_TO,
     len(h_input_keys),
 )
 
@@ -57,6 +58,7 @@ uniquer(
     d_output_keys,
     d_output_values,
     d_num_selected,
+    OpKind.EQUAL_TO,
     len(h_input_keys),
 )
 

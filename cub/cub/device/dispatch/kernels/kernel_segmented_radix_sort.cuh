@@ -17,7 +17,10 @@
 #include <cub/agent/agent_radix_sort_upsweep.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
+#include <cub/util_arch.cuh>
 
+#include <cuda/__device/arch_id.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/limits>
@@ -26,13 +29,21 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::radix_sort
 {
+_CCCL_EXEC_CHECK_DISABLE
+template <typename PolicySelector, bool AltDigitBits>
+_CCCL_API constexpr int segmented_radix_sort_kernel_launch_bounds()
+{
+  constexpr auto policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  return AltDigitBits ? policy.alt_segmented.block_threads : policy.segmented.block_threads;
+}
+
 /**
  * @brief Segmented radix sorting pass (one block per segment)
  *
- * @tparam ChainedPolicyT
- *   Chained tuning policy
+ * @tparam PolicySelector
+ *   Selects the tuning policy
  *
- * @tparam ALT_DIGIT_BITS
+ * @tparam AltDigitBits
  *   Whether or not to use the alternate (lower-bits) policy
  *
  * @tparam SortOrder
@@ -86,8 +97,8 @@ namespace detail::radix_sort
  * @param[in] pass_bits
  *   Number of bits of current radix digit
  */
-template <typename ChainedPolicyT,
-          bool ALT_DIGIT_BITS,
+template <typename PolicySelector,
+          bool AltDigitBits,
           SortOrder Order,
           typename KeyT,
           typename ValueT,
@@ -95,8 +106,10 @@ template <typename ChainedPolicyT,
           typename EndOffsetIteratorT,
           typename SegmentSizeT,
           typename DecomposerT = detail::identity_decomposer_t>
-__launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmentedPolicy::BLOCK_THREADS
-                                       : ChainedPolicyT::ActivePolicy::SegmentedPolicy::BLOCK_THREADS))
+#if _CCCL_HAS_CONCEPTS()
+  requires radix_sort_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltDigitBits>())
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -112,27 +125,41 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   // Constants
   //
 
-  using SegmentedPolicyT =
-    ::cuda::std::_If<ALT_DIGIT_BITS,
-                     typename ChainedPolicyT::ActivePolicy::AltSegmentedPolicy,
-                     typename ChainedPolicyT::ActivePolicy::SegmentedPolicy>;
+  static constexpr radix_sort_policy policy                  = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr radix_sort_downsweep_policy active_policy = AltDigitBits ? policy.alt_segmented : policy.segmented;
 
-  static constexpr int BLOCK_THREADS = SegmentedPolicyT::BLOCK_THREADS;
-  static constexpr int RADIX_BITS    = SegmentedPolicyT::RADIX_BITS;
-  static constexpr int RADIX_DIGITS  = 1 << RADIX_BITS;
+  static constexpr int block_threads = active_policy.block_threads;
+  static constexpr int radix_bits    = active_policy.radix_bits;
+  static constexpr int radix_digits  = 1 << radix_bits;
 
-  // Upsweep type
-  using BlockUpsweepT = detail::radix_sort::AgentRadixSortUpsweep<SegmentedPolicyT, KeyT, SegmentSizeT, DecomposerT>;
+  using ActiveUpsweepPolicyT =
+    AgentRadixSortUpsweepPolicy<active_policy.block_threads,
+                                active_policy.items_per_thread,
+                                void,
+                                active_policy.load_modifier,
+                                active_policy.radix_bits,
+                                NoScaling<active_policy.block_threads, active_policy.items_per_thread>>;
 
-  // Digit-scan type
-  using DigitScanT = BlockScan<SegmentSizeT, BLOCK_THREADS>;
+  using BlockUpsweepT = AgentRadixSortUpsweep<ActiveUpsweepPolicyT, KeyT, SegmentSizeT, DecomposerT>;
 
-  // Downsweep type
-  using BlockDownsweepT = detail::radix_sort::
-    AgentRadixSortDownsweep<SegmentedPolicyT, Order == SortOrder::Descending, KeyT, ValueT, SegmentSizeT, DecomposerT>;
+  using DigitScanT = BlockScan<SegmentSizeT, block_threads>;
+
+  using ActiveDownsweepPolicyT = AgentRadixSortDownsweepPolicy<
+    active_policy.block_threads,
+    active_policy.items_per_thread,
+    void,
+    active_policy.load_algorithm,
+    active_policy.load_modifier,
+    active_policy.rank_algorithm,
+    active_policy.scan_algorithm,
+    active_policy.radix_bits,
+    NoScaling<active_policy.block_threads, active_policy.items_per_thread>>;
+
+  using BlockDownsweepT =
+    AgentRadixSortDownsweep<ActiveDownsweepPolicyT, Order == SortOrder::Descending, KeyT, ValueT, SegmentSizeT, DecomposerT>;
 
   /// Number of bin-starting offsets tracked per thread
-  static constexpr int BINS_TRACKED_PER_THREAD = BlockDownsweepT::BINS_TRACKED_PER_THREAD;
+  static constexpr int bins_tracked_per_thread = BlockDownsweepT::BINS_TRACKED_PER_THREAD;
 
   //
   // Process input tiles
@@ -145,8 +172,8 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
     typename BlockDownsweepT::TempStorage downsweep;
     struct
     {
-      volatile SegmentSizeT reverse_counts_in[RADIX_DIGITS];
-      volatile SegmentSizeT reverse_counts_out[RADIX_DIGITS];
+      volatile SegmentSizeT reverse_counts_in[radix_digits];
+      volatile SegmentSizeT reverse_counts_out[radix_digits];
       typename DigitScanT::TempStorage scan;
     };
 
@@ -175,7 +202,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   __syncthreads();
 
   // The count of each digit value in this pass (valid in the first RADIX_DIGITS threads)
-  SegmentSizeT bin_count[BINS_TRACKED_PER_THREAD];
+  SegmentSizeT bin_count[bins_tracked_per_thread];
   upsweep.ExtractCounts(bin_count);
 
   __syncthreads();
@@ -184,11 +211,11 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   {
     // Reverse bin counts
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
+    for (int track = 0; track < bins_tracked_per_thread; ++track)
     {
-      int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+      int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
 
-      if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
+      if ((block_threads == radix_digits) || (bin_idx < radix_digits))
       {
         temp_storage.reverse_counts_in[bin_idx] = bin_count[track];
       }
@@ -197,19 +224,19 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
     __syncthreads();
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
+    for (int track = 0; track < bins_tracked_per_thread; ++track)
     {
-      int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+      int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
 
-      if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
+      if ((block_threads == radix_digits) || (bin_idx < radix_digits))
       {
-        bin_count[track] = temp_storage.reverse_counts_in[RADIX_DIGITS - bin_idx - 1];
+        bin_count[track] = temp_storage.reverse_counts_in[radix_digits - bin_idx - 1];
       }
     }
   }
 
   // Scan
-  SegmentSizeT bin_offset[BINS_TRACKED_PER_THREAD]; // The scatter base offset within the segment for each digit value
+  SegmentSizeT bin_offset[bins_tracked_per_thread]; // The scatter base offset within the segment for each digit value
                                                     // in this pass (valid in the first RADIX_DIGITS threads)
   DigitScanT(temp_storage.scan).ExclusiveSum(bin_count, bin_offset);
 
@@ -217,11 +244,11 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   {
     // Reverse bin offsets
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
+    for (int track = 0; track < bins_tracked_per_thread; ++track)
     {
-      int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+      int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
 
-      if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
+      if ((block_threads == radix_digits) || (bin_idx < radix_digits))
       {
         temp_storage.reverse_counts_out[threadIdx.x] = bin_offset[track];
       }
@@ -230,13 +257,13 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
     __syncthreads();
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
+    for (int track = 0; track < bins_tracked_per_thread; ++track)
     {
-      int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+      int bin_idx = (threadIdx.x * bins_tracked_per_thread) + track;
 
-      if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
+      if ((block_threads == radix_digits) || (bin_idx < radix_digits))
       {
-        bin_offset[track] = temp_storage.reverse_counts_out[RADIX_DIGITS - bin_idx - 1];
+        bin_offset[track] = temp_storage.reverse_counts_out[radix_digits - bin_idx - 1];
       }
     }
   }

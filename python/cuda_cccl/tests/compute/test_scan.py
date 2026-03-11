@@ -339,6 +339,7 @@ def test_reverse_input_iterator(monkeypatch):
     np.testing.assert_equal(d_output.get(), expected)
 
 
+@pytest.mark.no_verify_sass(reason="LDL/STL instructions emitted for this test.")
 def test_reverse_output_iterator():
     def add_op(a, b):
         return a + b

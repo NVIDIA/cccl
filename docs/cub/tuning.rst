@@ -138,6 +138,7 @@ The following code is included in the benchmark for the policy hub to be enabled
 
 ..
     The following code is repeated further down as well. Please keep in sync!
+    TODO(bgruber): replace this example with the new tuning API design
 
 .. code:: c++
 

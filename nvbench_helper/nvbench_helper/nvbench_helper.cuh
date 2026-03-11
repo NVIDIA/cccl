@@ -14,6 +14,7 @@
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 #  include <cuda/memory_resource>
+#  include <cuda/std/__pstl_algorithm>
 #  include <cuda/stream>
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
@@ -22,13 +23,7 @@
 
 #include <nvbench/nvbench.cuh>
 
-#if defined(_MSC_VER)
-#  define NVBENCH_HELPER_HAS_I128 0
-#else
-#  define NVBENCH_HELPER_HAS_I128 1
-#endif
-
-#if NVBENCH_HELPER_HAS_I128
+#if _CCCL_HAS_INT128()
 using int128_t  = __int128_t;
 using uint128_t = __uint128_t;
 
@@ -102,7 +97,7 @@ using fundamental_types =
                      int16_t,
                      int32_t,
                      int64_t,
-#  if NVBENCH_HELPER_HAS_I128
+#  if _CCCL_HAS_INT128()
                      int128_t,
 #  endif
                      float,
@@ -113,7 +108,7 @@ using all_types =
                      int16_t,
                      int32_t,
                      int64_t,
-#  if NVBENCH_HELPER_HAS_I128
+#  if _CCCL_HAS_INT128()
                      int128_t,
 #  endif
                      float,
@@ -591,15 +586,33 @@ struct caching_allocator_t
 
   void* allocate(::cuda::stream_ref __stream, size_t num_bytes, size_t)
   {
-    void* __res = allocate(num_bytes);
-    __stream.sync();
-    return __res;
+    value_type* result{};
+    auto free_block = free_blocks.find(num_bytes);
+
+    if (free_block != free_blocks.end())
+    {
+      result = free_block->second;
+      free_blocks.erase(free_block);
+    }
+    else
+    {
+      const cudaError_t status = cudaMallocAsync(&result, num_bytes, __stream.get());
+      if (cudaSuccess != status)
+      {
+        throw std::runtime_error(std::string("Failed to allocate device memory: ") + cudaGetErrorString(status));
+      }
+      // NOTE: We can avoid a `__stream.sync()` here because `allocate` is only ever called asynchronously with a stream
+      // So it is fine that the memory is only valid in stream order
+    }
+
+    allocated_blocks.insert(std::make_pair(result, num_bytes));
+    return result;
   }
 
   void deallocate(::cuda::stream_ref __stream, void* ptr, size_t num_bytes, size_t)
   {
-    deallocate(static_cast<char*>(ptr), num_bytes);
     __stream.sync();
+    deallocate(static_cast<char*>(ptr), num_bytes);
   }
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
@@ -667,6 +680,10 @@ auto policy(caching_allocator_t& alloc)
 {
   return thrust::cuda::par(alloc);
 }
+auto cuda_policy(caching_allocator_t& alloc)
+{
+  return cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
+}
 #else
 auto policy(caching_allocator_t&)
 {
@@ -678,6 +695,10 @@ auto policy(caching_allocator_t&)
 auto policy(caching_allocator_t& alloc, nvbench::launch& launch)
 {
   return thrust::cuda::par(alloc).on(launch.get_stream());
+}
+auto cuda_policy(caching_allocator_t& alloc, nvbench::launch& launch)
+{
+  return cuda::execution::__cub_par_unseq.with_memory_resource(alloc).with_stream(launch.get_stream().get_stream());
 }
 #else
 auto policy(caching_allocator_t&, nvbench::launch&)

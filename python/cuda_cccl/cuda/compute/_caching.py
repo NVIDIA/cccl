@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations
+
 import functools
 import types
 from typing import Any, Callable, Hashable
@@ -14,13 +16,17 @@ try:
 except ImportError:
     from cuda.core.experimental import Device
 
-
-from ._utils.protocols import get_dtype, is_device_array
-from .typing import DeviceArrayLike, GpuStruct
+from ._utils.protocols import get_dtype, get_shape, is_device_array
+from .struct import _Struct
 
 # Registry thet maps type -> key function for extracting cache key
 # from a value of that type.
 _KEY_FUNCTIONS: dict[type, Callable[[Any], Hashable]] = {}
+
+
+def _type_fqn(v):
+    # fully-qualified type name to distinguish np.ndarray from cp.ndarray from GpuStruct
+    return f"{type(v).__module__}.{type(v).__name__}"
 
 
 def _key_for(value: Any) -> Hashable:
@@ -49,13 +55,11 @@ def _key_for(value: Any) -> Hashable:
     # DeviceArrayLike is not a runtime-checkable protocol, so
     # we cannot isinstance() with it.
     if is_device_array(value):
-        return _KEY_FUNCTIONS[DeviceArrayLike](value)
+        return (_type_fqn(value), get_dtype(value))
 
     # Check for instance match (handles inheritance)
     for registered_type, keyer in _KEY_FUNCTIONS.items():
-        if registered_type is not DeviceArrayLike and isinstance(
-            value, registered_type
-        ):
+        if isinstance(value, registered_type):
             return keyer(value)
 
     # Fallback: use value directly (assumes it's hashable)
@@ -145,20 +149,16 @@ class _CacheWithRegisteredKeyFunctions:
 cache_with_registered_key_functions = _CacheWithRegisteredKeyFunctions()
 
 
-def _hash_device_array_like(value):
-    # hash based on pointer, shape, and dtype
-    ptr = value.__cuda_array_interface__["data"][0]
-    shape = value.__cuda_array_interface__["shape"]
-    dtype = value.__cuda_array_interface__["typestr"]
-    return hash((ptr, shape, dtype))
-
-
 def _make_hashable(value):
-    # Duck-type check for numba.cuda.CUDADispatcher (has py_func attribute)
+    # duck-type check for numba.cuda.CUDADispatcher:
     if hasattr(value, "py_func") and callable(value.py_func):
         return CachableFunction(value.py_func)
     elif is_device_array(value):
-        return _hash_device_array_like(value)
+        # Ops with device arrays in globals/closures will be handled
+        # by stateful op machinery, which enables updating the state
+        # (pointers). Thus, we only cache on the dtype and shape of
+        # the referenced array, but not its pointer.
+        return (get_dtype(value), get_shape(value))
     elif isinstance(value, (list, tuple)):
         return tuple(_make_hashable(v) for v in value)
     elif isinstance(value, dict):
@@ -196,6 +196,9 @@ class CachableFunction:
     ignoring other attributes such as their names or docstrings.
     """
 
+    # TODO: eventually, move this class to _jit.py as it only
+    # has to do with caching of Python callables that will be
+    # JIT compiled.
     def __init__(self, func):
         self._func = func
 
@@ -210,7 +213,14 @@ class CachableFunction:
             func.__code__.co_consts,
             tuple(contents),
             tuple(
-                _make_hashable(func.__globals__.get(name, None))
+                # if `name` is found in __globals__, try and hash
+                # the referenced object. If `name` is not found in
+                # __globals__, (e.g., `name` is part of a dotted
+                # name like `np.argmax`), for caching purposes we
+                # use the hash of the name itself. Assumes numba
+                # known how to interpret the dotted name at JIT
+                # time.
+                _make_hashable(func.__globals__.get(name, name))
                 for name in func.__code__.co_names
             ),
         )
@@ -226,10 +236,6 @@ class CachableFunction:
 
 
 # Register keyers for built-in types
-# Include fully-qualified type name to distinguish np.ndarray from cp.ndarray from GpuStruct
-def _type_fqn(v):
-    return f"{type(v).__module__}.{type(v).__name__}"
-
 
 cache_with_registered_key_functions.register(
     np.ndarray, lambda arr: ("numpy.ndarray", arr.dtype)
@@ -237,9 +243,4 @@ cache_with_registered_key_functions.register(
 cache_with_registered_key_functions.register(
     types.FunctionType, lambda fn: CachableFunction(fn)
 )
-cache_with_registered_key_functions.register(
-    DeviceArrayLike, lambda v: (_type_fqn(v), get_dtype(v))
-)
-cache_with_registered_key_functions.register(
-    GpuStruct, lambda v: (_type_fqn(v), v.dtype)
-)
+cache_with_registered_key_functions.register(_Struct, lambda v: (_type_fqn(v), v.dtype))

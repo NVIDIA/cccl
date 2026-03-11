@@ -107,6 +107,16 @@ public:
   }
 };
 
+//! @brief Creates a @c zip_function from a function
+//! @tparam _Fn The functor to wrap
+//! @relates zip_iterator
+//! @relates zip_function
+template <class _Fn>
+_CCCL_API constexpr zip_function<::cuda::std::decay_t<_Fn>> make_zip_function(_Fn&& __fun)
+{
+  return zip_function<::cuda::std::decay_t<_Fn>>{::cuda::std::forward<_Fn>(__fun)};
+}
+
 //! @}
 
 _CCCL_END_NAMESPACE_CUDA

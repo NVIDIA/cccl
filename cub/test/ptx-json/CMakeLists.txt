@@ -1,3 +1,8 @@
+if (NOT CUB_ENABLE_LAUNCH_NO_LAUNCHER)
+  message(STATUS "Skipping ptx-json tests because no-launcher is disabled.")
+  return()
+endif()
+
 if (NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   message(STATUS "Skipping ptx-json tests on non-Linux platforms.")
   return()
@@ -54,6 +59,8 @@ function(cub_detail_ptx_json_add_test target_name_var source)
     ${target_name}
     PROPERTIES #
       CUDA_CUBIN_COMPILATION ON
+      # Some of our presets specify multiple architectures, so the hope here is to make the compilation a little faster.
+      # Given that ptx-json doesn't depend on the arch, that should be fine.
       CUDA_ARCHITECTURES "80-real"
   )
 

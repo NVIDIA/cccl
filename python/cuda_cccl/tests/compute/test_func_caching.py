@@ -1,3 +1,5 @@
+import numpy as np
+
 from cuda.compute._caching import CachableFunction
 
 global_x = 1
@@ -87,7 +89,61 @@ def test_func_caching_wrapped_cuda_jit_function():
 
         return func
 
+    def make_func2():
+        @numba.cuda.jit
+        def inner(x):
+            return 2 * x
+
+        def func(x):
+            return inner(x) + 1
+
+        return func
+
     func1 = make_func()
     func2 = make_func()
+    func3 = make_func2()
 
     assert CachableFunction(func1) == CachableFunction(func2)
+    assert CachableFunction(func1) != CachableFunction(func3)
+
+
+def test_func_caching_with_global_np_ufunc():
+    def make_func():
+        def func(x):
+            return np.argmin(x) + 1
+
+        return func
+
+    def make_func2():
+        def func(x):
+            return np.argmax(x) + 1
+
+        return func
+
+    func1 = make_func()
+    func2 = make_func2()
+
+    assert CachableFunction(func1) != CachableFunction(func2)
+
+
+def test_func_caching_with_aliased_np_ufunc():
+    def make_func1():
+        amin = np.argmin
+
+        def func(x):
+            return amin(x) + 1
+
+        return func
+
+    def make_func2():
+        amax = np.argmax
+
+        def func(x):
+            return amax(x) + 1
+
+        return func
+
+    func1 = make_func1()
+    func2 = make_func2()
+
+    assert CachableFunction(func1) != CachableFunction(func2)

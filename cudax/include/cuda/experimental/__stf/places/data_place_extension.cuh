@@ -54,11 +54,11 @@ class exec_place;
  * @code
  * class my_custom_extension : public data_place_extension {
  * public:
- *   exec_place get_affine_exec_place() const override { ... }
+ *   exec_place affine_exec_place() const override { ... }
  *   int get_device_ordinal() const override { return my_device_id; }
  *   ::std::string to_string() const override { return "my_custom_place"; }
  *   size_t hash() const override { return std::hash<int>{}(my_device_id); }
- *   bool equals(const data_place_extension& other) const override { ... }
+ *   bool operator==(const data_place_extension& other) const override { ... }
  * };
  * @endcode
  */
@@ -74,7 +74,7 @@ public:
    * stored at this place. The exec_place may have its own virtual methods
    * (e.g., activate/deactivate) for execution-specific behavior.
    */
-  virtual exec_place get_affine_exec_place() const = 0;
+  virtual exec_place affine_exec_place() const = 0;
 
   /**
    * @brief Get the device ordinal for this place
@@ -104,7 +104,15 @@ public:
    * @param other The other extension to compare with
    * @return true if the extensions represent the same place
    */
-  virtual bool equals(const data_place_extension& other) const = 0;
+  virtual bool operator==(const data_place_extension& other) const = 0;
+
+  /**
+   * @brief Compare ordering with another extension
+   *
+   * @param other The other extension to compare with
+   * @return true if this extension is less than the other
+   */
+  virtual bool operator<(const data_place_extension& other) const = 0;
 
   /**
    * @brief Create a physical memory allocation for this place (VMM API)

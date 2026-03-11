@@ -73,7 +73,8 @@ static std::string get_device_for_kernel_name()
   check(cccl_type_name_from_nvrtc<for_each_wrapper>(&function_op_t));
   check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
-  return std::format("cub::detail::for_each::static_kernel<device_for_policy, {0}, {1}>", offset_t, function_op_t);
+  return std::format(
+    "cub::detail::for_each::static_kernel<device_for_policy_selector, {0}, {1}>", offset_t, function_op_t);
 }
 
 CUresult cccl_device_for_build_ex(

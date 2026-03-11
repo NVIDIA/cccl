@@ -57,6 +57,8 @@ protected:
     ::std::unordered_set<cudaGraphNode_t> seen;
     ::std::vector<cudaGraphNode_t> result;
 
+    result.reserve(nodes.size());
+
     for (cudaGraphNode_t node : nodes)
     {
       if (seen.insert(node).second)
@@ -68,7 +70,7 @@ protected:
     ::std::swap(nodes, result);
   }
 
-  bool factorize(backend_ctx_untyped& bctx, reserved::event_vector& events) override
+  bool factorize(const backend_ctx_untyped& bctx, reserved::event_vector& events) override
   {
     _CCCL_ASSERT(events.size() >= 2, "invalid value");
 
@@ -88,6 +90,8 @@ protected:
       cudaGraphNode_t n;
 
       ::std::vector<cudaGraphNode_t> nodes;
+
+      nodes.reserve(events.size());
 
       // List all graph nodes in the vector of events
       for (const auto& e : events)

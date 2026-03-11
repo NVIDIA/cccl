@@ -4,6 +4,11 @@
 # .inl files are not globbed for, because they are not supposed to be used as public
 # entrypoints.
 
+if (NOT CUB_ENABLE_LAUNCH_NO_LAUNCHER)
+  # Header tests are treated as core-only artifacts.
+  return()
+endif()
+
 function(cub_add_header_test label definitions)
   set(headertest_target cub.headers.${label})
 
