@@ -211,7 +211,6 @@ static inline stf_exec_place make_opaque_exec_place(void* handle)
   stf_exec_place p;
   p.kind     = STF_EXEC_PLACE_OPAQUE;
   p.u.opaque = handle;
-  _CCCL_ASSERT(handle != nullptr, "handle must not be null");
   return p;
 }
 
@@ -405,7 +404,6 @@ static inline stf_data_place make_opaque_data_place(void* handle)
   stf_data_place p;
   p.kind     = STF_DATA_PLACE_OPAQUE;
   p.u.opaque = handle;
-  _CCCL_ASSERT(handle != nullptr, "handle must not be null");
   return p;
 }
 
