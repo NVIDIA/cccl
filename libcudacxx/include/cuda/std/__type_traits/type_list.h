@@ -381,7 +381,7 @@ template <class _Ret, class... _Args>
 extern __fn_ptr_t<__type_list<_Ret, _Args...>> __as_type_list_v<_Ret(_Args...)>;
 } // namespace __detail
 
-//! \brief Given a type that is can be interpreted as a type list, return its
+//! \brief Given a type that can be interpreted as a type list, return its
 //! type list interpretation. Types that can be interpreted as a type
 //! list are of the following forms:
 //!
