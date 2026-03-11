@@ -475,28 +475,15 @@ struct policy_selector
   int input_size;
   int offset_size;
 
-  // TODO(bgruber): this is just the same as policy500, remove it before merging
-  _CCCL_HOST_DEVICE constexpr auto __delay_constructor_for_accumulator_pack_t() const -> delay_constructor_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> three_way_partition_policy
   {
-    return default_delay_constructor_policy(true); // we assume that the OffsetT is trivially copyable
-  }
-
-  _CCCL_HOST_DEVICE constexpr auto __make_default_policy(delay_constructor_policy delay_constructor) const
-    -> three_way_partition_policy
-  {
-    return three_way_partition_policy{
+    const auto default_policy = three_way_partition_policy{
       256,
       nominal_4B_items_to_items(9, input_size),
       BLOCK_LOAD_DIRECT,
       LOAD_DEFAULT,
       BLOCK_SCAN_WARP_SCANS,
-      delay_constructor};
-  }
-
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> three_way_partition_policy
-  {
-    const auto policy500 =
-      __make_default_policy(delay_constructor_policy{delay_constructor_kind::fixed_delay, 350, 450});
+      default_delay_constructor_policy(true)}; // we assume that the OffsetT is trivially copyable
 
     if (arch >= ::cuda::arch_id::sm_100)
     {
@@ -674,12 +661,12 @@ struct policy_selector
           BLOCK_SCAN_WARP_SCANS,
           delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1050}};
       }
-      return __make_default_policy(__delay_constructor_for_accumulator_pack_t());
+      return default_policy;
     }
 
     if (arch >= ::cuda::arch_id::sm_86)
     {
-      return policy500;
+      return default_policy;
     }
 
     if (arch >= ::cuda::arch_id::sm_80)
@@ -724,9 +711,11 @@ struct policy_selector
           BLOCK_SCAN_WARP_SCANS,
           delay_constructor_policy{delay_constructor_kind::fixed_delay, 672, 1120}};
       }
-      return __make_default_policy(__delay_constructor_for_accumulator_pack_t());
+      return default_policy;
     }
-    return policy500;
+
+    // from SM50
+    return default_policy;
   }
 };
 
