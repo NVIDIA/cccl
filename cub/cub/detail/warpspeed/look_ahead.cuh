@@ -26,9 +26,9 @@
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__type_traits/underlying_type.h>
 
-#if !_CCCL_HAS_NV_ATOMIC_INTRINSICS()
+#if !_CCCL_HAS_NV_ATOMIC_BUILTINS()
 #  include <cuda/atomic>
-#endif // !_CCCL_HAS_NV_ATOMIC_INTRINSICS()
+#endif // !_CCCL_HAS_NV_ATOMIC_BUILTINS()
 
 #include <nv/target>
 
@@ -80,12 +80,12 @@ storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, Ac
     static_assert(::cuda::is_power_of_two(sizeof(tile_state_t<AccumT>)));
     tile_state_t<AccumT> tmp{scanState, sum};
 
-#  if _CCCL_HAS_NV_ATOMIC_INTRINSICS()
+#  if _CCCL_HAS_NV_ATOMIC_BUILTINS()
     __nv_atomic_store(ptrTileStates + index, &tmp, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
-#  else // ^^^ _CCCL_HAS_NV_ATOMIC_INTRINSICS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_INTRINSICS() vvv
+#  else // ^^^ _CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_BUILTINS() vvv
     ::cuda::atomic_ref<tile_state_t<AccumT>, ::cuda::std::thread_scope_device>{ptrTileStates[index]}.store(
       tmp, ::cuda::std::memory_order_relaxed);
-#  endif // !_CCCL_HAS_NV_ATOMIC_INTRINSICS()
+#  endif // !_CCCL_HAS_NV_ATOMIC_BUILTINS()
   }
   else
   {
@@ -106,12 +106,12 @@ _CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* pt
                 && ::cuda::std::is_trivially_copyable_v<tile_state_t<AccumT>>)
   {
     static_assert(::cuda::is_power_of_two(sizeof(tile_state_t<AccumT>)));
-#  if _CCCL_HAS_NV_ATOMIC_INTRINSICS()
+#  if _CCCL_HAS_NV_ATOMIC_BUILTINS()
     __nv_atomic_load(ptrTileStates + index, &res, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
-#  else // ^^^ _CCCL_HAS_NV_ATOMIC_INTRINSICS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_INTRINSICS() vvv
+#  else // ^^^ _CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_BUILTINS() vvv
     res = ::cuda::atomic_ref<tile_state_t<AccumT>, ::cuda::std::thread_scope_device>{ptrTileStates[index]}.load(
       ::cuda::std::memory_order_relaxed);
-#  endif // !_CCCL_HAS_NV_ATOMIC_INTRINSICS()
+#  endif // !_CCCL_HAS_NV_ATOMIC_BUILTINS()
   }
   else
   {

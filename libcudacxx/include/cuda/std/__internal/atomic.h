@@ -52,10 +52,4 @@
 #  define _CCCL_HOST_128_ATOMICS_MAYBE()   0
 #endif
 
-#if defined(__CUDACC_DEVICE_ATOMIC_BUILTINS__) && !_CCCL_COMPILER(MSVC)
-#  define _CCCL_HAS_NV_ATOMIC_INTRINSICS() 1
-#else // ^^^ has intrinsics ^^^ / vvv no intrinsics
-#  define _CCCL_HAS_NV_ATOMIC_INTRINSICS() 0
-#endif // no intrinsics
-
 #endif // _CUDA_STD___INTERNAL_ATOMIC_H
