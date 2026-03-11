@@ -32,7 +32,7 @@ count(execution_policy<DerivedPolicy>& exec [[maybe_unused]],
       InputIterator last,
       const EqualityComparable& value)
 {
-  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator, ::hpx::forward_traversal_tag>)
   {
     return ::hpx::count(hpx::detail::to_hpx_execution_policy(exec),
                         ::thrust::try_unwrap_contiguous_iterator(first),
@@ -52,7 +52,7 @@ typename thrust::iterator_traits<InputIterator>::difference_type count_if(
   // wrap pred
   hpx_wrapped_function<Predicate> wrapped_pred{pred};
 
-  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator, ::hpx::forward_traversal_tag>)
   {
     return ::hpx::count_if(
       hpx::detail::to_hpx_execution_policy(exec),

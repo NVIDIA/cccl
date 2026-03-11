@@ -30,7 +30,7 @@ OutputIterator copy(execution_policy<DerivedPolicy>& exec [[maybe_unused]],
                     InputIterator last,
                     OutputIterator result)
 {
-  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator, ::hpx::forward_traversal_tag>)
   {
     auto res = ::hpx::copy(
       hpx::detail::to_hpx_execution_policy(exec),
@@ -49,7 +49,7 @@ template <typename DerivedPolicy, typename InputIterator, typename Size, typenam
 OutputIterator
 copy_n(execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator first, Size n, OutputIterator result)
 {
-  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator, ::hpx::forward_traversal_tag>)
   {
     auto res = ::hpx::copy_n(
       hpx::detail::to_hpx_execution_policy(exec),

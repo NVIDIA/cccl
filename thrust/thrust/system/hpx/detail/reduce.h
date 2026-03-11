@@ -35,7 +35,7 @@ OutputType reduce(execution_policy<DerivedPolicy>& exec [[maybe_unused]],
   // wrap binary_op
   hpx_wrapped_function<BinaryFunction> wrapped_binary_op{binary_op};
 
-  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator, ::hpx::forward_traversal_tag>)
   {
     return ::hpx::reduce(
       hpx::detail::to_hpx_execution_policy(exec),

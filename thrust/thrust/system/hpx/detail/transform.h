@@ -36,7 +36,7 @@ OutputIterator transform(
   // wrap op
   hpx_wrapped_function<UnaryFunction> wrapped_op{op};
 
-  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator, ::hpx::forward_traversal_tag>)
   {
     auto res = ::hpx::transform(
       hpx::detail::to_hpx_execution_policy(exec),
@@ -68,8 +68,8 @@ OutputIterator transform(
   // wrap op
   hpx_wrapped_function<BinaryFunction> wrapped_op{op};
 
-  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator1>
-                && ::hpx::traits::is_forward_iterator_v<InputIterator2>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator1, ::hpx::forward_traversal_tag>
+                && ::hpx::traits::belongs_to_iterator_traversal_v<InputIterator2, ::hpx::forward_traversal_tag>)
   {
     auto res = ::hpx::transform(
       hpx::detail::to_hpx_execution_policy(exec),

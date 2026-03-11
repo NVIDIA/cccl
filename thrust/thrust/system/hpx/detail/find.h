@@ -30,7 +30,7 @@ template <typename DerivedPolicy, typename InputIterator, typename T>
 InputIterator
 find(execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator first, InputIterator last, const T& value)
 {
-  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator, ::hpx::forward_traversal_tag>)
   {
     auto res = ::hpx::find(
       hpx::detail::to_hpx_execution_policy(exec),
@@ -52,7 +52,7 @@ find_if(execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator fi
   // wrap
   hpx_wrapped_function<Predicate> wrapped_pred(pred);
 
-  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator, ::hpx::forward_traversal_tag>)
   {
     auto res = ::hpx::find_if(
       hpx::detail::to_hpx_execution_policy(exec),
@@ -74,7 +74,7 @@ InputIterator find_if_not(
   // wrap
   hpx_wrapped_function<Predicate> wrapped_pred(pred);
 
-  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
+  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator, ::hpx::forward_traversal_tag>)
   {
     auto res = ::hpx::find_if_not(
       hpx::detail::to_hpx_execution_policy(exec),

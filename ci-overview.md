@@ -1,6 +1,6 @@
-#Continuous Integration(CI) Overview for CCCL
+# Continuous Integration (CI) Overview for CCCL
 
-The Continuous Integration(CI) process for CCCL ensures code quality and compatibility across various environments. This document provides an in-depth overview of the CI setup and workflows, enabling contributors to understand, debug, and reproduce CI checks locally.
+The Continuous Integration (CI) process for CCCL ensures code quality and compatibility across various environments. This document provides an in-depth overview of the CI setup and workflows, enabling contributors to understand, debug, and reproduce CI checks locally.
 
 ## CI Environment and Configuration
 
@@ -116,8 +116,8 @@ To enable commit signing using your existing ssh key, set the following git opti
 git config --global gpg.format ssh
 git config --global user.signingKey ~/.ssh/YOUR_PUBLIC_KEY_FILE_HERE.pub
 
-#These settings are optional.They tell git to automatically sign all new commits and tags.
-#If these are set to false, use `git commit - S` to manually sign each commit.
+# These settings are optional. They tell git to automatically sign all new commits and tags.
+# If these are set to false, use `git commit -S` to manually sign each commit.
 git config --global commit.gpgsign true
 git config --global tag.gpgsign true
 ```

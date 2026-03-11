@@ -3,7 +3,7 @@
 |[Contributor Guide](https://github.com/NVIDIA/cccl/blob/main/CONTRIBUTING.md)|[Dev Containers](https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md)|[Discord](https://discord.gg/nvidiadeveloper)|[Godbolt](https://godbolt.org/z/x4G73af9a)|[GitHub Project](https://github.com/orgs/NVIDIA/projects/6)|[Documentation](https://nvidia.github.io/cccl)|
 |-|-|-|-|-|-|
 
-#CUDA Core Compute Libraries(CCCL)
+# CUDA Core Compute Libraries (CCCL)
 
 Welcome to the CUDA Core Compute Libraries (CCCL) where our mission is to make CUDA more delightful.
 
@@ -44,15 +44,12 @@ It then shows how the same reduction can be done using Thrust's `reduce` algorit
 [Try it live on Godbolt!](https://godbolt.org/z/3KaWz3Msf)
 
 ```cpp
-#include <cub/block/block_reduce.cuh>
-
-#include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
-
+#include <thrust/device_vector.h>
+#include <cub/block/block_reduce.cuh>
 #include <cuda/atomic>
 #include <cuda/cmath>
 #include <cuda/std/span>
-
 #include <cstdio>
 
 template <int block_size>
@@ -61,21 +58,20 @@ __global__ void reduce(cuda::std::span<int const> data, cuda::std::span<int> res
   __shared__ typename BlockReduce::TempStorage temp_storage;
 
   int const index = threadIdx.x + blockIdx.x * blockDim.x;
-  int sum         = 0;
-  if (index < data.size())
-  {
+  int sum = 0;
+  if (index < data.size()) {
     sum += data[index];
   }
   sum = BlockReduce(temp_storage).Sum(sum);
 
-  if (threadIdx.x == 0)
-  {
+  if (threadIdx.x == 0) {
     cuda::atomic_ref<int, cuda::thread_scope_device> atomic_result(result.front());
     atomic_result.fetch_add(sum, cuda::memory_order_relaxed);
   }
 }
 
 int main() {
+
   // Allocate and initialize input data
   int const N = 1000;
   thrust::device_vector<int> data(N);
@@ -86,14 +82,12 @@ int main() {
 
   // Compute the sum reduction of `data` using a custom kernel
   constexpr int block_size = 256;
-  int const num_blocks     = cuda::ceil_div(N, block_size);
-  reduce<block_size>
-    <<<num_blocks, block_size>>>(cuda::std::span<int const>(thrust::raw_pointer_cast(data.data()), data.size()),
-                                 cuda::std::span<int>(thrust::raw_pointer_cast(kernel_result.data()), 1));
+  int const num_blocks = cuda::ceil_div(N, block_size);
+  reduce<block_size><<<num_blocks, block_size>>>(cuda::std::span<int const>(thrust::raw_pointer_cast(data.data()), data.size()),
+                                                 cuda::std::span<int>(thrust::raw_pointer_cast(kernel_result.data()), 1));
 
   auto const err = cudaDeviceSynchronize();
-  if (err != cudaSuccess)
-  {
+  if (err != cudaSuccess) {
     std::cout << "Error: " << cudaGetErrorString(err) << std::endl;
     return -1;
   }
@@ -125,10 +119,8 @@ When you compile with `nvcc`, it automatically adds CCCL headers to your include
 If compiling with another compiler, you will need to update your build system's include search path to point to the CCCL headers in your CTK install (e.g., `/usr/local/cuda/include`).
 
 ```cpp
-#include <cub/cub.cuh>
-
 #include <thrust/device_vector.h>
-
+#include <cub/cub.cuh>
 #include <cuda/std/atomic>
 ```
 
