@@ -33,9 +33,6 @@
 
 namespace cuda::experimental
 {
-//! @brief Tag constant used to enable extent-1 mode removal in @ref __to_raw_tensor.
-inline constexpr auto __remove_extent1 = ::cuda::std::true_type{};
-
 //! @brief Extracts the stride type from a layout mapping, defaulting to `index_type` when absent.
 template <typename _Mapping, typename = void>
 struct __mapping_stride_type
@@ -73,12 +70,10 @@ template <typename _ExtentT,
           typename _Tp,
           typename _Extents,
           typename _LayoutPolicy,
-          typename _AccessorPolicy,
-          bool _RemoveExtent1 = false>
+          typename _AccessorPolicy>
 [[nodiscard]]
 _CCCL_HOST_API constexpr __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>
-__to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _AccessorPolicy>& __mdspan,
-                ::cuda::std::bool_constant<_RemoveExtent1> = {}) noexcept
+__to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _AccessorPolicy>& __mdspan) noexcept
 {
   static_assert(_MaxRank >= _Extents::rank(), "_MaxRank must be at least _Extents::rank()");
   using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
@@ -87,15 +82,14 @@ __to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _Accesso
   __raw_tensor_t __result{__mdspan.data_handle(), 0, {}, {}};
   if constexpr (_Extents::rank() > 0)
   {
-    ::cuda::std::size_t __r = 0;
-    for (::cuda::std::size_t __i = 0; __i < _Extents::rank(); ++__i)
+    __rank_t __r = 0;
+    for (__rank_t __i = 0; __i < _Extents::rank(); ++__i)
     {
-      const auto __rank   = static_cast<__rank_t>(__i);
-      const auto __extent = static_cast<__extent_t>(__mdspan.extent(__rank));
-      if (!_RemoveExtent1 || __extent != 1)
+      const auto __extent = static_cast<__extent_t>(__mdspan.extent(__i));
+      if (__extent != __extent_t{1})
       {
         __result.__extents[__r] = __extent;
-        __result.__strides[__r] = static_cast<_StrideT>(__mdspan.stride(__rank));
+        __result.__strides[__r] = static_cast<_StrideT>(__mdspan.stride(__i));
         ++__r;
       }
     }
@@ -111,15 +105,14 @@ __to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _Accesso
 //! @param[in] __mdspan Source mdspan view
 //! @param[in] (tag) If true, remove extent-1 modes
 //! @return @ref __raw_tensor descriptor with data pointer, rank, extents, and strides
-template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _AccessorPolicy, bool _RemoveExtent1 = false>
+template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _AccessorPolicy>
 [[nodiscard]]
 _CCCL_HOST_API constexpr __to_raw_tensor_t<_Extents::rank(), _Tp, _Extents, _LayoutPolicy>
-__to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _AccessorPolicy>& __mdspan,
-                ::cuda::std::bool_constant<_RemoveExtent1> __tag = {}) noexcept
+__to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _AccessorPolicy>& __mdspan) noexcept
 {
   using __extent_t = typename _Extents::index_type;
   using __stride_t = __mdspan_stride_t<_Extents, _LayoutPolicy>;
-  return ::cuda::experimental::__to_raw_tensor<__extent_t, __stride_t, _Extents::rank()>(__mdspan, __tag);
+  return ::cuda::experimental::__to_raw_tensor<__extent_t, __stride_t, _Extents::rank()>(__mdspan);
 }
 } // namespace cuda::experimental
 

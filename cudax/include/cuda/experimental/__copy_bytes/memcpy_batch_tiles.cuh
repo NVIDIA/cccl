@@ -74,12 +74,18 @@ struct __tile_iterator_linearized
   //! @return Pointer into the tensor at the computed multi-dimensional offset
   [[nodiscard]] _CCCL_HOST_API _Tp* operator()(__unsigned_extent_t __tile_idx) const noexcept
   {
-    const auto __index = __tile_idx * __contiguous_size_;
-    _StrideT __offset  = 0;
-    for (::cuda::std::size_t __i = 0; __i < __tensor_.__rank; ++__i)
+    const auto __index    = __tile_idx * __contiguous_size_;
+    const auto& __extents = __tensor_.__extents;
+    const auto& __strides = __tensor_.__strides;
+    if (__tensor_.__rank == 1)
     {
-      const auto __coord = static_cast<_StrideT>((__index / __extent_products_[__i]) % __tensor_.__extents[__i]);
-      __offset += __coord * __tensor_.__strides[__i];
+      return __tensor_.__data + __index * __strides[0];
+    }
+    _StrideT __offset = (__index % __extents[0]) * __strides[0]; // __extent_products_[0] == 1
+    for (::cuda::std::size_t __i = 1; __i < __tensor_.__rank; ++__i)
+    {
+      const auto __coord = static_cast<_StrideT>((__index / __extent_products_[__i]) % __extents[__i]);
+      __offset += __coord * __strides[__i];
     }
     return __tensor_.__data + __offset;
   }
@@ -145,7 +151,7 @@ _CCCL_HOST_API inline void __memcpy_batch_tiles(
   using ::cuda::std::size_t;
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   auto __attributes = ::cuda::experimental::__get_memcpy_attributes(__direction, __src_data_handle, __dst_data_handle);
-  const auto __memcpy_batch_async_lambda = [&](auto& __src_ptrs, auto& __dst_ptrs, auto& __sizes) {
+  const auto __memcpy_batch_async_lambda = [&](auto __src_ptrs, auto __dst_ptrs, auto __sizes) {
     for (size_t __tile_idx = 0; __tile_idx < __num_tiles; ++__tile_idx)
     {
       __src_ptrs[__tile_idx] = __src_tiles_iterator(__tile_idx);
@@ -154,29 +160,32 @@ _CCCL_HOST_API inline void __memcpy_batch_tiles(
     }
     size_t __attribute_indices = 0;
     ::cuda::__driver::__memcpyBatchAsync(
-      __dst_ptrs.data(),
-      __src_ptrs.data(),
-      __sizes.data(),
+      __dst_ptrs,
+      __src_ptrs,
+      __sizes,
       __num_tiles,
       &__attributes,
       &__attribute_indices,
-      1, // __num_attributes
+      /*num_attributes=*/1,
       __stream.get());
   };
   constexpr size_t __max_tiles = 16;
   if (__num_tiles > __max_tiles)
   {
-    ::std::vector<const void*> __src_ptr_vector(__num_tiles);
-    ::std::vector<void*> __dst_ptr_vector(__num_tiles);
-    ::std::vector<size_t> __sizes(__num_tiles);
-    __memcpy_batch_async_lambda(__src_ptr_vector, __dst_ptr_vector, __sizes);
+    auto __src_ptrs = new const void*[__num_tiles];
+    auto __dst_ptrs = new void*[__num_tiles];
+    auto __sizes    = new size_t[__num_tiles];
+    __memcpy_batch_async_lambda(__src_ptrs, __dst_ptrs, __sizes);
+    delete[] __src_ptrs;
+    delete[] __dst_ptrs;
+    delete[] __sizes;
   }
   else
   {
     ::cuda::std::array<const void*, __max_tiles> __src_ptr_array{};
     ::cuda::std::array<void*, __max_tiles> __dst_ptr_array{};
     ::cuda::std::array<size_t, __max_tiles> __sizes{};
-    __memcpy_batch_async_lambda(__src_ptr_array, __dst_ptr_array, __sizes);
+    __memcpy_batch_async_lambda(__src_ptr_array.data(), __dst_ptr_array.data(), __sizes.data());
   }
 #  else
   for (size_t __tile_idx = 0; __tile_idx < __num_tiles; ++__tile_idx)
