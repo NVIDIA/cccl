@@ -232,7 +232,7 @@ public:
    */
   virtual ::std::shared_ptr<void> get_affine_exec_impl() const
   {
-    return nullptr;
+    throw ::std::logic_error("get_affine_exec_impl() called on non-composite data_place");
   }
 
   // === Composite-specific (throw by default) ===

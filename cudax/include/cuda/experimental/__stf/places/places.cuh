@@ -93,6 +93,11 @@ public:
       : pimpl_(make_static_instance<data_place_invalid>())
   {}
 
+  data_place(const data_place&)            = default;
+  data_place(data_place&&)                 = default;
+  data_place& operator=(const data_place&) = default;
+  data_place& operator=(data_place&&)      = default;
+
   /**
    * @brief Represents an invalid `data_place` object.
    */
@@ -192,8 +197,6 @@ public:
   // To use in a ::std::map indexed by data_place
   bool operator<(const data_place& rhs) const
   {
-    // Not implemented for composite places
-    EXPECT((!is_composite() && !rhs.is_composite()), "Ordering of composite places is not implemented.");
     return pimpl_->cmp(*rhs.pimpl_) < 0;
   }
 
@@ -1412,7 +1415,8 @@ inline exec_place data_place::affine_exec_place() const
   }
 
   // For invalid, affine, device_auto - throw
-  throw ::std::logic_error("affine_exec_place() not meaningful for this data_place type");
+  throw ::std::logic_error("affine_exec_place() not meaningful for data_place type with ordinal "
+                           + ::std::to_string(pimpl_->get_device_ordinal()));
 }
 
 /// Implementation deferred because we need the definition of exec_place_grid

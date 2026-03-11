@@ -1731,7 +1731,9 @@ inline void reserved::logical_data_untyped_impl::erase()
 
       data_instance& ref_instance  = get_data_instance(ref_id);
       const data_place& ref_dplace = ref_instance.get_dplace();
-      auto e                       = ref_dplace.affine_exec_place();
+      _CCCL_ASSERT(!ref_dplace.is_affine() && !ref_dplace.is_invalid(),
+                   "ref_dplace must be resolved to a concrete place before erase");
+      auto e = ref_dplace.affine_exec_place();
       l.reconstruct_after_redux(ctx, ref_id, e, wb_prereqs);
 
       h_state.current_mode = access_mode::none;
