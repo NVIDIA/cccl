@@ -107,6 +107,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
   {
     _CCCL_THROW(::std::invalid_argument, "destination mdspan must not have interleaved stride order");
   }
+
   if (__tensor_size == 1)
   {
     ::cuda::__driver::__memcpyAsync(__dst.data_handle(), __src.data_handle(), sizeof(_TpIn), __stream.get());
