@@ -164,9 +164,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
 
-  const unsigned tid      = threadIdx.x + blockDim.x * blockIdx.x;
+  const int tid           = blockDim.x * blockIdx.x + threadIdx.x;
   const OffsetT tile_base = static_cast<OffsetT>(tid) * items_per_tile;
-
   if (tid > 0 && tid < num_tiles)
   {
     d_keys_prev_in[tid] = d_keys_in[tile_base - 1];

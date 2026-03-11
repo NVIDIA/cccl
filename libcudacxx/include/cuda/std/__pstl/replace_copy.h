@@ -23,6 +23,7 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/replace_copy.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>
@@ -79,15 +80,17 @@ _CCCL_HOST_API _OutputIterator replace_copy(
   static_assert(__is_cpp17_equality_comparable_v<_Tp, iter_reference_t<_InputIterator>>,
                 "cuda::std::replace_copy requires T to be comparable with iter_reference_t<InputIterator>");
 
-  if (__first == __last)
-  {
-    return __result;
-  }
-
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__transform, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::replace_copy");
+
+    if (__first == __last)
+    {
+      return __result;
+    }
+
     return __dispatch(
       __policy,
       ::cuda::std::move(__first),

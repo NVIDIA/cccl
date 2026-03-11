@@ -53,29 +53,15 @@ int main()
   auto lX = ctx.logical_data(X);
   auto lY = ctx.logical_data(Y);
 
-  /* Compute Y = Y + alpha X */
+  /* Compute Y = Y + alpha X on the user stream */
   auto where = exec_place::cuda_stream(stream);
 
-  for (size_t iter = 0; iter < 10; iter++)
+  for (size_t iter = 0; iter < 20; iter++)
   {
     ctx.parallel_for(where, lX.shape(), lX.read(), lY.rw())->*[alpha] __device__(size_t i, auto x, auto y) {
       y(i) += alpha * x(i);
     };
   }
-
-  /* Associate the CUDA stream with a unique internal ID to speed up synchronizations */
-  auto rstream = register_stream(ctx.async_resources(), stream);
-  auto where2  = exec_place::cuda_stream(rstream);
-
-  for (size_t iter = 0; iter < 10; iter++)
-  {
-    ctx.parallel_for(where2, lX.shape(), lX.read(), lY.rw())->*[alpha] __device__(size_t i, auto x, auto y) {
-      y(i) += alpha * x(i);
-    };
-  }
-
-  // Remove the association
-  unregister_stream(ctx.async_resources(), rstream);
 
   ctx.finalize();
 

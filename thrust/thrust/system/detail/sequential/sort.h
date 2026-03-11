@@ -34,6 +34,10 @@ namespace sort_detail
 template <typename KeyType, typename Compare>
 inline constexpr bool use_primitive_sort =
   ::cuda::std::is_arithmetic_v<KeyType>
+  // RadixEncoder is not specialized for long double
+  && !::cuda::std::is_same_v<KeyType, long double>
+  // radix_sort_dispatcher only supports key sizes of 1, 2, 4, or 8 bytes
+  && (sizeof(KeyType) == 1 || sizeof(KeyType) == 2 || sizeof(KeyType) == 4 || sizeof(KeyType) == 8)
   && (::cuda::std::is_same_v<Compare, ::cuda::std::less<KeyType>>
       || ::cuda::std::is_same_v<Compare, ::cuda::std::greater<KeyType>>);
 

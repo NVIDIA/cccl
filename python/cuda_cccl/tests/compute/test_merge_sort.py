@@ -180,10 +180,10 @@ def test_merge_sort_pairs_struct_type():
     h_in_items["a"] = a_items
     h_in_items["b"] = b_items
 
-    d_in_keys = numba.cuda.to_device(h_in_keys)
-    d_in_keys = cp.asarray(d_in_keys).view(key_pair.dtype)
-    d_in_items = numba.cuda.to_device(h_in_items)
-    d_in_items = cp.asarray(d_in_items).view(item_pair.dtype)
+    d_in_keys = cp.empty_like(h_in_keys)
+    d_in_items = cp.empty_like(h_in_items)
+    d_in_keys.set(h_in_keys)
+    d_in_items.set(h_in_items)
 
     merge_sort_device(
         d_in_keys, d_in_items, d_in_keys, d_in_items, struct_compare_op, num_items
@@ -313,6 +313,38 @@ def test_merge_sort_well_known_greater():
 
     expected = np.array([9, 8, 5, 3, 2, 1])
     np.testing.assert_equal(d_out_keys.get(), expected)
+
+
+def test_merge_sort_large_temp_storage_not_negative():
+    """Regression test for https://github.com/NVIDIA/cccl/issues/7911.
+
+    temp_storage_bytes was returned as a signed 32-bit int, overflowing
+    to a negative value for large inputs requiring >2GB temp storage.
+    """
+    num_items = 2**28
+    dtype = np.int64
+    d_in_keys = cp.zeros(num_items, dtype=dtype)
+    d_out_keys = cp.empty(num_items, dtype=dtype)
+
+    sorter = cuda.compute.make_merge_sort(
+        d_in_keys=d_in_keys,
+        d_in_items=None,
+        d_out_keys=d_out_keys,
+        d_out_items=None,
+        op=OpKind.LESS,
+    )
+
+    temp_storage_bytes = sorter(
+        temp_storage=None,
+        d_in_keys=d_in_keys,
+        d_in_items=None,
+        d_out_keys=d_out_keys,
+        d_out_items=None,
+        op=OpKind.LESS,
+        num_items=num_items,
+    )
+
+    assert temp_storage_bytes > 0
 
 
 def test_merge_sort_with_values_well_known():

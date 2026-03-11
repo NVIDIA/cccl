@@ -797,8 +797,11 @@ struct policy_hub
                              detail::default_delay_constructor_t<int>>;
   };
 
+  // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy500
+  using DefaultPolicy500 = DefaultPolicy<9, 128>;
+
   struct Policy500
-      : DefaultPolicy<9, 128>
+      : DefaultPolicy500
       , ChainedPolicy<500, Policy500, Policy500>
   {};
 
@@ -814,8 +817,11 @@ struct policy_hub
   template <typename Tuning>
   static _CCCL_HOST_DEVICE auto select_agent_policy(long) -> typename DefaultPolicy<11, 64>::UniqueByKeyPolicyT;
 
+  // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy520
+  using DefaultPolicy520 = DefaultPolicy<11, 64>;
+
   struct Policy520
-      : DefaultPolicy<11, 64>
+      : DefaultPolicy520
       , ChainedPolicy<520, Policy520, Policy500>
   {};
 
@@ -824,8 +830,11 @@ struct policy_hub
     using UniqueByKeyPolicyT = decltype(select_agent_policy<sm80_tuning<KeyT, ValueT>>(0));
   };
 
+  // nvbug5935129: GCC-11.2 cannot directly use DefaultPolicy inside Policy860
+  using DefaultPolicy860 = DefaultPolicy<11, 64>;
+
   struct Policy860
-      : DefaultPolicy<11, 64>
+      : DefaultPolicy860
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 

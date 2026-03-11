@@ -231,8 +231,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
   OffsetT target_merged_tiles_number,
   int items_per_tile)
 {
-  OffsetT partition_idx = blockDim.x * blockIdx.x + threadIdx.x;
-
+  const OffsetT partition_idx = static_cast<OffsetT>(blockDim.x * blockIdx.x + threadIdx.x);
   if (partition_idx < num_partitions)
   {
     AgentPartition<KeyIteratorT, OffsetT, CompareOpT, KeyT>{

@@ -84,9 +84,7 @@ void run()
 
   /* Compute Y = Y + alpha X */
   auto t = ctx.task(all_devs, handle_X.read(cdp), handle_Y.rw(cdp));
-  t->*[&](auto stream, auto sX, auto sY) {
-    // should be nullptr as we did not set a place
-    // fprintf(stderr, "t.get_stream() = %p\n", t.get_stream());
+  t->*[&](auto, auto sX, auto sY) {
     size_t grid_size = t.grid_dims().size();
 
     assert(N % grid_size == 0);
@@ -94,8 +92,7 @@ void run()
     for (size_t i = 0; i < grid_size; i++)
     {
       t.set_current_place(pos4(i));
-      // fprintf(stderr, "t.get_stream(%ld) = %p\n", i, t.get_stream());
-      axpy<<<16, 128, 0, stream>>>(i * N / grid_size, N / grid_size, alpha, sX.data_handle(), sY.data_handle());
+      axpy<<<16, 128, 0, t.get_stream()>>>(i * N / grid_size, N / grid_size, alpha, sX.data_handle(), sY.data_handle());
       t.unset_current_place();
     }
   };
