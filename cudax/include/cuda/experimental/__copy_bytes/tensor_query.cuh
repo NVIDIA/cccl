@@ -168,7 +168,7 @@ template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _Acc
         return true;
       }
     }
-    for (::cuda::std::size_t __i = 0; __i + 1 < __sorted.__rank; ++__i)
+    for (__rank_t __i = 0; __i + 1 < __sorted.__rank; ++__i)
     {
       const auto __extent = static_cast<__stride_t>(__extents[__i]);
       if (__extent * cudax::__abs_integer(__strides[__i]) > cudax::__abs_integer(__strides[__i + 1]))
