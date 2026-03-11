@@ -41,19 +41,18 @@ __global__ void init_kernel(double* ptr, size_t n)
 
 void run_gc_grid_vmm_test()
 {
-  async_resources_handle handle;
   const int num_sms = 8;
   const int dev_id  = 0;
-  auto gc_helper    = handle.get_gc_helper(dev_id, num_sms);
+  green_context_helper gc_helper(num_sms, dev_id);
 
-  if (gc_helper->get_count() < 1)
+  if (gc_helper.get_count() < 1)
   {
     fprintf(stderr, "No green contexts available, skipping VMM path test.\n");
     return;
   }
 
   // Grid of green context places with explicit affine data places (VMM path).
-  auto where = gc_helper->get_grid(true);
+  auto where = gc_helper.get_grid(true);
 
   // Composite data place with blocked partitioner: allocation on this place
   // uses the VMM path (localized_array).
@@ -66,7 +65,7 @@ void run_gc_grid_vmm_test()
   const size_t n          = 1024 * 1024;
   const size_t size_bytes = n * sizeof(double);
 
-  // Modular API: allocate directly on the composite place (VMM path)
+  // Allocate directly on the composite place (VMM path)
   void* ptr = cdp.allocate(size_bytes);
   EXPECT(ptr != nullptr);
 
@@ -85,7 +84,6 @@ void run_gc_grid_vmm_test()
     EXPECT(h_buf[i] == static_cast<double>(i));
   }
 
-  // Modular API: deallocate
   cdp.deallocate(ptr, size_bytes);
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
