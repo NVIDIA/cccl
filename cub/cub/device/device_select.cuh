@@ -1509,8 +1509,8 @@ public:
   //! only the first key from each run is selectively copied to ``d_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
-  //! .. versionadded:: 2.2.0
-  //!    First appears in CUDA Toolkit 12.3.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - The user-provided equality operator, `equality_op`, is used to determine whether keys are equivalent
   //! - Copies of the selected items are compacted into ``d_out`` and maintain their original relative ordering.

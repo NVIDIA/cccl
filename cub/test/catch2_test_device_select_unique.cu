@@ -15,6 +15,15 @@
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
 
+struct fake_equal_to
+{
+  template <class T, class U>
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr bool operator()(const T& lhs, const U& rhs) const noexcept
+  {
+    return lhs == rhs;
+  }
+};
+
 template <class T>
 inline T to_bound(const unsigned long long bound)
 {
@@ -111,11 +120,8 @@ C2H_TEST("DeviceSelect::Unique handles none equal", "[device][select_unique]", t
   REQUIRE(num_selected_out[0] == num_items);
 
   // test overload with predicate
-  select_unique(cuda::counting_iterator<type>(0),
-                cuda::discard_iterator(),
-                d_first_num_selected_out,
-                num_items,
-                cuda::std::equal_to<type>{});
+  select_unique(
+    cuda::counting_iterator<type>(0), cuda::discard_iterator(), d_first_num_selected_out, num_items, fake_equal_to{});
   REQUIRE(num_selected_out[0] == num_items);
 }
 
@@ -139,7 +145,7 @@ C2H_TEST("DeviceSelect::Unique handles all equal", "[device][select_unique]", ty
   REQUIRE(out[0] == in[0]);
 
   // test overload with predicate
-  select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items, cuda::std::equal_to<type>{});
+  select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items, fake_equal_to{});
 
   // At least one item is selected
   REQUIRE(num_selected_out[0] == 1);
@@ -167,7 +173,7 @@ C2H_TEST("DeviceSelect::Unique does not change input", "[device][select_unique]"
   REQUIRE(reference == in);
 
   // test overload with predicate
-  select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items, cuda::std::equal_to<type>{});
+  select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items, fake_equal_to{});
   REQUIRE(reference == in);
 }
 
@@ -197,7 +203,7 @@ C2H_TEST("DeviceSelect::Unique works with iterators", "[device][select_unique]",
   REQUIRE(reference == out);
 
   // test overload with predicate
-  select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items, cuda::std::equal_to<type>{});
+  select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items, fake_equal_to{});
   REQUIRE(num_selected_std == num_selected_out[0]);
   REQUIRE(reference == out);
 }
@@ -233,7 +239,7 @@ C2H_TEST("DeviceSelect::Unique works with pointers", "[device][select_unique]", 
                 thrust::raw_pointer_cast(out.data()),
                 d_first_num_selected_out,
                 num_items,
-                cuda::std::equal_to<type>{});
+                fake_equal_to{});
   REQUIRE(num_selected_std == num_selected_out[0]);
   REQUIRE(reference == out);
 }
@@ -284,7 +290,7 @@ C2H_TEST("DeviceSelect::Unique works with a different output type", "[device][se
   REQUIRE(reference == out);
 
   // test overload with predicate
-  select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items, cuda::std::equal_to<type>{});
+  select_unique(in.begin(), out.begin(), d_first_num_selected_out, num_items, fake_equal_to{});
   REQUIRE(num_selected_std == num_selected_out[0]);
   REQUIRE(reference == out);
 }
@@ -333,7 +339,7 @@ try
     check_result_helper.check_all_results_correct();
 
     // test overload without predicate
-    select_unique(in, check_result_it, d_first_num_selected_out, num_items, cuda::std::equal_to<type>{});
+    select_unique(in, check_result_it, d_first_num_selected_out, num_items, fake_equal_to{});
 
     // Ensure that we created the correct output
     REQUIRE(num_selected_out[0] == num_items);
@@ -365,7 +371,7 @@ try
     check_result_helper.check_all_results_correct();
 
     // test overload with predicate
-    select_unique(in, check_result_it, d_first_num_selected_out, num_items, cuda::std::equal_to<type>{});
+    select_unique(in, check_result_it, d_first_num_selected_out, num_items, fake_equal_to{});
 
     // Ensure that we created the correct output
     REQUIRE(num_selected_out[0] == expected_num_unique);
