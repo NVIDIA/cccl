@@ -38,7 +38,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_shared_global_is_not_supported_
 
 #  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 1) // WAR for compiler state space issues
 template <size_t _Copy_size>
-inline _CCCL_DEVICE void __cp_async_shared_global(char* __dest, const char* __src)
+_CCCL_DEVICE_API void __cp_async_shared_global(char* __dest, const char* __src)
 {
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
 
@@ -65,7 +65,7 @@ inline _CCCL_DEVICE void __cp_async_shared_global(char* __dest, const char* __sr
     (::cuda::__cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();));
 }
 template <>
-inline _CCCL_DEVICE void __cp_async_shared_global<16>(char* __dest, const char* __src)
+_CCCL_DEVICE_API inline void __cp_async_shared_global<16>(char* __dest, const char* __src)
 {
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
   // When copying 16 bytes, it is possible to skip L1 cache (.cg).
@@ -86,7 +86,7 @@ inline _CCCL_DEVICE void __cp_async_shared_global<16>(char* __dest, const char* 
 }
 #  else // ^^^^ NVCC 12.0 / !NVCC 12.0 vvvvv WAR for compiler state space issues
 template <size_t _Copy_size>
-inline _CCCL_DEVICE void __cp_async_shared_global(char* __dest, const char* __src)
+_CCCL_DEVICE_API void __cp_async_shared_global(char* __dest, const char* __src)
 {
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
 
@@ -104,7 +104,7 @@ inline _CCCL_DEVICE void __cp_async_shared_global(char* __dest, const char* __sr
     (::cuda::__cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();));
 }
 template <>
-inline _CCCL_DEVICE void __cp_async_shared_global<16>(char* __dest, const char* __src)
+_CCCL_DEVICE_API inline void __cp_async_shared_global<16>(char* __dest, const char* __src)
 {
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
   // When copying 16 bytes, it is possible to skip L1 cache (.cg).
@@ -119,7 +119,7 @@ inline _CCCL_DEVICE void __cp_async_shared_global<16>(char* __dest, const char* 
 #  endif // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 1)
 
 template <size_t _Alignment, typename _Group>
-inline _CCCL_DEVICE void
+_CCCL_DEVICE_API void
 __cp_async_shared_global_mechanism(_Group __g, char* __dest, const char* __src, ::cuda::std::size_t __size)
 {
   // If `if constexpr` is not available, this function gets instantiated even

@@ -106,10 +106,10 @@ enum class candidate_class
 };
 
 // Calculates the number of passes needed for a type T with BitsPerPass bits processed per pass.
-template <typename T, int BitsPerPass>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes()
+template <typename T>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes(int bits_per_pass)
 {
-  return ::cuda::ceil_div<int>(sizeof(T) * 8, BitsPerPass);
+  return ::cuda::ceil_div<int>(sizeof(T) * 8, bits_per_pass);
 }
 
 // Calculates the starting bit for a given pass (bit 0 is the least significant (rightmost) bit).
@@ -748,7 +748,7 @@ struct AgentTopK
       choose_bucket(counter, current_k, pass);
 
       // Reset histogram for the next pass
-      constexpr int num_passes = calc_num_passes<key_in_t, bits_per_pass>();
+      constexpr int num_passes = calc_num_passes<key_in_t>(bits_per_pass);
       if (pass != num_passes - 1)
       {
         init_histograms(histogram);

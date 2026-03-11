@@ -34,7 +34,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 struct __cccl_catch_any_lvalue
 {
   template <class _Tp>
-  _CCCL_HOST_DEVICE operator _Tp&() const noexcept;
+  _CCCL_API operator _Tp&() const noexcept;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
@@ -68,16 +68,25 @@ _CCCL_END_NAMESPACE_CUDA_STD
 #  define _CCCL_CATCH     catch
 #  define _CCCL_CATCH_ALL catch (...)
 #  define _CCCL_CATCH_FALLTHROUGH
-#  define _CCCL_THROW(_TYPE, ...) throw ::_TYPE(__VA_ARGS__)
-#  define _CCCL_RETHROW           throw
+
+// Even though nvc++ in CUDA mode replaces `throw` by `__trap()` call in device code, it instantiates the exception type
+// which can introduce some host only symbols to the nvvm ir (for example snprintf). So we need to wrap it by the
+// NV_IF_ELSE_TARGET macro.
+#  define _CCCL_THROW(_TYPE, ...)                                                             \
+    do                                                                                        \
+    {                                                                                         \
+      NV_IF_ELSE_TARGET(NV_IS_HOST, (throw _TYPE(__VA_ARGS__);), (::cuda::std::terminate();)) \
+    } while (0)
+#  define _CCCL_RETHROW throw
 #else // ^^^ use exceptions ^^^ / vvv no exceptions vvv
 #  define _CCCL_TRY     \
     if constexpr (true) \
     {
-#  define _CCCL_CATCH(...)                                                                       \
-    }                                                                                            \
-    else if constexpr (false) for (__VA_ARGS__ = ::cuda::std::__cccl_catch_any_lvalue{}; false;) \
-    {
+#  define _CCCL_CATCH(...)    \
+    }                         \
+    else if constexpr (false) \
+    {                         \
+      for (__VA_ARGS__ = ::cuda::std::__cccl_catch_any_lvalue{}; false;)
 #  define _CCCL_CATCH_ALL \
     }                     \
     else

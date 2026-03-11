@@ -12,7 +12,7 @@
 
 #include <cuda/memory_pool>
 #include <cuda/std/__pstl_algorithm>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include "nvbench_helper.cuh"
 
@@ -41,19 +41,18 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   const auto mismatch_point = static_cast<std::size_t>(elements * common_prefix);
 
   thrust::device_vector<T> dinput(elements, thrust::no_init);
-  thrust::fill(dinput.begin(), dinput.begin() + mismatch_point, T{0});
-  thrust::fill(dinput.begin() + mismatch_point, dinput.end(), val);
+  cuda::std::fill(cuda::execution::__cub_par_unseq, dinput.begin(), dinput.begin() + mismatch_point, T{0});
+  cuda::std::fill(cuda::execution::__cub_par_unseq, dinput.begin() + mismatch_point, dinput.end(), val);
 
   state.add_global_memory_reads<T>(mismatch_point + 1);
   state.add_global_memory_writes<size_t>(1);
 
   caching_allocator_t alloc{};
-  auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(alloc);
 
   state.exec(
     nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-      (void) cuda::std::find_if_not(
-        policy.with_stream(launch.get_stream().get_stream()), dinput.begin(), dinput.end(), not_equal_to_val{val});
+      do_not_optimize(
+        cuda::std::find_if_not(cuda_policy(alloc, launch), dinput.begin(), dinput.end(), not_equal_to_val{val}));
     });
 }
 

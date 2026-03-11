@@ -125,13 +125,13 @@ def benchmark_kernel(sink_buffer):
 """
 
     if algorithm_name == "warp_sum":
-        algorithm = coop.warp.sum(numba_dtype)
+        algorithm = coop.warp.make_sum(numba_dtype)
     elif algorithm_name == "warp_min":
 
         def min_op(a, b):
             return a if a < b else b
 
-        algorithm = coop.warp.reduce(numba_dtype, min_op)
+        algorithm = coop.warp.make_reduce(numba_dtype, min_op)
 
     # Create local namespace with required functions
     local_ns = {

@@ -26,6 +26,8 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
+_CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
+_CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 #  include <cub/device/device_transform.cuh>
 
@@ -38,11 +40,12 @@ _CCCL_DIAG_POP
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__algorithm/transform.h>
 #  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__host_stdlib/new>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
-#  include <cuda/std/__new/bad_alloc.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__utility/move.h>
@@ -68,15 +71,12 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
     _UnaryOp __func,
     _Predicate __pred)
   {
-    // The standard forbids relying on stable addresses
-    constexpr auto __stable_address = CUB_NS_QUALIFIER::detail::transform::requires_stable_address::no;
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-
+    auto __stream    = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
     const auto __ret = __result + __count;
 
     // We pass the policy as an environment to device_transform
     _CCCL_TRY_CUDA_API(
-      CUB_NS_QUALIFIER::detail::transform::dispatch<__stable_address>,
+      ::cub::DeviceTransform::TransformIf,
       "cuda::std::transform: failed inside CUDA backend",
       ::cuda::std::move(__first),
       ::cuda::std::move(__result),
@@ -86,7 +86,6 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
       __stream.get());
 
     __stream.sync();
-
     return __ret;
   }
 
@@ -123,7 +122,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
       {
         if (__err.status() == cudaErrorMemoryAllocation)
         {
-          ::cuda::std::__throw_bad_alloc();
+          _CCCL_THROW(::std::bad_alloc);
         }
         else
         {
@@ -176,7 +175,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
       {
         if (__err.status() == cudaErrorMemoryAllocation)
         {
-          ::cuda::std::__throw_bad_alloc();
+          _CCCL_THROW(::std::bad_alloc);
         }
         else
         {

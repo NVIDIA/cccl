@@ -23,6 +23,8 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__functional/equal_to_value.h>
+#  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/find.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>
@@ -43,23 +45,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Tp>
-struct __find_compare_eq
-{
-  _Tp __val_;
-
-  _CCCL_API constexpr __find_compare_eq(const _Tp& __val) noexcept(is_nothrow_copy_constructible_v<_Tp>)
-      : __val_(__val)
-  {}
-
-  template <class _Up>
-  [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE constexpr bool operator()(const _Up& __rhs) const
-    noexcept(__is_cpp17_nothrow_equality_comparable_v<_Tp, _Up>)
-  {
-    return static_cast<bool>(__val_ == __rhs);
-  }
-};
-
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 _CCCL_TEMPLATE(class _Policy, class _Iter, class _Tp)
@@ -70,16 +55,19 @@ find([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, cons
   static_assert(__is_cpp17_equality_comparable_v<_Tp, iter_value_t<_Iter>>,
                 "Parallel cuda::std::find requires that T is equality comparable with iter_value_t<Iter>");
 
-  if (__first == __last)
-  {
-    return __first;
-  }
-
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__find_if, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
-    return __dispatch(__policy, ::cuda::std::move(__first), ::cuda::std::move(__last), __find_compare_eq{__val});
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::find");
+
+    if (__first == __last)
+    {
+      return __first;
+    }
+
+    return __dispatch(
+      __policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::equal_to_value<_Tp>{__val});
   }
   else
   {

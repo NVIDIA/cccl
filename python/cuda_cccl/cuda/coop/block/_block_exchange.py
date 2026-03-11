@@ -89,7 +89,7 @@ class BlockExchangeType(IntEnum):
     StripedToBlocked = auto()
 
 
-def exchange(
+def make_exchange(
     block_exchange_type: BlockExchangeType,
     dtype: DtypeType,
     threads_per_block: DimType,
@@ -98,48 +98,54 @@ def exchange(
     methods: dict = None,
 ):
     """
-    Transpose data partitioned across CUDA thread blocks using the provided
-    block exchange type.
+    Creates a block-wide exchange primitive for rearranging data
+    partitioned across CUDA thread blocks.
 
-    :param block_exchange_type: Supplies the type of block exchange to
-        perform.  Currently, only :py:attr:`StripedToBlocked` is supported.
+    Example:
+        The snippet below shows how to create and invoke the returned
+        ``block_exchange`` primitive for striped-to-blocked exchange.
 
-    :param dtype: Supplies the data type of the input and output arrays.
+        .. code-block:: python
+
+           block_exchange = coop.block.make_exchange(
+               coop.block.BlockExchangeType.StripedToBlocked,
+               dtype=numba.int32,
+               threads_per_block=128,
+               items_per_thread=4,
+           )
+           temp_storage_bytes = block_exchange.temp_storage_bytes
+
+           @cuda.jit(link=block_exchange.files)
+           def kernel(thread_data):
+               temp_storage = cuda.shared.array(
+                   shape=temp_storage_bytes,
+                   dtype=numba.uint8,
+               )
+               block_exchange(temp_storage, thread_data)
+
+    :param block_exchange_type: Exchange mode to perform. Currently, only
+        :py:attr:`StripedToBlocked` is supported.
+    :param dtype: Data type of input and output values.
     :type dtype: :py:class:`cuda.coop._typing.DtypeType`
-
-    :param threads_per_block: Supplies the number of threads in the block,
-        either as an integer for a 1D block or a tuple of two or three integers
-        for a 2D or 3D block, respectively.
-    :type threads_per_block:
-        :py:class:`cuda.coop._typing.DimType`
-
-    :param items_per_thread: Supplies the number of items partitioned onto each
-        thread.
-    :type  items_per_thread: int
-
-    :param warp_time_slicing: Supplies a boolean indicating whether warp
-        time-slicing is used.  If set to `True`, the algorithm will only use
-        enough shared memory to accommodate a single warp's worth of tile data,
-        time-slicing the block-wide exchange over multiple synchronized rounds.
-        Yields a much smaller shared-memory footprint at the expense of
-        decreased parallelism.  Defaults to `False`.
+    :param threads_per_block: Number of threads in the block.
+    :type threads_per_block: :py:class:`cuda.coop._typing.DimType`
+    :param items_per_thread: Number of items owned by each thread.
+    :type items_per_thread: int
+    :param warp_time_slicing: Whether to use warp time-slicing. If true,
+        shared memory usage is reduced at the expense of parallelism.
     :type warp_time_slicing: bool, optional
 
-    :param methods: Optionally supplies a dictionary of methods to use for
-        user-defined types.  The default is *None*.
-    :type  methods: dict, optional
+    :param methods: Optional method dictionary for user-defined types.
+    :type methods: dict, optional
 
     :raises ValueError: If ``block_exchange_type`` is not a valid enum
         value of :py:class:`BlockExchangeType`.
 
     :raises ValueError: If ``items_per_thread`` is less than 1.
 
-    :raises ValueError: If ``items_per_thread`` is greater than 1 and
-        ``methods`` is not *None* (i.e. a user-defined type is being used).
-
-    :returns: An :py:class:`cuda.coop._types.Invocable`
-        object representing the specialized kernel that call be called from
-        a Numba JIT'd CUDA kernel.
+    :returns: An :py:class:`cuda.coop._types.Invocable` object
+        representing the specialized kernel callable from a Numba JIT'd
+        CUDA kernel.
 
     """
     # Validate initial parameters.

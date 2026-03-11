@@ -30,7 +30,6 @@ runs:
         mkdir -p _site
         cp -rf ./docs/_build/html/* _site/
         touch _site/.nojekyll
-        ./docs/scrape_docs.bash ./_site
 
     # Update docs as workflow artifact:
     - name: Upload artifact

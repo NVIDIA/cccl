@@ -28,6 +28,8 @@
 #  include <cuda/__numeric/overflow_cast.h>
 #  include <cuda/__ptx/instructions/get_sreg.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/__type_traits/is_reference.h>
 #  include <cuda/std/__type_traits/is_unbounded_array.h>
@@ -65,7 +67,7 @@ template <__detail::launch_option_kind Kind>
 struct find_option_in_tuple_impl
 {
   template <typename Option, typename... Options>
-  _CCCL_DEVICE auto& operator()(const Option& opt, const Options&... rest)
+  _CCCL_DEVICE_API auto& operator()(const Option& opt, const Options&... rest)
   {
     if constexpr (Option::kind == Kind)
     {
@@ -77,14 +79,14 @@ struct find_option_in_tuple_impl
     }
   }
 
-  _CCCL_DEVICE auto operator()()
+  _CCCL_DEVICE_API auto operator()()
   {
     return option_not_found();
   }
 };
 
 template <__detail::launch_option_kind Kind, typename... Options>
-_CCCL_DEVICE auto& find_option_in_tuple(const ::cuda::std::tuple<Options...>& tuple)
+_CCCL_DEVICE_API auto& find_option_in_tuple(const ::cuda::std::tuple<Options...>& tuple)
 {
   return ::cuda::std::apply(find_option_in_tuple_impl<Kind>(), tuple);
 }
@@ -415,7 +417,7 @@ _CCCL_REQUIRES(::cuda::std::is_unbounded_array_v<_Tp>)
   using value_type = typename dynamic_shared_memory_option<_Tp>::value_type;
   if (__n * sizeof(value_type) > __max_portable_dyn_smem_size)
   {
-    ::cuda::std::__throw_invalid_argument("portable dynamic shared memory limit exceeded");
+    _CCCL_THROW(::std::invalid_argument, "portable dynamic shared memory limit exceeded");
   }
   return dynamic_shared_memory_option<_Tp>::__create(__n, false);
 }
