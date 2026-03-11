@@ -1,4 +1,4 @@
-# Agent Instructions
+#Agent Instructions
 
 This document provides guidelines for building, testing, and contributing to the CCCL repository. It is primarily written for agentic AIs, but the information is also useful for CCCL developers.
 
@@ -23,7 +23,9 @@ The repository uses **CMake** with the **Ninja** generator and provides standard
 
 For a given task, you should:
 
-1. Research. Search the web, read existing code, look up system/dependency headers / implementations of related functionality. Figure out best practices and common pitfalls. Look for existing tests of the functionality; if none exist, plan a new test that integrates with the relevant existing testing frameworks.
+1. Research. Search the web, read existing code, look up system/dependency headers / implementations of related functionality. Figure out best practices and common pitfalls. Look for existing tests of the functionality;
+if none
+{ exist, plan a new test that integrates with the relevant existing testing frameworks.
 2. Plan. Create a high-level plan to implement the requested feature.
 3. Review and Refine plan. Look for pitfalls, find ways to smooth out rough edges. Verify any assumptions, edgecases, or identified pitfalls. Repeat until the plan is solid.
 4. Gather consistency context. Look at similar code (sibling classes if possible, otherwise just related source files) to learn the style and patterns used in the project. Consistency is important -- similar features should be organized and implemented similarly. Naming conventions should be followed.
@@ -52,7 +54,11 @@ All CCCL subprojects are computationally expensive to build and test. Use the pr
 
 ### CMake Presets
 
-Presets are defined in `CMakePresets.json`. Names follow a `project` or `<project>-cpp<std>` format, such as `cub-cpp20`, `thrust-cpp17`, or `libcudacxx`. Use `cmake --list-presets` to view available options. Build trees are placed under `build/${CCCL_BUILD_INFIX}/${PRESET}`.
+Presets are defined in `CMakePresets.json`. Names follow a `project` or `<project>-cpp<std>` format, such as `cub-cpp20`, `thrust-cpp17`, or `libcudacxx`. Use `cmake --list-presets` to view available options. Build trees are placed under `build/${CCCL_BUILD_INFIX}/$
+  {
+    PRESET
+  }
+}`.
 
 ### `.devcontainer/launch.sh`
 
@@ -449,4 +455,5 @@ python/cuda_cccl/
 
 ---
 
-⚠️ **Reminder:** Long-running builds/tests are normal. Never cancel them; allow to complete.
+⚠️ **Reminder:** Long-running builds/tests are normal. Never cancel them;
+allow to complete.
