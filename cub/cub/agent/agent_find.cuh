@@ -13,7 +13,9 @@
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
 #include <cuda/__memory/is_aligned.h>
-#include <cuda/atomic>
+#if !_CCCL_HAS_NV_ATOMIC_BUILTINS()
+#  include <cuda/atomic>
+#endif // !_CCCL_HAS_NV_ATOMIC_BUILTINS()
 #include <cuda/std/__type_traits/integral_constant.h>
 
 CUB_NAMESPACE_BEGIN
@@ -160,13 +162,13 @@ struct agent_t
       // Only one thread reads atomically and propagates it to other threads of the block through shared memory
       if (threadIdx.x == 0)
       {
+#if _CCCL_HAS_NV_ATOMIC_BUILTINS()
         // __nv_atomic_load is a compiler build-in and compiles a lot faster
-#if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 8)
         __nv_atomic_load(found_pos_ptr, &temp_storage.global_result, __NV_ATOMIC_RELAXED, __NV_THREAD_SCOPE_DEVICE);
-#else
+#else // ^^^ _CCCL_HAS_NV_ATOMIC_BUILTINS() ^^^ / vvv !_CCCL_HAS_NV_ATOMIC_BUILTINS() vvv
         temp_storage.global_result = ::cuda::atomic_ref<OffsetT, ::cuda::std::thread_scope_device>{*found_pos_ptr}.load(
           ::cuda::std::memory_order_relaxed);
-#endif
+#endif // !_CCCL_HAS_NV_ATOMIC_BUILTINS()
       }
       __syncthreads();
 

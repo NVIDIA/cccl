@@ -73,7 +73,7 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_n, __execution_backend::__cuda>
     auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
 
     _CCCL_TRY_CUDA_API(
-      ::cub::DeviceTransform::TransformIf,
+      CUB_NS_QUALIFIER::DeviceTransform::TransformIf,
       "__pstl_cuda_copy_n: kernel launch of device_transform failed",
       tuple<_InputIterator>{::cuda::std::move(__first)},
       __result,

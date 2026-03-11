@@ -22,6 +22,7 @@
 #include <cuda/__functional/address_stability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/array>
 #include <cuda/std/concepts>
 #include <cuda/std/tuple>

@@ -6,6 +6,7 @@
 
 #include <thrust/host_vector.h>
 
+#include <cuda/cmath>
 #include <cuda/std/limits>
 
 #include <iostream>
