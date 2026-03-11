@@ -85,6 +85,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
   {
     _CCCL_THROW(::std::invalid_argument, "mdspans must have the same size");
   }
+
   const auto __tensor_size = __src.size();
   if (__tensor_size == 0)
   {
