@@ -1,4 +1,5 @@
-#Contributing to CCCL
+
+# Contributing to CCCL
 
 Thank you for your interest in contributing to the CUDA Core Compute Libraries (CCCL)!
 
@@ -32,7 +33,7 @@ Looking for ideas for your first contribution? Check out: ![GitHub Issues or Pul
    ```bash
    ./ci/build_[thrust|cub|libcudacxx].sh -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
 
-#test implies build
+   # test implies build
    ./ci/test_[thrust|cub|libcudacxx].sh  -cxx <HOST_COMPILER> -std <CXX_STANDARD> -arch <GPU_ARCHS>
    ```
 
