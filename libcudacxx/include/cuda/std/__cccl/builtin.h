@@ -428,4 +428,11 @@
 #  define _CCCL_BUILTIN_STRLEN(...) __builtin_strlen(__VA_ARGS__)
 #endif
 
+// The new __nv_atomic builtins are available when __CUDACC_DEVICE_ATOMIC_BUILTINS__ is defined
+#if defined(__CUDACC_DEVICE_ATOMIC_BUILTINS__) && _CCCL_PTX_ARCH() >= 600 && !_CCCL_COMPILER(MSVC)
+#  define _CCCL_HAS_NV_ATOMIC_BUILTINS() 1
+#else // ^^^ has intrinsics ^^^ / vvv no intrinsics
+#  define _CCCL_HAS_NV_ATOMIC_BUILTINS() 0
+#endif // no intrinsics
+
 #endif // __CCCL_BUILTIN_H

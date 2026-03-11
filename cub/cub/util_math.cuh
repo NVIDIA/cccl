@@ -18,7 +18,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/cmath>
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
