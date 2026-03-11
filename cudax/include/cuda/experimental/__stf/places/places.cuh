@@ -388,6 +388,9 @@ private:
   ::std::shared_ptr<data_place_interface> pimpl_;
 };
 
+/** Declaration for unqualified lookup (friend is only found via ADL when a \c data_place argument is present). */
+inline data_place from_index(size_t n);
+
 /**
  * @brief Indicates where a computation takes place (CPU, dev0, dev1, ...)
  *
