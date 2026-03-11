@@ -141,14 +141,16 @@ merge(execution_policy<ExecutionPolicy>& exec [[maybe_unused]],
   // wrap comp
   hpx_wrapped_function<StrictWeakOrdering> wrapped_comp{comp};
 
-  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator1, ::hpx::forward_traversal_tag>
-                && ::hpx::traits::belongs_to_iterator_traversal_v<InputIterator2, ::hpx::forward_traversal_tag>
-                && ::hpx::traits::belongs_to_iterator_traversal_v<OutputIterator, ::hpx::forward_traversal_tag>)
+  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator1>
+                && ::hpx::traits::is_forward_iterator_v<InputIterator2>
+                && ::hpx::traits::is_forward_iterator_v<OutputIterator>)
   {
     log_space_step lss(
       static_cast<std::size_t>(std::distance(first1, last1)) + static_cast<std::size_t>(std::distance(first2, last2)));
     ::hpx::execution::experimental::chunking_parameters params = {};
     ::hpx::execution::experimental::collect_chunking_parameters collect_params(params);
+    auto const stackless_policy = ::hpx::execution::experimental::with_stacksize(
+      hpx::detail::to_hpx_execution_policy(exec), ::hpx::threads::thread_stacksize::nostack);
     if (params.num_cores == 1)
     {
       auto res = ::hpx::merge(
@@ -164,7 +166,7 @@ merge(execution_policy<ExecutionPolicy>& exec [[maybe_unused]],
     else
     {
       auto res = ::hpx::merge(
-        hpx::detail::to_hpx_execution_policy(exec).with(lss),
+        stackless_policy.with(lss),
         ::thrust::try_unwrap_contiguous_iterator(first1),
         ::thrust::try_unwrap_contiguous_iterator(last1),
         ::thrust::try_unwrap_contiguous_iterator(first2),

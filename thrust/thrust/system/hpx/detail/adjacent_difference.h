@@ -36,8 +36,8 @@ OutputIterator adjacent_difference(
   InputIterator last,
   OutputIterator result)
 {
-  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator, ::hpx::forward_traversal_tag>
-                && ::hpx::traits::belongs_to_iterator_traversal_v<OutputIterator, ::hpx::forward_traversal_tag>)
+  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>
+                && ::hpx::traits::is_forward_iterator_v<OutputIterator>)
   {
     auto res = ::hpx::adjacent_difference(
       hpx::detail::to_hpx_execution_policy(exec),
@@ -62,8 +62,8 @@ OutputIterator adjacent_difference(
 {
   auto wrapped_op = hpx_wrapped_function<BinaryFunction>{binary_op};
 
-  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator, ::hpx::forward_traversal_tag>
-                && ::hpx::traits::belongs_to_iterator_traversal_v<OutputIterator, ::hpx::forward_traversal_tag>)
+  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>
+                && ::hpx::traits::is_forward_iterator_v<OutputIterator>)
   {
     auto res = ::hpx::adjacent_difference(
       hpx::detail::to_hpx_execution_policy(exec),

@@ -32,7 +32,7 @@ InputIterator for_each(
   // wrap f
   hpx_wrapped_function<UnaryFunction> wrapped_f{f};
 
-  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator, ::hpx::forward_traversal_tag>)
+  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
   {
     (void) ::hpx::for_each(
       hpx::detail::to_hpx_execution_policy(exec),
@@ -55,7 +55,7 @@ for_each_n(execution_policy<DerivedPolicy>& exec [[maybe_unused]], InputIterator
   // wrap f
   hpx_wrapped_function<UnaryFunction> wrapped_f{f};
 
-  if constexpr (::hpx::traits::belongs_to_iterator_traversal_v<InputIterator, ::hpx::forward_traversal_tag>)
+  if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
   {
     auto res = ::hpx::for_each_n(
       hpx::detail::to_hpx_execution_policy(exec), ::thrust::try_unwrap_contiguous_iterator(first), n, wrapped_f);
