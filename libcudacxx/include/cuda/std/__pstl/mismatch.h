@@ -64,16 +64,17 @@ _CCCL_REQUIRES(__has_forward_traversal<_InputIter1> _CCCL_AND __has_forward_trav
                 "cuda::std::mismatch: BinaryPred must satisfy "
                 "indirect_binary_predicate<BinaryPred, InputIter1, InputIter2>");
 
-  if (__first1 == __last1)
-  {
-    return pair<_InputIter1, _InputIter2>{__first1, __first2};
-  }
-
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__find_if, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
     _CCCL_NVTX_RANGE_SCOPE("cuda::std::mismatch");
+
+    if (__first1 == __last1)
+    {
+      return pair<_InputIter1, _InputIter2>{__first1, __first2};
+    }
+
     const auto __count = ::cuda::std::distance(__first1, __last1);
     auto __zip_first   = ::cuda::zip_iterator{::cuda::std::move(__first1), ::cuda::std::move(__first2)};
     auto __zip_last    = __zip_first + __count;
@@ -108,17 +109,18 @@ _CCCL_REQUIRES(__has_forward_traversal<_InputIter1> _CCCL_AND __has_forward_trav
                 "cuda::std::mismatch: BinaryPred must satisfy "
                 "indirect_binary_predicate<BinaryPred, InputIter1, InputIter2>");
 
-  // Different than equal, if either range is empty we return {first1, first2}
-  if (__first1 == __last1 || __first2 == __last2)
-  {
-    return pair<_InputIter1, _InputIter2>{__first1, __first2};
-  }
-
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__find_if, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
     _CCCL_NVTX_RANGE_SCOPE("cuda::std::mismatch");
+
+    // Different than equal, if either range is empty we return {first1, first2}
+    if (__first1 == __last1 || __first2 == __last2)
+    {
+      return pair<_InputIter1, _InputIter2>{__first1, __first2};
+    }
+
     auto __result = __dispatch(
       __policy,
       ::cuda::zip_iterator{::cuda::std::move(__first1), ::cuda::std::move(__first2)},

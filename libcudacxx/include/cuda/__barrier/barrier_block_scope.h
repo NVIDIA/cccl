@@ -490,6 +490,9 @@ public:
     return (1 << 20) - 1;
   }
 
+  //! @param __token The arrival token, obtained from a call to arrive(), to wait on. Users are expected to move-in a
+  //! token to this API, but the __token will only be left in a moved-from state if this function succeeds (i.e., it
+  //! returns true).
   template <class _Rep, class _Period>
   [[nodiscard]] _CCCL_API bool
   try_wait_for(arrival_token&& __token, const ::cuda::std::chrono::duration<_Rep, _Period>& __dur)
@@ -499,6 +502,9 @@ public:
     return __try_wait(::cuda::std::move(__token), __nanosec);
   }
 
+  //! @param __token The arrival token, obtained from a call to arrive(), to wait on. Users are expected to move-in a
+  //! token to this API, but the __token will only be left in a moved-from state if this function succeeds (i.e., it
+  //! returns true).
   template <class _Clock, class _Duration>
   [[nodiscard]] _CCCL_API bool
   try_wait_until(arrival_token&& __token, const ::cuda::std::chrono::time_point<_Clock, _Duration>& __time)

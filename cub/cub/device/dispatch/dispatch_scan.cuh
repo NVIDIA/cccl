@@ -410,6 +410,12 @@ struct DispatchScan
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(ActivePolicyT)
   {
+    if (num_items == 0)
+    {
+      temp_storage_bytes = 1; // just fulfill the contract that CUB always requires some temporary storage
+      return cudaSuccess;
+    }
+
     using InputT          = ::cuda::std::iter_value_t<InputIteratorT>;
     using OutputT         = ::cuda::std::iter_value_t<OutputIteratorT>;
     using WarpspeedPolicy = typename ActivePolicyT::WarpspeedPolicy;
