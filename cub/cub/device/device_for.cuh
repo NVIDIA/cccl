@@ -519,8 +519,8 @@ public:
   //! `bulk <https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2300r5.html#design-sender-adaptor-bulk>`_
   //! from P2300.
   //!
-  //! .. versionadded:: 2.4.0
-  //!    First appears in CUDA Toolkit 12.5.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -632,8 +632,8 @@ public:
   //!
   //! Applies the function object ``op`` to each element in the range ``[first, first + num_items)``
   //!
-  //! .. versionadded:: 2.4.0
-  //!    First appears in CUDA Toolkit 12.5.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -730,8 +730,8 @@ public:
   //!
   //! Applies the function object ``op`` to each element in the range ``[first, last)``
   //!
-  //! .. versionadded:: 2.4.0
-  //!    First appears in CUDA Toolkit 12.5.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -840,8 +840,8 @@ public:
   //! Unlike the ``ForEachN`` algorithm, ``ForEachCopyN`` is allowed to invoke ``op`` on copies of the elements.
   //! This relaxation allows ``ForEachCopyN`` to vectorize loads.
   //!
-  //! .. versionadded:: 2.4.0
-  //!    First appears in CUDA Toolkit 12.5.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -941,8 +941,8 @@ public:
   //! Unlike the ``ForEach`` algorithm, ``ForEachCopy`` is allowed to invoke ``op`` on copies of the elements.
   //! This relaxation allows ``ForEachCopy`` to vectorize loads.
   //!
-  //! .. versionadded:: 2.4.0
-  //!    First appears in CUDA Toolkit 12.5.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -1124,8 +1124,8 @@ public:
   //!
   //! Iterate through a multi-dimensional extents producing
   //!
-  //! .. versionadded:: 2.4.0
-  //!    First appears in CUDA Toolkit 12.5.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -1218,8 +1218,8 @@ public:
   //! Iterate through multi-dimensional extents using a specific mdspan layout, applying a function object for each
   //! element, passing
   //!
-  //! .. versionadded:: 2.4.0
-  //!    First appears in CUDA Toolkit 12.5.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - a single linear index that represents the current iteration
   //! - a list of indices containing the coordinates for each extent dimension
