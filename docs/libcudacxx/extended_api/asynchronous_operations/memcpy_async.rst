@@ -119,7 +119,7 @@ Template Parameters
    :header-rows: 0
 
    * - ``Group``
-     - A type satisfying the [*Group*] concept.
+     - A type satisfying the :ref:`ThreadGroup <libcudacxx-extended-api-thread-groups>` concept.
    * - ``Shape``
      - Either `cuda::std::size_t <https://en.cppreference.com/w/c/types/size_t>`_
        or :ref:`cuda::aligned_size_t <libcudacxx-extended-api-memory-aligned-size>`.

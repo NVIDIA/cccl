@@ -137,3 +137,6 @@ markers = [
   "large: tests requiring large device memory allocations",
   "no_numba: tests that should not import numba or numba.cuda",
 ]
+
+[project.entry-points."numba_extensions"]
+init = "cuda.coop._init_extension"

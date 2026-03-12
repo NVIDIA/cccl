@@ -1,4 +1,4 @@
-# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
@@ -6,10 +6,13 @@ import re
 import tempfile
 from collections import namedtuple
 from enum import Enum
-from typing import BinaryIO, Union
+from types import SimpleNamespace
+from typing import BinaryIO, Type, Union
 
 import numba
+import numba.types
 import numpy as np
+from numba.cuda.stubs import Stub as CudaVectorTypeStub
 
 from ._typing import DimType
 
@@ -101,6 +104,32 @@ def find_unsigned(name, txt):
         return int(found.group(1))
 
 
+def find_unsigned_ints_in_ptx_by_suffix(suffixes, txt, raise_on_missing=True):
+    suffix_pattern = "|".join(re.escape(suffix) for suffix in suffixes)
+    pattern = (
+        r"^\.global \.align 4 \.u32 ([a-zA-Z_][a-zA-Z0-9_]*)"
+        rf"({suffix_pattern})(?: = ([0-9]+))?;"
+    )
+    regex = re.compile(pattern, re.MULTILINE)
+
+    matches = regex.findall(txt)
+    result_dict = {}
+
+    for prefix, suffix, value in matches:
+        key = suffix.lstrip("_")
+        if value:
+            result_dict[key] = int(value)
+        else:
+            result_dict[key] = 0
+
+    if raise_on_missing:
+        for suffix in suffixes:
+            if suffix not in result_dict:
+                raise ValueError(f"{suffix} not found in text")
+
+    return SimpleNamespace(**result_dict)
+
+
 def find_mangled_name(name, txt):
     regex = re.compile(f"[_a-zA-Z0-9]*{name}[_a-zA-Z0-9]*", re.MULTILINE)
     return regex.search(txt).group(0)
@@ -173,18 +202,51 @@ def normalize_dim_param(dim: DimType) -> dim3:
             msg = f"Tuple dimension must have 2 or 3 elements, got {len(dim)}"
             raise ValueError(msg)
 
+    # Last ditch effort at casting to an integer.
+    try:
+        dim = int(dim)
+    except (ValueError, TypeError):
+        pass
+    else:
+        if dim < 0:
+            msg = f"Dimension value must be non-negative, got {dim}"
+            raise ValueError(msg)
+        return dim3(dim, 1, 1)
+
     raise ValueError(f"Unsupported dimension type: {type(dim)}")
 
 
+def _is_cuda_vector_type(obj) -> bool:
+    """
+    Returns True iff the object is a CUDA vector type, False otherwise.
+    """
+    return isinstance(obj, type) and issubclass(obj, CudaVectorTypeStub)
+
+
+def _resolve_cuda_vector_dtype(dtype):
+    """
+    Resolve a CUDA vector stub (e.g. ``numba.cuda.float2``) to the matching
+    Numba CUDA vector type used by typing/lowering internals.
+    """
+    try:
+        from numba.cuda.vector_types import vector_types
+    except Exception:
+        return dtype
+
+    return vector_types.get(dtype.__name__, dtype)
+
+
 def normalize_dtype_param(
-    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
-) -> "numba.types.Type":
+    dtype: Union[str, type, "np.dtype", numba.types.Type, Type[CudaVectorTypeStub]],
+) -> Union[numba.types.Type, Type[CudaVectorTypeStub]]:
     """
     Normalize the dtype parameter to an appropriate Numba type.
 
     The logic for this routine is as follows:
 
     - If the dtype is already a numba type, return it as is.
+    - If the dtype is a CUDA vector stub (for example, ``numba.cuda.float2``),
+      convert it to the corresponding Numba CUDA vector type.
     - If the dtype is a valid numpy dtype, convert it to the corresponding
       numba type.  Note that this applies to both `np.int32` and
       `np.dtype(np.int32)`.
@@ -202,7 +264,8 @@ def normalize_dtype_param(
         dtype: Supplies the dtype parameter to normalize.
 
     Returns:
-        The normalized dtype parameter as a numba type.
+        The normalized dtype parameter as a numba type. CUDA vector stubs are
+        resolved to their corresponding Numba CUDA vector types.
 
     Raises:
         ValueError: If the dtype is invalid.
@@ -213,6 +276,10 @@ def normalize_dtype_param(
     # If dtype is already a numba type, return it as is.
     if isinstance(dtype, numba.types.Type):
         return dtype
+
+    # Convert CUDA vector stubs to concrete Numba CUDA vector types.
+    if _is_cuda_vector_type(dtype):
+        return _resolve_cuda_vector_dtype(dtype)
 
     # Handle numpy dtype objects.
     if hasattr(np, "dtype") and isinstance(dtype, np.dtype):

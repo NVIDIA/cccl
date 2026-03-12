@@ -220,25 +220,49 @@ inline ::std::ostream& operator<<(::std::ostream& os, const BlockReduceAlgorithm
 //! a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads where each thread
 //! owns 4 consecutive items.
 //!
-//! .. code-block:: c++
+//! .. tab-set-code::
 //!
-//!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
+//!    .. code-block:: c++
 //!
-//!    __global__ void ExampleKernel(...)
-//!    {
-//!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-//!        using BlockReduce = cub::BlockReduce<int, 128>;
+//!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
 //!
-//!        // Allocate shared memory for BlockReduce
-//!        __shared__ typename BlockReduce::TempStorage temp_storage;
+//!        __global__ void ExampleKernel(...)
+//!        {
+//!            // Specialize BlockReduce for a 1D block of 128 threads of type int
+//!            using BlockReduce = cub::BlockReduce<int, 128>;
 //!
-//!        // Obtain a segment of consecutive items that are blocked across threads
-//!        int thread_data[4];
-//!        ...
+//!            // Allocate shared memory for BlockReduce
+//!            __shared__ typename BlockReduce::TempStorage temp_storage;
 //!
-//!        // Compute the block-wide sum for thread0
-//!        int aggregate = BlockReduce(temp_storage).Sum(thread_data);
-//!    }
+//!            // Obtain a segment of consecutive items that are blocked across threads
+//!            int thread_data[4];
+//!            ...
+//!
+//!            // Compute the block-wide sum for thread0
+//!            int aggregate = BlockReduce(temp_storage).Sum(thread_data);
+//!        }
+//!
+//!    .. code-block:: python
+//!
+//!        from numba import cuda
+//!        from cuda import coop
+//!
+//!        threads_per_block = 128
+//!        items_per_thread = 4
+//!
+//!        @cuda.jit
+//!        def kernel(d_data, d_out):
+//!            temp_storage = coop.TempStorage()
+//!            thread_data = coop.ThreadData(items_per_thread)
+//!            coop.block.load(d_data, thread_data)
+//!            aggregate = coop.block.sum[temp_storage](thread_data)
+//!            if cuda.threadIdx.x == 0:
+//!                d_out[0] = aggregate
+//!
+//!
+//! Suppose the set of input ``thread_data`` across the block of threads is
+//! ``{ [1,1,1,1], [1,1,1,1], ..., [1,1,1,1] }``.
+//! The value ``512`` will be written to ``d_out[0]``.
 //!
 //! Re-using dynamically allocating shared memory
 //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -363,25 +387,52 @@ public:
   //! The code snippet below illustrates a max reduction of 128 integer items that are partitioned
   //! across 128 threads.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-  //!        using BlockReduce = cub::BlockReduce<int, 128>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
   //!
-  //!        // Allocate shared memory for BlockReduce
-  //!        __shared__ typename BlockReduce::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockReduce for a 1D block of 128 threads of type int
+  //!            using BlockReduce = cub::BlockReduce<int, 128>;
   //!
-  //!        // Each thread obtains an input item
-  //!        int thread_data;
-  //!        ...
+  //!            // Allocate shared memory for BlockReduce
+  //!            __shared__ typename BlockReduce::TempStorage temp_storage;
   //!
-  //!        // Compute the block-wide max for thread0
-  //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cuda::maximum<>{});
-  //!    }
+  //!            // Each thread obtains an input item
+  //!            int thread_data;
+  //!            ...
+  //!
+  //!            // Compute the block-wide max for thread0
+  //!            int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cuda::maximum<>{});
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!
+  //!        @cuda.jit(device=True)
+  //!        def max_op(a, b):
+  //!            return a if a > b else b
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(1)
+  //!            coop.block.load(d_data, thread_data)
+  //!            aggregate = coop.block.reduce[temp_storage](thread_data, binary_op=max_op)
+  //!            if cuda.threadIdx.x == 0:
+  //!                d_out[0] = aggregate
+  //!
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``0, -1, 2, -3, ..., 126, -127``.
+  //! The value ``126`` will be written to ``d_out[0]``.
   //!
   //! @endrst
   //!
@@ -417,25 +468,53 @@ public:
   //! :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads where each thread owns
   //! 4 consecutive items.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-  //!        using BlockReduce = cub::BlockReduce<int, 128>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
   //!
-  //!        // Allocate shared memory for BlockReduce
-  //!        __shared__ typename BlockReduce::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockReduce for a 1D block of 128 threads of type int
+  //!            using BlockReduce = cub::BlockReduce<int, 128>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockReduce
+  //!            __shared__ typename BlockReduce::TempStorage temp_storage;
   //!
-  //!        // Compute the block-wide max for thread0
-  //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cuda::maximum<>{});
-  //!    }
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
+  //!
+  //!            // Compute the block-wide max for thread0
+  //!            int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cuda::maximum<>{});
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit(device=True)
+  //!        def max_op(a, b):
+  //!            return a if a > b else b
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_data, thread_data)
+  //!            aggregate = coop.block.reduce[temp_storage](thread_data, binary_op=max_op)
+  //!            if cuda.threadIdx.x == 0:
+  //!                d_out[0] = aggregate
+  //!
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{ [0,-1,2,-3], [4,-5,6,-7], ..., [508,-509,510,-511] }``.
+  //! The value ``510`` will be written to ``d_out[0]``.
   //!
   //! @endrst
   //!
@@ -475,25 +554,56 @@ public:
   //! The code snippet below illustrates a max reduction of a partially-full tile of integer items
   //! that are partitioned across 128 threads.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(int num_valid, ...)
-  //!    {
-  //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-  //!        using BlockReduce = cub::BlockReduce<int, 128>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
   //!
-  //!        // Allocate shared memory for BlockReduce
-  //!        __shared__ typename BlockReduce::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(int num_valid, ...)
+  //!        {
+  //!            // Specialize BlockReduce for a 1D block of 128 threads of type int
+  //!            using BlockReduce = cub::BlockReduce<int, 128>;
   //!
-  //!        // Each thread obtains an input item
-  //!        int thread_data;
-  //!        if (threadIdx.x < num_valid) thread_data = ...
+  //!            // Allocate shared memory for BlockReduce
+  //!            __shared__ typename BlockReduce::TempStorage temp_storage;
   //!
-  //!        // Compute the block-wide max for thread0
-  //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cuda::maximum<>{}, num_valid);
-  //!    }
+  //!            // Each thread obtains an input item
+  //!            int thread_data;
+  //!            if (threadIdx.x < num_valid) thread_data = ...
+  //!
+  //!            // Compute the block-wide max for thread0
+  //!            int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cuda::maximum<>{}, num_valid);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!
+  //!        @cuda.jit(device=True)
+  //!        def max_op(a, b):
+  //!            return a if a > b else b
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out, num_valid):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = d_data[cuda.threadIdx.x] if cuda.threadIdx.x < num_valid else -2147483648
+  //!            aggregate = coop.block.reduce[temp_storage](
+  //!                thread_data,
+  //!                binary_op=max_op,
+  //!                items_per_thread=1,
+  //!                num_valid=num_valid,
+  //!            )
+  //!            if cuda.threadIdx.x == 0:
+  //!                d_out[0] = aggregate
+  //!
+  //!
+  //! Suppose ``num_valid`` is ``100`` and the first 100 threads provide
+  //! ``thread_data = 0, 1, 2, ..., 99``.
+  //! The value ``99`` will be written to ``d_out[0]``.
   //!
   //! @endrst
   //!
@@ -543,25 +653,49 @@ public:
   //! The code snippet below illustrates a sum reduction of 128 integer items that are partitioned
   //! across 128 threads.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-  //!        using BlockReduce = cub::BlockReduce<int, 128>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
   //!
-  //!        // Allocate shared memory for BlockReduce
-  //!        __shared__ typename BlockReduce::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockReduce for a 1D block of 128 threads of type int
+  //!            using BlockReduce = cub::BlockReduce<int, 128>;
   //!
-  //!        // Each thread obtains an input item
-  //!        int thread_data;
-  //!        ...
+  //!            // Allocate shared memory for BlockReduce
+  //!            __shared__ typename BlockReduce::TempStorage temp_storage;
   //!
-  //!        // Compute the block-wide sum for thread0
-  //!        int aggregate = BlockReduce(temp_storage).Sum(thread_data);
-  //!    }
+  //!            // Each thread obtains an input item
+  //!            int thread_data;
+  //!            ...
+  //!
+  //!            // Compute the block-wide sum for thread0
+  //!            int aggregate = BlockReduce(temp_storage).Sum(thread_data);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out):
+  //!            temp_storage = coop.TempStorage()
+  //!            aggregate = coop.block.sum[temp_storage](
+  //!                d_data[cuda.threadIdx.x],
+  //!                items_per_thread=1,
+  //!            )
+  //!            if cuda.threadIdx.x == 0:
+  //!                d_out[0] = aggregate
+  //!
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``1, 1, ..., 1``.
+  //! The value ``128`` will be written to ``d_out[0]``.
   //!
   //! @endrst
   //!
@@ -590,25 +724,49 @@ public:
   //! :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads where each thread owns
   //! 4 consecutive items.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-  //!        using BlockReduce = cub::BlockReduce<int, 128>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
   //!
-  //!        // Allocate shared memory for BlockReduce
-  //!        __shared__ typename BlockReduce::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize BlockReduce for a 1D block of 128 threads of type int
+  //!            using BlockReduce = cub::BlockReduce<int, 128>;
   //!
-  //!        // Obtain a segment of consecutive items that are blocked across threads
-  //!        int thread_data[4];
-  //!        ...
+  //!            // Allocate shared memory for BlockReduce
+  //!            __shared__ typename BlockReduce::TempStorage temp_storage;
   //!
-  //!        // Compute the block-wide sum for thread0
-  //!        int aggregate = BlockReduce(temp_storage).Sum(thread_data);
-  //!    }
+  //!            // Obtain a segment of consecutive items that are blocked across threads
+  //!            int thread_data[4];
+  //!            ...
+  //!
+  //!            // Compute the block-wide sum for thread0
+  //!            int aggregate = BlockReduce(temp_storage).Sum(thread_data);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = coop.ThreadData(items_per_thread)
+  //!            coop.block.load(d_data, thread_data)
+  //!            aggregate = coop.block.sum[temp_storage](thread_data)
+  //!            if cuda.threadIdx.x == 0:
+  //!                d_out[0] = aggregate
+  //!
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{ [1,1,1,1], [1,1,1,1], ..., [1,1,1,1] }``.
+  //! The value ``512`` will be written to ``d_out[0]``.
   //!
   //! @endrst
   //!
@@ -642,26 +800,52 @@ public:
   //! The code snippet below illustrates a sum reduction of a partially-full tile of integer items
   //! that are partitioned across 128 threads.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(int num_valid, ...)
-  //!    {
-  //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-  //!        using BlockReduce = cub::BlockReduce<int, 128>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
   //!
-  //!        // Allocate shared memory for BlockReduce
-  //!        __shared__ typename BlockReduce::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(int num_valid, ...)
+  //!        {
+  //!            // Specialize BlockReduce for a 1D block of 128 threads of type int
+  //!            using BlockReduce = cub::BlockReduce<int, 128>;
   //!
-  //!        // Each thread obtains an input item (up to num_items)
-  //!        int thread_data;
-  //!        if (threadIdx.x < num_valid)
-  //!            thread_data = ...
+  //!            // Allocate shared memory for BlockReduce
+  //!            __shared__ typename BlockReduce::TempStorage temp_storage;
   //!
-  //!        // Compute the block-wide sum for thread0
-  //!        int aggregate = BlockReduce(temp_storage).Sum(thread_data, num_valid);
-  //!    }
+  //!            // Each thread obtains an input item (up to num_items)
+  //!            int thread_data;
+  //!            if (threadIdx.x < num_valid)
+  //!                thread_data = ...
+  //!
+  //!            // Compute the block-wide sum for thread0
+  //!            int aggregate = BlockReduce(temp_storage).Sum(thread_data, num_valid);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_data, d_out, num_valid):
+  //!            temp_storage = coop.TempStorage()
+  //!            thread_data = d_data[cuda.threadIdx.x] if cuda.threadIdx.x < num_valid else 0
+  //!            aggregate = coop.block.sum[temp_storage](
+  //!                thread_data,
+  //!                items_per_thread=1,
+  //!                num_valid=num_valid,
+  //!            )
+  //!            if cuda.threadIdx.x == 0:
+  //!                d_out[0] = aggregate
+  //!
+  //!
+  //! Suppose ``num_valid`` is ``100`` and the first 100 threads provide ``thread_data = 1``
+  //! (all other threads contribute ``0``).
+  //! The value ``100`` will be written to ``d_out[0]``.
   //!
   //! @endrst
   //!
