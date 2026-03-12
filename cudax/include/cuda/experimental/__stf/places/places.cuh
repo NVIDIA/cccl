@@ -218,32 +218,38 @@ public:
 
   bool is_invalid() const
   {
-    return typeid(*pimpl_) == typeid(data_place_invalid);
+    const auto& ref = *pimpl_;
+    return typeid(ref) == typeid(data_place_invalid);
   }
 
   bool is_host() const
   {
-    return typeid(*pimpl_) == typeid(data_place_host);
+    const auto& ref = *pimpl_;
+    return typeid(ref) == typeid(data_place_host);
   }
 
   bool is_managed() const
   {
-    return typeid(*pimpl_) == typeid(data_place_managed);
+    const auto& ref = *pimpl_;
+    return typeid(ref) == typeid(data_place_managed);
   }
 
   bool is_affine() const
   {
-    return typeid(*pimpl_) == typeid(data_place_affine);
+    const auto& ref = *pimpl_;
+    return typeid(ref) == typeid(data_place_affine);
   }
 
   bool is_device() const
   {
-    return typeid(*pimpl_) == typeid(data_place_device);
+    const auto& ref = *pimpl_;
+    return typeid(ref) == typeid(data_place_device);
   }
 
   bool is_device_auto() const
   {
-    return typeid(*pimpl_) == typeid(data_place_device_auto);
+    const auto& ref = *pimpl_;
+    return typeid(ref) == typeid(data_place_device_auto);
   }
 
   bool is_concrete() const
@@ -1647,7 +1653,8 @@ private:
 
 inline bool data_place::is_composite() const
 {
-  return typeid(*pimpl_) == typeid(data_place_composite);
+  const auto& ref = *pimpl_;
+  return typeid(ref) == typeid(data_place_composite);
 }
 
 inline data_place data_place::composite(get_executor_func_t f, const exec_place_grid& grid)
