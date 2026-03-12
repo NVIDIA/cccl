@@ -7,3 +7,4 @@ How-to guides for maintainers.
    :maxdepth: 1
 
    ../backport_process
+   profile_headers

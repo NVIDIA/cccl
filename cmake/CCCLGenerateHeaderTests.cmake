@@ -152,6 +152,28 @@ function(cccl_generate_header_tests target_name project_include_path)
     )
     configure_file("${CGHT_HEADER_TEMPLATE}" "${header_src}" @ONLY)
     cght_apply_per_header_defines("${header}" "${header_src}")
+
+    # For profile-headers workflows, emit per-TU preprocessed artifacts next to
+    # generated header test sources so consumers can read them directly.
+    if (
+      CCCL_PROFILE_HEADERS_GENERATE_PREPROCESSED_TUS
+      AND CGHT_LANGUAGE STREQUAL "CUDA"
+    )
+      get_filename_component(header_src_dir "${header_src}" DIRECTORY)
+      if ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA")
+        set_property(
+          SOURCE "${header_src}"
+          APPEND
+          PROPERTY COMPILE_OPTIONS "--keep" "--keep-dir=${header_src_dir}"
+        )
+      elseif ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
+        set_property(
+          SOURCE "${header_src}"
+          APPEND
+          PROPERTY COMPILE_OPTIONS "-save-temps=obj"
+        )
+      endif()
+    endif()
     list(APPEND header_srcs "${header_src}")
   endforeach()
 
