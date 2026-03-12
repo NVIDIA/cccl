@@ -22,68 +22,26 @@ if ("Clang" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
   list(FILTER public_headers EXCLUDE REGEX "annotated_ptr")
 endif()
 
-# We need to handle atomic headers differently as they do not compile on architectures below sm70
-set(architectures_at_least_sm70)
-foreach (item IN LISTS CMAKE_CUDA_ARCHITECTURES)
-  if (item GREATER_EQUAL 70)
-    list(APPEND architectures_at_least_sm70 ${item})
-  endif()
-endforeach()
-
-function(libcudacxx_create_public_header_test header_name headertest_src)
-  # Create the default target for that file
-  add_library(public_headertest_${header_name} SHARED "${headertest_src}.cu")
-  cccl_configure_target(public_headertest_${header_name})
-  target_compile_definitions(
-    public_headertest_${header_name}
-    PRIVATE _CCCL_HEADER_TEST
-  )
-
-  # Bring in the global CCCL compile definitions
-  target_link_libraries(
-    public_headertest_${header_name}
-    PUBLIC libcudacxx.compiler_interface
-  )
-
-  # Ensure that if this is an atomic header, we only include the right architectures
-  string(
-    REGEX MATCH
-    "atomic|barrier|latch|semaphore|annotated_ptr|pipeline"
-    match
-    "${header}"
-  )
-  if (match)
-    # Ensure that we only compile the header when we have some architectures enabled
-    if (NOT architectures_at_least_sm70)
-      return()
-    endif()
-    set_target_properties(
-      public_headertest_${header_name}
-      PROPERTIES CUDA_ARCHITECTURES "${architectures_at_least_sm70}"
-    )
+function(libcudacxx_add_public_header_test_target target_name)
+  if (NOT ARGN)
+    return()
   endif()
 
-  add_dependencies(
-    libcudacxx.test.public_headers
-    public_headertest_${header_name}
-  )
-endfunction()
-
-function(libcudacxx_add_public_header_test header)
-  # ${header} contains the "/" from the subfolder, replace by "_" for actual names
-  string(REPLACE "/" "_" header_name "${header}")
-
-  # Create the source file for the header target from the template and add the file to the global project
-  set(headertest_src "headers/${header_name}")
-  configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/header_test.cpp.in"
-    "${headertest_src}.cu"
+  cccl_generate_header_tests(
+    ${target_name}
+    libcudacxx/include
+    NO_METATARGETS
+    LANGUAGE CUDA
+    HEADER_TEMPLATE "${libcudacxx_SOURCE_DIR}/cmake/header_test.cpp.in"
+    HEADERS ${ARGN}
   )
 
-  # Create the default target for that file
-  libcudacxx_create_public_header_test(${header_name} ${headertest_src})
+  target_compile_definitions(${target_name} PRIVATE _CCCL_HEADER_TEST)
+  target_link_libraries(${target_name} PUBLIC libcudacxx.compiler_interface)
+  add_dependencies(libcudacxx.test.public_headers ${target_name})
 endfunction()
 
-foreach (header IN LISTS public_headers)
-  libcudacxx_add_public_header_test(${header})
-endforeach()
+libcudacxx_add_public_header_test_target(
+  libcudacxx.test.public_headers.base
+  ${public_headers}
+)
