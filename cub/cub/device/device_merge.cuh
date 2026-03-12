@@ -179,7 +179,8 @@ struct DeviceMerge
             typename CompareOp            = ::cuda::std::less<>,
             typename EnvT                 = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyIteratorIn1, void*>
-                                       && !::cuda::std::is_same_v<KeyIteratorIn1, ::cuda::std::nullptr_t>,
+                                       && !::cuda::std::is_same_v<KeyIteratorIn1, ::cuda::std::nullptr_t>
+                                       && !::cuda::std::is_arithmetic_v<CompareOp>,
                                      int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MergeKeys(
     KeyIteratorIn1 keys_in1,
@@ -405,7 +406,8 @@ struct DeviceMerge
             typename CompareOp            = ::cuda::std::less<>,
             typename EnvT                 = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyIteratorIn1, void*>
-                                       && !::cuda::std::is_same_v<KeyIteratorIn1, ::cuda::std::nullptr_t>,
+                                       && !::cuda::std::is_same_v<KeyIteratorIn1, ::cuda::std::nullptr_t>
+                                       && !::cuda::std::is_arithmetic_v<CompareOp>,
                                      int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MergePairs(
     KeyIteratorIn1 keys_in1,
