@@ -197,7 +197,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
   const auto direction = GENERATE_COPY(cub::detail::topk::select::min, cub::detail::topk::select::max);
 
   constexpr segment_size_t min_items = 1;
-  constexpr segment_size_t max_items = 1000000;
+  constexpr segment_size_t max_items = 1'000'000;
 
   // Number of items
   const segment_size_t num_items = GENERATE_COPY(

@@ -150,8 +150,8 @@ struct agent_batched_topk_worker_per_segment
 
     // Resolve Segment Parameters
     const auto segment_size = segment_sizes.get_param(segment_id);
-    const auto k            = ::cuda::std::min(
-      k_param.get_param(segment_id), static_cast<decltype(k_param.get_param(segment_id))>(segment_size));
+    const auto k =
+      (::min) (k_param.get_param(segment_id), static_cast<decltype(k_param.get_param(segment_id))>(segment_size));
     const auto direction = select_directions.get_param(segment_id);
 
     // Determine padding key based on direction
