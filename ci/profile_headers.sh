@@ -77,8 +77,8 @@ while IFS=$'\t' read -r header count; do
   included_by_count_map["${header}"]="${count}"
 done < <(
   find \
-    "${repo_root}/cub" \
-    "${repo_root}/thrust" \
+    "${repo_root}/cub/cub" \
+    "${repo_root}/thrust/thrust" \
     "${repo_root}/libcudacxx/include" \
     "${repo_root}/cudax/include" \
     -type f \
