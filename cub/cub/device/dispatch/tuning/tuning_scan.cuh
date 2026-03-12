@@ -568,7 +568,7 @@ struct policy_hub
 #if __cccl_ptx_isa >= 860
     struct WarpspeedPolicy
     {
-      // TODO(bgruber): remove everything but num_reduce_warps, num_look_ahead_items and items_per_thread from policy
+      // TODO(bgruber): remove everything but num_reduce_and_scan_warps, num_look_ahead_items and items_per_thread
 
       // Squad definitions
       static constexpr int num_squads           = 5;
