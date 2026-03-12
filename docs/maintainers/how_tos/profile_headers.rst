@@ -3,13 +3,8 @@ Profile headers
 
 Optimizing compile time in CCCL headers can be just as important as optimizing runtime performance.
 
-To help reason about the cost of each header in CCCL, we can generate a profile of compile time and transitive lines of code (LOC) for each header.
-
-This guide describes how to generate a profile of compile time and transitive LOC for
-CCCL public headers.
-
-- per-header TU compile time is computed from the ``.ninja_log``
-- transitive LOC is computed with ``cloc`` on the preprocessed output from a generated file that only includes the header
+To help reason about the baseline compile time cost of each header in CCCL, this guide describes
+how to generate a profile of compile time and transitive LOC for CCCL public headers.
 
 For every public header in CCCL, it measures the compile time and expanded LOC of the following file:
 
@@ -19,6 +14,9 @@ For every public header in CCCL, it measures the compile time and expanded LOC o
   int main() {
     return 0;
   }
+
+- per-header TU compile time is computed from the ``.ninja_log``
+- transitive LOC is computed with ``cloc`` on the preprocessed output from a generated file that only includes the header
 
 How to run
 ------------------
