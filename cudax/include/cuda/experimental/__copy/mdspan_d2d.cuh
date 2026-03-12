@@ -38,7 +38,9 @@
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
 
-#  include <cuda/experimental/__copy_bytes/memcpy_batch_tiles.cuh>
+#  include <cuda/experimental/__copy/copy_optimized.cuh>
+#  include <cuda/experimental/__copy/tensor_copy_utils.cuh>
+#  include <cuda/experimental/__copy/vector_access.cuh>
 #  include <cuda/experimental/__copy_bytes/simplify_paired.cuh>
 #  include <cuda/experimental/__copy_bytes/tensor_query.cuh>
 
@@ -46,54 +48,6 @@
 
 namespace cuda::experimental
 {
-//! @brief Compute the maximum vectorization width in bytes for a raw tensor.
-//!
-//! Expects mode 0 to be the contiguous mode (stride == 1), as established by
-//! @ref __sort_by_stride_paired. Computes the largest power-of-two vector width such that:
-//! - The pointer is aligned to that width.
-//! - All non-contiguous strides (in bytes) are divisible by it.
-//! - The contiguous mode's shape is divisible by the element count.
-//! The result is capped at 16 bytes. If mode 0 is not contiguous, returns sizeof(_Tp).
-//!
-//! @pre `__tensor.__rank` is in [1, _MaxRank].
-//! @pre All shapes must be > 1 (no degenerate modes).
-//! @pre Strides are sorted by @ref __sort_by_stride_paired (mode 0 has the smallest absolute stride).
-//!
-//! @param[in] __tensor Raw tensor with strides sorted by @ref __sort_by_stride_paired
-//! @return Maximum safe vectorization width in bytes, in [sizeof(_Tp), 16]
-template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
-[[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t
-__max_alignment(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor) noexcept
-{
-  using ::cuda::std::size_t;
-  namespace cudax = ::cuda::experimental;
-  _CCCL_ASSERT(::cuda::in_range(__tensor.__rank, size_t{1}, _MaxRank), "Invalid tensor rank");
-  _CCCL_ASSERT(::cuda::experimental::__has_no_extent1_modes(__tensor), "All extents must be different from 1");
-  const auto& __extents = __tensor.__extents;
-  const auto& __strides = __tensor.__strides;
-  if (__strides[0] != 1)
-  {
-    return sizeof(_Tp);
-  }
-  // (1) pointer alignment
-  size_t __alignment = ::cuda::__ptr_alignment(__tensor.__data);
-  // (2) alignment over all strides
-  for (size_t __i = 0; __i < __tensor.__rank; ++__i)
-  {
-    const auto __stride = cudax::__abs_integer(__strides[__i]);
-    if (__stride != 1)
-    {
-      const auto __stride_bytes = static_cast<size_t>(__stride) * sizeof(_Tp);
-      __alignment               = ::cuda::std::gcd(__alignment, __stride_bytes);
-    }
-  }
-  _CCCL_ASSERT(__alignment % sizeof(_Tp) == 0, "Maximum vector size is not a multiple of the element size");
-  // (3) Compute the number of items per vector over the contiguous mode
-  size_t __items_per_vector = __alignment / sizeof(_Tp);
-  __items_per_vector        = ::cuda::std::gcd(__items_per_vector, static_cast<size_t>(__extents[0]));
-  return __items_per_vector * sizeof(_Tp);
-}
-
 //! @brief Internal implementation of @ref copy_bytes for host/device mdspan transfers.
 //!
 //! Validates preconditions, converts mdspans to raw tensor descriptors, simplifies the paired layout
@@ -122,6 +76,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
                 "LayoutPolicyIn must be a predefined layout policy");
   static_assert(::cuda::__is_cuda_mdspan_layout_v<_LayoutPolicyOut>,
                 "LayoutPolicyOut must be a predefined layout policy");
+
   if (__src.size() != __dst.size())
   {
     _CCCL_THROW(::std::invalid_argument, "mdspans must have the same size");
@@ -147,7 +102,10 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
   {
     _CCCL_THROW(::std::invalid_argument, "destination mdspan must not have interleaved stride order");
   }
-  // TODO: must not overlap
+  if (cudax::__may_overlap(__src, __dst))
+  {
+    _CCCL_THROW(::std::invalid_argument, "mdspans must not overlap in memory");
+  }
   if (__tensor_size == 1)
   {
     ::cuda::__driver::__memcpyAsync(__dst.data_handle(), __src.data_handle(), sizeof(_TpIn), __stream.get());
@@ -155,13 +113,18 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
   }
   if constexpr (_ExtentsIn::rank() > 0 && _ExtentsOut::rank() > 0)
   {
-    using ::cuda::std::size_t;
+    constexpr auto __are_accessors_default_convertible =
+      ::cuda::std::is_convertible_v<_AccessorPolicyIn, ::cuda::std::default_accessor<_TpIn>>
+      && ::cuda::std::is_convertible_v<_AccessorPolicyOut, ::cuda::std::default_accessor<_TpOut>>;
+    constexpr auto __have_same_type =
+      ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_TpIn>, ::cuda::std::remove_cvref_t<_TpOut>>;
+
     using __extent_t = ::cuda::std::common_type_t<typename _ExtentsIn::index_type, typename _ExtentsOut::index_type>;
     using __stride_t = ::cuda::std::common_type_t<cudax::__mdspan_stride_t<_ExtentsIn, _LayoutPolicyIn>,
                                                   cudax::__mdspan_stride_t<_ExtentsOut, _LayoutPolicyOut>>;
     constexpr auto __max_rank = ::cuda::std::max(_ExtentsIn::rank(), _ExtentsOut::rank());
-    const auto __src_raw      = cudax::__to_raw_tensor<__extent_t, __stride_t, __max_rank>(__src, __remove_extent1);
-    const auto __dst_raw      = cudax::__to_raw_tensor<__extent_t, __stride_t, __max_rank>(__dst, __remove_extent1);
+    const auto __src_raw      = cudax::__to_raw_tensor<__extent_t, __stride_t, __max_rank>(__src);
+    const auto __dst_raw      = cudax::__to_raw_tensor<__extent_t, __stride_t, __max_rank>(__dst);
     if (!cudax::__same_extents(__src_raw, __dst_raw))
     {
       _CCCL_THROW(::std::invalid_argument, "mdspans must have the same extents (after removing singleton dimensions)");
@@ -174,13 +137,11 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     using __unsigned_extent_t = typename decltype(__src_simplified)::__unsigned_extent_t;
     const bool __both_stride1 = (__src_simplified.__strides[0] == 1) && (__dst_simplified.__strides[0] == 1);
     const __unsigned_extent_t __tile_size = __both_stride1 ? __src_simplified.__extents[0] : __unsigned_extent_t{1};
-    const auto __src_iter                 = (__tile_size > 1) ? __src_simplified : cudax::__reverse_modes(__src_raw);
-    const auto __dst_iter                 = (__tile_size > 1) ? __dst_simplified : cudax::__reverse_modes(__dst_raw);
+    const auto __src_normalized           = (__tile_size > 1) ? __src_simplified : cudax::__reverse_modes(__src_raw);
+    const auto __dst_normalized           = (__tile_size > 1) ? __dst_simplified : cudax::__reverse_modes(__dst_raw);
 
-    const size_t __num_tiles  = __tensor_size / __tile_size;
-    const size_t __copy_bytes = __tile_size * sizeof(_TpIn);
     _CCCL_ASSERT(__tensor_size % __tile_size == 0, "tensor size must be divisible by tile size");
-
+    // (1) contiguous case
     if (__tile_size == __tensor_size)
     {
       _CCCL_TRY_CUDA_API(
@@ -192,8 +153,44 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
         ::cuda::proclaim_copyable_arguments(::cuda::std::identity{}),
         __stream.get());
     }
-    if (__both_stride1)
+    // (2) vectorized case
+    if constexpr (__have_same_type && sizeof(_TpIn) <= __max_vector_access && __are_accessors_default_convertible)
     {
+      if (__both_stride1)
+      {
+        using ::cuda::std::size_t;
+        const auto __src_alignment            = cudax::__max_alignment(__src_normalized);
+        const auto __dst_alignment            = cudax::__max_alignment(__dst_normalized);
+        const auto __max_gpu_arch_vector_size = cudax::__max_gpu_arch_vector_size();
+        const auto __vector_size_bytes =
+          ::cuda::std::min({__src_alignment, __dst_alignment, __max_gpu_arch_vector_size});
+
+        const auto __inner_extent_bytes  = static_cast<size_t>(__src_normalized.__extents[0]) * sizeof(_TpIn);
+        const auto __inner_extent_vector = __inner_extent_bytes / __vector_size_bytes;
+
+        if (__inner_extent_vector >= cudax::__tile_size(__vector_size_bytes))
+        {
+          const auto __vector_tag = cudax::__vectorized_dispatch_tag{__common_alignment};
+          if (cudax::__dispatch_by_rank<2>(__vector_tag, __src_normalized, __dst_normalized, __stream))
+          {
+            return;
+          }
+        }
+        else
+        {
+          cudax::__copy_vectorized_dispatch(__src_normalized, __dst_normalized, __vector_size_bytes, __stream);
+        }
+      }
+    }
+    // (3) transpose case
+    if (cudax::__use_shared_mem_kernel(__src_normalized, __dst_normalized))
+    {
+      cudax::copy_bytes_shared_mem(__src_normalized, __dst_normalized, __stream);
+    }
+    // (4) fallback case
+    else
+    {
+      cudax::__copy_optimized(__src_normalized, __dst_normalized, __stream, __src.accessor(), __dst.accessor());
     }
   }
 }
