@@ -159,7 +159,7 @@ _CCCL_HOST_API void __copy_vectorized_dispatch(
   }
   else if constexpr (sizeof(_TpIn) <= 16)
   {
-    if (__vector_size == 16)
+    if (__vector_size_bytes == 16)
     {
       __call_copy_optimized(__const_vector_size<16>);
     }
