@@ -38,7 +38,9 @@
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
 
+#  include <cuda/experimental/__copy/copy_contiguous.cuh>
 #  include <cuda/experimental/__copy/copy_optimized.cuh>
+#  include <cuda/experimental/__copy/dispatch_by_vector.cuh>
 #  include <cuda/experimental/__copy/tensor_copy_utils.cuh>
 #  include <cuda/experimental/__copy/vector_access.cuh>
 #  include <cuda/experimental/__copy_bytes/simplify_paired.cuh>
@@ -152,11 +154,13 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
         __tensor_size,
         ::cuda::proclaim_copyable_arguments(::cuda::std::identity{}),
         __stream.get());
+      return;
     }
-    // (2) vectorized case
-    if constexpr (__have_same_type && sizeof(_TpIn) <= __max_vector_access && __are_accessors_default_convertible)
+    const auto __inner_extent_bytes = static_cast<size_t>(__src_normalized.__extents[0]) * sizeof(_TpIn);
+    if (__both_stride1 && __inner_extent_bytes >= __bytes_in_flight)
     {
-      if (__both_stride1)
+      // (2) vectorized case
+      if constexpr (__have_same_type && sizeof(_TpIn) <= __max_vector_access && __are_accessors_default_convertible)
       {
         using ::cuda::std::size_t;
         const auto __src_alignment            = cudax::__max_alignment(__src_normalized);
@@ -165,28 +169,24 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
         const auto __vector_size_bytes =
           ::cuda::std::min({__src_alignment, __dst_alignment, __max_gpu_arch_vector_size});
 
-        const auto __inner_extent_bytes  = static_cast<size_t>(__src_normalized.__extents[0]) * sizeof(_TpIn);
-        const auto __inner_extent_vector = __inner_extent_bytes / __vector_size_bytes;
-
-        if (__inner_extent_vector >= cudax::__tile_size(__vector_size_bytes))
-        {
-          const auto __vector_tag = cudax::__vectorized_dispatch_tag{__common_alignment};
-          if (cudax::__dispatch_by_rank<2>(__vector_tag, __src_normalized, __dst_normalized, __stream))
-          {
-            return;
-          }
-        }
-        else
-        {
-          cudax::__copy_vectorized_dispatch(__src_normalized, __dst_normalized, __vector_size_bytes, __stream);
-        }
+        const auto __op = [&](const auto& __src, const auto& __dst) {
+          ::cuda::experimental::__launch_copy_contiguous_kernel(__src, __dst);
+        };
+        cudax::__dispatch_by_vector_size(__src_normalized, __dst_normalized, __vector_size_bytes, __op);
       }
+      // (2) non-vectorized case but inner size is large enough to use the contiguous kernel
+      else
+      {
+        ::cuda::experimental::__launch_copy_contiguous_kernel(
+          __src_normalized, __dst_normalized, __stream, __src.accessor(), __dst.accessor());
+      }
+      return;
     }
     // (3) transpose case
-    if (cudax::__use_shared_mem_kernel(__src_normalized, __dst_normalized))
-    {
-      cudax::copy_bytes_shared_mem(__src_normalized, __dst_normalized, __stream);
-    }
+    // if (cudax::__use_shared_mem_kernel(__src_normalized, __dst_normalized))
+    //{
+    //  cudax::copy_bytes_shared_mem(__src_normalized, __dst_normalized, __stream);
+    //}
     // (4) fallback case
     else
     {

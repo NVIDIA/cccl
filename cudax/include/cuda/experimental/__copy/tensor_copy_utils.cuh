@@ -30,7 +30,6 @@
 #  include <cuda/std/__mdspan/mdspan.h>
 #  include <cuda/std/__memory/is_sufficiently_aligned.h>
 #  include <cuda/std/__numeric/gcd_lcm.h>
-#  include <cuda/std/cstdint>
 
 #  include <cuda/experimental/__copy/vector_access.cuh>
 #  include <cuda/experimental/__copy_bytes/abs_integer.cuh>

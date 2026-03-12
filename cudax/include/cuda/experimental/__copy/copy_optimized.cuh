@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__COPY_BYTES_COPY_BYTES_NAIVE
-#define _CUDAX__COPY_BYTES_COPY_BYTES_NAIVE
+#ifndef _CUDAX__COPY_OPTIMIZED_H
+#define _CUDAX__COPY_OPTIMIZED_H
 
 #include <cuda/std/detail/__config>
 
@@ -53,13 +53,13 @@ __global__ void __copy_optimized_kernel(
   _CCCL_GRID_CONSTANT const ::cuda::std::array<_StrideTOut, _Rank> __dst_strides,
   _CCCL_GRID_CONSTANT const _DstAccessor __dst_accessor,
   _CCCL_GRID_CONSTANT const __tensor_coord_iterator<_ExtentT, _Rank> __coord_iter,
-  _CCCL_GRID_CONSTANT const _ExtentT __num_items)
+  _CCCL_GRID_CONSTANT const _ExtentT __tensor_size)
 {
   const auto __idx    = ::cuda::gpu_thread.rank_as<_ExtentT>(::cuda::grid, __config);
   const auto __stride = ::cuda::gpu_thread.count_as<_ExtentT>(::cuda::grid, __config);
   const __partial_tensor __src{__src_ptr, __src_strides, __src_accessor};
   const __partial_tensor __dst{__dst_ptr, __dst_strides, __dst_accessor};
-  for (auto __i = __idx; __i < __num_items; __i += __stride)
+  for (auto __i = __idx; __i < __tensor_size; __i += __stride)
   {
     const auto __coord = __coord_iter(__i);
     __dst(__coord)     = __src(__coord);
@@ -75,7 +75,7 @@ __global__ void __copy_optimized_kernel(
 //! @param[in]  __src_accessor Accessor for reading source elements
 //! @param[out] __dst          Destination raw tensor descriptor
 //! @param[in]  __dst_accessor Accessor for writing destination elements
-//! @param[in]  __num_items    Total number of elements to copy
+//! @param[in]  __tensor_size    Total number of elements to copy
 //! @param[in]  __stream       CUDA stream for asynchronous execution
 template <typename _ExtentT,
           typename _StrideTIn,
@@ -88,18 +88,14 @@ template <typename _ExtentT,
 _CCCL_HOST_API void __copy_optimized(
   const __raw_tensor<_ExtentT, _StrideTIn, _TpIn, _Rank>& __src,
   const __raw_tensor<_ExtentT, _StrideTOut, _TpOut, _Rank>& __dst,
-  _ExtentT __num_items,
+  _ExtentT __tensor_size,
   ::cuda::stream_ref __stream,
   const _SrcAccessor& __src_accessor = {},
   const _DstAccessor& __dst_accessor = {}) noexcept
 {
   constexpr int __block_size = 256;
-  if (__num_items == 0)
-  {
-    return;
-  }
   const __tensor_coord_iterator<_ExtentT, _Rank> __coord_iter(__src.__extents);
-  const auto __grid_size = ::cuda::ceil_div(__num_items, _ExtentT{__block_size});
+  const auto __grid_size = ::cuda::ceil_div(__tensor_size, _ExtentT{__block_size});
   const auto __config    = ::cuda::make_config(::cuda::block_dims<__block_size>(), ::cuda::grid_dims(__grid_size));
   const auto& __kernel   = ::cuda::experimental::__copy_optimized_kernel<
     decltype(__config),
@@ -123,75 +119,10 @@ _CCCL_HOST_API void __copy_optimized(
     __dst.__strides,
     __dst_accessor,
     __coord_iter,
-    __num_items);
-}
-
-template <int _VectorSize>
-constexpr auto __const_vector_size = ::cuda::std::integral_constant<int, _VectorSize>{};
-
-template <typename _ExtentT,
-          typename _StrideTIn,
-          typename _StrideTOut,
-          typename _TpIn,
-          typename _TpOut,
-          typename _SrcAccessor,
-          typename _DstAccessor,
-          ::cuda::std::size_t _Rank>
-_CCCL_HOST_API void __copy_vectorized_dispatch(
-  const __raw_tensor<_ExtentT, _StrideTIn, _TpIn, _Rank>& __src,
-  const __raw_tensor<_ExtentT, _StrideTOut, _TpOut, _Rank>& __dst,
-  ::cuda::std::size_t __vector_size_bytes,
-  ::cuda::stream_ref __stream) noexcept
-{
-  namespace cudax                  = ::cuda::experimental;
-  const auto __total_size          = cudax::__total_size(__src);
-  const auto __call_copy_optimized = [&](auto __const_vector_size) {
-    const auto __src_recast = cudax::__reshape_vectorized<__const_vector_size>(__src);
-    const auto __dst_recast = cudax::__reshape_vectorized<__const_vector_size>(__dst);
-    cudax::__copy_optimized(__src_recast, __dst_recast, __total_size, __stream);
-  };
-  if constexpr (sizeof(_TpIn) <= 32)
-  {
-    if (__vector_size_bytes == 32)
-    {
-      __call_copy_optimized(__const_vector_size<32>);
-    }
-  }
-  else if constexpr (sizeof(_TpIn) <= 16)
-  {
-    if (__vector_size_bytes == 16)
-    {
-      __call_copy_optimized(__const_vector_size<16>);
-    }
-  }
-  else if constexpr (sizeof(_TpIn) <= 8)
-  {
-    if (__vector_size_bytes == 8)
-    {
-      __call_copy_optimized(__const_vector_size<8>);
-    }
-  }
-  else if constexpr (sizeof(_TpIn) <= 4)
-  {
-    if (__vector_size_bytes == 4)
-    {
-      __call_copy_optimized(__const_vector_size<4>);
-    }
-  }
-  else if constexpr (sizeof(_TpIn) <= 2)
-  {
-    if (__vector_size_bytes == 2)
-    {
-      __call_copy_optimized(__const_vector_size<2>);
-    }
-  }
-  else
-  {
-    __call_copy_optimized(__const_vector_size<1>);
-  }
+    __tensor_size);
 }
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__COPY_BYTES_COPY_BYTES_NAIVE
+#endif // _CUDAX__COPY_OPTIMIZED_H
