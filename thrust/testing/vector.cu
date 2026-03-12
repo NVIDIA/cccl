@@ -2,6 +2,7 @@
 
 #include <thrust/device_malloc_allocator.h>
 #include <thrust/sequence.h>
+#include <thrust/universal_vector.h>
 
 #include <initializer_list>
 #include <limits>
@@ -807,6 +808,20 @@ struct IntWithInit
   int value = 42;
 };
 
+struct ExplicitCtor
+{
+  int value;
+
+  _CCCL_HOST_DEVICE explicit ExplicitCtor(int v)
+      : value(v)
+  {}
+
+  _CCCL_HOST_DEVICE bool operator==(const ExplicitCtor& other) const
+  {
+    return value == other.value;
+  }
+};
+
 void TestVectorDefaultInitCtor()
 {
   // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
@@ -923,6 +938,19 @@ void TestVectorEmplaceBack()
     ASSERT_EQUAL(2, (int) dv[1]);
     ASSERT_EQUAL(3, (int) dv[2]);
   }
+
+  // universal_vector emplace_back
+  {
+    thrust::universal_vector<int> uv;
+    uv.emplace_back(1);
+    uv.emplace_back(2);
+    uv.emplace_back(3);
+
+    ASSERT_EQUAL(3lu, uv.size());
+    ASSERT_EQUAL(1, (int) uv[0]);
+    ASSERT_EQUAL(2, (int) uv[1]);
+    ASSERT_EQUAL(3, (int) uv[2]);
+  }
 }
 DECLARE_UNITTEST(TestVectorEmplaceBack);
 
@@ -941,17 +969,55 @@ void TestVectorEmplaceBackReturnsReference()
   // device_vector emplace_back returns a reference to the inserted element
   {
     thrust::device_vector<int> dv;
-    auto ref = dv.emplace_back(42);
+    auto&& ref = dv.emplace_back(42);
+    static_assert(cuda::std::is_same_v<decltype(ref), thrust::device_vector<int>::reference>);
 
     ASSERT_EQUAL(1lu, dv.size());
     ASSERT_EQUAL(42, (int) ref);
     ASSERT_EQUAL(42, (int) dv[0]);
+  }
+
+  // universal_vector emplace_back returns a reference to the inserted element
+  {
+    thrust::universal_vector<int> uv;
+    auto&& ref = uv.emplace_back(42);
+    static_assert(cuda::std::is_same_v<decltype(ref), thrust::universal_vector<int>::reference>);
+
+    ASSERT_EQUAL(1lu, uv.size());
+    ASSERT_EQUAL(42, (int) ref);
+    ASSERT_EQUAL(42, (int) uv[0]);
   }
 }
 DECLARE_UNITTEST(TestVectorEmplaceBackReturnsReference);
 
 void TestVectorEmplaceBackWithConstructorArgs()
 {
+  // Test with an element type that has an explicit constructor:
+  {
+    thrust::host_vector<ExplicitCtor> hv;
+    auto& ref = hv.emplace_back(7);
+
+    ASSERT_EQUAL(1lu, hv.size());
+    ASSERT_EQUAL(ExplicitCtor(7), ref);
+    ASSERT_EQUAL(ExplicitCtor(7), hv[0]);
+  }
+  {
+    thrust::device_vector<ExplicitCtor> dv;
+    auto ref = dv.emplace_back(7);
+
+    ASSERT_EQUAL(1lu, dv.size());
+    ASSERT_EQUAL(ExplicitCtor(7), (ExplicitCtor) ref);
+    ASSERT_EQUAL(ExplicitCtor(7), (ExplicitCtor) dv[0]);
+  }
+  {
+    thrust::universal_vector<ExplicitCtor> uv;
+    auto ref = uv.emplace_back(7);
+
+    ASSERT_EQUAL(1lu, uv.size());
+    ASSERT_EQUAL(ExplicitCtor(7), (ExplicitCtor) ref);
+    ASSERT_EQUAL(ExplicitCtor(7), (ExplicitCtor) uv[0]);
+  }
+
   // This is the motivating use case from the issue:
   // thrust::host_vector<thrust::device_vector<int>> out_buffers;
   // out_buffers.emplace_back(42);
