@@ -83,8 +83,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeys DoubleBuffer env-based API", "[segm
   auto keys_buf1 = thrust::device_vector<int>(7);
   auto offsets   = thrust::device_vector<int>{0, 3, 7};
 
-  cub::DoubleBuffer<int> d_keys(
-    thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
+  cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
@@ -117,8 +116,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeysDescending DoubleBuffer env-based AP
   auto keys_buf1 = thrust::device_vector<int>(7);
   auto offsets   = thrust::device_vector<int>{0, 3, 7};
 
-  cub::DoubleBuffer<int> d_keys(
-    thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
+  cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
@@ -133,8 +131,8 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeysDescending DoubleBuffer env-based AP
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedSort::SortKeysDescending (DoubleBuffer) failed with status: " << error
-              << std::endl;
+    std::cerr
+      << "cub::DeviceSegmentedSort::SortKeysDescending (DoubleBuffer) failed with status: " << error << std::endl;
   }
 
   thrust::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
@@ -214,8 +212,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeys DoubleBuffer env-based API", 
   auto keys_buf1 = thrust::device_vector<int>(7);
   auto offsets   = thrust::device_vector<int>{0, 3, 7};
 
-  cub::DoubleBuffer<int> d_keys(
-    thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
+  cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
@@ -241,16 +238,14 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeys DoubleBuffer env-based API", 
   REQUIRE(result == expected);
 }
 
-C2H_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer env-based API",
-         "[segmented_sort][keys][env]")
+C2H_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer env-based API", "[segmented_sort][keys][env]")
 {
   // example-begin stable-sort-keys-descending-db-env
   auto keys_buf0 = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_buf1 = thrust::device_vector<int>(7);
   auto offsets   = thrust::device_vector<int>{0, 3, 7};
 
-  cub::DoubleBuffer<int> d_keys(
-    thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
+  cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
@@ -265,8 +260,8 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer env-ba
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedSort::StableSortKeysDescending (DoubleBuffer) failed with status: " << error
-              << std::endl;
+    std::cerr
+      << "cub::DeviceSegmentedSort::StableSortKeysDescending (DoubleBuffer) failed with status: " << error << std::endl;
   }
 
   thrust::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};

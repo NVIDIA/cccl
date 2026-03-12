@@ -114,8 +114,7 @@ C2H_TEST("DeviceSegmentedSort::SortKeys DoubleBuffer uses environment", "[segmen
   auto keys_buf1 = c2h::device_vector<int>(7);
   auto offsets   = c2h::device_vector<int>{0, 3, 7};
 
-  cub::DoubleBuffer<int> d_keys(
-    thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
+  cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
@@ -141,8 +140,7 @@ C2H_TEST("DeviceSegmentedSort::SortKeysDescending DoubleBuffer uses environment"
   auto keys_buf1 = c2h::device_vector<int>(7);
   auto offsets   = c2h::device_vector<int>{0, 3, 7};
 
-  cub::DoubleBuffer<int> d_keys(
-    thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
+  cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
@@ -168,8 +166,7 @@ C2H_TEST("DeviceSegmentedSort::StableSortKeys DoubleBuffer uses environment", "[
   auto keys_buf1 = c2h::device_vector<int>(7);
   auto offsets   = c2h::device_vector<int>{0, 3, 7};
 
-  cub::DoubleBuffer<int> d_keys(
-    thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
+  cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
@@ -196,8 +193,7 @@ C2H_TEST("DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer uses enviro
   auto keys_buf1 = c2h::device_vector<int>(7);
   auto offsets   = c2h::device_vector<int>{0, 3, 7};
 
-  cub::DoubleBuffer<int> d_keys(
-    thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
+  cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
