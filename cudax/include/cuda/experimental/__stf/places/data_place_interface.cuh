@@ -14,7 +14,7 @@
  *
  * This interface defines the contract that all data_place implementations must satisfy.
  * It enables a clean polymorphic design where host, managed, device, composite, and
- * extension-based places all implement a common interface.
+ * custom places (e.g. green contexts) all implement a common interface.
  */
 
 #pragma once
@@ -56,7 +56,7 @@ using get_executor_func_t = pos4 (*)(pos4, dim4, dim4);
 /**
  * @brief Abstract interface for data_place implementations
  *
- * All data_place types (host, managed, device, composite, extensions) implement
+ * All data_place types (host, managed, device, composite, future places) implement
  * this interface. The data_place class holds a shared_ptr to this interface
  * and delegates all operations to it.
  */
@@ -80,85 +80,6 @@ public:
     managed     = -2,
     host        = -1,
   };
-
-  // === Type identification ===
-
-  /**
-   * @brief Check if this is the host (pinned memory) place
-   */
-  virtual bool is_host() const
-  {
-    return false;
-  }
-
-  /**
-   * @brief Check if this is the managed memory place
-   */
-  virtual bool is_managed() const
-  {
-    return false;
-  }
-
-  /**
-   * @brief Check if this is a specific device place
-   */
-  virtual bool is_device() const
-  {
-    return false;
-  }
-
-  /**
-   * @brief Check if this is the invalid place
-   */
-  virtual bool is_invalid() const
-  {
-    return false;
-  }
-
-  /**
-   * @brief Check if this is the affine place (uses exec_place's affine data place)
-   */
-  virtual bool is_affine() const
-  {
-    return false;
-  }
-
-  /**
-   * @brief Check if this is the device_auto place (auto-select device)
-   */
-  virtual bool is_device_auto() const
-  {
-    return false;
-  }
-
-  /**
-   * @brief Check if this is a composite place
-   */
-  virtual bool is_composite() const
-  {
-    return false;
-  }
-
-  /**
-   * @brief Check if this is an extension-based place (green context, etc.)
-   */
-  virtual bool is_extension() const
-  {
-    return false;
-  }
-
-  /**
-   * @brief Check if this is a concrete place (single, resolved allocation target)
-   *
-   * Returns true for host, managed, and device(ordinal). Returns false for
-   * invalid, affine, device_auto, and composite, which must be resolved or
-   * are not direct allocation targets. Extension places that support
-   * allocation may override to return true.
-   */
-  virtual bool is_concrete() const
-  {
-    return false;
-  }
 
   // === Core properties ===
 
@@ -234,18 +155,17 @@ public:
     return CUDA_ERROR_NOT_SUPPORTED;
   }
 
-  // === Extension support ===
-
   /**
-   * @brief Get the implementation for the affine exec_place (for extensions)
+   * @brief Get the implementation for the affine exec_place (for custom place types)
    *
-   * Extensions override this to provide their affine exec_place implementation.
-   * Returns nullptr by default (non-extensions).
+   * Custom data_place implementations (e.g. green contexts) override this to
+   * provide their own affine exec_place. Returns nullptr by default, which
+   * causes data_place::affine_exec_place() to fall through to the error path.
    * The returned shared_ptr should be castable to shared_ptr<exec_place::impl>.
    */
   virtual ::std::shared_ptr<void> get_affine_exec_impl() const
   {
-    throw ::std::logic_error("get_affine_exec_impl() called on non-composite data_place");
+    return nullptr;
   }
 
   // === Composite-specific (throw by default) ===

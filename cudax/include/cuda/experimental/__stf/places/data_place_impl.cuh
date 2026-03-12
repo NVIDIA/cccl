@@ -40,11 +40,6 @@ namespace cuda::experimental::stf
 class data_place_invalid final : public data_place_interface
 {
 public:
-  bool is_invalid() const override
-  {
-    return true;
-  }
-
   int get_device_ordinal() const override
   {
     return data_place_interface::invalid;
@@ -91,16 +86,6 @@ public:
 class data_place_host final : public data_place_interface
 {
 public:
-  bool is_host() const override
-  {
-    return true;
-  }
-
-  bool is_concrete() const override
-  {
-    return true;
-  }
-
   int get_device_ordinal() const override
   {
     return data_place_interface::host;
@@ -164,16 +149,6 @@ public:
 class data_place_managed final : public data_place_interface
 {
 public:
-  bool is_managed() const override
-  {
-    return true;
-  }
-
-  bool is_concrete() const override
-  {
-    return true;
-  }
-
   int get_device_ordinal() const override
   {
     return data_place_interface::managed;
@@ -226,16 +201,6 @@ public:
       : device_id_(device_id)
   {
     _CCCL_ASSERT(device_id >= 0, "Device ID must be non-negative");
-  }
-
-  bool is_device() const override
-  {
-    return true;
-  }
-
-  bool is_concrete() const override
-  {
-    return true;
   }
 
   int get_device_ordinal() const override
@@ -329,11 +294,6 @@ private:
 class data_place_affine final : public data_place_interface
 {
 public:
-  bool is_affine() const override
-  {
-    return true;
-  }
-
   int get_device_ordinal() const override
   {
     return data_place_interface::affine;
@@ -380,11 +340,6 @@ public:
 class data_place_device_auto final : public data_place_interface
 {
 public:
-  bool is_device_auto() const override
-  {
-    return true;
-  }
-
   int get_device_ordinal() const override
   {
     return data_place_interface::device_auto;

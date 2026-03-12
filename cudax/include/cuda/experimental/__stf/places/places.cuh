@@ -68,16 +68,11 @@ class data_place_composite;
  * @brief Designates where data will be stored (CPU memory vs. on device 0 (first GPU), device 1 (second GPU), ...)
  *
  * This class uses a polymorphic design where all place types (host, managed, device,
- * composite, extensions) implement a common data_place_interface. The data_place class
+ * composite, future extensions) implement a common data_place_interface. The data_place class
  * holds a shared_ptr to this interface and delegates operations to it.
  */
 class data_place
 {
-  // Private constructor from interface pointer
-  explicit data_place(::std::shared_ptr<data_place_interface> impl)
-      : pimpl_(mv(impl))
-  {}
-
   template <typename T>
   static ::std::shared_ptr<data_place_interface> make_static_instance()
   {
@@ -86,6 +81,9 @@ class data_place
   }
 
 public:
+  explicit data_place(::std::shared_ptr<data_place_interface> impl)
+      : pimpl_(mv(impl))
+  {}
   /**
    * @brief Default constructor. The object is initialized as invalid.
    */
@@ -215,52 +213,42 @@ public:
     return !(*this < rhs);
   }
 
-  /// checks if this data place is a composite data place
-  bool is_composite() const
-  {
-    return pimpl_->is_composite();
-  }
-
-  /// checks if this data place has an extension (green context, etc.)
-  bool is_extension() const
-  {
-    return pimpl_->is_extension();
-  }
+  // Defined later after data_place_composite is complete
+  bool is_composite() const;
 
   bool is_invalid() const
   {
-    return pimpl_->is_invalid();
+    return typeid(*pimpl_) == typeid(data_place_invalid);
   }
 
   bool is_host() const
   {
-    return pimpl_->is_host();
+    return typeid(*pimpl_) == typeid(data_place_host);
   }
 
   bool is_managed() const
   {
-    return pimpl_->is_managed();
+    return typeid(*pimpl_) == typeid(data_place_managed);
   }
 
   bool is_affine() const
   {
-    return pimpl_->is_affine();
+    return typeid(*pimpl_) == typeid(data_place_affine);
   }
 
-  /// checks if this data place corresponds to a specific device
   bool is_device() const
   {
-    return pimpl_->is_device();
+    return typeid(*pimpl_) == typeid(data_place_device);
   }
 
   bool is_device_auto() const
   {
-    return pimpl_->is_device_auto();
+    return typeid(*pimpl_) == typeid(data_place_device_auto);
   }
 
   bool is_concrete() const
   {
-    return pimpl_->is_concrete();
+    return !is_invalid() && !is_affine() && !is_device_auto() && !is_composite();
   }
 
   ::std::string to_string() const
@@ -332,14 +320,6 @@ public:
   decorated_stream getDataStream() const;
 
   /**
-   * @brief Check if this data place has a custom extension
-   */
-  bool has_extension() const
-  {
-    return is_extension();
-  }
-
-  /**
    * @brief Get the underlying interface pointer
    *
    * This is primarily for internal use and backward compatibility.
@@ -347,17 +327,6 @@ public:
   const ::std::shared_ptr<data_place_interface>& get_impl() const
   {
     return pimpl_;
-  }
-
-  /**
-   * @brief Create a data_place from an extension
-   *
-   * This factory method allows custom place types to be created from
-   * data_place_interface implementations that return true from is_extension().
-   */
-  static data_place from_extension(::std::shared_ptr<data_place_interface> ext)
-  {
-    return data_place(mv(ext));
   }
 
   /**
@@ -1405,18 +1374,17 @@ inline exec_place data_place::affine_exec_place() const
     return get_grid();
   }
 
-  if (is_extension())
-  {
-    // Extensions provide their own affine exec_place via get_affine_exec_impl()
-    auto impl = pimpl_->get_affine_exec_impl();
-    _CCCL_ASSERT(impl != nullptr, "Extension must provide affine exec_place implementation");
-    return exec_place(::std::static_pointer_cast<exec_place::impl>(impl));
-  }
-
   if (is_device())
   {
     // This must be a specific device
     return exec_place::device(pimpl_->get_device_ordinal());
+  }
+
+  // Custom place types (e.g. green contexts) provide their own affine exec_place
+  auto custom_impl = pimpl_->get_affine_exec_impl();
+  if (custom_impl)
+  {
+    return exec_place(::std::static_pointer_cast<exec_place::impl>(custom_impl));
   }
 
   // For invalid, affine, device_auto - throw
@@ -1612,11 +1580,6 @@ public:
       , partitioner_func_(mv(partitioner_func))
   {}
 
-  bool is_composite() const override
-  {
-    return true;
-  }
-
   int get_device_ordinal() const override
   {
     return data_place_interface::composite;
@@ -1681,6 +1644,11 @@ private:
   exec_place_grid grid_;
   get_executor_func_t partitioner_func_;
 };
+
+inline bool data_place::is_composite() const
+{
+  return typeid(*pimpl_) == typeid(data_place_composite);
+}
 
 inline data_place data_place::composite(get_executor_func_t f, const exec_place_grid& grid)
 {

@@ -40,129 +40,82 @@
 namespace cuda::experimental::stf
 {
 /**
- * @brief Data place for green contexts
+ * @brief data_place_interface implementation for green contexts
  *
  * Green contexts allow partitioning GPU resources (SMs, memory bandwidth)
- * for fine-grained control over execution. This class provides a data_place
- * for green context-based data locations using the extension mechanism.
+ * for fine-grained control over execution. This class provides the
+ * data_place_interface for green context-based data locations.
  */
-class green_ctx_data_place
+class green_ctx_data_place_impl : public data_place_interface
 {
 public:
-  /**
-   * @brief Extension implementation for green context data places
-   */
-  class extension : public data_place_interface
+  explicit green_ctx_data_place_impl(green_ctx_view view)
+      : view_(mv(view))
+  {}
+
+  int get_device_ordinal() const override
   {
-  public:
-    /**
-     * @brief Construct from a green context view
-     * @param view The green context view containing context and stream pool
-     */
-    explicit extension(green_ctx_view view)
-        : view_(mv(view))
-    {}
-
-    bool is_extension() const override
-    {
-      return true;
-    }
-
-    bool is_concrete() const override
-    {
-      return true;
-    }
-
-    int get_device_ordinal() const override
-    {
-      return view_.devid;
-    }
-
-    ::std::string to_string() const override
-    {
-      return "green_ctx(dev=" + ::std::to_string(view_.devid) + ")";
-    }
-
-    size_t hash() const override
-    {
-      return hash_all(view_.g_ctx, view_.devid);
-    }
-
-    int cmp(const data_place_interface& other) const override
-    {
-      if (typeid(*this) != typeid(other))
-      {
-        return typeid(*this).before(typeid(other)) ? -1 : 1;
-      }
-      const auto& o = static_cast<const extension&>(other);
-      if (view_ < o.view_)
-      {
-        return -1;
-      }
-      return (view_ == o.view_) ? 0 : 1;
-    }
-
-    /**
-     * @brief Get the underlying green context view
-     */
-    const green_ctx_view& get_view() const
-    {
-      return view_;
-    }
-
-    /**
-     * @brief Allocate memory for green context (uses cudaMallocAsync on the device)
-     */
-    void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
-    {
-      void* result = nullptr;
-      cuda_safe_call(cudaSetDevice(view_.devid));
-      cuda_safe_call(cudaMallocAsync(&result, size, stream));
-      return result;
-    }
-
-    /**
-     * @brief Deallocate memory for green context
-     */
-    void deallocate(void* ptr, size_t /*size*/, cudaStream_t stream) const override
-    {
-      cuda_safe_call(cudaFreeAsync(ptr, stream));
-    }
-
-    bool allocation_is_stream_ordered() const override
-    {
-      return true;
-    }
-
-    // Provide affine exec place implementation for data_place::affine_exec_place()
-    ::std::shared_ptr<void> get_affine_exec_impl() const override;
-
-  private:
-    green_ctx_view view_;
-  };
-
-  /**
-   * @brief Create a green context data place
-   *
-   * @param gc_view The green context view
-   * @return data_place for the green context
-   */
-  static data_place create(const green_ctx_view& gc_view)
-  {
-    auto ext = ::std::make_shared<extension>(gc_view);
-    return data_place::from_extension(mv(ext));
+    return view_.devid;
   }
+
+  ::std::string to_string() const override
+  {
+    return "green_ctx(dev=" + ::std::to_string(view_.devid) + ")";
+  }
+
+  size_t hash() const override
+  {
+    return hash_all(view_.g_ctx, view_.devid);
+  }
+
+  int cmp(const data_place_interface& other) const override
+  {
+    if (typeid(*this) != typeid(other))
+    {
+      return typeid(*this).before(typeid(other)) ? -1 : 1;
+    }
+    const auto& o = static_cast<const green_ctx_data_place_impl&>(other);
+    return (o.view_ < view_) - (view_ < o.view_);
+  }
+
+  const green_ctx_view& get_view() const
+  {
+    return view_;
+  }
+
+  void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
+  {
+    void* result = nullptr;
+    cuda_safe_call(cudaSetDevice(view_.devid));
+    cuda_safe_call(cudaMallocAsync(&result, size, stream));
+    return result;
+  }
+
+  void deallocate(void* ptr, size_t /*size*/, cudaStream_t stream) const override
+  {
+    cuda_safe_call(cudaFreeAsync(ptr, stream));
+  }
+
+  bool allocation_is_stream_ordered() const override
+  {
+    return true;
+  }
+
+  ::std::shared_ptr<void> get_affine_exec_impl() const override;
+
+private:
+  green_ctx_view view_;
 };
 
 /**
- * @brief Create a green context data place using the extension mechanism
+ * @brief Create a green context data place
  *
  * @param gc_view The green context view
  * @return data_place for the green context
  */
 inline data_place make_green_ctx_data_place(const green_ctx_view& gc_view)
 {
-  return green_ctx_data_place::create(gc_view);
+  return data_place(::std::make_shared<green_ctx_data_place_impl>(gc_view));
 }
 
 /* Get the unique ID associated with a context (overloaded) */
@@ -170,16 +123,13 @@ inline unsigned long long get_cuda_context_id(CUcontext ctx)
 {
   unsigned long long ctx_id;
   cuda_safe_call(cuCtxGetId(ctx, &ctx_id));
-
   return ctx_id;
 }
 
 /* Get the unique ID associated with a green context (overloaded) */
 inline unsigned long long get_cuda_context_id(CUgreenCtx gctx)
 {
-  CUcontext primary_ctx;
-  cuda_safe_call(cuCtxFromGreenCtx(&primary_ctx, gctx));
-  return get_cuda_context_id(primary_ctx);
+  return get_cuda_context_id(cuda_try<cuCtxFromGreenCtx>(gctx));
 }
 
 /**
@@ -428,7 +378,7 @@ inline exec_place exec_place::green_ctx(const green_ctx_view& gc_view, bool use_
   return exec_place_green_ctx(gc_view, use_green_ctx_data_place);
 }
 
-inline ::std::shared_ptr<void> green_ctx_data_place::extension::get_affine_exec_impl() const
+inline ::std::shared_ptr<void> green_ctx_data_place_impl::get_affine_exec_impl() const
 {
   return exec_place::green_ctx(view_).get_impl();
 }
@@ -501,9 +451,11 @@ UNITTEST("green context data_place equality")
   EXPECT(dp0a != dev0);
   EXPECT(!(dp0a == dev0));
 
-  // Green context data place should be an extension
-  EXPECT(dp0a.is_extension());
-  EXPECT(!dev0.is_extension());
+  // Green context data place should be concrete but not a plain device
+  EXPECT(dp0a.is_concrete());
+  EXPECT(!dp0a.is_device());
+  EXPECT(dev0.is_concrete());
+  EXPECT(dev0.is_device());
 };
 
 UNITTEST("green context exec_place equality with green_ctx_data_place flag")
@@ -529,8 +481,9 @@ UNITTEST("green context exec_place equality with green_ctx_data_place flag")
   // Different green contexts should NOT be equal
   EXPECT(p0a != p1);
 
-  // Affine data place should be an extension when use_green_ctx_data_place=true
-  EXPECT(p0a.affine_data_place().is_extension());
+  // Affine data place should be concrete but not a plain device when use_green_ctx_data_place=true
+  EXPECT(p0a.affine_data_place().is_concrete());
+  EXPECT(!p0a.affine_data_place().is_device());
 };
 
 UNITTEST("green context exec_place and data_place with different data place modes")
@@ -555,8 +508,8 @@ UNITTEST("green context exec_place and data_place with different data place mode
 
   // But their affine data places should be different
   EXPECT(ep0_device_affine.affine_data_place() != ep0_green_affine.affine_data_place());
-  EXPECT(!ep0_device_affine.affine_data_place().is_extension());
-  EXPECT(ep0_green_affine.affine_data_place().is_extension());
+  EXPECT(ep0_device_affine.affine_data_place().is_device());
+  EXPECT(!ep0_green_affine.affine_data_place().is_device());
 
   // Different green contexts should NOT be equal, regardless of data place mode
   auto ep1_device_affine = exec_place::green_ctx(gc1_view, false);
