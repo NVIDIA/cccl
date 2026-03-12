@@ -578,8 +578,7 @@ struct policy_hub
 #  if _CCCL_COMPILER(NVHPC)
       // need to reduce the number of threads to <= 256, so each thread can use up to 255 registers. This avoids an
       // error in ptxas, see also: https://github.com/NVIDIA/cccl/issues/7700.
-      static constexpr int num_reduce_warps    = 2;
-      static constexpr int num_scan_stor_warps = 2;
+      static constexpr int num_reduce_and_scan_warps = 2;
 #  else // _CCCL_COMPILER(NVHPC)
       static constexpr int num_reduce_and_scan_warps = 4; // this can be tuned
 #  endif // _CCCL_COMPILER(NVHPC)
