@@ -2448,7 +2448,8 @@ struct DeviceScan
             typename NumItemsT   = uint32_t,
             typename EnvT        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<
-              !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>,
+              !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
+                && !::cuda::std::is_same_v<ValuesInputIteratorT, size_t>,
               int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSumByKey(
     KeysInputIteratorT d_keys_in,
@@ -2470,7 +2471,7 @@ struct DeviceScan
         ValuesInputIteratorT,
         ValuesOutputIteratorT,
         EqualityOpT,
-        ::cuda::std::plus<init_t>,
+        ::cuda::std::plus<>,
         init_t,
         offset_t>::Dispatch(storage,
                             bytes,
@@ -2478,7 +2479,7 @@ struct DeviceScan
                             d_values_in,
                             d_values_out,
                             equality_op,
-                            ::cuda::std::plus<init_t>{},
+                            ::cuda::std::plus<>{},
                             init_value,
                             static_cast<offset_t>(num_items),
                             stream);
@@ -2579,7 +2580,8 @@ struct DeviceScan
             typename NumItemsT   = uint32_t,
             typename EnvT        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<
-              !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>,
+              !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
+                && !::cuda::std::is_same_v<ValuesInputIteratorT, size_t>,
               int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScanByKey(
     KeysInputIteratorT d_keys_in,
@@ -2691,7 +2693,8 @@ struct DeviceScan
             typename NumItemsT   = uint32_t,
             typename EnvT        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<
-              !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>,
+              !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
+                && !::cuda::std::is_same_v<ValuesInputIteratorT, size_t>,
               int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSumByKey(
     KeysInputIteratorT d_keys_in,
@@ -2705,13 +2708,12 @@ struct DeviceScan
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using offset_t = detail::choose_offset_t<NumItemsT>;
-      using value_t = cub::detail::it_value_t<ValuesInputIteratorT>;
       return DispatchScanByKey<
         KeysInputIteratorT,
         ValuesInputIteratorT,
         ValuesOutputIteratorT,
         EqualityOpT,
-        ::cuda::std::plus<value_t>,
+        ::cuda::std::plus<>,
         NullType,
         offset_t>::Dispatch(storage,
                             bytes,
@@ -2719,7 +2721,7 @@ struct DeviceScan
                             d_values_in,
                             d_values_out,
                             equality_op,
-                            ::cuda::std::plus<value_t>{},
+                            ::cuda::std::plus<>{},
                             NullType{},
                             static_cast<offset_t>(num_items),
                             stream);
@@ -2810,7 +2812,8 @@ struct DeviceScan
             typename NumItemsT   = uint32_t,
             typename EnvT        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<
-              !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>,
+              !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
+                && !::cuda::std::is_same_v<ValuesInputIteratorT, size_t>,
               int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanByKey(
     KeysInputIteratorT d_keys_in,
