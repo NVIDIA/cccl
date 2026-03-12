@@ -76,7 +76,7 @@ struct __pstl_dispatch<__pstl_algorithm::__exclusive_scan, __execution_backend::
     // Determine temporary device storage requirements for reduce
     size_t __num_bytes = 0;
     _CCCL_TRY_CUDA_API(
-      ::cub::DeviceScan::ExclusiveScan,
+      CUB_NS_QUALIFIER::DeviceScan::ExclusiveScan,
       "__pstl_cuda_exclusive_scan: determination of device storage for cub::DeviceScan::ExclusiveScan failed",
       static_cast<void*>(nullptr),
       __num_bytes,
@@ -96,7 +96,7 @@ struct __pstl_dispatch<__pstl_algorithm::__exclusive_scan, __execution_backend::
 
       // Run the scan
       _CCCL_TRY_CUDA_API(
-        ::cub::DeviceScan::ExclusiveScan,
+        CUB_NS_QUALIFIER::DeviceScan::ExclusiveScan,
         "__pstl_cuda_exclusive_scan: kernel launch of cub::DeviceScan::ExclusiveScan failed",
         __storage.__get_temp_storage(),
         __num_bytes,

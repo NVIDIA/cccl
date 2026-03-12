@@ -76,7 +76,7 @@ struct __pstl_dispatch<__pstl_algorithm::__remove_if, __execution_backend::__cud
     void* __temp_storage = nullptr;
     size_t __num_bytes   = 0;
     _CCCL_TRY_CUDA_API(
-      ::cub::DeviceSelect::If,
+      CUB_NS_QUALIFIER::DeviceSelect::If,
       "__pstl_cuda_select_if: determination of device storage for cub::DeviceSelect::If failed",
       __temp_storage,
       __num_bytes,
@@ -91,7 +91,7 @@ struct __pstl_dispatch<__pstl_algorithm::__remove_if, __execution_backend::__cud
 
       // Run the kernel
       _CCCL_TRY_CUDA_API(
-        ::cub::DeviceSelect::If,
+        CUB_NS_QUALIFIER::DeviceSelect::If,
         "__pstl_cuda_select_if: kernel launch of cub::DeviceSelect::If failed",
         __storage.__get_temp_storage(),
         __num_bytes,
