@@ -87,7 +87,7 @@ struct __pstl_dispatch<__pstl_algorithm::__remove_if, __execution_backend::__cud
       __stream.get());
 
     {
-      __temporary_storage<_OffsetType, decltype(__resource)> __storage{__stream, __resource, __num_bytes};
+      __temporary_storage<decltype(__resource), _OffsetType> __storage{__stream, __resource, __num_bytes, 1};
 
       // Run the kernel
       _CCCL_TRY_CUDA_API(
@@ -96,7 +96,7 @@ struct __pstl_dispatch<__pstl_algorithm::__remove_if, __execution_backend::__cud
         __storage.__get_temp_storage(),
         __num_bytes,
         ::cuda::std::move(__first),
-        __storage.__get_result_iter(),
+        __storage.template __get_ptr<0>(),
         __count,
         ::cuda::std::move(__pred),
         __stream.get());
@@ -106,7 +106,7 @@ struct __pstl_dispatch<__pstl_algorithm::__remove_if, __execution_backend::__cud
         ::cudaMemcpyAsync,
         "__pstl_cuda_select_if: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),
-        __storage.__res_,
+        __storage.template __get_ptr<0>(),
         sizeof(_OffsetType),
         ::cudaMemcpyDefault,
         __stream.get());
