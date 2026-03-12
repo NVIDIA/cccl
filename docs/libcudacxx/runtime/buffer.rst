@@ -8,11 +8,11 @@ Buffer
 
 The buffer API provides a typed container allocated from memory resources. It handles stream-ordered allocation, initialization, and deallocation of memory.
 
-:cpp:any:`cuda::buffer`
+:cpp:class:`cuda::buffer`
 ---------------------------
 .. _cccl-runtime-buffer-buffer:
 
-:cpp:any:`cuda::buffer` is a container that manages typed storage allocated from a given
+:cpp:class:`cuda::buffer` is a container that manages typed storage allocated from a given
 :ref:`memory resource <libcudacxx-extended-api-memory-resources-resource>` in stream order using a provided
 :ref:`stream_ref <cccl-runtime-stream-stream-ref>`. The elements are initialized during construction, which may require
 a kernel launch. The stream provided during construction is stored and later used for deallocation of the buffer,
@@ -20,7 +20,7 @@ either explicitly or when the buffer destructor is called.
 
 Buffer owns a copy of the memory resource, which means it must be copy-constructible. If a resource is not copy-constructible, like memory pool objects, :ref:`shared_resource <libcudacxx-extended-api-memory-resources-shared-resource>` can be used to attach shared ownership to a resource type.
 
-In addition to being typed, :cpp:any:`cuda::buffer` also takes a set of
+In addition to being typed, :cpp:class:`cuda::buffer` also takes a set of
 :ref:`properties <libcudacxx-extended-api-memory-resources-properties>` to ensure that memory accessibility and other
 constraints are checked at compile time.
 

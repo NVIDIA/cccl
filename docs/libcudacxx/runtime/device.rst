@@ -3,11 +3,11 @@
 Devices
 =======
 
-:cpp:any:`cuda::device_ref`
+:cpp:class:`cuda::device_ref`
 -------------------------------
 .. _cccl-runtime-device-device-ref:
 
-:cpp:any:`cuda::device_ref` is a lightweight, non-owning handle to a CUDA device ordinal. It allows to query
+:cpp:class:`cuda::device_ref` is a lightweight, non-owning handle to a CUDA device ordinal. It allows to query
 information about a device and serves as an argument to other runtime APIs which are tied to a specific device.
 It offers:
 
@@ -20,12 +20,12 @@ It offers:
 
 Availability: CCCL 3.1.0 / CUDA 13.1
 
-:cpp:any:`cuda::devices`
+:cpp:var:`cuda::devices`
 ----------------------------
 .. _cccl-runtime-device-devices:
 
-:cpp:any:`cuda::devices` is a random-access view of all available CUDA devices in the form of
-:cpp:any:`cuda::device_ref` objects. It
+:cpp:var:`cuda::devices` is a random-access view of all available CUDA devices in the form of
+:cpp:class:`cuda::device_ref` objects. It
 provides indexing, size, and iteration for use
 in range-based loops.
 
@@ -49,7 +49,7 @@ Device attributes
 .. _cccl-runtime-device-attributes:
 
 ``cuda::device_attributes`` provides strongly-typed attribute query objects usable with
-:cpp:any:`cuda::device_ref::attribute`. Selected examples:
+:cpp:func:`cuda::device_ref::attribute`. Selected examples:
 
 - ``compute_capability``
 - ``multiprocessor_count``
@@ -79,9 +79,9 @@ structure that describes common characteristics of all devices of an architectur
 queries of a single characteristic of a specific device.
 
 - :cpp:any:`cuda::arch_traits` and :cpp:any:`cuda::arch_traits_for` (compile-time and run-time forms).
-- Returns a :cpp:any:`cuda::arch_traits_t` with fields like
+- Returns a :cpp:struct:`cuda::arch_traits_t` with fields like
   ``max_threads_per_block``, ``max_shared_memory_per_block``, ``cluster_supported`` and other capability flags.
-- Traits for the current architecture can be accessed with :cpp:any:`cuda::device::current_arch_traits`
+- Traits for the current architecture can be accessed with :cpp:func:`cuda::device::current_arch_traits`
 
 Availability: CCCL 3.1.0 / CUDA 13.1
 
