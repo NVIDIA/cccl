@@ -73,7 +73,7 @@ struct __pstl_dispatch<__pstl_algorithm::__adjacent_difference, __execution_back
     // Determine temporary device storage requirements for device_merge
     size_t __num_bytes = 0;
     _CCCL_TRY_CUDA_API(
-      ::cub::DeviceAdjacentDifference::SubtractLeftCopy,
+      CUB_NS_QUALIFIER::DeviceAdjacentDifference::SubtractLeftCopy,
       "__pstl_cuda_merge: determination of device storage for cub::DeviceAdjacentDifference::SubtractLeftCopy failed",
       static_cast<void*>(nullptr),
       __num_bytes,
@@ -92,7 +92,7 @@ struct __pstl_dispatch<__pstl_algorithm::__adjacent_difference, __execution_back
 
       // Run the kernel, the standard requires that the input and output range do not overlap
       _CCCL_TRY_CUDA_API(
-        ::cub::DeviceAdjacentDifference::SubtractLeftCopy,
+        CUB_NS_QUALIFIER::DeviceAdjacentDifference::SubtractLeftCopy,
         "__pstl_cuda_merge: kernel launch of cub::DeviceAdjacentDifference::SubtractLeftCopy failed",
         __storage.__get_temp_storage(),
         __num_bytes,

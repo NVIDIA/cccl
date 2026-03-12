@@ -703,7 +703,7 @@ _CCCL_HOST_API void __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::st
     {
 #  if _CCCL_CUDA_COMPILATION()
       ::cuda::__ensure_current_context __guard(__stream);
-      ::cub::DeviceTransform::Fill(__first, __count, __value, __stream.get());
+      CUB_NS_QUALIFIER::DeviceTransform::Fill(__first, __count, __value, __stream.get());
 #  else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
       static_assert(sizeof(_Tp) <= 4,
                     "CUDA compiler is required to initialize an async_buffer with elements larger than 4 bytes");

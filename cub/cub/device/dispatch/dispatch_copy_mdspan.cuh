@@ -20,7 +20,7 @@
 #include <cub/device/device_transform.cuh>
 #include <cub/util_debug.cuh>
 
-#include <cuda/std/functional>
+#include <cuda/std/__functional/identity.h>
 #include <cuda/std/mdspan>
 
 CUB_NAMESPACE_BEGIN

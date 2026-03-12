@@ -13,8 +13,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/iterator>
 #include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN

@@ -76,7 +76,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
 
     // We pass the policy as an environment to device_transform
     _CCCL_TRY_CUDA_API(
-      ::cub::DeviceTransform::TransformIf,
+      CUB_NS_QUALIFIER::DeviceTransform::TransformIf,
       "cuda::std::transform: failed inside CUDA backend",
       ::cuda::std::move(__first),
       ::cuda::std::move(__result),
