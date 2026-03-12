@@ -5,7 +5,8 @@
 
 #include <nvbench_helper.cuh>
 
-// This benchmark tunes the old, non-warpspeed scan implementation
+// This benchmark tunes the old, non-warpspeed scan implementation. Using it for benchmarking, will pick the warpspeed
+// implementation on SM100+, but it's better to use the sum.warpspeed.cu benchmark instead, which uses a single OffsetT.
 
 // %RANGE% TUNE_ITEMS ipt 7:24:1
 // %RANGE% TUNE_THREADS tpb 128:1024:32
