@@ -82,15 +82,16 @@ _CCCL_HOST_API void __sort_by_stride_paired(__raw_tensor<_ExtentT, _StrideT, _Tp
   {
     __modes[__i] = {__src.__extents[__i], __src.__strides[__i], __dst.__strides[__i]};
   }
-  ::cuda::std::stable_sort(__modes.begin(), __modes.begin() + __rank, [](const __mode_t& __lhs, const __mode_t& __rhs) {
-    const auto __src_lhs = ::cuda::std::get<1>(__lhs);
-    const auto __src_rhs = ::cuda::std::get<1>(__rhs);
-    const auto __dst_lhs = ::cuda::std::get<2>(__lhs);
-    const auto __dst_rhs = ::cuda::std::get<2>(__rhs);
-    return cudax::__abs_integer(__src_lhs) < cudax::__abs_integer(__src_rhs)
-        || (cudax::__abs_integer(__src_lhs) == cudax::__abs_integer(__src_rhs)
-            && cudax::__abs_integer(__dst_lhs) < cudax::__abs_integer(__dst_rhs));
-  });
+  ::cuda::std::stable_sort(
+    __modes.begin(), __modes.begin() + __rank, [] __host__ __device__(const __mode_t& __lhs, const __mode_t& __rhs) {
+      const auto __src_lhs = ::cuda::std::get<1>(__lhs);
+      const auto __src_rhs = ::cuda::std::get<1>(__rhs);
+      const auto __dst_lhs = ::cuda::std::get<2>(__lhs);
+      const auto __dst_rhs = ::cuda::std::get<2>(__rhs);
+      return cudax::__abs_integer(__src_lhs) < cudax::__abs_integer(__src_rhs)
+          || (cudax::__abs_integer(__src_lhs) == cudax::__abs_integer(__src_rhs)
+              && cudax::__abs_integer(__dst_lhs) < cudax::__abs_integer(__dst_rhs));
+    });
   for (__rank_t __i = 0; __i < __rank; ++__i)
   {
     ::cuda::std::tie(__src.__extents[__i], __src.__strides[__i], __dst.__strides[__i]) = __modes[__i];

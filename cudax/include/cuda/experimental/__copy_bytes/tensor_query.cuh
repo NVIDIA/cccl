@@ -130,9 +130,10 @@ __sort_by_stride(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor
   {
     __modes[__i] = {__tensor.__extents[__i], __tensor.__strides[__i]};
   }
-  ::cuda::std::stable_sort(__modes.begin(), __modes.begin() + __rank, [](const __mode_t& __lhs, const __mode_t& __rhs) {
-    return cudax::__abs_integer(::cuda::std::get<1>(__lhs)) < cudax::__abs_integer(::cuda::std::get<1>(__rhs));
-  });
+  ::cuda::std::stable_sort(
+    __modes.begin(), __modes.begin() + __rank, [] __host__ __device__(const __mode_t& __lhs, const __mode_t& __rhs) {
+      return cudax::__abs_integer(::cuda::std::get<1>(__lhs)) < cudax::__abs_integer(::cuda::std::get<1>(__rhs));
+    });
   __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank> __result{__tensor.__data, __rank};
   for (__rank_t __i = 0; __i < __rank; ++__i)
   {
