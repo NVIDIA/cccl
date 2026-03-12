@@ -172,15 +172,16 @@ struct DeviceMerge
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   //! [strict weak ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
-  template <typename KeyIteratorIn1,
-            typename KeyIteratorIn2,
-            typename KeyIteratorOut,
-            typename CompareOp            = ::cuda::std::less<>,
-            typename EnvT                 = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyIteratorIn1, void*>
-                                       && !::cuda::std::is_same_v<KeyIteratorIn1, ::cuda::std::nullptr_t>
-                                       && !::cuda::std::is_arithmetic_v<CompareOp>,
-                                     int> = 0>
+  template <
+    typename KeyIteratorIn1,
+    typename KeyIteratorIn2,
+    typename KeyIteratorOut,
+    typename CompareOp = ::cuda::std::less<>,
+    typename EnvT      = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<
+      !::cuda::std::is_same_v<KeyIteratorIn1, void*> && !::cuda::std::is_same_v<KeyIteratorIn1, ::cuda::std::nullptr_t>
+        && ::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>,
+      int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MergeKeys(
     KeyIteratorIn1 keys_in1,
     ::cuda::std::int64_t num_keys1,
@@ -387,18 +388,19 @@ struct DeviceMerge
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   //! [strict weak ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
-  template <typename KeyIteratorIn1,
-            typename ValueIteratorIn1,
-            typename KeyIteratorIn2,
-            typename ValueIteratorIn2,
-            typename KeyIteratorOut,
-            typename ValueIteratorOut,
-            typename CompareOp            = ::cuda::std::less<>,
-            typename EnvT                 = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyIteratorIn1, void*>
-                                       && !::cuda::std::is_same_v<KeyIteratorIn1, ::cuda::std::nullptr_t>
-                                       && !::cuda::std::is_arithmetic_v<CompareOp>,
-                                     int> = 0>
+  template <
+    typename KeyIteratorIn1,
+    typename ValueIteratorIn1,
+    typename KeyIteratorIn2,
+    typename ValueIteratorIn2,
+    typename KeyIteratorOut,
+    typename ValueIteratorOut,
+    typename CompareOp = ::cuda::std::less<>,
+    typename EnvT      = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<
+      !::cuda::std::is_same_v<KeyIteratorIn1, void*> && !::cuda::std::is_same_v<KeyIteratorIn1, ::cuda::std::nullptr_t>
+        && ::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>,
+      int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MergePairs(
     KeyIteratorIn1 keys_in1,
     ValueIteratorIn1 values_in1,
