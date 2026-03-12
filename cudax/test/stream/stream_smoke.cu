@@ -8,9 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/array>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
-#include <cuda/std/array>
 
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/stream.cuh>
@@ -223,7 +223,7 @@ C2H_CCCLRT_TEST("Replicate supports dynamic stream counts", "[stream]")
 C2H_CCCLRT_TEST("Replicate prepend keeps moved stream at index zero", "[stream]")
 {
   cudax::stream source{cuda::device_ref{0}};
-  auto source_id = source.id();
+  auto source_id         = source.id();
   constexpr size_t count = 2;
 
   auto streams = cudax::replicate_prepend(::cuda::std::move(source), count);

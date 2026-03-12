@@ -27,16 +27,15 @@
 #include <cuda/__driver/driver_api.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/__stream/invalid_stream.h>
-
-#include <cuda/experimental/__device/logical_device.cuh>
-#include <cuda/experimental/__stream/stream_ref.cuh> // IWYU pragma: export
-#include <cuda/experimental/__utility/ensure_current_device.cuh>
-
 #include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/array>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
+
+#include <cuda/experimental/__device/logical_device.cuh>
+#include <cuda/experimental/__stream/stream_ref.cuh> // IWYU pragma: export
+#include <cuda/experimental/__utility/ensure_current_device.cuh>
 
 #include <vector>
 
@@ -168,10 +167,11 @@ template <size_t _Count>
 //! @brief Create a fixed-size group of streams on the same logical device as `__source`.
 //!
 //! @note This function only creates streams; it does not add synchronization dependencies.
-//! @note The streams are created with the default priority, which can be changed by the user. // TODO expose stream attributes?
+//! @note The streams are created with the default priority, which can be changed by the user. // TODO expose stream
+//! attributes?
 [[nodiscard]] auto replicate(stream_ref __source) -> ::cuda::std::array<stream, _Count>
 {
-  auto __dev      = __source.logical_device();
+  auto __dev = __source.logical_device();
 
   auto __streams = [&]<size_t... _Idx>(::cuda::std::index_sequence<_Idx...>) {
     return ::cuda::std::array<stream, _Count>{((void) _Idx, stream(__dev))...};
@@ -230,8 +230,7 @@ template <size_t _Count>
   auto __dev = __source.logical_device();
 
   auto __streams = [&]<size_t... _Idx>(::cuda::std::index_sequence<_Idx...>) {
-    return ::cuda::std::array<stream, _Count + 1>{
-      ::cuda::std::move(__source), ((void) _Idx, stream(__dev))...};
+    return ::cuda::std::array<stream, _Count + 1>{::cuda::std::move(__source), ((void) _Idx, stream(__dev))...};
   }(::cuda::std::make_index_sequence<_Count>{});
 
   return __streams;
@@ -242,8 +241,9 @@ _CCCL_CONCEPT __stream_join_range =
   ::cuda::std::is_same_v<::cuda::std::ranges::range_value_t<const _Range&>, stream_ref>
   || ::cuda::std::is_same_v<::cuda::std::ranges::range_value_t<const _Range&>, stream>;
 
-// TODO: consider accumulating all the dependencies in from range into a single stream in to_streams and then propagate that as a dependency to the other streams in to_streams
-// This has a drawback of introducing an extra dependency on that selected stream and other streams in to_streams, but results in less API calls overall.
+// TODO: consider accumulating all the dependencies in from range into a single stream in to_streams and then propagate
+// that as a dependency to the other streams in to_streams This has a drawback of introducing an extra dependency on
+// that selected stream and other streams in to_streams, but results in less API calls overall.
 //! @brief Internal implementation for joining two stream groups.
 //!
 //! For each stream in `__from_streams`, this function makes each non-identical stream
@@ -257,8 +257,8 @@ inline void __join_impl(const _ToRange& __to_streams, const _FromRange& __from_s
     return;
   }
 
-  auto __first                = stream_ref(*__to_begin);
-  auto __first_device         = __first.device();
+  auto __first                 = stream_ref(*__to_begin);
+  auto __first_device          = __first.device();
   bool __use_per_stream_events = false;
   cuda::event __event(__first_device);
   for (const auto& __from_stream : __from_streams)
@@ -317,9 +317,8 @@ inline void __join_impl(const _ToRange& __to_streams, const _FromRange& __from_s
 //! excluding identical stream pairs.
 _CCCL_TEMPLATE(class _ToRange, class _FromRange)
 _CCCL_REQUIRES(
-  ::cuda::std::ranges::forward_range<const _ToRange&> _CCCL_AND
-  ::cuda::std::ranges::forward_range<const _FromRange&> _CCCL_AND __stream_join_range<_ToRange> _CCCL_AND
-  __stream_join_range<_FromRange>)
+  ::cuda::std::ranges::forward_range<const _ToRange&> _CCCL_AND ::cuda::std::ranges::forward_range<const _FromRange&>
+    _CCCL_AND __stream_join_range<_ToRange> _CCCL_AND __stream_join_range<_FromRange>)
 inline void join(const _ToRange& __to_streams, const _FromRange& __from_streams)
 {
   __join_impl(__to_streams, __from_streams);
