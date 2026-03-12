@@ -18,7 +18,6 @@
 #include <cub/device/dispatch/dispatch_merge_sort.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/std/__execution/env.h>
 
@@ -241,7 +240,6 @@ public:
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
-  //! - This operation provides ``run_to_run`` determinism.
   //! - SortPairs is not guaranteed to be stable.
   //!
   //! Snippet
@@ -295,17 +293,6 @@ public:
   SortPairs(KeyIteratorT d_keys, ValueIteratorT d_items, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t,
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
-    static_assert(!::cuda::std::is_same_v<determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
-                  "gpu_to_gpu determinism is not supported for unstable sort. Use StableSortPairs instead.");
 
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
@@ -610,7 +597,6 @@ public:
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
-  //! - This operation provides ``run_to_run`` determinism.
   //! - SortKeys is not guaranteed to be stable.
   //!
   //! Snippet
@@ -654,17 +640,6 @@ public:
   SortKeys(KeyIteratorT d_keys, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t,
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
-    static_assert(!::cuda::std::is_same_v<determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
-                  "gpu_to_gpu determinism is not supported for unstable sort. Use StableSortKeys instead.");
 
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
@@ -955,7 +930,6 @@ public:
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
-  //! - This operation provides ``gpu_to_gpu`` determinism.
   //! - StableSortPairs preserves the relative ordering of equivalent elements.
   //!
   //! Snippet
@@ -1136,7 +1110,6 @@ public:
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
-  //! - This operation provides ``gpu_to_gpu`` determinism.
   //! - StableSortKeys preserves the relative ordering of equivalent elements.
   //!
   //! Snippet
