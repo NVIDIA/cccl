@@ -495,6 +495,7 @@ Does your project use CCCL? [Open a PR to add your project to this list!](https:
 - [cuML](https://github.com/rapidsai/cuml) - Machine learning algorithms and primitives
 - [CuPy](https://cupy.dev) - NumPy & SciPy for GPU
 - [cuSOLVER](https://developer.nvidia.com/cusolver) - Dense and sparse linear solvers
+- [CUSP](https://github.com/cusplibrary/cusplibrary) - Templated sparse linear algebra and graph computations
 - [GooFit](https://github.com/GooFit/GooFit) - Library for maximum-likelihood fits
 - [HeavyDB](https://github.com/heavyai/heavydb) - SQL database engine
 - [HOOMD](https://github.com/glotzerlab/hoomd-blue) - Monte Carlo and molecular dynamics simulations
