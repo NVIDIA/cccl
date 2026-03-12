@@ -19,7 +19,7 @@ jobs:
     steps:
       - name: Checkout Source
         uses: actions/checkout@v6
-        
+
       - name: Black Duck SCA
         id: black-duck-sca-scan
         uses: blackduck-inc/black-duck-security-scan@v2
@@ -35,9 +35,9 @@ jobs:
           # blackducksca_waitForScan: true
           ### Arbitrary product-related CLI arguments
           # detect_search_depth: 2
-          detect_args: >-                                                                                                                                    
+          detect_args: >-
             --detect.project.group.name='github-first-group'
-            --detect.detector.search.depth=4                                                                                                                 
+            --detect.detector.search.depth=4
             --detect.detector.search.continue=true
           # detect_config_path: "/path/to/application.properties"
           ### FIX PULL REQUEST CREATION: Uncomment below to enable
