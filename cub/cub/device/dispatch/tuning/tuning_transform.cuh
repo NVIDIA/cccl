@@ -481,10 +481,10 @@ struct policy_selector_from_types<RequiresStableAddress,
                                   ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                                   RandomAccessIteratorOut>
 {
-  // This can happen for multiple reasons. The user could pass an output iterator by accident, but it could also be a
-  // transform_iterator with a __device__ callable and a deduced return type (which is void in host code).
   static_assert((!::cuda::std::is_void_v<it_value_t<RandomAccessIteratorsIn>> && ...),
-                "Iterators for inputs must not have a value_type of void");
+                "Iterators for inputs must not have a value_type of void. This can happen for multiple reasons. You "
+                "could pass an output iterator by accident, but it could also be a transform_iterator with a "
+                "__device__ callable and a deduced return type (which is void in host code).");
 
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> transform_policy
   {
