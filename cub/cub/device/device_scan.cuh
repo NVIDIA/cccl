@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
-// SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 //! @file
@@ -187,7 +187,6 @@ struct DeviceScan
     static_assert(!is_determinism_required || is_safe_integral_op,
                   "run_to_run or gpu_to_gpu is only supported for integral types with known operators");
 
-    // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
       return scan_impl_determinism<
@@ -199,46 +198,6 @@ struct DeviceScan
         NumItemsT,
         ::cuda::execution::determinism::__determinism_t(requested_determinism_t::value),
         EnforceInclusive>(storage, bytes, d_in, d_out, scan_op, init, num_items, requested_determinism_t{}, stream);
-    });
-  }
-  template <typename KeysInputIteratorT,
-            typename ValuesInputIteratorT,
-            typename ValuesOutputIteratorT,
-            typename EqualityOpT,
-            typename ScanOpT,
-            typename InitValueT,
-            typename NumItemsT,
-            typename EnvT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t scan_bykey_impl_env(
-    KeysInputIteratorT d_keys_in,
-    ValuesInputIteratorT d_values_in,
-    ValuesOutputIteratorT d_values_out,
-    EqualityOpT equality_op,
-    ScanOpT scan_op,
-    InitValueT init_value,
-    NumItemsT num_items,
-    EnvT env)
-  {
-    // Dispatch with environment - handles all boilerplate
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using offset_t = detail::choose_offset_t<NumItemsT>;
-      return DispatchScanByKey<
-        KeysInputIteratorT,
-        ValuesInputIteratorT,
-        ValuesOutputIteratorT,
-        EqualityOpT,
-        ScanOpT,
-        InitValueT,
-        offset_t>::Dispatch(storage,
-                            bytes,
-                            d_keys_in,
-                            d_values_in,
-                            d_values_out,
-                            equality_op,
-                            scan_op,
-                            init_value,
-                            static_cast<offset_t>(num_items),
-                            stream);
     });
   }
   //! @endcond
@@ -430,10 +389,10 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSum");
 
-    using InitT = cub::detail::it_value_t<InputIteratorT>;
-    InitT init_value{};
+    using init_t = cub::detail::it_value_t<InputIteratorT>;
+    init_t init_value{};
 
-    return scan_impl_env(d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<InitT>(init_value), num_items, env);
+    return scan_impl_env(d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<init_t>(init_value), num_items, env);
   }
 
   //! @rst
@@ -2501,11 +2460,29 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSumByKey");
 
-    using InitT = cub::detail::it_value_t<ValuesInputIteratorT>;
-    InitT init_value{};
+    using init_t = cub::detail::it_value_t<ValuesInputIteratorT>;
+    init_t init_value{};
 
-    return scan_bykey_impl_env(
-      d_keys_in, d_values_in, d_values_out, equality_op, ::cuda::std::plus<>{}, init_value, num_items, env);
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using offset_t = detail::choose_offset_t<NumItemsT>;
+      return DispatchScanByKey<
+        KeysInputIteratorT,
+        ValuesInputIteratorT,
+        ValuesOutputIteratorT,
+        EqualityOpT,
+        ::cuda::std::plus<init_t>,
+        init_t,
+        offset_t>::Dispatch(storage,
+                            bytes,
+                            d_keys_in,
+                            d_values_in,
+                            d_values_out,
+                            equality_op,
+                            ::cuda::std::plus<init_t>{},
+                            init_value,
+                            static_cast<offset_t>(num_items),
+                            stream);
+    });
   }
 
   //! @rst
@@ -2616,7 +2593,26 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScanByKey");
 
-    return scan_bykey_impl_env(d_keys_in, d_values_in, d_values_out, equality_op, scan_op, init_value, num_items, env);
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using offset_t = detail::choose_offset_t<NumItemsT>;
+      return DispatchScanByKey<
+        KeysInputIteratorT,
+        ValuesInputIteratorT,
+        ValuesOutputIteratorT,
+        EqualityOpT,
+        ScanOpT,
+        InitValueT,
+        offset_t>::Dispatch(storage,
+                            bytes,
+                            d_keys_in,
+                            d_values_in,
+                            d_values_out,
+                            equality_op,
+                            scan_op,
+                            init_value,
+                            static_cast<offset_t>(num_items),
+                            stream);
+    });
   }
 
   //! @rst
@@ -2707,8 +2703,27 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveSumByKey");
 
-    return scan_bykey_impl_env(
-      d_keys_in, d_values_in, d_values_out, equality_op, ::cuda::std::plus<>{}, NullType{}, num_items, env);
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using offset_t = detail::choose_offset_t<NumItemsT>;
+      using value_t = cub::detail::it_value_t<ValuesInputIteratorT>;
+      return DispatchScanByKey<
+        KeysInputIteratorT,
+        ValuesInputIteratorT,
+        ValuesOutputIteratorT,
+        EqualityOpT,
+        ::cuda::std::plus<value_t>,
+        NullType,
+        offset_t>::Dispatch(storage,
+                            bytes,
+                            d_keys_in,
+                            d_values_in,
+                            d_values_out,
+                            equality_op,
+                            ::cuda::std::plus<value_t>{},
+                            NullType{},
+                            static_cast<offset_t>(num_items),
+                            stream);
+    });
   }
 
   //! @rst
@@ -2808,7 +2823,26 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScanByKey");
 
-    return scan_bykey_impl_env(d_keys_in, d_values_in, d_values_out, equality_op, scan_op, NullType{}, num_items, env);
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using offset_t = detail::choose_offset_t<NumItemsT>;
+      return DispatchScanByKey<
+        KeysInputIteratorT,
+        ValuesInputIteratorT,
+        ValuesOutputIteratorT,
+        EqualityOpT,
+        ScanOpT,
+        NullType,
+        offset_t>::Dispatch(storage,
+                            bytes,
+                            d_keys_in,
+                            d_values_in,
+                            d_values_out,
+                            equality_op,
+                            scan_op,
+                            NullType{},
+                            static_cast<offset_t>(num_items),
+                            stream);
+    });
   }
 
   //! @}
