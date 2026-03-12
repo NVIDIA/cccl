@@ -5,6 +5,8 @@
 // parameters and is agnostic of the offset type. It is thus in a separate file, so we can continue to tune the old scan
 // implementation on older hardware architectures.
 
+#include <cuda/__cccl_config>
+
 #if _CCCL_PP_COUNT(__CUDA_ARCH_LIST__) != 1
 #  error "This benchmark does not support being compiled for multiple architectures"
 #endif
