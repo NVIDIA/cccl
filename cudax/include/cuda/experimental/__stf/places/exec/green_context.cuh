@@ -68,6 +68,11 @@ public:
       return true;
     }
 
+    bool is_concrete() const override
+    {
+      return true;
+    }
+
     int get_device_ordinal() const override
     {
       return view_.devid;

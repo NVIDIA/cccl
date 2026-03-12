@@ -96,6 +96,11 @@ public:
     return true;
   }
 
+  bool is_concrete() const override
+  {
+    return true;
+  }
+
   int get_device_ordinal() const override
   {
     return data_place_interface::host;
@@ -164,6 +169,11 @@ public:
     return true;
   }
 
+  bool is_concrete() const override
+  {
+    return true;
+  }
+
   int get_device_ordinal() const override
   {
     return data_place_interface::managed;
@@ -219,6 +229,11 @@ public:
   }
 
   bool is_device() const override
+  {
+    return true;
+  }
+
+  bool is_concrete() const override
   {
     return true;
   }

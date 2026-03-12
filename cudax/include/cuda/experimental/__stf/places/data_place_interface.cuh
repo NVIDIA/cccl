@@ -147,6 +147,19 @@ public:
     return false;
   }
 
+  /**
+   * @brief Check if this is a concrete place (single, resolved allocation target)
+   *
+   * Returns true for host, managed, and device(ordinal). Returns false for
+   * invalid, affine, device_auto, and composite, which must be resolved or
+   * are not direct allocation targets. Extension places that support
+   * allocation may override to return true.
+   */
+  virtual bool is_concrete() const
+  {
+    return false;
+  }
+
   // === Core properties ===
 
   /**

@@ -258,6 +258,11 @@ public:
     return pimpl_->is_device_auto();
   }
 
+  bool is_concrete() const
+  {
+    return pimpl_->is_concrete();
+  }
+
   ::std::string to_string() const
   {
     return pimpl_->to_string();

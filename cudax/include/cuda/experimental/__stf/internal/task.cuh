@@ -441,7 +441,7 @@ void dep_allocate(
 {
   auto& inst = d.get_data_instance(instance_id);
 
-  _CCCL_ASSERT(!dplace.is_affine() && !dplace.is_invalid(),
+  _CCCL_ASSERT(dplace.is_concrete(),
                "dep_allocate requires a concrete data_place (resolved upstream in acquire)");
 
   /*
@@ -474,7 +474,7 @@ void dep_allocate(
         inst.allocated_size = s;
         inst.set_allocated(true);
         inst.reclaimable = true;
-        _CCCL_ASSERT(!inst.get_dplace().is_affine() && !inst.get_dplace().is_invalid(),
+        _CCCL_ASSERT(inst.get_dplace().is_concrete(),
                      "instance dplace must be concrete after allocation");
         break;
       }
