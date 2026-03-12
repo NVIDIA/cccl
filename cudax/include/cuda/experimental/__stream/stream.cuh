@@ -163,6 +163,21 @@ private:
   {}
 };
 
+template <size_t... _Idx>
+[[nodiscard]] inline auto __replicate_impl(logical_device __dev, ::cuda::std::index_sequence<_Idx...>)
+  -> ::cuda::std::array<stream, sizeof...(_Idx)>
+{
+  return ::cuda::std::array<stream, sizeof...(_Idx)>{((void) _Idx, stream(__dev))...};
+}
+
+template <size_t... _Idx>
+[[nodiscard]] inline auto
+__replicate_prepend_impl(stream&& __source, logical_device __dev, ::cuda::std::index_sequence<_Idx...>)
+  -> ::cuda::std::array<stream, sizeof...(_Idx) + 1>
+{
+  return ::cuda::std::array<stream, sizeof...(_Idx) + 1>{::cuda::std::move(__source), ((void) _Idx, stream(__dev))...};
+}
+
 template <size_t _Count>
 //! @brief Create a fixed-size group of streams on the same logical device as `__source`.
 //!
@@ -172,12 +187,7 @@ template <size_t _Count>
 [[nodiscard]] auto replicate(stream_ref __source) -> ::cuda::std::array<stream, _Count>
 {
   auto __dev = __source.logical_device();
-
-  auto __streams = [&]<size_t... _Idx>(::cuda::std::index_sequence<_Idx...>) {
-    return ::cuda::std::array<stream, _Count>{((void) _Idx, stream(__dev))...};
-  }(::cuda::std::make_index_sequence<_Count>{});
-
-  return __streams;
+  return __replicate_impl(__dev, ::cuda::std::make_index_sequence<_Count>{});
 }
 
 //! @brief Create a runtime-sized group of streams on the same logical device as `__source`.
@@ -228,12 +238,7 @@ template <size_t _Count>
 [[nodiscard]] inline auto replicate_prepend(stream&& __source) -> ::cuda::std::array<stream, _Count + 1>
 {
   auto __dev = __source.logical_device();
-
-  auto __streams = [&]<size_t... _Idx>(::cuda::std::index_sequence<_Idx...>) {
-    return ::cuda::std::array<stream, _Count + 1>{::cuda::std::move(__source), ((void) _Idx, stream(__dev))...};
-  }(::cuda::std::make_index_sequence<_Count>{});
-
-  return __streams;
+  return __replicate_prepend_impl(::cuda::std::move(__source), __dev, ::cuda::std::make_index_sequence<_Count>{});
 }
 
 template <class _Range>
