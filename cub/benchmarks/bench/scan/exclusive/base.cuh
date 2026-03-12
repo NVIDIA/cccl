@@ -7,14 +7,17 @@
 
 #include <cuda/std/__functional/invoke.h>
 
-#include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
 
 #if !TUNE_BASE
+#  if !USES_WARPSPEED()
+#    include <look_back_helper.cuh>
+#  endif // !USES_WARPSPEED()
+
 template <typename AccumT>
 struct policy_hub_t
 {
-  struct MaxPolicy : cub::ChainedPolicy<300, policy_t, policy_t>
+  struct MaxPolicy : cub::ChainedPolicy<300, MaxPolicy, MaxPolicy>
   {
 #  if USES_WARPSPEED()
     struct WarpspeedPolicy
@@ -39,26 +42,28 @@ struct policy_hub_t
 
       static constexpr int tile_size = items_per_thread * squad_reduce_thread_count;
 
+      using SquadDesc = cub::detail::warpspeed::SquadDesc;
+
       // The squads cannot be static constexpr variables, as those are not device accessible
-      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr warpspeed::SquadDesc squadReduce() noexcept
+      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr SquadDesc squadReduce() noexcept
       {
-        return warpspeed::SquadDesc{0, num_reduce_and_scan_warps};
+        return SquadDesc{0, num_reduce_and_scan_warps};
       }
-      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr warpspeed::SquadDesc squadScanStore() noexcept
+      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr SquadDesc squadScanStore() noexcept
       {
-        return warpspeed::SquadDesc{1, num_reduce_and_scan_warps};
+        return SquadDesc{1, num_reduce_and_scan_warps};
       }
-      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr warpspeed::SquadDesc squadLoad() noexcept
+      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr SquadDesc squadLoad() noexcept
       {
-        return warpspeed::SquadDesc{2, num_load_warps};
+        return SquadDesc{2, num_load_warps};
       }
-      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr warpspeed::SquadDesc squadSched() noexcept
+      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr SquadDesc squadSched() noexcept
       {
-        return warpspeed::SquadDesc{3, num_sched_warps};
+        return SquadDesc{3, num_sched_warps};
       }
-      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr warpspeed::SquadDesc squadLookback() noexcept
+      [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr SquadDesc squadLookback() noexcept
       {
-        return warpspeed::SquadDesc{4, num_look_ahead_warps};
+        return SquadDesc{4, num_look_ahead_warps};
       }
     };
 #  else // USES_WARPSPEED()
