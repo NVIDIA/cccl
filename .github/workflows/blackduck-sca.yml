@@ -20,11 +20,13 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5                                                                                                                        
-       with:                                                                                                                                                
+      - name: Setup Python
+        uses: actions/setup-python@v5                                                                                                                        
+        with:                                                                                                                                                
          python-version: '3.12'
                                                                                                                                                          
-      - run: pip install ./python/cuda_cccl
+      - name: Install CCCL Python package
+        run: pip install ./python/cuda_cccl
 
       - name: Black Duck SCA
         id: black-duck-sca-scan
