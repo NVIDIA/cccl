@@ -518,15 +518,6 @@ void* stf_exec_place_to_opaque(const stf_exec_place* c_place);
 //! \return Opaque handle; destroy with stf_data_place_opaque_destroy().
 void* stf_data_place_to_opaque(const stf_data_place* c_place);
 
-//! \brief Create an opaque exec_place handle wrapping a dummy (debug) place.
-//!
-//! The dummy place delegates to exec_place::device(dev_id) but prints to stderr
-//! on activate/deactivate. Useful for testing the opaque mechanism and as a
-//! reference for external exec_place implementations.
-//! \param dev_id CUDA device ID
-//! \return Opaque handle; destroy with stf_exec_place_opaque_destroy().
-void* stf_exec_place_dummy_create(int dev_id);
-
 //! \}
 
 //! \defgroup Handles Opaque Handles
