@@ -15,26 +15,28 @@ For every public header in CCCL, it measures the compile time and expanded LOC o
     return 0;
   }
 
-- per-header TU compile time is computed from the ``.ninja_log``
-- transitive LOC is computed with ``cloc`` on the preprocessed output from a generated file that only includes the header
+- per-header TU compile time is computed from the build's compile timing logs
+- transitive LOC is computed with ``cloc`` on preprocessed output for generated one-header translation units
 - include reference count is computed as direct ``#include`` references from other scanned CCCL headers
 
 How to run
-------------------
+----------
 
 .. code-block:: bash
 
   ci/profile_headers.sh \
     --output-csv /tmp/profile_headers.csv
 
-Outputs
--------
+To also print an aggregate expensive-header report using ``ctadvisor``:
 
-For ``--output-csv /tmp/profile_headers.csv``, the script writes:
+.. code-block:: bash
 
-- ``/tmp/profile_headers.csv`` with columns:
+  ci/profile_headers.sh \
+    --output-csv /tmp/profile_headers.csv \
+    --ctadvisor
 
-  - ``header_path``
-  - ``compile_time_ms``
-  - ``transitive_loc``
-  - ``included_by_header_count``
+
+Notebook workflow
+-----------------
+
+For exploratory analysis, use ``ci/profile_headers_analytics.ipynb``.

@@ -481,7 +481,8 @@
         "cudax_ENABLE_EXAMPLES": false,
         "cudax_ENABLE_CUDASTF": false,
         "cudax_ENABLE_CUFILE": false,
-        "CCCL_PROFILE_HEADERS_GENERATE_PREPROCESSED_TUS": true
+        "CCCL_PROFILE_HEADERS_GENERATE_PREPROCESSED_TUS": true,
+        "CCCL_PROFILE_HEADERS_GENERATE_DEVICE_TIME_TRACES": true
       }
     }
   ],

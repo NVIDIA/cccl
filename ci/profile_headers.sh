@@ -4,6 +4,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 output_csv=""
+run_ctadvisor=0
 declare -A output_time_map=()
 declare -A loc_by_pp=()
 declare -A included_by_count_map=()
@@ -12,6 +13,7 @@ usage() {
   cat <<'EOF'
 Usage: ci/profile_headers.sh --output-csv <path>
   --output-csv <path>        Required
+  --ctadvisor                Print ctadvisor report
 EOF
 }
 
@@ -20,6 +22,7 @@ status() { echo "[profile-headers] $*" >&2; }
 while (($#)); do
   case "$1" in
     --output-csv) output_csv="$2"; shift 2 ;;
+    --ctadvisor) run_ctadvisor=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "error: unknown option: $1" >&2; usage; exit 1 ;;
   esac
@@ -28,6 +31,9 @@ done
 [[ -n "$output_csv" ]] || { echo "error: --output-csv is required" >&2; exit 1; }
 command -v cmake >/dev/null || { echo "error: cmake not found" >&2; exit 1; }
 command -v cloc >/dev/null || { echo "error: cloc not found" >&2; exit 1; }
+if (( run_ctadvisor )); then
+  command -v ctadvisor >/dev/null || { echo "error: ctadvisor not found" >&2; exit 1; }
+fi
 
 pushd "$repo_root" >/dev/null
 
@@ -123,4 +129,13 @@ for i in "${!selected_tus[@]}"; do
 done
 
 status "Done. Profile headers CSV: $output_csv"
+
+if (( run_ctadvisor )); then
+  ctadvisor_trace_dir="${build_dir}/header_testing/device_time_trace"
+  json_traces=("${ctadvisor_trace_dir}"/**/*.json)
+  (( ${#json_traces[@]} > 0 )) || { echo "error: no ctadvisor traces found under ${ctadvisor_trace_dir}" >&2; exit 1; }
+  status "Running ctadvisor over ${#json_traces[@]} traces..."
+  ctadvisor --trace-file-path "${ctadvisor_trace_dir}" --header-advisor-entries 20 --thread-number "$(nproc --all --ignore=2)"
+fi
+
 popd >/dev/null

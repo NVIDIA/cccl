@@ -166,6 +166,22 @@ function(cccl_generate_header_tests target_name project_include_path)
           APPEND
           PROPERTY COMPILE_OPTIONS "--keep" "--keep-dir=${header_src_dir}"
         )
+        if (CCCL_PROFILE_HEADERS_GENERATE_DEVICE_TIME_TRACES)
+          set(trace_id "${header}")
+          string(REPLACE "/" "__" trace_id "${trace_id}")
+          string(REPLACE "." "_" trace_id "${trace_id}")
+          set(
+            trace_dir
+            "${CMAKE_BINARY_DIR}/header_testing/device_time_trace/${target_name}"
+          )
+          file(MAKE_DIRECTORY "${trace_dir}")
+          set_property(
+            SOURCE "${header_src}"
+            APPEND
+            PROPERTY
+              COMPILE_OPTIONS "--fdevice-time-trace=${trace_dir}/${trace_id}"
+          )
+        endif()
       elseif ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
         set_property(
           SOURCE "${header_src}"
