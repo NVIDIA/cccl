@@ -65,16 +65,14 @@ set(internal_headers_fallback)
 set(internal_headers_fallback_per_header_defines)
 foreach (header IN LISTS internal_headers)
   # MSVC cannot handle some of the fallbacks.
-  if (
-    "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}"
-    AND
-      (
-        "${header}" MATCHES "is_base_of"
-        OR "${header}" MATCHES "is_nothrow_destructible"
-        OR "${header}" MATCHES "is_polymorphic"
-      )
-  )
-    continue()
+  if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    if (
+      "${header}" MATCHES "is_base_of"
+      OR "${header}" MATCHES "is_nothrow_destructible"
+      OR "${header}" MATCHES "is_polymorphic"
+    )
+      continue()
+    endif()
   endif()
 
   file(READ "${libcudacxx_SOURCE_DIR}/include/${header}" header_file)
