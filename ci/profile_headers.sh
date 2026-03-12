@@ -6,6 +6,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 output_csv=""
 declare -A output_time_map=()
 declare -A loc_by_pp=()
+declare -A included_by_count_map=()
 
 usage() {
   cat <<'EOF'
@@ -64,6 +65,26 @@ for pp in "${pp_paths[@]}"; do
 done
 status "Found ${#selected_tus[@]} header TUs."
 
+status "Counting direct include references across CCCL headers..."
+while IFS=$'\t' read -r header count; do
+  [[ -n "${header}" ]] || continue
+  included_by_count_map["${header}"]="${count}"
+done < <(
+  find \
+    "${repo_root}/cub" \
+    "${repo_root}/thrust" \
+    "${repo_root}/libcudacxx/include" \
+    "${repo_root}/cudax/include" \
+    -type f \
+    \( -name '*.h' -o -name '*.hpp' -o -name '*.cuh' -o ! -name '*.*' \) \
+    -print0 \
+    | xargs -0 grep -h -E '^[[:space:]]*#include[[:space:]]*[<"][^">]+[">]' \
+    | sed -E 's/^[[:space:]]*#include[[:space:]]*[<"]([^">]+)[">].*$/\1/' \
+    | sort \
+    | uniq -c \
+    | awk '{count=$1; $1=""; sub(/^ /, "", $0); print $0 "\t" count}'
+)
+
 cloc_tmp="$(mktemp)"
 status "Counting transitive LOC with cloc..."
 cloc --csv --by-file --skip-uniqueness --processes "$(nproc --all --ignore=2)" --force-lang=C++,ii "${selected_pps[@]}" > "${cloc_tmp}"
@@ -74,7 +95,7 @@ done < "${cloc_tmp}"
 rm -f "${cloc_tmp}"
 
 mkdir -p "$(dirname "$output_csv")"
-echo "header_path,compile_time_ms,transitive_loc" > "$output_csv"
+echo "header_path,compile_time_ms,transitive_loc,included_by_header_count" > "$output_csv"
 status "Writing CSV rows..."
 
 for i in "${!selected_tus[@]}"; do
@@ -97,7 +118,8 @@ for i in "${!selected_tus[@]}"; do
     compile_time_ms="${output_time_map["${build_dir}/${object_rel}"]:-}"
   fi
 
-  echo "${header_path},${compile_time_ms},${transitive_loc}" >> "$output_csv"
+  included_by_header_count="${included_by_count_map["${header_path}"]:-0}"
+  echo "${header_path},${compile_time_ms},${transitive_loc},${included_by_header_count}" >> "$output_csv"
 done
 
 status "Done. Profile headers CSV: $output_csv"
