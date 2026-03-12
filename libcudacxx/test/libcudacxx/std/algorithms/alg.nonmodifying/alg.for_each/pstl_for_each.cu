@@ -49,13 +49,13 @@ void test_for_each(const Policy& policy, thrust::device_vector<bool>& res)
   }
 
   { // same type
-    thrust::fill(res.begin(), res.end(), false);
+    cuda::std::fill(policy, res.begin(), res.end(), false);
     cuda::std::for_each(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, fn);
     CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
   }
 
   { // convertible type
-    thrust::fill(res.begin(), res.end(), false);
+    cuda::std::fill(policy, res.begin(), res.end(), false);
     cuda::std::for_each(policy, cuda::counting_iterator<short>{0}, cuda::counting_iterator<short>{size}, fn);
     CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
   }

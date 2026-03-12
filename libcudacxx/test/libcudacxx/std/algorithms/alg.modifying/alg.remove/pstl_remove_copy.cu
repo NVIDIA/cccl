@@ -18,7 +18,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
 #include <thrust/execution_policy.h>
-#include <thrust/fill.h>
 
 #include <cuda/cmath>
 #include <cuda/iterator>
@@ -42,7 +41,7 @@ void test_remove_copy(const Policy& policy, thrust::device_vector<int>& output)
   }
 
   { // With matching value
-    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::fill(policy, output.begin(), output.end(), 0);
     const auto res =
       cuda::std::remove_copy(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, output.begin(), 42);
     CHECK(cuda::std::distance(output.begin(), res) == size - 1);
@@ -53,7 +52,7 @@ void test_remove_copy(const Policy& policy, thrust::device_vector<int>& output)
   }
 
   { // With conversion for value type
-    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::fill(policy, output.begin(), output.end(), 0);
     const auto res = cuda::std::remove_copy(
       policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, output.begin(), short{42});
     CHECK(cuda::std::distance(output.begin(), res) == size - 1);

@@ -54,8 +54,11 @@
 #include <cuda/std/__pstl/replace_copy.h>
 #include <cuda/std/__pstl/replace_copy_if.h>
 #include <cuda/std/__pstl/replace_if.h>
+#include <cuda/std/__pstl/reverse.h>
+#include <cuda/std/__pstl/reverse_copy.h>
 #include <cuda/std/__pstl/transform.h>
 #include <cuda/std/__pstl/transform_reduce.h>
+#include <cuda/std/__pstl/unique_copy.h>
 
 // [algorithm.syn]
 #include <cuda/std/initializer_list>

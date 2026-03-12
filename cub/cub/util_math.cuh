@@ -18,7 +18,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/cmath>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -50,12 +51,19 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT safe_add_bound_to_max(OffsetT lhs, O
   return lhs + capped_operand_rhs;
 }
 
+constexpr _CCCL_HOST_DEVICE int nominal_4B_items_to_items(int nominal_4b_items_per_thread, int item_size)
+{
+  return ::cuda::std::clamp(nominal_4b_items_per_thread * 4 / item_size, 1, nominal_4b_items_per_thread);
+}
+
 constexpr _CCCL_HOST_DEVICE int nominal_8B_items_to_items(int nominal_8b_items_per_thread, int item_size)
 {
-  return item_size <= 8
-         ? nominal_8b_items_per_thread
-         : (::cuda::std::min) (nominal_8b_items_per_thread,
-                               (::cuda::std::max) (1, ((nominal_8b_items_per_thread * 8) + item_size - 1) / item_size));
+  if (item_size <= 8)
+  {
+    return nominal_8b_items_per_thread;
+  }
+  return ::cuda::std::clamp(
+    ::cuda::ceil_div(nominal_8b_items_per_thread * 8, item_size), 1, nominal_8b_items_per_thread);
 }
 } // namespace detail
 
@@ -68,8 +76,7 @@ constexpr _CCCL_HOST_DEVICE int Nominal4BItemsToItemsCombined(int nominal_4b_ite
 template <typename T>
 constexpr _CCCL_HOST_DEVICE int Nominal4BItemsToItems(int nominal_4b_items_per_thread)
 {
-  return (::cuda::std::min) (nominal_4b_items_per_thread,
-                             (::cuda::std::max) (1, nominal_4b_items_per_thread * 4 / static_cast<int>(sizeof(T))));
+  return detail::nominal_4B_items_to_items(nominal_4b_items_per_thread, int{sizeof(T)});
 }
 
 template <typename ItemT>
