@@ -39,7 +39,7 @@ jobs:
             --detect.project.group.name='github-first-group'
             --detect.detector.search.depth=4
             --detect.detector.search.continue=true
-            --detect.accuracy.required=LOW
+            --detect.accuracy.required=NONE
           # detect_config_path: "/path/to/application.properties"
           ### FIX PULL REQUEST CREATION: Uncomment below to enable
           # blackducksca_fixpr_enabled: true
