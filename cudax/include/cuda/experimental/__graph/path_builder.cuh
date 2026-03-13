@@ -16,10 +16,8 @@
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__ranges/concepts.h>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
-#include <cuda/std/utility>
 
 #include <cuda/experimental/__graph/concepts.cuh>
 #include <cuda/experimental/__graph/graph_builder.cuh>
@@ -178,8 +176,11 @@ struct path_builder
 
   //! \brief Add a range of dependency nodes to this path builder.
   //! \param __deps The dependency node range to add.
-  template <size_t _Extent>
-  _CCCL_HOST_API void depends_on(::cuda::std::span<const cudaGraphNode_t, _Extent> __deps)
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(
+    ::cuda::std::ranges::forward_range<const _Range&>
+    _CCCL_AND ::cuda::std::is_same_v<::cuda::std::ranges::range_value_t<const _Range&>, cudaGraphNode_t>)
+  _CCCL_HOST_API void depends_on(const _Range& __deps)
   {
     __nodes_.insert(__nodes_.end(), __deps.begin(), __deps.end());
   }
@@ -238,120 +239,6 @@ template <typename _FirstNode, typename... _Nodes>
   path_builder __pb(__dev, __first_node.get_native_graph_handle());
   __pb.depends_on(__first_node, __nodes...);
   return __pb;
-}
-
-template <size_t _Count, size_t... _Idx>
-[[nodiscard]] inline auto __replicate_impl(const path_builder& __source, ::cuda::std::index_sequence<_Idx...>)
-  -> ::cuda::std::array<path_builder, _Count>
-{
-  const auto __dev    = __source.get_device();
-  const auto __graph  = __source.get_native_graph_handle();
-  return ::cuda::std::array<path_builder, _Count>{((void) _Idx, path_builder(__dev, __graph))...};
-}
-
-template <size_t _Count, size_t... _Idx>
-[[nodiscard]] inline auto __replicate_prepend_impl(
-  path_builder&& __source, device_ref __dev, cudaGraph_t __graph, ::cuda::std::index_sequence<_Idx...>)
-  -> ::cuda::std::array<path_builder, _Count + 1>
-{
-  return ::cuda::std::array<path_builder, _Count + 1>{
-    ::cuda::std::move(__source), ((void) _Idx, path_builder(__dev, __graph))...};
-}
-
-//! @brief Create a fixed-size group of peer path builders with the same graph/device as `__source`.
-//! @note This function only creates path builders; it does not add synchronization dependencies.
-template <size_t _Count>
-[[nodiscard]] inline auto replicate(const path_builder& __source) -> ::cuda::std::array<path_builder, _Count>
-{
-  return __replicate_impl<_Count>(__source, ::cuda::std::make_index_sequence<_Count>{});
-}
-
-//! @brief Create a runtime-sized group of peer path builders with the same graph/device as `__source`.
-//! @note This function only creates path builders; it does not add synchronization dependencies.
-[[nodiscard]] inline auto replicate(const path_builder& __source, size_t __count) -> ::std::vector<path_builder>
-{
-  const auto __dev   = __source.get_device();
-  const auto __graph = __source.get_native_graph_handle();
-  ::std::vector<path_builder> __replicas;
-  __replicas.reserve(__count);
-  for (size_t __idx = 0; __idx < __count; ++__idx)
-  {
-    __replicas.emplace_back(__dev, __graph);
-  }
-  return __replicas;
-}
-
-//! @brief Create a runtime-sized group of peer path builders with the same graph/device as `__source` and prepend
-//! `__source` at index 0.
-//! @note This function only creates path builders; it does not add synchronization dependencies.
-[[nodiscard]] inline auto replicate_prepend(path_builder&& __source, size_t __count) -> ::std::vector<path_builder>
-{
-  const auto __dev   = __source.get_device();
-  const auto __graph = __source.get_native_graph_handle();
-  ::std::vector<path_builder> __replicas;
-  __replicas.reserve(__count + 1);
-  __replicas.emplace_back(::cuda::std::move(__source));
-  for (size_t __idx = 0; __idx < __count; ++__idx)
-  {
-    __replicas.emplace_back(__dev, __graph);
-  }
-  return __replicas;
-}
-
-template <size_t _Count>
-//! @brief Create a fixed-size group of peer path builders with the same graph/device as `__source` and prepend
-//! `__source` at index 0.
-//! @note This function only creates path builders; it does not add synchronization dependencies.
-[[nodiscard]] inline auto replicate_prepend(path_builder&& __source) -> ::cuda::std::array<path_builder, _Count + 1>
-{
-  const auto __dev   = __source.get_device();
-  const auto __graph = __source.get_native_graph_handle();
-  return __replicate_prepend_impl<_Count>(::cuda::std::move(__source), __dev, __graph, ::cuda::std::make_index_sequence<_Count>{});
-}
-
-template <class _Range>
-_CCCL_CONCEPT __path_builder_join_range =
-  ::cuda::std::is_same_v<::cuda::std::ranges::range_value_t<const _Range&>, path_builder>;
-
-template <class _ToRange, class _FromRange>
-inline void __join_impl(_ToRange& __to_builders, const _FromRange& __from_builders)
-{
-  // TODO: Consider adding dependency deduplication in join to avoid duplicate graph edges.
-  for (auto& __to : __to_builders)
-  {
-    for (const auto& __from : __from_builders)
-    {
-      __to.depends_on(__from.get_dependencies());
-    }
-  }
-}
-
-//! @brief Synchronize one group of path builders with another by adding dependencies from all `from` into all `to`.
-_CCCL_TEMPLATE(class _ToRange, class _FromRange)
-_CCCL_REQUIRES(
-  ::cuda::std::ranges::forward_range<_ToRange&> _CCCL_AND ::cuda::std::ranges::forward_range<const _FromRange&>
-  _CCCL_AND __path_builder_join_range<_ToRange> _CCCL_AND __path_builder_join_range<_FromRange>)
-inline void join(_ToRange& __to_builders, const _FromRange& __from_builders)
-{
-  __join_impl(__to_builders, __from_builders);
-}
-
-//! @brief Synchronize a single target path builder with a group of source path builders.
-_CCCL_TEMPLATE(class _FromRange)
-_CCCL_REQUIRES(
-  ::cuda::std::ranges::forward_range<const _FromRange&> _CCCL_AND __path_builder_join_range<_FromRange>)
-inline void join(path_builder& __to_builder, const _FromRange& __from_builders)
-{
-  auto __to_span = ::cuda::std::span<path_builder>(&__to_builder, 1);
-  __join_impl(__to_span, __from_builders);
-}
-
-//! @brief Synchronize a group of target path builders with a single source path builder.
-_CCCL_TEMPLATE(class _ToRange)
-_CCCL_REQUIRES(::cuda::std::ranges::forward_range<_ToRange&> _CCCL_AND __path_builder_join_range<_ToRange>)
-inline void join(_ToRange& __to_builders, const path_builder& __from_builder)
-{
-  __join_impl(__to_builders, ::cuda::std::span<const path_builder>(&__from_builder, 1));
 }
 } // namespace cuda::experimental
 
