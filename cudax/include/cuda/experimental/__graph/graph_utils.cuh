@@ -37,8 +37,7 @@
 namespace cuda::experimental
 {
 template <::cuda::std::size_t _Count, ::cuda::std::size_t... _Idx>
-[[nodiscard]] _CCCL_HOST_API auto
-__replicate_impl(const path_builder& __source, ::cuda::std::index_sequence<_Idx...>)
+[[nodiscard]] _CCCL_HOST_API auto __replicate_impl(const path_builder& __source, ::cuda::std::index_sequence<_Idx...>)
   -> ::cuda::std::array<path_builder, _Count>
 {
   const auto __dev   = __source.get_device();
@@ -58,8 +57,7 @@ template <::cuda::std::size_t _Count, ::cuda::std::size_t... _Idx>
 //! @brief Create a fixed-size group of peer path builders with the same graph/device as `__source`.
 //! @note This function only creates path builders; it does not add synchronization dependencies.
 template <::cuda::std::size_t _Count>
-[[nodiscard]] _CCCL_HOST_API auto replicate(const path_builder& __source)
-  -> ::cuda::std::array<path_builder, _Count>
+[[nodiscard]] _CCCL_HOST_API auto replicate(const path_builder& __source) -> ::cuda::std::array<path_builder, _Count>
 {
   return __replicate_impl<_Count>(__source, ::cuda::std::make_index_sequence<_Count>{});
 }
@@ -132,7 +130,7 @@ _CCCL_HOST_API void __join_impl(_ToRange& __to_builders, const _FromRange& __fro
 _CCCL_TEMPLATE(class _ToRange, class _FromRange)
 _CCCL_REQUIRES(
   ::cuda::std::ranges::forward_range<_ToRange&> _CCCL_AND ::cuda::std::ranges::forward_range<const _FromRange&>
-  _CCCL_AND __path_builder_join_range<_ToRange> _CCCL_AND __path_builder_join_range<_FromRange>)
+    _CCCL_AND __path_builder_join_range<_ToRange> _CCCL_AND __path_builder_join_range<_FromRange>)
 _CCCL_HOST_API void join(_ToRange& __to_builders, const _FromRange& __from_builders)
 {
   __join_impl(__to_builders, __from_builders);
@@ -140,8 +138,7 @@ _CCCL_HOST_API void join(_ToRange& __to_builders, const _FromRange& __from_build
 
 //! @brief Synchronize a single target path builder with a group of source path builders.
 _CCCL_TEMPLATE(class _FromRange)
-_CCCL_REQUIRES(
-  ::cuda::std::ranges::forward_range<const _FromRange&> _CCCL_AND __path_builder_join_range<_FromRange>)
+_CCCL_REQUIRES(::cuda::std::ranges::forward_range<const _FromRange&> _CCCL_AND __path_builder_join_range<_FromRange>)
 _CCCL_HOST_API void join(path_builder& __to_builder, const _FromRange& __from_builders)
 {
   auto __to_span = ::cuda::std::span<path_builder>(&__to_builder, 1);

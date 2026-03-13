@@ -8,12 +8,12 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/array>
+
 #include <cuda/experimental/graph.cuh>
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 #include <cuda/experimental/stream.cuh>
-
-#include <cuda/std/array>
 
 #include <testing.cuh>
 #include <utility.cuh>

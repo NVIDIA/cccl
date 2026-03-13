@@ -177,9 +177,8 @@ struct path_builder
   //! \brief Add a range of dependency nodes to this path builder.
   //! \param __deps The dependency node range to add.
   _CCCL_TEMPLATE(class _Range)
-  _CCCL_REQUIRES(
-    ::cuda::std::ranges::forward_range<const _Range&>
-    _CCCL_AND ::cuda::std::is_same_v<::cuda::std::ranges::range_value_t<const _Range&>, cudaGraphNode_t>)
+  _CCCL_REQUIRES(::cuda::std::ranges::forward_range<const _Range&>
+                   _CCCL_AND ::cuda::std::is_same_v<::cuda::std::ranges::range_value_t<const _Range&>, cudaGraphNode_t>)
   _CCCL_HOST_API void depends_on(const _Range& __deps)
   {
     __nodes_.insert(__nodes_.end(), __deps.begin(), __deps.end());
