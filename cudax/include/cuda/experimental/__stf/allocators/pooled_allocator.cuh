@@ -96,7 +96,7 @@ public:
     }
 
     ::std::ptrdiff_t sz = nentries * block_size;
-    base                = root_allocator.allocate(ctx, place, sz, prereqs);
+    base                = root_allocator.allocate(ctx, this->place, sz, prereqs);
     assert(sz > 0);
     assert(base);
 

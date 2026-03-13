@@ -23,12 +23,16 @@
 
 #if _CCCL_HAS_BACKEND_CUDA()
 
+#  include <cuda/__cmath/round_up.h>
 #  include <cuda/__iterator/tabulate_output_iterator.h>
+#  include <cuda/__memory/align_up.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__memory/construct_at.h>
-#  include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#  include <cuda/std/__type_traits/type_list.h>
 #  include <cuda/std/__utility/forward.h>
+#  include <cuda/std/__utility/integer_sequence.h>
 #  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -38,97 +42,115 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 template <class _ResultType>
 struct __temporary_storage_construct_result
 {
-  _ResultType* __res_;
+  _ResultType* __result_;
 
-  _CCCL_HOST_API __temporary_storage_construct_result(_ResultType* __res = nullptr) noexcept
-      : __res_(__res)
+  _CCCL_HOST_API __temporary_storage_construct_result(_ResultType* __result = nullptr) noexcept
+      : __result_(__result)
   {}
 
   template <class _Index, class _Up>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   operator()(_Index, _Up&& __value) noexcept(is_nothrow_constructible_v<_ResultType, _Up>)
   {
-    ::cuda::std::__construct_at(__res_, ::cuda::std::forward<_Up>(__value));
+    ::cuda::std::__construct_at(__result_, ::cuda::std::forward<_Up>(__value));
   }
 };
 
-template <class _ResultType, class _Resource>
-struct __temporary_storage
+//! @brief Provides device accessible storage for a number of typed sequences and temporary storage the algorithm might
+//! need.
+template <class _Resource, class... _StoredTypes>
+class __temporary_storage
 {
   ::cuda::stream_ref __stream_;
   _Resource& __resource_;
-  size_t __num_bytes_allocated_;
-  _ResultType* __res_;
+  size_t __total_bytes_allocated_;
+  array<void*, 1 + sizeof...(_StoredTypes)> __storage_;
 
-  [[nodiscard]] _CCCL_HOST_API static constexpr size_t __get_min_alignment() noexcept
+  _CCCL_TEMPLATE(class... _Sizes)
+  _CCCL_REQUIRES((sizeof...(_Sizes) == sizeof...(_StoredTypes)))
+  [[nodiscard]] _CCCL_HOST_API static constexpr size_t
+  __get_total_bytes_allocated(const size_t __num_bytes_storage, const _Sizes... __elements_stored) noexcept
   {
-    if constexpr (is_void_v<_ResultType>)
+    return (::cuda::round_up(static_cast<size_t>(__elements_stored) * sizeof(_StoredTypes),
+                             ::cuda::mr::default_cuda_malloc_alignment)
+            + ... + ::cuda::round_up(__num_bytes_storage, ::cuda::mr::default_cuda_malloc_alignment));
+  }
+
+  template <size_t _Index>
+  [[nodiscard]] _CCCL_HOST_API static constexpr array<void*, 1 + sizeof...(_StoredTypes)>
+  __get_storage(array<void*, 1 + sizeof...(_StoredTypes)>& __storage,
+                const array<size_t, sizeof...(_StoredTypes)>& __num_elements) noexcept
+  {
+    if constexpr (_Index == sizeof...(_StoredTypes))
     {
-      return ::cuda::mr::default_cuda_malloc_alignment;
+      return __storage;
     }
     else
     {
-      return alignof(_ResultType) < ::cuda::mr::default_cuda_malloc_alignment
-             ? ::cuda::mr::default_cuda_malloc_alignment
-             : alignof(_ResultType);
+      using _StoredType     = __type_at_c<_Index, __type_list<_StoredTypes...>>;
+      __storage[_Index + 1] = static_cast<void*>(
+        ::cuda::align_up(static_cast<_StoredType*>(__storage[_Index]) + __num_elements[_Index],
+                         ::cuda::mr::default_cuda_malloc_alignment));
+      return __get_storage<_Index + 1>(__storage, __num_elements);
     }
   }
 
-  [[nodiscard]] _CCCL_HOST_API static constexpr size_t __get_bytes_allocated(const size_t __num_bytes_storage) noexcept
+  _CCCL_TEMPLATE(class... _Sizes)
+  _CCCL_REQUIRES((sizeof...(_Sizes) == sizeof...(_StoredTypes)))
+  [[nodiscard]] _CCCL_HOST_API static constexpr array<void*, 1 + sizeof...(_StoredTypes)>
+  __get_storage(void* __ptr, const _Sizes... __elements_stored) noexcept
   {
-    if constexpr (is_void_v<_ResultType>)
-    {
-      return __num_bytes_storage;
-    }
-    else
-    {
-      // We want to combine the allocation of the return value and the temporary storage into a single allocation
-      // However, we also want that the temporary storage is properly aligned to allow efficient vectorized access
-      // This might waste some space, e.g 254 bytes for short, but given the memory available on modern devices this is
-      // fine
-      constexpr size_t __padding = sizeof(_ResultType) % __get_min_alignment();
-      return sizeof(_ResultType) + __padding + __num_bytes_storage;
-    }
+    array<void*, 1 + sizeof...(_StoredTypes)> __storage{__ptr};
+    array<size_t, sizeof...(_StoredTypes)> __num_elements{static_cast<size_t>(__elements_stored)...};
+    return __get_storage<0>(__storage, __num_elements);
   }
 
-  _CCCL_HOST_API __temporary_storage(::cuda::stream_ref __stream, _Resource& __resource, size_t __num_bytes)
+public:
+  _CCCL_TEMPLATE(class... _Sizes)
+  _CCCL_REQUIRES((sizeof...(_Sizes) == sizeof...(_StoredTypes)))
+  _CCCL_HOST_API __temporary_storage(
+    ::cuda::stream_ref __stream,
+    _Resource& __resource,
+    const size_t __num_bytes_storage,
+    const _Sizes... __elements_stored)
       : __stream_(__stream)
       , __resource_(__resource)
-      , __num_bytes_allocated_(__get_bytes_allocated(__num_bytes))
-      , __res_(
-          static_cast<_ResultType*>(__resource_.allocate(__stream_, __num_bytes_allocated_, __get_min_alignment())))
+      , __total_bytes_allocated_(__get_total_bytes_allocated(__num_bytes_storage, __elements_stored...))
+      , __storage_(__get_storage(
+          __resource_.allocate(__stream_, __total_bytes_allocated_, ::cuda::mr::default_cuda_malloc_alignment),
+          __elements_stored...))
   {}
 
-  _CCCL_HOST_API ~__temporary_storage()
+  //! We are dealing with uninitialized storage, so we might need to go through construct_at
+  template <size_t _Index, class _OtherType = __type_at_c<_Index, __type_list<_StoredTypes...>>>
+  [[nodiscard]] _CCCL_HOST_API auto __get_ptr() noexcept
   {
-    __resource_.deallocate(__stream_, __res_, __num_bytes_allocated_, __get_min_alignment());
-  }
-
-  template <class _AccumT = _ResultType>
-  [[nodiscard]] _CCCL_HOST_API auto __get_result_iter() noexcept
-  {
-    if constexpr (::cuda::std::__detail::__can_optimize_construct_at<_ResultType, _AccumT>)
+    static_assert(_Index < sizeof...(_StoredTypes), "__temporary_storage::__get_ptr: Invalid index");
+    using _StoredType = __type_at_c<_Index, __type_list<_StoredTypes...>>;
+    if constexpr (::cuda::std::__detail::__can_optimize_construct_at<_StoredType, _OtherType>)
     {
-      return __res_;
+      return static_cast<_StoredType*>(__storage_[_Index]);
     }
     else
     {
-      return ::cuda::tabulate_output_iterator{__temporary_storage_construct_result<_ResultType>{__res_}};
+      return ::cuda::tabulate_output_iterator{
+        __temporary_storage_construct_result<_StoredType>{static_cast<_StoredType*>(__storage_[_Index])}};
     }
   }
 
+  //! When we know we can just return a plain pointer
+  template <size_t _Index>
+  [[nodiscard]] _CCCL_HOST_API auto* __get_raw_ptr() noexcept
+  {
+    static_assert(_Index < sizeof...(_StoredTypes), "__temporary_storage::__get_ptr: Invalid index");
+    using _StoredType = __type_at_c<_Index, __type_list<_StoredTypes...>>;
+    return static_cast<_StoredType*>(__storage_[_Index]);
+  }
+
+  // The final pointer is always the temporary storage for the algorithm
   [[nodiscard]] _CCCL_HOST_API void* __get_temp_storage() noexcept
   {
-    if constexpr (is_void_v<_ResultType>)
-    {
-      return __res_;
-    }
-    else
-    {
-      constexpr size_t __padding = sizeof(_ResultType) % __get_min_alignment();
-      constexpr size_t __offset  = sizeof(_ResultType) + __padding;
-      return static_cast<void*>(static_cast<unsigned char*>(static_cast<void*>(__res_)) + __offset);
-    }
+    return __storage_[sizeof...(_StoredTypes)];
   }
 };
 
