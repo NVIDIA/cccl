@@ -119,22 +119,24 @@ template <typename _ExtentT, typename _StrideT, typename _TpSrc, typename _TpDst
 _CCCL_HOST_API void __flip_negative_strides_paired(__raw_tensor<_ExtentT, _StrideT, _TpSrc, _MaxRank>& __src,
                                                    __raw_tensor<_ExtentT, _StrideT, _TpDst, _MaxRank>& __dst) noexcept
 {
-  using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _TpSrc, _MaxRank>;
-  using __rank_t       = typename __raw_tensor_t::__rank_t;
-  _CCCL_ASSERT(::cuda::experimental::__same_extents(__src, __dst),
-               "cudax::flip_negative_strides_paired: Source and destination tensors must have the same extents");
-  for (__rank_t __i = 0; __i < __src.__rank; ++__i)
+  if constexpr (!::cuda::std::is_unsigned_v<_StrideT>)
   {
-    if ((::cuda::std::is_unsigned_v<_StrideT> ? false : __src.__strides[__i] < 0) // MSVC workaround
-        && (::cuda::std::is_unsigned_v<_StrideT> ? false : __dst.__strides[__i] < 0))
+    using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _TpSrc, _MaxRank>;
+    using __rank_t       = typename __raw_tensor_t::__rank_t;
+    _CCCL_ASSERT(::cuda::experimental::__same_extents(__src, __dst),
+                 "cudax::flip_negative_strides_paired: Source and destination tensors must have the same extents");
+    for (__rank_t __i = 0; __i < __src.__rank; ++__i)
     {
-      const auto __extent         = __src.__extents[__i];
-      const auto __src_adjustment = static_cast<_StrideT>(__extent - 1) * __src.__strides[__i];
-      const auto __dst_adjustment = static_cast<_StrideT>(__extent - 1) * __dst.__strides[__i];
-      __src.__data += __src_adjustment;
-      __dst.__data += __dst_adjustment;
-      __src.__strides[__i] = -__src.__strides[__i];
-      __dst.__strides[__i] = -__dst.__strides[__i];
+      if (__src.__strides[__i] < 0 && __dst.__strides[__i] < 0)
+      {
+        const auto __extent         = __src.__extents[__i];
+        const auto __src_adjustment = static_cast<_StrideT>(__extent - 1) * __src.__strides[__i];
+        const auto __dst_adjustment = static_cast<_StrideT>(__extent - 1) * __dst.__strides[__i];
+        __src.__data += __src_adjustment;
+        __dst.__data += __dst_adjustment;
+        __src.__strides[__i] = -__src.__strides[__i];
+        __dst.__strides[__i] = -__dst.__strides[__i];
+      }
     }
   }
 }
