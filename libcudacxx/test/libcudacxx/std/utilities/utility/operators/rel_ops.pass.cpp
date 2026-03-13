@@ -7,7 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// test rel_ops
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
+
+// test rel_ops, deprecated in c++20
 
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
