@@ -11,7 +11,7 @@ description: Make the code in libcudacxx/include, cudax/include compliant with t
 - Template parameters: CamelCase, e.g. `MyParameter`.
 - All other symbols: snake style, e.g. `my_variable`.
 
-All non-public symbols must have a specific prefix:
+All non-public symbols must be C++ reserved identifiers:
 
 - `_` for macros and template parameters, e.g. `_MY_MACRO`., `_MyParameter`.
 - `__` for all other symbols, e.g. `__my_variable`.
