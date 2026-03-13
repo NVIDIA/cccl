@@ -87,6 +87,10 @@ cudax_add_catch2_test(test_target copy_bytes
 
 cudax_add_catch2_test(test_target copy
     copy/copy.cu
+    copy/copy_edge_cases.cu
+    copy/copy_vectorize.cu
+    copy/copy_vectorize_5d.cu
+    copy/copy_llm.cu
 )
 
 cudax_add_catch2_test(test_target cuco

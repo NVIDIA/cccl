@@ -8,84 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
 #include <cuda/std/array>
-#include <cuda/std/mdspan>
-#include <cuda/stream>
 
-#include <cuda/experimental/__copy/mdspan_d2d.cuh>
-
-#include "testing.cuh"
-
-static const cuda::stream stream{cuda::device_ref{0}};
-
-template <typename SrcLayout, typename DstLayout, typename T, typename... Ints>
-void test_copy(const thrust::host_vector<T>& input, const thrust::host_vector<T>& expected, Ints... shape)
-{
-  constexpr size_t Rank = sizeof...(Ints);
-  using extents_t       = cuda::std::dextents<int, Rank>;
-  extents_t ext(static_cast<int>(shape)...);
-  typename SrcLayout::template mapping<extents_t> src_mapping(ext);
-  typename DstLayout::template mapping<extents_t> dst_mapping(ext);
-
-  thrust::device_vector<T> d_src(input.begin(), input.end());
-  thrust::device_vector<T> d_dst(expected.size(), T{0});
-
-  cuda::device_mdspan<T, extents_t, SrcLayout> src(thrust::raw_pointer_cast(d_src.data()), src_mapping);
-  cuda::device_mdspan<T, extents_t, DstLayout> dst(thrust::raw_pointer_cast(d_dst.data()), dst_mapping);
-
-  cuda::experimental::copy(src, dst, stream);
-  stream.sync();
-
-  thrust::host_vector<T> result(d_dst);
-  CUDAX_REQUIRE(result == expected);
-}
-
-template <typename Layout, typename T, typename... Ints>
-void test_copy(const thrust::host_vector<T>& data, Ints... shape)
-{
-  test_copy<Layout, Layout>(data, data, shape...);
-}
-
-template <typename T, size_t Rank>
-void test_copy_strided(
-  const thrust::host_vector<T>& input,
-  const thrust::host_vector<T>& expected,
-  const cuda::std::array<int, Rank>& shape,
-  const cuda::std::array<int, Rank>& src_strides,
-  const cuda::std::array<int, Rank>& dst_strides)
-{
-  using extents_t = cuda::std::dextents<int, Rank>;
-  using mapping_t = cuda::std::layout_stride::mapping<extents_t>;
-  extents_t ext(shape);
-  mapping_t src_mapping(ext, src_strides);
-  mapping_t dst_mapping(ext, dst_strides);
-
-  thrust::device_vector<T> d_src(input.begin(), input.end());
-  thrust::device_vector<T> d_dst(expected.size(), T{0});
-
-  cuda::device_mdspan<T, extents_t, cuda::std::layout_stride> src(thrust::raw_pointer_cast(d_src.data()), src_mapping);
-  cuda::device_mdspan<T, extents_t, cuda::std::layout_stride> dst(thrust::raw_pointer_cast(d_dst.data()), dst_mapping);
-
-  cuda::experimental::copy(src, dst, stream);
-  stream.sync();
-
-  thrust::host_vector<T> result(d_dst);
-  CUDAX_REQUIRE(result == expected);
-}
-
-template <typename T, size_t Rank>
-void test_copy_strided(const thrust::host_vector<T>& data,
-                       const cuda::std::array<int, Rank>& shape,
-                       const cuda::std::array<int, Rank>& strides)
-{
-  test_copy_strided(data, data, shape, strides, strides);
-}
-
-using cuda::std::layout_left;
-using cuda::std::layout_right;
+#include "copy_common.cuh"
 
 /***********************************************************************************************************************
  * 1D Tests
