@@ -41,7 +41,7 @@ Function call:
 
 ## Types
 
-- Types must have fully qualified namespace, except when they are already declared in the current namespace.
+- Type names must be fully qualified, except when they are already declared in the current namespace.
 - This includes standard integer type aliases (`::cuda::std::size_t`, `::cuda::std::uintptr_t`, `::cuda::std::int32_t`, etc.) and any other `cuda::std` or standard library types. A local `using` declaration (e.g. `using ::cuda::std::size_t;`) is acceptable to avoid repetition within a function body.
 
 ## Headers
