@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_COPY_VECTOR_ACCESS_H
-#define __CUDAX_COPY_VECTOR_ACCESS_H
+#ifndef _CUDAX__COPY_VECTOR_ACCESS_H
+#define _CUDAX__COPY_VECTOR_ACCESS_H
 
 #include <cuda/std/detail/__config>
 
@@ -35,6 +35,7 @@
 
 namespace cuda::experimental
 {
+//! @brief Maps a vector byte width to the corresponding unsigned integer type for vectorized memory access.
 template <::cuda::std::size_t _VectorBytes>
 struct __vector_access
 {
@@ -88,4 +89,4 @@ using __vector_access_t = typename __vector_access<_VectorBytes>::type;
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_COPY_VECTOR_ACCESS_H
+#endif // _CUDAX__COPY_VECTOR_ACCESS_H

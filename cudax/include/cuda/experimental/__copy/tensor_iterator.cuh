@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_COPY_TENSOR_ITERATOR_H
-#define __CUDAX_COPY_TENSOR_ITERATOR_H
+#ifndef _CUDAX__COPY_TENSOR_ITERATOR_H
+#define _CUDAX__COPY_TENSOR_ITERATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -114,6 +114,10 @@ struct __tensor_coord_iterator
   __array_t __extents_;
   __array_t __extent_products_;
 
+  //! @brief Convert an array of _UExtentT elements to an array of _ExtentT elements.
+  //!
+  //! @param[in] __in Source array with elements of type _UExtentT
+  //! @return Array with elements statically cast to _ExtentT
   template <typename _UExtentT>
   [[nodiscard]] static _CCCL_HOST_API ::cuda::std::array<_ExtentT, _Rank>
   __to_extent_array(const ::cuda::std::array<_UExtentT, _Rank>& __in) noexcept
@@ -194,4 +198,4 @@ __partial_tensor(_Tp*, ::cuda::std::array<_StrideT, _Rank>, _Accessor)
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // __CUDAX_COPY_TENSOR_ITERATOR_H
+#endif // _CUDAX__COPY_TENSOR_ITERATOR_H

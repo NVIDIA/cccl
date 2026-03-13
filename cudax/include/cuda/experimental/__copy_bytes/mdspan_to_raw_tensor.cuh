@@ -23,6 +23,7 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__mdspan/traits.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__mdspan/mdspan.h>
 #  include <cuda/std/__type_traits/void_t.h>
@@ -45,8 +46,6 @@ struct __mapping_stride_type<_Mapping, ::cuda::std::void_t<typename _Mapping::st
 {
   using type = typename _Mapping::stride_type;
 };
-
-// TODO: extend to layout_stride_relaxed
 
 //! @brief Convenience alias: stride type of a layout mapping for given extents and layout policy.
 template <typename _Extents, typename _LayoutPolicy>
@@ -78,7 +77,12 @@ __to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _Accesso
   static_assert(_MaxRank >= _Extents::rank(), "_MaxRank must be at least _Extents::rank()");
   using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
   using __rank_t       = typename _Extents::rank_type;
-  __raw_tensor_t __result{__mdspan.data_handle(), 0, {}, {}};
+  auto* __data_ptr     = __mdspan.data_handle();
+  if constexpr (::cuda::__is_layout_stride_relaxed_v<_LayoutPolicy>)
+  {
+    __data_ptr += __mdspan.mapping().offset();
+  }
+  __raw_tensor_t __result{__data_ptr, 0, {}, {}};
   if constexpr (_Extents::rank() > 0)
   {
     __rank_t __r = 0;

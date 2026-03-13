@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/mdspan.h>
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__type_traits/is_same.h>
 
@@ -37,8 +38,13 @@ template <typename _LayoutPolicy>
 inline constexpr bool __is_layout_stride_v = ::cuda::std::is_same_v<_LayoutPolicy, ::cuda::std::layout_stride>;
 
 template <typename _LayoutPolicy>
+inline constexpr bool __is_layout_stride_relaxed_v =
+  ::cuda::std::is_same_v<_LayoutPolicy, ::cuda::layout_stride_relaxed>;
+
+template <typename _LayoutPolicy>
 inline constexpr bool __is_cuda_mdspan_layout_v =
-  __is_layout_right_v<_LayoutPolicy> || __is_layout_left_v<_LayoutPolicy> || __is_layout_stride_v<_LayoutPolicy>;
+  __is_layout_right_v<_LayoutPolicy> || __is_layout_left_v<_LayoutPolicy> || __is_layout_stride_v<_LayoutPolicy>
+  || __is_layout_stride_relaxed_v<_LayoutPolicy>;
 
 _CCCL_END_NAMESPACE_CUDA
 

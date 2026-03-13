@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__COPY_VECTORIZED_H
-#define _CUDAX__COPY_VECTORIZED_H
+#ifndef _CUDAX__COPY_DISPATCH_BY_VECTOR_H
+#define _CUDAX__COPY_DISPATCH_BY_VECTOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -63,13 +63,12 @@ constexpr auto __const_vector_size = ::cuda::std::integral_constant<int, _Vector
 
 //! @brief Dispatch a copy operation with the optimal vectorized element type.
 //!
-//! Selects the largest vector width that matches @p __vector_size_bytes, reshapes both tensors to
-//! that vector type via @ref __reshape_vectorized, and invokes @p __op with the reshaped tensors.
+//! Computes the maximum safe vector width from the source and destination tensors, reshapes both
+//! tensors to that vector type via @ref __reshape_vectorized, and invokes @p __op with the reshaped tensors.
 //!
-//! @param[in] __src               Source raw tensor descriptor
-//! @param[in] __dst               Destination raw tensor descriptor
-//! @param[in] __vector_size_bytes Vector width in bytes to use for the dispatch
-//! @param[in] __op                Callable invoked with the reshaped source and destination tensors
+//! @param[in] __src Source raw tensor descriptor
+//! @param[in] __dst Destination raw tensor descriptor
+//! @param[in] __op  Callable invoked with the reshaped source and destination tensors
 template <typename _ExtentT,
           typename _StrideTIn,
           typename _StrideTOut,
@@ -141,4 +140,4 @@ _CCCL_HOST_API void __dispatch_by_vector_size(
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // !_CCCL_COMPILER(NVRTC)
-#endif // _CUDAX__COPY_VECTORIZED_H
+#endif // _CUDAX__COPY_DISPATCH_BY_VECTOR_H

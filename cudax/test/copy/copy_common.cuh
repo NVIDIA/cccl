@@ -102,4 +102,75 @@ void test_copy_iota(Ints... shape)
   test_copy<layout_right>(data, shape...);
 }
 
+template <typename T, size_t Rank>
+void test_copy_offset(
+  int src_alloc,
+  int src_offset,
+  const cuda::std::array<int, Rank>& shape,
+  const cuda::std::array<int, Rank>& src_strides,
+  int dst_alloc,
+  int dst_offset,
+  const cuda::std::array<int, Rank>& dst_strides)
+{
+  thrust::host_vector<T> h_src(src_alloc);
+  for (int i = 0; i < src_alloc; ++i)
+  {
+    h_src[i] = static_cast<T>(i);
+  }
+  int total = 1;
+  for (size_t d = 0; d < Rank; ++d)
+  {
+    total *= shape[d];
+  }
+  thrust::host_vector<T> expected(dst_alloc, T{0});
+  for (int flat = 0; flat < total; ++flat)
+  {
+    cuda::std::array<int, Rank> idx{};
+    int tmp = flat;
+    for (int d = static_cast<int>(Rank) - 1; d >= 0; --d)
+    {
+      idx[d] = tmp % shape[d];
+      tmp /= shape[d];
+    }
+    int src_linear = src_offset;
+    int dst_linear = dst_offset;
+    for (size_t d = 0; d < Rank; ++d)
+    {
+      src_linear += idx[d] * src_strides[d];
+      dst_linear += idx[d] * dst_strides[d];
+    }
+    expected[dst_linear] = h_src[src_linear];
+  }
+
+  thrust::device_vector<T> d_src(h_src.begin(), h_src.end());
+  thrust::device_vector<T> d_dst(dst_alloc, T{0});
+
+  using extents_t = cuda::std::dextents<int, Rank>;
+  using mapping_t = cuda::layout_stride_relaxed::mapping<extents_t>;
+  extents_t ext(shape);
+  auto* src_ptr = thrust::raw_pointer_cast(d_src.data()) + src_offset;
+  auto* dst_ptr = thrust::raw_pointer_cast(d_dst.data()) + dst_offset;
+  mapping_t src_map(ext, cuda::dstrides<int, Rank>(src_strides));
+  mapping_t dst_map(ext, cuda::dstrides<int, Rank>(dst_strides));
+
+  cuda::device_mdspan<T, extents_t, cuda::layout_stride_relaxed> src(src_ptr, src_map);
+  cuda::device_mdspan<T, extents_t, cuda::layout_stride_relaxed> dst(dst_ptr, dst_map);
+
+  cuda::experimental::copy(src, dst, stream);
+  stream.sync();
+
+  thrust::host_vector<T> result(d_dst);
+  CUDAX_REQUIRE(result == expected);
+}
+
+template <typename T, size_t Rank>
+void test_copy_offset(
+  int alloc,
+  int offset,
+  const cuda::std::array<int, Rank>& shape,
+  const cuda::std::array<int, Rank>& strides)
+{
+  test_copy_offset<T>(alloc, offset, shape, strides, alloc, offset, strides);
+}
+
 #endif // CUDAX_TEST_COPY_COMMON_CUH

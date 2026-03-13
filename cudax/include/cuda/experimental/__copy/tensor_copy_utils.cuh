@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_COPY_TENSOR_COPY_UTILS_H
-#define __CUDAX_COPY_TENSOR_COPY_UTILS_H
+#ifndef _CUDAX__COPY_TENSOR_COPY_UTILS_H
+#define _CUDAX__COPY_TENSOR_COPY_UTILS_H
 
 #include <cuda/std/detail/__config>
 
@@ -219,4 +219,4 @@ __may_overlap(const ::cuda::std::mdspan<_Tp1, _Extents1, _LayoutPolicy1, _Access
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // !_CCCL_COMPILER(NVRTC)
-#endif // __CUDAX_COPY_TENSOR_COPY_UTILS_H
+#endif // _CUDAX__COPY_TENSOR_COPY_UTILS_H

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_COPY_MDSPAN_D2D_H
-#define __CUDAX_COPY_MDSPAN_D2D_H
+#ifndef _CUDAX__COPY_MDSPAN_D2D_H
+#define _CUDAX__COPY_MDSPAN_D2D_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,13 +25,13 @@
 
 #  include <cub/device/device_transform.cuh>
 
+#  include <cuda/__cmath/pow2.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__functional/address_stability.h>
 #  include <cuda/__mdspan/host_device_mdspan.h>
 #  include <cuda/__mdspan/traits.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__algorithm/max.h>
-#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__memory/is_sufficiently_aligned.h>
 #  include <cuda/std/__type_traits/common_type.h>
@@ -110,7 +110,17 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
   }
   if (__tensor_size == 1)
   {
-    ::cuda::__driver::__memcpyAsync(__dst.data_handle(), __src.data_handle(), sizeof(_TpIn), __stream.get());
+    const auto __src_ptr = __src.data_handle();
+    const auto __dst_ptr = __dst.data_handle();
+    if constexpr (::cuda::__is_layout_stride_relaxed_v<_LayoutPolicyIn>)
+    {
+      __src_ptr += __src.mapping().offset();
+    }
+    if constexpr (::cuda::__is_layout_stride_relaxed_v<_LayoutPolicyOut>)
+    {
+      __dst_ptr += __dst.mapping().offset();
+    }
+    ::cuda::__driver::__memcpyAsync(__dst_ptr, __src_ptr, sizeof(_TpIn), __stream.get());
     return;
   }
   if constexpr (_ExtentsIn::rank() > 0 && _ExtentsOut::rank() > 0)
@@ -123,8 +133,9 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
       ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_TpIn>, ::cuda::std::remove_cvref_t<_TpOut>>;
     constexpr bool __are_trivial_copyable =
       ::cuda::std::is_trivially_copyable_v<_TpIn> && ::cuda::std::is_trivially_copyable_v<_TpOut>;
-    constexpr bool __are_vectorizable = sizeof(_TpIn) <= __max_vector_access && __are_accessors_default_convertible
-                                     && __have_same_type && __are_trivial_copyable;
+    constexpr bool __are_vectorizable =
+      sizeof(_TpIn) <= __max_vector_access && ::cuda::is_power_of_two(sizeof(_TpIn))
+      && __are_accessors_default_convertible && __have_same_type && __are_trivial_copyable;
 
     // use the most efficient type for device code
     using __src_extent_t = ::cuda::std::common_type_t<typename _ExtentsIn::index_type, int>;
@@ -217,4 +228,4 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // !_CCCL_COMPILER(NVRTC)
-#endif // __CUDAX_COPY_MDSPAN_D2D_H
+#endif // _CUDAX__COPY_MDSPAN_D2D_H
