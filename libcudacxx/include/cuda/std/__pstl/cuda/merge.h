@@ -96,7 +96,7 @@ struct __pstl_dispatch<__pstl_algorithm::__merge, __execution_backend::__cuda>
     auto __resource = ::cuda::__call_or(
       ::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(__stream.device()), __policy);
     {
-      __temporary_storage<void, decltype(__resource)> __storage{__stream, __resource, __num_bytes};
+      __temporary_storage<decltype(__resource)> __storage{__stream, __resource, __num_bytes};
 
       // Run the kernel
       _CCCL_TRY_CUDA_API(
