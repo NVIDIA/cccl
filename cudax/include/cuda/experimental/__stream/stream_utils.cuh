@@ -126,14 +126,14 @@ _CCCL_CONCEPT __stream_join_range =
 
 //! @brief Make each target stream wait on `__event`, skipping the source stream itself.
 template <class _ToRange, class _Event>
-_CCCL_HOST_API void __wait_all_targets_on_event(const _ToRange& __to_streams, stream_ref __from, const _Event& __event)
+_CCCL_HOST_API void __wait_all_targets_on_event(const _ToRange& __to_streams, stream_ref __from, const _Event& __local_event)
 {
   for (const auto& __to_stream : __to_streams)
   {
     auto __to = stream_ref(__to_stream);
     if (__to != __from)
     {
-      __to.wait(__event);
+      __to.wait(__local_event);
     }
   }
 }
