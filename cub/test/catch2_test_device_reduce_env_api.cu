@@ -351,3 +351,126 @@ C2H_TEST("cub::DeviceReduce::ArgMax accepts stream", "[reduce][env]")
   REQUIRE(max_output == expected_max);
   REQUIRE(index_output == expected_index);
 }
+
+C2H_TEST("cub::DeviceReduce::TransformReduce accepts determinism requirements", "[reduce][env]")
+{
+  // example-begin transform-reduce-env-determinism
+  auto op        = cuda::std::plus{};
+  auto transform = cuda::std::negate{};
+  auto input     = thrust::device_vector<float>{1.0f, 2.0f, 3.0f, 4.0f};
+  auto output    = thrust::device_vector<float>(1);
+  auto init      = 0.0f;
+
+  auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
+
+  auto error =
+    cub::DeviceReduce::TransformReduce(input.begin(), output.begin(), input.size(), op, transform, init, env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceReduce::TransformReduce failed with status: " << error << std::endl;
+  }
+
+  thrust::device_vector<float> expected{-10.0f};
+  // example-end transform-reduce-env-determinism
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
+C2H_TEST("cub::DeviceReduce::TransformReduce accepts stream", "[reduce][env]")
+{
+  // example-begin transform-reduce-env-stream
+  auto op        = cuda::std::plus{};
+  auto transform = cuda::std::negate{};
+  auto input     = thrust::device_vector<float>{1.0f, 2.0f, 3.0f, 4.0f};
+  auto output    = thrust::device_vector<float>(1);
+  auto init      = 0.0f;
+
+  cudaStream_t legacy_stream = 0;
+  cuda::stream_ref stream_ref{legacy_stream};
+
+  auto error =
+    cub::DeviceReduce::TransformReduce(input.begin(), output.begin(), input.size(), op, transform, init, stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceReduce::TransformReduce failed with status: " << error << std::endl;
+  }
+
+  thrust::device_vector<float> expected{-10.0f};
+  // example-end transform-reduce-env-stream
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
+C2H_TEST("cub::DeviceReduce::ReduceByKey accepts env", "[reduce][env]")
+{
+  // example-begin reduce-by-key-env
+  auto keys_in        = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto values_in      = thrust::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
+  auto unique_out     = thrust::device_vector<int>(8);
+  auto aggregates_out = thrust::device_vector<int>(8);
+  auto num_runs_out   = thrust::device_vector<int>(1);
+
+  auto error = cub::DeviceReduce::ReduceByKey(
+    keys_in.begin(),
+    unique_out.begin(),
+    values_in.begin(),
+    aggregates_out.begin(),
+    num_runs_out.begin(),
+    cuda::minimum<int>{},
+    static_cast<int>(keys_in.size()));
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceReduce::ReduceByKey failed with status: " << error << std::endl;
+  }
+
+  thrust::device_vector<int> expected_keys{0, 2, 9, 5, 8};
+  thrust::device_vector<int> expected_aggregates{0, 1, 6, 2, 4};
+  // example-end reduce-by-key-env
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(num_runs_out[0] == 5);
+  unique_out.resize(5);
+  aggregates_out.resize(5);
+  REQUIRE(unique_out == expected_keys);
+  REQUIRE(aggregates_out == expected_aggregates);
+}
+
+C2H_TEST("cub::DeviceReduce::ReduceByKey accepts stream", "[reduce][env]")
+{
+  // example-begin reduce-by-key-env-stream
+  auto keys_in        = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto values_in      = thrust::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
+  auto unique_out     = thrust::device_vector<int>(8);
+  auto aggregates_out = thrust::device_vector<int>(8);
+  auto num_runs_out   = thrust::device_vector<int>(1);
+
+  cudaStream_t legacy_stream = 0;
+  cuda::stream_ref stream_ref{legacy_stream};
+
+  auto error = cub::DeviceReduce::ReduceByKey(
+    keys_in.begin(),
+    unique_out.begin(),
+    values_in.begin(),
+    aggregates_out.begin(),
+    num_runs_out.begin(),
+    cuda::minimum<int>{},
+    static_cast<int>(keys_in.size()),
+    stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceReduce::ReduceByKey failed with status: " << error << std::endl;
+  }
+
+  thrust::device_vector<int> expected_keys{0, 2, 9, 5, 8};
+  thrust::device_vector<int> expected_aggregates{0, 1, 6, 2, 4};
+  // example-end reduce-by-key-env-stream
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(num_runs_out[0] == 5);
+  unique_out.resize(5);
+  aggregates_out.resize(5);
+  REQUIRE(unique_out == expected_keys);
+  REQUIRE(aggregates_out == expected_aggregates);
+}
