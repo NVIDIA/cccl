@@ -37,7 +37,7 @@ Declaration/Definition:
 
 Function call:
 
-- All functions must have fully qualified namespace starting from the global namespace, e.g. `::cuda::ceil_div`. This includes calls to functions defined in the same namespace, e.g. inside `cuda::`, call `::cuda::ceil_div(...)`, not `ceil_div(...)`.
+- All calls to free functions must be fully qualified starting from the global namespace, e.g. `::cuda::ceil_div`. This includes calls to functions defined in the same namespace, e.g. inside `cuda::`, call `::cuda::ceil_div(...)`, not `ceil_div(...)`. This does not apply to (static) member functions of classes.
 
 ## Types
 
