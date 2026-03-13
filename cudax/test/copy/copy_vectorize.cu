@@ -99,4 +99,3 @@ TEST_CASE("copy d2d vectorize (16,3):(3,1)", "[copy][d2d][vectorize][2d]")
 {
   test_copy<layout_right>(make_data(), 16, 3);
 }
-

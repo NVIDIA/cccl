@@ -14,8 +14,8 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include <cuda/std/array>
 #include <cuda/mdspan>
+#include <cuda/std/array>
 #include <cuda/stream>
 
 #include <cuda/experimental/copy.cuh>
