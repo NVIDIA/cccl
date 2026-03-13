@@ -50,6 +50,62 @@ _CCCL_API constexpr scan_warpspeed_policy get_warpspeed_policy() noexcept
   return PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warpspeed;
 }
 
+template <typename PolicySelector>
+struct static_warpspeed_policy_adapter
+{
+  _CCCL_API static constexpr scan_warpspeed_policy policy() noexcept
+  {
+    return get_warpspeed_policy<PolicySelector>();
+  }
+
+  _CCCL_API constexpr warpspeed::SquadDesc squadReduce() const
+  {
+    return policy().squadReduce();
+  }
+  _CCCL_API constexpr warpspeed::SquadDesc squadScanStore() const
+  {
+    return policy().squadScanStore();
+  }
+  _CCCL_API constexpr warpspeed::SquadDesc squadLoad() const
+  {
+    return policy().squadLoad();
+  }
+  _CCCL_API constexpr warpspeed::SquadDesc squadSched() const
+  {
+    return policy().squadSched();
+  }
+  _CCCL_API constexpr warpspeed::SquadDesc squadLookback() const
+  {
+    return policy().squadLookback();
+  }
+};
+
+struct runtime_warpspeed_policy_adapter
+{
+  const scan_warpspeed_policy& policy;
+
+  _CCCL_API constexpr warpspeed::SquadDesc squadReduce() const
+  {
+    return policy.squadReduce();
+  }
+  _CCCL_API constexpr warpspeed::SquadDesc squadScanStore() const
+  {
+    return policy.squadScanStore();
+  }
+  _CCCL_API constexpr warpspeed::SquadDesc squadLoad() const
+  {
+    return policy.squadLoad();
+  }
+  _CCCL_API constexpr warpspeed::SquadDesc squadSched() const
+  {
+    return policy.squadSched();
+  }
+  _CCCL_API constexpr warpspeed::SquadDesc squadLookback() const
+  {
+    return policy.squadLookback();
+  }
+};
+
 template <typename InputT, typename OutputT, typename AccumT>
 struct scanKernelParams
 {
@@ -110,13 +166,13 @@ _CCCL_API constexpr scan_stage_counts make_scan_stage_counts(int num_stages)
   return {num_block_idx_stages, 2};
 }
 
-template <typename Policy,
+template <typename PolicyAdapter,
           typename SmemInOutT,
           typename SmemNextBlockIdxT,
           typename SmemSumExclusiveCtaT,
           typename SmemSumThreadAndWarpT>
 _CCCL_API constexpr void setup_scan_resources(
-  const Policy& policy,
+  const PolicyAdapter& policy,
   warpspeed::SyncHandler& syncHandler,
   warpspeed::SmemAllocator& smemAllocator,
   SmemInOutT& smemInOut,
@@ -165,7 +221,7 @@ allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& sm
   };
 
   setup_scan_resources(
-    ScanResourcesT::warpspeed_policy(),
+    static_warpspeed_policy_adapter<PolicySelector>{},
     syncHandler,
     smemAllocator,
     res.smemInOut,
@@ -834,7 +890,7 @@ _CCCL_API constexpr auto smem_for_stages(
   };
 
   setup_scan_resources(
-    policy,
+    runtime_warpspeed_policy_adapter{policy},
     syncHandler,
     smemAllocator,
     res.smemInOut,

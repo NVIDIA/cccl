@@ -264,6 +264,7 @@ try
     const bool types_match = input_type == output_type && input_type == accum_t.type;
     const bool benchmark_match =
       operation_t != cub::detail::op_kind_t::other && types_match && input_type != CCCL_STORAGE;
+    const bool accum_is_primitive_or_trivially_copy_constructible = true;
 
     return policy_selector{
       static_cast<int>(input_it.value_type.size),
@@ -275,6 +276,7 @@ try
       int{sizeof(OffsetT)},
       accum_type,
       operation_t,
+      accum_is_primitive_or_trivially_copy_constructible,
       benchmark_match};
   }();
 

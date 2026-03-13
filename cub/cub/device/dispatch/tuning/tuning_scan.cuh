@@ -30,6 +30,7 @@
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 #include <cuda/std/__type_traits/void_t.h>
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -712,6 +713,7 @@ struct policy_selector
   int offset_size;
   type_t accum_type;
   op_kind_t operation_t;
+  bool accum_is_primitive_or_trivially_copy_constructible;
   // TODO(griwes): remove this field before policy_selector is publicly exposed
   bool benchmark_match;
 
@@ -726,7 +728,7 @@ struct policy_selector
       large_values ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : BLOCK_LOAD_WARP_TRANSPOSE;
     const BlockStoreAlgorithm scan_transposed_store =
       large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
-    const auto default_delay = default_delay_constructor_policy(primitive_accum_t == primitive_accum::yes);
+    const auto default_delay = default_delay_constructor_policy(accum_is_primitive_or_trivially_copy_constructible);
 
     const auto warpspeed_policy = get_warpspeed_policy(arch, input_value_size, accum_size);
 
@@ -947,6 +949,21 @@ struct policy_selector
       }
     }
 
+    // Keep sm_86 aligned with legacy policy_hub behavior: policy_hub resets to default policy for 86.
+    if (arch >= ::cuda::arch_id::sm_86)
+    {
+      return make_mem_scaled_scan_policy(
+        128,
+        15,
+        accum_size,
+        scan_transposed_load,
+        LOAD_DEFAULT,
+        scan_transposed_store,
+        BLOCK_SCAN_WARP_SCANS,
+        default_delay,
+        warpspeed_policy);
+    }
+
     if (arch >= ::cuda::arch_id::sm_80)
     {
       if (primitive_op_t == primitive_op::yes)
@@ -1144,6 +1161,9 @@ struct policy_selector_from_types
     constexpr bool benchmark_match =
       benchmark_match_for_policy_selector<ScanOpT, InputValueT, OutputValueT, AccumT>::value;
 
+    constexpr bool accum_is_primitive_or_trivially_copy_constructible =
+      is_primitive<AccumT>::value || ::cuda::std::is_trivially_copy_constructible_v<AccumT>;
+
     constexpr auto policies = policy_selector{
       input_value_size,
       input_value_alignment,
@@ -1154,6 +1174,7 @@ struct policy_selector_from_types
       int{sizeof(OffsetT)},
       classify_type<AccumT>,
       classify_op<ScanOpT>,
+      accum_is_primitive_or_trivially_copy_constructible,
       benchmark_match};
     return policies(arch);
   }

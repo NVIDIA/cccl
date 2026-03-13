@@ -49,8 +49,8 @@ try
   thrust::device_vector<T> input = generate(elements);
   thrust::device_vector<T> output(elements);
 
-  T* d_input  = thrust::raw_pointer_cast(input.data());
-  T* d_output = thrust::raw_pointer_cast(output.data());
+  const T* d_input = thrust::raw_pointer_cast(input.data());
+  T* d_output      = thrust::raw_pointer_cast(output.data());
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements, "Size");
