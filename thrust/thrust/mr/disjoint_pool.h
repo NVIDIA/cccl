@@ -22,6 +22,7 @@
 
 #include <thrust/binary_search.h>
 #include <thrust/detail/seq.h>
+#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/find.h>
 #include <thrust/host_vector.h>
 #include <thrust/mr/allocator.h>
@@ -473,7 +474,7 @@ public:
     assert(::cuda::is_power_of_two(alignment));
 
     // verify that the pointer is at least as aligned as claimed
-    assert(reinterpret_cast<::cuda::std::intmax_t>(detail::pointer_traits<void_ptr>::get(p)) % alignment == 0);
+    assert(reinterpret_cast<::cuda::std::intmax_t>(::cuda::std::to_address(p)) % alignment == 0);
 
     // the deallocated block is oversized and/or overaligned
     if (n > m_options.largest_block_size || alignment > m_options.alignment)
