@@ -30,6 +30,7 @@
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 #include <cuda/std/__type_traits/void_t.h>
 
@@ -1347,13 +1348,14 @@ struct selector_smem_info
 };
 
 template <typename PolicySelectorT>
-struct selector_smem_info<PolicySelectorT,
-                          ::cuda::std::void_t<decltype(PolicySelectorT::input_value_size),
-                                              decltype(PolicySelectorT::input_value_alignment),
-                                              decltype(PolicySelectorT::output_value_size),
-                                              decltype(PolicySelectorT::output_value_alignment),
-                                              decltype(PolicySelectorT::accum_size),
-                                              decltype(PolicySelectorT::accum_alignment)>>
+struct selector_smem_info<
+  PolicySelectorT,
+  ::cuda::std::void_t<decltype(::cuda::std::integral_constant<int, PolicySelectorT::input_value_size>{}),
+                      decltype(::cuda::std::integral_constant<int, PolicySelectorT::input_value_alignment>{}),
+                      decltype(::cuda::std::integral_constant<int, PolicySelectorT::output_value_size>{}),
+                      decltype(::cuda::std::integral_constant<int, PolicySelectorT::output_value_alignment>{}),
+                      decltype(::cuda::std::integral_constant<int, PolicySelectorT::accum_size>{}),
+                      decltype(::cuda::std::integral_constant<int, PolicySelectorT::accum_alignment>{})>>
 {
   static constexpr bool has_static_layout     = true;
   static constexpr int input_value_size       = PolicySelectorT::input_value_size;
