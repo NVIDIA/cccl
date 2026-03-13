@@ -22,9 +22,10 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/arch_id.h>
-#include <cuda/cmath>
 #include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/concepts>
 
 #if !_CCCL_COMPILER(NVRTC)

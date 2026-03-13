@@ -16,8 +16,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/env_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_batch_memcpy.cuh>
 
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/cstdint>
 
@@ -168,6 +170,96 @@ struct DeviceMemcpy
     return detail::
       DispatchBatchMemcpy<InputBufferIt, OutputBufferIt, BufferSizeIteratorT, BlockOffsetT, CopyAlg::Memcpy>::Dispatch(
         d_temp_storage, temp_storage_bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream);
+  }
+
+  //! @rst
+  //! Copies data from a batch of given source buffers to their corresponding destination buffer.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! .. note::
+  //!
+  //!    If any input buffer aliases memory from any output buffer the behavior is undefined.
+  //!    If any output buffer aliases memory of another output buffer the behavior is undefined.
+  //!    Input buffers can alias one another.
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates usage of DeviceMemcpy::Batched with an environment:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_memcpy_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin memcpy-batched-env
+  //!     :end-before: example-end memcpy-batched-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputBufferIt
+  //!   **[inferred]** Device-accessible random-access input iterator type providing the pointers to
+  //!   the source memory buffers
+  //!
+  //! @tparam OutputBufferIt
+  //!   **[inferred]** Device-accessible random-access input iterator type providing the pointers to
+  //!   the destination memory buffers
+  //!
+  //! @tparam BufferSizeIteratorT
+  //!   **[inferred]** Device-accessible random-access input iterator type providing the number of bytes
+  //!   to be copied for each pair of buffers
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] input_buffer_it
+  //!   Device-accessible iterator providing the pointers to the source memory buffers
+  //!
+  //! @param[in] output_buffer_it
+  //!   Device-accessible iterator providing the pointers to the destination memory buffers
+  //!
+  //! @param[in] buffer_sizes
+  //!   Device-accessible iterator providing the number of bytes to be copied for each pair of buffers
+  //!
+  //! @param[in] num_buffers
+  //!   The total number of buffer pairs
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputBufferIt,
+            typename OutputBufferIt,
+            typename BufferSizeIteratorT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputBufferIt, void*>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  Batched(InputBufferIt input_buffer_it,
+          OutputBufferIt output_buffer_it,
+          BufferSizeIteratorT buffer_sizes,
+          ::cuda::std::int64_t num_buffers,
+          EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMemcpy::Batched");
+    static_assert(::cuda::std::is_pointer_v<cub::detail::it_value_t<InputBufferIt>>,
+                  "DeviceMemcpy::Batched only supports copying of memory buffers."
+                  "Please consider using DeviceCopy::Batched instead.");
+    static_assert(::cuda::std::is_pointer_v<cub::detail::it_value_t<OutputBufferIt>>,
+                  "DeviceMemcpy::Batched only supports copying of memory buffers."
+                  "Please consider using DeviceCopy::Batched instead.");
+
+    using BlockOffsetT = uint32_t;
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return detail::
+        DispatchBatchMemcpy<InputBufferIt, OutputBufferIt, BufferSizeIteratorT, BlockOffsetT, CopyAlg::Memcpy>::Dispatch(
+          storage, bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream);
+    });
   }
 };
 

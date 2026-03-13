@@ -51,6 +51,12 @@ _CCCL_HOST_API _Iter for_each_n([[maybe_unused]] const _Policy& __policy, _Iter 
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
     _CCCL_NVTX_RANGE_SCOPE("cuda::std::for_each_n");
+
+    if (__orig_n == 0)
+    {
+      return __first;
+    }
+
     return __dispatch(__policy, ::cuda::std::move(__first), __orig_n, ::cuda::std::move(__func));
   }
   else

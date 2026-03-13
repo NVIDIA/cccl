@@ -461,6 +461,12 @@ struct DispatchScan
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
   __invoke_lookahead_algorithm(PolicyGetter policy_getter, const PolicySelectorT& policy_selector)
   {
+    if (num_items == 0)
+    {
+      temp_storage_bytes = 1; // just fulfill the contract that CUB always requires some temporary storage
+      return cudaSuccess;
+    }
+
     CUB_DETAIL_CONSTEXPR_ISH auto active_policy          = policy_getter();
     CUB_DETAIL_CONSTEXPR_ISH const auto warpspeed_policy = active_policy.warpspeed;
 

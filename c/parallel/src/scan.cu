@@ -256,10 +256,11 @@ try
     using cub::detail::scan::primitive_accum;
     using cub::detail::scan::primitive_op;
 
-    const auto accum_type  = cccl_type_enum_to_cub_type(accum_t.type);
-    const auto operation_t = cccl_op_kind_to_cub_op(op.type);
+    const auto accum_type   = cccl_type_enum_to_cub_type(accum_t.type);
+    const auto operation_t  = cccl_op_kind_to_cub_op(op.type);
+    const auto input_type   = input_it.value_type.type;
+    const auto input_type_t = cccl_type_enum_to_cub_type(input_type);
 
-    const auto input_type  = input_it.value_type.type;
     const auto output_type = output_it.value_type.type;
     const bool types_match = input_type == output_type && input_type == accum_t.type;
     const bool benchmark_match =
@@ -274,6 +275,7 @@ try
       static_cast<int>(accum_t.size),
       static_cast<int>(accum_t.alignment),
       int{sizeof(OffsetT)},
+      input_type_t,
       accum_type,
       operation_t,
       accum_is_primitive_or_trivially_copy_constructible,

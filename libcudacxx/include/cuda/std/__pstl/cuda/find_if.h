@@ -78,7 +78,7 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
     void* __temp_storage = nullptr;
     size_t __num_bytes   = 0;
     _CCCL_TRY_CUDA_API(
-      ::cub::DeviceFind::FindIf,
+      CUB_NS_QUALIFIER::DeviceFind::FindIf,
       "__pstl_cuda_find_if: determining temporary storage failed",
       __temp_storage,
       __num_bytes,
@@ -96,7 +96,7 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
 
       // Run the find operation
       _CCCL_TRY_CUDA_API(
-        ::cub::DeviceFind::FindIf,
+        CUB_NS_QUALIFIER::DeviceFind::FindIf,
         "__pstl_cuda_find_if: cub::DeviceFind failed",
         __storage.__get_temp_storage(),
         __num_bytes,
