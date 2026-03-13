@@ -20,12 +20,17 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__fwd/array.h>
+#include <cuda/std/__fwd/complex.h>
+#include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
 #include <cuda/std/__type_traits/add_const.h>
 #include <cuda/std/__type_traits/add_cv.h>
 #include <cuda/std/__type_traits/add_volatile.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/cstddef>
 
@@ -60,7 +65,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, const volatile _Tp>
 template <size_t _Ip, class... _Types>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, __tuple_types<_Types...>>
 {
-  static_assert(_Ip < sizeof...(_Types), "tuple_element index out of range");
+  static_assert(_Ip < sizeof...(_Types), "cuda::std::tuple_element index out of range");
   using type _CCCL_NODEBUG_ALIAS = __type_index_c<_Ip, _Types...>;
 };
 
@@ -69,6 +74,27 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, tuple<_Tp...>>
 {
   using type _CCCL_NODEBUG_ALIAS = tuple_element_t<_Ip, __tuple_types<_Tp...>>;
 };
+
+#if _CCCL_HAS_HOST_STD_LIB()
+template <size_t _Ip, class _Tp, size_t _Np>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::array<_Tp, _Np>> : enable_if<(_Ip < _Np), _Tp>
+{};
+
+template <size_t _Ip, class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::complex<_Tp>> : enable_if<(_Ip < 2), _Tp>
+{};
+
+template <size_t _Ip, class _T1, class _T2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+tuple_element<_Ip, ::std::pair<_T1, _T2>> : enable_if<(_Ip < 2), conditional_t<_Ip == 0, _T1, _T2>>
+{};
+
+template <size_t _Ip, class... _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::tuple<_Tp...>>
+{
+  using type _CCCL_NODEBUG_ALIAS = tuple_element_t<_Ip, __tuple_types<_Tp...>>;
+};
+#endif // _CCCL_HAS_HOST_STD_LIB()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
