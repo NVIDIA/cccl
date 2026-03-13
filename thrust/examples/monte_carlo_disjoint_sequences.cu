@@ -21,10 +21,12 @@
 // past n states of the RNG. This function is accelerated and executes
 // in O(lg n) time.
 
-struct estimate_pi
+int main()
 {
-  __host__ __device__ float operator()(unsigned int thread_id)
-  {
+  // use 30K subsequences of random numbers
+  int M = 30000;
+
+  auto estimate_pi = [] __device__(unsigned int thread_id) {
     float sum      = 0;
     unsigned int N = 5000; // samples per stream
 
@@ -64,16 +66,10 @@ struct estimate_pi
 
     // divide by N
     return sum / N;
-  }
-};
-
-int main()
-{
-  // use 30K subsequences of random numbers
-  int M = 30000;
+  };
 
   float estimate = thrust::transform_reduce(
-    thrust::counting_iterator<int>(0), thrust::counting_iterator<int>(M), estimate_pi(), 0.0f, cuda::std::plus<float>());
+    thrust::counting_iterator<int>(0), thrust::counting_iterator<int>(M), estimate_pi, 0.0f, cuda::std::plus<float>());
   estimate /= M;
 
   std::cout << "pi is around " << estimate << std::endl;
