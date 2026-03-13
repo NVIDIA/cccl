@@ -70,13 +70,17 @@ using __vector_access_t = typename __vector_access<_VectorBytes>::type;
 
 //! @brief Query the maximum vector access width supported by the current GPU architecture.
 //!
-//! @return Maximum vector width in bytes (32 for SM >= 9.0, 16 otherwise)
+//! @return Maximum vector width in bytes (32 for SM >= 10.0, 16 otherwise)
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t __max_gpu_arch_vector_size() noexcept
 {
+#  if _CCCL_CTK_AT_LEAST(13, 0)
   const auto __dev_id = ::cuda::__driver::__cudevice_to_ordinal(::cuda::__driver::__ctxGetDevice());
   const auto __dev    = ::cuda::devices[__dev_id];
   const auto __major  = __dev.attribute<::cudaDevAttrComputeCapabilityMajor>();
-  return (__major >= 9) ? 32 : 16;
+  return (__major >= 10) ? 32 : 16;
+#  else
+  return 16;
+#  endif
 }
 
 #endif // !_CCCL_COMPILER(NVRTC)

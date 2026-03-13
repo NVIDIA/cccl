@@ -94,15 +94,18 @@ __max_alignment(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor)
 //! @tparam _VectorBytes Target vector width in bytes
 //! @param[in] __tensor Raw tensor with contiguous innermost mode
 //! @return Raw tensor with element type replaced by the vector type and adjusted extents/strides
+template <::cuda::std::size_t _VectorBytes, typename _Tp>
+using __reshape_vector_type =
+  ::cuda::std::conditional_t<::cuda::std::is_const_v<_Tp>,
+                             const ::cuda::experimental::__vector_access_t<_VectorBytes>,
+                             ::cuda::experimental::__vector_access_t<_VectorBytes>>;
+
 template <::cuda::std::size_t _VectorBytes, typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
 [[nodiscard]]
-_CCCL_HOST_API __raw_tensor<_ExtentT, _StrideT, ::cuda::experimental::__vector_access_t<_VectorBytes>, _MaxRank>
+_CCCL_HOST_API __raw_tensor<_ExtentT, _StrideT, __reshape_vector_type<_VectorBytes, _Tp>, _MaxRank>
 __reshape_vectorized(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
 {
-  using __vector_acc_t = ::cuda::experimental::__vector_access_t<_VectorBytes>;
-  using __vector_acc_cv_t =
-    ::cuda::std::conditional_t<::cuda::std::is_const_v<_Tp>, const __vector_acc_t, __vector_acc_t>;
-  using __vector_t = ::cuda::std::conditional_t<sizeof(_Tp) == _VectorBytes, _Tp, __vector_acc_cv_t>;
+  using __vector_t = __reshape_vector_type<_VectorBytes, _Tp>;
   using __rank_t   = typename __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>::__rank_t;
   static_assert(_VectorBytes % sizeof(_Tp) == 0, "vector size must be a multiple of element size");
   constexpr auto __elems_per_vector = _VectorBytes / sizeof(_Tp);

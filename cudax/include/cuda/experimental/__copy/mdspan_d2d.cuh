@@ -152,6 +152,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     const auto __dst_normalized = (__tile_size > 1) ? __dst_simplified : cudax::__reverse_modes(__dst_raw);
 
     _CCCL_ASSERT(__tensor_size % __tile_size == 0, "tensor size must be divisible by tile size");
+    const auto __inner_extent_bytes = __src_normalized.__extents[0] * sizeof(_TpIn);
     // (1) contiguous case
     if (__tile_size == __tensor_size)
     {
@@ -163,11 +164,9 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
         __tensor_size,
         ::cuda::proclaim_copyable_arguments(::cuda::std::identity{}),
         __stream.get());
-      return;
     }
     // (2) inner size is large
-    const auto __inner_extent_bytes = __src_normalized.__extents[0] * sizeof(_TpIn);
-    if (__both_stride1 && __inner_extent_bytes >= __bytes_in_flight) // TODO: tunable bytes in flight
+    else if (__both_stride1 && __inner_extent_bytes >= __bytes_in_flight) // TODO: tunable bytes in flight
     {
       // (2a) vectorized case
       if constexpr (__are_vectorizable)
@@ -183,24 +182,22 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
         cudax::__launch_copy_contiguous_kernel(
           __src_normalized, __dst_normalized, __stream, __src.accessor(), __dst.accessor());
       }
-      return;
     }
     // (3) inner size is not large -> try vectorized case
     else if (__both_stride1)
     {
       if constexpr (__are_vectorizable)
       {
-        const auto __op = [__stream](const auto& __src, const auto& __dst) {
+        const auto __op = [=](const auto& __src, const auto& __dst) {
           cudax::__copy_optimized(__src, __dst, static_cast<__common_extent_t>(__tensor_size), __stream);
         };
         cudax::__dispatch_by_vector_size(__src_normalized, __dst_normalized, __op);
-        return;
       }
     }
-    // (4) transpose case
+    // (4) transpose case, TODO: next PR
     // if (cudax::__use_shared_mem_kernel(__src_normalized, __dst_normalized))
     //{
-    //  cudax::copy_bytes_shared_mem(__src_normalized, __dst_normalized, __stream);
+    //  cudax::copy_shared_mem(__src_normalized, __dst_normalized, __stream);
     //}
     // (5) generic case (fallback)
     else

@@ -95,42 +95,46 @@ _CCCL_HOST_API void __dispatch_by_vector_size(
     if (__vector_size_bytes == 32)
     {
       __call_vectorized(__const_vector_size<32>);
+      return;
     }
   }
-  else
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
-    if constexpr (sizeof(_TpIn) <= 16)
+  if constexpr (sizeof(_TpIn) <= 16)
+  {
+    if (__vector_size_bytes == 16)
     {
-      if (__vector_size_bytes == 16)
-      {
-        __call_vectorized(__const_vector_size<16>);
-      }
+      __call_vectorized(__const_vector_size<16>);
+      return;
     }
-    else if constexpr (sizeof(_TpIn) <= 8)
+  }
+  if constexpr (sizeof(_TpIn) <= 8)
+  {
+    if (__vector_size_bytes == 8)
     {
-      if (__vector_size_bytes == 8)
-      {
-        __call_vectorized(__const_vector_size<8>);
-      }
+      __call_vectorized(__const_vector_size<8>);
+      return;
     }
-    else if constexpr (sizeof(_TpIn) <= 4)
+  }
+  if constexpr (sizeof(_TpIn) <= 4)
+  {
+    if (__vector_size_bytes == 4)
     {
-      if (__vector_size_bytes == 4)
-      {
-        __call_vectorized(__const_vector_size<4>);
-      }
+      __call_vectorized(__const_vector_size<4>);
+      return;
     }
-    else if constexpr (sizeof(_TpIn) <= 2)
+  }
+  if constexpr (sizeof(_TpIn) <= 2)
+  {
+    if (__vector_size_bytes == 2)
     {
-      if (__vector_size_bytes == 2)
-      {
-        __call_vectorized(__const_vector_size<2>);
-      }
+      __call_vectorized(__const_vector_size<2>);
+      return;
     }
-    else
-    {
-      __call_vectorized(__const_vector_size<1>);
-    }
+  }
+  if constexpr (sizeof(_TpIn) <= 1)
+  {
+    __call_vectorized(__const_vector_size<1>);
+  }
 }
 } // namespace cuda::experimental
 
