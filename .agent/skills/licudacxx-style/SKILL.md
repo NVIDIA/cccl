@@ -53,7 +53,7 @@ Function call:
 - The headers must be the most precise one, e.g. `#include <cuda/std/__type_traits/is_array.h>`.
 - Headers in `cuda/std/__cccl/` must not be included directly (they are provided by `__config` or the prologue/epilogue mechanism).
 
-- All headers must have the license boilerplate.
+- All headers must have the correct license. If the file is ported from LLVM libc++ then we *must* use the LLVM license.
 - All headers must have the include guard, with the correct name: uppercase full path from the root, separated by `_`.
 - The closing `#endif` always carries a comment repeating the guard name.
 - Right after the include guard, the code must include:
