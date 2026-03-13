@@ -477,7 +477,7 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
   size_t __total_size = 1;
   for (int __i = 0; __i < __rank; ++__i)
   {
-    const auto __max_box_size = static_cast<int>(::cuda::std::min(__tensor_sizes[__i], uint64_t{256}));
+    const auto __max_box_size = static_cast<int>(::cuda::std::__min(__tensor_sizes[__i], uint64_t{256}));
     const auto __box_size     = __box_sizes[__rank - 1 - __i];
     if (__box_size <= 0 || __box_size > __max_box_size)
     {
@@ -563,7 +563,7 @@ _CCCL_HOST_API inline __tma_elem_strides_array_t __get_elem_strides(
   const int __init_index = (__interleave_layout == tma_interleave_layout::none) ? 1 : 0;
   for (int __i = __init_index; __i < __rank; ++__i)
   {
-    const auto __max_elem_stride = static_cast<int>(::cuda::std::min(__tensor_sizes[__i], uint64_t{8}));
+    const auto __max_elem_stride = static_cast<int>(::cuda::std::__min(__tensor_sizes[__i], uint64_t{8}));
     const auto __elem_stride     = __elem_strides[__rank - 1 - __i];
     if (__elem_stride <= 0 || __elem_stride > __max_elem_stride)
     {
