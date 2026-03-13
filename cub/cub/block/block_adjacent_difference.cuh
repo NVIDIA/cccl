@@ -104,11 +104,12 @@ private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
-  /// Shared memory storage layout type (last element from each thread's input)
+  /// Shared memory storage layout type (stores boundary elements for inter-thread communication)
+  /// SubtractLeft operations store last items, SubtractRight operations store first items.
+  /// Since these operations are never used together, a single array suffices.
   struct _TempStorage
   {
-    T first_items[BLOCK_THREADS];
-    T last_items[BLOCK_THREADS];
+    T items[BLOCK_THREADS];
   };
 
   /// Internal storage allocator
@@ -295,7 +296,7 @@ public:
   SubtractLeft(T (&input)[ITEMS_PER_THREAD], OutputType (&output)[ITEMS_PER_THREAD], DifferenceOpT difference_op)
   {
     // Share last item
-    temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
+    temp_storage.items[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
     __syncthreads();
 
@@ -311,7 +312,7 @@ public:
     }
     else
     {
-      output[0] = difference_op(input[0], temp_storage.last_items[linear_tid - 1]);
+      output[0] = difference_op(input[0], temp_storage.items[linear_tid - 1]);
     }
   }
 
@@ -397,7 +398,7 @@ public:
     T tile_predecessor_item)
   {
     // Share last item
-    temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
+    temp_storage.items[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
     __syncthreads();
 
@@ -414,7 +415,7 @@ public:
     }
     else
     {
-      output[0] = difference_op(input[0], temp_storage.last_items[linear_tid - 1]);
+      output[0] = difference_op(input[0], temp_storage.items[linear_tid - 1]);
     }
   }
 
@@ -491,7 +492,7 @@ public:
     T (&input)[ITEMS_PER_THREAD], OutputType (&output)[ITEMS_PER_THREAD], DifferenceOpT difference_op, int valid_items)
   {
     // Share last item
-    temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
+    temp_storage.items[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
     __syncthreads();
 
@@ -527,7 +528,7 @@ public:
     }
     else
     {
-      output[0] = difference_op(input[0], temp_storage.last_items[linear_tid - 1]);
+      output[0] = difference_op(input[0], temp_storage.items[linear_tid - 1]);
     }
   }
 
@@ -617,7 +618,7 @@ public:
     T tile_predecessor_item)
   {
     // Share last item
-    temp_storage.last_items[linear_tid] = input[ITEMS_PER_THREAD - 1];
+    temp_storage.items[linear_tid] = input[ITEMS_PER_THREAD - 1];
 
     __syncthreads();
 
@@ -657,7 +658,7 @@ public:
     }
     else
     {
-      output[0] = difference_op(input[0], temp_storage.last_items[linear_tid - 1]);
+      output[0] = difference_op(input[0], temp_storage.items[linear_tid - 1]);
     }
   }
 
@@ -734,7 +735,7 @@ public:
   SubtractRight(T (&input)[ITEMS_PER_THREAD], OutputT (&output)[ITEMS_PER_THREAD], DifferenceOpT difference_op)
   {
     // Share first item
-    temp_storage.first_items[linear_tid] = input[0];
+    temp_storage.items[linear_tid] = input[0];
 
     __syncthreads();
 
@@ -750,8 +751,7 @@ public:
     }
     else
     {
-      output[ITEMS_PER_THREAD - 1] =
-        difference_op(input[ITEMS_PER_THREAD - 1], temp_storage.first_items[linear_tid + 1]);
+      output[ITEMS_PER_THREAD - 1] = difference_op(input[ITEMS_PER_THREAD - 1], temp_storage.items[linear_tid + 1]);
     }
   }
 
@@ -838,14 +838,14 @@ public:
     T tile_successor_item)
   {
     // Share first item
-    temp_storage.first_items[linear_tid] = input[0];
+    temp_storage.items[linear_tid] = input[0];
 
     __syncthreads();
 
     // Set flag for last thread-item
     T successor_item = (linear_tid == BLOCK_THREADS - 1)
                        ? tile_successor_item // Last thread
-                       : temp_storage.first_items[linear_tid + 1];
+                       : temp_storage.items[linear_tid + 1];
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ITEMS_PER_THREAD - 1; item++)
@@ -930,7 +930,7 @@ public:
     T (&input)[ITEMS_PER_THREAD], OutputT (&output)[ITEMS_PER_THREAD], DifferenceOpT difference_op, int valid_items)
   {
     // Share first item
-    temp_storage.first_items[linear_tid] = input[0];
+    temp_storage.items[linear_tid] = input[0];
 
     __syncthreads();
 
@@ -942,8 +942,7 @@ public:
         output[item] = difference_op(input[item], input[item + 1]);
       }
 
-      output[ITEMS_PER_THREAD - 1] =
-        difference_op(input[ITEMS_PER_THREAD - 1], temp_storage.first_items[linear_tid + 1]);
+      output[ITEMS_PER_THREAD - 1] = difference_op(input[ITEMS_PER_THREAD - 1], temp_storage.items[linear_tid + 1]);
     }
     else
     {
