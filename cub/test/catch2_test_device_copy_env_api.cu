@@ -7,8 +7,6 @@
 
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 #include <thrust/sequence.h>
 
 #include <cuda/devices>
@@ -19,58 +17,48 @@
 
 #include <c2h/catch2_test_helper.h>
 
-template <typename T>
-struct index_to_ptr
-{
-  T* base;
-  const int* offsets;
-  __host__ __device__ __forceinline__ T* operator()(int index) const
-  {
-    return base + offsets[index];
-  }
-};
-
-struct get_size
-{
-  const int* offsets;
-  __host__ __device__ __forceinline__ int operator()(int index) const
-  {
-    return offsets[index + 1] - offsets[index];
-  }
-};
-
 C2H_TEST("cub::DeviceCopy::Batched accepts env with stream", "[copy][env]")
 {
   // example-begin copy-batched-env
-  // 3 ranges of different sizes: [10, 20], [30, 40, 50], [60]
-  auto d_src     = thrust::device_vector<int>{10, 20, 30, 40, 50, 60};
-  auto d_dst     = thrust::device_vector<int>(6, 0);
-  auto d_offsets = thrust::device_vector<int>{0, 2, 5, 6};
+  // 3 contiguous ranges copied via Batched API
+  constexpr int num_ranges = 3;
+  constexpr int range_size = 4;
+  constexpr int num_items  = num_ranges * range_size;
 
-  int num_ranges = 3;
+  thrust::device_vector<int> d_src(num_items);
+  thrust::device_vector<int> d_dst(num_items, 0);
+  thrust::sequence(d_src.begin(), d_src.end(), 1);
 
-  thrust::counting_iterator<int> iota(0);
-  auto input_it = thrust::make_transform_iterator(
-    iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
-  auto output_it = thrust::make_transform_iterator(
-    iota, index_to_ptr<int>{thrust::raw_pointer_cast(d_dst.data()), thrust::raw_pointer_cast(d_offsets.data())});
-  auto sizes = thrust::make_transform_iterator(iota, get_size{thrust::raw_pointer_cast(d_offsets.data())});
+  // Each range is a contiguous slice of range_size elements
+  const int* src_base = thrust::raw_pointer_cast(d_src.data());
+  int* dst_base       = thrust::raw_pointer_cast(d_dst.data());
+
+  const int* h_input_ptrs[] = {src_base, src_base + range_size, src_base + 2 * range_size};
+  int* h_output_ptrs[]      = {dst_base, dst_base + range_size, dst_base + 2 * range_size};
+  int h_sizes[]             = {range_size, range_size, range_size};
+
+  thrust::device_vector<const int*> d_input_ptrs(h_input_ptrs, h_input_ptrs + num_ranges);
+  thrust::device_vector<int*> d_output_ptrs(h_output_ptrs, h_output_ptrs + num_ranges);
+  thrust::device_vector<int> d_sizes(h_sizes, h_sizes + num_ranges);
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
   auto env = cuda::std::execution::env{stream_ref};
 
-  auto error = cub::DeviceCopy::Batched(input_it, output_it, sizes, num_ranges, env);
+  auto error = cub::DeviceCopy::Batched(
+    thrust::raw_pointer_cast(d_input_ptrs.data()),
+    thrust::raw_pointer_cast(d_output_ptrs.data()),
+    thrust::raw_pointer_cast(d_sizes.data()),
+    num_ranges,
+    env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceCopy::Batched failed with status: " << error << std::endl;
   }
-
-  thrust::device_vector<int> expected{10, 20, 30, 40, 50, 60};
   // example-end copy-batched-env
 
   REQUIRE(error == cudaSuccess);
-  REQUIRE(d_dst == expected);
+  REQUIRE(d_dst == d_src);
 }
 
 C2H_TEST("cub::DeviceCopy::Copy mdspan accepts env with stream", "[copy][env]")

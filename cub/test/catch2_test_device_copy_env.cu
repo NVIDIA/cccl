@@ -69,7 +69,7 @@ TEST_CASE("DeviceCopy::Batched works with default environment", "[copy][device]"
   REQUIRE(d_dst == d_src);
 }
 
-#endif
+#endif // TEST_LAUNCH == 0
 
 C2H_TEST("DeviceCopy::Batched uses environment", "[copy][device]")
 {
