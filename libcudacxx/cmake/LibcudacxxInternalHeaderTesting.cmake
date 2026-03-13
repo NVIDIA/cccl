@@ -9,14 +9,6 @@ cccl_get_cudatoolkit()
 # Meta target for all configs' header builds:
 add_custom_target(libcudacxx.test.internal_headers)
 
-# We need to handle atomic headers differently as they do not compile on architectures below sm70
-set(architectures_at_least_sm70)
-foreach (item IN LISTS CMAKE_CUDA_ARCHITECTURES)
-  if (item GREATER_EQUAL 70)
-    list(APPEND architectures_at_least_sm70 ${item})
-  endif()
-endforeach()
-
 # Grep all internal headers
 file(
   GLOB_RECURSE internal_headers
@@ -39,94 +31,92 @@ list(FILTER internal_headers EXCLUDE REGEX "__cuda/*")
 # generated cuda::ptx headers are not standalone
 list(FILTER internal_headers EXCLUDE REGEX "__ptx/instructions/generated")
 
-function(libcudacxx_create_internal_header_test header_name headertest_src)
-  # Create the default target for that file
-  add_library(internal_headertest_${header_name} SHARED "${headertest_src}.cu")
-  cccl_configure_target(internal_headertest_${header_name})
-  target_compile_definitions(
-    internal_headertest_${header_name}
-    PRIVATE _CCCL_HEADER_TEST
+function(libcudacxx_add_internal_header_test_target target_name)
+  if (NOT ARGN)
+    return()
+  endif()
+
+  cccl_generate_header_tests(
+    ${target_name}
+    libcudacxx/include
+    NO_METATARGETS
+    LANGUAGE CUDA
+    HEADER_TEMPLATE "${libcudacxx_SOURCE_DIR}/cmake/header_test.cpp.in"
+    HEADERS ${ARGN}
   )
+
+  target_compile_definitions(${target_name} PRIVATE _CCCL_HEADER_TEST)
   target_link_libraries(
-    internal_headertest_${header_name}
+    ${target_name}
     PUBLIC #
       libcudacxx.compiler_interface
       CUDA::cudart
   )
-
-  # Ensure that if this is an atomic header, we only include the right architectures
-  string(
-    REGEX MATCH
-    "atomic|barrier|latch|semaphore|annotated_ptr|pipeline"
-    match
-    "${header}"
-  )
-  if (match)
-    # Ensure that we only compile the header when we have some architectures enabled
-    if (NOT architectures_at_least_sm70)
-      return()
-    endif()
-    set_target_properties(
-      internal_headertest_${header_name}
-      PROPERTIES CUDA_ARCHITECTURES "${architectures_at_least_sm70}"
-    )
-  endif()
-
-  add_dependencies(
-    libcudacxx.test.internal_headers
-    internal_headertest_${header_name}
-  )
+  add_dependencies(libcudacxx.test.internal_headers ${target_name})
 endfunction()
 
-# We have fallbacks for some type traits that we want to explicitly test so that they do not bitrot
-function(
-  libcudacxx_create_internal_header_fallback_test
-  header_name
-  headertest_src
+libcudacxx_add_internal_header_test_target(
+  libcudacxx.test.internal_headers.base
+  ${internal_headers}
 )
-  # MSVC cannot handle some of the fallbacks
+
+# We have fallbacks for some type traits that we want to explicitly test so that they do not bitrot.
+set(internal_headers_fallback)
+set(internal_headers_fallback_per_header_defines)
+foreach (header IN LISTS internal_headers)
+  # MSVC cannot handle some of the fallbacks.
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     if (
       "${header}" MATCHES "is_base_of"
       OR "${header}" MATCHES "is_nothrow_destructible"
       OR "${header}" MATCHES "is_polymorphic"
     )
-      return()
+      continue()
     endif()
   endif()
 
-  # Search the file for a fallback definition
-  file(READ ${libcudacxx_SOURCE_DIR}/include/${header} header_file)
+  file(READ "${libcudacxx_SOURCE_DIR}/include/${header}" header_file)
   string(REGEX MATCH "_LIBCUDACXX_[A-Z_]*_FALLBACK" fallback "${header_file}")
   if (fallback)
-    # Adopt the filename for the fallback tests
-    set(header_name "${header_name}_fallback")
-    libcudacxx_create_internal_header_test(${header_name} ${headertest_src})
-    target_compile_definitions(
-      internal_headertest_${header_name}
-      PRIVATE "-D${fallback}"
+    list(APPEND internal_headers_fallback "${header}")
+    string(
+      REGEX REPLACE
+      "([][+.*^$()|?\\\\])"
+      "\\\\\\1"
+      header_regex
+      "${header}"
+    )
+    list(
+      APPEND internal_headers_fallback_per_header_defines
+      DEFINE
+      "${fallback}"
+      "^${header_regex}$"
     )
   endif()
-endfunction()
-
-function(libcudacxx_add_internal_header_test header)
-  # ${header} contains the "/" from the subfolder, replace by "_" for actual names
-  string(REPLACE "/" "_" header_name "${header}")
-
-  # Create the source file for the header target from the template and add the file to the global project
-  set(headertest_src "headers/${header_name}")
-  configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/header_test.cpp.in"
-    "${headertest_src}.cu"
-  )
-
-  # Create the default target for that file
-  libcudacxx_create_internal_header_test(${header_name} ${headertest_src})
-
-  # Optionally create a fallback target for that file
-  libcudacxx_create_internal_header_fallback_test(${header_name} ${headertest_src})
-endfunction()
-
-foreach (header IN LISTS internal_headers)
-  libcudacxx_add_internal_header_test(${header})
 endforeach()
+
+if (internal_headers_fallback)
+  cccl_generate_header_tests(
+    libcudacxx.test.internal_headers.fallback
+    libcudacxx/include
+    NO_METATARGETS
+    LANGUAGE CUDA
+    HEADER_TEMPLATE "${libcudacxx_SOURCE_DIR}/cmake/header_test.cpp.in"
+    HEADERS ${internal_headers_fallback}
+    PER_HEADER_DEFINES ${internal_headers_fallback_per_header_defines}
+  )
+  target_compile_definitions(
+    libcudacxx.test.internal_headers.fallback
+    PRIVATE _CCCL_HEADER_TEST
+  )
+  target_link_libraries(
+    libcudacxx.test.internal_headers.fallback
+    PUBLIC #
+      libcudacxx.compiler_interface
+      CUDA::cudart
+  )
+  add_dependencies(
+    libcudacxx.test.internal_headers
+    libcudacxx.test.internal_headers.fallback
+  )
+endif()
