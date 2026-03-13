@@ -118,7 +118,18 @@ template <class _Tp>
 {
   if constexpr (is_signed_v<_Tp>)
   {
-    if constexpr (sizeof(_Tp) < sizeof(int32_t))
+    if constexpr (sizeof(_Tp) == sizeof(int8_t))
+    {
+#  if __cccl_ptx_isa >= 920
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, ({
+                     int32_t __result;
+                     asm("sub.sat.s8x4 %0, %1, %2;" : "=r"(__result) : "r"(int32_t{__x}), "r"(int32_t{__y}));
+                     return static_cast<_Tp>(__result);
+                   }))
+#  endif // __cccl_ptx_isa >= 920
+      return ::cuda::std::saturate_cast<_Tp>(int32_t{__x} - int32_t{__y});
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(int16_t))
     {
       return ::cuda::std::saturate_cast<_Tp>(int32_t{__x} - int32_t{__y});
     }
@@ -136,7 +147,21 @@ template <class _Tp>
   }
   else
   {
-    return ::cuda::sub_sat_overflow(__x, __y).value;
+#  if __cccl_ptx_isa >= 920
+    if constexpr (sizeof(_Tp) == sizeof(uint8_t))
+    {
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, ({
+                     uint32_t __result;
+                     asm("sub.sat.u8x4 %0, %1, %2;" : "=r"(__result) : "r"(uint32_t{__x}), "r"(uint32_t{__y}));
+                     return static_cast<_Tp>(__result);
+                   }))
+      return ::cuda::sub_sat_overflow(__x, __y).value;
+    }
+    else
+#  endif // __cccl_ptx_isa >= 920
+    {
+      return ::cuda::sub_sat_overflow(__x, __y).value;
+    }
   }
 }
 #endif // _CCCL_CUDA_COMPILATION()
