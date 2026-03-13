@@ -1,6 +1,6 @@
 ---
 name: libcudacxx-style
-description: Make the code in libcudacxx/include/cuda, cudax/include compliant with the coding style 
+description: Make the code in libcudacxx/include, cudax/include compliant with the coding style 
 ---
 
 # libcudacxx Style
