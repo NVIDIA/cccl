@@ -663,7 +663,7 @@ struct DispatchScan
 
   template <typename PolicyGetter, typename PolicySelectorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  __invoke(PolicyGetter policy_getter, const PolicySelectorT& policy_selector)
+  __invoke(PolicyGetter policy_getter, [[maybe_unused]] const PolicySelectorT& policy_selector)
   {
     CUB_DETAIL_CONSTEXPR_ISH auto active_policy = policy_getter();
 
