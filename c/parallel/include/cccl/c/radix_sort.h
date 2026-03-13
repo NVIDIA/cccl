@@ -42,6 +42,17 @@ typedef struct cccl_device_radix_sort_build_result_t
   CUkernel onesweep_kernel;
   cccl_sort_order_t order;
   void* runtime_policy;
+  size_t runtime_policy_size;
+  // Lowered (mangled) kernel names, heap-allocated, freed by cccl_device_radix_sort_cleanup():
+  char* single_tile_kernel_lowered_name;
+  char* upsweep_kernel_lowered_name;
+  char* alt_upsweep_kernel_lowered_name;
+  char* scan_bins_kernel_lowered_name;
+  char* downsweep_kernel_lowered_name;
+  char* alt_downsweep_kernel_lowered_name;
+  char* histogram_kernel_lowered_name;
+  char* exclusive_sum_kernel_lowered_name;
+  char* onesweep_kernel_lowered_name;
 } cccl_device_radix_sort_build_result_t;
 
 CCCL_C_API CUresult cccl_device_radix_sort_build(

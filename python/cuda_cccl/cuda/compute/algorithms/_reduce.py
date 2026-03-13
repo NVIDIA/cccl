@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from os import PathLike
 from typing import Callable
 
 import numpy as np
@@ -33,6 +34,7 @@ class _Reduce:
         "op_cccl",
         "build_result",
         "device_reduce_fn",
+        "determinism",
     ]
 
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
@@ -43,6 +45,7 @@ class _Reduce:
         op: OpAdapter,
         h_init: np.ndarray | GpuStruct,
         determinism: Determinism,
+        cc=None,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
@@ -59,8 +62,10 @@ class _Reduce:
             self.op_cccl,
             self.h_init_cccl,
             determinism,
+            cc=cc,
         )
 
+        self.determinism = determinism
         match determinism:
             case Determinism.RUN_TO_RUN:
                 self.device_reduce_fn = self.build_result.compute
@@ -79,6 +84,14 @@ class _Reduce:
         h_init: np.ndarray | GpuStruct,
         stream=None,
     ):
+        if self.d_in_cccl is None:
+            self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
+            self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
+            self.h_init_cccl = cccl.to_cccl_value(h_init)
+            value_type = get_value_type(h_init)
+            op_adapter_init = make_op_adapter(op)
+            self.op_cccl = op_adapter_init.compile((value_type, value_type), value_type)
+
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
@@ -108,6 +121,35 @@ class _Reduce:
             stream_handle,
         )
         return temp_storage_bytes
+
+    def save(self, path: str | PathLike) -> None:
+        """Serialize this reducer to a file. Reload with ``cuda.compute.load_algorithm(path)``."""
+        from pathlib import Path as _Path
+
+        from .._binary_format import write_cclb
+
+        data = self.build_result._serialize()
+        cubin = data.pop("cubin")
+        data["determinism"] = int(self.determinism)
+        write_cclb(_Path(path), "reduce", data, cubin)
+
+    @classmethod
+    def _from_serialized(cls, data: dict) -> "_Reduce":
+        """Reconstruct from a flat build dict (as produced by ``_serialize()``
+        with ``determinism`` merged in)."""
+        obj = cls.__new__(cls)
+        build = _bindings.DeviceReduceBuildResult._deserialize(data)
+        obj.build_result = build
+        obj.d_in_cccl = None  # type: ignore[assignment]
+        obj.d_out_cccl = None  # type: ignore[assignment]
+        obj.h_init_cccl = None  # type: ignore[assignment]
+        obj.op_cccl = None  # type: ignore[assignment]
+        obj.determinism = Determinism(data["determinism"])
+        if obj.determinism == Determinism.RUN_TO_RUN:
+            obj.device_reduce_fn = build.compute
+        else:
+            obj.device_reduce_fn = build.compute_nondeterministic
+        return obj
 
 
 @cache_with_registered_key_functions
@@ -146,6 +188,7 @@ def make_reduce_into(
         op_adapter,
         h_init,
         kwargs.get("determinism", Determinism.RUN_TO_RUN),
+        cc=kwargs.get("cc"),
     )
 
 

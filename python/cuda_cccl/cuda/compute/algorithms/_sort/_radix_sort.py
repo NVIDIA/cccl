@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from os import PathLike
+
 from ... import _bindings
 from ... import _cccl_interop as cccl
 from ..._caching import cache_with_registered_key_functions
@@ -36,6 +38,7 @@ class _RadixSort:
         d_in_values: DeviceArrayLike | DoubleBuffer | None,
         d_out_values: DeviceArrayLike | None,
         order: SortOrder,
+        cc=None,
     ):
         d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
             _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
@@ -65,6 +68,7 @@ class _RadixSort:
             self.d_in_values_cccl,
             self.decomposer_op,
             decomposer_return_type,
+            cc=cc,
         )
 
     def __call__(
@@ -82,6 +86,13 @@ class _RadixSort:
         d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
             _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
         )
+
+        if self.d_in_keys_cccl is None:
+            # Lazy init for deserialized objects
+            self.d_in_keys_cccl = cccl.to_cccl_input_iter(d_in_keys_array)
+            self.d_out_keys_cccl = cccl.to_cccl_output_iter(d_out_keys_array)
+            self.d_in_values_cccl = cccl.to_cccl_input_iter(d_in_values_array)
+            self.d_out_values_cccl = cccl.to_cccl_output_iter(d_out_values_array)
 
         set_cccl_iterator_state(self.d_in_keys_cccl, d_in_keys_array)
         if d_in_values_array is not None:
@@ -136,6 +147,34 @@ class _RadixSort:
 
         return temp_storage_bytes
 
+    def save(self, path: str | PathLike) -> None:
+        """Serialize this sorter to a file. Reload with ``cuda.compute.load_algorithm(path)``."""
+        from pathlib import Path as _Path
+
+        from ..._binary_format import write_cclb
+
+        data = self.build_result._serialize()
+        cubin = data.pop("cubin")
+        write_cclb(_Path(path), "radix_sort", data, cubin)
+
+    @classmethod
+    def _from_serialized(cls, data: dict) -> "_RadixSort":
+        """Reconstruct from a flat build dict (as produced by ``_serialize()``)."""
+        obj = cls.__new__(cls)
+        obj.build_result = _bindings.DeviceRadixSortBuildResult._deserialize(data)
+        obj.d_in_keys_cccl = None  # type: ignore[assignment]
+        obj.d_out_keys_cccl = None  # type: ignore[assignment]
+        obj.d_in_values_cccl = None  # type: ignore[assignment]
+        obj.d_out_values_cccl = None  # type: ignore[assignment]
+        obj.decomposer_op = cccl.Op(
+            name="",
+            operator_type=cccl.OpKind.STATELESS,
+            ltoir=b"",
+            state_alignment=1,
+            state=None,
+        )
+        return obj
+
 
 @cache_with_registered_key_functions
 def make_radix_sort(
@@ -144,6 +183,7 @@ def make_radix_sort(
     d_in_values: DeviceArrayLike | DoubleBuffer | None,
     d_out_values: DeviceArrayLike | None,
     order: SortOrder,
+    cc=None,
 ):
     """Implements a device-wide radix sort using ``d_in_keys`` in the requested order.
 
@@ -165,7 +205,7 @@ def make_radix_sort(
     Returns:
         A callable object that can be used to perform the radix sort
     """
-    return _RadixSort(d_in_keys, d_out_keys, d_in_values, d_out_values, order)
+    return _RadixSort(d_in_keys, d_out_keys, d_in_values, d_out_values, order, cc=cc)
 
 
 def radix_sort(

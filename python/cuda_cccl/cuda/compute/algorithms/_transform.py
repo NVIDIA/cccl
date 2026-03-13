@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from os import PathLike
 from typing import Callable
 
 from .. import _bindings
@@ -24,6 +25,7 @@ class _UnaryTransform:
         d_in: DeviceArrayLike | IteratorT,
         d_out: DeviceArrayLike | IteratorT,
         op: OpAdapter,
+        cc=None,
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
@@ -38,6 +40,7 @@ class _UnaryTransform:
             self.d_in_cccl,
             self.d_out_cccl,
             self.op_cccl,
+            cc=cc,
         )
 
     def __call__(
@@ -48,6 +51,15 @@ class _UnaryTransform:
         num_items: int,
         stream=None,
     ):
+        if self.d_in_cccl is None:
+            # Lazy init for deserialized objects
+            self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
+            self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
+            in_type = cccl.get_value_type(d_in)
+            out_type = cccl.get_value_type(d_out)
+            op_adapter_init = make_op_adapter(op)
+            self.op_cccl = op_adapter_init.compile((in_type,), out_type)
+
         op_adapter = make_op_adapter(op)
 
         set_cccl_iterator_state(self.d_in_cccl, d_in)
@@ -63,6 +75,26 @@ class _UnaryTransform:
             stream_handle,
         )
         return None
+
+    def save(self, path: str | PathLike) -> None:
+        """Serialize this transformer to a file. Reload with ``cuda.compute.load_algorithm(path)``."""
+        from pathlib import Path as _Path
+
+        from .._binary_format import write_cclb
+
+        data = self.build_result._serialize()
+        cubin = data.pop("cubin")
+        write_cclb(_Path(path), "unary_transform", data, cubin)
+
+    @classmethod
+    def _from_serialized(cls, data: dict) -> "_UnaryTransform":
+        """Reconstruct from a flat build dict (as produced by ``_serialize()``)."""
+        obj = cls.__new__(cls)
+        obj.build_result = _bindings.DeviceUnaryTransform._deserialize(data)
+        obj.d_in_cccl = None  # type: ignore[assignment]
+        obj.d_out_cccl = None  # type: ignore[assignment]
+        obj.op_cccl = None  # type: ignore[assignment]
+        return obj
 
 
 class _BinaryTransform:
@@ -80,6 +112,7 @@ class _BinaryTransform:
         d_in2: DeviceArrayLike | IteratorT,
         d_out: DeviceArrayLike | IteratorT,
         op: OpAdapter,
+        cc=None,
     ):
         self.d_in1_cccl = cccl.to_cccl_input_iter(d_in1)
         self.d_in2_cccl = cccl.to_cccl_input_iter(d_in2)
@@ -97,6 +130,7 @@ class _BinaryTransform:
             self.d_in2_cccl,
             self.d_out_cccl,
             self.op_cccl,
+            cc=cc,
         )
 
     def __call__(
@@ -108,6 +142,17 @@ class _BinaryTransform:
         num_items: int,
         stream=None,
     ):
+        if self.d_in1_cccl is None:
+            # Lazy init for deserialized objects
+            self.d_in1_cccl = cccl.to_cccl_input_iter(d_in1)
+            self.d_in2_cccl = cccl.to_cccl_input_iter(d_in2)
+            self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
+            in1_type = cccl.get_value_type(d_in1)
+            in2_type = cccl.get_value_type(d_in2)
+            out_type = cccl.get_value_type(d_out)
+            op_adapter_init = make_op_adapter(op)
+            self.op_cccl = op_adapter_init.compile((in1_type, in2_type), out_type)
+
         set_cccl_iterator_state(self.d_in1_cccl, d_in1)
         set_cccl_iterator_state(self.d_in2_cccl, d_in2)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
@@ -126,12 +171,34 @@ class _BinaryTransform:
         )
         return None
 
+    def save(self, path: str | PathLike) -> None:
+        """Serialize this transformer to a file. Reload with ``cuda.compute.load_algorithm(path)``."""
+        from pathlib import Path as _Path
+
+        from .._binary_format import write_cclb
+
+        data = self.build_result._serialize()
+        cubin = data.pop("cubin")
+        write_cclb(_Path(path), "binary_transform", data, cubin)
+
+    @classmethod
+    def _from_serialized(cls, data: dict) -> "_BinaryTransform":
+        """Reconstruct from a flat build dict (as produced by ``_serialize()``)."""
+        obj = cls.__new__(cls)
+        obj.build_result = _bindings.DeviceBinaryTransform._deserialize(data)
+        obj.d_in1_cccl = None  # type: ignore[assignment]
+        obj.d_in2_cccl = None  # type: ignore[assignment]
+        obj.d_out_cccl = None  # type: ignore[assignment]
+        obj.op_cccl = None  # type: ignore[assignment]
+        return obj
+
 
 @cache_with_registered_key_functions
 def make_unary_transform(
     d_in: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
     op: Operator,
+    cc=None,
 ):
     """
     Create a unary transform object that can be called to apply a transformation
@@ -157,7 +224,7 @@ def make_unary_transform(
         A callable object that performs the transformation.
     """
     op_adapter = make_op_adapter(op)
-    return _UnaryTransform(d_in, d_out, op_adapter)
+    return _UnaryTransform(d_in, d_out, op_adapter, cc=cc)
 
 
 @cache_with_registered_key_functions
@@ -166,6 +233,7 @@ def make_binary_transform(
     d_in2: DeviceArrayLike | IteratorT,
     d_out: DeviceArrayLike | IteratorT,
     op: Operator,
+    cc=None,
 ):
     """
     Create a binary transform object that can be called to apply a transformation
@@ -192,7 +260,7 @@ def make_binary_transform(
         A callable object that performs the transformation.
     """
     op_adapter = make_op_adapter(op)
-    return _BinaryTransform(d_in1, d_in2, d_out, op_adapter)
+    return _BinaryTransform(d_in1, d_in2, d_out, op_adapter, cc=cc)
 
 
 def unary_transform(

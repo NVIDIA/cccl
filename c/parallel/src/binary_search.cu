@@ -16,6 +16,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "util/cubin_loader.h"
 #include <cccl/c/binary_search.h>
 #include <cccl/c/types.h>
 #include <for/for_op_helper.h>
@@ -241,12 +242,12 @@ void binary_search_kernel({1} d_data, OffsetT num_data, {3} d_values, OffsetT nu
       ->add_link_list(linkable_list)
       ->finalize_program();
 
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(cuLibraryGetKernel(&build_ptr->kernel, build_ptr->library, lowered_name.c_str()));
+  cccl_try_load_for_device(&build_ptr->library, result.data.get(), &build_ptr->kernel, lowered_name.c_str());
 
-  build_ptr->cc         = cc;
-  build_ptr->cubin      = (void*) result.data.release();
-  build_ptr->cubin_size = result.size;
+  build_ptr->cc                  = cc;
+  build_ptr->cubin               = (void*) result.data.release();
+  build_ptr->cubin_size          = result.size;
+  build_ptr->kernel_lowered_name = strdup(lowered_name.c_str());
 
   return CUDA_SUCCESS;
 }
@@ -328,7 +329,11 @@ try
   }
 
   std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-  check(cuLibraryUnload(build_ptr->library));
+  std::free(build_ptr->kernel_lowered_name);
+  if (build_ptr->library != nullptr)
+  {
+    check(cuLibraryUnload(build_ptr->library));
+  }
 
   return CUDA_SUCCESS;
 }
