@@ -36,27 +36,28 @@ namespace cuda::experimental::stf
 /** @brief Contiguous memory interface. Supports multiple dimensions (compile-time chosen) and strides (run-time
  * chosen).
  */
-template <typename T, size_t dimensions = 1>
-class slice_stream_interface : public stream_data_interface<slice<T, dimensions>>
+template <typename T, typename... P>
+class mdspan_stream_interface : public stream_data_interface<mdspan<T, P...>>
 {
 public:
-  using base = stream_data_interface<slice<T, dimensions>>;
+  static constexpr size_t dimensions = mdspan<T, P...>::rank();
+  using base                         = stream_data_interface<mdspan<T, P...>>;
   using typename base::element_type;
   using typename base::shape_t;
 
   using mutable_value_type = typename ::std::remove_const<T>::type;
 
-  slice_stream_interface(T* p)
-      : base(slice<T, dimensions>(p))
+  mdspan_stream_interface(T* p)
+      : base(mdspan<T, P...>{p})
   {
     static_assert(dimensions == 0, "This constructor is reserved for 0-dimensional data.");
   }
 
-  slice_stream_interface(slice<T, dimensions> s)
-      : base(mv(s))
+  mdspan_stream_interface(mdspan<T, P...> m)
+      : base(mv(m))
   {}
 
-  slice_stream_interface(shape_t s)
+  mdspan_stream_interface(shape_t s)
       : base(mv(s))
   {}
 
@@ -296,6 +297,6 @@ struct streamed_interface_of;
 template <typename T, typename... P>
 struct streamed_interface_of<mdspan<T, P...>>
 {
-  using type = slice_stream_interface<T, mdspan<T, P...>::rank()>;
+  using type = mdspan_stream_interface<T, P...>;
 };
 } // namespace cuda::experimental::stf
