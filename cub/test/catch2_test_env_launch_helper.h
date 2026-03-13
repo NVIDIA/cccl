@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <cub/util_device.cuh>
+
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/std/optional>
@@ -148,6 +150,51 @@ struct stream_registry_factory_t
 
     // Get max grid dimension
     return cudaDeviceGetAttribute(&max_grid_dim_x, cudaDevAttrMaxGridDimX, device_ordinal);
+  }
+
+  CUB_RUNTIME_FUNCTION cudaError_t MemsetAsync(void* dst, unsigned char value, size_t num_bytes, cudaStream_t stream)
+  {
+    return cudaMemsetAsync(dst, value, num_bytes, stream);
+  }
+
+  CUB_RUNTIME_FUNCTION cudaError_t
+  MemcpyAsync(void* dst, const void* src, size_t num_bytes, cudaMemcpyKind kind, cudaStream_t stream)
+  {
+    return cudaMemcpyAsync(dst, src, num_bytes, kind, stream);
+  }
+
+  CUB_RUNTIME_FUNCTION cudaError_t MaxSharedMemory(int& max_shared_memory) const
+  {
+    int device = 0;
+    auto error = cudaGetDevice(&device);
+    if (error != cudaSuccess)
+    {
+      return error;
+    }
+
+    return cudaDeviceGetAttribute(&max_shared_memory, cudaDevAttrMaxSharedMemoryPerBlock, device);
+  }
+
+  template <typename Kernel>
+  CUB_RUNTIME_FUNCTION cudaError_t max_dynamic_smem_size_for(int& max_dynamic_smem_size, Kernel kernel_ptr)
+  {
+    NV_IF_ELSE_TARGET(NV_IS_HOST, //
+                      ({ return cub::MaxPotentialDynamicSmemBytes(max_dynamic_smem_size, kernel_ptr); }),
+                      ({
+                        cudaFuncAttributes func_attrs{};
+                        if (const auto error = cudaFuncGetAttributes(&func_attrs, kernel_ptr))
+                        {
+                          return error;
+                        }
+                        max_dynamic_smem_size = func_attrs.maxDynamicSharedSizeBytes;
+                        return cudaSuccess;
+                      }))
+  }
+
+  template <typename Kernel>
+  CUB_RUNTIME_FUNCTION cudaError_t set_max_dynamic_smem_size_for(Kernel kernel_ptr, int smem_size)
+  {
+    return cudaFuncSetAttribute(kernel_ptr, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size);
   }
 };
 
