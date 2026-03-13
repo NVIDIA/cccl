@@ -110,8 +110,8 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
   }
   if (__tensor_size == 1)
   {
-    const auto __src_ptr = __src.data_handle();
-    const auto __dst_ptr = __dst.data_handle();
+    auto __src_ptr = __src.data_handle();
+    auto __dst_ptr = __dst.data_handle();
     if constexpr (::cuda::__is_layout_stride_relaxed_v<_LayoutPolicyIn>)
     {
       __src_ptr += __src.mapping().offset();

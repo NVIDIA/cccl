@@ -165,10 +165,7 @@ void test_copy_offset(
 
 template <typename T, size_t Rank>
 void test_copy_offset(
-  int alloc,
-  int offset,
-  const cuda::std::array<int, Rank>& shape,
-  const cuda::std::array<int, Rank>& strides)
+  int alloc, int offset, const cuda::std::array<int, Rank>& shape, const cuda::std::array<int, Rank>& strides)
 {
   test_copy_offset<T>(alloc, offset, shape, strides, alloc, offset, strides);
 }
