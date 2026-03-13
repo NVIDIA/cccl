@@ -500,18 +500,37 @@ struct DispatchScan
     // TODO(bgruber): we probably need to ensure alignment of d_temp_storage
     _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, kernel_source.look_ahead_tile_state_alignment()), "");
 
-    auto scan_kernel                               = kernel_source.ScanKernel();
-    CUB_DETAIL_CONSTEXPR_ISH int smem_size_1_stage = detail::scan::smem_for_stages(
-      warpspeed_policy,
-      1,
-      policy_selector.input_value_size,
-      policy_selector.input_value_alignment,
-      policy_selector.output_value_size,
-      policy_selector.output_value_alignment,
-      policy_selector.accum_size,
-      policy_selector.accum_alignment);
-    CUB_DETAIL_STATIC_ISH_ASSERT(smem_size_1_stage <= detail::max_smem_per_block,
-                                 "Single-stage warpspeed scan exceeds architecture independent SMEM (48KiB)");
+    using selector_smem_info_t = detail::scan::selector_smem_info<PolicySelectorT>;
+
+    auto scan_kernel      = kernel_source.ScanKernel();
+    int smem_size_1_stage = 0;
+    if constexpr (selector_smem_info_t::has_static_layout)
+    {
+      CUB_DETAIL_CONSTEXPR_ISH int static_smem_size_1_stage = detail::scan::smem_for_stages(
+        warpspeed_policy,
+        1,
+        selector_smem_info_t::input_value_size,
+        selector_smem_info_t::input_value_alignment,
+        selector_smem_info_t::output_value_size,
+        selector_smem_info_t::output_value_alignment,
+        selector_smem_info_t::accum_size,
+        selector_smem_info_t::accum_alignment);
+      CUB_DETAIL_STATIC_ISH_ASSERT(static_smem_size_1_stage <= detail::max_smem_per_block,
+                                   "Single-stage warpspeed scan exceeds architecture independent SMEM (48KiB)");
+      smem_size_1_stage = static_smem_size_1_stage;
+    }
+    else
+    {
+      smem_size_1_stage = detail::scan::smem_for_stages(
+        warpspeed_policy,
+        1,
+        policy_selector.input_value_size,
+        policy_selector.input_value_alignment,
+        policy_selector.output_value_size,
+        policy_selector.output_value_alignment,
+        policy_selector.accum_size,
+        policy_selector.accum_alignment);
+    }
 
     int num_stages = 1;
     int smem_size  = smem_size_1_stage;
@@ -526,15 +545,32 @@ struct DispatchScan
 
                    while (num_stages <= max_stages_for_even_workload)
                    {
-                     const auto next_smem_size = detail::scan::smem_for_stages(
-                       warpspeed_policy,
-                       num_stages + 1,
-                       policy_selector.input_value_size,
-                       policy_selector.input_value_alignment,
-                       policy_selector.output_value_size,
-                       policy_selector.output_value_alignment,
-                       policy_selector.accum_size,
-                       policy_selector.accum_alignment);
+                     const auto next_smem_size = [&] {
+                       if constexpr (selector_smem_info_t::has_static_layout)
+                       {
+                         return detail::scan::smem_for_stages(
+                           warpspeed_policy,
+                           num_stages + 1,
+                           selector_smem_info_t::input_value_size,
+                           selector_smem_info_t::input_value_alignment,
+                           selector_smem_info_t::output_value_size,
+                           selector_smem_info_t::output_value_alignment,
+                           selector_smem_info_t::accum_size,
+                           selector_smem_info_t::accum_alignment);
+                       }
+                       else
+                       {
+                         return detail::scan::smem_for_stages(
+                           warpspeed_policy,
+                           num_stages + 1,
+                           policy_selector.input_value_size,
+                           policy_selector.input_value_alignment,
+                           policy_selector.output_value_size,
+                           policy_selector.output_value_alignment,
+                           policy_selector.accum_size,
+                           policy_selector.accum_alignment);
+                       }
+                     }();
                      if (next_smem_size > max_dynamic_smem_size)
                      {
                        // This number of stages failed, so stay at the current settings

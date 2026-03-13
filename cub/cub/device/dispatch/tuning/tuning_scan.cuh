@@ -1339,6 +1339,30 @@ struct policy_selector_from_types
     return policies(arch);
   }
 };
+
+template <typename PolicySelectorT, typename = void>
+struct selector_smem_info
+{
+  static constexpr bool has_static_layout = false;
+};
+
+template <typename PolicySelectorT>
+struct selector_smem_info<PolicySelectorT,
+                          ::cuda::std::void_t<decltype(PolicySelectorT::input_value_size),
+                                              decltype(PolicySelectorT::input_value_alignment),
+                                              decltype(PolicySelectorT::output_value_size),
+                                              decltype(PolicySelectorT::output_value_alignment),
+                                              decltype(PolicySelectorT::accum_size),
+                                              decltype(PolicySelectorT::accum_alignment)>>
+{
+  static constexpr bool has_static_layout     = true;
+  static constexpr int input_value_size       = PolicySelectorT::input_value_size;
+  static constexpr int input_value_alignment  = PolicySelectorT::input_value_alignment;
+  static constexpr int output_value_size      = PolicySelectorT::output_value_size;
+  static constexpr int output_value_alignment = PolicySelectorT::output_value_alignment;
+  static constexpr int accum_size             = PolicySelectorT::accum_size;
+  static constexpr int accum_alignment        = PolicySelectorT::accum_alignment;
+};
 } // namespace detail::scan
 
 CUB_NAMESPACE_END
