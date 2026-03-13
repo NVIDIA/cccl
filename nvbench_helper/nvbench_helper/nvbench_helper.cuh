@@ -31,7 +31,8 @@ NVBENCH_DECLARE_TYPE_STRINGS(int128_t, "I128", "int128_t");
 NVBENCH_DECLARE_TYPE_STRINGS(uint128_t, "U128", "uint128_t");
 #endif
 
-using complex = cuda::std::complex<float>;
+using complex32 = cuda::std::complex<float>;
+using complex64 = cuda::std::complex<double>;
 
 #if _CCCL_HAS_NVFP16()
 NVBENCH_DECLARE_TYPE_STRINGS(__half, "F16", "half");
@@ -41,8 +42,8 @@ NVBENCH_DECLARE_TYPE_STRINGS(cuda::std::complex<__half>, "C16", "complex_half");
 NVBENCH_DECLARE_TYPE_STRINGS(__nv_bfloat16, "BF16", "bfloat16");
 NVBENCH_DECLARE_TYPE_STRINGS(cuda::std::complex<__nv_bfloat16>, "CB16", "complex_bfloat16");
 #endif
-NVBENCH_DECLARE_TYPE_STRINGS(complex, "C32", "complex32");
-NVBENCH_DECLARE_TYPE_STRINGS(cuda::std::complex<double>, "C64", "complex64");
+NVBENCH_DECLARE_TYPE_STRINGS(complex32, "C32", "complex32");
+NVBENCH_DECLARE_TYPE_STRINGS(complex64, "C64", "complex64");
 
 NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::false_type, "false", "false_type");
 NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::true_type, "true", "true_type");
@@ -113,7 +114,7 @@ using all_types =
 #  endif
                      float,
                      double,
-                     complex>;
+                     complex32>;
 #endif
 
 template <class T>
@@ -302,12 +303,13 @@ struct vector_generator_t<void> : generator_base_t
 
   // This overload is needed because numeric limits is not specialized for complex, making
   // the min and max values for complex equal zero.
-  operator thrust::device_vector<complex>()
+  template <typename T>
+  operator thrust::device_vector<::cuda::std::complex<T>>()
   {
-    const complex min = complex{
-      ::cuda::std::numeric_limits<complex::value_type>::min(), ::cuda::std::numeric_limits<complex::value_type>::min()};
-    const complex max = complex{
-      ::cuda::std::numeric_limits<complex::value_type>::max(), ::cuda::std::numeric_limits<complex::value_type>::max()};
+    const auto min =
+      ::cuda::std::complex<T>{::cuda::std::numeric_limits<T>::min(), ::cuda::std::numeric_limits<T>::min()};
+    const auto max =
+      ::cuda::std::complex<T>{::cuda::std::numeric_limits<T>::max(), ::cuda::std::numeric_limits<T>::max()};
 
     return generator_base_t::generate(min, max);
   }
@@ -457,7 +459,9 @@ struct less_t
     return lhs < rhs;
   }
 
-  __host__ __device__ inline bool operator()(const complex& lhs, const complex& rhs) const
+  template <typename T>
+  __host__ __device__ inline bool
+  operator()(const ::cuda::std::complex<T>& lhs, const ::cuda::std::complex<T>& rhs) const
   {
     double magnitude_0 = cuda::std::abs(lhs);
     double magnitude_1 = cuda::std::abs(rhs);
@@ -478,20 +482,20 @@ struct less_t
       // std::abs(z) == inf;
       // ```
       // Dividing both components by a constant before computing the magnitude prevents overflow.
-      const complex::value_type scaler = 0.5;
+      const T scaler = 0.5;
 
       magnitude_0 = cuda::std::abs(lhs * scaler);
       magnitude_1 = cuda::std::abs(rhs * scaler);
     }
 
-    const complex::value_type difference = cuda::std::abs(magnitude_0 - magnitude_1);
-    const complex::value_type threshold  = ::cuda::std::numeric_limits<complex::value_type>::epsilon() * 2;
+    const T difference = cuda::std::abs(magnitude_0 - magnitude_1);
+    const T threshold  = ::cuda::std::numeric_limits<T>::epsilon() * 2;
 
     if (difference < threshold)
     {
       // Triangles with the same magnitude are sorted by their phase angle.
-      const complex::value_type phase_angle_0 = cuda::std::arg(lhs);
-      const complex::value_type phase_angle_1 = cuda::std::arg(rhs);
+      const T phase_angle_0 = cuda::std::arg(lhs);
+      const T phase_angle_1 = cuda::std::arg(rhs);
 
       return phase_angle_0 < phase_angle_1;
     }

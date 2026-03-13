@@ -44,6 +44,7 @@
 #include <cuda/std/__ranges/enable_view.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/integral_constant_like.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_convertible.h>
@@ -90,17 +91,6 @@ _CCCL_CONCEPT __span_compatible_sentinel_for = _CCCL_REQUIRES_EXPR((_Sentinel, _
   ( //
     requires(sized_sentinel_for<_Sentinel, _It>), //
     requires(!is_convertible_v<_Sentinel, size_t>) //
-  );
-
-template <class _Tp>
-_CCCL_CONCEPT __integral_constant_like = _CCCL_REQUIRES_EXPR((_Tp)) //
-  ( //
-    requires(is_integral_v<decltype(_Tp::value)>), //
-    requires(!is_same_v<bool, remove_const_t<decltype(_Tp::value)>>), //
-    requires(convertible_to<_Tp, decltype(_Tp::value)>), //
-    requires(equality_comparable_with<_Tp, decltype(_Tp::value)>), //
-    requires(_Tp() == _Tp::value), //
-    requires(static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value) //
   );
 
 template <class _Tp, bool = __integral_constant_like<_Tp>>
@@ -208,14 +198,16 @@ public:
   template <size_t _Count>
   _CCCL_API constexpr span<element_type, _Count> first() const noexcept
   {
-    static_assert(_Count <= _Extent, "span<T, N>::first<Count>(): Count out of range");
+    // ternary avoids "pointless comparison of unsigned integer with zero" warning
+    static_assert(_Count == 0 ? true : _Count <= _Extent, "span<T, N>::first<Count>(): Count out of range");
     return span<element_type, _Count>{data(), _Count};
   }
 
   template <size_t _Count>
   _CCCL_API constexpr span<element_type, _Count> last() const noexcept
   {
-    static_assert(_Count <= _Extent, "span<T, N>::last<Count>(): Count out of range");
+    // ternary avoids "pointless comparison of unsigned integer with zero" warning
+    static_assert(_Count == 0 ? true : _Count <= _Extent, "span<T, N>::last<Count>(): Count out of range");
     return span<element_type, _Count>{data() + size() - _Count, _Count};
   }
 
@@ -237,8 +229,10 @@ public:
   template <size_t _Offset, size_t _Count = dynamic_extent>
   _CCCL_API constexpr __subspan_t<_Offset, _Count> subspan() const noexcept
   {
-    static_assert(_Offset <= _Extent, "span<T, N>::subspan<Offset, Count>(): Offset out of range");
-    static_assert(_Count == dynamic_extent || _Count <= _Extent - _Offset,
+    // ternary avoids "pointless comparison of unsigned integer with zero" warning
+    static_assert(_Offset == 0 ? true : _Offset <= _Extent,
+                  "span<T, N>::subspan<Offset, Count>(): Offset out of range");
+    static_assert(_Count == dynamic_extent || (_Count == 0 ? true : _Count <= _Extent - _Offset),
                   "span<T, N>::subspan<Offset, Count>(): Offset + Count out of range");
     return __subspan_t<_Offset, _Count>{data() + _Offset, _Count == dynamic_extent ? size() - _Offset : _Count};
   }
@@ -456,7 +450,7 @@ public:
   {
     // ternary avoids "pointless comparison of unsigned integer with zero" warning
     _CCCL_ASSERT(_Offset == 0 ? true : _Offset <= size(), "span<T>::subspan<Offset, Count>(): Offset out of range");
-    _CCCL_ASSERT(_Count == dynamic_extent || _Count == 0 ? true : _Count <= size() - _Offset,
+    _CCCL_ASSERT(_Count == dynamic_extent || (_Count == 0 ? true : _Count <= size() - _Offset),
                  "span<T>::subspan<Offset, Count>(): Offset + Count out of range");
     return __subspan_t<_Offset, _Count>{data() + _Offset, _Count == dynamic_extent ? size() - _Offset : _Count};
   }
