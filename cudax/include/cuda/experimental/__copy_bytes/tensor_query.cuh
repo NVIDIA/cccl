@@ -109,6 +109,18 @@ template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank
     });
 }
 
+// lambdas are painful without --extended-lambda and when used with __host__ __device__ functions
+struct __mode_compare
+{
+  template <typename _ExtentT, typename _StrideT>
+  [[nodiscard]] _CCCL_API bool operator()(const ::cuda::std::tuple<_ExtentT, _StrideT>& __lhs,
+                                          const ::cuda::std::tuple<_ExtentT, _StrideT>& __rhs) const noexcept
+  {
+    return ::cuda::experimental::__abs_integer(::cuda::std::get<1>(__lhs))
+         < ::cuda::experimental::__abs_integer(::cuda::std::get<1>(__rhs));
+  }
+};
+
 //! @brief Reorders tensor modes by ascending absolute stride.
 //!
 //! After sorting, mode 0 has the smallest absolute stride (innermost) and mode rank-1 has the largest (outermost).
@@ -119,20 +131,16 @@ template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_
 [[nodiscard]] _CCCL_HOST_API constexpr __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>
 __sort_by_stride(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
 {
-  namespace cudax           = ::cuda::experimental;
-  using __raw_tensor_t      = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
-  using __unsigned_extent_t = typename __raw_tensor_t::__unsigned_extent_t;
-  using __rank_t            = typename __raw_tensor_t::__rank_t;
-  using __mode_t            = ::cuda::std::tuple<__unsigned_extent_t, _StrideT>;
-  const auto __rank         = __tensor.__rank;
+  using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
+  using __rank_t       = typename __raw_tensor_t::__rank_t;
+  using __mode_t       = ::cuda::std::tuple<_ExtentT, _StrideT>;
+  const auto __rank    = __tensor.__rank;
   ::cuda::std::array<__mode_t, _MaxRank> __modes{};
   for (__rank_t __i = 0; __i < __rank; ++__i)
   {
     __modes[__i] = {__tensor.__extents[__i], __tensor.__strides[__i]};
   }
-  ::cuda::std::stable_sort(__modes.begin(), __modes.begin() + __rank, [](const __mode_t& __lhs, const __mode_t& __rhs) {
-    return cudax::__abs_integer(::cuda::std::get<1>(__lhs)) < cudax::__abs_integer(::cuda::std::get<1>(__rhs));
-  });
+  ::cuda::std::stable_sort(__modes.begin(), __modes.begin() + __rank, __mode_compare{});
   __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank> __result{__tensor.__data, __rank};
   for (__rank_t __i = 0; __i < __rank; ++__i)
   {

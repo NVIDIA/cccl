@@ -42,18 +42,16 @@ namespace cuda::experimental
 template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
 struct __tile_iterator_linearized
 {
-  using __unsigned_extent_t = typename __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>::__unsigned_extent_t;
-
   const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank> __tensor_;
-  ::cuda::std::array<__unsigned_extent_t, _MaxRank> __extent_products_;
-  const __unsigned_extent_t __contiguous_size_;
+  ::cuda::std::array<_ExtentT, _MaxRank> __extent_products_;
+  const _ExtentT __contiguous_size_;
 
   //! @brief Constructs the iterator from a raw tensor and contiguous tile size.
   //!
   //! @param[in] __tensor          Raw tensor descriptor
   //! @param[in] __contiguous_size Number of contiguous elements per tile
   _CCCL_HOST_API explicit __tile_iterator_linearized(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor,
-                                                     __unsigned_extent_t __contiguous_size) noexcept
+                                                     _ExtentT __contiguous_size) noexcept
       : __tensor_{__tensor}
       , __extent_products_{}
       , __contiguous_size_{__contiguous_size}
@@ -64,7 +62,7 @@ struct __tile_iterator_linearized
       __tensor.__extents.data(),
       __tensor.__extents.data() + __tensor.__rank,
       __extent_products_.data(),
-      __unsigned_extent_t{1},
+      _ExtentT{1},
       ::cuda::std::multiplies<>{});
   }
 
@@ -72,8 +70,9 @@ struct __tile_iterator_linearized
   //!
   //! @param[in] __tile_idx linear tile index
   //! @return Pointer into the tensor at the computed multi-dimensional offset
-  [[nodiscard]] _CCCL_HOST_API _Tp* operator()(__unsigned_extent_t __tile_idx) const noexcept
+  [[nodiscard]] _CCCL_HOST_API _Tp* operator()(_ExtentT __tile_idx) const noexcept
   {
+    using __uextent_t     = ::cuda::std::make_unsigned_t<_ExtentT>;
     const auto __index    = __tile_idx * __contiguous_size_;
     const auto& __extents = __tensor_.__extents;
     const auto& __strides = __tensor_.__strides;
@@ -81,10 +80,12 @@ struct __tile_iterator_linearized
     {
       return __tensor_.__data + __index * __strides[0];
     }
-    _StrideT __offset = (__index % __extents[0]) * __strides[0]; // __extent_products_[0] == 1
+    const auto __extent0 = static_cast<__uextent_t>(__extents[0]);
+    _StrideT __offset    = (__index % __extent0) * __strides[0]; // __extent_products_[0] == 1
     for (::cuda::std::size_t __i = 1; __i < __tensor_.__rank; ++__i)
     {
-      const auto __coord = static_cast<_StrideT>((__index / __extent_products_[__i]) % __extents[__i]);
+      const auto __extent_product = static_cast<__uextent_t>(__extent_products_[__i]);
+      const auto __coord          = static_cast<_StrideT>((__index / __extent_product) % __extents[__i]);
       __offset += __coord * __strides[__i];
     }
     return __tensor_.__data + __offset;

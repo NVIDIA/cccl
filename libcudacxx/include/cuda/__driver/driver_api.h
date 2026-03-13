@@ -23,6 +23,7 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
@@ -578,11 +579,8 @@ template <::CUpointer_attribute _Attr>
 [[nodiscard]] _CCCL_HOST_API __pointer_attribute_value_type_t<_Attr> __pointerGetAttribute(const void* __ptr)
 {
   __pointer_attribute_value_type_t<_Attr> __result;
-  const auto __status = ::cuda::__driver::__pointerGetAttributeNoThrow<_Attr>(__result, __ptr);
-  if (__status != ::cudaSuccess)
-  {
-    _CCCL_THROW(::cuda::cuda_error, __status, "Failed to get attribute of a pointer");
-  }
+  _CCCL_TRY_CUDA_API(
+    ::cuda::__driver::__pointerGetAttributeNoThrow<_Attr>, "Failed to get attribute of a pointer", __result, __ptr);
   return __result;
 }
 

@@ -25,7 +25,6 @@
 
 #  include <cuda/std/__algorithm/stable_sort.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__type_traits/make_unsigned.h>
 #  include <cuda/std/array>
 #  include <cuda/std/tuple>
 
@@ -58,6 +57,24 @@ __reverse_modes(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __input) 
   return __result;
 }
 
+// lambdas are painful without --extended-lambda and when used with __host__ __device__ functions
+struct __mode_compare_paired
+{
+  template <typename _ExtentT, typename _StrideT>
+  [[nodiscard]] _CCCL_API bool operator()(const ::cuda::std::tuple<_ExtentT, _StrideT, _StrideT>& __lhs,
+                                          const ::cuda::std::tuple<_ExtentT, _StrideT, _StrideT>& __rhs) const noexcept
+  {
+    namespace cudax      = ::cuda::experimental;
+    const auto __src_lhs = ::cuda::std::get<1>(__lhs);
+    const auto __src_rhs = ::cuda::std::get<1>(__rhs);
+    const auto __dst_lhs = ::cuda::std::get<2>(__lhs);
+    const auto __dst_rhs = ::cuda::std::get<2>(__rhs);
+    return cudax::__abs_integer(__src_lhs) < cudax::__abs_integer(__src_rhs)
+        || (cudax::__abs_integer(__src_lhs) == cudax::__abs_integer(__src_rhs)
+            && cudax::__abs_integer(__dst_lhs) < cudax::__abs_integer(__dst_rhs));
+  }
+};
+
 //! @brief Sorts a source/destination tensor pair by ascending absolute destination stride.
 //!
 //! Both tensors are reordered in lockstep so that corresponding modes remain paired.
@@ -70,27 +87,18 @@ template <typename _ExtentT, typename _StrideT, typename _TpSrc, typename _TpDst
 _CCCL_HOST_API void __sort_by_stride_paired(__raw_tensor<_ExtentT, _StrideT, _TpSrc, _MaxRank>& __src,
                                             __raw_tensor<_ExtentT, _StrideT, _TpDst, _MaxRank>& __dst) noexcept
 {
-  namespace cudax           = ::cuda::experimental;
-  using __raw_tensor_t      = __raw_tensor<_ExtentT, _StrideT, _TpSrc, _MaxRank>;
-  using __unsigned_extent_t = typename __raw_tensor_t::__unsigned_extent_t;
-  using __rank_t            = typename __raw_tensor_t::__rank_t;
-  using __mode_t            = ::cuda::std::tuple<__unsigned_extent_t, _StrideT, _StrideT>;
-  const auto __rank         = __src.__rank;
+  namespace cudax      = ::cuda::experimental;
+  using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _TpSrc, _MaxRank>;
+  using __rank_t       = typename __raw_tensor_t::__rank_t;
+  using __mode_t       = ::cuda::std::tuple<_ExtentT, _StrideT, _StrideT>;
+  const auto __rank    = __src.__rank;
   _CCCL_ASSERT(cudax::__same_extents(__src, __dst), "Source and destination tensors must have the same extents");
   ::cuda::std::array<__mode_t, _MaxRank> __modes{};
   for (__rank_t __i = 0; __i < __rank; ++__i)
   {
     __modes[__i] = {__src.__extents[__i], __src.__strides[__i], __dst.__strides[__i]};
   }
-  ::cuda::std::stable_sort(__modes.begin(), __modes.begin() + __rank, [](const __mode_t& __lhs, const __mode_t& __rhs) {
-    const auto __src_lhs = ::cuda::std::get<1>(__lhs);
-    const auto __src_rhs = ::cuda::std::get<1>(__rhs);
-    const auto __dst_lhs = ::cuda::std::get<2>(__lhs);
-    const auto __dst_rhs = ::cuda::std::get<2>(__rhs);
-    return cudax::__abs_integer(__src_lhs) < cudax::__abs_integer(__src_rhs)
-        || (cudax::__abs_integer(__src_lhs) == cudax::__abs_integer(__src_rhs)
-            && cudax::__abs_integer(__dst_lhs) < cudax::__abs_integer(__dst_rhs));
-  });
+  ::cuda::std::stable_sort(__modes.begin(), __modes.begin() + __rank, __mode_compare_paired{});
   for (__rank_t __i = 0; __i < __rank; ++__i)
   {
     ::cuda::std::tie(__src.__extents[__i], __src.__strides[__i], __dst.__strides[__i]) = __modes[__i];
