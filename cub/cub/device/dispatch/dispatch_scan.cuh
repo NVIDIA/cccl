@@ -661,6 +661,10 @@ struct DispatchScan
   }
 #endif // __cccl_ptx_isa >= 860
 
+  // On Windows, the `if CUB_DETAIL_CONSTEXPR_ISH` results in `warning C4702: unreachable code`.
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4702)
+
   template <typename PolicyGetter, typename PolicySelectorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   __invoke(PolicyGetter policy_getter, [[maybe_unused]] const PolicySelectorT& policy_selector)
@@ -808,6 +812,8 @@ struct DispatchScan
 
     return cudaSuccess;
   }
+
+  _CCCL_DIAG_POP
 
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT = {})
