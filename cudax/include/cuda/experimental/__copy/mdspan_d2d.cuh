@@ -170,7 +170,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
           ::cuda::std::min({__src_alignment, __dst_alignment, __max_gpu_arch_vector_size});
 
         const auto __op = [&](const auto& __src, const auto& __dst) {
-          ::cuda::experimental::__launch_copy_contiguous_kernel(__src, __dst);
+          ::cuda::experimental::__launch_copy_contiguous_kernel(__src, __dst, __stream);
         };
         cudax::__dispatch_by_vector_size(__src_normalized, __dst_normalized, __vector_size_bytes, __op);
       }
@@ -190,7 +190,13 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     // (4) fallback case
     else
     {
-      cudax::__copy_optimized(__src_normalized, __dst_normalized, __stream, __src.accessor(), __dst.accessor());
+      cudax::__copy_optimized(
+        __src_normalized,
+        __dst_normalized,
+        static_cast<__extent_t>(__tensor_size),
+        __stream,
+        __src.accessor(),
+        __dst.accessor());
     }
   }
 }

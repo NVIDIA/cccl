@@ -26,7 +26,6 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
-#include <cuda/std/span>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -53,7 +52,7 @@ template <typename _ExtentT, ::cuda::std::size_t _Size>
 [[nodiscard]] _CCCL_API ::cuda::std::array<::cuda::fast_mod_div<_ExtentT>, _Size>
 __extents_fast_div_mod(const ::cuda::std::array<_ExtentT, _Size>& __extents) noexcept
 {
-  using __seq_t = ::cuda::std::index_sequence<_Size>;
+  using __seq_t = ::cuda::std::make_index_sequence<_Size>;
   return ::cuda::experimental::__extents_fast_div_mod_impl(__extents, __seq_t{});
 }
 
@@ -85,7 +84,7 @@ __extents_product_fast_div_mod_impl(const ::cuda::std::array<_ExtentT, _Size>& _
 {
   using __fast_mod_div_t = ::cuda::fast_mod_div<_ExtentT>;
   using __array_t        = ::cuda::std::array<__fast_mod_div_t, sizeof...(_Rp)>;
-  return __array_t{(::cuda::experimental::__extent_product_in_range(__extents, 0, _Rp), ...)};
+  return __array_t{::cuda::experimental::__extent_product_in_range(__extents, 0, _Rp)...};
 }
 
 //! @brief Precompute cumulative extent products as fast modulo/division objects.
@@ -96,7 +95,7 @@ template <typename _ExtentT, ::cuda::std::size_t _Size>
 [[nodiscard]] _CCCL_API ::cuda::std::array<::cuda::fast_mod_div<_ExtentT>, _Size>
 __extents_product_fast_div_mod(const ::cuda::std::array<_ExtentT, _Size>& __extents) noexcept
 {
-  using __seq_t = ::cuda::std::index_sequence<_Size>;
+  using __seq_t = ::cuda::std::make_index_sequence<_Size>;
   return ::cuda::experimental::__extents_product_fast_div_mod_impl(__extents, __seq_t{});
 }
 
@@ -114,12 +113,26 @@ struct __tensor_coord_iterator
   __array_t __extents_;
   __array_t __extent_products_;
 
+  template <typename _UExtentT>
+  static _CCCL_HOST_API ::cuda::std::array<_ExtentT, _Rank>
+  __to_extent_array(const ::cuda::std::array<_UExtentT, _Rank>& __in) noexcept
+  {
+    ::cuda::std::array<_ExtentT, _Rank> __out{};
+    for (::cuda::std::size_t __i = 0; __i < _Rank; ++__i)
+    {
+      __out[__i] = static_cast<_ExtentT>(__in[__i]);
+    }
+    return __out;
+  }
+
   //! @brief Constructs the iterator from tensor extents.
   //!
-  //! @param[in] __extents Tensor extents
-  _CCCL_HOST_API explicit __tensor_coord_iterator(::cuda::std::span<_ExtentT, _Rank> __extents) noexcept
-      : __extents_{::cuda::experimental::__extents_fast_div_mod(__extents)}
-      , __extent_products_{::cuda::experimental::__extents_product_fast_div_mod(__extents)}
+  //! @param[in] __extents Tensor extents (may be unsigned; converted to _ExtentT internally)
+  template <typename _UExtentT>
+  _CCCL_HOST_API explicit __tensor_coord_iterator(
+    const ::cuda::std::array<_UExtentT, _Rank>& __extents) noexcept
+      : __extents_{::cuda::experimental::__extents_fast_div_mod(__to_extent_array(__extents))}
+      , __extent_products_{::cuda::experimental::__extents_product_fast_div_mod(__to_extent_array(__extents))}
   {}
 
   //! @brief Returns the multi-dimensional coordinates for the given linear index.
@@ -162,7 +175,7 @@ struct __partial_tensor
   //! @param[in] __coords Array of per-dimension coordinates
   //! @return Reference to the element at the computed offset
   template <typename _CoordT>
-  [[nodiscard]] _CCCL_DEVICE_API _Tp& operator()(::cuda::std::span<_CoordT, _Rank> __coords) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API _Tp& operator()(const ::cuda::std::array<_CoordT, _Rank>& __coords) const noexcept
   {
     _StrideT __offset = 0;
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -170,12 +183,12 @@ struct __partial_tensor
     {
       __offset += static_cast<_StrideT>(__coords[__i]) * __strides[__i];
     }
-    return __accessor.access(__ptr, __offset);
+    return __accessor.access(const_cast<::cuda::std::remove_const_t<_Tp>*>(__ptr), __offset);
   }
 };
 
 template <typename _Tp, typename _StrideT, ::cuda::std::size_t _Rank, typename _Accessor>
-__partial_tensor(_Tp*, ::cuda::std::span<_StrideT, _Rank>, _Accessor)
+__partial_tensor(_Tp*, ::cuda::std::array<_StrideT, _Rank>, _Accessor)
   -> __partial_tensor<_Tp, _StrideT, _Rank, _Accessor>;
 } // namespace cuda::experimental
 

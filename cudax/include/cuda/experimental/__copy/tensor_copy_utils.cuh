@@ -100,8 +100,10 @@ _CCCL_HOST_API __raw_tensor<_ExtentT, _StrideT, ::cuda::experimental::__vector_a
 __reshape_vectorized(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept
 {
   using __vector_acc_t = ::cuda::experimental::__vector_access_t<_VectorBytes>;
-  using __vector_t     = ::cuda::std::conditional_t<sizeof(_Tp) == _VectorBytes, _Tp, __vector_acc_t>;
-  using __rank_t       = typename __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>::__rank_t;
+  using __vector_acc_cv_t =
+    ::cuda::std::conditional_t<::cuda::std::is_const_v<_Tp>, const __vector_acc_t, __vector_acc_t>;
+  using __vector_t = ::cuda::std::conditional_t<sizeof(_Tp) == _VectorBytes, _Tp, __vector_acc_cv_t>;
+  using __rank_t   = typename __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>::__rank_t;
   static_assert(_VectorBytes % sizeof(_Tp) == 0, "vector size must be a multiple of element size");
   constexpr auto __elems_per_vector = _VectorBytes / sizeof(_Tp);
   _CCCL_ASSERT(__tensor.__strides[0] == 1, "innermost mode must be contiguous");
@@ -199,9 +201,11 @@ __may_overlap(const ::cuda::std::mdspan<_Tp1, _Extents1, _LayoutPolicy1, _Access
   {
     return false;
   }
-  const auto __a_end = __a.data_handle() + __a.mapping().required_span_size() * sizeof(_Tp1);
-  const auto __b_end = __b.data_handle() + __b.mapping().required_span_size() * sizeof(_Tp2);
-  return ::cuda::ranges_overlap(__a.data_handle(), __a_end, __b.data_handle(), __b_end);
+  const auto* __a_begin = reinterpret_cast<const char*>(__a.data_handle());
+  const auto* __a_end   = __a_begin + __a.mapping().required_span_size() * sizeof(_Tp1);
+  const auto* __b_begin = reinterpret_cast<const char*>(__b.data_handle());
+  const auto* __b_end   = __b_begin + __b.mapping().required_span_size() * sizeof(_Tp2);
+  return ::cuda::ranges_overlap(__a_begin, __a_end, __b_begin, __b_end);
 }
 } // namespace cuda::experimental
 

@@ -99,7 +99,7 @@ _CCCL_HOST_API void __copy_optimized(
   const auto __config    = ::cuda::make_config(::cuda::block_dims<__block_size>(), ::cuda::grid_dims(__grid_size));
   const auto& __kernel   = ::cuda::experimental::__copy_optimized_kernel<
     decltype(__config),
-    const _TpIn,
+    _TpIn,
     _TpOut,
     _SrcAccessor,
     _DstAccessor,

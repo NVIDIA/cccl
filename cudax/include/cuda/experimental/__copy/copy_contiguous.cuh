@@ -24,7 +24,6 @@
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__cstddef/types.h>
 
-#include <cuda/experimental/__copy/copy_optimized.cuh>
 #include <cuda/experimental/__copy/tensor_copy_utils.cuh>
 #include <cuda/experimental/__copy_bytes/types.cuh>
 
@@ -58,8 +57,8 @@ __global__ void __copy_contiguous_kernel(
   const auto __stride         = ::cuda::gpu_thread.count_as<_ExtentT>(::cuda::grid, __config);
   const auto __block_id       = ::cuda::block.rank_as<int>(::cuda::grid, __config);
   constexpr auto __block_size = ::cuda::gpu_thread.count(::cuda::block, __config);
-  const __partial_tensor __src{__src_ptr, __src_strides, __src_accessor};
-  const __partial_tensor __dst{__dst_ptr, __dst_strides, __dst_accessor};
+  __partial_tensor __src{__src_ptr, __src_strides, __src_accessor};
+  __partial_tensor __dst{__dst_ptr, __dst_strides, __dst_accessor};
 
   const int __tile_idx    = __block_id % __num_inner_tiles;
   const int __outer_idx   = __block_id / __num_inner_tiles;
@@ -105,8 +104,6 @@ inline constexpr auto __bytes_in_flight = 64 * 1024; // 64KB
   return (__bytes_in_flight / __access_bytes) / __threads_per_sm;
 }
 
-inline constexpr int __block_size = 256;
-
 //! @brief Launch the tiled copy kernel with pre-built (recast) tensors.
 //!
 //! Computes tile size, inner/outer dimensions from the tensor and _VectorBits, then decomposes each CuTe tensor into
@@ -127,6 +124,7 @@ _CCCL_HOST_API void __launch_copy_contiguous_kernel(
   const _DstAccessor& __dst_accessor = {})
 {
   namespace cudax                    = ::cuda::experimental;
+  constexpr int __block_size         = 256;
   constexpr auto __elems_per_thread1 = cudax::__elem_per_thread(sizeof(_TpIn));
   constexpr auto __tile_size         = __block_size * __elems_per_thread1;
   const auto __inner_size            = __src.__extents[0];
@@ -149,18 +147,18 @@ _CCCL_HOST_API void __launch_copy_contiguous_kernel(
     _Rank>;
 
   ::cuda::launch(
+    __stream,
     __config,
     __kernel,
-    __src.__ptr,
+    __src.__data,
     __src.__strides,
     __src_accessor,
-    __dst.__ptr,
+    __dst.__data,
     __dst.__strides,
     __dst_accessor,
     __coord_iter,
     __inner_size,
-    __num_inner_tiles,
-    __stream);
+    __num_inner_tiles);
 }
 } // namespace cuda::experimental
 
