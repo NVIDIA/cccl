@@ -76,17 +76,50 @@ struct DeviceThreeWayPartitionKernelSource
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> three_way_partition_policy
+private:
+  struct extract_policy_dispatch_t
   {
-    // this is only used in device code, so we can use ::ActivePolicy directly
-    using active_policy = typename PolicyHub::MaxPolicy::ActivePolicy::ThreeWayPartitionPolicy;
-    return three_way_partition_policy{
-      active_policy::BLOCK_THREADS,
-      active_policy::ITEMS_PER_THREAD,
-      active_policy::LOAD_ALGORITHM,
-      active_policy::LOAD_MODIFIER,
-      active_policy::SCAN_ALGORITHM,
-      delay_constructor_policy_from_type<typename active_policy::detail::delay_constructor_t>};
+    three_way_partition_policy& policy;
+
+    template <typename ActivePolicyT>
+    _CCCL_API constexpr cudaError_t Invoke()
+    {
+      using active_policy = typename ActivePolicyT::ThreeWayPartitionPolicy;
+      policy              = three_way_partition_policy{
+        active_policy::BLOCK_THREADS,
+        active_policy::ITEMS_PER_THREAD,
+        active_policy::LOAD_ALGORITHM,
+        active_policy::LOAD_MODIFIER,
+        active_policy::SCAN_ALGORITHM,
+        delay_constructor_policy_from_type<typename active_policy::detail::delay_constructor_t>};
+      return cudaSuccess;
+    }
+  };
+
+public:
+  // Because a user can also provide a custom three way partition policy hub to DispatchSegmentedSort, which does not
+  // go through the Invoke mechanism, we need to support __host__ as well here.
+  _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> three_way_partition_policy
+  {
+    NV_IF_ELSE_TARGET(
+      NV_IS_HOST,
+      ({
+        const int ptx_version = static_cast<int>(arch) * 10;
+        three_way_partition_policy policy{};
+        extract_policy_dispatch_t dispatch{policy};
+        PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
+        return policy;
+      }),
+      ({
+        using active_policy = typename PolicyHub::MaxPolicy::ActivePolicy::ThreeWayPartitionPolicy;
+        return three_way_partition_policy{
+          active_policy::BLOCK_THREADS,
+          active_policy::ITEMS_PER_THREAD,
+          active_policy::LOAD_ALGORITHM,
+          active_policy::LOAD_MODIFIER,
+          active_policy::SCAN_ALGORITHM,
+          delay_constructor_policy_from_type<typename active_policy::detail::delay_constructor_t>};
+      }));
   }
 };
 } // namespace detail::three_way_partition
