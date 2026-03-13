@@ -30,7 +30,7 @@ Declaration/Definition:
 
 - All functions must be marked `_CCCL_HOST_API`, `_CCCL_DEVICE_API`, or `_CCCL_API`.
 - Non-template, non-`constexpr` functions must use `inline`.
-- All functions with a non-void return type must use `[[nodiscard]]`.
+- Most functions with a non-void return type shall use `[[nodiscard]]`. Exceptions are functions with known side effects, e.g. `cuda::std::copy`
 - All functions that don't throw exception must use `noexcept`
 - `constexpr` must be used for all functions that don't depend on run-time features, e.g. pointers.
 - If the return type is not explicit (`auto`), then a trailing return type is strongly preferred, e.g. `auto abs(float) -> float`
