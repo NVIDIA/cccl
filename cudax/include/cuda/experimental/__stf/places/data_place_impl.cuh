@@ -40,6 +40,11 @@ namespace cuda::experimental::stf
 class data_place_invalid final : public data_place_interface
 {
 public:
+  bool is_resolved() const override
+  {
+    return false;
+  }
+
   int get_device_ordinal() const override
   {
     return data_place_interface::invalid;
@@ -86,6 +91,11 @@ public:
 class data_place_host final : public data_place_interface
 {
 public:
+  bool is_resolved() const override
+  {
+    return true;
+  }
+
   int get_device_ordinal() const override
   {
     return data_place_interface::host;
@@ -149,6 +159,11 @@ public:
 class data_place_managed final : public data_place_interface
 {
 public:
+  bool is_resolved() const override
+  {
+    return true;
+  }
+
   int get_device_ordinal() const override
   {
     return data_place_interface::managed;
@@ -197,6 +212,11 @@ public:
 class data_place_device final : public data_place_interface
 {
 public:
+  bool is_resolved() const override
+  {
+    return true;
+  }
+
   explicit data_place_device(int device_id)
       : device_id_(device_id)
   {
@@ -294,6 +314,11 @@ private:
 class data_place_affine final : public data_place_interface
 {
 public:
+  bool is_resolved() const override
+  {
+    return false;
+  }
+
   int get_device_ordinal() const override
   {
     return data_place_interface::affine;
@@ -340,6 +365,11 @@ public:
 class data_place_device_auto final : public data_place_interface
 {
 public:
+  bool is_resolved() const override
+  {
+    return false;
+  }
+
   int get_device_ordinal() const override
   {
     return data_place_interface::device_auto;

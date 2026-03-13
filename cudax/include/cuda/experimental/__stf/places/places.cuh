@@ -252,9 +252,9 @@ public:
     return typeid(ref) == typeid(data_place_device_auto);
   }
 
-  bool is_concrete() const
+  bool is_resolved() const
   {
-    return !is_invalid() && !is_affine() && !is_device_auto() && !is_composite();
+    return pimpl_->is_resolved();
   }
 
   ::std::string to_string() const
@@ -1585,6 +1585,11 @@ public:
       : grid_(mv(grid))
       , partitioner_func_(mv(partitioner_func))
   {}
+
+  bool is_resolved() const override
+  {
+    return true;
+  }
 
   int get_device_ordinal() const override
   {

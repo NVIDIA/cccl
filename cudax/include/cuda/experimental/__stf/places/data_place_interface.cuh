@@ -84,6 +84,16 @@ public:
   // === Core properties ===
 
   /**
+   * @brief Whether this place is fully resolved and ready for allocation
+   *
+   * Returns true for places that represent a concrete memory target:
+   * host, managed, device(N), composite, green_ctx, etc.
+   * Returns false for abstract/deferred places that need further
+   * resolution: invalid, affine, device_auto.
+   */
+  virtual bool is_resolved() const = 0;
+
+  /**
    * @brief Get the device ordinal for this place
    *
    * Returns:

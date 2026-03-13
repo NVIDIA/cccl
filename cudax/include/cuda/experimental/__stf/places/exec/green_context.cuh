@@ -53,6 +53,11 @@ public:
       : view_(mv(view))
   {}
 
+  bool is_resolved() const override
+  {
+    return true;
+  }
+
   int get_device_ordinal() const override
   {
     return view_.devid;
@@ -451,10 +456,10 @@ UNITTEST("green context data_place equality")
   EXPECT(dp0a != dev0);
   EXPECT(!(dp0a == dev0));
 
-  // Green context data place should be concrete but not a plain device
-  EXPECT(dp0a.is_concrete());
+  // Green context data place should be resolved but not a plain device
+  EXPECT(dp0a.is_resolved());
   EXPECT(!dp0a.is_device());
-  EXPECT(dev0.is_concrete());
+  EXPECT(dev0.is_resolved());
   EXPECT(dev0.is_device());
 };
 
@@ -481,8 +486,8 @@ UNITTEST("green context exec_place equality with green_ctx_data_place flag")
   // Different green contexts should NOT be equal
   EXPECT(p0a != p1);
 
-  // Affine data place should be concrete but not a plain device when use_green_ctx_data_place=true
-  EXPECT(p0a.affine_data_place().is_concrete());
+  // Affine data place should be resolved but not a plain device when use_green_ctx_data_place=true
+  EXPECT(p0a.affine_data_place().is_resolved());
   EXPECT(!p0a.affine_data_place().is_device());
 };
 
