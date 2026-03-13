@@ -441,7 +441,8 @@ void dep_allocate(
 {
   auto& inst = d.get_data_instance(instance_id);
 
-  _CCCL_ASSERT(dplace.is_concrete(), "dep_allocate requires a concrete data_place (resolved upstream in acquire)");
+  _CCCL_ASSERT(dplace.is_concrete() || dplace.is_composite(),
+               "dep_allocate requires a concrete or composite data_place (resolved upstream in acquire)");
 
   /*
    * DATA LAZY ALLOCATION
@@ -473,7 +474,8 @@ void dep_allocate(
         inst.allocated_size = s;
         inst.set_allocated(true);
         inst.reclaimable = true;
-        _CCCL_ASSERT(inst.get_dplace().is_concrete(), "instance dplace must be concrete after allocation");
+        _CCCL_ASSERT(inst.get_dplace().is_concrete() || inst.get_dplace().is_composite(),
+                     "instance dplace must be concrete or composite after allocation");
         break;
       }
 
