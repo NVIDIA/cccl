@@ -15,6 +15,12 @@ Before installing cuda-cccl, ensure you have:
 * **Compatible NVIDIA GPU** with Compute Capability 6.0 or higher
 * **Operating Systems:** Linux (tested on Ubuntu 20.04+) or Windows 10/11 (with WSL2 support)
 
+.. note::
+
+   **Windows Users:** If you're using WSL (Windows Subsystem for Linux), refer to the
+   `CUDA on WSL User Guide <https://docs.nvidia.com/cuda/wsl-user-guide/index.html#getting-started-with-cuda-on-wsl>`_
+   for detailed instructions on setting up CUDA drivers and the toolkit in your WSL environment.
+
 Installation
 ------------
 
