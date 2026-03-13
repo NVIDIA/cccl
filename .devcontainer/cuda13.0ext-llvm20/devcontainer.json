@@ -63,6 +63,10 @@
           "--compile-commands-dir=${workspaceFolder}"
         ],
         "files.eol": "\n",
+        "files.exclude": {
+          "**/include/cuda/*.*": true,
+          "**/include/cuda/std/*.*": true
+        },
         "files.trimTrailingWhitespace": true
       }
     }
