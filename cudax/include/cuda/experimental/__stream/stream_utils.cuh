@@ -124,6 +124,20 @@ _CCCL_CONCEPT __stream_join_range =
   ::cuda::std::is_same_v<::cuda::std::ranges::range_value_t<const _Range&>, stream_ref>
   || ::cuda::std::is_same_v<::cuda::std::ranges::range_value_t<const _Range&>, stream>;
 
+//! @brief Make each target stream wait on `__event`, skipping the source stream itself.
+template <class _ToRange, class _Event>
+_CCCL_HOST_API void __wait_all_targets_on_event(const _ToRange& __to_streams, stream_ref __from, const _Event& __event)
+{
+  for (const auto& __to_stream : __to_streams)
+  {
+    auto __to = stream_ref(__to_stream);
+    if (__to != __from)
+    {
+      __to.wait(__event);
+    }
+  }
+}
+
 // TODO: consider accumulating all the dependencies in from range into a single stream in to_streams and then propagate
 // that as a dependency to the other streams in to_streams This has a drawback of introducing an extra dependency on
 // that selected stream and other streams in to_streams, but results in less API calls overall.
@@ -153,14 +167,7 @@ _CCCL_HOST_API void __join_impl(const _ToRange& __to_streams, const _FromRange& 
       auto __status = ::cuda::__driver::__eventRecordNoThrow(__local_event.get(), __from.get());
       if (__status == cudaSuccess)
       {
-        for (const auto& __to_stream : __to_streams)
-        {
-          auto __to = stream_ref(__to_stream);
-          if (__to != __from)
-          {
-            __to.wait(__local_event);
-          }
-        }
+        __wait_all_targets_on_event(__to_streams, __from, __local_event);
         continue;
       }
 
@@ -181,15 +188,7 @@ _CCCL_HOST_API void __join_impl(const _ToRange& __to_streams, const _FromRange& 
       // Some stream/device combinations cannot record into a shared event.
       // Fall back to an event allocated for each source stream's device.
       auto __from_event = cuda::event(__from);
-
-      for (const auto& __to_stream : __to_streams)
-      {
-        auto __to = stream_ref(__to_stream);
-        if (__to != __from)
-        {
-          __to.wait(__from_event);
-        }
-      }
+      __wait_all_targets_on_event(__to_streams, __from, __from_event);
     }
   }
 }
