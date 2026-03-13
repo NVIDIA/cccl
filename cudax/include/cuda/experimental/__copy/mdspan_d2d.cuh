@@ -115,18 +115,28 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
   }
   if constexpr (_ExtentsIn::rank() > 0 && _ExtentsOut::rank() > 0)
   {
-    constexpr auto __are_accessors_default_convertible =
+    // check the preconditions for the vectorized case
+    constexpr bool __are_accessors_default_convertible =
       ::cuda::std::is_convertible_v<_AccessorPolicyIn, ::cuda::std::default_accessor<_TpIn>>
       && ::cuda::std::is_convertible_v<_AccessorPolicyOut, ::cuda::std::default_accessor<_TpOut>>;
-    constexpr auto __have_same_type =
+    constexpr bool __have_same_type =
       ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_TpIn>, ::cuda::std::remove_cvref_t<_TpOut>>;
+    constexpr bool __are_trivial_copyable =
+      ::cuda::std::is_trivially_copyable_v<_TpIn> && ::cuda::std::is_trivially_copyable_v<_TpOut>;
+    constexpr bool __are_vectorizable = sizeof(_TpIn) <= __max_vector_access && __are_accessors_default_convertible
+                                     && __have_same_type && __are_trivial_copyable;
 
-    using __extent_t = ::cuda::std::common_type_t<typename _ExtentsIn::index_type, typename _ExtentsOut::index_type>;
-    using __stride_t = ::cuda::std::common_type_t<cudax::__mdspan_stride_t<_ExtentsIn, _LayoutPolicyIn>,
-                                                  cudax::__mdspan_stride_t<_ExtentsOut, _LayoutPolicyOut>>;
+    // use the most efficient type for device code
+    using __src_extent_t = ::cuda::std::common_type_t<typename _ExtentsIn::index_type, int>;
+    using __dst_extent_t = ::cuda::std::common_type_t<typename _ExtentsOut::index_type, int>;
+    using __common_extent_t =
+      ::cuda::std::conditional_t<(sizeof(__src_extent_t) < sizeof(__dst_extent_t)), __src_extent_t, __dst_extent_t>;
+    using __src_stride_t = ::cuda::std::common_type_t<cudax::__mdspan_stride_t<_ExtentsIn, _LayoutPolicyIn>, int>;
+    using __dst_stride_t = ::cuda::std::common_type_t<cudax::__mdspan_stride_t<_ExtentsOut, _LayoutPolicyOut>, int>;
+
     constexpr auto __max_rank = ::cuda::std::max(_ExtentsIn::rank(), _ExtentsOut::rank());
-    const auto __src_raw      = cudax::__to_raw_tensor<__extent_t, __stride_t, __max_rank>(__src);
-    const auto __dst_raw      = cudax::__to_raw_tensor<__extent_t, __stride_t, __max_rank>(__dst);
+    const auto __src_raw      = cudax::__to_raw_tensor<__common_extent_t, __src_stride_t, __max_rank>(__src);
+    const auto __dst_raw      = cudax::__to_raw_tensor<__common_extent_t, __dst_stride_t, __max_rank>(__dst);
     if (!cudax::__same_extents(__src_raw, __dst_raw))
     {
       _CCCL_THROW(::std::invalid_argument, "mdspans must have the same extents (after removing singleton dimensions)");
@@ -136,11 +146,10 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     cudax::__sort_by_stride_paired(__src_simplified, __dst_simplified);
     cudax::__flip_negative_strides_paired(__src_simplified, __dst_simplified);
     cudax::__coalesce_paired(__src_simplified, __dst_simplified);
-    using __unsigned_extent_t = typename decltype(__src_simplified)::__unsigned_extent_t;
-    const bool __both_stride1 = (__src_simplified.__strides[0] == 1) && (__dst_simplified.__strides[0] == 1);
-    const __unsigned_extent_t __tile_size = __both_stride1 ? __src_simplified.__extents[0] : __unsigned_extent_t{1};
-    const auto __src_normalized           = (__tile_size > 1) ? __src_simplified : cudax::__reverse_modes(__src_raw);
-    const auto __dst_normalized           = (__tile_size > 1) ? __dst_simplified : cudax::__reverse_modes(__dst_raw);
+    const bool __both_stride1   = (__src_simplified.__strides[0] == 1) && (__dst_simplified.__strides[0] == 1);
+    const auto __tile_size      = __both_stride1 ? __src_simplified.__extents[0] : 1;
+    const auto __src_normalized = (__tile_size > 1) ? __src_simplified : cudax::__reverse_modes(__src_raw);
+    const auto __dst_normalized = (__tile_size > 1) ? __dst_simplified : cudax::__reverse_modes(__dst_raw);
 
     _CCCL_ASSERT(__tensor_size % __tile_size == 0, "tensor size must be divisible by tile size");
     // (1) contiguous case
@@ -156,44 +165,50 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
         __stream.get());
       return;
     }
-    const auto __inner_extent_bytes = static_cast<::cuda::std::size_t>(__src_normalized.__extents[0]) * sizeof(_TpIn);
-    if (__both_stride1 && __inner_extent_bytes >= __bytes_in_flight)
+    // (2) inner size is large
+    const auto __inner_extent_bytes = __src_normalized.__extents[0] * sizeof(_TpIn);
+    if (__both_stride1 && __inner_extent_bytes >= __bytes_in_flight) // TODO: tunable bytes in flight
     {
-      // (2) vectorized case
-      if constexpr (__have_same_type && sizeof(_TpIn) <= __max_vector_access && __are_accessors_default_convertible)
+      // (2a) vectorized case
+      if constexpr (__are_vectorizable)
       {
-        using ::cuda::std::size_t;
-        const auto __src_alignment            = cudax::__max_alignment(__src_normalized);
-        const auto __dst_alignment            = cudax::__max_alignment(__dst_normalized);
-        const auto __max_gpu_arch_vector_size = cudax::__max_gpu_arch_vector_size();
-        const auto __vector_size_bytes =
-          ::cuda::std::min({__src_alignment, __dst_alignment, __max_gpu_arch_vector_size});
-
-        const auto __op = [&](const auto& __src, const auto& __dst) {
-          ::cuda::experimental::__launch_copy_contiguous_kernel(__src, __dst, __stream);
+        const auto __op = [__stream](const auto& __src, const auto& __dst) {
+          cudax::__launch_copy_contiguous_kernel(__src, __dst, __stream);
         };
-        cudax::__dispatch_by_vector_size(__src_normalized, __dst_normalized, __vector_size_bytes, __op);
+        cudax::__dispatch_by_vector_size(__src_normalized, __dst_normalized, __op);
       }
-      // (2) non-vectorized case but inner size is large enough to use the contiguous kernel
+      // (2b) non-vectorized case but inner size is large enough to use the contiguous kernel
       else
       {
-        ::cuda::experimental::__launch_copy_contiguous_kernel(
+        cudax::__launch_copy_contiguous_kernel(
           __src_normalized, __dst_normalized, __stream, __src.accessor(), __dst.accessor());
       }
       return;
     }
-    // (3) transpose case
+    // (3) inner size is not large -> try vectorized case
+    else if (__both_stride1)
+    {
+      if constexpr (__are_vectorizable)
+      {
+        const auto __op = [__stream](const auto& __src, const auto& __dst) {
+          cudax::__copy_optimized(__src, __dst, static_cast<__common_extent_t>(__tensor_size), __stream);
+        };
+        cudax::__dispatch_by_vector_size(__src_normalized, __dst_normalized, __op);
+        return;
+      }
+    }
+    // (4) transpose case
     // if (cudax::__use_shared_mem_kernel(__src_normalized, __dst_normalized))
     //{
     //  cudax::copy_bytes_shared_mem(__src_normalized, __dst_normalized, __stream);
     //}
-    // (4) fallback case
+    // (5) generic case (fallback)
     else
     {
       cudax::__copy_optimized(
         __src_normalized,
         __dst_normalized,
-        static_cast<__extent_t>(__tensor_size),
+        static_cast<__common_extent_t>(__tensor_size),
         __stream,
         __src.accessor(),
         __dst.accessor());

@@ -23,6 +23,7 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__cstddef/types.h>
 
 #  include <cuda/experimental/__copy/tensor_copy_utils.cuh>
@@ -32,6 +33,31 @@
 
 namespace cuda::experimental
 {
+//! @brief Compute the maximum vector access width in bytes for a pair of raw tensors.
+//!
+//! Takes the minimum of the source alignment, destination alignment, and the GPU architecture's
+//! maximum vector width.
+//!
+//! @param[in] __src Source raw tensor
+//! @param[in] __dst Destination raw tensor
+//! @return Maximum safe vector access width in bytes
+template <typename _SrcExtentT,
+          typename _SrcStrideT,
+          typename _TpSrc,
+          typename _DstExtentT,
+          typename _DstStrideT,
+          typename _TpDst,
+          ::cuda::std::size_t _MaxRank>
+[[nodiscard]] _CCCL_HOST_API ::cuda::std::size_t
+__vector_size_bytes(const __raw_tensor<_SrcExtentT, _SrcStrideT, _TpSrc, _MaxRank>& __src,
+                    const __raw_tensor<_DstExtentT, _DstStrideT, _TpDst, _MaxRank>& __dst) noexcept
+{
+  return ::cuda::std::min(
+    {::cuda::experimental::__max_alignment(__src),
+     ::cuda::experimental::__max_alignment(__dst),
+     ::cuda::experimental::__max_gpu_arch_vector_size()});
+}
+
 template <int _VectorSize>
 constexpr auto __const_vector_size = ::cuda::std::integral_constant<int, _VectorSize>{};
 
@@ -54,14 +80,15 @@ template <typename _ExtentT,
 _CCCL_HOST_API void __dispatch_by_vector_size(
   const __raw_tensor<_ExtentT, _StrideTIn, _TpIn, _Rank>& __src,
   const __raw_tensor<_ExtentT, _StrideTOut, _TpOut, _Rank>& __dst,
-  ::cuda::std::size_t __vector_size_bytes,
   _Op __op) noexcept
 {
+  namespace cudax              = ::cuda::experimental;
   const auto __call_vectorized = [&](auto __const_vector_size) {
-    const auto __src_recast = ::cuda::experimental::__reshape_vectorized<__const_vector_size>(__src);
-    const auto __dst_recast = ::cuda::experimental::__reshape_vectorized<__const_vector_size>(__dst);
+    const auto __src_recast = cudax::__reshape_vectorized<__const_vector_size>(__src);
+    const auto __dst_recast = cudax::__reshape_vectorized<__const_vector_size>(__dst);
     __op(__src_recast, __dst_recast);
   };
+  const auto __vector_size_bytes = cudax::__vector_size_bytes(__src, __dst);
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   if constexpr (sizeof(_TpIn) <= 32)
   {
