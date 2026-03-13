@@ -25,9 +25,9 @@
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/launch>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__mdspan/default_accessor.h>
 #include <cuda/std/array>
 
-#include <cuda/experimental/__copy/tensor_copy_utils.cuh>
 #include <cuda/experimental/__copy/tensor_iterator.cuh>
 #include <cuda/experimental/__copy_bytes/types.cuh>
 
@@ -35,6 +35,20 @@
 
 namespace cuda::experimental
 {
+//! @brief Element-wise copy kernel for strided tensor data.
+//!
+//! Each thread copies one element at a time using a grid-stride loop, mapping linear indices to
+//! multi-dimensional coordinates via @ref __tensor_coord_iterator.
+//!
+//! @param[in]  __config        Kernel launch configuration
+//! @param[in]  __src_ptr       Pointer to source data
+//! @param[in]  __src_strides   Per-dimension strides for the source tensor
+//! @param[in]  __src_accessor  Accessor for reading source elements
+//! @param[out] __dst_ptr       Pointer to destination data
+//! @param[in]  __dst_strides   Per-dimension strides for the destination tensor
+//! @param[in]  __dst_accessor  Accessor for writing destination elements
+//! @param[in]  __coord_iter    Coordinate iterator for multi-dimensional index mapping
+//! @param[in]  __tensor_size   Total number of elements to copy
 template <typename _Config,
           typename _TpSrc,
           typename _TpDst,
@@ -72,11 +86,11 @@ __global__ void __copy_optimized_kernel(
 //! computed from linear indices via @ref __tensor_coord_iterator.
 //!
 //! @param[in]  __src          Source raw tensor descriptor
-//! @param[in]  __src_accessor Accessor for reading source elements
 //! @param[out] __dst          Destination raw tensor descriptor
-//! @param[in]  __dst_accessor Accessor for writing destination elements
-//! @param[in]  __tensor_size    Total number of elements to copy
+//! @param[in]  __tensor_size  Total number of elements to copy
 //! @param[in]  __stream       CUDA stream for asynchronous execution
+//! @param[in]  __src_accessor Accessor for reading source elements
+//! @param[in]  __dst_accessor Accessor for writing destination elements
 template <typename _ExtentT,
           typename _StrideTIn,
           typename _StrideTOut,
@@ -98,15 +112,15 @@ _CCCL_HOST_API void __copy_optimized(
   const auto __grid_size = ::cuda::ceil_div(__tensor_size, _ExtentT{__block_size});
   const auto __config    = ::cuda::make_config(::cuda::block_dims<__block_size>(), ::cuda::grid_dims(__grid_size));
   const auto& __kernel   = ::cuda::experimental::__copy_optimized_kernel<
-    decltype(__config),
-    _TpIn,
-    _TpOut,
-    _SrcAccessor,
-    _DstAccessor,
-    _ExtentT,
-    _StrideTIn,
-    _StrideTOut,
-    _Rank>;
+      decltype(__config),
+      _TpIn,
+      _TpOut,
+      _SrcAccessor,
+      _DstAccessor,
+      _ExtentT,
+      _StrideTIn,
+      _StrideTOut,
+      _Rank>;
 
   ::cuda::launch(
     __stream,

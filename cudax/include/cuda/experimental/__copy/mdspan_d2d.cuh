@@ -50,15 +50,15 @@
 
 namespace cuda::experimental
 {
-//! @brief Internal implementation of @ref copy_bytes for host/device mdspan transfers.
+//! @brief Copy elements between two device mdspans.
 //!
 //! Validates preconditions, converts mdspans to raw tensor descriptors, simplifies the paired layout
-//! (sort, flip negative strides, coalesce), then dispatches a batched asynchronous memcpy.
+//! (sort, flip negative strides, coalesce), then dispatches either a vectorized contiguous kernel or a
+//! strided element-wise kernel.
 //!
-//! @param[in]  __src       Source mdspan
-//! @param[out] __dst       Destination mdspan
-//! @param[in]  __direction Copy direction (host-to-device or device-to-host)
-//! @param[in]  __stream    CUDA stream for the asynchronous transfer
+//! @param[in]  __src    Source device mdspan
+//! @param[out] __dst    Destination device mdspan
+//! @param[in]  __stream CUDA stream for the asynchronous transfer
 template <typename _TpIn,
           typename _ExtentsIn,
           typename _LayoutPolicyIn,
@@ -147,7 +147,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     if (__tile_size == __tensor_size)
     {
       _CCCL_TRY_CUDA_API(
-        cub::DeviceTransform::Transform,
+        ::cub::DeviceTransform::Transform,
         "cub::DeviceTransform::Transform failed",
         __src.data_handle(),
         __dst.data_handle(),
@@ -156,7 +156,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
         __stream.get());
       return;
     }
-    const auto __inner_extent_bytes = static_cast<size_t>(__src_normalized.__extents[0]) * sizeof(_TpIn);
+    const auto __inner_extent_bytes = static_cast<::cuda::std::size_t>(__src_normalized.__extents[0]) * sizeof(_TpIn);
     if (__both_stride1 && __inner_extent_bytes >= __bytes_in_flight)
     {
       // (2) vectorized case

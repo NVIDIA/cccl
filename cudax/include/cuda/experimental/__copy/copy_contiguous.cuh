@@ -21,16 +21,36 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/__stream/stream_ref.h>
+#include <cuda/launch>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__mdspan/default_accessor.h>
+#include <cuda/std/array>
 
 #include <cuda/experimental/__copy/tensor_copy_utils.cuh>
+#include <cuda/experimental/__copy/tensor_iterator.cuh>
 #include <cuda/experimental/__copy_bytes/types.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
+//! @brief Tiled copy kernel for contiguous innermost dimension.
+//!
+//! Each block processes one tile of the innermost dimension for one outer index. Threads within a
+//! block stride over the tile, reading from the source and writing to the destination via accessors.
+//!
+//! @param[in]  __config          Kernel launch configuration
+//! @param[in]  __src_ptr         Pointer to source data
+//! @param[in]  __src_strides     Per-dimension strides for the source tensor
+//! @param[in]  __src_accessor    Accessor for reading source elements
+//! @param[out] __dst_ptr         Pointer to destination data
+//! @param[in]  __dst_strides     Per-dimension strides for the destination tensor
+//! @param[in]  __dst_accessor    Accessor for writing destination elements
+//! @param[in]  __coord_iter      Coordinate iterator for multi-dimensional index mapping
+//! @param[in]  __inner_size      Extent of the contiguous innermost dimension
+//! @param[in]  __num_inner_tiles Number of tiles along the innermost dimension
 template <typename _Config,
           int _TileSize,
           typename _TpSrc,
@@ -92,28 +112,34 @@ __global__ void __copy_contiguous_kernel(
   }
 }
 
-inline constexpr auto __bytes_in_flight = 64 * 1024; // 64KB
+inline constexpr int __bytes_in_flight = 64 * 1024; // 64KB
 
-//! @brief Compute the tile size (number of recast elements per block) for a given vector width.
+//! @brief Compute the number of elements each thread copies for a given vector width.
 //!
-//! Each thread copies `max(1, __max_vector_bytes / __vector_bytes)` vector elements,
-//! so the tile contains at least `__block_size` elements even for wide vector types.
+//! @param[in] __access_bytes Size in bytes of one vectorized access
+//! @return Number of elements per thread
 [[nodiscard]] _CCCL_HOST_API constexpr int __elem_per_thread(int __access_bytes) noexcept
 {
   constexpr auto __threads_per_sm = 2048; // 2048 threads per SM
   return (__bytes_in_flight / __access_bytes) / __threads_per_sm;
 }
 
-//! @brief Launch the tiled copy kernel with pre-built (recast) tensors.
+//! @brief Launch the tiled copy kernel for contiguous innermost dimension.
 //!
-//! Computes tile size, inner/outer dimensions from the tensor and _VectorBits, then decomposes each CuTe tensor into
-//! its raw pointer and layout.
+//! Computes tile size and inner/outer dimensions from the raw tensor descriptors, then dispatches
+//! the @ref __copy_contiguous_kernel.
+//!
+//! @param[in] __src          Source raw tensor descriptor
+//! @param[in] __dst          Destination raw tensor descriptor
+//! @param[in] __stream       CUDA stream for asynchronous execution
+//! @param[in] __src_accessor Accessor for reading source elements
+//! @param[in] __dst_accessor Accessor for writing destination elements
 template <typename _ExtentT,
           typename _StrideTIn,
           typename _StrideTOut,
           typename _TpIn,
           typename _TpOut,
-          size_t _Rank,
+          ::cuda::std::size_t _Rank,
           typename _SrcAccessor = ::cuda::std::default_accessor<_TpIn>,
           typename _DstAccessor = ::cuda::std::default_accessor<_TpOut>>
 _CCCL_HOST_API void __launch_copy_contiguous_kernel(

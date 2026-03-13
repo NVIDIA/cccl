@@ -24,6 +24,7 @@
 #include <cuda/__cmath/fast_modulo_division.h>
 #include <cuda/__utility/in_range.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 
@@ -114,7 +115,7 @@ struct __tensor_coord_iterator
   __array_t __extent_products_;
 
   template <typename _UExtentT>
-  static _CCCL_HOST_API ::cuda::std::array<_ExtentT, _Rank>
+  [[nodiscard]] static _CCCL_HOST_API ::cuda::std::array<_ExtentT, _Rank>
   __to_extent_array(const ::cuda::std::array<_UExtentT, _Rank>& __in) noexcept
   {
     ::cuda::std::array<_ExtentT, _Rank> __out{};
@@ -129,8 +130,7 @@ struct __tensor_coord_iterator
   //!
   //! @param[in] __extents Tensor extents (may be unsigned; converted to _ExtentT internally)
   template <typename _UExtentT>
-  _CCCL_HOST_API explicit __tensor_coord_iterator(
-    const ::cuda::std::array<_UExtentT, _Rank>& __extents) noexcept
+  _CCCL_HOST_API explicit __tensor_coord_iterator(const ::cuda::std::array<_UExtentT, _Rank>& __extents) noexcept
       : __extents_{::cuda::experimental::__extents_fast_div_mod(__to_extent_array(__extents))}
       , __extent_products_{::cuda::experimental::__extents_product_fast_div_mod(__to_extent_array(__extents))}
   {}

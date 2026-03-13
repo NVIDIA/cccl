@@ -23,10 +23,8 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
-#  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__cstddef/types.h>
 
-#  include <cuda/experimental/__copy/copy_optimized.cuh>
 #  include <cuda/experimental/__copy/tensor_copy_utils.cuh>
 #  include <cuda/experimental/__copy_bytes/types.cuh>
 
@@ -37,6 +35,15 @@ namespace cuda::experimental
 template <int _VectorSize>
 constexpr auto __const_vector_size = ::cuda::std::integral_constant<int, _VectorSize>{};
 
+//! @brief Dispatch a copy operation with the optimal vectorized element type.
+//!
+//! Selects the largest vector width that matches @p __vector_size_bytes, reshapes both tensors to
+//! that vector type via @ref __reshape_vectorized, and invokes @p __op with the reshaped tensors.
+//!
+//! @param[in] __src               Source raw tensor descriptor
+//! @param[in] __dst               Destination raw tensor descriptor
+//! @param[in] __vector_size_bytes Vector width in bytes to use for the dispatch
+//! @param[in] __op                Callable invoked with the reshaped source and destination tensors
 template <typename _ExtentT,
           typename _StrideTIn,
           typename _StrideTOut,

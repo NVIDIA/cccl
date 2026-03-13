@@ -111,7 +111,7 @@ __reshape_vectorized(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __te
                "innermost extent must be divisible by elements per vector");
   _CCCL_ASSERT(::cuda::std::is_sufficiently_aligned<alignof(__vector_t)>(__tensor.__data),
                "tensor data is not sufficiently aligned to the extents and strides");
-  auto __data = reinterpret_cast<__vector_t*>(__tensor.__data);
+  const auto __data = reinterpret_cast<__vector_t*>(__tensor.__data);
   __raw_tensor<_ExtentT, _StrideT, __vector_t, _MaxRank> __result{
     __data, __tensor.__rank, __tensor.__extents, __tensor.__strides};
   __result.__extents[0] /= __elems_per_vector;
@@ -159,6 +159,10 @@ __to_mdspan(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noe
   }
 }
 
+//! @brief Compute the total number of elements in a raw tensor.
+//!
+//! @param[in] __tensor Raw tensor descriptor
+//! @return Product of all extents
 template <typename _ExtentT, typename _StrideT, typename _Tp, ::cuda::std::size_t _MaxRank>
 [[nodiscard]]
 _CCCL_HOST_API _ExtentT __total_size(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor) noexcept

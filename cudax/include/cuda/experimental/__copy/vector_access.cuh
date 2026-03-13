@@ -68,6 +68,9 @@ inline constexpr auto __max_vector_access = 16;
 template <::cuda::std::size_t _VectorBytes>
 using __vector_access_t = typename __vector_access<_VectorBytes>::type;
 
+//! @brief Query the maximum vector access width supported by the current GPU architecture.
+//!
+//! @return Maximum vector width in bytes (32 for SM >= 9.0, 16 otherwise)
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t __max_gpu_arch_vector_size() noexcept
 {
   const auto __dev_id = ::cuda::__driver::__cudevice_to_ordinal(::cuda::__driver::__ctxGetDevice());
