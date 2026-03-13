@@ -73,9 +73,8 @@ copy(::cuda::std::mdspan<T_In, E_In, L_In, A_In> mdspan_in,
   }
   // TODO (fbusato): add ForEachInLayout when mdspan_in and mdspan_out have compatible layouts
   // Compatible layouts could use more efficient iteration patterns
-  using extents_type = decltype(mdspan_in.extents());
   return cub::DeviceFor::__for_each_in_extents(
-    ::cuda::std::layout_right::mapping<extents_type>{mdspan_in.extents()}, copy_mdspan_t{mdspan_in, mdspan_out}, env);
+    ::cuda::std::layout_right::mapping<E_In>{mdspan_in.extents()}, copy_mdspan_t{mdspan_in, mdspan_out}, env);
 }
 } // namespace detail::copy_mdspan
 
