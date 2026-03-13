@@ -1,6 +1,6 @@
 ---
 name: libcudacxx-style
-description: Make the code in libcudacxx/include/cuda, cudax/include compliant with the coding style 
+description: Make the code in libcudacxx/include, cudax/include compliant with the coding style
 ---
 
 # libcudacxx Style
@@ -11,7 +11,7 @@ description: Make the code in libcudacxx/include/cuda, cudax/include compliant w
 - Template parameters: CamelCase, e.g. `MyParameter`.
 - All other symbols: snake style, e.g. `my_variable`.
 
-All non-public symbols must have a specific prefix:
+All non-public symbols must be C++ reserved identifiers:
 
 - `_` for macros and template parameters, e.g. `_MY_MACRO`., `_MyParameter`.
 - `__` for all other symbols, e.g. `__my_variable`.
@@ -30,18 +30,18 @@ Declaration/Definition:
 
 - All functions must be marked `_CCCL_HOST_API`, `_CCCL_DEVICE_API`, or `_CCCL_API`.
 - Non-template, non-`constexpr` functions must use `inline`.
-- All functions with a non-void return type must use `[[nodiscard]]`.
-- All functions that don't throw exception must use `noexcept`. This can be omitted for `_CCCL_DEVICE_API`.
+- Most functions with a non-void return type shall use `[[nodiscard]]`. Exceptions are functions with known side effects, e.g. `cuda::std::copy`
+- All functions that don't throw exception must use `noexcept`
 - `constexpr` must be used for all functions that don't depend on run-time features, e.g. pointers.
-- Return type must be explicit (non `auto`) when possible.
+- If the return type is not explicit (`auto`), then a trailing return type is strongly preferred, e.g. `auto abs(float) -> float`
 
 Function call:
 
-- All functions must have fully qualified namespace starting from the global namespace, e.g. `::cuda::ceil_div`. This includes calls to functions defined in the same namespace, e.g. inside `cuda::`, call `::cuda::ceil_div(...)`, not `ceil_div(...)`.
+- All calls to free functions must be fully qualified starting from the global namespace, e.g. `::cuda::ceil_div`. This includes calls to functions defined in the same namespace, e.g. inside `cuda::`, call `::cuda::ceil_div(...)`, not `ceil_div(...)`. This does not apply to (static) member functions of classes.
 
 ## Types
 
-- Types must have fully qualified namespace, except when they are already declared in the current namespace.
+- Type names must be fully qualified, except when they are already declared in the current namespace.
 - This includes standard integer type aliases (`::cuda::std::size_t`, `::cuda::std::uintptr_t`, `::cuda::std::int32_t`, etc.) and any other `cuda::std` or standard library types. A local `using` declaration (e.g. `using ::cuda::std::size_t;`) is acceptable to avoid repetition within a function body.
 
 ## Headers
@@ -50,10 +50,10 @@ Function call:
 - Files must include all headers related to the symbols that they are using.
 - No transitive header inclusion are allowed.
 - Unneeded headers must be removed.
-- The headers must be the most precise one, e.g. `#include <cuda/std/__type_traits/is_array>`.
+- The headers must be the most precise one, e.g. `#include <cuda/std/__type_traits/is_array.h>`.
 - Headers in `cuda/std/__cccl/` must not be included directly (they are provided by `__config` or the prologue/epilogue mechanism).
 
-- All headers must have the license boilerplate.
+- All headers must have the correct license. If the file is ported from LLVM libc++ then we *must* use the LLVM license.
 - All headers must have the include guard, with the correct name: uppercase full path from the root, separated by `_`.
 - The closing `#endif` always carries a comment repeating the guard name.
 - Right after the include guard, the code must include:
