@@ -82,5 +82,5 @@ Function call:
 - The code must reuse `cuda/` or `cuda/std` functionalities as much as possible, including macros.
 - Try to use modern C++ as much as possible. The repository supports C++17 but many more recent functionalities have been backported with functions and macros.
 - Never allow lambda expression, in device or host-device code.
-- Protect host code with `#if !_CCCL_COMPILER(NVRTC)`.
+- Protect host only code with `#if !_CCCL_COMPILER(NVRTC)`.
 - Remove unused code, variables, functions, types, template parameters, headers, etc.
