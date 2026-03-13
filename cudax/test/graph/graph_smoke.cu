@@ -13,6 +13,8 @@
 #include <cuda/experimental/memory_resource.cuh>
 #include <cuda/experimental/stream.cuh>
 
+#include <cuda/std/array>
+
 #include <testing.cuh>
 #include <utility.cuh>
 
@@ -243,6 +245,129 @@ C2H_TEST("Path builder with kernel nodes", "[graph]")
     CUDAX_REQUIRE(*ptr == 54);
   }
 
+  SECTION("path_builder replicate and join")
+  {
+    cudax::graph_builder g;
+    auto pb = cudax::start_path(g);
+    cudax::launch(pb, test::one_thread_dims, test::assign_42{}, ptr);
+
+    auto branches = cudax::replicate<2>(pb);
+    CUDAX_REQUIRE(branches[0].get_dependencies().size() == 0);
+    CUDAX_REQUIRE(branches[1].get_dependencies().size() == 0);
+
+    cudax::join(branches, pb);
+    CUDAX_REQUIRE(branches[0].get_dependencies().size() == 1);
+    CUDAX_REQUIRE(branches[1].get_dependencies().size() == 1);
+    CUDAX_REQUIRE(branches[0].get_dependencies()[0] == pb.get_dependencies()[0]);
+    CUDAX_REQUIRE(branches[1].get_dependencies()[0] == pb.get_dependencies()[0]);
+
+    cudax::launch(branches[0], test::one_thread_dims, test::atomic_add_one{}, ptr);
+    cudax::launch(branches[1], test::one_thread_dims, test::atomic_add_one{}, ptr);
+
+    auto sink = cudax::start_path(g);
+    cudax::join(sink, branches);
+    cudax::launch(sink, test::one_thread_dims, test::verify_n<44>{}, ptr);
+
+    auto exec = g.instantiate();
+    exec.launch(s);
+    s.sync();
+    CUDAX_REQUIRE(*ptr == 44);
+    *ptr = 0;
+  }
+
+  SECTION("path_builder join supports group-to-group")
+  {
+    cudax::graph_builder g;
+    auto root = cudax::start_path(g);
+    cudax::launch(root, test::one_thread_dims, test::assign_42{}, ptr);
+
+    auto source0 = cudax::start_path(g, root);
+    auto source1 = cudax::start_path(g, root);
+    cudax::launch(source0, test::one_thread_dims, test::atomic_add_one{}, ptr);
+    cudax::launch(source1, test::one_thread_dims, test::atomic_add_one{}, ptr);
+
+    auto target0 = cudax::start_path(g);
+    auto target1 = cudax::start_path(g);
+    auto targets = ::cuda::std::array<cudax::path_builder, 2>{target0, target1};
+    auto sources = ::cuda::std::array<cudax::path_builder, 2>{source0, source1};
+
+    cudax::join(targets, sources);
+    CUDAX_REQUIRE(targets[0].get_dependencies().size() == 2);
+    CUDAX_REQUIRE(targets[1].get_dependencies().size() == 2);
+
+    cudax::launch(targets[0], test::one_thread_dims, test::verify_n<44>{}, ptr);
+    auto exec = g.instantiate();
+    exec.launch(s);
+    s.sync();
+    CUDAX_REQUIRE(*ptr == 44);
+    *ptr = 0;
+  }
+
+  SECTION("path_builder join supports multi-node source fan-in")
+  {
+    cudax::graph_builder g;
+    auto root = cudax::start_path(g);
+    cudax::launch(root, test::one_thread_dims, test::assign_42{}, ptr);
+
+    auto p0 = cudax::start_path(g, root);
+    auto p1 = cudax::start_path(g, root);
+    auto p2 = cudax::start_path(g, root);
+    auto p3 = cudax::start_path(g, root);
+    auto n0 = cudax::launch(p0, test::one_thread_dims, test::atomic_add_one{}, ptr);
+    auto n1 = cudax::launch(p1, test::one_thread_dims, test::atomic_add_one{}, ptr);
+    auto n2 = cudax::launch(p2, test::one_thread_dims, test::atomic_add_one{}, ptr);
+    auto n3 = cudax::launch(p3, test::one_thread_dims, test::atomic_add_one{}, ptr);
+
+    auto source0 = cudax::start_path(g);
+    auto source1 = cudax::start_path(g);
+    source0.depends_on(n0, n1);
+    source1.depends_on(n2, n3);
+    CUDAX_REQUIRE(source0.get_dependencies().size() == 2);
+    CUDAX_REQUIRE(source1.get_dependencies().size() == 2);
+
+    auto target0 = cudax::start_path(g);
+    auto target1 = cudax::start_path(g);
+    auto targets = ::cuda::std::array<cudax::path_builder, 2>{target0, target1};
+    auto sources = ::cuda::std::array<cudax::path_builder, 2>{source0, source1};
+    cudax::join(targets, sources);
+    CUDAX_REQUIRE(targets[0].get_dependencies().size() == 4);
+    CUDAX_REQUIRE(targets[1].get_dependencies().size() == 4);
+
+    cudax::launch(targets[0], test::one_thread_dims, test::verify_n<46>{}, ptr);
+    auto exec = g.instantiate();
+    exec.launch(s);
+    s.sync();
+    CUDAX_REQUIRE(*ptr == 46);
+    *ptr = 0;
+  }
+
+  SECTION("path_builder replicate_prepend variants")
+  {
+    cudax::graph_builder g;
+
+    auto dynamic_seed = cudax::start_path(g);
+    cudax::launch(dynamic_seed, test::one_thread_dims, test::assign_42{}, ptr);
+    const auto dynamic_seed_dep = dynamic_seed.get_dependencies()[0];
+    auto dynamic_group          = cudax::replicate_prepend(std::move(dynamic_seed), 2);
+
+    CUDAX_REQUIRE(dynamic_group.size() == 3);
+    CUDAX_REQUIRE(dynamic_group[0].get_dependencies().size() == 1);
+    CUDAX_REQUIRE(dynamic_group[0].get_dependencies()[0] == dynamic_seed_dep);
+    CUDAX_REQUIRE(dynamic_group[1].get_dependencies().size() == 0);
+    CUDAX_REQUIRE(dynamic_group[2].get_dependencies().size() == 0);
+
+    auto static_seed = cudax::start_path(g);
+    cudax::launch(static_seed, test::one_thread_dims, test::assign_42{}, ptr);
+    const auto static_seed_dep = static_seed.get_dependencies()[0];
+    auto static_group          = cudax::replicate_prepend<2>(std::move(static_seed));
+
+    CUDAX_REQUIRE(static_group.size() == 3);
+    CUDAX_REQUIRE(static_group[0].get_dependencies().size() == 1);
+    CUDAX_REQUIRE(static_group[0].get_dependencies()[0] == static_seed_dep);
+    CUDAX_REQUIRE(static_group[1].get_dependencies().size() == 0);
+    CUDAX_REQUIRE(static_group[2].get_dependencies().size() == 0);
+  }
+
 #if _CCCL_CTK_AT_LEAST(12, 3)
   SECTION("legacy stream capture")
   {
@@ -271,6 +396,30 @@ C2H_TEST("Path builder with kernel nodes", "[graph]")
 
   if (cuda::devices.size() > 1)
   {
+    SECTION("Multi-device path_builder join")
+    {
+      cudax::graph_builder g(cuda::devices[0]);
+      auto root = cudax::start_path(g);
+      cudax::launch(root, test::one_thread_dims, test::assign_42{}, ptr);
+
+      auto dev0_source = cudax::start_path(cuda::devices[0], root);
+      auto dev1_source = cudax::start_path(cuda::devices[1], root);
+      cudax::launch(dev0_source, test::one_thread_dims, test::atomic_add_one{}, ptr);
+      cudax::launch(dev1_source, test::one_thread_dims, test::atomic_add_one{}, ptr);
+
+      auto target_group = cudax::replicate<1>(cudax::start_path(cuda::devices[0], root));
+      auto source_group = ::cuda::std::array<cudax::path_builder, 2>{dev0_source, dev1_source};
+      cudax::join(target_group, source_group);
+      CUDAX_REQUIRE(target_group[0].get_dependencies().size() >= 2);
+
+      cudax::launch(target_group[0], test::one_thread_dims, test::verify_n<44>{}, ptr);
+      auto exec = g.instantiate();
+      exec.launch(s);
+      s.sync();
+      CUDAX_REQUIRE(*ptr == 44);
+      *ptr = 0;
+    }
+
     SECTION("Multi-device graph")
     {
       cuda::device_memory_pool_ref dev0_mr = cuda::device_default_memory_pool(cuda::devices[0]);
