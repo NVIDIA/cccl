@@ -211,12 +211,12 @@ allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& sm
   using InOutT            = typename ScanResourcesT::InOutT;
   using SumThreadAndWarpT = typename ScanResourcesT::SumThreadAndWarpT;
 
-  const auto counts = make_scan_stage_counts(numStages);
+  const auto [num_block_idx_stages, num_sum_exclusive_cta_stages] = make_scan_stage_counts(numStages);
 
   ScanResourcesT res = {
     warpspeed::SmemResource<InOutT>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
-    warpspeed::SmemResource<uint4>(syncHandler, smemAllocator, warpspeed::Stages{counts.num_block_idx_stages}),
-    warpspeed::SmemResource<AccumT>(syncHandler, smemAllocator, warpspeed::Stages{counts.num_sum_exclusive_cta_stages}),
+    warpspeed::SmemResource<uint4>(syncHandler, smemAllocator, warpspeed::Stages{num_block_idx_stages}),
+    warpspeed::SmemResource<AccumT>(syncHandler, smemAllocator, warpspeed::Stages{num_sum_exclusive_cta_stages}),
     warpspeed::SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
   };
 

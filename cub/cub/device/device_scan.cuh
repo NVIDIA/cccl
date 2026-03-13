@@ -49,12 +49,6 @@ struct tuning
     return static_cast<const Derived&>(*this);
   }
 };
-
-struct default_tuning : tuning<default_tuning>
-{
-  template <typename InputValueT, typename OutputValueT, typename AccumT, typename OffsetT, typename ScanOpT>
-  using selector = policy_selector_from_types<InputValueT, OutputValueT, AccumT, OffsetT, ScanOpT>;
-};
 } // namespace detail::scan
 
 //! @rst
@@ -124,9 +118,6 @@ struct DeviceScan
     ::cuda::execution::determinism::__determinism_holder_t<Determinism>,
     cudaStream_t stream)
   {
-    using scan_tuning_t = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::scan::get_tuning_query_t, detail::scan::default_tuning>;
-
     // Unsigned integer type for global offsets
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
@@ -137,12 +128,15 @@ struct DeviceScan
                                                     cub::detail::it_value_t<InputIteratorT>,
                                                     typename InitValueT::value_type>>;
 
-    using policy_selector_t = typename scan_tuning_t::template selector<
+    using default_policy_selector_t = detail::scan::policy_selector_from_types<
       detail::it_value_t<InputIteratorT>,
       detail::it_value_t<OutputIteratorT>,
       accum_t,
       offset_t,
       ScanOpT>;
+
+    using policy_selector_t = ::cuda::std::execution::
+      __query_result_or_t<TuningEnvT, detail::scan::get_tuning_query_t, default_policy_selector_t>;
 
     return detail::scan::dispatch<EnforceInclusive>(
       d_temp_storage,

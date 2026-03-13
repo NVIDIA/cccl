@@ -55,7 +55,7 @@ TEST_CASE("Device scan exclusive scan works with default environment", "[scan][d
   using offset_t    = cub::detail::choose_offset_t<num_items_t>;
 
   using selector_t =
-    cub::detail::scan::default_tuning::selector<value_t, value_t, value_t, offset_t, block_size_check_t>;
+    cub::detail::scan::policy_selector_from_types<value_t, value_t, value_t, offset_t, block_size_check_t>;
 
   int current_device{};
   REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
@@ -104,38 +104,16 @@ TEST_CASE("Device scan exclusive sum works with default environment", "[sum][dev
 template <int BlockThreads>
 struct scan_tuning : cub::detail::scan::tuning<scan_tuning<BlockThreads>>
 {
-  template <class InputValueT, class OutputValueT, class AccumT, class OffsetT, class ScanOpT>
-  struct policy_hub
+  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::detail::scan::scan_policy
   {
-    struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
-    {
-      struct ScanPolicyT
-      {
-        static constexpr int BLOCK_THREADS                      = BlockThreads;
-        static constexpr int ITEMS_PER_THREAD                   = 1;
-        static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE;
-
-        static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::CacheLoadModifier::LOAD_DEFAULT;
-        static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM =
-          cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE;
-        static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING;
-
-        struct detail
-        {
-          using delay_constructor_t = cub::detail::default_delay_constructor_t<AccumT>;
-        };
-      };
-    };
-
-    using MaxPolicy = Policy500;
-  };
-
-  template <class InputValueT, class OutputValueT, class AccumT, class OffsetT, class ScanOpT>
-  using selector =
-    cub::detail::scan::policy_selector_from_hub<policy_hub<InputValueT, OutputValueT, AccumT, OffsetT, ScanOpT>,
-                                                InputValueT,
-                                                OutputValueT,
-                                                AccumT>;
+    return {BlockThreads,
+            1,
+            cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
+            cub::CacheLoadModifier::LOAD_DEFAULT,
+            cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE,
+            cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
+            cub::detail::delay_constructor_policy{cub::detail::delay_constructor_kind::fixed_delay, 350, 450}};
+  }
 };
 
 struct get_reduce_tuning_query_t
@@ -208,7 +186,7 @@ TEST_CASE("Device scan inclusive-scan works with default environment", "[scan][d
   using offset_t    = cub::detail::choose_offset_t<num_items_t>;
 
   using selector_t =
-    cub::detail::scan::default_tuning::selector<value_t, value_t, value_t, offset_t, block_size_check_t>;
+    cub::detail::scan::policy_selector_from_types<value_t, value_t, value_t, offset_t, block_size_check_t>;
 
   int current_device{};
   REQUIRE(cudaSuccess == cudaGetDevice(&current_device));

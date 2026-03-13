@@ -160,13 +160,6 @@ struct policy_selector_from_hub
   {
     return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }
-
-  static constexpr int input_value_size       = int{sizeof(InputValueT)};
-  static constexpr int input_value_alignment  = int{alignof(InputValueT)};
-  static constexpr int output_value_size      = int{sizeof(OutputValueT)};
-  static constexpr int output_value_alignment = int{alignof(OutputValueT)};
-  static constexpr int accum_size             = int{sizeof(AccumT)};
-  static constexpr int accum_alignment        = int{alignof(AccumT)};
 };
 } // namespace detail::scan
 
@@ -463,11 +456,14 @@ struct DispatchScan
     return cudaSuccess;
   }
 
-#if _CCCL_CUDACC_AT_LEAST(12, 8)
-  template <typename PolicySelectorT>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(
-    const detail::scan::scan_warpspeed_policy& warpspeed_policy, const PolicySelectorT& policy_selector)
+#if __cccl_ptx_isa >= 860
+  template <typename PolicyGetter, typename PolicySelectorT>
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
+  __invoke_lookahead_algorithm(PolicyGetter policy_getter, const PolicySelectorT& policy_selector)
   {
+    CUB_DETAIL_CONSTEXPR_ISH auto active_policy          = policy_getter();
+    CUB_DETAIL_CONSTEXPR_ISH const auto warpspeed_policy = active_policy.warpspeed;
+
     const int grid_dim =
       static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(warpspeed_policy.tile_size)));
 
@@ -498,17 +494,21 @@ struct DispatchScan
     // TODO(bgruber): we probably need to ensure alignment of d_temp_storage
     _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, kernel_source.look_ahead_tile_state_alignment()), "");
 
-    auto scan_kernel = kernel_source.ScanKernel();
-    int num_stages   = 1;
-    int smem_size    = detail::scan::smem_for_stages(
+    auto scan_kernel                               = kernel_source.ScanKernel();
+    CUB_DETAIL_CONSTEXPR_ISH int smem_size_1_stage = detail::scan::smem_for_stages(
       warpspeed_policy,
-      num_stages,
+      1,
       policy_selector.input_value_size,
       policy_selector.input_value_alignment,
       policy_selector.output_value_size,
       policy_selector.output_value_alignment,
       policy_selector.accum_size,
       policy_selector.accum_alignment);
+    CUB_DETAIL_STATIC_ISH_ASSERT(smem_size_1_stage <= detail::max_smem_per_block,
+                                 "Single-stage warpspeed scan exceeds architecture independent SMEM (48KiB)");
+
+    int num_stages = 1;
+    int smem_size  = smem_size_1_stage;
 
     // When launched from the host, maximize the number of stages that we can fit inside the shared memory.
     NV_IF_TARGET(NV_IS_HOST, ({
@@ -617,7 +617,7 @@ struct DispatchScan
 
     return cudaSuccess;
   }
-#endif // _CCCL_CUDACC_AT_LEAST(12, 8)
+#endif // __cccl_ptx_isa >= 860
 
   template <typename PolicyGetter, typename PolicySelectorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
@@ -628,16 +628,12 @@ struct DispatchScan
     CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.load_modifier != CacheLoadModifier::LOAD_LDG,
                                  "The memory consistency model does not apply to texture accesses");
 
-#if !_CCCL_CUDACC_AT_LEAST(12, 8)
-    (void) policy_selector;
-#endif // !_CCCL_CUDACC_AT_LEAST(12, 8)
-
-#if _CCCL_CUDACC_AT_LEAST(12, 8)
-    if (kernel_source.use_warpspeed(active_policy))
+#if __cccl_ptx_isa >= 860
+    if CUB_DETAIL_CONSTEXPR_ISH (kernel_source.use_warpspeed(active_policy))
     {
-      return __invoke_lookahead_algorithm(active_policy.warpspeed, policy_selector);
+      return __invoke_lookahead_algorithm(policy_getter, policy_selector);
     }
-#endif // _CCCL_CUDACC_AT_LEAST(12, 8)
+#endif // __cccl_ptx_isa >= 860
 
     // Number of input tiles
     const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
