@@ -246,8 +246,7 @@ C2H_TEST("DeviceTransform::TransformStableArgumentAddresses custom stream", "[de
 }
 
 // use a policy selector that prescribes to run with exactly 8 threads per block and 3 items per thread
-// TODO(bgruber): can we get by without the base class?
-struct my_policy_selector : cub::detail::transform::tuning<my_policy_selector>
+struct my_policy_selector
 {
   _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::transform::transform_policy
   {
