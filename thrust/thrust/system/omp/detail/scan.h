@@ -21,6 +21,7 @@
 #include <thrust/system/omp/detail/pragma_omp.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/distance.h>

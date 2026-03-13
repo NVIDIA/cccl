@@ -7,6 +7,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <cuda/iterator>
 #include <cuda/std/tuple>
 
 #include <look_back_helper.cuh>

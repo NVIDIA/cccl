@@ -20,6 +20,7 @@
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/address_stability.h>
 #include <cuda/__functional/call_or.h>
+#include <cuda/__iterator/zip_iterator.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/tuple>

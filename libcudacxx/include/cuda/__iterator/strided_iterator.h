@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/iterator.h>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
@@ -49,7 +50,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @tparam _Stride Either an <a href="https://eel.is/c++draft/iterator.concept.winc#4">integer-like</a> or an
 //! <a href="https://eel.is/c++draft/views.contiguous#concept:integral-constant-like">integral-constant-like</a>
 //! specifying the stride
-template <class _Iter, class _Stride = ::cuda::std::iter_difference_t<_Iter>>
+template <class _Iter, class _Stride>
 class strided_iterator
 {
 private:

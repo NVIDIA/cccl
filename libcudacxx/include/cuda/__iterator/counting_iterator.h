@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/iterator.h>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
@@ -167,8 +168,8 @@ template <::cuda::std::weakly_incrementable _Start>
   requires ::cuda::std::copyable<_Start>
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Start,
-          ::cuda::std::enable_if_t<::cuda::std::weakly_incrementable<_Start>, int> = 0,
-          ::cuda::std::enable_if_t<::cuda::std::copyable<_Start>, int>             = 0>
+          ::cuda::std::enable_if_t<::cuda::std::weakly_incrementable<_Start>, int>,
+          ::cuda::std::enable_if_t<::cuda::std::copyable<_Start>, int>>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class counting_iterator : public __counting_iterator_category<_Start>
 {
