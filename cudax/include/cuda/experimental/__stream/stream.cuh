@@ -265,14 +265,14 @@ inline void __join_impl(const _ToRange& __to_streams, const _FromRange& __from_s
   auto __first                 = stream_ref(*__to_begin);
   auto __first_device          = __first.device();
   bool __use_per_stream_events = false;
-  cuda::event __event(__first_device);
+  cuda::event __local_event(__first_device);
   for (const auto& __from_stream : __from_streams)
   {
     auto __from = stream_ref(__from_stream);
 
     if (!__use_per_stream_events)
     {
-      auto __status = ::cuda::__driver::__eventRecordNoThrow(__event.get(), __from.get());
+      auto __status = ::cuda::__driver::__eventRecordNoThrow(__local_event.get(), __from.get());
       if (__status == cudaSuccess)
       {
         for (const auto& __to_stream : __to_streams)
@@ -280,7 +280,7 @@ inline void __join_impl(const _ToRange& __to_streams, const _FromRange& __from_s
           auto __to = stream_ref(__to_stream);
           if (__to != __from)
           {
-            __to.wait(__event);
+            __to.wait(__local_event);
           }
         }
         continue;
