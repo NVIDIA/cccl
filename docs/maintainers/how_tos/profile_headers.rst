@@ -3,10 +3,14 @@ Profile headers
 
 Optimizing compile time in CCCL headers can be just as important as optimizing runtime performance.
 
-To help reason about the baseline compile time cost of each header in CCCL, this guide describes
-how to generate a profile of compile time, transitive LOC, and include reference count for CCCL public headers.
+This workflow profiles headers using generated one-header translation units (TUs) and
+NVCC device-time-trace output. It supports two modes:
 
-For every public header in CCCL, it measures the compile time and expanded LOC of the following file:
+- ``public``: profile direct per-public-header costs (compile time + transitive LOC)
+- ``all``: aggregate transitive header behavior across all generated public-header TUs
+  (how many public-header TUs include each header + processing time metrics)
+
+For each public header in CCCL, generated TUs have the form:
 
 .. code-block:: c++
 
@@ -15,9 +19,9 @@ For every public header in CCCL, it measures the compile time and expanded LOC o
     return 0;
   }
 
-- per-header TU compile time is computed from the build's compile timing logs
-- transitive LOC is computed with ``cloc`` on preprocessed output for generated one-header translation units
-- include reference count is computed as direct ``#include`` references from other scanned CCCL headers
+- per-header TU compile time is computed from build timing logs
+- transitive LOC is computed with ``cloc`` on preprocessed output
+- transitive include/time metrics are computed from device-time-trace events
 
 How to run
 ----------
@@ -27,13 +31,46 @@ How to run
   ci/profile_headers.sh \
     --output-csv /tmp/profile_headers.csv
 
+Run ``public`` mode explicitly:
+
+.. code-block:: bash
+
+  ci/profile_headers.sh \
+    --mode public \
+    --output-csv /tmp/profile_headers_public.csv
+
+Run ``all`` mode explicitly:
+
+.. code-block:: bash
+
+  ci/profile_headers.sh \
+    --mode all \
+    --output-csv /tmp/profile_headers_all.csv
+
 To also print an aggregate expensive-header report using ``ctadvisor``:
 
 .. code-block:: bash
 
   ci/profile_headers.sh \
+    --mode all \
     --output-csv /tmp/profile_headers.csv \
     --ctadvisor
+
+CSV output
+----------
+
+``--mode public`` writes:
+
+- ``header_path``
+- ``compile_time_ms``
+- ``transitive_loc``
+
+``--mode all`` writes:
+
+- ``header_path``
+- ``include_tu_count``: number of distinct generated public-header TUs where the header appears at least once
+- ``avg_process_time_s``: average processing time per including TU
+- ``total_process_time_s``: total processing time summed across all including TUs
 
 
 Notebook workflow
