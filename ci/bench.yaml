@@ -1,0 +1,55 @@
+# # CUB PR benchmark request config.
+#
+# ## Overview:
+#
+# This file is used to request CUB benchmark comparisons in PR CI.
+#
+# Changes should not be merged to main.
+# The CI branch protections will fail if this file is modified. Reset it before merging.
+#
+# !! Strongly consider appending the following to your **commit messages** while benchmarking. !!
+# This prevents wasteful non-benchmark CI jobs if they are not needed.
+#
+#     [bench-only]
+#
+# ## Quick start:
+#
+# 1. Add one or more benchmark regexes under benchmarks.filters.
+# 2. Enable at least one GPU by uncommenting or adding entries in benchmarks.gpus.
+# 3. Push and inspect the dispatched benchmark jobs/artifacts.
+# 4. Remove/reset benchmark-request edits before final merge.
+
+benchmarks:
+
+  # Inclusive regex filters (required). Examples:
+  #  - "^cub\.bench\.for_each\.base"
+  #  - "^cub\.bench\.reduce\.(sum|min)\."
+  filters:
+    - '^cub\.bench\.for_each\.base'
+    - '^cub\.bench\.reduce\.(sum|min)\.'
+
+  # Select GPUs. These are limited and shared, be intentional and conservative.
+  gpus:
+    # - "t4"         # sm_75, 16 GB
+    - "rtx2080"    # sm_75,  8 GB
+    - "rtxa6000"   # sm_86, 48 GB
+    # - "l4"         # sm_89, 24 GB
+    - "rtx4090"    # sm_89, 24 GB
+    - "h100"       # sm_90, 80 GB
+    - "rtxpro6000" # sm_120
+
+  # Extra .devcontainer/launch.sh args
+  # launch_args: "--cuda 13.1 --host gcc14"
+  launch_args: "" # Latest nvcc + gcc
+
+  # Advanced:
+  base_ref: "origin/main"
+  test_ref: "HEAD"
+  arch: "native"
+  nvbench_args: >- # concatenate lines with spaces
+    --timeout 30
+    --stopping-criterion entropy
+    --min-samples 5000
+    --throttle-threshold 90
+    --throttle-recovery-delay 0.15
+  nvbench_compare_args: ""
