@@ -33,7 +33,7 @@ Declaration/Definition:
 - All functions with a non-void return type must use `[[nodiscard]]`.
 - All functions that don't throw exception must use `noexcept`
 - `constexpr` must be used for all functions that don't depend on run-time features, e.g. pointers.
-- Return type must be explicit (non `auto`) when possible.
+- If the return type is not explicit (`auto`), then a trailing return type is strongly preferred, e.g. `auto abs(float) -> float`
 
 Function call:
 
