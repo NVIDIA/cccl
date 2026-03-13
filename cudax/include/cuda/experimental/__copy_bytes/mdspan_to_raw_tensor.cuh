@@ -77,7 +77,6 @@ __to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _Accesso
 {
   static_assert(_MaxRank >= _Extents::rank(), "_MaxRank must be at least _Extents::rank()");
   using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
-  using __extent_t     = typename __raw_tensor_t::__unsigned_extent_t;
   using __rank_t       = typename _Extents::rank_type;
   __raw_tensor_t __result{__mdspan.data_handle(), 0, {}, {}};
   if constexpr (_Extents::rank() > 0)
@@ -85,8 +84,8 @@ __to_raw_tensor(const ::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _Accesso
     __rank_t __r = 0;
     for (__rank_t __i = 0; __i < _Extents::rank(); ++__i)
     {
-      const auto __extent = static_cast<__extent_t>(__mdspan.extent(__i));
-      if (__extent != __extent_t{1})
+      const auto __extent = static_cast<_ExtentT>(__mdspan.extent(__i));
+      if (__extent != _ExtentT{1})
       {
         __result.__extents[__r] = __extent;
         __result.__strides[__r] = static_cast<_StrideT>(__mdspan.stride(__i));

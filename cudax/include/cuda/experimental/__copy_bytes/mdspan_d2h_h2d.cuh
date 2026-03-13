@@ -138,11 +138,10 @@ _CCCL_HOST_API void __copy_bytes_impl(
     cudax::__flip_negative_strides_paired(__src_simplified, __dst_simplified);
     cudax::__coalesce_paired(__src_simplified, __dst_simplified);
 
-    using __unsigned_extent_t = typename decltype(__src_simplified)::__unsigned_extent_t;
-    const bool __both_stride1 = (__src_simplified.__strides[0] == 1) && (__dst_simplified.__strides[0] == 1);
-    const __unsigned_extent_t __tile_size = __both_stride1 ? __src_simplified.__extents[0] : __unsigned_extent_t{1};
-    const auto __src_iter                 = (__tile_size > 1) ? __src_simplified : cudax::__reverse_modes(__src_raw);
-    const auto __dst_iter                 = (__tile_size > 1) ? __dst_simplified : cudax::__reverse_modes(__dst_raw);
+    const bool __both_stride1    = (__src_simplified.__strides[0] == 1) && (__dst_simplified.__strides[0] == 1);
+    const __extent_t __tile_size = __both_stride1 ? __src_simplified.__extents[0] : __extent_t{1};
+    const auto __src_iter        = (__tile_size > 1) ? __src_simplified : cudax::__reverse_modes(__src_raw);
+    const auto __dst_iter        = (__tile_size > 1) ? __dst_simplified : cudax::__reverse_modes(__dst_raw);
 
     const auto __num_tiles  = __tensor_size / __tile_size;
     const auto __copy_bytes = __tile_size * sizeof(_TpIn);
