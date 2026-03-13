@@ -50,7 +50,7 @@ Function call:
 - Files must include all headers related to the symbols that they are using.
 - No transitive header inclusion are allowed.
 - Unneeded headers must be removed.
-- The headers must be the most precise one, e.g. `#include <cuda/std/__type_traits/is_array>`.
+- The headers must be the most precise one, e.g. `#include <cuda/std/__type_traits/is_array.h>`.
 - Headers in `cuda/std/__cccl/` must not be included directly (they are provided by `__config` or the prologue/epilogue mechanism).
 
 - All headers must have the license boilerplate.
