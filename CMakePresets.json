@@ -120,6 +120,7 @@
       "name": "libcudacxx",
       "inherits": "base",
       "cacheVariables": {
+        "CCCL_ENABLE_BENCHMARKS": true,
         "CCCL_ENABLE_LIBCUDACXX": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true
       }
@@ -146,6 +147,7 @@
       "name": "libcudacxx-nvrtc",
       "inherits": "libcudacxx",
       "cacheVariables": {
+        "CCCL_ENABLE_BENCHMARKS": false,
         "LIBCUDACXX_TEST_WITH_NVRTC": true,
         "CMAKE_CUDA_ARCHITECTURES": "70"
       }
