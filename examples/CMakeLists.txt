@@ -98,3 +98,5 @@ foreach (DEVICE_SYSTEM IN ITEMS CUDA OMP TBB CPP)
     ${cmake_cpm_opts}
   )
 endforeach()
+
+add_subdirectory(ccclrt)
