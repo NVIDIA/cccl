@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2008-2026, NVIDIA Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -18,6 +18,7 @@
 #include <thrust/scan.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 #include <thrust/system/tbb/detail/reduce_intervals.h>
+#include <thrust/system/tbb/pre_include.h>
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
