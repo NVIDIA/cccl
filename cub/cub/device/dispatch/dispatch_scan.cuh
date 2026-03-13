@@ -135,6 +135,18 @@ struct DeviceScanKernelSource
   }
 };
 
+template <typename KernelSourceT>
+CUB_RUNTIME_FUNCTION constexpr bool
+use_warpspeed_constexpr_ish(const KernelSourceT& kernel_source, const scan_policy& policy)
+{
+#if defined(CUB_DEFINE_RUNTIME_POLICIES)
+  return kernel_source.use_warpspeed(policy);
+#else
+  (void) kernel_source;
+  return KernelSourceT::use_warpspeed(policy);
+#endif
+}
+
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
 template <typename LegacyActivePolicy>
 _CCCL_API constexpr auto convert_policy() -> scan_policy
@@ -671,7 +683,7 @@ struct DispatchScan
                                  "The memory consistency model does not apply to texture accesses");
 
 #if __cccl_ptx_isa >= 860
-    if CUB_DETAIL_CONSTEXPR_ISH (kernel_source.use_warpspeed(active_policy))
+    if CUB_DETAIL_CONSTEXPR_ISH (detail::scan::use_warpspeed_constexpr_ish(kernel_source, active_policy))
     {
       return __invoke_lookahead_algorithm(policy_getter, policy_selector);
     }
