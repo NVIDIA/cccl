@@ -466,7 +466,7 @@ public:
 
     // ===== Properties =====
 
-    virtual const data_place affine_data_place() const
+    virtual data_place affine_data_place() const
     {
       return affine;
     }
@@ -484,15 +484,6 @@ public:
     virtual bool is_device() const
     {
       return affine.is_device();
-    }
-
-    /**
-     * @brief Check if this is a multi-element grid (size > 1)
-     * @deprecated Use size() > 1 instead
-     */
-    virtual bool is_grid() const
-    {
-      return size() > 1;
     }
 
     virtual void set_affine_data_place(data_place place)
@@ -760,7 +751,7 @@ public:
     return pimpl->to_string();
   }
 
-  const data_place affine_data_place() const
+  data_place affine_data_place() const
   {
     return pimpl->affine_data_place();
   }
@@ -803,7 +794,7 @@ public:
    */
   bool is_grid() const
   {
-    return pimpl->is_grid();
+    return size() > 1;
   }
 
   /**
@@ -1037,7 +1028,7 @@ public:
       _CCCL_ASSERT(!prev.get_impl(), "Host deactivate expects empty prev");
     }
 
-    const data_place affine_data_place() const override
+    data_place affine_data_place() const override
     {
       return data_place::host();
     }
