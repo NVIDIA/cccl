@@ -1418,6 +1418,128 @@ struct sm100_tuning<Input,
   using delay_constructor                            = exponential_backoff_constructor_t<536, 845>;
 };
 
+template <class InputT,
+          flagged,
+          keep_rejects,
+          offset_size OffsetSize,
+          primitive,
+          input_size InputSize,
+          may_alias,
+          distinct_partitions DistinctPartitions>
+struct sm120_tuning;
+
+// partition::if
+template <class Input>
+struct sm120_tuning<Input,
+                    flagged::no,
+                    keep_rejects::yes,
+                    offset_size::_4,
+                    primitive::yes,
+                    input_size::_1,
+                    may_alias::no,
+                    distinct_partitions::no>
+{
+  // trp_0.ld_0.ipt_21.tpb_256.ns_1036.dcid_0.l2w_990 1.116614  1.0  1.103126  1.285714
+  static constexpr int nominal_4b_items              = 21;
+  static constexpr int threads                       = 256;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = no_delay_constructor_t<990>;
+};
+
+template <class Input>
+struct sm120_tuning<Input,
+                    flagged::no,
+                    keep_rejects::yes,
+                    offset_size::_4,
+                    primitive::yes,
+                    input_size::_1,
+                    may_alias::no,
+                    distinct_partitions::yes>
+{
+  // trp_0.ld_0.ipt_19.tpb_256.ns_1188.dcid_0.l2w_625 1.067131  1.000000  1.070177  1.333333
+  static constexpr int nominal_4b_items              = 19;
+  static constexpr int threads                       = 256;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = no_delay_constructor_t<625>;
+};
+
+template <class Input>
+struct sm120_tuning<Input,
+                    flagged::no,
+                    keep_rejects::yes,
+                    offset_size::_4,
+                    primitive::yes,
+                    input_size::_2,
+                    may_alias::no,
+                    distinct_partitions::no>
+{
+  // trp_0.ld_0.ipt_12.tpb_256.ns_1676.dcid_0.l2w_670 1.076889  0.997207  1.100695  1.333333
+  static constexpr int nominal_4b_items              = 12;
+  static constexpr int threads                       = 256;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = no_delay_constructor_t<670>;
+};
+
+template <class Input>
+struct sm120_tuning<Input,
+                    flagged::no,
+                    keep_rejects::yes,
+                    offset_size::_4,
+                    primitive::yes,
+                    input_size::_2,
+                    may_alias::no,
+                    distinct_partitions::yes>
+{
+  // trp_0.ld_0.ipt_14.tpb_224.ns_1064.dcid_5.l2w_605 1.076329  0.997214  1.100189  1.333333
+  static constexpr int nominal_4b_items              = 14;
+  static constexpr int threads                       = 224;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = exponential_backon_jitter_window_constructor_t<1064, 605>;
+};
+
+template <class Input>
+struct sm120_tuning<Input,
+                    flagged::no,
+                    keep_rejects::yes,
+                    offset_size::_8,
+                    primitive::yes,
+                    input_size::_2,
+                    may_alias::no,
+                    distinct_partitions::no>
+{
+  // trp_0.ld_0.ipt_8.tpb_512.ns_1612.dcid_0.l2w_905 1.069564  0.796875  1.092946  1.333333
+  static constexpr int nominal_4b_items              = 8;
+  static constexpr int threads                       = 512;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = no_delay_constructor_t<905>;
+};
+
+template <class Input>
+struct sm120_tuning<Input,
+                    flagged::no,
+                    keep_rejects::yes,
+                    offset_size::_8,
+                    primitive::yes,
+                    input_size::_2,
+                    may_alias::no,
+                    distinct_partitions::yes>
+{
+  // trp_0.ld_0.ipt_12.tpb_256.ns_752.dcid_6.l2w_645 1.093218  0.991620  1.116711  1.333333
+  static constexpr int nominal_4b_items              = 12;
+  static constexpr int threads                       = 256;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = exponential_backon_jitter_constructor_t<752, 645>;
+};
+
+// input_size::_4 (I32/F32): removed — conflicting trends between I32 and F32, falls back to SM100
+// input_size::_8 (I64/F64): removed — vanishing speedup at large sizes, falls back to SM100
+
 template <class InputT>
 constexpr primitive is_primitive()
 {
@@ -1562,7 +1684,32 @@ struct policy_hub
                                                    is_distinct_partitions<DistinctPartitions>()>>(0));
   };
 
-  using MaxPolicy = Policy1000;
+  struct Policy1200 : ChainedPolicy<1200, Policy1200, Policy1000>
+  {
+    // Use values from tuning if a specialization exists, otherwise pick Policy1000
+    template <typename Tuning>
+    static auto select_agent_policy120(int)
+      -> AgentSelectIfPolicy<Tuning::threads,
+                             Nominal4BItemsToItems<InputT>(Tuning::nominal_4b_items),
+                             Tuning::load_algorithm,
+                             Tuning::load_modifier,
+                             BLOCK_SCAN_WARP_SCANS,
+                             typename Tuning::delay_constructor>;
+    template <typename Tuning>
+    static auto select_agent_policy120(long) -> typename Policy1000::SelectIfPolicyT;
+
+    using SelectIfPolicyT =
+      decltype(select_agent_policy120<sm120_tuning<InputT,
+                                                   is_flagged<FlagT>(),
+                                                   are_rejects_kept<keep_rejects>(),
+                                                   classify_offset_size<OffsetT>(),
+                                                   is_primitive<InputT>(),
+                                                   classify_input_size<InputT>(),
+                                                   should_alias<may_alias>(),
+                                                   is_distinct_partitions<DistinctPartitions>()>>(0));
+  };
+
+  using MaxPolicy = Policy1200;
 };
 } // namespace detail::select
 
