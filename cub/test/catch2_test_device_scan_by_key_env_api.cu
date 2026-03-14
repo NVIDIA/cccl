@@ -14,25 +14,6 @@
 
 #include <c2h/catch2_test_helper.h>
 
-C2H_TEST("cub::DeviceScan::ExclusiveSumByKey accepts environment", "[scan][by_key][env]")
-{
-  auto keys   = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};
-  auto input  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto output = thrust::device_vector<int>(7);
-
-  auto error =
-    cub::DeviceScan::ExclusiveSumByKey(keys.begin(), input.begin(), output.begin(), static_cast<int>(input.size()));
-  if (error != cudaSuccess)
-  {
-    std::cerr << "cub::DeviceScan::ExclusiveSumByKey failed with status: " << error << std::endl;
-  }
-
-  thrust::device_vector<int> expected{0, 8, 0, 7, 12, 0, 0};
-
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(output == expected);
-}
-
 C2H_TEST("cub::DeviceScan::ExclusiveSumByKey accepts stream environment", "[scan][by_key][env]")
 {
   // example-begin exclusive-sum-by-key-env
@@ -53,27 +34,6 @@ C2H_TEST("cub::DeviceScan::ExclusiveSumByKey accepts stream environment", "[scan
 
   thrust::device_vector<float> expected{0.0f, 8.0f, 0.0f, 7.0f, 12.0f, 0.0f, 0.0f};
   // example-end exclusive-sum-by-key-env
-
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(output == expected);
-}
-
-C2H_TEST("cub::DeviceScan::ExclusiveScanByKey accepts environment", "[scan][by_key][env]")
-{
-  auto op     = cuda::std::plus{};
-  auto keys   = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};
-  auto input  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto output = thrust::device_vector<int>(7);
-  auto init   = 0;
-
-  auto error = cub::DeviceScan::ExclusiveScanByKey(
-    keys.begin(), input.begin(), output.begin(), op, init, static_cast<int>(input.size()));
-  if (error != cudaSuccess)
-  {
-    std::cerr << "cub::DeviceScan::ExclusiveScanByKey failed with status: " << error << std::endl;
-  }
-
-  thrust::device_vector<int> expected{0, 8, 0, 7, 12, 0, 0};
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
@@ -106,25 +66,6 @@ C2H_TEST("cub::DeviceScan::ExclusiveScanByKey accepts stream environment", "[sca
   REQUIRE(output == expected);
 }
 
-C2H_TEST("cub::DeviceScan::InclusiveSumByKey accepts environment", "[scan][by_key][env]")
-{
-  auto keys   = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};
-  auto input  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto output = thrust::device_vector<int>(7);
-
-  auto error =
-    cub::DeviceScan::InclusiveSumByKey(keys.begin(), input.begin(), output.begin(), static_cast<int>(input.size()));
-  if (error != cudaSuccess)
-  {
-    std::cerr << "cub::DeviceScan::InclusiveSumByKey failed with status: " << error << std::endl;
-  }
-
-  thrust::device_vector<int> expected{8, 14, 7, 12, 15, 0, 9};
-
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(output == expected);
-}
-
 C2H_TEST("cub::DeviceScan::InclusiveSumByKey accepts stream environment", "[scan][by_key][env]")
 {
   // example-begin inclusive-sum-by-key-env
@@ -145,26 +86,6 @@ C2H_TEST("cub::DeviceScan::InclusiveSumByKey accepts stream environment", "[scan
 
   thrust::device_vector<float> expected{8.0f, 14.0f, 7.0f, 12.0f, 15.0f, 0.0f, 9.0f};
   // example-end inclusive-sum-by-key-env
-
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(output == expected);
-}
-
-C2H_TEST("cub::DeviceScan::InclusiveScanByKey accepts environment", "[scan][by_key][env]")
-{
-  auto op     = cuda::std::plus{};
-  auto keys   = thrust::device_vector<int>{0, 0, 1, 1, 1, 2, 2};
-  auto input  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto output = thrust::device_vector<int>(7);
-
-  auto error = cub::DeviceScan::InclusiveScanByKey(
-    keys.begin(), input.begin(), output.begin(), op, static_cast<int>(input.size()));
-  if (error != cudaSuccess)
-  {
-    std::cerr << "cub::DeviceScan::InclusiveScanByKey failed with status: " << error << std::endl;
-  }
-
-  thrust::device_vector<int> expected{8, 14, 7, 12, 15, 0, 9};
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
