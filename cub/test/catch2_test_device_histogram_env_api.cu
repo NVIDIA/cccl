@@ -49,6 +49,48 @@ C2H_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream", "[histog
   REQUIRE(d_histogram == expected);
 }
 
+C2H_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream (2D)", "[histogram][env]")
+{
+  // example-begin histogram-even-2d-env
+  // 2D region of interest: 2 rows, 3 samples per row, row stride includes 1 padding element
+  // Row 0: [0, 1, 2, PAD]   Row 1: [1, 2, 0, PAD]
+  auto d_samples          = thrust::device_vector<int>{0, 1, 2, -1, 1, 2, 0, -1};
+  int num_levels          = 4; // 3 bins: [0,1), [1,2), [2,3)
+  int lower_level         = 0;
+  int upper_level         = 3;
+  int num_row_samples     = 3;
+  int num_rows            = 2;
+  size_t row_stride_bytes = 4 * sizeof(int);
+
+  auto d_histogram = thrust::device_vector<int>(num_levels - 1, 0);
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+  auto env = cuda::std::execution::env{stream_ref};
+
+  auto error = cub::DeviceHistogram::HistogramEven(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_levels,
+    lower_level,
+    upper_level,
+    num_row_samples,
+    num_rows,
+    row_stride_bytes,
+    env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceHistogram::HistogramEven (2D) failed with status: " << error << std::endl;
+  }
+
+  // Samples: 0,1,2, 1,2,0 → bin[0]=2, bin[1]=2, bin[2]=2
+  thrust::device_vector<int> expected{2, 2, 2};
+  // example-end histogram-even-2d-env
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_histogram == expected);
+}
+
 C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream", "[histogram][env]")
 {
   // example-begin histogram-range-env
@@ -76,6 +118,46 @@ C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream", "[histo
 
   thrust::device_vector<int> expected{1, 5, 0, 2};
   // example-end histogram-range-env
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_histogram == expected);
+}
+
+C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream (2D)", "[histogram][env]")
+{
+  // example-begin histogram-range-2d-env
+  // 2D region of interest: 2 rows, 3 samples per row, row stride includes 1 padding element
+  // Row 0: [0, 1, 2, PAD]   Row 1: [1, 2, 0, PAD]
+  auto d_samples          = thrust::device_vector<int>{0, 1, 2, -1, 1, 2, 0, -1};
+  auto d_levels           = thrust::device_vector<int>{0, 1, 2, 3}; // 3 bins: [0,1), [1,2), [2,3)
+  int num_levels          = static_cast<int>(d_levels.size());
+  int num_row_samples     = 3;
+  int num_rows            = 2;
+  size_t row_stride_bytes = 4 * sizeof(int);
+
+  auto d_histogram = thrust::device_vector<int>(num_levels - 1, 0);
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+  auto env = cuda::std::execution::env{stream_ref};
+
+  auto error = cub::DeviceHistogram::HistogramRange(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_levels,
+    thrust::raw_pointer_cast(d_levels.data()),
+    num_row_samples,
+    num_rows,
+    row_stride_bytes,
+    env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceHistogram::HistogramRange (2D) failed with status: " << error << std::endl;
+  }
+
+  // Samples: 0,1,2, 1,2,0 → bin[0]=2, bin[1]=2, bin[2]=2
+  thrust::device_vector<int> expected{2, 2, 2};
+  // example-end histogram-range-2d-env
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_histogram == expected);

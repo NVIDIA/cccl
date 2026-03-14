@@ -1615,8 +1615,8 @@ public:
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_histogram_env_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin histogram-even-env
-  //!     :end-before: example-end histogram-even-env
+  //!     :start-after: example-begin histogram-even-2d-env
+  //!     :end-before: example-end histogram-even-2d-env
   //!
   //! @endrst
   //!
@@ -2025,8 +2025,8 @@ public:
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_histogram_env_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin histogram-range-env
-  //!     :end-before: example-end histogram-range-env
+  //!     :start-after: example-begin histogram-range-2d-env
+  //!     :end-before: example-end histogram-range-2d-env
   //!
   //! @endrst
   //!
