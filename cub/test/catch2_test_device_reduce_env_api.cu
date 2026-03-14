@@ -9,6 +9,8 @@
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
+#include <cuda/devices>
+#include <cuda/stream>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -67,10 +69,11 @@ C2H_TEST("cub::DeviceReduce::Reduce accepts stream", "[reduce][env]")
   auto output = thrust::device_vector<float>(1);
   auto init   = 0.0f;
 
-  cudaStream_t legacy_stream = 0;
-  cuda::stream_ref stream_ref{legacy_stream};
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+  auto env = cuda::std::execution::env{stream_ref};
 
-  auto error = cub::DeviceReduce::Reduce(input.begin(), output.begin(), input.size(), op, init, stream_ref);
+  auto error = cub::DeviceReduce::Reduce(input.begin(), output.begin(), input.size(), op, init, env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::Reduce failed with status: " << error << std::endl;
@@ -89,10 +92,11 @@ C2H_TEST("cub::DeviceReduce::Sum accepts stream", "[reduce][env]")
   auto input  = thrust::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
   auto output = thrust::device_vector<float>(1);
 
-  cudaStream_t legacy_stream = 0;
-  cuda::stream_ref stream_ref{legacy_stream};
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+  auto env = cuda::std::execution::env{stream_ref};
 
-  auto error = cub::DeviceReduce::Sum(input.begin(), output.begin(), input.size(), stream_ref);
+  auto error = cub::DeviceReduce::Sum(input.begin(), output.begin(), input.size(), env);
   if (error != cudaSuccess)
   {
     thrust::device_vector<float> expected{6.0f};
@@ -150,10 +154,11 @@ C2H_TEST("cub::DeviceReduce::Sum accepts stream", "[reduce][env]")
   auto input  = thrust::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
   auto output = thrust::device_vector<float>(1);
 
-  cudaStream_t legacy_stream = 0;
-  cuda::stream_ref stream_ref{legacy_stream};
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+  auto env = cuda::std::execution::env{stream_ref};
 
-  auto error = cub::DeviceReduce::Sum(input.begin(), output.begin(), input.size(), stream_ref);
+  auto error = cub::DeviceReduce::Sum(input.begin(), output.begin(), input.size(), env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::Sum failed with status: " << error << std::endl;
@@ -193,10 +198,11 @@ C2H_TEST("cub::DeviceReduce::Min accepts stream", "[reduce][env]")
   auto input  = thrust::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
   auto output = thrust::device_vector<float>(1);
 
-  cudaStream_t legacy_stream = 0;
-  cuda::stream_ref stream_ref{legacy_stream};
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+  auto env = cuda::std::execution::env{stream_ref};
 
-  auto error = cub::DeviceReduce::Min(input.begin(), output.begin(), input.size(), stream_ref);
+  auto error = cub::DeviceReduce::Min(input.begin(), output.begin(), input.size(), env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::Min failed with status: " << error << std::endl;
@@ -236,10 +242,11 @@ C2H_TEST("cub::DeviceReduce::Max accepts stream", "[reduce][env]")
   auto input  = thrust::device_vector<float>{0.0f, 1.0f, 2.0f, 3.0f};
   auto output = thrust::device_vector<float>(1);
 
-  cudaStream_t legacy_stream = 0;
-  cuda::stream_ref stream_ref{legacy_stream};
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+  auto env = cuda::std::execution::env{stream_ref};
 
-  auto error = cub::DeviceReduce::Max(input.begin(), output.begin(), input.size(), stream_ref);
+  auto error = cub::DeviceReduce::Max(input.begin(), output.begin(), input.size(), env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::Max failed with status: " << error << std::endl;
@@ -283,11 +290,11 @@ C2H_TEST("cub::DeviceReduce::ArgMin accepts stream", "[reduce][env]")
   auto min_output   = thrust::device_vector<float>(1);
   auto index_output = thrust::device_vector<cuda::std::int64_t>(1);
 
-  cudaStream_t legacy_stream = 0;
-  cuda::stream_ref stream_ref{legacy_stream};
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+  auto env = cuda::std::execution::env{stream_ref};
 
-  auto error =
-    cub::DeviceReduce::ArgMin(input.begin(), min_output.begin(), index_output.begin(), input.size(), stream_ref);
+  auto error = cub::DeviceReduce::ArgMin(input.begin(), min_output.begin(), index_output.begin(), input.size(), env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::ArgMin failed with status: " << error << std::endl;
@@ -333,11 +340,11 @@ C2H_TEST("cub::DeviceReduce::ArgMax accepts stream", "[reduce][env]")
   auto max_output   = thrust::device_vector<float>(1);
   auto index_output = thrust::device_vector<cuda::std::int64_t>(1);
 
-  cudaStream_t legacy_stream = 0;
-  cuda::stream_ref stream_ref{legacy_stream};
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+  auto env = cuda::std::execution::env{stream_ref};
 
-  auto error =
-    cub::DeviceReduce::ArgMax(input.begin(), max_output.begin(), index_output.begin(), input.size(), stream_ref);
+  auto error = cub::DeviceReduce::ArgMax(input.begin(), max_output.begin(), index_output.begin(), input.size(), env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::ArgMax failed with status: " << error << std::endl;
@@ -386,11 +393,12 @@ C2H_TEST("cub::DeviceReduce::TransformReduce accepts stream", "[reduce][env]")
   auto output    = thrust::device_vector<float>(1);
   auto init      = 0.0f;
 
-  cudaStream_t legacy_stream = 0;
-  cuda::stream_ref stream_ref{legacy_stream};
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+  auto env = cuda::std::execution::env{stream_ref};
 
   auto error =
-    cub::DeviceReduce::TransformReduce(input.begin(), output.begin(), input.size(), op, transform, init, stream_ref);
+    cub::DeviceReduce::TransformReduce(input.begin(), output.begin(), input.size(), op, transform, init, env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::TransformReduce failed with status: " << error << std::endl;
@@ -446,8 +454,9 @@ C2H_TEST("cub::DeviceReduce::ReduceByKey accepts stream", "[reduce][env]")
   auto aggregates_out = thrust::device_vector<int>(8);
   auto num_runs_out   = thrust::device_vector<int>(1);
 
-  cudaStream_t legacy_stream = 0;
-  cuda::stream_ref stream_ref{legacy_stream};
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceReduce::ReduceByKey(
     keys_in.begin(),
@@ -457,7 +466,7 @@ C2H_TEST("cub::DeviceReduce::ReduceByKey accepts stream", "[reduce][env]")
     num_runs_out.begin(),
     cuda::minimum<int>{},
     static_cast<int>(keys_in.size()),
-    stream_ref);
+    env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::ReduceByKey failed with status: " << error << std::endl;
