@@ -168,7 +168,7 @@ try
   // Set the k value
   constexpr num_items_t min_k = 1;
   constexpr num_items_t max_k = 1 << 20;
-  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, cuda::std::min(num_items, max_k))));
+  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, (cuda::std::min) (num_items, max_k))));
 
   // Capture test parameters
   CAPTURE(c2h::type_name<key_t>(), c2h::type_name<num_items_t>(), num_items, k, direction);
@@ -206,8 +206,9 @@ try
   const num_items_t num_items = detail::make_large_offset<num_items_t>();
 
   // Set the k value
-  const auto limit_k    = static_cast<k_items_t>(cuda::std::min(
-    static_cast<num_items_t>(cuda::std::numeric_limits<k_items_t>::max()), static_cast<num_items_t>(num_items)));
+  const auto limit_k = static_cast<k_items_t>(
+    (cuda::std::min) (static_cast<num_items_t>(cuda::std::numeric_limits<k_items_t>::max()),
+                      static_cast<num_items_t>(num_items)));
   const k_items_t min_k = limit_k > k_items_t{10000} ? limit_k - k_items_t{10000} : k_items_t{1};
   const k_items_t k     = GENERATE_COPY(take(3, random(min_k, limit_k)));
 
