@@ -1589,8 +1589,7 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<SampleIteratorT, void*>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
     SampleIteratorT d_samples,
     CounterT* d_histogram,
@@ -1705,8 +1704,7 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<SampleIteratorT, void*>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
     SampleIteratorT d_samples,
     CounterT* d_histogram,
@@ -1828,8 +1826,7 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<SampleIteratorT, void*>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
     SampleIteratorT d_samples,
     ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
@@ -1964,8 +1961,7 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<SampleIteratorT, void*>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
     SampleIteratorT d_samples,
     ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
@@ -2091,8 +2087,7 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<SampleIteratorT, void*>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t HistogramRange(
     SampleIteratorT d_samples,
     CounterT* d_histogram,
@@ -2193,8 +2188,7 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<SampleIteratorT, void*>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t HistogramRange(
     SampleIteratorT d_samples,
     CounterT* d_histogram,
@@ -2302,8 +2296,7 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<SampleIteratorT, void*>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
     SampleIteratorT d_samples,
     ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
@@ -2424,8 +2417,7 @@ public:
             typename CounterT,
             typename LevelT,
             typename OffsetT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<SampleIteratorT, void*>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
     SampleIteratorT d_samples,
     ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
