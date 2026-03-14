@@ -235,7 +235,7 @@ C2H_TEST("DeviceTopK::MaxPairs: Test for large num_items", "[pairs][topk][device
   // Set the k value
   constexpr num_items_t min_k = 1;
   constexpr num_items_t max_k = 1 << 20;
-  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, cuda::std::min(num_items, max_k))));
+  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, (cuda::std::min) (num_items, max_k))));
 
   // Prepare input and output
   auto keys_in   = cuda::make_transform_iterator(cuda::make_counting_iterator(num_items_t{}), inc_t<key_t>{num_items});
