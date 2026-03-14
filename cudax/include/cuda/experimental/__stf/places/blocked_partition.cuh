@@ -102,8 +102,9 @@ public:
     return box<dimensions>(bounds);
   }
 
-  _CCCL_HOST_DEVICE static pos4 get_executor(pos4 data_coords, dim4 data_dims, dim4 grid_dims)
+  _CCCL_HOST_DEVICE static void get_executor(pos4* result, pos4 data_coords, dim4 data_dims, dim4 grid_dims)
   {
+    _CCCL_ASSERT(result != nullptr, "get_executor: result pointer must not be null");
     // Find the largest dimension
     size_t rank       = data_dims.get_rank();
     size_t target_dim = (which_dim == -1) ? rank : size_t(which_dim);
@@ -120,7 +121,7 @@ public:
     // Get the coordinate in the selected dimension
     size_t c = data_coords.get(target_dim);
 
-    return pos4(c / part_size);
+    *result = pos4(c / part_size);
   }
 };
 
@@ -148,7 +149,8 @@ UNITTEST("blocked partition with very large data arrays")
 
   // Test get_executor for position in the middle
   pos4 middle_coord(200, 150, 100, 500);
-  pos4 block_pos = blocked_partition::get_executor(middle_coord, massive_4d_dims, grid_dims);
+  pos4 block_pos;
+  blocked_partition::get_executor(&block_pos, middle_coord, massive_4d_dims, grid_dims);
 
   // Verify block position is within grid bounds
   EXPECT(block_pos.x >= 0);

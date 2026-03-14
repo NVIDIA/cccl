@@ -17,11 +17,11 @@
 
 // Blocked partition along first dimension: maps data coordinates to grid position.
 // Used to exercise composite data place with a grid of execution places.
-static stf_pos4 blocked_mapper_1d(stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims)
+static void blocked_mapper_1d(stf_pos4* result, stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims)
 {
   uint64_t extent    = data_dims.x;
   uint64_t nplaces   = grid_dims.x;
-  uint64_t part_size = ::cuda::ceil_div(extent, nplaces);
+  uint64_t part_size = (extent + nplaces - 1) / nplaces;
   if (part_size == 0)
   {
     part_size = 1;
@@ -32,12 +32,10 @@ static stf_pos4 blocked_mapper_1d(stf_pos4 data_coords, stf_dim4 data_dims, stf_
   {
     place_x = static_cast<int64_t>(nplaces) - 1;
   }
-  stf_pos4 result = {};
-  result.x        = place_x;
-  result.y        = 0;
-  result.z        = 0;
-  result.t        = 0;
-  return result;
+  result->x = place_x;
+  result->y = 0;
+  result->z = 0;
+  result->t = 0;
 }
 
 C2H_TEST("empty stf tasks", "[task]")
@@ -210,6 +208,85 @@ C2H_TEST("composite data place with stf_exec_place_grid_create (vector of places
   stf_logical_data_destroy(lX);
   stf_ctx_finalize(ctx);
   stf_exec_place_grid_destroy(grid);
+
+  for (size_t i = 0; i < N; ++i)
+  {
+    REQUIRE(X[i] == static_cast<float>(i));
+  }
+  free(X);
+}
+
+C2H_TEST("task set_exec_place with STF_EXEC_PLACE_GRID", "[task][places]")
+{
+  const size_t nplaces = 2;
+  stf_exec_place places[nplaces];
+  for (size_t i = 0; i < nplaces; i++)
+  {
+    places[i] = make_device_place(0); // same device repeated
+  }
+  stf_exec_place_grid_handle grid = stf_exec_place_grid_create(places, nplaces, nullptr);
+  REQUIRE(grid != nullptr);
+
+  stf_ctx_handle ctx;
+  stf_ctx_create(&ctx);
+  stf_task_handle t;
+  stf_task_create(ctx, &t);
+  stf_exec_place e_place = make_exec_place_from_grid(grid);
+  REQUIRE(e_place.kind == STF_EXEC_PLACE_GRID);
+  stf_task_set_exec_place(t, &e_place);
+  stf_task_start(t);
+  stf_dim4 dims;
+  int got_dims = stf_task_get_grid_dims(t, &dims);
+  REQUIRE(got_dims == 0); // 0 = success
+  REQUIRE(dims.x == 2);
+  REQUIRE(dims.y == 1);
+  CUstream s0, s1;
+  REQUIRE(stf_task_get_custream_at_index(t, 0, &s0) == 0);
+  REQUIRE(stf_task_get_custream_at_index(t, 1, &s1) == 0);
+  REQUIRE(s0 != nullptr);
+  REQUIRE(s1 != nullptr);
+  stf_task_end(t);
+  stf_ctx_finalize(ctx);
+  stf_exec_place_grid_destroy(grid);
+}
+
+// ---------------------------------------------------------------------------
+// Opaque exec_place extensibility tests
+// ---------------------------------------------------------------------------
+
+C2H_TEST("opaque exec_place round-trip (device via opaque)", "[task][places][opaque]")
+{
+  // Convert a regular C device place to opaque and verify it works in a task.
+  stf_exec_place dev0 = make_device_place(0);
+  void* handle        = stf_exec_place_to_opaque(&dev0);
+  REQUIRE(handle != nullptr);
+
+  stf_exec_place opaque = make_opaque_exec_place(handle);
+  REQUIRE(opaque.kind == STF_EXEC_PLACE_OPAQUE);
+
+  size_t N = 64;
+  float* X = static_cast<float*>(malloc(N * sizeof(float)));
+  for (size_t i = 0; i < N; ++i)
+  {
+    X[i] = static_cast<float>(i);
+  }
+
+  stf_ctx_handle ctx;
+  stf_ctx_create(&ctx);
+
+  stf_logical_data_handle lX;
+  stf_logical_data(ctx, &lX, X, N * sizeof(float));
+
+  stf_task_handle t;
+  stf_task_create(ctx, &t);
+  stf_task_set_exec_place(t, &opaque);
+  stf_task_add_dep(t, lX, STF_RW);
+  stf_task_start(t);
+  stf_task_end(t);
+
+  stf_logical_data_destroy(lX);
+  stf_ctx_finalize(ctx);
+  stf_exec_place_opaque_destroy(handle);
 
   for (size_t i = 0; i < N; ++i)
   {

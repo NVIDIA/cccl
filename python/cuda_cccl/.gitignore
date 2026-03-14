@@ -22,6 +22,10 @@ wheels/
 build.log
 .python-version
 
+# Build-time generated files copied into package tree by CMake
+cuda/stf/include/
+cuda/stf/cu*/stf_build_config.json
+
 # CMake
 CMakeFiles/
 CMakeCache.txt

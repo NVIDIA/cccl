@@ -112,17 +112,22 @@ typedef struct stf_exec_place_host
   char dummy; //!< Dummy field for standard C compatibility
 } stf_exec_place_host;
 
+//! \brief Opaque handle for an execution place grid (e.g. one place per stream).
+typedef void* stf_exec_place_grid_handle;
+
 //! \brief Execution place type discriminator
 typedef enum stf_exec_place_kind
 {
   STF_EXEC_PLACE_DEVICE, //!< Task executes on CUDA device
-  STF_EXEC_PLACE_HOST //!< Task executes on host (CPU)
+  STF_EXEC_PLACE_HOST, //!< Task executes on host (CPU)
+  STF_EXEC_PLACE_GRID, //!< Task executes on a grid of places (from stf_exec_place_grid_*)
+  STF_EXEC_PLACE_OPAQUE //!< Opaque handle wrapping an arbitrary C++ exec_place (for extensibility)
 } stf_exec_place_kind;
 
 //! \brief Execution place specification
 //!
 //! Tagged union specifying where a task should execute.
-//! Use helper functions make_device_place() and make_host_place() to create.
+//! Use helper functions make_device_place(), make_host_place(), make_exec_place_from_grid() to create.
 typedef struct stf_exec_place
 {
   enum stf_exec_place_kind kind; //!< Type of execution place
@@ -130,6 +135,8 @@ typedef struct stf_exec_place
   {
     stf_exec_place_device device; //!< Device configuration (when kind == STF_EXEC_PLACE_DEVICE)
     stf_exec_place_host host; //!< Host configuration (when kind == STF_EXEC_PLACE_HOST)
+    stf_exec_place_grid_handle grid; //!< Grid handle (when kind == STF_EXEC_PLACE_GRID)
+    void* opaque; //!< Opaque C++ exec_place handle (when kind == STF_EXEC_PLACE_OPAQUE)
   } u; //!< Configuration union
 } stf_exec_place;
 
@@ -167,6 +174,43 @@ static inline stf_exec_place make_host_place()
   stf_exec_place p;
   p.kind         = STF_EXEC_PLACE_HOST;
   p.u.host.dummy = 0; /* to avoid uninitialized memory warnings */
+  return p;
+}
+
+//! \brief Create execution place from an execution place grid handle
+//!
+//! \param grid Grid handle from stf_exec_place_grid_from_devices() or stf_exec_place_grid_create()
+//! \return Execution place configured for the grid
+//!
+//! \note The grid handle must not be destroyed while the task using this place is in use.
+//!
+//! \par Example:
+//! \code
+//! stf_exec_place_grid_handle grid = stf_exec_place_grid_from_devices(dev_ids, 2);
+//! stf_exec_place place = make_exec_place_from_grid(grid);
+//! stf_task_set_exec_place(task, &place);
+//! \endcode
+static inline stf_exec_place make_exec_place_from_grid(stf_exec_place_grid_handle grid)
+{
+  stf_exec_place p;
+  p.kind   = STF_EXEC_PLACE_GRID;
+  p.u.grid = grid;
+  return p;
+}
+
+//! \brief Create execution place from an opaque C++ exec_place handle.
+//!
+//! \param handle Opaque handle from stf_exec_place_opaque_wrap() (must not be NULL).
+//! \return Execution place wrapping the opaque handle.
+//!
+//! \note The handle must remain valid (not destroyed) while the returned stf_exec_place is in use.
+//!       Typically the caller owns the handle and destroys it with stf_exec_place_opaque_destroy()
+//!       after all C API calls using this place have completed.
+static inline stf_exec_place make_opaque_exec_place(void* handle)
+{
+  stf_exec_place p;
+  p.kind     = STF_EXEC_PLACE_OPAQUE;
+  p.u.opaque = handle;
   return p;
 }
 
@@ -227,15 +271,12 @@ typedef struct stf_dim4
 } stf_dim4;
 
 //! \brief Partition (mapper) function: data coordinates -> grid position.
-//! Can be implemented in C or provided from Python via ctypes/cffi.
+//! Can be implemented in C or provided from Python via ctypes.
+//! \param[out] result Position in the place grid (which place owns this data)
 //! \param data_coords Logical position in the data space
 //! \param data_dims Full shape of the data
 //! \param grid_dims Shape of the execution place grid
-//! \return Position in the place grid (which place owns this data)
-typedef stf_pos4 (*stf_get_executor_fn)(stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims);
-
-//! \brief Opaque handle for an execution place grid (e.g. one place per stream).
-typedef void* stf_exec_place_grid_handle;
+typedef void (*stf_get_executor_fn)(stf_pos4* result, stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims);
 
 //! \}
 
@@ -246,7 +287,8 @@ typedef enum stf_data_place_kind
   STF_DATA_PLACE_HOST, //!< Data on host (CPU) memory
   STF_DATA_PLACE_MANAGED, //!< Data in CUDA managed (unified) memory
   STF_DATA_PLACE_AFFINE, //!< Data follows execution place (default)
-  STF_DATA_PLACE_COMPOSITE //!< Data partitioned over a grid via a partition function
+  STF_DATA_PLACE_COMPOSITE, //!< Data partitioned over a grid via a partition function
+  STF_DATA_PLACE_OPAQUE //!< Opaque handle wrapping an arbitrary C++ data_place (for extensibility)
 } stf_data_place_kind;
 
 //! \brief Composite data place configuration (grid + partition function)
@@ -270,6 +312,7 @@ typedef struct stf_data_place
     stf_data_place_managed managed; //!< Managed memory configuration
     stf_data_place_affine affine; //!< Affine placement configuration
     stf_data_place_composite composite; //!< Composite (grid + partition function)
+    void* opaque; //!< Opaque C++ data_place handle (when kind == STF_DATA_PLACE_OPAQUE)
   } u; //!< Configuration union
 } stf_data_place;
 
@@ -350,6 +393,20 @@ static inline struct stf_data_place make_affine_data_place()
   return p;
 }
 
+//! \brief Create data place from an opaque C++ data_place handle.
+//!
+//! \param handle Opaque handle from stf_data_place_opaque_wrap() (must not be NULL).
+//! \return Data place wrapping the opaque handle.
+//!
+//! \note The handle must remain valid while the returned stf_data_place is in use.
+static inline stf_data_place make_opaque_data_place(void* handle)
+{
+  stf_data_place p;
+  p.kind     = STF_DATA_PLACE_OPAQUE;
+  p.u.opaque = handle;
+  return p;
+}
+
 //! \brief Create a composite data place (grid + partition function).
 //!
 //! The partition function (\p mapper) maps data coordinates to a position in the
@@ -360,9 +417,11 @@ static inline struct stf_data_place make_affine_data_place()
 //!
 //! \par Example (C):
 //! \code
-//! stf_pos4 my_mapper(stf_pos4 coords, stf_dim4 data_dims, stf_dim4 grid_dims) {
-//!   stf_pos4 p = { coords.x / ((int64_t)data_dims.x / (int64_t)grid_dims.x), 0, 0, 0 };
-//!   return p;
+//! void my_mapper(stf_pos4* result, stf_pos4 coords, stf_dim4 data_dims, stf_dim4 grid_dims) {
+//!   result->x = coords.x / ((int64_t)data_dims.x / (int64_t)grid_dims.x);
+//!   result->y = 0;
+//!   result->z = 0;
+//!   result->t = 0;
 //! }
 //! int devs[] = { 0, 1 };
 //! stf_exec_place_grid_handle grid = stf_exec_place_grid_from_devices(devs, 2);
@@ -401,6 +460,63 @@ stf_exec_place_grid_create(const stf_exec_place* places, size_t count, const stf
 //! stf_exec_place_grid_create().
 //! \param grid Grid handle (may be NULL; no-op in that case)
 void stf_exec_place_grid_destroy(stf_exec_place_grid_handle grid);
+
+//! \brief Get the shape of the execution place grid (out-parameter for Python/ctypes).
+//! \param grid Grid handle (must not be NULL)
+//! \param[out] out_dims On success, the grid shape (x, y, z, t) is written here. Must not be NULL.
+//! \note Total number of places is out_dims->x * out_dims->y * out_dims->z * out_dims->t.
+void stf_exec_place_grid_get_dims(stf_exec_place_grid_handle grid, stf_dim4* out_dims);
+
+//! \brief Set the affine data place for this grid (used when the task uses data_place::affine()).
+//! Call before passing the grid to stf_task_set_exec_place() so that dependencies with affine
+//! data place resolve to \p dplace (e.g. a composite data place).
+//! \param grid Grid handle (must not be NULL)
+//! \param dplace Data place to use as affine for this grid (e.g. from stf_make_composite_data_place())
+void stf_exec_place_grid_set_affine_data_place(stf_exec_place_grid_handle grid, const stf_data_place* dplace);
+
+//! \}
+
+//! \defgroup OpaquePlace Opaque place handles (extensibility)
+//! \brief Wrap/destroy arbitrary C++ exec_place or data_place objects as opaque handles.
+//!
+//! External libraries that define custom exec_place or data_place subclasses in C++ can
+//! use these functions to pass them through the C API. The opaque handle is a heap-allocated
+//! copy of the C++ object (sharing its internal pimpl) that is valid until destroyed.
+//! \{
+
+//! \brief Wrap a C++ exec_place object as an opaque handle.
+//! \param cpp_exec_place Pointer to a C++ exec_place object (must not be NULL).
+//!        The object is copied (the shared_ptr<impl> is shared, not deep-copied).
+//! \return Opaque handle; destroy with stf_exec_place_opaque_destroy().
+void* stf_exec_place_opaque_wrap(const void* cpp_exec_place);
+
+//! \brief Destroy an opaque exec_place handle.
+//! \param handle Handle from stf_exec_place_opaque_wrap() (may be NULL; no-op in that case).
+void stf_exec_place_opaque_destroy(void* handle);
+
+//! \brief Wrap a C++ data_place object as an opaque handle.
+//! \param cpp_data_place Pointer to a C++ data_place object (must not be NULL).
+//!        The object is copied.
+//! \return Opaque handle; destroy with stf_data_place_opaque_destroy().
+void* stf_data_place_opaque_wrap(const void* cpp_data_place);
+
+//! \brief Destroy an opaque data_place handle.
+//! \param handle Handle from stf_data_place_opaque_wrap() (may be NULL; no-op in that case).
+void stf_data_place_opaque_destroy(void* handle);
+
+//! \brief Convert a C stf_exec_place struct to an opaque handle.
+//!
+//! This converts the tagged-union C representation to a heap-allocated C++
+//! exec_place and returns an opaque handle. Useful for round-tripping
+//! standard places through the opaque path (e.g. in tests or Python).
+//! \param c_place Pointer to a C stf_exec_place struct (must not be NULL).
+//! \return Opaque handle; destroy with stf_exec_place_opaque_destroy().
+void* stf_exec_place_to_opaque(const stf_exec_place* c_place);
+
+//! \brief Convert a C stf_data_place struct to an opaque handle.
+//! \param c_place Pointer to a C stf_data_place struct (must not be NULL).
+//! \return Opaque handle; destroy with stf_data_place_opaque_destroy().
+void* stf_data_place_to_opaque(const stf_data_place* c_place);
 
 //! \}
 
@@ -968,6 +1084,28 @@ void stf_task_end(stf_task_handle t);
 //! \see stf_task_start(), stf_task_get()
 
 CUstream stf_task_get_custream(stf_task_handle t);
+
+//!
+//! \brief Get the grid shape of the task's exec place (when it is a grid).
+//!
+//! \param t Task handle
+//! \param[out] out_dims On success, the grid shape (x, y, z, t) is written here. Must not be NULL.
+//! \return 0 on success; non-zero if task exec place is not a grid or \p out_dims is NULL
+//!
+//! \note Total number of grid entries is out_dims->x * out_dims->y * out_dims->z * out_dims->t.
+int stf_task_get_grid_dims(stf_task_handle t, stf_dim4* out_dims);
+
+//!
+//! \brief Get the CUDA stream for a specific grid index (when task's exec place is a grid).
+//!
+//! Use this when the same place is repeated in the grid: the index is the linear slot (0 to
+//! product of grid dims - 1), not a place identity.
+//!
+//! \param t Task handle (must have been started; exec place must be a grid)
+//! \param place_index Linear index in the grid (0-based; use stf_task_get_grid_dims to get shape)
+//! \param[out] out_stream On success, the stream for that index is written here. Must not be NULL.
+//! \return 0 on success; non-zero if task is not a grid, index out of range, or no per-index streams
+int stf_task_get_custream_at_index(stf_task_handle t, size_t place_index, CUstream* out_stream);
 
 //!
 //! \brief Get data pointer for task dependency

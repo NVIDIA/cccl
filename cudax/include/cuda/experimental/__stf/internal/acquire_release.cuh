@@ -135,6 +135,10 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
     // a parallel_for construct, for example
     const data_place& dplace = it->get_dplace().is_affine() ? get_affine_data_place() : it->get_dplace();
 
+    EXPECT(!dplace.is_invalid(),
+           "Task's affine data place is invalid. When the exec place is a grid, it must provide a valid "
+           "affine (e.g. first place in the grid). Use an explicit data_place for the dependency if needed.");
+
     const instance_id_t instance_id =
       mode == access_mode::relaxed ? d.find_unused_instance_id(dplace) : d.find_instance_id(dplace);
 
