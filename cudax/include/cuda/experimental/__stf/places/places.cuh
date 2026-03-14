@@ -443,8 +443,7 @@ public:
       {
         cuda_safe_call(cudaSetDevice(new_dev_id));
       }
-      auto old_dev = data_place::device(old_dev_id);
-      return exec_place(mv(old_dev));
+      return exec_place(data_place::device(old_dev_id));
     }
 
     /**
@@ -474,16 +473,6 @@ public:
     virtual ::std::string to_string() const
     {
       return "exec(" + affine.to_string() + ")";
-    }
-
-    virtual bool is_host() const
-    {
-      return affine.is_host();
-    }
-
-    virtual bool is_device() const
-    {
-      return affine.is_device();
     }
 
     virtual void set_affine_data_place(data_place place)
@@ -529,15 +518,29 @@ public:
     static constexpr size_t pool_size      = 4;
     static constexpr size_t data_pool_size = 4;
 
+    // Grid iteration state - only meaningful for multi-element grids
+    virtual ::std::ptrdiff_t get_current_idx() const
+    {
+      return -1;
+    }
+    virtual void set_current_idx(::std::ptrdiff_t) const
+    {
+      _CCCL_ASSERT(false, "set_current_idx called on non-grid exec_place");
+    }
+    virtual ::std::shared_ptr<impl> get_saved_prev_impl() const
+    {
+      return nullptr;
+    }
+    virtual void set_saved_prev_impl(::std::shared_ptr<impl>) const
+    {
+      _CCCL_ASSERT(false, "set_saved_prev_impl called on non-grid exec_place");
+    }
+
   protected:
     friend class exec_place;
     data_place affine = data_place::invalid();
     mutable stream_pool pool_compute;
     mutable stream_pool pool_data;
-
-    // Current place state for grid iteration
-    mutable ::std::ptrdiff_t current_idx = -1;
-    mutable ::std::shared_ptr<impl> saved_prev_impl;
   };
 
   exec_place() = default;
@@ -710,14 +713,15 @@ public:
    */
   void set_current_place(size_t idx)
   {
-    if (pimpl->current_idx >= 0)
+    auto cur_idx = pimpl->get_current_idx();
+    if (cur_idx >= 0)
     {
-      exec_place saved_prev(pimpl->saved_prev_impl);
-      pimpl->deactivate(pimpl->current_idx, saved_prev);
+      exec_place saved_prev(pimpl->get_saved_prev_impl());
+      pimpl->deactivate(cur_idx, saved_prev);
     }
-    pimpl->current_idx     = static_cast<::std::ptrdiff_t>(idx);
-    exec_place prev        = pimpl->activate(idx);
-    pimpl->saved_prev_impl = prev.pimpl;
+    pimpl->set_current_idx(static_cast<::std::ptrdiff_t>(idx));
+    exec_place prev = pimpl->activate(idx);
+    pimpl->set_saved_prev_impl(prev.pimpl);
   }
 
   /**
@@ -733,10 +737,11 @@ public:
    */
   void unset_current_place()
   {
-    EXPECT(pimpl->current_idx >= 0, "unset_current_place() called without corresponding set_current_place()");
-    exec_place saved_prev(pimpl->saved_prev_impl);
-    pimpl->deactivate(pimpl->current_idx, saved_prev);
-    pimpl->current_idx = -1;
+    auto cur_idx = pimpl->get_current_idx();
+    EXPECT(cur_idx >= 0, "unset_current_place() called without corresponding set_current_place()");
+    exec_place saved_prev(pimpl->get_saved_prev_impl());
+    pimpl->deactivate(cur_idx, saved_prev);
+    pimpl->set_current_idx(-1);
   }
 
   /**
@@ -744,8 +749,9 @@ public:
    */
   exec_place get_current_place() const
   {
-    EXPECT(pimpl->current_idx >= 0, "No current place set");
-    return get_place(pimpl->current_idx);
+    auto cur_idx = pimpl->get_current_idx();
+    EXPECT(cur_idx >= 0, "No current place set");
+    return get_place(cur_idx);
   }
 
   /**
@@ -753,7 +759,7 @@ public:
    */
   ::std::ptrdiff_t current_place_id() const
   {
-    return pimpl->current_idx;
+    return pimpl->get_current_idx();
   }
 
   // ===== Properties =====
@@ -792,12 +798,12 @@ public:
 
   bool is_host() const
   {
-    return pimpl->is_host();
+    return affine_data_place().is_host();
   }
 
   bool is_device() const
   {
-    return pimpl->is_device();
+    return affine_data_place().is_device();
   }
 
   /**
@@ -1249,16 +1255,6 @@ public:
            + "x" + ::std::to_string(dims_.t) + ")";
     }
 
-    bool is_device() const override
-    {
-      return false;
-    }
-
-    bool is_host() const override
-    {
-      return false;
-    }
-
     // ===== Comparison =====
 
     int cmp(const exec_place::impl& rhs) const override
@@ -1317,9 +1313,33 @@ public:
       return places_;
     }
 
+    // ===== Grid iteration state =====
+
+    ::std::ptrdiff_t get_current_idx() const override
+    {
+      return current_idx_;
+    }
+
+    void set_current_idx(::std::ptrdiff_t idx) const override
+    {
+      current_idx_ = idx;
+    }
+
+    ::std::shared_ptr<exec_place::impl> get_saved_prev_impl() const override
+    {
+      return saved_prev_impl_;
+    }
+
+    void set_saved_prev_impl(::std::shared_ptr<exec_place::impl> p) const override
+    {
+      saved_prev_impl_ = mv(p);
+    }
+
   private:
     dim4 dims_;
     ::std::vector<exec_place> places_;
+    mutable ::std::ptrdiff_t current_idx_ = -1;
+    mutable ::std::shared_ptr<exec_place::impl> saved_prev_impl_;
   };
 
   explicit operator bool() const
