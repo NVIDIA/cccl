@@ -53,9 +53,6 @@ class exec_place_host;
 class exec_place_grid;
 
 // Green contexts are only supported since CUDA 12.4
-#if _CCCL_CTK_AT_LEAST(12, 4)
-class exec_place_green_ctx;
-#endif // _CCCL_CTK_AT_LEAST(12, 4)
 
 //! Function type for computing executor placement from data coordinates
 using get_executor_func_t = pos4 (*)(pos4, dim4, dim4);
