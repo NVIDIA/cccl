@@ -1521,6 +1521,21 @@ public:
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
+  //! - The number of histogram bins is (``num_levels - 1``)
+  //! - All bins comprise the same width of sample values: ``(upper_level - lower_level) / (num_levels - 1)``.
+  //! - If the common type of ``SampleT`` and ``LevelT`` is of integral type, the bin for a sample is
+  //!   computed as ``(sample - lower_level) * (num_levels - 1) / (upper_level - lower_level)``, round
+  //!   down to the nearest whole number. To protect against potential overflows, if the product
+  //!   ``(upper_level - lower_level) * (num_levels - 1)`` exceeds the number representable by an
+  //!   ``uint64_t``, the cuda error ``cudaErrorInvalidValue`` is returned. If the common type is 128
+  //!   bits wide, bin computation will use 128-bit arithmetic and ``cudaErrorInvalidValue`` will only
+  //!   be returned if bin computation would overflow for 128-bit arithmetic.
+  //! - The ranges ``[d_samples, d_samples + num_samples)`` and
+  //!   ``[d_histogram, d_histogram + num_levels - 1)`` shall not overlap in any way.
+  //! - ``cuda::std::common_type<LevelT, SampleT>`` must be valid, and both LevelT and SampleT must be valid
+  //!   arithmetic types. The common type must be convertible to ``int`` and trivially copyable.
+  //! - @devicestorage
+  //!
   //! Snippet
   //! +++++++
   //!
@@ -1608,6 +1623,29 @@ public:
   //!
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - A two-dimensional *region of interest* within ``d_samples`` can be specified using
+  //!   the ``num_row_samples``, ``num_rows``, and ``row_stride_bytes`` parameters.
+  //! - The row stride must be a whole multiple of the sample data type
+  //!   size, i.e., ``(row_stride_bytes % sizeof(SampleT)) == 0``.
+  //! - The number of histogram bins is (``num_levels - 1``)
+  //! - All bins comprise the same width of sample values: ``(upper_level - lower_level) / (num_levels - 1)``
+  //! - If the common type of ``SampleT`` and ``LevelT`` is of integral type, the bin for a sample is
+  //!   computed as ``(sample - lower_level) * (num_levels - 1) / (upper_level - lower_level)``, round
+  //!   down to the nearest whole number. To protect against potential overflows, if the product
+  //!   ``(upper_level - lower_level) * (num_levels - 1)`` exceeds the number representable by an
+  //!   ``uint64_t``, the cuda error ``cudaErrorInvalidValue`` is returned. If the common type is 128
+  //!   bits wide, bin computation will use 128-bit arithmetic and ``cudaErrorInvalidValue`` will only
+  //!   be returned if bin computation would overflow for 128-bit arithmetic.
+  //! - For a given row ``r`` in ``[0, num_rows)``, let
+  //!   ``row_begin = d_samples + r * row_stride_bytes / sizeof(SampleT)`` and
+  //!   ``row_end = row_begin + num_row_samples``. The ranges
+  //!   ``[row_begin, row_end)`` and ``[d_histogram, d_histogram + num_levels - 1)``
+  //!   shall not overlap in any way.
+  //! - ``cuda::std::common_type<LevelT, SampleT>`` must be valid, and both LevelT
+  //!   and SampleT must be valid arithmetic types. The common type must be
+  //!   convertible to ``int`` and trivially copyable.
+  //! - @devicestorage
   //!
   //! Snippet
   //! +++++++
@@ -1703,6 +1741,31 @@ public:
   //!
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The input is a sequence of *pixel* structures, where each pixel comprises
+  //!   a record of ``NUM_CHANNELS`` consecutive data samples
+  //!   (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
+  //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
+  //!   histograms for the first ``NUM_ACTIVE_CHANNELS``
+  //!   (e.g., only *RGB* histograms from *RGBA* pixel samples).
+  //! - The number of histogram bins for channel\ :sub:`i` is ``num_levels[i] - 1``.
+  //! - For channel\ :sub:`i`, the range of values for all histogram bins have the same width:
+  //!   ``(upper_level[i] - lower_level[i]) / (num_levels[i] - 1)``
+  //! - If the common type of sample and level is of integral type, the bin for a sample is
+  //!   computed as ``(sample - lower_level[i]) * (num_levels - 1) / (upper_level[i] - lower_level[i])``, round down
+  //!   to the nearest whole number. To protect against potential overflows, if, for any channel ``i``, the product
+  //!   ``(upper_level[i] - lower_level[i]) * (num_levels[i] - 1)`` exceeds the number representable by an ``uint64_t``,
+  //!   the cuda error ``cudaErrorInvalidValue`` is returned. If the common type is 128 bits wide, bin computation
+  //!   will use 128-bit arithmetic and ``cudaErrorInvalidValue`` will only be returned if bin
+  //!   computation would overflow for 128-bit arithmetic.
+  //! - For a given channel ``c`` in ``[0, NUM_ACTIVE_CHANNELS)``, the ranges
+  //!   ``[d_samples, d_samples + NUM_CHANNELS * num_pixels)`` and
+  //!   ``[d_histogram[c], d_histogram[c] + num_levels[c] - 1)`` shall not overlap in any way.
+  //! - ``cuda::std::common_type<LevelT, SampleT>`` must be valid, and both LevelT
+  //!   and SampleT must be valid arithmetic types.
+  //!   The common type must be convertible to ``int`` and trivially copyable.
+  //! - @devicestorage
   //!
   //! Snippet
   //! +++++++
@@ -1800,6 +1863,39 @@ public:
   //!
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The input is a sequence of *pixel* structures, where each pixel
+  //!   comprises a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
+  //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
+  //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., only *RGB*
+  //!   histograms from *RGBA* pixel samples).
+  //! - A two-dimensional *region of interest* within ``d_samples`` can be
+  //!   specified using the ``num_row_samples``, ``num_rows``, and ``row_stride_bytes`` parameters.
+  //! - The row stride must be a whole multiple of the sample data type
+  //!   size, i.e., ``(row_stride_bytes % sizeof(SampleT)) == 0``.
+  //! - The number of histogram bins for channel\ :sub:`i` is ``num_levels[i] - 1``.
+  //! - For channel\ :sub:`i`, the range of values for all histogram bins have the same width:
+  //!   ``(upper_level[i] - lower_level[i]) / (num_levels[i] - 1)``
+  //! - If the common type of sample and level is of integral type, the bin for a sample is
+  //!   computed as ``(sample - lower_level[i]) * (num_levels - 1) / (upper_level[i] - lower_level[i])``,
+  //!   round down to the nearest whole number. To protect against potential overflows, if, for any channel ``i``,
+  //!   the product ``(upper_level[i] - lower_level[i]) * (num_levels[i] - 1)`` exceeds the number representable by
+  //!   an ``uint64_t``, the cuda error ``cudaErrorInvalidValue`` is returned.
+  //!   If the common type is 128 bits wide, bin computation will use 128-bit arithmetic and ``cudaErrorInvalidValue``
+  //!   will only be returned if bin computation would overflow for 128-bit arithmetic.
+  //! - For a given row ``r`` in ``[0, num_rows)``, and sample ``s`` in
+  //!   ``[0, num_row_pixels)``, let
+  //!   ``row_begin = d_samples + r * row_stride_bytes / sizeof(SampleT)``,
+  //!   ``sample_begin = row_begin + s * NUM_CHANNELS``, and
+  //!   ``sample_end = sample_begin + NUM_ACTIVE_CHANNELS``. For a given channel ``c`` in
+  //!   ``[0, NUM_ACTIVE_CHANNELS)``, the ranges
+  //!   ``[sample_begin, sample_end)`` and
+  //!   ``[d_histogram[c], d_histogram[c] + num_levels[c] - 1)`` shall not overlap in any way.
+  //! - ``cuda::std::common_type<LevelT, SampleT>`` must be valid, and both LevelT
+  //!   and SampleT must be valid arithmetic types. The common type must be
+  //!   convertible to ``int`` and trivially copyable.
+  //! - @devicestorage
   //!
   //! Snippet
   //! +++++++
@@ -1936,6 +2032,15 @@ public:
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
+  //! - The number of histogram bins is (``num_levels - 1``)
+  //! - The value range for bin\ :sub:`i` is ``[level[i], level[i+1])``
+  //! - The range ``[d_histogram, d_histogram + num_levels - 1)`` shall not
+  //!   overlap ``[d_samples, d_samples + num_samples)`` nor
+  //!   ``[d_levels, d_levels + num_levels)`` in any way. The ranges
+  //!   ``[d_levels, d_levels + num_levels)`` and
+  //!   ``[d_samples, d_samples + num_samples)`` may overlap.
+  //! - @devicestorage
+  //!
   //! Snippet
   //! +++++++
   //!
@@ -2018,6 +2123,20 @@ public:
   //!
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - A two-dimensional *region of interest* within ``d_samples`` can be
+  //!   specified using the ``num_row_samples``, ``num_rows``, and ``row_stride_bytes`` parameters.
+  //! - The row stride must be a whole multiple of the sample data type
+  //!   size, i.e., ``(row_stride_bytes % sizeof(SampleT)) == 0``.
+  //! - The number of histogram bins is (``num_levels - 1``)
+  //! - The value range for bin\ :sub:`i` is ``[level[i], level[i+1])``
+  //! - For a given row ``r`` in ``[0, num_rows)``, let
+  //!   ``row_begin = d_samples + r * row_stride_bytes / sizeof(SampleT)`` and
+  //!   ``row_end = row_begin + num_row_samples``. The range
+  //!   ``[d_histogram, d_histogram + num_levels - 1)`` shall not overlap
+  //!   ``[row_begin, row_end)`` nor ``[d_levels, d_levels + num_levels)``.
+  //!   The ranges ``[d_levels, d_levels + num_levels)`` and ``[row_begin, row_end)`` may overlap.
+  //! - @devicestorage
   //!
   //! Snippet
   //! +++++++
@@ -2108,6 +2227,22 @@ public:
   //!
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The input is a sequence of *pixel* structures, where each pixel
+  //!   comprises a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
+  //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
+  //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., *RGB* histograms from *RGBA* pixel samples).
+  //! - The number of histogram bins for channel\ :sub:`i` is ``num_levels[i] - 1``.
+  //! - For channel\ :sub:`i`, the range of values for all histogram bins have the same width:
+  //!   ``(upper_level[i] - lower_level[i]) / (num_levels[i] - 1)``
+  //! - For given channels ``c1`` and ``c2`` in ``[0, NUM_ACTIVE_CHANNELS)``, the
+  //!   range ``[d_histogram[c1], d_histogram[c1] + num_levels[c1] - 1)`` shall
+  //!   not overlap ``[d_samples, d_samples + NUM_CHANNELS * num_pixels)`` nor
+  //!   ``[d_levels[c2], d_levels[c2] + num_levels[c2])`` in any way.
+  //!   The ranges ``[d_levels[c2], d_levels[c2] + num_levels[c2])`` and
+  //!   ``[d_samples, d_samples + NUM_CHANNELS * num_pixels)`` may overlap.
+  //! - @devicestorage
   //!
   //! Snippet
   //! +++++++
@@ -2200,6 +2335,30 @@ public:
   //!
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The input is a sequence of *pixel* structures, where each pixel comprises
+  //!   a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
+  //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
+  //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., *RGB* histograms from *RGBA* pixel samples).
+  //! - A two-dimensional *region of interest* within ``d_samples`` can be
+  //!   specified using the ``num_row_samples``, ``num_rows``, and ``row_stride_bytes`` parameters.
+  //! - The row stride must be a whole multiple of the sample data type
+  //!   size, i.e., ``(row_stride_bytes % sizeof(SampleT)) == 0``.
+  //! - The number of histogram bins for channel\ :sub:`i` is ``num_levels[i] - 1``.
+  //! - For channel\ :sub:`i`, the range of values for all histogram bins have the same width:
+  //!   ``(upper_level[i] - lower_level[i]) / (num_levels[i] - 1)``
+  //! - For a given row ``r`` in ``[0, num_rows)``, and sample ``s`` in ``[0, num_row_pixels)``, let
+  //!   ``row_begin = d_samples + r * row_stride_bytes / sizeof(SampleT)``,
+  //!   ``sample_begin = row_begin + s * NUM_CHANNELS``, and
+  //!   ``sample_end = sample_begin + NUM_ACTIVE_CHANNELS``. For given channels
+  //!   ``c1`` and ``c2`` in ``[0, NUM_ACTIVE_CHANNELS)``, the range
+  //!   ``[d_histogram[c1], d_histogram[c1] + num_levels[c1] - 1)`` shall not overlap
+  //!   ``[sample_begin, sample_end)`` nor
+  //!   ``[d_levels[c2], d_levels[c2] + num_levels[c2])`` in any way. The ranges
+  //!   ``[d_levels[c2], d_levels[c2] + num_levels[c2])`` and
+  //!   ``[sample_begin, sample_end)`` may overlap.
+  //! - @devicestorage
   //!
   //! Snippet
   //! +++++++
