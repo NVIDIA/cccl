@@ -167,13 +167,11 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (1D)"
 {
   // example-begin multi-histogram-even-1d-env
   // 4-channel RGBA pixels, histogram 3 active channels
-  [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
-  [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
+  constexpr int NUM_CHANNELS        = 4;
+  constexpr int NUM_ACTIVE_CHANNELS = 3;
 
-  // clang-format off
   // 2 pixels: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128)
   auto d_samples = thrust::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
-  // clang-format on
   int num_pixels = 2;
 
   // 5 levels per channel → 4 bins per channel: [0,1), [1,2), [2,3), [3,4)
@@ -219,8 +217,8 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (2D)"
 {
   // example-begin multi-histogram-even-2d-env
   // 4-channel RGBA pixels, histogram 3 active channels, 2D region
-  [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
-  [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
+  constexpr int NUM_CHANNELS        = 4;
+  constexpr int NUM_ACTIVE_CHANNELS = 3;
 
   // 2 rows, 2 pixels per row, with row stride = 2 pixels * 4 channels * 1 byte = 8 bytes
   // Row 0: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128)
@@ -281,8 +279,8 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (1D)
 {
   // example-begin multi-histogram-range-1d-env
   // 4-channel RGBA pixels, histogram 3 active channels
-  [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
-  [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
+  constexpr int NUM_CHANNELS        = 4;
+  constexpr int NUM_ACTIVE_CHANNELS = 3;
 
   // 2 pixels: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128)
   auto d_samples = thrust::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
@@ -338,8 +336,8 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (2D)
 {
   // example-begin multi-histogram-range-2d-env
   // 4-channel RGBA pixels, histogram 3 active channels, 2D region
-  [[maybe_unused]] constexpr int NUM_CHANNELS        = 4;
-  [[maybe_unused]] constexpr int NUM_ACTIVE_CHANNELS = 3;
+  constexpr int NUM_CHANNELS        = 4;
+  constexpr int NUM_ACTIVE_CHANNELS = 3;
 
   // 2 rows, 2 pixels per row
   // Row 0: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128)
