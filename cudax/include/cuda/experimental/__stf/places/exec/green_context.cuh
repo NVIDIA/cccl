@@ -325,29 +325,27 @@ public:
     return pool_;
   }
 
-  bool operator==(const exec_place::impl& rhs) const override
+  int cmp(const exec_place::impl& rhs) const override
   {
     if (typeid(*this) != typeid(rhs))
     {
-      return false;
+      return typeid(*this).before(typeid(rhs)) ? -1 : 1;
     }
     const auto& other = static_cast<const exec_place_green_ctx_impl&>(rhs);
-    return g_ctx_ == other.g_ctx_;
+    if (g_ctx_ < other.g_ctx_)
+    {
+      return -1;
+    }
+    if (other.g_ctx_ < g_ctx_)
+    {
+      return 1;
+    }
+    return 0;
   }
 
   size_t hash() const override
   {
     return ::std::hash<CUgreenCtx>()(g_ctx_);
-  }
-
-  bool operator<(const exec_place::impl& rhs) const override
-  {
-    if (typeid(*this) != typeid(rhs))
-    {
-      return typeid(*this).before(typeid(rhs));
-    }
-    const auto& other = static_cast<const exec_place_green_ctx_impl&>(rhs);
-    return g_ctx_ < other.g_ctx_;
   }
 
 private:

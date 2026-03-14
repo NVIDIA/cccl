@@ -493,23 +493,30 @@ public:
 
     // ===== Comparison =====
 
-    virtual bool operator==(const impl& rhs) const
+    /**
+     * @brief Three-way comparison
+     * @return -1 if *this < rhs, 0 if *this == rhs, 1 if *this > rhs
+     */
+    virtual int cmp(const impl& rhs) const
     {
-      return affine == rhs.affine;
+      if (typeid(*this) != typeid(rhs))
+      {
+        return typeid(*this).before(typeid(rhs)) ? -1 : 1;
+      }
+      if (affine < rhs.affine)
+      {
+        return -1;
+      }
+      if (rhs.affine < affine)
+      {
+        return 1;
+      }
+      return 0;
     }
 
     virtual size_t hash() const
     {
       return affine.hash();
-    }
-
-    virtual bool operator<(const impl& rhs) const
-    {
-      if (typeid(*this) != typeid(rhs))
-      {
-        return typeid(*this).before(typeid(rhs));
-      }
-      return device_ordinal(affine) < device_ordinal(rhs.affine);
     }
 
     // ===== Stream management =====
@@ -543,8 +550,13 @@ public:
 
   bool operator==(const exec_place& rhs) const
   {
-    return *pimpl == *rhs.pimpl;
+    if (pimpl.get() == rhs.pimpl.get())
+    {
+      return true;
+    }
+    return pimpl->cmp(*rhs.pimpl) == 0;
   }
+
   bool operator!=(const exec_place& rhs) const
   {
     return !(*this == rhs);
@@ -552,7 +564,7 @@ public:
 
   bool operator<(const exec_place& rhs) const
   {
-    return *pimpl < *rhs.pimpl;
+    return pimpl->cmp(*rhs.pimpl) < 0;
   }
 
   bool operator>(const exec_place& rhs) const
@@ -1249,14 +1261,34 @@ public:
 
     // ===== Comparison =====
 
-    bool operator==(const exec_place::impl& rhs) const override
+    int cmp(const exec_place::impl& rhs) const override
     {
-      auto other = dynamic_cast<const impl*>(&rhs);
-      if (!other)
+      if (typeid(*this) != typeid(rhs))
       {
-        return false;
+        return typeid(*this).before(typeid(rhs)) ? -1 : 1;
       }
-      return dims_ == other->dims_ && places_ == other->places_;
+      const auto& other = static_cast<const impl&>(rhs);
+      // Compare dims first
+      auto this_dims  = ::std::tie(dims_.x, dims_.y, dims_.z, dims_.t);
+      auto other_dims = ::std::tie(other.dims_.x, other.dims_.y, other.dims_.z, other.dims_.t);
+      if (this_dims < other_dims)
+      {
+        return -1;
+      }
+      if (other_dims < this_dims)
+      {
+        return 1;
+      }
+      // Then compare places
+      if (places_ < other.places_)
+      {
+        return -1;
+      }
+      if (other.places_ < places_)
+      {
+        return 1;
+      }
+      return 0;
     }
 
     size_t hash() const override
@@ -1267,21 +1299,6 @@ public:
         hash_combine(h, p.hash());
       }
       return h;
-    }
-
-    bool operator<(const exec_place::impl& rhs) const override
-    {
-      if (typeid(*this) != typeid(rhs))
-      {
-        return typeid(*this).before(typeid(rhs));
-      }
-      const auto& other = static_cast<const impl&>(rhs);
-      if (!(dims_ == other.dims_))
-      {
-        return ::std::tie(dims_.x, dims_.y, dims_.z, dims_.t)
-             < ::std::tie(other.dims_.x, other.dims_.y, other.dims_.z, other.dims_.t);
-      }
-      return places_ < other.places_;
     }
 
     // ===== Stream management =====
@@ -1312,7 +1329,7 @@ public:
 
   bool operator==(const exec_place_grid& rhs) const
   {
-    return *get_impl() == *(rhs.get_impl());
+    return get_impl()->cmp(*rhs.get_impl()) == 0;
   }
 
   /**
