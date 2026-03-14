@@ -235,6 +235,94 @@ private:
       reduce_tuning_t{});
   }
 
+  //! @brief Internal implementation shared by Reduce and TransformReduce env overloads
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename TransformOpT,
+            typename T,
+            typename NumItemsT,
+            typename AccumT,
+            typename EnvT>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __transform_reduce(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    ReductionOpT reduction_op,
+    TransformOpT transform_op,
+    T init,
+    EnvT env)
+  {
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
+                  "Determinism should be used inside requires to have an effect.");
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using default_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    using accum_t = AccumT;
+
+    constexpr auto gpu_gpu_determinism =
+      ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
+
+    // integral types are always gpu-to-gpu deterministic if reduction operator is a simple cuda binary
+    // operator, so fallback to run-to-run determinism
+    constexpr auto integral_fallback =
+      gpu_gpu_determinism && ::cuda::std::is_integral_v<accum_t> && (detail::is_cuda_binary_operator<ReductionOpT>);
+
+    // use gpu-to-gpu determinism only for float and double types with ::cuda::std::plus operator
+    constexpr auto float_double_plus =
+      gpu_gpu_determinism && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_std_plus_v<ReductionOpT>;
+
+    constexpr auto float_double_min_max_fallback =
+      gpu_gpu_determinism
+      && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_minimum_maximum_v<ReductionOpT>;
+
+    constexpr auto supported =
+      integral_fallback || float_double_plus || float_double_min_max_fallback || !gpu_gpu_determinism;
+
+    // gpu_to_gpu determinism is only supported for integral types with cuda operators, or
+    // float and double types with ::cuda::std::plus operator
+    static_assert(supported, "gpu_to_gpu determinism is unsupported");
+
+    if constexpr (!supported)
+    {
+      return cudaErrorNotSupported;
+    }
+    else
+    {
+      constexpr auto no_determinism = detail::is_non_deterministic_v<default_determinism_t>;
+
+      // Certain conditions must be met to be able to use the non-deterministic
+      // kernel. The output iterator must be a contiguous iterator and the
+      // reduction operator must be plus (for now). Additionally, since atomics for types of
+      // size < 4B are emulated, they perform poorly, so we fall back to the run-to-run
+      // determinism.
+      constexpr auto is_contiguous_fallback =
+        !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
+      constexpr auto is_plus_fallback = !no_determinism || detail::is_cuda_std_plus_v<ReductionOpT>;
+      constexpr auto is_4b_or_greater = !no_determinism || sizeof(accum_t) >= 4;
+
+      // If the conditions for gpu-to-gpu determinism or non-deterministic
+      // reduction are not met, we fall back to run-to-run determinism.
+      using determinism_t = ::cuda::std::conditional_t<
+        (gpu_gpu_determinism && (integral_fallback || float_double_min_max_fallback))
+          || (no_determinism && !(is_contiguous_fallback && is_plus_fallback && is_4b_or_greater)),
+        ::cuda::execution::determinism::run_to_run_t,
+        default_determinism_t>;
+
+      // Dispatch with environment - handles all boilerplate
+      return detail::dispatch_with_env(
+        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+          using tuning_t = decltype(tuning);
+          return reduce_impl<tuning_t>(
+            storage, bytes, d_in, d_out, num_items, reduction_op, transform_op, init, determinism_t{}, stream);
+        });
+    }
+  }
+
 public:
   //! @rst
   //! Computes a device-wide reduction using the specified binary ``reduction_op`` functor and initial value ``init``.
@@ -441,74 +529,15 @@ public:
     InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, ReductionOpT reduction_op, T init, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Reduce");
-
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using default_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t, //
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
-
     using accum_t = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
-
-    constexpr auto gpu_gpu_determinism =
-      ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
-
-    // integral types are always gpu-to-gpu deterministic if reduction operator is a simple cuda binary
-    // operator, so fallback to run-to-run determinism
-    constexpr auto integral_fallback =
-      gpu_gpu_determinism && ::cuda::std::is_integral_v<accum_t> && (detail::is_cuda_binary_operator<ReductionOpT>);
-
-    // use gpu-to-gpu determinism only for float and double types with ::cuda::std::plus operator
-    constexpr auto float_double_plus =
-      gpu_gpu_determinism && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_std_plus_v<ReductionOpT>;
-
-    constexpr auto float_double_min_max_fallback =
-      gpu_gpu_determinism
-      && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_minimum_maximum_v<ReductionOpT>;
-
-    constexpr auto supported =
-      integral_fallback || float_double_plus || float_double_min_max_fallback || !gpu_gpu_determinism;
-
-    // gpu_to_gpu determinism is only supported for integral types with cuda operators, or
-    // float and double types with ::cuda::std::plus operator
-    static_assert(supported, "gpu_to_gpu determinism is unsupported");
-
-    if constexpr (!supported)
-    {
-      return cudaErrorNotSupported;
-    }
-    else
-    {
-      constexpr auto no_determinism = detail::is_non_deterministic_v<default_determinism_t>;
-
-      // Certain conditions must be met to be able to use the non-deterministic
-      // kernel. The output iterator must be a contiguous iterator and the
-      // reduction operator must be plus (for now). Additionally, since atomics for types of
-      // size < 4B are emulated, they perform poorly, so we fall back to the run-to-run
-      // determinism.
-      constexpr auto is_contiguous_fallback =
-        !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
-      constexpr auto is_plus_fallback = !no_determinism || detail::is_cuda_std_plus_v<ReductionOpT>;
-      constexpr auto is_4b_or_greater = !no_determinism || sizeof(accum_t) >= 4;
-
-      // If the conditions for gpu-to-gpu determinism or non-deterministic
-      // reduction are not met, we fall back to run-to-run determinism.
-      using determinism_t = ::cuda::std::conditional_t<
-        (gpu_gpu_determinism && (integral_fallback || float_double_min_max_fallback))
-          || (no_determinism && !(is_contiguous_fallback && is_plus_fallback && is_4b_or_greater)),
-        ::cuda::execution::determinism::run_to_run_t,
-        default_determinism_t>;
-
-      // Dispatch with environment - handles all boilerplate
-      return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-        using tuning_t = decltype(tuning);
-        return reduce_impl<tuning_t>(
-          storage, bytes, d_in, d_out, num_items, reduction_op, ::cuda::std::identity{}, init, determinism_t{}, stream);
-      });
-    }
+    return __transform_reduce<InputIteratorT,
+                              OutputIteratorT,
+                              ReductionOpT,
+                              ::cuda::std::identity,
+                              T,
+                              NumItemsT,
+                              accum_t,
+                              EnvT>(d_in, d_out, num_items, reduction_op, ::cuda::std::identity{}, init, env);
   }
 
   //! @rst
@@ -2208,63 +2237,10 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::TransformReduce");
-
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using default_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t, //
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
-
     using accum_t = ::cuda::std::
       __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
-
-    constexpr auto gpu_gpu_determinism =
-      ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
-
-    constexpr auto integral_fallback =
-      gpu_gpu_determinism && ::cuda::std::is_integral_v<accum_t> && (detail::is_cuda_binary_operator<ReductionOpT>);
-
-    constexpr auto float_double_plus =
-      gpu_gpu_determinism && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_std_plus_v<ReductionOpT>;
-
-    constexpr auto float_double_min_max_fallback =
-      gpu_gpu_determinism
-      && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_minimum_maximum_v<ReductionOpT>;
-
-    constexpr auto supported =
-      integral_fallback || float_double_plus || float_double_min_max_fallback || !gpu_gpu_determinism;
-
-    static_assert(supported, "gpu_to_gpu determinism is unsupported");
-
-    if constexpr (!supported)
-    {
-      return cudaErrorNotSupported;
-    }
-    else
-    {
-      constexpr auto no_determinism = detail::is_non_deterministic_v<default_determinism_t>;
-
-      constexpr auto is_contiguous_fallback =
-        !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
-      constexpr auto is_plus_fallback = !no_determinism || detail::is_cuda_std_plus_v<ReductionOpT>;
-      constexpr auto is_4b_or_greater = !no_determinism || sizeof(accum_t) >= 4;
-
-      using determinism_t = ::cuda::std::conditional_t<
-        (gpu_gpu_determinism && (integral_fallback || float_double_min_max_fallback))
-          || (no_determinism && !(is_contiguous_fallback && is_plus_fallback && is_4b_or_greater)),
-        ::cuda::execution::determinism::run_to_run_t,
-        default_determinism_t>;
-
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-          using tuning_t = decltype(tuning);
-          return reduce_impl<tuning_t>(
-            storage, bytes, d_in, d_out, num_items, reduction_op, transform_op, init, determinism_t{}, stream);
-        });
-    }
+    return __transform_reduce<InputIteratorT, OutputIteratorT, ReductionOpT, TransformOpT, T, NumItemsT, accum_t, EnvT>(
+      d_in, d_out, num_items, reduction_op, transform_op, init, env);
   }
 
   //! @rst
