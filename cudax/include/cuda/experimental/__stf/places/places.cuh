@@ -51,7 +51,6 @@ namespace cuda::experimental::stf
 class exec_place;
 class exec_place_host;
 class exec_place_grid;
-class exec_place_cuda_stream;
 
 // Green contexts are only supported since CUDA 12.4
 #if _CCCL_CTK_AT_LEAST(12, 4)
@@ -854,8 +853,8 @@ public:
   static exec_place green_ctx(const green_ctx_view& gc_view, bool use_green_ctx_data_place = false);
 #endif // _CCCL_CTK_AT_LEAST(12, 4)
 
-  static exec_place_cuda_stream cuda_stream(cudaStream_t stream);
-  static exec_place_cuda_stream cuda_stream(const decorated_stream& dstream);
+  static exec_place cuda_stream(cudaStream_t stream);
+  static exec_place cuda_stream(const decorated_stream& dstream);
 
   /**
    * @brief Returns the currently active device.

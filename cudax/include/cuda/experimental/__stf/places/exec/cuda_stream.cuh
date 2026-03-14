@@ -30,97 +30,84 @@
 namespace cuda::experimental::stf
 {
 /**
- * @brief Designates execution that is to run on a specific CUDA stream
- *
+ * @brief Implementation for CUDA stream execution places
  */
-class exec_place_cuda_stream : public exec_place
+class exec_place_cuda_stream_impl : public exec_place::impl
 {
 public:
-  class impl : public exec_place::impl
+  exec_place_cuda_stream_impl(const decorated_stream& dstream)
+      : exec_place::impl(data_place::device(dstream.dev_id))
+      , dstream_(dstream)
+      , dummy_pool_(dstream)
+  {}
+
+  exec_place get_place(size_t idx) const override
   {
-  public:
-    impl(const decorated_stream& _dstream)
-        : exec_place::impl(data_place::device(_dstream.dev_id))
-        , dstream_(_dstream)
-        , dummy_pool_(_dstream)
-    {}
-
-    // Grid interface - cuda_stream is a 1-element grid
-    exec_place get_place(size_t idx) const override
-    {
-      EXPECT(idx == 0, "Index out of bounds for cuda_stream exec_place");
-      return exec_place::cuda_stream(dstream_);
-    }
-
-    exec_place activate(size_t idx) const override
-    {
-      EXPECT(idx == 0, "Index out of bounds for cuda_stream exec_place");
-      return exec_place::device(dstream_.dev_id).activate();
-    }
-
-    void deactivate(size_t idx, const exec_place& prev) const override
-    {
-      EXPECT(idx == 0, "Index out of bounds for cuda_stream exec_place");
-      exec_place::device(dstream_.dev_id).deactivate(prev);
-    }
-
-    stream_pool& get_stream_pool(bool) const override
-    {
-      return dummy_pool_;
-    }
-
-    ::std::string to_string() const override
-    {
-      return "exec(stream id=" + ::std::to_string(dstream_.id) + " dev=" + ::std::to_string(dstream_.dev_id) + ")";
-    }
-
-    bool operator==(const exec_place::impl& rhs) const override
-    {
-      if (typeid(*this) != typeid(rhs))
-      {
-        return false;
-      }
-      const auto& other = static_cast<const impl&>(rhs);
-      return dstream_.stream == other.dstream_.stream;
-    }
-
-    size_t hash() const override
-    {
-      return ::std::hash<cudaStream_t>()(dstream_.stream);
-    }
-
-    bool operator<(const exec_place::impl& rhs) const override
-    {
-      if (typeid(*this) != typeid(rhs))
-      {
-        return typeid(*this).before(typeid(rhs));
-      }
-      const auto& other = static_cast<const impl&>(rhs);
-      return dstream_.stream < other.dstream_.stream;
-    }
-
-  private:
-    decorated_stream dstream_;
-    mutable stream_pool dummy_pool_;
-  };
-
-public:
-  exec_place_cuda_stream(const decorated_stream& dstream)
-      : exec_place(::std::make_shared<impl>(dstream))
-  {
-    static_assert(sizeof(exec_place_cuda_stream) == sizeof(exec_place),
-                  "exec_place_cuda_stream cannot add state; it would be sliced away.");
+    EXPECT(idx == 0, "Index out of bounds for cuda_stream exec_place");
+    return exec_place::cuda_stream(dstream_);
   }
+
+  exec_place activate(size_t idx) const override
+  {
+    EXPECT(idx == 0, "Index out of bounds for cuda_stream exec_place");
+    return exec_place::device(dstream_.dev_id).activate();
+  }
+
+  void deactivate(size_t idx, const exec_place& prev) const override
+  {
+    EXPECT(idx == 0, "Index out of bounds for cuda_stream exec_place");
+    exec_place::device(dstream_.dev_id).deactivate(prev);
+  }
+
+  stream_pool& get_stream_pool(bool) const override
+  {
+    return dummy_pool_;
+  }
+
+  ::std::string to_string() const override
+  {
+    return "exec(stream id=" + ::std::to_string(dstream_.id) + " dev=" + ::std::to_string(dstream_.dev_id) + ")";
+  }
+
+  bool operator==(const exec_place::impl& rhs) const override
+  {
+    if (typeid(*this) != typeid(rhs))
+    {
+      return false;
+    }
+    const auto& other = static_cast<const exec_place_cuda_stream_impl&>(rhs);
+    return dstream_.stream == other.dstream_.stream;
+  }
+
+  size_t hash() const override
+  {
+    return ::std::hash<cudaStream_t>()(dstream_.stream);
+  }
+
+  bool operator<(const exec_place::impl& rhs) const override
+  {
+    if (typeid(*this) != typeid(rhs))
+    {
+      return typeid(*this).before(typeid(rhs));
+    }
+    const auto& other = static_cast<const exec_place_cuda_stream_impl&>(rhs);
+    return dstream_.stream < other.dstream_.stream;
+  }
+
+private:
+  decorated_stream dstream_;
+  mutable stream_pool dummy_pool_;
 };
 
-inline exec_place_cuda_stream exec_place::cuda_stream(cudaStream_t stream)
+inline exec_place exec_place::cuda_stream(cudaStream_t stream)
 {
   int devid = get_device_from_stream(stream);
-  return exec_place_cuda_stream(decorated_stream(stream, get_stream_id(stream), devid));
+  return exec_place(
+    ::std::make_shared<exec_place_cuda_stream_impl>(decorated_stream(stream, get_stream_id(stream), devid)));
 }
 
-inline exec_place_cuda_stream exec_place::cuda_stream(const decorated_stream& dstream)
+inline exec_place exec_place::cuda_stream(const decorated_stream& dstream)
 {
-  return exec_place_cuda_stream(dstream);
+  return exec_place(::std::make_shared<exec_place_cuda_stream_impl>(dstream));
 }
 } // end namespace cuda::experimental::stf
