@@ -220,7 +220,6 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     OffsetT num_items,
     OutOffsetT k,
     OffsetT buffer_length,
-    int total_bits,
     ExtractBinOpT extract_bin_op,
     IdentifyCandidatesOpT identify_candidates_op,
     int pass)
@@ -253,7 +252,6 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     num_items,
     k,
     buffer_length,
-    total_bits,
     extract_bin_op,
     identify_candidates_op)
     .template invoke_filter_and_histogram<IsFirstPass>(
@@ -287,7 +285,6 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     OffsetT num_items,
     OutOffsetT k,
     OffsetT buffer_length,
-    int total_bits,
     IdentifyCandidatesOpT identify_candidates_op,
     int pass)
 {
@@ -320,7 +317,6 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     num_items,
     k,
     buffer_length,
-    total_bits,
     extract_bin_op_t{},
     identify_candidates_op)
     .invoke_last_filter(in_buf, in_idx_buf, counter, k, pass);
@@ -568,7 +564,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                       num_items,
                       k,
                       candidate_buffer_length,
-                      total_bits,
                       extract_op,
                       identify_op,
                       pass)))
@@ -594,7 +589,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                       num_items,
                       k,
                       candidate_buffer_length,
-                      total_bits,
                       extract_op,
                       identify_op,
                       pass)))
@@ -637,7 +631,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                   num_items,
                   k,
                   candidate_buffer_length,
-                  total_bits,
                   identify_op,
                   pass)))
     {

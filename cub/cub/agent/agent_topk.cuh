@@ -292,7 +292,6 @@ struct AgentTopK
   OffsetT num_items; // Total number of input items
   OutOffsetT k; // Total number of output items
   OffsetT buffer_length; // Size of the buffer for storing intermediate candidates
-  int total_bits; // Total number of key bits considered
   ExtractBinOpT extract_bin_op; // The operation for bin
   IdentifyCandidatesOpT identify_candidates_op; // The operation for filtering
 
@@ -338,7 +337,6 @@ struct AgentTopK
     OffsetT num_items,
     OutOffsetT k,
     OffsetT buffer_length,
-    int total_bits,
     ExtractBinOpT extract_bin_op,
     IdentifyCandidatesOpT identify_candidates_op)
       : temp_storage(temp_storage.Alias())
@@ -349,7 +347,6 @@ struct AgentTopK
       , num_items(num_items)
       , k(k)
       , buffer_length(buffer_length)
-      , total_bits(total_bits)
       , extract_bin_op(extract_bin_op)
       , identify_candidates_op(identify_candidates_op)
   {}
