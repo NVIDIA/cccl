@@ -39,6 +39,7 @@
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__type_traits/is_copy_assignable.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
@@ -77,6 +78,10 @@ struct make_transform_iterator_base
 private:
   using reference  = replace_if_use_default<Reference, transform_iterator_reference<UnaryFunc, Iterator>>;
   using value_type = replace_if_use_default<Value, ::cuda::std::remove_cvref<reference>>;
+
+  static_assert(!::cuda::std::is_void_v<value_type>,
+                "thrust::transform_iterator requires a non-void value type. "
+                "A common error is using it with a __device__ only function.");
 
 public:
   using type =
