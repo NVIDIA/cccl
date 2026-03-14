@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/iterator.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/totally_ordered.h>
 #include <cuda/std/__iterator/concepts.h>
@@ -88,7 +89,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //!
 //! // values is now {10, -1, -1, -1, 50, 60, -1, 80}
 //! @endcode
-template <class _Iter, class _Index = _Iter>
+template <class _Iter, class _Index>
 class permutation_iterator
 {
 private:

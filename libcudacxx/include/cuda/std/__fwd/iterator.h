@@ -36,6 +36,13 @@ template <class, class = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
+_LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
+
+template <class _Iter>
+class _CCCL_TYPE_VISIBILITY_DEFAULT reverse_iterator;
+
+_LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(reverse_iterator)
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
