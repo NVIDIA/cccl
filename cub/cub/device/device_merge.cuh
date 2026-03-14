@@ -17,7 +17,6 @@
 #include <cub/device/dispatch/dispatch_merge.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <cuda/__execution/require.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/cstdint>
 
@@ -179,9 +178,9 @@ struct DeviceMerge
     typename CompareOp = ::cuda::std::less<>,
     typename EnvT      = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<
-      !::cuda::std::is_same_v<KeyIteratorIn1, void*> && !::cuda::std::is_same_v<KeyIteratorIn1, ::cuda::std::nullptr_t>
-        && ::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>,
-      int> = 0>
+      !::cuda::std::is_same_v<KeyIteratorIn1, void*> && !::cuda::std::is_same_v<KeyIteratorIn1, ::cuda::std::nullptr_t>,
+      int> = 0,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MergeKeys(
     KeyIteratorIn1 keys_in1,
     ::cuda::std::int64_t num_keys1,
@@ -398,9 +397,9 @@ struct DeviceMerge
     typename CompareOp = ::cuda::std::less<>,
     typename EnvT      = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<
-      !::cuda::std::is_same_v<KeyIteratorIn1, void*> && !::cuda::std::is_same_v<KeyIteratorIn1, ::cuda::std::nullptr_t>
-        && ::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>,
-      int> = 0>
+      !::cuda::std::is_same_v<KeyIteratorIn1, void*> && !::cuda::std::is_same_v<KeyIteratorIn1, ::cuda::std::nullptr_t>,
+      int> = 0,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MergePairs(
     KeyIteratorIn1 keys_in1,
     ValueIteratorIn1 values_in1,
