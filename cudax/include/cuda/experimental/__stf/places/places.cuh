@@ -377,18 +377,19 @@ inline data_place from_index(size_t n);
 /**
  * @brief Indicates where a computation takes place (CPU, dev0, dev1, ...)
  *
- * Currently data and computation are together `(devid == int(data_place))`.
+ * All execution places are modeled as grids. Scalar places (host, single device)
+ * are simply 1-element grids. This unified model eliminates special-casing and
+ * allows uniform iteration over any exec_place.
  */
 class exec_place
 {
 public:
   /*
-   * @brief Using the pimpl idiom. Public because a number of classes inehrit from this.
+   * @brief Using the pimpl idiom. Public because a number of classes inherit from this.
    */
   class impl
   {
   public:
-    // Note that the default ctor assumes an invalid affine data place
     impl()                       = default;
     impl(const impl&)            = delete;
     impl& operator=(const impl&) = delete;
@@ -398,8 +399,44 @@ public:
         : affine(mv(place))
     {}
 
-    virtual exec_place activate() const
+    // ===== Grid interface (all places are grids) =====
+
+    /**
+     * @brief Get the dimensions of this grid
+     *
+     * For scalar places, returns dim4(1, 1, 1, 1).
+     */
+    virtual dim4 get_dims() const
     {
+      return dim4(1, 1, 1, 1);
+    }
+
+    /**
+     * @brief Get the total number of places in this grid
+     */
+    virtual size_t size() const
+    {
+      return 1;
+    }
+
+    /**
+     * @brief Get the sub-place at the given linear index
+     *
+     * For scalar places, idx must be 0.
+     */
+    virtual exec_place get_place(size_t idx) const;
+
+    // ===== Activation/deactivation (indexed) =====
+
+    /**
+     * @brief Activate the sub-place at the given index
+     *
+     * For scalar places, idx must be 0.
+     * Returns the previous execution state needed for deactivate().
+     */
+    virtual exec_place activate(size_t idx) const
+    {
+      EXPECT(idx == 0, "Index out of bounds for scalar exec_place");
       if (!affine.is_device())
       {
         return exec_place();
@@ -414,8 +451,12 @@ public:
       return exec_place(mv(old_dev));
     }
 
-    virtual void deactivate(const exec_place& prev) const
+    /**
+     * @brief Deactivate the sub-place at the given index, restoring previous state
+     */
+    virtual void deactivate(size_t idx, const exec_place& prev) const
     {
+      EXPECT(idx == 0, "Index out of bounds for scalar exec_place");
       if (affine.is_device())
       {
         auto current_dev_id  = cuda_try<cudaGetDevice>();
@@ -426,6 +467,8 @@ public:
         }
       }
     }
+
+    // ===== Properties =====
 
     virtual const data_place affine_data_place() const
     {
@@ -447,20 +490,21 @@ public:
       return affine.is_device();
     }
 
+    /**
+     * @brief Check if this is a multi-element grid (size > 1)
+     * @deprecated Use size() > 1 instead
+     */
     virtual bool is_grid() const
     {
-      return false;
-    }
-
-    virtual size_t size() const
-    {
-      return 1;
+      return size() > 1;
     }
 
     virtual void set_affine_data_place(data_place place)
     {
       affine = mv(place);
     }
+
+    // ===== Comparison =====
 
     virtual bool operator==(const impl& rhs) const
     {
@@ -474,22 +518,15 @@ public:
 
     virtual bool operator<(const impl& rhs) const
     {
-      // Different types: order by typeid
       if (typeid(*this) != typeid(rhs))
       {
         return typeid(*this).before(typeid(rhs));
       }
-      // Same type (both base impl): compare by device ID
-      // (base impl stores devid in affine, so we extract it via device_ordinal)
       return device_ordinal(affine) < device_ordinal(rhs.affine);
     }
 
-    /**
-     * @brief Get the stream pool for this execution place.
-     *
-     * The base implementation returns pool_compute or pool_data stored
-     * directly on the impl.
-     */
+    // ===== Stream management =====
+
     virtual stream_pool& get_stream_pool(bool for_computation) const
     {
       return for_computation ? pool_compute : pool_data;
@@ -503,6 +540,10 @@ public:
     data_place affine = data_place::invalid();
     mutable stream_pool pool_compute;
     mutable stream_pool pool_data;
+
+    // Current place state for grid iteration
+    mutable ::std::ptrdiff_t current_idx = -1;
+    mutable ::std::shared_ptr<impl> saved_prev_impl;
   };
 
   exec_place() = default;
@@ -522,7 +563,6 @@ public:
     return !(*this == rhs);
   }
 
-  // To use in a ::std::map indexed by exec_place
   bool operator<(const exec_place& rhs) const
   {
     return *pimpl < *rhs.pimpl;
@@ -543,20 +583,51 @@ public:
     return !(*this < rhs);
   }
 
-  /**
-   * @brief Compute a hash value for this execution place
-   *
-   * Used by std::hash specialization for unordered containers.
-   */
   size_t hash() const
   {
     return pimpl->hash();
   }
 
+  // ===== Grid interface (all places are grids) =====
+
+  /**
+   * @brief Get the dimensions of this grid
+   *
+   * For scalar places (host, single device), returns dim4(1, 1, 1, 1).
+   */
+  dim4 get_dims() const
+  {
+    return pimpl->get_dims();
+  }
+
+  /**
+   * @brief Get the total number of places in this grid
+   */
+  size_t size() const
+  {
+    return pimpl->size();
+  }
+
+  /**
+   * @brief Get the sub-place at the given linear index
+   *
+   * For scalar places, idx must be 0 and returns the place itself.
+   */
+  exec_place get_place(size_t idx) const
+  {
+    return pimpl->get_place(idx);
+  }
+
+  /**
+   * @brief Get the sub-place at the given multi-dimensional position
+   */
+  exec_place get_place(pos4 p) const
+  {
+    return get_place(get_dims().get_index(p));
+  }
+
   /**
    * @brief an iterator class which goes over all subplaces in an exec place.
-   *
-   * This is a trivial singleton unless we have a grid of places.
    */
   class iterator
   {
@@ -566,7 +637,10 @@ public:
         , index(index)
     {}
 
-    exec_place operator*();
+    exec_place operator*()
+    {
+      return it_impl->get_place(index);
+    }
 
     iterator& operator++()
     {
@@ -598,19 +672,98 @@ public:
     return iterator(pimpl, pimpl->size());
   }
 
+  // ===== Activation/deactivation =====
+
   /**
-   * @brief Returns a string representation of the execution place object.
+   * @brief Activate the sub-place at the given index
    *
-   * @return std::string
+   * @param idx The index of the sub-place to activate (default 0 for scalar places)
+   * @return The previous execution state needed for deactivate()
    */
+  exec_place activate(size_t idx = 0) const
+  {
+    return pimpl->activate(idx);
+  }
+
+  /**
+   * @brief Deactivate the sub-place at the given index, restoring previous state
+   *
+   * @param idx The index of the sub-place to deactivate (default 0 for scalar places)
+   * @param prev The previous state returned by activate()
+   */
+  void deactivate(size_t idx, const exec_place& prev) const
+  {
+    pimpl->deactivate(idx, prev);
+  }
+
+  /**
+   * @brief Convenience overload for scalar places (idx=0)
+   */
+  void deactivate(const exec_place& prev) const
+  {
+    deactivate(0, prev);
+  }
+
+  /**
+   * @brief Set the current place for grid iteration
+   *
+   * Activates the place at the given index and saves state for later restoration.
+   */
+  void set_current_place(size_t idx)
+  {
+    if (pimpl->current_idx >= 0)
+    {
+      exec_place saved_prev(pimpl->saved_prev_impl);
+      pimpl->deactivate(pimpl->current_idx, saved_prev);
+    }
+    pimpl->current_idx     = static_cast<::std::ptrdiff_t>(idx);
+    exec_place prev        = pimpl->activate(idx);
+    pimpl->saved_prev_impl = prev.pimpl;
+  }
+
+  /**
+   * @brief Set the current place using multi-dimensional position
+   */
+  void set_current_place(pos4 p)
+  {
+    set_current_place(get_dims().get_index(p));
+  }
+
+  /**
+   * @brief Unset the current place, restoring previous execution context
+   */
+  void unset_current_place()
+  {
+    EXPECT(pimpl->current_idx >= 0, "unset_current_place() called without corresponding set_current_place()");
+    exec_place saved_prev(pimpl->saved_prev_impl);
+    pimpl->deactivate(pimpl->current_idx, saved_prev);
+    pimpl->current_idx = -1;
+  }
+
+  /**
+   * @brief Get the currently active sub-place
+   */
+  exec_place get_current_place() const
+  {
+    EXPECT(pimpl->current_idx >= 0, "No current place set");
+    return get_place(pimpl->current_idx);
+  }
+
+  /**
+   * @brief Get the index of the currently active sub-place, or -1 if none
+   */
+  ::std::ptrdiff_t current_place_id() const
+  {
+    return pimpl->current_idx;
+  }
+
+  // ===== Properties =====
+
   ::std::string to_string() const
   {
     return pimpl->to_string();
   }
 
-  /**
-   * @brief Returns the `data_place` naturally associated with this execution place.
-   */
   const data_place affine_data_place() const
   {
     return pimpl->affine_data_place();
@@ -626,9 +779,6 @@ public:
     return pimpl->get_stream_pool(for_computation);
   }
 
-  /**
-   * @brief Get a decorated stream from the stream pool associated to this execution place.
-   */
   decorated_stream getStream(bool for_computation) const;
 
   cudaStream_t pick_stream(bool for_computation = true) const
@@ -636,30 +786,9 @@ public:
     return getStream(for_computation).stream;
   }
 
-  // TODO make protected !
   const ::std::shared_ptr<impl>& get_impl() const
   {
     return pimpl;
-  }
-
-  /**
-   * @brief Set computation to run on this place.
-   *
-   * @return `exec_place` The previous execution place. See `deactivate` below.
-   */
-  exec_place activate() const
-  {
-    return pimpl->activate();
-  }
-
-  /**
-   * @brief Undoes the effect of `activate`. Call with the previous `exec_place` object returned by `activate`.
-   *
-   * @warning Undefined behavior if you don't pass the result of `activate`.
-   */
-  void deactivate(const exec_place& p) const
-  {
-    pimpl->deactivate(p);
   }
 
   bool is_host() const
@@ -672,24 +801,38 @@ public:
     return pimpl->is_device();
   }
 
+  /**
+   * @brief Check if this is a multi-element grid (size > 1)
+   * @deprecated Use size() > 1 instead. All places are now grids.
+   */
   bool is_grid() const
   {
     return pimpl->is_grid();
   }
 
-  size_t size() const
+  /**
+   * @brief Get the dimension along a specific axis
+   * @deprecated Use get_dims().get(axis_id) instead
+   */
+  size_t grid_dim(int axis_id) const
   {
-    return pimpl->size();
+    return get_dims().get(axis_id);
   }
 
-  // Get the implementation assuming this is a grid
-  // We need to defer the implementation after exec_place_grid has been
-  // defined because this requires a ::std::static_pointer_cast from the base
-  // class to exec_place_grid
-  exec_place_grid as_grid() const;
+  /**
+   * @brief Get all dimensions
+   * @deprecated Use get_dims() instead
+   */
+  dim4 grid_dims() const
+  {
+    return get_dims();
+  }
 
-  size_t grid_dim(int axid_is) const;
-  dim4 grid_dims() const;
+  /**
+   * @brief Convert to exec_place_grid type
+   * @deprecated All places are grids now; use exec_place methods directly
+   */
+  exec_place_grid as_grid() const;
 
   /* These helper methods provide convenient way to express execution places,
    * for example exec_place::host or exec_place::device(4).
@@ -870,11 +1013,11 @@ inline decorated_stream exec_place::getStream(bool for_computation) const
 /**
  * @brief Designates execution that is to run on the host.
  *
+ * Host is modeled as a 1-element grid containing the host execution context.
  */
 class exec_place_host : public exec_place
 {
 public:
-  // Implementation of the exec_place_host class
   class impl : public exec_place::impl
   {
   public:
@@ -882,21 +1025,27 @@ public:
         : exec_place::impl(data_place::host())
     {}
 
-    // operator<: base class implementation is correct (compares typeid, then device_ordinal).
-    // Since host is a singleton, all instances compare equal.
+    // Grid interface - host is a 1-element grid
+    exec_place get_place(size_t idx) const override;
 
-    exec_place activate() const override
+    // Activation - no-op for host
+    exec_place activate(size_t idx) const override
     {
+      EXPECT(idx == 0, "Index out of bounds for host exec_place");
       return exec_place();
-    } // no-op
-    void deactivate(const exec_place& p) const override
+    }
+
+    void deactivate(size_t idx, const exec_place& prev) const override
     {
-      _CCCL_ASSERT(!p.get_impl(), "");
-    } // no-op
-    virtual const data_place affine_data_place() const override
+      EXPECT(idx == 0, "Index out of bounds for host exec_place");
+      _CCCL_ASSERT(!prev.get_impl(), "Host deactivate expects empty prev");
+    }
+
+    const data_place affine_data_place() const override
     {
       return data_place::host();
     }
+
     stream_pool& get_stream_pool(bool for_computation) const override
     {
       return exec_place::current_device().get_stream_pool(for_computation);
@@ -943,6 +1092,8 @@ UNITTEST("exec_place_host::operator->*")
 
 /**
  * @brief Designates execution that is to run on a specific CUDA device.
+ *
+ * Device is modeled as a 1-element grid containing that device.
  */
 class exec_place_device : public exec_place
 {
@@ -952,10 +1103,22 @@ public:
   public:
     explicit impl(int devid)
         : exec_place::impl(data_place::device(devid))
+        , devid_(devid)
     {
       pool_compute = stream_pool(pool_size);
       pool_data    = stream_pool(data_pool_size);
     }
+
+    // Grid interface - device is a 1-element grid
+    exec_place get_place(size_t idx) const override;
+
+    int get_devid() const
+    {
+      return devid_;
+    }
+
+  private:
+    int devid_;
   };
 };
 
@@ -1032,83 +1195,87 @@ public:
   class impl : public exec_place::impl
   {
   public:
-    // Define a grid directly from a vector of places
-    // This creates an execution grid automatically
     impl(::std::vector<exec_place> _places)
-        : dims(_places.size(), 1, 1, 1)
-        , places(mv(_places))
+        : dims_(_places.size(), 1, 1, 1)
+        , places_(mv(_places))
     {
-      _CCCL_ASSERT(!places.empty(), "");
-      _CCCL_ASSERT(dims.x > 0, "");
-      _CCCL_ASSERT(affine.is_invalid(), "");
+      _CCCL_ASSERT(!places_.empty(), "Grid must have at least one place");
+      _CCCL_ASSERT(dims_.x > 0, "Grid dimensions must be positive");
     }
 
-    // With a "dim4 shape"
     impl(::std::vector<exec_place> _places, const dim4& _dims)
-        : dims(_dims)
-        , places(mv(_places))
+        : dims_(_dims)
+        , places_(mv(_places))
     {
-      _CCCL_ASSERT(dims.x > 0, "");
-      _CCCL_ASSERT(affine.is_invalid(), "");
+      _CCCL_ASSERT(dims_.x > 0, "Grid dimensions must be positive");
     }
 
-    // TODO improve with a better description
-    ::std::string to_string() const final
+    // ===== Grid interface =====
+
+    dim4 get_dims() const override
     {
-      return ::std::string("GRID place");
+      return dims_;
     }
 
-    exec_place activate() const override
+    size_t size() const override
     {
-      // No-op
-      return exec_place();
+      return dims_.size();
     }
 
-    // TODO : shall we deactivate the current place, if any ?
-    void deactivate(const exec_place& _prev) const override
+    exec_place get_place(size_t idx) const override
     {
-      // No-op
-      EXPECT(!_prev.get_impl(), "Invalid execution place.");
+      EXPECT(idx < places_.size(), "Index out of bounds");
+      return places_[idx];
     }
 
-    /* Dynamically checks whether an execution place is a device */
+    // ===== Activation (delegates to sub-places) =====
+
+    exec_place activate(size_t idx) const override
+    {
+      EXPECT(idx < places_.size(), "Index out of bounds");
+      return places_[idx].activate(0);
+    }
+
+    void deactivate(size_t idx, const exec_place& prev) const override
+    {
+      EXPECT(idx < places_.size(), "Index out of bounds");
+      places_[idx].deactivate(0, prev);
+    }
+
+    // ===== Properties =====
+
+    ::std::string to_string() const override
+    {
+      return "grid(" + ::std::to_string(dims_.x) + "x" + ::std::to_string(dims_.y) + "x" + ::std::to_string(dims_.z)
+           + "x" + ::std::to_string(dims_.t) + ")";
+    }
+
     bool is_device() const override
     {
       return false;
     }
 
-    /* Dynamically checks whether an execution place is a grid */
-    bool is_grid() const override
+    bool is_host() const override
     {
-      return true;
+      return false;
     }
+
+    // ===== Comparison =====
 
     bool operator==(const exec_place::impl& rhs) const override
     {
-      // First, check if rhs is of type exec_place_grid::impl
       auto other = dynamic_cast<const impl*>(&rhs);
       if (!other)
       {
-        return false; // rhs is not a grid, so they are not equal
+        return false;
       }
-
-      // Compare two grids
-      return *this == *other;
-    }
-
-    // Compare two grids
-    bool operator==(const impl& rhs) const
-    {
-      // Compare grid-specific properties
-      // Note: for grids, equality is determined by dims and places, not the affine data place
-      return dims == rhs.dims && places == rhs.places;
+      return dims_ == other->dims_ && places_ == other->places_;
     }
 
     size_t hash() const override
     {
-      // Hash based on dims and places, consistent with operator==
-      size_t h = ::cuda::experimental::stf::hash<dim4>{}(dims);
-      for (const auto& p : places)
+      size_t h = ::cuda::experimental::stf::hash<dim4>{}(dims_);
+      for (const auto& p : places_)
       {
         hash_combine(h, p.hash());
       }
@@ -1117,211 +1284,61 @@ public:
 
     bool operator<(const exec_place::impl& rhs) const override
     {
-      // Different types: order by typeid
       if (typeid(*this) != typeid(rhs))
       {
         return typeid(*this).before(typeid(rhs));
       }
-      // Same type: safe to cast
       const auto& other = static_cast<const impl&>(rhs);
-      // Compare dims first, then places
-      if (!(dims == other.dims))
+      if (!(dims_ == other.dims_))
       {
-        // Use tuple comparison for consistent ordering
-        return ::std::tie(dims.x, dims.y, dims.z, dims.t)
-             < ::std::tie(other.dims.x, other.dims.y, other.dims.z, other.dims.t);
+        return ::std::tie(dims_.x, dims_.y, dims_.z, dims_.t)
+             < ::std::tie(other.dims_.x, other.dims_.y, other.dims_.z, other.dims_.t);
       }
-      return places < other.places;
+      return places_ < other.places_;
     }
 
-    const ::std::vector<exec_place>& get_places() const
-    {
-      return places;
-    }
+    // ===== Stream management =====
 
     stream_pool& get_stream_pool(bool for_computation) const override
     {
       _CCCL_ASSERT(!for_computation, "Expected data transfer stream pool");
-      const auto& v = get_places();
-      _CCCL_ASSERT(v.size() > 0, "Grid must have at least one place");
-      return v[0].get_stream_pool(for_computation);
+      _CCCL_ASSERT(!places_.empty(), "Grid must have at least one place");
+      return places_[0].get_stream_pool(for_computation);
     }
 
-    exec_place grid_activate(size_t i) const
+    // ===== Grid-specific accessors =====
+
+    const ::std::vector<exec_place>& get_places() const
     {
-      const auto& v = get_places();
-      return v[i].activate();
-    }
-
-    void grid_deactivate(size_t i, exec_place p) const
-    {
-      const auto& v = get_places();
-      v[i].deactivate(p);
-    }
-
-    const exec_place& get_current_place()
-    {
-      return get_places()[current_p_1d];
-    }
-
-    // Set the current place from the 1D index within the grid (flattened grid)
-    void set_current_place(size_t p_index)
-    {
-      // Unset the previous place, if any
-      if (current_p_1d >= 0)
-      {
-        // First deactivate the previous place
-        grid_deactivate(current_p_1d, old_place);
-      }
-
-      // get the 1D index for that position
-      current_p_1d = (::std::ptrdiff_t) p_index;
-
-      // The returned value contains the state to restore when we deactivate the place
-      old_place = grid_activate(current_p_1d);
-    }
-
-    // Set the current place, given the position in the grid
-    void set_current_place(pos4 p)
-    {
-      size_t p_index = dims.get_index(p);
-      set_current_place(p_index);
-    }
-
-    void unset_current_place()
-    {
-      EXPECT(current_p_1d >= 0, "unset_current_place() called without corresponding call to set_current_place()");
-
-      // First deactivate the previous place
-      grid_deactivate(current_p_1d, old_place);
-      current_p_1d = -1;
-    }
-
-    ::std::ptrdiff_t current_place_id() const
-    {
-      return current_p_1d;
-    }
-
-    dim4 get_dims() const
-    {
-      return dims;
-    }
-
-    size_t get_dim(int axis_id) const
-    {
-      return dims.get(axis_id);
-    }
-
-    size_t size() const override
-    {
-      return dims.size();
-    }
-
-    /* Get the place associated to this position in the grid */
-    const exec_place& get_place(pos4 p) const
-    {
-      return coords_to_place(p);
-    }
-
-    const exec_place& get_place(size_t p_index) const
-    {
-      return coords_to_place(p_index);
+      return places_;
     }
 
   private:
-    // What is the execution place at theses coordinates in the exec place grid ?
-    const exec_place& coords_to_place(size_t c0, size_t c1 = 0, size_t c2 = 0, size_t c3 = 0) const
-    {
-      // Flatten the (c0, c1, c2, c3) vector into a global index
-      size_t index = c0 + dims.get(0) * (c1 + dims.get(1) * (c2 + c3 * dims.get(2)));
-      return places[index];
-    }
-
-    const exec_place& coords_to_place(pos4 coords) const
-    {
-      return coords_to_place(coords.x, coords.y, coords.z, coords.t);
-    }
-
-    // current position in the grid (flattened to 1D) if we have a grid of
-    // execution place. -1 indicates there is no current position.
-    ::std::ptrdiff_t current_p_1d = -1;
-
-    // saved state before setting the current place
-    exec_place old_place;
-
-    // dimensions of the "grid"
-    dim4 dims;
-    ::std::vector<exec_place> places;
+    dim4 dims_;
+    ::std::vector<exec_place> places_;
   };
-
-  ///@{ @name Constructors
-  dim4 get_dims() const
-  {
-    return get_impl()->get_dims();
-  }
-
-  size_t get_dim(int axis_id) const
-  {
-    return get_dims().get(axis_id);
-  }
-
-  size_t size() const
-  {
-    return get_dims().size();
-  }
 
   explicit operator bool() const
   {
-    return get_impl() != nullptr;
+    return exec_place::get_impl() != nullptr;
   }
 
-  /* Note that we compare against the exact same implementation : we could
-   * have equivalent grids with the same execution places, but to avoid a
-   * costly comparison we here only look for actually identical grids.
-   */
   bool operator==(const exec_place_grid& rhs) const
   {
     return *get_impl() == *(rhs.get_impl());
   }
 
-  ::std::ptrdiff_t current_place_id() const
-  {
-    return get_impl()->current_place_id();
-  }
-
-  const exec_place& get_place(pos4 p) const
-  {
-    return get_impl()->get_place(p);
-  }
-
+  /**
+   * @brief Get the vector of sub-places (grid-specific)
+   */
   const ::std::vector<exec_place>& get_places() const
   {
     return get_impl()->get_places();
   }
 
-  // Set the current place from the 1D index within the grid (flattened grid)
-  void set_current_place(size_t p_index)
-  {
-    return get_impl()->set_current_place(p_index);
-  }
-
-  // Get the current execution place
-  const exec_place& get_current_place()
-  {
-    return get_impl()->get_current_place();
-  }
-
-  // Set the current place, given the position in the grid
-  void set_current_place(pos4 p)
-  {
-    return get_impl()->set_current_place(p);
-  }
-
-  void unset_current_place()
-  {
-    return get_impl()->unset_current_place();
-  }
-
+  /**
+   * @brief Get the typed impl (for grid-specific operations)
+   */
   ::std::shared_ptr<impl> get_impl() const
   {
     _CCCL_ASSERT(::std::dynamic_pointer_cast<impl>(exec_place::get_impl()), "Invalid exec_place_grid impl");
@@ -1333,7 +1350,6 @@ public:
       : exec_place(nullptr)
   {}
 
-  // private:
   exec_place_grid(::std::shared_ptr<impl> p)
       : exec_place(mv(p))
   {}
@@ -1398,15 +1414,27 @@ inline exec_place data_place::affine_exec_place() const
                            + ::std::to_string(pimpl_->get_device_ordinal()));
 }
 
-/// Implementation deferred because we need the definition of exec_place_grid
-inline exec_place exec_place::iterator::operator*()
+// === Deferred implementations for get_place() ===
+
+inline exec_place exec_place::impl::get_place(size_t idx) const
 {
-  EXPECT(index < it_impl->size());
-  if (it_impl->is_grid())
-  {
-    return ::std::static_pointer_cast<exec_place_grid::impl>(it_impl)->get_place(index);
-  }
-  return exec_place(it_impl);
+  EXPECT(idx == 0, "Index out of bounds for scalar exec_place");
+  // For generic scalar places, we can't easily return self
+  // This should be overridden by concrete implementations
+  return exec_place(
+    ::std::const_pointer_cast<impl>(::std::shared_ptr<const impl>(::std::shared_ptr<const impl>{}, this)));
+}
+
+inline exec_place exec_place_host::impl::get_place(size_t idx) const
+{
+  EXPECT(idx == 0, "Index out of bounds for host exec_place");
+  return exec_place::host();
+}
+
+inline exec_place exec_place_device::impl::get_place(size_t idx) const
+{
+  EXPECT(idx == 0, "Index out of bounds for device exec_place");
+  return exec_place::device(devid_);
 }
 
 //! Creates a grid by replicating an execution place multiple times
@@ -1418,21 +1446,8 @@ inline exec_place_grid exec_place::repeat(const exec_place& e, size_t cnt)
 /* Deferred implementation : ::std::static_pointer_cast requires that exec_place_grid is a complete type */
 inline exec_place_grid exec_place::as_grid() const
 {
-  // Make sure it is really a grid
-  EXPECT(is_grid());
+  EXPECT(size() > 1, "as_grid() called on scalar exec_place");
   return exec_place_grid(::std::static_pointer_cast<exec_place_grid::impl>(pimpl));
-}
-
-inline dim4 exec_place::grid_dims() const
-{
-  EXPECT(is_grid());
-  return ::std::static_pointer_cast<exec_place_grid::impl>(pimpl)->get_dims();
-}
-
-inline size_t exec_place::grid_dim(int axis_id) const
-{
-  EXPECT(is_grid());
-  return ::std::static_pointer_cast<exec_place_grid::impl>(pimpl)->get_dim(axis_id);
 }
 
 /* Get the first N available devices */
@@ -1466,8 +1481,7 @@ inline exec_place_grid exec_place::all_devices()
 //! Creates a cyclic partition of an execution place grid with specified strides
 inline exec_place_grid partition_cyclic(const exec_place_grid& e_place, dim4 strides, pos4 tile_id)
 {
-  const auto& g = e_place.as_grid();
-  dim4 g_dims   = e_place.get_dims();
+  dim4 g_dims = e_place.get_dims();
 
   /*
    *  Example : strides = (3, 2). tile 1 id = (1, 0)
@@ -1479,15 +1493,10 @@ inline exec_place_grid partition_cyclic(const exec_place_grid& e_place, dim4 str
   // Dimension K_x of the new grid on axis x :
   // pos_x + K_x stride_x = dim_x
   // K_x = (dim_x - pos_x)/stride_x
-  dim4 size = dim4((g.get_dim(0) - tile_id.x + strides.x - 1) / strides.x,
-                   (g.get_dim(1) - tile_id.y + strides.y - 1) / strides.y,
-                   (g.get_dim(2) - tile_id.z + strides.z - 1) / strides.z,
-                   (g.get_dim(3) - tile_id.t + strides.t - 1) / strides.t);
-
-  //    fprintf(stderr, "G DIM %d STRIDE %d ID %d\n", g_dims.x, strides.x, tile_id.x);
-  //    fprintf(stderr, "G DIM %d STRIDE %d ID %d\n", g_dims.y, strides.y, tile_id.y);
-  //    fprintf(stderr, "G DIM %d STRIDE %d ID %d\n", g_dims.z, strides.z, tile_id.z);
-  //    fprintf(stderr, "G DIM %d STRIDE %d ID %d\n", g_dims.t, strides.t, tile_id.t);
+  dim4 size = dim4((g_dims.x - tile_id.x + strides.x - 1) / strides.x,
+                   (g_dims.y - tile_id.y + strides.y - 1) / strides.y,
+                   (g_dims.z - tile_id.z + strides.z - 1) / strides.z,
+                   (g_dims.t - tile_id.t + strides.t - 1) / strides.t);
 
   ::std::vector<exec_place> places;
   places.reserve(size.x * size.y * size.z * size.t);
@@ -1500,7 +1509,7 @@ inline exec_place_grid partition_cyclic(const exec_place_grid& e_place, dim4 str
       {
         for (size_t x = static_cast<size_t>(tile_id.x); x < g_dims.x; x += strides.x)
         {
-          places.push_back(g.get_place(pos4(x, y, z, t)));
+          places.push_back(e_place.get_place(pos4(x, y, z, t)));
         }
       }
     }
@@ -1519,18 +1528,15 @@ inline exec_place_grid partition_cyclic(const exec_place_grid& e_place, dim4 str
 //! auto sub_g = partition_tile(g, dim4(2,2), dim4(0,1))
 inline exec_place_grid partition_tile(const exec_place_grid& e_place, dim4 tile_sizes, pos4 tile_id)
 {
-  const auto& g = e_place.as_grid();
+  dim4 g_dims = e_place.get_dims();
 
-  // TODO define dim4=dim4 * dim4
   dim4 begin_coords(
     tile_id.x * tile_sizes.x, tile_id.y * tile_sizes.y, tile_id.z * tile_sizes.z, tile_id.t * tile_sizes.t);
 
-  // TODO define dim4=MIN(dim4,dim4)
-  // upper bound coordinate (excluded)
-  dim4 end_coords(::std::min((tile_id.x + 1) * tile_sizes.x, g.get_dim(0)),
-                  ::std::min((tile_id.y + 1) * tile_sizes.y, g.get_dim(1)),
-                  ::std::min((tile_id.z + 1) * tile_sizes.z, g.get_dim(2)),
-                  ::std::min((tile_id.t + 1) * tile_sizes.t, g.get_dim(3)));
+  dim4 end_coords(::std::min((tile_id.x + 1) * tile_sizes.x, g_dims.x),
+                  ::std::min((tile_id.y + 1) * tile_sizes.y, g_dims.y),
+                  ::std::min((tile_id.z + 1) * tile_sizes.z, g_dims.z),
+                  ::std::min((tile_id.t + 1) * tile_sizes.t, g_dims.t));
 
   //    fprintf(stderr, "G DIM %d TILE SIZE %d ID %d\n", g_dims.x, tile_sizes.x, tile_id.x);
   //    fprintf(stderr, "G DIM %d TILE SIZE %d ID %d\n", g_dims.y, tile_sizes.y, tile_id.y);
@@ -1559,7 +1565,7 @@ inline exec_place_grid partition_tile(const exec_place_grid& e_place, dim4 tile_
       {
         for (size_t x = static_cast<size_t>(begin_coords.x); x < end_coords.x; x++)
         {
-          places.push_back(g.get_place(pos4(x, y, z, t)));
+          places.push_back(e_place.get_place(pos4(x, y, z, t)));
         }
       }
     }

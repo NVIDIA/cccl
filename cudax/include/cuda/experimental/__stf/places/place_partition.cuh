@@ -222,7 +222,7 @@ private:
   /** @brief Compute the subplaces of a place at the specified granularity (scope) into the sub_places vector */
   void compute_subplaces(async_resources_handle& handle, const exec_place& place, place_partition_scope scope)
   {
-    if (place.is_grid() && scope == place_partition_scope::cuda_stream)
+    if (place.size() > 1 && scope == place_partition_scope::cuda_stream)
     {
       // Recursively partition grid into devices, then into streams
       for (auto& device_p : place_partition(place, handle, place_partition_scope::cuda_device))
@@ -247,7 +247,7 @@ private:
 
 // Green contexts are only supported since CUDA 12.4
 #if _CCCL_CTK_AT_LEAST(12, 4)
-    if (place.is_grid() && scope == place_partition_scope::green_context)
+    if (place.size() > 1 && scope == place_partition_scope::green_context)
     {
       // Recursively partition grid into devices, then into green contexts
       for (auto& device_p : place_partition(place, handle, place_partition_scope::cuda_device))
@@ -291,11 +291,13 @@ private:
 #endif // _CCCL_CTK_BELOW(12, 4)
     _CCCL_ASSERT(scope != place_partition_scope::cuda_stream, "CUDA stream scope needs an async resource handle.");
 
-    if (place.is_grid() && scope == place_partition_scope::cuda_device)
+    if (place.size() > 1 && scope == place_partition_scope::cuda_device)
     {
-      exec_place_grid g = place.as_grid();
-      // Copy the vector of places
-      sub_places = g.get_places();
+      // Get places from the grid
+      for (size_t i = 0; i < place.size(); ++i)
+      {
+        sub_places.push_back(place.get_place(i));
+      }
       return;
     }
 

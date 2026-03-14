@@ -95,7 +95,7 @@ void cuda_launcher_graph(interpreted_spec interpreted_policy, Fun&& f, void** ar
 template <typename Fun, typename interpreted_spec, typename Arg>
 void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg arg, cudaStream_t stream, size_t rank)
 {
-  assert(!p.is_grid());
+  assert(p.size() == 1);
 
   p->*[&] {
     auto th = thread_hierarchy(static_cast<int>(rank), interpreted_policy);
@@ -140,7 +140,7 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
 template <typename task_t, typename Fun, typename interpreted_spec, typename Arg>
 void graph_launch_impl(task_t& t, interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg arg, size_t rank)
 {
-  assert(!p.is_grid());
+  assert(p.size() == 1);
 
   auto kernel_args = tuple_prepend(thread_hierarchy(static_cast<int>(rank), interpreted_policy), mv(arg));
   using args_type  = decltype(kernel_args);
@@ -331,11 +331,11 @@ public:
     assert(e_place.affine_data_place() == t.get_affine_data_place());
 
     /*
-     * If we have a grid of places, the implicit affine partitioner is the blocked_partition.
+     * If we have a multi-place grid, the implicit affine partitioner is the blocked_partition.
      *
      * An explicit composite data place is required per data dependency to customize this behaviour.
      */
-    if (e_place.is_grid())
+    if (e_place.size() > 1)
     {
       // Create a composite data place defined by the grid of places + the partitioning function
       t.set_affine_data_place(data_place::composite(blocked_partition(), e_place.as_grid()));

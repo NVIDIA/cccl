@@ -41,29 +41,37 @@ public:
   public:
     impl(const decorated_stream& _dstream)
         : exec_place::impl(data_place::device(_dstream.dev_id))
-        , dstream(_dstream)
-        , dummy_pool(_dstream)
+        , dstream_(_dstream)
+        , dummy_pool_(_dstream)
     {}
 
-    /* We set the current device to be the device on which the CUDA stream was created */
-    exec_place activate() const override
+    // Grid interface - cuda_stream is a 1-element grid
+    exec_place get_place(size_t idx) const override
     {
-      return exec_place::device(dstream.dev_id).activate();
+      EXPECT(idx == 0, "Index out of bounds for cuda_stream exec_place");
+      return exec_place::cuda_stream(dstream_);
     }
 
-    void deactivate(const exec_place& prev) const override
+    exec_place activate(size_t idx) const override
     {
-      return exec_place::device(dstream.dev_id).deactivate(prev);
+      EXPECT(idx == 0, "Index out of bounds for cuda_stream exec_place");
+      return exec_place::device(dstream_.dev_id).activate();
+    }
+
+    void deactivate(size_t idx, const exec_place& prev) const override
+    {
+      EXPECT(idx == 0, "Index out of bounds for cuda_stream exec_place");
+      exec_place::device(dstream_.dev_id).deactivate(prev);
     }
 
     stream_pool& get_stream_pool(bool) const override
     {
-      return dummy_pool;
+      return dummy_pool_;
     }
 
     ::std::string to_string() const override
     {
-      return "exec(stream id=" + ::std::to_string(dstream.id) + " dev=" + ::std::to_string(dstream.dev_id) + ")";
+      return "exec(stream id=" + ::std::to_string(dstream_.id) + " dev=" + ::std::to_string(dstream_.dev_id) + ")";
     }
 
     bool operator==(const exec_place::impl& rhs) const override
@@ -73,14 +81,12 @@ public:
         return false;
       }
       const auto& other = static_cast<const impl&>(rhs);
-      // Compare by stream handle
-      return dstream.stream == other.dstream.stream;
+      return dstream_.stream == other.dstream_.stream;
     }
 
     size_t hash() const override
     {
-      // Hash the stream handle, not the affine data place
-      return ::std::hash<cudaStream_t>()(dstream.stream);
+      return ::std::hash<cudaStream_t>()(dstream_.stream);
     }
 
     bool operator<(const exec_place::impl& rhs) const override
@@ -90,13 +96,12 @@ public:
         return typeid(*this).before(typeid(rhs));
       }
       const auto& other = static_cast<const impl&>(rhs);
-      return dstream.stream < other.dstream.stream;
+      return dstream_.stream < other.dstream_.stream;
     }
 
   private:
-    decorated_stream dstream;
-    // We create a dummy pool of streams which only consists in a single stream in practice.
-    mutable stream_pool dummy_pool;
+    decorated_stream dstream_;
+    mutable stream_pool dummy_pool_;
   };
 
 public:
