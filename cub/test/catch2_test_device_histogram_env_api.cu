@@ -220,14 +220,15 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (2D)"
   constexpr int NUM_CHANNELS        = 4;
   constexpr int NUM_ACTIVE_CHANNELS = 3;
 
-  // 2 rows, 2 pixels per row, with row stride = 2 pixels * 4 channels * 1 byte = 8 bytes
-  // Row 0: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128)
-  // Row 1: (R=1, G=1, B=3, A=200), (R=2, G=3, B=0, A=100)
-  auto d_samples = thrust::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128, 1, 1, 3, 200, 2, 3, 0, 100};
+  // 2 rows, 2 pixels per row, stride includes 1 extra padding pixel per row
+  // Row 0: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128), (PAD, PAD, PAD, PAD)
+  // Row 1: (R=1, G=1, B=3, A=200), (R=2, G=3, B=0, A=100), (PAD, PAD, PAD, PAD)
+  auto d_samples = thrust::device_vector<unsigned char>{
+    0, 2, 1, 255, 3, 4, 2, 128, 0, 0, 0, 0, 1, 1, 3, 200, 2, 3, 0, 100, 0, 0, 0, 0};
 
   int num_row_pixels      = 2;
   int num_rows            = 2;
-  size_t row_stride_bytes = num_row_pixels * NUM_CHANNELS * sizeof(unsigned char);
+  size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char); // 3 pixels wide, 2 used
 
   cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels            = {5, 5, 5};
   cuda::std::array<unsigned char, NUM_ACTIVE_CHANNELS> lower_level = {0, 0, 0};
@@ -339,14 +340,15 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (2D)
   constexpr int NUM_CHANNELS        = 4;
   constexpr int NUM_ACTIVE_CHANNELS = 3;
 
-  // 2 rows, 2 pixels per row
-  // Row 0: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128)
-  // Row 1: (R=1, G=1, B=3, A=200), (R=2, G=3, B=0, A=100)
-  auto d_samples = thrust::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128, 1, 1, 3, 200, 2, 3, 0, 100};
+  // 2 rows, 2 pixels per row, stride includes 1 extra padding pixel per row
+  // Row 0: (R=0, G=2, B=1, A=255), (R=3, G=4, B=2, A=128), (PAD, PAD, PAD, PAD)
+  // Row 1: (R=1, G=1, B=3, A=200), (R=2, G=3, B=0, A=100), (PAD, PAD, PAD, PAD)
+  auto d_samples = thrust::device_vector<unsigned char>{
+    0, 2, 1, 255, 3, 4, 2, 128, 0, 0, 0, 0, 1, 1, 3, 200, 2, 3, 0, 100, 0, 0, 0, 0};
 
   int num_row_pixels      = 2;
   int num_rows            = 2;
-  size_t row_stride_bytes = num_row_pixels * NUM_CHANNELS * sizeof(unsigned char);
+  size_t row_stride_bytes = 3 * NUM_CHANNELS * sizeof(unsigned char); // 3 pixels wide, 2 used
 
   auto d_levels_r = thrust::device_vector<unsigned char>{0, 2, 4}; // 2 bins: [0,2), [2,4)
   auto d_levels_g = thrust::device_vector<unsigned char>{0, 3, 5}; // 2 bins: [0,3), [3,5)
