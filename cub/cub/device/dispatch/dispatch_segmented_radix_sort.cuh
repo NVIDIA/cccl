@@ -861,17 +861,17 @@ template <SortOrder Order,
           typename ValueT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
-          typename DecomposerT    = identity_decomposer_t,
-          typename PolicySelector = policy_selector_from_types<KeyT, ValueT, SegmentSizeT>,
-          typename KernelSource   = DeviceSegmentedRadixSortKernelSource<
-              PolicySelector,
-              Order,
-              KeyT,
-              ValueT,
-              BeginOffsetIteratorT,
-              EndOffsetIteratorT,
-              SegmentSizeT,
-              DecomposerT>,
+          typename DecomposerT = identity_decomposer_t,
+          typename PolicySelector,
+          typename KernelSource = DeviceSegmentedRadixSortKernelSource<
+            PolicySelector,
+            Order,
+            KeyT,
+            ValueT,
+            BeginOffsetIteratorT,
+            EndOffsetIteratorT,
+            SegmentSizeT,
+            DecomposerT>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires radix_sort_policy_selector<PolicySelector>
