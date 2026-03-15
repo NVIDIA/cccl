@@ -582,8 +582,16 @@ _CCCL_HOST_DEVICE bool vector_base<T, Alloc>::empty() const
 template <typename T, typename Alloc>
 void vector_base<T, Alloc>::push_back(const value_type& x)
 {
-  insert(end(), x);
+  (void) emplace_back(x);
 } // end vector_base::push_back()
+
+template <typename T, typename Alloc>
+template <typename... Args>
+typename vector_base<T, Alloc>::reference vector_base<T, Alloc>::emplace_back(Args&&... args)
+{
+  insert(end(), value_type(::cuda::std::forward<Args>(args)...));
+  return back(); // reference to newly appended element
+} // end vector_base::emplace_back()
 
 template <typename T, typename Alloc>
 void vector_base<T, Alloc>::pop_back()
