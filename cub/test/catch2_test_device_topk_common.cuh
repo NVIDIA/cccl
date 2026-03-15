@@ -104,11 +104,6 @@ struct topk_custom_key_t
     return lhs.primary == rhs.primary && lhs.secondary == rhs.secondary;
   }
 
-  friend __host__ __device__ bool operator!=(const topk_custom_key_t& lhs, const topk_custom_key_t& rhs)
-  {
-    return !(lhs == rhs);
-  }
-
   friend __host__ __device__ bool operator<(const topk_custom_key_t& lhs, const topk_custom_key_t& rhs)
   {
     return lhs.primary == rhs.primary ? lhs.secondary < rhs.secondary : lhs.primary < rhs.primary;
