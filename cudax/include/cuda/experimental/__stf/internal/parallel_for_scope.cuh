@@ -550,8 +550,8 @@ public:
     // If there is a partitioner, we ensure there is a proper affine data place for this execution place
     if constexpr (!::std::is_same_v<partitioner_t, null_partition>)
     {
-      // This is only meaningful for grid of places
-      if (e_place.is_grid())
+      // This is only meaningful for multi-place grids
+      if (e_place.size() > 1)
       {
         // Create a composite data place defined by the grid of places + the partitioning function
         t.set_affine_data_place(data_place::composite(partitioner_t(), e_place.as_grid()));
@@ -629,7 +629,7 @@ public:
     if constexpr (need_reduction)
     {
       _CCCL_ASSERT(e_place != exec_place::host(), "Reduce access mode currently unimplemented on host.");
-      _CCCL_ASSERT(!e_place.is_grid(), "Reduce access mode currently unimplemented on grid of places.");
+      _CCCL_ASSERT(e_place.size() == 1, "Reduce access mode currently unimplemented on grid of places.");
       do_parallel_for_redux(f, e_place, shape, t);
       return;
     }
@@ -659,7 +659,7 @@ public:
     if constexpr (!::std::is_same_v<exec_place_t, exec_place_host> && is_extended_host_device_lambda_closure_type
                   || is_extended_device_lambda_closure_type)
     {
-      if (!e_place.is_grid())
+      if (e_place.size() == 1)
       {
         // Apply the parallel_for construct over the entire shape on the
         // execution place of the task
@@ -681,11 +681,12 @@ public:
         }
         else
         {
-          size_t grid_size = t.grid_dims().size();
+          const auto& t_place = t.get_exec_place();
+          size_t grid_size    = t_place.size();
           for (size_t i = 0; i < grid_size; i++)
           {
             t.set_current_place(pos4(i));
-            const auto sub_shape = partitioner_t::apply(shape, pos4(i), t.grid_dims());
+            const auto sub_shape = partitioner_t::apply(shape, pos4(i), t_place.get_dims());
             do_parallel_for(f, t.get_current_place(), sub_shape, t);
             t.unset_current_place();
           }

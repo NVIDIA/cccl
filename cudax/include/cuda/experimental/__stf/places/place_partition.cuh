@@ -222,9 +222,9 @@ private:
   /** @brief Compute the subplaces of a place at the specified granularity (scope) into the sub_places vector */
   void compute_subplaces(async_resources_handle& handle, const exec_place& place, place_partition_scope scope)
   {
-    if (place.is_grid() && scope == place_partition_scope::cuda_stream)
+    // Handle multi-element grids by recursively partitioning
+    if (place.size() > 1 && scope == place_partition_scope::cuda_stream)
     {
-      // Recursively partition grid into devices, then into streams
       for (auto& device_p : place_partition(place, handle, place_partition_scope::cuda_device))
       {
         auto device_p_places = place_partition(device_p, handle, place_partition_scope::cuda_stream).sub_places;
@@ -233,6 +233,27 @@ private:
       return;
     }
 
+    // Handle scalar places (including 1-element grids) for cuda_stream scope
+    if (place.size() == 1 && scope == place_partition_scope::cuda_stream)
+    {
+      // Get the underlying scalar place (for 1-element grids, get the single element)
+      exec_place scalar_place = place.is_device() ? place : place.get_place(0);
+      if (!scalar_place.is_device())
+      {
+        // Host or other non-device place - no streams to partition into
+        sub_places.push_back(place);
+        return;
+      }
+      auto& pool = scalar_place.get_stream_pool(true);
+      for (size_t i = 0; i < pool.size(); i++)
+      {
+        decorated_stream dstream = pool.next(scalar_place);
+        sub_places.push_back(exec_place::cuda_stream(dstream));
+      }
+      return;
+    }
+
+    // Legacy path for explicit device check (kept for compatibility)
     if (place.is_device() && scope == place_partition_scope::cuda_stream)
     {
       auto& pool = place.get_stream_pool(true);
@@ -247,7 +268,7 @@ private:
 
 // Green contexts are only supported since CUDA 12.4
 #if _CCCL_CTK_AT_LEAST(12, 4)
-    if (place.is_grid() && scope == place_partition_scope::green_context)
+    if (place.size() > 1 && scope == place_partition_scope::green_context)
     {
       // Recursively partition grid into devices, then into green contexts
       for (auto& device_p : place_partition(place, handle, place_partition_scope::cuda_device))
@@ -258,18 +279,40 @@ private:
       return;
     }
 
-    if (place.is_device() && scope == place_partition_scope::green_context)
+    // Handle scalar places (including 1-element grids) for green_context scope
+    if (place.size() == 1 && scope == place_partition_scope::green_context)
     {
-      // Find the device associated to the place, and get the green context helper
-      int dev_id = device_ordinal(place.affine_data_place());
+      exec_place scalar_place = place.is_device() ? place : place.get_place(0);
+      if (!scalar_place.is_device())
+      {
+        sub_places.push_back(place);
+        return;
+      }
+      int dev_id = device_ordinal(scalar_place.affine_data_place());
 
-      // 8 SMs per green context is a granularity that should work on any arch.
       const char* env = getenv("CUDASTF_GREEN_CONTEXT_SIZE");
       int sm_cnt      = env ? atoi(env) : 8;
 
       auto h = handle.get_gc_helper(dev_id, sm_cnt);
 
-      // Get views of green context out of the helper to create execution places
+      size_t cnt = h->get_count();
+      for (size_t i = 0; i < cnt; i++)
+      {
+        sub_places.push_back(exec_place::green_ctx(h->get_view(i)));
+      }
+      return;
+    }
+
+    // Legacy path for explicit device check (kept for compatibility)
+    if (place.is_device() && scope == place_partition_scope::green_context)
+    {
+      int dev_id = device_ordinal(place.affine_data_place());
+
+      const char* env = getenv("CUDASTF_GREEN_CONTEXT_SIZE");
+      int sm_cnt      = env ? atoi(env) : 8;
+
+      auto h = handle.get_gc_helper(dev_id, sm_cnt);
+
       size_t cnt = h->get_count();
       for (size_t i = 0; i < cnt; i++)
       {
@@ -291,17 +334,26 @@ private:
 #endif // _CCCL_CTK_BELOW(12, 4)
     _CCCL_ASSERT(scope != place_partition_scope::cuda_stream, "CUDA stream scope needs an async resource handle.");
 
-    if (place.is_grid() && scope == place_partition_scope::cuda_device)
+    if (scope == place_partition_scope::cuda_device)
     {
-      exec_place_grid g = place.as_grid();
-      // Copy the vector of places
-      sub_places = g.get_places();
-      return;
-    }
-
-    if (place.is_device() && scope == place_partition_scope::cuda_device)
-    {
-      sub_places.push_back(place);
+      if (place.size() > 1)
+      {
+        // Multi-element grid: extract all places
+        for (size_t i = 0; i < place.size(); ++i)
+        {
+          sub_places.push_back(place.get_place(i));
+        }
+      }
+      else if (place.is_device())
+      {
+        // Scalar device place
+        sub_places.push_back(place);
+      }
+      else
+      {
+        // 1-element grid or other scalar place: extract the underlying place
+        sub_places.push_back(place.get_place(0));
+      }
       return;
     }
 
