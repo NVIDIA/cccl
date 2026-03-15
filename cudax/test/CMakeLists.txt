@@ -81,6 +81,19 @@ cudax_add_catch2_test(test_target containers
     containers/uninitialized_buffer.cu
 )
 
+cudax_add_catch2_test(test_target copy_bytes
+    copy_bytes/mdspan_d2h_h2d.cu
+)
+
+cudax_add_catch2_test(test_target copy
+    copy/copy.cu
+    copy/copy_edge_cases.cu
+    copy/copy_vectorize.cu
+    copy/copy_vectorize_5d.cu
+    copy/copy_llm.cu
+    copy/copy_nvmath.cu
+)
+
 cudax_add_catch2_test(test_target cuco
     cuco/utility/test_hashers.cu
 )

@@ -5,6 +5,7 @@
 
 cccl_get_cub()
 cccl_get_cudax()
+cccl_get_cutlass()
 cccl_get_libcudacxx()
 cccl_get_thrust()
 
@@ -53,6 +54,7 @@ target_link_libraries(
     cudax.compiler_flags
     libcudacxx::libcudacxx
     CUB::CUB
+    CUTLASS
     Thrust::Thrust
     cudax::cudax
 )
