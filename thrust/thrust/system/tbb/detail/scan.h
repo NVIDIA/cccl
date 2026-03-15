@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2013, NVIDIA Corporation. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2008-2026, NVIDIA Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 /*! \file scan.h
@@ -20,6 +20,7 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
+#include <thrust/system/tbb/pre_include.h>
 
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/advance.h>

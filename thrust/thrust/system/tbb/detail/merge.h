@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2021, NVIDIA Corporation. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2008-2026, NVIDIA Corporation. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -18,6 +18,7 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/merge.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
+#include <thrust/system/tbb/pre_include.h>
 
 #include <tbb/parallel_for.h>
 
