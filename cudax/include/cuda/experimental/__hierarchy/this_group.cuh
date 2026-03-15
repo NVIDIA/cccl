@@ -26,9 +26,9 @@
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 
+#include <cuda/experimental/__hierarchy/current_hierarchy.cuh>
 #include <cuda/experimental/__hierarchy/fwd.cuh>
 #include <cuda/experimental/__hierarchy/grid_sync.cuh>
-#include <cuda/experimental/__hierarchy/implicit_hierarchy.cuh>
 
 #if _CCCL_HAS_COOPERATIVE_GROUPS()
 #  include <cooperative_groups.h>
@@ -49,24 +49,18 @@ class __this_group_base
   static_assert(__is_hierarchy_level_v<_Level>);
   static_assert(__is_hierarchy_v<_Hierarchy>);
 
-  _Hierarchy __hier_;
-
 public:
   using hierarchy_type = _Hierarchy;
 
-  _CCCL_DEVICE_API explicit __this_group_base() noexcept
-      : __hier_{::cuda::experimental::__implicit_hierarchy()}
-  {}
+  _CCCL_DEVICE_API explicit __this_group_base() noexcept = default;
 
   _CCCL_TEMPLATE(class _HierarchyLike)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
-  _CCCL_DEVICE_API __this_group_base(const _HierarchyLike& __hier_like) noexcept
-      : __hier_{::cuda::__unpack_hierarchy_if_needed(__hier_like)}
-  {}
+  _CCCL_DEVICE_API __this_group_base(const _HierarchyLike&) noexcept {}
 
-  [[nodiscard]] _CCCL_API const _Hierarchy& hierarchy() const noexcept
+  [[nodiscard]] _CCCL_API _Hierarchy hierarchy() const noexcept
   {
-    return __hier_;
+    return ::cuda::experimental::__current_hierarchy<_Hierarchy>();
   }
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel, class _Level2 = _Level)
@@ -121,11 +115,12 @@ public:
 #  if _CCCL_HAS_COOPERATIVE_GROUPS()
   template <class _Parent>
   _CCCL_DEVICE_API this_thread(const ::cooperative_groups::thread_block_tile<1, _Parent>&) noexcept
-      : __base_type{::cuda::experimental::__implicit_hierarchy()}
   {}
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
   _CCCL_DEVICE_API void sync() noexcept {}
+
+  _CCCL_DEVICE_API void aligned_sync() noexcept {}
 #endif // _CCCL_CUDA_COMPILATION()
 };
 
@@ -153,7 +148,18 @@ public:
   using __base_type::rank;
   using __base_type::rank_as;
 
+#  if _CCCL_HAS_COOPERATIVE_GROUPS()
+  template <class _Parent>
+  _CCCL_DEVICE_API this_warp(const ::cooperative_groups::thread_block_tile<32, _Parent>&) noexcept
+  {}
+#  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
+
   _CCCL_DEVICE_API void sync() noexcept
+  {
+    ::__syncwarp();
+  }
+
+  _CCCL_DEVICE_API void aligned_sync() noexcept
   {
     ::__syncwarp();
   }
@@ -163,6 +169,11 @@ public:
 _CCCL_TEMPLATE(class _Hierarchy)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Hierarchy>)
 _CCCL_HOST_DEVICE this_warp(const _Hierarchy&) -> this_warp<__hierarchy_type_of<_Hierarchy>>;
+
+#if _CCCL_HAS_COOPERATIVE_GROUPS()
+template <class _Parent>
+_CCCL_HOST_DEVICE this_warp(const ::cooperative_groups::thread_block_tile<32, _Parent>&) -> this_warp<>;
+#endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
 template <class _Hierarchy>
 class this_block : __this_group_base<block_level, _Hierarchy>
@@ -182,14 +193,17 @@ public:
   using __base_type::rank_as;
 
 #  if _CCCL_HAS_COOPERATIVE_GROUPS()
-  _CCCL_DEVICE_API this_block(const ::cooperative_groups::thread_block&) noexcept
-      : __base_type{::cuda::experimental::__implicit_hierarchy()}
-  {}
+  _CCCL_DEVICE_API this_block(const ::cooperative_groups::thread_block&) noexcept {}
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
   _CCCL_DEVICE_API void sync() noexcept
   {
     ::__barrier_sync(0);
+  }
+
+  _CCCL_DEVICE_API void aligned_sync() noexcept
+  {
+    ::__syncthreads();
   }
 #endif // _CCCL_CUDA_COMPILATION()
 };
@@ -220,19 +234,25 @@ public:
   using __base_type::rank_as;
 
 #  if _CCCL_HAS_COOPERATIVE_GROUPS() && defined(_CG_HAS_CLUSTER_GROUP)
-  _CCCL_DEVICE_API this_cluster(const ::cooperative_groups::cluster_group&) noexcept
-      : __base_type{::cuda::experimental::__implicit_hierarchy()}
-  {}
+  _CCCL_DEVICE_API this_cluster(const ::cooperative_groups::cluster_group&) noexcept {}
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS() && defined(_CG_HAS_CLUSTER_GROUP)
 
-  _CCCL_DEVICE_API void sync() noexcept
+  _CCCL_DEVICE_API void sync() noexcept {NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_90,
+    ({
+      asm volatile("barrier.cluster.arrive.aligned;");
+      ::__cluster_barrier_wait();
+    }),
+    ({ ::__barrier_sync(0); }))}
+
+  _CCCL_DEVICE_API void aligned_sync() noexcept
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
                       ({
                         ::__cluster_barrier_arrive();
                         ::__cluster_barrier_wait();
                       }),
-                      ({ ::__barrier_sync(0); }))
+                      ({ ::__syncthreads(); }))
   }
 #endif // _CCCL_CUDA_COMPILATION()
 };
@@ -258,14 +278,17 @@ public:
 
 #if _CCCL_CUDA_COMPILATION()
 #  if _CCCL_HAS_COOPERATIVE_GROUPS()
-  _CCCL_DEVICE_API this_grid(const ::cooperative_groups::grid_group&) noexcept
-      : __base_type{::cuda::experimental::__implicit_hierarchy()}
-  {}
+  _CCCL_DEVICE_API this_grid(const ::cooperative_groups::grid_group&) noexcept {}
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
   _CCCL_DEVICE_API void sync() noexcept
   {
-    ::cuda::experimental::__cg_imported::__grid_sync();
+    ::cuda::experimental::__cg_imported::__grid_sync<false>();
+  }
+
+  _CCCL_DEVICE_API void aligned_sync() noexcept
+  {
+    ::cuda::experimental::__cg_imported::__grid_sync<true>();
   }
 #endif // _CCCL_CUDA_COMPILATION()
 };

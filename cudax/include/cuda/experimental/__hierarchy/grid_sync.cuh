@@ -52,12 +52,20 @@ struct __grid_workspace
   return (((__old ^ __curr) & 0x80000000) != 0);
 }
 
-_CCCL_DEVICE_API inline void __grid_sync()
+template <bool _Aligned>
+_CCCL_DEVICE_API void __grid_sync() noexcept
 {
   const auto __bar_ptr = &::cuda::experimental::__cg_imported::__grid_workspace_ptr()->__barrier_;
 
   // Synchronize the block before synchronizing with the other blocks.
-  ::__barrier_sync(0);
+  if constexpr (_Aligned)
+  {
+    ::__barrier_sync(0);
+  }
+  else
+  {
+    ::__syncthreads();
+  }
 
   // Synchronize with other blocks using the thread 0 in block.
   if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
@@ -97,7 +105,14 @@ _CCCL_DEVICE_API inline void __grid_sync()
   }
 
   // Wait for the thread 0 to finish the inter block synchronization.
-  ::__barrier_sync(0);
+  if constexpr (_Aligned)
+  {
+    ::__barrier_sync(0);
+  }
+  else
+  {
+    ::__syncthreads();
+  }
 }
 } // namespace __cg_imported
 } // namespace cuda::experimental

@@ -123,7 +123,7 @@ __hierarchy_extents_cast(::cuda::std::extents<_OrgIndex, _StaticExts...> __org_e
 // Used to either pass-through the hierarchy argument or unpack it from launch configuration
 _CCCL_TEMPLATE(class _Type)
 _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_Type>)
-[[nodiscard]] _CCCL_API constexpr auto& __unpack_hierarchy_if_needed(const _Type& __instance) noexcept
+[[nodiscard]] _CCCL_API constexpr decltype(auto) __unpack_hierarchy_if_needed(const _Type& __instance) noexcept
 {
   if constexpr (__is_hierarchy_v<_Type>)
   {
