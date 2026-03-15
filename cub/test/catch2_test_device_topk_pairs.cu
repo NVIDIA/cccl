@@ -18,7 +18,6 @@
 #include "catch2_test_device_topk_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
-#include <c2h/custom_type.h>
 
 template <cub::detail::topk::select SelectDirection,
           typename KeyInputIteratorT,
@@ -118,20 +117,7 @@ using value_types     = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>
 using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 using k_items_types   = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 
-using custom_key_t =
-  c2h::custom_type_t<c2h::equal_comparable_t,
-                     c2h::lexicographical_less_comparable_t,
-                     c2h::lexicographical_greater_comparable_t>;
 using custom_value_t = cuda::std::uint32_t;
-
-struct custom_pair_decomposer_t
-{
-  template <template <typename> class... Ps>
-  __host__ __device__ cuda::std::tuple<std::size_t&, std::size_t&> operator()(c2h::custom_type_t<Ps...>& key) const
-  {
-    return {key.key, key.val};
-  }
-};
 
 C2H_TEST("DeviceTopK::MaxPairs: Basic testing", "[pairs][topk][device]", key_types, value_types, directions)
 {
@@ -278,7 +264,7 @@ C2H_TEST("DeviceTopK::MaxPairs: Test for large num_items", "[pairs][topk][device
 
 C2H_TEST("DeviceTopK::{Min,Max}Pairs works with custom keys and decomposers", "[pairs][topk][device]", directions)
 {
-  using key_t              = custom_key_t;
+  using key_t              = topk_custom_key_t;
   using value_t            = custom_value_t;
   constexpr auto direction = c2h::get<0, TestType>::value;
   using num_items_t        = cuda::std::uint32_t;
@@ -296,7 +282,7 @@ C2H_TEST("DeviceTopK::{Min,Max}Pairs works with custom keys and decomposers", "[
   c2h::device_vector<value_t> values_in(num_items);
   c2h::device_vector<key_t> keys_out(k);
   c2h::device_vector<value_t> values_out(k);
-  c2h::gen(C2H_SEED(3), keys_in);
+  gen_topk_custom_keys(C2H_SEED(3), keys_in);
   c2h::gen(C2H_SEED(5), values_in);
 
   auto requirements =
@@ -315,7 +301,7 @@ C2H_TEST("DeviceTopK::{Min,Max}Pairs works with custom keys and decomposers", "[
       values_out.begin(),
       num_items,
       k,
-      custom_pair_decomposer_t{},
+      topk_custom_key_decomposer_t{},
       env);
   }
   else
@@ -329,7 +315,7 @@ C2H_TEST("DeviceTopK::{Min,Max}Pairs works with custom keys and decomposers", "[
       values_out.begin(),
       num_items,
       k,
-      custom_pair_decomposer_t{},
+      topk_custom_key_decomposer_t{},
       env);
   }
 
@@ -345,7 +331,7 @@ C2H_TEST("DeviceTopK::{Min,Max}Pairs works with custom keys and decomposers", "[
       values_out.begin(),
       num_items,
       k,
-      custom_pair_decomposer_t{},
+      topk_custom_key_decomposer_t{},
       env);
   }
   else
@@ -359,7 +345,7 @@ C2H_TEST("DeviceTopK::{Min,Max}Pairs works with custom keys and decomposers", "[
       values_out.begin(),
       num_items,
       k,
-      custom_pair_decomposer_t{},
+      topk_custom_key_decomposer_t{},
       env);
   }
 

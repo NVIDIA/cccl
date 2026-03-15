@@ -20,7 +20,6 @@
 #include "catch2_test_launch_helper.h"
 #include "cuda/__iterator/tabulate_output_iterator.h"
 #include <c2h/catch2_test_helper.h>
-#include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
 template <cub::detail::topk::select SelectDirection,
@@ -69,20 +68,7 @@ using key_types =
 >;
 // clang-format on
 
-using custom_key_t =
-  c2h::custom_type_t<c2h::equal_comparable_t,
-                     c2h::lexicographical_less_comparable_t,
-                     c2h::lexicographical_greater_comparable_t>;
-using custom_key_types = c2h::type_list<custom_key_t>;
-
-struct custom_key_decomposer_t
-{
-  template <template <typename> class... Ps>
-  __host__ __device__ cuda::std::tuple<std::size_t&, std::size_t&> operator()(c2h::custom_type_t<Ps...>& key) const
-  {
-    return {key.key, key.val};
-  }
-};
+using custom_key_types = c2h::type_list<topk_custom_key_t>;
 
 C2H_TEST("DeviceTopK::{Min,Max}Keys work as expected", "[keys][topk][device]", key_types, directions)
 {
@@ -223,11 +209,11 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys works with custom keys and decomposers",
     values({min_num_items, num_items_t{3}, max_num_items}), take(1, random(min_num_items, max_num_items)));
   const num_items_t k = GENERATE_COPY(take(3, random(num_items_t{1}, num_items)));
 
-  CAPTURE(c2h::type_name<key_t>(), num_items, k, direction);
+  CAPTURE(num_items, k, direction);
 
   c2h::device_vector<key_t> keys_in(num_items);
   c2h::device_vector<key_t> keys_out(k, thrust::no_init);
-  c2h::gen(C2H_SEED(7), keys_in);
+  gen_topk_custom_keys(C2H_SEED(7), keys_in);
   c2h::device_vector<key_t> expected_keys(keys_in);
 
   auto requirements =
@@ -238,12 +224,12 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys works with custom keys and decomposers",
   if constexpr (direction == cub::detail::topk::select::max)
   {
     cub::DeviceTopK::MaxKeys(
-      nullptr, temp_storage_bytes, keys_in.begin(), keys_out.begin(), num_items, k, custom_key_decomposer_t{}, env);
+      nullptr, temp_storage_bytes, keys_in.begin(), keys_out.begin(), num_items, k, topk_custom_key_decomposer_t{}, env);
   }
   else
   {
     cub::DeviceTopK::MinKeys(
-      nullptr, temp_storage_bytes, keys_in.begin(), keys_out.begin(), num_items, k, custom_key_decomposer_t{}, env);
+      nullptr, temp_storage_bytes, keys_in.begin(), keys_out.begin(), num_items, k, topk_custom_key_decomposer_t{}, env);
   }
   c2h::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
 
@@ -256,7 +242,7 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys works with custom keys and decomposers",
       keys_out.begin(),
       num_items,
       k,
-      custom_key_decomposer_t{},
+      topk_custom_key_decomposer_t{},
       env);
   }
   else
@@ -268,7 +254,7 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys works with custom keys and decomposers",
       keys_out.begin(),
       num_items,
       k,
-      custom_key_decomposer_t{},
+      topk_custom_key_decomposer_t{},
       env);
   }
 
