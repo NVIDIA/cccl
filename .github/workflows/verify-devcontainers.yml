@@ -28,6 +28,11 @@ jobs:
       uses: actions/checkout@v6
       with:
         persist-credentials: false
+    - name: Setup proxy cache
+      uses: nv-gha-runners/setup-proxy-cache@main
+      continue-on-error: true
+      with:
+        enable-apt: true
     - name: Setup jq and yq
       run: |
         sudo apt-get update
@@ -115,6 +120,11 @@ jobs:
       uses: actions/checkout@v6
       with:
         persist-credentials: false
+    - name: Setup proxy cache
+      uses: nv-gha-runners/setup-proxy-cache@main
+      continue-on-error: true
+      with:
+        enable-apt: true
 
     - name: Install dependencies
       run: |
