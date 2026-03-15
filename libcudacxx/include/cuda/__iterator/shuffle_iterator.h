@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/iterator.h>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
@@ -84,7 +85,7 @@ _CCCL_CONCEPT __is_bijection = _CCCL_REQUIRES_EXPR((_Bijection), const _Bijectio
 //! // iterator[2] returns 2
 //! // iterator[3] returns 0
 //! @endcode
-template <class _IndexType = ::cuda::std::size_t, class _Bijection = random_bijection<_IndexType>>
+template <class _IndexType, class _Bijection>
 class shuffle_iterator
 {
 private:

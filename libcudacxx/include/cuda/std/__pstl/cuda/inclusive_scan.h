@@ -76,7 +76,7 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
     // Determine temporary device storage requirements for reduce
     size_t __num_bytes = 0;
     _CCCL_TRY_CUDA_API(
-      ::cub::DeviceScan::InclusiveScanInit,
+      CUB_NS_QUALIFIER::DeviceScan::InclusiveScanInit,
       "__pstl_cuda_inclusive_scan: determination of device storage for cub::DeviceScan::InclusiveScanInit failed",
       static_cast<void*>(nullptr),
       __num_bytes,
@@ -92,11 +92,11 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
       ::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(__stream.device()), __policy);
 
     {
-      __temporary_storage<void, decltype(__resource)> __storage{__stream, __resource, __num_bytes};
+      __temporary_storage<decltype(__resource)> __storage{__stream, __resource, __num_bytes};
 
       // Run the scan
       _CCCL_TRY_CUDA_API(
-        ::cub::DeviceScan::InclusiveScanInit,
+        CUB_NS_QUALIFIER::DeviceScan::InclusiveScanInit,
         "__pstl_cuda_exclusive_scan: kernel launch of cub::DeviceScan::InclusiveScanInit failed",
         __storage.__get_temp_storage(),
         __num_bytes,
@@ -125,7 +125,7 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
     // Determine temporary device storage requirements for reduce
     size_t __num_bytes = 0;
     _CCCL_TRY_CUDA_API(
-      ::cub::DeviceScan::InclusiveScan,
+      CUB_NS_QUALIFIER::DeviceScan::InclusiveScan,
       "__pstl_cuda_inclusive_scan: determination of device storage for cub::DeviceScan::InclusiveScan failed",
       static_cast<void*>(nullptr),
       __num_bytes,
@@ -140,11 +140,11 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
       ::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(__stream.device()), __policy);
 
     {
-      __temporary_storage<void, decltype(__resource)> __storage{__stream, __resource, __num_bytes};
+      __temporary_storage<decltype(__resource)> __storage{__stream, __resource, __num_bytes};
 
       // Run the scan
       _CCCL_TRY_CUDA_API(
-        ::cub::DeviceScan::InclusiveScan,
+        CUB_NS_QUALIFIER::DeviceScan::InclusiveScan,
         "__pstl_cuda_exclusive_scan: kernel launch of cub::DeviceScan::InclusiveScan failed",
         __storage.__get_temp_storage(),
         __num_bytes,

@@ -10,10 +10,9 @@
 
 #include <cub/detail/choose_offset.cuh> // cub::detail::choose_offset_t
 #include <cub/detail/launcher/cuda_driver.cuh> // cub::detail::CudaDriverLauncherFactory
-#include <cub/detail/ptx-json-parser.cuh>
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh> // cub::DispatchSegmentedSort
 #include <cub/device/dispatch/kernels/kernel_segmented_sort.cuh> // DeviceSegmentedSort kernels
-#include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh> // policy_hub
+#include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
 #include <cub/thread/thread_load.cuh> // cub::LoadModifier
 
 #include <exception> // std::exception
@@ -32,13 +31,12 @@
 #include "util/types.h"
 #include <cccl/c/segmented_sort.h>
 #include <cccl/c/types.h> // cccl_type_info
-#include <nlohmann/json.hpp>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
 #include <util/build_utils.h>
 
 struct device_segmented_sort_policy_selector;
-struct device_three_way_partition_policy;
+struct device_three_way_partition_policy_selector;
 using OffsetT = ptrdiff_t;
 static_assert(std::is_same_v<cub::detail::choose_signed_offset_t<OffsetT>, OffsetT>, "OffsetT must be long");
 
@@ -296,8 +294,8 @@ std::string get_three_way_partition_init_kernel_name()
 
 std::string get_three_way_partition_kernel_name(std::string_view large_selector_t, std::string_view small_selector_t)
 {
-  std::string chained_policy_t;
-  check(cccl_type_name_from_nvrtc<device_three_way_partition_policy>(&chained_policy_t));
+  std::string policy_selector_t;
+  check(cccl_type_name_from_nvrtc<device_three_way_partition_policy_selector>(&policy_selector_t));
 
   static constexpr std::string_view input_it_t =
     "thrust::counting_iterator<cub::detail::segmented_sort::local_segment_index_t>";
@@ -317,7 +315,7 @@ std::string get_three_way_partition_kernel_name(std::string_view large_selector_
   return std::format(
     "cub::detail::three_way_partition::DeviceThreeWayPartitionKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, "
     "{10}>",
-    chained_policy_t, // 0 (ChainedPolicyT)
+    policy_selector_t, // 0 (PolicySelector)
     input_it_t, // 1 (InputIteratorT)
     first_out_it_t, // 2 (FirstOutputIteratorT)
     second_out_it_t, // 3 (SecondOutputIteratorT)
@@ -348,55 +346,6 @@ struct partition_kernel_source
     return build.offset_type.size;
   }
 };
-
-struct partition_runtime_tuning_policy
-{
-  cub::detail::RuntimeThreeWayPartitionAgentPolicy three_way_partition;
-
-  auto ThreeWayPartition() const
-  {
-    return three_way_partition;
-  }
-
-  using MaxPolicy = partition_runtime_tuning_policy;
-
-  template <typename F>
-  cudaError_t Invoke(int, F& op)
-  {
-    return op.template Invoke<partition_runtime_tuning_policy>(*this);
-  }
-};
-
-std::string get_three_way_partition_policy_delay_constructor(const nlohmann::json& partition_policy)
-{
-  auto delay_ctor_info = partition_policy["DelayConstructor"];
-
-  std::string delay_ctor_params;
-  for (auto&& param : delay_ctor_info["params"])
-  {
-    delay_ctor_params.append(to_string(param) + ", ");
-  }
-  delay_ctor_params.erase(delay_ctor_params.size() - 2); // remove last ", "
-
-  return std::format("cub::detail::{}<{}>", delay_ctor_info["name"].get<std::string>(), delay_ctor_params);
-}
-
-std::string inject_delay_constructor_into_three_way_policy(
-  const std::string& three_way_partition_policy_str, const std::string& delay_constructor_type)
-{
-  // Insert before the final closing of the struct (right before the sequence "};")
-  static constexpr std::string_view needle = "};";
-  const auto pos                           = three_way_partition_policy_str.rfind(needle);
-  if (pos == std::string::npos)
-  {
-    return three_way_partition_policy_str; // unexpected; return as-is
-  }
-  const std::string insertion =
-    std::format("\n  struct detail {{ using delay_constructor_t = {}; }}; \n", delay_constructor_type);
-  std::string out = three_way_partition_policy_str;
-  out.insert(pos, insertion);
-  return out;
-}
 } // namespace segmented_sort
 
 struct segmented_sort_keys_input_iterator_tag;
@@ -466,8 +415,6 @@ try
 
   const auto [end_offset_iterator_name, end_offset_iterator_src] =
     get_specialization<segmented_sort_end_offset_iterator_tag>(template_id<input_iterator_traits>(), end_offset_it);
-
-  const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
 
   const std::string key_t = cccl_type_enum_to_name(keys_in_it.value_type.type);
   const std::string value_t =
@@ -543,9 +490,18 @@ try
     key_t, // 0
     value_t); // 1
 
-  static constexpr std::string_view three_way_partition_policy_hub_expr =
-    "cub::detail::three_way_partition::policy_hub<cub::detail::segmented_sort::local_segment_index_t, "
-    "cub::detail::three_way_partition::per_partition_offset_t>";
+  const auto partition_policy_sel = cub::detail::three_way_partition::policy_selector{
+    cub::detail::classify_type<cub::detail::segmented_sort::local_segment_index_t>,
+    int{sizeof(cub::detail::segmented_sort::local_segment_index_t)},
+    int{sizeof(cub::detail::three_way_partition::per_partition_offset_t)}};
+
+  // TODO(bgruber): drop this if tuning policies become formattable
+  std::stringstream partition_policy_sel_str;
+  partition_policy_sel_str << partition_policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+
+  const auto three_way_partition_policy_expr = std::format(
+    "cub::detail::three_way_partition::policy_selector_from_types<cub::detail::segmented_sort::local_segment_index_t, "
+    "cub::detail::three_way_partition::per_partition_offset_t>");
 
   const std::string final_src = std::format(
     R"XXX(
@@ -573,18 +529,17 @@ struct __align__({4}) items_storage_t {{
 {9}
 {10}
 using device_segmented_sort_policy_selector = {11};
+using device_three_way_partition_policy_selector = {13};
 using namespace cub;
+using namespace cub::detail;
 using namespace cub::detail::segmented_sort;
+using namespace cub::detail::three_way_partition;
 static_assert(
   device_segmented_sort_policy_selector()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {12},
   "Host generated and JIT compiled policy mismatch");
-using device_three_way_partition_policy = {13}::MaxPolicy;
-
-#include <cub/detail/ptx-json/json.cuh>
-__device__ consteval auto& three_way_partition_policy_generator() {{
-  return ptx_json::id<ptx_json::string("device_three_way_partition_policy")>()
-    = cub::detail::three_way_partition::ThreeWayPartitionPolicyWrapper<device_three_way_partition_policy::ActivePolicy>::EncodedPolicy();
-}}
+static_assert(
+  device_three_way_partition_policy_selector()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {14},
+  "Host generated and JIT compiled three-way partition policy mismatch");
 )XXX",
     jit_template_header_contents, // 0
     keys_in_it.value_type.size, // 1
@@ -599,7 +554,8 @@ __device__ consteval auto& three_way_partition_policy_generator() {{
     small_selector_src, // 10
     segmented_sort_policy_expr, // 11
     segmented_sort_policy_sel_str.view(), // 12
-    three_way_partition_policy_hub_expr); // 13
+    three_way_partition_policy_expr, // 13
+    partition_policy_sel_str.view()); // 14
 
 #if false // CCCL_DEBUGGING_SWITCH
   fflush(stderr);
@@ -617,7 +573,6 @@ __device__ consteval auto& three_way_partition_policy_generator() {{
     "-dlto",
     "-default-device",
     "-DCUB_DISABLE_CDP",
-    "-DCUB_ENABLE_POLICY_PTX_JSON", // TODO(bgruber): remove after we ported three way partition to the new tuning API
     "-std=c++20"};
 
   cccl::detail::extend_args_with_build_config(args, config);
@@ -691,14 +646,6 @@ __device__ consteval auto& three_way_partition_policy_generator() {{
   check(cuLibraryGetKernel(
     &build_ptr->three_way_partition_kernel, build_ptr->library, three_way_partition_kernel_lowered_name.c_str()));
 
-  // TODO(bgruber): convert to the new tuning API
-  nlohmann::json partition_policy =
-    cub::detail::ptx_json::parse("device_three_way_partition_policy", {result.data.get(), result.size});
-
-  using cub::detail::RuntimeThreeWayPartitionAgentPolicy;
-  auto three_way_partition_policy =
-    RuntimeThreeWayPartitionAgentPolicy::from_json(partition_policy, "ThreeWayPartitionPolicy");
-
   build_ptr->cc                         = cc_major * 10 + cc_minor;
   build_ptr->large_segments_selector_op = large_selector_op;
   build_ptr->small_segments_selector_op = small_selector_op;
@@ -706,10 +653,9 @@ __device__ consteval auto& three_way_partition_policy_generator() {{
   build_ptr->cubin_size                 = result.size;
   build_ptr->key_type                   = keys_in_it.value_type;
   build_ptr->offset_type                = cccl_type_info{sizeof(OffsetT), alignof(OffsetT), cccl_type_enum::CCCL_INT64};
-  // Use the runtime policy extracted via from_json
-  build_ptr->runtime_policy           = new cub::detail::segmented_sort::policy_selector{policy_sel};
-  build_ptr->partition_runtime_policy = new segmented_sort::partition_runtime_tuning_policy{three_way_partition_policy};
-  build_ptr->order                    = sort_order;
+  build_ptr->runtime_policy             = new cub::detail::segmented_sort::policy_selector{policy_sel};
+  build_ptr->partition_runtime_policy   = new cub::detail::three_way_partition::policy_selector{partition_policy_sel};
+  build_ptr->order                      = sort_order;
 
   return CUDA_SUCCESS;
 }
@@ -798,34 +744,24 @@ CUresult cccl_device_segmented_sort_impl(
     cub::DoubleBuffer<indirect_arg_t> d_values_double_buffer(
       *static_cast<indirect_arg_t**>(&val_arg_in), *static_cast<indirect_arg_t**>(&val_arg_out));
 
-    // TODO(bgruber): remove all template arguments except the first two (the others can be deduced)
-    auto exec_status = cub::detail::segmented_sort::dispatch<
-      Order,
-      OffsetT, // OffsetT
-      indirect_arg_t, // KeyT
-      indirect_arg_t, // ValueT
-      indirect_iterator_t, // BeginOffsetIteratorT
-      indirect_iterator_t, // EndOffsetIteratorT
-      cub::detail::segmented_sort::policy_selector, // PolicySelector
-      segmented_sort::segmented_sort_kernel_source, // KernelSource
-      segmented_sort::partition_runtime_tuning_policy // PartitionPolicyHub
-      >(d_temp_storage,
-        *temp_storage_bytes,
-        d_keys_double_buffer,
-        d_values_double_buffer,
-        num_items,
-        num_segments,
-        indirect_iterator_t{start_offset_in},
-        indirect_iterator_t{end_offset_in},
-        is_overwrite_okay,
-        stream,
-        /* policy_selector */
-        *static_cast<cub::detail::segmented_sort::policy_selector*>(build.runtime_policy),
-        /* partition_max_policy */
-        *static_cast<segmented_sort::partition_runtime_tuning_policy*>(build.partition_runtime_policy),
-        /* kernel_source */ segmented_sort::segmented_sort_kernel_source{build},
-        /* partition_kernel_source */ segmented_sort::partition_kernel_source{build},
-        /* launcher_factory */ cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
+    auto exec_status = cub::detail::segmented_sort::dispatch<Order, OffsetT>(
+      d_temp_storage,
+      *temp_storage_bytes,
+      d_keys_double_buffer,
+      d_values_double_buffer,
+      num_items,
+      num_segments,
+      indirect_iterator_t{start_offset_in},
+      indirect_iterator_t{end_offset_in},
+      is_overwrite_okay,
+      stream,
+      /* policy_selector */
+      *static_cast<cub::detail::segmented_sort::policy_selector*>(build.runtime_policy),
+      /* partition_policy_selector */
+      *static_cast<cub::detail::three_way_partition::policy_selector*>(build.partition_runtime_policy),
+      /* kernel_source */ segmented_sort::segmented_sort_kernel_source{build},
+      /* partition_kernel_source */ segmented_sort::partition_kernel_source{build},
+      /* launcher_factory */ cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
 
     *selector = d_keys_double_buffer.selector;
     error     = static_cast<CUresult>(exec_status);
@@ -909,8 +845,8 @@ try
   // Clean up the runtime policies
   std::unique_ptr<cub::detail::segmented_sort::policy_selector> rtp(
     static_cast<cub::detail::segmented_sort::policy_selector*>(build_ptr->runtime_policy));
-  std::unique_ptr<segmented_sort::partition_runtime_tuning_policy> prtp(
-    static_cast<segmented_sort::partition_runtime_tuning_policy*>(build_ptr->partition_runtime_policy));
+  std::unique_ptr<cub::detail::three_way_partition::policy_selector> prtp(
+    static_cast<cub::detail::three_way_partition::policy_selector*>(build_ptr->partition_runtime_policy));
   check(cuLibraryUnload(build_ptr->library));
 
   return CUDA_SUCCESS;

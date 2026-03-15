@@ -83,7 +83,7 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
     void* __temp_storage = nullptr;
     size_t __num_bytes   = 0;
     _CCCL_TRY_CUDA_API(
-      ::cub::DeviceReduce::Reduce,
+      CUB_NS_QUALIFIER::DeviceReduce::Reduce,
       "__pstl_cuda_reduce: determination of device storage for cub::DeviceReduce::Reduce failed",
       __temp_storage,
       __num_bytes,
@@ -99,16 +99,16 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
       ::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(__stream.device()), __policy);
 
     {
-      __temporary_storage<_Tp, decltype(__resource)> __storage{__stream, __resource, __num_bytes};
+      __temporary_storage<decltype(__resource), _Tp> __storage{__stream, __resource, __num_bytes, 1};
 
       // Run the reduction
       _CCCL_TRY_CUDA_API(
-        ::cub::DeviceReduce::Reduce,
+        CUB_NS_QUALIFIER::DeviceReduce::Reduce,
         "__pstl_cuda_reduce: kernel launch of cub::DeviceReduce::Reduce failed",
         __storage.__get_temp_storage(),
         __num_bytes,
         ::cuda::std::move(__first),
-        __storage.template __get_result_iter<_AccumT>(),
+        __storage.template __get_ptr<0, _AccumT>(),
         __count,
         ::cuda::std::move(__func),
         ::cuda::std::move(__init),
@@ -119,7 +119,7 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
         ::cudaMemcpyAsync,
         "__pstl_cuda_reduce: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),
-        __storage.__res_,
+        __storage.template __get_ptr<0>(),
         sizeof(_Tp),
         ::cudaMemcpyDefault,
         __stream.get());

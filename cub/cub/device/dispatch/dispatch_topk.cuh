@@ -25,7 +25,12 @@
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
 
-#include <cuda/cmath>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -305,12 +310,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
     // We are capping k at a maximum of num_items
     using common_offset_t = ::cuda::std::common_type_t<OffsetT, OutOffsetT>;
-    k = static_cast<OutOffsetT>(::cuda::std::min(common_offset_t{k}, static_cast<common_offset_t>(num_items)));
+    k = static_cast<OutOffsetT>((::cuda::std::min) (common_offset_t{k}, static_cast<common_offset_t>(num_items)));
 
     // Specify temporary storage allocation requirements
-    const size_t size_counter             = sizeof(Counter<key_in_t, OffsetT, OutOffsetT>);
-    const size_t size_histogram           = num_buckets * sizeof(OffsetT);
-    const OffsetT candidate_buffer_length = ::cuda::std::max(OffsetT{1}, num_items / coefficient_for_candidate_buffer);
+    const size_t size_counter   = sizeof(Counter<key_in_t, OffsetT, OutOffsetT>);
+    const size_t size_histogram = num_buckets * sizeof(OffsetT);
+    const OffsetT candidate_buffer_length =
+      (::cuda::std::max) (OffsetT{1}, num_items / coefficient_for_candidate_buffer);
 
     constexpr int allocations_array_size            = keys_only ? 4 : 6;
     size_t allocation_sizes[allocations_array_size] = {
@@ -372,7 +378,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       return error;
     }
     const auto main_kernel_max_occupancy = static_cast<unsigned int>(main_kernel_blocks_per_sm * num_sms);
-    const auto topk_grid_size            = ::cuda::std::min(main_kernel_max_occupancy, num_tiles);
+    const auto topk_grid_size            = (::cuda::std::min) (main_kernel_max_occupancy, num_tiles);
 
 // Log topk_kernel configuration @todo check the kernel launch
 #ifdef CUB_DEBUG_LOG
@@ -433,7 +439,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
         }
         const auto first_pass_kernel_max_occupancy =
           static_cast<unsigned int>(first_pass_kernel_blocks_per_sm * num_sms);
-        const auto topk_first_pass_grid_size = ::cuda::std::min(first_pass_kernel_max_occupancy, num_tiles);
+        const auto topk_first_pass_grid_size = (::cuda::std::min) (first_pass_kernel_max_occupancy, num_tiles);
 
         // Compute histogram of the first pass
         if (const auto error = CubDebug(
@@ -505,7 +511,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       return error;
     }
     const auto last_filter_kernel_max_occupancy = static_cast<unsigned int>(last_filter_kernel_blocks_per_sm * num_sms);
-    const auto last_filter_grid_size            = ::cuda::std::min(last_filter_kernel_max_occupancy, num_tiles);
+    const auto last_filter_grid_size            = (::cuda::std::min) (last_filter_kernel_max_occupancy, num_tiles);
     if (const auto error = CubDebug(
           launcher_factory(last_filter_grid_size, block_threads, 0, stream)
             .doit(topk_last_filter_kernel,

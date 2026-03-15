@@ -2,6 +2,8 @@
 
 // Include this file at the top of a unit test for CUB device algorithms to check whether any inserted NVTX ranges nest.
 
+#include <cuda/std/optional>
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

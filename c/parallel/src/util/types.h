@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <cub/device/dispatch/tuning/common.cuh>
+
 #include <cuda/std/cstdint>
 
 #include <string>
@@ -106,4 +108,35 @@ std::string cccl_type_enum_to_name(cccl_type_enum type, bool is_pointer = false)
   }
 
   return result;
+}
+
+inline constexpr cub::detail::type_t cccl_type_enum_to_cub_type(cccl_type_enum type)
+{
+  switch (type)
+  {
+    case CCCL_INT8:
+      return cub::detail::type_t::int8;
+    case CCCL_INT16:
+      return cub::detail::type_t::int16;
+    case CCCL_INT32:
+      return cub::detail::type_t::int32;
+    case CCCL_INT64:
+      return cub::detail::type_t::int64;
+    case CCCL_UINT8:
+      return cub::detail::type_t::uint8;
+    case CCCL_UINT16:
+      return cub::detail::type_t::uint16;
+    case CCCL_UINT32:
+      return cub::detail::type_t::uint32;
+    case CCCL_UINT64:
+      return cub::detail::type_t::uint64;
+    case CCCL_FLOAT32:
+      return cub::detail::type_t::float32;
+    case CCCL_FLOAT64:
+      return cub::detail::type_t::float64;
+    case CCCL_FLOAT16:
+    case CCCL_STORAGE:
+    default:
+      return cub::detail::type_t::other;
+  }
 }

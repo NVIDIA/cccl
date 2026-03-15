@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/iterator.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iterator_traits.h>
@@ -43,36 +44,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @addtogroup iterators
 //! @{
-
-//! @brief @c tabulate_output_iterator is a special kind of output iterator which, whenever a value is assigned to a
-//! dereferenced iterator, calls the given callable with the index that corresponds to the offset of the dereferenced
-//! iterator and the assigned value.
-//!
-//! The following code snippet demonstrates how to create a @c tabulate_output_iterator which prints the index and the
-//! assigned value.
-//!
-//! @code
-//! #include <cuda/iterator>
-//!
-//! struct print_op
-//! {
-//!   __host__ __device__ void operator()(int index, float value) const
-//!   {
-//!     printf("%d: %f\n", index, value);
-//!   }
-//! };
-//!
-//! int main()
-//! {
-//!   auto tabulate_it = cuda::make_tabulate_output_iterator(print_op{});
-//!
-//!   tabulate_it[0] =  1.0f;    // prints: 0: 1.0
-//!   tabulate_it[1] =  3.0f;    // prints: 1: 3.0
-//!   tabulate_it[9] =  5.0f;    // prints: 9: 5.0
-//! }
-//! @endcode
-template <class _Fn, class _Index = ::cuda::std::ptrdiff_t>
-class tabulate_output_iterator;
 
 template <class _Fn, class _Index>
 class __tabulate_proxy
@@ -114,6 +85,33 @@ public:
   }
 };
 
+//! @brief @c tabulate_output_iterator is a special kind of output iterator which, whenever a value is assigned to a
+//! dereferenced iterator, calls the given callable with the index that corresponds to the offset of the dereferenced
+//! iterator and the assigned value.
+//!
+//! The following code snippet demonstrates how to create a @c tabulate_output_iterator which prints the index and the
+//! assigned value.
+//!
+//! @code
+//! #include <cuda/iterator>
+//!
+//! struct print_op
+//! {
+//!   __host__ __device__ void operator()(int index, float value) const
+//!   {
+//!     printf("%d: %f\n", index, value);
+//!   }
+//! };
+//!
+//! int main()
+//! {
+//!   auto tabulate_it = cuda::make_tabulate_output_iterator(print_op{});
+//!
+//!   tabulate_it[0] =  1.0f;    // prints: 0: 1.0
+//!   tabulate_it[1] =  3.0f;    // prints: 1: 3.0
+//!   tabulate_it[9] =  5.0f;    // prints: 9: 5.0
+//! }
+//! @endcode
 template <class _Fn, class _Index>
 class tabulate_output_iterator
 {

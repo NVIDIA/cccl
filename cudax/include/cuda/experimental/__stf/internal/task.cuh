@@ -452,6 +452,8 @@ void dep_allocate(
 {
   auto& inst = d.get_data_instance(instance_id);
 
+  _CCCL_ASSERT(dplace.is_resolved(), "dep_allocate requires a resolved data_place");
+
   /*
    * DATA LAZY ALLOCATION
    */
@@ -482,6 +484,7 @@ void dep_allocate(
         inst.allocated_size = s;
         inst.set_allocated(true);
         inst.reclaimable = true;
+        _CCCL_ASSERT(inst.get_dplace().is_resolved(), "instance dplace must be resolved after allocation");
         break;
       }
 
