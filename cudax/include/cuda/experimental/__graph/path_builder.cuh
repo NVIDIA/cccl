@@ -16,6 +16,8 @@
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/span>
+#include <cuda/std/type_traits>
 
 #include <cuda/experimental/__graph/concepts.cuh>
 #include <cuda/experimental/__graph/graph_builder.cuh>
@@ -170,6 +172,16 @@ struct path_builder
         }
       }(static_cast<Nodes&&>(__nodes)),
       ...);
+  }
+
+  //! \brief Add a range of dependency nodes to this path builder.
+  //! \param __deps The dependency node range to add.
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(::cuda::std::ranges::forward_range<const _Range&>
+                   _CCCL_AND ::cuda::std::is_same_v<::cuda::std::ranges::range_value_t<const _Range&>, cudaGraphNode_t>)
+  _CCCL_HOST_API void depends_on(const _Range& __deps)
+  {
+    __nodes_.insert(__nodes_.end(), __deps.begin(), __deps.end());
   }
 
   //! \brief Get the graph that the path builder is building.
