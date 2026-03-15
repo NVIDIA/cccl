@@ -433,11 +433,6 @@ public:
     return chained_task_nodes;
   }
 
-  const auto& get_ready_dependencies() const
-  {
-    return ready_dependencies;
-  }
-
   void add_done_node(cudaGraphNode_t n)
   {
     done_nodes.push_back(n);
@@ -506,9 +501,10 @@ private:
 
   size_t stage = 0;
 
+  // same as ready_prereqs converted to a vector of cudaGraphNode_t
   ::std::vector<cudaGraphNode_t> ready_dependencies;
 
-  // If we are building our graph by hand, and using get_ready_dependencies()
+  // If we are building our graph by hand
   ::std::vector<cudaGraphNode_t> done_nodes;
 
   backend_ctx_untyped ctx;
