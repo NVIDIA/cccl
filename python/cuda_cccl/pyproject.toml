@@ -129,6 +129,7 @@ known-first-party = [
   "cuda.cccl.headers",
   "cuda.compute",
   "cuda.coop",
+  "cuda.stf",
 ]
 
 [tool.pytest.ini_options]
