@@ -57,6 +57,7 @@ if ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA")
       -Wall
       -Werror
       all-warnings
+      -Wnull-dereference
       -Wno-deprecated-gpu-targets
     )
   endif()
@@ -66,19 +67,20 @@ elseif ("${CMAKE_CUDA_COMPILER_ID}" STREQUAL "Clang")
     headertest_warning_levels_device
     -Wall
     -Werror
+    -Wnull-dereference
     -Wno-unknown-cuda-version
     -Xclang=-fcuda-allow-variadic-functions
   )
   # If the CMAKE_CUDA_COMPILER is unknown, try to use gcc style warnings
 else()
-  set(headertest_warning_levels_device -Wall -Werror)
+  set(headertest_warning_levels_device -Wall -Werror -Wnull-dereference)
 endif()
 
 # Set raw host/device warnings
 if (MSVC)
   set(headertest_warning_levels_host /W4 /WX)
 else()
-  set(headertest_warning_levels_host -Wall -Werror)
+  set(headertest_warning_levels_host -Wall -Werror -Wnull-dereference)
 endif()
 
 # Enable building the nvrtcc project if NVRTC is enabled

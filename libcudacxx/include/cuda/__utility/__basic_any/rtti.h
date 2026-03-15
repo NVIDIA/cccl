@@ -197,6 +197,10 @@ struct __rtti_ex : __rtti
   __base_info __base_vptr_array[_NbrInterfaces];
 };
 
+// GCC cannot prove __query_interface(__iunknown()) is non-null when inlined
+// (the __iunknown interface is always registered; the design guarantees non-null here)
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wnull-dereference")
 //!
 //! __try_vptr_cast
 //!
@@ -228,6 +232,7 @@ template <class _SrcInterface, class _DstInterface>
     return rtti->__query_interface(_DstInterface());
   }
 }
+_CCCL_DIAG_POP
 
 template <class _SrcInterface, class _DstInterface>
 [[nodiscard]] _CCCL_API auto __vptr_cast(__vptr_for<_SrcInterface> __src_vptr) //
