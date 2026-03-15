@@ -50,21 +50,26 @@ struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, true>
   static constexpr bool is_descending = SelectDirection != select::min;
   using bit_ordered_type              = typename Traits<T>::UnsignedBits;
 
+  int pass{};
   int start_bit{};
   unsigned mask{};
-  DecomposerT decomposer{};
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE extract_bin_op_t(int pass, int /*total_bits*/, DecomposerT decomposer)
-      : start_bit(calc_start_bit<T, BitsPerPass>(pass))
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE extract_bin_op_t(int pass, int /*total_bits*/, DecomposerT /*decomposer*/)
+      : pass(pass)
+      , start_bit(calc_start_bit<T, BitsPerPass>(pass))
       , mask(calc_mask<T, BitsPerPass>(pass))
-      , decomposer(decomposer)
   {}
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int operator()(T key) const
   {
-    bit_ordered_type bits = reinterpret_cast<bit_ordered_type&>(key);
-    bits                  = RadixSortTwiddle<is_descending, T>::In(bits, decomposer);
-    return (bits >> start_bit) & mask;
+    auto bits = reinterpret_cast<typename Traits<T>::UnsignedBits&>(key);
+    bits      = Traits<T>::TwiddleIn(bits);
+    if constexpr (SelectDirection != select::min)
+    {
+      bits = ~bits;
+    }
+    int bucket = (bits >> start_bit) & mask;
+    return bucket;
   }
 };
 
@@ -106,29 +111,31 @@ struct identify_candidates_op_t;
 template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
 struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, true>
 {
-  static constexpr bool is_descending = SelectDirection != select::min;
-  using bit_ordered_type              = typename Traits<T>::UnsignedBits;
-  using key_prefix_t                  = key_prefix_storage_t<T>;
-
-  key_prefix_t* kth_key_bits{};
-  int start_bit{};
-  DecomposerT decomposer{};
-
+  using unsigned_bits_t = typename Traits<T>::UnsignedBits;
+  using key_prefix_t    = key_prefix_storage_t<T>;
+  unsigned_bits_t* kth_key_bits;
+  int start_bit;
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-  identify_candidates_op_t(key_prefix_t* kth_key_bits, int pass, int /*total_bits*/, DecomposerT decomposer)
-      : kth_key_bits(kth_key_bits)
-      , start_bit(calc_start_bit<T, BitsPerPass>(pass - 1))
-      , decomposer(decomposer)
-  {}
+  identify_candidates_op_t(key_prefix_t* kth_key_bits, int pass, int /*total_bits*/, DecomposerT /*decomposer*/)
+      : kth_key_bits(&kth_key_bits->bits)
+  {
+    start_bit = calc_start_bit<T, BitsPerPass>(pass - 1);
+  }
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
   {
-    bit_ordered_type bits = reinterpret_cast<bit_ordered_type&>(key);
-    bits                  = RadixSortTwiddle<is_descending, T>::In(bits, decomposer);
-    bits                  = (bits >> start_bit) << start_bit;
+    auto bits = reinterpret_cast<unsigned_bits_t&>(key);
+    bits      = Traits<T>::TwiddleIn(bits);
 
-    return (bits < kth_key_bits->bits) ? candidate_class::selected
-         : (bits == kth_key_bits->bits)
+    if constexpr (SelectDirection != select::min)
+    {
+      bits = ~bits;
+    }
+
+    bits = (bits >> start_bit) << start_bit;
+
+    return (bits < *kth_key_bits) ? candidate_class::selected
+         : (bits == *kth_key_bits)
            ? candidate_class::candidate
            : candidate_class::rejected;
   }

@@ -92,17 +92,18 @@ struct key_prefix_storage_t<KeyT, false>
 
 template <typename KeyT, int BitsPerPass>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-set_kth_key_bits(key_prefix_storage_t<KeyT>& prefix, const int pass, const unsigned int bucket)
+set_kth_key_bits(key_prefix_storage_t<KeyT>& prefix, const int pass, const int bin_index)
 {
   if constexpr (detail::radix::is_fundamental_type<KeyT>::value)
   {
-    using bits_t      = typename Traits<KeyT>::UnsignedBits;
-    const int bit_pos = calc_start_bit<KeyT, BitsPerPass>(pass);
-    prefix.bits |= static_cast<bits_t>(bucket) << bit_pos;
+    using bits_t        = typename Traits<KeyT>::UnsignedBits;
+    const int start_bit = calc_start_bit<KeyT, BitsPerPass>(pass);
+    bits_t bucket       = bin_index;
+    prefix.bits |= static_cast<bits_t>(bucket) << start_bit;
   }
   else
   {
-    prefix.shift_or(BitsPerPass, bucket);
+    prefix.shift_or(BitsPerPass, bin_index);
   }
 }
 
