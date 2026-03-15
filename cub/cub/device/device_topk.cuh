@@ -317,6 +317,9 @@ struct DeviceTopK
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
+    static_assert(!detail::radix::is_fundamental_type<key_t>::value,
+                  "Custom decomposers are not supported for fundamental types; "
+                  "use the non-decomposer API overload instead");
 
     if constexpr (decomposer_check_t::value)
     {
@@ -480,6 +483,9 @@ struct DeviceTopK
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
+    static_assert(!detail::radix::is_fundamental_type<key_t>::value,
+                  "Custom decomposers are not supported for fundamental types; "
+                  "use the non-decomposer API overload instead");
 
     if constexpr (decomposer_check_t::value)
     {
@@ -622,6 +628,9 @@ struct DeviceTopK
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
+    static_assert(!detail::radix::is_fundamental_type<key_t>::value,
+                  "Custom decomposers are not supported for fundamental types; "
+                  "use the non-decomposer API overload instead");
 
     if constexpr (decomposer_check_t::value)
     {
@@ -764,6 +773,9 @@ struct DeviceTopK
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
+    static_assert(!detail::radix::is_fundamental_type<key_t>::value,
+                  "Custom decomposers are not supported for fundamental types; "
+                  "use the non-decomposer API overload instead");
 
     if constexpr (decomposer_check_t::value)
     {
