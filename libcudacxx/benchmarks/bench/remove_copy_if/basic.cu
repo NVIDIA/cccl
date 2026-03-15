@@ -25,7 +25,12 @@ struct is_even
     return static_cast<int>(val) % 2 == 0;
   }
 
-  __device__ constexpr bool operator()(const complex& val) const noexcept
+  __device__ constexpr bool operator()(const complex32& val) const noexcept
+  {
+    return static_cast<int>(val.real()) % 2 == 0;
+  }
+
+  __device__ constexpr bool operator()(const complex64& val) const noexcept
   {
     return static_cast<int>(val.real()) % 2 == 0;
   }
