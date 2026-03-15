@@ -11,8 +11,8 @@
 #include <thrust/device_vector.h>
 
 #include <cuda/memory_pool>
-#include <cuda/std/__pstl_algorithm>
 #include <cuda/std/complex>
+#include <cuda/std/execution>
 #include <cuda/stream>
 
 #include "nvbench_helper.cuh"
@@ -23,7 +23,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
   thrust::device_vector<T> in = generate(elements, bit_entropy::_1_000, T{0}, T{42});
-  const auto count            = cuda::std::count(cuda::execution::__cub_par_unseq, in.begin(), in.end(), T{42});
+  const auto count            = cuda::std::count(cuda::execution::gpu, in.begin(), in.end(), T{42});
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);

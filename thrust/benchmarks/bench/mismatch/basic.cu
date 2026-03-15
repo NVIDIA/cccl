@@ -6,7 +6,6 @@
 #include <thrust/mismatch.h>
 
 #include <cuda/memory_pool>
-#include <cuda/std/__pstl_algorithm>
 #include <cuda/stream>
 
 #include "nvbench_helper.cuh"
@@ -57,14 +56,11 @@ static void range_range(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_reads<T>(mismatch_point + 1);
   state.add_global_memory_writes<size_t>(1);
 
-  cuda::stream stream{cuda::device_ref{0}};
-  cuda::device_memory_pool_ref alloc = cuda::device_default_memory_pool(stream.device());
-
-  auto policy = cuda::execution::__cub_par_unseq.with_stream(stream).with_memory_resource(alloc);
+  caching_allocator_t alloc{};
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               (void) cuda::std::mismatch(
-                 policy.with_stream(launch.get_stream().get_stream()),
+               (void) thrust::mismatch(
+                 policy(alloc, launch),
                  dinput.begin(),
                  dinput.end(),
                  cuda::constant_iterator<T>{0},

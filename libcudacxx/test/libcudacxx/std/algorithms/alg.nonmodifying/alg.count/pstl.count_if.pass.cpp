@@ -13,7 +13,6 @@
 // template<class ExecutionPolicy, class ForwardIterator, class UnaryPred>
 //   void count_if(ExecutionPolicy&& exec, ForwardIterator first, ForwardIterator last, UnaryPred pred);
 
-#include <cuda/std/__pstl_algorithm>
 #include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 

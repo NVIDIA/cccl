@@ -23,7 +23,7 @@
 
 #include <cuda/iterator>
 #include <cuda/memory_pool>
-#include <cuda/std/__pstl_algorithm>
+#include <cuda/std/algorithm>
 #include <cuda/std/execution>
 #include <cuda/std/functional>
 #include <cuda/stream>
@@ -59,21 +59,21 @@ C2H_TEST("cuda::std::mismatch(first1, last1, first2)", "[parallel algorithm]")
 {
   SECTION("with default stream")
   {
-    const auto policy = cuda::execution::__cub_par_unseq;
+    const auto policy = cuda::execution::gpu;
     test_mismatch(policy);
   }
 
   SECTION("with provided stream")
   {
     cuda::stream stream{cuda::device_ref{0}};
-    const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream);
+    const auto policy = cuda::execution::gpu.with_stream(stream);
     test_mismatch(policy);
   }
 
   SECTION("with provided memory_resource")
   {
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
-    const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
+    const auto policy                            = cuda::execution::gpu.with_memory_resource(device_resource);
     test_mismatch(policy);
   }
 
@@ -81,7 +81,7 @@ C2H_TEST("cuda::std::mismatch(first1, last1, first2)", "[parallel algorithm]")
   {
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
-    const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream).with_memory_resource(device_resource);
+    const auto policy = cuda::execution::gpu.with_stream(stream).with_memory_resource(device_resource);
     test_mismatch(policy);
   }
 }
@@ -134,21 +134,21 @@ C2H_TEST("cuda::std::mismatch(first1, last1, first2, last2)", "[parallel algorit
 {
   SECTION("with default stream")
   {
-    const auto policy = cuda::execution::__cub_par_unseq;
+    const auto policy = cuda::execution::gpu;
     test_mismatch2(policy);
   }
 
   SECTION("with provided stream")
   {
     cuda::stream stream{cuda::device_ref{0}};
-    const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream);
+    const auto policy = cuda::execution::gpu.with_stream(stream);
     test_mismatch2(policy);
   }
 
   SECTION("with provided memory_resource")
   {
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
-    const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
+    const auto policy                            = cuda::execution::gpu.with_memory_resource(device_resource);
     test_mismatch2(policy);
   }
 
@@ -156,7 +156,7 @@ C2H_TEST("cuda::std::mismatch(first1, last1, first2, last2)", "[parallel algorit
   {
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
-    const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream).with_memory_resource(device_resource);
+    const auto policy = cuda::execution::gpu.with_stream(stream).with_memory_resource(device_resource);
     test_mismatch2(policy);
   }
 }
