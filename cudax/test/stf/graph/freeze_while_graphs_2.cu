@@ -36,7 +36,7 @@ __global__ void setHandle(cudaGraphConditionalHandle handle)
 int main()
 {
 #if _CCCL_CTK_BELOW(12, 4)
-  fprintf(stderr, "Waiving test: conditional nodes are only available since CUDA 12.4.\n");
+  fprintf(stderr, "Skipping test: conditional nodes are only available since CUDA 12.4.\n");
 #else
   const int N = 16;
   int X[N];
@@ -75,9 +75,9 @@ int main()
   cudaGraphNode_t conditionalNode;
   // There is no input dependency because they are implied by graph launch
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-  cudaGraphAddNode(&conditionalNode, graph, nullptr, nullptr, 0, &cParams);
+  cuda_safe_call(cudaGraphAddNode(&conditionalNode, graph, nullptr, nullptr, 0, &cParams));
 #  else
-  cudaGraphAddNode(&conditionalNode, graph, nullptr, 0, &cParams);
+  cuda_safe_call(cudaGraphAddNode(&conditionalNode, graph, nullptr, 0, &cParams));
 #  endif
 
   cudaGraph_t bodyGraph = cParams.conditional.phGraph_out[0];

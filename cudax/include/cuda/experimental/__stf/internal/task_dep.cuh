@@ -24,6 +24,8 @@
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 
+#include <variant>
+
 namespace cuda::experimental::stf
 {
 ::std::shared_ptr<void> pack_state(const logical_data_untyped&);

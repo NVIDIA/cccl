@@ -11,16 +11,9 @@
 #include <cuda/functional>
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 #include "test_macros.h"
-
-#if _CCCL_COMPILER(GCC, >=, 12)
-_CCCL_BEGIN_NV_DIAG_SUPPRESS(3215) // "if consteval" and "if not consteval" are not standard in this mode
-_CCCL_DIAG_SUPPRESS_GCC("-Wc++23-extensions")
-#endif // _CCCL_COMPILER(GCC, >=, 12)
-#if _CCCL_CUDA_COMPILER(CLANG, >=, 13)
-_CCCL_DIAG_SUPPRESS_CLANG("-Wc++23-extensions")
-#endif // _CCCL_CUDA_COMPILER(CLANG, >=, 13)
 
 /***********************************************************************************************************************
  * Helper
@@ -82,7 +75,7 @@ __host__ __device__ constexpr void test_absorbing_impl(bool has_absorbing, [[may
     else
     {
       assert((absorbing == cuda::absorbing_element<Op, T>()));
-      _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+      if (!cuda::std::__cccl_default_is_constant_evaluated())
       {
         test_absorbing_impl2<Op, T>();
         test_absorbing_impl2<Op, const T>();

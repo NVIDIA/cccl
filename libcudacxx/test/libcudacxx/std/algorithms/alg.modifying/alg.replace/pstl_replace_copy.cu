@@ -40,47 +40,73 @@ struct not_42
   }
 };
 
+template <class Policy>
+void test_replace_copy(const Policy& policy, thrust::device_vector<int>& output)
+{
+  { // empty should not access anything
+    cuda::std::replace_copy(policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr), output.begin(), 42, 1337);
+  }
+
+  { // same type
+    thrust::sequence(output.begin(), output.end(), 0);
+    cuda::std::replace_copy(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, output.begin(), 42, 1337);
+    CHECK(thrust::none_of(output.begin(), output.end(), not_42{}));
+  }
+
+  { // convertible type
+    thrust::sequence(output.begin(), output.end(), 0);
+    cuda::std::replace_copy(
+      policy,
+      cuda::counting_iterator{0},
+      cuda::counting_iterator{size},
+      output.begin(),
+      static_cast<short>(42),
+      static_cast<short>(1));
+    CHECK(thrust::none_of(output.begin(), output.end(), not_42{}));
+  }
+
+  { // convertible output
+    thrust::sequence(output.begin(), output.end(), 0);
+    cuda::std::replace_copy(
+      policy,
+      cuda::counting_iterator<short>{0},
+      cuda::counting_iterator<short>{size},
+      output.begin(),
+      static_cast<short>(42),
+      static_cast<short>(1));
+    CHECK(thrust::none_of(output.begin(), output.end(), not_42{}));
+  }
+}
+
 C2H_TEST("cuda::std::replace_copy", "[parallel algorithm]")
 {
-  thrust::device_vector<int> output(size, thrust::no_init);
+  thrust::device_vector<int> input(size, thrust::no_init);
 
   SECTION("with default stream")
   {
-    thrust::sequence(output.begin(), output.end(), 0);
-
     const auto policy = cuda::execution::__cub_par_unseq;
-    cuda::std::replace_copy(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, output.begin(), 42, 1337);
-    CHECK(thrust::none_of(output.begin(), output.end(), not_42{}));
+    test_replace_copy(policy, input);
   }
 
   SECTION("with provided stream")
   {
-    thrust::sequence(output.begin(), output.end(), 0);
-
     cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream);
-    cuda::std::replace_copy(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, output.begin(), 42, 1337);
-    CHECK(thrust::none_of(output.begin(), output.end(), not_42{}));
+    test_replace_copy(policy, input);
   }
 
   SECTION("with provided memory_resource")
   {
-    thrust::sequence(output.begin(), output.end(), 0);
-
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
     const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
-    cuda::std::replace_copy(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, output.begin(), 42, 1337);
-    CHECK(thrust::none_of(output.begin(), output.end(), not_42{}));
+    test_replace_copy(policy, input);
   }
 
   SECTION("with provided stream and memory_resource")
   {
-    thrust::sequence(output.begin(), output.end(), 0);
-
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
     const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource).with_stream(stream);
-    cuda::std::replace_copy(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, output.begin(), 42, 1337);
-    CHECK(thrust::none_of(output.begin(), output.end(), not_42{}));
+    test_replace_copy(policy, input);
   }
 }

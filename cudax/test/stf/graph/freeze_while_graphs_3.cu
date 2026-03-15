@@ -94,7 +94,7 @@ int main()
   };
 
   cudaGraphConditionalHandle handle;
-  cudaGraphConditionalHandleCreate(&handle, ctx.graph(), 1, cudaGraphCondAssignDefault);
+  cuda_safe_call(cudaGraphConditionalHandleCreate(&handle, ctx.graph(), 1, cudaGraphCondAssignDefault));
 
   cudaGraphNodeParams cParams = {};
   cParams.type                = cudaGraphNodeTypeConditional;
@@ -105,9 +105,9 @@ int main()
   cudaGraphNode_t conditionalNode;
   // There is no input dependencies yet, we will add them later
 #  if _CCCL_CTK_AT_LEAST(13, 0)
-  cudaGraphAddNode(&conditionalNode, ctx.graph(), nullptr, nullptr, 0, &cParams);
+  cuda_safe_call(cudaGraphAddNode(&conditionalNode, ctx.graph(), nullptr, nullptr, 0, &cParams));
 #  else
-  cudaGraphAddNode(&conditionalNode, ctx.graph(), nullptr, 0, &cParams);
+  cuda_safe_call(cudaGraphAddNode(&conditionalNode, ctx.graph(), nullptr, 0, &cParams));
 #  endif
 
   cudaGraph_t bodyGraph = cParams.conditional.phGraph_out[0];

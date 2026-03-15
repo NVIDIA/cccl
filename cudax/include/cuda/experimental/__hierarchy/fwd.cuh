@@ -49,6 +49,21 @@ template <class _Hierarchy, class _Kind>
 class cluster_group;
 template <class _Hierarchy, class _Kind>
 class grid_group;
+
+// traits
+
+template <class _Tp>
+inline constexpr bool __is_this_hierarchy_group_v = false;
+template <class _Hierarchy>
+inline constexpr bool __is_this_hierarchy_group_v<thread_group<_Hierarchy, __this_hierarchy_group_kind>> = true;
+template <class _Hierarchy>
+inline constexpr bool __is_this_hierarchy_group_v<warp_group<_Hierarchy, __this_hierarchy_group_kind>> = true;
+template <class _Hierarchy>
+inline constexpr bool __is_this_hierarchy_group_v<block_group<_Hierarchy, __this_hierarchy_group_kind>> = true;
+template <class _Hierarchy>
+inline constexpr bool __is_this_hierarchy_group_v<cluster_group<_Hierarchy, __this_hierarchy_group_kind>> = true;
+template <class _Hierarchy>
+inline constexpr bool __is_this_hierarchy_group_v<grid_group<_Hierarchy, __this_hierarchy_group_kind>> = true;
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

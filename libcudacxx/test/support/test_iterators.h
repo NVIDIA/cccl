@@ -2068,4 +2068,104 @@ using cpp20_input_iterator_list =
 #endif
 } // namespace types
 
+//! @brief Test iterator that validates, that the iterator is only ever advanced and not incremented repeatedly
+class advance_only_iterator
+{
+  int* iter_ = nullptr;
+
+public:
+  using iterator_category = cuda::std::random_access_iterator_tag;
+  using value_type        = int;
+  using difference_type   = cuda::std::ptrdiff_t;
+  using pointer           = int*;
+  using reference         = int&;
+
+  __host__ __device__ constexpr advance_only_iterator() {}
+  __host__ __device__ constexpr advance_only_iterator(int* iter)
+      : iter_(iter)
+  {}
+
+  __host__ __device__ constexpr reference operator*() const
+  {
+    return *iter_;
+  }
+  __host__ __device__ constexpr reference operator[](difference_type n) const
+  {
+    return iter_[n];
+  }
+
+  __host__ __device__ constexpr advance_only_iterator& operator++()
+  {
+    return *this;
+  }
+  __host__ __device__ constexpr advance_only_iterator& operator--()
+  {
+    return *this;
+  }
+  __host__ __device__ constexpr advance_only_iterator operator++(int)
+  {
+    return *this;
+  }
+  __host__ __device__ constexpr advance_only_iterator operator--(int)
+  {
+    return *this;
+  }
+
+  __host__ __device__ constexpr advance_only_iterator& operator+=(difference_type n)
+  {
+    iter_ += n;
+    return *this;
+  }
+  __host__ __device__ constexpr advance_only_iterator& operator-=(difference_type n)
+  {
+    iter_ -= n;
+    return *this;
+  }
+  __host__ __device__ friend constexpr advance_only_iterator operator+(advance_only_iterator x, difference_type n)
+  {
+    x += n;
+    return x;
+  }
+  __host__ __device__ friend constexpr advance_only_iterator operator+(difference_type n, advance_only_iterator x)
+  {
+    x += n;
+    return x;
+  }
+  __host__ __device__ friend constexpr advance_only_iterator operator-(advance_only_iterator x, difference_type n)
+  {
+    x -= n;
+    return x;
+  }
+  __host__ __device__ friend constexpr difference_type operator-(advance_only_iterator x, advance_only_iterator y)
+  {
+    return x.iter_ - y.iter_;
+  }
+
+  __host__ __device__ friend constexpr bool operator==(const advance_only_iterator& x, const advance_only_iterator& y)
+  {
+    return x.iter_ == y.iter_;
+  }
+  __host__ __device__ friend constexpr bool operator!=(const advance_only_iterator& x, const advance_only_iterator& y)
+  {
+    return x.iter_ != y.iter_;
+  }
+  __host__ __device__ friend constexpr bool operator<(const advance_only_iterator& x, const advance_only_iterator& y)
+  {
+    return x.iter_ < y.iter_;
+  }
+  __host__ __device__ friend constexpr bool operator<=(const advance_only_iterator& x, const advance_only_iterator& y)
+  {
+    return x.iter_ <= y.iter_;
+  }
+  __host__ __device__ friend constexpr bool operator>(const advance_only_iterator& x, const advance_only_iterator& y)
+  {
+    return x.iter_ > y.iter_;
+  }
+  __host__ __device__ friend constexpr bool operator>=(const advance_only_iterator& x, const advance_only_iterator& y)
+  {
+    return x.iter_ >= y.iter_;
+  }
+};
+static_assert(cuda::std::random_access_iterator<advance_only_iterator>, "");
+
 #endif // SUPPORT_TEST_ITERATORS_H

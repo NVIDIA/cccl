@@ -204,7 +204,7 @@ public:
       }
       else if constexpr (__same_as<_Error, cudaError_t>)
       {
-        ::cuda::__throw_cuda_error(__err, "sync_wait failed with cudaError_t");
+        _CCCL_THROW(::cuda::cuda_error, __err, "sync_wait failed with cudaError_t");
       }
       else
       {

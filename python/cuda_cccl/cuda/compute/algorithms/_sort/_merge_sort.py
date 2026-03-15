@@ -134,10 +134,17 @@ def make_merge_sort(
         d_in_items: Optional device array or iterator that contains each key's corresponding item
         d_out_keys: Device array to store the sorted keys
         d_out_items: Device array to store the sorted items
-        op: The comparison operator for sorting. The signature is  ``(T, T) -> int8``, where ``T`` is the input data type.
+        op: The comparison operator for sorting. The signature is  ``(T, T) -> int8``, where ``T`` is the input data type. See notes below.
 
     Returns:
         A callable object that can be used to perform the merge sort
+
+    .. important::
+
+      The provided comparison operator must follow `strict weak ordering <https://en.cppreference.com/w/cpp/concepts/strict_weak_order.html>`_
+      semantics. For example, the comparator ``lambda lhs, rhs: lhs < rhs``  follows strict weak ordering,  but the comparator
+      ``lambda lhs, rhs: rhs >= lhs`` does not, because it is reflexive: ``r(x, x) == True``. Providing a comparator that does not
+      follow the required semantics can lead to incorrect results, silent memory corruption, or crashes.
     """
     op_adapter = make_op_adapter(op)
     return _MergeSort(d_in_keys, d_in_items, d_out_keys, d_out_items, op_adapter)
@@ -164,15 +171,21 @@ def merge_sort(
             :language: python
             :start-after: # example-begin
 
-
     Args:
         d_in_keys: Device array or iterator containing the input sequence of keys
         d_in_items: Device array or iterator containing the input sequence of items (optional)
         d_out_keys: Device array to store the sorted keys
         d_out_items: Device array to store the sorted items (optional)
-        op: The comparison operator for sorting. The signature is  ``(T, T) -> int8``, where ``T`` is the input data type.
+        op: The comparison operator for sorting. The signature is  ``(T, T) -> int8``, where ``T`` is the input data type. See notes below.
         num_items: Number of items to sort
         stream: CUDA stream for the operation (optional)
+
+    .. important::
+
+      The provided comparison operator must follow `strict weak ordering <https://en.cppreference.com/w/cpp/concepts/strict_weak_order.html>`_
+      semantics. For example, the comparator ``lambda lhs, rhs: lhs < rhs``  follows strict weak ordering,  but the comparator
+      ``lambda lhs, rhs: rhs >= lhs`` does not, because it is reflexive: ``r(x, x) == True``. Providing a comparator that does not
+      follow the required semantics can lead to incorrect results, silent memory corruption, or crashes.
     """
     sorter = make_merge_sort(d_in_keys, d_in_items, d_out_keys, d_out_items, op)
     tmp_storage_bytes = sorter(

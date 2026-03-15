@@ -18,6 +18,7 @@
 #include <cub/agent/agent_radix_sort_onesweep.cuh>
 #include <cub/agent/agent_radix_sort_upsweep.cuh>
 #include <cub/agent/agent_scan.cuh>
+#include <cub/detail/delay_constructor.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
 
@@ -31,130 +32,6 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::radix_sort
 {
-enum class delay_constructor_kind
-{
-  no_delay,
-  fixed_delay,
-  exponential_backoff,
-  exponential_backoff_jitter,
-  exponential_backoff_jitter_window,
-  exponential_backon_jitter_window,
-  exponential_backon_jitter,
-  exponential_backon
-};
-
-#if !_CCCL_COMPILER(NVRTC)
-inline ::std::ostream& operator<<(::std::ostream& os, delay_constructor_kind kind)
-{
-  switch (kind)
-  {
-    case delay_constructor_kind::no_delay:
-      return os << "delay_constructor_kind::no_delay";
-    case delay_constructor_kind::fixed_delay:
-      return os << "delay_constructor_kind::fixed_delay";
-    case delay_constructor_kind::exponential_backoff:
-      return os << "delay_constructor_kind::exponential_backoff";
-    case delay_constructor_kind::exponential_backoff_jitter:
-      return os << "delay_constructor_kind::exponential_backoff_jitter";
-    case delay_constructor_kind::exponential_backoff_jitter_window:
-      return os << "delay_constructor_kind::exponential_backoff_jitter_window";
-    case delay_constructor_kind::exponential_backon_jitter_window:
-      return os << "delay_constructor_kind::exponential_backon_jitter_window";
-    case delay_constructor_kind::exponential_backon_jitter:
-      return os << "delay_constructor_kind::exponential_backon_jitter";
-    case delay_constructor_kind::exponential_backon:
-      return os << "delay_constructor_kind::exponential_backon";
-    default:
-      return os << "<unknown delay_constructor_kind: " << static_cast<int>(kind) << ">";
-  }
-}
-#endif // !_CCCL_COMPILER(NVRTC)
-
-struct delay_constructor_policy
-{
-  delay_constructor_kind kind;
-  unsigned int delay;
-  unsigned int l2_write_latency;
-
-  _CCCL_API constexpr friend bool operator==(const delay_constructor_policy& lhs, const delay_constructor_policy& rhs)
-  {
-    return lhs.kind == rhs.kind && lhs.delay == rhs.delay && lhs.l2_write_latency == rhs.l2_write_latency;
-  }
-
-  _CCCL_API constexpr friend bool operator!=(const delay_constructor_policy& lhs, const delay_constructor_policy& rhs)
-  {
-    return !(lhs == rhs);
-  }
-
-#if !_CCCL_COMPILER(NVRTC)
-  friend ::std::ostream& operator<<(::std::ostream& os, const delay_constructor_policy& p)
-  {
-    return os << "delay_constructor_policy { .kind = " << p.kind << ", .delay = " << p.delay
-              << ", .l2_write_latency = " << p.l2_write_latency << " }";
-  }
-#endif // !_CCCL_COMPILER(NVRTC)
-};
-
-template <typename DelayConstructor>
-inline constexpr auto delay_constructor_policy_from_type = 0;
-
-template <unsigned int L2WriteLatency>
-inline constexpr auto delay_constructor_policy_from_type<no_delay_constructor_t<L2WriteLatency>> =
-  delay_constructor_policy{delay_constructor_kind::no_delay, 0, L2WriteLatency};
-
-template <unsigned int Delay, unsigned int L2WriteLatency>
-inline constexpr auto delay_constructor_policy_from_type<fixed_delay_constructor_t<Delay, L2WriteLatency>> =
-  delay_constructor_policy{delay_constructor_kind::fixed_delay, Delay, L2WriteLatency};
-
-template <unsigned int Delay, unsigned int L2WriteLatency>
-inline constexpr auto delay_constructor_policy_from_type<exponential_backoff_constructor_t<Delay, L2WriteLatency>> =
-  delay_constructor_policy{delay_constructor_kind::exponential_backoff, Delay, L2WriteLatency};
-
-template <unsigned int Delay, unsigned int L2WriteLatency>
-inline constexpr auto
-  delay_constructor_policy_from_type<exponential_backoff_jitter_constructor_t<Delay, L2WriteLatency>> =
-    delay_constructor_policy{delay_constructor_kind::exponential_backoff_jitter, Delay, L2WriteLatency};
-
-template <unsigned int Delay, unsigned int L2WriteLatency>
-inline constexpr auto
-  delay_constructor_policy_from_type<exponential_backoff_jitter_window_constructor_t<Delay, L2WriteLatency>> =
-    delay_constructor_policy{delay_constructor_kind::exponential_backoff_jitter_window, Delay, L2WriteLatency};
-
-template <unsigned int Delay, unsigned int L2WriteLatency>
-inline constexpr auto
-  delay_constructor_policy_from_type<exponential_backon_jitter_window_constructor_t<Delay, L2WriteLatency>> =
-    delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, Delay, L2WriteLatency};
-
-template <unsigned int Delay, unsigned int L2WriteLatency>
-inline constexpr auto delay_constructor_policy_from_type<exponential_backon_jitter_constructor_t<Delay, L2WriteLatency>> =
-  delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, Delay, L2WriteLatency};
-
-template <unsigned int Delay, unsigned int L2WriteLatency>
-inline constexpr auto delay_constructor_policy_from_type<exponential_backon_constructor_t<Delay, L2WriteLatency>> =
-  delay_constructor_policy{delay_constructor_kind::exponential_backon, Delay, L2WriteLatency};
-
-// TODO(bgruber): this is modeled after <look_back_helper.cuh>, unify this
-template <delay_constructor_kind Kind, unsigned int Delay, unsigned int L2WriteLatency>
-struct __delay_constructor_t_helper
-{
-private:
-  using delay_constructors = ::cuda::std::__type_list<
-    detail::no_delay_constructor_t<L2WriteLatency>,
-    detail::fixed_delay_constructor_t<Delay, L2WriteLatency>,
-    detail::exponential_backoff_constructor_t<Delay, L2WriteLatency>,
-    detail::exponential_backoff_jitter_constructor_t<Delay, L2WriteLatency>,
-    detail::exponential_backoff_jitter_window_constructor_t<Delay, L2WriteLatency>,
-    detail::exponential_backon_jitter_window_constructor_t<Delay, L2WriteLatency>,
-    detail::exponential_backon_jitter_constructor_t<Delay, L2WriteLatency>,
-    detail::exponential_backon_constructor_t<Delay, L2WriteLatency>>;
-
-public:
-  using type = ::cuda::std::__type_at_c<static_cast<int>(Kind), delay_constructors>;
-};
-
-template <delay_constructor_kind Kind, unsigned int Delay, unsigned int L2WriteLatency>
-using delay_constructor_t = typename __delay_constructor_t_helper<Kind, Delay, L2WriteLatency>::type;
-
 struct radix_sort_histogram_policy
 {
   int block_threads;
@@ -962,7 +839,7 @@ _CCCL_API constexpr auto get_sm100_tuning(int key_size, int value_size, int offs
   return get_sm90_tuning(key_size, value_size, offset_size);
 }
 
-// TODO(bgruber): remove when segmented radix sort is ported to the new tuning API
+// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 template <typename PolicyT, typename = void>
 struct RadixSortPolicyWrapper : PolicyT
 {
@@ -975,7 +852,7 @@ struct RadixSortPolicyWrapper : PolicyT
 using namespace radix_sort_runtime_policies;
 #endif
 
-// TODO(bgruber): remove when segmented radix sort is ported to the new tuning API
+// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 template <typename StaticPolicyT>
 struct RadixSortPolicyWrapper<
   StaticPolicyT,
@@ -1044,12 +921,107 @@ struct RadixSortPolicyWrapper<
 #endif
 };
 
-// TODO(bgruber): remove when segmented radix sort is ported to the new tuning API
+// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 template <typename PolicyT>
 _CCCL_HOST_DEVICE RadixSortPolicyWrapper<PolicyT> MakeRadixSortPolicyWrapper(PolicyT policy)
 {
   return RadixSortPolicyWrapper<PolicyT>{policy};
 }
+
+// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
+template <typename LegacyActivePolicy>
+_CCCL_API constexpr auto convert_policy() -> radix_sort_policy
+{
+  using active_policy = LegacyActivePolicy;
+
+  auto convert_downsweep_policy = [](auto p) {
+    (void) p;
+    using p_t = decltype(p);
+    return radix_sort_downsweep_policy{
+      p_t::BLOCK_THREADS,
+      p_t::ITEMS_PER_THREAD,
+      p_t::RADIX_BITS,
+      p_t::LOAD_ALGORITHM,
+      p_t::LOAD_MODIFIER,
+      p_t::RANK_ALGORITHM,
+      p_t::SCAN_ALGORITHM};
+  };
+
+  using hist_pol       = typename active_policy::HistogramPolicy;
+  const auto histogram = radix_sort_histogram_policy{
+    hist_pol::BLOCK_THREADS, hist_pol::ITEMS_PER_THREAD, hist_pol::NUM_PARTS, hist_pol::RADIX_BITS};
+
+  using exc_sum_pol        = typename active_policy::ExclusiveSumPolicy;
+  const auto exclusive_sum = radix_sort_exclusive_sum_policy{exc_sum_pol::BLOCK_THREADS, exc_sum_pol::RADIX_BITS};
+
+  using one_pol       = typename active_policy::OnesweepPolicy;
+  const auto onesweep = radix_sort_onesweep_policy{
+    one_pol::BLOCK_THREADS,
+    one_pol::ITEMS_PER_THREAD,
+    one_pol::RANK_NUM_PARTS,
+    one_pol::RADIX_BITS,
+    one_pol::RANK_ALGORITHM,
+    one_pol::SCAN_ALGORITHM,
+    one_pol::STORE_ALGORITHM};
+
+  using scan_pol  = typename active_policy::ScanPolicy;
+  const auto scan = scan_policy{
+    scan_pol::BLOCK_THREADS,
+    scan_pol::ITEMS_PER_THREAD,
+    scan_pol::LOAD_ALGORITHM,
+    scan_pol::LOAD_MODIFIER,
+    scan_pol::STORE_ALGORITHM,
+    scan_pol::SCAN_ALGORITHM,
+    delay_constructor_policy_from_type<typename scan_pol::detail::delay_constructor_t>};
+
+  const auto downsweep     = convert_downsweep_policy(typename active_policy::DownsweepPolicy{});
+  const auto alt_downsweep = convert_downsweep_policy(typename active_policy::AltDownsweepPolicy{});
+
+  using up_pol       = typename active_policy::UpsweepPolicy;
+  const auto upsweep = radix_sort_upsweep_policy{
+    up_pol::BLOCK_THREADS, up_pol::ITEMS_PER_THREAD, up_pol::RADIX_BITS, up_pol::LOAD_MODIFIER};
+
+  using alt_up_pol       = typename active_policy::AltUpsweepPolicy;
+  const auto alt_upsweep = radix_sort_upsweep_policy{
+    alt_up_pol::BLOCK_THREADS, alt_up_pol::ITEMS_PER_THREAD, alt_up_pol::RADIX_BITS, alt_up_pol::LOAD_MODIFIER};
+
+  const auto single_tile   = convert_downsweep_policy(typename active_policy::SingleTilePolicy{});
+  const auto segmented     = convert_downsweep_policy(typename active_policy::SegmentedPolicy{});
+  const auto alt_segmented = convert_downsweep_policy(typename active_policy::AltSegmentedPolicy{});
+
+  return radix_sort_policy{
+    active_policy::ONESWEEP,
+    active_policy::ONESWEEP_RADIX_BITS,
+    histogram,
+    exclusive_sum,
+    onesweep,
+    scan,
+    downsweep,
+    alt_downsweep,
+    upsweep,
+    alt_upsweep,
+    single_tile,
+    segmented,
+    alt_segmented};
+}
+
+// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
+template <typename LegacyActivePolicy>
+_CCCL_API _CCCL_FORCEINLINE constexpr auto convert_policy(RadixSortPolicyWrapper<LegacyActivePolicy> policy)
+  -> radix_sort_policy
+{
+  return convert_policy<LegacyActivePolicy>();
+}
+
+// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
+template <typename PolicyHub>
+struct policy_selector_from_hub
+{
+  _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> radix_sort_policy
+  {
+    return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
+  }
+};
 
 /**
  * @brief Tuning policy for kernel specialization
@@ -1759,6 +1731,11 @@ struct policy_hub
   return ::cuda::std::max(1, nominal_4b_num_parts * 4 / ::cuda::std::max(compute_t_size, 4));
 }
 
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept radix_sort_policy_selector = detail::policy_selector<T, radix_sort_policy>;
+#endif // _CCCL_HAS_CONCEPTS()
+
 struct policy_selector
 {
   int key_size;
@@ -1778,7 +1755,7 @@ struct policy_selector
     return ::cuda::std::max(value_size, key_size);
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto make_onsweep_small_key_policy(const small_key_tuning_values& tuning) const
+  [[nodiscard]] _CCCL_API constexpr auto make_onesweep_small_key_policy(const small_key_tuning_values& tuning) const
     -> radix_sort_policy
   {
     const int primary_radix_bits     = (key_size > 1) ? 7 : 5;
@@ -1921,12 +1898,12 @@ struct policy_selector
 
     if (arch >= ::cuda::arch_id::sm_100)
     {
-      return make_onsweep_small_key_policy(get_sm100_tuning(key_size, value_size, offset_size, key_type));
+      return make_onesweep_small_key_policy(get_sm100_tuning(key_size, value_size, offset_size, key_type));
     }
 
     if (arch >= ::cuda::arch_id::sm_90)
     {
-      return make_onsweep_small_key_policy(get_sm90_tuning(key_size, value_size, offset_size));
+      return make_onesweep_small_key_policy(get_sm90_tuning(key_size, value_size, offset_size));
     }
 
     if (arch >= ::cuda::arch_id::sm_80)
@@ -2540,6 +2517,10 @@ struct policy_selector
       alt_segmented};
   }
 };
+
+#if _CCCL_HAS_CONCEPTS()
+static_assert(radix_sort_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
 
 template <typename KeyT, typename ValueT, typename OffsetT>
 struct policy_selector_from_types

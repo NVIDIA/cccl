@@ -208,6 +208,7 @@ struct DeviceSegmentedReduce
         d_end_offsets,
         reduction_op,
         initial_value, // zero-initialize
+        0, // max_segment_size
         stream);
     }
     _CCCL_UNREACHABLE();
@@ -418,6 +419,7 @@ struct DeviceSegmentedReduce
         d_end_offsets,
         ::cuda::std::plus<>{},
         init_t{}, // zero-initialize
+        0, // max_segment_size
         stream);
     }
     _CCCL_UNREACHABLE();
@@ -561,6 +563,7 @@ struct DeviceSegmentedReduce
         d_end_offsets,
         op_t{},
         init_t{}, // zero-initialize
+        0, // max_segment_size
         stream.get(),
         segmented_reduce_tuning_t{});
       if (error != cudaSuccess)
@@ -586,6 +589,7 @@ struct DeviceSegmentedReduce
         d_end_offsets,
         op_t{},
         init_t{}, // zero-initialize
+        0, // max_segment_size
         stream.get(),
         segmented_reduce_tuning_t{});
 
@@ -803,6 +807,7 @@ struct DeviceSegmentedReduce
         d_end_offsets,
         ::cuda::minimum<>{},
         ::cuda::std::numeric_limits<init_t>::max(),
+        0, // max_segment_size
         stream);
     }
     _CCCL_UNREACHABLE();
@@ -1033,6 +1038,7 @@ struct DeviceSegmentedReduce
         d_end_offsets,
         cub::ArgMin{},
         initial_value,
+        0, // max_segment_size
         stream);
     }
     _CCCL_UNREACHABLE();
@@ -1267,6 +1273,7 @@ struct DeviceSegmentedReduce
         d_end_offsets,
         ::cuda::maximum<>{},
         ::cuda::std::numeric_limits<init_t>::lowest(),
+        0, // max_segment_size
         stream);
     }
     _CCCL_UNREACHABLE();
@@ -1494,6 +1501,7 @@ struct DeviceSegmentedReduce
         d_end_offsets,
         cub::ArgMax{},
         initial_value,
+        0, // max_segment_size
         stream);
     }
     _CCCL_UNREACHABLE();

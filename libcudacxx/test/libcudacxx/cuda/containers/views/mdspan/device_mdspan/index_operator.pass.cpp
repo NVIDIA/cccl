@@ -28,6 +28,7 @@
 #include <cuda/mdspan>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
 
 #include "../ConvertibleToIntegral.h"
 #include "../CustomTestLayouts.h"
@@ -45,12 +46,12 @@ __device__ constexpr auto& access(MDS mds, int64_t i0)
 }
 
 #if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
-template <class MDS,
-          class... Indices,
-          class  = cuda::std::enable_if_t<
-             cuda::std::__all<cuda::std::is_same<decltype(cuda::std::declval<MDS>()[cuda::std::declval<Indices>()...]),
-                                                 typename MDS::reference>::value>::value,
-             int> = 0>
+template <
+  class MDS,
+  class... Indices,
+  class  = cuda::std::enable_if_t<
+     cuda::std::is_same_v<decltype(cuda::std::declval<MDS>()[cuda::std::declval<Indices>()...]), typename MDS::reference>,
+     int> = 0>
 __device__ constexpr bool check_operator_constraints(MDS m, Indices... idxs)
 {
   unused(m[idxs...]);
@@ -159,7 +160,7 @@ __device__ constexpr void test_layout()
   test_iteration(construct_mapping(Layout(), cuda::std::extents<unsigned, D>(7)));
   test_iteration(construct_mapping(Layout(), cuda::std::extents<unsigned, 7>()));
   test_iteration(construct_mapping(Layout(), cuda::std::extents<unsigned, 7, 8>()));
-  test_iteration(construct_mapping(Layout(), cuda::std::extents<char, D, D, D, D>(1, 1, 1, 1)));
+  test_iteration(construct_mapping(Layout(), cuda::std::extents<signed char, D, D, D, D>(1, 1, 1, 1)));
 
 #if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
   test_iteration(construct_mapping(Layout(), cuda::std::extents<int>()));

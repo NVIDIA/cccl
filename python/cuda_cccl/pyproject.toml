@@ -61,14 +61,14 @@ test-cu12 = [
   "cuda-cccl[cu12]",
   "pytest",
   "pytest-xdist",
-  "cupy-cuda12x",
+  "cupy-cuda12x<14.0.0",
   "pytest-benchmark",
 ]
 test-cu13 = [
   "cuda-cccl[cu13]",
   "pytest",
   "pytest-xdist",
-  "cupy-cuda13x",
+  "cupy-cuda13x<14.0.0",
   "pytest-benchmark",
 ]
 bench-cu12 = ["cuda-cccl[cu12]", "cuda-bench[cu12]"]

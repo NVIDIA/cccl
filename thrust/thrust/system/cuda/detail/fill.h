@@ -28,35 +28,21 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-template <typename T>
-struct __return_constant
-{
-  T value;
-
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE auto operator()() const -> T
-  {
-    return value;
-  }
-};
-
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class OutputIterator, class Size, class T>
 OutputIterator _CCCL_HOST_DEVICE
 fill_n(execution_policy<Derived>& policy, OutputIterator first, Size count, const T& value)
 {
   THRUST_CDP_DISPATCH(
-    (using Predicate   = CUB_NS_QUALIFIER::detail::transform::always_true_predicate;
-     using TransformOp = __return_constant<T>;
-     cudaError_t status;
-     THRUST_INDEX_TYPE_DISPATCH(
-       status,
-       (CUB_NS_QUALIFIER::detail::transform::dispatch<CUB_NS_QUALIFIER::detail::transform::requires_stable_address::no>),
-       count,
-       (::cuda::std::tuple<>{}, first, count_fixed, Predicate{}, TransformOp{value}, cuda_cub::stream(policy)));
-     throw_on_error(status, "fill_n: failed inside CUB");
-     throw_on_error(synchronize_optional(policy), "fill_n: failed to synchronize");
-     return first + count;),
-    (return thrust::fill_n(cvt_to_seq(derived_cast(policy)), first, count, value);));
+    ({
+      cudaError_t status;
+      THRUST_INDEX_TYPE_DISPATCH(
+        status, (CUB_NS_QUALIFIER::DeviceTransform::Fill), count, (first, count_fixed, value, cuda_cub::stream(policy)));
+      throw_on_error(status, "fill_n: failed inside CUB");
+      throw_on_error(synchronize_optional(policy), "fill_n: failed to synchronize");
+      return first + count;
+    }),
+    ({ return thrust::fill_n(cvt_to_seq(derived_cast(policy)), first, count, value); }));
 }
 
 template <class Derived, class ForwardIterator, class T>

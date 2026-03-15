@@ -19,13 +19,19 @@
 template <typename Result, typename Lhs, typename Rhs>
 __host__ __device__ constexpr void test_add_overflow(Lhs lhs, Rhs rhs, bool overflow)
 {
+  using UResult         = cuda::std::make_unsigned_t<Result>;
+  const auto ref_result = static_cast<Result>(static_cast<UResult>(lhs) + static_cast<UResult>(rhs));
+
   // test overflow_result<Result> add_overflow(Lhs lhs, Rhs rhs) overload
   {
     const auto result = cuda::add_overflow<Result>(lhs, rhs);
-    // overflow result is well-defined only for unsigned types
+
+    // nvcc 12.0 seems not to be able to compute this correctly during constant evaluation.
+#if _CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
     if (!overflow || cuda::std::is_unsigned_v<Result>)
+#endif // _CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
     {
-      assert(result.value == static_cast<Result>(static_cast<Result>(lhs) + static_cast<Result>(rhs)));
+      assert(result.value == ref_result);
     }
     assert(result.overflow == overflow);
   }
@@ -33,10 +39,12 @@ __host__ __device__ constexpr void test_add_overflow(Lhs lhs, Rhs rhs, bool over
   {
     Result result{};
     bool has_overflow = cuda::add_overflow<Result>(result, lhs, rhs);
-    // overflow result is well-defined only for unsigned types
+    // nvcc 12.0 seems not to be able to compute this correctly during constant evaluation.
+#if _CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
     if (!overflow || cuda::std::is_unsigned_v<Result>)
+#endif // _CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
     {
-      assert(result == static_cast<Result>(static_cast<Result>(lhs) + static_cast<Result>(rhs)));
+      assert(result == ref_result);
     }
     assert(has_overflow == overflow);
   }

@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#define _CUDAX_HIERARCHY
+
 #include <cub/block/block_reduce.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/warp/warp_reduce.cuh>
@@ -57,19 +59,27 @@ struct TestKernel
       unsigned array[]{1, 2, 3};
 
       auto this_thread = cudax::this_thread(config);
-      CUDAX_REQUIRE(this_thread.count(cuda::grid) == cuda::gpu_thread.count(cuda::grid));
-      CUDAX_REQUIRE(this_thread.rank(cuda::grid) == cuda::gpu_thread.rank(cuda::grid));
+
       this_thread.sync();
 
       const auto result = sum(this_thread, array);
       CUDAX_REQUIRE(result == 6);
+
+      CUDAX_REQUIRE(cuda::gpu_thread.count(this_thread) == 1);
+      CUDAX_REQUIRE(cuda::gpu_thread.rank(this_thread) == 0);
+      CUDAX_REQUIRE(this_thread.count(cuda::warp) == cuda::gpu_thread.count(cuda::warp));
+      CUDAX_REQUIRE(this_thread.rank(cuda::warp) == cuda::gpu_thread.rank(cuda::warp));
+      CUDAX_REQUIRE(this_thread.count(cuda::block) == cuda::gpu_thread.count(cuda::block));
+      CUDAX_REQUIRE(this_thread.rank(cuda::block) == cuda::gpu_thread.rank(cuda::block));
+      CUDAX_REQUIRE(this_thread.count(cuda::cluster) == cuda::gpu_thread.count(cuda::cluster));
+      CUDAX_REQUIRE(this_thread.rank(cuda::cluster) == cuda::gpu_thread.rank(cuda::cluster));
+      CUDAX_REQUIRE(this_thread.count(cuda::grid) == cuda::gpu_thread.count(cuda::grid));
+      CUDAX_REQUIRE(this_thread.rank(cuda::grid) == cuda::gpu_thread.rank(cuda::grid));
     }
     {
       unsigned array[]{1, 2, 3};
 
       auto this_warp = cudax::this_warp(config);
-      CUDAX_REQUIRE(this_warp.count(cuda::grid) == cuda::warp.count(cuda::grid));
-      CUDAX_REQUIRE(this_warp.rank(cuda::grid) == cuda::warp.rank(cuda::grid));
       this_warp.sync();
 
       const auto result = sum(this_warp, array);
@@ -77,13 +87,22 @@ struct TestKernel
       {
         CUDAX_REQUIRE(result == 6 * cuda::gpu_thread.count(cuda::warp));
       }
+
+      CUDAX_REQUIRE(cuda::gpu_thread.count(this_warp) == cuda::gpu_thread.count(cuda::warp));
+      CUDAX_REQUIRE(cuda::gpu_thread.rank(this_warp) == cuda::gpu_thread.rank(cuda::warp));
+      CUDAX_REQUIRE(cuda::warp.count(this_warp) == 1);
+      CUDAX_REQUIRE(cuda::warp.rank(this_warp) == 0);
+      CUDAX_REQUIRE(this_warp.count(cuda::block) == cuda::warp.count(cuda::block));
+      CUDAX_REQUIRE(this_warp.rank(cuda::block) == cuda::warp.rank(cuda::block));
+      CUDAX_REQUIRE(this_warp.count(cuda::cluster) == cuda::warp.count(cuda::cluster));
+      CUDAX_REQUIRE(this_warp.rank(cuda::cluster) == cuda::warp.rank(cuda::cluster));
+      CUDAX_REQUIRE(this_warp.count(cuda::grid) == cuda::warp.count(cuda::grid));
+      CUDAX_REQUIRE(this_warp.rank(cuda::grid) == cuda::warp.rank(cuda::grid));
     }
     {
       unsigned array[]{1, 2, 3};
 
       auto this_block = cudax::this_block(config);
-      CUDAX_REQUIRE(this_block.count(cuda::grid) == cuda::block.count(cuda::grid));
-      CUDAX_REQUIRE(this_block.rank(cuda::grid) == cuda::block.rank(cuda::grid));
       this_block.sync();
 
       const auto result = sum(this_block, array);
@@ -91,16 +110,49 @@ struct TestKernel
       {
         CUDAX_REQUIRE(result == 6 * cuda::gpu_thread.count(cuda::block));
       }
+
+      CUDAX_REQUIRE(cuda::gpu_thread.count(this_block) == cuda::gpu_thread.count(cuda::block));
+      CUDAX_REQUIRE(cuda::gpu_thread.rank(this_block) == cuda::gpu_thread.rank(cuda::block));
+      CUDAX_REQUIRE(cuda::warp.count(this_block) == cuda::warp.count(cuda::block));
+      CUDAX_REQUIRE(cuda::warp.rank(this_block) == cuda::warp.rank(cuda::block));
+      CUDAX_REQUIRE(cuda::block.count(this_block) == 1);
+      CUDAX_REQUIRE(cuda::block.rank(this_block) == 0);
+      CUDAX_REQUIRE(this_block.count(cuda::cluster) == cuda::block.count(cuda::cluster));
+      CUDAX_REQUIRE(this_block.rank(cuda::cluster) == cuda::block.rank(cuda::cluster));
+      CUDAX_REQUIRE(this_block.count(cuda::grid) == cuda::block.count(cuda::grid));
+      CUDAX_REQUIRE(this_block.rank(cuda::grid) == cuda::block.rank(cuda::grid));
     }
     {
       auto this_cluster = cudax::this_cluster(config);
       CUDAX_REQUIRE(this_cluster.count(cuda::grid) == cuda::cluster.count(cuda::grid));
       CUDAX_REQUIRE(this_cluster.rank(cuda::grid) == cuda::cluster.rank(cuda::grid));
       this_cluster.sync();
+
+      CUDAX_REQUIRE(cuda::gpu_thread.count(this_cluster) == cuda::gpu_thread.count(cuda::cluster));
+      CUDAX_REQUIRE(cuda::gpu_thread.rank(this_cluster) == cuda::gpu_thread.rank(cuda::cluster));
+      CUDAX_REQUIRE(cuda::warp.count(this_cluster) == cuda::warp.count(cuda::cluster));
+      CUDAX_REQUIRE(cuda::warp.rank(this_cluster) == cuda::warp.rank(cuda::cluster));
+      CUDAX_REQUIRE(cuda::block.count(this_cluster) == cuda::block.count(cuda::cluster));
+      CUDAX_REQUIRE(cuda::block.rank(this_cluster) == cuda::block.rank(cuda::cluster));
+      CUDAX_REQUIRE(cuda::cluster.count(this_cluster) == 1);
+      CUDAX_REQUIRE(cuda::cluster.rank(this_cluster) == 0);
+      CUDAX_REQUIRE(this_cluster.count(cuda::grid) == cuda::cluster.count(cuda::grid));
+      CUDAX_REQUIRE(this_cluster.rank(cuda::grid) == cuda::cluster.rank(cuda::grid));
     }
     {
       auto this_grid = cudax::this_grid(config);
       this_grid.sync();
+
+      CUDAX_REQUIRE(cuda::gpu_thread.count(this_grid) == cuda::gpu_thread.count(cuda::grid));
+      CUDAX_REQUIRE(cuda::gpu_thread.rank(this_grid) == cuda::gpu_thread.rank(cuda::grid));
+      CUDAX_REQUIRE(cuda::warp.count(this_grid) == cuda::warp.count(cuda::grid));
+      CUDAX_REQUIRE(cuda::warp.rank(this_grid) == cuda::warp.rank(cuda::grid));
+      CUDAX_REQUIRE(cuda::block.count(this_grid) == cuda::block.count(cuda::grid));
+      CUDAX_REQUIRE(cuda::block.rank(this_grid) == cuda::block.rank(cuda::grid));
+      CUDAX_REQUIRE(cuda::cluster.count(this_grid) == cuda::cluster.count(cuda::grid));
+      CUDAX_REQUIRE(cuda::cluster.rank(this_grid) == cuda::cluster.rank(cuda::grid));
+      CUDAX_REQUIRE(cuda::grid.count(this_grid) == 1);
+      CUDAX_REQUIRE(cuda::grid.rank(this_grid) == 0);
     }
   }
 };

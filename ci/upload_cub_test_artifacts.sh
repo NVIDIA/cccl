@@ -17,24 +17,28 @@ if ! ci/util/workflow/has_consumers.sh; then
   exit 0
 fi
 
-# Figure out which artifacts need to be built:
-consumers=$(ci/util/workflow/get_consumers.sh)
-preset_variants=()
-if grep -q "TestGPU" <<< "$consumers"; then
-  preset_variants+=("no_lid")
-fi
-if grep -q "HostLaunch" <<< "$consumers"; then
-  preset_variants+=("lid_0")
-fi
-if grep -q "DeviceLaunch" <<< "$consumers"; then
-  preset_variants+=("lid_1")
-fi
-if grep -q "GraphCapture" <<< "$consumers"; then
-  preset_variants+=("lid_2")
-fi
-# Limited jobs run the entire test suite:
-if grep -q "SmallGMem" <<< "$consumers"; then
-  preset_variants+=("no_lid" "lid_0" "lid_1" "lid_2")
+if [ "$#" -gt 0 ]; then
+  preset_variants=("$@")
+else
+  # Figure out which artifacts need to be built:
+  consumers=$(ci/util/workflow/get_consumers.sh)
+  preset_variants=()
+  if grep -q "TestGPU" <<< "$consumers"; then
+    preset_variants+=("no_lid")
+  fi
+  if grep -q "HostLaunch" <<< "$consumers"; then
+    preset_variants+=("lid_0")
+  fi
+  if grep -q "DeviceLaunch" <<< "$consumers"; then
+    preset_variants+=("lid_1")
+  fi
+  if grep -q "GraphCapture" <<< "$consumers"; then
+    preset_variants+=("lid_2")
+  fi
+  # Limited jobs run the entire test suite:
+  if grep -q "SmallGMem" <<< "$consumers"; then
+    preset_variants+=("no_lid" "lid_0" "lid_1" "lid_2")
+  fi
 fi
 
 # Remove duplicates:

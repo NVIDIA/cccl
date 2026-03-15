@@ -2,6 +2,12 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2024, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
+#include <cuda/__cccl_config>
+
+// We start suppressing deprecation warnings but do not stop at the end of the file. This suppresses warnings in the
+// compiler-generated `catch2_test_iterator.compute_120.cudafe1.stub.c`
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/iterator/cache_modified_output_iterator.cuh>
@@ -9,7 +15,6 @@
 #include <cub/util_allocator.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/__cccl_config>
 #include <cuda/iterator>
 #include <cuda/std/__cccl/dialect.h>
 
@@ -18,10 +23,6 @@
 #include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_VEC_SIZE types 1:2:3:4
-
-// We start suppressing deprecation warnings but do not stop at the end of the file. This suppresses warnings in the
-// compiler-generated `catch2_test_iterator.compute_120.cudafe1.stub.c`
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 
 #if TEST_VEC_SIZE == 1
 using types = c2h::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t, float, double>;

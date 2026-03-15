@@ -48,8 +48,23 @@ struct ::cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_c
 CUB_NAMESPACE_BEGIN
 namespace detail::transform
 {
+// TODO(bgruber): can we get by without the tuning base class? Since we have transform_policy_selector, could we enrich
+// get_tuning_query_t to just check if the environment has a type that fulfills transform_policy_selector?
 struct get_tuning_query_t
 {};
+
+template <class PolicySelector>
+// TODO(bgruber): we cannot check the concept here because PolicySelector is usually an incomplete type still
+// #if _CCCL_HAS_CONCEPTS()
+//   requires transform_policy_selector<PolicySelector>
+// #endif // _CCCL_HAS_CONCEPTS()
+struct tuning
+{
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_tuning_query_t&) const noexcept -> PolicySelector
+  {
+    return static_cast<const PolicySelector&>(*this);
+  }
+};
 } // namespace detail::transform
 
 //! DeviceTransform provides device-wide, parallel operations for transforming elements tuple-wise from multiple input
@@ -81,31 +96,30 @@ private:
       return error;
     }
 
-    using tuning_env_t =
-      ::cuda::__call_result_or_t<::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>, Env>;
-    using transform_tuning_t = ::cuda::__call_result_or_t<detail::transform::get_tuning_query_t, int, tuning_env_t>;
+    const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get();
 
-    if constexpr (!::cuda::std::is_same_v<transform_tuning_t, int>)
-    {
-      return detail::transform::dispatch<StableAddress>(
-        ::cuda::std::move(inputs),
-        ::cuda::std::move(output),
-        static_cast<offset_t>(num_items),
-        ::cuda::std::move(predicate),
-        ::cuda::std::move(transform_op),
-        ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get(),
-        transform_tuning_t{});
-    }
-    else
-    {
-      return detail::transform::dispatch<StableAddress>(
-        ::cuda::std::move(inputs),
-        ::cuda::std::move(output),
-        static_cast<offset_t>(num_items),
-        ::cuda::std::move(predicate),
-        ::cuda::std::move(transform_op),
-        ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get());
-    }
+    using tuning_env =
+      ::cuda::std::execution::__query_result_or_t<Env, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
+    using default_policy_selector = detail::transform::policy_selector_from_types<
+      StableAddress == detail::transform::requires_stable_address::yes,
+      ::cuda::std::is_same_v<Predicate, detail::transform::always_true_predicate>,
+      ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+      RandomAccessIteratorOut>;
+    using policy_selector = ::cuda::std::execution::
+      __query_result_or_t<tuning_env, detail::transform::get_tuning_query_t, default_policy_selector>;
+
+#if _CCCL_HAS_CONCEPTS()
+    static_assert(detail::transform::transform_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
+
+    return detail::transform::dispatch<StableAddress>(
+      ::cuda::std::move(inputs),
+      ::cuda::std::move(output),
+      static_cast<offset_t>(num_items),
+      ::cuda::std::move(predicate),
+      ::cuda::std::move(transform_op),
+      stream,
+      policy_selector{});
   }
 
   // TODO(bgruber): we want to eventually forward the output tuple to the kernel and optimize writing multiple streams
@@ -792,6 +806,31 @@ public:
       stream);
   }
 #endif // _CCCL_DOXYGEN_INVOKED
+
+  // internal, used only by Thrust
+  template <typename... RandomAccessIteratorsIn,
+            typename RandomAccessIteratorOut,
+            typename NumItemsT,
+            typename Predicate,
+            typename TransformOp,
+            typename Env = ::cuda::std::execution::env<>>
+  CUB_RUNTIME_FUNCTION static cudaError_t __transform_if_stable_argument_addresses(
+    ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+    RandomAccessIteratorOut output,
+    NumItemsT num_items,
+    Predicate predicate,
+    TransformOp transform_op,
+    Env env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformIfStableArgumentAddresses");
+    return TransformInternal<detail::transform::requires_stable_address::yes>(
+      ::cuda::std::move(inputs),
+      ::cuda::std::move(output),
+      num_items,
+      ::cuda::std::move(predicate),
+      ::cuda::std::move(transform_op),
+      ::cuda::std::move(env));
+  }
 };
 
 CUB_NAMESPACE_END

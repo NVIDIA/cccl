@@ -25,7 +25,9 @@
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wshadow")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedef")
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
+_CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 #  include <cub/device/device_for.cuh>
 
@@ -38,9 +40,11 @@ _CCCL_DIAG_POP
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__algorithm/for_each_n.h>
 #  include <cuda/std/__exception/cuda_error.h>
+#  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__exception/terminate.h>
 #  include <cuda/std/__execution/env.h>
 #  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__host_stdlib/new>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -60,7 +64,7 @@ struct __pstl_dispatch<__pstl_algorithm::__for_each_n, __execution_backend::__cu
 {
   template <class _Policy, class _Iter, class _Size, class _Fn>
   [[nodiscard]] _CCCL_HOST_API static _Iter
-  __par_impl([[maybe_unused]] const _Policy& __policy, _Iter __first, _Size __orig_n, _Fn __func) noexcept
+  __par_impl([[maybe_unused]] const _Policy& __policy, _Iter __first, _Size __orig_n, _Fn __func)
   {
     const auto __count = ::cuda::std::__convert_to_integral(__orig_n);
 
@@ -79,12 +83,25 @@ struct __pstl_dispatch<__pstl_algorithm::__for_each_n, __execution_backend::__cu
   }
 
   template <class _Policy, class _Iter, class _Size, class _Fn>
-  [[nodiscard]] _CCCL_HOST_API _CCCL_FORCEINLINE _Iter
-  operator()(const _Policy& __policy, _Iter __first, _Size __orig_n, _Fn __func) const noexcept
+  [[nodiscard]] _CCCL_HOST_API _Iter operator()(const _Policy& __policy, _Iter __first, _Size __orig_n, _Fn __func) const
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_Iter>)
     {
-      return __par_impl(__policy, ::cuda::std::move(__first), __orig_n, ::cuda::std::move(__func));
+      try
+      {
+        return __par_impl(__policy, ::cuda::std::move(__first), __orig_n, ::cuda::std::move(__func));
+      }
+      catch (const ::cuda::cuda_error& __err)
+      {
+        if (__err.status() == ::cudaErrorMemoryAllocation)
+        {
+          _CCCL_THROW(::std::bad_alloc);
+        }
+        else
+        {
+          throw __err;
+        }
+      }
     }
     else
     {
