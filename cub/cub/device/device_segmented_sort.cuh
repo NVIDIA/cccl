@@ -18,10 +18,12 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/env_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -286,6 +288,114 @@ public:
       stream);
   }
 
+  //! @rst
+  //! Sorts segments of keys into ascending order.
+  //! Approximately ``num_items + 2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - The contents of the input data are not altered by the sorting operation.
+  //! - SortKeys is not guaranteed to be stable. That is, suppose that ``i`` and
+  //!   ``j`` are equivalent: neither one is less than the other. It is not
+  //!   guaranteed that the relative order of these two elements will be
+  //!   preserved by sort.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin sort-keys-env
+  //!     :end-before: example-end sort-keys-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** Key type
+  //!
+  //! @tparam BeginOffsetIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segment
+  //!   beginning offsets @iterator
+  //!
+  //! @tparam EndOffsetIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segment
+  //!   ending offsets @iterator
+  //!
+  //! @tparam EnvT
+  //!   **[optional]** Environment type providing stream and other properties
+  //!
+  //! @param[in] d_keys_in
+  //!   Device-accessible pointer to the input data of key data to sort
+  //!
+  //! @param[out] d_keys_out
+  //!   Device-accessible pointer to the sorted output sequence of key data
+  //!
+  //! @param[in] num_items
+  //!   The total number of items to sort (across all segments)
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the sorting data
+  //!
+  //! @param[in] d_begin_offsets
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
+  //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
+  //!   @endrst
+  //!
+  //! @param[in] d_end_offsets
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_end_offsets[i] - 1`` is the last element of
+  //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
+  //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the i-th segment is considered empty.
+  //!   @endrst
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Environment providing stream and other properties. Default is empty environment.
+  //!   @endrst
+  template <typename KeyT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename EnvT                                                      = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    constexpr bool is_overwrite_okay = false;
+
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        using OffsetT =
+          detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+
+        DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+        DoubleBuffer<NullType> d_values;
+
+        return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys,
+          d_values,
+          num_items,
+          num_segments,
+          d_begin_offsets,
+          d_end_offsets,
+          is_overwrite_okay,
+          stream);
+      });
+  }
+
 private:
   // Internal version without NVTX range
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
@@ -457,6 +567,114 @@ public:
       stream);
   }
 
+  //! @rst
+  //! Sorts segments of keys into descending order.
+  //! Approximately ``num_items + 2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - The contents of the input data are not altered by the sorting operation.
+  //! - SortKeysDescending is not guaranteed to be stable. That is, suppose that
+  //!   ``i`` and ``j`` are equivalent: neither one is less than the other. It is
+  //!   not guaranteed that the relative order of these two elements will be
+  //!   preserved by sort.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin sort-keys-descending-env
+  //!     :end-before: example-end sort-keys-descending-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** Key type
+  //!
+  //! @tparam BeginOffsetIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segment
+  //!   beginning offsets @iterator
+  //!
+  //! @tparam EndOffsetIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segment
+  //!   ending offsets @iterator
+  //!
+  //! @tparam EnvT
+  //!   **[optional]** Environment type providing stream and other properties
+  //!
+  //! @param[in] d_keys_in
+  //!   Device-accessible pointer to the input data of key data to sort
+  //!
+  //! @param[out] d_keys_out
+  //!   Device-accessible pointer to the sorted output sequence of key data
+  //!
+  //! @param[in] num_items
+  //!   The total number of items to sort (across all segments)
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the sorting data
+  //!
+  //! @param[in] d_begin_offsets
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
+  //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
+  //!   @endrst
+  //!
+  //! @param[in] d_end_offsets
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_end_offsets[i] - 1`` is the last element of
+  //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
+  //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the ``i``-th segment is considered empty.
+  //!   @endrst
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Environment providing stream and other properties. Default is empty environment.
+  //!   @endrst
+  template <typename KeyT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename EnvT                                                      = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    constexpr bool is_overwrite_okay = false;
+
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        using OffsetT =
+          detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+
+        DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+        DoubleBuffer<NullType> d_values;
+
+        return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys,
+          d_values,
+          num_items,
+          num_segments,
+          d_begin_offsets,
+          d_end_offsets,
+          is_overwrite_okay,
+          stream);
+      });
+  }
+
 private:
   // Internal version without NVTX range
   template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
@@ -626,6 +844,118 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysNoNVTX(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
+  }
+
+  //! @rst
+  //! Sorts segments of keys into ascending order.
+  //! Approximately ``2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - The sorting operation is given a pair of key buffers managed by a
+  //!   DoubleBuffer structure that indicates which of the two buffers is
+  //!   "current" (and thus contains the input data to be sorted).
+  //! - The contents of both buffers may be altered by the sorting operation.
+  //! - Upon completion, the sorting operation will update the "current"
+  //!   indicator within the DoubleBuffer wrapper to reference which of the two
+  //!   buffers now contains the sorted output sequence (a function of the number
+  //!   of key bits and the targeted device architecture).
+  //! - SortKeys is not guaranteed to be stable. That is, suppose that
+  //!   ``i`` and ``j`` are equivalent: neither one is less than the other. It is
+  //!   not guaranteed that the relative order of these two elements will be
+  //!   preserved by sort.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin sort-keys-db-env
+  //!     :end-before: example-end sort-keys-db-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** Key type
+  //!
+  //! @tparam BeginOffsetIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segment
+  //!   beginning offsets @iterator
+  //!
+  //! @tparam EndOffsetIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segment
+  //!   ending offsets @iterator
+  //!
+  //! @tparam EnvT
+  //!   **[optional]** Environment type providing stream and other properties
+  //!
+  //! @param[in,out] d_keys
+  //!   Reference to the double-buffer of keys whose "current" device-accessible
+  //!   buffer contains the unsorted input keys and, upon return, is updated to
+  //!   point to the sorted output keys
+  //!
+  //! @param[in] num_items
+  //!   The total number of items to sort (across all segments)
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the sorting data
+  //!
+  //! @param[in] d_begin_offsets
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
+  //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
+  //!   @endrst
+  //!
+  //! @param[in] d_end_offsets
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_end_offsets[i] - 1`` is the last element of
+  //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
+  //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the ``i``-th segment is considered empty.
+  //!   @endrst
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Environment providing stream and other properties. Default is empty environment.
+  //!   @endrst
+  template <typename KeyT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename EnvT                                                      = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
+    DoubleBuffer<KeyT>& d_keys,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    constexpr bool is_overwrite_okay = true;
+
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        using OffsetT =
+          detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+
+        DoubleBuffer<NullType> d_values;
+
+        return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys,
+          d_values,
+          num_items,
+          num_segments,
+          d_begin_offsets,
+          d_end_offsets,
+          is_overwrite_okay,
+          stream);
+      });
   }
 
 private:
@@ -801,6 +1131,118 @@ public:
   }
 
   //! @rst
+  //! Sorts segments of keys into descending order.
+  //! Approximately ``2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - The sorting operation is given a pair of key buffers managed by a
+  //!   DoubleBuffer structure that indicates which of the two buffers is
+  //!   "current" (and thus contains the input data to be sorted).
+  //! - The contents of both buffers may be altered by the sorting operation.
+  //! - Upon completion, the sorting operation will update the "current"
+  //!   indicator within the DoubleBuffer wrapper to reference which of the two
+  //!   buffers now contains the sorted output sequence (a function of the number
+  //!   of key bits and the targeted device architecture).
+  //! - SortKeysDescending is not guaranteed to be stable. That is, suppose that
+  //!   ``i`` and ``j`` are equivalent: neither one is less than the other. It is
+  //!   not guaranteed that the relative order of these two elements will be
+  //!   preserved by sort.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin sort-keys-descending-db-env
+  //!     :end-before: example-end sort-keys-descending-db-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** Key type
+  //!
+  //! @tparam BeginOffsetIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segment
+  //!   beginning offsets @iterator
+  //!
+  //! @tparam EndOffsetIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segment
+  //!   ending offsets @iterator
+  //!
+  //! @tparam EnvT
+  //!   **[optional]** Environment type providing stream and other properties
+  //!
+  //! @param[in,out] d_keys
+  //!   Reference to the double-buffer of keys whose "current" device-accessible
+  //!   buffer contains the unsorted input keys and, upon return, is updated to
+  //!   point to the sorted output keys
+  //!
+  //! @param[in] num_items
+  //!   The total number of items to sort (across all segments)
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the sorting data
+  //!
+  //! @param[in] d_begin_offsets
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
+  //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
+  //!   @endrst
+  //!
+  //! @param[in] d_end_offsets
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_end_offsets[i] - 1`` is the last element of
+  //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
+  //!   If ``d_end_offsets[i] - 1<= d_begin_offsets[i]``, the ``i``-th segment is considered empty.
+  //!   @endrst
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Environment providing stream and other properties. Default is empty environment.
+  //!   @endrst
+  template <typename KeyT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename EnvT                                                      = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
+    DoubleBuffer<KeyT>& d_keys,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    constexpr bool is_overwrite_okay = true;
+
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        using OffsetT =
+          detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+
+        DoubleBuffer<NullType> d_values;
+
+        return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys,
+          d_values,
+          num_items,
+          num_segments,
+          d_begin_offsets,
+          d_end_offsets,
+          is_overwrite_okay,
+          stream);
+      });
+  }
+
+  //! @rst
   //! Sorts segments of keys into ascending order. Approximately
   //! ``num_items +  2 * num_segments`` auxiliary storage required.
   //!
@@ -940,6 +1382,115 @@ public:
   }
 
   //! @rst
+  //! Sorts segments of keys into ascending order.
+  //! Approximately ``num_items + 2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - The contents of the input data are not altered by the sorting operation.
+  //! - StableSortKeys is stable: it preserves the relative ordering of
+  //!   equivalent elements. That is, if ``x`` and ``y`` are elements such that
+  //!   ``x`` precedes ``y``, and if the two elements are equivalent (neither
+  //!   ``x < y`` nor ``y < x``) then a postcondition of stable sort is that
+  //!   ``x`` still precedes ``y``.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin stable-sort-keys-env
+  //!     :end-before: example-end stable-sort-keys-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** Key type
+  //!
+  //! @tparam BeginOffsetIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segment
+  //!   beginning offsets @iterator
+  //!
+  //! @tparam EndOffsetIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segment
+  //!   ending offsets @iterator
+  //!
+  //! @tparam EnvT
+  //!   **[optional]** Environment type providing stream and other properties
+  //!
+  //! @param[in] d_keys_in
+  //!   Device-accessible pointer to the input data of key data to sort
+  //!
+  //! @param[out] d_keys_out
+  //!   Device-accessible pointer to the sorted output sequence of key data
+  //!
+  //! @param[in] num_items
+  //!   The total number of items to sort (across all segments)
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the sorting data
+  //!
+  //! @param[in] d_begin_offsets
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
+  //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
+  //!   @endrst
+  //!
+  //! @param[in] d_end_offsets
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_end_offsets[i] - 1`` is the last element of
+  //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
+  //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the ``i``-th segment is considered empty.
+  //!   @endrst
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Environment providing stream and other properties. Default is empty environment.
+  //!   @endrst
+  template <typename KeyT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename EnvT                                                      = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    constexpr bool is_overwrite_okay = false;
+
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        using OffsetT =
+          detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+
+        DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+        DoubleBuffer<NullType> d_values;
+
+        return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys,
+          d_values,
+          num_items,
+          num_segments,
+          d_begin_offsets,
+          d_end_offsets,
+          is_overwrite_okay,
+          stream);
+      });
+  }
+
+  //! @rst
   //! Sorts segments of keys into descending order.
   //! Approximately ``num_items + 2 * num_segments`` auxiliary storage required.
   //!
@@ -1076,6 +1627,116 @@ public:
       d_begin_offsets,
       d_end_offsets,
       stream);
+  }
+
+  //! @rst
+  //! Sorts segments of keys into descending order.
+  //! Approximately ``num_items + 2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - The contents of the input data are not altered by the sorting operation.
+  //! - StableSortKeysDescending is stable: it preserves the relative ordering of
+  //!   equivalent elements. That is, if ``x`` and ``y`` are elements such that
+  //!   ``x`` precedes ``y``, and if the two elements are equivalent (neither ``x < y`` nor ``y < x``)
+  //!   then a postcondition of stable sort is that ``x`` still precedes ``y``.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin stable-sort-keys-descending-env
+  //!     :end-before: example-end stable-sort-keys-descending-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** Key type
+  //!
+  //! @tparam BeginOffsetIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segment
+  //!   beginning offsets @iterator
+  //!
+  //! @tparam EndOffsetIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segment
+  //!   ending offsets @iterator
+  //!
+  //! @tparam EnvT
+  //!   **[optional]** Environment type providing stream and other properties
+  //!
+  //! @param[in] d_keys_in
+  //!   Device-accessible pointer to the input data of key data to sort
+  //!
+  //! @param[out] d_keys_out
+  //!   Device-accessible pointer to the sorted output sequence of key data
+  //!
+  //! @param[in] num_items
+  //!   The total number of items to sort (across all segments)
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the sorting data
+  //!
+  //! @param[in] d_begin_offsets
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
+  //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and
+  //!   ``d_values_*``
+  //!   @endrst
+  //!
+  //! @param[in] d_end_offsets
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_end_offsets[i] - 1`` is the last element of
+  //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
+  //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the ``i``-th segment is
+  //!   considered empty.
+  //!   @endrst
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Environment providing stream and other properties. Default is empty environment.
+  //!   @endrst
+  template <typename KeyT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename EnvT                                                      = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysDescending(
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    constexpr bool is_overwrite_okay = false;
+
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        using OffsetT =
+          detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+
+        DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+        DoubleBuffer<NullType> d_values;
+
+        return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys,
+          d_values,
+          num_items,
+          num_segments,
+          d_begin_offsets,
+          d_end_offsets,
+          is_overwrite_okay,
+          stream);
+      });
   }
 
   //! @rst
@@ -1220,6 +1881,120 @@ public:
   }
 
   //! @rst
+  //! Sorts segments of keys into ascending order.
+  //! Approximately ``2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - The sorting operation is given a pair of key buffers managed by a
+  //!   DoubleBuffer structure that indicates which of the two buffers is
+  //!   "current" (and thus contains the input data to be sorted).
+  //! - The contents of both buffers may be altered by the sorting operation.
+  //! - Upon completion, the sorting operation will update the "current"
+  //!   indicator within the DoubleBuffer wrapper to reference which of the two
+  //!   buffers now contains the sorted output sequence (a function of the number
+  //!   of key bits and the targeted device architecture).
+  //! - StableSortKeys is stable: it preserves the relative ordering of
+  //!   equivalent elements. That is, if ``x`` and ``y`` are elements such that
+  //!   ``x`` precedes ``y``, and if the two elements are equivalent (neither
+  //!   ``x < y`` nor ``y < x``) then a postcondition of stable sort is that
+  //!   ``x`` still precedes ``y``.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin stable-sort-keys-db-env
+  //!     :end-before: example-end stable-sort-keys-db-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** Key type
+  //!
+  //! @tparam BeginOffsetIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segment
+  //!   beginning offsets @iterator
+  //!
+  //! @tparam EndOffsetIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segment
+  //!   ending offsets @iterator
+  //!
+  //! @tparam EnvT
+  //!   **[optional]** Environment type providing stream and other properties
+  //!
+  //! @param[in,out] d_keys
+  //!   Reference to the double-buffer of keys whose "current" device-accessible
+  //!   buffer contains the unsorted input keys and, upon return, is updated to
+  //!   point to the sorted output keys
+  //!
+  //! @param[in] num_items
+  //!   The total number of items to sort (across all segments)
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the sorting data
+  //!
+  //! @param[in] d_begin_offsets
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
+  //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
+  //!   @endrst
+  //!
+  //! @param[in] d_end_offsets
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_end_offsets[i] - 1`` is the last element of
+  //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
+  //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the ``i``-th segment is
+  //!   considered empty.
+  //!   @endrst
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Environment providing stream and other properties. Default is empty environment.
+  //!   @endrst
+  template <typename KeyT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename EnvT                                                      = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
+    DoubleBuffer<KeyT>& d_keys,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    constexpr bool is_overwrite_okay = true;
+
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        using OffsetT =
+          detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+
+        DoubleBuffer<NullType> d_values;
+
+        return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys,
+          d_values,
+          num_items,
+          num_segments,
+          d_begin_offsets,
+          d_end_offsets,
+          is_overwrite_okay,
+          stream);
+      });
+  }
+
+  //! @rst
   //! Sorts segments of keys into descending order.
   //! Approximately ``2 * num_segments`` auxiliary storage required.
   //!
@@ -1357,6 +2132,120 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysDescendingNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
+  }
+
+  //! @rst
+  //! Sorts segments of keys into descending order.
+  //! Approximately ``2 * num_segments`` auxiliary storage required.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - The sorting operation is given a pair of key buffers managed by a
+  //!   DoubleBuffer structure that indicates which of the two buffers is
+  //!   "current" (and thus contains the input data to be sorted).
+  //! - The contents of both buffers may be altered by the sorting operation.
+  //! - Upon completion, the sorting operation will update the "current"
+  //!   indicator within the DoubleBuffer wrapper to reference which of the two
+  //!   buffers now contains the sorted output sequence (a function of the number
+  //!   of key bits and the targeted device architecture).
+  //! - StableSortKeysDescending is stable: it preserves the relative ordering of
+  //!   equivalent elements. That is, if ``x`` and ``y`` are elements such that
+  //!   ``x`` precedes ``y``, and if the two elements are equivalent (neither
+  //!   ``x < y`` nor ``y < x``) then a postcondition of stable sort is that
+  //!   ``x`` still precedes ``y``.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin stable-sort-keys-descending-db-env
+  //!     :end-before: example-end stable-sort-keys-descending-db-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** Key type
+  //!
+  //! @tparam BeginOffsetIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segment
+  //!   beginning offsets @iterator
+  //!
+  //! @tparam EndOffsetIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading segment
+  //!   ending offsets @iterator
+  //!
+  //! @tparam EnvT
+  //!   **[optional]** Environment type providing stream and other properties
+  //!
+  //! @param[in,out] d_keys
+  //!   Reference to the double-buffer of keys whose "current" device-accessible
+  //!   buffer contains the unsorted input keys and, upon return, is updated to
+  //!   point to the sorted output keys
+  //!
+  //! @param[in] num_items
+  //!   The total number of items to sort (across all segments)
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the sorting data
+  //!
+  //! @param[in] d_begin_offsets
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
+  //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
+  //!   @endrst
+  //!
+  //! @param[in] d_end_offsets
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_end_offsets[i] - 1`` is the last
+  //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and
+  //!   ``d_values_*``. If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the
+  //!   ``i``-th segment is considered empty.
+  //!   @endrst
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Environment providing stream and other properties. Default is empty environment.
+  //!   @endrst
+  template <typename KeyT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT,
+            typename EnvT                                                      = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysDescending(
+    DoubleBuffer<KeyT>& d_keys,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    constexpr bool is_overwrite_okay = true;
+
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        using OffsetT =
+          detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+
+        DoubleBuffer<NullType> d_values;
+
+        return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_keys,
+          d_values,
+          num_items,
+          num_segments,
+          d_begin_offsets,
+          d_end_offsets,
+          is_overwrite_okay,
+          stream);
+      });
   }
 
 private:
