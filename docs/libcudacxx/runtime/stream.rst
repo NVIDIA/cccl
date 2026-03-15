@@ -5,16 +5,16 @@ Streams
 
 Stream is conceptually a queue of operations for a specific device. It is passed as an argument to all asynchronous operations like kernel launch, memory copy and allocations.
 
-``cuda::stream_ref``
----------------------
+:cpp:class:`cuda::stream_ref`
+-------------------------------
 .. _cccl-runtime-stream-stream-ref:
 
-``cuda::stream_ref`` is a non-owning wrapper around a ``cudaStream_t``. It prevents unsafe implicit constructions from
+:cpp:class:`cuda::stream_ref` is a non-owning wrapper around a ``cudaStream_t``. It prevents unsafe implicit constructions from
 ``nullptr`` or integer literals and provides convenient helpers for:
 
 - ``sync()``: wait for the recorded work to complete
 - ``is_done()``: non-blocking completion query
-- comparison operators against other ``stream_ref`` or ``cudaStream_t``
+- comparison operators against other :cpp:class:`cuda::stream_ref` or ``cudaStream_t``
 
 Availability: CCCL 2.2.0 / CUDA 12.3
 
@@ -37,13 +37,15 @@ Example:
 
     cudaStreamDestroy(stream);
 
-``cuda::stream``
------------------
+:cpp:struct:`cuda::stream`
+---------------------------
 .. _cccl-runtime-stream-stream:
 
-``cuda::stream`` is an owning wrapper around a ``cudaStream_t`` that manages the lifetime of the underlying CUDA stream.
-It derives from ``stream_ref``, provides all of its functionality, and can be used anywhere a ``stream_ref`` is expected.
-It can be constructed for a specific ``cuda::device_ref``, moved (but not copied), and converted from or to a
+:cpp:struct:`cuda::stream` is an owning wrapper around a ``cudaStream_t`` that manages the lifetime of the underlying CUDA
+stream.
+It derives from :cpp:class:`cuda::stream_ref`, provides all of its functionality, and can be used anywhere a
+:cpp:class:`cuda::stream_ref` is expected.
+It can be constructed for a specific :cpp:class:`cuda::device_ref`, moved (but not copied), and converted from or to a
 ``cudaStream_t`` via ``from_native_handle``/``release()``.
 
 Availability: CCCL 3.1.0 / CUDA 13.1

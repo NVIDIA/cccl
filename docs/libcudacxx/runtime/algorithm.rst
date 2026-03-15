@@ -3,20 +3,23 @@
 Algorithm
 ==========
 
-The ``runtime`` part of the ``cuda/algorithm`` header provides stream-ordered, byte-wise primitives that operate on ``cuda::std::span`` and
-``cuda::std::mdspan``-compatible types. They require a ``cuda::stream_ref`` to enqueue work.
+The ``runtime`` part of the ``cuda/algorithm`` header provides stream-ordered, byte-wise primitives that operate on
+:cpp:class:`cuda::std::span` and :cpp:class:`cuda::std::mdspan`-compatible types. They require a
+:cpp:class:`cuda::stream_ref` to enqueue work.
 
-``cuda::copy_bytes``
----------------------
+:cpp:func:`cuda::copy_bytes`
+-------------------------------
 .. _cccl-runtime-algorithm-copy_bytes:
 
 Launch a byte-wise copy from source to destination on the provided stream.
 
-- Signature: ``copy_bytes(stream, src, dst, config = {})``
-- Overloads accept ``cuda::std::span``-convertible contiguous ranges or ``cuda::std::mdspan``-convertible multi-dimensional views.
+- Signature: :cpp:func:`cuda::copy_bytes`
+- Overloads accept :cpp:class:`cuda::std::span`-convertible contiguous ranges or
+  :cpp:class:`cuda::std::mdspan`-convertible multi-dimensional views.
 - Elements must be trivially copyable
-- ``cuda::std::mdspan``-convertible types must convert to an mdspan that is exhaustive
-- The optional ``config`` argument is a ``cuda::copy_configuration`` that controls source access order and managed-memory location hints
+- :cpp:class:`cuda::std::mdspan`-convertible types must convert to an mdspan that is exhaustive
+- The optional ``config`` argument is a :cpp:struct:`cuda::copy_configuration` that controls source access order and
+  managed-memory location hints
 
 Availability: CCCL 3.1.0 / CUDA 13.1
 
@@ -46,15 +49,15 @@ Availability: CCCL 3.1.0 / CUDA 13.1
    }
 
 
-``cuda::fill_bytes``
----------------------
+:cpp:func:`cuda::fill_bytes`
+-------------------------------
 .. _cccl-runtime-algorithm-fill_bytes:
 
 Launch a byte-wise fill of the destination on the provided stream.
 
-- Overloads accept ``cuda::std::span``-convertible or ``cuda::std::mdspan``-convertible destinations.
+- Overloads accept :cpp:class:`cuda::std::span`-convertible or :cpp:class:`cuda::std::mdspan`-convertible destinations.
 - Elements must be trivially copyable
-- ``cuda::std::mdspan``-convertible types must convert to an mdspan that is exhaustive
+- :cpp:class:`cuda::std::mdspan`-convertible types must convert to an mdspan that is exhaustive
 
 Availability: CCCL 3.1.0 / CUDA 13.1
 
