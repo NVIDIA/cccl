@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___ATOMICS_FUNCTIONS_HOST_H
-#define _CUDA_STD___ATOMICS_FUNCTIONS_HOST_H
+#ifndef _CUDA_STD___ATOMIC_BACKENDS_HOST_H
+#define _CUDA_STD___ATOMIC_BACKENDS_HOST_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__atomic/functions/common.h>
+#include <cuda/std/__atomic/backends/common.h>
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/platform.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -239,4 +239,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___ATOMICS_FUNCTIONS_HOST_H
+#endif // _CUDA_STD___ATOMIC_BACKENDS_HOST_H

@@ -559,7 +559,6 @@ atomic_fetch_xor_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 }
 
 // flag type and operations
-
 struct atomic_flag
 {
   __atomic_storage_t<_CCCL_ATOMIC_FLAG_TYPE> __a;
@@ -730,7 +729,6 @@ _CCCL_API inline void atomic_flag_notify_all(atomic_flag* __o) noexcept
 }
 
 #endif
-
 // fences
 
 _CCCL_API inline void atomic_thread_fence(memory_order __m) noexcept

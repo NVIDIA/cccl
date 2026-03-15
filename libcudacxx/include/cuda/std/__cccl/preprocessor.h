@@ -38,8 +38,12 @@ CCCL_IGNORE_MSVC_TRADITIONAL_PREPROCESSOR_WARNING to suppress this warning.
 #define _CCCL_PP_SECOND(_, second, ...) second
 #define _CCCL_PP_THIRD(_1, _2, third)   third
 
-#define _CCCL_PP_EXPAND(...) __VA_ARGS__
+#define _CCCL_PP_EXPAND1(...) __VA_ARGS__
+#define _CCCL_PP_EXPAND(...)  _CCCL_PP_EXPAND1(_CCCL_PP_EXPAND1(__VA_ARGS__))
 #define _CCCL_PP_EAT(...)
+
+#define _CCCL_PP_DEFER(id)     id _CCCL_PP_EAT()
+#define _CCCL_PP_OBSTRUCT(...) __VA_ARGS__ _CCCL_PP_DEFER(_CCCL_PP_EAT)()
 
 #define _CCCL_PP_CAT_(_Xp, ...) _Xp##__VA_ARGS__
 #define _CCCL_PP_CAT(_Xp, ...)  _CCCL_PP_CAT_(_Xp, __VA_ARGS__)

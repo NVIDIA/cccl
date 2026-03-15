@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_HELPER_H
-#define _CUDA_STD___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_HELPER_H
+#ifndef _CUDA_STD___ATOMIC_BACKENDS_CUDA_SUPPORTED_ATOMICS_HELPER_H
+#define _CUDA_STD___ATOMIC_BACKENDS_CUDA_SUPPORTED_ATOMICS_HELPER_H
 
 #include <cuda/std/detail/__config>
 
@@ -181,4 +181,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_H
+#endif // _CUDA_STD___ATOMIC_BACKENDS_CUDA_SUPPORTED_ATOMICS_HELPER_H

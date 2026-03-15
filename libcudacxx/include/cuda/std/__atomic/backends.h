@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDA_STD___ATOMIC_FUNCTIONS_H
-#define __CUDA_STD___ATOMIC_FUNCTIONS_H
+#ifndef __CUDA_STD___ATOMIC_BACKENDS_H
+#define __CUDA_STD___ATOMIC_BACKENDS_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,12 +22,15 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/platform.h>
-
+#if _CCCL_CUDA_COMPILER(NVCC, >, 12, 8)
+#  include <cuda/std/__atomic/backends/cuda_nvvm.h>
+#else
 // Device atomics
-#include <cuda/std/__atomic/functions/cuda_ptx_derived.h>
-#include <cuda/std/__atomic/functions/cuda_ptx_generated.h>
+#  include <cuda/std/__atomic/backends/cuda_ptx_generated.h>
+#endif
+#include <cuda/std/__atomic/backends/cuda_ptx_derived.h>
 
 // Host atomics
-#include <cuda/std/__atomic/functions/host.h>
+#include <cuda/std/__atomic/backends/host.h>
 
-#endif // __CUDA_STD___ATOMIC_FUNCTIONS_H
+#endif // __CUDA_STD___ATOMIC_BACKENDS_H
