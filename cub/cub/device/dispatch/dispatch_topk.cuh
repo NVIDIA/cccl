@@ -54,9 +54,9 @@ struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, true>
   unsigned mask{};
   DecomposerT decomposer{};
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE extract_bin_op_t(int pass, int total_bits, DecomposerT decomposer)
-      : start_bit(calc_start_bit<BitsPerPass>(total_bits, pass))
-      , mask(calc_mask<BitsPerPass>(total_bits, pass))
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE extract_bin_op_t(int pass, int /*total_bits*/, DecomposerT decomposer)
+      : start_bit(calc_start_bit<T, BitsPerPass>(pass))
+      , mask(calc_mask<T, BitsPerPass>(pass))
       , decomposer(decomposer)
   {}
 
@@ -108,16 +108,16 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, tr
 {
   static constexpr bool is_descending = SelectDirection != select::min;
   using bit_ordered_type              = typename Traits<T>::UnsignedBits;
-  using key_prefix_t                  = key_prefix_storage_t<T, BitsPerPass>;
+  using key_prefix_t                  = key_prefix_storage_t<T>;
 
   key_prefix_t* kth_key_bits{};
   int start_bit{};
   DecomposerT decomposer{};
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-  identify_candidates_op_t(key_prefix_t* kth_key_bits, int pass, int total_bits, DecomposerT decomposer)
+  identify_candidates_op_t(key_prefix_t* kth_key_bits, int pass, int /*total_bits*/, DecomposerT decomposer)
       : kth_key_bits(kth_key_bits)
-      , start_bit(calc_start_bit<BitsPerPass>(total_bits, pass - 1))
+      , start_bit(calc_start_bit<T, BitsPerPass>(pass - 1))
       , decomposer(decomposer)
   {}
 
@@ -140,7 +140,7 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, fa
   static constexpr bool is_descending = SelectDirection != select::min;
   using radix_traits_t                = detail::radix::traits_t<T>;
   using bit_ordered_type              = typename radix_traits_t::bit_ordered_type;
-  using key_prefix_t                  = key_prefix_storage_t<T, BitsPerPass>;
+  using key_prefix_t                  = key_prefix_storage_t<T>;
 
   key_prefix_t* kth_key_bits{};
   int pass{};
@@ -165,6 +165,8 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, fa
     bit_ordered_type ordered = key;
     ordered                  = RadixSortTwiddle<is_descending, T>::In(ordered, decomposer);
 
+    // Build the key's prefix using the same funnel shift as set_kth_key_bits
+    key_prefix_t key_prefix{};
     for (int prefix_pass = 0; prefix_pass < pass; ++prefix_pass)
     {
       const int start_bit = calc_start_bit<BitsPerPass>(total_bits, prefix_pass);
@@ -172,13 +174,42 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, fa
         calc_start_bit<BitsPerPass>(total_bits, prefix_pass - 1) - calc_start_bit<BitsPerPass>(total_bits, prefix_pass);
       auto extractor =
         radix_traits_t::template digit_extractor<ShiftDigitExtractor<T>>(start_bit, num_bits, decomposer);
-      const unsigned int digit = static_cast<unsigned int>(extractor.Digit(ordered));
-      const unsigned int kth   = kth_key_bits->digits[prefix_pass];
-      if (digit < kth)
+      key_prefix.shift_or(BitsPerPass, static_cast<unsigned int>(extractor.Digit(ordered)));
+    }
+
+    // Compare word-by-word from MSB to LSB
+    const int total_prefix_bits = pass * BitsPerPass;
+    const int top_word_idx      = (total_prefix_bits - 1) / 32;
+    const int bits_in_top_word  = ((total_prefix_bits - 1) % 32) + 1;
+
+    // Top word may be partially filled
+    {
+      unsigned int key_w = key_prefix.words[top_word_idx];
+      unsigned int kth_w = kth_key_bits->words[top_word_idx];
+      if (bits_in_top_word < 32)
+      {
+        const unsigned int mask = (1u << bits_in_top_word) - 1u;
+        key_w &= mask;
+        kth_w &= mask;
+      }
+      if (key_w < kth_w)
       {
         return candidate_class::selected;
       }
-      if (digit > kth)
+      if (key_w > kth_w)
+      {
+        return candidate_class::rejected;
+      }
+    }
+
+    // Remaining words are fully populated
+    for (int w = top_word_idx - 1; w >= 0; --w)
+    {
+      if (key_prefix.words[w] < kth_key_bits->words[w])
+      {
+        return candidate_class::selected;
+      }
+      if (key_prefix.words[w] > kth_key_bits->words[w])
       {
         return candidate_class::rejected;
       }
@@ -212,10 +243,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     OffsetT* in_idx_buf,
     KeyInT* out_buf,
     OffsetT* out_idx_buf,
-    Counter<it_value_t<KeyInputIteratorT>,
-            OffsetT,
-            OutOffsetT,
-            PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).bits_per_pass>* counter,
+    Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
     OffsetT* histogram,
     OffsetT num_items,
     OutOffsetT k,
@@ -278,10 +306,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     ValueOutputIteratorT d_values_out,
     KeyInT* in_buf,
     OffsetT* in_idx_buf,
-    Counter<it_value_t<KeyInputIteratorT>,
-            OffsetT,
-            OutOffsetT,
-            PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).bits_per_pass>* counter,
+    Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
     OffsetT num_items,
     OutOffsetT k,
     OffsetT buffer_length,
@@ -418,11 +443,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     k = static_cast<OutOffsetT>((::cuda::std::min) (common_offset_t{k}, static_cast<common_offset_t>(num_items)));
 
     // Specify temporary storage allocation requirements
-    using counter_t             = Counter<key_in_t, OffsetT, OutOffsetT, bits_per_pass>;
-    const size_t size_counter   = sizeof(counter_t);
-    const size_t size_histogram = num_buckets * sizeof(OffsetT);
-    const OffsetT candidate_buffer_length =
-      (::cuda::std::max) (OffsetT{1}, num_items / coefficient_for_candidate_buffer);
+    using counter_t                       = Counter<key_in_t, OffsetT, OutOffsetT>;
+    const size_t size_counter             = sizeof(counter_t);
+    const size_t size_histogram           = num_buckets * sizeof(OffsetT);
+    const OffsetT candidate_buffer_length = (::cuda::std::max) (OffsetT{1}, num_items / coefficient_for_candidate_buffer);
 
     constexpr int allocations_array_size            = keys_only ? 4 : 6;
     size_t allocation_sizes[allocations_array_size] = {
