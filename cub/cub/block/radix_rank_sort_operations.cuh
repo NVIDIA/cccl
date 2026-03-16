@@ -211,6 +211,20 @@ template <class KeyT, class DecomposerT>
 using decomposer_check_t =
   is_tuple_of_references_to_fundamental_types_t<::cuda::std::invoke_result_t<DecomposerT, KeyT&>>;
 
+// SFINAE-friendly version of decomposer_check_t: true iff DecomposerT is callable
+// with KeyT& and returns a tuple of references to fundamental types.
+template <class KeyT, class DecomposerT, class = void>
+struct is_valid_decomposer : ::cuda::std::false_type
+{};
+
+template <class KeyT, class DecomposerT>
+struct is_valid_decomposer< //
+  KeyT,
+  DecomposerT,
+  ::cuda::std::void_t<::cuda::std::invoke_result_t<DecomposerT, KeyT&>>>
+    : is_tuple_of_references_to_fundamental_types_t<::cuda::std::invoke_result_t<DecomposerT, KeyT&>>
+{};
+
 template <class T>
 struct bit_ordered_conversion_policy_t
 {
