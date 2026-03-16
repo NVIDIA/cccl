@@ -75,7 +75,7 @@ public:
   // ::std::function<pos4(size_t)> delinearize : translate the index in a buffer into a position in the data
   // TODO pass mv(place)
   template <typename F>
-  localized_array(exec_place_grid grid,
+  localized_array(exec_place grid,
                   get_executor_func_t mapper,
                   F&& delinearize,
                   size_t total_size,
@@ -422,7 +422,7 @@ private:
   }
 
   event_list prereqs; // To allow reuse in a cache
-  exec_place_grid grid;
+  exec_place grid;
   get_executor_func_t mapper = nullptr;
   ::std::vector<metadata> meta;
 

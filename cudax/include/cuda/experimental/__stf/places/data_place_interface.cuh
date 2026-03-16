@@ -184,7 +184,7 @@ public:
    * @brief Get the grid for composite places
    * @throws std::logic_error if not a composite place
    */
-  virtual const exec_place_grid& get_grid() const
+  virtual const exec_place& get_grid() const
   {
     throw ::std::logic_error("get_grid() called on non-composite data_place");
   }

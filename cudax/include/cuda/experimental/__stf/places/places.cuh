@@ -165,9 +165,9 @@ public:
 
   // User-visible API when using a different partitioner than the one of the grid
   template <typename partitioner_t /*, typename scalar_exec_place_t */>
-  static data_place composite(partitioner_t p, const exec_place_grid& g);
+  static data_place composite(partitioner_t p, const exec_place& g);
 
-  static data_place composite(get_executor_func_t f, const exec_place_grid& grid);
+  static data_place composite(get_executor_func_t f, const exec_place& grid);
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
   static data_place green_ctx(const green_ctx_view& gc_view);
@@ -296,7 +296,7 @@ public:
     return p.pimpl_->get_device_ordinal();
   }
 
-  const exec_place_grid& get_grid() const
+  const exec_place& get_grid() const
   {
     return pimpl_->get_grid();
   }
@@ -1619,7 +1619,7 @@ inline exec_place partition_tile(const exec_place& e_place, dim4 tile_sizes, pos
 class data_place_composite final : public data_place_interface
 {
 public:
-  data_place_composite(exec_place_grid grid, get_executor_func_t partitioner_func)
+  data_place_composite(exec_place grid, get_executor_func_t partitioner_func)
       : grid_(mv(grid))
       , partitioner_func_(mv(partitioner_func))
   {}
@@ -1679,7 +1679,7 @@ public:
     return false;
   }
 
-  const exec_place_grid& get_grid() const override
+  const exec_place& get_grid() const override
   {
     return grid_;
   }
@@ -1690,7 +1690,7 @@ public:
   }
 
 private:
-  exec_place_grid grid_;
+  exec_place grid_;
   get_executor_func_t partitioner_func_;
 };
 
@@ -1700,14 +1700,14 @@ inline bool data_place::is_composite() const
   return typeid(ref) == typeid(data_place_composite);
 }
 
-inline data_place data_place::composite(get_executor_func_t f, const exec_place_grid& grid)
+inline data_place data_place::composite(get_executor_func_t f, const exec_place& grid)
 {
   return data_place(::std::make_shared<data_place_composite>(grid, f));
 }
 
 // User-visible API when the same partitioner as the one of the grid
 template <typename partitioner_t>
-data_place data_place::composite(partitioner_t, const exec_place_grid& g)
+data_place data_place::composite(partitioner_t, const exec_place& g)
 {
   return data_place::composite(&partitioner_t::get_executor, g);
 }

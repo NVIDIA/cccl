@@ -87,7 +87,7 @@ public:
       return;
     }
 
-    exec_place_grid grid = memory_node.get_grid();
+    exec_place grid = memory_node.get_grid();
     size_t total_size    = this->shape.size();
 
     // position (x,y,z,t) on (nx,ny,nz,nt)
