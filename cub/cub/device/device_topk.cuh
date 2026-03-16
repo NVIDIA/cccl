@@ -281,13 +281,103 @@ struct DeviceTopK
       ::cuda::std::move(env));
   }
 
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Finds the largest K keys and their corresponding values from an unordered input sequence of key-value pairs,
+  //! using a decomposer to interpret user-defined key types.
+  //!
+  //! .. note::
+  //!
+  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!
+  //! - @devicestorage
+  //!
+  //! .. versionadded:: 3.3.0
+  //!
+  //! A Simple Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Let's consider a user-defined ``custom_t`` type below. To find the top-k
+  //! elements of an array of ``custom_t`` objects, we have to tell CUB about
+  //! relevant members of the ``custom_t`` type. We do this by providing a
+  //! decomposer that returns a tuple of references to relevant members of the key.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_topk_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin topk-custom-type
+  //!     :end-before: example-end topk-custom-type
+  //!
+  //! The following snippet shows how to find the top-k largest pairs of ``custom_t``
+  //! objects using ``cub::DeviceTopK::MaxPairs``:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_topk_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin topk-max-pairs-custom-type
+  //!     :end-before: example-end topk-max-pairs-custom-type
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
+  //!
+  //! @tparam KeyOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing output keys @iterator
+  //!
+  //! @tparam ValueInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input values @iterator
+  //!
+  //! @tparam ValueOutputIteratorT
+  //!   **[inferred]** Random-access input iterator type for writing output values @iterator
+  //!
+  //! @tparam NumItemsT
+  //!  The integral type of variable num_items
+  //!
+  //! @tparam NumOutItemsT
+  //!  The integral type of variable k
+  //!
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a key into a tuple of references to its
   //!   constituent arithmetic types.
   //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the required allocation size is written to
+  //!   `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_keys_in
+  //!   Random-access iterator to the input sequence containing the keys
+  //!
+  //! @param[out] d_keys_out
+  //!   Random-access iterator to the output sequence of keys, where K values will be written to
+  //!
+  //! @param[in] d_values_in
+  //!   Random-access iterator to the input sequence containing the values associated to each key
+  //!
+  //! @param[out] d_values_out
+  //!   Random-access iterator to the output sequence of values, corresponding to the top k keys, where k values will be
+  //!   written to
+  //!
+  //! @param[in] num_items
+  //!   Number of items to be read and processed from `d_keys_in` and `d_values_in` each
+  //!
+  //! @param[in] k
+  //!   The value of K, which is the number of largest pairs to find from `num_items` pairs. Capped to a maximum of
+  //!   `num_items`.
+  //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a key into a tuple of references to its constituent arithmetic
   //!   types.
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   @endrst
   template <typename KeyInputIteratorT,
             typename KeyOutputIteratorT,
             typename ValueInputIteratorT,
@@ -298,7 +388,7 @@ struct DeviceTopK
             typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static //
     ::cuda::std::enable_if_t<
-      !::cuda::std::execution::__queryable_with<DecomposerT, ::cuda::execution::__get_requirements_t>,
+      detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, DecomposerT>::value,
       cudaError_t>
     MaxPairs(void* d_temp_storage,
              size_t& temp_storage_bytes,
@@ -312,29 +402,23 @@ struct DeviceTopK
              EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxPairs");
-    using key_t              = detail::it_value_t<KeyInputIteratorT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<key_t, DecomposerT>;
+    using key_t = detail::it_value_t<KeyInputIteratorT>;
 
-    static_assert(decomposer_check_t::value,
-                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
     static_assert(!detail::radix::is_fundamental_type<key_t>::value,
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
-    if constexpr (decomposer_check_t::value)
-    {
-      return detail::dispatch_topk_hub<detail::topk::select::max>(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys_in,
-        d_keys_out,
-        d_values_in,
-        d_values_out,
-        num_items,
-        k,
-        decomposer,
-        ::cuda::std::move(env));
-    }
+    return detail::dispatch_topk<detail::topk::select::max>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
+      num_items,
+      k,
+      decomposer,
+      ::cuda::std::move(env));
   }
 
   //! @rst
@@ -447,13 +531,103 @@ struct DeviceTopK
       ::cuda::std::move(env));
   }
 
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Finds the lowest K keys and their corresponding values from an unordered input sequence of key-value pairs,
+  //! using a decomposer to interpret user-defined key types.
+  //!
+  //! .. note::
+  //!
+  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!
+  //! - @devicestorage
+  //!
+  //! .. versionadded:: 3.3.0
+  //!
+  //! A Simple Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Let's consider a user-defined ``custom_t`` type below. To find the top-k
+  //! elements of an array of ``custom_t`` objects, we have to tell CUB about
+  //! relevant members of the ``custom_t`` type. We do this by providing a
+  //! decomposer that returns a tuple of references to relevant members of the key.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_topk_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin topk-custom-type
+  //!     :end-before: example-end topk-custom-type
+  //!
+  //! The following snippet shows how to find the top-k smallest pairs of ``custom_t``
+  //! objects using ``cub::DeviceTopK::MinPairs``:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_topk_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin topk-min-pairs-custom-type
+  //!     :end-before: example-end topk-min-pairs-custom-type
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
+  //!
+  //! @tparam KeyOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing output keys @iterator
+  //!
+  //! @tparam ValueInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input values @iterator
+  //!
+  //! @tparam ValueOutputIteratorT
+  //!   **[inferred]** Random-access input iterator type for writing output values @iterator
+  //!
+  //! @tparam NumItemsT
+  //!  The integral type of variable num_items
+  //!
+  //! @tparam NumOutItemsT
+  //!  The integral type of variable k
+  //!
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a key into a tuple of references to its
   //!   constituent arithmetic types.
   //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_keys_in
+  //!   Random-access iterator to the input sequence containing the keys
+  //!
+  //! @param[out] d_keys_out
+  //!   Random-access iterator to the output sequence of keys, where K values will be written to
+  //!
+  //! @param[in] d_values_in
+  //!   Random-access iterator to the input sequence containing the values associated to each key
+  //!
+  //! @param[out] d_values_out
+  //!   Random-access iterator to the output sequence of values, corresponding to the top k keys, where k values will be
+  //!   written to
+  //!
+  //! @param[in] num_items
+  //!   Number of items to be read and processed from `d_keys_in` and `d_values_in` each
+  //!
+  //! @param[in] k
+  //!   The value of K, which is the number of lowest pairs to find from `num_items` pairs. Capped to a maximum of
+  //!   `num_items`.
+  //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a key into a tuple of references to its constituent arithmetic
   //!   types.
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   @endrst
   template <typename KeyInputIteratorT,
             typename KeyOutputIteratorT,
             typename ValueInputIteratorT,
@@ -464,7 +638,7 @@ struct DeviceTopK
             typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static //
     ::cuda::std::enable_if_t<
-      !::cuda::std::execution::__queryable_with<DecomposerT, ::cuda::execution::__get_requirements_t>,
+      detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, DecomposerT>::value,
       cudaError_t>
     MinPairs(void* d_temp_storage,
              size_t& temp_storage_bytes,
@@ -478,29 +652,23 @@ struct DeviceTopK
              EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinPairs");
-    using key_t              = detail::it_value_t<KeyInputIteratorT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<key_t, DecomposerT>;
+    using key_t = detail::it_value_t<KeyInputIteratorT>;
 
-    static_assert(decomposer_check_t::value,
-                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
     static_assert(!detail::radix::is_fundamental_type<key_t>::value,
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
-    if constexpr (decomposer_check_t::value)
-    {
-      return detail::dispatch_topk_hub<detail::topk::select::min>(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys_in,
-        d_keys_out,
-        d_values_in,
-        d_values_out,
-        num_items,
-        k,
-        decomposer,
-        ::cuda::std::move(env));
-    }
+    return detail::dispatch_topk<detail::topk::select::min>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
+      num_items,
+      k,
+      decomposer,
+      ::cuda::std::move(env));
   }
 
   //! @rst
@@ -596,13 +764,90 @@ struct DeviceTopK
       ::cuda::std::move(env));
   }
 
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Finds the largest K keys from an unordered input sequence of keys,
+  //! using a decomposer to interpret user-defined key types.
+  //!
+  //! .. note::
+  //!
+  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!
+  //! - @devicestorage
+  //!
+  //! .. versionadded:: 3.3.0
+  //!
+  //! A Simple Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Let's consider a user-defined ``custom_t`` type below. To find the top-k
+  //! elements of an array of ``custom_t`` objects, we have to tell CUB about
+  //! relevant members of the ``custom_t`` type. We do this by providing a
+  //! decomposer that returns a tuple of references to relevant members of the key.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_topk_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin topk-custom-type
+  //!     :end-before: example-end topk-custom-type
+  //!
+  //! The following snippet shows how to find the top-k largest keys of ``custom_t``
+  //! objects using ``cub::DeviceTopK::MaxKeys``:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_topk_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin topk-max-keys-custom-type
+  //!     :end-before: example-end topk-max-keys-custom-type
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
+  //!
+  //! @tparam KeyOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing output keys @iterator
+  //!
+  //! @tparam NumItemsT
+  //!  The integral type of variable num_items
+  //!
+  //! @tparam NumOutItemsT
+  //!  The integral type of variable k
+  //!
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a key into a tuple of references to its
   //!   constituent arithmetic types.
   //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_keys_in
+  //!   Random-access iterator to the input sequence containing the keys
+  //!
+  //! @param[out] d_keys_out
+  //!   Random-access iterator to the output sequence of keys, where K values will be written to
+  //!
+  //! @param[in] num_items
+  //!   Number of items to be read and processed from `d_keys_in`
+  //!
+  //! @param[in] k
+  //!   The value of K, which is the number of largest keys to find from `num_items` keys. Capped to a maximum of
+  //!   `num_items`.
+  //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a key into a tuple of references to its constituent arithmetic
   //!   types.
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   @endrst
   template <typename KeyInputIteratorT,
             typename KeyOutputIteratorT,
             typename NumItemsT,
@@ -611,7 +856,7 @@ struct DeviceTopK
             typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static //
     ::cuda::std::enable_if_t<
-      !::cuda::std::execution::__queryable_with<DecomposerT, ::cuda::execution::__get_requirements_t>,
+      detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, DecomposerT>::value,
       cudaError_t>
     MaxKeys(void* d_temp_storage,
             size_t& temp_storage_bytes,
@@ -623,29 +868,23 @@ struct DeviceTopK
             EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxKeys");
-    using key_t              = detail::it_value_t<KeyInputIteratorT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<key_t, DecomposerT>;
+    using key_t = detail::it_value_t<KeyInputIteratorT>;
 
-    static_assert(decomposer_check_t::value,
-                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
     static_assert(!detail::radix::is_fundamental_type<key_t>::value,
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
-    if constexpr (decomposer_check_t::value)
-    {
-      return detail::dispatch_topk_hub<detail::topk::select::max>(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys_in,
-        d_keys_out,
-        static_cast<NullType*>(nullptr),
-        static_cast<NullType*>(nullptr),
-        num_items,
-        k,
-        decomposer,
-        ::cuda::std::move(env));
-    }
+    return detail::dispatch_topk<detail::topk::select::max>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      static_cast<NullType*>(nullptr),
+      static_cast<NullType*>(nullptr),
+      num_items,
+      k,
+      decomposer,
+      ::cuda::std::move(env));
   }
 
   //! @rst
@@ -741,13 +980,90 @@ struct DeviceTopK
       ::cuda::std::move(env));
   }
 
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Finds the lowest K keys from an unordered input sequence of keys,
+  //! using a decomposer to interpret user-defined key types.
+  //!
+  //! .. note::
+  //!
+  //!    The behavior is undefined if the input and output ranges overlap in any way.
+  //!
+  //! - @devicestorage
+  //!
+  //! .. versionadded:: 3.3.0
+  //!
+  //! A Simple Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Let's consider a user-defined ``custom_t`` type below. To find the top-k
+  //! elements of an array of ``custom_t`` objects, we have to tell CUB about
+  //! relevant members of the ``custom_t`` type. We do this by providing a
+  //! decomposer that returns a tuple of references to relevant members of the key.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_topk_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin topk-custom-type
+  //!     :end-before: example-end topk-custom-type
+  //!
+  //! The following snippet shows how to find the top-k smallest keys of ``custom_t``
+  //! objects using ``cub::DeviceTopK::MinKeys``:
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_topk_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin topk-min-keys-custom-type
+  //!     :end-before: example-end topk-min-keys-custom-type
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
+  //!
+  //! @tparam KeyOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing output keys @iterator
+  //!
+  //! @tparam NumItemsT
+  //!  The integral type of variable num_items
+  //!
+  //! @tparam NumOutItemsT
+  //!  The integral type of variable k
+  //!
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a key into a tuple of references to its
   //!   constituent arithmetic types.
   //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_keys_in
+  //!   Random-access iterator to the input sequence containing the keys
+  //!
+  //! @param[out] d_keys_out
+  //!   Random-access iterator to the output sequence of keys, where K values will be written to
+  //!
+  //! @param[in] num_items
+  //!   Number of items to be read and processed from `d_keys_in`
+  //!
+  //! @param[in] k
+  //!   The value of K, which is the number of lowest keys to find from `num_items` keys. Capped to a maximum of
+  //!   `num_items`.
+  //!
   //! @param decomposer
   //!   Callable object responsible for decomposing a key into a tuple of references to its constituent arithmetic
   //!   types.
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   @endrst
   template <typename KeyInputIteratorT,
             typename KeyOutputIteratorT,
             typename NumItemsT,
@@ -756,7 +1072,7 @@ struct DeviceTopK
             typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static //
     ::cuda::std::enable_if_t<
-      !::cuda::std::execution::__queryable_with<DecomposerT, ::cuda::execution::__get_requirements_t>,
+      detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, DecomposerT>::value,
       cudaError_t>
     MinKeys(void* d_temp_storage,
             size_t& temp_storage_bytes,
@@ -768,29 +1084,23 @@ struct DeviceTopK
             EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinKeys");
-    using key_t              = detail::it_value_t<KeyInputIteratorT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<key_t, DecomposerT>;
+    using key_t = detail::it_value_t<KeyInputIteratorT>;
 
-    static_assert(decomposer_check_t::value,
-                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
     static_assert(!detail::radix::is_fundamental_type<key_t>::value,
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
-    if constexpr (decomposer_check_t::value)
-    {
-      return detail::dispatch_topk_hub<detail::topk::select::min>(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys_in,
-        d_keys_out,
-        static_cast<NullType*>(nullptr),
-        static_cast<NullType*>(nullptr),
-        num_items,
-        k,
-        decomposer,
-        ::cuda::std::move(env));
-    }
+    return detail::dispatch_topk<detail::topk::select::min>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      static_cast<NullType*>(nullptr),
+      static_cast<NullType*>(nullptr),
+      num_items,
+      k,
+      decomposer,
+      ::cuda::std::move(env));
   }
 };
 
