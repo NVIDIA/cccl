@@ -450,10 +450,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     k = static_cast<OutOffsetT>((::cuda::std::min) (common_offset_t{k}, static_cast<common_offset_t>(num_items)));
 
     // Specify temporary storage allocation requirements
-    using counter_t                       = Counter<key_in_t, OffsetT, OutOffsetT>;
-    const size_t size_counter             = sizeof(counter_t);
-    const size_t size_histogram           = num_buckets * sizeof(OffsetT);
-    const OffsetT candidate_buffer_length = (::cuda::std::max) (OffsetT{1}, num_items / coefficient_for_candidate_buffer);
+    using counter_t             = Counter<key_in_t, OffsetT, OutOffsetT>;
+    const size_t size_counter   = sizeof(counter_t);
+    const size_t size_histogram = num_buckets * sizeof(OffsetT);
+    const OffsetT candidate_buffer_length =
+      (::cuda::std::max) (OffsetT{1}, num_items / coefficient_for_candidate_buffer);
 
     constexpr int allocations_array_size            = keys_only ? 4 : 6;
     size_t allocation_sizes[allocations_array_size] = {
