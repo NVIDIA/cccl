@@ -166,6 +166,18 @@ using __iresource _CCCL_NODEBUG_ALIAS = ::cuda::
 template <class... _Properties>
 using __iasync_resource _CCCL_NODEBUG_ALIAS = __iset<__iresource<_Properties...>, __ibasic_async_resource<>>;
 
+// Resource-ref variants omit __icopyable: resource_ref is a reference (non-owning)
+// wrapper, so the underlying resource need not be copyable. Including __icopyable
+// here causes GCC to evaluate copyable<T> during overload resolution, which can
+// create a recursive constraint-satisfaction cycle when T has a constructor
+// accepting resource_ref (see https://github.com/NVIDIA/cccl/issues/8037).
+template <class... _Properties>
+using __iresource_ref _CCCL_NODEBUG_ALIAS = ::cuda::
+  __iset<__ibasic_resource<>, __iproperty_set<_Properties...>, ::cuda::__iequality_comparable<>>;
+
+template <class... _Properties>
+using __iasync_resource_ref _CCCL_NODEBUG_ALIAS = __iset<__iresource_ref<_Properties...>, __ibasic_async_resource<>>;
+
 template <class _Property>
 using __try_property_result_t =
   ::cuda::std::conditional_t<!::cuda::std::is_same_v<__property_result_t<_Property>, void>, //
@@ -260,11 +272,11 @@ private:
 //! @tparam _Properties The properties that any resource wrapped within the `synchronous_resource_ref` needs to satisfy
 template <class... _Properties>
 struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
-    : __basic_any<__iresource<_Properties...>&>
+    : __basic_any<__iresource_ref<_Properties...>&>
     , __with_try_get_property<synchronous_resource_ref<_Properties...>>
 {
   // Inherit constructors from __basic_any
-  _CCCL_DELEGATE_CONSTRUCTORS(synchronous_resource_ref, ::cuda::__basic_any, __iresource<_Properties...>&);
+  _CCCL_DELEGATE_CONSTRUCTORS(synchronous_resource_ref, ::cuda::__basic_any, __iresource_ref<_Properties...>&);
 
   synchronous_resource_ref(const synchronous_resource_ref& __other) noexcept = default;
 
@@ -316,11 +328,11 @@ private:
 //! @tparam _Properties The properties that any async resource wrapped within the `resource_ref` needs to satisfy
 template <class... _Properties>
 struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
-    : __basic_any<__iasync_resource<_Properties...>&>
+    : __basic_any<__iasync_resource_ref<_Properties...>&>
     , __with_try_get_property<resource_ref<_Properties...>>
 {
   // Inherit other constructors from __basic_any
-  _CCCL_DELEGATE_CONSTRUCTORS(resource_ref, ::cuda::__basic_any, __iasync_resource<_Properties...>&);
+  _CCCL_DELEGATE_CONSTRUCTORS(resource_ref, ::cuda::__basic_any, __iasync_resource_ref<_Properties...>&);
 
   resource_ref(const resource_ref& __other) noexcept = default;
 
