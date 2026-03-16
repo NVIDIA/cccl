@@ -194,6 +194,9 @@ struct is_fundamental_type<T, ::cuda::std::void_t<typename Traits<T>::UnsignedBi
   static constexpr bool value = true;
 };
 
+template <class T>
+inline constexpr bool is_fundamental_type_v = is_fundamental_type<T>::value;
+
 template <class T, class = void>
 struct is_tuple_of_references_to_fundamental_types_t : ::cuda::std::false_type
 {};

@@ -41,7 +41,7 @@ template <typename T,
           select SelectDirection,
           int BitsPerPass,
           typename DecomposerT,
-          bool IsFundamental = detail::radix::is_fundamental_type<T>::value>
+          bool IsFundamental = detail::radix::is_fundamental_type_v<T>>
 struct extract_bin_op_t;
 
 template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
@@ -105,7 +105,7 @@ template <typename T,
           select SelectDirection,
           int BitsPerPass,
           typename DecomposerT,
-          bool IsFundamental = detail::radix::is_fundamental_type<T>::value>
+          bool IsFundamental = detail::radix::is_fundamental_type_v<T>>
 struct identify_candidates_op_t;
 
 template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>

@@ -59,7 +59,7 @@ struct AgentTopKPolicy
 template <typename T, int BitsPerPass>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass);
 
-template <typename KeyT, bool IsFundamental = detail::radix::is_fundamental_type<KeyT>::value>
+template <typename KeyT, bool IsFundamental = detail::radix::is_fundamental_type_v<KeyT>>
 struct key_prefix_storage_t;
 
 template <typename KeyT>
@@ -97,7 +97,7 @@ template <typename KeyT, int BitsPerPass>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 set_kth_key_bits(key_prefix_storage_t<KeyT>& prefix, const int pass, const int bin_index)
 {
-  if constexpr (detail::radix::is_fundamental_type<KeyT>::value)
+  if constexpr (detail::radix::is_fundamental_type_v<KeyT>)
   {
     using bits_t        = typename Traits<KeyT>::UnsignedBits;
     const int start_bit = calc_start_bit<KeyT, BitsPerPass>(pass);
