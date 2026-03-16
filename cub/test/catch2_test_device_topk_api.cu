@@ -268,18 +268,23 @@ C2H_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]")
     const custom_t* d_in = thrust::raw_pointer_cast(in.data());
     custom_t* d_out      = thrust::raw_pointer_cast(out.data());
 
+    auto requirements = cuda::execution::require(
+      cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+
     // 1) Get temp storage size
     std::uint8_t* d_temp_storage{};
     std::size_t temp_storage_bytes{};
 
-    cub::DeviceTopK::MaxKeys(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, k, decomposer_t{});
+    cub::DeviceTopK::MaxKeys(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, k, decomposer_t{}, requirements);
 
     // 2) Allocate temp storage
     thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     // 3) Find the top-k largest keys
-    cub::DeviceTopK::MaxKeys(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, k, decomposer_t{});
+    cub::DeviceTopK::MaxKeys(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, k, decomposer_t{}, requirements);
 
     // Sort output for comparison (output order is not guaranteed)
     thrust::sort(out.begin(), out.end(), cuda::std::greater<>{});
@@ -313,15 +318,20 @@ C2H_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]")
     const custom_t* d_in = thrust::raw_pointer_cast(in.data());
     custom_t* d_out      = thrust::raw_pointer_cast(out.data());
 
+    auto requirements = cuda::execution::require(
+      cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+
     std::uint8_t* d_temp_storage{};
     std::size_t temp_storage_bytes{};
 
-    cub::DeviceTopK::MinKeys(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, k, decomposer_t{});
+    cub::DeviceTopK::MinKeys(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, k, decomposer_t{}, requirements);
 
     thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-    cub::DeviceTopK::MinKeys(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, k, decomposer_t{});
+    cub::DeviceTopK::MinKeys(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, k, decomposer_t{}, requirements);
 
     // Sort output for comparison (output order is not guaranteed)
     thrust::sort(out.begin(), out.end());
@@ -361,17 +371,38 @@ C2H_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]")
     const int* d_vals_in = thrust::raw_pointer_cast(vals_in.data());
     int* d_vals_out      = thrust::raw_pointer_cast(vals_out.data());
 
+    auto requirements = cuda::execution::require(
+      cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+
     std::uint8_t* d_temp_storage{};
     std::size_t temp_storage_bytes{};
 
     cub::DeviceTopK::MaxPairs(
-      d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_vals_in, d_vals_out, num_items, k, decomposer_t{});
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_vals_in,
+      d_vals_out,
+      num_items,
+      k,
+      decomposer_t{},
+      requirements);
 
     thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     cub::DeviceTopK::MaxPairs(
-      d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_vals_in, d_vals_out, num_items, k, decomposer_t{});
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_vals_in,
+      d_vals_out,
+      num_items,
+      k,
+      decomposer_t{},
+      requirements);
 
     // Sort by key for comparison (output order is not guaranteed)
     thrust::sort_by_key(keys_out.begin(), keys_out.end(), vals_out.begin(), cuda::std::greater<>{});
@@ -415,17 +446,38 @@ C2H_TEST("DeviceTopK works with custom types and decomposer", "[device][topk]")
     const int* d_vals_in = thrust::raw_pointer_cast(vals_in.data());
     int* d_vals_out      = thrust::raw_pointer_cast(vals_out.data());
 
+    auto requirements = cuda::execution::require(
+      cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+
     std::uint8_t* d_temp_storage{};
     std::size_t temp_storage_bytes{};
 
     cub::DeviceTopK::MinPairs(
-      d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_vals_in, d_vals_out, num_items, k, decomposer_t{});
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_vals_in,
+      d_vals_out,
+      num_items,
+      k,
+      decomposer_t{},
+      requirements);
 
     thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     cub::DeviceTopK::MinPairs(
-      d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_vals_in, d_vals_out, num_items, k, decomposer_t{});
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_vals_in,
+      d_vals_out,
+      num_items,
+      k,
+      decomposer_t{},
+      requirements);
 
     // Sort by key for comparison (output order is not guaranteed)
     thrust::sort_by_key(keys_out.begin(), keys_out.end(), vals_out.begin());
