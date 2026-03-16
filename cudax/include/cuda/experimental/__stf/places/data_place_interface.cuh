@@ -46,7 +46,6 @@ namespace cuda::experimental::stf
 {
 // Forward declarations
 class exec_place;
-class exec_place_grid;
 class pos4;
 class dim4;
 

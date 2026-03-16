@@ -1118,9 +1118,6 @@ public:
   }
 
   template <typename S, typename... Deps>
-  auto parallel_for(exec_place_grid e_place, S shape, Deps... deps) = delete;
-
-  template <typename S, typename... Deps>
   auto parallel_for(S shape, Deps... deps)
   {
     return parallel_for(self().default_exec_place(), mv(shape), mv(deps)...);

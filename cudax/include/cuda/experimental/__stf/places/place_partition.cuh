@@ -80,7 +80,7 @@ inline ::std::string place_partition_scope_to_string(place_partition_scope scope
  * `cuda_device` scope. Green context scope requires CUDA 12.4 or later.
  *
  * Iteration over subplaces is provided via `begin()` / `end()`; `as_grid()` builds
- * an `exec_place_grid` from the subplaces.
+ * an `exec_place` grid from the subplaces.
  */
 class place_partition
 {
@@ -131,14 +131,13 @@ public:
    * @param grid Input execution place grid to partition
    * @param scope Partitioning granularity
    */
-  place_partition(async_resources_handle& handle, const exec_place_grid& grid, place_partition_scope scope)
+  place_partition(async_resources_handle& handle, const exec_place& grid, place_partition_scope scope)
   {
     ::std::vector<::std::shared_ptr<exec_place>> places;
-    const auto& grid_places = grid.get_places();
-    places.reserve(grid_places.size());
-    for (const auto& ep : grid_places)
+    places.reserve(grid.size());
+    for (size_t i = 0; i < grid.size(); ++i)
     {
-      places.push_back(::std::make_shared<exec_place>(ep));
+      places.push_back(::std::make_shared<exec_place>(grid.get_place(i)));
     }
     for (const auto& place : places)
     {

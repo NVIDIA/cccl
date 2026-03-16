@@ -161,7 +161,7 @@ inline void loop_dispatch(context_t ctx, size_t start, size_t end, ::std::functi
   }
   else
   {
-    loop_dispatch<context_t, exec_place_grid, use_threads>(
+    loop_dispatch<context_t, exec_place, use_threads>(
       mv(ctx), exec_place::all_devices(), scope, start, end, mv(func));
   }
 }

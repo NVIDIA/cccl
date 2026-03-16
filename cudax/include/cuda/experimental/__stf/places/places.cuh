@@ -50,7 +50,6 @@ namespace cuda::experimental::stf
 {
 class exec_place;
 class exec_place_host;
-class exec_place_grid;
 
 // Green contexts are only supported since CUDA 12.4
 
@@ -825,10 +824,14 @@ public:
   }
 
   /**
-   * @brief Convert to exec_place_grid type
+   * @brief Returns *this for compatibility
    * @deprecated All places are grids now; use exec_place methods directly
    */
-  exec_place_grid as_grid() const;
+  const exec_place& as_grid() const
+  {
+    EXPECT(size() > 1, "as_grid() called on scalar exec_place");
+    return *this;
+  }
 
   /* These helper methods provide convenient way to express execution places,
    * for example exec_place::host or exec_place::device(4).
@@ -1181,197 +1184,146 @@ UNITTEST("exec_place copyable")
 };
 #endif // UNITTESTED_FILE
 
-//! A multidimensional grid of execution places for structured parallel computation
-class exec_place_grid : public exec_place
+/**
+ * Implementation class for multi-device execution place grids.
+ * This is used internally by make_grid() and related factory functions.
+ */
+class exec_place_grid_impl : public exec_place::impl
 {
 public:
-  /*
-   * Implementation of the exec_place_grid
-   */
-  class impl : public exec_place::impl
+  exec_place_grid_impl(::std::vector<exec_place> _places)
+      : dims_(_places.size(), 1, 1, 1)
+      , places_(mv(_places))
   {
-  public:
-    impl(::std::vector<exec_place> _places)
-        : dims_(_places.size(), 1, 1, 1)
-        , places_(mv(_places))
-    {
-      _CCCL_ASSERT(!places_.empty(), "Grid must have at least one place");
-      _CCCL_ASSERT(dims_.x > 0, "Grid dimensions must be positive");
-    }
-
-    impl(::std::vector<exec_place> _places, const dim4& _dims)
-        : dims_(_dims)
-        , places_(mv(_places))
-    {
-      _CCCL_ASSERT(dims_.x > 0, "Grid dimensions must be positive");
-    }
-
-    // ===== Grid interface =====
-
-    dim4 get_dims() const override
-    {
-      return dims_;
-    }
-
-    size_t size() const override
-    {
-      return dims_.size();
-    }
-
-    exec_place get_place(size_t idx) const override
-    {
-      EXPECT(idx < places_.size(), "Index out of bounds");
-      return places_[idx];
-    }
-
-    // ===== Activation (delegates to sub-places) =====
-
-    exec_place activate(size_t idx) const override
-    {
-      EXPECT(idx < places_.size(), "Index out of bounds");
-      return places_[idx].activate(0);
-    }
-
-    void deactivate(size_t idx, const exec_place& prev) const override
-    {
-      EXPECT(idx < places_.size(), "Index out of bounds");
-      places_[idx].deactivate(0, prev);
-    }
-
-    // ===== Properties =====
-
-    ::std::string to_string() const override
-    {
-      return "grid(" + ::std::to_string(dims_.x) + "x" + ::std::to_string(dims_.y) + "x" + ::std::to_string(dims_.z)
-           + "x" + ::std::to_string(dims_.t) + ")";
-    }
-
-    // ===== Comparison =====
-
-    int cmp(const exec_place::impl& rhs) const override
-    {
-      if (typeid(*this) != typeid(rhs))
-      {
-        return typeid(*this).before(typeid(rhs)) ? -1 : 1;
-      }
-      const auto& other = static_cast<const impl&>(rhs);
-      // Compare dims first
-      auto this_dims  = ::std::tie(dims_.x, dims_.y, dims_.z, dims_.t);
-      auto other_dims = ::std::tie(other.dims_.x, other.dims_.y, other.dims_.z, other.dims_.t);
-      if (this_dims < other_dims)
-      {
-        return -1;
-      }
-      if (other_dims < this_dims)
-      {
-        return 1;
-      }
-      // Then compare places
-      if (places_ < other.places_)
-      {
-        return -1;
-      }
-      if (other.places_ < places_)
-      {
-        return 1;
-      }
-      return 0;
-    }
-
-    size_t hash() const override
-    {
-      size_t h = ::cuda::experimental::stf::hash<dim4>{}(dims_);
-      for (const auto& p : places_)
-      {
-        hash_combine(h, p.hash());
-      }
-      return h;
-    }
-
-    // ===== Stream management =====
-
-    stream_pool& get_stream_pool(bool for_computation) const override
-    {
-      _CCCL_ASSERT(!for_computation, "Expected data transfer stream pool");
-      _CCCL_ASSERT(!places_.empty(), "Grid must have at least one place");
-      return places_[0].get_stream_pool(for_computation);
-    }
-
-    // ===== Grid-specific accessors =====
-
-    const ::std::vector<exec_place>& get_places() const
-    {
-      return places_;
-    }
-
-    // ===== Grid iteration state =====
-
-    ::std::ptrdiff_t get_current_idx() const override
-    {
-      return current_idx_;
-    }
-
-    void set_current_idx(::std::ptrdiff_t idx) const override
-    {
-      current_idx_ = idx;
-    }
-
-    ::std::shared_ptr<exec_place::impl> get_saved_prev_impl() const override
-    {
-      return saved_prev_impl_;
-    }
-
-    void set_saved_prev_impl(::std::shared_ptr<exec_place::impl> p) const override
-    {
-      saved_prev_impl_ = mv(p);
-    }
-
-  private:
-    dim4 dims_;
-    ::std::vector<exec_place> places_;
-    mutable ::std::ptrdiff_t current_idx_ = -1;
-    mutable ::std::shared_ptr<exec_place::impl> saved_prev_impl_;
-  };
-
-  explicit operator bool() const
-  {
-    return exec_place::get_impl() != nullptr;
+    _CCCL_ASSERT(!places_.empty(), "Grid must have at least one place");
+    _CCCL_ASSERT(dims_.x > 0, "Grid dimensions must be positive");
   }
 
-  bool operator==(const exec_place_grid& rhs) const
+  exec_place_grid_impl(::std::vector<exec_place> _places, const dim4& _dims)
+      : dims_(_dims)
+      , places_(mv(_places))
   {
-    return get_impl()->cmp(*rhs.get_impl()) == 0;
+    _CCCL_ASSERT(dims_.x > 0, "Grid dimensions must be positive");
   }
 
-  /**
-   * @brief Get the vector of sub-places (grid-specific)
-   */
-  const ::std::vector<exec_place>& get_places() const
+  // ===== Grid interface =====
+
+  dim4 get_dims() const override
   {
-    return get_impl()->get_places();
+    return dims_;
   }
 
-  /**
-   * @brief Get the typed impl (for grid-specific operations)
-   */
-  ::std::shared_ptr<impl> get_impl() const
+  size_t size() const override
   {
-    _CCCL_ASSERT(::std::dynamic_pointer_cast<impl>(exec_place::get_impl()), "Invalid exec_place_grid impl");
-    return ::std::static_pointer_cast<impl>(exec_place::get_impl());
+    return dims_.size();
   }
 
-  // Default constructor
-  exec_place_grid()
-      : exec_place(nullptr)
-  {}
+  exec_place get_place(size_t idx) const override
+  {
+    EXPECT(idx < places_.size(), "Index out of bounds");
+    return places_[idx];
+  }
 
-  exec_place_grid(::std::shared_ptr<impl> p)
-      : exec_place(mv(p))
-  {}
+  // ===== Activation (delegates to sub-places) =====
 
-  exec_place_grid(::std::vector<exec_place> p, const dim4& d)
-      : exec_place(::std::make_shared<impl>(mv(p), d))
-  {}
+  exec_place activate(size_t idx) const override
+  {
+    EXPECT(idx < places_.size(), "Index out of bounds");
+    return places_[idx].activate(0);
+  }
+
+  void deactivate(size_t idx, const exec_place& prev) const override
+  {
+    EXPECT(idx < places_.size(), "Index out of bounds");
+    places_[idx].deactivate(0, prev);
+  }
+
+  // ===== Properties =====
+
+  ::std::string to_string() const override
+  {
+    return "grid(" + ::std::to_string(dims_.x) + "x" + ::std::to_string(dims_.y) + "x" + ::std::to_string(dims_.z)
+         + "x" + ::std::to_string(dims_.t) + ")";
+  }
+
+  // ===== Comparison =====
+
+  int cmp(const exec_place::impl& rhs) const override
+  {
+    if (typeid(*this) != typeid(rhs))
+    {
+      return typeid(*this).before(typeid(rhs)) ? -1 : 1;
+    }
+    const auto& other = static_cast<const exec_place_grid_impl&>(rhs);
+    // Compare dims first
+    auto this_dims  = ::std::tie(dims_.x, dims_.y, dims_.z, dims_.t);
+    auto other_dims = ::std::tie(other.dims_.x, other.dims_.y, other.dims_.z, other.dims_.t);
+    if (this_dims < other_dims)
+    {
+      return -1;
+    }
+    if (other_dims < this_dims)
+    {
+      return 1;
+    }
+    // Then compare places
+    if (places_ < other.places_)
+    {
+      return -1;
+    }
+    if (other.places_ < places_)
+    {
+      return 1;
+    }
+    return 0;
+  }
+
+  size_t hash() const override
+  {
+    size_t h = ::cuda::experimental::stf::hash<dim4>{}(dims_);
+    for (const auto& p : places_)
+    {
+      hash_combine(h, p.hash());
+    }
+    return h;
+  }
+
+  // ===== Stream management =====
+
+  stream_pool& get_stream_pool(bool for_computation) const override
+  {
+    _CCCL_ASSERT(!for_computation, "Expected data transfer stream pool");
+    _CCCL_ASSERT(!places_.empty(), "Grid must have at least one place");
+    return places_[0].get_stream_pool(for_computation);
+  }
+
+  // ===== Grid iteration state =====
+
+  ::std::ptrdiff_t get_current_idx() const override
+  {
+    return current_idx_;
+  }
+
+  void set_current_idx(::std::ptrdiff_t idx) const override
+  {
+    current_idx_ = idx;
+  }
+
+  ::std::shared_ptr<exec_place::impl> get_saved_prev_impl() const override
+  {
+    return saved_prev_impl_;
+  }
+
+  void set_saved_prev_impl(::std::shared_ptr<exec_place::impl> p) const override
+  {
+    saved_prev_impl_ = mv(p);
+  }
+
+private:
+  dim4 dims_;
+  ::std::vector<exec_place> places_;
+  mutable ::std::ptrdiff_t current_idx_ = -1;
+  mutable ::std::shared_ptr<exec_place::impl> saved_prev_impl_;
 };
 
 //! Creates a grid of execution places with specified dimensions
@@ -1383,7 +1335,7 @@ inline exec_place make_grid(::std::vector<exec_place> places, const dim4& dims)
   {
     return mv(places[0]);
   }
-  return exec_place_grid(mv(places), dims);
+  return exec_place(::std::make_shared<exec_place_grid_impl>(mv(places), dims));
 }
 
 //! Creates a linear grid from a vector of execution places
@@ -1396,7 +1348,6 @@ inline exec_place make_grid(::std::vector<exec_place> places)
 }
 
 // === data_place::affine_exec_place implementation ===
-// Defined here after exec_place_grid is complete
 
 inline exec_place data_place::affine_exec_place() const
 {
@@ -1414,7 +1365,6 @@ inline exec_place data_place::affine_exec_place() const
   if (is_composite())
   {
     // Return the grid of places associated to this composite data place
-    // exec_place_grid inherits from exec_place, so this works via slicing
     return get_grid();
   }
 
@@ -1468,13 +1418,6 @@ inline exec_place exec_place::repeat(const exec_place& e, size_t cnt)
     return e;
   }
   return make_grid(::std::vector<exec_place>(cnt, e));
-}
-
-/* Deferred implementation : ::std::static_pointer_cast requires that exec_place_grid is a complete type */
-inline exec_place_grid exec_place::as_grid() const
-{
-  EXPECT(size() > 1, "as_grid() called on scalar exec_place");
-  return exec_place_grid(::std::static_pointer_cast<exec_place_grid::impl>(pimpl));
 }
 
 /* Get the first N available devices */
