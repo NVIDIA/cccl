@@ -51,7 +51,7 @@ def bench_reduce_custom(state: bench.State):
 
     state.add_element_count(num_items)
     state.add_global_memory_reads(num_items * d_in.dtype.itemsize, "Size")
-    state.add_global_memory_writes(1 * d_out.dtype.itemsize)
+    state.add_global_memory_writes(d_out.dtype.itemsize)
 
     def launcher(launch: bench.Launch):
         reducer(
