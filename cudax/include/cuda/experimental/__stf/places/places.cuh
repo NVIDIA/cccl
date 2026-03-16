@@ -807,16 +807,6 @@ public:
   }
 
   /**
-   * @brief Check if this is a grid execution place
-   *
-   * Returns true for any grid, including 1-element grids.
-   */
-  bool is_grid() const
-  {
-    return affine_data_place().is_invalid();
-  }
-
-  /**
    * @brief Get the dimension along a specific axis
    * @deprecated Use get_dims().get(axis_id) instead
    */
@@ -1483,7 +1473,7 @@ inline exec_place exec_place::repeat(const exec_place& e, size_t cnt)
 /* Deferred implementation : ::std::static_pointer_cast requires that exec_place_grid is a complete type */
 inline exec_place_grid exec_place::as_grid() const
 {
-  EXPECT(is_grid(), "as_grid() called on scalar exec_place");
+  EXPECT(size() > 1, "as_grid() called on scalar exec_place");
   return exec_place_grid(::std::static_pointer_cast<exec_place_grid::impl>(pimpl));
 }
 

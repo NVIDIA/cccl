@@ -550,8 +550,8 @@ public:
     // If there is a partitioner, we ensure there is a proper affine data place for this execution place
     if constexpr (!::std::is_same_v<partitioner_t, null_partition>)
     {
-      // Grids (including 1-element grids) need a composite data place
-      if (e_place.is_grid())
+      // Grids need a composite data place
+      if (e_place.size() > 1)
       {
         // Create a composite data place defined by the grid of places + the partitioning function
         t.set_affine_data_place(data_place::composite(partitioner_t(), e_place.as_grid()));
@@ -662,8 +662,8 @@ public:
       if (e_place.size() == 1)
       {
         // Apply the parallel_for construct over the entire shape on the
-        // execution place of the task. For 1-element grids, extract the element.
-        const exec_place& scalar_place = e_place.is_grid() ? e_place.get_place(0) : e_place;
+        // execution place of the task.
+        const exec_place& scalar_place = e_place;
         if constexpr (need_reduction)
         {
           do_parallel_for_redux(f, scalar_place, shape, t);

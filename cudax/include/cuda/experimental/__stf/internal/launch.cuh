@@ -335,7 +335,7 @@ public:
      *
      * An explicit composite data place is required per data dependency to customize this behaviour.
      */
-    if (e_place.is_grid())
+    if (e_place.size() > 1)
     {
       // Create a composite data place defined by the grid of places + the partitioning function
       t.set_affine_data_place(data_place::composite(blocked_partition(), e_place.as_grid()));
