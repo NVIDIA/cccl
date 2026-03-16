@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___PSTL_UNIQUE_COPY_H
-#define _CUDA_STD___PSTL_UNIQUE_COPY_H
+#ifndef _CUDA_STD___PSTL_UNIQUE_H
+#define _CUDA_STD___PSTL_UNIQUE_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,21 +24,15 @@
 #if !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__nvtx/nvtx.h>
-#  include <cuda/std/__algorithm/unique_copy.h>
+#  include <cuda/std/__algorithm/unique.h>
 #  include <cuda/std/__execution/policy.h>
-#  include <cuda/std/__functional/not_fn.h>
-#  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/concepts.h>
-#  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
-#  include <cuda/std/__iterator/next.h>
-#  include <cuda/std/__iterator/prev.h>
+#  include <cuda/std/__iterator/readable_traits.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
-#  include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #  include <cuda/std/__utility/move.h>
-#  include <cuda/std/tuple>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
 #    include <cuda/std/__pstl/cuda/unique.h>
@@ -50,46 +44,32 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
-_CCCL_TEMPLATE(class _Policy,
-               class _InputIterator,
-               class _OutputIterator,
-               class _BinaryPredicate = equal_to<iter_value_t<_InputIterator>>)
-_CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND __has_forward_traversal<_OutputIterator> _CCCL_AND
-                 is_execution_policy_v<_Policy>)
-_CCCL_HOST_API _OutputIterator unique_copy(
-  [[maybe_unused]] const _Policy& __policy,
-  _InputIterator __first,
-  _InputIterator __last,
-  _OutputIterator __result,
-  _BinaryPredicate __pred = {})
+_CCCL_TEMPLATE(class _Policy, class _InputIterator, class _BinaryPredicate = equal_to<iter_value_t<_InputIterator>>)
+_CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND is_execution_policy_v<_Policy>)
+_CCCL_HOST_API _InputIterator unique(
+  [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _BinaryPredicate __pred = {})
 {
   static_assert(indirect_binary_predicate<_BinaryPredicate, _InputIterator, _InputIterator>,
-                "cuda::std::unique_copy: BinaryPredicate must satisfy "
+                "cuda::std::unique: BinaryPredicate must satisfy "
                 "indirect_binary_predicate<BinaryPredicate, InputIterator, InputIterator>");
 
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__unique, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
-    _CCCL_NVTX_RANGE_SCOPE("cuda::std::unique_copy");
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::unique");
 
     if (__first == __last)
     {
-      return __result;
+      return __first;
     }
 
-    return __dispatch(
-      __policy,
-      ::cuda::std::move(__first),
-      ::cuda::std::move(__last),
-      ::cuda::std::move(__result),
-      ::cuda::std::move(__pred));
+    return __dispatch(__policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__pred));
   }
   else
   {
-    static_assert(__always_false_v<_Policy>, "Parallel cuda::std::unique_copy requires at least one selected backend");
-    return ::cuda::std::unique_copy(
-      ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__result), ::cuda::std::move(__pred));
+    static_assert(__always_false_v<_Policy>, "Parallel cuda::std::unique requires at least one selected backend");
+    return ::cuda::std::unique(::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__pred));
   }
 }
 
@@ -101,4 +81,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#endif // _CUDA_STD___PSTL_UNIQUE_COPY_H
+#endif // _CUDA_STD___PSTL_UNIQUE_H
