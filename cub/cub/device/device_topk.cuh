@@ -27,6 +27,7 @@
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__utility/move.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -248,25 +249,26 @@ struct DeviceTopK
   //!   @rst
   //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
   //!   @endrst
-  template <typename KeyInputIteratorT,
-            typename KeyOutputIteratorT,
-            typename ValueInputIteratorT,
-            typename ValueOutputIteratorT,
-            typename NumItemsT,
-            typename NumOutItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static //
+  template <
+    typename KeyInputIteratorT,
+    typename KeyOutputIteratorT,
+    typename ValueInputIteratorT,
+    typename ValueOutputIteratorT,
+    typename NumItemsT,
+    typename NumOutItemsT,
+    typename EnvT                 = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<!detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, EnvT>::value,
-                             cudaError_t>
-    MaxPairs(void* d_temp_storage,
-             size_t& temp_storage_bytes,
-             KeyInputIteratorT d_keys_in,
-             KeyOutputIteratorT d_keys_out,
-             ValueInputIteratorT d_values_in,
-             ValueOutputIteratorT d_values_out,
-             NumItemsT num_items,
-             NumOutItemsT k,
-             EnvT env = {})
+                             int> = 0>
+  CUB_RUNTIME_FUNCTION static cudaError_t MaxPairs(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    KeyInputIteratorT d_keys_in,
+    KeyOutputIteratorT d_keys_out,
+    ValueInputIteratorT d_values_in,
+    ValueOutputIteratorT d_values_out,
+    NumItemsT num_items,
+    NumOutItemsT k,
+    EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxPairs");
 
@@ -296,7 +298,8 @@ struct DeviceTopK
   //!
   //! - @devicestorage
   //!
-  //! .. versionadded:: 3.3.0
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -500,25 +503,26 @@ struct DeviceTopK
   //!   @rst
   //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
   //!   @endrst
-  template <typename KeyInputIteratorT,
-            typename KeyOutputIteratorT,
-            typename ValueInputIteratorT,
-            typename ValueOutputIteratorT,
-            typename NumItemsT,
-            typename NumOutItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static //
+  template <
+    typename KeyInputIteratorT,
+    typename KeyOutputIteratorT,
+    typename ValueInputIteratorT,
+    typename ValueOutputIteratorT,
+    typename NumItemsT,
+    typename NumOutItemsT,
+    typename EnvT                 = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<!detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, EnvT>::value,
-                             cudaError_t>
-    MinPairs(void* d_temp_storage,
-             size_t& temp_storage_bytes,
-             KeyInputIteratorT d_keys_in,
-             KeyOutputIteratorT d_keys_out,
-             ValueInputIteratorT d_values_in,
-             ValueOutputIteratorT d_values_out,
-             NumItemsT num_items,
-             NumOutItemsT k,
-             EnvT env = {})
+                             int> = 0>
+  CUB_RUNTIME_FUNCTION static cudaError_t MinPairs(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    KeyInputIteratorT d_keys_in,
+    KeyOutputIteratorT d_keys_out,
+    ValueInputIteratorT d_values_in,
+    ValueOutputIteratorT d_values_out,
+    NumItemsT num_items,
+    NumOutItemsT k,
+    EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinPairs");
 
@@ -548,7 +552,8 @@ struct DeviceTopK
   //!
   //! - @devicestorage
   //!
-  //! .. versionadded:: 3.3.0
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -739,21 +744,22 @@ struct DeviceTopK
   //!   @rst
   //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
   //!   @endrst
-  template <typename KeyInputIteratorT,
-            typename KeyOutputIteratorT,
-            typename NumItemsT,
-            typename NumOutItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static //
+  template <
+    typename KeyInputIteratorT,
+    typename KeyOutputIteratorT,
+    typename NumItemsT,
+    typename NumOutItemsT,
+    typename EnvT                 = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<!detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, EnvT>::value,
-                             cudaError_t>
-    MaxKeys(void* d_temp_storage,
-            size_t& temp_storage_bytes,
-            KeyInputIteratorT d_keys_in,
-            KeyOutputIteratorT d_keys_out,
-            NumItemsT num_items,
-            NumOutItemsT k,
-            EnvT env = {})
+                             int> = 0>
+  CUB_RUNTIME_FUNCTION static cudaError_t MaxKeys(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    KeyInputIteratorT d_keys_in,
+    KeyOutputIteratorT d_keys_out,
+    NumItemsT num_items,
+    NumOutItemsT k,
+    EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxKeys");
 
@@ -783,7 +789,8 @@ struct DeviceTopK
   //!
   //! - @devicestorage
   //!
-  //! .. versionadded:: 3.3.0
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -957,21 +964,22 @@ struct DeviceTopK
   //!   @rst
   //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
   //!   @endrst
-  template <typename KeyInputIteratorT,
-            typename KeyOutputIteratorT,
-            typename NumItemsT,
-            typename NumOutItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static //
+  template <
+    typename KeyInputIteratorT,
+    typename KeyOutputIteratorT,
+    typename NumItemsT,
+    typename NumOutItemsT,
+    typename EnvT                 = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<!detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, EnvT>::value,
-                             cudaError_t>
-    MinKeys(void* d_temp_storage,
-            size_t& temp_storage_bytes,
-            KeyInputIteratorT d_keys_in,
-            KeyOutputIteratorT d_keys_out,
-            NumItemsT num_items,
-            NumOutItemsT k,
-            EnvT env = {})
+                             int> = 0>
+  CUB_RUNTIME_FUNCTION static cudaError_t MinKeys(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    KeyInputIteratorT d_keys_in,
+    KeyOutputIteratorT d_keys_out,
+    NumItemsT num_items,
+    NumOutItemsT k,
+    EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinKeys");
 
@@ -1001,7 +1009,8 @@ struct DeviceTopK
   //!
   //! - @devicestorage
   //!
-  //! .. versionadded:: 3.3.0
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
