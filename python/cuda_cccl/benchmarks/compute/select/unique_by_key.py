@@ -54,34 +54,8 @@ def bench_unique_by_key(state: bench.State):
         stream=alloc_stream,
     )
 
-    # Generate random input values
     with alloc_stream:
-        if np.issubdtype(value_dtype, np.integer):
-            info = np.iinfo(value_dtype)
-            if np.dtype(value_dtype).itemsize >= 8:
-                # For int64/uint64: generate random int64 and view as target dtype
-                # to avoid overflow in cp.random.randint high parameter
-                d_in_values = cp.random.randint(
-                    np.iinfo(np.int64).min,
-                    np.iinfo(np.int64).max,
-                    size=num_elements,
-                    dtype=np.int64,
-                ).view(value_dtype)
-            else:
-                d_in_values = cp.random.randint(
-                    int(info.min),
-                    int(info.max) + 1,
-                    size=num_elements,
-                    dtype=np.int64,
-                ).astype(value_dtype)
-        elif np.issubdtype(value_dtype, np.complexfloating):
-            real = cp.random.uniform(-1, 1, size=num_elements).astype(np.float32)
-            imag = cp.random.uniform(-1, 1, size=num_elements).astype(np.float32)
-            d_in_values = (real + 1j * imag).astype(value_dtype)
-        else:
-            d_in_values = cp.random.uniform(-1, 1, size=num_elements).astype(
-                value_dtype
-            )
+        d_in_values = cp.zeros(num_elements, dtype=value_dtype)
 
         d_out_keys = cp.empty(num_elements, dtype=key_dtype)
         d_out_values = cp.empty(num_elements, dtype=value_dtype)
