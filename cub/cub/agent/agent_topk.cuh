@@ -57,7 +57,7 @@ struct AgentTopKPolicy
 };
 
 template <typename T, int BitsPerPass>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass);
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass);
 
 template <typename KeyT, bool IsFundamental = detail::radix::is_fundamental_type<KeyT>::value>
 struct key_prefix_storage_t;
@@ -87,7 +87,7 @@ struct key_prefix_storage_t<KeyT, false>
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = num_words - 1; i > 0; --i)
     {
-      words[i] = (words[i] << shift) | (words[i - 1] >> (32 - shift));
+      words[i] = __funnelshift_l(words[i - 1], words[i], shift);
     }
     words[0] = (words[0] << shift) | value;
   }
@@ -162,13 +162,13 @@ enum class candidate_class
 
 // Calculates the number of passes needed for a type T with BitsPerPass bits processed per pass.
 template <typename T>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes(int bits_per_pass)
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes(int bits_per_pass)
 {
   return ::cuda::ceil_div<int>(sizeof(T) * 8, bits_per_pass);
 }
 
 template <int BitsPerPass>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_num_passes(const int total_bits)
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_num_passes(const int total_bits)
 {
   return ::cuda::ceil_div<int>(total_bits, BitsPerPass);
 }
@@ -176,7 +176,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_num_passes(const int total_bits)
 // Calculates the starting bit for a given pass (bit 0 is the least significant (rightmost) bit).
 // We process the input from the most to the least significant bit. This way, we can skip some passes in the end.
 template <typename T, int BitsPerPass>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
 {
   int start_bit = int{sizeof(T)} * 8 - (pass + 1) * BitsPerPass;
   if (start_bit < 0)
@@ -187,7 +187,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
 }
 
 template <int BitsPerPass>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_start_bit(const int total_bits, const int pass)
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_start_bit(const int total_bits, const int pass)
 {
   int start_bit = total_bits - (pass + 1) * BitsPerPass;
   if (start_bit < 0)
@@ -199,7 +199,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_start_bit(const int total_bits, con
 
 // Used in the bin ID calculation to exclude bits unrelated to the current pass
 template <typename T, int BitsPerPass>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr unsigned calc_mask(const int pass)
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr unsigned calc_mask(const int pass)
 {
   int num_bits = calc_start_bit<T, BitsPerPass>(pass - 1) - calc_start_bit<T, BitsPerPass>(pass);
   return (1 << num_bits) - 1;
