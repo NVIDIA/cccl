@@ -255,16 +255,18 @@ struct DeviceTopK
             typename NumItemsT,
             typename NumOutItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t MaxPairs(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeyInputIteratorT d_keys_in,
-    KeyOutputIteratorT d_keys_out,
-    ValueInputIteratorT d_values_in,
-    ValueOutputIteratorT d_values_out,
-    NumItemsT num_items,
-    NumOutItemsT k,
-    EnvT env = {})
+  CUB_RUNTIME_FUNCTION static //
+    ::cuda::std::enable_if_t<!detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, EnvT>::value,
+                             cudaError_t>
+    MaxPairs(void* d_temp_storage,
+             size_t& temp_storage_bytes,
+             KeyInputIteratorT d_keys_in,
+             KeyOutputIteratorT d_keys_out,
+             ValueInputIteratorT d_values_in,
+             ValueOutputIteratorT d_values_out,
+             NumItemsT num_items,
+             NumOutItemsT k,
+             EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxPairs");
 
@@ -505,16 +507,18 @@ struct DeviceTopK
             typename NumItemsT,
             typename NumOutItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t MinPairs(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeyInputIteratorT d_keys_in,
-    KeyOutputIteratorT d_keys_out,
-    ValueInputIteratorT d_values_in,
-    ValueOutputIteratorT d_values_out,
-    NumItemsT num_items,
-    NumOutItemsT k,
-    EnvT env = {})
+  CUB_RUNTIME_FUNCTION static //
+    ::cuda::std::enable_if_t<!detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, EnvT>::value,
+                             cudaError_t>
+    MinPairs(void* d_temp_storage,
+             size_t& temp_storage_bytes,
+             KeyInputIteratorT d_keys_in,
+             KeyOutputIteratorT d_keys_out,
+             ValueInputIteratorT d_values_in,
+             ValueOutputIteratorT d_values_out,
+             NumItemsT num_items,
+             NumOutItemsT k,
+             EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinPairs");
 
@@ -740,14 +744,16 @@ struct DeviceTopK
             typename NumItemsT,
             typename NumOutItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t MaxKeys(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeyInputIteratorT d_keys_in,
-    KeyOutputIteratorT d_keys_out,
-    NumItemsT num_items,
-    NumOutItemsT k,
-    EnvT env = {})
+  CUB_RUNTIME_FUNCTION static //
+    ::cuda::std::enable_if_t<!detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, EnvT>::value,
+                             cudaError_t>
+    MaxKeys(void* d_temp_storage,
+            size_t& temp_storage_bytes,
+            KeyInputIteratorT d_keys_in,
+            KeyOutputIteratorT d_keys_out,
+            NumItemsT num_items,
+            NumOutItemsT k,
+            EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxKeys");
 
@@ -956,14 +962,16 @@ struct DeviceTopK
             typename NumItemsT,
             typename NumOutItemsT,
             typename EnvT = ::cuda::std::execution::env<>>
-  CUB_RUNTIME_FUNCTION static cudaError_t MinKeys(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeyInputIteratorT d_keys_in,
-    KeyOutputIteratorT d_keys_out,
-    NumItemsT num_items,
-    NumOutItemsT k,
-    EnvT env = {})
+  CUB_RUNTIME_FUNCTION static //
+    ::cuda::std::enable_if_t<!detail::radix::is_valid_decomposer<detail::it_value_t<KeyInputIteratorT>, EnvT>::value,
+                             cudaError_t>
+    MinKeys(void* d_temp_storage,
+            size_t& temp_storage_bytes,
+            KeyInputIteratorT d_keys_in,
+            KeyOutputIteratorT d_keys_out,
+            NumItemsT num_items,
+            NumOutItemsT k,
+            EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinKeys");
 
