@@ -72,28 +72,28 @@ def bench_compare_complex(state: bench.State):
             )
             d_in = (real + 1j * imag).astype(np.complex64)
             d_out = cp.empty(num_elements - 1, dtype=np.bool_)
+
+        num_items = num_elements - 1
+        transformer = make_binary_transform(d_in[:-1], d_in[1:], d_out, less_complex)
+
+        state.add_element_count(num_elements)
+        state.add_global_memory_reads(num_elements * d_in.dtype.itemsize)
+        state.add_global_memory_writes(num_elements * d_out.dtype.itemsize)
+
+        def launcher(launch: bench.Launch):
+            transformer(
+                d_in[:-1],
+                d_in[1:],
+                d_out,
+                less_complex,
+                num_items,
+                launch.get_stream(),
+            )
+
+        state.exec(launcher, batched=False)
     except (MemoryError, cp.cuda.memory.OutOfMemoryError):
         state.skip("Skipping: out of memory.")
         return
-
-    num_items = num_elements - 1
-    transformer = make_binary_transform(d_in[:-1], d_in[1:], d_out, less_complex)
-
-    state.add_element_count(num_elements)
-    state.add_global_memory_reads(num_elements * d_in.dtype.itemsize)
-    state.add_global_memory_writes(num_elements * d_out.dtype.itemsize)
-
-    def launcher(launch: bench.Launch):
-        transformer(
-            d_in[:-1],
-            d_in[1:],
-            d_out,
-            less_complex,
-            num_items,
-            launch.get_stream(),
-        )
-
-    state.exec(launcher, batched=False)
 
 
 if __name__ == "__main__":

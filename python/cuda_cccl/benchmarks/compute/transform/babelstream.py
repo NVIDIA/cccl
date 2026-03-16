@@ -56,25 +56,25 @@ def bench_mul(state: bench.State):
         with alloc_stream:
             c = cp.full(num_items, START_C, dtype=dtype)
             b = cp.full(num_items, START_B, dtype=dtype)
+
+        scalar = dtype(START_SCALAR)
+
+        def mul_op(ci):
+            return ci * scalar
+
+        transform = cuda.compute.make_unary_transform(c, b, mul_op)
+
+        state.add_element_count(num_items)
+        state.add_global_memory_reads(num_items * c.dtype.itemsize)
+        state.add_global_memory_writes(num_items * b.dtype.itemsize)
+
+        def launcher(launch: bench.Launch):
+            transform(c, b, mul_op, num_items, launch.get_stream())
+
+        state.exec(launcher, batched=False)
     except (MemoryError, cp.cuda.memory.OutOfMemoryError):
         state.skip("Skipping: out of memory.")
         return
-
-    scalar = dtype(START_SCALAR)
-
-    def mul_op(ci):
-        return ci * scalar
-
-    transform = cuda.compute.make_unary_transform(c, b, mul_op)
-
-    state.add_element_count(num_items)
-    state.add_global_memory_reads(num_items * c.dtype.itemsize)
-    state.add_global_memory_writes(num_items * b.dtype.itemsize)
-
-    def launcher(launch: bench.Launch):
-        transform(c, b, mul_op, num_items, launch.get_stream())
-
-    state.exec(launcher, batched=False)
 
 
 def bench_add(state: bench.State):
@@ -94,23 +94,23 @@ def bench_add(state: bench.State):
             a = cp.full(num_items, START_A, dtype=dtype)
             b = cp.full(num_items, START_B, dtype=dtype)
             c = cp.full(num_items, START_C, dtype=dtype)
+
+        def add_op(ai, bi):
+            return ai + bi
+
+        transform = cuda.compute.make_binary_transform(a, b, c, add_op)
+
+        state.add_element_count(num_items)
+        state.add_global_memory_reads(2 * num_items * a.dtype.itemsize)
+        state.add_global_memory_writes(num_items * c.dtype.itemsize)
+
+        def launcher(launch: bench.Launch):
+            transform(a, b, c, add_op, num_items, launch.get_stream())
+
+        state.exec(launcher, batched=False)
     except (MemoryError, cp.cuda.memory.OutOfMemoryError):
         state.skip("Skipping: out of memory.")
         return
-
-    def add_op(ai, bi):
-        return ai + bi
-
-    transform = cuda.compute.make_binary_transform(a, b, c, add_op)
-
-    state.add_element_count(num_items)
-    state.add_global_memory_reads(2 * num_items * a.dtype.itemsize)
-    state.add_global_memory_writes(num_items * c.dtype.itemsize)
-
-    def launcher(launch: bench.Launch):
-        transform(a, b, c, add_op, num_items, launch.get_stream())
-
-    state.exec(launcher, batched=False)
 
 
 def bench_triad(state: bench.State):
@@ -130,25 +130,25 @@ def bench_triad(state: bench.State):
             a = cp.full(num_items, START_A, dtype=dtype)
             b = cp.full(num_items, START_B, dtype=dtype)
             c = cp.full(num_items, START_C, dtype=dtype)
+
+        scalar = dtype(START_SCALAR)
+
+        def triad_op(bi, ci):
+            return bi + scalar * ci
+
+        transform = cuda.compute.make_binary_transform(b, c, a, triad_op)
+
+        state.add_element_count(num_items)
+        state.add_global_memory_reads(2 * num_items * a.dtype.itemsize)
+        state.add_global_memory_writes(num_items * a.dtype.itemsize)
+
+        def launcher(launch: bench.Launch):
+            transform(b, c, a, triad_op, num_items, launch.get_stream())
+
+        state.exec(launcher, batched=False)
     except (MemoryError, cp.cuda.memory.OutOfMemoryError):
         state.skip("Skipping: out of memory.")
         return
-
-    scalar = dtype(START_SCALAR)
-
-    def triad_op(bi, ci):
-        return bi + scalar * ci
-
-    transform = cuda.compute.make_binary_transform(b, c, a, triad_op)
-
-    state.add_element_count(num_items)
-    state.add_global_memory_reads(2 * num_items * a.dtype.itemsize)
-    state.add_global_memory_writes(num_items * a.dtype.itemsize)
-
-    def launcher(launch: bench.Launch):
-        transform(b, c, a, triad_op, num_items, launch.get_stream())
-
-    state.exec(launcher, batched=False)
 
 
 def bench_nstream(state: bench.State):
@@ -168,30 +168,30 @@ def bench_nstream(state: bench.State):
             a = cp.full(num_items, START_A, dtype=dtype)
             b = cp.full(num_items, START_B, dtype=dtype)
             c = cp.full(num_items, START_C, dtype=dtype)
+
+        scalar = dtype(START_SCALAR)
+
+        # Use ZipIterator to combine 3 inputs into one for unary transform
+        zip_in = ZipIterator(a, b, c)
+
+        def nstream_op(abc):
+            return abc[0] + abc[1] + scalar * abc[2]
+
+        transform = cuda.compute.make_unary_transform(zip_in, a, nstream_op)
+
+        state.add_element_count(num_items)
+        state.add_global_memory_reads(3 * num_items * a.dtype.itemsize)
+        state.add_global_memory_writes(num_items * a.dtype.itemsize)
+
+        def launcher(launch: bench.Launch):
+            # Update ZipIterator state for each iteration
+            zip_in_iter = ZipIterator(a, b, c)
+            transform(zip_in_iter, a, nstream_op, num_items, launch.get_stream())
+
+        state.exec(launcher, batched=False)
     except (MemoryError, cp.cuda.memory.OutOfMemoryError):
         state.skip("Skipping: out of memory.")
         return
-
-    scalar = dtype(START_SCALAR)
-
-    # Use ZipIterator to combine 3 inputs into one for unary transform
-    zip_in = ZipIterator(a, b, c)
-
-    def nstream_op(abc):
-        return abc[0] + abc[1] + scalar * abc[2]
-
-    transform = cuda.compute.make_unary_transform(zip_in, a, nstream_op)
-
-    state.add_element_count(num_items)
-    state.add_global_memory_reads(3 * num_items * a.dtype.itemsize)
-    state.add_global_memory_writes(num_items * a.dtype.itemsize)
-
-    def launcher(launch: bench.Launch):
-        # Update ZipIterator state for each iteration
-        zip_in_iter = ZipIterator(a, b, c)
-        transform(zip_in_iter, a, nstream_op, num_items, launch.get_stream())
-
-    state.exec(launcher, batched=False)
 
 
 # Registry of all BabelStream benchmarks
