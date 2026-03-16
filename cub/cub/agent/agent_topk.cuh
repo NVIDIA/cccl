@@ -75,12 +75,15 @@ struct key_prefix_storage_t<KeyT, true>
 template <typename KeyT>
 struct key_prefix_storage_t<KeyT, false>
 {
-  static constexpr int num_words = static_cast<int>((sizeof(KeyT) * 8 + 63) / 32);
+  static constexpr int num_words = ::cuda::ceil_div<int>(sizeof(KeyT) * 8 + 31, 32);
   unsigned int words[num_words];
 
-  // Precondition: 0 < shift < 32
+  // Funnel-shifts the entire bit-vector left by `shift` positions and inserts `value` into the
+  // vacated low bits. Each word receives carry bits from its lower neighbor (high-to-low order
+  // so each word reads its neighbor's original value). The final word is filled from `value`.
   _CCCL_DEVICE _CCCL_FORCEINLINE void shift_or(int shift, unsigned int value)
   {
+    _CCCL_ASSERT(shift > 0 && shift < 32, "shift_or requires 0 < shift < 32");
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = num_words - 1; i > 0; --i)
     {
