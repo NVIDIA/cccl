@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
@@ -15,8 +15,6 @@
 
 #include <cuda/std/__algorithm/upper_bound.h>
 #include <cuda/std/__bit/integral.h>
-#include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__cccl/visibility.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/tuple>
