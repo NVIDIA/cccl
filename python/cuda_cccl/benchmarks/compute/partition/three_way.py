@@ -107,7 +107,7 @@ def bench_three_way_partition(state: bench.State):
     state.add_global_memory_reads(num_elements * d_in.dtype.itemsize)
     state.add_global_memory_writes(num_elements * d_in.dtype.itemsize)
     # C++ reports add_global_memory_writes<offset_t>(1) — 1 element of offset type.
-    state.add_global_memory_writes(1 * d_num_selected_out.dtype.itemsize)
+    state.add_global_memory_writes(d_num_selected_out.dtype.itemsize)
 
     def launcher(launch: bench.Launch):
         partitioner(
