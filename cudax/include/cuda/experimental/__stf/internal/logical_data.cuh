@@ -1467,8 +1467,7 @@ public:
         continue;
       }
 
-      // TODO THIS MAY BE A BUG: do we care about managed devices or host?
-      const auto memory_node = data_place::device(static_cast<int>(n - 2));
+      const auto memory_node = from_index(n);
       // Skip the target memory node in this step
       if (memory_node == target_memory_node)
       {
@@ -1732,7 +1731,8 @@ inline void reserved::logical_data_untyped_impl::erase()
 
       data_instance& ref_instance  = get_data_instance(ref_id);
       const data_place& ref_dplace = ref_instance.get_dplace();
-      auto e                       = ref_dplace.affine_exec_place();
+      _CCCL_ASSERT(ref_dplace.is_resolved(), "ref_dplace must be resolved before erase");
+      auto e = ref_dplace.affine_exec_place();
       l.reconstruct_after_redux(ctx, ref_id, e, wb_prereqs);
 
       h_state.current_mode = access_mode::none;

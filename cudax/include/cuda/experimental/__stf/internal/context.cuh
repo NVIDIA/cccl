@@ -410,6 +410,22 @@ public:
     };
   }
 
+  cudaGraph_t graph() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return payload->*[&](auto& self) {
+      return self.graph();
+    };
+  }
+
+  size_t stage() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return payload->*[&](auto& self) {
+      return self.stage();
+    };
+  }
+
   /**
    * @brief Returns the number of tasks created since the context was created or since the last fence (if any)
    */
@@ -963,6 +979,20 @@ UNITTEST("context is_graph_ctx")
 
   context ctx2 = graph_ctx();
   EXPECT(ctx2.is_graph_ctx());
+  ctx2.finalize();
+};
+
+UNITTEST("context graph and stage")
+{
+  // stream_ctx: graph() is nullptr, stage() is size_t(-1)
+  context ctx;
+  EXPECT(ctx.graph() == nullptr);
+  ctx.finalize();
+
+  // graph_ctx: graph() and stage() delegate to backend
+  context ctx2 = graph_ctx();
+  ctx2.logical_data(1); // ensure context has been used so graph may be created
+  EXPECT(ctx2.graph() != nullptr);
   ctx2.finalize();
 };
 

@@ -94,7 +94,7 @@ struct __pstl_dispatch<__pstl_algorithm::__unique_copy, __execution_backend::__c
       ::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(__stream.device()), __policy);
 
     {
-      __temporary_storage<_OffsetType, decltype(__resource)> __storage{__stream, __resource, __num_bytes};
+      __temporary_storage<decltype(__resource), _OffsetType> __storage{__stream, __resource, __num_bytes, 1};
 
       _CCCL_TRY_CUDA_API(
         CUB_NS_QUALIFIER::DeviceSelect::Unique,
@@ -103,7 +103,7 @@ struct __pstl_dispatch<__pstl_algorithm::__unique_copy, __execution_backend::__c
         __num_bytes,
         ::cuda::std::move(__first),
         __result,
-        __storage.__get_result_iter(),
+        __storage.template __get_ptr<0>(),
         __count,
         ::cuda::std::move(__pred),
         __stream.get());
@@ -112,7 +112,7 @@ struct __pstl_dispatch<__pstl_algorithm::__unique_copy, __execution_backend::__c
         ::cudaMemcpyAsync,
         "__pstl_cuda_unique_copy: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),
-        __storage.__res_,
+        __storage.template __get_ptr<0>(),
         sizeof(_OffsetType),
         cudaMemcpyDefault,
         __stream.get());

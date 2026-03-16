@@ -6,7 +6,7 @@ scratch=/home/scratch."$USER"_sw
 node_selector="cpu.arch=x86_64 and gpu.product_name='*B200*'"
 container_image="rapidsai/devcontainers:26.02-cpp-gcc14-cuda13.0"
 jobtime="4:00:00"
-benchmark_preset="cub-benchmark"
+benchmark_preset="benchmark"
 
 batch_script=$scratch/batch.sh
 cat << BATCH_SCRIPT > $batch_script

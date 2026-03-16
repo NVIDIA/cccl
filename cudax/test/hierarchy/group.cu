@@ -21,33 +21,73 @@
 
 #include <cuda/experimental/hierarchy.cuh>
 
+#include <cooperative_groups.h>
+
 #include "testing.cuh"
 
-template <class... GArgs, class T, cuda::std::size_t N>
-[[nodiscard]] __device__ T sum(cudax::thread_group<GArgs...> group, T (&array)[N])
+template <class Hierarchy, class T, cuda::std::size_t N>
+__device__ T sum(cudax::this_thread<Hierarchy> group, T (&array)[N])
 {
   return cub::ThreadReduce(array, cuda::std::plus<T>{});
 }
 
-template <class... GArgs, class T, cuda::std::size_t N>
-[[nodiscard]] __device__ T sum(cudax::warp_group<GArgs...> group, T (&array)[N])
+template <class Hierarchy, class T, cuda::std::size_t N>
+__device__ T sum(cudax::this_warp<Hierarchy> group, T (&array)[N])
 {
   using WarpReduce = cub::WarpReduce<T>;
 
-  __shared__ typename WarpReduce::TempStorage temp_storage;
+  __shared__ typename WarpReduce::TempStorage scratch;
 
   const auto partial = cub::ThreadReduce(array, cuda::std::plus<T>{});
-  return WarpReduce{temp_storage}.Sum(partial);
+  return WarpReduce{scratch}.Sum(partial);
 }
 
-template <class... GArgs, class T, cuda::std::size_t N>
-[[nodiscard]] __device__ T sum(cudax::block_group<GArgs...> group, T (&array)[N])
+template <class Hierarchy, class T, cuda::std::size_t N>
+__device__ T sum(cudax::this_block<Hierarchy> group, T (&array)[N])
 {
-  // todo: Replace 32 with value from group.
+  // todo: support other block sizes
   using BlockReduce = cub::BlockReduce<T, 32>;
 
-  __shared__ typename BlockReduce::TempStorage temp_storage;
-  return BlockReduce{temp_storage}.Sum(array);
+  __shared__ typename BlockReduce::TempStorage scratch;
+  return BlockReduce{scratch}.Sum(array);
+}
+
+template <class Hierarchy, class T, cuda::std::size_t N>
+__device__ T sum(cudax::this_cluster<Hierarchy> group, T (&array)[N])
+{
+  // todo: support other block sizes
+  using BlockReduce = cub::BlockReduce<T, 32>;
+  union SMem
+  {
+    typename BlockReduce::TempStorage block_scratch;
+    T cluster_scratch;
+  };
+
+  __shared__ SMem smem;
+  T result = BlockReduce{smem.block_scratch}.Sum(array);
+
+  NV_IF_TARGET(NV_PROVIDES_SM_90, ({
+                 const auto dsmem = static_cast<T*>(__cluster_map_shared_rank(&smem.cluster_scratch, 0));
+
+                 if (cuda::gpu_thread.rank(group) == 0)
+                 {
+                   smem.cluster_scratch = 0;
+                 }
+                 group.sync();
+
+                 if (cuda::gpu_thread.rank(cuda::block, group.hierarchy()) == 0)
+                 {
+                   atomicAdd(dsmem, result);
+                 }
+                 group.sync();
+
+                 if (cuda::gpu_thread.rank(group) == 0)
+                 {
+                   result = smem.cluster_scratch;
+                 }
+               }))
+
+  return result;
 }
 
 struct TestKernel
@@ -58,8 +98,7 @@ struct TestKernel
     {
       unsigned array[]{1, 2, 3};
 
-      auto this_thread = cudax::this_thread(config);
-
+      cudax::this_thread this_thread{config};
       this_thread.sync();
 
       const auto result = sum(this_thread, array);
@@ -79,7 +118,7 @@ struct TestKernel
     {
       unsigned array[]{1, 2, 3};
 
-      auto this_warp = cudax::this_warp(config);
+      cudax::this_warp this_warp{config};
       this_warp.sync();
 
       const auto result = sum(this_warp, array);
@@ -102,7 +141,7 @@ struct TestKernel
     {
       unsigned array[]{1, 2, 3};
 
-      auto this_block = cudax::this_block(config);
+      cudax::this_block this_block{config};
       this_block.sync();
 
       const auto result = sum(this_block, array);
@@ -123,10 +162,16 @@ struct TestKernel
       CUDAX_REQUIRE(this_block.rank(cuda::grid) == cuda::block.rank(cuda::grid));
     }
     {
-      auto this_cluster = cudax::this_cluster(config);
-      CUDAX_REQUIRE(this_cluster.count(cuda::grid) == cuda::cluster.count(cuda::grid));
-      CUDAX_REQUIRE(this_cluster.rank(cuda::grid) == cuda::cluster.rank(cuda::grid));
+      unsigned array[]{1, 2, 3};
+
+      cudax::this_cluster this_cluster{config};
       this_cluster.sync();
+
+      const auto result = sum(this_cluster, array);
+      if (cuda::gpu_thread.rank(cuda::cluster) == 0)
+      {
+        CUDAX_REQUIRE(result == 6 * cuda::gpu_thread.count(cuda::cluster));
+      }
 
       CUDAX_REQUIRE(cuda::gpu_thread.count(this_cluster) == cuda::gpu_thread.count(cuda::cluster));
       CUDAX_REQUIRE(cuda::gpu_thread.rank(this_cluster) == cuda::gpu_thread.rank(cuda::cluster));
@@ -140,7 +185,7 @@ struct TestKernel
       CUDAX_REQUIRE(this_cluster.rank(cuda::grid) == cuda::cluster.rank(cuda::grid));
     }
     {
-      auto this_grid = cudax::this_grid(config);
+      cudax::this_grid this_grid{config};
       this_grid.sync();
 
       CUDAX_REQUIRE(cuda::gpu_thread.count(this_grid) == cuda::gpu_thread.count(cuda::grid));
@@ -163,9 +208,66 @@ C2H_TEST("Hierarchy groups", "[hierarchy]")
 
   const cuda::stream stream{device};
 
-  const auto config = cuda::make_config(cuda::grid_dims<2>(), cuda::block_dims<32>(), cuda::cooperative_launch{});
+  if (cuda::device_attributes::compute_capability(device) >= cuda::compute_capability{90})
+  {
+    const auto config = cuda::make_config(
+      cuda::grid_dims<2>(), cuda::cluster_dims<3>(), cuda::block_dims<32>(), cuda::cooperative_launch{});
+    cuda::launch(stream, config, TestKernel{});
+  }
+  else
+  {
+    const auto config = cuda::make_config(cuda::grid_dims<2>(), cuda::block_dims<32>(), cuda::cooperative_launch{});
+    cuda::launch(stream, config, TestKernel{});
+  }
 
-  cuda::launch(stream, config, TestKernel{});
+  stream.sync();
+}
+
+struct CgInteropKernel
+{
+  template <class Config>
+  __device__ void operator()(const Config& config)
+  {
+    {
+      cudax::this_thread g{cooperative_groups::this_thread()};
+      g.sync();
+    }
+    {
+      cudax::this_block g{cooperative_groups::this_thread_block()};
+      g.sync();
+    }
+#if defined(_CG_HAS_CLUSTER_GROUP)
+    {
+      NV_IF_TARGET(NV_PROVIDES_SM_90, ({
+                     cudax::this_cluster g{cooperative_groups::this_cluster()};
+                     g.sync();
+                   }))
+    }
+#endif // _CG_HAS_CLUSTER_GROUP
+    {
+      cudax::this_grid g{cooperative_groups::this_grid()};
+      g.sync();
+    }
+  }
+};
+
+C2H_TEST("Groups interoperability with coopertive groups", "[hierarchy][cg_interop]")
+{
+  const auto device = cuda::devices[0];
+
+  const cuda::stream stream{device};
+
+  if (cuda::device_attributes::compute_capability(device) >= cuda::compute_capability{90})
+  {
+    const auto config = cuda::make_config(
+      cuda::grid_dims<2>(), cuda::cluster_dims<3>(), cuda::block_dims<32>(), cuda::cooperative_launch{});
+    cuda::launch(stream, config, CgInteropKernel{});
+  }
+  else
+  {
+    const auto config = cuda::make_config(cuda::grid_dims<2>(), cuda::block_dims<32>(), cuda::cooperative_launch{});
+    cuda::launch(stream, config, CgInteropKernel{});
+  }
 
   stream.sync();
 }

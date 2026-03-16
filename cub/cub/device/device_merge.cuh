@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/env_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_merge.cuh>
 #include <cub/util_namespace.cuh>
 
@@ -106,6 +107,112 @@ struct DeviceMerge
   //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
+  //! Merges two sorted sequences of values (called keys) into a sorted output sequence. Merging is unstable,
+  //! which means any two equivalent values (neither value is ordered before the other) may be written to the output
+  //! sequence in any order.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_merge_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin merge-keys-env
+  //!     :end-before: example-end merge-keys-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyIteratorIn1
+  //!   **[deduced]** Random access iterator to the first sorted input sequence. Must have the same
+  //!   value type as KeyIteratorIn2.
+  //!
+  //! @tparam KeyIteratorIn2
+  //!   **[deduced]** Random access iterator to the second sorted input sequence. Must have the
+  //!   same value type as KeyIteratorIn1.
+  //!
+  //! @tparam KeyIteratorOut
+  //!   **[deduced]** Random access iterator to the output sequence.
+  //!
+  //! @tparam CompareOp
+  //!   **[deduced]** Binary predicate to compare the input iterator's value types. Must have a
+  //!   signature equivalent to `bool operator()(Key lhs, Key rhs)` and establish a [strict weak ordering].
+  //!
+  //! @tparam EnvT
+  //!   **[deduced]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] keys_in1
+  //!   Iterator to the beginning of the first sorted input sequence.
+  //!
+  //! @param[in] num_keys1
+  //!   Number of keys in the first input sequence.
+  //!
+  //! @param[in] keys_in2
+  //!   Iterator to the beginning of the second sorted input sequence.
+  //!
+  //! @param[in] num_keys2
+  //!   Number of keys in the second input sequence.
+  //!
+  //! @param[out] keys_out
+  //!   Iterator to the beginning of the output sequence.
+  //!
+  //! @param[in] compare_op
+  //!   Comparison function object, returning true if the first argument is ordered before the
+  //!   second. Must establish a [strict weak ordering].
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  //! [strict weak ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
+  template <
+    typename KeyIteratorIn1,
+    typename KeyIteratorIn2,
+    typename KeyIteratorOut,
+    typename CompareOp = ::cuda::std::less<>,
+    typename EnvT      = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<
+      !::cuda::std::is_same_v<KeyIteratorIn1, void*> && !::cuda::std::is_same_v<KeyIteratorIn1, ::cuda::std::nullptr_t>,
+      int> = 0,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MergeKeys(
+    KeyIteratorIn1 keys_in1,
+    ::cuda::std::int64_t num_keys1,
+    KeyIteratorIn2 keys_in2,
+    ::cuda::std::int64_t num_keys2,
+    KeyIteratorOut keys_out,
+    CompareOp compare_op = {},
+    EnvT env             = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMerge::MergeKeys");
+
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        return detail::merge::dispatch(
+          d_temp_storage,
+          temp_storage_bytes,
+          keys_in1,
+          static_cast<NullType*>(nullptr),
+          num_keys1,
+          keys_in2,
+          static_cast<NullType*>(nullptr),
+          num_keys2,
+          keys_out,
+          static_cast<NullType*>(nullptr),
+          compare_op,
+          stream);
+      });
+  }
+
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //! Merges two sorted sequences of key-value pairs into a sorted output sequence. Merging is unstable,
   //! which means any two equivalent values (neither value is ordered before the other) may be written to the output
   //! sequence in any order.
@@ -190,6 +297,139 @@ struct DeviceMerge
       values_out,
       compare_op,
       stream);
+  }
+
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //! Merges two sorted sequences of key-value pairs into a sorted output sequence. Merging is unstable,
+  //! which means any two equivalent values (neither value is ordered before the other) may be written to the output
+  //! sequence in any order.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_merge_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin merge-pairs-env
+  //!     :end-before: example-end merge-pairs-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyIteratorIn1
+  //!   **[deduced]** Random access iterator to the keys of the first sorted input sequence. Must
+  //!   have the same value type as KeyIteratorIn2.
+  //!
+  //! @tparam ValueIteratorIn1
+  //!   **[deduced]** Random access iterator to the values of the first sorted input sequence.
+  //!   Must have the same value type as ValueIteratorIn2.
+  //!
+  //! @tparam KeyIteratorIn2
+  //!   **[deduced]** Random access iterator to the second sorted input sequence. Must have the
+  //!   same value type as KeyIteratorIn1.
+  //!
+  //! @tparam ValueIteratorIn2
+  //!   **[deduced]** Random access iterator to the values of the second sorted input sequence.
+  //!   Must have the same value type as ValueIteratorIn1.
+  //!
+  //! @tparam KeyIteratorOut
+  //!   **[deduced]** Random access iterator to the keys of the output sequence.
+  //!
+  //! @tparam ValueIteratorOut
+  //!   **[deduced]** Random access iterator to the values of the output sequence.
+  //!
+  //! @tparam CompareOp
+  //!   **[deduced]** Binary predicate to compare the key input iterator's value types. Must have a
+  //!   signature equivalent to `bool operator()(Key lhs, Key rhs)` and establish a [strict weak ordering].
+  //!
+  //! @tparam EnvT
+  //!   **[deduced]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] keys_in1
+  //!   Iterator to the beginning of the keys of the first sorted input sequence.
+  //!
+  //! @param[in] values_in1
+  //!   Iterator to the beginning of the values of the first sorted input sequence.
+  //!
+  //! @param[in] num_pairs1
+  //!   Number of key-value pairs in the first input sequence.
+  //!
+  //! @param[in] keys_in2
+  //!   Iterator to the beginning of the keys of the second sorted input sequence.
+  //!
+  //! @param[in] values_in2
+  //!   Iterator to the beginning of the values of the second sorted input sequence.
+  //!
+  //! @param[in] num_pairs2
+  //!   Number of key-value pairs in the second input sequence.
+  //!
+  //! @param[out] keys_out
+  //!   Iterator to the beginning of the keys of the output sequence.
+  //!
+  //! @param[out] values_out
+  //!   Iterator to the beginning of the values of the output sequence.
+  //!
+  //! @param[in] compare_op
+  //!   Comparison function object, returning true if the first argument is ordered before the
+  //!   second. Must establish a [strict weak ordering].
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  //! [strict weak ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
+  template <
+    typename KeyIteratorIn1,
+    typename ValueIteratorIn1,
+    typename KeyIteratorIn2,
+    typename ValueIteratorIn2,
+    typename KeyIteratorOut,
+    typename ValueIteratorOut,
+    typename CompareOp = ::cuda::std::less<>,
+    typename EnvT      = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<
+      !::cuda::std::is_same_v<KeyIteratorIn1, void*> && !::cuda::std::is_same_v<KeyIteratorIn1, ::cuda::std::nullptr_t>,
+      int> = 0,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MergePairs(
+    KeyIteratorIn1 keys_in1,
+    ValueIteratorIn1 values_in1,
+    ::cuda::std::int64_t num_pairs1,
+    KeyIteratorIn2 keys_in2,
+    ValueIteratorIn2 values_in2,
+    ::cuda::std::int64_t num_pairs2,
+    KeyIteratorOut keys_out,
+    ValueIteratorOut values_out,
+    CompareOp compare_op = {},
+    EnvT env             = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceMerge::MergePairs");
+
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        return detail::merge::dispatch(
+          d_temp_storage,
+          temp_storage_bytes,
+          keys_in1,
+          values_in1,
+          num_pairs1,
+          keys_in2,
+          values_in2,
+          num_pairs2,
+          keys_out,
+          values_out,
+          compare_op,
+          stream);
+      });
   }
 };
 

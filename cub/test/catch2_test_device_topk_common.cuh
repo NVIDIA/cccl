@@ -65,7 +65,7 @@ struct get_output_size_op
   __device__ __forceinline__ cuda::std::int64_t operator()(cuda::std::int64_t segment_id) const
   {
     const auto segment_size = offset_it[segment_id + 1] - offset_it[segment_id];
-    return ::cuda::std::min(static_cast<cuda::std::int64_t>(k_it[segment_id]), segment_size);
+    return (cuda::std::min) (static_cast<cuda::std::int64_t>(k_it[segment_id]), segment_size);
   }
 };
 
@@ -116,7 +116,7 @@ struct set_bit_flag_for_write_op
   template <typename OffsetT, typename T>
   __host__ __device__ void operator()(OffsetT index, T val)
   {
-    static_assert(::cuda::std::is_integral<T>::value, "set_bit_for_element_op requires values to be of integral type");
+    static_assert(cuda::std::is_integral<T>::value, "set_bit_for_element_op requires values to be of integral type");
     set_bit_flag(d_element_flags, static_cast<OffsetT>(val));
     set_bit_flag(d_index_flags, index);
   }
@@ -179,8 +179,8 @@ public:
   check_unordered_output_helper(std::size_t num_elements)
       : num_elements(num_elements)
   {
-    element_flags.resize(::cuda::ceil_div(num_elements, bits_per_element), 0);
-    index_flags.resize(::cuda::ceil_div(num_elements, bits_per_element), 0);
+    element_flags.resize(cuda::ceil_div(num_elements, bits_per_element), 0);
+    index_flags.resize(cuda::ceil_div(num_elements, bits_per_element), 0);
   }
 
   // Prepares and returns a tabulate_output_iterator that checks whether the correct result has been written at each

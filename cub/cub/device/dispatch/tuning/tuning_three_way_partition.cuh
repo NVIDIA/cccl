@@ -17,14 +17,24 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
+#include <cub/detail/delay_constructor.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
+
+#include <cuda/__device/arch_id.h>
+#include <cuda/std/concepts>
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::three_way_partition
 {
+// TODO(bgruber): drop in CCCL 4.0
 template <typename PolicyT, typename = void>
 struct ThreeWayPartitionPolicyWrapper : PolicyT
 {
@@ -33,6 +43,7 @@ struct ThreeWayPartitionPolicyWrapper : PolicyT
   {}
 };
 
+// TODO(bgruber): drop in CCCL 4.0
 template <typename StaticPolicyT>
 struct ThreeWayPartitionPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<typename StaticPolicyT::ThreeWayPartitionPolicy>>
     : StaticPolicyT
@@ -54,6 +65,7 @@ struct ThreeWayPartitionPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<typenam
 #endif
 };
 
+// TODO(bgruber): drop in CCCL 4.0
 template <typename PolicyT>
 _CCCL_HOST_DEVICE ThreeWayPartitionPolicyWrapper<PolicyT> MakeThreeWayPartitionPolicyWrapper(PolicyT policy)
 {
@@ -415,6 +427,310 @@ struct policy_hub
   };
 
   using MaxPolicy = Policy1000;
+};
+
+struct three_way_partition_policy
+{
+  int block_threads;
+  int items_per_thread;
+  BlockLoadAlgorithm load_algorithm;
+  CacheLoadModifier load_modifier;
+  BlockScanAlgorithm block_scan_algorithm;
+  delay_constructor_policy delay_constructor;
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator==(const three_way_partition_policy& lhs, const three_way_partition_policy& rhs)
+  {
+    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
+        && lhs.block_scan_algorithm == rhs.block_scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator!=(const three_way_partition_policy& lhs, const three_way_partition_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const three_way_partition_policy& policy)
+  {
+    return os
+        << "three_way_partition_policy { .block_threads = " << policy.block_threads
+        << ", .items_per_thread = " << policy.items_per_thread << ", .load_algorithm = " << policy.load_algorithm
+        << ", .load_modifier = " << policy.load_modifier << ", .block_scan_algorithm = " << policy.block_scan_algorithm
+        << ", .delay_constructor = " << policy.delay_constructor << " }";
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+};
+
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept three_way_partition_policy_selector = policy_selector<T, three_way_partition_policy>;
+#endif // _CCCL_HAS_CONCEPTS()
+
+struct policy_selector
+{
+  type_t input_type;
+  int input_size;
+  int offset_size;
+
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> three_way_partition_policy
+  {
+    const auto default_policy = three_way_partition_policy{
+      256,
+      nominal_4B_items_to_items(9, input_size),
+      BLOCK_LOAD_DIRECT,
+      LOAD_DEFAULT,
+      BLOCK_SCAN_WARP_SCANS,
+      default_delay_constructor_policy(true)}; // we assume that the OffsetT is trivially copyable
+
+    if (arch >= ::cuda::arch_id::sm_100)
+    {
+      // offset_size == 4 && input_size == 1
+      // trp_0.ipt_12.tpb_256.ns_792.dcid_6.l2w_365 1.063960  0.978016  1.072833  1.301435
+      // This tuning regressed during validation, so we disabled it and fall back to the SM90 tuning
+
+      // offset_size == 4 && input_size == 2
+      // trp_1.ipt_14.tpb_288.ns_496.dcid_6.l2w_400 1.170449  1.123515  1.170428  1.252066
+      // This tuning regressed during validation, so we disabled it and fall back to the SM90 tuning
+
+      if (offset_size == 4 && input_size == 4)
+      {
+        return three_way_partition_policy{
+          512,
+          11,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 72, 840}};
+      }
+      if (offset_size == 4 && input_size == 8)
+      {
+        return three_way_partition_policy{
+          256,
+          10,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 8, 845}};
+      }
+
+      // TODO(gonidelis): Add tunings for I128.
+
+      if (offset_size == 8 && input_size == 2)
+      {
+        // trp_1.ipt_20.tpb_768.ns_544.dcid_5.l2w_500 1.064438  1.000000  1.069149  1.200658
+        return three_way_partition_policy{
+          768,
+          20,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 544, 500}};
+      }
+
+      if (offset_size == 8 && input_size == 4)
+      {
+        // trp_1.ipt_15.tpb_768.ns_144.dcid_6.l2w_280 1.099504  1.002083  1.095122  1.352941
+        return three_way_partition_policy{
+          768,
+          15,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 144, 280}};
+      }
+
+      if (offset_size == 8 && input_size == 8)
+      {
+        // trp_1.ipt_14.tpb_320.ns_872.dcid_7.l2w_620 1.083194  1.000000  1.078944  1.315789
+        return three_way_partition_policy{
+          320,
+          14,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::exponential_backon, 872, 620}};
+      }
+
+      // TODO(gonidelis): Add tunings for I128.
+
+      // fall through to SM90
+    }
+
+    if (arch >= ::cuda::arch_id::sm_90)
+    {
+      if (offset_size == 4 && input_size == 1)
+      {
+        return three_way_partition_policy{
+          256,
+          12,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 445}};
+      }
+      if (offset_size == 4 && input_size == 2)
+      {
+        return three_way_partition_policy{
+          256,
+          12,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::fixed_delay, 104, 512}};
+      }
+      if (offset_size == 4 && input_size == 4)
+      {
+        return three_way_partition_policy{
+          320,
+          12,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1105}};
+      }
+      if (offset_size == 4 && input_size == 8)
+      {
+        return three_way_partition_policy{
+          384,
+          7,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::fixed_delay, 464, 1165}};
+      }
+      if (offset_size == 4 && input_size == 16)
+      {
+        return three_way_partition_policy{
+          128,
+          7,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1040}};
+      }
+      if (offset_size == 8 && input_size == 1)
+      {
+        return three_way_partition_policy{
+          256,
+          24,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::fixed_delay, 4, 285}};
+      }
+      if (offset_size == 8 && input_size == 2)
+      {
+        return three_way_partition_policy{
+          640,
+          24,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 245}};
+      }
+      if (offset_size == 8 && input_size == 4)
+      {
+        return three_way_partition_policy{
+          256,
+          23,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 910}};
+      }
+      if (offset_size == 8 && input_size == 8)
+      {
+        return three_way_partition_policy{
+          256,
+          18,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1145}};
+      }
+      if (offset_size == 8 && input_size == 16)
+      {
+        return three_way_partition_policy{
+          256,
+          11,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1050}};
+      }
+      return default_policy;
+    }
+
+    if (arch >= ::cuda::arch_id::sm_86)
+    {
+      return default_policy;
+    }
+
+    if (arch >= ::cuda::arch_id::sm_80)
+    {
+      if (offset_size == 4 && input_size == 2)
+      {
+        return three_way_partition_policy{
+          256,
+          12,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 910}};
+      }
+      if (offset_size == 4 && input_size == 4)
+      {
+        return three_way_partition_policy{
+          256,
+          11,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1120}};
+      }
+      if (offset_size == 4 && input_size == 8)
+      {
+        return three_way_partition_policy{
+          224,
+          11,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::fixed_delay, 264, 1080}};
+      }
+      if (offset_size == 4 && input_size == 16)
+      {
+        return three_way_partition_policy{
+          128,
+          10,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::fixed_delay, 672, 1120}};
+      }
+      return default_policy;
+    }
+
+    // from SM50
+    return default_policy;
+  }
+};
+
+#if _CCCL_HAS_CONCEPTS()
+static_assert(three_way_partition_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
+
+template <typename InputT, typename OffsetT>
+struct policy_selector_from_types
+{
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> three_way_partition_policy
+  {
+    constexpr auto selector = policy_selector{classify_type<InputT>, int{sizeof(InputT)}, int{sizeof(OffsetT)}};
+    return selector(arch);
+  }
 };
 } // namespace detail::three_way_partition
 

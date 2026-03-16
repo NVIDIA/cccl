@@ -99,7 +99,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform_reduce, __execution_backend
       ::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(__stream.device()), __policy);
 
     {
-      __temporary_storage<_Tp, decltype(__resource)> __storage{__stream, __resource, __num_bytes};
+      __temporary_storage<decltype(__resource), _Tp> __storage{__stream, __resource, __num_bytes, 1};
 
       // Run the reduction
       _CCCL_TRY_CUDA_API(
@@ -108,7 +108,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform_reduce, __execution_backend
         __storage.__get_temp_storage(),
         __num_bytes,
         ::cuda::std::move(__first),
-        __storage.template __get_result_iter<_AccumT>(),
+        __storage.template __get_ptr<0, _AccumT>(),
         __count,
         ::cuda::std::move(__reduction_op),
         ::cuda::std::move(__transform_op),
@@ -120,7 +120,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform_reduce, __execution_backend
         ::cudaMemcpyAsync,
         "__pstl_cuda_transformm_reduce: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),
-        __storage.__res_,
+        __storage.template __get_ptr<0>(),
         sizeof(_Tp),
         ::cudaMemcpyDefault,
         __stream.get());

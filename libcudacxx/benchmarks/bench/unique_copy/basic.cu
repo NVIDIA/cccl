@@ -10,8 +10,8 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/sequence.h>
 #include <thrust/transform.h>
+#include <thrust/unique.h>
 
 #include <cuda/memory_pool>
 #include <cuda/std/__pstl_algorithm>

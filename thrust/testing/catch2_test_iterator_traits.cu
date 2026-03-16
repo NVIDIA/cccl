@@ -4,6 +4,8 @@
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 
+#include <cuda/iterator>
+
 #include <vector>
 
 #include "catch2_test_helper.h"

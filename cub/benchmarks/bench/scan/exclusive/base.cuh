@@ -7,23 +7,12 @@
 
 #include <cuda/std/__functional/invoke.h>
 
-#include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
 
 #if !TUNE_BASE
-#  if TUNE_TRANSPOSE == 0
-#    define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_DIRECT
-#    define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_DIRECT
-#  else // TUNE_TRANSPOSE == 1
-#    define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_WARP_TRANSPOSE
-#    define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_WARP_TRANSPOSE
-#  endif // TUNE_TRANSPOSE
-
-#  if TUNE_LOAD == 0
-#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  elif TUNE_LOAD == 1
-#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_LOAD
+#  if !USES_WARPSPEED()
+#    include <look_back_helper.cuh>
+#  endif // !USES_WARPSPEED()
 #endif // TUNE_BASE
 
 #include "../policy_selector.h"
@@ -38,6 +27,9 @@ try
   using input_it_t     = const T*;
   using output_it_t    = T*;
   using offset_t       = cub::detail::choose_offset_t<OffsetT>;
+#if USES_WARPSPEED()
+  static_assert(sizeof(offset_t) == sizeof(size_t)); // warpspeed scan uses size_t internally
+#endif // USES_WARPSPEED()
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   if (sizeof(offset_t) == 4 && elements > std::numeric_limits<offset_t>::max())
@@ -95,7 +87,7 @@ catch (const std::bad_alloc&)
   state.skip("Skipping: out of memory.");
 }
 
-NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(all_types, offset_types))
+NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(all_types, scan_offset_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 32, 4));

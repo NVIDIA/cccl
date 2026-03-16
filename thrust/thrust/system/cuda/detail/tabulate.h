@@ -20,6 +20,7 @@
 #  include <thrust/system/cuda/execution_policy.h>
 
 #  include <cuda/__functional/address_stability.h>
+#  include <cuda/__iterator/counting_iterator.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/incrementable_traits.h>
 
