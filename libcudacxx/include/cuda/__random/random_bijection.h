@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/random.h>
 #include <cuda/__random/feistel_bijection.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -37,7 +38,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! @tparam _IndexType The type of the index to shuffle. Defaults to uint64_t.
 //! @tparam _Bijection The __bijection to use. A low quality random __bijection may lead to poor work balancing between
 //! calls to the operator(). Defaults to a feistel bijetion
-template <class _IndexType = ::cuda::std::uint64_t, class _Bijection = __feistel_bijection>
+template <class _IndexType, class _Bijection>
 class random_bijection
 {
 private:

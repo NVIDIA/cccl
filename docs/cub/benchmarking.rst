@@ -21,10 +21,10 @@ Starting from scratch:
     cd cccl
     mkdir build
     cd build
-    cmake .. --preset=cub-benchmark
+    cmake .. --preset=benchmark
 
 You clone the repository, create a build directory and configure the build with CMake.
-The preset `cub-benchmark` takes care of everything.
+The preset `benchmark` takes care of everything.
 
 .. TODO(bgruber): do we have a public NVIDIA maintained table I can link here instead?
 
@@ -340,7 +340,7 @@ With cmake, you can just add `-DCMAKE_CUDA_FLAGS=-lineinfo` when invoking cmake 
 
 .. code-block:: bash
 
-    cmake .. --preset=cub-benchmark -DCMAKE_CUDA_FLAGS=-lineinfo
+    cmake .. --preset=benchmark -DCMAKE_CUDA_FLAGS=-lineinfo
 
 To profile the kernels, use the `ncu` command.
 A typical invocation, if you work on a remote cluster, could look like this:

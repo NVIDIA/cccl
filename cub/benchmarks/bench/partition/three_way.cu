@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
-#include <cub/device/device_partition.cuh>
+#include <cub/device/dispatch/dispatch_three_way_partition.cuh>
+#include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
 
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
@@ -14,27 +15,19 @@
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
 
 #if !TUNE_BASE
-#  if TUNE_TRANSPOSE == 0
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
-#  else // TUNE_TRANSPOSE == 1
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
-#  endif // TUNE_TRANSPOSE
-
 template <typename InputT>
-struct policy_hub_t
+struct tuned_policy_selector_t
 {
-  struct policy_t : cub::ChainedPolicy<500, policy_t, policy_t>
+  _CCCL_API constexpr auto operator()(::cuda::arch_id) const
+    -> cub::detail::three_way_partition::three_way_partition_policy
   {
-    using ThreeWayPartitionPolicy = //
-      cub::AgentThreeWayPartitionPolicy<TUNE_THREADS_PER_BLOCK,
-                                        TUNE_ITEMS_PER_THREAD,
-                                        TUNE_LOAD_ALGORITHM,
-                                        cub::LOAD_DEFAULT,
-                                        cub::BLOCK_SCAN_WARP_SCANS,
-                                        delay_constructor_t>;
-  };
-
-  using MaxPolicy = policy_t;
+    return {TUNE_THREADS_PER_BLOCK,
+            TUNE_ITEMS_PER_THREAD,
+            TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
+            cub::LOAD_DEFAULT,
+            cub::BLOCK_SCAN_WARP_SCANS,
+            cub::detail::delay_constructor_policy_from_type<delay_constructor_t>};
+  }
 };
 #endif // !TUNE_BASE
 
@@ -46,30 +39,6 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using num_selected_it_t = OffsetT*;
   using select_op_t       = less_then_t<T>;
   using offset_t          = OffsetT;
-
-#if !TUNE_BASE
-  using policy_t   = policy_hub_t<T>;
-  using dispatch_t = cub::DispatchThreeWayPartitionIf<
-    input_it_t,
-    output_it_t,
-    output_it_t,
-    output_it_t,
-    num_selected_it_t,
-    select_op_t,
-    select_op_t,
-    offset_t,
-    policy_t>;
-#else // TUNE_BASE
-  using dispatch_t = cub::DispatchThreeWayPartitionIf<
-    input_it_t,
-    output_it_t,
-    output_it_t,
-    output_it_t,
-    num_selected_it_t,
-    select_op_t,
-    select_op_t,
-    offset_t>;
-#endif // !TUNE_BASE
 
   // Retrieve axis parameters
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
@@ -102,14 +71,8 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_writes<offset_t>(1);
 
   std::size_t temp_size{};
-  dispatch_t::Dispatch(
-    nullptr, temp_size, d_in, d_out_1, d_out_2, d_out_3, d_num_selected, select_op_1, select_op_2, elements, 0);
-
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size);
-  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
-
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
+  auto dispatch = [&](void* temp_storage, cudaStream_t stream) {
+    return cub::detail::three_way_partition::dispatch(
       temp_storage,
       temp_size,
       d_in,
@@ -119,8 +82,22 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       d_num_selected,
       select_op_1,
       select_op_2,
-      elements,
-      launch.get_stream());
+      static_cast<offset_t>(elements),
+      stream
+#if !TUNE_BASE
+      ,
+      policy_selector_t{}
+#endif // !TUNE_BASE
+    );
+  };
+
+  dispatch(nullptr, 0);
+
+  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
+  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
+
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    dispatch(temp_storage, launch.get_stream());
   });
 }
 

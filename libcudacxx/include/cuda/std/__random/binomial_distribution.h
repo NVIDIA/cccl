@@ -20,9 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cmath/exponential_functions.h>
+#include <cuda/std/__cmath/gamma.h>
+#include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
-#include <cuda/std/cmath>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -57,9 +59,9 @@ public:
       if (0 < __p_ && __p_ < 1)
       {
         __r0_ = static_cast<result_type>((__t_ + 1) * __p_);
-        __pr_ = cuda::std::exp(
-          cuda::std::lgamma(__t_ + 1.) - cuda::std::lgamma(__r0_ + 1.) - cuda::std::lgamma(__t_ - __r0_ + 1.)
-          + __r0_ * cuda::std::log(__p_) + (__t_ - __r0_) * cuda::std::log(1 - __p_));
+        __pr_ = ::cuda::std::exp(
+          ::cuda::std::lgamma(__t_ + 1.) - ::cuda::std::lgamma(__r0_ + 1.) - ::cuda::std::lgamma(__t_ - __r0_ + 1.)
+          + __r0_ * ::cuda::std::log(__p_) + (__t_ - __r0_) * ::cuda::std::log(1 - __p_));
         __odds_ratio_ = __p_ / (1 - __p_);
       }
     }
