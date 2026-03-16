@@ -69,23 +69,23 @@ def bench_segmented_reduce_sum(state: bench.State):
     alloc_stream.synchronize()
 
     reducer = make_segmented_reduce(
-        d_in=d_in,
-        d_out=d_out,
-        start_offsets_in=start_offsets,
-        end_offsets_in=end_offsets,
-        op=OpKind.PLUS,
-        h_init=h_init,
+        d_in,
+        d_out,
+        start_offsets,
+        end_offsets,
+        OpKind.PLUS,
+        h_init,
     )
 
     temp_storage_bytes = reducer(
-        temp_storage=None,
-        d_in=d_in,
-        d_out=d_out,
-        op=OpKind.PLUS,
-        num_segments=num_segments,
-        start_offsets_in=start_offsets,
-        end_offsets_in=end_offsets,
-        h_init=h_init,
+        None,
+        d_in,
+        d_out,
+        OpKind.PLUS,
+        num_segments,
+        start_offsets,
+        end_offsets,
+        h_init,
     )
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -96,15 +96,15 @@ def bench_segmented_reduce_sum(state: bench.State):
 
     def launcher(launch: bench.Launch):
         reducer(
-            temp_storage=temp_storage,
-            d_in=d_in,
-            d_out=d_out,
-            op=OpKind.PLUS,
-            num_segments=num_segments,
-            start_offsets_in=start_offsets,
-            end_offsets_in=end_offsets,
-            h_init=h_init,
-            stream=launch.get_stream(),
+            temp_storage,
+            d_in,
+            d_out,
+            OpKind.PLUS,
+            num_segments,
+            start_offsets,
+            end_offsets,
+            h_init,
+            launch.get_stream(),
         )
 
     state.exec(launcher, batched=False)

@@ -113,20 +113,14 @@ def bench_heavy(state: bench.State):
             d_out = cp.empty(size, dtype=np.uint32)
 
         op = _HEAVY_OPS[n_regs]
-        transform = cuda.compute.make_unary_transform(d_in=d_in, d_out=d_out, op=op)
+        transform = cuda.compute.make_unary_transform(d_in, d_out, op)
 
         state.add_element_count(size)
         state.add_global_memory_reads(size * d_in.dtype.itemsize)
         state.add_global_memory_writes(size * d_out.dtype.itemsize)
 
         def launcher(launch: bench.Launch):
-            transform(
-                d_in=d_in,
-                d_out=d_out,
-                num_items=size,
-                op=op,
-                stream=launch.get_stream(),
-            )
+            transform(d_in, d_out, op, size, launch.get_stream())
 
         state.exec(launcher, batched=False)
     except (MemoryError, cp.cuda.memory.OutOfMemoryError):

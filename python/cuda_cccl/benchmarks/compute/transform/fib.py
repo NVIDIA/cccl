@@ -66,20 +66,14 @@ def bench_transform_fib(state: bench.State):
             )
             d_out = cp.empty(num_elements, dtype=np.uint32)
 
-        transformer = make_unary_transform(d_in=d_in, d_out=d_out, op=fib_op)
+        transformer = make_unary_transform(d_in, d_out, fib_op)
 
         state.add_element_count(num_elements)
         state.add_global_memory_reads(num_elements * d_in.dtype.itemsize)
         state.add_global_memory_writes(num_elements * d_out.dtype.itemsize)
 
         def launcher(launch: bench.Launch):
-            transformer(
-                d_in=d_in,
-                d_out=d_out,
-                num_items=num_elements,
-                op=fib_op,
-                stream=launch.get_stream(),
-            )
+            transformer(d_in, d_out, fib_op, num_elements, launch.get_stream())
 
         state.exec(launcher, batched=False)
     except (MemoryError, cp.cuda.memory.OutOfMemoryError):

@@ -60,7 +60,7 @@ def bench_transform_grayscale(state: bench.State):
             d_pixels["b"] = b_data
             d_out = cp.empty(num_elements, dtype=dtype)
 
-        transformer = make_unary_transform(d_in=d_pixels, d_out=d_out, op=to_grayscale)
+        transformer = make_unary_transform(d_pixels, d_out, to_grayscale)
 
         state.add_element_count(num_elements)
         state.add_global_memory_reads(num_elements * d_pixels.dtype.itemsize)
@@ -68,11 +68,7 @@ def bench_transform_grayscale(state: bench.State):
 
         def launcher(launch: bench.Launch):
             transformer(
-                d_in=d_pixels,
-                d_out=d_out,
-                num_items=num_elements,
-                op=to_grayscale,
-                stream=launch.get_stream(),
+                d_pixels, d_out, to_grayscale, num_elements, launch.get_stream()
             )
 
         state.exec(launcher, batched=False)

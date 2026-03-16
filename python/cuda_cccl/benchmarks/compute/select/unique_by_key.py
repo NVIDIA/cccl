@@ -90,23 +90,23 @@ def bench_unique_by_key(state: bench.State):
     alloc_stream.synchronize()
 
     uniquer = make_unique_by_key(
-        d_in_keys=d_in_keys,
-        d_in_items=d_in_values,
-        d_out_keys=d_out_keys,
-        d_out_items=d_out_values,
-        d_out_num_selected=d_num_selected,
-        op=OpKind.EQUAL_TO,
+        d_in_keys,
+        d_in_values,
+        d_out_keys,
+        d_out_values,
+        d_num_selected,
+        OpKind.EQUAL_TO,
     )
 
     temp_storage_bytes = uniquer(
-        temp_storage=None,
-        d_in_keys=d_in_keys,
-        d_in_items=d_in_values,
-        d_out_keys=d_out_keys,
-        d_out_items=d_out_values,
-        d_out_num_selected=d_num_selected,
-        op=OpKind.EQUAL_TO,
-        num_items=num_elements,
+        None,
+        d_in_keys,
+        d_in_values,
+        d_out_keys,
+        d_out_values,
+        d_num_selected,
+        OpKind.EQUAL_TO,
+        num_elements,
     )
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
@@ -114,15 +114,15 @@ def bench_unique_by_key(state: bench.State):
     # Run once before timing to materialize the number of selected runs,
     # matching the C++ metric accounting flow.
     uniquer(
-        temp_storage=temp_storage,
-        d_in_keys=d_in_keys,
-        d_in_items=d_in_values,
-        d_out_keys=d_out_keys,
-        d_out_items=d_out_values,
-        d_out_num_selected=d_num_selected,
-        op=OpKind.EQUAL_TO,
-        num_items=num_elements,
-        stream=alloc_stream,
+        temp_storage,
+        d_in_keys,
+        d_in_values,
+        d_out_keys,
+        d_out_values,
+        d_num_selected,
+        OpKind.EQUAL_TO,
+        num_elements,
+        alloc_stream,
     )
     alloc_stream.synchronize()
     num_runs = int(d_num_selected.get()[0])
@@ -136,15 +136,15 @@ def bench_unique_by_key(state: bench.State):
 
     def launcher(launch: bench.Launch):
         uniquer(
-            temp_storage=temp_storage,
-            d_in_keys=d_in_keys,
-            d_in_items=d_in_values,
-            d_out_keys=d_out_keys,
-            d_out_items=d_out_values,
-            d_out_num_selected=d_num_selected,
-            op=OpKind.EQUAL_TO,
-            num_items=num_elements,
-            stream=launch.get_stream(),
+            temp_storage,
+            d_in_keys,
+            d_in_values,
+            d_out_keys,
+            d_out_values,
+            d_num_selected,
+            OpKind.EQUAL_TO,
+            num_elements,
+            launch.get_stream(),
         )
 
     state.exec(launcher, batched=False)

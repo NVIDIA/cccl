@@ -43,21 +43,14 @@ def bench_reduce_nondeterministic(state: bench.State):
     h_init = np.zeros(1, dtype=dtype)
 
     reducer = make_reduce_into(
-        d_in=d_in,
-        d_out=d_out,
-        op=OpKind.PLUS,
-        h_init=h_init,
+        d_in,
+        d_out,
+        OpKind.PLUS,
+        h_init,
         determinism=Determinism.NOT_GUARANTEED,
     )
 
-    temp_storage_bytes = reducer(
-        temp_storage=None,
-        d_in=d_in,
-        d_out=d_out,
-        op=OpKind.PLUS,
-        num_items=num_items,
-        h_init=h_init,
-    )
+    temp_storage_bytes = reducer(None, d_in, d_out, OpKind.PLUS, num_items, h_init)
     with alloc_stream:
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
 
@@ -67,13 +60,13 @@ def bench_reduce_nondeterministic(state: bench.State):
 
     def launcher(launch: bench.Launch):
         reducer(
-            temp_storage=temp_storage,
-            d_in=d_in,
-            d_out=d_out,
-            op=OpKind.PLUS,
-            num_items=num_items,
-            h_init=h_init,
-            stream=launch.get_stream(),
+            temp_storage,
+            d_in,
+            d_out,
+            OpKind.PLUS,
+            num_items,
+            h_init,
+            launch.get_stream(),
         )
 
     state.exec(launcher, batched=False)

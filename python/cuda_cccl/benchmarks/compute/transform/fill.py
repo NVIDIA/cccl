@@ -40,7 +40,7 @@ def bench_fill(state: bench.State):
         constant_it = ConstantIterator(dtype(42))
 
         transform = cuda.compute.make_unary_transform(
-            d_in=constant_it, d_out=d_out, op=OpKind.IDENTITY
+            constant_it, d_out, OpKind.IDENTITY
         )
 
         state.add_element_count(num_items)
@@ -49,11 +49,7 @@ def bench_fill(state: bench.State):
 
         def launcher(launch: bench.Launch):
             transform(
-                d_in=constant_it,
-                d_out=d_out,
-                op=OpKind.IDENTITY,
-                num_items=num_items,
-                stream=launch.get_stream(),
+                constant_it, d_out, OpKind.IDENTITY, num_items, launch.get_stream()
             )
 
         state.exec(launcher, batched=False)
