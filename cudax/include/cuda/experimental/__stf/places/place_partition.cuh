@@ -210,10 +210,10 @@ public:
     return sub_places[i];
   }
 
-  /** @brief Build an exec_place_grid from the subplaces.
-   * @return A grid view of the partitioned execution places.
+  /** @brief Build an exec_place from the subplaces.
+   * @return A grid view of the partitioned execution places, or single place if size == 1.
    */
-  exec_place_grid as_grid() const
+  exec_place as_grid() const
   {
     return make_grid(sub_places);
   }

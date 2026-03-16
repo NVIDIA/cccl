@@ -331,11 +331,11 @@ public:
     assert(e_place.affine_data_place() == t.get_affine_data_place());
 
     /*
-     * If we have a multi-place grid, the implicit affine partitioner is the blocked_partition.
+     * If we have a grid (including 1-element grids), the implicit affine partitioner is the blocked_partition.
      *
      * An explicit composite data place is required per data dependency to customize this behaviour.
      */
-    if (e_place.size() > 1)
+    if (e_place.is_grid())
     {
       // Create a composite data place defined by the grid of places + the partitioning function
       t.set_affine_data_place(data_place::composite(blocked_partition(), e_place.as_grid()));

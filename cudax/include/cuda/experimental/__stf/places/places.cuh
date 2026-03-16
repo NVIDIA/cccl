@@ -807,12 +807,13 @@ public:
   }
 
   /**
-   * @brief Check if this is a multi-element grid (size > 1)
-   * @deprecated Use size() > 1 instead. All places are now grids.
+   * @brief Check if this is a grid execution place
+   *
+   * Returns true for any grid, including 1-element grids.
    */
   bool is_grid() const
   {
-    return size() > 1;
+    return affine_data_place().is_invalid();
   }
 
   /**
@@ -872,14 +873,14 @@ public:
     return exec_place::device(cuda_try<cudaGetDevice>());
   }
 
-  static exec_place_grid all_devices();
+  static exec_place all_devices();
 
-  static exec_place_grid n_devices(size_t n, dim4 dims);
+  static exec_place n_devices(size_t n, dim4 dims);
 
-  static exec_place_grid n_devices(size_t n);
+  static exec_place n_devices(size_t n);
 
   // For debug purpose on a machine with a single GPU, for example
-  static exec_place_grid repeat(const exec_place& e, size_t cnt);
+  static exec_place repeat(const exec_place& e, size_t cnt);
 
   template <typename... Args>
   auto partition_by_scope(Args&&... args);
@@ -1384,13 +1385,20 @@ public:
 };
 
 //! Creates a grid of execution places with specified dimensions
-inline exec_place_grid make_grid(::std::vector<exec_place> places, const dim4& dims)
+//! Returns the single element if size == 1 (no grid wrapper needed)
+inline exec_place make_grid(::std::vector<exec_place> places, const dim4& dims)
 {
+  _CCCL_ASSERT(!places.empty(), "invalid places");
+  if (places.size() == 1)
+  {
+    return mv(places[0]);
+  }
   return exec_place_grid(mv(places), dims);
 }
 
 //! Creates a linear grid from a vector of execution places
-inline exec_place_grid make_grid(::std::vector<exec_place> places)
+//! Returns the single element if size == 1 (no grid wrapper needed)
+inline exec_place make_grid(::std::vector<exec_place> places)
 {
   _CCCL_ASSERT(!places.empty(), "invalid places");
   auto grid_dim = dim4(places.size(), 1, 1, 1);
@@ -1462,20 +1470,26 @@ inline exec_place exec_place_device::impl::get_place(size_t idx) const
 }
 
 //! Creates a grid by replicating an execution place multiple times
-inline exec_place_grid exec_place::repeat(const exec_place& e, size_t cnt)
+//! Returns the original place if cnt == 1 (no grid wrapper needed)
+inline exec_place exec_place::repeat(const exec_place& e, size_t cnt)
 {
+  if (cnt == 1)
+  {
+    return e;
+  }
   return make_grid(::std::vector<exec_place>(cnt, e));
 }
 
 /* Deferred implementation : ::std::static_pointer_cast requires that exec_place_grid is a complete type */
 inline exec_place_grid exec_place::as_grid() const
 {
-  EXPECT(size() > 1, "as_grid() called on scalar exec_place");
+  EXPECT(is_grid(), "as_grid() called on scalar exec_place");
   return exec_place_grid(::std::static_pointer_cast<exec_place_grid::impl>(pimpl));
 }
 
 /* Get the first N available devices */
-inline exec_place_grid exec_place::n_devices(size_t n, dim4 dims)
+//! Returns single device if n == 1 (no grid wrapper needed)
+inline exec_place exec_place::n_devices(size_t n, dim4 dims)
 {
   const int ndevs = cuda_try<cudaGetDeviceCount>();
 
@@ -1492,18 +1506,21 @@ inline exec_place_grid exec_place::n_devices(size_t n, dim4 dims)
 }
 
 /* Get the first N available devices */
-inline exec_place_grid exec_place::n_devices(size_t n)
+//! Returns single device if n == 1 (no grid wrapper needed)
+inline exec_place exec_place::n_devices(size_t n)
 {
   return n_devices(n, dim4(n, 1, 1, 1));
 }
 
-inline exec_place_grid exec_place::all_devices()
+//! Returns all available devices, or single device if only one GPU
+inline exec_place exec_place::all_devices()
 {
   return n_devices(cuda_try<cudaGetDeviceCount>());
 }
 
 //! Creates a cyclic partition of an execution place grid with specified strides
-inline exec_place_grid partition_cyclic(const exec_place_grid& e_place, dim4 strides, pos4 tile_id)
+//! Returns single place if partition contains only one element
+inline exec_place partition_cyclic(const exec_place& e_place, dim4 strides, pos4 tile_id)
 {
   dim4 g_dims = e_place.get_dims();
 
@@ -1547,10 +1564,11 @@ inline exec_place_grid partition_cyclic(const exec_place_grid& e_place, dim4 str
 }
 
 //! Creates a tiled partition of an execution place grid with specified tile sizes
+//! Returns single place if partition contains only one element
 //!
 //! example :
 //! auto sub_g = partition_tile(g, dim4(2,2), dim4(0,1))
-inline exec_place_grid partition_tile(const exec_place_grid& e_place, dim4 tile_sizes, pos4 tile_id)
+inline exec_place partition_tile(const exec_place& e_place, dim4 tile_sizes, pos4 tile_id)
 {
   dim4 g_dims = e_place.get_dims();
 
