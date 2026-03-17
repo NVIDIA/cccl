@@ -36,6 +36,14 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::topk
 {
+// Used in the bin ID calculation to exclude bits unrelated to the current pass
+template <typename T, int BitsPerPass>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr unsigned calc_mask(const int pass)
+{
+  int num_bits = calc_start_bit<T, BitsPerPass>(pass - 1) - calc_start_bit<T, BitsPerPass>(pass);
+  return (1 << num_bits) - 1;
+}
+
 // Get the bin ID from the value of element
 template <typename T,
           select SelectDirection,

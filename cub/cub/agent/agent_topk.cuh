@@ -56,9 +56,6 @@ struct AgentTopKPolicy
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 };
 
-template <typename T, int BitsPerPass>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass);
-
 template <typename KeyT, bool IsFundamental = detail::radix::is_fundamental_type_v<KeyT>>
 struct key_prefix_storage_t;
 
@@ -68,6 +65,43 @@ struct key_prefix_storage_t<KeyT, true>
   using bits_t = typename Traits<KeyT>::UnsignedBits;
   bits_t bits;
 };
+
+// Calculates the number of passes needed for a type T with BitsPerPass bits processed per pass.
+template <typename T>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes(int bits_per_pass)
+{
+  return ::cuda::ceil_div<int>(sizeof(T) * 8, bits_per_pass);
+}
+
+template <int BitsPerPass>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_num_passes(const int total_bits)
+{
+  return ::cuda::ceil_div<int>(total_bits, BitsPerPass);
+}
+
+// Calculates the starting bit for a given pass (bit 0 is the least significant (rightmost) bit).
+// We process the input from the most to the least significant bit. This way, we can skip some passes in the end.
+template <typename T, int BitsPerPass>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
+{
+  int start_bit = int{sizeof(T)} * 8 - (pass + 1) * BitsPerPass;
+  if (start_bit < 0)
+  {
+    start_bit = 0;
+  }
+  return start_bit;
+}
+
+template <int BitsPerPass>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_start_bit(const int total_bits, const int pass)
+{
+  int start_bit = total_bits - (pass + 1) * BitsPerPass;
+  if (start_bit < 0)
+  {
+    start_bit = 0;
+  }
+  return start_bit;
+}
 
 // Bit-vector for accumulating prefix digits via funnel shift. Each pass shifts the existing
 // contents left by BitsPerPass and ORs the new bucket at the bottom. Sized to hold all
@@ -159,51 +193,6 @@ enum class candidate_class
   // The given candidate is definitely not amongst the top-k items
   rejected
 };
-
-// Calculates the number of passes needed for a type T with BitsPerPass bits processed per pass.
-template <typename T>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes(int bits_per_pass)
-{
-  return ::cuda::ceil_div<int>(sizeof(T) * 8, bits_per_pass);
-}
-
-template <int BitsPerPass>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_num_passes(const int total_bits)
-{
-  return ::cuda::ceil_div<int>(total_bits, BitsPerPass);
-}
-
-// Calculates the starting bit for a given pass (bit 0 is the least significant (rightmost) bit).
-// We process the input from the most to the least significant bit. This way, we can skip some passes in the end.
-template <typename T, int BitsPerPass>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
-{
-  int start_bit = int{sizeof(T)} * 8 - (pass + 1) * BitsPerPass;
-  if (start_bit < 0)
-  {
-    start_bit = 0;
-  }
-  return start_bit;
-}
-
-template <int BitsPerPass>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_start_bit(const int total_bits, const int pass)
-{
-  int start_bit = total_bits - (pass + 1) * BitsPerPass;
-  if (start_bit < 0)
-  {
-    start_bit = 0;
-  }
-  return start_bit;
-}
-
-// Used in the bin ID calculation to exclude bits unrelated to the current pass
-template <typename T, int BitsPerPass>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr unsigned calc_mask(const int pass)
-{
-  int num_bits = calc_start_bit<T, BitsPerPass>(pass - 1) - calc_start_bit<T, BitsPerPass>(pass);
-  return (1 << num_bits) - 1;
-}
 
 //! @brief AgentTopK implements a stateful abstraction of CUDA thread blocks for participating in
 //! device-wide topK
@@ -819,8 +808,18 @@ struct AgentTopK
       choose_bucket(counter, current_k, pass);
 
       // Reset histogram for the next pass
-      constexpr int num_passes = calc_num_passes<key_in_t>(bits_per_pass);
-      if (pass != num_passes - 1)
+      // TODO: Refactor calc_start_bit, calc_mask, and calc_num_passes to uniformly work with
+      // total_bits (passed as a kernel parameter) instead of sizeof(KeyT), then use a single
+      // unconditional path for both fundamental and non-fundamental types.
+      if constexpr (detail::radix::is_fundamental_type_v<key_in_t>)
+      {
+        constexpr int num_passes = calc_num_passes<key_in_t>(bits_per_pass);
+        if (pass != num_passes - 1)
+        {
+          init_histograms(histogram);
+        }
+      }
+      else
       {
         init_histograms(histogram);
       }
