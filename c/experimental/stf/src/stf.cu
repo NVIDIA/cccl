@@ -439,10 +439,9 @@ stf_exec_place_grid_create(const stf_exec_place* places, size_t count, const stf
   {
     cpp_places.push_back(to_exec_place(const_cast<stf_exec_place*>(&places[i])));
   }
-  exec_place grid =
-    (grid_dims != nullptr)
-      ? make_grid(::std::move(cpp_places), dim4(grid_dims->x, grid_dims->y, grid_dims->z, grid_dims->t))
-      : make_grid(::std::move(cpp_places));
+  exec_place grid = (grid_dims != nullptr)
+                    ? make_grid(::std::move(cpp_places), dim4(grid_dims->x, grid_dims->y, grid_dims->z, grid_dims->t))
+                    : make_grid(::std::move(cpp_places));
   return new exec_place(::std::move(grid));
 }
 

@@ -75,12 +75,8 @@ public:
   // ::std::function<pos4(size_t)> delinearize : translate the index in a buffer into a position in the data
   // TODO pass mv(place)
   template <typename F>
-  localized_array(exec_place grid,
-                  get_executor_func_t mapper,
-                  F&& delinearize,
-                  size_t total_size,
-                  size_t elemsize,
-                  dim4 data_dims)
+  localized_array(
+    exec_place grid, get_executor_func_t mapper, F&& delinearize, size_t total_size, size_t elemsize, dim4 data_dims)
       : grid(mv(grid))
       , mapper(mv(mapper))
       , total_size_bytes(total_size * elemsize)

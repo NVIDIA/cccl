@@ -1242,8 +1242,8 @@ public:
 
   ::std::string to_string() const override
   {
-    return "grid(" + ::std::to_string(dims_.x) + "x" + ::std::to_string(dims_.y) + "x" + ::std::to_string(dims_.z)
-         + "x" + ::std::to_string(dims_.t) + ")";
+    return "grid(" + ::std::to_string(dims_.x) + "x" + ::std::to_string(dims_.y) + "x" + ::std::to_string(dims_.z) + "x"
+         + ::std::to_string(dims_.t) + ")";
   }
 
   // ===== Comparison =====
