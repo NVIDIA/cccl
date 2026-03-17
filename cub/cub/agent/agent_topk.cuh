@@ -21,6 +21,8 @@
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cmath/ceil_div.h>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::topk
