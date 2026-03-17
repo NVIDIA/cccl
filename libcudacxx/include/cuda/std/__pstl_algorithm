@@ -42,6 +42,8 @@
 #include <cuda/std/__pstl/generate.h>
 #include <cuda/std/__pstl/generate_n.h>
 #include <cuda/std/__pstl/inclusive_scan.h>
+#include <cuda/std/__pstl/is_sorted.h>
+#include <cuda/std/__pstl/is_sorted_until.h>
 #include <cuda/std/__pstl/merge.h>
 #include <cuda/std/__pstl/mismatch.h>
 #include <cuda/std/__pstl/none_of.h>
