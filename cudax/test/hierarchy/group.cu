@@ -73,13 +73,13 @@ __device__ T sum(cudax::this_cluster<Hierarchy> group, T (&array)[N])
                  {
                    smem.cluster_scratch = 0;
                  }
-                 group.sync();
+                 group.sync_aligned();
 
                  if (cuda::gpu_thread.rank(cuda::block, group.hierarchy()) == 0)
                  {
                    atomicAdd(dsmem, result);
                  }
-                 group.sync();
+                 group.sync_aligned();
 
                  if (cuda::gpu_thread.rank(group) == 0)
                  {
@@ -100,6 +100,7 @@ struct TestKernel
 
       cudax::this_thread this_thread{config};
       this_thread.sync();
+      this_thread.sync_aligned();
 
       const auto result = sum(this_thread, array);
       CUDAX_REQUIRE(result == 6);
@@ -120,6 +121,7 @@ struct TestKernel
 
       cudax::this_warp this_warp{config};
       this_warp.sync();
+      this_warp.sync_aligned();
 
       const auto result = sum(this_warp, array);
       if (cuda::gpu_thread.rank(cuda::warp) == 0)
@@ -143,6 +145,7 @@ struct TestKernel
 
       cudax::this_block this_block{config};
       this_block.sync();
+      this_block.sync_aligned();
 
       const auto result = sum(this_block, array);
       if (cuda::gpu_thread.rank(cuda::block) == 0)
@@ -166,6 +169,7 @@ struct TestKernel
 
       cudax::this_cluster this_cluster{config};
       this_cluster.sync();
+      this_cluster.sync_aligned();
 
       const auto result = sum(this_cluster, array);
       if (cuda::gpu_thread.rank(cuda::cluster) == 0)
@@ -187,6 +191,7 @@ struct TestKernel
     {
       cudax::this_grid this_grid{config};
       this_grid.sync();
+      this_grid.sync_aligned();
 
       CUDAX_REQUIRE(cuda::gpu_thread.count(this_grid) == cuda::gpu_thread.count(cuda::grid));
       CUDAX_REQUIRE(cuda::gpu_thread.rank(this_grid) == cuda::gpu_thread.rank(cuda::grid));
@@ -230,6 +235,10 @@ struct CgInteropKernel
   {
     {
       cudax::this_thread g{cooperative_groups::this_thread()};
+      g.sync();
+    }
+    {
+      cudax::this_warp g{cooperative_groups::tiled_partition<32>(cooperative_groups::this_thread_block())};
       g.sync();
     }
     {
