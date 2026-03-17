@@ -63,9 +63,15 @@ struct proclaims_copyable_arguments<__callable_permitting_copied_arguments<F>> :
 //! @see proclaims_copyable_arguments
 template <typename F>
 [[nodiscard]] _CCCL_API constexpr auto proclaim_copyable_arguments(F&& f)
-  -> __callable_permitting_copied_arguments<::cuda::std::decay_t<F>>
 {
-  return {::cuda::std::forward<F>(f)};
+  if constexpr (proclaims_copyable_arguments<F>::value)
+  { // If F is already marked then we do not need to wrap it
+    return f;
+  }
+  else
+  {
+    return __callable_permitting_copied_arguments<::cuda::std::decay_t<F>>{::cuda::std::forward<F>(f)};
+  }
 }
 
 // Specializations for libcu++ function objects are provided here to not pull this include into `<cuda/std/...>` headers
