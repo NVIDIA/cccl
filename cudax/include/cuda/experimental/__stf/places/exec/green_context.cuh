@@ -277,10 +277,10 @@ public:
       : driver_context_(saved_context)
   {}
 
-  exec_place get_place(size_t idx) const override
+  exec_place get_place(size_t idx) override
   {
     EXPECT(idx == 0, "Index out of bounds for green_ctx exec_place");
-    return exec_place::green_ctx(green_ctx_view(g_ctx_, pool_, devid_));
+    return exec_place(shared_from_this());
   }
 
   exec_place activate(size_t idx) const override

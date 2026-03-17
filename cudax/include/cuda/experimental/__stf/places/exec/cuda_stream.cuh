@@ -41,10 +41,10 @@ public:
       , dummy_pool_(dstream)
   {}
 
-  exec_place get_place(size_t idx) const override
+  exec_place get_place(size_t idx) override
   {
     EXPECT(idx == 0, "Index out of bounds for cuda_stream exec_place");
-    return exec_place::cuda_stream(dstream_);
+    return exec_place(shared_from_this());
   }
 
   exec_place activate(size_t idx) const override

@@ -663,14 +663,13 @@ public:
       {
         // Apply the parallel_for construct over the entire shape on the
         // execution place of the task.
-        const exec_place& scalar_place = e_place;
         if constexpr (need_reduction)
         {
-          do_parallel_for_redux(f, scalar_place, shape, t);
+          do_parallel_for_redux(f, e_place, shape, t);
         }
         else
         {
-          do_parallel_for(f, scalar_place, shape, t);
+          do_parallel_for(f, e_place, shape, t);
         }
       }
       else
@@ -682,12 +681,10 @@ public:
         }
         else
         {
-          const auto& t_place = t.get_exec_place();
-          size_t grid_size    = t_place.size();
-          for (size_t i = 0; i < grid_size; i++)
+          for (size_t i = 0; i < e_place.size(); i++)
           {
             t.set_current_place(pos4(i));
-            const auto sub_shape = partitioner_t::apply(shape, pos4(i), t_place.get_dims());
+            const auto sub_shape = partitioner_t::apply(shape, pos4(i), e_place.get_dims());
             do_parallel_for(f, t.get_current_place(), sub_shape, t);
             t.unset_current_place();
           }

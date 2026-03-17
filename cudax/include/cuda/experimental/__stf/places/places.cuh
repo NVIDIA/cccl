@@ -382,7 +382,7 @@ public:
   /*
    * @brief Using the pimpl idiom. Public because a number of classes inherit from this.
    */
-  class impl
+  class impl : public ::std::enable_shared_from_this<impl>
   {
   public:
     impl()                       = default;
@@ -419,7 +419,7 @@ public:
      *
      * For scalar places, idx must be 0.
      */
-    virtual exec_place get_place(size_t idx) const;
+    virtual exec_place get_place(size_t idx);
 
     // ===== Activation/deactivation (indexed) =====
 
@@ -614,7 +614,7 @@ public:
    *
    * For scalar places, idx must be 0 and returns the place itself.
    */
-  exec_place get_place(size_t idx) const
+  exec_place get_place(size_t idx)
   {
     return pimpl->get_place(idx);
   }
@@ -622,7 +622,7 @@ public:
   /**
    * @brief Get the sub-place at the given multi-dimensional position
    */
-  exec_place get_place(pos4 p) const
+  exec_place get_place(pos4 p)
   {
     return get_place(get_dims().get_index(p));
   }
@@ -746,7 +746,7 @@ public:
   /**
    * @brief Get the currently active sub-place
    */
-  exec_place get_current_place() const
+  exec_place get_current_place()
   {
     auto cur_idx = pimpl->get_current_idx();
     EXPECT(cur_idx >= 0, "No current place set");
@@ -1025,7 +1025,7 @@ public:
     {}
 
     // Grid interface - host is a 1-element grid
-    exec_place get_place(size_t idx) const override;
+    exec_place get_place(size_t idx) override;
 
     // Activation - no-op for host
     exec_place activate(size_t idx) const override
@@ -1109,7 +1109,7 @@ public:
     }
 
     // Grid interface - device is a 1-element grid
-    exec_place get_place(size_t idx) const override;
+    exec_place get_place(size_t idx) override;
 
     int get_devid() const
     {
@@ -1218,7 +1218,7 @@ public:
     return dims_.size();
   }
 
-  exec_place get_place(size_t idx) const override
+  exec_place get_place(size_t idx) override
   {
     EXPECT(idx < places_.size(), "Index out of bounds");
     return places_[idx];
@@ -1388,25 +1388,22 @@ inline exec_place data_place::affine_exec_place() const
 
 // === Deferred implementations for get_place() ===
 
-inline exec_place exec_place::impl::get_place(size_t idx) const
+inline exec_place exec_place::impl::get_place(size_t idx)
 {
   EXPECT(idx == 0, "Index out of bounds for scalar exec_place");
-  // For generic scalar places, we can't easily return self
-  // This should be overridden by concrete implementations
-  return exec_place(
-    ::std::const_pointer_cast<impl>(::std::shared_ptr<const impl>(::std::shared_ptr<const impl>{}, this)));
+  return exec_place(shared_from_this());
 }
 
-inline exec_place exec_place_host::impl::get_place(size_t idx) const
+inline exec_place exec_place_host::impl::get_place(size_t idx)
 {
   EXPECT(idx == 0, "Index out of bounds for host exec_place");
-  return exec_place::host();
+  return exec_place(shared_from_this());
 }
 
-inline exec_place exec_place_device::impl::get_place(size_t idx) const
+inline exec_place exec_place_device::impl::get_place(size_t idx)
 {
   EXPECT(idx == 0, "Index out of bounds for device exec_place");
-  return exec_place::device(devid_);
+  return exec_place(shared_from_this());
 }
 
 //! Creates a grid by replicating an execution place multiple times
@@ -1453,7 +1450,7 @@ inline exec_place exec_place::all_devices()
 
 //! Creates a cyclic partition of an execution place grid with specified strides
 //! Returns single place if partition contains only one element
-inline exec_place partition_cyclic(const exec_place& e_place, dim4 strides, pos4 tile_id)
+inline exec_place partition_cyclic(exec_place e_place, dim4 strides, pos4 tile_id)
 {
   dim4 g_dims = e_place.get_dims();
 
@@ -1501,7 +1498,7 @@ inline exec_place partition_cyclic(const exec_place& e_place, dim4 strides, pos4
 //!
 //! example :
 //! auto sub_g = partition_tile(g, dim4(2,2), dim4(0,1))
-inline exec_place partition_tile(const exec_place& e_place, dim4 tile_sizes, pos4 tile_id)
+inline exec_place partition_tile(exec_place e_place, dim4 tile_sizes, pos4 tile_id)
 {
   dim4 g_dims = e_place.get_dims();
 

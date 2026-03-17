@@ -464,7 +464,7 @@ public:
     get_exec_place().unset_current_place();
   }
 
-  exec_place get_current_place() const
+  exec_place get_current_place()
   {
     return get_exec_place().get_current_place();
   }

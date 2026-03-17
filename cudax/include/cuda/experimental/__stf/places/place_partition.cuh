@@ -131,7 +131,7 @@ public:
    * @param grid Input execution place grid to partition
    * @param scope Partitioning granularity
    */
-  place_partition(async_resources_handle& handle, const exec_place& grid, place_partition_scope scope)
+  place_partition(async_resources_handle& handle, exec_place grid, place_partition_scope scope)
   {
     ::std::vector<::std::shared_ptr<exec_place>> places;
     places.reserve(grid.size());
@@ -219,7 +219,7 @@ public:
 
 private:
   /** @brief Compute the subplaces of a place at the specified granularity (scope) into the sub_places vector */
-  void compute_subplaces(async_resources_handle& handle, const exec_place& place, place_partition_scope scope)
+  void compute_subplaces(async_resources_handle& handle, exec_place place, place_partition_scope scope)
   {
     // Handle multi-element grids by recursively partitioning
     if (place.size() > 1 && scope == place_partition_scope::cuda_stream)
@@ -326,7 +326,7 @@ private:
   }
 
   /** @brief Compute the subplaces of a place at the specified granularity (scope) into the sub_places vector */
-  void compute_subplaces_no_handle(const exec_place& place, place_partition_scope scope)
+  void compute_subplaces_no_handle(exec_place place, place_partition_scope scope)
   {
 #if _CCCL_CTK_BELOW(12, 4)
     _CCCL_ASSERT(scope != place_partition_scope::green_context, "Green contexts scope need an async resource handle.");

@@ -110,7 +110,7 @@ public:
 
   stream_task<>& start()
   {
-    const auto& e_place = get_exec_place();
+    auto& e_place = get_exec_place();
 
     event_list ready_prereqs = acquire(ctx);
 
