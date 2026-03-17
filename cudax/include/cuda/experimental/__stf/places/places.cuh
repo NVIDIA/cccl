@@ -415,11 +415,12 @@ public:
     }
 
     /**
-     * @brief Get the sub-place at the given linear index
+     * @brief Get the impl of the sub-place at the given linear index
      *
-     * For scalar places, idx must be 0.
+     * For scalar places, idx must be 0 and returns shared_from_this().
+     * For grids, returns the impl of the stored sub-place.
      */
-    virtual exec_place get_place(size_t idx);
+    virtual ::std::shared_ptr<impl> get_place_impl(size_t idx);
 
     // ===== Activation/deactivation (indexed) =====
 
@@ -616,7 +617,7 @@ public:
    */
   exec_place get_place(size_t idx)
   {
-    return pimpl->get_place(idx);
+    return exec_place(pimpl->get_place_impl(idx));
   }
 
   /**
@@ -640,7 +641,7 @@ public:
 
     exec_place operator*()
     {
-      return it_impl->get_place(index);
+      return exec_place(it_impl->get_place_impl(index));
     }
 
     iterator& operator++()
@@ -1025,7 +1026,7 @@ public:
     {}
 
     // Grid interface - host is a 1-element grid
-    exec_place get_place(size_t idx) override;
+    ::std::shared_ptr<exec_place::impl> get_place_impl(size_t idx) override;
 
     // Activation - no-op for host
     exec_place activate(size_t idx) const override
@@ -1109,7 +1110,7 @@ public:
     }
 
     // Grid interface - device is a 1-element grid
-    exec_place get_place(size_t idx) override;
+    ::std::shared_ptr<exec_place::impl> get_place_impl(size_t idx) override;
 
     int get_devid() const
     {
@@ -1218,10 +1219,10 @@ public:
     return dims_.size();
   }
 
-  exec_place get_place(size_t idx) override
+  ::std::shared_ptr<exec_place::impl> get_place_impl(size_t idx) override
   {
     EXPECT(idx < places_.size(), "Index out of bounds");
-    return places_[idx];
+    return places_[idx].get_impl();
   }
 
   // ===== Activation (delegates to sub-places) =====
@@ -1388,22 +1389,22 @@ inline exec_place data_place::affine_exec_place() const
 
 // === Deferred implementations for get_place() ===
 
-inline exec_place exec_place::impl::get_place(size_t idx)
+inline ::std::shared_ptr<exec_place::impl> exec_place::impl::get_place_impl(size_t idx)
 {
   EXPECT(idx == 0, "Index out of bounds for scalar exec_place");
-  return exec_place(shared_from_this());
+  return shared_from_this();
 }
 
-inline exec_place exec_place_host::impl::get_place(size_t idx)
+inline ::std::shared_ptr<exec_place::impl> exec_place_host::impl::get_place_impl(size_t idx)
 {
   EXPECT(idx == 0, "Index out of bounds for host exec_place");
-  return exec_place(shared_from_this());
+  return shared_from_this();
 }
 
-inline exec_place exec_place_device::impl::get_place(size_t idx)
+inline ::std::shared_ptr<exec_place::impl> exec_place_device::impl::get_place_impl(size_t idx)
 {
   EXPECT(idx == 0, "Index out of bounds for device exec_place");
-  return exec_place(shared_from_this());
+  return shared_from_this();
 }
 
 //! Creates a grid by replicating an execution place multiple times
