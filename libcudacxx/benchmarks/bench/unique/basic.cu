@@ -40,18 +40,17 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   thrust::device_vector<T> in;
   make_unique_input(in, elements);
-  thrust::device_vector<T> out(elements, thrust::no_init);
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);
-  // unique_copy writes at most elements
+  // unique writes at most elements
   state.add_global_memory_writes<T>(elements / 2);
 
   caching_allocator_t alloc{};
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               do_not_optimize(cuda::std::unique_copy(cuda_policy(alloc, launch), in.begin(), in.end(), out.begin()));
+               do_not_optimize(cuda::std::unique(cuda_policy(alloc, launch), in.begin(), in.end()));
              });
 }
 
@@ -67,20 +66,18 @@ static void with_comp(nvbench::state& state, nvbench::type_list<T>)
 
   thrust::device_vector<T> in;
   make_unique_input(in, elements);
-  thrust::device_vector<T> out(elements, thrust::no_init);
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);
-  // unique_copy writes at most elements
+  // unique writes at most elements
   state.add_global_memory_writes<T>(elements / 2);
 
   caching_allocator_t alloc{};
 
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
-             [&](nvbench::launch& launch) {
-               do_not_optimize(cuda::std::unique_copy(
-                 cuda_policy(alloc, launch), in.begin(), in.end(), out.begin(), cuda::std::equal_to<T>{}));
-             });
+  state.exec(
+    nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+      do_not_optimize(cuda::std::unique(cuda_policy(alloc, launch), in.begin(), in.end(), cuda::std::equal_to<T>{}));
+    });
 }
 
 NVBENCH_BENCH_TYPES(with_comp, NVBENCH_TYPE_AXES(fundamental_types))
