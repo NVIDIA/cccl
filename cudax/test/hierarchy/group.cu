@@ -46,8 +46,15 @@ __device__ T sum(cudax::this_warp<Hierarchy> group, T (&array)[N])
 template <class Hierarchy, class T, cuda::std::size_t N>
 __device__ T sum(cudax::this_block<Hierarchy> group, T (&array)[N])
 {
-  // todo: support other block sizes
-  using BlockReduce = cub::BlockReduce<T, 32>;
+  using BlockExts = decltype(cuda::gpu_thread.extents(cuda::block, group.hierarchy()));
+  static_assert(BlockExts::rank_dynamic() == 0, "This algorithm requires all static extents.");
+
+  using BlockReduce =
+    cub::BlockReduce<T,
+                     static_cast<int>(BlockExts::static_extent(0)),
+                     cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+                     static_cast<int>(BlockExts::static_extent(1)),
+                     static_cast<int>(BlockExts::static_extent(2))>;
 
   __shared__ typename BlockReduce::TempStorage scratch;
   return BlockReduce{scratch}.Sum(array);
@@ -56,8 +63,16 @@ __device__ T sum(cudax::this_block<Hierarchy> group, T (&array)[N])
 template <class Hierarchy, class T, cuda::std::size_t N>
 __device__ T sum(cudax::this_cluster<Hierarchy> group, T (&array)[N])
 {
-  // todo: support other block sizes
-  using BlockReduce = cub::BlockReduce<T, 32>;
+  using BlockExts = decltype(cuda::gpu_thread.extents(cuda::block, group.hierarchy()));
+  static_assert(BlockExts::rank_dynamic() == 0, "This algorithm requires all static extents.");
+
+  using BlockReduce =
+    cub::BlockReduce<T,
+                     static_cast<int>(BlockExts::static_extent(0)),
+                     cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+                     static_cast<int>(BlockExts::static_extent(1)),
+                     static_cast<int>(BlockExts::static_extent(2))>;
+
   union SMem
   {
     typename BlockReduce::TempStorage block_scratch;
@@ -70,21 +85,26 @@ __device__ T sum(cudax::this_cluster<Hierarchy> group, T (&array)[N])
   NV_IF_TARGET(NV_PROVIDES_SM_90, ({
                  const auto dsmem = static_cast<T*>(__cluster_map_shared_rank(&smem.cluster_scratch, 0));
 
-                 if (cuda::gpu_thread.rank(group) == 0)
+                 const auto is_root_thread = (cuda::gpu_thread.rank(group) == 0);
+                 if (is_root_thread)
                  {
                    smem.cluster_scratch = 0;
                  }
                  group.sync_aligned();
 
-                 if (cuda::gpu_thread.rank(cuda::block, group.hierarchy()) == 0)
+                 if (cuda::gpu_thread.rank(cuda::block, group.hierarchy()) == 0 && !is_root_thread)
                  {
-                   atomicAdd(dsmem, result);
+                   [[maybe_unused]] unsigned old;
+                   asm volatile("atom.relaxed.cluster.shared::cluster.add.s32 %0, [%1], %2;"
+                                : "=r"(old)
+                                : "l"(dsmem), "r"(result)
+                                : "memory");
                  }
                  group.sync_aligned();
 
-                 if (cuda::gpu_thread.rank(group) == 0)
+                 if (is_root_thread)
                  {
-                   result = smem.cluster_scratch;
+                   result += smem.cluster_scratch;
                  }
                }))
 
@@ -242,12 +262,12 @@ C2H_TEST("Hierarchy groups", "[hierarchy]")
   if (cuda::device_attributes::compute_capability(device) >= cuda::compute_capability{90})
   {
     const auto config = cuda::make_config(
-      cuda::grid_dims<2>(), cuda::cluster_dims<3>(), cuda::block_dims<32>(), cuda::cooperative_launch{});
+      cuda::grid_dims<2>(), cuda::cluster_dims<3>(), cuda::block_dims<128>(), cuda::cooperative_launch{});
     cuda::launch(stream, config, TestKernel{});
   }
   else
   {
-    const auto config = cuda::make_config(cuda::grid_dims<2>(), cuda::block_dims<32>(), cuda::cooperative_launch{});
+    const auto config = cuda::make_config(cuda::grid_dims<2>(), cuda::block_dims<128>(), cuda::cooperative_launch{});
     cuda::launch(stream, config, TestKernel{});
   }
 
