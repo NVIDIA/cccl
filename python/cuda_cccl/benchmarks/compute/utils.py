@@ -17,7 +17,6 @@ ALL_TYPES = {
 }
 
 SIGNED_TYPES = {k: ALL_TYPES[k] for k in ("I8", "I16", "I32", "I64", "F32", "F64")}
-INTEGER_TYPES = {k: ALL_TYPES[k] for k in ("I8", "I16", "I32", "I64")}
 FLOAT_TYPES = {k: ALL_TYPES[k] for k in ("F32", "F64")}
 
 # Matches C++ integral_types = {int8_t, int16_t, int32_t, int64_t}
