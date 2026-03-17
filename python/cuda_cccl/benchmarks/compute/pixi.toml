@@ -20,6 +20,7 @@ python = "3.13.*"
 numpy = "*"
 cupy = "*"
 pyyaml = "*"
+pre-commit = "*"
 
 [feature.bench.pypi-dependencies]
 cuda-bench = ">=0.2.0"
@@ -80,3 +81,8 @@ description = "Run C++ CUB benchmarks"
 [tasks.bench-all]
 cmd = ["python", "run_benchmarks.py"]
 description = "Run both Python and C++ benchmarks"
+
+[tasks.pre-commit]
+cmd = ["pre-commit", "run", "--all-files"]
+cwd = "../../../.."
+description = "Run pre-commit checks on the entire repo"
