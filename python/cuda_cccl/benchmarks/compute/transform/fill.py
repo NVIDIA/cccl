@@ -31,31 +31,27 @@ def bench_fill(state: bench.State):
     num_items = int(state.get_int64("Elements{io}"))
 
     # Setup data
+    alloc_stream = as_cupy_stream(state.get_stream())
     try:
-        alloc_stream = as_cupy_stream(state.get_stream())
         with alloc_stream:
             d_out = cp.empty(num_items, dtype=dtype)
-
-        # Python equivalent of C++ return_constant<T>{42}
-        constant_it = ConstantIterator(dtype(42))
-
-        transform = cuda.compute.make_unary_transform(
-            constant_it, d_out, OpKind.IDENTITY
-        )
-
-        state.add_element_count(num_items)
-        state.add_global_memory_reads(0)
-        state.add_global_memory_writes(num_items * d_out.dtype.itemsize)
-
-        def launcher(launch: bench.Launch):
-            transform(
-                constant_it, d_out, OpKind.IDENTITY, num_items, launch.get_stream()
-            )
-
-        state.exec(launcher, batched=False)
     except (MemoryError, cp.cuda.memory.OutOfMemoryError):
         state.skip("Skipping: out of memory.")
         return
+
+    # Python equivalent of C++ return_constant<T>{42}
+    constant_it = ConstantIterator(dtype(42))
+
+    transform = cuda.compute.make_unary_transform(constant_it, d_out, OpKind.IDENTITY)
+
+    state.add_element_count(num_items)
+    state.add_global_memory_reads(0)
+    state.add_global_memory_writes(num_items * d_out.dtype.itemsize)
+
+    def launcher(launch: bench.Launch):
+        transform(constant_it, d_out, OpKind.IDENTITY, num_items, launch.get_stream())
+
+    state.exec(launcher, batched=False)
 
 
 if __name__ == "__main__":

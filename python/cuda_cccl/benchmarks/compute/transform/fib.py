@@ -53,8 +53,8 @@ def bench_transform_fib(state: bench.State):
     # Axes
     num_elements = int(state.get_int64("Elements{io}"))
 
+    alloc_stream = as_cupy_stream(state.get_stream())
     try:
-        alloc_stream = as_cupy_stream(state.get_stream())
         with alloc_stream:
             d_in = generate_data_with_entropy(
                 num_elements,
@@ -65,20 +65,20 @@ def bench_transform_fib(state: bench.State):
                 max_val=np.int64(42),
             )
             d_out = cp.empty(num_elements, dtype=np.uint32)
-
-        transformer = make_unary_transform(d_in, d_out, fib_op)
-
-        state.add_element_count(num_elements)
-        state.add_global_memory_reads(num_elements * d_in.dtype.itemsize)
-        state.add_global_memory_writes(num_elements * d_out.dtype.itemsize)
-
-        def launcher(launch: bench.Launch):
-            transformer(d_in, d_out, fib_op, num_elements, launch.get_stream())
-
-        state.exec(launcher, batched=False)
     except (MemoryError, cp.cuda.memory.OutOfMemoryError):
         state.skip("Skipping: out of memory.")
         return
+
+    transformer = make_unary_transform(d_in, d_out, fib_op)
+
+    state.add_element_count(num_elements)
+    state.add_global_memory_reads(num_elements * d_in.dtype.itemsize)
+    state.add_global_memory_writes(num_elements * d_out.dtype.itemsize)
+
+    def launcher(launch: bench.Launch):
+        transformer(d_in, d_out, fib_op, num_elements, launch.get_stream())
+
+    state.exec(launcher, batched=False)
 
 
 if __name__ == "__main__":
