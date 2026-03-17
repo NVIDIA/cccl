@@ -1,9 +1,13 @@
 ---
 Checks:
-      'modernize-*,
-       -modernize-use-equals-default,
-       -modernize-concat-nested-namespaces,
-       -modernize-use-trailing-return-type'
+  # TODO: BEGIN REMOVE ME
+  - '-*'
+  - 'performance-implicit-conversion-in-loop'
+  # END REMOVE ME
+      # 'modernize-*,
+      #  -modernize-use-equals-default,
+      #  -modernize-concat-nested-namespaces,
+      #  -modernize-use-trailing-return-type'
 
       # -modernize-use-equals-default        # auto-fix is broken (doesn't insert =default correctly)
       # -modernize-concat-nested-namespaces  # auto-fix is broken (can delete code)

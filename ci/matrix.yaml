@@ -89,6 +89,16 @@ workflows:
     # libc++
     # - arm64 for now as it's closest to android.
     # - {jobs: ['build'], cpu: 'arm64', project: 'libcudacxx', std: 'all', cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', cmake_options: '-DCCCL_USE_LIBCXX=ON', sm: '75;80;90;100'}
+    # clang-tidy
+    #
+    # The precise value of sm is not important, but it is required for cmake to identify
+    # clang as a CUDA compiler (see
+    # https://discourse.cmake.org/t/cmake-cuda-clang-fails/8657/5).
+    #
+    # Standard being exactly "min" is required. clang-tidy may emit additional diagnostics
+    # for later C++ versions (for example, warning that you should use designated
+    # initializers in C++20 or higher).
+    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang'], cudacxx: ['clang'], ctk: 'clang-cuda', sm: '75' }
 
   # Used when an upstream project changes to reduce time spent smoke testing dependencies.
   pull_request_lite:
@@ -209,6 +219,8 @@ workflows:
     - {jobs: ['build'], cxx: 'nvhpc',      ctk: 'nvhpc',      std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
     # clang-cuda
     - {jobs: ['build'], cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', std: 'all', sm: '75;80;90;100'}
+    # clang-tidy
+    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang'], cudacxx: ['clang'], ctk: 'clang-cuda', sm: '75' }
 
   weekly:
     # CTK 12.0 full matrix build: default projects
@@ -298,6 +310,8 @@ workflows:
     - {jobs: ['build'], cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', std: 'all', sm: '75;80;90;100'}
     # compute-sanitizer
     - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
+    # clang-tidy
+    - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang'], cudacxx: ['clang'], ctk: 'clang-cuda', sm: '75' }
 
   python-wheels:
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: ['gcc13', 'msvc']}
@@ -562,6 +576,9 @@ projects:
   bisect:
     name: 'Bisect'
     stds: [17, 20]
+  tidy:
+    name: 'clang-tidy'
+    stds: [17]
 
 # testing -> Runner with GPU is in a nv-gh-runners testing pool
 gpus:
