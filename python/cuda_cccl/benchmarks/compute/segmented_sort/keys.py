@@ -84,22 +84,7 @@ def run_segmented_sort(
             launch.get_stream(),
         )
 
-    exec_tag = getattr(bench, "exec_tag", None)
-    if exec_tag is not None:
-        try:
-            state.exec(launcher, exec_tag=exec_tag.sync, batched=False)
-            return
-        except TypeError:
-            try:
-                state.exec(exec_tag.sync, launcher, batched=False)
-                return
-            except TypeError:
-                pass
-
-    try:
-        state.exec(launcher, batched=False, sync=True)
-    except TypeError:
-        state.exec(launcher, batched=False)
+    state.exec(launcher, batched=False, sync=True)
 
 
 def bench_segmented_sort(state: bench.State, use_power_law: bool):
