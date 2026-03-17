@@ -7,10 +7,28 @@
 #include <cub/device/device_radix_sort.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+
+#include <cuda/devices>
+#include <cuda/stream>
 
 #include <iostream>
 
 #include <c2h/catch2_test_helper.h>
+
+struct custom_key_t
+{
+  int key;
+  int payload;
+};
+
+struct custom_decomposer_t
+{
+  __host__ __device__ auto operator()(custom_key_t& k) const -> ::cuda::std::tuple<int&>
+  {
+    return {k.key};
+  }
+};
 
 C2H_TEST("cub::DeviceRadixSort::SortPairs env-based API", "[radix_sort][env]")
 {
@@ -156,4 +174,152 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending DoubleBuffer env-based API", 
   REQUIRE(error == cudaSuccess);
   auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
   REQUIRE(keys == expected_keys);
+}
+
+C2H_TEST("cub::DeviceRadixSort::SortPairs decomposer with bits env-based API", "[radix_sort][env]")
+{
+  // example-begin radix-sort-pairs-decomposer-bits-env
+  auto keys_in    = thrust::device_vector<custom_key_t>{{3, 100}, {1, 200}, {2, 300}};
+  auto keys_out   = thrust::device_vector<custom_key_t>(3);
+  auto values_in  = thrust::device_vector<int>{0, 1, 2};
+  auto values_out = thrust::device_vector<int>(3);
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceRadixSort::SortPairs(
+    keys_in.data().get(),
+    keys_out.data().get(),
+    values_in.data().get(),
+    values_out.data().get(),
+    static_cast<int>(keys_in.size()),
+    custom_decomposer_t{},
+    0,
+    sizeof(int) * 8,
+    stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceRadixSort::SortPairs (decomposer+bits) failed with status: " << error << std::endl;
+  }
+  stream.sync();
+  // example-end radix-sort-pairs-decomposer-bits-env
+
+  REQUIRE(error == cudaSuccess);
+  thrust::host_vector<custom_key_t> h_keys_out(keys_out);
+  REQUIRE(h_keys_out[0].key == 1);
+  REQUIRE(h_keys_out[1].key == 2);
+  REQUIRE(h_keys_out[2].key == 3);
+  thrust::host_vector<int> h_values_out(values_out);
+  REQUIRE(h_values_out[0] == 1);
+  REQUIRE(h_values_out[1] == 2);
+  REQUIRE(h_values_out[2] == 0);
+}
+
+C2H_TEST("cub::DeviceRadixSort::SortPairs decomposer env-based API", "[radix_sort][env]")
+{
+  // example-begin radix-sort-pairs-decomposer-env
+  auto keys_in    = thrust::device_vector<custom_key_t>{{3, 100}, {1, 200}, {2, 300}};
+  auto keys_out   = thrust::device_vector<custom_key_t>(3);
+  auto values_in  = thrust::device_vector<int>{0, 1, 2};
+  auto values_out = thrust::device_vector<int>(3);
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceRadixSort::SortPairs(
+    keys_in.data().get(),
+    keys_out.data().get(),
+    values_in.data().get(),
+    values_out.data().get(),
+    static_cast<int>(keys_in.size()),
+    custom_decomposer_t{},
+    stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceRadixSort::SortPairs (decomposer) failed with status: " << error << std::endl;
+  }
+  stream.sync();
+  // example-end radix-sort-pairs-decomposer-env
+
+  REQUIRE(error == cudaSuccess);
+  thrust::host_vector<custom_key_t> h_keys_out(keys_out);
+  REQUIRE(h_keys_out[0].key == 1);
+  REQUIRE(h_keys_out[1].key == 2);
+  REQUIRE(h_keys_out[2].key == 3);
+  thrust::host_vector<int> h_values_out(values_out);
+  REQUIRE(h_values_out[0] == 1);
+  REQUIRE(h_values_out[1] == 2);
+  REQUIRE(h_values_out[2] == 0);
+}
+
+C2H_TEST("cub::DeviceRadixSort::SortPairs DoubleBuffer decomposer env-based API", "[radix_sort][env]")
+{
+  // example-begin radix-sort-pairs-db-decomposer-env
+  thrust::device_vector<custom_key_t> keys_buf0{{3, 100}, {1, 200}, {2, 300}};
+  thrust::device_vector<custom_key_t> keys_buf1(3);
+  thrust::device_vector<int> values_buf0{0, 1, 2};
+  thrust::device_vector<int> values_buf1(3);
+
+  cub::DoubleBuffer<custom_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
+  cub::DoubleBuffer<int> d_values(values_buf0.data().get(), values_buf1.data().get());
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceRadixSort::SortPairs(
+    d_keys, d_values, static_cast<int>(keys_buf0.size()), custom_decomposer_t{}, stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceRadixSort::SortPairs (DB decomposer) failed with status: " << error << std::endl;
+  }
+  stream.sync();
+  // example-end radix-sort-pairs-db-decomposer-env
+
+  REQUIRE(error == cudaSuccess);
+  auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
+  thrust::host_vector<custom_key_t> h_keys(keys);
+  REQUIRE(h_keys[0].key == 1);
+  REQUIRE(h_keys[1].key == 2);
+  REQUIRE(h_keys[2].key == 3);
+  auto& values = d_values.selector == 0 ? values_buf0 : values_buf1;
+  thrust::host_vector<int> h_values(values);
+  REQUIRE(h_values[0] == 1);
+  REQUIRE(h_values[1] == 2);
+  REQUIRE(h_values[2] == 0);
+}
+
+C2H_TEST("cub::DeviceRadixSort::SortPairs DoubleBuffer decomposer with bits env-based API", "[radix_sort][env]")
+{
+  // example-begin radix-sort-pairs-db-decomposer-bits-env
+  thrust::device_vector<custom_key_t> keys_buf0{{3, 100}, {1, 200}, {2, 300}};
+  thrust::device_vector<custom_key_t> keys_buf1(3);
+  thrust::device_vector<int> values_buf0{0, 1, 2};
+  thrust::device_vector<int> values_buf1(3);
+
+  cub::DoubleBuffer<custom_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
+  cub::DoubleBuffer<int> d_values(values_buf0.data().get(), values_buf1.data().get());
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceRadixSort::SortPairs(
+    d_keys, d_values, static_cast<int>(keys_buf0.size()), custom_decomposer_t{}, 0, sizeof(int) * 8, stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceRadixSort::SortPairs (DB decomposer+bits) failed with status: " << error << std::endl;
+  }
+  stream.sync();
+  // example-end radix-sort-pairs-db-decomposer-bits-env
+
+  REQUIRE(error == cudaSuccess);
+  auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
+  thrust::host_vector<custom_key_t> h_keys(keys);
+  REQUIRE(h_keys[0].key == 1);
+  REQUIRE(h_keys[1].key == 2);
+  REQUIRE(h_keys[2].key == 3);
+  auto& values = d_values.selector == 0 ? values_buf0 : values_buf1;
+  thrust::host_vector<int> h_values(values);
+  REQUIRE(h_values[0] == 1);
+  REQUIRE(h_values[1] == 2);
+  REQUIRE(h_values[2] == 0);
 }
