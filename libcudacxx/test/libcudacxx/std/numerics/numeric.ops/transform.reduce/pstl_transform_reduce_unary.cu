@@ -32,7 +32,7 @@
 
 #include "test_macros.h"
 
-inline constexpr int size = 100;
+inline constexpr int size = 1000;
 
 template <class T>
 struct plus_one
