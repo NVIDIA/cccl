@@ -367,7 +367,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works", "[merge][sort][device]", wide_key_t
 }
 
 C2H_TEST(
-  "DeviceMergeSort::StableSortPairs works and performs a stable sort", "[merge][sort][device][skip-cs-initcheck]", key_types, value_types)
+  "DeviceMergeSort::StableSortPairs works and performs a stable sort", "[merge][sort][device]", key_types, value_types)
 {
   using key_t    = typename c2h::get<0, TestType>;
   using data_t   = typename c2h::get<1, TestType>;
