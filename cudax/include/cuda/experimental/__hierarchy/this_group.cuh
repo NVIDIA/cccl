@@ -83,11 +83,10 @@ class __this_group_base
   static_assert(__is_hierarchy_level_v<_Level>);
   static_assert(__is_hierarchy_v<_Hierarchy>);
 
+protected:
   _Hierarchy __hier_;
 
 public:
-  using hierarchy_type = _Hierarchy;
-
   _CCCL_DEVICE_API explicit __this_group_base() noexcept
       : __hier_{::cuda::experimental::__implicit_hierarchy()}
   {}
@@ -98,22 +97,17 @@ public:
       : __hier_{::cuda::__unpack_hierarchy_if_needed(__hier_like)}
   {}
 
-  [[nodiscard]] _CCCL_API const _Hierarchy& hierarchy() const noexcept
-  {
-    return __hier_;
-  }
-
   _CCCL_TEMPLATE(class _Tp, class _InLevel, class _Level2 = _Level)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel> _CCCL_AND(
     !::cuda::std::is_same_v<_Level2, grid_level>))
-  [[nodiscard]] _CCCL_API constexpr _Tp count_as(const _InLevel& __in_level) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp count_as(const _InLevel& __in_level) const noexcept
   {
     return _Level{}.template count_as<_Tp>(__in_level);
   }
 
   _CCCL_TEMPLATE(class _InLevel, class _Level2 = _Level)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND(!::cuda::std::is_same_v<_Level2, grid_level>))
-  [[nodiscard]] _CCCL_API constexpr auto count(const _InLevel& __in_level) const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _InLevel& __in_level) const noexcept
   {
     return _Level{}.count(__in_level);
   }
@@ -142,12 +136,13 @@ class this_thread : __this_group_base<thread_level, _Hierarchy>
   using __base_type = __this_group_base<thread_level, _Hierarchy>;
 
 public:
-  using level_type = thread_level;
+  using unit_type      = thread_level;
+  using level_type     = thread_level;
+  using hierarchy_type = _Hierarchy;
 
   using __base_type::__base_type;
   using __base_type::count;
   using __base_type::count_as;
-  using __base_type::hierarchy;
 #if _CCCL_CUDA_COMPILATION()
   using __base_type::rank;
   using __base_type::rank_as;
@@ -161,6 +156,11 @@ public:
   _CCCL_DEVICE_API void sync() noexcept {}
 
   _CCCL_DEVICE_API void sync_aligned() noexcept {}
+
+  [[nodiscard]] _CCCL_DEVICE_API const _Hierarchy& hierarchy() const noexcept
+  {
+    return __base_type::__hier_;
+  }
 #endif // _CCCL_CUDA_COMPILATION()
 };
 
@@ -178,12 +178,13 @@ class this_warp : __this_group_base<warp_level, _Hierarchy>
   using __base_type = __this_group_base<warp_level, _Hierarchy>;
 
 public:
-  using level_type = warp_level;
+  using unit_type      = warp_level;
+  using level_type     = warp_level;
+  using hierarchy_type = _Hierarchy;
 
   using __base_type::__base_type;
   using __base_type::count;
   using __base_type::count_as;
-  using __base_type::hierarchy;
 #if _CCCL_CUDA_COMPILATION()
   using __base_type::rank;
   using __base_type::rank_as;
@@ -203,6 +204,11 @@ public:
   {
     ::__syncwarp();
   }
+
+  [[nodiscard]] _CCCL_DEVICE_API const _Hierarchy& hierarchy() const noexcept
+  {
+    return __base_type::__hier_;
+  }
 #endif // _CCCL_CUDA_COMPILATION()
 };
 
@@ -221,12 +227,13 @@ class this_block : __this_group_base<block_level, _Hierarchy>
   using __base_type = __this_group_base<block_level, _Hierarchy>;
 
 public:
-  using level_type = block_level;
+  using unit_type      = block_level;
+  using level_type     = block_level;
+  using hierarchy_type = _Hierarchy;
 
   using __base_type::__base_type;
   using __base_type::count;
   using __base_type::count_as;
-  using __base_type::hierarchy;
 
 #if _CCCL_CUDA_COMPILATION()
   using __base_type::rank;
@@ -245,6 +252,11 @@ public:
   {
     ::cuda::experimental::__block_sync<true>();
   }
+
+  [[nodiscard]] _CCCL_DEVICE_API const _Hierarchy& hierarchy() const noexcept
+  {
+    return __base_type::__hier_;
+  }
 #endif // _CCCL_CUDA_COMPILATION()
 };
 
@@ -262,12 +274,13 @@ class this_cluster : __this_group_base<cluster_level, _Hierarchy>
   using __base_type = __this_group_base<cluster_level, _Hierarchy>;
 
 public:
-  using level_type = cluster_level;
+  using unit_type      = cluster_level;
+  using level_type     = cluster_level;
+  using hierarchy_type = _Hierarchy;
 
   using __base_type::__base_type;
   using __base_type::count;
   using __base_type::count_as;
-  using __base_type::hierarchy;
 
 #if _CCCL_CUDA_COMPILATION()
   using __base_type::rank;
@@ -285,6 +298,11 @@ public:
   _CCCL_DEVICE_API void sync_aligned() noexcept
   {
     ::cuda::experimental::__cluster_sync<true>();
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API const _Hierarchy& hierarchy() const noexcept
+  {
+    return __base_type::__hier_;
   }
 #endif // _CCCL_CUDA_COMPILATION()
 };
@@ -374,10 +392,11 @@ class this_grid : __this_group_base<grid_level, _Hierarchy>
 #endif // _CCCL_CUDA_COMPILATION()
 
 public:
-  using level_type = grid_level;
+  using unit_type      = grid_level;
+  using level_type     = grid_level;
+  using hierarchy_type = _Hierarchy;
 
   using __base_type::__base_type;
-  using __base_type::hierarchy;
 
 #if _CCCL_CUDA_COMPILATION()
 #  if _CCCL_HAS_COOPERATIVE_GROUPS()
@@ -392,6 +411,11 @@ public:
   _CCCL_DEVICE_API void sync_aligned() noexcept
   {
     __sync_impl<true>();
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API const _Hierarchy& hierarchy() const noexcept
+  {
+    return __base_type::__hier_;
   }
 #endif // _CCCL_CUDA_COMPILATION()
 };
