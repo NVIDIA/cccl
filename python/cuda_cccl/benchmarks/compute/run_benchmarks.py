@@ -481,10 +481,6 @@ Supported benchmarks:
             )
 
     print()
-    print("To compare results, run:")
-    for bench in benchmarks_to_run:
-        print(f"  python analysis/python_vs_cpp_summary.py -b {bench} -d {args.device}")
-    print()
 
 
 if __name__ == "__main__":
