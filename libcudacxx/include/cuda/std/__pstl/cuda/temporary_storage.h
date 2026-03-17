@@ -112,7 +112,7 @@ class __temporary_storage
   }
 
   //! @brief Helper function to retrieve a memory resource from a policy
-  //!        In contrast to `__call_or` it does not require us to allways call .device() on the stream
+  //!        In contrast to `__call_or` it does not require us to always call .device() on the stream
   template <class _Policy>
   [[nodiscard]] _CCCL_HOST_API static ::cuda::mr::resource_ref<::cuda::mr::device_accessible>
   __get_memory_resource_or(const _Policy& __policy) noexcept
