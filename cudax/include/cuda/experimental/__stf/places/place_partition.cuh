@@ -79,7 +79,7 @@ inline ::std::string place_partition_scope_to_string(place_partition_scope scope
  * are obtained from the handle). The constructors without a handle support only
  * `cuda_device` scope. Green context scope requires CUDA 12.4 or later.
  *
- * Iteration over subplaces is provided via `begin()` / `end()`; `as_grid()` builds
+ * Iteration over subplaces is provided via `begin()` / `end()`; `to_exec_place()` builds
  * an `exec_place` grid from the subplaces.
  */
 class place_partition
@@ -212,7 +212,7 @@ public:
   /** @brief Build an exec_place from the subplaces.
    * @return A grid view of the partitioned execution places, or single place if size == 1.
    */
-  exec_place as_grid() const
+  exec_place to_exec_place() const
   {
     return make_grid(sub_places);
   }
@@ -367,6 +367,6 @@ private:
 template <typename... Args>
 auto exec_place::partition_by_scope(Args&&... args)
 {
-  return place_partition(*this, ::std::forward<Args>(args)...).as_grid();
+  return place_partition(*this, ::std::forward<Args>(args)...).to_exec_place();
 }
 } // end namespace cuda::experimental::stf

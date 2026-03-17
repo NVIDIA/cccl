@@ -41,7 +41,7 @@ public:
       , dummy_pool_(dstream)
   {}
 
-  ::std::shared_ptr<exec_place::impl> get_place_impl(size_t idx) override
+  ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
     EXPECT(idx == 0, "Index out of bounds for cuda_stream exec_place");
     return shared_from_this();
@@ -53,7 +53,7 @@ public:
     return exec_place::device(dstream_.dev_id).activate();
   }
 
-  void deactivate(size_t idx, const exec_place& prev) const override
+  void deactivate(const exec_place& prev, size_t idx = 0) const override
   {
     EXPECT(idx == 0, "Index out of bounds for cuda_stream exec_place");
     exec_place::device(dstream_.dev_id).deactivate(prev);

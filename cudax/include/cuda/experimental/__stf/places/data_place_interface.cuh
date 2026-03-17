@@ -180,15 +180,6 @@ public:
   // === Composite-specific (throw by default) ===
 
   /**
-   * @brief Get the grid for composite places
-   * @throws std::logic_error if not a composite place
-   */
-  virtual const exec_place& get_grid() const
-  {
-    throw ::std::logic_error("get_grid() called on non-composite data_place");
-  }
-
-  /**
    * @brief Get the partitioner function for composite places
    * @throws std::logic_error if not a composite place
    */

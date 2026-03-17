@@ -476,7 +476,8 @@ public:
       dim4 data_dims)
   {
     EXPECT(place.is_composite());
-    return cache.get(place.get_grid(), mapper, ::std::forward<F>(delinearize), total_size, elem_size, data_dims);
+    return cache.get(
+      place.affine_exec_place(), mapper, ::std::forward<F>(delinearize), total_size, elem_size, data_dims);
   }
 
 private:

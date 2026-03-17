@@ -295,11 +295,6 @@ public:
     return p.pimpl_->get_device_ordinal();
   }
 
-  const exec_place& get_grid() const
-  {
-    return pimpl_->get_grid();
-  }
-
   const get_executor_func_t& get_partitioner() const
   {
     return pimpl_->get_partitioner();
@@ -420,7 +415,7 @@ public:
      * For scalar places, idx must be 0 and returns shared_from_this().
      * For grids, returns the impl of the stored sub-place.
      */
-    virtual ::std::shared_ptr<impl> get_place_impl(size_t idx);
+    virtual ::std::shared_ptr<impl> get_place(size_t idx);
 
     // ===== Activation/deactivation (indexed) =====
 
@@ -430,38 +425,12 @@ public:
      * For scalar places, idx must be 0.
      * Returns the previous execution state needed for deactivate().
      */
-    virtual exec_place activate(size_t idx) const
-    {
-      EXPECT(idx == 0, "Index out of bounds for scalar exec_place");
-      if (!affine.is_device())
-      {
-        return exec_place();
-      }
-      auto old_dev_id = cuda_try<cudaGetDevice>();
-      auto new_dev_id = device_ordinal(affine);
-      if (old_dev_id != new_dev_id)
-      {
-        cuda_safe_call(cudaSetDevice(new_dev_id));
-      }
-      return exec_place(data_place::device(old_dev_id));
-    }
+    virtual exec_place activate(size_t idx) const = 0;
 
     /**
      * @brief Deactivate the sub-place at the given index, restoring previous state
      */
-    virtual void deactivate(size_t idx, const exec_place& prev) const
-    {
-      EXPECT(idx == 0, "Index out of bounds for scalar exec_place");
-      if (affine.is_device())
-      {
-        auto current_dev_id  = cuda_try<cudaGetDevice>();
-        auto restored_dev_id = device_ordinal(prev.pimpl->affine);
-        if (current_dev_id != restored_dev_id)
-        {
-          cuda_safe_call(cudaSetDevice(restored_dev_id));
-        }
-      }
-    }
+    virtual void deactivate(const exec_place& prev, size_t idx = 0) const = 0;
 
     // ===== Properties =====
 
@@ -537,10 +506,9 @@ public:
 
   exec_place() = default;
   exec_place(const data_place& affine)
-      : pimpl(affine.is_device() ? device(device_ordinal(affine)).pimpl : ::std::make_shared<impl>(affine))
+      : pimpl(affine.is_device() ? device(device_ordinal(affine)).pimpl : device_auto().pimpl)
   {
-    _CCCL_ASSERT(pimpl->affine != data_place::host(),
-                 "To create an execution place for the host, use exec_place::host().");
+    _CCCL_ASSERT(!affine.is_host(), "To create an execution place for the host, use exec_place::host().");
   }
 
   bool operator==(const exec_place& rhs) const
@@ -609,7 +577,7 @@ public:
    */
   exec_place get_place(size_t idx)
   {
-    return exec_place(pimpl->get_place_impl(idx));
+    return exec_place(pimpl->get_place(idx));
   }
 
   /**
@@ -633,7 +601,7 @@ public:
 
     exec_place operator*()
     {
-      return exec_place(it_impl->get_place_impl(index));
+      return exec_place(it_impl->get_place(index));
     }
 
     iterator& operator++()
@@ -682,20 +650,12 @@ public:
   /**
    * @brief Deactivate the sub-place at the given index, restoring previous state
    *
-   * @param idx The index of the sub-place to deactivate (default 0 for scalar places)
    * @param prev The previous state returned by activate()
+   * @param idx The index of the sub-place to deactivate (default 0 for scalar places)
    */
-  void deactivate(size_t idx, const exec_place& prev) const
+  void deactivate(const exec_place& prev, size_t idx = 0) const
   {
-    pimpl->deactivate(idx, prev);
-  }
-
-  /**
-   * @brief Convenience overload for scalar places (idx=0)
-   */
-  void deactivate(const exec_place& prev) const
-  {
-    deactivate(0, prev);
+    pimpl->deactivate(prev, idx);
   }
 
   /**
@@ -709,7 +669,7 @@ public:
     if (cur_idx >= 0)
     {
       exec_place saved_prev(pimpl->get_saved_prev_impl());
-      pimpl->deactivate(cur_idx, saved_prev);
+      pimpl->deactivate(saved_prev, cur_idx);
     }
     pimpl->set_current_idx(static_cast<::std::ptrdiff_t>(idx));
     exec_place prev = pimpl->activate(idx);
@@ -732,7 +692,7 @@ public:
     auto cur_idx = pimpl->get_current_idx();
     EXPECT(cur_idx >= 0, "unset_current_place() called without corresponding set_current_place()");
     exec_place saved_prev(pimpl->get_saved_prev_impl());
-    pimpl->deactivate(cur_idx, saved_prev);
+    pimpl->deactivate(saved_prev, cur_idx);
     pimpl->set_current_idx(-1);
   }
 
@@ -1018,7 +978,7 @@ public:
     {}
 
     // Grid interface - host is a 1-element grid
-    ::std::shared_ptr<exec_place::impl> get_place_impl(size_t idx) override;
+    ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override;
 
     // Activation - no-op for host
     exec_place activate(size_t idx) const override
@@ -1027,7 +987,7 @@ public:
       return exec_place();
     }
 
-    void deactivate(size_t idx, const exec_place& prev) const override
+    void deactivate(const exec_place& prev, size_t idx = 0) const override
     {
       EXPECT(idx == 0, "Index out of bounds for host exec_place");
       _CCCL_ASSERT(!prev.get_impl(), "Host deactivate expects empty prev");
@@ -1073,9 +1033,41 @@ inline exec_place_host exec_place::host()
   return exec_place_host();
 }
 
+// Implementation for device_auto placeholder
+class exec_place_device_auto_impl : public exec_place::impl
+{
+public:
+  exec_place_device_auto_impl()
+      : exec_place::impl(data_place::device_auto())
+  {}
+
+  exec_place activate(size_t) const override
+  {
+    throw ::std::logic_error("activate() called on device_auto exec_place - should be resolved first");
+  }
+
+  void deactivate(const exec_place&, size_t) const override
+  {
+    throw ::std::logic_error("deactivate() called on device_auto exec_place - should be resolved first");
+  }
+
+  ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
+  {
+    EXPECT(idx == 0, "Index out of bounds for device_auto exec_place");
+    // Static instance - use no-op deleter instead of shared_from_this()
+    return ::std::shared_ptr<impl>(this, [](impl*) {});
+  }
+
+  ::std::string to_string() const override
+  {
+    return "device_auto";
+  }
+};
+
 inline exec_place exec_place::device_auto()
 {
-  return exec_place(data_place::device_auto());
+  static exec_place_device_auto_impl instance;
+  return ::std::shared_ptr<exec_place::impl>(&instance, [](exec_place::impl*) {});
 }
 
 UNITTEST("exec_place_host::operator->*")
@@ -1107,7 +1099,29 @@ public:
     }
 
     // Grid interface - device is a 1-element grid
-    ::std::shared_ptr<exec_place::impl> get_place_impl(size_t idx) override;
+    ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override;
+
+    exec_place activate(size_t idx) const override
+    {
+      EXPECT(idx == 0, "Index out of bounds for device exec_place");
+      auto old_dev_id = cuda_try<cudaGetDevice>();
+      if (old_dev_id != devid_)
+      {
+        cuda_safe_call(cudaSetDevice(devid_));
+      }
+      return exec_place::device(old_dev_id);
+    }
+
+    void deactivate(const exec_place& prev, size_t idx = 0) const override
+    {
+      EXPECT(idx == 0, "Index out of bounds for device exec_place");
+      auto current_dev_id  = cuda_try<cudaGetDevice>();
+      auto restored_dev_id = device_ordinal(prev.affine_data_place());
+      if (current_dev_id != restored_dev_id)
+      {
+        cuda_safe_call(cudaSetDevice(restored_dev_id));
+      }
+    }
 
     int get_devid() const
     {
@@ -1221,7 +1235,7 @@ public:
     return dims_.size();
   }
 
-  ::std::shared_ptr<exec_place::impl> get_place_impl(size_t idx) override
+  ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
     EXPECT(idx < places_.size(), "Index out of bounds");
     return places_[idx].get_impl();
@@ -1235,10 +1249,10 @@ public:
     return places_[idx].activate(0);
   }
 
-  void deactivate(size_t idx, const exec_place& prev) const override
+  void deactivate(const exec_place& prev, size_t idx = 0) const override
   {
     EXPECT(idx < places_.size(), "Index out of bounds");
-    places_[idx].deactivate(0, prev);
+    places_[idx].deactivate(prev);
   }
 
   // ===== Properties =====
@@ -1353,12 +1367,6 @@ inline exec_place data_place::affine_exec_place() const
     return exec_place::host();
   }
 
-  if (is_composite())
-  {
-    // Return the grid of places associated to this composite data place
-    return get_grid();
-  }
-
   if (is_device())
   {
     // This must be a specific device
@@ -1379,22 +1387,24 @@ inline exec_place data_place::affine_exec_place() const
 
 // === Deferred implementations for get_place() ===
 
-inline ::std::shared_ptr<exec_place::impl> exec_place::impl::get_place_impl(size_t idx)
+inline ::std::shared_ptr<exec_place::impl> exec_place::impl::get_place(size_t idx)
 {
   EXPECT(idx == 0, "Index out of bounds for scalar exec_place");
   return shared_from_this();
 }
 
-inline ::std::shared_ptr<exec_place::impl> exec_place_host::impl::get_place_impl(size_t idx)
+inline ::std::shared_ptr<exec_place::impl> exec_place_host::impl::get_place(size_t idx)
 {
   EXPECT(idx == 0, "Index out of bounds for host exec_place");
-  return shared_from_this();
+  // Static instance - use no-op deleter instead of shared_from_this()
+  return ::std::shared_ptr<impl>(this, [](impl*) {});
 }
 
-inline ::std::shared_ptr<exec_place::impl> exec_place_device::impl::get_place_impl(size_t idx)
+inline ::std::shared_ptr<exec_place::impl> exec_place_device::impl::get_place(size_t idx)
 {
   EXPECT(idx == 0, "Index out of bounds for device exec_place");
-  return shared_from_this();
+  // Static instance - use no-op deleter instead of shared_from_this()
+  return ::std::shared_ptr<impl>(this, [](impl*) {});
 }
 
 //! Creates a grid by replicating an execution place multiple times
@@ -1587,12 +1597,12 @@ public:
     {
       return ::std::less<get_executor_func_t>{}(o.get_partitioner(), get_partitioner()) ? 1 : -1;
     }
-    if (get_grid() == o.get_grid())
+    if (grid_ == o.grid_)
     {
       return 0;
     }
     // Grids differ: compare structurally (shape first, then element-by-element places)
-    return (get_grid() < o.get_grid()) ? -1 : 1;
+    return (grid_ < o.grid_) ? -1 : 1;
   }
 
   void* allocate(::std::ptrdiff_t, cudaStream_t) const override
@@ -1610,9 +1620,9 @@ public:
     return false;
   }
 
-  const exec_place& get_grid() const override
+  ::std::shared_ptr<void> get_affine_exec_impl() const override
   {
-    return grid_;
+    return grid_.get_impl();
   }
 
   const get_executor_func_t& get_partitioner() const override

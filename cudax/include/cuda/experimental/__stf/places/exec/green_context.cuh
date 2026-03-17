@@ -277,7 +277,7 @@ public:
       : driver_context_(saved_context)
   {}
 
-  ::std::shared_ptr<exec_place::impl> get_place_impl(size_t idx) override
+  ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
     EXPECT(idx == 0, "Index out of bounds for green_ctx exec_place");
     return shared_from_this();
@@ -299,7 +299,7 @@ public:
     return result;
   }
 
-  void deactivate(size_t idx, const exec_place& prev) const override
+  void deactivate(const exec_place& prev, size_t idx = 0) const override
   {
     EXPECT(idx == 0, "Index out of bounds for green_ctx exec_place");
 
