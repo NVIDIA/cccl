@@ -66,7 +66,7 @@ public:
 
   ::std::string to_string() const override
   {
-    return "exec(stream id=" + ::std::to_string(dstream_.id) + " dev=" + ::std::to_string(dstream_.dev_id) + ")";
+    return "cuda_stream(id=" + ::std::to_string(dstream_.id) + " dev=" + ::std::to_string(dstream_.dev_id) + ")";
   }
 
   int cmp(const exec_place::impl& rhs) const override
@@ -76,15 +76,7 @@ public:
       return typeid(*this).before(typeid(rhs)) ? -1 : 1;
     }
     const auto& other = static_cast<const exec_place_cuda_stream_impl&>(rhs);
-    if (dstream_.stream < other.dstream_.stream)
-    {
-      return -1;
-    }
-    if (other.dstream_.stream < dstream_.stream)
-    {
-      return 1;
-    }
-    return 0;
+    return (other.dstream_.stream < dstream_.stream) - (dstream_.stream < other.dstream_.stream);
   }
 
   size_t hash() const override

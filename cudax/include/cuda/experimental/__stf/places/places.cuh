@@ -492,15 +492,7 @@ public:
       {
         return typeid(*this).before(typeid(rhs)) ? -1 : 1;
       }
-      if (affine < rhs.affine)
-      {
-        return -1;
-      }
-      if (rhs.affine < affine)
-      {
-        return 1;
-      }
-      return 0;
+      return (rhs.affine < affine) - (affine < rhs.affine);
     }
 
     virtual size_t hash() const
@@ -1050,6 +1042,11 @@ public:
     {
       return exec_place::current_device().get_stream_pool(for_computation);
     }
+
+    ::std::string to_string() const override
+    {
+      return "host";
+    }
   };
 
   static ::std::shared_ptr<impl> make()
@@ -1115,6 +1112,11 @@ public:
     int get_devid() const
     {
       return devid_;
+    }
+
+    ::std::string to_string() const override
+    {
+      return "device(" + ::std::to_string(devid_) + ")";
     }
 
   private:
@@ -1259,24 +1261,12 @@ public:
     // Compare dims first
     auto this_dims  = ::std::tie(dims_.x, dims_.y, dims_.z, dims_.t);
     auto other_dims = ::std::tie(other.dims_.x, other.dims_.y, other.dims_.z, other.dims_.t);
-    if (this_dims < other_dims)
+    if (int c = (other_dims < this_dims) - (this_dims < other_dims); c != 0)
     {
-      return -1;
-    }
-    if (other_dims < this_dims)
-    {
-      return 1;
+      return c;
     }
     // Then compare places
-    if (places_ < other.places_)
-    {
-      return -1;
-    }
-    if (other.places_ < places_)
-    {
-      return 1;
-    }
-    return 0;
+    return (other.places_ < places_) - (places_ < other.places_);
   }
 
   size_t hash() const override

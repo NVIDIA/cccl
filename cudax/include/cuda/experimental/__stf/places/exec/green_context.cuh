@@ -332,15 +332,7 @@ public:
       return typeid(*this).before(typeid(rhs)) ? -1 : 1;
     }
     const auto& other = static_cast<const exec_place_green_ctx_impl&>(rhs);
-    if (g_ctx_ < other.g_ctx_)
-    {
-      return -1;
-    }
-    if (other.g_ctx_ < g_ctx_)
-    {
-      return 1;
-    }
-    return 0;
+    return (other.g_ctx_ < g_ctx_) - (g_ctx_ < other.g_ctx_);
   }
 
   size_t hash() const override
