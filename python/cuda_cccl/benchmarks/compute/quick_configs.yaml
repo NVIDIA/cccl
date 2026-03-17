@@ -50,10 +50,6 @@ reduce/custom:
   "T{ct}": "I32"
   "Elements{io}": 16
 
-reduce/deterministic:
-  "T{ct}": "F32"
-  "Elements{io}": 16
-
 reduce/nondeterministic:
   "T{ct}": "I32"
   "Elements{io}": 16
@@ -73,11 +69,6 @@ histogram/even:
   "Entropy": "1.000"
 
 select/if:
-  "T{ct}": "I32"
-  "Elements{io}": 16
-  "Entropy": "1.000"
-
-select/flagged:
   "T{ct}": "I32"
   "Elements{io}": 16
   "Entropy": "1.000"
@@ -109,36 +100,6 @@ merge_sort/pairs:
   "ValueT{ct}": "I32"
   "Elements{io}": 16
   "Entropy": "1.000"
-
-segmented_reduce/sum:
-  benchmarks:
-    small:
-      "T{ct}": "I32"
-      "Elements{io}": 16
-      "SegmentSize": 3
-    medium:
-      "T{ct}": "I32"
-      "Elements{io}": 16
-      "SegmentSize": 6
-    large:
-      "T{ct}": "I32"
-      "Elements{io}": 16
-      "SegmentSize": 10
-
-segmented_reduce/custom:
-  benchmarks:
-    small:
-      "T{ct}": "I32"
-      "Elements{io}": 16
-      "SegmentSize": 3
-    medium:
-      "T{ct}": "I32"
-      "Elements{io}": 16
-      "SegmentSize": 6
-    large:
-      "T{ct}": "I32"
-      "Elements{io}": 16
-      "SegmentSize": 10
 
 segmented_sort/keys:
   benchmarks:
