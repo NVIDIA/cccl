@@ -77,11 +77,9 @@ public:
     const auto& e_place = get_exec_place();
     if (e_place.size() > 1)
     {
-      // Even with a grid, when we have a ctx.task construct we have not
-      // yet selected/activated a specific place. So we take the main
-      // stream associated to the whole task in that case.
-      ::std::ptrdiff_t current_id = e_place.current_place_id();
-      return (current_id < 0 ? dstream.stream : stream_grid[current_id].stream);
+      // For grids, use get_stream(idx) to specify which place's stream.
+      // Without an index, return the main task stream.
+      return dstream.stream;
     }
 
     return dstream.stream;
@@ -208,19 +206,29 @@ public:
     return *this;
   }
 
-  void set_current_place(pos4 p)
+  /**
+   * @brief Activate a sub-place within the task's execution place grid
+   *
+   * Returns an active_place RAII guard. The sub-place is automatically
+   * deactivated when the guard is destroyed.
+   *
+   * @param p The position within the grid
+   * @return An active_place guard managing the activation lifetime
+   */
+  active_place activate_place(pos4 p)
   {
-    get_exec_place().set_current_place(p);
+    return get_exec_place().activate(get_exec_place().get_dims().get_index(p));
   }
 
-  void unset_current_place()
+  /**
+   * @brief Activate a sub-place within the task's execution place grid
+   *
+   * @param idx The linear index within the grid
+   * @return An active_place guard managing the activation lifetime
+   */
+  active_place activate_place(size_t idx)
   {
-    get_exec_place().unset_current_place();
-  }
-
-  exec_place get_current_place()
-  {
-    return get_exec_place().get_current_place();
+    return get_exec_place().activate(idx);
   }
 
   /* End the task, but do not clear its data structures yet */

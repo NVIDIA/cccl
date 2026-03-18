@@ -50,13 +50,13 @@ public:
   exec_place activate(size_t idx) const override
   {
     EXPECT(idx == 0, "Index out of bounds for cuda_stream exec_place");
-    return exec_place::device(dstream_.dev_id).activate();
+    return exec_place::device(dstream_.dev_id).get_impl()->activate(0);
   }
 
   void deactivate(const exec_place& prev, size_t idx = 0) const override
   {
     EXPECT(idx == 0, "Index out of bounds for cuda_stream exec_place");
-    exec_place::device(dstream_.dev_id).deactivate(prev);
+    exec_place::device(dstream_.dev_id).get_impl()->deactivate(prev, 0);
   }
 
   bool is_device() const override

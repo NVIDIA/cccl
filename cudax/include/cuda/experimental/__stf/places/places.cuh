@@ -364,6 +364,9 @@ private:
 /** Declaration for unqualified lookup (friend is only found via ADL when a \c data_place argument is present). */
 inline data_place from_index(size_t n);
 
+// Forward declaration
+class active_place;
+
 /**
  * @brief Indicates where a computation takes place (CPU, dev0, dev1, ...)
  *
@@ -488,24 +491,6 @@ public:
 
     static constexpr size_t pool_size      = 4;
     static constexpr size_t data_pool_size = 4;
-
-    // Grid iteration state - only meaningful for multi-element grids
-    virtual ::std::ptrdiff_t get_current_idx() const
-    {
-      return -1;
-    }
-    virtual void set_current_idx(::std::ptrdiff_t) const
-    {
-      _CCCL_ASSERT(false, "set_current_idx called on non-grid exec_place");
-    }
-    virtual ::std::shared_ptr<impl> get_saved_prev_impl() const
-    {
-      return nullptr;
-    }
-    virtual void set_saved_prev_impl(::std::shared_ptr<impl>) const
-    {
-      _CCCL_ASSERT(false, "set_saved_prev_impl called on non-grid exec_place");
-    }
 
   protected:
     friend class exec_place;
@@ -646,86 +631,18 @@ public:
     return iterator(pimpl, pimpl->size());
   }
 
-  // ===== Activation/deactivation =====
+  // ===== Activation =====
 
   /**
    * @brief Activate the sub-place at the given index
    *
+   * Returns an active_place RAII guard that automatically deactivates when destroyed.
+   * For scalar places, idx should be 0 (the default).
+   *
    * @param idx The index of the sub-place to activate (default 0 for scalar places)
-   * @return The previous execution state needed for deactivate()
+   * @return An active_place guard that manages the activation lifetime
    */
-  exec_place activate(size_t idx = 0) const
-  {
-    return pimpl->activate(idx);
-  }
-
-  /**
-   * @brief Deactivate the sub-place at the given index, restoring previous state
-   *
-   * @param prev The previous state returned by activate()
-   * @param idx The index of the sub-place to deactivate (default 0 for scalar places)
-   */
-  void deactivate(const exec_place& prev, size_t idx = 0) const
-  {
-    pimpl->deactivate(prev, idx);
-  }
-
-  /**
-   * @brief Set the current place for grid iteration
-   *
-   * Activates the place at the given index and saves state for later restoration.
-   */
-
-  void set_current_place(size_t idx)
-  {
-    auto cur_idx = pimpl->get_current_idx();
-    if (cur_idx >= 0)
-    {
-      exec_place saved_prev(pimpl->get_saved_prev_impl());
-      pimpl->deactivate(saved_prev, cur_idx);
-    }
-    pimpl->set_current_idx(static_cast<::std::ptrdiff_t>(idx));
-    exec_place prev = pimpl->activate(idx);
-    pimpl->set_saved_prev_impl(prev.pimpl);
-  }
-
-  /**
-   * @brief Set the current place using multi-dimensional position
-   */
-  void set_current_place(pos4 p)
-  {
-    set_current_place(get_dims().get_index(p));
-  }
-
-  /**
-   * @brief Unset the current place, restoring previous execution context
-   */
-  void unset_current_place()
-  {
-    auto cur_idx = pimpl->get_current_idx();
-    EXPECT(cur_idx >= 0, "unset_current_place() called without corresponding set_current_place()");
-    exec_place saved_prev(pimpl->get_saved_prev_impl());
-    pimpl->deactivate(saved_prev, cur_idx);
-    pimpl->set_current_idx(-1);
-  }
-
-  /**
-   * @brief Get the currently active sub-place
-   */
-  exec_place get_current_place()
-  {
-    auto cur_idx = pimpl->get_current_idx();
-    EXPECT(cur_idx >= 0, "No current place set");
-    return get_place(cur_idx);
-  }
-
-  /**
-   * @brief Get the index of the currently active sub-place, or -1 if none
-   */
-  ::std::ptrdiff_t current_place_id() const
-  {
-    return pimpl->get_current_idx();
-  }
+  inline active_place activate(size_t idx = 0) const;
 
   // ===== Properties =====
 
@@ -877,70 +794,163 @@ private:
  * When constructed, it activates the given execution place (e.g., sets the current CUDA device).
  * When destroyed, it restores the previous execution place that was active before construction.
  *
- * The guard is non-copyable and non-movable to ensure proper RAII semantics.
+ * For grids, the index specifies which sub-place to activate. For scalar places, the index
+ * should be 0 (the default).
  *
- * @note This class only accepts `exec_place` objects. Implicit conversions from other types
- *       (such as `data_place`) are explicitly disabled to prevent accidental misuse.
+ * The guard is non-copyable and non-movable to ensure proper RAII semantics.
  *
  * Example usage:
  * @code
- * // Assume current device is 0
+ * // Scalar place activation
  * {
- *   exec_place_guard guard(exec_place::device(1));
+ *   auto active = exec_place::device(1).activate();
  *   // Device 1 is now active
  *   // ... perform operations on device 1 ...
  * }
- * // Device 0 is restored
+ * // Previous device is restored
+ *
+ * // Grid iteration
+ * exec_place grid = make_grid(...);
+ * for (size_t i = 0; i < grid.size(); i++) {
+ *   auto active = grid.activate(i);
+ *   // grid[i] is now active
+ *   kernel<<<..., active->getStream()>>>(...);
+ * }
  * @endcode
  */
-class exec_place_guard
+class active_place
 {
 public:
   /**
-   * @brief Constructs the guard and activates the given execution place.
+   * @brief Constructs the guard and activates the sub-place at the given index.
    *
-   * @param place The execution place to activate. Must be an `exec_place` object;
-   *              implicit conversions from other types are disabled.
+   * @param place The execution place (or grid) containing the sub-place to activate
+   * @param idx The index of the sub-place to activate (default 0 for scalar places)
    */
-  explicit exec_place_guard(exec_place place)
+  active_place(exec_place place, size_t idx = 0)
       : place_(mv(place))
-      , prev_(place_.activate())
+      , idx_(idx)
+      , active_(true)
+      , current_(place_.get_place(idx_))
+      , prev_(place_.get_impl()->activate(idx_))
   {}
 
   /**
-   * @brief Destructor that restores the previous execution place.
+   * @brief Destructor that restores the previous execution place (if not moved-from).
    */
-  ~exec_place_guard()
+  ~active_place()
   {
-    place_.deactivate(prev_);
+    if (active_)
+    {
+      place_.get_impl()->deactivate(prev_, idx_);
+    }
   }
 
   // Non-copyable
-  exec_place_guard(const exec_place_guard&)            = delete;
-  exec_place_guard& operator=(const exec_place_guard&) = delete;
+  active_place(const active_place&)            = delete;
+  active_place& operator=(const active_place&) = delete;
 
-  // Non-movable
-  exec_place_guard(exec_place_guard&&)            = delete;
-  exec_place_guard& operator=(exec_place_guard&&) = delete;
-
-  // Prevent implicit conversions from other types (e.g., data_place)
-  template <typename T,
-            typename = ::std::enable_if_t<!::std::is_same_v<::std::decay_t<T>, exec_place>
-                                          && !::std::is_base_of_v<exec_place, ::std::decay_t<T>>>>
-  exec_place_guard(T&&)
+  // Movable (like unique_lock)
+  active_place(active_place&& other) noexcept
+      : place_(mv(other.place_))
+      , idx_(other.idx_)
+      , active_(other.active_)
+      , current_(mv(other.current_))
+      , prev_(mv(other.prev_))
   {
-    static_assert(!::std::is_same_v<T, T>, "exec_place_guard requires an exec_place, not a data_place or other type.");
+    other.active_ = false;
+  }
+
+  active_place& operator=(active_place&& other) noexcept
+  {
+    if (this != &other)
+    {
+      if (active_)
+      {
+        place_.get_impl()->deactivate(prev_, idx_);
+      }
+      place_        = mv(other.place_);
+      idx_          = other.idx_;
+      active_       = other.active_;
+      current_      = mv(other.current_);
+      prev_         = mv(other.prev_);
+      other.active_ = false;
+    }
+    return *this;
+  }
+
+  /**
+   * @brief Get the currently active sub-place
+   */
+  exec_place& operator*()
+  {
+    return current_;
+  }
+  const exec_place& operator*() const
+  {
+    return current_;
+  }
+
+  /**
+   * @brief Access the currently active sub-place's members
+   */
+  exec_place* operator->()
+  {
+    return &current_;
+  }
+  const exec_place* operator->() const
+  {
+    return &current_;
+  }
+
+  /**
+   * @brief Get the currently active sub-place
+   */
+  exec_place& place()
+  {
+    return current_;
+  }
+  const exec_place& place() const
+  {
+    return current_;
+  }
+
+  /**
+   * @brief Get the index within the grid (0 for scalar places)
+   */
+  size_t index() const
+  {
+    return idx_;
+  }
+
+  /**
+   * @brief Check if this guard is active (not moved-from)
+   */
+  bool is_active() const
+  {
+    return active_;
   }
 
 private:
-  exec_place place_;
-  exec_place prev_;
+  exec_place place_; // The grid (or scalar place)
+  size_t idx_; // Index within grid
+  bool active_; // Whether this guard is active (not moved-from)
+  exec_place current_; // The activated sub-place
+  exec_place prev_; // Previous state to restore
 };
+
+// Deprecated: Use active_place instead
+using exec_place_guard = active_place;
+
+inline active_place exec_place::activate(size_t idx) const
+{
+  return active_place(*this, idx);
+}
 
 template <typename Fun>
 auto exec_place::operator->*(Fun&& fun) const
 {
-  exec_place_guard guard(*this);
+  auto active = activate();
   return ::std::forward<Fun>(fun)();
 }
 
@@ -954,7 +964,7 @@ inline decorated_stream stream_pool::next(const exec_place& place)
 
   if (!result.stream)
   {
-    exec_place_guard guard(place);
+    auto active = place.activate();
     cuda_safe_call(cudaStreamCreateWithFlags(&result.stream, cudaStreamNonBlocking));
     result.id     = get_stream_id(result.stream);
     result.dev_id = get_device_from_stream(result.stream);
@@ -1272,13 +1282,13 @@ public:
   exec_place activate(size_t idx) const override
   {
     EXPECT(idx < places_.size(), "Index out of bounds");
-    return places_[idx].activate(0);
+    return places_[idx].get_impl()->activate(0);
   }
 
   void deactivate(const exec_place& prev, size_t idx = 0) const override
   {
     EXPECT(idx < places_.size(), "Index out of bounds");
-    places_[idx].deactivate(prev);
+    places_[idx].get_impl()->deactivate(prev, 0);
   }
 
   // ===== Properties =====
@@ -1328,33 +1338,9 @@ public:
     return places_[0].get_stream_pool(for_computation);
   }
 
-  // ===== Grid iteration state =====
-
-  ::std::ptrdiff_t get_current_idx() const override
-  {
-    return current_idx_;
-  }
-
-  void set_current_idx(::std::ptrdiff_t idx) const override
-  {
-    current_idx_ = idx;
-  }
-
-  ::std::shared_ptr<exec_place::impl> get_saved_prev_impl() const override
-  {
-    return saved_prev_impl_;
-  }
-
-  void set_saved_prev_impl(::std::shared_ptr<exec_place::impl> p) const override
-  {
-    saved_prev_impl_ = mv(p);
-  }
-
 private:
   dim4 dims_;
   ::std::vector<exec_place> places_;
-  mutable ::std::ptrdiff_t current_idx_ = -1;
-  mutable ::std::shared_ptr<exec_place::impl> saved_prev_impl_;
 };
 
 //! Creates a grid of execution places with specified dimensions

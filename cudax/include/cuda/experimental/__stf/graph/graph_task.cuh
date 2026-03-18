@@ -454,19 +454,29 @@ public:
     return ::std::unique_lock<::std::mutex>(graph_mutex);
   }
 
-  void set_current_place(pos4 p)
+  /**
+   * @brief Activate a sub-place within the task's execution place grid
+   *
+   * Returns an active_place RAII guard. The sub-place is automatically
+   * deactivated when the guard is destroyed.
+   *
+   * @param p The position within the grid
+   * @return An active_place guard managing the activation lifetime
+   */
+  active_place activate_place(pos4 p)
   {
-    get_exec_place().set_current_place(p);
+    return get_exec_place().activate(get_exec_place().get_dims().get_index(p));
   }
 
-  void unset_current_place()
+  /**
+   * @brief Activate a sub-place within the task's execution place grid
+   *
+   * @param idx The linear index within the grid
+   * @return An active_place guard managing the activation lifetime
+   */
+  active_place activate_place(size_t idx)
   {
-    get_exec_place().unset_current_place();
-  }
-
-  exec_place get_current_place()
-  {
-    return get_exec_place().get_current_place();
+    return get_exec_place().activate(idx);
   }
 
 private:

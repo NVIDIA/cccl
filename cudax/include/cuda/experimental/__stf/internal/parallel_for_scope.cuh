@@ -683,10 +683,9 @@ public:
         {
           for (size_t i = 0; i < e_place.size(); i++)
           {
-            t.set_current_place(pos4(i));
+            auto active          = t.activate_place(i);
             const auto sub_shape = partitioner_t::apply(shape, pos4(i), e_place.get_dims());
-            do_parallel_for(f, t.get_current_place(), sub_shape, t);
-            t.unset_current_place();
+            do_parallel_for(f, active.place(), sub_shape, t);
           }
         }
       }
