@@ -221,7 +221,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMin env-based API", "[segmented_reduce]
   {
     std::cerr << "cub::DeviceSegmentedReduce::ArgMin failed with status: " << error << std::endl;
   }
-  stream.wait();
+  stream.sync();
   // example-end segmented-reduce-argmin-env
 
   thrust::host_vector<cub::KeyValuePair<int, int>> h_out(d_out);
@@ -254,7 +254,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMax env-based API", "[segmented_reduce]
   {
     std::cerr << "cub::DeviceSegmentedReduce::ArgMax failed with status: " << error << std::endl;
   }
-  stream.wait();
+  stream.sync();
   // example-end segmented-reduce-argmax-env
 
   thrust::host_vector<cub::KeyValuePair<int, int>> h_out(d_out);
@@ -411,7 +411,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMin fixed-size env-based API", "[segmen
   {
     std::cerr << "cub::DeviceSegmentedReduce::ArgMin (fixed-size) failed with status: " << error << std::endl;
   }
-  stream.wait();
+  stream.sync();
   // example-end fixed-size-segmented-reduce-argmin-env
 
   thrust::host_vector<cuda::std::pair<int, int>> h_out(d_out);
@@ -440,7 +440,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMax fixed-size env-based API", "[segmen
   {
     std::cerr << "cub::DeviceSegmentedReduce::ArgMax (fixed-size) failed with status: " << error << std::endl;
   }
-  stream.wait();
+  stream.sync();
   // example-end fixed-size-segmented-reduce-argmax-env
 
   thrust::host_vector<cuda::std::pair<int, int>> h_out(d_out);
