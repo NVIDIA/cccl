@@ -485,3 +485,161 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce accepts not_guaranteed determinism 
   REQUIRE(d_out == expected);
   REQUIRE(error == cudaSuccess);
 }
+C2H_TEST("cub::DeviceSegmentedReduce::Reduce fixed-size env-based API", "[segmented_reduce][env]")
+{
+  // example-begin fixed-size-segmented-reduce-reduce-env
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<int> d_out(2);
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+  auto env = ::cuda::std::execution::env{stream_ref};
+
+  auto error = cub::DeviceSegmentedReduce::Reduce(
+    d_in.begin(), d_out.begin(), num_segments, segment_size, ::cuda::std::plus<>{}, 0, env);
+  thrust::device_vector<int> expected{21, 8};
+
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Reduce (fixed-size) failed with status: " << error << std::endl;
+  }
+  // example-end fixed-size-segmented-reduce-reduce-env
+
+  REQUIRE(d_out == expected);
+  REQUIRE(error == cudaSuccess);
+}
+
+C2H_TEST("cub::DeviceSegmentedReduce::Sum fixed-size env-based API", "[segmented_reduce][env]")
+{
+  // example-begin fixed-size-segmented-reduce-sum-env
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<int> d_out(2);
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+  auto env = ::cuda::std::execution::env{stream_ref};
+
+  auto error = cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, segment_size, env);
+  thrust::device_vector<int> expected{21, 8};
+
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Sum (fixed-size) failed with status: " << error << std::endl;
+  }
+  // example-end fixed-size-segmented-reduce-sum-env
+
+  REQUIRE(d_out == expected);
+  REQUIRE(error == cudaSuccess);
+}
+
+C2H_TEST("cub::DeviceSegmentedReduce::Min fixed-size env-based API", "[segmented_reduce][env]")
+{
+  // example-begin fixed-size-segmented-reduce-min-env
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<int> d_out(2);
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+  auto env = ::cuda::std::execution::env{stream_ref};
+
+  auto error = cub::DeviceSegmentedReduce::Min(d_in.begin(), d_out.begin(), num_segments, segment_size, env);
+  thrust::device_vector<int> expected{6, 0};
+
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Min (fixed-size) failed with status: " << error << std::endl;
+  }
+  // example-end fixed-size-segmented-reduce-min-env
+
+  REQUIRE(d_out == expected);
+  REQUIRE(error == cudaSuccess);
+}
+
+C2H_TEST("cub::DeviceSegmentedReduce::Max fixed-size env-based API", "[segmented_reduce][env]")
+{
+  // example-begin fixed-size-segmented-reduce-max-env
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<int> d_out(2);
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+  auto env = ::cuda::std::execution::env{stream_ref};
+
+  auto error = cub::DeviceSegmentedReduce::Max(d_in.begin(), d_out.begin(), num_segments, segment_size, env);
+  thrust::device_vector<int> expected{8, 5};
+
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Max (fixed-size) failed with status: " << error << std::endl;
+  }
+  // example-end fixed-size-segmented-reduce-max-env
+
+  REQUIRE(d_out == expected);
+  REQUIRE(error == cudaSuccess);
+}
+
+C2H_TEST("cub::DeviceSegmentedReduce::ArgMin fixed-size env-based API", "[segmented_reduce][env]")
+{
+  // example-begin fixed-size-segmented-reduce-argmin-env
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<cuda::std::pair<int, int>> d_out(2);
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+  auto env = ::cuda::std::execution::env{stream_ref};
+
+  auto error = cub::DeviceSegmentedReduce::ArgMin(d_in.begin(), d_out.begin(), num_segments, segment_size, env);
+
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::ArgMin (fixed-size) failed with status: " << error << std::endl;
+  }
+  stream.sync();
+  // example-end fixed-size-segmented-reduce-argmin-env
+
+  thrust::host_vector<cuda::std::pair<int, int>> h_out(d_out);
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(h_out[0].first == 1);
+  REQUIRE(h_out[0].second == 6);
+  REQUIRE(h_out[1].first == 2);
+  REQUIRE(h_out[1].second == 0);
+}
+
+C2H_TEST("cub::DeviceSegmentedReduce::ArgMax fixed-size env-based API", "[segmented_reduce][env]")
+{
+  // example-begin fixed-size-segmented-reduce-argmax-env
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<cuda::std::pair<int, int>> d_out(2);
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+  auto env = ::cuda::std::execution::env{stream_ref};
+
+  auto error = cub::DeviceSegmentedReduce::ArgMax(d_in.begin(), d_out.begin(), num_segments, segment_size, env);
+
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::ArgMax (fixed-size) failed with status: " << error << std::endl;
+  }
+  stream.sync();
+  // example-end fixed-size-segmented-reduce-argmax-env
+
+  thrust::host_vector<cuda::std::pair<int, int>> h_out(d_out);
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(h_out[0].first == 0);
+  REQUIRE(h_out[0].second == 8);
+  REQUIRE(h_out[1].first == 0);
+  REQUIRE(h_out[1].second == 5);
+}

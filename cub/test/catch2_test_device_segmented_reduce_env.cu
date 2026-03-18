@@ -139,7 +139,241 @@ TEST_CASE("Device segmented argmax works with default environment", "[segmented_
   REQUIRE(h_out[2].value == 2);
 }
 
+TEST_CASE("Device fixed-size segmented reduce works with default environment", "[segmented_reduce][device]")
+{
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<int> d_out(2);
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSegmentedReduce::Reduce(
+            d_in.begin(), d_out.begin(), num_segments, segment_size, ::cuda::std::plus<>{}, 0));
+
+  thrust::device_vector<int> expected{21, 8};
+  REQUIRE(d_out == expected);
+}
+
+TEST_CASE("Device fixed-size segmented sum works with default environment", "[segmented_reduce][device]")
+{
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<int> d_out(2);
+
+  REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, segment_size));
+
+  thrust::device_vector<int> expected{21, 8};
+  REQUIRE(d_out == expected);
+}
+
+TEST_CASE("Device fixed-size segmented min works with default environment", "[segmented_reduce][device]")
+{
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<int> d_out(2);
+
+  REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::Min(d_in.begin(), d_out.begin(), num_segments, segment_size));
+
+  thrust::device_vector<int> expected{6, 0};
+  REQUIRE(d_out == expected);
+}
+
+TEST_CASE("Device fixed-size segmented max works with default environment", "[segmented_reduce][device]")
+{
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<int> d_out(2);
+
+  REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::Max(d_in.begin(), d_out.begin(), num_segments, segment_size));
+
+  thrust::device_vector<int> expected{8, 5};
+  REQUIRE(d_out == expected);
+}
+
+TEST_CASE("Device fixed-size segmented argmin works with default environment", "[segmented_reduce][device]")
+{
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<cuda::std::pair<int, int>> d_out(2);
+
+  REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::ArgMin(d_in.begin(), d_out.begin(), num_segments, segment_size));
+
+  thrust::host_vector<cuda::std::pair<int, int>> h_out(d_out);
+  REQUIRE(h_out[0].first == 1);
+  REQUIRE(h_out[0].second == 6);
+  REQUIRE(h_out[1].first == 2);
+  REQUIRE(h_out[1].second == 0);
+}
+
+TEST_CASE("Device fixed-size segmented argmax works with default environment", "[segmented_reduce][device]")
+{
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<cuda::std::pair<int, int>> d_out(2);
+
+  REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::ArgMax(d_in.begin(), d_out.begin(), num_segments, segment_size));
+
+  thrust::host_vector<cuda::std::pair<int, int>> h_out(d_out);
+  REQUIRE(h_out[0].first == 0);
+  REQUIRE(h_out[0].second == 8);
+  REQUIRE(h_out[1].first == 0);
+  REQUIRE(h_out[1].second == 5);
+}
+
 #endif
+
+TEST_CASE("Device fixed-size segmented reduce uses custom stream", "[segmented_reduce][device]")
+{
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<int> d_out(2);
+
+  cudaStream_t custom_stream;
+  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  auto env         = stdexec::env{stream_prop};
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSegmentedReduce::Reduce(
+            d_in.begin(), d_out.begin(), num_segments, segment_size, ::cuda::std::plus<>{}, 0, env));
+
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+
+  thrust::device_vector<int> expected{21, 8};
+  REQUIRE(d_out == expected);
+
+  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+}
+
+TEST_CASE("Device fixed-size segmented sum uses custom stream", "[segmented_reduce][device]")
+{
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<int> d_out(2);
+
+  cudaStream_t custom_stream;
+  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  auto env         = stdexec::env{stream_prop};
+
+  REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, segment_size, env));
+
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+
+  thrust::device_vector<int> expected{21, 8};
+  REQUIRE(d_out == expected);
+
+  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+}
+
+TEST_CASE("Device fixed-size segmented min uses custom stream", "[segmented_reduce][device]")
+{
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<int> d_out(2);
+
+  cudaStream_t custom_stream;
+  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  auto env         = stdexec::env{stream_prop};
+
+  REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::Min(d_in.begin(), d_out.begin(), num_segments, segment_size, env));
+
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+
+  thrust::device_vector<int> expected{6, 0};
+  REQUIRE(d_out == expected);
+
+  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+}
+
+TEST_CASE("Device fixed-size segmented max uses custom stream", "[segmented_reduce][device]")
+{
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<int> d_out(2);
+
+  cudaStream_t custom_stream;
+  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  auto env         = stdexec::env{stream_prop};
+
+  REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::Max(d_in.begin(), d_out.begin(), num_segments, segment_size, env));
+
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+
+  thrust::device_vector<int> expected{8, 5};
+  REQUIRE(d_out == expected);
+
+  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+}
+
+TEST_CASE("Device fixed-size segmented argmin uses custom stream", "[segmented_reduce][device]")
+{
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<cuda::std::pair<int, int>> d_out(2);
+
+  cudaStream_t custom_stream;
+  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  auto env         = stdexec::env{stream_prop};
+
+  REQUIRE(
+    cudaSuccess == cub::DeviceSegmentedReduce::ArgMin(d_in.begin(), d_out.begin(), num_segments, segment_size, env));
+
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+
+  thrust::host_vector<cuda::std::pair<int, int>> h_out(d_out);
+  REQUIRE(h_out[0].first == 1);
+  REQUIRE(h_out[0].second == 6);
+  REQUIRE(h_out[1].first == 2);
+  REQUIRE(h_out[1].second == 0);
+
+  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+}
+
+TEST_CASE("Device fixed-size segmented argmax uses custom stream", "[segmented_reduce][device]")
+{
+  int num_segments = 2;
+  int segment_size = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0};
+  thrust::device_vector<cuda::std::pair<int, int>> d_out(2);
+
+  cudaStream_t custom_stream;
+  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  auto env         = stdexec::env{stream_prop};
+
+  REQUIRE(
+    cudaSuccess == cub::DeviceSegmentedReduce::ArgMax(d_in.begin(), d_out.begin(), num_segments, segment_size, env));
+
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+
+  thrust::host_vector<cuda::std::pair<int, int>> h_out(d_out);
+  REQUIRE(h_out[0].first == 0);
+  REQUIRE(h_out[0].second == 8);
+  REQUIRE(h_out[1].first == 0);
+  REQUIRE(h_out[1].second == 5);
+
+  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+}
 
 C2H_TEST("Device segmented reduce uses environment", "[segmented_reduce][device]")
 {
