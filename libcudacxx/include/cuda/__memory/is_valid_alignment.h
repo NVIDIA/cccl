@@ -1,16 +1,15 @@
-// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___MEMORY_IS_SUFFICIENTLY_ALIGNED_H
-#define _CUDA_STD___MEMORY_IS_SUFFICIENTLY_ALIGNED_H
+#ifndef _CUDA___MEMORY_IS_VALID_ALIGNMENT_H
+#define _CUDA___MEMORY_IS_VALID_ALIGNMENT_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,23 +21,29 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory/is_aligned.h>
-#include <cuda/__memory/is_valid_alignment.h>
-#include <cuda/std/cstddef>
+#include <cuda/__cmath/pow2.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/is_void.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_CUDA_STD
+_CCCL_BEGIN_NAMESPACE_CUDA
 
-template <size_t _ByteAlignment, class _ElementType>
-[[nodiscard]] _CCCL_API bool is_sufficiently_aligned(_ElementType* __ptr) noexcept
+template <class _Tp = void>
+[[nodiscard]] _CCCL_API constexpr bool __is_valid_alignment(::cuda::std::size_t __alignment) noexcept
 {
-  static_assert(::cuda::__is_valid_alignment<_ElementType>(_ByteAlignment), "invalid _ByteAlignment for _ElementType");
-  return ::cuda::is_aligned(__ptr, _ByteAlignment);
+  if constexpr (::cuda::std::is_void_v<_Tp>)
+  {
+    return __alignment > 0 && ::cuda::is_power_of_two(__alignment);
+  }
+  else
+  {
+    return __alignment >= alignof(_Tp) && ::cuda::is_power_of_two(__alignment);
+  }
 }
 
-_CCCL_END_NAMESPACE_CUDA_STD
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___MEMORY_IS_SUFFICIENTLY_ALIGNED_H
+#endif // _CUDA___MEMORY_IS_VALID_ALIGNMENT_H
