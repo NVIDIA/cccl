@@ -37,7 +37,6 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__algorithm/transform.h>
 #include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/construct_at.h>
@@ -64,7 +63,7 @@ namespace detail::transform
 template <typename T>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
 {
-  _CCCL_ASSERT(::cuda::std::has_single_bit(alignment), "");
+  _CCCL_ASSERT(::cuda::is_power_of_two(alignment), "");
   return reinterpret_cast<const char*>(
     reinterpret_cast<::cuda::std::uintptr_t>(ptr) & ~::cuda::std::uintptr_t{alignment - 1});
 }

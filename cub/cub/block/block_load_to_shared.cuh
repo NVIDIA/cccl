@@ -23,6 +23,7 @@
 
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_down.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__memory/address_space.h>
@@ -37,7 +38,6 @@
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__iterator/data.h>
 #include <cuda/std/__iterator/size.h>
 #include <cuda/std/cstdint>
@@ -305,7 +305,7 @@ public:
   CopyAsync(::cuda::std::span<char> smem_dst, ::cuda::std::span<const T> gmem_src)
   {
     static_assert(THRUST_NS_QUALIFIER::is_trivially_relocatable_v<T>);
-    static_assert(::cuda::std::has_single_bit(unsigned{GmemAlign}));
+    static_assert(::cuda::is_power_of_two(GmemAlign));
     static_assert(GmemAlign >= int{alignof(T)});
     constexpr bool bulk_aligned = GmemAlign >= detail::bulk_copy_min_align;
     // Avoid 64b multiplication in span::size_bytes()
