@@ -35,8 +35,6 @@ _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
-#  include <cuda/__memory_pool/device_memory_pool.h>
-#  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
@@ -54,8 +52,6 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
 #  include <cuda/std/__utility/move.h>
-
-#  include <cuda_runtime.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -88,11 +84,10 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
       __num_items);
 
     // Allocate memory for result
-    auto __stream   = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-    auto __resource = ::cuda::__call_or(
-      ::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(__stream.device()), __policy);
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
+
     {
-      __temporary_storage<decltype(__resource), _OffsetType> __storage{__stream, __resource, __num_bytes, 1};
+      __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
       // Run the find operation
       _CCCL_TRY_CUDA_API(

@@ -410,6 +410,22 @@ public:
     };
   }
 
+  cudaGraph_t graph() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return payload->*[&](auto& self) {
+      return self.graph();
+    };
+  }
+
+  size_t stage() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return payload->*[&](auto& self) {
+      return self.stage();
+    };
+  }
+
   /**
    * @brief Returns the number of tasks created since the context was created or since the last fence (if any)
    */
@@ -725,6 +741,32 @@ public:
     };
   }
 
+  //! Take all resources from \p other (e.g. a nested context) and merge them into this context.
+  //! \p other will have no resources after this call.
+  void import_resources_from(context& other)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    import_resources(other.export_resources());
+  }
+
+private:
+  ctx_resource_set export_resources()
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return payload->*[](auto& self) {
+      return self.export_resources();
+    };
+  }
+
+  void import_resources(ctx_resource_set&& other)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    payload->*[&other](auto& self) {
+      self.import_resources(mv(other));
+    };
+  }
+
+public:
   void submit()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
@@ -815,7 +857,9 @@ public:
   bool is_graph_ctx() const
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    return (payload.index() == 1);
+    return payload->*[&](auto& self) {
+      return self.is_graph_ctx();
+    };
   }
 
   async_resources_handle& async_resources() const
@@ -963,6 +1007,116 @@ UNITTEST("context is_graph_ctx")
 
   context ctx2 = graph_ctx();
   EXPECT(ctx2.is_graph_ctx());
+  ctx2.finalize();
+};
+
+UNITTEST("context resources released on finalize")
+{
+  // Dummy resource that sets a flag when released (callback path)
+  struct dummy_released_resource : ctx_resource
+  {
+    bool* released_ = nullptr;
+    explicit dummy_released_resource(bool* released)
+        : released_(released)
+    {}
+    bool can_release_in_callback() const override
+    {
+      return true;
+    }
+    void release_in_callback() override
+    {
+      if (released_)
+      {
+        *released_ = true;
+      }
+    }
+  };
+
+  bool released = false;
+  context ctx;
+  ctx.add_resource(::std::make_shared<dummy_released_resource>(&released));
+  // This is a blocking call, resources should have been released when it returns
+  ctx.finalize();
+  EXPECT(released);
+};
+
+UNITTEST("context resources released on finalize non blocking")
+{
+  struct dummy_released_resource : ctx_resource
+  {
+    bool* released_ = nullptr;
+    explicit dummy_released_resource(bool* released)
+        : released_(released)
+    {}
+    bool can_release_in_callback() const override
+    {
+      return true;
+    }
+    void release_in_callback() override
+    {
+      if (released_)
+      {
+        *released_ = true;
+      }
+    }
+  };
+
+  cudaStream_t stream;
+  cuda_safe_call(cudaStreamCreate(&stream));
+
+  bool released = false;
+  context ctx(stream, async_resources_handle());
+  ctx.add_resource(::std::make_shared<dummy_released_resource>(&released));
+  ctx.finalize(); // non-blocking: context was created with user stream
+  EXPECT(!released); // not yet, callback not run
+  cuda_safe_call(cudaStreamSynchronize(stream));
+  EXPECT(released);
+
+  cuda_safe_call(cudaStreamDestroy(stream));
+};
+
+UNITTEST("context import_resources_from")
+{
+  struct dummy_released_resource : ctx_resource
+  {
+    bool* released_ = nullptr;
+    explicit dummy_released_resource(bool* released)
+        : released_(released)
+    {}
+    bool can_release_in_callback() const override
+    {
+      return true;
+    }
+    void release_in_callback() override
+    {
+      if (released_)
+      {
+        *released_ = true;
+      }
+    }
+  };
+
+  bool released = false;
+  context child_ctx;
+  child_ctx.add_resource(::std::make_shared<dummy_released_resource>(&released));
+  context parent_ctx;
+  parent_ctx.import_resources_from(child_ctx);
+  // This is a blocking call, resources should have been released when it returns
+  parent_ctx.finalize();
+  EXPECT(released);
+};
+
+UNITTEST("context graph and stage")
+{
+  // stream_ctx: graph() is nullptr, stage() is size_t(-1)
+  context ctx;
+  EXPECT(ctx.graph() == nullptr);
+  ctx.finalize();
+
+  // graph_ctx: graph() and stage() delegate to backend
+  context ctx2 = graph_ctx();
+  ctx2.logical_data(1); // ensure context has been used so graph may be created
+  EXPECT(ctx2.graph() != nullptr);
   ctx2.finalize();
 };
 

@@ -18,6 +18,7 @@ CUDA Experimental
 However, any feature within this library has important use cases and we encourage users to experiment with them.
 
 Specifically, ``cudax`` provides:
+   - :ref:`asynchronous byte-wise mdspan copy <cudax-copy-bytes>`
    - :ref:`uninitialized storage <libcudacxx-containers-uninitialized-buffer>`
    - :ref:`an owning type erased memory resource <libcudacxx-memory-resource-any-async-resource>`
    - :ref:`stream-ordered memory resources <libcudacxx-memory-resource-async>`

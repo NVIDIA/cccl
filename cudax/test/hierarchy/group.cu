@@ -17,6 +17,7 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include <cuda/experimental/hierarchy.cuh>
@@ -45,8 +46,15 @@ __device__ T sum(cudax::this_warp<Hierarchy> group, T (&array)[N])
 template <class Hierarchy, class T, cuda::std::size_t N>
 __device__ T sum(cudax::this_block<Hierarchy> group, T (&array)[N])
 {
-  // todo: support other block sizes
-  using BlockReduce = cub::BlockReduce<T, 32>;
+  using BlockExts = decltype(cuda::gpu_thread.extents(cuda::block, group.hierarchy()));
+  static_assert(BlockExts::rank_dynamic() == 0, "This algorithm requires all static extents.");
+
+  using BlockReduce =
+    cub::BlockReduce<T,
+                     static_cast<int>(BlockExts::static_extent(0)),
+                     cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+                     static_cast<int>(BlockExts::static_extent(1)),
+                     static_cast<int>(BlockExts::static_extent(2))>;
 
   __shared__ typename BlockReduce::TempStorage scratch;
   return BlockReduce{scratch}.Sum(array);
@@ -55,8 +63,16 @@ __device__ T sum(cudax::this_block<Hierarchy> group, T (&array)[N])
 template <class Hierarchy, class T, cuda::std::size_t N>
 __device__ T sum(cudax::this_cluster<Hierarchy> group, T (&array)[N])
 {
-  // todo: support other block sizes
-  using BlockReduce = cub::BlockReduce<T, 32>;
+  using BlockExts = decltype(cuda::gpu_thread.extents(cuda::block, group.hierarchy()));
+  static_assert(BlockExts::rank_dynamic() == 0, "This algorithm requires all static extents.");
+
+  using BlockReduce =
+    cub::BlockReduce<T,
+                     static_cast<int>(BlockExts::static_extent(0)),
+                     cub::BLOCK_REDUCE_WARP_REDUCTIONS,
+                     static_cast<int>(BlockExts::static_extent(1)),
+                     static_cast<int>(BlockExts::static_extent(2))>;
+
   union SMem
   {
     typename BlockReduce::TempStorage block_scratch;
@@ -69,21 +85,26 @@ __device__ T sum(cudax::this_cluster<Hierarchy> group, T (&array)[N])
   NV_IF_TARGET(NV_PROVIDES_SM_90, ({
                  const auto dsmem = static_cast<T*>(__cluster_map_shared_rank(&smem.cluster_scratch, 0));
 
-                 if (cuda::gpu_thread.rank(group) == 0)
+                 const auto is_root_thread = (cuda::gpu_thread.rank(group) == 0);
+                 if (is_root_thread)
                  {
                    smem.cluster_scratch = 0;
                  }
-                 group.sync();
+                 group.sync_aligned();
 
-                 if (cuda::gpu_thread.rank(cuda::block, group.hierarchy()) == 0)
+                 if (cuda::gpu_thread.rank(cuda::block, group.hierarchy()) == 0 && !is_root_thread)
                  {
-                   atomicAdd(dsmem, result);
+                   [[maybe_unused]] unsigned old;
+                   asm volatile("atom.relaxed.cluster.shared::cluster.add.s32 %0, [%1], %2;"
+                                : "=r"(old)
+                                : "l"(dsmem), "r"(result)
+                                : "memory");
                  }
-                 group.sync();
+                 group.sync_aligned();
 
-                 if (cuda::gpu_thread.rank(group) == 0)
+                 if (is_root_thread)
                  {
-                   result = smem.cluster_scratch;
+                   result += smem.cluster_scratch;
                  }
                }))
 
@@ -99,7 +120,13 @@ struct TestKernel
       unsigned array[]{1, 2, 3};
 
       cudax::this_thread this_thread{config};
+      static_assert(cudax::group<decltype(this_thread)>);
+
       this_thread.sync();
+      this_thread.sync_aligned();
+
+      decltype(auto) hierarchy = cuda::std::as_const(this_thread).hierarchy();
+      static_assert(cuda::std::is_same_v<decltype(hierarchy), const typename Config::hierarchy_type&>);
 
       const auto result = sum(this_thread, array);
       CUDAX_REQUIRE(result == 6);
@@ -119,7 +146,13 @@ struct TestKernel
       unsigned array[]{1, 2, 3};
 
       cudax::this_warp this_warp{config};
+      static_assert(cudax::group<decltype(this_warp)>);
+
       this_warp.sync();
+      this_warp.sync_aligned();
+
+      decltype(auto) hierarchy = cuda::std::as_const(this_warp).hierarchy();
+      static_assert(cuda::std::is_same_v<decltype(hierarchy), const typename Config::hierarchy_type&>);
 
       const auto result = sum(this_warp, array);
       if (cuda::gpu_thread.rank(cuda::warp) == 0)
@@ -142,7 +175,13 @@ struct TestKernel
       unsigned array[]{1, 2, 3};
 
       cudax::this_block this_block{config};
+      static_assert(cudax::group<decltype(this_block)>);
+
       this_block.sync();
+      this_block.sync_aligned();
+
+      decltype(auto) hierarchy = cuda::std::as_const(this_block).hierarchy();
+      static_assert(cuda::std::is_same_v<decltype(hierarchy), const typename Config::hierarchy_type&>);
 
       const auto result = sum(this_block, array);
       if (cuda::gpu_thread.rank(cuda::block) == 0)
@@ -165,7 +204,13 @@ struct TestKernel
       unsigned array[]{1, 2, 3};
 
       cudax::this_cluster this_cluster{config};
+      static_assert(cudax::group<decltype(this_cluster)>);
+
       this_cluster.sync();
+      this_cluster.sync_aligned();
+
+      decltype(auto) hierarchy = cuda::std::as_const(this_cluster).hierarchy();
+      static_assert(cuda::std::is_same_v<decltype(hierarchy), const typename Config::hierarchy_type&>);
 
       const auto result = sum(this_cluster, array);
       if (cuda::gpu_thread.rank(cuda::cluster) == 0)
@@ -186,7 +231,13 @@ struct TestKernel
     }
     {
       cudax::this_grid this_grid{config};
+      static_assert(cudax::group<decltype(this_grid)>);
+
       this_grid.sync();
+      this_grid.sync_aligned();
+
+      decltype(auto) hierarchy = cuda::std::as_const(this_grid).hierarchy();
+      static_assert(cuda::std::is_same_v<decltype(hierarchy), const typename Config::hierarchy_type&>);
 
       CUDAX_REQUIRE(cuda::gpu_thread.count(this_grid) == cuda::gpu_thread.count(cuda::grid));
       CUDAX_REQUIRE(cuda::gpu_thread.rank(this_grid) == cuda::gpu_thread.rank(cuda::grid));
@@ -211,12 +262,12 @@ C2H_TEST("Hierarchy groups", "[hierarchy]")
   if (cuda::device_attributes::compute_capability(device) >= cuda::compute_capability{90})
   {
     const auto config = cuda::make_config(
-      cuda::grid_dims<2>(), cuda::cluster_dims<3>(), cuda::block_dims<32>(), cuda::cooperative_launch{});
+      cuda::grid_dims<2>(), cuda::cluster_dims<3>(), cuda::block_dims<128>(), cuda::cooperative_launch{});
     cuda::launch(stream, config, TestKernel{});
   }
   else
   {
-    const auto config = cuda::make_config(cuda::grid_dims<2>(), cuda::block_dims<32>(), cuda::cooperative_launch{});
+    const auto config = cuda::make_config(cuda::grid_dims<2>(), cuda::block_dims<128>(), cuda::cooperative_launch{});
     cuda::launch(stream, config, TestKernel{});
   }
 
@@ -230,23 +281,37 @@ struct CgInteropKernel
   {
     {
       cudax::this_thread g{cooperative_groups::this_thread()};
+      static_assert(cudax::group<decltype(g)>);
       g.sync();
+      g.sync_aligned();
+    }
+    {
+      cudax::this_warp g{cooperative_groups::tiled_partition<32>(cooperative_groups::this_thread_block())};
+      static_assert(cudax::group<decltype(g)>);
+      g.sync();
+      g.sync_aligned();
     }
     {
       cudax::this_block g{cooperative_groups::this_thread_block()};
+      static_assert(cudax::group<decltype(g)>);
       g.sync();
+      g.sync_aligned();
     }
 #if defined(_CG_HAS_CLUSTER_GROUP)
     {
       NV_IF_TARGET(NV_PROVIDES_SM_90, ({
                      cudax::this_cluster g{cooperative_groups::this_cluster()};
+                     static_assert(cudax::group<decltype(g)>);
                      g.sync();
+                     g.sync_aligned();
                    }))
     }
 #endif // _CG_HAS_CLUSTER_GROUP
     {
       cudax::this_grid g{cooperative_groups::this_grid()};
+      static_assert(cudax::group<decltype(g)>);
       g.sync();
+      g.sync_aligned();
     }
   }
 };

@@ -24,12 +24,18 @@
 #if _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cuda/__cmath/round_up.h>
+#  include <cuda/__functional/call_or.h>
 #  include <cuda/__iterator/tabulate_output_iterator.h>
 #  include <cuda/__memory/align_up.h>
+#  include <cuda/__memory_pool/device_memory_pool.h>
+#  include <cuda/__memory_resource/any_resource.h>
+#  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__memory/construct_at.h>
+#  include <cuda/std/__type_traits/is_callable.h>
 #  include <cuda/std/__type_traits/type_list.h>
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/integer_sequence.h>
@@ -58,11 +64,11 @@ struct __temporary_storage_construct_result
 
 //! @brief Provides device accessible storage for a number of typed sequences and temporary storage the algorithm might
 //! need.
-template <class _Resource, class... _StoredTypes>
+template <class... _StoredTypes>
 class __temporary_storage
 {
   ::cuda::stream_ref __stream_;
-  _Resource& __resource_;
+  ::cuda::mr::resource_ref<::cuda::mr::device_accessible> __resource_;
   size_t __total_bytes_allocated_;
   array<void*, 1 + sizeof...(_StoredTypes)> __storage_;
 
@@ -105,21 +111,44 @@ class __temporary_storage
     return __get_storage<0>(__storage, __num_elements);
   }
 
+  //! @brief Helper function to retrieve a memory resource from a policy
+  //!        In contrast to `__call_or` it does not require us to always call .device() on the stream
+  template <class _Policy>
+  [[nodiscard]] _CCCL_HOST_API static ::cuda::mr::resource_ref<::cuda::mr::device_accessible>
+  __get_memory_resource_or(const _Policy& __policy) noexcept
+  {
+    if constexpr (::cuda::std::__is_callable_v<::cuda::mr::get_memory_resource_t, const _Policy&>)
+    {
+      return ::cuda::mr::get_memory_resource(__policy);
+    }
+    else if constexpr (::cuda::std::__is_callable_v<::cuda::get_stream_t, const _Policy&>)
+    {
+      return ::cuda::device_default_memory_pool(::cuda::get_stream(__policy).device());
+    }
+    else
+    { // no stream no memory resource, assume device 0
+      return ::cuda::device_default_memory_pool(0);
+    }
+  }
+
 public:
-  _CCCL_TEMPLATE(class... _Sizes)
+  _CCCL_TEMPLATE(class _Policy, class... _Sizes)
   _CCCL_REQUIRES((sizeof...(_Sizes) == sizeof...(_StoredTypes)))
-  _CCCL_HOST_API __temporary_storage(
-    ::cuda::stream_ref __stream,
-    _Resource& __resource,
-    const size_t __num_bytes_storage,
-    const _Sizes... __elements_stored)
-      : __stream_(__stream)
-      , __resource_(__resource)
+  _CCCL_HOST_API
+  __temporary_storage(const _Policy& __policy, const size_t __num_bytes_storage, const _Sizes... __elements_stored)
+      : __stream_(::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy))
+      , __resource_(__get_memory_resource_or(__policy))
       , __total_bytes_allocated_(__get_total_bytes_allocated(__num_bytes_storage, __elements_stored...))
       , __storage_(__get_storage(
           __resource_.allocate(__stream_, __total_bytes_allocated_, ::cuda::mr::default_cuda_malloc_alignment),
           __elements_stored...))
   {}
+
+  _CCCL_HOST_API ~__temporary_storage()
+  {
+    __resource_.deallocate(
+      __stream_, __storage_[0], __total_bytes_allocated_, ::cuda::mr::default_cuda_malloc_alignment);
+  }
 
   //! We are dealing with uninitialized storage, so we might need to go through construct_at
   template <size_t _Index, class _OtherType = __type_at_c<_Index, __type_list<_StoredTypes...>>>
