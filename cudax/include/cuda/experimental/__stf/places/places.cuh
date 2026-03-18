@@ -434,6 +434,16 @@ public:
 
     // ===== Properties =====
 
+    virtual bool is_host() const
+    {
+      return false;
+    }
+
+    virtual bool is_device() const
+    {
+      return false;
+    }
+
     virtual data_place affine_data_place() const
     {
       return affine;
@@ -504,12 +514,14 @@ public:
     mutable stream_pool pool_data;
   };
 
-  exec_place() = default;
-  exec_place(const data_place& affine)
-      : pimpl(affine.is_device() ? device(device_ordinal(affine)).pimpl : device_auto().pimpl)
+  template <typename T>
+  static ::std::shared_ptr<impl> make_static_instance()
   {
-    _CCCL_ASSERT(!affine.is_host(), "To create an execution place for the host, use exec_place::host().");
+    static T instance;
+    return ::std::shared_ptr<impl>(&instance, [](impl*) {});
   }
+
+  exec_place() = default;
 
   bool operator==(const exec_place& rhs) const
   {
@@ -663,6 +675,7 @@ public:
    *
    * Activates the place at the given index and saves state for later restoration.
    */
+
   void set_current_place(size_t idx)
   {
     auto cur_idx = pimpl->get_current_idx();
@@ -750,12 +763,12 @@ public:
 
   bool is_host() const
   {
-    return affine_data_place().is_host();
+    return pimpl->is_host();
   }
 
   bool is_device() const
   {
-    return affine_data_place().is_device();
+    return pimpl->is_device();
   }
 
   /**
@@ -993,6 +1006,11 @@ public:
       _CCCL_ASSERT(!prev.get_impl(), "Host deactivate expects empty prev");
     }
 
+    bool is_host() const override
+    {
+      return true;
+    }
+
     data_place affine_data_place() const override
     {
       return data_place::host();
@@ -1009,10 +1027,9 @@ public:
     }
   };
 
-  static ::std::shared_ptr<impl> make()
+  static ::std::shared_ptr<exec_place::impl> make()
   {
-    static impl result;
-    return ::std::shared_ptr<impl>(&result, [](impl*) {}); // no-op deleter
+    return exec_place::make_static_instance<impl>();
   }
 
 private:
@@ -1051,6 +1068,11 @@ public:
     throw ::std::logic_error("deactivate() called on device_auto exec_place - should be resolved first");
   }
 
+  bool is_device() const override
+  {
+    return true;
+  }
+
   ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
     EXPECT(idx == 0, "Index out of bounds for device_auto exec_place");
@@ -1066,8 +1088,7 @@ public:
 
 inline exec_place exec_place::device_auto()
 {
-  static exec_place_device_auto_impl instance;
-  return ::std::shared_ptr<exec_place::impl>(&instance, [](exec_place::impl*) {});
+  return make_static_instance<exec_place_device_auto_impl>();
 }
 
 UNITTEST("exec_place_host::operator->*")
@@ -1121,6 +1142,11 @@ public:
       {
         cuda_safe_call(cudaSetDevice(restored_dev_id));
       }
+    }
+
+    bool is_device() const override
+    {
+      return true;
     }
 
     int get_devid() const

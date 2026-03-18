@@ -95,7 +95,7 @@ void cuda_launcher_graph(interpreted_spec interpreted_policy, Fun&& f, void** ar
 template <typename Fun, typename interpreted_spec, typename Arg>
 void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg arg, cudaStream_t stream, size_t rank)
 {
-  assert(p.size() == 1);
+  _CCCL_ASSERT(p.size() == 1, "Expected scalar exec_place");
 
   p->*[&] {
     auto th = thread_hierarchy(static_cast<int>(rank), interpreted_policy);
@@ -114,7 +114,7 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
         interpreted_policy.set_system_mem(sys_mem);
       }
 
-      assert(sys_mem);
+      _CCCL_ASSERT(sys_mem, "System memory allocation failed");
       th.set_system_tmp(sys_mem);
     }
 
@@ -140,7 +140,7 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
 template <typename task_t, typename Fun, typename interpreted_spec, typename Arg>
 void graph_launch_impl(task_t& t, interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg arg, size_t rank)
 {
-  assert(p.size() == 1);
+  _CCCL_ASSERT(p.size() == 1, "Expected scalar exec_place");
 
   auto kernel_args = tuple_prepend(thread_hierarchy(static_cast<int>(rank), interpreted_policy), mv(arg));
   using args_type  = decltype(kernel_args);
@@ -247,7 +247,7 @@ private:
   template <typename Fun>
   void run_on_host(Fun&& f)
   {
-    assert(!"Not yet implemented");
+    _CCCL_ASSERT(false, "Not yet implemented");
     abort();
   }
 
@@ -328,7 +328,7 @@ public:
 
     auto t = ctx.task(e_place);
 
-    assert(e_place.affine_data_place() == t.get_affine_data_place());
+    _CCCL_ASSERT(e_place.affine_data_place() == t.get_affine_data_place(), "Affine data places must match");
 
     /*
      * If we have a grid (including 1-element grids), the implicit affine partitioner is the blocked_partition.

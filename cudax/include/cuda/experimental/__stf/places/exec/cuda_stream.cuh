@@ -59,6 +59,11 @@ public:
     exec_place::device(dstream_.dev_id).deactivate(prev);
   }
 
+  bool is_device() const override
+  {
+    return true;
+  }
+
   stream_pool& get_stream_pool(bool) const override
   {
     return dummy_pool_;
