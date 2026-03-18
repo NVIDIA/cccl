@@ -391,6 +391,20 @@ struct hierarchy_level_base
       return _Level::rank(typename _Group::level_type{} /*, __group.hierarchy()*/);
     }
   }
+
+  _CCCL_TEMPLATE(class _Group)
+  _CCCL_REQUIRES(::cuda::experimental::__is_this_hierarchy_group_v<_Group>)
+  [[nodiscard]] _CCCL_API static constexpr bool is_root_rank(const _Group& __group) noexcept
+  {
+    return _Level::rank(__group) == 0;
+  }
+
+  _CCCL_TEMPLATE(class _Group)
+  _CCCL_REQUIRES(::cuda::experimental::__is_this_hierarchy_group_v<_Group>)
+  [[nodiscard]] _CCCL_API static constexpr bool is_part_of(const _Group& __group) noexcept
+  {
+    return true;
+  }
 #    endif // _CCCL_CUDA_COMPILATION()
 #  endif // _CUDAX_HIERARCHY
 
