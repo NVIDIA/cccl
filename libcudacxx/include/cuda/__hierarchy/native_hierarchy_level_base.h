@@ -60,6 +60,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_leve
   using __base_type::dims_as;
   using __base_type::extents;
   using __base_type::extents_as;
+  using __base_type::static_count;
   using __base_type::static_dims;
 
 #  if _CCCL_CUDA_COMPILATION()
@@ -87,6 +88,13 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_leve
   [[nodiscard]] _CCCL_DEVICE_API static auto extents(const _InLevel& __level) noexcept
   {
     return _Level::template extents_as<__default_md_query_type<_InLevel>>(__level);
+  }
+
+  _CCCL_TEMPLATE(class _InLevel)
+  _CCCL_REQUIRES(__is_native_hierarchy_level_v<_InLevel>)
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto static_count(const _InLevel& __level) noexcept
+  {
+    return __base_type::__static_count_impl(__level);
   }
 
   _CCCL_TEMPLATE(class _InLevel)

@@ -64,6 +64,21 @@ __device__ void test_extents(const Exp exp, const Level& level, Args... args)
 }
 
 template <class Level, class... Args>
+__device__ void test_static_count(Level level, Args... args)
+{
+  constexpr auto static_dims = level.static_dims(args...);
+  if constexpr (static_dims.x != cuda::std::dynamic_extent && static_dims.y != cuda::std::dynamic_extent
+                && static_dims.z != cuda::std::dynamic_extent)
+  {
+    static_assert(level.static_count(args...) == static_dims.x * static_dims.y * static_dims.z);
+  }
+  else
+  {
+    static_assert(level.static_count(args...) == cuda::std::dynamic_extent);
+  }
+}
+
+template <class Level, class... Args>
 __device__ void test_count(const cuda::std::size_t exp, const Level& level, Args... args)
 {
   assert(level.count(args...) == exp);

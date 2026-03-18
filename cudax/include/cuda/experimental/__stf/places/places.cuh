@@ -1700,8 +1700,8 @@ enum class instance_id_t : size_t
 UNITTEST("places to_symbol")
 {
   EXPECT(data_place::host().to_string() == ::std::string("host"));
-  EXPECT(exec_place::current_device().to_string() == ::std::string("exec(dev0)"));
-  EXPECT(exec_place::host().to_string() == ::std::string("exec(host)"));
+  EXPECT(exec_place::current_device().to_string() == ::std::string("device(0)"));
+  EXPECT(exec_place::host().to_string() == ::std::string("host"));
 };
 
 UNITTEST("exec place equality")

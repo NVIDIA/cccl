@@ -91,7 +91,15 @@ __device__ void test_thread(
     test_extents(exp, cuda::gpu_thread, cuda::grid, hier);
   }
 
-  // 4. Test cuda::gpu_thread.count(x, hier)
+  // 4. Test cuda::gpu_thread.static_count(x, hier)
+  test_static_count(cuda::gpu_thread, cuda::block, hier);
+  if constexpr (Hierarchy::has_level(cuda::cluster))
+  {
+    test_static_count(cuda::gpu_thread, cuda::cluster, hier);
+  }
+  test_static_count(cuda::gpu_thread, cuda::grid, hier);
+
+  // 5. Test cuda::gpu_thread.count(x, hier)
   test_count(cuda::std::size_t{blockDim.z} * blockDim.y * blockDim.x, cuda::gpu_thread, cuda::block, hier);
   if constexpr (Hierarchy::has_level(cuda::cluster))
   {
@@ -108,7 +116,7 @@ __device__ void test_thread(
     test_count(cuda::std::size_t{exp.z} * exp.y * exp.x, cuda::gpu_thread, cuda::grid, hier);
   }
 
-  // 5. test cuda::gpu_thread.index(x, hier)
+  // 6. test cuda::gpu_thread.index(x, hier)
   test_index(threadIdx, cuda::gpu_thread, cuda::block, hier);
   if constexpr (Hierarchy::has_level(cuda::cluster))
   {
@@ -129,7 +137,7 @@ __device__ void test_thread(
     test_index(exp, cuda::gpu_thread, cuda::grid, hier);
   }
 
-  // 6. Test cuda::gpu_thread.rank(x, hier)
+  // 7. Test cuda::gpu_thread.rank(x, hier)
   test_rank((threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x + threadIdx.x, cuda::gpu_thread, cuda::block, hier);
   if constexpr (Hierarchy::has_level(cuda::cluster))
   {

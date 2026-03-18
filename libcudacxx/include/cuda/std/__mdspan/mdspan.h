@@ -441,13 +441,16 @@ public:
   template <size_t... _Idxs>
   [[nodiscard]] _CCCL_API constexpr bool __check_size() const noexcept
   {
-    size_t __prod = 1;
-    for (size_t __r = 0; __r != extents_type::rank(); ++__r)
+    if constexpr (extents_type::rank() > 0) // MSVC raises a warning even with __r != extents_type::rank()
     {
-      const auto __extent = static_cast<size_t>(mapping().extents().extent(__r));
-      if (__mdspan_detail::__mul_overflow(__prod, __extent, &__prod))
+      size_t __prod = 1;
+      for (size_t __r = 0; __r < extents_type::rank(); ++__r)
       {
-        return false;
+        const auto __extent = static_cast<size_t>(mapping().extents().extent(__r));
+        if (__mdspan_detail::__mul_overflow(__prod, __extent, &__prod))
+        {
+          return false;
+        }
       }
     }
     return true;

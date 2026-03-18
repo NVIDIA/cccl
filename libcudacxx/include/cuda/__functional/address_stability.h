@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/iterator.h>
 #include <cuda/std/__functional/not_fn.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__functional/ranges_operations.h>
@@ -71,6 +72,10 @@ template <typename F>
 
 template <typename _Fn>
 struct proclaims_copyable_arguments<::cuda::std::__not_fn_t<_Fn>> : proclaims_copyable_arguments<_Fn>
+{};
+
+template <typename _Fn>
+struct proclaims_copyable_arguments<zip_function<_Fn>> : proclaims_copyable_arguments<_Fn>
 {};
 
 template <typename _Tp>
