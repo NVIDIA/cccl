@@ -229,3 +229,27 @@ void TestDevicePointerCompare()
   }
 }
 DECLARE_UNITTEST(TestDevicePointerCompare);
+
+template <typename Vector>
+void TestToAddress()
+{
+  using T = typename Vector::value_type;
+
+  Vector vec(3);
+
+  T* first;
+  T* last;
+
+  first = cuda::std::to_address(&vec[0]);
+  last  = cuda::std::to_address(&vec[2]);
+  ASSERT_EQUAL(last - first, 2);
+
+  first = cuda::std::to_address(&vec.front());
+  last  = cuda::std::to_address(&vec.back());
+  ASSERT_EQUAL(last - first, 2);
+
+  first = cuda::std::to_address(vec.begin());
+  last  = cuda::std::to_address(vec.end());
+  ASSERT_EQUAL(last - first, 3);
+}
+DECLARE_VECTOR_UNITTEST(TestToAddress);

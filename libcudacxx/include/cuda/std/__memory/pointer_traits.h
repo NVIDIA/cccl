@@ -159,12 +159,6 @@ public:
   }
 };
 
-template <class _From, class _To>
-struct __rebind_pointer
-{
-  using type = typename pointer_traits<_From>::template rebind<_To>;
-};
-
 // to_address
 
 template <class _Pointer, class = void>
