@@ -264,7 +264,7 @@ public:
       int item_dev = device_ordinal(item.place);
 
       // Physically allocate this block on the appropriate device/place
-      // Use the data_place's mem_create which delegates to extensions for custom behavior
+      // Use the data_place's mem_create which may implement custom behavior
       cuda_safe_call(item.place.mem_create(&item.alloc_handle, item.size));
 
       _CCCL_ASSERT(item.offset + item.size <= vm_total_size_bytes, "Allocation offset out of bounds");

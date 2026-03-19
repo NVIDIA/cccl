@@ -25,7 +25,6 @@
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/utility/getenv_cache.cuh>
 #include <cuda/experimental/__stf/utility/memory.cuh>
-#include <cuda/experimental/__stf/utility/stream_to_dev.cuh>
 #include <cuda/experimental/__stf/utility/unstable_unique.cuh>
 
 #include <mutex>
@@ -299,7 +298,7 @@ public:
     {
       // We did not select a stream yet, so we take one in the pools in
       // the async_resource_handle object associated to the context
-      dstream = place.getDataStream(bctx.async_resources());
+      dstream = place.getDataStream();
     }
 
     // Note that if we had stream_dev_id = -1 (eg. host memory), the device

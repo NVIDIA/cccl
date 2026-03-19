@@ -71,7 +71,7 @@ struct __pstl_dispatch<__pstl_algorithm::__generate_n, __execution_backend::__cu
 
     // We pass the policy as an environment to device_transform
     _CCCL_TRY_CUDA_API(
-      ::cub::DeviceTransform::Generate,
+      CUB_NS_QUALIFIER::DeviceTransform::Generate,
       "__pstl_cuda_generate: call to cub device_transform::Generate failed",
       ::cuda::std::move(__result),
       __count,

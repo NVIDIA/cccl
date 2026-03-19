@@ -351,20 +351,26 @@ template <class _Kernel, class _Config, class... _Args>
   using _BlockDesc = typename _Hierarchy::template level_desc_type<block_level>;
   using _BlockExts = typename _BlockDesc::extents_type;
 
-  if constexpr (_Hierarchy::has_level(cluster))
-  {
-    using _ClusterDesc = typename _Hierarchy::template level_desc_type<cluster_level>;
-    using _ClusterExts = typename _ClusterDesc::extents_type;
-
-    if constexpr (_BlockExts::rank_dynamic() == 0 && _ClusterExts::rank_dynamic() == 0)
-    {
-      return ::cuda::__kernel_launcher_with_block_size<_Config, _Kernel, _Args...>;
-    }
-  }
-
   if constexpr (_BlockExts::rank_dynamic() == 0)
   {
-    return ::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>;
+    if constexpr (_Hierarchy::has_level(cluster))
+    {
+      using _ClusterDesc = typename _Hierarchy::template level_desc_type<cluster_level>;
+      using _ClusterExts = typename _ClusterDesc::extents_type;
+
+      if constexpr (_ClusterExts::rank_dynamic() == 0)
+      {
+        return ::cuda::__kernel_launcher_with_block_size<_Config, _Kernel, _Args...>;
+      }
+      else
+      {
+        return ::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>;
+      }
+    }
+    else
+    {
+      return ::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>;
+    }
   }
   else
   {

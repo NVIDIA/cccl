@@ -23,6 +23,7 @@
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__device/arch_id.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__concepts/regular.h>
@@ -609,7 +610,7 @@ _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferAlignBytes()
 template <typename T, int GmemAlign = alignof(T)>
 _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t num_items)
 {
-  static_assert(::cuda::std::has_single_bit(unsigned{GmemAlign}));
+  static_assert(::cuda::is_power_of_two(GmemAlign));
   static_assert(GmemAlign >= int{alignof(T)});
   _CCCL_ASSERT(num_items <= ::cuda::std::size_t{::cuda::std::numeric_limits<int>::max()},
                "num_items must fit into an int");
@@ -812,7 +813,7 @@ public:
 #if !_CCCL_COMPILER(NVRTC)
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
   template <typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int device_ptx_version, FunctorT& op)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static constexpr cudaError_t Invoke(int device_ptx_version, FunctorT& op)
   {
     // __CUDA_ARCH_LIST__ is available from CTK 11.5 onwards and contains values like 860
     // NV_TARGET_SM_INTEGER_LIST is defined by NVHPC and contains values like 86, so we need to scale by 10
@@ -840,7 +841,7 @@ private:
 
 #if !_CCCL_COMPILER(NVRTC)
   template <int ArchMult, int... CudaArches, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static constexpr cudaError_t
   runtime_arch_to_compiletime(int device_ptx_version, FunctorT& op)
   {
     // We instantiate find_and_invoke_policy for each CudaArches (the arches we are compiling for), but only call the
@@ -858,7 +859,7 @@ private:
   }
 
   template <int DevicePtxVersion, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t find_and_invoke_policy(FunctorT& op)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static constexpr cudaError_t find_and_invoke_policy(FunctorT& op)
   {
     // find the first policy we can use on DevicePtxVersion
     if constexpr (DevicePtxVersion < PolicyPtxVersion && have_previous_policy)

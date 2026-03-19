@@ -40,7 +40,7 @@
 
 #include "test_macros.h"
 
-inline constexpr int size = 100;
+inline constexpr int size = 1000;
 
 template <class Policy, class Iter>
 void test_transform_reduce(const Policy policy, const thrust::device_vector<int>& Input1, Iter input2)

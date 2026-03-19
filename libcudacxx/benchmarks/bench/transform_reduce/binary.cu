@@ -10,6 +10,7 @@
 
 #include <thrust/device_vector.h>
 
+#include <cuda/iterator>
 #include <cuda/memory_pool>
 #include <cuda/std/__pstl_algorithm>
 #include <cuda/stream>

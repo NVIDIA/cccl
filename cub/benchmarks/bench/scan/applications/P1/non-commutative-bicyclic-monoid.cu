@@ -162,7 +162,7 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>
 #ifdef TUNE_T
 using uint_types = nvbench::type_list<TUNE_T>;
 #else
-#  if NVBENCH_HELPER_HAS_I128
+#  if _CCCL_HAS_INT128()
 using uint_types = nvbench::type_list<cuda::std::uint32_t, cuda::std::uint64_t, uint128_t>;
 #  else
 using uint_types = nvbench::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;

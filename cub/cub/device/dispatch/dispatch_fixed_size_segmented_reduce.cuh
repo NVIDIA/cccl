@@ -81,7 +81,7 @@ template <typename InputIteratorT,
           typename ReductionOpT,
           typename InitT,
           typename AccumT       = ::cuda::std::__accumulator_t<ReductionOpT, it_value_t<InputIteratorT>, InitT>,
-          typename PolicyHub    = fixed_size_segmented_reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
+          typename PolicyHub    = segmented_reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
           typename KernelSource = DeviceFixedSizeSegmentedReduceKernelSource<
             typename PolicyHub::MaxPolicy,
             InputIteratorT,

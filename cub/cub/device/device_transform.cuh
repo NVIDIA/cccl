@@ -20,6 +20,7 @@
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/address_stability.h>
 #include <cuda/__functional/call_or.h>
+#include <cuda/__iterator/zip_iterator.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/tuple>
@@ -71,7 +72,6 @@ struct tuning
 //! sequences into an output sequence.
 struct DeviceTransform
 {
-private:
   template <detail::transform::requires_stable_address StableAddress = detail::transform::requires_stable_address::no,
             typename... RandomAccessIteratorsIn,
             typename RandomAccessIteratorOut,
@@ -79,7 +79,7 @@ private:
             typename Predicate,
             typename TransformOp,
             typename Env>
-  CUB_RUNTIME_FUNCTION static cudaError_t TransformInternal(
+  CUB_RUNTIME_FUNCTION static cudaError_t __transform_internal(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
     RandomAccessIteratorOut output,
     NumItemsT num_items,
@@ -130,7 +130,7 @@ private:
             typename Predicate,
             typename TransformOp,
             typename Env>
-  CUB_RUNTIME_FUNCTION static cudaError_t TransformInternal(
+  CUB_RUNTIME_FUNCTION static cudaError_t __transform_internal(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
     ::cuda::std::tuple<RandomAccessIteratorsOut...> outputs,
     NumItemsT num_items,
@@ -138,7 +138,7 @@ private:
     TransformOp transform_op,
     Env env)
   {
-    return TransformInternal<StableAddress>(
+    return __transform_internal<StableAddress>(
       ::cuda::std::move(inputs),
       ::cuda::make_zip_iterator(::cuda::std::move(outputs)),
       num_items,
@@ -147,7 +147,6 @@ private:
       ::cuda::std::move(env));
   }
 
-public:
   //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -182,7 +181,8 @@ public:
             typename... RandomAccessIteratorsOut,
             typename NumItemsT,
             typename TransformOp,
-            typename Env = ::cuda::std::execution::env<>>
+            typename Env = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<Env, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t Transform(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
     ::cuda::std::tuple<RandomAccessIteratorsOut...> outputs,
@@ -191,7 +191,7 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Transform");
-    return TransformInternal(
+    return __transform_internal(
       ::cuda::std::move(inputs),
       ::cuda::std::move(outputs),
       num_items,
@@ -201,6 +201,29 @@ public:
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // we need this so the previous overload is not ambiguous with the next one
+  static_assert(!::cuda::std::is_convertible_v<::cuda::stream_ref, cudaStream_t>);
+
+  // we keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <typename... RandomAccessIteratorsIn,
+            typename... RandomAccessIteratorsOut,
+            typename NumItemsT,
+            typename TransformOp>
+  CUB_RUNTIME_FUNCTION static cudaError_t Transform(
+    ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+    ::cuda::std::tuple<RandomAccessIteratorsOut...> outputs,
+    NumItemsT num_items,
+    TransformOp transform_op,
+    cudaStream_t stream)
+  {
+    return Transform(
+      ::cuda::std::move(inputs),
+      ::cuda::std::move(outputs),
+      num_items,
+      ::cuda::std::move(transform_op),
+      ::cuda::stream_ref{stream});
+  }
+
   // Overload with additional parameters to specify temporary storage. Provided for compatibility with other CUB APIs.
   template <typename... RandomAccessIteratorsIn,
             typename... RandomAccessIteratorsOut,
@@ -261,7 +284,8 @@ public:
             typename RandomAccessIteratorOut,
             typename NumItemsT,
             typename TransformOp,
-            typename Env = ::cuda::std::execution::env<>>
+            typename Env = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<Env, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t Transform(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
     RandomAccessIteratorOut output,
@@ -270,7 +294,7 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Transform");
-    return TransformInternal(
+    return __transform_internal(
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
@@ -280,6 +304,23 @@ public:
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // we keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
+  CUB_RUNTIME_FUNCTION static cudaError_t Transform(
+    ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+    RandomAccessIteratorOut output,
+    NumItemsT num_items,
+    TransformOp transform_op,
+    cudaStream_t stream)
+  {
+    return Transform(
+      ::cuda::std::move(inputs),
+      ::cuda::std::move(output),
+      num_items,
+      ::cuda::std::move(transform_op),
+      ::cuda::stream_ref{stream});
+  }
+
   // Overload with additional parameters to specify temporary storage. Provided for compatibility with other CUB APIs.
   template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t Transform(
@@ -325,7 +366,8 @@ public:
             typename RandomAccessIteratorOut,
             typename NumItemsT,
             typename TransformOp,
-            typename Env = ::cuda::std::execution::env<>>
+            typename Env = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<Env, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t Transform(
     RandomAccessIteratorIn input,
     RandomAccessIteratorOut output,
@@ -342,6 +384,23 @@ public:
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // we keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <typename RandomAccessIteratorIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
+  CUB_RUNTIME_FUNCTION static cudaError_t Transform(
+    RandomAccessIteratorIn input,
+    RandomAccessIteratorOut output,
+    NumItemsT num_items,
+    TransformOp transform_op,
+    cudaStream_t stream)
+  {
+    return Transform(
+      ::cuda::std::make_tuple(::cuda::std::move(input)),
+      ::cuda::std::move(output),
+      num_items,
+      ::cuda::std::move(transform_op),
+      ::cuda::stream_ref{stream});
+  }
+
   // Overload with additional parameters to specify temporary storage. Provided for compatibility with other CUB APIs.
   template <typename RandomAccessIteratorIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t Transform(
@@ -387,7 +446,8 @@ public:
   template <typename RandomAccessIteratorOut,
             typename NumItemsT,
             typename Generator,
-            typename Env = ::cuda::std::execution::env<>>
+            typename Env = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<Env, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Generate(RandomAccessIteratorOut output, NumItemsT num_items, Generator generator, Env env = {})
   {
@@ -398,7 +458,7 @@ public:
       "The return value of the generator's call operator must be assignable to the dereferenced output iterator");
 
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Generate");
-    return TransformInternal(
+    return __transform_internal(
       ::cuda::std::make_tuple(),
       ::cuda::std::move(output),
       num_items,
@@ -408,6 +468,14 @@ public:
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // we keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <typename RandomAccessIteratorOut, typename NumItemsT, typename Generator>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Generate(RandomAccessIteratorOut output, NumItemsT num_items, Generator generator, cudaStream_t stream)
+  {
+    return Generate(::cuda::std::move(output), num_items, ::cuda::std::move(generator), ::cuda::stream_ref{stream});
+  }
+
   // Overload with additional parameters to specify temporary storage. Provided for compatibility with other CUB APIs.
   template <typename RandomAccessIteratorOut, typename NumItemsT, typename Generator>
   CUB_RUNTIME_FUNCTION static cudaError_t Generate(
@@ -446,7 +514,8 @@ public:
   template <typename RandomAccessIteratorOut,
             typename NumItemsT,
             typename Value,
-            typename Env = ::cuda::std::execution::env<>>
+            typename Env = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<Env, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Fill(RandomAccessIteratorOut output, NumItemsT num_items, Value value, Env env = {})
   {
@@ -454,7 +523,7 @@ public:
                   "The passed value must be assignable to the dereferenced output iterator");
 
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Fill");
-    return TransformInternal(
+    return __transform_internal(
       ::cuda::std::make_tuple(),
       ::cuda::std::move(output),
       num_items,
@@ -464,6 +533,14 @@ public:
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // we keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <typename RandomAccessIteratorOut, typename NumItemsT, typename Value>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Fill(RandomAccessIteratorOut output, NumItemsT num_items, Value value, cudaStream_t stream)
+  {
+    return Fill(::cuda::std::move(output), num_items, ::cuda::std::move(value), ::cuda::stream_ref{stream});
+  }
+
   // Overload with additional parameters to specify temporary storage. Provided for compatibility with other CUB APIs.
   template <typename RandomAccessIteratorOut, typename NumItemsT, typename Value>
   CUB_RUNTIME_FUNCTION static cudaError_t
@@ -525,7 +602,8 @@ public:
             typename NumItemsT,
             typename Predicate,
             typename TransformOp,
-            typename Env = ::cuda::std::execution::env<>>
+            typename Env = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<Env, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t TransformIf(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
     RandomAccessIteratorOut output,
@@ -535,7 +613,7 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformIf");
-    return TransformInternal(
+    return __transform_internal(
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
@@ -545,6 +623,29 @@ public:
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // we keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <typename... RandomAccessIteratorsIn,
+            typename RandomAccessIteratorOut,
+            typename NumItemsT,
+            typename Predicate,
+            typename TransformOp>
+  CUB_RUNTIME_FUNCTION static cudaError_t TransformIf(
+    ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+    RandomAccessIteratorOut output,
+    NumItemsT num_items,
+    Predicate predicate,
+    TransformOp transform_op,
+    cudaStream_t stream)
+  {
+    return TransformIf(
+      ::cuda::std::move(inputs),
+      ::cuda::std::move(output),
+      num_items,
+      ::cuda::std::move(predicate),
+      ::cuda::std::move(transform_op),
+      ::cuda::stream_ref{stream});
+  }
+
   // Overload with additional parameters to specify temporary storage. Provided for compatibility with other CUB APIs.
   template <typename... RandomAccessIteratorsIn,
             typename RandomAccessIteratorOut,
@@ -616,7 +717,8 @@ public:
             typename NumItemsT,
             typename Predicate,
             typename TransformOp,
-            typename Env = ::cuda::std::execution::env<>>
+            typename Env = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<Env, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t TransformIf(
     RandomAccessIteratorIn input,
     RandomAccessIteratorOut output,
@@ -635,6 +737,29 @@ public:
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // we keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <typename RandomAccessIteratorIn,
+            typename RandomAccessIteratorOut,
+            typename NumItemsT,
+            typename Predicate,
+            typename TransformOp>
+  CUB_RUNTIME_FUNCTION static cudaError_t TransformIf(
+    RandomAccessIteratorIn input,
+    RandomAccessIteratorOut output,
+    NumItemsT num_items,
+    Predicate predicate,
+    TransformOp transform_op,
+    cudaStream_t stream)
+  {
+    return TransformIf(
+      ::cuda::std::make_tuple(::cuda::std::move(input)),
+      ::cuda::std::move(output),
+      num_items,
+      ::cuda::std::move(predicate),
+      ::cuda::std::move(transform_op),
+      ::cuda::stream_ref{stream});
+  }
+
   // Overload with additional parameters to specify temporary storage. Provided for compatibility with other CUB APIs.
   template <typename RandomAccessIteratorIn,
             typename RandomAccessIteratorOut,
@@ -702,7 +827,8 @@ public:
             typename RandomAccessIteratorOut,
             typename NumItemsT,
             typename TransformOp,
-            typename Env = ::cuda::std::execution::env<>>
+            typename Env = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<Env, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t TransformStableArgumentAddresses(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
     RandomAccessIteratorOut output,
@@ -711,7 +837,7 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformStableArgumentAddresses");
-    return TransformInternal<detail::transform::requires_stable_address::yes>(
+    return __transform_internal<detail::transform::requires_stable_address::yes>(
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
@@ -721,6 +847,23 @@ public:
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // we keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
+  CUB_RUNTIME_FUNCTION static cudaError_t TransformStableArgumentAddresses(
+    ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+    RandomAccessIteratorOut output,
+    NumItemsT num_items,
+    TransformOp transform_op,
+    cudaStream_t stream)
+  {
+    return TransformStableArgumentAddresses(
+      ::cuda::std::move(inputs),
+      ::cuda::std::move(output),
+      num_items,
+      ::cuda::std::move(transform_op),
+      ::cuda::stream_ref{stream});
+  }
+
   template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t TransformStableArgumentAddresses(
     void* d_temp_storage,
@@ -765,7 +908,8 @@ public:
             typename RandomAccessIteratorOut,
             typename NumItemsT,
             typename TransformOp,
-            typename Env = ::cuda::std::execution::env<>>
+            typename Env = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<Env, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t TransformStableArgumentAddresses(
     RandomAccessIteratorIn input,
     RandomAccessIteratorOut output,
@@ -782,6 +926,23 @@ public:
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // we keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <typename RandomAccessIteratorIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
+  CUB_RUNTIME_FUNCTION static cudaError_t TransformStableArgumentAddresses(
+    RandomAccessIteratorIn input,
+    RandomAccessIteratorOut output,
+    NumItemsT num_items,
+    TransformOp transform_op,
+    cudaStream_t stream)
+  {
+    return TransformStableArgumentAddresses(
+      ::cuda::std::make_tuple(::cuda::std::move(input)),
+      ::cuda::std::move(output),
+      num_items,
+      ::cuda::std::move(transform_op),
+      ::cuda::stream_ref{stream});
+  }
+
   template <typename RandomAccessIteratorIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t TransformStableArgumentAddresses(
     void* d_temp_storage,
@@ -813,7 +974,8 @@ public:
             typename NumItemsT,
             typename Predicate,
             typename TransformOp,
-            typename Env = ::cuda::std::execution::env<>>
+            typename Env = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<Env, cudaStream_t>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t __transform_if_stable_argument_addresses(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
     RandomAccessIteratorOut output,
@@ -823,7 +985,7 @@ public:
     Env env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformIfStableArgumentAddresses");
-    return TransformInternal<detail::transform::requires_stable_address::yes>(
+    return __transform_internal<detail::transform::requires_stable_address::yes>(
       ::cuda::std::move(inputs),
       ::cuda::std::move(output),
       num_items,
@@ -831,6 +993,31 @@ public:
       ::cuda::std::move(transform_op),
       ::cuda::std::move(env));
   }
+
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  // we keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
+  template <typename... RandomAccessIteratorsIn,
+            typename RandomAccessIteratorOut,
+            typename NumItemsT,
+            typename Predicate,
+            typename TransformOp>
+  CUB_RUNTIME_FUNCTION static cudaError_t __transform_if_stable_argument_addresses(
+    ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
+    RandomAccessIteratorOut output,
+    NumItemsT num_items,
+    Predicate predicate,
+    TransformOp transform_op,
+    cudaStream_t stream)
+  {
+    return __transform_if_stable_argument_addresses(
+      ::cuda::std::move(inputs),
+      ::cuda::std::move(output),
+      num_items,
+      ::cuda::std::move(predicate),
+      ::cuda::std::move(transform_op),
+      ::cuda::stream_ref{stream});
+  }
+#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

@@ -180,6 +180,16 @@ struct radix_sort_kernel_source
   {
     return build.value_type.size;
   }
+
+  indirect_arg_t* AdvanceKeys(indirect_arg_t* ptr, OffsetT offset) const
+  {
+    return reinterpret_cast<indirect_arg_t*>(reinterpret_cast<char*>(ptr) + offset * build.key_type.size);
+  }
+
+  indirect_arg_t* AdvanceValues(indirect_arg_t* ptr, OffsetT offset) const
+  {
+    return reinterpret_cast<indirect_arg_t*>(reinterpret_cast<char*>(ptr) + offset * build.value_type.size);
+  }
 };
 } // namespace radix_sort
 
@@ -229,6 +239,7 @@ try
   const auto policy_sel = cub::detail::radix_sort::policy_selector{
     static_cast<int>(input_keys_it.value_type.size),
     // FIXME(bgruber): input_values_it.value_type.size is 4 when it represents cub::NullType, which is very odd
+    // TODO(bgruber): instead of 0 we should probably use int{sizeof(cub::NullType)}
     keys_only ? 0 : static_cast<int>(input_values_it.value_type.size),
     int{sizeof(OffsetT)},
     key_type};

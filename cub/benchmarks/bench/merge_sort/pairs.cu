@@ -131,7 +131,7 @@ using key_types = all_types;
 using value_types = nvbench::type_list<TUNE_ValueT>;
 #else // !defined(TUNE_ValueT)
 using value_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t
-#  if NVBENCH_HELPER_HAS_I128
+#  if _CCCL_HAS_INT128()
 // nvcc currently hangs for __int128 value type with the fallback policy of {CTA: 64, IPT: 1}. NVBug 4384075
 //  ,
 //  int128_t

@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__fwd/zip_iterator.h>
+#include <cuda/__fwd/iterator.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>

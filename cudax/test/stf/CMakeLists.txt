@@ -33,6 +33,7 @@ set(
   gnu/include_only.cpp
   graph/concurrency_test.cu
   graph/explicit_graph.cu
+  graph/explicit_graph_async.cu
   graph/explicit_graph_while.cu
   graph/explicit_graph_while-kernels.cu
   graph/get_cache_stats.cu
@@ -193,7 +194,7 @@ set(
   cuda/experimental/__stf/internal/slice.cuh
   cuda/experimental/__stf/internal/thread_hierarchy.cuh
   cuda/experimental/__stf/places/cyclic_shape.cuh
-  cuda/experimental/__stf/places/inner_shape.cuh
+  cuda/experimental/__stf/internal/inner_shape.cuh
   cuda/experimental/__stf/places/places.cuh
   cuda/experimental/__stf/places/tiled_partition.cuh
   cuda/experimental/__stf/stream/stream_ctx.cuh

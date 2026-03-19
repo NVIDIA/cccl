@@ -568,6 +568,8 @@ struct policy_hub
 #if __cccl_ptx_isa >= 860
     struct WarpspeedPolicy
     {
+      // TODO(bgruber): remove everything but num_reduce_and_scan_warps, num_look_ahead_items and items_per_thread
+
       // Squad definitions
       static constexpr int num_squads           = 5;
       static constexpr int num_threads_per_warp = 32;
@@ -576,30 +578,28 @@ struct policy_hub
 #  if _CCCL_COMPILER(NVHPC)
       // need to reduce the number of threads to <= 256, so each thread can use up to 255 registers. This avoids an
       // error in ptxas, see also: https://github.com/NVIDIA/cccl/issues/7700.
-      static constexpr int num_reduce_warps    = 2;
-      static constexpr int num_scan_stor_warps = 2;
+      static constexpr int num_reduce_and_scan_warps = 2;
 #  else // _CCCL_COMPILER(NVHPC)
-      static constexpr int num_reduce_warps    = 4;
-      static constexpr int num_scan_stor_warps = 4;
+      static constexpr int num_reduce_and_scan_warps = 4; // this can be tuned
 #  endif // _CCCL_COMPILER(NVHPC)
-      static constexpr int num_load_warps       = 1;
-      static constexpr int num_sched_warps      = 1;
-      static constexpr int num_look_ahead_warps = 1;
-
+      static constexpr int num_load_warps       = 1; // no point in being more than 1
+      static constexpr int num_sched_warps      = 1; // no point in being more than 1
+      static constexpr int num_look_ahead_warps = 1; // must be 1
       // TODO(bgruber): 5 is a bit better for complex<float>
       static constexpr int num_look_ahead_items = sizeof(AccumT) == 2 ? 3 : 4;
 
       // Deduced definitions
       static constexpr int num_total_warps =
-        num_reduce_warps + num_scan_stor_warps + num_load_warps + num_sched_warps + num_look_ahead_warps;
+        2 * num_reduce_and_scan_warps + num_load_warps + num_sched_warps + num_look_ahead_warps;
       static constexpr int num_total_threads = num_total_warps * num_threads_per_warp;
 
 #  if _CCCL_COMPILER(NVHPC)
       static_assert(num_total_threads <= 256);
 #  endif // _CCCL_COMPILER(NVHPC)
 
-      static constexpr int squad_reduce_thread_count = num_reduce_warps * num_threads_per_warp;
+      static constexpr int squad_reduce_thread_count = num_reduce_and_scan_warps * num_threads_per_warp;
 
+      // manual tuning based on cub.bench.scan.exclusive.sum.base
       // 256 / sizeof(InputValueT) - 1 should minimize bank conflicts (and fits into 48KiB SMEM)
       // 2-byte types and double needed special handling
       static constexpr int items_per_thread =
@@ -626,11 +626,11 @@ struct policy_hub
       // The squads cannot be static constexpr variables, as those are not device accessible
       [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr warpspeed::SquadDesc squadReduce() noexcept
       {
-        return warpspeed::SquadDesc{0, num_reduce_warps};
+        return warpspeed::SquadDesc{0, num_reduce_and_scan_warps};
       }
       [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr warpspeed::SquadDesc squadScanStore() noexcept
       {
-        return warpspeed::SquadDesc{1, num_scan_stor_warps};
+        return warpspeed::SquadDesc{1, num_reduce_and_scan_warps};
       }
       [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE static constexpr warpspeed::SquadDesc squadLoad() noexcept
       {
@@ -648,7 +648,37 @@ struct policy_hub
 #endif // __cccl_ptx_isa >= 860
   };
 
-  using MaxPolicy = Policy1000;
+  struct Policy1200 : ChainedPolicy<1200, Policy1200, Policy1000>
+  {
+    using ScanPolicyT = typename Policy1000::ScanPolicyT;
+
+    struct WarpspeedPolicy : Policy1000::WarpspeedPolicy
+    {
+      static _CCCL_API constexpr auto __compute_ipt()
+      {
+        auto ipt = Policy1000::WarpspeedPolicy::items_per_thread;
+
+        // based on cub.bench.scan.exclusive.custom.base, cap items per thread if we don't know the scan op
+        if (is_primitive_op<ScanOpT>() == primitive_op::no && ::cuda::std::is_arithmetic_v<InputValueT>)
+        {
+          if constexpr (sizeof(InputValueT) == 4 || sizeof(InputValueT) == 8)
+          {
+            return 127;
+          }
+
+          const int max = sizeof(InputValueT) <= 2 ? 63 : 127;
+          ipt           = ::cuda::std::min(ipt, max);
+        }
+
+        return ipt;
+      }
+
+      static constexpr int items_per_thread = __compute_ipt();
+      static constexpr int tile_size        = items_per_thread * Policy1000::WarpspeedPolicy::squad_reduce_thread_count;
+    };
+  };
+
+  using MaxPolicy = Policy1200;
 };
 } // namespace detail::scan
 

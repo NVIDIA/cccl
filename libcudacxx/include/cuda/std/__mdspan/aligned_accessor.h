@@ -29,7 +29,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/has_single_bit.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__mdspan/default_accessor.h>
 #include <cuda/std/__memory/assume_aligned.h>
@@ -48,7 +48,7 @@ class aligned_accessor
 public:
   static constexpr auto byte_alignment = _ByteAlignment;
 
-  static_assert(::cuda::std::has_single_bit(byte_alignment), "byte_alignment must be a power of two.");
+  static_assert(::cuda::is_power_of_two(byte_alignment), "byte_alignment must be a power of two.");
 
   static_assert(byte_alignment >= alignof(_ElementType), "Insufficient byte alignment for _ElementType");
 

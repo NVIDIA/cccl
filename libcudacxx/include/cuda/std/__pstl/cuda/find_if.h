@@ -35,8 +35,6 @@ _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
-#  include <cuda/__memory_pool/device_memory_pool.h>
-#  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
@@ -55,8 +53,6 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__type_traits/is_execution_policy.h>
 #  include <cuda/std/__utility/move.h>
 
-#  include <cuda_runtime.h>
-
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
@@ -71,37 +67,36 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
   __par_impl([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, _UnaryOp __pred)
   {
     const auto __num_items = ::cuda::std::distance(__first, __last);
-    using __offset_type    = remove_cvref_t<decltype(__num_items)>;
-    __offset_type __ret;
+    using _OffsetType      = remove_cvref_t<decltype(__num_items)>;
+    _OffsetType __ret;
 
     // Determine temporary device storage requirements for find_if
     void* __temp_storage = nullptr;
     size_t __num_bytes   = 0;
     _CCCL_TRY_CUDA_API(
-      ::cub::DeviceFind::FindIf,
+      CUB_NS_QUALIFIER::DeviceFind::FindIf,
       "__pstl_cuda_find_if: determining temporary storage failed",
       __temp_storage,
       __num_bytes,
       __first,
-      static_cast<__offset_type*>(nullptr),
+      static_cast<_OffsetType*>(nullptr),
       __pred,
       __num_items);
 
     // Allocate memory for result
-    auto __stream   = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-    auto __resource = ::cuda::__call_or(
-      ::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(__stream.device()), __policy);
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
+
     {
-      __temporary_storage<__offset_type, decltype(__resource)> __storage{__stream, __resource, __num_bytes};
+      __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
       // Run the find operation
       _CCCL_TRY_CUDA_API(
-        ::cub::DeviceFind::FindIf,
+        CUB_NS_QUALIFIER::DeviceFind::FindIf,
         "__pstl_cuda_find_if: cub::DeviceFind failed",
         __storage.__get_temp_storage(),
         __num_bytes,
         ::cuda::std::move(__first),
-        __storage.__get_result_iter(),
+        __storage.template __get_ptr<0>(),
         ::cuda::std::move(__pred),
         __num_items,
         __stream.get());
@@ -111,8 +106,8 @@ struct __pstl_dispatch<__pstl_algorithm::__find_if, __execution_backend::__cuda>
         ::cudaMemcpyAsync,
         "__pstl_cuda_find_if: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),
-        __storage.__res_,
-        sizeof(__offset_type),
+        __storage.template __get_ptr<0>(),
+        sizeof(_OffsetType),
         ::cudaMemcpyDefault,
         __stream.get());
     }

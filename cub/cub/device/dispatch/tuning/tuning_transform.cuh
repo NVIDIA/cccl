@@ -22,6 +22,7 @@
 #include <cuda/__functional/address_stability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/array>
 #include <cuda/std/concepts>
 #include <cuda/std/tuple>
@@ -341,6 +342,7 @@ struct policy_selector
       all_input_values_trivially_reloc &= input.value_type_is_trivially_relocatable;
       // the vectorized kernel supports mixing contiguous and non-contiguous iterators
       can_memcpy_contiguous_inputs &= !input.is_contiguous || input.value_type_is_trivially_relocatable;
+      _CCCL_ASSERT(input.value_type_size > 0, "Iterators to inputs must not have a value_type of zero size");
       all_value_types_have_power_of_two_size &= ::cuda::is_power_of_two(input.value_type_size);
     }
     const bool can_memcpy_all_inputs = all_inputs_contiguous && all_input_values_trivially_reloc;
@@ -479,6 +481,11 @@ struct policy_selector_from_types<RequiresStableAddress,
                                   ::cuda::std::tuple<RandomAccessIteratorsIn...>,
                                   RandomAccessIteratorOut>
 {
+  static_assert((!::cuda::std::is_void_v<it_value_t<RandomAccessIteratorsIn>> && ...),
+                "Iterators for inputs must not have a value_type of void. This can happen for multiple reasons. You "
+                "could pass an output iterator by accident, but it could also be a transform_iterator with a "
+                "__device__ callable and a deduced return type (which is void in host code).");
+
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> transform_policy
   {
     constexpr auto policies = policy_selector<sizeof...(RandomAccessIteratorsIn)>{

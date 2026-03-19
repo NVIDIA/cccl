@@ -49,6 +49,7 @@
 #  include <cuda/std/__ranges/concepts.h>
 #  include <cuda/std/__ranges/size.h>
 #  include <cuda/std/__ranges/unwrap_end.h>
+#  include <cuda/std/__type_traits/decay.h>
 #  include <cuda/std/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/move.h>
@@ -703,7 +704,7 @@ _CCCL_HOST_API void __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::st
     {
 #  if _CCCL_CUDA_COMPILATION()
       ::cuda::__ensure_current_context __guard(__stream);
-      ::cub::DeviceTransform::Fill(__first, __count, __value, __stream.get());
+      CUB_NS_QUALIFIER::DeviceTransform::Fill(__first, __count, __value, __stream.get());
 #  else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
       static_assert(sizeof(_Tp) <= 4,
                     "CUDA compiler is required to initialize an async_buffer with elements larger than 4 bytes");
@@ -766,7 +767,7 @@ _CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
                    __buffer_compatible_env<_Env>)
 auto make_buffer(stream_ref __stream, _Resource&& __mr, const _Env& __env = {})
 {
-  using __buffer_type = __buffer_type_for_props<_Tp, typename ::std::decay_t<_Resource>::default_queries>;
+  using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __env};
 }
 

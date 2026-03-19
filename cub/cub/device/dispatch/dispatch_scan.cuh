@@ -40,6 +40,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/readable_traits.h>
+#include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
