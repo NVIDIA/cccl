@@ -173,10 +173,10 @@ TEST_CASE("Device scan inclusive sum works with default environment", "[sum][dev
 
   num_items_t num_items = 3;
 
-  auto d_in  = cuda::constant_iterator(value_t{1});
+  auto d_in  = thrust::device_vector<value_t>{1, 1, 1};
   auto d_out = thrust::device_vector<value_t>(num_items);
 
-  REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveSum(d_in, d_out.begin(), num_items));
+  REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveSum(d_in.begin(), d_out.begin(), num_items));
 
   for (int i = 0; i < num_items; i++)
   {
@@ -349,16 +349,17 @@ C2H_TEST("Device scan inclusive-sum uses environment", "[scan][device]")
   using num_items_t = int;
 
   num_items_t num_items = 10;
-  auto d_in             = cuda::constant_iterator(1.0f);
-  auto d_out            = thrust::device_vector<float>(num_items);
+  auto d_in             = thrust::device_vector<int>(num_items, 1);
+  auto d_out            = thrust::device_vector<int>(num_items);
 
   size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess == cub::DeviceScan::InclusiveSum(nullptr, expected_bytes_allocated, d_in, d_out.begin(), num_items));
+  REQUIRE(cudaSuccess
+          == cub::DeviceScan::InclusiveSum(nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_items));
 
-  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)}; // temp storage size
+  auto env = stdexec::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed), // determinism
+                          expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
-  device_scan_inclusive_sum(d_in, d_out.begin(), num_items, env);
+  device_scan_inclusive_sum(d_in.begin(), d_out.begin(), num_items, env);
 
   for (int i = 0; i < num_items; i++)
   {
