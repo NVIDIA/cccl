@@ -836,6 +836,19 @@ public:
   {}
 
   /**
+   * @brief Deleted constructor for data_place to prevent accidental misuse.
+   *
+   * Use data_place::affine_exec_place() to get the exec_place first.
+   */
+  template <typename T = void>
+  active_place(const data_place&)
+  {
+    static_assert(!::std::is_same_v<T, T>,
+                  "active_place cannot be constructed from data_place; "
+                  "use data_place::affine_exec_place() to get the exec_place first");
+  }
+
+  /**
    * @brief Destructor that restores the previous execution place (if not moved-from).
    */
   ~active_place()
