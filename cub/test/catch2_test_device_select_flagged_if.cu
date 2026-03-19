@@ -9,7 +9,7 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/logical.h>
 
-#include <cuda/__functional/always_pred.h>
+#include <cuda/functional>
 
 #include <algorithm>
 
