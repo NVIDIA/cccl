@@ -33,7 +33,9 @@ __host__ __device__ constexpr void test()
 }
 
 struct alignas(512) OverAligned
-{};
+{
+  char data_[512];
+};
 
 __host__ __device__ constexpr bool test()
 {
