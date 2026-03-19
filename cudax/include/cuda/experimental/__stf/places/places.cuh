@@ -49,7 +49,6 @@
 namespace cuda::experimental::stf
 {
 class exec_place;
-class exec_place_host;
 
 // Green contexts are only supported since CUDA 12.4
 
@@ -673,7 +672,7 @@ public:
   /* These helper methods provide convenient way to express execution places,
    * for example exec_place::host or exec_place::device(4).
    */
-  static exec_place_host host();
+  static exec_place host();
   static exec_place device_auto();
 
   static exec_place device(int devid);
@@ -768,13 +767,18 @@ private:
  * for (size_t i = 0; i < grid.size(); i++) {
  *   auto active = grid.activate(i);
  *   // grid[i] is now active
- *   kernel<<<..., active->getStream()>>>(...);
+ *   kernel<<<..., active.place().getStream()>>>(...);
  * }
  * @endcode
  */
 class exec_place_scope
 {
 public:
+  /**
+   * @brief Default constructor creates an inactive scope.
+   */
+  exec_place_scope() = default;
+
   /**
    * @brief Constructs the guard and activates the sub-place at the given index.
    *
@@ -784,7 +788,6 @@ public:
   exec_place_scope(exec_place place, size_t idx = 0)
       : place_(mv(place))
       , idx_(idx)
-      , active_(true)
       , current_(place_.get_place(idx_))
       , prev_(place_.get_impl()->activate(idx_))
   {}
@@ -807,7 +810,7 @@ public:
    */
   ~exec_place_scope()
   {
-    if (active_)
+    if (place_.get_impl())
     {
       place_.get_impl()->deactivate(prev_, idx_);
     }
@@ -821,53 +824,27 @@ public:
   exec_place_scope(exec_place_scope&& other) noexcept
       : place_(mv(other.place_))
       , idx_(other.idx_)
-      , active_(other.active_)
       , current_(mv(other.current_))
       , prev_(mv(other.prev_))
   {
-    other.active_ = false;
+    other.place_ = exec_place(); // Mark other as inactive
   }
 
   exec_place_scope& operator=(exec_place_scope&& other) noexcept
   {
     if (this != &other)
     {
-      if (active_)
+      if (place_.get_impl())
       {
         place_.get_impl()->deactivate(prev_, idx_);
       }
-      place_        = mv(other.place_);
-      idx_          = other.idx_;
-      active_       = other.active_;
-      current_      = mv(other.current_);
-      prev_         = mv(other.prev_);
-      other.active_ = false;
+      place_       = mv(other.place_);
+      idx_         = other.idx_;
+      current_     = mv(other.current_);
+      prev_        = mv(other.prev_);
+      other.place_ = exec_place(); // Mark other as inactive
     }
     return *this;
-  }
-
-  /**
-   * @brief Get the currently active sub-place
-   */
-  exec_place& operator*()
-  {
-    return current_;
-  }
-  const exec_place& operator*() const
-  {
-    return current_;
-  }
-
-  /**
-   * @brief Access the currently active sub-place's members
-   */
-  exec_place* operator->()
-  {
-    return &current_;
-  }
-  const exec_place* operator->() const
-  {
-    return &current_;
   }
 
   /**
@@ -891,17 +868,16 @@ public:
   }
 
   /**
-   * @brief Check if this guard is active (not moved-from)
+   * @brief Check if this scope is active (not moved-from)
    */
   bool is_active() const
   {
-    return active_;
+    return place_.get_impl() != nullptr;
   }
 
 private:
-  exec_place place_; // The grid (or scalar place)
-  size_t idx_; // Index within grid
-  bool active_; // Whether this guard is active (not moved-from)
+  exec_place place_; // The grid (or scalar place); empty means inactive
+  size_t idx_ = 0; // Index within grid
   exec_place current_; // The activated sub-place
   exec_place prev_; // Previous state to restore
 };
@@ -953,78 +929,62 @@ inline decorated_stream exec_place::getStream(bool for_computation) const
 }
 
 /**
- * @brief Designates execution that is to run on the host.
+ * @brief Host execution place implementation.
  *
  * Host is modeled as a 1-element grid containing the host execution context.
  */
-class exec_place_host : public exec_place
+class exec_place_host_impl : public exec_place::impl
 {
 public:
-  class impl : public exec_place::impl
+  exec_place_host_impl()
+      : exec_place::impl(data_place::host())
+  {}
+
+  // Grid interface - host is a 1-element grid
+  ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
-  public:
-    impl()
-        : exec_place::impl(data_place::host())
-    {}
-
-    // Grid interface - host is a 1-element grid
-    ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override;
-
-    // Activation - no-op for host
-    exec_place activate(size_t idx) const override
-    {
-      EXPECT(idx == 0, "Index out of bounds for host exec_place");
-      return exec_place();
-    }
-
-    void deactivate(const exec_place& prev, size_t idx = 0) const override
-    {
-      EXPECT(idx == 0, "Index out of bounds for host exec_place");
-      _CCCL_ASSERT(!prev.get_impl(), "Host deactivate expects empty prev");
-    }
-
-    bool is_host() const override
-    {
-      return true;
-    }
-
-    data_place affine_data_place() const override
-    {
-      return data_place::host();
-    }
-
-    stream_pool& get_stream_pool(bool for_computation) const override
-    {
-      return exec_place::current_device().get_stream_pool(for_computation);
-    }
-
-    ::std::string to_string() const override
-    {
-      return "host";
-    }
-  };
-
-  static ::std::shared_ptr<exec_place::impl> make()
-  {
-    return exec_place::make_static_instance<impl>();
+    EXPECT(idx == 0, "Index out of bounds for host exec_place");
+    // Static instance - use no-op deleter instead of shared_from_this()
+    return ::std::shared_ptr<impl>(this, [](impl*) {});
   }
 
-private:
-  friend class exec_place;
-  /**
-   * @brief Constructor
-   */
-  exec_place_host()
-      : exec_place(make())
+  // Activation - no-op for host
+  exec_place activate(size_t idx) const override
   {
-    static_assert(sizeof(exec_place) == sizeof(exec_place_host),
-                  "exec_place_host cannot add state; it would be sliced away.");
+    EXPECT(idx == 0, "Index out of bounds for host exec_place");
+    return exec_place();
+  }
+
+  void deactivate(const exec_place& prev, size_t idx = 0) const override
+  {
+    EXPECT(idx == 0, "Index out of bounds for host exec_place");
+    _CCCL_ASSERT(!prev.get_impl(), "Host deactivate expects empty prev");
+  }
+
+  bool is_host() const override
+  {
+    return true;
+  }
+
+  data_place affine_data_place() const override
+  {
+    return data_place::host();
+  }
+
+  stream_pool& get_stream_pool(bool for_computation) const override
+  {
+    return exec_place::current_device().get_stream_pool(for_computation);
+  }
+
+  ::std::string to_string() const override
+  {
+    return "host";
   }
 };
 
-inline exec_place_host exec_place::host()
+inline exec_place exec_place::host()
 {
-  return exec_place_host();
+  return exec_place(make_static_instance<exec_place_host_impl>());
 }
 
 // Implementation for device_auto placeholder
@@ -1068,7 +1028,7 @@ inline exec_place exec_place::device_auto()
   return make_static_instance<exec_place_device_auto_impl>();
 }
 
-UNITTEST("exec_place_host::operator->*")
+UNITTEST("exec_place::host operator->*")
 {
   bool witness = false;
   exec_place::host()->*[&] {
@@ -1370,13 +1330,6 @@ inline ::std::shared_ptr<exec_place::impl> exec_place::impl::get_place(size_t id
 {
   EXPECT(idx == 0, "Index out of bounds for scalar exec_place");
   return shared_from_this();
-}
-
-inline ::std::shared_ptr<exec_place::impl> exec_place_host::impl::get_place(size_t idx)
-{
-  EXPECT(idx == 0, "Index out of bounds for host exec_place");
-  // Static instance - use no-op deleter instead of shared_from_this()
-  return ::std::shared_ptr<impl>(this, [](impl*) {});
 }
 
 inline ::std::shared_ptr<exec_place::impl> exec_place_device::impl::get_place(size_t idx)

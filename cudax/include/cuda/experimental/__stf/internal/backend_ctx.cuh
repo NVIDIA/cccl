@@ -1046,13 +1046,6 @@ public:
     return reserved::launch_scope<Engine, thread_hierarchy_spec_t, Deps...>(self(), mv(spec), mv(e_place), mv(deps)...);
   }
 
-  /* Using ctx.launch with a host place */
-  template <typename... Deps>
-  auto launch(exec_place_host, task_dep<Deps>... deps)
-  {
-    return reserved::host_launch_scope<Engine, true, Deps...>(self(), mv(deps)...);
-  }
-
   /* Default execution policy, explicit place */
   // default depth to avoid breaking all codes (XXX temporary)
   template <typename... Deps>

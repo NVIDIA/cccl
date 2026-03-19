@@ -66,7 +66,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
   auto result = get_input_events();
 
   // Automatically set the appropriate context (device, SM affinity, ...)
-  pimpl->saved_place_ctx.emplace(eplace);
+  pimpl->saved_place_ctx = exec_place_scope(eplace);
 
   auto& task_deps = pimpl->deps;
 
@@ -280,7 +280,7 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
   }
 
   // Automatically reset the context to its original configuration (device, SM affinity, ...)
-  pimpl->saved_place_ctx.reset();
+  pimpl->saved_place_ctx = exec_place_scope();
 
   auto& dot = *ctx.get_dot();
   if (dot.is_tracing())
