@@ -104,7 +104,9 @@ TEST_CASE("DeviceMergeSort::SortPairsCopy works with default environment", "[mer
       cuda::std::less<int>{}));
 
   c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
   REQUIRE(d_keys_out == expected_keys);
+  REQUIRE(d_values_out == expected_values);
 }
 
 TEST_CASE("DeviceMergeSort::SortKeysCopy works with default environment", "[merge_sort][device]")
@@ -318,7 +320,9 @@ C2H_TEST("DeviceMergeSort::SortPairsCopy uses environment", "[merge_sort][device
     env);
 
   c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
   REQUIRE(d_keys_out == expected_keys);
+  REQUIRE(d_values_out == expected_values);
 }
 
 C2H_TEST("DeviceMergeSort::SortKeysCopy uses environment", "[merge_sort][device]")
