@@ -511,17 +511,17 @@ C2H_TEST("cub::DeviceReduce::TransformReduce accepts stream", "[reduce][env]")
 C2H_TEST("cub::DeviceReduce::ReduceByKey accepts run_to_run determinism requirements", "[reduce][env]")
 {
   // example-begin reduce-by-key-env
-  auto keys_in        = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
-  auto values_in      = thrust::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
-  auto unique_out     = thrust::device_vector<int>(8);
-  auto aggregates_out = thrust::device_vector<int>(8);
-  auto num_runs_out   = thrust::device_vector<int>(1);
+  auto keys_in         = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto values_in       = thrust::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
+  auto unique_keys_out = thrust::device_vector<int>(5);
+  auto aggregates_out  = thrust::device_vector<int>(5);
+  auto num_runs_out    = thrust::device_vector<int>(1);
 
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
 
   auto error = cub::DeviceReduce::ReduceByKey(
     keys_in.begin(),
-    unique_out.begin(),
+    unique_keys_out.begin(),
     values_in.begin(),
     aggregates_out.begin(),
     num_runs_out.begin(),
@@ -539,26 +539,26 @@ C2H_TEST("cub::DeviceReduce::ReduceByKey accepts run_to_run determinism requirem
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(num_runs_out[0] == 5);
-  unique_out.resize(5);
+  unique_keys_out.resize(5);
   aggregates_out.resize(5);
-  REQUIRE(unique_out == expected_keys);
+  REQUIRE(unique_keys_out == expected_keys);
   REQUIRE(aggregates_out == expected_aggregates);
 }
 
 C2H_TEST("cub::DeviceReduce::ReduceByKey accepts not_guaranteed determinism requirements", "[reduce][env]")
 {
   // example-begin reduce-by-key-env-non-determinism
-  auto keys_in        = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
-  auto values_in      = thrust::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
-  auto unique_out     = thrust::device_vector<int>(8);
-  auto aggregates_out = thrust::device_vector<int>(8);
-  auto num_runs_out   = thrust::device_vector<int>(1);
+  auto keys_in         = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto values_in       = thrust::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
+  auto unique_keys_out = thrust::device_vector<int>(5);
+  auto aggregates_out  = thrust::device_vector<int>(5);
+  auto num_runs_out    = thrust::device_vector<int>(1);
 
   auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
 
   auto error = cub::DeviceReduce::ReduceByKey(
     keys_in.begin(),
-    unique_out.begin(),
+    unique_keys_out.begin(),
     values_in.begin(),
     aggregates_out.begin(),
     num_runs_out.begin(),
@@ -576,27 +576,27 @@ C2H_TEST("cub::DeviceReduce::ReduceByKey accepts not_guaranteed determinism requ
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(num_runs_out[0] == 5);
-  unique_out.resize(5);
+  unique_keys_out.resize(5);
   aggregates_out.resize(5);
-  REQUIRE(unique_out == expected_keys);
+  REQUIRE(unique_keys_out == expected_keys);
   REQUIRE(aggregates_out == expected_aggregates);
 }
 
 C2H_TEST("cub::DeviceReduce::ReduceByKey accepts stream", "[reduce][env]")
 {
   // example-begin reduce-by-key-env-stream
-  auto keys_in        = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
-  auto values_in      = thrust::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
-  auto unique_out     = thrust::device_vector<int>(8);
-  auto aggregates_out = thrust::device_vector<int>(8);
-  auto num_runs_out   = thrust::device_vector<int>(1);
+  auto keys_in         = thrust::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto values_in       = thrust::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
+  auto unique_keys_out = thrust::device_vector<int>(5);
+  auto aggregates_out  = thrust::device_vector<int>(5);
+  auto num_runs_out    = thrust::device_vector<int>(1);
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceReduce::ReduceByKey(
     keys_in.begin(),
-    unique_out.begin(),
+    unique_keys_out.begin(),
     values_in.begin(),
     aggregates_out.begin(),
     num_runs_out.begin(),
@@ -615,8 +615,8 @@ C2H_TEST("cub::DeviceReduce::ReduceByKey accepts stream", "[reduce][env]")
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(num_runs_out[0] == 5);
-  unique_out.resize(5);
+  unique_keys_out.resize(5);
   aggregates_out.resize(5);
-  REQUIRE(unique_out == expected_keys);
+  REQUIRE(unique_keys_out == expected_keys);
   REQUIRE(aggregates_out == expected_aggregates);
 }
