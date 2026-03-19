@@ -37,7 +37,7 @@ struct always_false
   //! @param ... Any number of arguments of any type (ignored)
   //! @return Always returns false
   template <typename... _Ts>
-  _CCCL_API constexpr bool operator()(_Ts&&...) const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool operator()(_Ts&&...) const noexcept
   {
     return false;
   }
