@@ -43,7 +43,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_topk_keys(
   auto env = cuda::std::execution::env{stream_env, requirements};
 
   auto values_it = static_cast<cub::NullType*>(nullptr);
-  return cub::detail::dispatch_topk<SelectDirection>(
+  return cub::detail::dispatch_topk_hub<SelectDirection>(
     d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, values_it, values_it, num_items, k, env);
 }
 
@@ -68,6 +68,8 @@ using key_types =
 >;
 // clang-format on
 
+using custom_key_types = c2h::type_list<topk_custom_key_t>;
+
 C2H_TEST("DeviceTopK::{Min,Max}Keys work as expected", "[keys][topk][device]", key_types, directions)
 {
   using key_t              = c2h::get<0, TestType>;
@@ -90,7 +92,7 @@ C2H_TEST("DeviceTopK::{Min,Max}Keys work as expected", "[keys][topk][device]", k
 
   // Prepare input & output
   c2h::device_vector<key_t> keys_in(num_items);
-  c2h::device_vector<key_t> keys_out(k, thrust::no_init);
+  c2h::device_vector<key_t> keys_out(k);
   const int num_key_seeds = 1;
   c2h::gen(C2H_SEED(num_key_seeds), keys_in);
   c2h::device_vector<key_t> expected_keys(keys_in);
@@ -189,6 +191,78 @@ try
 catch (std::bad_alloc& e)
 {
   std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+}
+
+C2H_TEST("DeviceTopK::{Min,Max}Keys works with custom keys and decomposers",
+         "[keys][topk][device]",
+         custom_key_types,
+         directions)
+{
+  using key_t              = c2h::get<0, TestType>;
+  constexpr auto direction = c2h::get<1, TestType>::value;
+  using num_items_t        = cuda::std::uint32_t;
+  using comparator_t       = direction_to_comparator_t<direction>;
+
+  constexpr num_items_t min_num_items = 1;
+  constexpr num_items_t max_num_items = 1 << 18;
+  const num_items_t num_items         = GENERATE_COPY(
+    values({min_num_items, num_items_t{3}, max_num_items}), take(1, random(min_num_items, max_num_items)));
+  const num_items_t k = GENERATE_COPY(take(3, random(num_items_t{1}, num_items)));
+
+  CAPTURE(num_items, k, direction);
+
+  c2h::device_vector<key_t> keys_in(num_items);
+  c2h::device_vector<key_t> keys_out(k, thrust::no_init);
+  gen_topk_custom_keys(C2H_SEED(7), keys_in);
+  c2h::device_vector<key_t> expected_keys(keys_in);
+
+  auto requirements =
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+  auto env = cuda::std::execution::env{cuda::stream_ref{cudaStream_t{}}, requirements};
+
+  size_t temp_storage_bytes = 0;
+  if constexpr (direction == cub::detail::topk::select::max)
+  {
+    cub::DeviceTopK::MaxKeys(
+      nullptr, temp_storage_bytes, keys_in.begin(), keys_out.begin(), num_items, k, topk_custom_key_decomposer_t{}, env);
+  }
+  else
+  {
+    cub::DeviceTopK::MinKeys(
+      nullptr, temp_storage_bytes, keys_in.begin(), keys_out.begin(), num_items, k, topk_custom_key_decomposer_t{}, env);
+  }
+  c2h::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
+
+  if constexpr (direction == cub::detail::topk::select::max)
+  {
+    cub::DeviceTopK::MaxKeys(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_storage_bytes,
+      keys_in.begin(),
+      keys_out.begin(),
+      num_items,
+      k,
+      topk_custom_key_decomposer_t{},
+      env);
+  }
+  else
+  {
+    cub::DeviceTopK::MinKeys(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_storage_bytes,
+      keys_in.begin(),
+      keys_out.begin(),
+      num_items,
+      k,
+      topk_custom_key_decomposer_t{},
+      env);
+  }
+
+  thrust::sort(expected_keys.begin(), expected_keys.end(), comparator_t{});
+  expected_keys.resize(k);
+  thrust::sort(keys_out.begin(), keys_out.end(), comparator_t{});
+
+  REQUIRE(expected_keys == keys_out);
 }
 
 C2H_TEST("DeviceTopK::{Min,Max}Keys works for different offset types for num_items and k",

@@ -188,13 +188,13 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 #define _CCCL_CONCEPT_EAT_SATISFIES_(...) _CCCL_PP_CAT(_CCCL_CONCEPT_EAT_SATISFIES_, __VA_ARGS__)
 #define _CCCL_CONCEPT_EAT_SATISFIES__Satisfies(...)
 
-// Converts "_Satisfies(TYPE) EXPR..." to "TYPE" (The ridiculous concatenation of _CCCL_PP_
-// with EXPAND(__VA_ARGS__) is the only way to get MSVC's broken preprocessor to do macro
+// Converts "_Satisfies(TYPE) EXPR..." to "TYPE" (The ridiculous concatenation of _CCCL
+// with _PP_EXPAND(__VA_ARGS__) is the only way to get MSVC's broken preprocessor to do macro
 // expansion here.)
 #define _CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES_(...) \
-  _CCCL_PP_CAT(_CCCL_PP_,                              \
+  _CCCL_PP_CAT(_CCCL,                                  \
                _CCCL_PP_EVAL(_CCCL_PP_FIRST, _CCCL_PP_CAT(_CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES_, __VA_ARGS__)))
-#define _CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES__Satisfies(...) EXPAND(__VA_ARGS__),
+#define _CCCL_CONCEPT_GET_CONCEPT_FROM_SATISFIES__Satisfies(...) _PP_EXPAND(__VA_ARGS__),
 
 // Here are the implementations of the internal macros, first for when concepts
 // are available, and then for when they're not.

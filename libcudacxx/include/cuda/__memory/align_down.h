@@ -21,7 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/is_aligned.h>
+#include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__memory/runtime_assume_aligned.h>
 #include <cuda/std/__type_traits/is_void.h>
@@ -41,14 +42,13 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp>
-[[nodiscard]] _CCCL_API inline _Tp* align_down(_Tp* __ptr, ::cuda::std::size_t __alignment) noexcept
+[[nodiscard]] _CCCL_API _Tp* align_down(_Tp* __ptr, ::cuda::std::size_t __alignment) noexcept
 {
   using ::cuda::std::uintptr_t;
-  _CCCL_ASSERT(::cuda::is_power_of_two(__alignment), "alignment must be a power of two");
+  _CCCL_ASSERT(::cuda::__is_valid_alignment<_Tp>(__alignment), "invalid alignment");
   if constexpr (!::cuda::std::is_void_v<_Tp>)
   {
-    _CCCL_ASSERT(__alignment >= alignof(_Tp), "wrong alignment");
-    _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__ptr) % alignof(_Tp) == 0, "ptr is not aligned");
+    _CCCL_ASSERT(::cuda::is_aligned(__ptr, alignof(_Tp)), "__ptr is not aligned for _Tp");
     if (__alignment == alignof(_Tp))
     {
       return __ptr;

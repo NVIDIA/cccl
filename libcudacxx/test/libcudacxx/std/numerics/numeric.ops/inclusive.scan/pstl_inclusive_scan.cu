@@ -30,7 +30,7 @@
 
 #include "test_macros.h"
 
-inline constexpr int size = 100;
+inline constexpr int size = 1000;
 
 struct sum_of_int
 {

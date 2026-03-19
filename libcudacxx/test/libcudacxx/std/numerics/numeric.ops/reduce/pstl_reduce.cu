@@ -33,7 +33,7 @@
 
 #include "test_macros.h"
 
-inline constexpr int size = 100;
+inline constexpr int size = 1000;
 
 template <class Policy>
 void test_reduce(const Policy& policy, const thrust::device_vector<int>& data)
