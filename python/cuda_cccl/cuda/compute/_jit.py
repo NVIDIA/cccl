@@ -183,22 +183,24 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
 
                 return error_impl
 
+            # Use getattr instead of exec for safer field access
             field_name = field_names_list[idx_val]
-            exec(
-                f"def impl(struct_val, idx): return struct_val.{field_name}",
-                namespace := {},
-            )
-            return namespace["impl"]
 
-        conditions = "\n".join(
-            f"    {'if' if i == 0 else 'elif'} idx == {i}: return struct_val.{name}"
-            for i, name in enumerate(field_names_list)
-        )
-        exec(
-            f"def impl(struct_val, idx):\n{conditions}\n    else: raise IndexError('Index out of range')",
-            namespace := {},
-        )
-        return namespace["impl"]
+            def impl(struct_val, idx):
+                return getattr(struct_val, field_name)
+
+            return impl
+
+        # Use a dictionary-based lookup instead of exec
+        field_lookup = {i: name for i, name in enumerate(field_names_list)}
+        num_fields = len(field_names_list)
+
+        def impl(struct_val, idx):
+            if 0 <= idx < num_fields:
+                return getattr(struct_val, field_lookup[idx])
+            raise IndexError("Index out of range")
+
+        return impl
 
     @cuda_registry.register
     class StructConstructor(ConcreteTemplate):
@@ -660,6 +662,44 @@ class _AddStateParameters(ast.NodeTransformer):
         return node
 
 
+def _validate_source_safety(source: str) -> None:
+    """
+    Validate that source code doesn't contain obviously dangerous patterns.
+
+    This is a defense-in-depth measure. The source comes from user code,
+    and we want to prevent obvious malicious patterns.
+
+    Args:
+        source: The source code to validate
+
+    Raises:
+        ValueError: If dangerous patterns are detected
+    """
+    # List of dangerous patterns to detect
+    dangerous_patterns = [
+        ("__import__", "Dynamic module import"),
+        ("eval", "eval() function"),
+        ("exec", "exec() function"),
+        ("open", "File operations"),
+        ("compile", "Dynamic code compilation"),
+        ("__builtins__", "Builtin manipulation"),
+        ("__globals__", "Global manipulation"),
+        ("__code__", "Code object manipulation"),
+    ]
+
+    for pattern, description in dangerous_patterns:
+        if pattern in source:
+            # Allow if it's in a comment or string
+            # Simple check: look for the pattern outside of # comments
+            for line in source.split("\n"):
+                stripped = line.strip()
+                if not stripped.startswith("#") and pattern in stripped:
+                    raise ValueError(
+                        f"Dangerous pattern '{pattern}' ({description}) detected in source code. "
+                        "This may indicate an attempt to execute malicious code."
+                    )
+
+
 def _transform_function_ast(func: Callable, state_names: List[str]) -> Callable:
     """
     Transform a function to add state arrays captured as globals or closures
@@ -695,6 +735,10 @@ def _transform_function_ast(func: Callable, state_names: List[str]) -> Callable:
     # Dedent source (in case function is defined inside a class/function)
     source = textwrap.dedent(source)
 
+    # Validate source doesn't contain obviously malicious patterns
+    # This is a defense-in-depth measure since the function comes from user code
+    _validate_source_safety(source)
+
     # Parse to AST
     tree = ast.parse(source)
 
@@ -703,26 +747,65 @@ def _transform_function_ast(func: Callable, state_names: List[str]) -> Callable:
     tree = transformer.visit(tree)
     ast.fix_missing_locations(tree)
 
-    # Compile and execute to create new function
-    # We need to provide the original function's globals for imports
-    # AND inject closure variables so they're accessible in the new function
-    globals_dict = func.__globals__.copy()
+    # Create a restricted globals dict with only necessary builtins
+    # This reduces the attack surface when executing transformed code
+    restricted_globals = {
+        "__builtins__": {
+            # Allow only safe builtins
+            "abs": abs,
+            "len": len,
+            "range": range,
+            "enumerate": enumerate,
+            "zip": zip,
+            "map": map,
+            "filter": filter,
+            "sum": sum,
+            "min": min,
+            "max": max,
+            "print": print,
+            "bool": bool,
+            "int": int,
+            "float": float,
+            "str": str,
+            "list": list,
+            "tuple": tuple,
+            "dict": dict,
+            "set": set,
+            "type": type,
+            "isinstance": isinstance,
+            "hasattr": hasattr,
+            "getattr": getattr,
+            "setattr": setattr,
+            "ValueError": ValueError,
+            "IndexError": IndexError,
+            "KeyError": KeyError,
+            "TypeError": TypeError,
+        },
+    }
+
+    # Also inject necessary modules from original globals for common operations
+    # These are needed for the transformed function to work properly
+    for name in ("numpy", "numba", "cuda"):
+        if name in func.__globals__:
+            restricted_globals[name] = func.__globals__[name]
 
     # Inject closure variables (except state arrays which become parameters)
     if func.__closure__:
         for name, cell in zip(func.__code__.co_freevars, func.__closure__):
             if name not in state_names:  # Don't inject state arrays
                 try:
-                    globals_dict[name] = cell.cell_contents
+                    restricted_globals[name] = cell.cell_contents
                 except ValueError:
                     pass  # Cell is empty
 
-    local_ns: dict[str, Callable] = {}
-    exec(
-        compile(tree, filename=f"<auto_stateful:{func.__name__}>", mode="exec"),
-        globals_dict,
-        local_ns,
+    # Compile the transformed AST to a code object
+    compiled_code = compile(
+        tree, filename=f"<auto_stateful:{func.__name__}>", mode="exec"
     )
+
+    # Execute in restricted namespace
+    local_ns: dict[str, Callable] = {}
+    exec(compiled_code, restricted_globals, local_ns)
 
     # Get the transformed function
     transformed_func = local_ns[func.__name__]

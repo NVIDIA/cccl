@@ -215,22 +215,23 @@ def get_includes() -> List[str]:
 
 def _check_compile_result(cubin: bytes):
     # check compiled code for LDL/STL instructions
-    temp_cubin_file = tempfile.NamedTemporaryFile(delete=False)
-    try:
+    # Use delete=True to ensure cleanup even on exceptions
+    # Use a fixed suffix to ensure the file is recognized correctly
+    with tempfile.NamedTemporaryFile(suffix=".cubin", delete=True) as temp_cubin_file:
         temp_cubin_file.write(cubin)
+        temp_cubin_file.flush()
+
+        # Run nvdisasm with the temp file path
+        # Path is safe here as it's a system-generated temp file, not user input
         out = subprocess.run(
             ["nvdisasm", "-gi", temp_cubin_file.name], capture_output=True
         )
         if out.returncode != 0:
             raise RuntimeError("nvdisasm failed")
         sass = out.stdout.decode("utf-8")
-    except FileNotFoundError:
-        sass = "nvdiasm not found, skipping SASS validation"
-        warnings.warn(sass)
 
     assert "LDL" not in sass, "LDL instruction found in SASS"
     assert "STL" not in sass, "STL instruction found in SASS"
-    return temp_cubin_file.name
 
 
 # this global variable controls whether the compile result is checked
@@ -258,7 +259,6 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
 
     if _check_sass:
         cubin = result._get_cubin()
-        temp_cubin_file_name = _check_compile_result(cubin)
-        os.unlink(temp_cubin_file_name)
+        _check_compile_result(cubin)
 
     return result

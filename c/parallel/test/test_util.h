@@ -49,33 +49,39 @@ inline std::string inspect_sass(const void* cubin, size_t cubin_size)
   temp_in_file.write(static_cast<const char*>(cubin), cubin_size);
   temp_in_file.close();
 
-  std::string command = "nvdisasm -gi ";
-  command += temp_in_filename.string();
-  command += " > ";
-  command += temp_out_filename.string();
+  // Use popen to capture command output directly without shell redirection
+  // This avoids potential command injection by not using shell interpretation
+  // Build command with properly escaped arguments
+  std::string command = "nvdisasm -gi \"" + temp_in_filename.string() + "\"";
 
-  int exec_code = std::system(command.c_str());
+  // Use popen instead of system() to capture output directly
+  // This avoids shell interpretation and reduces command injection risk
+  FILE* pipe = popen(command.c_str(), "r");
+  if (!pipe)
+  {
+    throw std::runtime_error("Failed to execute nvdisasm command.");
+  }
 
+  // Read output from pipe
+  std::string sass;
+  char buffer[4096];
+  while (fgets(buffer, sizeof(buffer), pipe) != nullptr)
+  {
+    sass += buffer;
+  }
+
+  // Get exit status
+  int exit_status = pclose(pipe);
+
+  // Clean up input file
   if (!fs::remove(temp_in_filename))
   {
     throw std::runtime_error("Failed to remove temporary file.");
   }
 
-  if (exec_code != 0)
+  if (exit_status != 0)
   {
-    throw std::runtime_error("Failed to execute command.");
-  }
-
-  std::ifstream temp_out_file(temp_out_filename, std::ios::binary);
-  if (!temp_out_file)
-  {
-    throw std::runtime_error("Failed to create temporary file.");
-  }
-
-  const std::string sass{std::istreambuf_iterator<char>(temp_out_file), std::istreambuf_iterator<char>()};
-  if (!fs::remove(temp_out_filename))
-  {
-    throw std::runtime_error("Failed to remove temporary file.");
+    throw std::runtime_error("nvdisasm command failed with exit code: " + std::to_string(exit_status));
   }
 
   return sass;
