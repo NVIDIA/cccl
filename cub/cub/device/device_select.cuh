@@ -334,7 +334,7 @@ public:
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
   //! .. versionadded:: 3.4.0
-  //!    First appears in CUDA Toolkit 12.4.
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -448,8 +448,10 @@ public:
   //! - Stream: Query via ``cuda::get_stream``
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
-  //! - Copies of the selected items are compacted in ``d_data`` and maintain
-  //!   their original relative ordering.
+  //! - The value type of ``d_flags`` must be castable to ``bool`` (e.g., ``bool``, ``char``, ``int``, etc.).
+  //! - Copies of the selected items are compacted in-place and maintain their original relative ordering.
+  //! - | The ``d_data`` may equal ``d_flags``. The range ``[d_data, d_data + num_items)`` shall not overlap
+  //!   | ``[d_flags, d_flags + num_items)`` in any other way.
   //!
   //!
   //! Snippet
@@ -531,7 +533,7 @@ public:
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
   //! .. versionadded:: 3.4.0
-  //!    First appears in CUDA Toolkit 12.4.
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -1474,8 +1476,9 @@ public:
   //!
   //! - The expression ``select_op(flag)`` must be convertible to ``bool``,
   //!   where the type of ``flag`` corresponds to the value type of ``FlagIterator``.
-  //! - Copies of the selected items are compacted in ``d_data`` and maintain
-  //!   their original relative ordering.
+  //! - Copies of the selected items are compacted in-place and maintain their original relative ordering.
+  //! - | The ``d_data`` may equal ``d_flags``. The range ``[d_data, d_data + num_items)`` shall not overlap
+  //!   | ``[d_flags, d_flags + num_items)`` in any other way.
   //!
   //!
   //! Snippet
