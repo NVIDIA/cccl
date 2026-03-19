@@ -45,8 +45,7 @@ struct always_false
 
 //! @brief A predicate that always returns true for any input
 //! @details This functor can be used with algorithms requiring a predicate
-//!          that matches all elements. Critical for CUB optimizations where
-//!          type identity enables specialized fast paths.
+//!          that matches all elements. 
 struct always_true
 {
   //! @brief Function call operator that always returns true
