@@ -38,7 +38,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.exec(
     nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
       do_not_optimize(
-        cuda::std::any_of(cuda_policy(alloc, launch), dinput.begin(), dinput.end(), cuda::equal_to_value<T>{val}));
+        cuda::std::any_of(cuda_policy(alloc, launch), dinput.begin(), dinput.end(), cuda::equal_to_value{val}));
     });
 }
 
