@@ -235,11 +235,10 @@ public:
     }
 
     // t.get_stream_grid should return the stream from get_stream if this is not a grid ?
-    size_t p_rank = 0;
-    for (auto&& p : e_place)
+    for (size_t p_rank = 0; p_rank < e_place.size(); ++p_rank)
     {
+      auto p = e_place.get_place(p_rank);
       launch_impl(interpreted_policy, p, f, arg, streams[p_rank], p_rank);
-      p_rank++;
     }
   }
 
@@ -440,9 +439,9 @@ public:
       }
     }
 
-    size_t p_rank = 0;
-    for (auto p : e_place)
+    for (size_t p_rank = 0; p_rank < e_place.size(); ++p_rank)
     {
+      auto p = e_place.get_place(p_rank);
       if constexpr (::std::is_same_v<Ctx, stream_ctx>)
       {
         reserved::launch_impl(interpreted_policy, p, f, args, t.get_stream(p_rank), p_rank);
@@ -451,7 +450,6 @@ public:
       {
         reserved::graph_launch_impl(t, interpreted_policy, p, f, args, p_rank);
       }
-      p_rank++;
     }
   }
 

@@ -365,7 +365,7 @@ private:
 inline data_place from_index(size_t n);
 
 // Forward declaration
-class active_place;
+class exec_place_scope;
 
 /**
  * @brief Indicates where a computation takes place (CPU, dev0, dev1, ...)
@@ -585,64 +585,18 @@ public:
     return get_place(get_dims().get_index(p));
   }
 
-  /**
-   * @brief an iterator class which goes over all subplaces in an exec place.
-   */
-  class iterator
-  {
-  public:
-    iterator(::std::shared_ptr<impl> impl, size_t index)
-        : it_impl(mv(impl))
-        , index(index)
-    {}
-
-    exec_place operator*()
-    {
-      return exec_place(it_impl->get_place(index));
-    }
-
-    iterator& operator++()
-    {
-      index++;
-      return *this;
-    }
-
-    bool operator==(const iterator& other) const
-    {
-      return index == other.index;
-    }
-
-    bool operator!=(const iterator& other) const
-    {
-      return !(*this == other);
-    }
-
-  private:
-    ::std::shared_ptr<impl> it_impl;
-    size_t index;
-  };
-
-  iterator begin()
-  {
-    return iterator(pimpl, 0);
-  }
-  iterator end()
-  {
-    return iterator(pimpl, pimpl->size());
-  }
-
   // ===== Activation =====
 
   /**
    * @brief Activate the sub-place at the given index
    *
-   * Returns an active_place RAII guard that automatically deactivates when destroyed.
+   * Returns an exec_place_scope RAII guard that automatically deactivates when destroyed.
    * For scalar places, idx should be 0 (the default).
    *
    * @param idx The index of the sub-place to activate (default 0 for scalar places)
-   * @return An active_place guard that manages the activation lifetime
+   * @return An exec_place_scope guard that manages the activation lifetime
    */
-  inline active_place activate(size_t idx = 0) const;
+  inline exec_place_scope activate(size_t idx = 0) const;
 
   // ===== Properties =====
 
@@ -818,7 +772,7 @@ private:
  * }
  * @endcode
  */
-class active_place
+class exec_place_scope
 {
 public:
   /**
@@ -827,7 +781,7 @@ public:
    * @param place The execution place (or grid) containing the sub-place to activate
    * @param idx The index of the sub-place to activate (default 0 for scalar places)
    */
-  active_place(exec_place place, size_t idx = 0)
+  exec_place_scope(exec_place place, size_t idx = 0)
       : place_(mv(place))
       , idx_(idx)
       , active_(true)
@@ -841,17 +795,17 @@ public:
    * Use data_place::affine_exec_place() to get the exec_place first.
    */
   template <typename T = void>
-  active_place(const data_place&)
+  exec_place_scope(const data_place&)
   {
     static_assert(!::std::is_same_v<T, T>,
-                  "active_place cannot be constructed from data_place; "
+                  "exec_place_scope cannot be constructed from data_place; "
                   "use data_place::affine_exec_place() to get the exec_place first");
   }
 
   /**
    * @brief Destructor that restores the previous execution place (if not moved-from).
    */
-  ~active_place()
+  ~exec_place_scope()
   {
     if (active_)
     {
@@ -860,11 +814,11 @@ public:
   }
 
   // Non-copyable
-  active_place(const active_place&)            = delete;
-  active_place& operator=(const active_place&) = delete;
+  exec_place_scope(const exec_place_scope&)            = delete;
+  exec_place_scope& operator=(const exec_place_scope&) = delete;
 
   // Movable (like unique_lock)
-  active_place(active_place&& other) noexcept
+  exec_place_scope(exec_place_scope&& other) noexcept
       : place_(mv(other.place_))
       , idx_(other.idx_)
       , active_(other.active_)
@@ -874,7 +828,7 @@ public:
     other.active_ = false;
   }
 
-  active_place& operator=(active_place&& other) noexcept
+  exec_place_scope& operator=(exec_place_scope&& other) noexcept
   {
     if (this != &other)
     {
@@ -952,12 +906,12 @@ private:
   exec_place prev_; // Previous state to restore
 };
 
-// Deprecated: Use active_place instead
-using exec_place_guard = active_place;
+// Deprecated: Use exec_place_scope instead
+using exec_place_guard = exec_place_scope;
 
-inline active_place exec_place::activate(size_t idx) const
+inline exec_place_scope exec_place::activate(size_t idx) const
 {
-  return active_place(*this, idx);
+  return exec_place_scope(*this, idx);
 }
 
 template <typename Fun>

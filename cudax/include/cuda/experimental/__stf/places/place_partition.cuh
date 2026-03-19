@@ -252,19 +252,6 @@ private:
       return;
     }
 
-    // Legacy path for explicit device check (kept for compatibility)
-    if (place.is_device() && scope == place_partition_scope::cuda_stream)
-    {
-      auto& pool = place.get_stream_pool(true);
-      for (size_t i = 0; i < pool.size(); i++)
-      {
-        // As a side effect, this will populate the pool
-        decorated_stream dstream = pool.next(place);
-        sub_places.push_back(exec_place::cuda_stream(dstream));
-      }
-      return;
-    }
-
 // Green contexts are only supported since CUDA 12.4
 #if _CCCL_CTK_AT_LEAST(12, 4)
     if (place.size() > 1 && scope == place_partition_scope::green_context)
@@ -288,24 +275,6 @@ private:
         return;
       }
       int dev_id = device_ordinal(scalar_place.affine_data_place());
-
-      const char* env = getenv("CUDASTF_GREEN_CONTEXT_SIZE");
-      int sm_cnt      = env ? atoi(env) : 8;
-
-      auto h = handle.get_gc_helper(dev_id, sm_cnt);
-
-      size_t cnt = h->get_count();
-      for (size_t i = 0; i < cnt; i++)
-      {
-        sub_places.push_back(exec_place::green_ctx(h->get_view(i)));
-      }
-      return;
-    }
-
-    // Legacy path for explicit device check (kept for compatibility)
-    if (place.is_device() && scope == place_partition_scope::green_context)
-    {
-      int dev_id = device_ordinal(place.affine_data_place());
 
       const char* env = getenv("CUDASTF_GREEN_CONTEXT_SIZE");
       int sm_cnt      = env ? atoi(env) : 8;

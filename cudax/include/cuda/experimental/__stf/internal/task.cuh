@@ -141,7 +141,7 @@ private:
 
     // RAII guard for the task's execution place activation.
     // Created in acquire_deps, destroyed in release_deps.
-    ::std::optional<active_place> saved_place_ctx;
+    ::std::optional<exec_place_scope> saved_place_ctx;
 
     // Indicate the status of the task
     task::phase phase = task::phase::setup;

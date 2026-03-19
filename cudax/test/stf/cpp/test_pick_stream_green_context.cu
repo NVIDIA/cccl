@@ -158,7 +158,7 @@ int main()
       cuda_safe_call(cuCtxGetId(green_driver_ctx, &green_ctx_id));
       EXPECT(current_ctx_id == green_ctx_id);
     }
-    // active_place destructor restores previous context
+    // exec_place_scope destructor restores previous context
 
     // Verify we're back to the initial context
     CUcontext restored_ctx;

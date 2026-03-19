@@ -457,13 +457,13 @@ public:
   /**
    * @brief Activate a sub-place within the task's execution place grid
    *
-   * Returns an active_place RAII guard. The sub-place is automatically
+   * Returns an exec_place_scope RAII guard. The sub-place is automatically
    * deactivated when the guard is destroyed.
    *
    * @param p The position within the grid
-   * @return An active_place guard managing the activation lifetime
+   * @return An exec_place_scope guard managing the activation lifetime
    */
-  active_place activate_place(pos4 p)
+  exec_place_scope activate_place(pos4 p)
   {
     return get_exec_place().activate(get_exec_place().get_dims().get_index(p));
   }
@@ -472,9 +472,9 @@ public:
    * @brief Activate a sub-place within the task's execution place grid
    *
    * @param idx The linear index within the grid
-   * @return An active_place guard managing the activation lifetime
+   * @return An exec_place_scope guard managing the activation lifetime
    */
-  active_place activate_place(size_t idx)
+  exec_place_scope activate_place(size_t idx)
   {
     return get_exec_place().activate(idx);
   }

@@ -124,7 +124,7 @@ int main()
       cuda_safe_call(cudaGetDevice(&after_activate));
       EXPECT(after_activate == initial_device);
     }
-    // active_place destructor restores automatically
+    // exec_place_scope destructor restores automatically
   }
 
   // Test activate() with multiple devices using RAII
@@ -144,7 +144,7 @@ int main()
       cuda_safe_call(cudaGetDevice(&new_device));
       EXPECT(new_device == 1);
     }
-    // active_place destructor restores previous device
+    // exec_place_scope destructor restores previous device
 
     // Verify we're back on the initial device
     int restored_device;
