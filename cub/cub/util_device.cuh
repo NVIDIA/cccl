@@ -23,6 +23,7 @@
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__device/arch_id.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__concepts/regular.h>
@@ -609,7 +610,7 @@ _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferAlignBytes()
 template <typename T, int GmemAlign = alignof(T)>
 _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t num_items)
 {
-  static_assert(::cuda::std::has_single_bit(unsigned{GmemAlign}));
+  static_assert(::cuda::is_power_of_two(GmemAlign));
   static_assert(GmemAlign >= int{alignof(T)});
   _CCCL_ASSERT(num_items <= ::cuda::std::size_t{::cuda::std::numeric_limits<int>::max()},
                "num_items must fit into an int");

@@ -85,14 +85,14 @@ __device__ T sum(cudax::this_cluster<Hierarchy> group, T (&array)[N])
   NV_IF_TARGET(NV_PROVIDES_SM_90, ({
                  const auto dsmem = static_cast<T*>(__cluster_map_shared_rank(&smem.cluster_scratch, 0));
 
-                 const auto is_root_thread = (cuda::gpu_thread.rank(group) == 0);
-                 if (is_root_thread)
+                 if (cuda::gpu_thread.is_root_rank(group))
                  {
-                   smem.cluster_scratch = 0;
+                   smem.cluster_scratch = result;
                  }
                  group.sync_aligned();
 
-                 if (cuda::gpu_thread.rank(cuda::block, group.hierarchy()) == 0 && !is_root_thread)
+                 cudax::this_block this_block{group.hierarchy()};
+                 if (cuda::gpu_thread.is_root_rank(this_block) && !cuda::gpu_thread.is_root_rank(group))
                  {
                    [[maybe_unused]] unsigned old;
                    asm volatile("atom.relaxed.cluster.shared::cluster.add.s32 %0, [%1], %2;"
@@ -102,9 +102,9 @@ __device__ T sum(cudax::this_cluster<Hierarchy> group, T (&array)[N])
                  }
                  group.sync_aligned();
 
-                 if (is_root_thread)
+                 if (cuda::gpu_thread.is_root_rank(group))
                  {
-                   result += smem.cluster_scratch;
+                   result = smem.cluster_scratch;
                  }
                }))
 
@@ -132,15 +132,20 @@ struct TestKernel
       CUDAX_REQUIRE(result == 6);
 
       CUDAX_REQUIRE(cuda::gpu_thread.count(this_thread) == 1);
-      CUDAX_REQUIRE(cuda::gpu_thread.rank(this_thread) == 0);
       CUDAX_REQUIRE(this_thread.count(cuda::warp) == cuda::gpu_thread.count(cuda::warp));
-      CUDAX_REQUIRE(this_thread.rank(cuda::warp) == cuda::gpu_thread.rank(cuda::warp));
       CUDAX_REQUIRE(this_thread.count(cuda::block) == cuda::gpu_thread.count(cuda::block));
-      CUDAX_REQUIRE(this_thread.rank(cuda::block) == cuda::gpu_thread.rank(cuda::block));
       CUDAX_REQUIRE(this_thread.count(cuda::cluster) == cuda::gpu_thread.count(cuda::cluster));
-      CUDAX_REQUIRE(this_thread.rank(cuda::cluster) == cuda::gpu_thread.rank(cuda::cluster));
       CUDAX_REQUIRE(this_thread.count(cuda::grid) == cuda::gpu_thread.count(cuda::grid));
+
+      CUDAX_REQUIRE(cuda::gpu_thread.rank(this_thread) == 0);
+      CUDAX_REQUIRE(this_thread.rank(cuda::warp) == cuda::gpu_thread.rank(cuda::warp));
+      CUDAX_REQUIRE(this_thread.rank(cuda::block) == cuda::gpu_thread.rank(cuda::block));
+      CUDAX_REQUIRE(this_thread.rank(cuda::cluster) == cuda::gpu_thread.rank(cuda::cluster));
       CUDAX_REQUIRE(this_thread.rank(cuda::grid) == cuda::gpu_thread.rank(cuda::grid));
+
+      CUDAX_REQUIRE(cuda::gpu_thread.is_root_rank(this_thread));
+
+      CUDAX_REQUIRE(cuda::gpu_thread.is_part_of(this_thread));
     }
     {
       unsigned array[]{1, 2, 3};
@@ -155,21 +160,28 @@ struct TestKernel
       static_assert(cuda::std::is_same_v<decltype(hierarchy), const typename Config::hierarchy_type&>);
 
       const auto result = sum(this_warp, array);
-      if (cuda::gpu_thread.rank(cuda::warp) == 0)
+      if (cuda::gpu_thread.is_root_rank(this_warp))
       {
         CUDAX_REQUIRE(result == 6 * cuda::gpu_thread.count(cuda::warp));
       }
 
       CUDAX_REQUIRE(cuda::gpu_thread.count(this_warp) == cuda::gpu_thread.count(cuda::warp));
-      CUDAX_REQUIRE(cuda::gpu_thread.rank(this_warp) == cuda::gpu_thread.rank(cuda::warp));
       CUDAX_REQUIRE(cuda::warp.count(this_warp) == 1);
-      CUDAX_REQUIRE(cuda::warp.rank(this_warp) == 0);
       CUDAX_REQUIRE(this_warp.count(cuda::block) == cuda::warp.count(cuda::block));
-      CUDAX_REQUIRE(this_warp.rank(cuda::block) == cuda::warp.rank(cuda::block));
       CUDAX_REQUIRE(this_warp.count(cuda::cluster) == cuda::warp.count(cuda::cluster));
-      CUDAX_REQUIRE(this_warp.rank(cuda::cluster) == cuda::warp.rank(cuda::cluster));
       CUDAX_REQUIRE(this_warp.count(cuda::grid) == cuda::warp.count(cuda::grid));
+
+      CUDAX_REQUIRE(cuda::gpu_thread.rank(this_warp) == cuda::gpu_thread.rank(cuda::warp));
+      CUDAX_REQUIRE(cuda::warp.rank(this_warp) == 0);
+      CUDAX_REQUIRE(this_warp.rank(cuda::block) == cuda::warp.rank(cuda::block));
+      CUDAX_REQUIRE(this_warp.rank(cuda::cluster) == cuda::warp.rank(cuda::cluster));
       CUDAX_REQUIRE(this_warp.rank(cuda::grid) == cuda::warp.rank(cuda::grid));
+
+      CUDAX_REQUIRE(cuda::gpu_thread.is_root_rank(this_warp) == (cuda::gpu_thread.rank(cuda::warp) == 0));
+      CUDAX_REQUIRE(cuda::warp.is_root_rank(this_warp));
+
+      CUDAX_REQUIRE(cuda::gpu_thread.is_part_of(this_warp));
+      CUDAX_REQUIRE(cuda::warp.is_part_of(this_warp));
     }
     {
       unsigned array[]{1, 2, 3};
@@ -184,21 +196,30 @@ struct TestKernel
       static_assert(cuda::std::is_same_v<decltype(hierarchy), const typename Config::hierarchy_type&>);
 
       const auto result = sum(this_block, array);
-      if (cuda::gpu_thread.rank(cuda::block) == 0)
+      if (cuda::gpu_thread.is_root_rank(this_block))
       {
         CUDAX_REQUIRE(result == 6 * cuda::gpu_thread.count(cuda::block));
       }
 
       CUDAX_REQUIRE(cuda::gpu_thread.count(this_block) == cuda::gpu_thread.count(cuda::block));
-      CUDAX_REQUIRE(cuda::gpu_thread.rank(this_block) == cuda::gpu_thread.rank(cuda::block));
       CUDAX_REQUIRE(cuda::warp.count(this_block) == cuda::warp.count(cuda::block));
-      CUDAX_REQUIRE(cuda::warp.rank(this_block) == cuda::warp.rank(cuda::block));
       CUDAX_REQUIRE(cuda::block.count(this_block) == 1);
-      CUDAX_REQUIRE(cuda::block.rank(this_block) == 0);
       CUDAX_REQUIRE(this_block.count(cuda::cluster) == cuda::block.count(cuda::cluster));
-      CUDAX_REQUIRE(this_block.rank(cuda::cluster) == cuda::block.rank(cuda::cluster));
       CUDAX_REQUIRE(this_block.count(cuda::grid) == cuda::block.count(cuda::grid));
+
+      CUDAX_REQUIRE(cuda::gpu_thread.rank(this_block) == cuda::gpu_thread.rank(cuda::block));
+      CUDAX_REQUIRE(cuda::warp.rank(this_block) == cuda::warp.rank(cuda::block));
+      CUDAX_REQUIRE(cuda::block.rank(this_block) == 0);
+      CUDAX_REQUIRE(this_block.rank(cuda::cluster) == cuda::block.rank(cuda::cluster));
       CUDAX_REQUIRE(this_block.rank(cuda::grid) == cuda::block.rank(cuda::grid));
+
+      CUDAX_REQUIRE(cuda::gpu_thread.is_root_rank(this_block) == (cuda::gpu_thread.rank(cuda::block) == 0));
+      CUDAX_REQUIRE(cuda::warp.is_root_rank(this_block) == (cuda::warp.rank(cuda::block) == 0));
+      CUDAX_REQUIRE(cuda::block.is_root_rank(this_block));
+
+      CUDAX_REQUIRE(cuda::gpu_thread.is_part_of(this_block));
+      CUDAX_REQUIRE(cuda::warp.is_part_of(this_block));
+      CUDAX_REQUIRE(cuda::block.is_part_of(this_block));
     }
     {
       unsigned array[]{1, 2, 3};
@@ -213,21 +234,32 @@ struct TestKernel
       static_assert(cuda::std::is_same_v<decltype(hierarchy), const typename Config::hierarchy_type&>);
 
       const auto result = sum(this_cluster, array);
-      if (cuda::gpu_thread.rank(cuda::cluster) == 0)
+      if (cuda::gpu_thread.is_root_rank(this_cluster))
       {
         CUDAX_REQUIRE(result == 6 * cuda::gpu_thread.count(cuda::cluster));
       }
 
       CUDAX_REQUIRE(cuda::gpu_thread.count(this_cluster) == cuda::gpu_thread.count(cuda::cluster));
-      CUDAX_REQUIRE(cuda::gpu_thread.rank(this_cluster) == cuda::gpu_thread.rank(cuda::cluster));
       CUDAX_REQUIRE(cuda::warp.count(this_cluster) == cuda::warp.count(cuda::cluster));
-      CUDAX_REQUIRE(cuda::warp.rank(this_cluster) == cuda::warp.rank(cuda::cluster));
       CUDAX_REQUIRE(cuda::block.count(this_cluster) == cuda::block.count(cuda::cluster));
-      CUDAX_REQUIRE(cuda::block.rank(this_cluster) == cuda::block.rank(cuda::cluster));
       CUDAX_REQUIRE(cuda::cluster.count(this_cluster) == 1);
-      CUDAX_REQUIRE(cuda::cluster.rank(this_cluster) == 0);
       CUDAX_REQUIRE(this_cluster.count(cuda::grid) == cuda::cluster.count(cuda::grid));
+
+      CUDAX_REQUIRE(cuda::gpu_thread.rank(this_cluster) == cuda::gpu_thread.rank(cuda::cluster));
+      CUDAX_REQUIRE(cuda::warp.rank(this_cluster) == cuda::warp.rank(cuda::cluster));
+      CUDAX_REQUIRE(cuda::block.rank(this_cluster) == cuda::block.rank(cuda::cluster));
+      CUDAX_REQUIRE(cuda::cluster.rank(this_cluster) == 0);
       CUDAX_REQUIRE(this_cluster.rank(cuda::grid) == cuda::cluster.rank(cuda::grid));
+
+      CUDAX_REQUIRE(cuda::gpu_thread.is_root_rank(this_cluster) == (cuda::gpu_thread.rank(cuda::cluster) == 0));
+      CUDAX_REQUIRE(cuda::warp.is_root_rank(this_cluster) == (cuda::warp.rank(cuda::cluster) == 0));
+      CUDAX_REQUIRE(cuda::block.is_root_rank(this_cluster) == (cuda::block.rank(cuda::cluster) == 0));
+      CUDAX_REQUIRE(cuda::cluster.is_root_rank(this_cluster));
+
+      CUDAX_REQUIRE(cuda::gpu_thread.is_part_of(this_cluster));
+      CUDAX_REQUIRE(cuda::warp.is_part_of(this_cluster));
+      CUDAX_REQUIRE(cuda::block.is_part_of(this_cluster));
+      CUDAX_REQUIRE(cuda::cluster.is_part_of(this_cluster));
     }
     {
       cudax::this_grid this_grid{config};
@@ -240,15 +272,28 @@ struct TestKernel
       static_assert(cuda::std::is_same_v<decltype(hierarchy), const typename Config::hierarchy_type&>);
 
       CUDAX_REQUIRE(cuda::gpu_thread.count(this_grid) == cuda::gpu_thread.count(cuda::grid));
-      CUDAX_REQUIRE(cuda::gpu_thread.rank(this_grid) == cuda::gpu_thread.rank(cuda::grid));
       CUDAX_REQUIRE(cuda::warp.count(this_grid) == cuda::warp.count(cuda::grid));
-      CUDAX_REQUIRE(cuda::warp.rank(this_grid) == cuda::warp.rank(cuda::grid));
       CUDAX_REQUIRE(cuda::block.count(this_grid) == cuda::block.count(cuda::grid));
-      CUDAX_REQUIRE(cuda::block.rank(this_grid) == cuda::block.rank(cuda::grid));
       CUDAX_REQUIRE(cuda::cluster.count(this_grid) == cuda::cluster.count(cuda::grid));
-      CUDAX_REQUIRE(cuda::cluster.rank(this_grid) == cuda::cluster.rank(cuda::grid));
       CUDAX_REQUIRE(cuda::grid.count(this_grid) == 1);
+
+      CUDAX_REQUIRE(cuda::gpu_thread.rank(this_grid) == cuda::gpu_thread.rank(cuda::grid));
+      CUDAX_REQUIRE(cuda::warp.rank(this_grid) == cuda::warp.rank(cuda::grid));
+      CUDAX_REQUIRE(cuda::block.rank(this_grid) == cuda::block.rank(cuda::grid));
+      CUDAX_REQUIRE(cuda::cluster.rank(this_grid) == cuda::cluster.rank(cuda::grid));
       CUDAX_REQUIRE(cuda::grid.rank(this_grid) == 0);
+
+      CUDAX_REQUIRE(cuda::gpu_thread.is_root_rank(this_grid) == (cuda::gpu_thread.rank(cuda::grid) == 0));
+      CUDAX_REQUIRE(cuda::warp.is_root_rank(this_grid) == (cuda::warp.rank(cuda::grid) == 0));
+      CUDAX_REQUIRE(cuda::block.is_root_rank(this_grid) == (cuda::block.rank(cuda::grid) == 0));
+      CUDAX_REQUIRE(cuda::cluster.is_root_rank(this_grid) == (cuda::cluster.rank(cuda::grid) == 0));
+      CUDAX_REQUIRE(cuda::grid.is_root_rank(this_grid));
+
+      CUDAX_REQUIRE(cuda::gpu_thread.is_part_of(this_grid));
+      CUDAX_REQUIRE(cuda::warp.is_part_of(this_grid));
+      CUDAX_REQUIRE(cuda::block.is_part_of(this_grid));
+      CUDAX_REQUIRE(cuda::cluster.is_part_of(this_grid));
+      CUDAX_REQUIRE(cuda::grid.is_part_of(this_grid));
     }
   }
 };
