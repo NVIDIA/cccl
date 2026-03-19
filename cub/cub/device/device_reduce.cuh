@@ -236,13 +236,13 @@ private:
   }
 
   //! @brief Internal implementation shared by Reduce and TransformReduce env overloads
-  template <typename InputIteratorT,
+  template <typename AccumT,
+            typename InputIteratorT,
             typename OutputIteratorT,
             typename ReductionOpT,
             typename TransformOpT,
             typename T,
             typename NumItemsT,
-            typename AccumT,
             typename EnvT>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __transform_reduce(
     InputIteratorT d_in,
@@ -530,14 +530,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Reduce");
     using accum_t = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
-    return __transform_reduce<InputIteratorT,
-                              OutputIteratorT,
-                              ReductionOpT,
-                              ::cuda::std::identity,
-                              T,
-                              NumItemsT,
-                              accum_t,
-                              EnvT>(d_in, d_out, num_items, reduction_op, ::cuda::std::identity{}, init, env);
+    return __transform_reduce<accum_t>(d_in, d_out, num_items, reduction_op, ::cuda::std::identity{}, init, env);
   }
 
   //! @rst
@@ -2239,8 +2232,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::TransformReduce");
     using accum_t = ::cuda::std::
       __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
-    return __transform_reduce<InputIteratorT, OutputIteratorT, ReductionOpT, TransformOpT, T, NumItemsT, accum_t, EnvT>(
-      d_in, d_out, num_items, reduction_op, transform_op, init, env);
+    return __transform_reduce<accum_t>(d_in, d_out, num_items, reduction_op, transform_op, init, env);
   }
 
   //! @rst

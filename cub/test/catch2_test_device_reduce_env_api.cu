@@ -263,8 +263,7 @@ C2H_TEST("cub::DeviceReduce::ArgMin accepts determinism requirements", "[reduce]
 
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
 
-  auto error =
-    cub::DeviceReduce::ArgMin(input.begin(), min_output.begin(), index_output.begin(), input.size(), stream_ref);
+  auto error = cub::DeviceReduce::ArgMin(input.begin(), min_output.begin(), index_output.begin(), input.size(), env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::ArgMin failed with status: " << error << std::endl;
@@ -314,8 +313,7 @@ C2H_TEST("cub::DeviceReduce::ArgMax accepts determinism requirements", "[reduce]
 
   auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
 
-  auto error =
-    cub::DeviceReduce::ArgMax(input.begin(), max_output.begin(), index_output.begin(), input.size(), stream_ref);
+  auto error = cub::DeviceReduce::ArgMax(input.begin(), max_output.begin(), index_output.begin(), input.size(), env);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceReduce::ArgMax failed with status: " << error << std::endl;
