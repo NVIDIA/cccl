@@ -16,21 +16,6 @@
 
 #include "nvbench_helper.cuh"
 
-struct equal_to_val
-{
-  size_t val_;
-
-  constexpr equal_to_val(const size_t val) noexcept
-      : val_(val)
-  {}
-
-  template <class T>
-  __device__ constexpr bool operator()(const T& val) const noexcept
-  {
-    return val == val_;
-  }
-};
-
 template <typename T>
 static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
@@ -51,7 +36,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               do_not_optimize(thrust::find(policy(alloc, launch), dinput.begin(), dinput.end(), val));
+               do_not_optimize(thrust::find(policy(alloc, launch), dinput.begin(), dinput.end(), cuda::equal_to_value<T>{val}));
              });
 }
 
