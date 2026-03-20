@@ -389,15 +389,14 @@ struct UnitWord
   CCCL_DEPRECATED static constexpr auto ALIGN_BYTES = alignof(T);
 
   template <typename Unit>
+  static constexpr bool __is_multiple = (sizeof(T) % sizeof(Unit) == 0) && (alignof(T) % alignof(Unit) == 0);
+
+  template <typename Unit>
   struct CCCL_DEPRECATED IsMultiple
   {
     static constexpr auto UNIT_ALIGN_BYTES = alignof(Unit);
-    static constexpr bool IS_MULTIPLE =
-      (sizeof(T) % sizeof(Unit) == 0) && (int(alignof(T)) % int(UNIT_ALIGN_BYTES) == 0);
+    static constexpr bool IS_MULTIPLE      = __is_multiple<Unit>;
   };
-
-  template <typename Unit>
-  static constexpr bool __is_multiple = (sizeof(T) % sizeof(Unit) == 0) && (alignof(T) % alignof(Unit) == 0);
 
   /// Largest shuffle word evenly dividing T and not increasing the alignment
   using ShuffleWord = ::cuda::std::
