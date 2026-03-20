@@ -30,6 +30,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__type_traits/is_const.h>
+#include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_reference.h>
@@ -262,13 +263,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __basic_any<_Interface&> : __basic_any<__ir
     this->__set_ref(__other.__get_vptr(), __other.__get_optr());
   }
 
-  _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::remove_const_t<_Tp>)
-  _CCCL_REQUIRES((!__is_basic_any<_Up>) _CCCL_AND(__is_const_ref || !::cuda::std::is_const_v<_Tp>)
-                   _CCCL_AND __satisfies<_Up, interface_type>)
-  _CCCL_API __basic_any(_Tp& __obj) noexcept
+  _CCCL_TEMPLATE(class _Tp,
+                 class _Up = ::cuda::std::remove_reference_t<_Tp>,
+                 class _Vp = ::cuda::std::remove_const_t<_Up>)
+  _CCCL_REQUIRES(::cuda::std::is_lvalue_reference_v<_Tp> _CCCL_AND(!__is_basic_any<_Vp>)
+                   _CCCL_AND(__is_const_ref || !::cuda::std::is_const_v<_Up>)
+                     _CCCL_AND __satisfies<_Vp, interface_type>)
+  _CCCL_API __basic_any(_Tp&& __obj) noexcept
       : __basic_any<__ireference<_Interface>>()
   {
-    __vptr_for<interface_type> const __vptr = ::cuda::__get_vtable_ptr_for<interface_type, _Up>();
+    __vptr_for<interface_type> const __vptr = ::cuda::__get_vtable_ptr_for<interface_type, _Vp>();
     this->__set_ref(__vptr, &__obj);
   }
 
