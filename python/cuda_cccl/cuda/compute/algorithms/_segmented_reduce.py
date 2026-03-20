@@ -128,7 +128,8 @@ class _SegmentedReduce:
     def compute(self, temp_storage, d_in, d_out, num_items, h_init=None, op=None, stream=None) -> None:
         resolved_op = self._op if op is None else op
         resolved_init = self._h_init if h_init is None else h_init
-        self(temp_storage, d_in, d_out, resolved_op, num_items, resolved_init, stream)return temp_storage_bytes
+        self(temp_storage, d_in, d_out, resolved_op, num_items, resolved_init, stream)
+        return temp_storage_bytes
 
 
 @cache_with_registered_key_functions
