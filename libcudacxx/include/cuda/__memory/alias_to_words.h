@@ -74,6 +74,23 @@ struct __alias_storage
         static_cast<void*>(::cuda::std::addressof(__value)), static_cast<const void*>(this), sizeof(_Tp));
     }
   }
+
+  template <class _Tp>
+  [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE constexpr _Tp __convert_back() noexcept
+  {
+    _Tp __output;
+    if constexpr (!::cuda::std::is_array_v<_Tp>
+                  && (::cuda::std::is_trivially_copyable_v<_Tp> || ::cuda::std::__is_extended_arithmetic_v<_Tp>) )
+    {
+      __output = ::cuda::std::bit_cast<_Tp>(*this);
+    }
+    else
+    {
+      ::cuda::std::memcpy(
+        static_cast<void*>(::cuda::std::addressof(__output)), static_cast<const void*>(this), sizeof(_Tp));
+    }
+    return __output;
+  }
 };
 
 template <size_t _TypeSize, size_t _FullWords>
@@ -99,6 +116,23 @@ struct __alias_storage<_TypeSize, _FullWords, 0>
       ::cuda::std::memcpy(
         static_cast<void*>(::cuda::std::addressof(__value)), static_cast<const void*>(this), sizeof(_Tp));
     }
+  }
+
+  template <class _Tp>
+  [[nodiscard]] _CCCL_API _CCCL_FORCEINLINE constexpr _Tp __convert_back() noexcept
+  {
+    _Tp __output;
+    if constexpr (!::cuda::std::is_array_v<_Tp>
+                  && (::cuda::std::is_trivially_copyable_v<_Tp> || ::cuda::std::__is_extended_arithmetic_v<_Tp>) )
+    {
+      __output = ::cuda::std::bit_cast<_Tp>(*this);
+    }
+    else
+    {
+      ::cuda::std::memcpy(
+        static_cast<void*>(::cuda::std::addressof(__output)), static_cast<const void*>(this), sizeof(_Tp));
+    }
+    return __output;
   }
 };
 

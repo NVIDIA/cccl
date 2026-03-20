@@ -22,7 +22,10 @@
 #include <cub/util_debug.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/alias_to_words.h>
+#include <cuda/__warp/warp_shuffle.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -211,28 +214,19 @@ template <int LOGICAL_WARP_THREADS, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_thread, unsigned int member_mask)
 {
   /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-  constexpr int SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8;
+  static constexpr int SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8;
+  static constexpr int WORDS  = ::cuda::ceil_div(sizeof(T), sizeof(uint32_t));
 
-  using ShuffleWord = typename UnitWord<T>::ShuffleWord;
-
-  constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
-
-  T output;
-  ShuffleWord* output_alias = reinterpret_cast<ShuffleWord*>(&output);
-  ShuffleWord* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
-
-  unsigned int shuffle_word;
-  shuffle_word    = SHFL_UP_SYNC((unsigned int) input_alias[0], src_offset, first_thread | SHFL_C, member_mask);
-  output_alias[0] = shuffle_word;
+  auto words = ::cuda::__alias_to_words(input);
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int WORD = 1; WORD < WORDS; ++WORD)
+  for (int WORD = 0; WORD < WORDS; ++WORD)
   {
-    shuffle_word       = SHFL_UP_SYNC((unsigned int) input_alias[WORD], src_offset, first_thread | SHFL_C, member_mask);
-    output_alias[WORD] = shuffle_word;
+    words[WORD] = SHFL_UP_SYNC(words[WORD], src_offset, first_thread | SHFL_C, member_mask);
   }
 
-  return output;
+  input = words.template __convert_back<T>();
+  return input;
 }
 
 /**
@@ -290,27 +284,17 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_t
 {
   /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
   static constexpr int SHFL_C = (32 - LOGICAL_WARP_THREADS) << 8;
+  static constexpr int WORDS  = ::cuda::ceil_div(sizeof(T), sizeof(uint32_t));
 
-  using ShuffleWord = typename UnitWord<T>::ShuffleWord;
-
-  constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
-
-  T output;
-  ShuffleWord* output_alias = reinterpret_cast<ShuffleWord*>(&output);
-  ShuffleWord* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
-
-  unsigned int shuffle_word;
-  shuffle_word    = SHFL_DOWN_SYNC((unsigned int) input_alias[0], src_offset, last_thread | SHFL_C, member_mask);
-  output_alias[0] = shuffle_word;
-
+  auto words = ::cuda::__alias_to_words(input);
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int WORD = 1; WORD < WORDS; ++WORD)
+  for (int WORD = 0; WORD < WORDS; ++WORD)
   {
-    shuffle_word = SHFL_DOWN_SYNC((unsigned int) input_alias[WORD], src_offset, last_thread | SHFL_C, member_mask);
-    output_alias[WORD] = shuffle_word;
+    words[WORD] = SHFL_DOWN_SYNC(words[WORD], src_offset, last_thread | SHFL_C, member_mask);
   }
 
-  return output;
+  input = words.template __convert_back<T>();
+  return input;
 }
 
 /**
@@ -365,25 +349,17 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_t
 template <int LOGICAL_WARP_THREADS, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned int member_mask)
 {
-  using ShuffleWord = typename UnitWord<T>::ShuffleWord;
+  static constexpr int WORDS = ::cuda::ceil_div(sizeof(T), sizeof(uint32_t));
 
-  constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
-
-  T output;
-  ShuffleWord* output_alias = reinterpret_cast<ShuffleWord*>(&output);
-  ShuffleWord* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
-
-  unsigned int shuffle_word;
-  shuffle_word    = __shfl_sync(member_mask, (unsigned int) input_alias[0], src_lane, LOGICAL_WARP_THREADS);
-  output_alias[0] = shuffle_word;
-
+  auto words = ::cuda::__alias_to_words(input);
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int WORD = 1; WORD < WORDS; ++WORD)
+  for (int WORD = 0; WORD < WORDS; ++WORD)
   {
-    shuffle_word       = __shfl_sync(member_mask, (unsigned int) input_alias[WORD], src_lane, LOGICAL_WARP_THREADS);
-    output_alias[WORD] = shuffle_word;
+    words[WORD] = __shfl_sync(member_mask, words[WORD], src_lane, LOGICAL_WARP_THREADS);
   }
-  return output;
+
+  input = words.template __convert_back<T>();
+  return input;
 }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
