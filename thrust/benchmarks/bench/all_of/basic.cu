@@ -5,7 +5,7 @@
 #include <thrust/fill.h>
 #include <thrust/logical.h>
 
-#include <cuda/__functional/equal_to_value.h>
+#include <cuda/functional>
 #include <cuda/memory_pool>
 #include <cuda/stream>
 

@@ -10,7 +10,7 @@
 
 #include <thrust/device_vector.h>
 
-#include <cuda/__functional/equal_to_value.h>
+#include <cuda/functional>
 #include <cuda/memory_pool>
 #include <cuda/std/__pstl_algorithm>
 #include <cuda/stream>
