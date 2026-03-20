@@ -135,7 +135,7 @@ struct policy_selector
 {
   int key_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> merge_sort_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> merge_sort_policy
   {
     // from SM60
     return merge_sort_policy{

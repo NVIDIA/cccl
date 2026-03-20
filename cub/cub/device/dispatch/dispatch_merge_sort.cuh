@@ -198,7 +198,7 @@ private:
 public:
   // Invocation
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT policy = {})
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke([[maybe_unused]] ActivePolicyT policy = {})
   {
     if (num_items == 0)
     {
