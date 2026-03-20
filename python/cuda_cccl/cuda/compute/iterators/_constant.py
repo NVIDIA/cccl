@@ -72,6 +72,7 @@ class ConstantIterator(IteratorBase):
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
+            extra_ltoirs=[],
         )
 
     def _make_input_deref_op(self) -> Op | None:
@@ -91,6 +92,7 @@ class ConstantIterator(IteratorBase):
             operator_type=OpKind.STATELESS,
             name=symbol,
             ltoir=ltoir,
+            extra_ltoirs=[],
         )
 
     def _make_output_deref_op(self) -> Op | None:

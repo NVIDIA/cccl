@@ -152,6 +152,7 @@ class RawOp(_OpAdapter):
             ltoir=self._ltoir,
             state=self._state,
             state_alignment=self._state_alignment,
+            extra_ltoirs=self._extra_ltoirs,
         )
 
     def get_state(self) -> bytes:

@@ -83,8 +83,7 @@ class _UnaryTransform:
         num_items: int,
         stream=None,
     ) -> None:
-        # Transforms currently don't require explicit temp storage, but we
-        # accept it for API consistency with multi-phase algorithms.
+        # Transforms currently don't require explicit temp storage.
         _ = d_temp_storage
         self(d_in, d_out, op, num_items, stream)
 
@@ -159,7 +158,6 @@ class _BinaryTransform:
         num_items: int,
         stream=None,
     ) -> int:
-        # Transforms are single-phase in this API: no explicit temp storage is required.
         return 0
 
     def compute(
@@ -172,8 +170,6 @@ class _BinaryTransform:
         num_items: int,
         stream=None,
     ) -> None:
-        # Transforms currently don't require explicit temp storage, but we
-        # accept it for API consistency with multi-phase algorithms.
         _ = d_temp_storage
         self(d_in1, d_in2, d_out, op, num_items, stream)
 

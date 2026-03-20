@@ -28,13 +28,7 @@ extern "C" __device__ void always_false(void*, void* result) {{
 
 
 class _Select:
-    __slots__ = [
-        "partitioner",
-        "discard_second",
-        "discard_unselected",
-        "false_op",
-        "_cond",
-    ]
+    __slots__ = ["partitioner", "discard_second", "discard_unselected", "false_op", "_cond"]
 
     def __init__(
         self,
