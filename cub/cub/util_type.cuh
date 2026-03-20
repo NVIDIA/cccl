@@ -300,6 +300,8 @@ private:
  * Size and alignment
  ******************************************************************************/
 
+namespace detail
+{
 /// Structure alignment
 template <typename T>
 struct AlignBytes
@@ -375,17 +377,21 @@ template <typename T> struct AlignBytes<volatile T> : AlignBytes<T> {};
 template <typename T> struct AlignBytes<const T> : AlignBytes<T> {};
 template <typename T> struct AlignBytes<const volatile T> : AlignBytes<T> {};
 // clang-format on
+} // namespace detail
+
+template <typename T>
+using AlignBytes CCCL_DEPRECATED_BECAUSE("Use alignof(T) directly") = detail::AlignBytes<T>;
 
 /// Unit-words of data movement
 template <typename T>
 struct UnitWord
 {
-  static constexpr auto ALIGN_BYTES = AlignBytes<T>::ALIGN_BYTES;
+  static constexpr auto ALIGN_BYTES = alignof(T);
 
   template <typename Unit>
   struct IsMultiple
   {
-    static constexpr auto UNIT_ALIGN_BYTES = AlignBytes<Unit>::ALIGN_BYTES;
+    static constexpr auto UNIT_ALIGN_BYTES = alignof(Unit);
     static constexpr bool IS_MULTIPLE =
       (sizeof(T) % sizeof(Unit) == 0) && (int(ALIGN_BYTES) % int(UNIT_ALIGN_BYTES) == 0);
   };

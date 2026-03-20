@@ -25,8 +25,10 @@
 
 #include <cuda/__device/arch_id.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__concepts/regular.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
@@ -606,15 +608,14 @@ _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferAlignBytes()
 //!   Guaranteed alignment in bytes of the source range (both begin and end) in global memory
 //! @param[in] num_items
 //!   Size of the source range in global memory
-template <typename T, int GmemAlign = alignof(T)>
+template <typename T, ::cuda::std::size_t GmemAlign = alignof(T)>
 _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t num_items)
 {
-  static_assert(::cuda::std::has_single_bit(unsigned{GmemAlign}));
-  static_assert(GmemAlign >= int{alignof(T)});
+  static_assert(::cuda::__is_valid_alignment<T>(GmemAlign));
   _CCCL_ASSERT(num_items <= ::cuda::std::size_t{::cuda::std::numeric_limits<int>::max()},
                "num_items must fit into an int");
   const int num_bytes = static_cast<int>(num_items) * int{sizeof(T)};
-  if constexpr (GmemAlign >= detail::bulk_copy_min_align)
+  if constexpr (GmemAlign >= static_cast<::cuda::std::size_t>(detail::bulk_copy_min_align))
   {
     return num_bytes;
   }

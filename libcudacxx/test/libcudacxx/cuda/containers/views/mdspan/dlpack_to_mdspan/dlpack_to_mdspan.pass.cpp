@@ -510,7 +510,7 @@ bool test_return_types()
 
   static_assert(
     cuda::std::is_same_v<decltype(host_ms),
-                         cuda::host_mdspan<float, cuda::std::dextents<int64_t, 1>, cuda::std::layout_stride>>);
+                         cuda::host_mdspan<float, cuda::std::dextents<int64_t, 1>, cuda::layout_stride_relaxed>>);
   assert(host_ms.extent(0) == 4);
 
   auto host_ms_right = cuda::to_host_mdspan<float, 1, cuda::std::layout_right>(tensor);

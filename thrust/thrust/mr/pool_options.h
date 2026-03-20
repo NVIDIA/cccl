@@ -21,6 +21,7 @@
 #include <thrust/detail/config/memory_resource.h>
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/cstddef>
 
 THRUST_NAMESPACE_BEGIN
@@ -98,7 +99,7 @@ struct pool_options
     {
       return false;
     }
-    if (alignment != 0 && !::cuda::is_power_of_two(alignment))
+    if (::cuda::__is_valid_alignment(alignment))
     {
       return false;
     }

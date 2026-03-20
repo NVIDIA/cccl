@@ -33,8 +33,6 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
-#  include <cuda/__memory_pool/device_memory_pool.h>
-#  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
@@ -106,12 +104,10 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
       __count,
       0);
 
-    auto __stream   = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-    auto __resource = ::cuda::__call_or(
-      ::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(__stream.device()), __policy);
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
 
     { // Create temporary storage for the return value as well as a copy of the input sequence as Unique is not inplace
-      __temporary_storage<decltype(__resource), _OffsetType> __storage{__stream, __resource, __num_bytes, 1};
+      __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
       _CCCL_TRY_CUDA_API(
         DispatchUnique::Dispatch,

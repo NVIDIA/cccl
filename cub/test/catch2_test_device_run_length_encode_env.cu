@@ -11,7 +11,9 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
+#include <cuda/devices>
 #include <cuda/iterator>
+#include <cuda/stream>
 
 #include "catch2_test_env_launch_helper.h"
 
@@ -152,8 +154,7 @@ TEST_CASE("DeviceRunLengthEncode::Encode uses custom stream", "[run_length_encod
   auto d_num_runs_out = c2h::device_vector<int>(1);
   int num_items       = static_cast<int>(d_in.size());
 
-  cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  cuda::stream custom_stream{cuda::devices[0]};
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -167,13 +168,14 @@ TEST_CASE("DeviceRunLengthEncode::Encode uses custom stream", "[run_length_encod
       d_num_runs_out.begin(),
       num_items));
 
-  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  cuda::stream_ref stream_ref{custom_stream};
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, stream_ref};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
   run_length_encode_env(
     d_in.begin(), d_unique_out.begin(), d_counts_out.begin(), d_num_runs_out.begin(), num_items, env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  custom_stream.sync();
 
   c2h::device_vector<int> expected_unique{0, 2, 9, 5, 8};
   c2h::device_vector<int> expected_counts{1, 2, 1, 3, 1};
@@ -184,8 +186,6 @@ TEST_CASE("DeviceRunLengthEncode::Encode uses custom stream", "[run_length_encod
   d_counts_out.resize(d_num_runs_out[0]);
   REQUIRE(d_unique_out == expected_unique);
   REQUIRE(d_counts_out == expected_counts);
-
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
 TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns uses custom stream", "[run_length_encode][device]")
@@ -196,8 +196,7 @@ TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns uses custom stream", "[run_leng
   auto d_num_runs_out = c2h::device_vector<int>(1);
   int num_items       = static_cast<int>(d_in.size());
 
-  cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  cuda::stream custom_stream{cuda::devices[0]};
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -211,13 +210,14 @@ TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns uses custom stream", "[run_leng
       d_num_runs_out.begin(),
       num_items));
 
-  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  cuda::stream_ref stream_ref{custom_stream};
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, stream_ref};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
   non_trivial_runs_env(
     d_in.begin(), d_offsets_out.begin(), d_lengths_out.begin(), d_num_runs_out.begin(), num_items, env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  custom_stream.sync();
 
   c2h::device_vector<int> expected_offsets{1, 4};
   c2h::device_vector<int> expected_lengths{2, 3};
@@ -228,6 +228,4 @@ TEST_CASE("DeviceRunLengthEncode::NonTrivialRuns uses custom stream", "[run_leng
   d_lengths_out.resize(d_num_runs_out[0]);
   REQUIRE(d_offsets_out == expected_offsets);
   REQUIRE(d_lengths_out == expected_lengths);
-
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
