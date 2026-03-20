@@ -238,6 +238,60 @@ C2H_TEST("Device segmented max uses environment", "[segmented_reduce][device]")
   REQUIRE(d_out == expected);
 }
 
+C2H_TEST("Device segmented argmin uses environment", "[segmented_reduce][device]")
+{
+  int num_segments                     = 3;
+  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  thrust::device_vector<cub::KeyValuePair<int, int>> d_out(3);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedReduce::ArgMin(
+      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_segmented_reduce_argmin(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
+
+  thrust::host_vector<cub::KeyValuePair<int, int>> h_out(d_out);
+  REQUIRE(h_out[0].key == 3);
+  REQUIRE(h_out[0].value == 5);
+  REQUIRE(h_out[1].key == 1);
+  REQUIRE(h_out[1].value == 0);
+  REQUIRE(h_out[2].key == 0);
+  REQUIRE(h_out[2].value == 1);
+}
+
+C2H_TEST("Device segmented argmax uses environment", "[segmented_reduce][device]")
+{
+  int num_segments                     = 3;
+  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  thrust::device_vector<cub::KeyValuePair<int, int>> d_out(3);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedReduce::ArgMax(
+      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_segmented_reduce_argmax(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
+
+  thrust::host_vector<cub::KeyValuePair<int, int>> h_out(d_out);
+  REQUIRE(h_out[0].key == 0);
+  REQUIRE(h_out[0].value == 8);
+  REQUIRE(h_out[1].key == 2);
+  REQUIRE(h_out[1].value == 9);
+  REQUIRE(h_out[2].key == 1);
+  REQUIRE(h_out[2].value == 2);
+}
+
 TEST_CASE("Device segmented reduce uses custom stream", "[segmented_reduce][device]")
 {
   int num_segments                     = 3;
@@ -365,60 +419,6 @@ TEST_CASE("Device segmented max uses custom stream", "[segmented_reduce][device]
   REQUIRE(d_out == expected);
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
-}
-
-C2H_TEST("Device segmented argmin uses environment", "[segmented_reduce][device]")
-{
-  int num_segments                     = 3;
-  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
-  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
-  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
-  thrust::device_vector<cub::KeyValuePair<int, int>> d_out(3);
-
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::ArgMin(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
-
-  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
-
-  device_segmented_reduce_argmin(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
-
-  thrust::host_vector<cub::KeyValuePair<int, int>> h_out(d_out);
-  REQUIRE(h_out[0].key == 3);
-  REQUIRE(h_out[0].value == 5);
-  REQUIRE(h_out[1].key == 1);
-  REQUIRE(h_out[1].value == 0);
-  REQUIRE(h_out[2].key == 0);
-  REQUIRE(h_out[2].value == 1);
-}
-
-C2H_TEST("Device segmented argmax uses environment", "[segmented_reduce][device]")
-{
-  int num_segments                     = 3;
-  thrust::device_vector<int> d_offsets = {0, 4, 7, 9};
-  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
-  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
-  thrust::device_vector<cub::KeyValuePair<int, int>> d_out(3);
-
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceSegmentedReduce::ArgMax(
-      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1));
-
-  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
-
-  device_segmented_reduce_argmax(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
-
-  thrust::host_vector<cub::KeyValuePair<int, int>> h_out(d_out);
-  REQUIRE(h_out[0].key == 0);
-  REQUIRE(h_out[0].value == 8);
-  REQUIRE(h_out[1].key == 2);
-  REQUIRE(h_out[1].value == 9);
-  REQUIRE(h_out[2].key == 1);
-  REQUIRE(h_out[2].value == 2);
 }
 
 TEST_CASE("Device segmented argmin uses custom stream", "[segmented_reduce][device]")

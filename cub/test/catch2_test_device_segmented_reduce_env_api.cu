@@ -291,3 +291,27 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce accepts run_to_run determinism requ
   REQUIRE(d_out == expected);
   REQUIRE(error == cudaSuccess);
 }
+
+C2H_TEST("cub::DeviceSegmentedReduce::Reduce accepts not_guaranteed determinism requirements",
+         "[segmented_reduce][env]")
+{
+  int num_segments                     = 3;
+  thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
+  thrust::device_vector<int> d_out(3);
+
+  auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
+
+  auto error = cub::DeviceSegmentedReduce::Reduce(
+    d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, ::cuda::std::plus<>{}, 0, env);
+  thrust::device_vector<int> expected{21, 0, 17};
+
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedReduce::Reduce failed with status: " << error << std::endl;
+  }
+
+  REQUIRE(d_out == expected);
+  REQUIRE(error == cudaSuccess);
+}
