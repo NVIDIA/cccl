@@ -704,7 +704,7 @@ public:
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
     using OutputT = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
     using init_t  = OutputT;
-    using op_t    = ::cuda::std::plus<detail::it_value_t<InputIteratorT>>;
+    using op_t    = ::cuda::std::plus<>;
     using AccumT  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_t>;
 
     return segmented_reduce_impl<AccumT, OffsetT>(
@@ -1012,7 +1012,7 @@ public:
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
     using InputT  = detail::it_value_t<InputIteratorT>;
     using init_t  = InputT;
-    using op_t    = ::cuda::minimum<InputT>;
+    using op_t    = ::cuda::minimum<>;
     using AccumT  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_t>;
 
     static_assert(::cuda::std::numeric_limits<init_t>::is_specialized,
@@ -1713,7 +1713,7 @@ public:
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
     using InputT  = cub::detail::it_value_t<InputIteratorT>;
     using init_t  = InputT;
-    using op_t    = ::cuda::maximum<InputT>;
+    using op_t    = ::cuda::maximum<>;
     using AccumT  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_t>;
 
     static_assert(::cuda::std::numeric_limits<init_t>::is_specialized,
