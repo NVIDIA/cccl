@@ -95,7 +95,7 @@ public:
 #if _CCCL_CTK_BELOW(12, 4)
     _CCCL_ASSERT(scope != place_partition_scope::green_context, "Green contexts unsupported.");
 #endif // _CCCL_CTK_BELOW(12, 4)
-    compute_subplaces(handle, place, scope);
+    compute_subplaces(handle, mv(place), scope);
   }
 
   /** @brief Partition an execution place into a vector of subplaces (no async handle).
@@ -108,7 +108,7 @@ public:
 #if _CCCL_CTK_BELOW(12, 4)
     _CCCL_ASSERT(scope != place_partition_scope::green_context, "Green contexts need an async resource handle.");
 #endif // _CCCL_CTK_BELOW(12, 4)
-    compute_subplaces_no_handle(place, scope);
+    compute_subplaces_no_handle(mv(place), scope);
   }
 
   /** @brief Partition a vector of execution places into a single vector of subplaces (with async handle).
@@ -131,7 +131,7 @@ public:
    * @param grid Input execution place grid to partition
    * @param scope Partitioning granularity
    */
-  place_partition(async_resources_handle& handle, exec_place grid, place_partition_scope scope)
+  place_partition(async_resources_handle& handle, const exec_place& grid, place_partition_scope scope)
   {
     ::std::vector<::std::shared_ptr<exec_place>> places;
     places.reserve(grid.size());
@@ -224,7 +224,7 @@ private:
     // Handle multi-element grids by recursively partitioning
     if (place.size() > 1 && scope == place_partition_scope::cuda_stream)
     {
-      for (auto& device_p : place_partition(place, handle, place_partition_scope::cuda_device))
+      for (auto& device_p : place_partition(mv(place), handle, place_partition_scope::cuda_device))
       {
         auto device_p_places = place_partition(device_p, handle, place_partition_scope::cuda_stream).sub_places;
         sub_places.insert(sub_places.end(), device_p_places.begin(), device_p_places.end());
@@ -240,7 +240,7 @@ private:
       if (!scalar_place.is_device())
       {
         // Host or other non-device place - no streams to partition into
-        sub_places.push_back(place);
+        sub_places.push_back(mv(place));
         return;
       }
       auto& pool = scalar_place.get_stream_pool(true);
@@ -257,7 +257,7 @@ private:
     if (place.size() > 1 && scope == place_partition_scope::green_context)
     {
       // Recursively partition grid into devices, then into green contexts
-      for (auto& device_p : place_partition(place, handle, place_partition_scope::cuda_device))
+      for (auto& device_p : place_partition(mv(place), handle, place_partition_scope::cuda_device))
       {
         auto device_p_places = place_partition(device_p, handle, place_partition_scope::green_context).sub_places;
         sub_places.insert(sub_places.end(), device_p_places.begin(), device_p_places.end());
@@ -271,7 +271,7 @@ private:
       exec_place scalar_place = place.is_device() ? place : place.get_place(0);
       if (!scalar_place.is_device())
       {
-        sub_places.push_back(place);
+        sub_places.push_back(mv(place));
         return;
       }
       int dev_id = device_ordinal(scalar_place.affine_data_place());
@@ -291,7 +291,7 @@ private:
 #endif
 
     // If the scope requires no handle
-    compute_subplaces_no_handle(place, scope);
+    compute_subplaces_no_handle(mv(place), scope);
   }
 
   /** @brief Compute the subplaces of a place at the specified granularity (scope) into the sub_places vector */
@@ -315,7 +315,7 @@ private:
       else if (place.is_device())
       {
         // Scalar device place
-        sub_places.push_back(place);
+        sub_places.push_back(mv(place));
       }
       else
       {

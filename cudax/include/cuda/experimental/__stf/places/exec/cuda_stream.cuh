@@ -43,19 +43,19 @@ public:
 
   ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
-    EXPECT(idx == 0, "Index out of bounds for cuda_stream exec_place");
+    _CCCL_ASSERT(idx == 0, "Index out of bounds for cuda_stream exec_place");
     return shared_from_this();
   }
 
   exec_place activate(size_t idx) const override
   {
-    EXPECT(idx == 0, "Index out of bounds for cuda_stream exec_place");
+    _CCCL_ASSERT(idx == 0, "Index out of bounds for cuda_stream exec_place");
     return exec_place::device(dstream_.dev_id).get_impl()->activate(0);
   }
 
   void deactivate(const exec_place& prev, size_t idx = 0) const override
   {
-    EXPECT(idx == 0, "Index out of bounds for cuda_stream exec_place");
+    _CCCL_ASSERT(idx == 0, "Index out of bounds for cuda_stream exec_place");
     exec_place::device(dstream_.dev_id).get_impl()->deactivate(prev, 0);
   }
 
@@ -97,12 +97,12 @@ private:
 inline exec_place exec_place::cuda_stream(cudaStream_t stream)
 {
   int devid = get_device_from_stream(stream);
-  return exec_place(
-    ::std::make_shared<exec_place_cuda_stream_impl>(decorated_stream(stream, get_stream_id(stream), devid)));
+  return exec_place{
+    ::std::make_shared<exec_place_cuda_stream_impl>(decorated_stream(stream, get_stream_id(stream), devid))};
 }
 
 inline exec_place exec_place::cuda_stream(const decorated_stream& dstream)
 {
-  return exec_place(::std::make_shared<exec_place_cuda_stream_impl>(dstream));
+  return exec_place{::std::make_shared<exec_place_cuda_stream_impl>(dstream)};
 }
 } // end namespace cuda::experimental::stf
