@@ -979,11 +979,14 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_LOAD_VECTORIZE)
     {
-      // FIXME(bgruber): we should test for contiguous iterator here
-      if constexpr (::cuda::std::is_pointer_v<RandomAccessIterator>)
+      if constexpr (detail::is_CacheModifiedInputIterator<RandomAccessIterator>)
       {
-        InternalLoadDirectBlockedVectorized<detail::cache_modifier_from_iterator<RandomAccessIterator>>(
-          linear_tid, block_src_it, dst_items);
+        InternalLoadDirectBlockedVectorized<RandomAccessIterator::__modifier>(linear_tid, block_src_it.ptr, dst_items);
+      }
+      // FIXME(bgruber): we should test for contiguous iterator here
+      else if constexpr (::cuda::std::is_pointer_v<RandomAccessIterator>)
+      {
+        InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, block_src_it, dst_items);
       }
       else
       {
