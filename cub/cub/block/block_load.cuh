@@ -823,19 +823,19 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockLoadAlgorithm algo)
 //! @tparam T
 //!   The data type to read into (which must be convertible from the input iterator's value type).
 //!
-//! @tparam BLOCK_DIM_X
+//! @tparam BlockDimX
 //!   The thread block length in threads along the X dimension
 //!
 //! @tparam ItemsPerThread
 //!   The number of consecutive items partitioned onto each thread.
 //!
-//! @tparam ALGORITHM
+//! @tparam Algorithm
 //!   **[optional]** cub::BlockLoadAlgorithm tuning policy. default: ``cub::BLOCK_LOAD_DIRECT``.
 //!
-//! @tparam BLOCK_DIM_Y
+//! @tparam BlockDimY
 //!   **[optional]** The thread block length in threads along the Y dimension (default: 1)
 //!
-//! @tparam BLOCK_DIM_Z
+//! @tparam BlockDimZ
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
 template <typename T,

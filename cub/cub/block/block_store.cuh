@@ -654,7 +654,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
 //! @tparam ItemsPerThread
 //!   The number of consecutive items partitioned onto each thread.
 //!
-//! @tparam ALGORITHM
+//! @tparam Algorithm
 //!   **[optional]** cub::BlockStoreAlgorithm tuning policy enumeration (default: cub::BLOCK_STORE_DIRECT)
 //!
 //! @tparam BlockDimY
