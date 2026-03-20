@@ -218,6 +218,13 @@ public:
 
 namespace detail
 {
+template <typename Iterator>
+inline constexpr CacheLoadModifier cache_modifier_from_iterator = LOAD_DEFAULT;
+
+template <CacheLoadModifier MODIFIER, typename ValueType, typename OffsetT>
+inline constexpr CacheLoadModifier
+  cache_modifier_from_iterator<CacheModifiedInputIterator<MODIFIER, ValueType, OffsetT>> = MODIFIER;
+
 template <CacheLoadModifier LoadModifier, typename Iterator>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto try_make_cache_modified_iterator(Iterator it)
 {
