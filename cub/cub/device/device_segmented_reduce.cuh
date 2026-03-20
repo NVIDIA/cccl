@@ -613,8 +613,8 @@ public:
   //! @rst
   //! Computes a device-wide segmented sum using the addition (``+``) operator.
   //!
-  //! .. versionadded:: 3.4.0
-  //!    First appears in CUDA Toolkit 13.4.
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``0`` as the initial value of the reduction for each segment.
   //! - When input a contiguous sequence of segments, a single sequence
@@ -690,8 +690,10 @@ public:
             typename OutputIteratorT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
+            typename      = ::cuda::std::void_t<typename ::cuda::std::iterator_traits<BeginOffsetIteratorT>::value_type,
+                                                typename ::cuda::std::iterator_traits<EndOffsetIteratorT>::value_type>,
             typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  CUB_RUNTIME_FUNCTION static cudaError_t
   Sum(InputIteratorT d_in,
       OutputIteratorT d_out,
       ::cuda::std::int64_t num_segments,
