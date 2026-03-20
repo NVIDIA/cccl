@@ -139,6 +139,8 @@ class _BinarySearch:
         num_values: int | None = None,
         stream=None,
     ) -> None:
+        assert num_items is not None, "num_items must be provided"
+        assert num_values is not None, "num_values must be provided"
         self(d_data, d_values, d_out, comp, num_items, num_values, stream)
 
 

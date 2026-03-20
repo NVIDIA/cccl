@@ -172,37 +172,16 @@ class _Scan:
         )
         return temp_storage_bytes
 
-    def get_temp_storage_bytes(
-        self,
-        d_in,
-        d_out,
-        num_items: int,
-        init_value: np.ndarray | DeviceArrayLike | GpuStruct | None = None,
-        op: Callable | OpAdapter | None = None,
-        stream=None,
-    ) -> int:
-        if op is None:
-            op = self._op
-        if init_value is None:
-            init_value = self._init_value
-        return self(None, d_in, d_out, op, num_items, init_value, stream)
 
-    def compute(
-        self,
-        temp_storage,
-        d_in,
-        d_out,
-        num_items: int,
-        init_value: np.ndarray | DeviceArrayLike | GpuStruct | None = None,
-        op: Callable | OpAdapter | None = None,
-        stream=None,
-    ) -> None:
-        if op is None:
-            op = self._op
-        if init_value is None:
-            init_value = self._init_value
-        self(temp_storage, d_in, d_out, op, num_items, init_value, stream)
+    def get_temp_storage_bytes(self, d_in, d_out, num_items, init_value=None, op=None, stream=None) -> int:
+        resolved_op = self._op if op is None else op
+        resolved_init = self._init_value if init_value is None else init_value
+        return self(None, d_in, d_out, resolved_op, num_items, resolved_init, stream)
 
+    def compute(self, temp_storage, d_in, d_out, num_items, init_value=None, op=None, stream=None) -> None:
+        resolved_op = self._op if op is None else op
+        resolved_init = self._init_value if init_value is None else init_value
+        self(temp_storage, d_in, d_out, resolved_op, num_items, resolved_init, stream)
 
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
