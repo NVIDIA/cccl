@@ -64,6 +64,7 @@ struct benchmark_sequential_op_t
     for (int i = 0; i < Batches; ++i)
     {
       // This is somewhat of an unfair comparison since all results are returned by lane 0
+      // while they are distributed among threads for WarpReduceBatched.
       thread_data[i] = warp_reduce.Reduce(thread_data[i], op_t{});
     }
     return thread_data;
@@ -93,7 +94,7 @@ launch_bounds_mode_t parse_launch_bounds_mode(nvbench::state& state)
   }
 }
 
-using batches_list              = nvbench::enum_type_list<8, 15, 16, 32>;
+using batches_list              = nvbench::enum_type_list<8, 15, 16, 32, 64>;
 using logical_warp_threads_list = nvbench::enum_type_list<8, 16, 32>;
 
 /**
@@ -104,10 +105,11 @@ void warp_reduce_batched(nvbench::state& state,
                          nvbench::type_list<T, nvbench::enum_type<Batches>, nvbench::enum_type<LogicalWarpThreads>>)
 {
   constexpr int block_size                = 256;
+  constexpr int grid_size                 = (1 << 28) / block_size;
   constexpr int max_sm_warps              = 48; // For consumer GPUs, datacenter allows 64, but same amount of registers
   constexpr int full_bounds_max_sm_blocks = (max_sm_warps * 32) / block_size;
-  constexpr int unroll_factor = cuda::ceil_div(128, cuda::next_power_of_two(Batches)); // Balance compile time and
-                                                                                       // performance
+  constexpr int unroll_factor = cuda::ceil_div(64, cuda::next_power_of_two(Batches)); // Balance compile time and
+                                                                                      // performance
   const auto launch_bounds_mode = parse_launch_bounds_mode(state);
   const auto& kernel =
     launch_bounds_mode == launch_bounds_mode_t::full
@@ -121,32 +123,12 @@ void warp_reduce_batched(nvbench::state& state,
                          benchmark_batched_op_t<LogicalWarpThreads>,
                          cuda::std::array<T, Batches>>;
 
-  const int num_SMs = state.get_device().value().get_number_of_sms();
-
-  int max_blocks_per_SM = 0;
-  if (launch_bounds_mode == launch_bounds_mode_t::full)
-  {
-    max_blocks_per_SM = full_bounds_max_sm_blocks;
-  }
-  else
-  {
-    const int device = state.get_device().value().get_id();
-    NVBENCH_CUDA_CALL_NOEXCEPT(
-      cudaOccupancyMaxActiveBlocksPerMultiprocessor(&max_blocks_per_SM, kernel, block_size, 0));
-  }
-
-  const int grid_size = max_blocks_per_SM * num_SMs;
-
   auto wspro_stages = 0;
   for (int stride_inter_reduce = 2; stride_inter_reduce <= LogicalWarpThreads; stride_inter_reduce *= 2)
   {
     wspro_stages += cuda::ceil_div(Batches, stride_inter_reduce);
   }
-
-  // Add metadata
-  state.add_element_count(grid_size * block_size * unroll_factor * Batches);
   state.add_summary("Stages").set_int64("value", wspro_stages);
-  state.add_summary("Blocks").set_int64("value", grid_size);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launcher) {
     kernel<<<grid_size, block_size, 0, launcher.get_stream()>>>(benchmark_batched_op_t<LogicalWarpThreads>{});
@@ -166,10 +148,11 @@ void warp_reduce_sequential(nvbench::state& state,
                             nvbench::type_list<T, nvbench::enum_type<Batches>, nvbench::enum_type<LogicalWarpThreads>>)
 {
   constexpr int block_size                = 256;
+  constexpr int grid_size                 = (1 << 28) / block_size;
   constexpr int max_sm_warps              = 48; // For consumer GPUs, datacenter allows 64, but same amount of registers
   constexpr int full_bounds_max_sm_blocks = (max_sm_warps * 32) / block_size;
-  constexpr int unroll_factor = cuda::ceil_div(128, cuda::next_power_of_two(Batches)); // Balance compile time and
-                                                                                       // performance
+  constexpr int unroll_factor = cuda::ceil_div(64, cuda::next_power_of_two(Batches)); // Balance compile time and
+                                                                                      // performance
   const auto launch_bounds_mode = parse_launch_bounds_mode(state);
   const auto& kernel =
     launch_bounds_mode == launch_bounds_mode_t::full
@@ -183,26 +166,8 @@ void warp_reduce_sequential(nvbench::state& state,
                          benchmark_sequential_op_t<LogicalWarpThreads>,
                          cuda::std::array<T, Batches>>;
 
-  const int num_SMs = state.get_device().value().get_number_of_sms();
-
-  int max_blocks_per_SM = 0;
-  if (launch_bounds_mode == launch_bounds_mode_t::full)
-  {
-    max_blocks_per_SM = full_bounds_max_sm_blocks;
-  }
-  else
-  {
-    const int device = state.get_device().value().get_id();
-    NVBENCH_CUDA_CALL_NOEXCEPT(
-      cudaOccupancyMaxActiveBlocksPerMultiprocessor(&max_blocks_per_SM, kernel, block_size, 0));
-  }
-
-  const int grid_size          = max_blocks_per_SM * num_SMs;
   const auto sequential_stages = Batches * cuda::ilog2(LogicalWarpThreads);
-
-  state.add_element_count(grid_size * block_size * unroll_factor * Batches);
   state.add_summary("Stages").set_int64("value", sequential_stages);
-  state.add_summary("Blocks").set_int64("value", grid_size);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launcher) {
     kernel<<<grid_size, block_size, 0, launcher.get_stream()>>>(benchmark_sequential_op_t<LogicalWarpThreads>{});
@@ -213,3 +178,64 @@ NVBENCH_BENCH_TYPES(warp_reduce_sequential, NVBENCH_TYPE_AXES(value_types, batch
   .set_name("sequential")
   .set_type_axes_names({"T{ct}", "Batches", "LogicalWarpThreads"})
   .add_string_axis("LaunchBoundsMode", {"partial", "full"});
+
+/**
+ * @brief Run batched warp reduction latency benchmark
+ */
+template <typename T, nvbench::int32_t Batches, nvbench::int32_t LogicalWarpThreads>
+void warp_reduce_batched_latency(
+  nvbench::state& state, nvbench::type_list<T, nvbench::enum_type<Batches>, nvbench::enum_type<LogicalWarpThreads>>)
+{
+  constexpr int block_size    = 32;
+  constexpr int grid_size     = 1;
+  constexpr int unroll_factor = cuda::ceil_div(128, cuda::next_power_of_two(Batches)); // Balance compile time and
+                                                                                       // performance
+  const auto& kernel =
+    benchmark_kernel<block_size, unroll_factor, benchmark_batched_op_t<LogicalWarpThreads>, cuda::std::array<T, Batches>>;
+
+  auto wspro_stages = 0;
+  for (int stride_inter_reduce = 2; stride_inter_reduce <= LogicalWarpThreads; stride_inter_reduce *= 2)
+  {
+    wspro_stages += cuda::ceil_div(Batches, stride_inter_reduce);
+  }
+  state.add_summary("Stages").set_int64("value", wspro_stages);
+
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launcher) {
+    kernel<<<grid_size, block_size, 0, launcher.get_stream()>>>(benchmark_batched_op_t<LogicalWarpThreads>{});
+  });
+}
+
+NVBENCH_BENCH_TYPES(warp_reduce_batched_latency,
+                    NVBENCH_TYPE_AXES(value_types, batches_list, logical_warp_threads_list))
+  .set_name("base-latency")
+  .set_type_axes_names({"T{ct}", "Batches", "LogicalWarpThreads"});
+
+/**
+ * @brief Run sequential warp reduction latency benchmark (baseline)
+ */
+template <typename T, nvbench::int32_t Batches, nvbench::int32_t LogicalWarpThreads>
+void warp_reduce_sequential_latency(
+  nvbench::state& state, nvbench::type_list<T, nvbench::enum_type<Batches>, nvbench::enum_type<LogicalWarpThreads>>)
+{
+  constexpr int block_size    = 32;
+  constexpr int grid_size     = 1;
+  constexpr int unroll_factor = cuda::ceil_div(128, cuda::next_power_of_two(Batches)); // Balance compile time and
+                                                                                       // performance
+  const auto& kernel =
+    benchmark_kernel<block_size,
+                     unroll_factor,
+                     benchmark_sequential_op_t<LogicalWarpThreads>,
+                     cuda::std::array<T, Batches>>;
+
+  const auto sequential_stages = Batches * cuda::ilog2(LogicalWarpThreads);
+  state.add_summary("Stages").set_int64("value", sequential_stages);
+
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launcher) {
+    kernel<<<grid_size, block_size, 0, launcher.get_stream()>>>(benchmark_sequential_op_t<LogicalWarpThreads>{});
+  });
+}
+
+NVBENCH_BENCH_TYPES(warp_reduce_sequential_latency,
+                    NVBENCH_TYPE_AXES(value_types, batches_list, logical_warp_threads_list))
+  .set_name("sequential-latency")
+  .set_type_axes_names({"T{ct}", "Batches", "LogicalWarpThreads"});
