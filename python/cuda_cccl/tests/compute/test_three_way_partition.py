@@ -65,6 +65,56 @@ def _host_three_way_partition(h_in: np.ndarray, less_than_op, greater_equal_op):
     )
 
 
+def three_way_partition_multi_phase(
+    d_in,
+    d_first_part_out,
+    d_second_part_out,
+    d_unselected_out,
+    d_num_selected_out,
+    select_first_part_op,
+    select_second_part_op,
+    num_items: int,
+    stream=None,
+):
+    partitioner = cuda.compute.make_three_way_partition(
+        d_in,
+        d_first_part_out,
+        d_second_part_out,
+        d_unselected_out,
+        d_num_selected_out,
+        select_first_part_op,
+        select_second_part_op,
+    )
+    temp_storage_bytes = int(
+        partitioner.get_temp_storage_bytes(
+            d_in,
+            d_first_part_out,
+            d_second_part_out,
+            d_unselected_out,
+            d_num_selected_out,
+            num_items,
+            stream=stream,
+        )
+    )
+
+    d_temp_storage = (
+        None
+        if temp_storage_bytes == 0
+        else cp.empty(temp_storage_bytes, dtype=np.uint8)
+    )
+
+    partitioner.compute(
+        d_temp_storage,
+        d_in,
+        d_first_part_out,
+        d_second_part_out,
+        d_unselected_out,
+        d_num_selected_out,
+        num_items,
+        stream=stream,
+    )
+
+
 @pytest.mark.parametrize("dtype,num_items", three_way_partition_params)
 def test_three_way_partition_basic(dtype, num_items, monkeypatch):
     # NOTE: the SASS check failure is seen only with NVRTC 13.1:
@@ -90,7 +140,7 @@ def test_three_way_partition_basic(dtype, num_items, monkeypatch):
     d_second = cp.empty_like(d_in)
     d_unselected = cp.empty_like(d_in)
     d_num_selected = cp.empty(2, dtype=np.int32)
-    cuda.compute.three_way_partition(
+    three_way_partition_multi_phase(
         d_in,
         d_first,
         d_second,
@@ -132,7 +182,7 @@ def test_three_way_partition_empty():
     def greater_equal_op(x):
         return x >= 42
 
-    cuda.compute.three_way_partition(
+    three_way_partition_multi_phase(
         d_in,
         d_first,
         d_second,
@@ -169,7 +219,7 @@ def test_three_way_partition_with_iterators():
     d_unselected = cp.empty_like(d_in)
     d_num_selected = cp.empty(2, dtype=np.uint32)
 
-    cuda.compute.three_way_partition(
+    three_way_partition_multi_phase(
         in_it,
         d_first,
         d_second,
@@ -231,7 +281,7 @@ def test_three_way_partition_struct_type():
     d_unselected = cp.empty_like(d_in)
     d_num_selected = cp.empty(2, dtype=np.uint64)
 
-    cuda.compute.three_way_partition(
+    three_way_partition_multi_phase(
         d_in,
         d_first,
         d_second,
@@ -277,7 +327,7 @@ def test_three_way_partition_with_stream(cuda_stream):
         d_unselected = cp.empty_like(d_in)
         d_num_selected = cp.empty(2, dtype=np.int64)
 
-    cuda.compute.three_way_partition(
+    three_way_partition_multi_phase(
         d_in,
         d_first,
         d_second,
@@ -319,7 +369,7 @@ def test_three_way_partition_no_selection():
     d_unselected = cp.empty_like(d_in)
     d_num_selected = cp.empty(2, dtype=np.int64)
 
-    cuda.compute.three_way_partition(
+    three_way_partition_multi_phase(
         d_in,
         d_first,
         d_second,
@@ -356,7 +406,7 @@ def test_three_way_partition_same_predicate():
     d_unselected = cp.empty_like(d_in)
     d_num_selected = cp.empty(2, dtype=np.int64)
 
-    cuda.compute.three_way_partition(
+    three_way_partition_multi_phase(
         d_in,
         d_first,
         d_second,
@@ -389,7 +439,7 @@ def test_three_way_partition_all_selected_first():
     d_unselected = cp.empty_like(d_in)
     d_num_selected = cp.empty(2, dtype=np.int64)
 
-    cuda.compute.three_way_partition(
+    three_way_partition_multi_phase(
         d_in,
         d_first,
         d_second,

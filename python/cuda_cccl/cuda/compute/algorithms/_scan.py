@@ -46,6 +46,8 @@ class _Scan:
         "d_in_cccl",
         "d_out_cccl",
         "init_value_cccl",
+        "_init_value",
+        "_op",
         "op_cccl",
         "device_scan_fn",
         "init_kind",
@@ -62,6 +64,8 @@ class _Scan:
     ):
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
+        self._init_value = init_value
+        self._op = op
 
         self.init_kind = get_init_kind(init_value)
 
@@ -167,6 +171,37 @@ class _Scan:
             stream_handle,
         )
         return temp_storage_bytes
+
+    def get_temp_storage_bytes(
+        self,
+        d_in,
+        d_out,
+        num_items: int,
+        init_value: np.ndarray | DeviceArrayLike | GpuStruct | None = None,
+        op: Callable | OpAdapter | None = None,
+        stream=None,
+    ) -> int:
+        if op is None:
+            op = self._op
+        if init_value is None:
+            init_value = self._init_value
+        return self(None, d_in, d_out, op, num_items, init_value, stream)
+
+    def compute(
+        self,
+        temp_storage,
+        d_in,
+        d_out,
+        num_items: int,
+        init_value: np.ndarray | DeviceArrayLike | GpuStruct | None = None,
+        op: Callable | OpAdapter | None = None,
+        stream=None,
+    ) -> None:
+        if op is None:
+            op = self._op
+        if init_value is None:
+            init_value = self._init_value
+        self(temp_storage, d_in, d_out, op, num_items, init_value, stream)
 
 
 # TODO Figure out `sum` without operator and initial value

@@ -16,7 +16,6 @@ DTYPE_LIST = [
     np.float64,
 ]
 
-
 def random_sorted_array(size, dtype, max_value=1000):
     rng = np.random.default_rng()
     if np.isdtype(dtype, "integral"):
@@ -51,7 +50,25 @@ def test_lower_bound_basic(dtype, num_items, num_values):
     d_values = cp.asarray(h_values)
     d_out = cp.empty(num_values, dtype=np.uintp)
 
-    cuda.compute.lower_bound(d_data, d_values, d_out, num_items, num_values)
+    searcher = cuda.compute.make_lower_bound(d_data, d_values, d_out)
+    temp_storage_bytes = searcher.get_temp_storage_bytes(
+        d_data,
+        d_values,
+        d_out,
+        comp=None,
+        num_items=num_items,
+        num_values=num_values,
+    )
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    searcher.compute(
+        d_temp_storage,
+        d_data,
+        d_values,
+        d_out,
+        comp=None,
+        num_items=num_items,
+        num_values=num_values,
+    )
 
     expected = np.searchsorted(h_data, h_values, side="left").astype(np.uintp)
     got = cp.asnumpy(d_out)
@@ -70,7 +87,25 @@ def test_upper_bound_basic(dtype, num_items, num_values):
     d_values = cp.asarray(h_values)
     d_out = cp.empty(num_values, dtype=np.uintp)
 
-    cuda.compute.upper_bound(d_data, d_values, d_out, num_items, num_values)
+    searcher = cuda.compute.make_upper_bound(d_data, d_values, d_out)
+    temp_storage_bytes = searcher.get_temp_storage_bytes(
+        d_data,
+        d_values,
+        d_out,
+        comp=None,
+        num_items=num_items,
+        num_values=num_values,
+    )
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    searcher.compute(
+        d_temp_storage,
+        d_data,
+        d_values,
+        d_out,
+        comp=None,
+        num_items=num_items,
+        num_values=num_values,
+    )
 
     expected = np.searchsorted(h_data, h_values, side="right").astype(np.uintp)
     got = cp.asnumpy(d_out)
@@ -96,12 +131,48 @@ def test_binary_search_with_duplicates(dtype):
     d_values = cp.asarray(h_values)
     d_out = cp.empty(len(h_values), dtype=np.uintp)
 
-    cuda.compute.lower_bound(d_data, d_values, d_out, len(h_data), len(h_values))
+    lower_searcher = cuda.compute.make_lower_bound(d_data, d_values, d_out)
+    lower_temp_storage_bytes = lower_searcher.get_temp_storage_bytes(
+        d_data,
+        d_values,
+        d_out,
+        comp=None,
+        num_items=len(h_data),
+        num_values=len(h_values),
+    )
+    d_lower_temp_storage = cp.empty(lower_temp_storage_bytes, dtype=np.uint8)
+    lower_searcher.compute(
+        d_lower_temp_storage,
+        d_data,
+        d_values,
+        d_out,
+        comp=None,
+        num_items=len(h_data),
+        num_values=len(h_values),
+    )
     expected = np.searchsorted(h_data, h_values, side="left").astype(np.uintp)
     got = cp.asnumpy(d_out)
     assert np.array_equal(got, expected)
 
-    cuda.compute.upper_bound(d_data, d_values, d_out, len(h_data), len(h_values))
+    upper_searcher = cuda.compute.make_upper_bound(d_data, d_values, d_out)
+    upper_temp_storage_bytes = upper_searcher.get_temp_storage_bytes(
+        d_data,
+        d_values,
+        d_out,
+        comp=None,
+        num_items=len(h_data),
+        num_values=len(h_values),
+    )
+    d_upper_temp_storage = cp.empty(upper_temp_storage_bytes, dtype=np.uint8)
+    upper_searcher.compute(
+        d_upper_temp_storage,
+        d_data,
+        d_values,
+        d_out,
+        comp=None,
+        num_items=len(h_data),
+        num_values=len(h_values),
+    )
     expected = np.searchsorted(h_data, h_values, side="right").astype(np.uintp)
     got = cp.asnumpy(d_out)
     assert np.array_equal(got, expected)
@@ -114,7 +185,7 @@ def test_binary_search_requires_unsigned_output():
     d_out = cp.empty(len(d_values), dtype=np.int32)  # signed, should fail
 
     with pytest.raises(TypeError, match="unsigned integer"):
-        cuda.compute.lower_bound(d_data, d_values, d_out, len(d_data), len(d_values))
+        cuda.compute.make_lower_bound(d_data, d_values, d_out)
 
 
 def test_binary_search_requires_pointer_sized_output():
@@ -126,4 +197,4 @@ def test_binary_search_requires_pointer_sized_output():
     )  # unsigned but not pointer-sized (on 64-bit)
 
     with pytest.raises(ValueError, match="pointer-sized"):
-        cuda.compute.lower_bound(d_data, d_values, d_out, len(d_data), len(d_values))
+        cuda.compute.make_lower_bound(d_data, d_values, d_out)

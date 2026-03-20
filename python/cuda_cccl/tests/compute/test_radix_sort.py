@@ -69,17 +69,31 @@ def radix_sort_device(
     end_bit=None,
     stream=None,
 ):
-    # Use the new single-phase API with automatic temp storage allocation
-    cuda.compute.radix_sort(
+    # Use the object multi-step API for explicit temp storage allocation.
+    sorter = cuda.compute.make_radix_sort(
+        d_in_keys, d_out_keys, d_in_values, d_out_values, order
+    )
+    temp_storage_bytes = sorter.get_temp_storage_bytes(
         d_in_keys,
         d_out_keys,
         d_in_values,
         d_out_values,
-        order,
         num_items,
-        begin_bit,
-        end_bit,
-        stream,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        stream=stream,
+    )
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    sorter.compute(
+        d_temp_storage,
+        d_in_keys,
+        d_out_keys,
+        d_in_values,
+        d_out_values,
+        num_items,
+        begin_bit=begin_bit,
+        end_bit=end_bit,
+        stream=stream,
     )
 
 
@@ -432,12 +446,27 @@ def test_radix_sort_large_num_items(dtype):
     d_in_keys = cp.asarray(h_in_keys)
     d_out_keys = cp.empty(num_items, dtype=dtype)
 
-    cuda.compute.radix_sort(
+    sorter = cuda.compute.make_radix_sort(
         d_in_keys,
         d_out_keys,
         None,
         None,
         SortOrder.ASCENDING,
+    )
+    temp_storage_bytes = sorter.get_temp_storage_bytes(
+        d_in_keys,
+        d_out_keys,
+        None,
+        None,
+        num_items,
+    )
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    sorter.compute(
+        d_temp_storage,
+        d_in_keys,
+        d_out_keys,
+        None,
+        None,
         num_items,
     )
 
@@ -491,13 +520,27 @@ def test_radix_sort(monkeypatch):
     d_out_keys = cp.empty_like(d_in_keys)
     d_out_values = cp.empty_like(d_in_values)
 
-    # Call single-phase API directly with num_items parameter
-    cuda.compute.radix_sort(
+    sorter = cuda.compute.make_radix_sort(
         d_in_keys,
         d_out_keys,
         d_in_values,
         d_out_values,
         SortOrder.ASCENDING,
+    )
+    temp_storage_bytes = sorter.get_temp_storage_bytes(
+        d_in_keys,
+        d_out_keys,
+        d_in_values,
+        d_out_values,
+        d_in_keys.size,
+    )
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    sorter.compute(
+        d_temp_storage,
+        d_in_keys,
+        d_out_keys,
+        d_in_values,
+        d_out_values,
         d_in_keys.size,
     )
 
@@ -543,13 +586,27 @@ def test_radix_sort_double_buffer(monkeypatch):
     keys_double_buffer = DoubleBuffer(d_in_keys, d_out_keys)
     values_double_buffer = DoubleBuffer(d_in_values, d_out_values)
 
-    # Call single-phase API directly with num_items parameter
-    cuda.compute.radix_sort(
+    sorter = cuda.compute.make_radix_sort(
         keys_double_buffer,
         None,
         values_double_buffer,
         None,
         SortOrder.ASCENDING,
+    )
+    temp_storage_bytes = sorter.get_temp_storage_bytes(
+        keys_double_buffer,
+        None,
+        values_double_buffer,
+        None,
+        d_in_keys.size,
+    )
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    sorter.compute(
+        d_temp_storage,
+        keys_double_buffer,
+        None,
+        values_double_buffer,
+        None,
         d_in_keys.size,
     )
 

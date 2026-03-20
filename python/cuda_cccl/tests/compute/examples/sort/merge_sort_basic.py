@@ -25,13 +25,32 @@ d_in_keys = cp.asarray(h_in_keys)
 d_in_values = cp.asarray(h_in_values)
 
 # Perform the merge sort.
-cuda.compute.merge_sort(
+sorter = cuda.compute.make_merge_sort(
     d_in_keys,
     d_in_values,
     d_in_keys,
     d_in_values,
     OpKind.LESS,
+)
+temp_storage_bytes = int(
+    sorter.get_temp_storage_bytes(
+        d_in_keys,
+        d_in_values,
+        d_in_keys,
+        d_in_values,
+        d_in_keys.size,
+        op=OpKind.LESS,
+    )
+)
+d_temp_storage = None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+sorter.compute(
+    d_temp_storage,
+    d_in_keys,
+    d_in_values,
+    d_in_keys,
+    d_in_values,
     d_in_keys.size,
+    op=OpKind.LESS,
 )
 
 # Verify the result.

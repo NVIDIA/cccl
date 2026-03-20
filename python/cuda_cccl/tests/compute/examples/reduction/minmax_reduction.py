@@ -48,7 +48,25 @@ d_out = cp.empty(tuple(), dtype=MinMax.dtype)
 h_init = MinMax(np.inf, -np.inf)
 
 # Perform the reduction.
-cuda.compute.reduce_into(tr_it, d_out, minmax_op, nelems, h_init)
+reducer = cuda.compute.make_reduce_into(tr_it, d_out, minmax_op, h_init)
+temp_storage_bytes = int(
+    reducer.get_temp_storage_bytes(
+        tr_it,
+        d_out,
+        nelems,
+        h_init=h_init,
+        op=minmax_op,
+    )
+)
+d_temp_storage = None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+reducer.compute(
+    d_temp_storage,
+    tr_it,
+    d_out,
+    nelems,
+    h_init=h_init,
+    op=minmax_op,
+)
 
 # Verify the result.
 actual = d_out.get()

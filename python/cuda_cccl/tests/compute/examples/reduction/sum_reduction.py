@@ -20,7 +20,25 @@ d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
 d_output = cp.empty(1, dtype=dtype)
 
 # Perform the reduction.
-cuda.compute.reduce_into(d_input, d_output, OpKind.PLUS, len(d_input), h_init)
+reducer = cuda.compute.make_reduce_into(d_input, d_output, OpKind.PLUS, h_init)
+temp_storage_bytes = int(
+    reducer.get_temp_storage_bytes(
+        d_input,
+        d_output,
+        len(d_input),
+        h_init=h_init,
+        op=OpKind.PLUS,
+    )
+)
+d_temp_storage = None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+reducer.compute(
+    d_temp_storage,
+    d_input,
+    d_output,
+    len(d_input),
+    h_init=h_init,
+    op=OpKind.PLUS,
+)
 
 # Verify the result.
 expected_output = 15

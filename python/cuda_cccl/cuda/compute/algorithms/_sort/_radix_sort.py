@@ -136,6 +136,53 @@ class _RadixSort:
 
         return temp_storage_bytes
 
+    def get_temp_storage_bytes(
+        self,
+        d_in_keys: DeviceArrayLike | DoubleBuffer,
+        d_out_keys: DeviceArrayLike | None,
+        d_in_values: DeviceArrayLike | DoubleBuffer | None,
+        d_out_values: DeviceArrayLike | None,
+        num_items: int,
+        begin_bit: int | None = None,
+        end_bit: int | None = None,
+        stream=None,
+    ) -> int:
+        return self(
+            None,
+            d_in_keys,
+            d_out_keys,
+            d_in_values,
+            d_out_values,
+            num_items,
+            begin_bit,
+            end_bit,
+            stream,
+        )
+
+    def compute(
+        self,
+        temp_storage,
+        d_in_keys: DeviceArrayLike | DoubleBuffer,
+        d_out_keys: DeviceArrayLike | None,
+        d_in_values: DeviceArrayLike | DoubleBuffer | None,
+        d_out_values: DeviceArrayLike | None,
+        num_items: int,
+        begin_bit: int | None = None,
+        end_bit: int | None = None,
+        stream=None,
+    ) -> None:
+        self(
+            temp_storage,
+            d_in_keys,
+            d_out_keys,
+            d_in_values,
+            d_out_values,
+            num_items,
+            begin_bit,
+            end_bit,
+            stream,
+        )
+
 
 @cache_with_registered_key_functions
 def make_radix_sort(

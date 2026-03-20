@@ -30,8 +30,8 @@ def greater_than_equal_op(x):
     return x >= 8
 
 
-# Perform the three_way_partition.
-cuda.compute.three_way_partition(
+# Perform the three-way partition using the multi-step object API.
+partitioner = cuda.compute.make_three_way_partition(
     d_input,
     d_first_part,
     d_second_part,
@@ -39,7 +39,30 @@ cuda.compute.three_way_partition(
     d_num_selected,
     less_than_op,
     greater_than_equal_op,
+)
+temp_storage_bytes = int(
+    partitioner.get_temp_storage_bytes(
+        d_input,
+        d_first_part,
+        d_second_part,
+        d_unselected,
+        d_num_selected,
+        len(h_input),
+        select_first_part_op=less_than_op,
+        select_second_part_op=greater_than_equal_op,
+    )
+)
+d_temp_storage = None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+partitioner.compute(
+    d_temp_storage,
+    d_input,
+    d_first_part,
+    d_second_part,
+    d_unselected,
+    d_num_selected,
     len(h_input),
+    select_first_part_op=less_than_op,
+    select_second_part_op=greater_than_equal_op,
 )
 
 # Verify the result.

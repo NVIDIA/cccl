@@ -41,7 +41,25 @@ it_output = TransformOutputIterator(d_output, write_op)
 
 h_init = SumAndCount(0.0, 0)
 
-cuda.compute.inclusive_scan(it_input, it_output, add_op, h_init, len(d_input))
+scanner = cuda.compute.make_inclusive_scan(it_input, it_output, add_op, h_init)
+temp_storage_bytes = int(
+    scanner.get_temp_storage_bytes(
+        it_input,
+        it_output,
+        len(d_input),
+        init_value=h_init,
+        op=add_op,
+    )
+)
+d_temp_storage = None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+scanner.compute(
+    d_temp_storage,
+    it_input,
+    it_output,
+    len(d_input),
+    init_value=h_init,
+    op=add_op,
+)
 
 expected = np.array([1.0, 1.5, 2.0, 2.5, 3.0], dtype=np.float32)
 np.testing.assert_allclose(d_output.get(), expected)

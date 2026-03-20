@@ -41,7 +41,27 @@ h_init = np.asarray([(-1, -1)], dtype=dtype)
 d_output = cp.empty(1, dtype=dtype)
 
 # Perform the reduction.
-cuda.compute.reduce_into(zip_it, d_output, max_by_value, num_items, h_init)
+reducer = cuda.compute.make_reduce_into(zip_it, d_output, max_by_value, h_init)
+temp_storage_bytes = int(
+    reducer.get_temp_storage_bytes(
+        zip_it,
+        d_output,
+        num_items,
+        h_init=h_init,
+        op=max_by_value,
+    )
+)
+d_temp_storage = (
+    None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+)
+reducer.compute(
+    d_temp_storage,
+    zip_it,
+    d_output,
+    num_items,
+    h_init=h_init,
+    op=max_by_value,
+)
 
 result = d_output.get()[0]
 expected_index = 4

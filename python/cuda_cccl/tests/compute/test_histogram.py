@@ -335,24 +335,23 @@ def test_histogram_cache_bug_crosses_256_bin_threshold():
         h_upper_level,
         num_samples,
     )
-    temp_bytes = hist(
-        None,
+    temp_bytes = hist.get_temp_storage_bytes(
         d_samples,
         d_histogram[:num_bins_1],
-        h_num_output_levels,
-        h_lower_level,
-        h_upper_level,
         num_samples,
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
     )
     temp_storage = cp.empty(temp_bytes, dtype=np.uint8)
-    hist(
+    hist.compute(
         temp_storage,
         d_samples,
         d_histogram[:num_bins_1],
-        h_num_output_levels,
-        h_lower_level,
-        h_upper_level,
         num_samples,
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
     )
     cp.cuda.Device().synchronize()
     assert int(d_histogram[:num_bins_1].sum()) == num_samples
@@ -374,24 +373,23 @@ def test_histogram_cache_bug_crosses_256_bin_threshold():
         num_samples,
     )
 
-    temp_bytes2 = hist2(
-        None,
+    temp_bytes2 = hist2.get_temp_storage_bytes(
         d_samples,
         d_histogram[:num_bins_2],
-        h_num_output_levels,
-        h_lower_level,
-        h_upper_level,
         num_samples,
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
     )
     temp_storage2 = cp.empty(temp_bytes2, dtype=np.uint8)
-    hist2(
+    hist2.compute(
         temp_storage2,
         d_samples,
         d_histogram[:num_bins_2],
-        h_num_output_levels,
-        h_lower_level,
-        h_upper_level,
         num_samples,
+        h_num_output_levels=h_num_output_levels,
+        h_lower_level=h_lower_level,
+        h_upper_level=h_upper_level,
     )
     cp.cuda.Device().synchronize()
     assert int(d_histogram[:num_bins_2].sum()) == num_samples

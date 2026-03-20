@@ -13,6 +13,28 @@ from cuda.compute.iterators import (
 )
 
 
+def unary_transform_multi_phase(d_in, d_out, op, num_items: int, stream=None):
+    transformer = cuda.compute.make_unary_transform(d_in, d_out, op)
+    temp_storage_bytes = int(
+        transformer.get_temp_storage_bytes(d_in, d_out, op, num_items, stream=stream)
+    )
+
+    d_temp_storage = (
+        None
+        if temp_storage_bytes == 0
+        else cp.empty(temp_storage_bytes, dtype=np.uint8)
+    )
+
+    transformer.compute(
+        d_temp_storage,
+        d_in,
+        d_out,
+        op,
+        num_items,
+        stream=stream,
+    )
+
+
 def test_shuffle_iterator_bijectivity():
     num_items = 100
     seed = 42
@@ -20,7 +42,7 @@ def test_shuffle_iterator_bijectivity():
     shuffle_it = ShuffleIterator(num_items, seed)
 
     d_output = cp.empty(num_items, dtype=np.int64)
-    cuda.compute.unary_transform(shuffle_it, d_output, lambda x: x, num_items)
+    unary_transform_multi_phase(shuffle_it, d_output, lambda x: x, num_items)
 
     result = d_output.get()
 
@@ -38,8 +60,8 @@ def test_shuffle_iterator_determinism():
     d_output1 = cp.empty(num_items, dtype=np.int64)
     d_output2 = cp.empty(num_items, dtype=np.int64)
 
-    cuda.compute.unary_transform(shuffle_it1, d_output1, lambda x: x, num_items)
-    cuda.compute.unary_transform(shuffle_it2, d_output2, lambda x: x, num_items)
+    unary_transform_multi_phase(shuffle_it1, d_output1, lambda x: x, num_items)
+    unary_transform_multi_phase(shuffle_it2, d_output2, lambda x: x, num_items)
 
     cp.testing.assert_array_equal(d_output1, d_output2)
 
@@ -51,7 +73,7 @@ def test_shuffle_iterator_various_sizes(num_items):
     shuffle_it = ShuffleIterator(num_items, seed)
 
     d_output = cp.empty(num_items, dtype=np.int64)
-    cuda.compute.unary_transform(shuffle_it, d_output, lambda x: x, num_items)
+    unary_transform_multi_phase(shuffle_it, d_output, lambda x: x, num_items)
 
     result = d_output.get()
 
@@ -69,7 +91,7 @@ def test_shuffle_iterator_with_permutation_iterator():
     perm_it = PermutationIterator(d_values, shuffle_it)
 
     d_output = cp.empty(num_items, dtype=np.int32)
-    cuda.compute.unary_transform(perm_it, d_output, lambda x: x, num_items)
+    unary_transform_multi_phase(perm_it, d_output, lambda x: x, num_items)
 
     result = d_output.get()
 

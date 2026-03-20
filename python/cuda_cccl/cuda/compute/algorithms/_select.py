@@ -28,7 +28,13 @@ extern "C" __device__ void always_false(void*, void* result) {{
 
 
 class _Select:
-    __slots__ = ["partitioner", "discard_second", "discard_unselected", "false_op"]
+    __slots__ = [
+        "partitioner",
+        "discard_second",
+        "discard_unselected",
+        "false_op",
+        "_cond",
+    ]
 
     def __init__(
         self,
@@ -55,6 +61,7 @@ class _Select:
             cond,  # select_first_part_op - user's select condition
             self.false_op,  # select_second_part_op - always false
         )
+        self._cond = cond
 
     def __call__(
         self,
@@ -66,6 +73,8 @@ class _Select:
         num_items: int,
         stream=None,
     ):
+        if cond is None:
+            cond = self._cond
         return self.partitioner(
             temp_storage,
             d_in,
@@ -78,6 +87,29 @@ class _Select:
             num_items,
             stream,
         )
+
+    def get_temp_storage_bytes(
+        self,
+        d_in,
+        d_out,
+        d_num_selected_out,
+        num_items: int,
+        cond=None,
+        stream=None,
+    ) -> int:
+        return self(None, d_in, d_out, d_num_selected_out, cond, num_items, stream)
+
+    def compute(
+        self,
+        temp_storage,
+        d_in,
+        d_out,
+        d_num_selected_out,
+        num_items: int,
+        cond=None,
+        stream=None,
+    ) -> None:
+        self(temp_storage, d_in, d_out, d_num_selected_out, cond, num_items, stream)
 
 
 @cache_with_registered_key_functions

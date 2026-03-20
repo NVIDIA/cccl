@@ -33,12 +33,29 @@ keys_double_buffer = DoubleBuffer(d_in_keys, d_out_keys)
 values_double_buffer = DoubleBuffer(d_in_values, d_out_values)
 
 # Perform the radix sort.
-cuda.compute.radix_sort(
+sorter = cuda.compute.make_radix_sort(
     keys_double_buffer,
     None,
     values_double_buffer,
     None,
     SortOrder.ASCENDING,
+)
+temp_storage_bytes = int(
+    sorter.get_temp_storage_bytes(
+        keys_double_buffer,
+        None,
+        values_double_buffer,
+        None,
+        d_in_keys.size,
+    )
+)
+d_temp_storage = None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+sorter.compute(
+    d_temp_storage,
+    keys_double_buffer,
+    None,
+    values_double_buffer,
+    None,
     d_in_keys.size,
 )
 

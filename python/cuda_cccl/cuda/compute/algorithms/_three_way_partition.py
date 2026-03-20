@@ -27,6 +27,8 @@ class _ThreeWayPartition:
         "d_num_selected_out_cccl",
         "select_first_part_op_cccl",
         "select_second_part_op_cccl",
+        "_select_first_part_op",
+        "_select_second_part_op",
     ]
 
     def __init__(
@@ -53,6 +55,8 @@ class _ThreeWayPartition:
         self.select_second_part_op_cccl = select_second_part_op.compile(
             (value_type,), types.uint8
         )
+        self._select_first_part_op = select_first_part_op
+        self._select_second_part_op = select_second_part_op
 
         self.build_result = call_build(
             _bindings.DeviceThreeWayPartitionBuildResult,
@@ -112,6 +116,65 @@ class _ThreeWayPartition:
             stream_handle,
         )
         return temp_storage_bytes
+
+    def get_temp_storage_bytes(
+        self,
+        d_in,
+        d_first_part_out,
+        d_second_part_out,
+        d_unselected_out,
+        d_num_selected_out,
+        num_items: int,
+        select_first_part_op: Callable | OpAdapter | None = None,
+        select_second_part_op: Callable | OpAdapter | None = None,
+        stream=None,
+    ) -> int:
+        if select_first_part_op is None:
+            select_first_part_op = self._select_first_part_op
+        if select_second_part_op is None:
+            select_second_part_op = self._select_second_part_op
+        return self(
+            None,
+            d_in,
+            d_first_part_out,
+            d_second_part_out,
+            d_unselected_out,
+            d_num_selected_out,
+            select_first_part_op,
+            select_second_part_op,
+            num_items,
+            stream,
+        )
+
+    def compute(
+        self,
+        temp_storage,
+        d_in,
+        d_first_part_out,
+        d_second_part_out,
+        d_unselected_out,
+        d_num_selected_out,
+        num_items: int,
+        select_first_part_op: Callable | OpAdapter | None = None,
+        select_second_part_op: Callable | OpAdapter | None = None,
+        stream=None,
+    ) -> None:
+        if select_first_part_op is None:
+            select_first_part_op = self._select_first_part_op
+        if select_second_part_op is None:
+            select_second_part_op = self._select_second_part_op
+        self(
+            temp_storage,
+            d_in,
+            d_first_part_out,
+            d_second_part_out,
+            d_unselected_out,
+            d_num_selected_out,
+            select_first_part_op,
+            select_second_part_op,
+            num_items,
+            stream,
+        )
 
 
 @cache_with_registered_key_functions

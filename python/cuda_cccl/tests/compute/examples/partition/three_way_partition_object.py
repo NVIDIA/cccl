@@ -42,30 +42,29 @@ partitioner = cuda.compute.make_three_way_partition(
 )
 
 # Get the temporary storage size.
-temp_storage_size = partitioner(
-    None,
+temp_storage_size = partitioner.get_temp_storage_bytes(
     d_input,
     d_first_part,
     d_second_part,
     d_unselected,
     d_num_selected,
-    less_than_op,
-    greater_than_equal_op,
     len(h_input),
+    select_first_part_op=less_than_op,
+    select_second_part_op=greater_than_equal_op,
 )
 d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
 # Perform the three_way_partition.
-partitioner(
+partitioner.compute(
     d_temp_storage,
     d_input,
     d_first_part,
     d_second_part,
     d_unselected,
     d_num_selected,
-    less_than_op,
-    greater_than_equal_op,
     len(h_input),
+    select_first_part_op=less_than_op,
+    select_second_part_op=greater_than_equal_op,
 )
 
 # Verify the result.

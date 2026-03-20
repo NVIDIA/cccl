@@ -103,6 +103,62 @@ def host_segmented_sort(
     return keys, vals
 
 
+def segmented_sort_multi_phase(
+    d_in_keys,
+    d_out_keys,
+    d_in_values,
+    d_out_values,
+    num_items: int,
+    num_segments: int,
+    start_offsets_in,
+    end_offsets_in,
+    order: cuda.compute.SortOrder,
+    stream=None,
+):
+    sorter = cuda.compute.make_segmented_sort(
+        d_in_keys,
+        d_out_keys,
+        d_in_values,
+        d_out_values,
+        start_offsets_in,
+        end_offsets_in,
+        order,
+    )
+
+    temp_storage_bytes = int(
+        sorter.get_temp_storage_bytes(
+            d_in_keys,
+            d_out_keys,
+            d_in_values,
+            d_out_values,
+            num_items,
+            num_segments,
+            start_offsets_in,
+            end_offsets_in,
+            stream=stream,
+        )
+    )
+
+    d_temp_storage = (
+        None
+        if temp_storage_bytes == 0
+        else cp.empty(temp_storage_bytes, dtype=np.uint8)
+    )
+
+    sorter.compute(
+        d_temp_storage,
+        d_in_keys,
+        d_out_keys,
+        d_in_values,
+        d_out_values,
+        num_items,
+        num_segments,
+        start_offsets_in,
+        end_offsets_in,
+        stream=stream,
+    )
+
+
 @pytest.mark.parametrize("dtype, num_segments, segment_size", DTYPE_SEGMENT_PARAMS)
 def test_segmented_sort_keys(dtype, num_segments, segment_size, monkeypatch):
     # Disable SASS verification only for this test when dtype is int64
@@ -121,7 +177,7 @@ def test_segmented_sort_keys(dtype, num_segments, segment_size, monkeypatch):
     d_in_keys = numba.cuda.to_device(h_in_keys)
     d_out_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
 
-    cuda.compute.segmented_sort(
+    segmented_sort_multi_phase(
         d_in_keys,
         d_out_keys,
         None,
@@ -158,7 +214,7 @@ def test_segmented_sort_pairs(dtype, num_segments, segment_size):
     d_out_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
     d_out_vals = numba.cuda.to_device(np.empty_like(h_in_vals))
 
-    cuda.compute.segmented_sort(
+    segmented_sort_multi_phase(
         d_in_keys,
         d_out_keys,
         d_in_vals,
@@ -193,7 +249,7 @@ def test_segmented_sort_keys_double_buffer(dtype, num_segments, segment_size):
     d_tmp_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
     keys_db = cuda.compute.DoubleBuffer(d_in_keys, d_tmp_keys)
 
-    cuda.compute.segmented_sort(
+    segmented_sort_multi_phase(
         keys_db,
         None,
         None,
@@ -232,7 +288,7 @@ def test_segmented_sort_pairs_double_buffer(dtype, num_segments, segment_size):
     keys_db = cuda.compute.DoubleBuffer(d_in_keys, d_tmp_keys)
     vals_db = cuda.compute.DoubleBuffer(d_in_vals, d_tmp_vals)
 
-    cuda.compute.segmented_sort(
+    segmented_sort_multi_phase(
         keys_db,
         None,
         vals_db,
@@ -302,7 +358,7 @@ def test_segmented_sort_variable_segment_sizes(num_segments):
     d_out_keys = numba.cuda.to_device(np.empty_like(h_in_keys))
     d_out_vals = numba.cuda.to_device(np.empty_like(h_in_vals))
 
-    cuda.compute.segmented_sort(
+    segmented_sort_multi_phase(
         d_in_keys,
         d_out_keys,
         d_in_vals,

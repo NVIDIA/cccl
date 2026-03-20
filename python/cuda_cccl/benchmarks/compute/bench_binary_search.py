@@ -7,18 +7,33 @@ import pytest
 
 import cuda.compute
 
-
 def lower_bound_run(d_data, d_values, d_out, build_only):
     searcher = cuda.compute.make_lower_bound(d_data, d_values, d_out)
     if not build_only:
-        searcher(d_data, d_values, d_out, None, len(d_data), len(d_values))
+        temp_storage_bytes = searcher.get_temp_storage_bytes(
+            d_data, d_values, d_out, comp=None, num_items=len(d_data),
+            num_values=len(d_values)
+        )
+        d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+        searcher.compute(
+            d_temp_storage, d_data, d_values, d_out, comp=None, num_items=len(d_data),
+            num_values=len(d_values)
+        )
     cp.cuda.runtime.deviceSynchronize()
 
 
 def upper_bound_run(d_data, d_values, d_out, build_only):
     searcher = cuda.compute.make_upper_bound(d_data, d_values, d_out)
     if not build_only:
-        searcher(d_data, d_values, d_out, None, len(d_data), len(d_values))
+        temp_storage_bytes = searcher.get_temp_storage_bytes(
+            d_data, d_values, d_out, comp=None, num_items=len(d_data),
+            num_values=len(d_values)
+        )
+        d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+        searcher.compute(
+            d_temp_storage, d_data, d_values, d_out, comp=None, num_items=len(d_data),
+            num_values=len(d_values)
+        )
     cp.cuda.runtime.deviceSynchronize()
 
 

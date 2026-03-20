@@ -29,12 +29,29 @@ d_out_keys = cp.empty_like(d_in_keys)
 d_out_values = cp.empty_like(d_in_values)
 
 # Perform the radix sort.
-cuda.compute.radix_sort(
+sorter = cuda.compute.make_radix_sort(
     d_in_keys,
     d_out_keys,
     d_in_values,
     d_out_values,
     SortOrder.ASCENDING,
+)
+temp_storage_bytes = int(
+    sorter.get_temp_storage_bytes(
+        d_in_keys,
+        d_out_keys,
+        d_in_values,
+        d_out_values,
+        d_in_keys.size,
+    )
+)
+d_temp_storage = None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+sorter.compute(
+    d_temp_storage,
+    d_in_keys,
+    d_out_keys,
+    d_in_values,
+    d_out_values,
     d_in_keys.size,
 )
 

@@ -110,6 +110,53 @@ class _MergeSort:
 
         return temp_storage_bytes
 
+    def get_temp_storage_bytes(
+        self,
+        d_in_keys: DeviceArrayLike | IteratorT,
+        d_in_items: DeviceArrayLike | IteratorT | None,
+        d_out_keys: DeviceArrayLike,
+        d_out_items: DeviceArrayLike | None,
+        num_items: int,
+        op: Operator | None = None,
+        stream=None,
+    ) -> int:
+        if op is None:
+            op = self.op_adapter
+        return self(
+            None,
+            d_in_keys,
+            d_in_items,
+            d_out_keys,
+            d_out_items,
+            op,
+            num_items,
+            stream,
+        )
+
+    def compute(
+        self,
+        temp_storage,
+        d_in_keys: DeviceArrayLike | IteratorT,
+        d_in_items: DeviceArrayLike | IteratorT | None,
+        d_out_keys: DeviceArrayLike,
+        d_out_items: DeviceArrayLike | None,
+        num_items: int,
+        op: Operator | None = None,
+        stream=None,
+    ) -> None:
+        if op is None:
+            op = self.op_adapter
+        self(
+            temp_storage,
+            d_in_keys,
+            d_in_items,
+            d_out_keys,
+            d_out_items,
+            op,
+            num_items,
+            stream,
+        )
+
 
 @cache_with_registered_key_functions
 def make_merge_sort(

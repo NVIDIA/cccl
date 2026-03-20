@@ -42,8 +42,35 @@ n_segments = start_o.size
 d_output = cp.empty(n_segments, dtype=dtype)
 
 # Perform the segmented reduce.
-cuda.compute.segmented_reduce(
-    d_input, d_output, start_o, end_o, min_op, h_init, n_segments
+reducer = cuda.compute.make_segmented_reduce(
+    d_input,
+    d_output,
+    start_o,
+    end_o,
+    min_op,
+    h_init,
+)
+temp_storage_bytes = int(
+    reducer.get_temp_storage_bytes(
+        d_input,
+        d_output,
+        n_segments,
+        start_o,
+        end_o,
+        h_init=h_init,
+        op=min_op,
+    )
+)
+d_temp_storage = None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+reducer.compute(
+    d_temp_storage,
+    d_input,
+    d_output,
+    n_segments,
+    start_o,
+    end_o,
+    h_init=h_init,
+    op=min_op,
 )
 
 # Verify the result.

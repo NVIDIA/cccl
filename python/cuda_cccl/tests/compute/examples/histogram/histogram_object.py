@@ -39,28 +39,27 @@ histogrammer = cuda.compute.make_histogram_even(
 )
 
 # Get the temporary storage size.
-temp_storage_size = histogrammer(
-    None,
+temp_storage_size = histogrammer.get_temp_storage_bytes(
     d_samples,
     d_histogram,
-    h_num_output_levels,
-    h_lower_level,
-    h_upper_level,
     len(h_samples),
+    h_num_output_levels=h_num_output_levels,
+    h_lower_level=h_lower_level,
+    h_upper_level=h_upper_level,
 )
 
 # Allocate the temporary storage.
-d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
+d_temp_storage = None if temp_storage_size == 0 else cp.empty(temp_storage_size, dtype=np.uint8)
 
 # Perform the histogram.
-histogrammer(
+histogrammer.compute(
     d_temp_storage,
     d_samples,
     d_histogram,
-    h_num_output_levels,
-    h_lower_level,
-    h_upper_level,
     len(h_samples),
+    h_num_output_levels=h_num_output_levels,
+    h_lower_level=h_lower_level,
+    h_upper_level=h_upper_level,
 )
 
 # Verify the result.

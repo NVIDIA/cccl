@@ -22,6 +22,45 @@ def offset_dtype(request):
     return np.dtype(request.param)
 
 
+def segmented_reduce_multi_phase(
+    d_in,
+    d_out,
+    start_offsets_in,
+    end_offsets_in,
+    op,
+    h_init,
+    num_segments: int,
+    stream=None,
+):
+    reducer = cuda.compute.make_segmented_reduce(
+        d_in, d_out, start_offsets_in, end_offsets_in, op, h_init
+    )
+    temp_storage_bytes = int(
+        reducer.get_temp_storage_bytes(
+            d_in,
+            d_out,
+            num_segments,
+            start_offsets_in,
+            end_offsets_in,
+            stream=stream,
+        )
+    )
+
+    d_temp_storage = (
+        None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+    )
+
+    reducer.compute(
+        d_temp_storage,
+        d_in,
+        d_out,
+        num_segments,
+        start_offsets_in,
+        end_offsets_in,
+        stream=stream,
+    )
+
+
 def test_segmented_reduce(input_array, offset_dtype, monkeypatch):
     "Test for all supported input types and for some offset types"
     # Disable SASS verification for this test (LDL instruction in SASS).
@@ -60,9 +99,14 @@ def test_segmented_reduce(input_array, offset_dtype, monkeypatch):
     else:
         reduce_op = binary_op
 
-    # Call single-phase API directly with num_segments parameter
-    cuda.compute.segmented_reduce(
-        d_in, d_out, start_offsets, end_offsets, reduce_op, h_init, n_segments
+    segmented_reduce_multi_phase(
+        d_in,
+        d_out,
+        start_offsets,
+        end_offsets,
+        reduce_op,
+        h_init,
+        n_segments,
     )
 
     d_expected = cp.empty_like(d_out)
@@ -106,8 +150,7 @@ def test_segmented_reduce_struct_type(monkeypatch):
 
     h_init = Pixel(0, 0, 0)
 
-    # Call single-phase API directly with n_segments parameter
-    cuda.compute.segmented_reduce(
+    segmented_reduce_multi_phase(
         d_rgb, d_out, start_offsets, end_offsets, max_g_value, h_init, n_segments
     )
 
@@ -171,7 +214,7 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input(monkeypatch):
         RuntimeError,
         match="Segmented sort does not currently support more than 2\\^31-1 segments\\.",
     ):
-        cuda.compute.segmented_reduce(
+        segmented_reduce_multi_phase(
             input_it, res, start_offsets, end_offsets, my_add, h_init, num_segments
         )
 
@@ -235,7 +278,7 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input(monkeypatch):
         RuntimeError,
         match="Segmented sort does not currently support more than 2\\^31-1 segments\\.",
     ):
-        cuda.compute.segmented_reduce(
+        segmented_reduce_multi_phase(
             input_it, res, start_offsets, end_offsets, _plus, h_init, num_segments
         )
 
@@ -256,9 +299,7 @@ def test_segmented_reduce_well_known_plus(monkeypatch):
     d_ends = cp.array([3, 5, 9], dtype=np.int32)
     d_output = cp.empty(3, dtype=dtype)
 
-    cuda.compute.segmented_reduce(
-        d_input, d_output, d_starts, d_ends, OpKind.PLUS, h_init, 3
-    )
+    segmented_reduce_multi_phase(d_input, d_output, d_starts, d_ends, OpKind.PLUS, h_init, 3)
 
     expected = np.array([6, 9, 30])
     np.testing.assert_equal(d_output.get(), expected)
@@ -280,7 +321,7 @@ def test_segmented_reduce_well_known_maximum(monkeypatch):
     d_ends = cp.array([3, 5, 9], dtype=np.int32)
     d_output = cp.empty(3, dtype=dtype)
 
-    cuda.compute.segmented_reduce(
+    segmented_reduce_multi_phase(
         d_input, d_output, d_starts, d_ends, OpKind.MAXIMUM, h_init, 3
     )
 
@@ -303,7 +344,7 @@ def test_segmented_reduce_bool_maximum(monkeypatch):
     d_ends = cp.array([2, 4, 5], dtype=np.int32)
     d_output = cp.empty(3, dtype=np.bool_)
 
-    cuda.compute.segmented_reduce(
+    segmented_reduce_multi_phase(
         d_input, d_output, d_starts, d_ends, OpKind.MAXIMUM, h_init, 3
     )
 
@@ -336,7 +377,7 @@ def test_segmented_reduce_transform_output_iterator(floating_array, monkeypatch)
 
     d_out_it = TransformOutputIterator(d_output, sqrt)
 
-    cuda.compute.segmented_reduce(
+    segmented_reduce_multi_phase(
         d_input, d_out_it, start_offsets, end_offsets, OpKind.PLUS, h_init, 2
     )
 
@@ -382,7 +423,7 @@ def test_device_segmented_reduce_for_rowwise_sum(monkeypatch):
     h_init = np.zeros(tuple(), dtype=np.int32)
     d_output = cp.empty(n_rows, dtype=d_input.dtype)
 
-    cuda.compute.segmented_reduce(
+    segmented_reduce_multi_phase(
         d_input, d_output, start_offsets, end_offsets, add_op, h_init, n_rows
     )
 
@@ -408,7 +449,7 @@ def test_segmented_reduce_with_lambda(monkeypatch):
     d_output = cp.empty(3, dtype=dtype)
 
     # Use a lambda function directly as the reducer
-    cuda.compute.segmented_reduce(
+    segmented_reduce_multi_phase(
         d_input, d_output, d_starts, d_ends, lambda a, b: a + b, h_init, 3
     )
 

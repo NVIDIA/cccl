@@ -131,6 +131,57 @@ class _SegmentedSort:
 
         return temp_storage_bytes
 
+    def get_temp_storage_bytes(
+        self,
+        d_in_keys,
+        d_out_keys,
+        d_in_values,
+        d_out_values,
+        num_items,
+        num_segments,
+        start_offsets_in,
+        end_offsets_in,
+        stream=None,
+    ) -> int:
+        return self(
+            None,
+            d_in_keys,
+            d_out_keys,
+            d_in_values,
+            d_out_values,
+            num_items,
+            num_segments,
+            start_offsets_in,
+            end_offsets_in,
+            stream,
+        )
+
+    def compute(
+        self,
+        temp_storage,
+        d_in_keys,
+        d_out_keys,
+        d_in_values,
+        d_out_values,
+        num_items,
+        num_segments,
+        start_offsets_in,
+        end_offsets_in,
+        stream=None,
+    ) -> None:
+        self(
+            temp_storage,
+            d_in_keys,
+            d_out_keys,
+            d_in_values,
+            d_out_values,
+            num_items,
+            num_segments,
+            start_offsets_in,
+            end_offsets_in,
+            stream,
+        )
+
 
 @cache_with_registered_key_functions
 def make_segmented_sort(

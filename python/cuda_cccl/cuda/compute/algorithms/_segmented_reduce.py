@@ -35,6 +35,8 @@ class _SegmentedReduce:
         "start_offsets_in_cccl",
         "end_offsets_in_cccl",
         "h_init_cccl",
+        "_h_init",
+        "_op",
         "op_cccl",
     ]
 
@@ -52,6 +54,8 @@ class _SegmentedReduce:
         self.start_offsets_in_cccl = cccl.to_cccl_input_iter(start_offsets_in)
         self.end_offsets_in_cccl = cccl.to_cccl_input_iter(end_offsets_in)
         self.h_init_cccl = cccl.to_cccl_value(h_init)
+        self._h_init = h_init
+        self._op = op
 
         # Compile the op with value types
         value_type = get_value_type(h_init)
@@ -116,6 +120,61 @@ class _SegmentedReduce:
             stream_handle,
         )
         return temp_storage_bytes
+
+    def get_temp_storage_bytes(
+        self,
+        d_in,
+        d_out,
+        num_segments: int,
+        start_offsets_in,
+        end_offsets_in,
+        h_init: np.ndarray | GpuStruct | None = None,
+        op: Callable | OpAdapter | None = None,
+        stream=None,
+    ) -> int:
+        if op is None:
+            op = self._op
+        if h_init is None:
+            h_init = self._h_init
+        return self(
+            None,
+            d_in,
+            d_out,
+            op,
+            num_segments,
+            start_offsets_in,
+            end_offsets_in,
+            h_init,
+            stream,
+        )
+
+    def compute(
+        self,
+        temp_storage,
+        d_in,
+        d_out,
+        num_segments: int,
+        start_offsets_in,
+        end_offsets_in,
+        h_init: np.ndarray | GpuStruct | None = None,
+        op: Callable | OpAdapter | None = None,
+        stream=None,
+    ) -> None:
+        if op is None:
+            op = self._op
+        if h_init is None:
+            h_init = self._h_init
+        self(
+            temp_storage,
+            d_in,
+            d_out,
+            op,
+            num_segments,
+            start_offsets_in,
+            end_offsets_in,
+            h_init,
+            stream,
+        )
 
 
 @cache_with_registered_key_functions

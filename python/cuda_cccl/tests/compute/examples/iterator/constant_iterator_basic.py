@@ -30,7 +30,27 @@ h_init = np.array([0], dtype=np.int32)
 d_output = cp.empty(1, dtype=np.int32)
 
 # Perform the reduction.
-cuda.compute.reduce_into(constant_it, d_output, OpKind.PLUS, num_items, h_init)
+reducer = cuda.compute.make_reduce_into(constant_it, d_output, OpKind.PLUS, h_init)
+temp_storage_bytes = int(
+    reducer.get_temp_storage_bytes(
+        constant_it,
+        d_output,
+        num_items,
+        h_init=h_init,
+        op=OpKind.PLUS,
+    )
+)
+d_temp_storage = (
+    None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+)
+reducer.compute(
+    d_temp_storage,
+    constant_it,
+    d_output,
+    num_items,
+    h_init=h_init,
+    op=OpKind.PLUS,
+)
 
 # Verify the result.
 expected_output = constant_value * num_items

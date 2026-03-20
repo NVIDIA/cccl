@@ -72,7 +72,25 @@ d_output = cp.empty(1, dtype=Pixel.dtype)
 h_init = Pixel(Point(0, 0), Color(0, 0, 0))
 
 # Perform the reduction on the zipped data
-cuda.compute.reduce_into(zip_it, d_output, sum_pixels, num_items, h_init)
+reducer = cuda.compute.make_reduce_into(zip_it, d_output, sum_pixels, h_init)
+temp_storage_bytes = int(
+    reducer.get_temp_storage_bytes(
+        zip_it,
+        d_output,
+        num_items,
+        h_init=h_init,
+        op=sum_pixels,
+    )
+)
+d_temp_storage = None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+reducer.compute(
+    d_temp_storage,
+    zip_it,
+    d_output,
+    num_items,
+    h_init=h_init,
+    op=sum_pixels,
+)
 
 # Verify the result
 result = d_output.get()[0]

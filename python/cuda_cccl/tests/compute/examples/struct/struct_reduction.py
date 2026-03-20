@@ -36,7 +36,25 @@ d_out = cp.empty(1, Pixel.dtype)
 h_init = Pixel(0, 0, 0)
 
 # Perform the reduction.
-cuda.compute.reduce_into(d_rgb, d_out, max_g_value, d_rgb.size, h_init)
+reducer = cuda.compute.make_reduce_into(d_rgb, d_out, max_g_value, h_init)
+temp_storage_bytes = int(
+    reducer.get_temp_storage_bytes(
+        d_rgb,
+        d_out,
+        d_rgb.size,
+        h_init=h_init,
+        op=max_g_value,
+    )
+)
+d_temp_storage = None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+reducer.compute(
+    d_temp_storage,
+    d_rgb,
+    d_out,
+    d_rgb.size,
+    h_init=h_init,
+    op=max_g_value,
+)
 
 # Calculate the expected result.
 h_rgb = d_rgb.get()

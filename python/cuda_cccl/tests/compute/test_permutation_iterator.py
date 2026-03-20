@@ -44,8 +44,15 @@ def test_permutation_iterator_with_array_values():
 
     h_init = np.array([0], dtype="int32")
     d_output = cp.empty(1, dtype="int32")
-    cuda.compute.reduce_into(
-        perm_it, d_output, cuda.compute.OpKind.PLUS, len(indices), h_init
+    reducer = cuda.compute.make_reduce_into(
+        perm_it, d_output, cuda.compute.OpKind.PLUS, h_init
+    )
+    temp_storage_bytes = reducer.get_temp_storage_bytes(
+        perm_it, d_output, len(indices), h_init=h_init
+    )
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    reducer.compute(
+        d_temp_storage, perm_it, d_output, len(indices), h_init=h_init
     )
     assert d_output[0] == values[indices].sum()
 
@@ -58,8 +65,15 @@ def test_permutation_iterator_with_iterator_values():
     h_init = np.array([0], dtype="int32")
     d_output = cp.empty(1, dtype="int32")
 
-    cuda.compute.reduce_into(
-        perm_it, d_output, cuda.compute.OpKind.PLUS, len(indices), h_init
+    reducer = cuda.compute.make_reduce_into(
+        perm_it, d_output, cuda.compute.OpKind.PLUS, h_init
+    )
+    temp_storage_bytes = reducer.get_temp_storage_bytes(
+        perm_it, d_output, len(indices), h_init=h_init
+    )
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    reducer.compute(
+        d_temp_storage, perm_it, d_output, len(indices), h_init=h_init
     )
 
     expected = cp.arange(10, 20)[indices].sum()
@@ -84,7 +98,20 @@ def test_permutation_iterator_of_zip_iterator():
     h_init = Pair(0, 0)
     d_output = cp.empty(1, dtype=Pair.dtype)
 
-    cuda.compute.reduce_into(perm_it, d_output, sum_both_fields, len(indices), h_init)
+    reducer = cuda.compute.make_reduce_into(
+        perm_it, d_output, sum_both_fields, h_init
+    )
+    temp_storage_bytes = reducer.get_temp_storage_bytes(
+        perm_it, d_output, len(indices), h_init=h_init
+    )
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    reducer.compute(
+        d_temp_storage,
+        perm_it,
+        d_output,
+        len(indices),
+        h_init=h_init,
+    )
 
     result = d_output.get()[0]
     assert result["value_0"] == d_values1[indices].sum()
@@ -113,7 +140,20 @@ def test_zip_iterator_of_permutation_iterators():
     d_output = cp.empty(1, dtype=Pair.dtype)
 
     num_items = len(indices1)
-    cuda.compute.reduce_into(zip_it, d_output, sum_both_fields, num_items, h_init)
+    reducer = cuda.compute.make_reduce_into(
+        zip_it, d_output, sum_both_fields, h_init
+    )
+    temp_storage_bytes = reducer.get_temp_storage_bytes(
+        zip_it, d_output, num_items, h_init=h_init
+    )
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    reducer.compute(
+        d_temp_storage,
+        zip_it,
+        d_output,
+        num_items,
+        h_init=h_init,
+    )
 
     result = d_output.get()[0]
     assert result["value_0"] == d_values1[indices1].sum()
@@ -209,12 +249,25 @@ def test_permutation_iterator_advance():
     d_output = cp.empty(1, dtype="int32")
 
     remaining_items = len(indices) - offset
-    cuda.compute.reduce_into(
+    reducer = cuda.compute.make_reduce_into(
         advanced_perm_it,
         d_output,
         cuda.compute.OpKind.PLUS,
-        remaining_items,
         h_init,
+    )
+    temp_storage_bytes = reducer.get_temp_storage_bytes(
+        advanced_perm_it,
+        d_output,
+        remaining_items,
+        h_init=h_init,
+    )
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    reducer.compute(
+        d_temp_storage,
+        advanced_perm_it,
+        d_output,
+        remaining_items,
+        h_init=h_init,
     )
 
     # Expected: values[indices[2:]] = values[[4, 1, 3, 5]] = [50, 20, 40, 60]

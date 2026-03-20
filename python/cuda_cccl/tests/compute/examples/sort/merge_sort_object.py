@@ -34,28 +34,27 @@ sorter = cuda.compute.make_merge_sort(
 )
 
 # Get the temporary storage size.
-temp_storage_size = sorter(
-    None,
+temp_storage_size = sorter.get_temp_storage_bytes(
     d_input_keys,
     d_input_values,
     d_output_keys,
     d_output_values,
-    OpKind.LESS,
     len(h_input_keys),
+    op=OpKind.LESS,
 )
 
 # Allocate the temporary storage.
 d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
 # Perform the merge sort.
-sorter(
+sorter.compute(
     d_temp_storage,
     d_input_keys,
     d_input_values,
     d_output_keys,
     d_output_values,
-    OpKind.LESS,
     len(h_input_keys),
+    op=OpKind.LESS,
 )
 
 # Verify the result.

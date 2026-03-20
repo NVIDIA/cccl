@@ -43,7 +43,23 @@ h_init = Pair(0, 0.0)
 d_output = cp.empty(1, dtype=Pair.dtype)
 
 # Perform the reduction.
-cuda.compute.reduce_into(zip_it, d_output, sum_pairs, len(d_input1), h_init)
+reducer = cuda.compute.make_reduce_into(zip_it, d_output, sum_pairs, h_init)
+temp_storage_bytes = int(
+    reducer.get_temp_storage_bytes(
+        zip_it, d_output, len(d_input1), h_init=h_init, op=sum_pairs
+    )
+)
+d_temp_storage = (
+    None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+)
+reducer.compute(
+    d_temp_storage,
+    zip_it,
+    d_output,
+    len(d_input1),
+    h_init=h_init,
+    op=sum_pairs,
+)
 
 # Calculate the expected results.
 expected_first = sum(d_input1.get())

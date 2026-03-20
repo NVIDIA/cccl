@@ -6,7 +6,7 @@
 # example-begin
 import cupy as cp
 
-from cuda.compute.algorithms import select
+from cuda.compute.algorithms import make_select
 
 # Create input data
 d_in = cp.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=cp.int32)
@@ -20,7 +20,12 @@ def is_even(x):
 
 
 # Execute select
-select(d_in, d_out, d_num_selected, is_even, len(d_in))
+selector = make_select(d_in, d_out, d_num_selected, is_even)
+temp_storage_bytes = int(
+    selector.get_temp_storage_bytes(d_in, d_out, d_num_selected, len(d_in), cond=is_even)
+)
+d_temp_storage = None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=cp.uint8)
+selector.compute(d_temp_storage, d_in, d_out, d_num_selected, len(d_in), cond=is_even)
 
 # Get results
 num_selected = int(d_num_selected[0])

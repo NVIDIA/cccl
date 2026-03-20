@@ -27,6 +27,7 @@ class _UniqueByKey:
         "d_out_keys_cccl",
         "d_out_items_cccl",
         "d_out_num_selected_cccl",
+        "_op",
         "op_cccl",
     ]
 
@@ -48,6 +49,7 @@ class _UniqueByKey:
         # Compile the op - unique_by_key expects bool return (comparison)
         value_type = cccl.get_value_type(d_in_keys)
         self.op_cccl = op.compile((value_type, value_type), types.uint8)
+        self._op = op
 
         self.build_result = call_build(
             _bindings.DeviceUniqueByKeyBuildResult,
@@ -104,6 +106,57 @@ class _UniqueByKey:
             stream_handle,
         )
         return temp_storage_bytes
+
+    def get_temp_storage_bytes(
+        self,
+        d_in_keys: DeviceArrayLike | IteratorT,
+        d_in_items: DeviceArrayLike | IteratorT,
+        d_out_keys: DeviceArrayLike | IteratorT,
+        d_out_items: DeviceArrayLike | IteratorT,
+        d_out_num_selected: DeviceArrayLike,
+        num_items: int,
+        op: Operator | None = None,
+        stream=None,
+    ) -> int:
+        if op is None:
+            op = self._op
+        return self(
+            None,
+            d_in_keys,
+            d_in_items,
+            d_out_keys,
+            d_out_items,
+            d_out_num_selected,
+            op,
+            num_items,
+            stream,
+        )
+
+    def compute(
+        self,
+        temp_storage,
+        d_in_keys: DeviceArrayLike | IteratorT,
+        d_in_items: DeviceArrayLike | IteratorT,
+        d_out_keys: DeviceArrayLike | IteratorT,
+        d_out_items: DeviceArrayLike | IteratorT,
+        d_out_num_selected: DeviceArrayLike,
+        num_items: int,
+        op: Operator | None = None,
+        stream=None,
+    ) -> None:
+        if op is None:
+            op = self._op
+        self(
+            temp_storage,
+            d_in_keys,
+            d_in_items,
+            d_out_keys,
+            d_out_items,
+            d_out_num_selected,
+            op,
+            num_items,
+            stream,
+        )
 
 
 @cache_with_registered_key_functions

@@ -27,14 +27,37 @@ d_in_values = DiscardIterator()
 d_out_values = DiscardIterator()
 
 # Perform the unique by key operation.
-cuda.compute.unique_by_key(
+uniquer = cuda.compute.make_unique_by_key(
     d_in_keys,
     d_in_values,
     d_out_keys,
     d_out_values,
     d_out_num_selected,
     OpKind.EQUAL_TO,
+)
+temp_storage_bytes = int(
+    uniquer.get_temp_storage_bytes(
+        d_in_keys,
+        d_in_values,
+        d_out_keys,
+        d_out_values,
+        d_out_num_selected,
+        d_in_keys.size,
+        op=OpKind.EQUAL_TO,
+    )
+)
+d_temp_storage = (
+    None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+)
+uniquer.compute(
+    d_temp_storage,
+    d_in_keys,
+    d_in_values,
+    d_out_keys,
+    d_out_values,
+    d_out_num_selected,
     d_in_keys.size,
+    op=OpKind.EQUAL_TO,
 )
 
 # Verify the result.

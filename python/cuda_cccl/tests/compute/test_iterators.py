@@ -207,8 +207,17 @@ def test_transform_iterator_with_lambda():
     h_init = np.array([0], dtype=np.int32)
     d_output = cp.empty(1, dtype=np.int32)
 
-    # Perform reduction on the transformed iterator
-    cuda.compute.reduce_into(transform_it, d_output, OpKind.PLUS, num_items, h_init)
+    # Perform reduction on the transformed iterator (multi-step object API)
+    reducer = cuda.compute.make_reduce_into(
+        transform_it, d_output, OpKind.PLUS, h_init
+    )
+    temp_storage_bytes = reducer.get_temp_storage_bytes(
+        transform_it, d_output, num_items
+    )
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    reducer.compute(
+        d_temp_storage, transform_it, d_output, num_items
+    )
 
     # Expected: sum of (10*2, 11*2, ..., 109*2) = 2 * sum(10..109)
     expected = 2 * sum(range(first_item, first_item + num_items))
@@ -238,7 +247,14 @@ def test_transform_iterator_with_zip_iterator():
     h_init = np.array([0], dtype=np.int32)
     d_output = cp.empty(1, dtype=np.int32)
 
-    cuda.compute.reduce_into(transform_it, d_output, OpKind.PLUS, len(d_a), h_init)
+    reducer = cuda.compute.make_reduce_into(
+        transform_it, d_output, OpKind.PLUS, h_init
+    )
+    temp_storage_bytes = reducer.get_temp_storage_bytes(
+        transform_it, d_output, len(d_a)
+    )
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    reducer.compute(d_temp_storage, transform_it, d_output, len(d_a))
 
     result = d_output.get()[0]
     expected = (d_a + d_b).sum().get()

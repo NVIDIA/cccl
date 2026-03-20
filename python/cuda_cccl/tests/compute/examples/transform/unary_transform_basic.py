@@ -24,7 +24,23 @@ def op(a):
 
 
 # Perform the unary transform.
-cuda.compute.unary_transform(d_in, d_out, op, len(d_in))
+transformer = cuda.compute.make_unary_transform(d_in, d_out, op)
+temp_storage_bytes = int(
+    transformer.get_temp_storage_bytes(
+        d_in,
+        d_out,
+        op,
+        len(d_in),
+    )
+)
+d_temp_storage = None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+transformer.compute(
+    d_temp_storage,
+    d_in,
+    d_out,
+    op,
+    len(d_in),
+)
 
 # Verify the result.
 result = d_out.get()

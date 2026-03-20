@@ -34,11 +34,33 @@ def scan_host(h_input: np.ndarray, op, h_init, force_inclusive):
 
 
 def scan_device(d_input, d_output, num_items, op, h_init, force_inclusive, stream=None):
-    scan_algorithm = (
-        cuda.compute.inclusive_scan if force_inclusive else cuda.compute.exclusive_scan
+    make_scan = (
+        cuda.compute.make_inclusive_scan
+        if force_inclusive
+        else cuda.compute.make_exclusive_scan
     )
-    # Call single-phase API directly with all parameters including num_items
-    scan_algorithm(d_input, d_output, op, h_init, num_items, stream)
+    scanner = make_scan(d_input, d_output, op, h_init)
+
+    temp_storage_bytes = int(
+        scanner.get_temp_storage_bytes(
+            d_input,
+            d_output,
+            num_items,
+            init_value=h_init,
+            op=op,
+            stream=stream,
+        )
+    )
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    scanner.compute(
+        d_temp_storage,
+        d_input,
+        d_output,
+        num_items,
+        init_value=h_init,
+        op=op,
+        stream=stream,
+    )
 
 
 @pytest.mark.parametrize(
@@ -214,7 +236,9 @@ def test_exclusive_scan_well_known_plus():
     d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
     d_output = cp.empty_like(d_input, dtype=dtype)
 
-    cuda.compute.exclusive_scan(d_input, d_output, OpKind.PLUS, h_init, d_input.size)
+    scan_device(
+        d_input, d_output, d_input.size, OpKind.PLUS, h_init, force_inclusive=False
+    )
 
     expected = np.array([0, 1, 3, 6, 10])
     np.testing.assert_equal(d_output.get(), expected)
@@ -238,7 +262,9 @@ def test_inclusive_scan_well_known_plus(monkeypatch):
     d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
     d_output = cp.empty_like(d_input, dtype=dtype)
 
-    cuda.compute.inclusive_scan(d_input, d_output, OpKind.PLUS, h_init, d_input.size)
+    scan_device(
+        d_input, d_output, d_input.size, OpKind.PLUS, h_init, force_inclusive=True
+    )
 
     expected = np.array([1, 3, 6, 10, 15])
     np.testing.assert_equal(d_output.get(), expected)
@@ -253,7 +279,14 @@ def test_exclusive_scan_well_known_maximum():
     d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype=dtype)
     d_output = cp.empty_like(d_input, dtype=dtype)
 
-    cuda.compute.exclusive_scan(d_input, d_output, OpKind.MAXIMUM, h_init, d_input.size)
+    scan_device(
+        d_input,
+        d_output,
+        d_input.size,
+        OpKind.MAXIMUM,
+        h_init,
+        force_inclusive=False,
+    )
 
     expected = np.array([1, 1, 1, 2, 2, 2, 4, 4, 4, 4])
     np.testing.assert_equal(d_output.get(), expected)
@@ -273,7 +306,9 @@ def test_scan_transform_output_iterator(floating_array):
 
     d_out_it = TransformOutputIterator(d_output, square)
 
-    cuda.compute.inclusive_scan(d_input, d_out_it, OpKind.PLUS, h_init, d_input.size)
+    scan_device(
+        d_input, d_out_it, d_input.size, OpKind.PLUS, h_init, force_inclusive=True
+    )
 
     expected = cp.cumsum(d_input) ** 2
     # Use more lenient tolerance for float32 due to precision differences
@@ -291,7 +326,9 @@ def test_exclusive_scan_max():
     d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     d_output = cp.empty_like(d_input, dtype="int32")
 
-    cuda.compute.exclusive_scan(d_input, d_output, max_op, h_init, d_input.size)
+    scan_device(
+        d_input, d_output, d_input.size, max_op, h_init, force_inclusive=False
+    )
 
     expected = np.asarray([1, 1, 1, 2, 2, 2, 4, 4, 4, 4])
     np.testing.assert_equal(d_output.get(), expected)
@@ -305,7 +342,9 @@ def test_inclusive_scan_add():
     d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
     d_output = cp.empty_like(d_input, dtype="int32")
 
-    cuda.compute.inclusive_scan(d_input, d_output, add_op, h_init, d_input.size)
+    scan_device(
+        d_input, d_output, d_input.size, add_op, h_init, force_inclusive=True
+    )
 
     expected = np.asarray([-5, -5, -3, -6, -4, 0, 0, -1, 1, 9])
     np.testing.assert_equal(d_output.get(), expected)
@@ -332,7 +371,14 @@ def test_reverse_input_iterator(monkeypatch):
     d_output = cp.empty_like(d_input, dtype="int32")
     reverse_it = ReverseIterator(d_input)
 
-    cuda.compute.inclusive_scan(reverse_it, d_output, add_op, h_init, len(d_input))
+    scan_device(
+        reverse_it,
+        d_output,
+        len(d_input),
+        add_op,
+        h_init,
+        force_inclusive=True,
+    )
 
     # Check the result is correct
     expected = np.asarray([8, 10, 9, 9, 13, 15, 12, 14, 14, 9])
@@ -349,7 +395,14 @@ def test_reverse_output_iterator():
     d_output = cp.empty_like(d_input, dtype="int32")
     reverse_it = ReverseIterator(d_output)
 
-    cuda.compute.inclusive_scan(d_input, reverse_it, add_op, h_init, len(d_input))
+    scan_device(
+        d_input,
+        reverse_it,
+        len(d_input),
+        add_op,
+        h_init,
+        force_inclusive=True,
+    )
 
     expected = np.asarray([9, 1, -1, 0, 0, -4, -6, -3, -5, -5])
     np.testing.assert_equal(d_output.get(), expected)
@@ -427,8 +480,13 @@ def test_inclusive_scan_with_lambda():
     d_output = cp.empty_like(d_input)
 
     # Use a lambda function directly as the scan operator
-    cuda.compute.inclusive_scan(
-        d_input, d_output, lambda a, b: a + b, h_init, len(d_input)
+    scan_device(
+        d_input,
+        d_output,
+        len(d_input),
+        lambda a, b: a + b,
+        h_init,
+        force_inclusive=True,
     )
 
     expected = np.array([1, 3, 6, 10, 15], dtype=np.int32)

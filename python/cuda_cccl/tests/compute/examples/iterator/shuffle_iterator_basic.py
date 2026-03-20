@@ -24,8 +24,21 @@ shuffle_it = ShuffleIterator(num_items, seed=42)
 # Use PermutationIterator to permute the data according to the random indices
 perm_it = PermutationIterator(d_input, shuffle_it)
 
-# Use unary_transform to write values into d_output
-cuda.compute.unary_transform(perm_it, d_output, lambda x: x, num_items)
+identity_op = lambda x: x
+transformer = cuda.compute.make_unary_transform(perm_it, d_output, identity_op)
+temp_storage_bytes = int(
+    transformer.get_temp_storage_bytes(
+        perm_it, d_output, identity_op, num_items
+    )
+)
+d_temp_storage = None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+transformer.compute(
+    d_temp_storage,
+    perm_it,
+    d_output,
+    identity_op,
+    num_items,
+)
 
 # Verify it is a valid permutation of the input data:
 cp.testing.assert_array_equal(cp.sort(d_output), d_input)

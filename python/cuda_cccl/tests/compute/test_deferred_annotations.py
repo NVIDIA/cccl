@@ -8,7 +8,7 @@ from __future__ import annotations
 import cupy as cp
 import numpy as np
 
-from cuda.compute import OpKind, TransformIterator, gpu_struct, reduce_into
+from cuda.compute import OpKind, TransformIterator, gpu_struct, make_reduce_into
 
 
 def test_deferred_annotations():
@@ -30,7 +30,21 @@ def test_transform_iterator_future_annotations():
     h_init = np.array([0], dtype=np.int32)
 
     transform_it = TransformIterator(d_in, add_one)
-    reduce_into(transform_it, d_out, OpKind.PLUS, d_in.size, h_init)
+    reducer = make_reduce_into(transform_it, d_out, OpKind.PLUS, h_init)
+    temp_storage_bytes = reducer.get_temp_storage_bytes(
+        transform_it,
+        d_out,
+        d_in.size,
+        h_init=h_init,
+    )
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    reducer.compute(
+        d_temp_storage,
+        transform_it,
+        d_out,
+        d_in.size,
+        h_init=h_init,
+    )
 
     expected = int(cp.sum(d_in + 1).get())
     assert int(d_out.get()[0]) == expected

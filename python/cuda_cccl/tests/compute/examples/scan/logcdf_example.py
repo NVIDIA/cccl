@@ -50,11 +50,47 @@ h_init = np.array(-np.inf, dtype=np.float64)
 
 logcdf2 = cp.empty_like(logpdf)
 
-# Perform the first inclusive scan (log-add-exp).
-cuda.compute.inclusive_scan(logpdf, logcdf, logaddexp, h_init, logpdf.size)
+# Perform the first inclusive scan (log-add-exp) using the object API.
+scanner_logaddexp = cuda.compute.make_inclusive_scan(logpdf, logcdf, logaddexp, h_init)
+temp_storage_bytes = int(
+    scanner_logaddexp.get_temp_storage_bytes(
+        logpdf,
+        logcdf,
+        logpdf.size,
+        init_value=h_init,
+        op=logaddexp,
+    )
+)
+d_temp_storage = None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+scanner_logaddexp.compute(
+    d_temp_storage,
+    logpdf,
+    logcdf,
+    logpdf.size,
+    init_value=h_init,
+    op=logaddexp,
+)
 
-# Perform the second inclusive scan (maximum).
-cuda.compute.inclusive_scan(logcdf, logcdf2, maximum, h_init, logpdf.size)
+# Perform the second inclusive scan (maximum) using the object API.
+scanner_maximum = cuda.compute.make_inclusive_scan(logcdf, logcdf2, maximum, h_init)
+temp_storage_bytes_2 = int(
+    scanner_maximum.get_temp_storage_bytes(
+        logcdf,
+        logcdf2,
+        logpdf.size,
+        init_value=h_init,
+        op=maximum,
+    )
+)
+d_temp_storage_2 = None if temp_storage_bytes_2 == 0 else cp.empty(temp_storage_bytes_2, dtype=np.uint8)
+scanner_maximum.compute(
+    d_temp_storage_2,
+    logcdf,
+    logcdf2,
+    logpdf.size,
+    init_value=h_init,
+    op=maximum,
+)
 
 # Verify the results and compute quantiles.
 assert cp.all(logcdf2[:-1] <= logcdf2[1:])

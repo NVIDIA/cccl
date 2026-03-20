@@ -64,6 +64,30 @@ class _UnaryTransform:
         )
         return None
 
+    def get_temp_storage_bytes(
+        self,
+        d_in,
+        d_out,
+        op: Callable | OpAdapter,
+        num_items: int,
+        stream=None,
+    ) -> int:
+        return 0
+
+    def compute(
+        self,
+        d_temp_storage,
+        d_in,
+        d_out,
+        op: Callable | OpAdapter,
+        num_items: int,
+        stream=None,
+    ) -> None:
+        # Transforms currently don't require explicit temp storage, but we
+        # accept it for API consistency with multi-phase algorithms.
+        _ = d_temp_storage
+        self(d_in, d_out, op, num_items, stream)
+
 
 class _BinaryTransform:
     __slots__ = [
@@ -125,6 +149,33 @@ class _BinaryTransform:
             stream_handle,
         )
         return None
+
+    def get_temp_storage_bytes(
+        self,
+        d_in1,
+        d_in2,
+        d_out,
+        op: Callable | OpAdapter,
+        num_items: int,
+        stream=None,
+    ) -> int:
+        # Transforms are single-phase in this API: no explicit temp storage is required.
+        return 0
+
+    def compute(
+        self,
+        d_temp_storage,
+        d_in1,
+        d_in2,
+        d_out,
+        op: Callable | OpAdapter,
+        num_items: int,
+        stream=None,
+    ) -> None:
+        # Transforms currently don't require explicit temp storage, but we
+        # accept it for API consistency with multi-phase algorithms.
+        _ = d_temp_storage
+        self(d_in1, d_in2, d_out, op, num_items, stream)
 
 
 @cache_with_registered_key_functions

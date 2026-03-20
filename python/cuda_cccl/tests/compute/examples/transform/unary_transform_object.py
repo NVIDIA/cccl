@@ -28,7 +28,11 @@ def add_one_op(a):
 transformer = cuda.compute.make_unary_transform(d_input, d_output, add_one_op)
 
 # Perform the unary transform.
-transformer(d_input, d_output, add_one_op, len(h_input))
+temp_storage_size = transformer.get_temp_storage_bytes(
+    d_input, d_output, add_one_op, len(h_input)
+)
+d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
+transformer.compute(d_temp_storage, d_input, d_output, add_one_op, len(h_input))
 
 # Verify the result.
 expected_result = np.array([2, 3, 4, 5], dtype=dtype)

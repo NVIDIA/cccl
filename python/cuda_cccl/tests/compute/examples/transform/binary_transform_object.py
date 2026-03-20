@@ -29,7 +29,11 @@ transformer = cuda.compute.make_binary_transform(
 )
 
 # Perform the binary transform.
-transformer(d_input1, d_input2, d_output, OpKind.PLUS, len(h_input1))
+temp_storage_size = transformer.get_temp_storage_bytes(
+    d_input1, d_input2, d_output, OpKind.PLUS, len(h_input1)
+)
+d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
+transformer.compute(d_temp_storage, d_input1, d_input2, d_output, OpKind.PLUS, len(h_input1))
 
 # Verify the result.
 expected_result = np.array([11, 22, 33, 44], dtype=dtype)

@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 
 import cuda.compute
+from cuda.compute._utils.temp_storage_buffer import TempStorageBuffer
 from cuda.compute import (
     CacheModifiedInputIterator,
     ConstantIterator,
@@ -56,6 +57,38 @@ def add_op(a, b):
 add_op_lambda = lambda a, b: a + b  # noqa: E731
 
 
+def reduce_into_multi_phase(
+    d_in, d_out, op, num_items, h_init, stream=None, **kwargs
+):
+    reducer = cuda.compute.make_reduce_into(
+        d_in, d_out, op, h_init, **kwargs
+    )
+    temp_storage_bytes = reducer.get_temp_storage_bytes(
+        d_in,
+        d_out,
+        num_items,
+        h_init=h_init,
+        op=op,
+        stream=stream,
+    )
+
+    temp_storage = (
+        None
+        if int(temp_storage_bytes) == 0
+        else TempStorageBuffer(int(temp_storage_bytes), stream)
+    )
+
+    reducer.compute(
+        temp_storage,
+        d_in,
+        d_out,
+        num_items,
+        h_init=h_init,
+        op=op,
+        stream=stream,
+    )
+
+
 reduce_params = [
     pytest.param(
         dt,
@@ -97,9 +130,7 @@ def test_device_reduce_with_lambda():
     d_input = numba.cuda.to_device(h_input)
 
     # Use a lambda function directly as the reducer
-    cuda.compute.reduce_into(
-        d_input, d_output, lambda a, b: a + b, d_input.size, h_init
-    )
+    reduce_into_multi_phase(d_input, d_output, lambda a, b: a + b, d_input.size, h_init)
     h_output = d_output.copy_to_host()
     assert h_output[0] == sum(h_input) + init_value
 
@@ -117,7 +148,7 @@ def test_device_reduce_with_lambda_variable():
     d_input = numba.cuda.to_device(h_input)
 
     # Use a lambda function assigned to a variable as the reducer
-    cuda.compute.reduce_into(d_input, d_output, add_op_lambda, d_input.size, h_init)
+    reduce_into_multi_phase(d_input, d_output, add_op_lambda, d_input.size, h_init)
     h_output = d_output.copy_to_host()
     assert h_output[0] == sum(h_input) + init_value
 
@@ -131,7 +162,7 @@ def test_complex_device_reduce():
         h_input = real_imag[0] + 1j * real_imag[1]
         d_input = numba.cuda.to_device(h_input)
         assert d_input.size == num_items
-        cuda.compute.reduce_into(d_input, d_output, add_op, num_items, h_init)
+        reduce_into_multi_phase(d_input, d_output, add_op, num_items, h_init)
 
         result = d_output.copy_to_host()[0]
         expected = np.sum(h_input, initial=h_init[0])
@@ -155,7 +186,7 @@ def _test_device_sum_with_iterator(
 
     h_init = np.array([start_sum_with], dtype_out)
 
-    cuda.compute.reduce_into(d_input, d_output, add_op, len(l_varr), h_init)
+    reduce_into_multi_phase(d_input, d_output, add_op, len(l_varr), h_init)
 
     h_output = d_output.copy_to_host()
     assert h_output[0] == expected_result
@@ -553,7 +584,7 @@ def test_reduce_2d_array(array_2d):
     d_out = cp.empty(1, dtype=array_2d.dtype)
     h_init = np.asarray([0], dtype=array_2d.dtype)
     d_in = array_2d
-    cuda.compute.reduce_into(d_in, d_out, binary_op, d_in.size, h_init)
+    reduce_into_multi_phase(d_in, d_out, binary_op, d_in.size, h_init)
     np.testing.assert_allclose(d_in.sum().get(), d_out.get())
 
 
@@ -586,7 +617,7 @@ def test_reduce_with_stream(cuda_stream):
         d_in = cp.asarray(h_in)
         d_out = cp.empty(1, dtype=np.int32)
 
-    cuda.compute.reduce_into(d_in, d_out, add_op, d_in.size, h_init, stream=cuda_stream)
+    reduce_into_multi_phase(d_in, d_out, add_op, d_in.size, h_init, stream=cuda_stream)
     with cp_stream:
         cp.testing.assert_allclose(d_in.sum().get(), d_out.get())
 
@@ -624,8 +655,7 @@ def test_reduce_invalid_stream():
     with pytest.raises(
         TypeError, match="does not implement the '__cuda_stream__' protocol"
     ):
-        _ = reduce_into(
-            None,
+        _ = reduce_into.get_temp_storage_bytes(
             d_in=d_in,
             d_out=d_out,
             op=add_op,
@@ -637,8 +667,7 @@ def test_reduce_invalid_stream():
     with pytest.raises(
         TypeError, match="could not obtain __cuda_stream__ protocol version and handle"
     ):
-        _ = reduce_into(
-            None,
+        _ = reduce_into.get_temp_storage_bytes(
             d_in=d_in,
             d_out=d_out,
             op=add_op,
@@ -648,8 +677,7 @@ def test_reduce_invalid_stream():
         )
 
     with pytest.raises(TypeError, match="invalid stream handle"):
-        _ = reduce_into(
-            None,
+        _ = reduce_into.get_temp_storage_bytes(
             d_in=d_in,
             d_out=d_out,
             op=add_op,
@@ -665,7 +693,9 @@ def test_device_reduce_well_known_plus():
     d_input = cp.array([1, 2, 3, 4, 5], dtype=dtype)
     d_output = cp.empty(1, dtype=dtype)
 
-    cuda.compute.reduce_into(d_input, d_output, OpKind.PLUS, len(d_input), h_init)
+    reduce_into_multi_phase(
+        d_input, d_output, OpKind.PLUS, len(d_input), h_init
+    )
 
     expected_output = 15
     assert (d_output == expected_output).all()
@@ -677,7 +707,9 @@ def test_device_reduce_well_known_minimum():
     d_input = cp.array([8, 6, 7, 5, 3, 0, 9], dtype=dtype)
     d_output = cp.empty(1, dtype=dtype)
 
-    cuda.compute.reduce_into(d_input, d_output, OpKind.MINIMUM, len(d_input), h_init)
+    reduce_into_multi_phase(
+        d_input, d_output, OpKind.MINIMUM, len(d_input), h_init
+    )
 
     expected_output = 0
     assert (d_output == expected_output).all()
@@ -689,7 +721,9 @@ def test_device_reduce_well_known_maximum():
     d_input = cp.array([8, 6, 7, 5, 3, 0, 9], dtype=dtype)
     d_output = cp.empty(1, dtype=dtype)
 
-    cuda.compute.reduce_into(d_input, d_output, OpKind.MAXIMUM, len(d_input), h_init)
+    reduce_into_multi_phase(
+        d_input, d_output, OpKind.MAXIMUM, len(d_input), h_init
+    )
 
     expected_output = 9
     assert (d_output == expected_output).all()
@@ -707,7 +741,7 @@ def test_cache_modified_input_iterator():
     h_init = np.array([0], dtype=np.int32)
     d_output = cp.empty(1, dtype=np.int32)
 
-    cuda.compute.reduce_into(iterator, d_output, add_op, len(values), h_init)
+    reduce_into_multi_phase(iterator, d_output, add_op, len(values), h_init)
 
     expected_output = functools.reduce(lambda a, b: a + b, values)
     assert (d_output == expected_output).all()
@@ -724,7 +758,7 @@ def test_constant_iterator():
     h_init = np.array([0], dtype=np.int32)
     d_output = cp.empty(1, dtype=np.int32)
 
-    cuda.compute.reduce_into(constant_it, d_output, add_op, num_items, h_init)
+    reduce_into_multi_phase(constant_it, d_output, add_op, num_items, h_init)
 
     expected_output = functools.reduce(lambda a, b: a + b, [value] * num_items)
     assert (d_output == expected_output).all()
@@ -741,7 +775,7 @@ def test_counting_iterator():
     h_init = np.array([0], dtype=np.int32)  # Initial value for the reduction
     d_output = cp.empty(1, dtype=np.int32)  # Storage for output
 
-    cuda.compute.reduce_into(first_it, d_output, add_op, num_items, h_init)
+    reduce_into_multi_phase(first_it, d_output, add_op, num_items, h_init)
 
     expected_output = functools.reduce(
         lambda a, b: a + b, range(first_item, first_item + num_items)
@@ -763,7 +797,9 @@ def test_transform_iterator():
     h_init = np.array([0], dtype=np.int32)
     d_output = cp.empty(1, dtype=np.int32)
 
-    cuda.compute.reduce_into(transform_it, d_output, add_op, num_items, h_init)
+    reduce_into_multi_phase(
+        transform_it, d_output, add_op, num_items, h_init
+    )
 
     expected_output = functools.reduce(
         lambda a, b: a + b, [a**2 for a in range(first_item, first_item + num_items)]
@@ -786,7 +822,7 @@ def test_reduce_struct_type():
 
     h_init = Pixel(0, 0, 0)
 
-    cuda.compute.reduce_into(d_rgb, d_out, max_g_value, d_rgb.size, h_init)
+    reduce_into_multi_phase(d_rgb, d_out, max_g_value, d_rgb.size, h_init)
 
     h_rgb = d_rgb.get()
     expected = h_rgb[h_rgb.view("int32")[:, 1].argmax()]
@@ -826,7 +862,7 @@ def test_reduce_struct_type_minmax():
     h_init = MinMax(np.inf, -np.inf)
 
     # run the reduction algorithm
-    cuda.compute.reduce_into(tr_it, d_out, minmax_op, nelems, h_init)
+    reduce_into_multi_phase(tr_it, d_out, minmax_op, nelems, h_init)
 
     # display values computed on the device
     actual = d_out.get()
@@ -851,7 +887,9 @@ def test_reduce_transform_output_iterator(floating_array):
 
     d_out_it = TransformOutputIterator(d_output, sqrt)
 
-    cuda.compute.reduce_into(d_input, d_out_it, OpKind.PLUS, len(d_input), h_init)
+    reduce_into_multi_phase(
+        d_input, d_out_it, OpKind.PLUS, len(d_input), h_init
+    )
 
     expected = cp.sqrt(cp.sum(d_input))
     np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)
@@ -864,7 +902,7 @@ def test_reduce_with_not_guaranteed_determinism(floating_array):
     d_input = floating_array
     d_output = cp.empty(1, dtype=dtype)
 
-    cuda.compute.reduce_into(
+    reduce_into_multi_phase(
         d_input,
         d_output,
         OpKind.PLUS,
@@ -880,7 +918,9 @@ def test_reduce_bool():
     d_output = cp.empty_like(d_input, shape=(1,))
 
     # Perform the reduction.
-    cuda.compute.reduce_into(d_input, d_output, OpKind.MAXIMUM, len(d_input), h_init)
+    reduce_into_multi_phase(
+        d_input, d_output, OpKind.MAXIMUM, len(d_input), h_init
+    )
 
     expected = True
     assert d_output.get()[0] == expected

@@ -14,7 +14,30 @@ d_data = cp.asarray(h_data)
 d_values = cp.asarray(h_values)
 d_out = cp.empty(len(h_values), dtype=np.uintp)
 
-cuda.compute.lower_bound(d_data, d_values, d_out, len(d_data), len(d_values))
+searcher = cuda.compute.make_lower_bound(d_data, d_values, d_out)
+
+temp_storage_bytes = int(
+    searcher.get_temp_storage_bytes(
+        d_data,
+        d_values,
+        d_out,
+        num_items=len(d_data),
+        num_values=len(d_values),
+    )
+)
+
+d_temp_storage = (
+    None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+)
+
+searcher.compute(
+    d_temp_storage,
+    d_data,
+    d_values,
+    d_out,
+    num_items=len(d_data),
+    num_values=len(d_values),
+)
 
 expected = np.searchsorted(h_data, h_values, side="left").astype(np.uintp)
 got = cp.asnumpy(d_out)

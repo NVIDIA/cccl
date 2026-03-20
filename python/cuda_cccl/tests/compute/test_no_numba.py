@@ -24,8 +24,15 @@ def test_reduce_op_kind():
     d_input = cp.array(h_input)
     d_output = cp.empty(1, dtype=np.int32)
 
-    h_init = np.array(0, dtype=np.int32)
-    cuda.compute.reduce_into(d_input, d_output, OpKind.PLUS, num_items, h_init)
+    h_init = np.array([0], dtype=np.int32)
+    reducer = cuda.compute.make_reduce_into(
+        d_input, d_output, OpKind.PLUS, h_init
+    )
+    temp_storage_bytes = reducer.get_temp_storage_bytes(
+        d_input, d_output, num_items, h_init=h_init
+    )
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    reducer.compute(d_temp_storage, d_input, d_output, num_items, h_init=h_init)
 
     result = d_output.get()[0]
     expected = np.sum(h_input)

@@ -30,6 +30,8 @@ class _Reduce:
         "d_in_cccl",
         "d_out_cccl",
         "h_init_cccl",
+        "_h_init",
+        "_op",
         "op_cccl",
         "build_result",
         "device_reduce_fn",
@@ -47,7 +49,8 @@ class _Reduce:
         self.d_in_cccl = cccl.to_cccl_input_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_output_iter(d_out)
         self.h_init_cccl = cccl.to_cccl_value(h_init)
-
+        self._h_init = h_init
+        self._op = op
         # Compile the op with value types
         value_type = get_value_type(h_init)
         self.op_cccl = op.compile((value_type, value_type), value_type)
@@ -68,6 +71,37 @@ class _Reduce:
                 self.device_reduce_fn = self.build_result.compute_nondeterministic
             case _:
                 raise ValueError(f"Invalid determinism: {determinism}")
+
+    def get_temp_storage_bytes(
+        self,
+        d_in,
+        d_out,
+        num_items: int,
+        h_init: np.ndarray | GpuStruct | None = None,
+        op: Callable | OpAdapter | None = None,
+        stream=None,
+    ) -> int:
+        if op is None:
+            op = self._op
+        if h_init is None:
+            h_init = self._h_init
+        return self(None, d_in, d_out, op, num_items, h_init, stream)
+
+    def compute(
+        self,
+        temp_storage,
+        d_in,
+        d_out,
+        num_items: int,
+        h_init: np.ndarray | GpuStruct | None = None,
+        op: Callable | OpAdapter | None = None,
+        stream=None,
+    ) -> None:
+        if op is None:
+            op = self._op
+        if h_init is None:
+            h_init = self._h_init
+        self(temp_storage, d_in, d_out, op, num_items, h_init, stream)
 
     def __call__(
         self,

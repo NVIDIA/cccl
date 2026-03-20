@@ -26,6 +26,9 @@ class _Histogram:
         "h_num_output_levels_cccl",
         "h_lower_level_cccl",
         "h_upper_level_cccl",
+        "_h_num_output_levels",
+        "_h_lower_level",
+        "_h_upper_level",
         "build_result",
     ]
 
@@ -50,6 +53,9 @@ class _Histogram:
         self.h_num_output_levels_cccl = cccl.to_cccl_value(h_num_output_levels)
         self.h_lower_level_cccl = cccl.to_cccl_value(h_lower_level)
         self.h_upper_level_cccl = cccl.to_cccl_value(h_upper_level)
+        self._h_num_output_levels = h_num_output_levels
+        self._h_lower_level = h_lower_level
+        self._h_upper_level = h_upper_level
 
         self.build_result = call_build(
             _bindings.DeviceHistogramBuildResult,
@@ -106,6 +112,61 @@ class _Histogram:
         )
 
         return temp_storage_bytes
+
+    def get_temp_storage_bytes(
+        self,
+        d_samples: DeviceArrayLike | IteratorT,
+        d_histogram: DeviceArrayLike,
+        num_samples: int,
+        h_num_output_levels: np.ndarray | None = None,
+        h_lower_level: np.ndarray | None = None,
+        h_upper_level: np.ndarray | None = None,
+        stream=None,
+    ) -> int:
+        if h_num_output_levels is None:
+            h_num_output_levels = self._h_num_output_levels
+        if h_lower_level is None:
+            h_lower_level = self._h_lower_level
+        if h_upper_level is None:
+            h_upper_level = self._h_upper_level
+        return self(
+            None,
+            d_samples,
+            d_histogram,
+            h_num_output_levels,
+            h_lower_level,
+            h_upper_level,
+            num_samples,
+            stream,
+        )
+
+    def compute(
+        self,
+        temp_storage,
+        d_samples: DeviceArrayLike | IteratorT,
+        d_histogram: DeviceArrayLike,
+        num_samples: int,
+        h_num_output_levels: np.ndarray | None = None,
+        h_lower_level: np.ndarray | None = None,
+        h_upper_level: np.ndarray | None = None,
+        stream=None,
+    ) -> None:
+        if h_num_output_levels is None:
+            h_num_output_levels = self._h_num_output_levels
+        if h_lower_level is None:
+            h_lower_level = self._h_lower_level
+        if h_upper_level is None:
+            h_upper_level = self._h_upper_level
+        self(
+            temp_storage,
+            d_samples,
+            d_histogram,
+            h_num_output_levels,
+            h_lower_level,
+            h_upper_level,
+            num_samples,
+            stream,
+        )
 
 
 @cache_with_registered_key_functions

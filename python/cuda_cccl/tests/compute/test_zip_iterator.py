@@ -14,6 +14,86 @@ from cuda.compute import (
 )
 
 
+def reduce_into_multi_phase(d_in, d_out, op, num_items: int, h_init, stream=None):
+    reducer = cuda.compute.make_reduce_into(d_in, d_out, op, h_init)
+
+    temp_storage_bytes = int(
+        reducer.get_temp_storage_bytes(
+            d_in,
+            d_out,
+            num_items,
+            h_init=h_init,
+            op=op,
+            stream=stream,
+        )
+    )
+
+    d_temp_storage = (
+        None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+    )
+
+    reducer.compute(
+        d_temp_storage,
+        d_in,
+        d_out,
+        num_items,
+        h_init=h_init,
+        op=op,
+        stream=stream,
+    )
+
+
+def inclusive_scan_multi_phase(d_in, d_out, op, init_value, num_items: int, stream=None):
+    scanner = cuda.compute.make_inclusive_scan(d_in, d_out, op, init_value)
+    temp_storage_bytes = int(
+        scanner.get_temp_storage_bytes(
+            d_in,
+            d_out,
+            num_items,
+            init_value=init_value,
+            op=op,
+            stream=stream,
+        )
+    )
+
+    d_temp_storage = (
+        None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+    )
+
+    scanner.compute(
+        d_temp_storage,
+        d_in,
+        d_out,
+        num_items,
+        init_value=init_value,
+        op=op,
+        stream=stream,
+    )
+
+
+def binary_transform_multi_phase(d_in1, d_in2, d_out, op, num_items: int, stream=None):
+    transformer = cuda.compute.make_binary_transform(d_in1, d_in2, d_out, op)
+    temp_storage_bytes = int(
+        transformer.get_temp_storage_bytes(
+            d_in1, d_in2, d_out, op, num_items, stream=stream
+        )
+    )
+
+    d_temp_storage = (
+        None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+    )
+
+    transformer.compute(
+        d_temp_storage,
+        d_in1,
+        d_in2,
+        d_out,
+        op,
+        num_items,
+        stream=stream,
+    )
+
+
 @pytest.mark.parametrize("num_items", [10, 1_000, 100_000])
 def test_zip_iterator_basic(num_items):
     @gpu_struct
@@ -32,7 +112,7 @@ def test_zip_iterator_basic(num_items):
     d_output = cp.empty(1, dtype=Pair.dtype)
     h_init = Pair(0, 0.0)
 
-    cuda.compute.reduce_into(zip_it, d_output, sum_pairs, num_items, h_init)
+    reduce_into_multi_phase(zip_it, d_output, sum_pairs, num_items, h_init)
 
     expected_first = d_input1.sum().get()
     expected_second = d_input2.sum().get()
@@ -60,7 +140,7 @@ def test_zip_iterator_with_counting_iterator(num_items):
 
     d_output = cp.empty(1, dtype=dtype)
 
-    cuda.compute.reduce_into(zip_it, d_output, max_by_value, num_items, h_init)
+    reduce_into_multi_phase(zip_it, d_output, max_by_value, num_items, h_init)
 
     result = d_output.get()[0]
 
@@ -96,7 +176,7 @@ def test_zip_iterator_with_counting_iterator_and_transform(num_items):
     result = d_output.get()[0]
     h_init = IndexValuePair(-1, -1)
 
-    cuda.compute.reduce_into(zip_it, d_output, max_by_value, num_items, h_init)
+    reduce_into_multi_phase(zip_it, d_output, max_by_value, num_items, h_init)
 
     result = d_output.get()[0]
 
@@ -129,7 +209,7 @@ def test_zip_iterator_n_iterators(num_items):
     d_output = cp.empty(1, dtype=Triple.dtype)
     h_init = Triple(0, 0.0, 0)
 
-    cuda.compute.reduce_into(zip_it, d_output, sum_triples, num_items, h_init)
+    reduce_into_multi_phase(zip_it, d_output, sum_triples, num_items, h_init)
 
     result = d_output.get()[0]
 
@@ -160,7 +240,7 @@ def test_zip_iterator_single_iterator(num_items):
     d_output = cp.empty(1, dtype=Single.dtype)
     h_init = Single(0)
 
-    cuda.compute.reduce_into(zip_it, d_output, sum_singles, num_items, h_init)
+    reduce_into_multi_phase(zip_it, d_output, sum_singles, num_items, h_init)
 
     result = d_output.get()[0]
 
@@ -188,7 +268,7 @@ def test_zip_iterator_with_transform(num_items):
 
     d_output = cp.empty(num_items, dtype=TransformedPair.dtype)
 
-    cuda.compute.binary_transform(
+    binary_transform_multi_phase(
         zip_it1, zip_it2, d_output, binary_transform, num_items
     )
 
@@ -225,7 +305,7 @@ def test_zip_iterator_with_scan(num_items):
     d_output = cp.empty(num_items, dtype=Pair.dtype)
     h_init = Pair(cp.iinfo(np.int64).max, cp.iinfo(np.int64).max)
 
-    cuda.compute.inclusive_scan(zip_it, d_output, min_pairs, h_init, num_items)
+    inclusive_scan_multi_phase(zip_it, d_output, min_pairs, h_init, num_items)
 
     result = d_output.get()
 
@@ -265,7 +345,7 @@ def test_output_zip_iterator_with_scan(monkeypatch, num_items):
     def add_pairs(p1, p2):
         return p1[0] + p2[0], p1[1] + p2[1]
 
-    cuda.compute.inclusive_scan(zip_it, zip_out_it, add_pairs, None, num_items)
+    inclusive_scan_multi_phase(zip_it, zip_out_it, add_pairs, None, num_items)
 
     in1 = d_in1.get()
     in2 = d_in2.get()
@@ -318,7 +398,7 @@ def test_nested_zip_iterators():
     d_output = cp.empty(1, dtype=OuterTriple.dtype)
     h_init = OuterTriple(InnerPair(0, 0), 0.0)
 
-    cuda.compute.reduce_into(outer_zip, d_output, sum_nested_zips, num_items, h_init)
+    reduce_into_multi_phase(outer_zip, d_output, sum_nested_zips, num_items, h_init)
 
     result = d_output.get()[0]
 
@@ -364,7 +444,7 @@ def test_deeply_nested_zip_iterators():
     d_output = cp.empty(1, dtype=OuterPair.dtype)
     h_init = OuterPair(InnerPair(0, 0.0), 0)
 
-    cuda.compute.reduce_into(outer_zip, d_output, sum_nested_zips, num_items, h_init)
+    reduce_into_multi_phase(outer_zip, d_output, sum_nested_zips, num_items, h_init)
 
     result = d_output.get()[0]
 
@@ -425,7 +505,7 @@ def test_nested_output_zip_iterator_with_scan(monkeypatch, num_items, dtype_map)
         result2 = (v1[1].x + v2[1].x, v1[1].y + v2[1].y)
         return Vec2(result1[0], result1[1]), Vec2(result2[0], result2[1])
 
-    cuda.compute.inclusive_scan(zip_it, zip_out_it, add_vec2_pairs, None, num_items)
+    inclusive_scan_multi_phase(zip_it, zip_out_it, add_vec2_pairs, None, num_items)
 
     in1 = d_in1.get()
     in2 = d_in2.get()
@@ -620,7 +700,7 @@ def test_zip_iterator_advance():
     d_output = cp.empty(1, dtype=Pair.dtype)
 
     remaining_items = num_items - offset
-    cuda.compute.reduce_into(
+    reduce_into_multi_phase(
         advanced_zip_it, d_output, sum_pairs, remaining_items, h_init
     )
 
@@ -667,8 +747,12 @@ def test_nested_zip_iterator_advance():
     h_init = OuterTriple(InnerPair(0, 0), 0.0)
 
     remaining_items = num_items - offset
-    cuda.compute.reduce_into(
-        advanced_outer_zip, d_output, sum_nested_zips, remaining_items, h_init
+    reduce_into_multi_phase(
+        advanced_outer_zip,
+        d_output,
+        sum_nested_zips,
+        remaining_items,
+        h_init,
     )
 
     result = d_output.get()[0]

@@ -38,6 +38,8 @@ class _BinarySearch:
         "op_cccl",
         "data_ptr",
         "out_ptr",
+        "_comp",
+        "_mode",
     ]
 
     def __init__(
@@ -63,6 +65,8 @@ class _BinarySearch:
 
         self.data_ptr = protocols.get_data_pointer(d_data)
         self.out_ptr = protocols.get_data_pointer(d_out)
+        self._comp = comp
+        self._mode = mode
 
         self.d_data_cccl = cccl.to_cccl_input_iter(d_data)
         self.d_values_cccl = cccl.to_cccl_input_iter(d_values)
@@ -110,6 +114,32 @@ class _BinarySearch:
             self.op_cccl,
             stream_handle,
         )
+
+    def get_temp_storage_bytes(
+        self,
+        d_data,
+        d_values,
+        d_out,
+        comp: Operator | None = None,
+        num_items: int | None = None,
+        num_values: int | None = None,
+        stream=None,
+    ) -> int:
+        # Binary search doesn't require temporary storage.
+        return 0
+
+    def compute(
+        self,
+        temp_storage,
+        d_data,
+        d_values,
+        d_out,
+        comp: Operator | None = None,
+        num_items: int | None = None,
+        num_values: int | None = None,
+        stream=None,
+    ) -> None:
+        self(d_data, d_values, d_out, comp, num_items, num_values, stream)
 
 
 @cache_with_registered_key_functions

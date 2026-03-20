@@ -24,11 +24,13 @@ d_output = cp.empty(len(h_input), dtype=dtype)
 
 # Create the scanner object and allocate temporary storage.
 scanner = cuda.compute.make_exclusive_scan(d_input, d_output, OpKind.PLUS, h_init)
-temp_storage_size = scanner(None, d_input, d_output, OpKind.PLUS, len(h_input), h_init)
+temp_storage_size = scanner.get_temp_storage_bytes(
+    d_input, d_output, len(h_input), init_value=h_init
+)
 d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
 # Perform the exclusive scan.
-scanner(d_temp_storage, d_input, d_output, OpKind.PLUS, len(h_input), h_init)
+scanner.compute(d_temp_storage, d_input, d_output, len(h_input), init_value=h_init)
 
 # Verify the result.
 expected_result = np.array([0, 1, 3, 6], dtype=dtype)

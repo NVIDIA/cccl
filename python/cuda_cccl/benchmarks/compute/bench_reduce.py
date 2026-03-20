@@ -17,9 +17,9 @@ def reduce_pointer(input_array, build_only):
 
     alg = cuda.compute.make_reduce_into(input_array, res, OpKind.PLUS, h_init)
     if not build_only:
-        temp_storage_bytes = alg(None, input_array, res, OpKind.PLUS, size, h_init)
+        temp_storage_bytes = alg.get_temp_storage_bytes(input_array, res, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, input_array, res, OpKind.PLUS, size, h_init)
+        alg.compute(temp_storage, input_array, res, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -34,9 +34,9 @@ def reduce_pointer_custom_op(input_array, build_only):
 
     alg = cuda.compute.make_reduce_into(input_array, res, my_add, h_init)
     if not build_only:
-        temp_storage_bytes = alg(None, input_array, res, my_add, size, h_init)
+        temp_storage_bytes = alg.get_temp_storage_bytes(input_array, res, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, input_array, res, my_add, size, h_init)
+        alg.compute(temp_storage, input_array, res, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -51,9 +51,9 @@ def reduce_struct(input_array, build_only):
 
     alg = cuda.compute.make_reduce_into(input_array, res, my_add, h_init)
     if not build_only:
-        temp_storage_bytes = alg(None, input_array, res, my_add, size, h_init)
+        temp_storage_bytes = alg.get_temp_storage_bytes(input_array, res, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, input_array, res, my_add, size, h_init)
+        alg.compute(temp_storage, input_array, res, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -68,12 +68,11 @@ def reduce_iterator(inp, size, build_only):
 
     alg = cuda.compute.make_reduce_into(inp, res, my_add, h_init)
     if not build_only:
-        temp_storage_bytes = alg(None, inp, res, my_add, size, h_init)
+        temp_storage_bytes = alg.get_temp_storage_bytes(inp, res, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, inp, res, my_add, size, h_init)
+        alg.compute(temp_storage, inp, res, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
-
 
 @gpu_struct
 class MyStruct:
@@ -92,7 +91,6 @@ def bench_reduce_pointer(bench_fixture, request, size):
 
     fixture = request.getfixturevalue(bench_fixture)
     fixture(run)
-
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
 def bench_reduce_iterator(bench_fixture, request, size):
@@ -133,7 +131,6 @@ def bench_reduce_pointer_custom_op(bench_fixture, request, size):
 
     fixture = request.getfixturevalue(bench_fixture)
     fixture(run)
-
 
 def bench_reduce_pointer_single_phase(benchmark, size):
     input_array = cp.random.randint(0, 10, size)
@@ -209,7 +206,6 @@ def reduce_iterator_single_phase(inp, size, build_only):
 
     cp.cuda.runtime.deviceSynchronize()
 
-
 def reduce_pointer_lambda(input_array, build_only):
     """Reduce using a lambda function as the operator."""
     size = len(input_array)
@@ -219,14 +215,11 @@ def reduce_pointer_lambda(input_array, build_only):
     # Use a lambda function directly as the reducer
     alg = cuda.compute.make_reduce_into(input_array, res, lambda x, y: x + y, h_init)
     if not build_only:
-        temp_storage_bytes = alg(
-            None, input_array, res, lambda x, y: x + y, size, h_init
-        )
+        temp_storage_bytes = alg.get_temp_storage_bytes(input_array, res, size, h_init)
         temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
-        alg(temp_storage, input_array, res, lambda x, y: x + y, size, h_init)
+        alg.compute(temp_storage, input_array, res, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
-
 
 @pytest.mark.parametrize("bench_fixture", ["compile_benchmark", "benchmark"])
 def bench_reduce_pointer_lambda(bench_fixture, request, size):

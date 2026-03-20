@@ -57,7 +57,25 @@ d_output = cp.empty(1, dtype=Particle.dtype)
 h_init = Particle(0, Point(0, 0))
 
 # Perform the reduction
-cuda.compute.reduce_into(d_input, d_output, sum_particles, num_items, h_init)
+reducer = cuda.compute.make_reduce_into(d_input, d_output, sum_particles, h_init)
+temp_storage_bytes = int(
+    reducer.get_temp_storage_bytes(
+        d_input,
+        d_output,
+        num_items,
+        h_init=h_init,
+        op=sum_particles,
+    )
+)
+d_temp_storage = None if temp_storage_bytes == 0 else cp.empty(temp_storage_bytes, dtype=np.uint8)
+reducer.compute(
+    d_temp_storage,
+    d_input,
+    d_output,
+    num_items,
+    h_init=h_init,
+    op=sum_particles,
+)
 
 # Verify the result
 result = d_output.get()[0]
