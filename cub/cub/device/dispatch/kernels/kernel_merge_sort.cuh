@@ -14,100 +14,68 @@
 #endif // no system header
 
 #include <cub/agent/agent_merge_sort.cuh>
+#include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_policy_wrapper_t.cuh>
 #include <cub/util_vsmem.cuh>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::merge_sort
 {
-/**
- * @brief Helper class template that provides two agent template instantiations: one instantiated with the default
- * policy and one with the fallback policy. This helps to avoid having to enlist all the agent's template parameters
- * twice: once for the default agent and once for the fallback agent
- */
-template <typename DefaultPolicyT, typename FallbackPolicyT, template <typename...> class AgentT, typename... AgentParamsT>
-struct dual_policy_agent_helper_t
-{
-  using default_agent_t  = AgentT<DefaultPolicyT, AgentParamsT...>;
-  using fallback_agent_t = AgentT<FallbackPolicyT, AgentParamsT...>;
-
-  static constexpr auto default_size  = sizeof(typename default_agent_t::TempStorage);
-  static constexpr auto fallback_size = sizeof(typename fallback_agent_t::TempStorage);
-};
-
-/**
- * @brief Helper class template for merge sort-specific virtual shared memory handling. The merge sort algorithm in its
- * current implementation relies on the fact that both the sorting as well as the merging kernels use the same tile
- * size. This circumstance needs to be respected when determining whether the fallback policy for large user types is
- * applicable: we must either use the fallback for both or for none of the two agents.
- */
-template <typename DefaultPolicyT,
-          typename KeyInputIteratorT,
-          typename ValueInputIteratorT,
-          typename KeyIteratorT,
-          typename ValueIteratorT,
+//! @brief Helper class template for merge sort-specific virtual shared memory handling. The merge sort algorithm in
+//! its current implementation relies on the fact that both the sorting as well as the merging kernels use the same tile
+//! size. This circumstance needs to be respected when determining whether the fallback policy for large user types is
+//! applicable: we must either use the fallback for both or for none of the two agents.
+template <typename DefaultPolicyGetter,
+          typename KeyInIt,
+          typename ValInIt,
+          typename KeyOutIt,
+          typename ValOutIt,
           typename OffsetT,
           typename CompareOpT,
           typename KeyT,
           typename ValueT>
 class merge_sort_vsmem_helper_t
 {
-private:
-  // Default fallback policy with a smaller tile size
-  using fallback_policy_t = cub::detail::policy_wrapper_t<DefaultPolicyT, 64, 1>;
+  struct fallback_pol_getter
+  {
+    _CCCL_API _CCCL_FORCEINLINE constexpr auto operator()() const
+    {
+      merge_sort_policy policy = DefaultPolicyGetter{}();
+      policy.block_threads     = 64;
+      policy.items_per_thread  = 1;
+      return policy;
+    }
+  };
 
-  // Helper for the `AgentBlockSort` template with one member type alias for the agent template instantiated with the
-  // default policy and one instantiated with the fallback policy
-  using block_sort_helper_t = dual_policy_agent_helper_t<
-    DefaultPolicyT,
-    fallback_policy_t,
-    merge_sort::AgentBlockSort,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyIteratorT,
-    ValueIteratorT,
-    OffsetT,
-    CompareOpT,
-    KeyT,
-    ValueT>;
-  using default_block_sort_agent_t  = typename block_sort_helper_t::default_agent_t;
-  using fallback_block_sort_agent_t = typename block_sort_helper_t::fallback_agent_t;
+  using default_block_sort_agent_t =
+    AgentBlockSort<DefaultPolicyGetter, KeyInIt, ValInIt, KeyOutIt, ValOutIt, OffsetT, CompareOpT, KeyT, ValueT>;
+  using fallback_block_sort_agent_t =
+    AgentBlockSort<fallback_pol_getter, KeyInIt, ValInIt, KeyOutIt, ValOutIt, OffsetT, CompareOpT, KeyT, ValueT>;
 
-  // Helper for the `AgentMerge` template with one member type alias for the agent template instantiated with the
-  // default policy and one instantiated with the fallback policy
-  using merge_helper_t = dual_policy_agent_helper_t<
-    DefaultPolicyT,
-    fallback_policy_t,
-    merge_sort::AgentMerge,
-    KeyIteratorT,
-    ValueIteratorT,
-    OffsetT,
-    CompareOpT,
-    KeyT,
-    ValueT>;
-  using default_merge_agent_t  = typename merge_helper_t::default_agent_t;
-  using fallback_merge_agent_t = typename merge_helper_t::fallback_agent_t;
+  using default_merge_agent_t  = AgentMerge<DefaultPolicyGetter, KeyOutIt, ValOutIt, OffsetT, CompareOpT, KeyT, ValueT>;
+  using fallback_merge_agent_t = AgentMerge<fallback_pol_getter, KeyOutIt, ValOutIt, OffsetT, CompareOpT, KeyT, ValueT>;
 
   // Use fallback if either (a) the default block sort or (b) the block merge agent exceed the maximum shared memory
   // available per block and both (1) the fallback block sort and (2) the fallback merge agent would not exceed the
   // available shared memory
   static constexpr auto max_default_size =
-    (::cuda::std::max) (block_sort_helper_t::default_size, merge_helper_t::default_size);
+    (::cuda::std::max) (sizeof(typename default_block_sort_agent_t::TempStorage),
+                        sizeof(typename default_merge_agent_t::TempStorage));
   static constexpr auto max_fallback_size =
-    (::cuda::std::max) (block_sort_helper_t::fallback_size, merge_helper_t::fallback_size);
+    (::cuda::std::max) (sizeof(typename fallback_block_sort_agent_t::TempStorage),
+                        sizeof(typename fallback_merge_agent_t::TempStorage));
   static constexpr bool uses_fallback_policy =
     (max_default_size > max_smem_per_block) && (max_fallback_size <= max_smem_per_block);
 
 public:
-  using policy_t = ::cuda::std::_If<uses_fallback_policy, fallback_policy_t, DefaultPolicyT>;
+  static constexpr merge_sort_policy policy = uses_fallback_policy ? fallback_pol_getter{}() : DefaultPolicyGetter{}();
   using block_sort_agent_t =
     ::cuda::std::_If<uses_fallback_policy, fallback_block_sort_agent_t, default_block_sort_agent_t>;
   using merge_agent_t = ::cuda::std::_If<uses_fallback_policy, fallback_merge_agent_t, default_merge_agent_t>;
 };
 
-template <typename ChainedPolicyT,
+template <typename PolicySelectorT,
           typename KeyInputIteratorT,
           typename ValueInputIteratorT,
           typename KeyIteratorT,
@@ -117,7 +85,7 @@ template <typename ChainedPolicyT,
           typename KeyT,
           typename ValueT>
 __launch_bounds__(
-  merge_sort_vsmem_helper_t<typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
+  merge_sort_vsmem_helper_t<policy_getter<PolicySelectorT, cuda::arch_id{CUB_PTX_ARCH / 10}>,
                             KeyInputIteratorT,
                             ValueInputIteratorT,
                             KeyIteratorT,
@@ -125,7 +93,7 @@ __launch_bounds__(
                             OffsetT,
                             CompareOpT,
                             KeyT,
-                            ValueT>::policy_t::BLOCK_THREADS)
+                            ValueT>::policy.block_threads)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortBlockSortKernel(
     bool ping,
     KeyInputIteratorT keys_in,
@@ -138,8 +106,8 @@ __launch_bounds__(
     CompareOpT compare_op,
     vsmem_t vsmem)
 {
-  using MergeSortHelperT = merge_sort_vsmem_helper_t<
-    typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
+  using vsmem_adapted_agents = merge_sort_vsmem_helper_t<
+    policy_getter<PolicySelectorT, cuda::arch_id{CUB_PTX_ARCH / 10}>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -149,23 +117,21 @@ __launch_bounds__(
     KeyT,
     ValueT>;
 
-  using ActivePolicyT = typename MergeSortHelperT::policy_t;
-
-  using AgentBlockSortT = typename MergeSortHelperT::block_sort_agent_t;
-
-  using vsmem_helper_t = vsmem_helper_impl<AgentBlockSortT>;
+  static constexpr merge_sort_policy active_policy = vsmem_adapted_agents::policy;
+  using agent_block_sort_t                         = vsmem_adapted_agents::block_sort_agent_t;
+  using vsmem_helper_t                             = vsmem_helper_impl<agent_block_sort_t>;
 
   // Static shared memory allocation
   __shared__ typename vsmem_helper_t::static_temp_storage_t static_temp_storage;
 
   // Get temporary storage
-  typename AgentBlockSortT::TempStorage& temp_storage = vsmem_helper_t::get_temp_storage(static_temp_storage, vsmem);
+  typename agent_block_sort_t::TempStorage& temp_storage = vsmem_helper_t::get_temp_storage(static_temp_storage, vsmem);
 
-  AgentBlockSortT agent(
+  agent_block_sort_t agent(
     ping,
     temp_storage,
-    try_make_cache_modified_iterator<ActivePolicyT::LOAD_MODIFIER>(keys_in),
-    try_make_cache_modified_iterator<ActivePolicyT::LOAD_MODIFIER>(items_in),
+    try_make_cache_modified_iterator<active_policy.load_modifier>(keys_in),
+    try_make_cache_modified_iterator<active_policy.load_modifier>(items_in),
     keys_count,
     keys_out,
     items_out,
@@ -209,7 +175,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
   }
 }
 
-template <typename ChainedPolicyT,
+template <typename PolicySelectorT,
           typename KeyInputIteratorT,
           typename ValueInputIteratorT,
           typename KeyIteratorT,
@@ -219,7 +185,7 @@ template <typename ChainedPolicyT,
           typename KeyT,
           typename ValueT>
 __launch_bounds__(
-  merge_sort_vsmem_helper_t<typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
+  merge_sort_vsmem_helper_t<policy_getter<PolicySelectorT, cuda::arch_id{CUB_PTX_ARCH / 10}>,
                             KeyInputIteratorT,
                             ValueInputIteratorT,
                             KeyIteratorT,
@@ -227,7 +193,7 @@ __launch_bounds__(
                             OffsetT,
                             CompareOpT,
                             KeyT,
-                            ValueT>::policy_t::BLOCK_THREADS)
+                            ValueT>::policy.block_threads)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortMergeKernel(
     bool ping,
     KeyIteratorT keys_ping,
@@ -240,8 +206,8 @@ __launch_bounds__(
     OffsetT target_merged_tiles_number,
     vsmem_t vsmem)
 {
-  using MergeSortHelperT = merge_sort_vsmem_helper_t<
-    typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
+  using vsmem_adapted_agents = merge_sort_vsmem_helper_t<
+    policy_getter<PolicySelectorT, cuda::arch_id{CUB_PTX_ARCH / 10}>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -251,25 +217,23 @@ __launch_bounds__(
     KeyT,
     ValueT>;
 
-  using ActivePolicyT = typename MergeSortHelperT::policy_t;
-
-  using AgentMergeT = typename MergeSortHelperT::merge_agent_t;
-
-  using vsmem_helper_t = vsmem_helper_impl<AgentMergeT>;
+  static constexpr merge_sort_policy active_policy = vsmem_adapted_agents::policy;
+  using agent_merge_t                              = vsmem_adapted_agents::merge_agent_t;
+  using vsmem_helper_t                             = vsmem_helper_impl<agent_merge_t>;
 
   // Static shared memory allocation
   __shared__ typename vsmem_helper_t::static_temp_storage_t static_temp_storage;
 
   // Get temporary storage
-  typename AgentMergeT::TempStorage& temp_storage = vsmem_helper_t::get_temp_storage(static_temp_storage, vsmem);
+  typename agent_merge_t::TempStorage& temp_storage = vsmem_helper_t::get_temp_storage(static_temp_storage, vsmem);
 
-  AgentMergeT agent(
+  agent_merge_t agent(
     ping,
     temp_storage,
-    try_make_cache_modified_iterator<ActivePolicyT::LOAD_MODIFIER>(keys_ping),
-    try_make_cache_modified_iterator<ActivePolicyT::LOAD_MODIFIER>(items_ping),
-    try_make_cache_modified_iterator<ActivePolicyT::LOAD_MODIFIER>(keys_pong),
-    try_make_cache_modified_iterator<ActivePolicyT::LOAD_MODIFIER>(items_pong),
+    try_make_cache_modified_iterator<active_policy.load_modifier>(keys_ping),
+    try_make_cache_modified_iterator<active_policy.load_modifier>(items_ping),
+    try_make_cache_modified_iterator<active_policy.load_modifier>(keys_pong),
+    try_make_cache_modified_iterator<active_policy.load_modifier>(items_pong),
     keys_count,
     keys_pong,
     items_pong,
