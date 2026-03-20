@@ -119,17 +119,37 @@ class _SegmentedReduce:
             self.h_init_cccl,
             stream_handle,
         )
-        # After
-    def get_temp_storage_bytes(self, d_in, d_out, num_items, h_init=None, op=None, stream=None) -> int:
-        resolved_op = self._op if op is None else op
-        resolved_init = self._h_init if h_init is None else h_init
-        return self(None, d_in, d_out, resolved_op, num_items, resolved_init, stream)
 
-    def compute(self, temp_storage, d_in, d_out, num_items, h_init=None, op=None, stream=None) -> None:
+    def get_temp_storage_bytes(
+        self,
+        d_in,
+        d_out,
+        num_segments: int,
+        start_offsets_in,
+        end_offsets_in,
+        h_init: np.ndarray | GpuStruct | None = None,
+        op: Callable | OpAdapter | None = None,
+        stream=None,
+    ) -> int:
         resolved_op = self._op if op is None else op
         resolved_init = self._h_init if h_init is None else h_init
-        self(temp_storage, d_in, d_out, resolved_op, num_items, resolved_init, stream)
-        return temp_storage_bytes
+        return self(None, d_in, d_out, resolved_op, num_segments, start_offsets_in, end_offsets_in, resolved_init, stream)
+
+    def compute(
+        self,
+        temp_storage,
+        d_in,
+        d_out,
+        num_segments: int,
+        start_offsets_in,
+        end_offsets_in,
+        h_init: np.ndarray | GpuStruct | None = None,
+        op: Callable | OpAdapter | None = None,
+        stream=None,
+    ) -> None:
+        resolved_op = self._op if op is None else op
+        resolved_init = self._h_init if h_init is None else h_init
+        self(temp_storage, d_in, d_out, resolved_op, num_segments, start_offsets_in, end_offsets_in, resolved_init, stream)
 
 
 @cache_with_registered_key_functions
