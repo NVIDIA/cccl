@@ -137,7 +137,7 @@ std::string get_merge_sort_kernel_name(
       : cccl_type_enum_to_name<items_storage_t>(output_items_it.value_type.type);
 
   return std::format(
-    "cub::detail::merge_sort::{0}<{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, device_merge_sort_vsmem_helper>",
+    "cub::detail::merge_sort::{0}<{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}>",
     kernel_name,
     chained_policy_t,
     input_keys_iterator_t,
@@ -197,33 +197,6 @@ struct merge_sort_kernel_source
   std::size_t ValueSize() const
   {
     return build.item_type.size;
-  }
-};
-
-struct dynamic_vsmem_helper_t
-{
-  template <typename PolicyT, typename... Ts>
-  static ::cuda::std::size_t BlockSortVSMemPerBlock(PolicyT /*policy*/)
-  {
-    return 0;
-  }
-
-  template <typename PolicyT, typename... Ts>
-  static ::cuda::std::size_t MergeVSMemPerBlock(PolicyT /*policy*/)
-  {
-    return 0;
-  }
-
-  template <typename PolicyT, typename... Ts>
-  static int BlockThreads(PolicyT policy)
-  {
-    return policy.BlockThreads();
-  }
-
-  template <typename PolicyT, typename... Ts>
-  static int ItemsPerTile(PolicyT policy)
-  {
-    return policy.ItemsPerTile();
   }
 };
 } // namespace merge_sort
@@ -298,29 +271,6 @@ struct __align__({3}) items_storage_t {{
 {7}
 {8}
 using device_merge_sort_policy = {9}::MaxPolicy;
-
-struct device_merge_sort_vsmem_helper {{
-  template<typename ActivePolicyT, typename KeyInputIteratorT, typename ValueInputIteratorT, typename... Ts>
-  struct MergeSortVSMemHelperT {{
-    using policy_t = device_merge_sort_policy::ActivePolicy::MergeSortPolicy;
-    using block_sort_agent_t = cub::detail::merge_sort::AgentBlockSort<policy_t, KeyInputIteratorT, ValueInputIteratorT, Ts...>;
-    using merge_agent_t = cub::detail::merge_sort::AgentMerge<policy_t, Ts...>;
-  }};
-  template <typename AgentT>
-  struct VSmemHelperT {{
-    using static_temp_storage_t = typename AgentT::TempStorage;
-    static _CCCL_DEVICE _CCCL_FORCEINLINE static_temp_storage_t& get_temp_storage(
-      static_temp_storage_t& static_temp_storage, cub::detail::vsmem_t& vsmem)
-    {{
-        return static_temp_storage;
-    }}
-    template <bool needs_vsmem_ = false, ::cuda::std::enable_if_t<!needs_vsmem_, int> = 0>
-    static _CCCL_DEVICE _CCCL_FORCEINLINE bool discard_temp_storage(static_temp_storage_t& temp_storage)
-    {{
-      return false;
-    }}
-  }};
-}};
 
 #include <cub/detail/ptx-json/json.cuh>
 __device__ consteval auto& policy_generator() {{
@@ -466,7 +416,6 @@ CUresult cccl_device_merge_sort(
       merge_sort::merge_sort_runtime_tuning_policy,
       merge_sort::merge_sort_kernel_source,
       cub::detail::CudaDriverLauncherFactory,
-      merge_sort::dynamic_vsmem_helper_t,
       indirect_arg_t,
       indirect_arg_t>::Dispatch(d_temp_storage,
                                 *temp_storage_bytes,

@@ -103,7 +103,6 @@ template <typename KeyInputIteratorT,
             OffsetT,
             CompareOpT>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
-          typename VSMemHelperT          = detail::merge_sort::VSMemHelper,
           typename KeyT                  = cub::detail::it_value_t<KeyIteratorT>,
           typename ValueT                = cub::detail::it_value_t<ValueIteratorT>>
 struct DispatchMergeSort
@@ -189,8 +188,11 @@ struct DispatchMergeSort
       return cudaSuccess;
     }
 
-    auto wrapped_policy  = detail::merge_sort::MakeMergeSortPolicyWrapper(policy);
-    const auto tile_size = VSMemHelperT::template ItemsPerTile<
+    auto wrapped_policy = detail::merge_sort::MakeMergeSortPolicyWrapper(policy);
+#ifdef CUB_DEFINE_RUNTIME_POLICIES
+    const auto tile_size = wrapped_policy.MergeSort().ItemsPerTile();
+#else // CUB_DEFINE_RUNTIME_POLICIES
+    const auto tile_size = merge_sort_vsmem_helper_t<
       typename ActivePolicyT::MergeSortPolicy,
       KeyInputIteratorT,
       ValueInputIteratorT,
@@ -199,7 +201,8 @@ struct DispatchMergeSort
       OffsetT,
       CompareOpT,
       KeyT,
-      ValueT>(wrapped_policy.MergeSort());
+      ValueT>::policy_t::ITEMS_PER_TILE;
+#endif // CUB_DEFINE_RUNTIME_POLICIES
     const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
     const auto merge_partitions_size         = static_cast<size_t>(1 + num_tiles) * sizeof(OffsetT);
@@ -210,9 +213,13 @@ struct DispatchMergeSort
      * Merge sort supports large types, which can lead to excessive shared memory size requirements. In these cases,
      * merge sort allocates virtual shared memory that resides in global memory.
      */
+#ifdef CUB_DEFINE_RUNTIME_POLICIES
+    constexpr ::cuda::std::size_t block_sort_smem_size = 0;
+    constexpr ::cuda::std::size_t merge_smem_size      = 0;
+#else // CUB_DEFINE_RUNTIME_POLICIES
     const ::cuda::std::size_t block_sort_smem_size =
       num_tiles
-      * VSMemHelperT::template BlockSortVSMemPerBlock<
+      * vsmem_helper_impl<typename merge_sort_vsmem_helper_t<
         typename ActivePolicyT::MergeSortPolicy,
         KeyInputIteratorT,
         ValueInputIteratorT,
@@ -221,10 +228,10 @@ struct DispatchMergeSort
         OffsetT,
         CompareOpT,
         KeyT,
-        ValueT>(wrapped_policy.MergeSort());
+        ValueT>::block_sort_agent_t>::vsmem_per_block;
     const ::cuda::std::size_t merge_smem_size =
       num_tiles
-      * VSMemHelperT::template MergeVSMemPerBlock<
+      * vsmem_helper_impl<typename merge_sort_vsmem_helper_t<
         typename ActivePolicyT::MergeSortPolicy,
         KeyInputIteratorT,
         ValueInputIteratorT,
@@ -233,7 +240,8 @@ struct DispatchMergeSort
         OffsetT,
         CompareOpT,
         KeyT,
-        ValueT>(wrapped_policy.MergeSort());
+        ValueT>::merge_agent_t>::vsmem_per_block;
+#endif // CUB_DEFINE_RUNTIME_POLICIES
     const ::cuda::std::size_t virtual_shared_memory_size = (::cuda::std::max) (block_sort_smem_size, merge_smem_size);
 
     void* allocations[4]       = {nullptr, nullptr, nullptr, nullptr};
@@ -271,7 +279,10 @@ struct DispatchMergeSort
     auto keys_buffer      = static_cast<KeyT*>(allocations[1]);
     auto items_buffer     = static_cast<ValueT*>(allocations[2]);
 
-    const int block_threads = VSMemHelperT::template BlockThreads<
+#ifdef CUB_DEFINE_RUNTIME_POLICIES
+    const int block_threads = wrapped_policy.MergeSort().BlockThreads();
+#else // CUB_DEFINE_RUNTIME_POLICIES
+    const int block_threads = merge_sort_vsmem_helper_t<
       typename ActivePolicyT::MergeSortPolicy,
       KeyInputIteratorT,
       ValueInputIteratorT,
@@ -280,7 +291,8 @@ struct DispatchMergeSort
       OffsetT,
       CompareOpT,
       KeyT,
-      ValueT>(wrapped_policy.MergeSort());
+      ValueT>::policy_t::BLOCK_THREADS;
+#endif // CUB_DEFINE_RUNTIME_POLICIES
 
     // Invoke DeviceMergeSortBlockSortKernel
     launcher_factory(static_cast<int>(num_tiles), block_threads, 0, stream, true)
