@@ -482,7 +482,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   cudaStream_t stream,
   PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
-  KernelLauncherFactory launcher_factory = {}) -> cudaError_t
+  KernelLauncherFactory launcher_factory = {},
+  KeyT*                                  = nullptr /* for CCCL.C */,
+  ValueT*                                = nullptr /* for CCCL.C */) -> cudaError_t
 {
   constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
