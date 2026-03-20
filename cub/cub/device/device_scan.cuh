@@ -316,10 +316,6 @@ struct DeviceScan
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
-  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
-  //!   The range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
-  //!   shall not overlap in any other way.
-  //! - @devicestorage
   //!
   //! Preconditions
   //! +++++++++++++
@@ -618,7 +614,6 @@ struct DeviceScan
   //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The
   //!   range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
   //!   shall not overlap in any other way.
-  //! - @devicestorage
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -1077,9 +1072,6 @@ struct DeviceScan
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
-  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place. The
-  //!   range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
-  //!   shall not overlap in any other way.
   //!
   //! Preconditions
   //! +++++++++++++
@@ -1361,9 +1353,6 @@ struct DeviceScan
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
-  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
-  //!   The range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
-  //!   shall not overlap in any other way.
   //!
   //! Preconditions
   //! +++++++++++++

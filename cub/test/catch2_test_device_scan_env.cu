@@ -81,6 +81,27 @@ TEST_CASE("Device scan exclusive scan works with default environment", "[scan][d
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+TEST_CASE("Device scan exclusive scan with FutureValue works with default environment", "[scan][device]")
+{
+  using num_items_t = int;
+
+  num_items_t num_items = 4;
+
+  auto d_in  = thrust::device_vector<int>{1, 1, 1, 1};
+  auto d_out = thrust::device_vector<int>(num_items);
+
+  auto init_value_vec = thrust::device_vector<int>{0};
+  auto future_init    = cub::FutureValue<int>(thrust::raw_pointer_cast(init_value_vec.data()));
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceScan::ExclusiveScan(d_in.begin(), d_out.begin(), cuda::std::plus{}, future_init, num_items));
+
+  for (int i = 0; i < num_items; i++)
+  {
+    REQUIRE(d_out[i] == i);
+  }
+}
+
 TEST_CASE("Device scan exclusive sum works with default environment", "[sum][device]")
 {
   using num_items_t = int;

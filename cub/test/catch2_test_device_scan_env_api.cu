@@ -39,6 +39,27 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan accepts run_to_run determinism requirem
   REQUIRE(output == expected);
 }
 
+C2H_TEST("cub::DeviceScan::ExclusiveScan accepts not_guaranteed determinism requirements", "[scan][env]")
+{
+  auto op     = cuda::std::plus{};
+  auto input  = thrust::device_vector<int>{0, 1, 2, 3};
+  auto output = thrust::device_vector<int>(4);
+  auto init   = 0;
+
+  auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
+
+  auto error = cub::DeviceScan::ExclusiveScan(input.begin(), output.begin(), op, init, input.size(), env);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceScan::ExclusiveScan failed with status: " << error << std::endl;
+  }
+
+  thrust::device_vector<int> expected{0, 0, 1, 3};
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
 C2H_TEST("cub::DeviceScan::ExclusiveScan accepts stream and not_guaranteed determinism", "[scan][env]")
 {
   // example-begin exclusive-scan-env-stream
