@@ -103,12 +103,12 @@ public:
    * @param place The execution place to partition
    * @param scope Partitioning granularity (must be cuda_device when no handle is provided)
    */
-  place_partition(exec_place place, place_partition_scope scope)
+  place_partition(const exec_place& place, place_partition_scope scope)
   {
 #if _CCCL_CTK_BELOW(12, 4)
     _CCCL_ASSERT(scope != place_partition_scope::green_context, "Green contexts need an async resource handle.");
 #endif // _CCCL_CTK_BELOW(12, 4)
-    compute_subplaces_no_handle(mv(place), scope);
+    compute_subplaces_no_handle(place, scope);
   }
 
   /** @brief Partition a vector of execution places into a single vector of subplaces (with async handle).
@@ -291,11 +291,11 @@ private:
 #endif
 
     // If the scope requires no handle
-    compute_subplaces_no_handle(mv(place), scope);
+    compute_subplaces_no_handle(place, scope);
   }
 
   /** @brief Compute the subplaces of a place at the specified granularity (scope) into the sub_places vector */
-  void compute_subplaces_no_handle(exec_place place, place_partition_scope scope)
+  void compute_subplaces_no_handle(const exec_place& place, place_partition_scope scope)
   {
 #if _CCCL_CTK_BELOW(12, 4)
     _CCCL_ASSERT(scope != place_partition_scope::green_context, "Green contexts scope need an async resource handle.");
@@ -304,23 +304,9 @@ private:
 
     if (scope == place_partition_scope::cuda_device)
     {
-      if (place.size() > 1)
+      for (size_t i = 0; i < place.size(); ++i)
       {
-        // Multi-element grid: extract all places
-        for (size_t i = 0; i < place.size(); ++i)
-        {
-          sub_places.push_back(place.get_place(i));
-        }
-      }
-      else if (place.is_device())
-      {
-        // Scalar device place
-        sub_places.push_back(mv(place));
-      }
-      else
-      {
-        // 1-element grid or other scalar place: extract the underlying place
-        sub_places.push_back(place.get_place(0));
+        sub_places.push_back(place.get_place(i));
       }
       return;
     }

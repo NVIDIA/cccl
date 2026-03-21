@@ -571,7 +571,7 @@ public:
    *
    * For scalar places, idx must be 0 and returns the place itself.
    */
-  exec_place get_place(size_t idx)
+  exec_place get_place(size_t idx) const
   {
     return exec_place(pimpl->get_place(idx));
   }
@@ -579,7 +579,7 @@ public:
   /**
    * @brief Get the sub-place at the given multi-dimensional position
    */
-  exec_place get_place(pos4 p)
+  exec_place get_place(pos4 p) const
   {
     return get_place(get_dims().get_index(p));
   }
