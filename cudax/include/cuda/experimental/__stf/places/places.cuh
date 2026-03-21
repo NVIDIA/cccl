@@ -943,7 +943,7 @@ public:
   // Grid interface - host is a 1-element grid
   ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
-    EXPECT(idx == 0, "Index out of bounds for host exec_place");
+    _CCCL_ASSERT(idx == 0, "Index out of bounds for host exec_place");
     // Static instance - use no-op deleter instead of shared_from_this()
     return ::std::shared_ptr<impl>(this, [](impl*) {});
   }
@@ -951,13 +951,13 @@ public:
   // Activation - no-op for host
   exec_place activate(size_t idx) const override
   {
-    EXPECT(idx == 0, "Index out of bounds for host exec_place");
+    _CCCL_ASSERT(idx == 0, "Index out of bounds for host exec_place");
     return exec_place();
   }
 
   void deactivate(const exec_place& prev, size_t idx = 0) const override
   {
-    EXPECT(idx == 0, "Index out of bounds for host exec_place");
+    _CCCL_ASSERT(idx == 0, "Index out of bounds for host exec_place");
     _CCCL_ASSERT(!prev.get_impl(), "Host deactivate expects empty prev");
   }
 
@@ -1012,7 +1012,7 @@ public:
 
   ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
-    EXPECT(idx == 0, "Index out of bounds for device_auto exec_place");
+    _CCCL_ASSERT(idx == 0, "Index out of bounds for device_auto exec_place");
     // Static instance - use no-op deleter instead of shared_from_this()
     return ::std::shared_ptr<impl>(this, [](impl*) {});
   }
@@ -1061,7 +1061,7 @@ public:
 
     exec_place activate(size_t idx) const override
     {
-      EXPECT(idx == 0, "Index out of bounds for device exec_place");
+      _CCCL_ASSERT(idx == 0, "Index out of bounds for device exec_place");
       auto old_dev_id = cuda_try<cudaGetDevice>();
       if (old_dev_id != devid_)
       {
@@ -1072,7 +1072,7 @@ public:
 
     void deactivate(const exec_place& prev, size_t idx = 0) const override
     {
-      EXPECT(idx == 0, "Index out of bounds for device exec_place");
+      _CCCL_ASSERT(idx == 0, "Index out of bounds for device exec_place");
       auto current_dev_id  = cuda_try<cudaGetDevice>();
       auto restored_dev_id = device_ordinal(prev.affine_data_place());
       if (current_dev_id != restored_dev_id)
@@ -1328,13 +1328,13 @@ inline exec_place data_place::affine_exec_place() const
 
 inline ::std::shared_ptr<exec_place::impl> exec_place::impl::get_place(size_t idx)
 {
-  EXPECT(idx == 0, "Index out of bounds for scalar exec_place");
+  _CCCL_ASSERT(idx == 0, "Index out of bounds for scalar exec_place");
   return shared_from_this();
 }
 
 inline ::std::shared_ptr<exec_place::impl> exec_place_device::impl::get_place(size_t idx)
 {
-  EXPECT(idx == 0, "Index out of bounds for device exec_place");
+  _CCCL_ASSERT(idx == 0, "Index out of bounds for device exec_place");
   // Static instance - use no-op deleter instead of shared_from_this()
   return ::std::shared_ptr<impl>(this, [](impl*) {});
 }

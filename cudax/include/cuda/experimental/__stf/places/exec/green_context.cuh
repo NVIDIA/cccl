@@ -279,13 +279,13 @@ public:
 
   ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
-    EXPECT(idx == 0, "Index out of bounds for green_ctx exec_place");
+    _CCCL_ASSERT(idx == 0, "Index out of bounds for green_ctx exec_place");
     return shared_from_this();
   }
 
   exec_place activate(size_t idx) const override
   {
-    EXPECT(idx == 0, "Index out of bounds for green_ctx exec_place");
+    _CCCL_ASSERT(idx == 0, "Index out of bounds for green_ctx exec_place");
 
     // Save the current context and transform it into a fake green context place
     CUcontext current_ctx;
@@ -301,7 +301,7 @@ public:
 
   void deactivate(const exec_place& prev, size_t idx = 0) const override
   {
-    EXPECT(idx == 0, "Index out of bounds for green_ctx exec_place");
+    _CCCL_ASSERT(idx == 0, "Index out of bounds for green_ctx exec_place");
 
     auto prev_impl      = ::std::static_pointer_cast<exec_place_green_ctx_impl>(prev.get_impl());
     CUcontext saved_ctx = prev_impl->driver_context_;
