@@ -1,12 +1,5 @@
 #pragma once
 
-// This test utility compares mixed numeric types (e.g. float vs double) via
-// templated assertions, so implicit float-to-double promotion is intentional.
-#if defined(__GNUC__) && !defined(__clang__)
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Wdouble-promotion"
-#endif
-
 #include <thrust/complex.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/device_vector.h>
@@ -16,8 +9,30 @@
 
 #include <cuda/std/utility>
 
+#include <type_traits>
+
 #include <unittest/exceptions.h>
 #include <unittest/util.h>
+
+namespace unittest::detail
+{
+// Promote both operands to their common type before comparing, avoiding
+// implicit float-to-double promotion warnings (-Wdouble-promotion).
+// For non-arithmetic types, compare directly with no cast.
+template <typename T1, typename T2>
+auto promote(const T1& a, const T2& b)
+{
+  if constexpr (std::is_arithmetic_v<std::decay_t<T1>> && std::is_arithmetic_v<std::decay_t<T2>>)
+  {
+    using common_t = std::common_type_t<std::decay_t<T1>, std::decay_t<T2>>;
+    return std::pair<common_t, common_t>{static_cast<common_t>(a), static_cast<common_t>(b)};
+  }
+  else
+  {
+    return std::pair<const T1&, const T2&>{a, b};
+  }
+}
+} // namespace unittest::detail
 
 #define ASSERT_EQUAL_WITH_FILE_AND_LINE(X, Y, FILE_, LINE_)       unittest::assert_equal((X), (Y), FILE_, LINE_)
 #define ASSERT_EQUAL_QUIET_WITH_FILE_AND_LINE(X, Y, FILE_, LINE_) unittest::assert_equal_quiet((X), (Y), FILE_, LINE_)
@@ -126,7 +141,8 @@ struct value_type<THRUST_NS_QUALIFIER::device_reference<T>>
 template <typename T1, typename T2>
 void assert_equal(T1 a, T2 b, const std::string& filename = "unknown", int lineno = -1)
 {
-  if (!(a == b))
+  auto [x, y] = detail::promote(a, b);
+  if (!(x == y))
   {
     unittest::UnitTestFailure f;
     f << "[" << filename << ":" << lineno << "] ";
@@ -152,7 +168,8 @@ void assert_equal(char a, char b, const std::string& filename = "unknown", int l
 template <typename T1, typename T2>
 void assert_equal_quiet(const T1& a, const T2& b, const std::string& filename = "unknown", int lineno = -1)
 {
-  if (!(a == b))
+  auto [x, y] = detail::promote(a, b);
+  if (!(x == y))
   {
     unittest::UnitTestFailure f;
     f << "[" << filename << ":" << lineno << "] ";
@@ -167,7 +184,8 @@ void assert_equal_quiet(const T1& a, const T2& b, const std::string& filename = 
 template <typename T1, typename T2>
 void assert_not_equal(T1 a, T2 b, const std::string& filename = "unknown", int lineno = -1)
 {
-  if (a == b)
+  auto [x, y] = detail::promote(a, b);
+  if (x == y)
   {
     unittest::UnitTestFailure f;
     f << "[" << filename << ":" << lineno << "] ";
@@ -193,7 +211,8 @@ void assert_not_equal(char a, char b, const std::string& filename = "unknown", i
 template <typename T1, typename T2>
 void assert_not_equal_quiet(const T1& a, const T2& b, const std::string& filename = "unknown", int lineno = -1)
 {
-  if (a == b)
+  auto [x, y] = detail::promote(a, b);
+  if (x == y)
   {
     unittest::UnitTestFailure f;
     f << "[" << filename << ":" << lineno << "] ";
@@ -206,7 +225,8 @@ void assert_not_equal_quiet(const T1& a, const T2& b, const std::string& filenam
 template <typename T1, typename T2>
 void assert_less(T1 a, T2 b, const std::string& filename = "unknown", int lineno = -1)
 {
-  if (!(a < b))
+  auto [x, y] = detail::promote(a, b);
+  if (!(x < y))
   {
     unittest::UnitTestFailure f;
     f << "[" << filename << ":" << lineno << "] ";
@@ -231,7 +251,8 @@ void assert_less(char a, char b, const std::string& filename = "unknown", int li
 template <typename T1, typename T2>
 void assert_greater(T1 a, T2 b, const std::string& filename = "unknown", int lineno = -1)
 {
-  if (!(a > b))
+  auto [x, y] = detail::promote(a, b);
+  if (!(x > y))
   {
     unittest::UnitTestFailure f;
     f << "[" << filename << ":" << lineno << "] ";
@@ -256,7 +277,8 @@ void assert_greater(char a, char b, const std::string& filename = "unknown", int
 template <typename T1, typename T2>
 void assert_lequal(T1 a, T2 b, const std::string& filename = "unknown", int lineno = -1)
 {
-  if (!(a <= b))
+  auto [x, y] = detail::promote(a, b);
+  if (!(x <= y))
   {
     unittest::UnitTestFailure f;
     f << "[" << filename << ":" << lineno << "] ";
@@ -281,7 +303,8 @@ void assert_lequal(char a, char b, const std::string& filename = "unknown", int 
 template <typename T1, typename T2>
 void assert_gequal(T1 a, T2 b, const std::string& filename = "unknown", int lineno = -1)
 {
-  if (!(a >= b))
+  auto [x, y] = detail::promote(a, b);
+  if (!(x >= y))
   {
     unittest::UnitTestFailure f;
     f << "[" << filename << ":" << lineno << "] ";
@@ -772,7 +795,3 @@ void check_assert_throws(
   }
 }
 }; // end namespace unittest
-
-#if defined(__GNUC__) && !defined(__clang__)
-#  pragma GCC diagnostic pop
-#endif
