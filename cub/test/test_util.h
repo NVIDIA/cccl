@@ -38,6 +38,7 @@
 #include "mersenne.h"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/extended_types.h>
+#include <c2h/isclose.h>
 #include <c2h/test_util_vec.h>
 
 /******************************************************************************
@@ -1074,22 +1075,17 @@ int CompareResults(float* computed, float* reference, OffsetT len, bool verbose 
 {
   for (OffsetT i = 0; i < len; i++)
   {
-    if (computed[i] != reference[i])
+    if (!isclose(computed[i], reference[i]))
     {
-      float difference = std::abs(computed[i] - reference[i]);
-      float fraction   = difference / std::abs(reference[i]);
-
-      if (fraction > 0.00015)
+      if (verbose)
       {
-        if (verbose)
-        {
-          std::cout
-            << "INCORRECT: [" << i << "]: "
-            << "(computed) " << CoutCast(computed[i]) << " != " << CoutCast(reference[i])
-            << " (difference:" << difference << ", fraction: " << fraction << ")";
-        }
-        return 1;
+        float difference = std::abs(computed[i] - reference[i]);
+        std::cout
+          << "INCORRECT: [" << i << "]: "
+          << "(computed) " << CoutCast(computed[i]) << " != " << CoutCast(reference[i]) << " (difference:" << difference
+          << ")";
       }
+      return 1;
     }
   }
   return 0;
@@ -1113,20 +1109,15 @@ int CompareResults(double* computed, double* reference, OffsetT len, bool verbos
 {
   for (OffsetT i = 0; i < len; i++)
   {
-    if (computed[i] != reference[i])
+    if (!isclose(computed[i], reference[i]))
     {
-      double difference = std::abs(computed[i] - reference[i]);
-      double fraction   = difference / std::abs(reference[i]);
-
-      if (fraction > 0.00015)
+      if (verbose)
       {
-        if (verbose)
-        {
-          std::cout << "INCORRECT: [" << i << "]: " << CoutCast(computed[i]) << " != " << CoutCast(reference[i])
-                    << " (difference:" << difference << ", fraction: " << fraction << ")";
-        }
-        return 1;
+        double difference = std::abs(computed[i] - reference[i]);
+        std::cout << "INCORRECT: [" << i << "]: " << CoutCast(computed[i]) << " != " << CoutCast(reference[i])
+                  << " (difference:" << difference << ")";
       }
+      return 1;
     }
   }
   return 0;

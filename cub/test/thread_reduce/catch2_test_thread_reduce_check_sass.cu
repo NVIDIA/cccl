@@ -23,6 +23,7 @@
 #  include "c2h/catch2_test_helper.h"
 #  include "c2h/extended_types.h"
 #  include "c2h/generators.h"
+#  include <c2h/isclose.h>
 #  include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 /***********************************************************************************************************************
@@ -110,18 +111,10 @@ using cub_operator_fp_list = c2h::type_list<cuda::std::plus<>, cuda::minimum<>>;
  * Verify results and kernel launch
  **********************************************************************************************************************/
 
-_CCCL_TEMPLATE(typename T)
-_CCCL_REQUIRES((cuda::std::is_floating_point<T>::value))
+template <typename T>
 void verify_results(const T& expected_data, const T& test_results)
 {
-  REQUIRE_THAT(expected_data, Catch::Matchers::WithinRel(test_results, T{0.05}));
-}
-
-_CCCL_TEMPLATE(typename T)
-_CCCL_REQUIRES((!cuda::std::is_floating_point<T>::value))
-void verify_results(const T& expected_data, const T& test_results)
-{
-  REQUIRE(expected_data == test_results);
+  REQUIRE(isclose(expected_data, test_results));
 }
 
 template <typename T, typename ReduceOperator>

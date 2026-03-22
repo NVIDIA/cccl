@@ -16,6 +16,7 @@
 #include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
+#include <c2h/isclose.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedSum, device_inclusive_segmented_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::ExclusiveSegmentedSum, device_exclusive_segmented_sum);
@@ -73,34 +74,20 @@ bool check_segment(const c2h::host_vector<ValueT>& h_output,
   {
     if constexpr (cuda::std::is_floating_point_v<ValueT>)
     {
-      ValueT ref_v  = h_ref[pos];
-      ValueT act_v  = h_output[pos];
-      ValueT diff   = (ref_v - act_v);
-      ValueT adiff  = (diff > ValueT{0}) ? diff : -diff;
-      ValueT ref_av = (ref_v > ValueT{0}) ? ref_v : -ref_v;
-      ValueT act_av = (act_v > ValueT{0}) ? act_v : -act_v;
-
-      ValueT eps = ::cuda::std::numeric_limits<ValueT>::epsilon();
-      correct    = correct && (adiff < 3 * eps + 2 * eps * (::cuda::std::max(ref_av, act_av)));
+      correct = correct && isclose(h_ref[pos], h_output[pos]);
     }
     else if constexpr (cuda::std::is_same_v<ValueT, half_t> || cuda::std::is_same_v<ValueT, bfloat16_t>)
     {
-      float ref_v = h_ref[pos];
-      float act_v = h_output[pos];
+      float ref_v = static_cast<float>(h_ref[pos]);
+      float act_v = static_cast<float>(h_output[pos]);
       if (cuda::std::isfinite(ref_v) && cuda::std::isfinite(act_v))
       {
-        float diff   = (ref_v - act_v);
-        float adiff  = (diff > float{0}) ? diff : -diff;
-        float ref_av = (ref_v > float{0}) ? ref_v : -ref_v;
-        float act_av = (act_v > float{0}) ? act_v : -act_v;
-
-        float eps = float{1} / float{128};
-        correct   = correct && (adiff < 3 * eps + 5 * eps * (::cuda::std::max(ref_av, act_av)));
+        correct = correct && isclose(ref_v, act_v);
       }
     }
     else
     {
-      correct = correct && (h_ref[pos] == h_output[pos]);
+      correct = correct && isclose(h_ref[pos], h_output[pos]);
     }
     if (!correct)
     {

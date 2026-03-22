@@ -22,6 +22,7 @@
 #include <c2h/checked_allocator.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
+#include <c2h/isclose.h>
 #include <c2h/test_util_vec.h>
 #include <c2h/utility.h>
 #include <c2h/vector.h>
@@ -214,25 +215,37 @@ std::vector<T> to_vec(std::vector<T> const& vec)
 }
 } // namespace detail
 
-#define REQUIRE_APPROX_EQ(ref, out)                          \
-  {                                                          \
-    auto vec_ref = detail::to_vec(ref);                      \
-    auto vec_out = detail::to_vec(out);                      \
-    REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out)); \
+#define REQUIRE_APPROX_EQ(ref, out)                                      \
+  {                                                                      \
+    auto vec_ref = detail::to_vec(ref);                                  \
+    auto vec_out = detail::to_vec(out);                                  \
+    for (size_t i = 0; i < vec_ref.size(); i++)                          \
+    {                                                                    \
+      INFO("index " << i << ": " << vec_ref[i] << " vs " << vec_out[i]); \
+      REQUIRE(isclose(vec_ref[i], vec_out[i]));                          \
+    }                                                                    \
   }
 
-#define REQUIRE_APPROX_EQ_EPSILON(ref, out, eps)                          \
-  {                                                                       \
-    auto vec_ref = detail::to_vec(ref);                                   \
-    auto vec_out = detail::to_vec(out);                                   \
-    REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out).epsilon(eps)); \
+#define REQUIRE_APPROX_EQ_EPSILON(ref, out, eps)                         \
+  {                                                                      \
+    auto vec_ref = detail::to_vec(ref);                                  \
+    auto vec_out = detail::to_vec(out);                                  \
+    for (size_t i = 0; i < vec_ref.size(); i++)                          \
+    {                                                                    \
+      INFO("index " << i << ": " << vec_ref[i] << " vs " << vec_out[i]); \
+      REQUIRE(isclose(vec_ref[i], vec_out[i], eps));                     \
+    }                                                                    \
   }
 
 #define REQUIRE_APPROX_EQ_ABS(ref, out, abs)                             \
   {                                                                      \
     auto vec_ref = detail::to_vec(ref);                                  \
     auto vec_out = detail::to_vec(out);                                  \
-    REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out).margin(abs)); \
+    for (size_t i = 0; i < vec_ref.size(); i++)                          \
+    {                                                                    \
+      INFO("index " << i << ": " << vec_ref[i] << " vs " << vec_out[i]); \
+      REQUIRE(isclose(vec_ref[i], vec_out[i], 0 * vec_ref[i], abs));     \
+    }                                                                    \
   }
 
 namespace c2h::detail
