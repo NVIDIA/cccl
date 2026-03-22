@@ -238,10 +238,6 @@ std::vector<T> to_vec(std::vector<T> const& vec)
 namespace c2h::detail
 {
 // Copy of Catch2::MatchExpr, but streamReconstructedExpression does not print arg
-// Catch2's ITransientExpression has virtual functions but a non-virtual destructor.
-// We can't fix the third-party base class, so suppress the warning here.
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_GCC("-Wnon-virtual-dtor")
 template <typename ArgT, typename MatcherT>
 class QuietMatchExpr : public Catch::ITransientExpression
 {
@@ -255,12 +251,13 @@ public:
       , m_matcher(matcher)
   {}
 
+  ~QuietMatchExpr() override = default;
+
   void streamReconstructedExpression(std::ostream& os) const override
   {
     os << m_matcher.toString();
   }
 };
-_CCCL_DIAG_POP
 
 template <typename ArgT, typename MatcherT>
 QuietMatchExpr(ArgT&&, MatcherT) -> QuietMatchExpr<ArgT, MatcherT>;
