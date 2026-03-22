@@ -1,5 +1,12 @@
 #pragma once
 
+// This test utility compares mixed numeric types (e.g. float vs double) via
+// templated assertions, so implicit float-to-double promotion is intentional.
+#if defined(__GNUC__) && !defined(__clang__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wdouble-promotion"
+#endif
+
 #include <thrust/complex.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/device_vector.h>
@@ -765,3 +772,7 @@ void check_assert_throws(
   }
 }
 }; // end namespace unittest
+
+#if defined(__GNUC__) && !defined(__clang__)
+#  pragma GCC diagnostic pop
+#endif

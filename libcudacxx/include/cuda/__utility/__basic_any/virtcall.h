@@ -33,6 +33,7 @@
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-local-typedefs")
+_CCCL_DIAG_SUPPRESS_GCC("-Wnull-dereference")
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 

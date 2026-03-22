@@ -178,6 +178,16 @@ function(cccl_build_compiler_targets)
     append_option_if_available("-Wunused-local-typedefs" cxx_compile_options)
     append_option_if_available("-Wvla" cxx_compile_options)
 
+    # Strict warnings: catch shadowed variables, missing virtual destructors,
+    # null dereference, implicit float-to-double, and format string issues.
+    # Note: -Wpedantic is intentionally omitted — nvcc's preprocessor emits
+    # GCC-style line directives that trigger unavoidable pedantic warnings.
+    append_option_if_available("-Wshadow=local" cxx_compile_options)
+    append_option_if_available("-Wnon-virtual-dtor" cxx_compile_options)
+    append_option_if_available("-Wnull-dereference" cxx_compile_options)
+    append_option_if_available("-Wdouble-promotion" cxx_compile_options)
+    append_option_if_available("-Wformat=2" cxx_compile_options)
+
     # Disable GNU extensions (flag is clang only)
     append_option_if_available("-Wgnu" cxx_compile_options)
     append_option_if_available("-Wno-gnu-line-marker" cxx_compile_options) # WAR 3916341

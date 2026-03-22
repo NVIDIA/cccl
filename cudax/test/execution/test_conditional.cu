@@ -30,8 +30,8 @@ C2H_TEST("simple use of conditional runs exactly one of the two closures", "[ada
     auto sndr1 =
       ex::just(i)
       | ex::conditional(
-        [](int i) {
-          return i % 2 == 0;
+        [](int val) {
+          return val % 2 == 0;
         },
         ex::then([&](int) {
           even = true;

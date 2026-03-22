@@ -470,10 +470,10 @@ void bulk_forwards_values()
   int counter[n]{0};
 
   auto sndr = ex::just(magic_number, &counter) //
-            | ex::bulk(ex::par, n, [](int i, int val, int (*counter)[n]) {
+            | ex::bulk(ex::par, n, [](int i, int val, int (*ctr)[n]) {
                 if (val == magic_number)
                 {
-                  (*counter)[i]++;
+                  (*ctr)[i]++;
                 }
               });
   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{magic_number, &counter});
@@ -541,8 +541,8 @@ void bulk_forwards_values_that_can_be_taken_by_reference()
   ::cuda::std::iota(vals_expected.begin(), vals_expected.end(), 0);
 
   auto sndr = ex::just(cuda::std::move(vals)) //
-            | ex::bulk(ex::par, n, [&](std::size_t i, ::cuda::std::array<int, n>& vals) {
-                vals[i] = static_cast<int>(i);
+            | ex::bulk(ex::par, n, [&](std::size_t i, ::cuda::std::array<int, n>& arr) {
+                arr[i] = static_cast<int>(i);
               });
   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{vals_expected});
   ex::start(op);
@@ -555,10 +555,10 @@ void bulk_chunked_forwards_values_that_can_be_taken_by_reference()
   ::cuda::std::iota(vals_expected.begin(), vals_expected.end(), 0);
 
   auto sndr = ex::just(cuda::std::move(vals)) //
-            | ex::bulk_chunked(ex::par, n, [&](std::size_t b, std::size_t e, ::cuda::std::array<int, n>& vals) {
+            | ex::bulk_chunked(ex::par, n, [&](std::size_t b, std::size_t e, ::cuda::std::array<int, n>& arr) {
                 for (; b != e; ++b)
                 {
-                  vals[b] = static_cast<int>(b);
+                  arr[b] = static_cast<int>(b);
                 }
               });
   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{vals_expected});
@@ -572,8 +572,8 @@ void bulk_unchunked_forwards_values_that_can_be_taken_by_reference()
   ::cuda::std::iota(vals_expected.begin(), vals_expected.end(), 0);
 
   auto sndr = ex::just(cuda::std::move(vals)) //
-            | ex::bulk_unchunked(ex::par, n, [&](std::size_t i, ::cuda::std::array<int, n>& vals) {
-                vals[i] = static_cast<int>(i);
+            | ex::bulk_unchunked(ex::par, n, [&](std::size_t i, ::cuda::std::array<int, n>& arr) {
+                arr[i] = static_cast<int>(i);
               });
   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{vals_expected});
   ex::start(op);

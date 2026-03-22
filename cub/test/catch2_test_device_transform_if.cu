@@ -43,10 +43,10 @@ C2H_TEST("DeviceTransform::TransformIf conditional BabelStream add",
   c2h::host_vector<type> a_h = a;
   c2h::host_vector<type> b_h = b;
   c2h::host_vector<type> reference_h(num_items);
-  std::transform(a_h.begin(), a_h.end(), b_h.begin(), reference_h.begin(), [](type a, type b) {
-    if (a < 10)
+  std::transform(a_h.begin(), a_h.end(), b_h.begin(), reference_h.begin(), [](type lhs, type rhs) {
+    if (lhs < 10)
     {
-      return static_cast<type>(a + b);
+      return static_cast<type>(lhs + rhs);
     }
     return type{42 + 1};
   });

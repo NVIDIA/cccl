@@ -85,6 +85,7 @@ c2h::host_vector<MessageT> compute_reference(const c2h::device_vector<MessageT>&
 
   c2h::host_vector<MessageT> reference = tile_aggregates;
   MessageT* h_reference                = thrust::raw_pointer_cast(reference.data());
+  REQUIRE(h_reference != nullptr);
 
   MessageT aggregate = h_reference[0];
   for (std::size_t i = 1; i < reference.size(); i++)

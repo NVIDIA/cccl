@@ -21,6 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+// GCC's -Wnull-dereference fires false positives on __query_interface() return
+// values, which are guaranteed non-null by the library's invariants when called
+// on a valid vptr.
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wnull-dereference")
+
 #include <cuda/__utility/__basic_any/basic_any_base.h>
 #include <cuda/__utility/__basic_any/basic_any_fwd.h>
 #include <cuda/__utility/__basic_any/basic_any_ref.h>
@@ -561,6 +567,8 @@ private:
 };
 
 _CCCL_END_NAMESPACE_CUDA
+
+_CCCL_DIAG_POP
 
 #include <cuda/std/__cccl/epilogue.h>
 
