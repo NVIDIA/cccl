@@ -317,8 +317,8 @@ __host__ __device__ constexpr bool test()
 #if TEST_HAS_EXCEPTIONS()
 void test_exceptions()
 { // constructors throw std::bad_alloc
-  constexpr size_t capacity = 4;
-  using inplace_vector      = cuda::std::inplace_vector<int, capacity>;
+  [[maybe_unused]] constexpr size_t capacity = 4;
+  using inplace_vector                       = cuda::std::inplace_vector<int, capacity>;
 
   try
   {

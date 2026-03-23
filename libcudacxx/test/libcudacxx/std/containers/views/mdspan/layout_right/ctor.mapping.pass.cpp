@@ -62,9 +62,10 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
 template <class T1, class T2>
 __host__ __device__ constexpr void test_conversion()
 {
-  constexpr size_t D             = cuda::std::dynamic_extent;
-  constexpr bool idx_convertible = static_cast<size_t>(cuda::std::numeric_limits<T1>::max())
-                                >= static_cast<size_t>(cuda::std::numeric_limits<T2>::max());
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr bool idx_convertible =
+    static_cast<size_t>(cuda::std::numeric_limits<T1>::max())
+    >= static_cast<size_t>(cuda::std::numeric_limits<T2>::max());
 
   // clang-format off
   test_conversion<idx_convertible && true,  cuda::std::extents<T1>>(cuda::std::extents<T2>());
