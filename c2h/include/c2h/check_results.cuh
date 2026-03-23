@@ -42,9 +42,14 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
   {
     for (size_t i = 0; i < test_results.size(); ++i)
     {
-      INFO("index " << i);
-      REQUIRE(isclose(expected_data[i].x, test_results[i].x, 0.01f));
-      REQUIRE(isclose(expected_data[i].y, test_results[i].y, 0.01f));
+      bool close_x = isclose(expected_data[i].x, test_results[i].x, 0.01f);
+      bool close_y = isclose(expected_data[i].y, test_results[i].y, 0.01f);
+      if (!close_x || !close_y)
+      {
+        INFO("index " << i);
+      }
+      REQUIRE(close_x);
+      REQUIRE(close_y);
     }
   }
   else if constexpr (cuda::std::is_same_v<T, __nv_bfloat162> || cuda::std::is_same_v<T, __half2>)
@@ -52,9 +57,16 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
     constexpr auto rel_err = cuda::std::is_same_v<T, __half2> ? 0.08f : 0.2f;
     for (size_t i = 0; i < test_results.size(); ++i)
     {
-      INFO("index " << i);
-      REQUIRE(isclose(static_cast<float>(expected_data[i].x), static_cast<float>(test_results[i].x), rel_err));
-      REQUIRE(isclose(static_cast<float>(expected_data[i].y), static_cast<float>(test_results[i].y), rel_err));
+      bool close_x =
+        isclose(static_cast<float>(expected_data[i].x), static_cast<float>(test_results[i].x), rel_err);
+      bool close_y =
+        isclose(static_cast<float>(expected_data[i].y), static_cast<float>(test_results[i].y), rel_err);
+      if (!close_x || !close_y)
+      {
+        INFO("index " << i);
+      }
+      REQUIRE(close_x);
+      REQUIRE(close_y);
     }
   }
   else if constexpr (cuda::std::is_same_v<T, cuda::std::complex<__nv_bfloat16>>
@@ -67,9 +79,14 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
       auto test_real     = static_cast<float>(test_results[i].real());
       auto expected_imag = static_cast<float>(expected_data[i].imag());
       auto test_imag     = static_cast<float>(test_results[i].imag());
-      INFO("index " << i);
-      REQUIRE(isclose(expected_real, test_real, rel_err));
-      REQUIRE(isclose(expected_imag, test_imag, rel_err));
+      bool close_real    = isclose(expected_real, test_real, rel_err);
+      bool close_imag    = isclose(expected_imag, test_imag, rel_err);
+      if (!close_real || !close_imag)
+      {
+        INFO("index " << i);
+      }
+      REQUIRE(close_real);
+      REQUIRE(close_imag);
     }
   }
   else if constexpr (cuda::std::__is_cuda_std_complex_v<T>)
@@ -80,9 +97,14 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
       auto test_real     = test_results[i].real();
       auto expected_imag = expected_data[i].imag();
       auto test_imag     = test_results[i].imag();
-      INFO("index " << i);
-      REQUIRE(isclose(expected_real, test_real));
-      REQUIRE(isclose(expected_imag, test_imag));
+      bool close_real    = isclose(expected_real, test_real);
+      bool close_imag    = isclose(expected_imag, test_imag);
+      if (!close_real || !close_imag)
+      {
+        INFO("index " << i);
+      }
+      REQUIRE(close_real);
+      REQUIRE(close_imag);
     }
   }
   else
