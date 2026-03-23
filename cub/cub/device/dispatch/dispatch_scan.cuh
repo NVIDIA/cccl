@@ -171,6 +171,7 @@ private:
     }
   };
 
+public:
   // Called from host (compile-time) and device code during dispatch
   _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_policy
   {
