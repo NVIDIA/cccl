@@ -26,6 +26,7 @@
 
 #    include <cuda/__cmath/ceil_div.h>
 #    include <cuda/__cmath/pow2.h>
+#    include <cuda/__memory/alias_to_words.h>
 #    include <cuda/__ptx/instructions/get_sreg.h>
 #    include <cuda/__ptx/instructions/shfl_sync.h>
 #    include <cuda/std/__concepts/concept_macros.h>
@@ -73,19 +74,17 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
     constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
     auto __clamp_segmask  = (_Width - 1u) | ((__warp_size - _Width) << 8);
     bool __pred;
-    uint32_t __array[__ratio];
-    ::cuda::std::memcpy(
-      static_cast<void*>(__array), static_cast<const void*>(::cuda::std::addressof(__data)), sizeof(_Up));
+    auto __words = ::cuda::__alias_to_words(__data);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < __ratio; ++i)
     {
-      __array[i] = ::cuda::ptx::shfl_sync_idx(__array[i], __pred, __src_lane, __clamp_segmask, __lane_mask);
+      __words[i] = ::cuda::ptx::shfl_sync_idx(__words[i], __pred, __src_lane, __clamp_segmask, __lane_mask);
     }
+
     warp_shuffle_result<_Up> __result;
     __result.pred = __pred;
-    ::cuda::std::memcpy(
-      static_cast<void*>(::cuda::std::addressof(__result.data)), static_cast<void*>(__array), sizeof(_Up));
+    __words.__assign_to(__result.data);
     return __result;
   }
 }
@@ -121,19 +120,15 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
     constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
     auto __clamp_segmask  = (__warp_size - _Width) << 8;
     bool __pred;
-    uint32_t __array[__ratio];
-    ::cuda::std::memcpy(
-      static_cast<void*>(__array), static_cast<const void*>(::cuda::std::addressof(__data)), sizeof(_Up));
+    auto __words = ::cuda::__alias_to_words(__data);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < __ratio; ++i)
     {
-      __array[i] = ::cuda::ptx::shfl_sync_up(__array[i], __pred, __delta, __clamp_segmask, __lane_mask);
+      __words[i] = ::cuda::ptx::shfl_sync_up(__words[i], __pred, __delta, __clamp_segmask, __lane_mask);
     }
     warp_shuffle_result<_Up> __result;
-    __result.pred = __pred;
-    ::cuda::std::memcpy(
-      static_cast<void*>(::cuda::std::addressof(__result.data)), static_cast<void*>(__array), sizeof(_Up));
+    __words.__assign_to(__result.data);
     return __result;
   }
 }
@@ -169,19 +164,16 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
     constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
     auto __clamp_segmask  = (_Width - 1u) | ((__warp_size - _Width) << 8);
     bool __pred;
-    uint32_t __array[__ratio];
-    ::cuda::std::memcpy(
-      static_cast<void*>(__array), static_cast<const void*>(::cuda::std::addressof(__data)), sizeof(_Up));
+    auto __words = ::cuda::__alias_to_words(__data);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < __ratio; ++i)
     {
-      __array[i] = ::cuda::ptx::shfl_sync_down(__array[i], __pred, __delta, __clamp_segmask, __lane_mask);
+      __words[i] = ::cuda::ptx::shfl_sync_down(__words[i], __pred, __delta, __clamp_segmask, __lane_mask);
     }
     warp_shuffle_result<_Up> __result;
     __result.pred = __pred;
-    ::cuda::std::memcpy(
-      static_cast<void*>(::cuda::std::addressof(__result.data)), static_cast<void*>(__array), sizeof(_Up));
+    __words.__assign_to(__result.data);
     return __result;
   }
 }
@@ -217,19 +209,16 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
     constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
     auto __clamp_segmask  = (_Width - 1u) | ((__warp_size - _Width) << 8);
     bool __pred;
-    uint32_t __array[__ratio];
-    ::cuda::std::memcpy(
-      static_cast<void*>(__array), static_cast<const void*>(::cuda::std::addressof(__data)), sizeof(_Up));
+    auto __words = ::cuda::__alias_to_words(__data);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < __ratio; ++i)
     {
-      __array[i] = ::cuda::ptx::shfl_sync_bfly(__array[i], __pred, __xor_mask, __clamp_segmask, __lane_mask);
+      __words[i] = ::cuda::ptx::shfl_sync_bfly(__words[i], __pred, __xor_mask, __clamp_segmask, __lane_mask);
     }
     warp_shuffle_result<_Up> __result;
     __result.pred = __pred;
-    ::cuda::std::memcpy(
-      static_cast<void*>(::cuda::std::addressof(__result.data)), static_cast<void*>(__array), sizeof(_Up));
+    __words.__assign_to(__result.data);
     return __result;
   }
 }
