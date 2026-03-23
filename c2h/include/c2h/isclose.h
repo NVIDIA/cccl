@@ -21,6 +21,7 @@ bool isclose(T a, T b, T r_tol, T a_tol)
   }
   else
   {
+    static_assert(std::is_integral_v<T>, "isclose: unsupported type, expected floating point or integral");
     return a == b;
   }
 }
@@ -40,6 +41,7 @@ bool isclose(T a, T b)
   }
   else
   {
+    static_assert(std::is_integral_v<T>, "isclose: unsupported type, expected floating point or integral");
     return a == b;
   }
 }
