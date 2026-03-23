@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "catch2_test_helper.h"
-#include <c2h/isclose.h>
 #include <unittest/random.h>
 #include <unittest/testframework.h>
 
@@ -43,6 +42,11 @@ struct other_floating_point_type<double>
 template <typename T>
 using other_floating_point_type_t = typename other_floating_point_type<T>::type;
 
+// Helper to compare complex numbers with approximate equality
+// Supports both scalar and thrust::complex<T> types
+double const DEFAULT_RELATIVE_TOL = 1e-4;
+double const DEFAULT_ABSOLUTE_TOL = 1e-4;
+
 template <typename T>
 inline constexpr bool is_complex = false;
 template <typename T>
@@ -50,17 +54,18 @@ inline constexpr bool is_complex<thrust::complex<T>> = true;
 template <typename T>
 inline constexpr bool is_complex<std::complex<T>> = true;
 
+// Overload for complex types
 template <typename T1, typename T2>
 ::cuda::std::enable_if_t<is_complex<T1> && is_complex<T2>> require_almost_equal(const T1& a, const T2& b)
 {
-  CHECK(isclose(static_cast<double>(a.real()), static_cast<double>(b.real())));
-  CHECK(isclose(static_cast<double>(a.imag()), static_cast<double>(b.imag())));
+  CHECK(a.real() == Catch::Approx(b.real()).margin(DEFAULT_ABSOLUTE_TOL).epsilon(DEFAULT_RELATIVE_TOL));
+  CHECK(a.imag() == Catch::Approx(b.imag()).margin(DEFAULT_ABSOLUTE_TOL).epsilon(DEFAULT_RELATIVE_TOL));
 }
 
 template <typename T1, typename T2>
 ::cuda::std::enable_if_t<!is_complex<T1> && !is_complex<T2>> require_almost_equal(const T1& a, const T2& b)
 {
-  CHECK(isclose(static_cast<double>(a), static_cast<double>(b)));
+  CHECK(a == Catch::Approx(b).margin(DEFAULT_ABSOLUTE_TOL).epsilon(DEFAULT_RELATIVE_TOL));
 }
 } // anonymous namespace
 
