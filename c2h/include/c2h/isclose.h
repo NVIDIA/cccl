@@ -37,7 +37,7 @@ bool isclose(T a, T b)
 {
   if constexpr (std::is_floating_point_v<T>)
   {
-    return isclose(a, b, T(1000) * std::numeric_limits<T>::epsilon(), T(0));
+    return isclose(a, b, T(1 << 8) * std::numeric_limits<T>::epsilon(), T(0));
   }
   else
   {
