@@ -140,6 +140,9 @@ struct DeviceScanKernelSource
 template <typename LegacyActivePolicy>
 _CCCL_API constexpr auto convert_policy() -> scan_policy
 {
+  // this does not convert any warpspeed policy data, which is fine because we merged warpspeed scan during the CCCL 3.4
+  // development cycle, so it never had user exposure through the policy_hub, and we can just only support it through
+  // the policy_selector, which CUB and Thrust.
   using scan_policy_t = typename LegacyActivePolicy::ScanPolicyT;
   return scan_policy{
     scan_policy_t::BLOCK_THREADS,
@@ -152,14 +155,34 @@ _CCCL_API constexpr auto convert_policy() -> scan_policy
 }
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
-template <typename PolicyHub, typename InputValueT, typename OutputValueT, typename AccumT>
+template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  // Called from device code during dispatch, and from host code when clang-cuda evaluates
-  // scan_policy_selector concept checks.
-  _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> scan_policy
+private:
+  struct extract_policy_dispatch_t
   {
-    return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
+    scan_policy& policy;
+
+    template <typename ActivePolicyT>
+    _CCCL_API constexpr cudaError_t Invoke()
+    {
+      policy = convert_policy<ActivePolicyT>();
+      return cudaSuccess;
+    }
+  };
+
+  // Called from host (compile-time) and device code during dispatch
+  _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_policy
+  {
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      ({
+                        const int ptx_version = static_cast<int>(arch) * 10;
+                        scan_policy policy{};
+                        extract_policy_dispatch_t dispatch{policy};
+                        PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
+                        return policy;
+                      }),
+                      ({ return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>(); }));
   }
 };
 } // namespace detail::scan
@@ -208,8 +231,7 @@ template <
   typename PolicyHub              = detail::scan::
     policy_hub<detail::it_value_t<InputIteratorT>, detail::it_value_t<OutputIteratorT>, AccumT, OffsetT, ScanOpT>,
   typename KernelSource = detail::scan::DeviceScanKernelSource<
-    detail::scan::
-      policy_selector_from_hub<PolicyHub, detail::it_value_t<InputIteratorT>, detail::it_value_t<OutputIteratorT>, AccumT>,
+    detail::scan::policy_selector_from_hub<PolicyHub>,
     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
     ScanOpT,
