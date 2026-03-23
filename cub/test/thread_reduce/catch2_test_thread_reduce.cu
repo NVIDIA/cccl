@@ -323,7 +323,7 @@ C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
     auto reference_result =
       std::accumulate(h_in_float.begin(), h_in_float.begin() + num_items, operator_identity, std_reduce_op);
     run_thread_reduce_kernel(num_items, d_in, d_out, reduce_op);
-    float test_result = float{c2h::host_vector<value_t>(d_out)[0]};
+    float test_result{c2h::host_vector<value_t>(d_out)[0]};
     REQUIRE(isclose(reference_result, test_result, 0.05f));
   }
 }
