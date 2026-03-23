@@ -24,10 +24,10 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -419,7 +419,7 @@ struct WarpScanShfl
                  "first_lane must be in range [0, lane_id]");
     _CCCL_ASSERT((offset > 0) && (offset < LOGICAL_WARP_THREADS),
                  "offset must be in the range [1, LOGICAL_WARP_THREADS)");
-    _CCCL_ASSERT(::cuda::std::has_single_bit(static_cast<unsigned>(offset)), "offset must be a power of two");
+    _CCCL_ASSERT(::cuda::is_power_of_two(offset), "offset must be a power of two");
     _Tp temp = ::cuda::device::warp_shuffle_up<LOGICAL_WARP_THREADS>(input, offset, member_mask);
 
     // Perform scan op if from a valid peer

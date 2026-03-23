@@ -48,7 +48,7 @@ __host__ __device__ constexpr void test_conversion(E ext, cuda::std::array<intpt
 
 __host__ __device__ constexpr bool test()
 {
-  constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   // Rank-0 case
   test_conversion(cuda::std::extents<int>(), cuda::std::array<intptr_t, 0>{});
   // Rank-1 cases

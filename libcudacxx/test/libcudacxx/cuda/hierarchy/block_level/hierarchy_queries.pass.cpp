@@ -70,7 +70,14 @@ __device__ void test_block(
     test_extents(exp, cuda::block, cuda::grid, hier);
   }
 
-  // 4. Test cuda::block.count(x, hier)
+  // 4. Test cuda::block.static_count(x, hier)
+  if constexpr (Hierarchy::has_level(cuda::cluster))
+  {
+    test_static_count(cuda::block, cuda::cluster, hier);
+  }
+  test_static_count(cuda::block, cuda::grid, hier);
+
+  // 5. Test cuda::block.count(x, hier)
   if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     cuda::std::size_t exp = 1;
@@ -83,7 +90,7 @@ __device__ void test_block(
   }
   test_count(cuda::std::size_t{gridDim.z} * gridDim.y * gridDim.x, cuda::block, cuda::grid, hier);
 
-  // 5. test cuda::block.index(x, hier)
+  // 6. test cuda::block.index(x, hier)
   if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     uint3 exp{0, 0, 0};
@@ -92,7 +99,7 @@ __device__ void test_block(
   }
   test_index(blockIdx, cuda::block, cuda::grid, hier);
 
-  // 6. Test cuda::block.rank(x, hier)
+  // 7. Test cuda::block.rank(x, hier)
   if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     cuda::std::size_t exp = 0;

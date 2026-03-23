@@ -94,6 +94,61 @@ template <cub::detail::topk::select SelectDirection>
 using direction_to_comparator_t =
   cuda::std::conditional_t<SelectDirection == cub::detail::topk::select::min, cuda::std::less<>, cuda::std::greater<>>;
 
+struct topk_custom_key_t
+{
+  cuda::std::uint32_t primary;
+  float secondary;
+
+  friend __host__ __device__ bool operator==(const topk_custom_key_t& lhs, const topk_custom_key_t& rhs)
+  {
+    return lhs.primary == rhs.primary && lhs.secondary == rhs.secondary;
+  }
+
+  friend __host__ __device__ bool operator<(const topk_custom_key_t& lhs, const topk_custom_key_t& rhs)
+  {
+    return lhs.primary == rhs.primary ? lhs.secondary < rhs.secondary : lhs.primary < rhs.primary;
+  }
+
+  friend __host__ __device__ bool operator>(const topk_custom_key_t& lhs, const topk_custom_key_t& rhs)
+  {
+    return lhs.primary == rhs.primary ? lhs.secondary > rhs.secondary : lhs.primary > rhs.primary;
+  }
+
+  friend __host__ std::ostream& operator<<(std::ostream& os, const topk_custom_key_t& v)
+  {
+    return os << "{ " << v.primary << ", " << v.secondary << " }";
+  }
+};
+
+struct topk_custom_key_decomposer_t
+{
+  __host__ __device__ cuda::std::tuple<cuda::std::uint32_t&, float&> operator()(topk_custom_key_t& key) const
+  {
+    return {key.primary, key.secondary};
+  }
+};
+
+// Generates topk_custom_key_t data with only 2 LSBs set on the primary key (values 0-3),
+// forcing the algorithm to inspect secondary key bits to resolve the top-k.
+inline void gen_topk_custom_keys(c2h::seed_t seed, c2h::device_vector<topk_custom_key_t>& keys)
+{
+  const auto num_items = keys.size();
+  c2h::device_vector<cuda::std::uint32_t> primary(num_items);
+  c2h::device_vector<float> secondary(num_items);
+  c2h::gen(seed, primary, cuda::std::uint32_t{0}, cuda::std::uint32_t{3});
+  c2h::gen(seed, secondary);
+
+  c2h::host_vector<cuda::std::uint32_t> h_primary(primary);
+  c2h::host_vector<float> h_secondary(secondary);
+  c2h::host_vector<topk_custom_key_t> h_keys(num_items);
+  for (std::size_t i = 0; i < num_items; ++i)
+  {
+    h_keys[i].primary   = h_primary[i];
+    h_keys[i].secondary = h_secondary[i];
+  }
+  keys = h_keys;
+}
+
 // Function object that maintains two bit-flags:
 // (1) one to keep track of the unique items encountered
 // (2) another to keep track of the indices where items were written
@@ -233,7 +288,7 @@ template <typename KeyT, typename OffsetT>
 c2h::device_vector<KeyT> compact_to_topk_batched(
   c2h::device_vector<KeyT>& d_keys_in, const c2h::device_vector<OffsetT>& d_offsets, cuda::std::int64_t k)
 {
-  // Expect
+  // Expects d_offsets includes the number of items at the end
   const auto num_segments = d_offsets.size() - 1;
 
   // Maps segments to source pointers: d_keys_in.data() + offset[i]

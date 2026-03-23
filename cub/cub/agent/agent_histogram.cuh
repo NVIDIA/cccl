@@ -636,8 +636,8 @@ struct AgentHistogram
     OffsetT num_row_pixels, OffsetT num_rows, OffsetT row_stride_samples, int tiles_per_row, GridQueue<int> tile_queue)
   {
     // Check whether all row starting offsets are vec-aligned (in single-channel) or pixel-aligned (in multi-channel)
-    constexpr int vec_mask   = AlignBytes<VecT>::ALIGN_BYTES - 1;
-    constexpr int pixel_mask = AlignBytes<PixelT>::ALIGN_BYTES - 1;
+    constexpr int vec_mask   = alignof(VecT) - 1;
+    constexpr int pixel_mask = alignof(PixelT) - 1;
     const size_t row_bytes   = sizeof(SampleT) * row_stride_samples;
 
     const bool vec_aligned_rows =

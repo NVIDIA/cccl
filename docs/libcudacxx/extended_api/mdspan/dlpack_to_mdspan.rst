@@ -14,15 +14,15 @@ Conversion functions
 
    namespace cuda {
 
-   template <typename ElementType, size_t Rank, typename LayoutPolicy = cuda::std::layout_stride>
+   template <typename ElementType, size_t Rank, typename LayoutPolicy = cuda::layout_stride_relaxed>
    [[nodiscard]] cuda::host_mdspan<ElementType, cuda::std::dims<Rank, int64_t>, LayoutPolicy>
    to_host_mdspan(const DLTensor& tensor);
 
-   template <typename ElementType, size_t Rank, typename LayoutPolicy = cuda::std::layout_stride>
+   template <typename ElementType, size_t Rank, typename LayoutPolicy = cuda::layout_stride_relaxed>
    [[nodiscard]] cuda::device_mdspan<ElementType, cuda::std::dims<Rank, int64_t>, LayoutPolicy>
    to_device_mdspan(const DLTensor& tensor);
 
-   template <typename ElementType, size_t Rank, typename LayoutPolicy = cuda::std::layout_stride>
+   template <typename ElementType, size_t Rank, typename LayoutPolicy = cuda::layout_stride_relaxed>
    [[nodiscard]] cuda::managed_mdspan<ElementType, cuda::std::dims<Rank, int64_t>, LayoutPolicy>
    to_managed_mdspan(const DLTensor& tensor);
 
@@ -33,20 +33,22 @@ Template parameters
 
 - ``ElementType``: The element type of the resulting ``mdspan``. Must match the ``DLTensor::dtype``.
 - ``Rank``: The number of dimensions. Must match ``DLTensor::ndim``.
-- ``LayoutPolicy``: The layout policy for the resulting ``mdspan``. Defaults to ``cuda::std::layout_stride``. Supported layouts are:
+- ``LayoutPolicy``: The layout policy for the resulting ``mdspan``. Defaults to ``cuda::layout_stride_relaxed``. Supported layouts are:
 
   - ``cuda::std::layout_right`` (C-contiguous, row-major)
   - ``cuda::std::layout_left`` (Fortran-contiguous, column-major)
   - ``cuda::std::layout_stride`` (general strided layout)
+  - ``cuda::layout_stride_relaxed`` (general strided layout with negative/zero strides and offset support)
 
 Semantics
 ---------
 
 The conversion produces a non-owning ``mdspan`` view of the ``DLTensor`` data:
 
-- The ``mdspan`` data pointer is computed as ``static_cast<char*>(tensor.data) + tensor.byte_offset``.
+- For ``layout_right``, ``layout_left``, and ``layout_stride``, the data pointer is computed as ``static_cast<char*>(tensor.data) + tensor.byte_offset``.
+- For ``layout_stride_relaxed``, the data pointer is ``tensor.data`` directly (no ``byte_offset`` adjustment). Instead, ``tensor.byte_offset`` is converted to an element offset (``byte_offset / sizeof(ElementType)``) and stored in the mapping. This ensures that ``mapping(indices...) = offset + sum(index_i * stride_i)`` produces non-negative indices even with negative strides, and ``required_span_size()`` correctly reflects the actual memory span.
 - For ``rank > 0``, ``mdspan.extent(i)`` is ``tensor.shape[i]``.
-- For ``layout_stride``, ``mdspan.stride(i)`` is ``tensor.strides[i]`` (or computed as row-major if ``strides`` is ``nullptr`` for DLPack < v1.2).
+- For ``layout_stride`` and ``layout_stride_relaxed``, ``mdspan.stride(i)`` is ``tensor.strides[i]`` (or computed as row-major if ``strides`` is ``nullptr`` for DLPack < v1.2).
 - The device type is validated:
 
   - ``kDLCPU`` for ``to_host_mdspan``
@@ -65,7 +67,7 @@ Supported element types:
 Constraints
 -----------
 
-- ``LayoutPolicy`` must be one of ``cuda::std::layout_right``, ``cuda::std::layout_left``, or ``cuda::std::layout_stride``.
+- ``LayoutPolicy`` must be one of ``cuda::std::layout_right``, ``cuda::std::layout_left``, ``cuda::std::layout_stride``, or ``cuda::layout_stride_relaxed``.
 - For ``layout_right`` and ``layout_left``, the ``DLTensor`` strides must be compatible with the layout.
 
 Runtime errors
@@ -82,6 +84,7 @@ The conversion throws ``std::invalid_argument`` in the following cases:
 - ``DLTensor::strides`` is ``nullptr`` for ``layout_left`` with rank > 1 (DLPack < v1.2).
 - ``DLTensor::strides[i]`` is not positive for ``layout_stride``.
 - ``DLTensor::strides`` are not compatible with the requested ``layout_right`` or ``layout_left``.
+- ``DLTensor::byte_offset`` is not a multiple of the element size for ``layout_stride_relaxed``.
 - ``DLTensor::device.device_type`` does not match the target mdspan type.
 - Data pointer is not properly aligned for the element type.
 

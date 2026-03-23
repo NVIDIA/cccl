@@ -286,6 +286,55 @@ void test_exception_zero_stride_layout_stride()
   assert(caught);
 }
 
+void test_no_exception_zero_stride_layout_stride_relaxed()
+{
+  cuda::std::array<int, 6> data{};
+  dlpack_array<2> shape   = {2, 3};
+  dlpack_array<2> strides = {0, 1};
+  DLTensor tensor{};
+  tensor.data    = data.data();
+  tensor.device  = DLDevice{kDLCPU, 0};
+  tensor.ndim    = 2;
+  tensor.dtype   = DLDataType{DLDataTypeCode::kDLInt, 32, 1};
+  tensor.shape   = shape.data();
+  tensor.strides = strides.data();
+  bool caught    = false;
+  try
+  {
+    unused(cuda::to_host_mdspan<int, 2, cuda::layout_stride_relaxed>(tensor));
+  }
+  catch (const std::invalid_argument&)
+  {
+    caught = true;
+  }
+  assert(!caught);
+}
+
+void test_no_exception_negative_stride_layout_stride_relaxed()
+{
+  cuda::std::array<int, 5> data{};
+  dlpack_array<1> shape   = {5};
+  dlpack_array<1> strides = {-1};
+  DLTensor tensor{};
+  tensor.data        = data.data();
+  tensor.device      = DLDevice{kDLCPU, 0};
+  tensor.ndim        = 1;
+  tensor.dtype       = DLDataType{DLDataTypeCode::kDLInt, 32, 1};
+  tensor.shape       = shape.data();
+  tensor.strides     = strides.data();
+  tensor.byte_offset = 4 * sizeof(int);
+  bool caught        = false;
+  try
+  {
+    unused(cuda::to_host_mdspan<int, 1, cuda::layout_stride_relaxed>(tensor));
+  }
+  catch (const std::invalid_argument&)
+  {
+    caught = true;
+  }
+  assert(!caught);
+}
+
 void test_exception_null_strides_dlpack_v12()
 {
   cuda::std::array<float, 6> data{};
@@ -349,6 +398,8 @@ bool test_exceptions()
   test_exception_stride_mismatch_layout_right();
   test_exception_stride_mismatch_layout_left();
   test_exception_zero_stride_layout_stride();
+  test_no_exception_zero_stride_layout_stride_relaxed();
+  test_no_exception_negative_stride_layout_stride_relaxed();
 #if DLPACK_MAJOR_VERSION > 1 || (DLPACK_MAJOR_VERSION == 1 && DLPACK_MINOR_VERSION >= 2)
   test_exception_null_strides_dlpack_v12();
 #endif

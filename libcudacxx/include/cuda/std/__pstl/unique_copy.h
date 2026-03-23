@@ -41,7 +41,7 @@
 #  include <cuda/std/tuple>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
-#    include <cuda/std/__pstl/cuda/unique_copy.h>
+#    include <cuda/std/__pstl/cuda/unique.h>
 #  endif // _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -68,7 +68,7 @@ _CCCL_HOST_API _OutputIterator unique_copy(
                 "indirect_binary_predicate<BinaryPredicate, InputIterator, InputIterator>");
 
   [[maybe_unused]] auto __dispatch =
-    ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__unique_copy, _Policy>();
+    ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__unique, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
     _CCCL_NVTX_RANGE_SCOPE("cuda::std::unique_copy");

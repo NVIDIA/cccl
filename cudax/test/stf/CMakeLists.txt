@@ -33,6 +33,7 @@ set(
   gnu/include_only.cpp
   graph/concurrency_test.cu
   graph/explicit_graph.cu
+  graph/explicit_graph_async.cu
   graph/explicit_graph_while.cu
   graph/explicit_graph_while-kernels.cu
   graph/get_cache_stats.cu
