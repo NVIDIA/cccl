@@ -7,9 +7,8 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/universal_vector.h>
 
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
-
-#include <type_traits>
 
 #include <unittest/exceptions.h>
 #include <unittest/util.h>
@@ -22,9 +21,9 @@ namespace unittest::detail
 template <typename T1, typename T2>
 auto promote(const T1& a, const T2& b)
 {
-  if constexpr (std::is_arithmetic_v<std::decay_t<T1>> && std::is_arithmetic_v<std::decay_t<T2>>)
+  if constexpr (cuda::std::is_arithmetic_v<cuda::std::decay_t<T1>> && cuda::std::is_arithmetic_v<cuda::std::decay_t<T2>>)
   {
-    using common_t = std::common_type_t<std::decay_t<T1>, std::decay_t<T2>>;
+    using common_t = cuda::std::common_type_t<cuda::std::decay_t<T1>, cuda::std::decay_t<T2>>;
     return std::pair<common_t, common_t>{static_cast<common_t>(a), static_cast<common_t>(b)};
   }
   else
