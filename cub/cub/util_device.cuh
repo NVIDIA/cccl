@@ -25,8 +25,10 @@
 
 #include <cuda/__device/arch_id.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__concepts/regular.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
@@ -606,15 +608,14 @@ _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferAlignBytes()
 //!   Guaranteed alignment in bytes of the source range (both begin and end) in global memory
 //! @param[in] num_items
 //!   Size of the source range in global memory
-template <typename T, int GmemAlign = alignof(T)>
+template <typename T, ::cuda::std::size_t GmemAlign = alignof(T)>
 _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t num_items)
 {
-  static_assert(::cuda::std::has_single_bit(unsigned{GmemAlign}));
-  static_assert(GmemAlign >= int{alignof(T)});
+  static_assert(::cuda::__is_valid_alignment<T>(GmemAlign));
   _CCCL_ASSERT(num_items <= ::cuda::std::size_t{::cuda::std::numeric_limits<int>::max()},
                "num_items must fit into an int");
   const int num_bytes = static_cast<int>(num_items) * int{sizeof(T)};
-  if constexpr (GmemAlign >= detail::bulk_copy_min_align)
+  if constexpr (GmemAlign >= static_cast<::cuda::std::size_t>(detail::bulk_copy_min_align))
   {
     return num_bytes;
   }
@@ -812,7 +813,7 @@ public:
 #if !_CCCL_COMPILER(NVRTC)
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
   template <typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int device_ptx_version, FunctorT& op)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static constexpr cudaError_t Invoke(int device_ptx_version, FunctorT& op)
   {
     // __CUDA_ARCH_LIST__ is available from CTK 11.5 onwards and contains values like 860
     // NV_TARGET_SM_INTEGER_LIST is defined by NVHPC and contains values like 86, so we need to scale by 10
@@ -840,7 +841,7 @@ private:
 
 #if !_CCCL_COMPILER(NVRTC)
   template <int ArchMult, int... CudaArches, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static constexpr cudaError_t
   runtime_arch_to_compiletime(int device_ptx_version, FunctorT& op)
   {
     // We instantiate find_and_invoke_policy for each CudaArches (the arches we are compiling for), but only call the
@@ -858,7 +859,7 @@ private:
   }
 
   template <int DevicePtxVersion, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t find_and_invoke_policy(FunctorT& op)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static constexpr cudaError_t find_and_invoke_policy(FunctorT& op)
   {
     // find the first policy we can use on DevicePtxVersion
     if constexpr (DevicePtxVersion < PolicyPtxVersion && have_previous_policy)

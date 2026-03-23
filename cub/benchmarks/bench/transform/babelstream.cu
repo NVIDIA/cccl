@@ -32,7 +32,7 @@ using element_types =
                      std::int16_t,
                      float,
                      double
-#  ifdef _CCCL_HAS_INT128()
+#  if _CCCL_HAS_INT128()
                      ,
                      __int128
 #  endif

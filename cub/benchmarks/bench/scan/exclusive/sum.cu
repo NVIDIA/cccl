@@ -5,6 +5,9 @@
 
 #include <nvbench_helper.cuh>
 
+// This benchmark tunes the old, non-warpspeed scan implementation. Using it for benchmarking, will pick the warpspeed
+// implementation on SM100+, but it's better to use the sum.warpspeed.cu benchmark instead, which uses a single OffsetT.
+
 // %RANGE% TUNE_ITEMS ipt 7:24:1
 // %RANGE% TUNE_THREADS tpb 128:1024:32
 // %RANGE% TUNE_MAGIC_NS ns 0:2048:4
@@ -13,5 +16,7 @@
 // %RANGE% TUNE_TRANSPOSE trp 0:1:1
 // %RANGE% TUNE_LOAD ld 0:1:1
 
-using op_t = ::cuda::std::plus<>;
+#define USES_WARPSPEED() 0
+using op_t              = ::cuda::std::plus<>;
+using scan_offset_types = offset_types;
 #include "base.cuh"

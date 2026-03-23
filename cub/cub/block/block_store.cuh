@@ -654,7 +654,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockStoreAlgorithm algo)
 //! @tparam ItemsPerThread
 //!   The number of consecutive items partitioned onto each thread.
 //!
-//! @tparam ALGORITHM
+//! @tparam Algorithm
 //!   **[optional]** cub::BlockStoreAlgorithm tuning policy enumeration (default: cub::BLOCK_STORE_DIRECT)
 //!
 //! @tparam BlockDimY
@@ -671,432 +671,45 @@ template <typename T,
           int BlockDimZ                 = 1>
 class BlockStore
 {
-private:
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BlockDimX * BlockDimY * BlockDimZ;
 
-  /// Store helper
-  template <BlockStoreAlgorithm _POLICY, int DUMMY>
-  struct StoreInternal;
+  // transposing store algorithms need a BlockExchange
+  using block_exchange =
+    BlockExchange<T, BlockDimX, ItemsPerThread, Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED, BlockDimY, BlockDimZ>;
 
-  template <int DUMMY>
-  struct StoreInternal<BLOCK_STORE_DIRECT, DUMMY>
+  static_assert((Algorithm != BLOCK_STORE_WARP_TRANSPOSE && Algorithm != BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
+                  || (BLOCK_THREADS % detail::warp_threads == 0),
+                "BlockThreads must be a multiple of warp_threads for this BlockStoreAlgorithm");
+
+  _CCCL_API static constexpr auto temp_storage_helper()
   {
-    /// Shared memory storage layout type
-    using TempStorage = NullType;
-
-    /// Linear thread-id
-    int linear_tid;
-
-    /// Constructor
-    _CCCL_DEVICE _CCCL_FORCEINLINE StoreInternal(TempStorage& /*temp_storage*/, int linear_tid)
-        : linear_tid(linear_tid)
-    {}
-
-    /**
-     * @brief Store items into a linear segment of memory
-     *
-     * @param[in] block_itr
-     *   The thread block's base output iterator for storing to
-     *
-     * @param[in] items
-     *   Data to store
-     */
-    template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
+    if constexpr (Algorithm == BLOCK_STORE_DIRECT || Algorithm == BLOCK_STORE_STRIPED
+                  || Algorithm == BLOCK_STORE_VECTORIZE)
     {
-      StoreDirectBlocked(linear_tid, block_itr, items);
+      return NullType{};
     }
-
-    /**
-     * @brief Store items into a linear segment of memory, guarded by range
-     *
-     * @param[in] block_itr
-     *   The thread block's base output iterator for storing to
-     *
-     * @param[in] items
-     *   Data to store
-     *
-     * @param[in] valid_items
-     *   Number of valid items to write
-     */
-    template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
+    else if constexpr (Algorithm == BLOCK_STORE_TRANSPOSE || Algorithm == BLOCK_STORE_WARP_TRANSPOSE
+                       || Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
     {
-      StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
-    }
-  };
-
-  /**
-   * BLOCK_STORE_STRIPED specialization of store helper
-   */
-  template <int DUMMY>
-  struct StoreInternal<BLOCK_STORE_STRIPED, DUMMY>
-  {
-    /// Shared memory storage layout type
-    using TempStorage = NullType;
-
-    /// Linear thread-id
-    int linear_tid;
-
-    /// Constructor
-    _CCCL_DEVICE _CCCL_FORCEINLINE StoreInternal(TempStorage& /*temp_storage*/, int linear_tid)
-        : linear_tid(linear_tid)
-    {}
-
-    /**
-     * @brief Store items into a linear segment of memory
-     *
-     * @param[in] block_itr
-     *   The thread block's base output iterator for storing to
-     *
-     * @param[in] items
-     *   Data to store
-     */
-    template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
-    {
-      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
-    }
-
-    /**
-     * @brief Store items into a linear segment of memory, guarded by range
-     *
-     * @param[in] block_itr
-     *   The thread block's base output iterator for storing to
-     *
-     * @param[in] items
-     *   Data to store
-     *
-     * @param[in] valid_items
-     *   Number of valid items to write
-     */
-    template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
-    {
-      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, valid_items);
-    }
-  };
-
-  /**
-   * BLOCK_STORE_VECTORIZE specialization of store helper
-   */
-  template <int DUMMY>
-  struct StoreInternal<BLOCK_STORE_VECTORIZE, DUMMY>
-  {
-    /// Shared memory storage layout type
-    using TempStorage = NullType;
-
-    /// Linear thread-id
-    int linear_tid;
-
-    /// Constructor
-    _CCCL_DEVICE _CCCL_FORCEINLINE StoreInternal(TempStorage& /*temp_storage*/, int linear_tid)
-        : linear_tid(linear_tid)
-    {}
-
-    /**
-     * @brief Store items into a linear segment of memory,
-     *        specialized for native pointer types (attempts vectorization)
-     *
-     * @param[in] block_ptr
-     *   The thread block's base output iterator for storing to
-     *
-     * @param[in] items
-     *   Data to store
-     */
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(T* block_ptr, T (&items)[ItemsPerThread])
-    {
-      StoreDirectBlockedVectorized(linear_tid, block_ptr, items);
-    }
-
-    /**
-     * @brief Store items into a linear segment of memory,
-     *        specialized for opaque input iterators (skips vectorization)
-     *
-     * @param[in] block_itr
-     *   The thread block's base output iterator for storing to
-     *
-     * @param[in] items
-     *   Data to store
-     */
-    template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
-    {
-      StoreDirectBlocked(linear_tid, block_itr, items);
-    }
-
-    /**
-     * @brief Store items into a linear segment of memory, guarded by range
-     *
-     * @param[in] block_itr
-     *   The thread block's base output iterator for storing to
-     *
-     * @param[in] items
-     *   Data to store
-     *
-     * @param[in] valid_items
-     *   Number of valid items to write
-     */
-    template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
-    {
-      StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
-    }
-  };
-
-  /**
-   * BLOCK_STORE_TRANSPOSE specialization of store helper
-   */
-  template <int DUMMY>
-  struct StoreInternal<BLOCK_STORE_TRANSPOSE, DUMMY>
-  {
-    // BlockExchange utility type for keys
-    using BlockExchange = BlockExchange<T, BlockDimX, ItemsPerThread, false, BlockDimY, BlockDimZ>;
-
-    /// Shared memory storage layout type
-    struct _TempStorage : BlockExchange::TempStorage
-    {
-      /// Temporary storage for partially-full block guard
-      volatile int valid_items;
-    };
-
-    /// Alias wrapper allowing storage to be unioned
-    struct TempStorage : Uninitialized<_TempStorage>
-    {};
-
-    /// Thread reference to shared storage
-    _TempStorage& temp_storage;
-
-    /// Linear thread-id
-    int linear_tid;
-
-    /// Constructor
-    _CCCL_DEVICE _CCCL_FORCEINLINE StoreInternal(TempStorage& temp_storage, int linear_tid)
-        : temp_storage(temp_storage.Alias())
-        , linear_tid(linear_tid)
-    {}
-
-    /**
-     * @brief Store items into a linear segment of memory
-     *
-     * @param[in] block_itr
-     *   The thread block's base output iterator for storing to
-     *
-     * @param[in] items
-     *   Data to store
-     */
-    template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
-    {
-      BlockExchange(temp_storage).BlockedToStriped(items);
-      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
-    }
-
-    /**
-     * @brief Store items into a linear segment of memory, guarded by range
-     *
-     * @param[in] block_itr
-     *   The thread block's base output iterator for storing to
-     *
-     * @param[in] items
-     *   Data to store
-     *
-     * @param[in] valid_items
-     *   Number of valid items to write
-     */
-    template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
-    {
-      BlockExchange(temp_storage).BlockedToStriped(items);
-      if (linear_tid == 0)
+      struct _TempStorage : block_exchange::TempStorage
       {
-        // Move through volatile smem as a workaround to prevent RF spilling on
-        // subsequent loads
-        temp_storage.valid_items = valid_items;
-      }
-      __syncthreads();
-      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, temp_storage.valid_items);
+        volatile int valid_items; // Temporary storage for partially-full block guard
+      };
+      return _TempStorage{};
     }
-  };
+  }
 
-  /**
-   * BLOCK_STORE_WARP_TRANSPOSE specialization of store helper
-   */
-  template <int DUMMY>
-  struct StoreInternal<BLOCK_STORE_WARP_TRANSPOSE, DUMMY>
-  {
-    static constexpr int WARP_THREADS = detail::warp_threads;
+  using _TempStorage = decltype(temp_storage_helper());
 
-    // Assert BLOCK_THREADS must be a multiple of WARP_THREADS
-    static_assert(int(BLOCK_THREADS) % int(WARP_THREADS) == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
-
-    // BlockExchange utility type for keys
-    using BlockExchange = BlockExchange<T, BlockDimX, ItemsPerThread, false, BlockDimY, BlockDimZ>;
-
-    /// Shared memory storage layout type
-    struct _TempStorage : BlockExchange::TempStorage
-    {
-      /// Temporary storage for partially-full block guard
-      volatile int valid_items;
-    };
-
-    /// Alias wrapper allowing storage to be unioned
-    struct TempStorage : Uninitialized<_TempStorage>
-    {};
-
-    /// Thread reference to shared storage
-    _TempStorage& temp_storage;
-
-    /// Linear thread-id
-    int linear_tid;
-
-    /// Constructor
-    _CCCL_DEVICE _CCCL_FORCEINLINE StoreInternal(TempStorage& temp_storage, int linear_tid)
-        : temp_storage(temp_storage.Alias())
-        , linear_tid(linear_tid)
-    {}
-
-    /**
-     * @brief Store items into a linear segment of memory
-     *
-     * @param[in] block_itr
-     *   The thread block's base output iterator for storing to
-     *
-     * @param[in] items
-     *   Data to store
-     */
-    template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
-    {
-      BlockExchange(temp_storage).BlockedToWarpStriped(items);
-      StoreDirectWarpStriped(linear_tid, block_itr, items);
-    }
-
-    /**
-     * @brief Store items into a linear segment of memory, guarded by range
-     *
-     * @param[in] block_itr
-     *   The thread block's base output iterator for storing to
-     *
-     * @param[in] items
-     *   Data to store
-     *
-     * @param[in] valid_items
-     *   Number of valid items to write
-     */
-    template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
-    {
-      BlockExchange(temp_storage).BlockedToWarpStriped(items);
-      if (linear_tid == 0)
-      {
-        // Move through volatile smem as a workaround to prevent RF spilling on
-        // subsequent loads
-        temp_storage.valid_items = valid_items;
-      }
-      __syncthreads();
-      StoreDirectWarpStriped(linear_tid, block_itr, items, temp_storage.valid_items);
-    }
-  };
-
-  /**
-   * BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED specialization of store helper
-   */
-  template <int DUMMY>
-  struct StoreInternal<BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED, DUMMY>
-  {
-    static constexpr int WARP_THREADS = detail::warp_threads;
-
-    // Assert BLOCK_THREADS must be a multiple of WARP_THREADS
-    static_assert(int(BLOCK_THREADS) % int(WARP_THREADS) == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
-
-    // BlockExchange utility type for keys
-    using BlockExchange = BlockExchange<T, BlockDimX, ItemsPerThread, true, BlockDimY, BlockDimZ>;
-
-    /// Shared memory storage layout type
-    struct _TempStorage : BlockExchange::TempStorage
-    {
-      /// Temporary storage for partially-full block guard
-      volatile int valid_items;
-    };
-
-    /// Alias wrapper allowing storage to be unioned
-    struct TempStorage : Uninitialized<_TempStorage>
-    {};
-
-    /// Thread reference to shared storage
-    _TempStorage& temp_storage;
-
-    /// Linear thread-id
-    int linear_tid;
-
-    /// Constructor
-    _CCCL_DEVICE _CCCL_FORCEINLINE StoreInternal(TempStorage& temp_storage, int linear_tid)
-        : temp_storage(temp_storage.Alias())
-        , linear_tid(linear_tid)
-    {}
-
-    /**
-     * @brief Store items into a linear segment of memory
-     *
-     * @param[in] block_itr
-     *   The thread block's base output iterator for storing to
-     *
-     * @param[in] items
-     *   Data to store
-     */
-    template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
-    {
-      BlockExchange(temp_storage).BlockedToWarpStriped(items);
-      StoreDirectWarpStriped(linear_tid, block_itr, items);
-    }
-
-    /**
-     * @brief Store items into a linear segment of memory, guarded by range
-     *
-     * @param[in] block_itr
-     *   The thread block's base output iterator for storing to
-     *
-     * @param[in] items
-     *   Data to store
-     *
-     * @param[in] valid_items
-     *   Number of valid items to write
-     */
-    template <typename OutputIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
-    {
-      BlockExchange(temp_storage).BlockedToWarpStriped(items);
-      if (linear_tid == 0)
-      {
-        // Move through volatile smem as a workaround to prevent RF spilling on
-        // subsequent loads
-        temp_storage.valid_items = valid_items;
-      }
-      __syncthreads();
-      StoreDirectWarpStriped(linear_tid, block_itr, items, temp_storage.valid_items);
-    }
-  };
-
-  /// Internal load implementation to use
-  using InternalStore = StoreInternal<Algorithm, 0>;
-
-  /// Shared memory storage layout type
-  using _TempStorage = typename InternalStore::TempStorage;
-
-  /// Internal storage allocator
   _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
     __shared__ _TempStorage private_storage;
     return private_storage;
   }
 
-  /// Thread reference to shared storage
   _TempStorage& temp_storage;
 
-  /// Linear thread-id
   int linear_tid;
 
 public:
@@ -1191,7 +804,41 @@ public:
   template <typename OutputIteratorT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread])
   {
-    InternalStore(temp_storage, linear_tid).Store(block_itr, items);
+    if constexpr (Algorithm == BLOCK_STORE_DIRECT)
+    {
+      StoreDirectBlocked(linear_tid, block_itr, items);
+    }
+    else if constexpr (Algorithm == BLOCK_STORE_STRIPED)
+    {
+      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
+    }
+    else if constexpr (Algorithm == BLOCK_STORE_VECTORIZE)
+    {
+      // FIXME(bgruber): we should test for contiguous iterator here
+      if constexpr (::cuda::std::is_pointer_v<OutputIteratorT>)
+      {
+        StoreDirectBlockedVectorized(linear_tid, block_itr, items);
+      }
+      else
+      {
+        StoreDirectBlocked(linear_tid, block_itr, items);
+      }
+    }
+    else if constexpr (Algorithm == BLOCK_STORE_TRANSPOSE)
+    {
+      block_exchange(temp_storage).BlockedToStriped(items);
+      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items);
+    }
+    else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE)
+    {
+      block_exchange(temp_storage).BlockedToWarpStriped(items);
+      StoreDirectWarpStriped(linear_tid, block_itr, items);
+    }
+    else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
+    {
+      block_exchange(temp_storage).BlockedToWarpStriped(items);
+      StoreDirectWarpStriped(linear_tid, block_itr, items);
+    }
   }
 
   //! @rst
@@ -1249,7 +896,51 @@ public:
   template <typename OutputIteratorT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
   {
-    InternalStore(temp_storage, linear_tid).Store(block_itr, items, valid_items);
+    if constexpr (Algorithm == BLOCK_STORE_DIRECT)
+    {
+      StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
+    }
+    else if constexpr (Algorithm == BLOCK_STORE_STRIPED)
+    {
+      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, valid_items);
+    }
+    else if constexpr (Algorithm == BLOCK_STORE_VECTORIZE)
+    {
+      StoreDirectBlocked(linear_tid, block_itr, items, valid_items);
+    }
+    else if constexpr (Algorithm == BLOCK_STORE_TRANSPOSE)
+    {
+      block_exchange(temp_storage).BlockedToStriped(items);
+      if (linear_tid == 0)
+      {
+        // Move through volatile smem as a workaround to prevent RF spilling on subsequent loads
+        temp_storage.valid_items = valid_items;
+      }
+      __syncthreads();
+      StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, temp_storage.valid_items);
+    }
+    else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE)
+    {
+      block_exchange(temp_storage).BlockedToWarpStriped(items);
+      if (linear_tid == 0)
+      {
+        // Move through volatile smem as a workaround to prevent RF spilling on subsequent loads
+        temp_storage.valid_items = valid_items;
+      }
+      __syncthreads();
+      StoreDirectWarpStriped(linear_tid, block_itr, items, temp_storage.valid_items);
+    }
+    else if constexpr (Algorithm == BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED)
+    {
+      block_exchange(temp_storage).BlockedToWarpStriped(items);
+      if (linear_tid == 0)
+      {
+        // Move through volatile smem as a workaround to prevent RF spilling on subsequent loads
+        temp_storage.valid_items = valid_items;
+      }
+      __syncthreads();
+      StoreDirectWarpStriped(linear_tid, block_itr, items, temp_storage.valid_items);
+    }
   }
 
   //! @}

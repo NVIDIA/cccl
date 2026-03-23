@@ -18,8 +18,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/env_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_histogram.cuh>
 
+#include <cuda/__execution/require.h>
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/remove_const.h>
@@ -1501,6 +1503,971 @@ public:
       num_rows,
       row_stride_bytes,
       stream);
+  }
+
+  //@}
+
+  //! @name Environment-based overloads
+  //! @{
+
+  //! @rst
+  //! Computes an intensity histogram from a sequence of data samples using equal-width bins.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The number of histogram bins is (``num_levels - 1``)
+  //! - All bins comprise the same width of sample values: ``(upper_level - lower_level) / (num_levels - 1)``.
+  //! - If the common type of ``SampleT`` and ``LevelT`` is of integral type, the bin for a sample is
+  //!   computed as ``(sample - lower_level) * (num_levels - 1) / (upper_level - lower_level)``, round
+  //!   down to the nearest whole number. To protect against potential overflows, if the product
+  //!   ``(upper_level - lower_level) * (num_levels - 1)`` exceeds the number representable by an
+  //!   ``uint64_t``, the cuda error ``cudaErrorInvalidValue`` is returned. If the common type is 128
+  //!   bits wide, bin computation will use 128-bit arithmetic and ``cudaErrorInvalidValue`` will only
+  //!   be returned if bin computation would overflow for 128-bit arithmetic.
+  //! - The ranges ``[d_samples, d_samples + num_samples)`` and
+  //!   ``[d_histogram, d_histogram + num_levels - 1)`` shall not overlap in any way.
+  //! - ``cuda::std::common_type<LevelT, SampleT>`` must be valid, and both LevelT and SampleT must be valid
+  //!   arithmetic types. The common type must be convertible to ``int`` and trivially copyable.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_histogram_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin histogram-even-env
+  //!     :end-before: example-end histogram-even-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam SampleIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input samples @iterator
+  //!
+  //! @tparam CounterT
+  //!   **[inferred]** Integer type for histogram bin counters
+  //!
+  //! @tparam LevelT
+  //!   **[inferred]** Type for specifying boundaries (levels)
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Signed integer type for sequence offsets, list lengths, pointer differences, etc.
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_samples
+  //!   The pointer to the input sequence of data samples.
+  //!
+  //! @param[out] d_histogram
+  //!   The pointer to the histogram counter output array of length `num_levels - 1`.
+  //!
+  //! @param[in] num_levels
+  //!   The number of boundaries (levels) for delineating histogram samples.
+  //!   Implies that the number of bins is `num_levels - 1`.
+  //!
+  //! @param[in] lower_level
+  //!   The lower sample value bound (inclusive) for the lowest histogram bin.
+  //!
+  //! @param[in] upper_level
+  //!   The upper sample value bound (exclusive) for the highest histogram bin.
+  //!
+  //! @param[in] num_samples
+  //!   The number of input samples (i.e., the length of `d_samples`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
+    SampleIteratorT d_samples,
+    CounterT* d_histogram,
+    int num_levels,
+    LevelT lower_level,
+    LevelT upper_level,
+    OffsetT num_samples,
+    EnvT env = {})
+  {
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
+    return MultiHistogramEven<1, 1>(
+      d_samples,
+      ::cuda::std::array{d_histogram},
+      ::cuda::std::array{num_levels},
+      ::cuda::std::array{lower_level},
+      ::cuda::std::array{upper_level},
+      num_samples,
+      static_cast<OffsetT>(1),
+      sizeof(SampleT) * num_samples,
+      env);
+  }
+
+  //! @rst
+  //! Computes an intensity histogram from a 2D region of data samples using equal-width bins.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - A two-dimensional *region of interest* within ``d_samples`` can be specified using
+  //!   the ``num_row_samples``, ``num_rows``, and ``row_stride_bytes`` parameters.
+  //! - The row stride must be a whole multiple of the sample data type
+  //!   size, i.e., ``(row_stride_bytes % sizeof(SampleT)) == 0``.
+  //! - The number of histogram bins is (``num_levels - 1``)
+  //! - All bins comprise the same width of sample values: ``(upper_level - lower_level) / (num_levels - 1)``
+  //! - If the common type of ``SampleT`` and ``LevelT`` is of integral type, the bin for a sample is
+  //!   computed as ``(sample - lower_level) * (num_levels - 1) / (upper_level - lower_level)``, round
+  //!   down to the nearest whole number. To protect against potential overflows, if the product
+  //!   ``(upper_level - lower_level) * (num_levels - 1)`` exceeds the number representable by an
+  //!   ``uint64_t``, the cuda error ``cudaErrorInvalidValue`` is returned. If the common type is 128
+  //!   bits wide, bin computation will use 128-bit arithmetic and ``cudaErrorInvalidValue`` will only
+  //!   be returned if bin computation would overflow for 128-bit arithmetic.
+  //! - For a given row ``r`` in ``[0, num_rows)``, let
+  //!   ``row_begin = d_samples + r * row_stride_bytes / sizeof(SampleT)`` and
+  //!   ``row_end = row_begin + num_row_samples``. The ranges
+  //!   ``[row_begin, row_end)`` and ``[d_histogram, d_histogram + num_levels - 1)``
+  //!   shall not overlap in any way.
+  //! - ``cuda::std::common_type<LevelT, SampleT>`` must be valid, and both LevelT
+  //!   and SampleT must be valid arithmetic types. The common type must be
+  //!   convertible to ``int`` and trivially copyable.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_histogram_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin histogram-even-2d-env
+  //!     :end-before: example-end histogram-even-2d-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam SampleIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input samples @iterator
+  //!
+  //! @tparam CounterT
+  //!   **[inferred]** Integer type for histogram bin counters
+  //!
+  //! @tparam LevelT
+  //!   **[inferred]** Type for specifying boundaries (levels)
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Signed integer type for sequence offsets, list lengths, pointer differences, etc.
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_samples
+  //!   The pointer to the input sequence of data samples.
+  //!
+  //! @param[out] d_histogram
+  //!   The pointer to the histogram counter output array of length `num_levels - 1`.
+  //!
+  //! @param[in] num_levels
+  //!   The number of boundaries (levels) for delineating histogram samples.
+  //!
+  //! @param[in] lower_level
+  //!   The lower sample value bound (inclusive) for the lowest histogram bin.
+  //!
+  //! @param[in] upper_level
+  //!   The upper sample value bound (exclusive) for the highest histogram bin.
+  //!
+  //! @param[in] num_row_samples
+  //!   The number of data samples per row in the region of interest
+  //!
+  //! @param[in] num_rows
+  //!   The number of rows in the region of interest
+  //!
+  //! @param[in] row_stride_bytes
+  //!   The number of bytes between starts of consecutive rows in the region of interest
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
+    SampleIteratorT d_samples,
+    CounterT* d_histogram,
+    int num_levels,
+    LevelT lower_level,
+    LevelT upper_level,
+    OffsetT num_row_samples,
+    OffsetT num_rows,
+    size_t row_stride_bytes,
+    EnvT env = {})
+  {
+    return MultiHistogramEven<1, 1>(
+      d_samples,
+      ::cuda::std::array{d_histogram},
+      ::cuda::std::array{num_levels},
+      ::cuda::std::array{lower_level},
+      ::cuda::std::array{upper_level},
+      num_row_samples,
+      num_rows,
+      row_stride_bytes,
+      env);
+  }
+
+  //! @rst
+  //! Computes per-channel intensity histograms from a sequence of multi-channel "pixel" data samples
+  //! using equal-width bins.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The input is a sequence of *pixel* structures, where each pixel comprises
+  //!   a record of ``NUM_CHANNELS`` consecutive data samples
+  //!   (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
+  //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
+  //!   histograms for the first ``NUM_ACTIVE_CHANNELS``
+  //!   (e.g., only *RGB* histograms from *RGBA* pixel samples).
+  //! - The number of histogram bins for channel\ :sub:`i` is ``num_levels[i] - 1``.
+  //! - For channel\ :sub:`i`, the range of values for all histogram bins have the same width:
+  //!   ``(upper_level[i] - lower_level[i]) / (num_levels[i] - 1)``
+  //! - If the common type of sample and level is of integral type, the bin for a sample is
+  //!   computed as ``(sample - lower_level[i]) * (num_levels - 1) / (upper_level[i] - lower_level[i])``, round down
+  //!   to the nearest whole number. To protect against potential overflows, if, for any channel ``i``, the product
+  //!   ``(upper_level[i] - lower_level[i]) * (num_levels[i] - 1)`` exceeds the number representable by an ``uint64_t``,
+  //!   the cuda error ``cudaErrorInvalidValue`` is returned. If the common type is 128 bits wide, bin computation
+  //!   will use 128-bit arithmetic and ``cudaErrorInvalidValue`` will only be returned if bin
+  //!   computation would overflow for 128-bit arithmetic.
+  //! - For a given channel ``c`` in ``[0, NUM_ACTIVE_CHANNELS)``, the ranges
+  //!   ``[d_samples, d_samples + NUM_CHANNELS * num_pixels)`` and
+  //!   ``[d_histogram[c], d_histogram[c] + num_levels[c] - 1)`` shall not overlap in any way.
+  //! - ``cuda::std::common_type<LevelT, SampleT>`` must be valid, and both LevelT
+  //!   and SampleT must be valid arithmetic types.
+  //!   The common type must be convertible to ``int`` and trivially copyable.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_histogram_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin multi-histogram-even-1d-env
+  //!     :end-before: example-end multi-histogram-even-1d-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam NUM_CHANNELS
+  //!   Number of channels interleaved in the input data (may be greater than the number of channels being
+  //!   actively histogrammed)
+  //!
+  //! @tparam NUM_ACTIVE_CHANNELS
+  //!   **[inferred]** Number of channels actively being histogrammed
+  //!
+  //! @tparam SampleIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input samples @iterator
+  //!
+  //! @tparam CounterT
+  //!   **[inferred]** Integer type for histogram bin counters
+  //!
+  //! @tparam LevelT
+  //!   **[inferred]** Type for specifying boundaries (levels)
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Signed integer type for sequence offsets, list lengths, pointer differences, etc.
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_samples
+  //!   The pointer to the multi-channel input sequence of data samples.
+  //!
+  //! @param[out] d_histogram
+  //!   Array of active channel histogram counter output arrays, each of length `num_levels[channel] - 1`.
+  //!
+  //! @param[in] num_levels
+  //!   Array of the number of boundaries (levels) for each active channel.
+  //!
+  //! @param[in] lower_level
+  //!   Array of the lower sample value bound (inclusive) for the lowest bin of each active channel.
+  //!
+  //! @param[in] upper_level
+  //!   Array of the upper sample value bound (exclusive) for the highest bin of each active channel.
+  //!
+  //! @param[in] num_pixels
+  //!   The number of multi-channel pixels (i.e., the length of `d_samples / NUM_CHANNELS`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <int NUM_CHANNELS,
+            int NUM_ACTIVE_CHANNELS,
+            typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
+    SampleIteratorT d_samples,
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
+    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level,
+    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level,
+    OffsetT num_pixels,
+    EnvT env = {})
+  {
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
+    return MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      d_samples,
+      d_histogram,
+      num_levels,
+      lower_level,
+      upper_level,
+      num_pixels,
+      static_cast<OffsetT>(1),
+      sizeof(SampleT) * NUM_CHANNELS * num_pixels,
+      env);
+  }
+
+  //! @rst
+  //! Computes per-channel intensity histograms from a 2D region of multi-channel "pixel" data samples
+  //! using equal-width bins.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The input is a sequence of *pixel* structures, where each pixel
+  //!   comprises a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
+  //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
+  //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., only *RGB*
+  //!   histograms from *RGBA* pixel samples).
+  //! - A two-dimensional *region of interest* within ``d_samples`` can be
+  //!   specified using the ``num_row_samples``, ``num_rows``, and ``row_stride_bytes`` parameters.
+  //! - The row stride must be a whole multiple of the sample data type
+  //!   size, i.e., ``(row_stride_bytes % sizeof(SampleT)) == 0``.
+  //! - The number of histogram bins for channel\ :sub:`i` is ``num_levels[i] - 1``.
+  //! - For channel\ :sub:`i`, the range of values for all histogram bins have the same width:
+  //!   ``(upper_level[i] - lower_level[i]) / (num_levels[i] - 1)``
+  //! - If the common type of sample and level is of integral type, the bin for a sample is
+  //!   computed as ``(sample - lower_level[i]) * (num_levels - 1) / (upper_level[i] - lower_level[i])``,
+  //!   round down to the nearest whole number. To protect against potential overflows, if, for any channel ``i``,
+  //!   the product ``(upper_level[i] - lower_level[i]) * (num_levels[i] - 1)`` exceeds the number representable by
+  //!   an ``uint64_t``, the cuda error ``cudaErrorInvalidValue`` is returned.
+  //!   If the common type is 128 bits wide, bin computation will use 128-bit arithmetic and ``cudaErrorInvalidValue``
+  //!   will only be returned if bin computation would overflow for 128-bit arithmetic.
+  //! - For a given row ``r`` in ``[0, num_rows)``, and sample ``s`` in
+  //!   ``[0, num_row_pixels)``, let
+  //!   ``row_begin = d_samples + r * row_stride_bytes / sizeof(SampleT)``,
+  //!   ``sample_begin = row_begin + s * NUM_CHANNELS``, and
+  //!   ``sample_end = sample_begin + NUM_ACTIVE_CHANNELS``. For a given channel ``c`` in
+  //!   ``[0, NUM_ACTIVE_CHANNELS)``, the ranges
+  //!   ``[sample_begin, sample_end)`` and
+  //!   ``[d_histogram[c], d_histogram[c] + num_levels[c] - 1)`` shall not overlap in any way.
+  //! - ``cuda::std::common_type<LevelT, SampleT>`` must be valid, and both LevelT
+  //!   and SampleT must be valid arithmetic types. The common type must be
+  //!   convertible to ``int`` and trivially copyable.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_histogram_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin multi-histogram-even-2d-env
+  //!     :end-before: example-end multi-histogram-even-2d-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam NUM_CHANNELS
+  //!   Number of channels interleaved in the input data (may be greater than the number of channels being
+  //!   actively histogrammed)
+  //!
+  //! @tparam NUM_ACTIVE_CHANNELS
+  //!   **[inferred]** Number of channels actively being histogrammed
+  //!
+  //! @tparam SampleIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input samples @iterator
+  //!
+  //! @tparam CounterT
+  //!   **[inferred]** Integer type for histogram bin counters
+  //!
+  //! @tparam LevelT
+  //!   **[inferred]** Type for specifying boundaries (levels)
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Signed integer type for sequence offsets, list lengths, pointer differences, etc.
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_samples
+  //!   The pointer to the multi-channel input sequence of data samples.
+  //!
+  //! @param[out] d_histogram
+  //!   Array of active channel histogram counter output arrays, each of length `num_levels[channel] - 1`.
+  //!
+  //! @param[in] num_levels
+  //!   Array of the number of boundaries (levels) for each active channel.
+  //!
+  //! @param[in] lower_level
+  //!   Array of the lower sample value bound (inclusive) for the lowest bin of each active channel.
+  //!
+  //! @param[in] upper_level
+  //!   Array of the upper sample value bound (exclusive) for the highest bin of each active channel.
+  //!
+  //! @param[in] num_row_pixels
+  //!   The number of multi-channel pixels per row in the region of interest
+  //!
+  //! @param[in] num_rows
+  //!   The number of rows in the region of interest
+  //!
+  //! @param[in] row_stride_bytes
+  //!   The number of bytes between starts of consecutive rows in the region of interest
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <int NUM_CHANNELS,
+            int NUM_ACTIVE_CHANNELS,
+            typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
+    SampleIteratorT d_samples,
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
+    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level,
+    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level,
+    OffsetT num_row_pixels,
+    OffsetT num_rows,
+    size_t row_stride_bytes,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceHistogram::MultiHistogramEven");
+
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
+    ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
+
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) -> cudaError_t {
+        if constexpr (sizeof(OffsetT) > sizeof(int))
+        {
+          if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
+          {
+            return DispatchHistogram<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, int>::
+              DispatchEven(
+                storage,
+                bytes,
+                d_samples,
+                d_histogram,
+                num_levels,
+                lower_level,
+                upper_level,
+                (int) num_row_pixels,
+                (int) num_rows,
+                (int) (row_stride_bytes / sizeof(SampleT)),
+                stream,
+                is_byte_sample);
+          }
+        }
+        return DispatchHistogram<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT>::
+          DispatchEven(
+            storage,
+            bytes,
+            d_samples,
+            d_histogram,
+            num_levels,
+            lower_level,
+            upper_level,
+            num_row_pixels,
+            num_rows,
+            (OffsetT) (row_stride_bytes / sizeof(SampleT)),
+            stream,
+            is_byte_sample);
+      });
+  }
+
+  //! @rst
+  //! Computes an intensity histogram from a sequence of data samples using the specified bin boundary levels.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The number of histogram bins is (``num_levels - 1``)
+  //! - The value range for bin\ :sub:`i` is ``[level[i], level[i+1])``
+  //! - The range ``[d_histogram, d_histogram + num_levels - 1)`` shall not
+  //!   overlap ``[d_samples, d_samples + num_samples)`` nor
+  //!   ``[d_levels, d_levels + num_levels)`` in any way. The ranges
+  //!   ``[d_levels, d_levels + num_levels)`` and
+  //!   ``[d_samples, d_samples + num_samples)`` may overlap.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_histogram_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin histogram-range-env
+  //!     :end-before: example-end histogram-range-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam SampleIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input samples @iterator
+  //!
+  //! @tparam CounterT
+  //!   **[inferred]** Integer type for histogram bin counters
+  //!
+  //! @tparam LevelT
+  //!   **[inferred]** Type for specifying boundaries (levels)
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Signed integer type for sequence offsets, list lengths, pointer differences, etc.
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_samples
+  //!   The pointer to the input sequence of data samples.
+  //!
+  //! @param[out] d_histogram
+  //!   The pointer to the histogram counter output array of length `num_levels - 1`.
+  //!
+  //! @param[in] num_levels
+  //!   The number of boundaries (levels) for delineating histogram samples.
+  //!   Implies that the number of bins is `num_levels - 1`.
+  //!
+  //! @param[in] d_levels
+  //!   The pointer to the array of boundaries (levels). Bins are defined by consecutive pairs.
+  //!
+  //! @param[in] num_samples
+  //!   The number of input samples (i.e., the length of `d_samples`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t HistogramRange(
+    SampleIteratorT d_samples,
+    CounterT* d_histogram,
+    int num_levels,
+    const LevelT* d_levels,
+    OffsetT num_samples,
+    EnvT env = {})
+  {
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
+    return MultiHistogramRange<1, 1>(
+      d_samples,
+      ::cuda::std::array{d_histogram},
+      ::cuda::std::array{num_levels},
+      ::cuda::std::array{d_levels},
+      num_samples,
+      static_cast<OffsetT>(1),
+      sizeof(SampleT) * num_samples,
+      env);
+  }
+
+  //! @rst
+  //! Computes an intensity histogram from a 2D region of data samples using the specified bin boundary levels.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - A two-dimensional *region of interest* within ``d_samples`` can be
+  //!   specified using the ``num_row_samples``, ``num_rows``, and ``row_stride_bytes`` parameters.
+  //! - The row stride must be a whole multiple of the sample data type
+  //!   size, i.e., ``(row_stride_bytes % sizeof(SampleT)) == 0``.
+  //! - The number of histogram bins is (``num_levels - 1``)
+  //! - The value range for bin\ :sub:`i` is ``[level[i], level[i+1])``
+  //! - For a given row ``r`` in ``[0, num_rows)``, let
+  //!   ``row_begin = d_samples + r * row_stride_bytes / sizeof(SampleT)`` and
+  //!   ``row_end = row_begin + num_row_samples``. The range
+  //!   ``[d_histogram, d_histogram + num_levels - 1)`` shall not overlap
+  //!   ``[row_begin, row_end)`` nor ``[d_levels, d_levels + num_levels)``.
+  //!   The ranges ``[d_levels, d_levels + num_levels)`` and ``[row_begin, row_end)`` may overlap.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_histogram_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin histogram-range-2d-env
+  //!     :end-before: example-end histogram-range-2d-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam SampleIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input samples @iterator
+  //!
+  //! @tparam CounterT
+  //!   **[inferred]** Integer type for histogram bin counters
+  //!
+  //! @tparam LevelT
+  //!   **[inferred]** Type for specifying boundaries (levels)
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Signed integer type for sequence offsets, list lengths, pointer differences, etc.
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_samples
+  //!   The pointer to the input sequence of data samples.
+  //!
+  //! @param[out] d_histogram
+  //!   The pointer to the histogram counter output array of length `num_levels - 1`.
+  //!
+  //! @param[in] num_levels
+  //!   The number of boundaries (levels) for delineating histogram samples.
+  //!
+  //! @param[in] d_levels
+  //!   The pointer to the array of boundaries (levels). Bins are defined by consecutive pairs.
+  //!
+  //! @param[in] num_row_samples
+  //!   The number of data samples per row in the region of interest
+  //!
+  //! @param[in] num_rows
+  //!   The number of rows in the region of interest
+  //!
+  //! @param[in] row_stride_bytes
+  //!   The number of bytes between starts of consecutive rows in the region of interest
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t HistogramRange(
+    SampleIteratorT d_samples,
+    CounterT* d_histogram,
+    int num_levels,
+    const LevelT* d_levels,
+    OffsetT num_row_samples,
+    OffsetT num_rows,
+    size_t row_stride_bytes,
+    EnvT env = {})
+  {
+    return MultiHistogramRange<1, 1>(
+      d_samples,
+      ::cuda::std::array{d_histogram},
+      ::cuda::std::array{num_levels},
+      ::cuda::std::array{d_levels},
+      num_row_samples,
+      num_rows,
+      row_stride_bytes,
+      env);
+  }
+
+  //! @rst
+  //! Computes per-channel intensity histograms from a sequence of multi-channel "pixel" data samples
+  //! using the specified bin boundary levels.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The input is a sequence of *pixel* structures, where each pixel
+  //!   comprises a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
+  //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
+  //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., *RGB* histograms from *RGBA* pixel samples).
+  //! - The number of histogram bins for channel\ :sub:`i` is ``num_levels[i] - 1``.
+  //! - For channel\ :sub:`i`, the range of values for all histogram bins have the same width:
+  //!   ``(upper_level[i] - lower_level[i]) / (num_levels[i] - 1)``
+  //! - For given channels ``c1`` and ``c2`` in ``[0, NUM_ACTIVE_CHANNELS)``, the
+  //!   range ``[d_histogram[c1], d_histogram[c1] + num_levels[c1] - 1)`` shall
+  //!   not overlap ``[d_samples, d_samples + NUM_CHANNELS * num_pixels)`` nor
+  //!   ``[d_levels[c2], d_levels[c2] + num_levels[c2])`` in any way.
+  //!   The ranges ``[d_levels[c2], d_levels[c2] + num_levels[c2])`` and
+  //!   ``[d_samples, d_samples + NUM_CHANNELS * num_pixels)`` may overlap.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_histogram_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin multi-histogram-range-1d-env
+  //!     :end-before: example-end multi-histogram-range-1d-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam NUM_CHANNELS
+  //!   Number of channels interleaved in the input data (may be greater than the number of channels being
+  //!   actively histogrammed)
+  //!
+  //! @tparam NUM_ACTIVE_CHANNELS
+  //!   **[inferred]** Number of channels actively being histogrammed
+  //!
+  //! @tparam SampleIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input samples @iterator
+  //!
+  //! @tparam CounterT
+  //!   **[inferred]** Integer type for histogram bin counters
+  //!
+  //! @tparam LevelT
+  //!   **[inferred]** Type for specifying boundaries (levels)
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Signed integer type for sequence offsets, list lengths, pointer differences, etc.
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_samples
+  //!   The pointer to the multi-channel input sequence of data samples.
+  //!
+  //! @param[out] d_histogram
+  //!   Array of active channel histogram counter output arrays, each of length `num_levels[channel] - 1`.
+  //!
+  //! @param[in] num_levels
+  //!   Array of the number of boundaries (levels) for each active channel.
+  //!
+  //! @param[in] d_levels
+  //!   Array of pointers to the arrays of boundaries (levels) for each active channel.
+  //!
+  //! @param[in] num_pixels
+  //!   The number of multi-channel pixels (i.e., the length of `d_samples / NUM_CHANNELS`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <int NUM_CHANNELS,
+            int NUM_ACTIVE_CHANNELS,
+            typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
+    SampleIteratorT d_samples,
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
+    ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS> d_levels,
+    OffsetT num_pixels,
+    EnvT env = {})
+  {
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
+    return MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      d_samples,
+      d_histogram,
+      num_levels,
+      d_levels,
+      num_pixels,
+      static_cast<OffsetT>(1),
+      sizeof(SampleT) * NUM_CHANNELS * num_pixels,
+      env);
+  }
+
+  //! @rst
+  //! Computes per-channel intensity histograms from a 2D region of multi-channel "pixel" data samples
+  //! using the specified bin boundary levels.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The input is a sequence of *pixel* structures, where each pixel comprises
+  //!   a record of ``NUM_CHANNELS`` consecutive data samples (e.g., an *RGBA* pixel).
+  //! - ``NUM_CHANNELS`` can be up to 4.
+  //! - Of the ``NUM_CHANNELS`` specified, the function will only compute
+  //!   histograms for the first ``NUM_ACTIVE_CHANNELS`` (e.g., *RGB* histograms from *RGBA* pixel samples).
+  //! - A two-dimensional *region of interest* within ``d_samples`` can be
+  //!   specified using the ``num_row_samples``, ``num_rows``, and ``row_stride_bytes`` parameters.
+  //! - The row stride must be a whole multiple of the sample data type
+  //!   size, i.e., ``(row_stride_bytes % sizeof(SampleT)) == 0``.
+  //! - The number of histogram bins for channel\ :sub:`i` is ``num_levels[i] - 1``.
+  //! - For channel\ :sub:`i`, the range of values for all histogram bins have the same width:
+  //!   ``(upper_level[i] - lower_level[i]) / (num_levels[i] - 1)``
+  //! - For a given row ``r`` in ``[0, num_rows)``, and sample ``s`` in ``[0, num_row_pixels)``, let
+  //!   ``row_begin = d_samples + r * row_stride_bytes / sizeof(SampleT)``,
+  //!   ``sample_begin = row_begin + s * NUM_CHANNELS``, and
+  //!   ``sample_end = sample_begin + NUM_ACTIVE_CHANNELS``. For given channels
+  //!   ``c1`` and ``c2`` in ``[0, NUM_ACTIVE_CHANNELS)``, the range
+  //!   ``[d_histogram[c1], d_histogram[c1] + num_levels[c1] - 1)`` shall not overlap
+  //!   ``[sample_begin, sample_end)`` nor
+  //!   ``[d_levels[c2], d_levels[c2] + num_levels[c2])`` in any way. The ranges
+  //!   ``[d_levels[c2], d_levels[c2] + num_levels[c2])`` and
+  //!   ``[sample_begin, sample_end)`` may overlap.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_histogram_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin multi-histogram-range-2d-env
+  //!     :end-before: example-end multi-histogram-range-2d-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam NUM_CHANNELS
+  //!   Number of channels interleaved in the input data (may be greater than the number of channels being
+  //!   actively histogrammed)
+  //!
+  //! @tparam NUM_ACTIVE_CHANNELS
+  //!   **[inferred]** Number of channels actively being histogrammed
+  //!
+  //! @tparam SampleIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input samples @iterator
+  //!
+  //! @tparam CounterT
+  //!   **[inferred]** Integer type for histogram bin counters
+  //!
+  //! @tparam LevelT
+  //!   **[inferred]** Type for specifying boundaries (levels)
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Signed integer type for sequence offsets, list lengths, pointer differences, etc.
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type (e.g., `cuda::std::execution::env<...>`)
+  //!
+  //! @param[in] d_samples
+  //!   The pointer to the multi-channel input sequence of data samples.
+  //!
+  //! @param[out] d_histogram
+  //!   Array of active channel histogram counter output arrays, each of length `num_levels[channel] - 1`.
+  //!
+  //! @param[in] num_levels
+  //!   Array of the number of boundaries (levels) for each active channel.
+  //!
+  //! @param[in] d_levels
+  //!   Array of pointers to the arrays of boundaries (levels) for each active channel.
+  //!
+  //! @param[in] num_row_pixels
+  //!   The number of multi-channel pixels per row in the region of interest
+  //!
+  //! @param[in] num_rows
+  //!   The number of rows in the region of interest
+  //!
+  //! @param[in] row_stride_bytes
+  //!   The number of bytes between starts of consecutive rows in the region of interest
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <int NUM_CHANNELS,
+            int NUM_ACTIVE_CHANNELS,
+            typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
+    SampleIteratorT d_samples,
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_histogram,
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
+    ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS> d_levels,
+    OffsetT num_row_pixels,
+    OffsetT num_rows,
+    size_t row_stride_bytes,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceHistogram::MultiHistogramRange");
+
+    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
+    ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
+
+    return detail::dispatch_with_env(
+      env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) -> cudaError_t {
+        if constexpr (sizeof(OffsetT) > sizeof(int))
+        {
+          if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
+          {
+            return DispatchHistogram<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, int>::
+              DispatchRange(
+                storage,
+                bytes,
+                d_samples,
+                d_histogram,
+                num_levels,
+                d_levels,
+                (int) num_row_pixels,
+                (int) num_rows,
+                (int) (row_stride_bytes / sizeof(SampleT)),
+                stream,
+                is_byte_sample);
+          }
+        }
+        return DispatchHistogram<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT>::
+          DispatchRange(
+            storage,
+            bytes,
+            d_samples,
+            d_histogram,
+            num_levels,
+            d_levels,
+            num_row_pixels,
+            num_rows,
+            (OffsetT) (row_stride_bytes / sizeof(SampleT)),
+            stream,
+            is_byte_sample);
+      });
   }
 
   //@}

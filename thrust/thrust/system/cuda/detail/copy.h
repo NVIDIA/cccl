@@ -29,7 +29,7 @@
 #  include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #endif // _CCCL_CUDA_COMPILATION()
 
-#include <cuda/__fwd/zip_iterator.h>
+#include <cuda/__fwd/iterator.h>
 #include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN

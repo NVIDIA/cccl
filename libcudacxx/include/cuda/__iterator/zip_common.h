@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__fwd/zip_iterator.h>
+#include <cuda/__fwd/iterator.h>
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__iterator/concepts.h>

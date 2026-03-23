@@ -33,7 +33,9 @@
 #include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/iterator_categories.h>
 
-#include <cuda/iterator>
+#include <cuda/__fwd/iterator.h>
+#include <cuda/std/__fwd/iterator.h>
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/void_t.h>
 
 THRUST_NAMESPACE_BEGIN

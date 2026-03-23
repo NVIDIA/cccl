@@ -519,8 +519,8 @@ public:
   //! `bulk <https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2300r5.html#design-sender-adaptor-bulk>`_
   //! from P2300.
   //!
-  //! .. versionadded:: 2.4.0
-  //!    First appears in CUDA Toolkit 12.5.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -632,8 +632,8 @@ public:
   //!
   //! Applies the function object ``op`` to each element in the range ``[first, first + num_items)``
   //!
-  //! .. versionadded:: 2.4.0
-  //!    First appears in CUDA Toolkit 12.5.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -730,8 +730,8 @@ public:
   //!
   //! Applies the function object ``op`` to each element in the range ``[first, last)``
   //!
-  //! .. versionadded:: 2.4.0
-  //!    First appears in CUDA Toolkit 12.5.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -840,8 +840,8 @@ public:
   //! Unlike the ``ForEachN`` algorithm, ``ForEachCopyN`` is allowed to invoke ``op`` on copies of the elements.
   //! This relaxation allows ``ForEachCopyN`` to vectorize loads.
   //!
-  //! .. versionadded:: 2.4.0
-  //!    First appears in CUDA Toolkit 12.5.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -941,8 +941,8 @@ public:
   //! Unlike the ``ForEach`` algorithm, ``ForEachCopy`` is allowed to invoke ``op`` on copies of the elements.
   //! This relaxation allows ``ForEachCopy`` to vectorize loads.
   //!
-  //! .. versionadded:: 2.4.0
-  //!    First appears in CUDA Toolkit 12.5.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -1124,8 +1124,8 @@ public:
   //!
   //! Iterate through a multi-dimensional extents producing
   //!
-  //! .. versionadded:: 2.4.0
-  //!    First appears in CUDA Toolkit 12.5.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -1218,8 +1218,8 @@ public:
   //! Iterate through multi-dimensional extents using a specific mdspan layout, applying a function object for each
   //! element, passing
   //!
-  //! .. versionadded:: 2.4.0
-  //!    First appears in CUDA Toolkit 12.5.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - a single linear index that represents the current iteration
   //! - a list of indices containing the coordinates for each extent dimension
@@ -1294,19 +1294,8 @@ public:
     !::cuda::std::is_convertible_v<EnvT, cudaStream_t>))
   CUB_RUNTIME_FUNCTION static cudaError_t ForEachInLayout(const LayoutMapping& layout_mapping, OpType op, EnvT env = {})
   {
-    using namespace cub::detail;
-    using extents_type      = typename LayoutMapping::extents_type;
-    using extent_index_type = typename extents_type::index_type;
-    using fast_mod_array_t  = ::cuda::std::array<fast_div_mod<extent_index_type>, extents_type::rank()>;
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
-    static constexpr auto seq            = ::cuda::std::make_index_sequence<extents_type::rank()>{};
-    constexpr bool is_layout_right       = ::cuda::std::__is_cuda_std_layout_right_mapping_v<LayoutMapping>;
-    auto extents                         = layout_mapping.extents();
-    fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod<is_layout_right>(extents, seq);
-    fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(extents, seq);
-    for_each::op_wrapper_extents_t<OpType, extents_type, is_layout_right, fast_mod_array_t> op_wrapper{
-      op, extents, sub_sizes_div_array, extents_div_array};
-    return Bulk(static_cast<implicit_prom_t<extent_index_type>>(cub::detail::size(extents)), op_wrapper, env);
+    return __for_each_in_extents(layout_mapping, op, env);
   }
 
   // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
@@ -1316,6 +1305,33 @@ public:
   ForEachInLayout(const LayoutMapping& layout_mapping, OpType op, cudaStream_t stream)
   {
     return ForEachInLayout(layout_mapping, op, ::cuda::stream_ref{stream});
+  }
+
+  // Internal version of ForEachInLayout without NVTX range, for use by other device algorithms
+  _CCCL_TEMPLATE(typename LayoutMapping, typename OpType, typename EnvT = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES(::cuda::std::__is_cuda_std_layout_left_or_right_mapping_v<LayoutMapping>)
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  __for_each_in_extents(const LayoutMapping& layout_mapping, OpType op, EnvT env = {})
+  {
+    using namespace cub::detail;
+    using extents_type                   = typename LayoutMapping::extents_type;
+    using extent_index_type              = typename extents_type::index_type;
+    using fast_mod_array_t               = ::cuda::std::array<fast_div_mod<extent_index_type>, extents_type::rank()>;
+    static constexpr auto seq            = ::cuda::std::make_index_sequence<extents_type::rank()>{};
+    constexpr bool is_layout_right       = ::cuda::std::__is_cuda_std_layout_right_mapping_v<LayoutMapping>;
+    auto extents                         = layout_mapping.extents();
+    fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod<is_layout_right>(extents, seq);
+    fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(extents, seq);
+    for_each::op_wrapper_extents_t<OpType, extents_type, is_layout_right, fast_mod_array_t> op_wrapper{
+      op, extents, sub_sizes_div_array, extents_div_array};
+    using ShapeT = implicit_prom_t<extent_index_type>;
+    auto shape   = static_cast<ShapeT>(cub::detail::size(extents));
+    if (shape == 0)
+    {
+      return cudaSuccess;
+    }
+    auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
+    return detail::for_each::dispatch<ShapeT>(shape, op_wrapper, stream.get());
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED

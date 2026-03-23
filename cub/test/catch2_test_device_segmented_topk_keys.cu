@@ -120,7 +120,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small fixed-size segments",
   constexpr auto max_segment_size           = static_max_segment_size;
   const segment_size_t segment_size = GENERATE_COPY(values({min_segment_size, segment_size_t{3}, max_segment_size}),
                                                     take(4, random(min_segment_size, max_segment_size)));
-  const segment_size_t max_k        = cuda::std::min(static_max_k, segment_size);
+  const segment_size_t max_k        = (cuda::std::min) (static_max_k, segment_size);
 
   // Skip invalid combinations
   if (segment_size > max_segment_size)
@@ -197,7 +197,7 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Keys work with small variable-size segment
   const auto direction = GENERATE_COPY(cub::detail::topk::select::min, cub::detail::topk::select::max);
 
   constexpr segment_size_t min_items = 1;
-  constexpr segment_size_t max_items = 1000000;
+  constexpr segment_size_t max_items = 1'000'000;
 
   // Number of items
   const segment_size_t num_items = GENERATE_COPY(

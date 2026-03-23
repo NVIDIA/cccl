@@ -18,7 +18,10 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/util_type.cuh>
+
+#include <cuda/__cmath/ceil_div.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -55,6 +58,94 @@ struct AgentTopKPolicy
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 };
 
+template <typename KeyT, bool IsFundamental = detail::radix::is_fundamental_type_v<KeyT>>
+struct key_prefix_storage_t;
+
+template <typename KeyT>
+struct key_prefix_storage_t<KeyT, true>
+{
+  using bits_t = typename Traits<KeyT>::UnsignedBits;
+  bits_t bits;
+};
+
+// Calculates the number of passes needed for a type T with BitsPerPass bits processed per pass.
+template <typename T>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes(int bits_per_pass)
+{
+  return ::cuda::ceil_div<int>(sizeof(T) * 8, bits_per_pass);
+}
+
+template <int BitsPerPass>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_num_passes(const int total_bits)
+{
+  return ::cuda::ceil_div<int>(total_bits, BitsPerPass);
+}
+
+// Calculates the starting bit for a given pass (bit 0 is the least significant (rightmost) bit).
+// We process the input from the most to the least significant bit. This way, we can skip some passes in the end.
+template <typename T, int BitsPerPass>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
+{
+  int start_bit = int{sizeof(T)} * 8 - (pass + 1) * BitsPerPass;
+  if (start_bit < 0)
+  {
+    start_bit = 0;
+  }
+  return start_bit;
+}
+
+template <int BitsPerPass>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int calc_start_bit(const int total_bits, const int pass)
+{
+  int start_bit = total_bits - (pass + 1) * BitsPerPass;
+  if (start_bit < 0)
+  {
+    start_bit = 0;
+  }
+  return start_bit;
+}
+
+// Bit-vector for accumulating prefix digits via funnel shift. Each pass shifts the existing
+// contents left by BitsPerPass and ORs the new bucket at the bottom. Sized to hold all
+// decomposed bits of KeyT plus headroom for the shift padding of the last pass.
+template <typename KeyT>
+struct key_prefix_storage_t<KeyT, false>
+{
+  static constexpr int num_words = ::cuda::ceil_div<int>(sizeof(KeyT) * 8 + 31, 32);
+  unsigned int words[num_words];
+
+  // Funnel-shifts the entire bit-vector left by `shift` positions and inserts `value` into the
+  // vacated low bits. Each word receives carry bits from its lower neighbor (high-to-low order
+  // so each word reads its neighbor's original value). The final word is filled from `value`.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void shift_or(int shift, unsigned int value)
+  {
+    _CCCL_ASSERT(shift > 0 && shift < 32, "shift_or requires 0 < shift < 32");
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = num_words - 1; i > 0; --i)
+    {
+      words[i] = __funnelshift_l(words[i - 1], words[i], shift);
+    }
+    words[0] = (words[0] << shift) | value;
+  }
+};
+
+template <typename KeyT, int BitsPerPass>
+_CCCL_DEVICE _CCCL_FORCEINLINE void
+set_kth_key_bits(key_prefix_storage_t<KeyT>& prefix, const int pass, const int bin_index)
+{
+  if constexpr (detail::radix::is_fundamental_type_v<KeyT>)
+  {
+    using bits_t        = typename Traits<KeyT>::UnsignedBits;
+    const int start_bit = calc_start_bit<KeyT, BitsPerPass>(pass);
+    bits_t bucket       = bin_index;
+    prefix.bits |= static_cast<bits_t>(bucket) << start_bit;
+  }
+  else
+  {
+    prefix.shift_or(BitsPerPass, bin_index);
+  }
+}
+
 template <typename KeyInT, typename OffsetT, typename OutOffsetT>
 struct alignas(128) Counter
 {
@@ -72,7 +163,7 @@ struct alignas(128) Counter
   // element is a result (written to `out`), a candidate for next pass (written to
   // `out_buf`), or not useful (discarded). The bits that are not yet processed do not
   // matter for this purpose.
-  typename Traits<KeyInT>::UnsignedBits kth_key_bits;
+  key_prefix_storage_t<KeyInT> kth_key_bits;
 
   // Record how many elements have passed filtering. It's used to determine the position
   // in the `out_buf` where an element should be written.
@@ -104,34 +195,6 @@ enum class candidate_class
   // The given candidate is definitely not amongst the top-k items
   rejected
 };
-
-// Calculates the number of passes needed for a type T with BitsPerPass bits processed per pass.
-template <typename T>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes(int bits_per_pass)
-{
-  return ::cuda::ceil_div<int>(sizeof(T) * 8, bits_per_pass);
-}
-
-// Calculates the starting bit for a given pass (bit 0 is the least significant (rightmost) bit).
-// We process the input from the most to the least significant bit. This way, we can skip some passes in the end.
-template <typename T, int BitsPerPass>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
-{
-  int start_bit = int{sizeof(T)} * 8 - (pass + 1) * BitsPerPass;
-  if (start_bit < 0)
-  {
-    start_bit = 0;
-  }
-  return start_bit;
-}
-
-// Used in the bin ID calculation to exclude bits unrelated to the current pass
-template <typename T, int BitsPerPass>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr unsigned calc_mask(const int pass)
-{
-  int num_bits = calc_start_bit<T, BitsPerPass>(pass - 1) - calc_start_bit<T, BitsPerPass>(pass);
-  return (1 << num_bits) - 1;
-}
 
 //! @brief AgentTopK implements a stateful abstraction of CUDA thread blocks for participating in
 //! device-wide topK
@@ -563,11 +626,10 @@ struct AgentTopK
         counter->k = k - prev;
 
         // The number of candidates in the next pass
-        counter->len                                   = cur - prev;
-        typename Traits<key_in_t>::UnsignedBits bucket = bin_idx;
+        counter->len              = cur - prev;
+        const unsigned int bucket = static_cast<unsigned int>(bin_idx);
         // Update the "splitter" key by adding the radix digit of the k-th item bin of this pass
-        const int start_bit = calc_start_bit<key_in_t, bits_per_pass>(pass);
-        counter->kth_key_bits |= bucket << start_bit;
+        set_kth_key_bits<key_in_t, bits_per_pass>(counter->kth_key_bits, pass, bucket);
       }
     };
 
@@ -748,8 +810,18 @@ struct AgentTopK
       choose_bucket(counter, current_k, pass);
 
       // Reset histogram for the next pass
-      constexpr int num_passes = calc_num_passes<key_in_t>(bits_per_pass);
-      if (pass != num_passes - 1)
+      // TODO: Refactor calc_start_bit, calc_mask, and calc_num_passes to uniformly work with
+      // total_bits (passed as a kernel parameter) instead of sizeof(KeyT), then use a single
+      // unconditional path for both fundamental and non-fundamental types.
+      if constexpr (detail::radix::is_fundamental_type_v<key_in_t>)
+      {
+        constexpr int num_passes = calc_num_passes<key_in_t>(bits_per_pass);
+        if (pass != num_passes - 1)
+        {
+          init_histograms(histogram);
+        }
+      }
+      else
       {
         init_histograms(histogram);
       }

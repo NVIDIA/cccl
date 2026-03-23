@@ -28,6 +28,7 @@
 #include <cuda/__memory/address_space.h>
 #include <cuda/__memory/align_up.h>
 #include <cuda/__memory/is_aligned.h>
+#include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/__memory/ptr_rebind.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/elect_sync.h>
@@ -37,7 +38,6 @@
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__iterator/data.h>
 #include <cuda/std/__iterator/size.h>
 #include <cuda/std/cstdint>
@@ -300,14 +300,13 @@ public:
   //!   Note: This range is aliasing the `smem_dst` buffer. So `smem_dst` should not be written to/reused while this
   //!   range is still in use!
   // TODO Allow spans with static sizes?
-  template <typename T, int GmemAlign = alignof(T)>
+  template <typename T, ::cuda::std::size_t GmemAlign = alignof(T)>
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::span<T>
   CopyAsync(::cuda::std::span<char> smem_dst, ::cuda::std::span<const T> gmem_src)
   {
     static_assert(THRUST_NS_QUALIFIER::is_trivially_relocatable_v<T>);
-    static_assert(::cuda::std::has_single_bit(unsigned{GmemAlign}));
-    static_assert(GmemAlign >= int{alignof(T)});
-    constexpr bool bulk_aligned = GmemAlign >= detail::bulk_copy_min_align;
+    static_assert(::cuda::__is_valid_alignment<T>(GmemAlign));
+    constexpr bool bulk_aligned = GmemAlign >= static_cast<::cuda::std::size_t>(detail::bulk_copy_min_align);
     // Avoid 64b multiplication in span::size_bytes()
     const int num_bytes = static_cast<int>(sizeof(T)) * static_cast<int>(size(gmem_src));
     const auto dst_ptr  = data(smem_dst);
@@ -363,7 +362,7 @@ public:
 
   // Avoid need to explicitly specify `T` for non-const src.
   //! @brief Convenience overload, see `CopyAsync(span<char>, span<const T>)`.
-  template <typename T, int GmemAlign = alignof(T)>
+  template <typename T, ::cuda::std::size_t GmemAlign = alignof(T)>
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::span<T>
   CopyAsync(::cuda::std::span<char> smem_dst, ::cuda::std::span<T> gmem_src)
   {

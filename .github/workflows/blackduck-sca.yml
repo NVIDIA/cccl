@@ -30,15 +30,15 @@ jobs:
           blackducksca_url: ${{ vars.BLACKDUCK_URL }}
           blackducksca_token: ${{ secrets.BLACKDUCK_TOKEN }}
           ### SCANNING: Optional fields
-          blackducksca_scan_full: true
           # blackducksca_scan_failure_severities: "BLOCKER,CRITICAL"
           # blackducksca_waitForScan: true
           ### Arbitrary product-related CLI arguments
           # detect_search_depth: 2
           detect_args: >-
             --detect.project.group.name='github-first-group'
-            --detect.detector.search.depth=4
+            --detect.detector.search.depth=64
             --detect.detector.search.continue=true
+            --detect.accuracy.required=NONE
           # detect_config_path: "/path/to/application.properties"
           ### FIX PULL REQUEST CREATION: Uncomment below to enable
           # blackducksca_fixpr_enabled: true

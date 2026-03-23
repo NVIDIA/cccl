@@ -453,6 +453,7 @@ The deprecation period will depend on the impact of the change, but will usually
 
 | CCCL version | CTK version |
 |--------------|-------------|
+| 3.2          | 13.2        |
 | 3.1          | 13.1        |
 | 3.0          | 13.0        |
 | 2.8          | 12.9        |
@@ -493,9 +494,11 @@ Does your project use CCCL? [Open a PR to add your project to this list!](https:
 - [cuDF](https://github.com/rapidsai/cudf) - Algorithms and file readers for ETL data analytics
 - [cuGraph](https://github.com/rapidsai/cugraph) - Algorithms for graph analytics
 - [cuML](https://github.com/rapidsai/cuml) - Machine learning algorithms and primitives
+- [cuOpt](https://github.com/NVIDIA/cuopt) - Accelerated decision optimization
 - [CuPy](https://cupy.dev) - NumPy & SciPy for GPU
 - [cuSOLVER](https://developer.nvidia.com/cusolver) - Dense and sparse linear solvers
 - [CUSP](https://github.com/cusplibrary/cusplibrary) - Sparse matrix operations, iterative methods, and algebraic multigrid
+- [cuVS](https://github.com/rapidsai/cuvs) - Approximate clustering and vector search
 - [GooFit](https://github.com/GooFit/GooFit) - Library for maximum-likelihood fits
 - [HeavyDB](https://github.com/heavyai/heavydb) - SQL database engine
 - [HOOMD](https://github.com/glotzerlab/hoomd-blue) - Monte Carlo and molecular dynamics simulations

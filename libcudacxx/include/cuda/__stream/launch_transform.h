@@ -29,6 +29,7 @@
 #  include <cuda/std/__memory/construct_at.h>
 #  include <cuda/std/__new/launder.h>
 #  include <cuda/std/__optional/optional.h>
+#  include <cuda/std/__tuple_dir/ignore.h>
 #  include <cuda/std/__type_traits/decay.h>
 #  include <cuda/std/__type_traits/is_callable.h>
 #  include <cuda/std/__type_traits/is_reference.h>

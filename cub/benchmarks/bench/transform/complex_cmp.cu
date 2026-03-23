@@ -37,11 +37,11 @@ try
     return;
   }
 
-  thrust::device_vector<complex> in = generate(n);
+  thrust::device_vector<complex32> in = generate(n);
   thrust::device_vector<bool> out(n - 1);
 
   state.add_element_count(n);
-  state.add_global_memory_reads<complex>(n);
+  state.add_global_memory_reads<complex32>(n);
   state.add_global_memory_writes<bool>(n);
 
   // the complex comparison needs lots of compute and transform reads from overlapping input
