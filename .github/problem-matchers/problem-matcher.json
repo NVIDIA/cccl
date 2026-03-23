@@ -4,9 +4,9 @@
       "owner": "nvcc",
       "pattern": [
         {
+          "message": 5,
           "regexp": "^\\/home\\/coder\\/(.+):(\\d+):(\\d+): (\\w+): \"(.+)\"$",
-          "severity": 4,
-          "message": 5
+          "severity": 4
         }
       ]
     }
