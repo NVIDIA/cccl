@@ -119,7 +119,7 @@ __launch_bounds__(
     ValueT>;
 
   static constexpr merge_sort_policy active_policy = vsmem_adapted_agents::policy;
-  using agent_block_sort_t                         = vsmem_adapted_agents::block_sort_agent_t;
+  using agent_block_sort_t                         = typename vsmem_adapted_agents::block_sort_agent_t;
   using vsmem_helper_t                             = vsmem_helper_impl<agent_block_sort_t>;
 
   // Static shared memory allocation
@@ -219,7 +219,7 @@ __launch_bounds__(
     ValueT>;
 
   static constexpr merge_sort_policy active_policy = vsmem_adapted_agents::policy;
-  using agent_merge_t                              = vsmem_adapted_agents::merge_agent_t;
+  using agent_merge_t                              = typename vsmem_adapted_agents::merge_agent_t;
   using vsmem_helper_t                             = vsmem_helper_impl<agent_merge_t>;
 
   // Static shared memory allocation
