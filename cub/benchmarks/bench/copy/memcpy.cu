@@ -86,8 +86,8 @@ struct policy_selector_t
         TUNE_THREADS,
         TUNE_BUFFERS_PER_THREAD,
         TUNE_TLEV_BYTES_PER_THREAD,
-        TUNE_LARGE_THREADS * TUNE_LARGE_BUFFER_BYTES_PER_THREAD,
         bool{TUNE_PREFER_POW2_BITS},
+        TUNE_LARGE_THREADS * TUNE_LARGE_BUFFER_BYTES_PER_THREAD,
         TUNE_WARP_LEVEL_THRESHOLD,
         TUNE_BLOCK_LEVEL_THRESHOLD,
         cub::detail::delay_constructor_policy{

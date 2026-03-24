@@ -32,8 +32,8 @@ struct small_buffer_policy
   int block_threads;
   int buffers_per_thread;
   int tlev_bytes_per_thread;
-  int block_level_tile_size;
   bool prefer_pow2_bits;
+  int block_level_tile_size;
   int warp_level_threshold;
   int block_level_threshold;
   delay_constructor_policy buff_delay_constructor;
@@ -43,8 +43,8 @@ struct small_buffer_policy
   operator==(const small_buffer_policy& lhs, const small_buffer_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.buffers_per_thread == rhs.buffers_per_thread
-        && lhs.tlev_bytes_per_thread == rhs.tlev_bytes_per_thread
-        && lhs.block_level_tile_size == rhs.block_level_tile_size && lhs.prefer_pow2_bits == rhs.prefer_pow2_bits
+        && lhs.tlev_bytes_per_thread == rhs.tlev_bytes_per_thread && lhs.prefer_pow2_bits == rhs.prefer_pow2_bits
+        && lhs.block_level_tile_size == rhs.block_level_tile_size
         && lhs.warp_level_threshold == rhs.warp_level_threshold
         && lhs.block_level_threshold == rhs.block_level_threshold
         && lhs.buff_delay_constructor == rhs.buff_delay_constructor
@@ -63,8 +63,8 @@ struct small_buffer_policy
     return os
         << "small_buffer_policy { .block_threads = " << policy.block_threads << ", .buffers_per_thread = "
         << policy.buffers_per_thread << ", .tlev_bytes_per_thread = " << policy.tlev_bytes_per_thread
-        << ", .block_level_tile_size = " << policy.block_level_tile_size << ", .prefer_pow2_bits = "
-        << policy.prefer_pow2_bits << ", .warp_level_threshold = " << policy.warp_level_threshold
+        << ", .prefer_pow2_bits = " << policy.prefer_pow2_bits << ", .block_level_tile_size = "
+        << policy.block_level_tile_size << ", .warp_level_threshold = " << policy.warp_level_threshold
         << ", .block_level_threshold = " << policy.block_level_threshold << ", .buff_delay_constructor = "
         << policy.buff_delay_constructor << ", .block_delay_constructor = " << policy.block_delay_constructor << " }";
   }
@@ -141,8 +141,8 @@ struct policy_selector
         128,
         4,
         8,
+        /* prefer_pow2_bits */ arch < ::cuda::arch_id::sm_70,
         large.block_threads * large.bytes_per_thread,
-        arch < ::cuda::arch_id::sm_70,
         128,
         8 * 1024,
         // BufferOffsetT and BlockOffsetT are primitive/trivially copyable
