@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/algorithm>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
@@ -11,11 +12,15 @@
 template <typename T>
 bool isclose(T a, T b, T r_tol, T a_tol)
 {
-  if constexpr (cuda::std::is_floating_point_v<T>)
+  if constexpr (cuda::is_floating_point_v<T>)
   {
-    if (a == b)
+    if (cuda::std::isnan(a) || cuda::std::isnan(b))
     {
-      return true;
+      return false;
+    }
+    if (cuda::std::isinf(a) || cuda::std::isinf(b))
+    {
+      return a == b;
     }
     return cuda::std::abs(a - b) <= cuda::std::max(a_tol, r_tol * cuda::std::max(cuda::std::abs(a), cuda::std::abs(b)));
   }
@@ -35,7 +40,7 @@ bool isclose(T a, T b, T r_tol)
 template <typename T>
 bool isclose(T a, T b)
 {
-  if constexpr (cuda::std::is_floating_point_v<T>)
+  if constexpr (cuda::is_floating_point_v<T>)
   {
     return isclose(a, b, T(1 << 8) * cuda::std::numeric_limits<T>::epsilon(), T{});
   }
