@@ -1184,14 +1184,6 @@ struct benchmark_match_for_policy_selector<
 template <typename InputValueT, typename OutputValueT, typename AccumT, typename OffsetT, typename ScanOpT>
 struct policy_selector_from_types
 {
-  // TODO(bgruber): get rid of these again
-  static constexpr int input_value_size       = int{sizeof(InputValueT)};
-  static constexpr int input_value_alignment  = int{alignof(InputValueT)};
-  static constexpr int output_value_size      = int{sizeof(OutputValueT)};
-  static constexpr int output_value_alignment = int{alignof(OutputValueT)};
-  static constexpr int accum_size             = int{sizeof(AccumT)};
-  static constexpr int accum_alignment        = int{alignof(AccumT)};
-  static constexpr type_t input_type          = classify_type<InputValueT>;
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_policy
   {
     constexpr bool benchmark_match =
@@ -1201,45 +1193,20 @@ struct policy_selector_from_types
       is_primitive<AccumT>::value || ::cuda::std::is_trivially_copy_constructible_v<AccumT>;
 
     constexpr auto policies = policy_selector{
-      input_value_size,
-      input_value_alignment,
-      output_value_size,
-      output_value_alignment,
-      accum_size,
-      accum_alignment,
+      int{sizeof(InputValueT)},
+      int{alignof(InputValueT)},
+      int{sizeof(OutputValueT)},
+      int{alignof(OutputValueT)},
+      int{sizeof(AccumT)},
+      int{alignof(AccumT)},
       int{sizeof(OffsetT)},
-      input_type,
+      classify_type<InputValueT>,
       classify_type<AccumT>,
       classify_op<ScanOpT>,
       accum_is_primitive_or_trivially_copy_constructible,
       benchmark_match};
     return policies(arch);
   }
-};
-
-template <typename PolicySelectorT, typename = void>
-struct selector_smem_info
-{
-  static constexpr bool has_static_layout = false;
-};
-
-template <typename PolicySelectorT>
-struct selector_smem_info<
-  PolicySelectorT,
-  ::cuda::std::void_t<decltype(::cuda::std::integral_constant<int, PolicySelectorT::input_value_size>{}),
-                      decltype(::cuda::std::integral_constant<int, PolicySelectorT::input_value_alignment>{}),
-                      decltype(::cuda::std::integral_constant<int, PolicySelectorT::output_value_size>{}),
-                      decltype(::cuda::std::integral_constant<int, PolicySelectorT::output_value_alignment>{}),
-                      decltype(::cuda::std::integral_constant<int, PolicySelectorT::accum_size>{}),
-                      decltype(::cuda::std::integral_constant<int, PolicySelectorT::accum_alignment>{})>>
-{
-  static constexpr bool has_static_layout     = true;
-  static constexpr int input_value_size       = PolicySelectorT::input_value_size;
-  static constexpr int input_value_alignment  = PolicySelectorT::input_value_alignment;
-  static constexpr int output_value_size      = PolicySelectorT::output_value_size;
-  static constexpr int output_value_alignment = PolicySelectorT::output_value_alignment;
-  static constexpr int accum_size             = PolicySelectorT::accum_size;
-  static constexpr int accum_alignment        = PolicySelectorT::accum_alignment;
 };
 } // namespace detail::scan
 
