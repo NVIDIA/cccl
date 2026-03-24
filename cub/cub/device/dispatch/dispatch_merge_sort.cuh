@@ -29,7 +29,7 @@
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 #  include <sstream>
-#endif
+#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
 CUB_NAMESPACE_BEGIN
 
@@ -209,7 +209,7 @@ public:
       return cudaSuccess;
     }
 
-    const auto tile_size =
+    constexpr auto tile_size =
       detail::merge_sort::merge_sort_vsmem_helper_t<
         policy_getter<ActivePolicyT>,
         KeyInputIteratorT,
@@ -231,30 +231,20 @@ public:
      * merge sort allocates virtual shared memory that resides in global memory.
      */
 
+    using merge_sort_vsmem_t = detail::merge_sort::merge_sort_vsmem_helper_t<
+      policy_getter<ActivePolicyT>,
+      KeyInputIteratorT,
+      ValueInputIteratorT,
+      KeyIteratorT,
+      ValueIteratorT,
+      OffsetT,
+      CompareOpT,
+      KeyT,
+      ValueT>;
     const ::cuda::std::size_t block_sort_smem_size =
-      num_tiles
-      * detail::vsmem_helper_impl<typename detail::merge_sort::merge_sort_vsmem_helper_t<
-        policy_getter<ActivePolicyT>,
-        KeyInputIteratorT,
-        ValueInputIteratorT,
-        KeyIteratorT,
-        ValueIteratorT,
-        OffsetT,
-        CompareOpT,
-        KeyT,
-        ValueT>::block_sort_agent_t>::vsmem_per_block;
+      num_tiles * detail::vsmem_helper_impl<typename merge_sort_vsmem_t::block_sort_agent_t>::vsmem_per_block;
     const ::cuda::std::size_t merge_smem_size =
-      num_tiles
-      * detail::vsmem_helper_impl<typename detail::merge_sort::merge_sort_vsmem_helper_t<
-        policy_getter<ActivePolicyT>,
-        KeyInputIteratorT,
-        ValueInputIteratorT,
-        KeyIteratorT,
-        ValueIteratorT,
-        OffsetT,
-        CompareOpT,
-        KeyT,
-        ValueT>::merge_agent_t>::vsmem_per_block;
+      num_tiles * detail::vsmem_helper_impl<typename merge_sort_vsmem_t::merge_agent_t>::vsmem_per_block;
     const ::cuda::std::size_t virtual_shared_memory_size = (::cuda::std::max) (block_sort_smem_size, merge_smem_size);
 
     void* allocations[4]       = {nullptr, nullptr, nullptr, nullptr};
