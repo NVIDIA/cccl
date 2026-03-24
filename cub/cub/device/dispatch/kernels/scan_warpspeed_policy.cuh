@@ -15,11 +15,12 @@ namespace detail::scan
 {
 struct scan_warpspeed_policy
 {
-  bool valid = false;
+  bool valid = false; // TODO(bgruber): move this to an enum value inside scan_policy telling which algorithm to use
   int num_reduce_and_scan_warps;
   int look_ahead_items_per_thread;
   int items_per_thread;
 
+  // TODO(bgruber): this is unusual, remove it
   _CCCL_API constexpr explicit operator bool() const noexcept
   {
     return valid;

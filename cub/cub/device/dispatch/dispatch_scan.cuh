@@ -147,19 +147,6 @@ struct DeviceScanKernelSource
     ::cuda::std::__construct_at(&arg.lookahead, static_cast<warpspeed::tile_state_t<AccumT>*>(ts));
     return arg;
   }
-
-  CUB_RUNTIME_FUNCTION static constexpr bool use_warpspeed(const scan_policy& policy)
-  {
-#if _CCCL_CUDACC_AT_LEAST(12, 8)
-    if (policy.warpspeed)
-    {
-      return detail::scan::use_warpspeed<UnwrappedInputIteratorT, UnwrappedOutputIteratorT, AccumT>(policy.warpspeed);
-    }
-#else
-    (void) policy;
-#endif
-    return false;
-  }
 };
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
@@ -690,24 +677,15 @@ struct DispatchScan
   template <typename PolicyGetter>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(PolicyGetter policy_getter)
   {
-    CUB_DETAIL_CONSTEXPR_ISH auto active_policy = policy_getter();
+    CUB_DETAIL_CONSTEXPR_ISH detail::scan::scan_policy active_policy = policy_getter();
 
     CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.load_modifier != CacheLoadModifier::LOAD_LDG,
                                  "The memory consistency model does not apply to texture accesses");
 
-#if __cccl_ptx_isa >= 860
-#  if defined(CUB_DEFINE_RUNTIME_POLICIES)
-    if (kernel_source.use_warpspeed(active_policy))
+    if (active_policy.warpspeed)
     {
       return __invoke_lookahead_algorithm(policy_getter);
     }
-#  else
-    if CUB_DETAIL_CONSTEXPR_ISH (KernelSource::use_warpspeed(active_policy))
-    {
-      return __invoke_lookahead_algorithm(policy_getter);
-    }
-#  endif
-#endif // __cccl_ptx_isa >= 860
 
     // Number of input tiles
     const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
@@ -945,11 +923,7 @@ template <
                                                          ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
                                                                           cub::detail::it_value_t<InputIteratorT>,
                                                                           typename InitValueT::value_type>>,
-  typename PolicySelector = policy_selector_from_types<detail::it_value_t<InputIteratorT>,
-                                                       detail::it_value_t<OutputIteratorT>,
-                                                       AccumT,
-                                                       OffsetT,
-                                                       ScanOpT>,
+  typename PolicySelector = policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT>,
   typename KernelSource   = DeviceScanKernelSource<
       PolicySelector,
       THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
@@ -1022,28 +996,25 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   });
 }
 
-template <typename AccumT,
-          ForceInclusive EnforceInclusive = ForceInclusive::No,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename ScanOpT,
-          typename InitValueT,
-          typename OffsetT,
-          typename PolicySelector = policy_selector_from_types<detail::it_value_t<InputIteratorT>,
-                                                               detail::it_value_t<OutputIteratorT>,
-                                                               AccumT,
-                                                               OffsetT,
-                                                               ScanOpT>,
-          typename KernelSource   = DeviceScanKernelSource<
-              PolicySelector,
-              THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
-              THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
-              ScanOpT,
-              InitValueT,
-              OffsetT,
-              AccumT,
-              EnforceInclusive>,
-          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <
+  typename AccumT,
+  ForceInclusive EnforceInclusive = ForceInclusive::No,
+  typename InputIteratorT,
+  typename OutputIteratorT,
+  typename ScanOpT,
+  typename InitValueT,
+  typename OffsetT,
+  typename PolicySelector = policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT>,
+  typename KernelSource   = DeviceScanKernelSource<
+      PolicySelector,
+      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
+      ScanOpT,
+      InitValueT,
+      OffsetT,
+      AccumT,
+      EnforceInclusive>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_with_accum(
   void* d_temp_storage,
   size_t& temp_storage_bytes,

@@ -66,8 +66,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
   constexpr scan_policy policy = PolicySelectorT{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
-  if constexpr (policy.warpspeed
-                && detail::scan::use_warpspeed<InputIteratorT, OutputIteratorT, AccumT>(policy.warpspeed))
+  if constexpr (policy.warpspeed)
   {
     device_scan_init_lookahead_body(tile_state.lookahead, num_tiles);
   }
@@ -116,8 +115,7 @@ template <typename PolicySelector, typename InputIteratorT, typename OutputItera
 {
   constexpr scan_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  if constexpr (policy.warpspeed
-                && detail::scan::use_warpspeed<InputIteratorT, OutputIteratorT, AccumT>(policy.warpspeed))
+  if constexpr (policy.warpspeed)
   {
     return num_total_threads(policy.warpspeed);
   }
@@ -201,8 +199,7 @@ __launch_bounds__(get_device_scan_launch_bounds<PolicySelector, InputIteratorT, 
                 "accesses");
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  if constexpr (policy.warpspeed
-                && detail::scan::use_warpspeed<InputIteratorT, OutputIteratorT, AccumT>(policy.warpspeed))
+  if constexpr (policy.warpspeed)
   {
     NV_IF_TARGET(
       NV_PROVIDES_SM_100, ({

@@ -116,12 +116,8 @@ struct DeviceScan
                                                     cub::detail::it_value_t<InputIteratorT>,
                                                     typename InitValueT::value_type>>;
 
-    using default_policy_selector_t = detail::scan::policy_selector_from_types<
-      detail::it_value_t<InputIteratorT>,
-      detail::it_value_t<OutputIteratorT>,
-      accum_t,
-      offset_t,
-      ScanOpT>;
+    using default_policy_selector_t =
+      detail::scan::policy_selector_from_types<InputIteratorT, OutputIteratorT, accum_t, offset_t, ScanOpT>;
 
     using policy_selector_t =
       ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::scan::scan_policy, default_policy_selector_t>;
