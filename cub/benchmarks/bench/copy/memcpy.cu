@@ -78,7 +78,7 @@ struct offset_to_size_t
 
 struct policy_selector_t
 {
-  _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::arch_id /*arch*/) const
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::arch_id /*arch*/) const
     -> cub::detail::batch_memcpy::batch_memcpy_policy
   {
     return {
