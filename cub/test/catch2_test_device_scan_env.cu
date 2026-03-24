@@ -123,13 +123,14 @@ struct scan_tuning
 {
   _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::detail::scan::scan_policy
   {
-    return {BlockThreads,
-            1,
-            cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
-            cub::CacheLoadModifier::LOAD_DEFAULT,
-            cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE,
-            cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
-            cub::detail::default_delay_constructor_policy(true),
+    return {cub::detail::scan::scan_algorithm::lookback,
+            {BlockThreads,
+             1,
+             cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
+             cub::CacheLoadModifier::LOAD_DEFAULT,
+             cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE,
+             cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
+             cub::detail::default_delay_constructor_policy(true)},
             {}};
   }
 };

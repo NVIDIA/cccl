@@ -155,16 +155,19 @@ _CCCL_API constexpr auto convert_policy() -> scan_policy
 {
   // this does not convert any warpspeed policy data, which is fine because we merged warpspeed scan during the CCCL 3.4
   // development cycle, so it never had user exposure through the policy_hub, and we can just only support it through
-  // the policy_selector, which CUB and Thrust.
+  // the policy_selector.
   using scan_policy_t = typename LegacyActivePolicy::ScanPolicyT;
   return scan_policy{
-    scan_policy_t::BLOCK_THREADS,
-    scan_policy_t::ITEMS_PER_THREAD,
-    scan_policy_t::LOAD_ALGORITHM,
-    scan_policy_t::LOAD_MODIFIER,
-    scan_policy_t::STORE_ALGORITHM,
-    scan_policy_t::SCAN_ALGORITHM,
-    detail::delay_constructor_policy_from_type<typename scan_policy_t::detail::delay_constructor_t>};
+    scan_algorithm::lookback,
+    scan_lookback_policy{
+      scan_policy_t::BLOCK_THREADS,
+      scan_policy_t::ITEMS_PER_THREAD,
+      scan_policy_t::LOAD_ALGORITHM,
+      scan_policy_t::LOAD_MODIFIER,
+      scan_policy_t::STORE_ALGORITHM,
+      scan_policy_t::SCAN_ALGORITHM,
+      detail::delay_constructor_policy_from_type<typename scan_policy_t::detail::delay_constructor_t>},
+    scan_warpspeed_policy{}};
 }
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
@@ -670,22 +673,13 @@ struct DispatchScan
   }
 #endif // __cccl_ptx_isa >= 860
 
-  // On Windows, the `if CUB_DETAIL_CONSTEXPR_ISH` results in `warning C4702: unreachable code`.
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4702)
-
   template <typename PolicyGetter>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(PolicyGetter policy_getter)
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookback_algorithm(PolicyGetter policy_getter)
   {
-    CUB_DETAIL_CONSTEXPR_ISH detail::scan::scan_policy active_policy = policy_getter();
+    CUB_DETAIL_CONSTEXPR_ISH const detail::scan::scan_lookback_policy active_policy = policy_getter().lookback;
 
     CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.load_modifier != CacheLoadModifier::LOAD_LDG,
                                  "The memory consistency model does not apply to texture accesses");
-
-    if (active_policy.warpspeed)
-    {
-      return __invoke_lookahead_algorithm(policy_getter);
-    }
 
     // Number of input tiles
     const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
@@ -812,7 +806,18 @@ struct DispatchScan
     return cudaSuccess;
   }
 
-  _CCCL_DIAG_POP
+  template <typename PolicyGetter>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(PolicyGetter policy_getter)
+  {
+    if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == detail::scan::scan_algorithm::warpspeed)
+    {
+      return __invoke_lookahead_algorithm(policy_getter);
+    }
+    else
+    {
+      return __invoke_lookback_algorithm(policy_getter);
+    }
+  }
 
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT = {})

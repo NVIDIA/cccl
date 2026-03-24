@@ -66,7 +66,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
   constexpr scan_policy policy = PolicySelectorT{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
-  if constexpr (policy.warpspeed)
+  if constexpr (policy.algorithm == scan_algorithm::warpspeed)
   {
     device_scan_init_lookahead_body(tile_state.lookahead, num_tiles);
   }
@@ -115,12 +115,12 @@ template <typename PolicySelector, typename InputIteratorT, typename OutputItera
 {
   constexpr scan_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  if constexpr (policy.warpspeed)
+  if constexpr (policy.algorithm == scan_algorithm::warpspeed)
   {
     return num_total_threads(policy.warpspeed);
   }
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
-  return policy.block_threads;
+  return policy.lookback.block_threads;
 }
 
 /**
@@ -193,28 +193,30 @@ __launch_bounds__(get_device_scan_launch_bounds<PolicySelector, InputIteratorT, 
     _CCCL_GRID_CONSTANT const OffsetT num_items,
     _CCCL_GRID_CONSTANT const int num_stages)
 {
-  static constexpr scan_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
-  static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
-                "The memory consistency model does not apply to texture "
-                "accesses");
-
-#if _CCCL_CUDACC_AT_LEAST(12, 8)
-  if constexpr (policy.warpspeed)
+  static constexpr scan_policy active_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  if constexpr (active_policy.algorithm == scan_algorithm::warpspeed)
   {
+#if _CCCL_CUDACC_AT_LEAST(12, 8)
     NV_IF_TARGET(
       NV_PROVIDES_SM_100, ({
         auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
           d_in, d_out, tile_state.lookahead, num_items, num_stages};
         device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT>(scan_params, scan_op, init_value);
       }));
+#else
+    static_assert(sizeof(d_in) == 0,
+                  "Implementation bug: Tuning policy selected warpspeed, but CUDA compiler does not support it");
+#endif // _CCCL_CUDACC_AT_LEAST(12, 8)
   }
   else
-#endif // _CCCL_CUDACC_AT_LEAST(12, 8)
   {
+    static constexpr scan_lookback_policy policy = active_policy.lookback;
+    static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
+                  "The memory consistency model does not apply to texture accesses");
     using ScanPolicyT = AgentScanPolicy<
-      policy.block_threads,
-      policy.items_per_thread,
-      AccumT,
+      0,
+      0,
+      void,
       policy.load_algorithm,
       policy.load_modifier,
       policy.store_algorithm,

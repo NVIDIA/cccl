@@ -23,7 +23,6 @@
 #include <cub/detail/warpspeed/resource/smem_resource_raw.cuh>
 #include <cub/detail/warpspeed/squad/squad_desc.cuh>
 #include <cub/detail/warpspeed/sync_handler.cuh>
-#include <cub/device/dispatch/kernels/scan_warpspeed_policy.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
@@ -549,7 +548,7 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 
-struct scan_policy
+struct scan_lookback_policy
 {
   int block_threads;
   int items_per_thread;
@@ -558,14 +557,95 @@ struct scan_policy
   BlockStoreAlgorithm store_algorithm;
   BlockScanAlgorithm scan_algorithm;
   delay_constructor_policy delay_constructor;
-  scan_warpspeed_policy warpspeed = {};
 
-  _CCCL_API constexpr friend bool operator==(const scan_policy& lhs, const scan_policy& rhs)
+  _CCCL_API constexpr friend bool operator==(const scan_lookback_policy& lhs, const scan_lookback_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.store_algorithm == rhs.store_algorithm && lhs.scan_algorithm == rhs.scan_algorithm
-        && lhs.delay_constructor == rhs.delay_constructor && lhs.warpspeed == rhs.warpspeed;
+        && lhs.delay_constructor == rhs.delay_constructor;
+  }
+
+  _CCCL_API constexpr friend bool operator!=(const scan_lookback_policy& lhs, const scan_lookback_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const scan_lookback_policy& p)
+  {
+    return os
+        << "scan_lookback_policy { .block_threads = " << p.block_threads
+        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+        << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+};
+
+struct scan_warpspeed_policy
+{
+  int num_reduce_and_scan_warps;
+  int look_ahead_items_per_thread;
+  int items_per_thread;
+
+  _CCCL_API constexpr int tile_size() const noexcept
+  {
+    return items_per_thread * num_reduce_and_scan_warps * warp_threads;
+  }
+
+  _CCCL_API constexpr friend bool operator==(const scan_warpspeed_policy& lhs, const scan_warpspeed_policy& rhs)
+  {
+    return lhs.num_reduce_and_scan_warps == rhs.num_reduce_and_scan_warps
+        && lhs.look_ahead_items_per_thread == rhs.look_ahead_items_per_thread
+        && lhs.items_per_thread == rhs.items_per_thread;
+  }
+
+  _CCCL_API constexpr friend bool operator!=(const scan_warpspeed_policy& lhs, const scan_warpspeed_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const scan_warpspeed_policy& p)
+  {
+    return os << "scan_warpspeed_policy { .num_reduce_and_scan_warps = " << p.num_reduce_and_scan_warps
+              << ", .look_ahead_items_per_thread = " << p.look_ahead_items_per_thread
+              << ", .items_per_thread = " << p.items_per_thread << " }";
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+};
+
+enum class scan_algorithm
+{
+  lookback,
+  warpspeed
+};
+
+#if !_CCCL_COMPILER(NVRTC)
+inline ::std::ostream& operator<<(::std::ostream& os, scan_algorithm algorithm)
+{
+  switch (algorithm)
+  {
+    case scan_algorithm::lookback:
+      return os << "scan_algorithm::lookback";
+    case scan_algorithm::warpspeed:
+      return os << "scan_algorithm::warpspeed";
+    default:
+      return os << "scan_algorithm::<unknown>";
+  }
+}
+#endif // !_CCCL_COMPILER(NVRTC)
+
+struct scan_policy
+{
+  scan_algorithm algorithm;
+  scan_lookback_policy lookback;
+  scan_warpspeed_policy warpspeed;
+
+  _CCCL_API constexpr friend bool operator==(const scan_policy& lhs, const scan_policy& rhs)
+  {
+    return lhs.lookback == rhs.lookback && lhs.warpspeed == rhs.warpspeed && lhs.algorithm == rhs.algorithm;
   }
 
   _CCCL_API constexpr friend bool operator!=(const scan_policy& lhs, const scan_policy& rhs)
@@ -576,15 +656,8 @@ struct scan_policy
 #if !_CCCL_COMPILER(NVRTC)
   friend ::std::ostream& operator<<(::std::ostream& os, const scan_policy& p)
   {
-    os << "scan_policy { .block_threads = " << p.block_threads << ", .items_per_thread = " << p.items_per_thread
-       << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-       << ", .store_algorithm = " << p.store_algorithm << ", .scan_algorithm = " << p.scan_algorithm
-       << ", .delay_constructor = " << p.delay_constructor;
-    if (p.warpspeed)
-    {
-      os << ", .warpspeed = " << p.warpspeed;
-    }
-    return os << " }";
+    return os << "scan_policy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback
+              << ", .warpspeed = " << p.warpspeed << " }";
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
@@ -594,7 +667,7 @@ template <typename T>
 concept scan_policy_selector = policy_selector<T, scan_policy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
-_CCCL_API constexpr auto make_mem_scaled_scan_policy(
+_CCCL_API constexpr auto make_mem_scaled_lookback_scan_policy(
   int nominal_4b_block_threads,
   int nominal_4b_items_per_thread,
   int compute_t_size,
@@ -602,19 +675,20 @@ _CCCL_API constexpr auto make_mem_scaled_scan_policy(
   CacheLoadModifier load_modifier,
   BlockStoreAlgorithm store_algorithm,
   BlockScanAlgorithm scan_algorithm,
-  delay_constructor_policy delay_constructor = {delay_constructor_kind::fixed_delay, 350, 450},
-  scan_warpspeed_policy warpspeed            = {}) -> scan_policy
+  delay_constructor_policy delay_constructor = {delay_constructor_kind::fixed_delay, 350, 450}) -> scan_policy
 {
   const auto scaled = scale_mem_bound(nominal_4b_block_threads, nominal_4b_items_per_thread, compute_t_size);
   return scan_policy{
-    scaled.block_threads,
-    scaled.items_per_thread,
-    load_algorithm,
-    load_modifier,
-    store_algorithm,
-    scan_algorithm,
-    delay_constructor,
-    warpspeed};
+    scan_algorithm::lookback,
+    scan_lookback_policy{
+      scaled.block_threads,
+      scaled.items_per_thread,
+      load_algorithm,
+      load_modifier,
+      store_algorithm,
+      scan_algorithm,
+      delay_constructor},
+    scan_warpspeed_policy{}};
 }
 
 _CCCL_API constexpr warpspeed::SquadDesc squad_reduce(const scan_warpspeed_policy& policy)
@@ -805,7 +879,6 @@ struct policy_selector
     if (arch >= ::cuda::arch_id::sm_100)
     {
       scan_warpspeed_policy warpspeed_policy{};
-      warpspeed_policy.valid = true;
 
       // TODO(bgruber): tune this
 #if _CCCL_COMPILER(NVHPC)
@@ -860,19 +933,19 @@ struct policy_selector
     return {};
   }
 
-  _CCCL_API constexpr scan_warpspeed_policy validate_warpspeed_policy(scan_warpspeed_policy warpspeed_policy) const
+  _CCCL_API constexpr bool can_use_warpspeed(const scan_warpspeed_policy& warpspeed_policy) const
   {
     // We need `cuda::std::is_constant_evaluated` for the compile-time SMEM computation. And we need PTX ISA 8.6.
     // MSVC + nvcc < 13.1 just fails to compile `cub.test.device.scan.lid_1.types_0` with `Internal error` and nothing
     // else.
 #if (defined(__CUDA_ARCH__) && __cccl_ptx_isa < 860) || !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) \
   || ((_CCCL_COMPILER(MSVC) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 1)))
-    warpspeed_policy.valid = false;
+    return false;
 #else
     if (!input_contiguous || !output_contiguous || !input_trivially_copyable || !output_trivially_copyable
         || !output_default_constructible)
     {
-      warpspeed_policy.valid = false;
+      return false;
     }
 
     if (smem_for_stages(
@@ -886,15 +959,22 @@ struct policy_selector
           accum_alignment)
         > static_cast<int>(max_smem_per_block))
     {
-      warpspeed_policy.valid = false;
+      return false;
     }
 #endif
-    return warpspeed_policy;
+    return true;
   }
 
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_policy
   {
-    const scan_warpspeed_policy warpspeed_policy = validate_warpspeed_policy(get_warpspeed_policy(arch));
+    // we first try to get the valid warpspeed implementation. if we can't run it, fall back to the old scan impl.
+    {
+      const scan_warpspeed_policy warpspeed_policy = get_warpspeed_policy(arch);
+      if (can_use_warpspeed(warpspeed_policy))
+      {
+        return {scan_algorithm::warpspeed, scan_lookback_policy{}, warpspeed_policy};
+      }
+    }
 
     const primitive_accum primitive_accum_t =
       accum_type != type_t::other && accum_type != type_t::int128 ? primitive_accum::yes : primitive_accum::no;
@@ -917,7 +997,7 @@ struct policy_selector
           {
             case 1:
               // ipt_18.tpb_512.ns_768.dcid_7.l2w_820.trp_1.ld_0 1.188818  1.005682  1.173041  1.305288
-              return make_mem_scaled_scan_policy(
+              return make_mem_scaled_lookback_scan_policy(
                 512,
                 18,
                 accum_size,
@@ -925,11 +1005,10 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon, 768, 820},
-                warpspeed_policy);
+                delay_constructor_policy{delay_constructor_kind::exponential_backon, 768, 820});
             case 2:
               // ipt_13.tpb_512.ns_1384.dcid_7.l2w_720.trp_1.ld_0 1.128443  1.002841  1.119688  1.307692
-              return make_mem_scaled_scan_policy(
+              return make_mem_scaled_lookback_scan_policy(
                 512,
                 13,
                 accum_size,
@@ -937,11 +1016,10 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon, 1384, 720},
-                warpspeed_policy);
+                delay_constructor_policy{delay_constructor_kind::exponential_backon, 1384, 720});
             case 4:
               // ipt_22.tpb_384.ns_1904.dcid_6.l2w_830.trp_1.ld_0 1.148442  0.997167  1.139902  1.462651
-              return make_mem_scaled_scan_policy(
+              return make_mem_scaled_lookback_scan_policy(
                 384,
                 22,
                 accum_size,
@@ -949,11 +1027,10 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 1904, 830},
-                warpspeed_policy);
+                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 1904, 830});
             case 8:
               // ipt_23.tpb_416.ns_772.dcid_5.l2w_710.trp_1.ld_0 1.089468  1.015581  1.085630  1.264583
-              return make_mem_scaled_scan_policy(
+              return make_mem_scaled_lookback_scan_policy(
                 416,
                 23,
                 accum_size,
@@ -961,8 +1038,7 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 772, 710},
-                warpspeed_policy);
+                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 772, 710});
             default:
               break;
           }
@@ -973,7 +1049,7 @@ struct policy_selector
           {
             case 1:
               // ipt_14.tpb_384.ns_228.dcid_7.l2w_775.trp_1.ld_1 1.107210  1.000000  1.100637  1.307692
-              return make_mem_scaled_scan_policy(
+              return make_mem_scaled_lookback_scan_policy(
                 384,
                 14,
                 accum_size,
@@ -981,15 +1057,14 @@ struct policy_selector
                 LOAD_CA,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon, 228, 775},
-                warpspeed_policy);
+                delay_constructor_policy{delay_constructor_kind::exponential_backon, 228, 775});
             case 2:
               // todo(gonidelis): Regresses for large inputs. Find better tuning.
               // ipt_13.tpb_288.ns_1520.dcid_5.l2w_895.trp_1.ld_1 1.080934  0.983509  1.077724  1.305288
               break;
             case 4:
               // ipt_19.tpb_416.ns_956.dcid_7.l2w_550.trp_1.ld_1 1.146142  0.994350  1.137459  1.455636
-              return make_mem_scaled_scan_policy(
+              return make_mem_scaled_lookback_scan_policy(
                 416,
                 19,
                 accum_size,
@@ -997,15 +1072,14 @@ struct policy_selector
                 LOAD_CA,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backon, 956, 550},
-                warpspeed_policy);
+                delay_constructor_policy{delay_constructor_kind::exponential_backon, 956, 550});
             case 8:
               if (accum_type == type_t::float64)
               {
                 break;
               }
               // ipt_22.tpb_320.ns_328.dcid_2.l2w_965.trp_1.ld_0 1.080133  1.000000  1.075577  1.248963
-              return make_mem_scaled_scan_policy(
+              return make_mem_scaled_lookback_scan_policy(
                 320,
                 22,
                 accum_size,
@@ -1013,8 +1087,7 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::exponential_backoff, 328, 965},
-                warpspeed_policy);
+                delay_constructor_policy{delay_constructor_kind::exponential_backoff, 328, 965});
             default:
               break;
           }
@@ -1031,7 +1104,7 @@ struct policy_selector
           switch (accum_size)
           {
             case 1:
-              return make_mem_scaled_scan_policy(
+              return make_mem_scaled_lookback_scan_policy(
                 192,
                 22,
                 accum_size,
@@ -1039,10 +1112,9 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 168, 1140},
-                warpspeed_policy);
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 168, 1140});
             case 2:
-              return make_mem_scaled_scan_policy(
+              return make_mem_scaled_lookback_scan_policy(
                 512,
                 12,
                 accum_size,
@@ -1050,12 +1122,11 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 376, 1125},
-                warpspeed_policy);
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 376, 1125});
             case 4:
               if (accum_type == type_t::float32)
               {
-                return make_mem_scaled_scan_policy(
+                return make_mem_scaled_lookback_scan_policy(
                   128,
                   24,
                   accum_size,
@@ -1063,10 +1134,9 @@ struct policy_selector
                   LOAD_DEFAULT,
                   BLOCK_STORE_WARP_TRANSPOSE,
                   BLOCK_SCAN_WARP_SCANS,
-                  delay_constructor_policy{delay_constructor_kind::fixed_delay, 688, 1140},
-                  warpspeed_policy);
+                  delay_constructor_policy{delay_constructor_kind::fixed_delay, 688, 1140});
               }
-              return make_mem_scaled_scan_policy(
+              return make_mem_scaled_lookback_scan_policy(
                 128,
                 24,
                 accum_size,
@@ -1074,12 +1144,11 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 648, 1245},
-                warpspeed_policy);
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 648, 1245});
             case 8:
               if (accum_type == type_t::float64)
               {
-                return make_mem_scaled_scan_policy(
+                return make_mem_scaled_lookback_scan_policy(
                   224,
                   24,
                   accum_size,
@@ -1087,10 +1156,9 @@ struct policy_selector
                   LOAD_DEFAULT,
                   BLOCK_STORE_WARP_TRANSPOSE,
                   BLOCK_SCAN_WARP_SCANS,
-                  delay_constructor_policy{delay_constructor_kind::fixed_delay, 576, 1215},
-                  warpspeed_policy);
+                  delay_constructor_policy{delay_constructor_kind::fixed_delay, 576, 1215});
               }
-              return make_mem_scaled_scan_policy(
+              return make_mem_scaled_lookback_scan_policy(
                 224,
                 24,
                 accum_size,
@@ -1098,8 +1166,7 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 632, 1290},
-                warpspeed_policy);
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 632, 1290});
             default:
               break;
           }
@@ -1109,7 +1176,7 @@ struct policy_selector
         if (primitive_accum_t == primitive_accum::no && accum_size == 16
             && (accum_type == type_t::int128 || accum_type == type_t::uint128))
         {
-          return make_mem_scaled_scan_policy(
+          return make_mem_scaled_lookback_scan_policy(
             576,
             21,
             accum_size,
@@ -1117,8 +1184,7 @@ struct policy_selector
             LOAD_DEFAULT,
             BLOCK_STORE_WARP_TRANSPOSE,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::fixed_delay, 860, 630},
-            warpspeed_policy);
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 860, 630});
         }
 #endif
       }
@@ -1127,7 +1193,7 @@ struct policy_selector
     // Keep sm_86 aligned with legacy policy_hub behavior: policy_hub resets to default policy for 86.
     if (arch >= ::cuda::arch_id::sm_86)
     {
-      return make_mem_scaled_scan_policy(
+      return make_mem_scaled_lookback_scan_policy(
         128,
         15,
         accum_size,
@@ -1135,8 +1201,7 @@ struct policy_selector
         LOAD_DEFAULT,
         scan_transposed_store,
         BLOCK_SCAN_WARP_SCANS,
-        default_delay,
-        warpspeed_policy);
+        default_delay);
     }
 
     if (arch >= ::cuda::arch_id::sm_80)
@@ -1148,7 +1213,7 @@ struct policy_selector
           switch (accum_size)
           {
             case 1:
-              return make_mem_scaled_scan_policy(
+              return make_mem_scaled_lookback_scan_policy(
                 320,
                 14,
                 accum_size,
@@ -1156,10 +1221,9 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 368, 725},
-                warpspeed_policy);
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 368, 725});
             case 2:
-              return make_mem_scaled_scan_policy(
+              return make_mem_scaled_lookback_scan_policy(
                 352,
                 16,
                 accum_size,
@@ -1167,12 +1231,11 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 488, 1040},
-                warpspeed_policy);
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 488, 1040});
             case 4:
               if (accum_type == type_t::float32)
               {
-                return make_mem_scaled_scan_policy(
+                return make_mem_scaled_lookback_scan_policy(
                   288,
                   8,
                   accum_size,
@@ -1180,10 +1243,9 @@ struct policy_selector
                   LOAD_DEFAULT,
                   BLOCK_STORE_WARP_TRANSPOSE,
                   BLOCK_SCAN_WARP_SCANS,
-                  delay_constructor_policy{delay_constructor_kind::fixed_delay, 724, 1050},
-                  warpspeed_policy);
+                  delay_constructor_policy{delay_constructor_kind::fixed_delay, 724, 1050});
               }
-              return make_mem_scaled_scan_policy(
+              return make_mem_scaled_lookback_scan_policy(
                 320,
                 12,
                 accum_size,
@@ -1191,12 +1253,11 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 268, 1180},
-                warpspeed_policy);
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 268, 1180});
             case 8:
               if (accum_type == type_t::float64)
               {
-                return make_mem_scaled_scan_policy(
+                return make_mem_scaled_lookback_scan_policy(
                   384,
                   12,
                   accum_size,
@@ -1204,10 +1265,9 @@ struct policy_selector
                   LOAD_DEFAULT,
                   BLOCK_STORE_WARP_TRANSPOSE,
                   BLOCK_SCAN_WARP_SCANS,
-                  delay_constructor_policy{delay_constructor_kind::fixed_delay, 388, 1100},
-                  warpspeed_policy);
+                  delay_constructor_policy{delay_constructor_kind::fixed_delay, 388, 1100});
               }
-              return make_mem_scaled_scan_policy(
+              return make_mem_scaled_lookback_scan_policy(
                 288,
                 22,
                 accum_size,
@@ -1215,8 +1275,7 @@ struct policy_selector
                 LOAD_DEFAULT,
                 BLOCK_STORE_WARP_TRANSPOSE,
                 BLOCK_SCAN_WARP_SCANS,
-                delay_constructor_policy{delay_constructor_kind::fixed_delay, 716, 785},
-                warpspeed_policy);
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 716, 785});
             default:
               break;
           }
@@ -1226,7 +1285,7 @@ struct policy_selector
         if (primitive_accum_t == primitive_accum::no && accum_size == 16
             && (accum_type == type_t::int128 || accum_type == type_t::uint128))
         {
-          return make_mem_scaled_scan_policy(
+          return make_mem_scaled_lookback_scan_policy(
             640,
             24,
             accum_size,
@@ -1234,8 +1293,7 @@ struct policy_selector
             LOAD_DEFAULT,
             BLOCK_STORE_DIRECT,
             BLOCK_SCAN_WARP_SCANS,
-            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1200},
-            warpspeed_policy);
+            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1200});
         }
 #endif
       }
@@ -1247,7 +1305,7 @@ struct policy_selector
           && offset_size == 8 && input_value_size == 4)
       {
         // ipt_7.tpb_128.ns_628.dcid_1.l2w_520.trp_1.ld_0
-        return make_mem_scaled_scan_policy(
+        return make_mem_scaled_lookback_scan_policy(
           128,
           7,
           accum_size,
@@ -1255,11 +1313,10 @@ struct policy_selector
           LOAD_DEFAULT,
           BLOCK_STORE_WARP_TRANSPOSE,
           BLOCK_SCAN_WARP_SCANS,
-          delay_constructor_policy{delay_constructor_kind::fixed_delay, 628, 520},
-          warpspeed_policy);
+          delay_constructor_policy{delay_constructor_kind::fixed_delay, 628, 520});
       }
 
-      return make_mem_scaled_scan_policy(
+      return make_mem_scaled_lookback_scan_policy(
         128,
         15,
         accum_size,
@@ -1267,13 +1324,12 @@ struct policy_selector
         LOAD_DEFAULT,
         scan_transposed_store,
         BLOCK_SCAN_WARP_SCANS,
-        default_delay,
-        warpspeed_policy);
+        default_delay);
     }
 
     if (arch >= ::cuda::arch_id::sm_60)
     {
-      return make_mem_scaled_scan_policy(
+      return make_mem_scaled_lookback_scan_policy(
         128,
         15,
         accum_size,
@@ -1281,11 +1337,10 @@ struct policy_selector
         LOAD_DEFAULT,
         scan_transposed_store,
         BLOCK_SCAN_WARP_SCANS,
-        default_delay,
-        warpspeed_policy);
+        default_delay);
     }
 
-    return make_mem_scaled_scan_policy(
+    return make_mem_scaled_lookback_scan_policy(
       128,
       12,
       accum_size,
@@ -1293,8 +1348,7 @@ struct policy_selector
       LOAD_CA,
       BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED,
       BLOCK_SCAN_RAKING,
-      default_delay,
-      warpspeed_policy);
+      default_delay);
   }
 };
 
