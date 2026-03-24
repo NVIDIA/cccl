@@ -21,7 +21,7 @@ repos:
       - id: check-json
       - id: check-toml
       - id: pretty-format-json
-        args: ['--autofix', '--indent=2']
+        args: ['--autofix', '--indent=2', '--no-sort-keys']
       - id: check-symlinks
       - id: check-executables-have-shebangs
       - id: check-merge-conflict
