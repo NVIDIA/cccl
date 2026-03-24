@@ -547,8 +547,8 @@ struct DispatchScan
     // TODO(bgruber): we probably need to ensure alignment of d_temp_storage
     _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, kernel_source.look_ahead_tile_state_alignment()), "");
 
-    auto scan_kernel = kernel_source.ScanKernel();
-    auto kernel_src  = kernel_source; // need to pull a copy to not access `this` during constant evaluation
+    auto scan_kernel                 = kernel_source.ScanKernel();
+    [[maybe_unused]] auto kernel_src = kernel_source; // need to pull a copy to not access `this` during const. eval.
     CUB_DETAIL_CONSTEXPR_ISH int smem_size_1_stage = detail::scan::smem_for_stages(
       warpspeed_policy,
       1,
