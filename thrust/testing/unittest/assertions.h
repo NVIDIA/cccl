@@ -21,7 +21,8 @@ namespace unittest::detail
 template <typename T1, typename T2>
 auto promote(const T1& a, const T2& b)
 {
-  if constexpr (cuda::std::is_arithmetic_v<cuda::std::decay_t<T1>> && cuda::std::is_arithmetic_v<cuda::std::decay_t<T2>>)
+  if constexpr (cuda::std::is_arithmetic_v<cuda::std::decay_t<T1>>
+                && cuda::std::is_arithmetic_v<cuda::std::decay_t<T2>>)
   {
     using common_t = cuda::std::common_type_t<cuda::std::decay_t<T1>, cuda::std::decay_t<T2>>;
     return std::pair<common_t, common_t>{static_cast<common_t>(a), static_cast<common_t>(b)};

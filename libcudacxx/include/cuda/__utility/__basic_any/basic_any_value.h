@@ -351,8 +351,7 @@ public:
       auto* __unk = __vptr->__query_interface(__iunknown());
       _CCCL_ASSERT(__unk != nullptr, "query_interface returned a null pointer");
       _CCCL_ASSUME(__unk != nullptr);
-      _CCCL_ASSERT(__unk->__cookie_ == 0xDEADBEEF,
-                   "query_interface returned a bad pointer to the __iunknown vtable");
+      _CCCL_ASSERT(__unk->__cookie_ == 0xDEADBEEF, "query_interface returned a bad pointer to the __iunknown vtable");
       __unk->__dtor_(__buffer_, __in_situ());
       __release_();
     }
@@ -367,8 +366,7 @@ public:
       auto* __unk = __vptr->__query_interface(__iunknown());
       _CCCL_ASSERT(__unk != nullptr, "query_interface returned a null pointer");
       _CCCL_ASSUME(__unk != nullptr);
-      _CCCL_ASSERT(__unk->__cookie_ == 0xDEADBEEF,
-                   "query_interface returned a bad pointer to the __iunknown vtable");
+      _CCCL_ASSERT(__unk->__cookie_ == 0xDEADBEEF, "query_interface returned a bad pointer to the __iunknown vtable");
       return *__unk->__object_info_->__object_typeid_;
     }
     return _CCCL_TYPEID(void);
