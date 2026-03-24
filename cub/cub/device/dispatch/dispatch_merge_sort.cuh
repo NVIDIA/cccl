@@ -482,7 +482,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   {
     if (d_temp_storage == nullptr)
     {
-      temp_storage_bytes = 0;
+      temp_storage_bytes = 1;
     }
     return cudaSuccess;
   }

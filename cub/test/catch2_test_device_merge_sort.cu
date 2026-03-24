@@ -204,7 +204,7 @@ C2H_TEST("DeviceMergeSort::SortKeysCopy works",
   // Prepare input
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items =
-    GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({500, 1000000, 2000000}));
+    GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({0, 500, 1000000, 2000000}));
   auto key_ranks = make_shuffled_key_ranks_vector(num_items, C2H_SEED(2));
   c2h::device_vector<key_t> keys_in(num_items);
   thrust::transform(
@@ -230,7 +230,7 @@ C2H_TEST("DeviceMergeSort::SortKeys works", "[merge][sort][device]", wide_key_ty
   // Prepare input
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items =
-    GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({500, 1000000, 2000000}));
+    GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({0, 500, 1000000, 2000000}));
   auto key_ranks = make_shuffled_key_ranks_vector(num_items, C2H_SEED(2));
   c2h::device_vector<key_t> keys_in_out(num_items);
   thrust::transform(
@@ -256,7 +256,7 @@ C2H_TEST("DeviceMergeSort::StableSortKeysCopy works and performs a stable sort w
   // Prepare input (generate a items that compare equally to check for stability of sort)
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items =
-    GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({500, 1000000, 2000000}));
+    GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({0, 500, 1000000, 2000000}));
   c2h::device_vector<offset_t> key_ranks(num_items);
   c2h::gen(C2H_SEED(2), key_ranks, offset_t{}, static_cast<offset_t>(128));
   c2h::device_vector<key_t> keys_in(num_items);
@@ -285,7 +285,7 @@ C2H_TEST("DeviceMergeSort::StableSortKeys works", "[merge][sort][device]")
   // Prepare input
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items =
-    GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({500, 1000000, 2000000}));
+    GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({0, 500, 1000000, 2000000}));
   c2h::device_vector<key_t> keys_in_out(num_items);
   c2h::gen(C2H_SEED(2), keys_in_out);
 
@@ -309,7 +309,7 @@ C2H_TEST("DeviceMergeSort::SortPairsCopy works",
   // Prepare input
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items =
-    GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({500, 1000000, 2000000}));
+    GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({0, 500, 1000000, 2000000}));
   auto key_ranks = make_shuffled_key_ranks_vector(num_items, C2H_SEED(2));
   c2h::device_vector<key_t> keys_in(num_items);
   thrust::transform(
@@ -344,7 +344,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works", "[merge][sort][device]", wide_key_t
   // Prepare input
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items =
-    GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({500, 1000000, 2000000}));
+    GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({0, 500, 1000000, 2000000}));
   auto key_ranks = make_shuffled_key_ranks_vector(num_items, C2H_SEED(2));
   c2h::device_vector<key_t> keys_in_out(num_items);
   thrust::transform(
@@ -376,7 +376,7 @@ C2H_TEST(
   // Prepare input
   // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items =
-    GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({500, 1000000, 2000000}));
+    GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1, 1000000)), values({0, 500, 1000000, 2000000}));
   c2h::device_vector<key_t> keys_in_out(num_items);
   c2h::device_vector<data_t> values_in_out(num_items);
   c2h::gen(C2H_SEED(2), keys_in_out);
