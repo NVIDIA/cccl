@@ -552,12 +552,12 @@ struct DispatchScan
     CUB_DETAIL_CONSTEXPR_ISH int smem_size_1_stage = detail::scan::smem_for_stages(
       warpspeed_policy,
       1,
-      kernel_src.InputSize(),
-      kernel_src.InputAlign(),
-      kernel_src.OutputSize(),
-      kernel_src.OutputAlign(),
-      kernel_src.AccumSize(),
-      kernel_src.AccumAlign());
+      static_cast<int>(kernel_src.InputSize()),
+      static_cast<int>(kernel_src.InputAlign()),
+      static_cast<int>(kernel_src.OutputSize()),
+      static_cast<int>(kernel_src.OutputAlign()),
+      static_cast<int>(kernel_src.AccumSize()),
+      static_cast<int>(kernel_src.AccumAlign()));
     CUB_DETAIL_STATIC_ISH_ASSERT(smem_size_1_stage <= detail::max_smem_per_block,
                                  "Single-stage warpspeed scan exceeds architecture independent SMEM (48KiB)");
 
@@ -577,12 +577,12 @@ struct DispatchScan
                      const int next_smem_size = detail::scan::smem_for_stages(
                        warpspeed_policy,
                        num_stages + 1,
-                       kernel_source.InputSize(),
-                       kernel_source.InputAlign(),
-                       kernel_source.OutputSize(),
-                       kernel_source.OutputAlign(),
-                       kernel_source.AccumSize(),
-                       kernel_source.AccumAlign());
+                       static_cast<int>(kernel_source.InputSize()),
+                       static_cast<int>(kernel_source.InputAlign()),
+                       static_cast<int>(kernel_source.OutputSize()),
+                       static_cast<int>(kernel_source.OutputAlign()),
+                       static_cast<int>(kernel_source.AccumSize()),
+                       static_cast<int>(kernel_source.AccumAlign()));
                      if (next_smem_size > max_dynamic_smem_size)
                      {
                        // This number of stages failed, so stay at the current settings
