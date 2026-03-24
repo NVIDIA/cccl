@@ -486,7 +486,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   KeyT*                                  = nullptr /* for CCCL.C */,
   ValueT*                                = nullptr /* for CCCL.C */) -> cudaError_t
 {
-  constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
+  [[maybe_unused]] constexpr bool keys_only = ::cuda::std::is_same_v<ValueT, NullType>;
 
   if (num_items == 0)
   {
