@@ -5,6 +5,7 @@
 
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/algorithm>
+#include <cuda/std/cassert>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -14,6 +15,8 @@ bool isclose(T a, T b, T r_tol, T a_tol)
 {
   if constexpr (cuda::is_floating_point_v<T>)
   {
+    assert(cuda::std::isfinite(r_tol) && r_tol >= T{} && "r_tol must be finite and non-negative");
+    assert(cuda::std::isfinite(a_tol) && a_tol >= T{} && "a_tol must be finite and non-negative");
     if (cuda::std::isnan(a) || cuda::std::isnan(b))
     {
       return false;
