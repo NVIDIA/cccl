@@ -17,7 +17,8 @@ SCRIPT_PATH=$(cd $(dirname ${0}); pwd -P)
 cd $SCRIPT_PATH
 
 # Configuration
-SPHINXOPTS="${SPHINXOPTS:---keep-going}"
+# Keep going to surface all warnings; -W makes warnings fail the build.
+SPHINXOPTS="${SPHINXOPTS:---keep-going -W}"
 BUILDDIR="_build"
 DOXYGEN_BUILD_DIR="${SCRIPT_PATH}/_build/doxygen-build"
 DOXYGEN_SRC_DIR="${SCRIPT_PATH}/_build/doxygen-src"
@@ -193,7 +194,7 @@ fi
 # Build Sphinx HTML documentation
 echo "Building documentation with Sphinx..."
 # Use the virtual environment's Python
-python -m sphinx.cmd.build -b html -d ${BUILDDIR}/doctrees -j auto . ${BUILDDIR}/html ${SPHINXOPTS}
+python -m sphinx.cmd.build -b html -d "${BUILDDIR}/doctrees" -j auto "." "${BUILDDIR}/html" ${SPHINXOPTS}
 
 # Reorganize output to include versioned directory and root assets
 VERSION="${SPHINX_CCCL_VER:-unstable}"

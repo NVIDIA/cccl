@@ -8,11 +8,17 @@ Numeric
    :maxdepth: 1
 
    numeric/add_overflow
+   numeric/add_sat_overflow
    numeric/div_overflow
+   numeric/div_sat_overflow
    numeric/mul_overflow
+   numeric/mul_sat_overflow
    numeric/narrow
+   numeric/overflow_cast
    numeric/overflow_result
+   numeric/saturate_overflow_cast
    numeric/sub_overflow
+   numeric/sub_sat_overflow
 
 .. list-table::
    :widths: 25 45 30 30

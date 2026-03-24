@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-numeric-sub_sat_overflow:
 
 ``cuda::sub_sat_overflow``
-======================
+==========================
 
 Defined in ``<cuda/numeric>`` header.
 

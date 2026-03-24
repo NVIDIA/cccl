@@ -179,6 +179,7 @@ Example:
 ``cuda::dynamic_shared_memory<T>``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Specifies dynamic shared memory configuration. It provides a type-safe way to specify shared memory content and later access it through the configuration object passed to the kernel.
+
 - For non-array ``T`` (e.g., a struct), call ``cuda::dynamic_shared_memory<T>()`` with no size argument.
 - For bounded array ``T[n]`` (e.g., ``int[10]``), call ``cuda::dynamic_shared_memory<T[n]>()`` with no size argument.
 - For unbounded array ``T[]`` (e.g., ``float[]``), pass the element count: ``cuda::dynamic_shared_memory<T[]>(n)``.

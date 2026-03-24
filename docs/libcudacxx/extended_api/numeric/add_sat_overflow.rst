@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-numeric-add_sat_overflow:
 
 ``cuda::add_sat_overflow``
-======================
+==========================
 
 Defined in ``<cuda/numeric>`` header.
 

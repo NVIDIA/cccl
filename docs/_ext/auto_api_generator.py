@@ -528,15 +528,13 @@ def generate_group_index_page(group_name, group_refid, project_name, xml_dir, ap
     # Do NOT use doxygengroup directive to avoid duplicate declarations
     # Instead, just provide a simple page with links to members
 
-    # Add toctree for group members
+    # Provide a list of links instead of a toctree to avoid duplicate-toctree warnings.
     if members:
-        content.append(".. toctree::")
-        content.append("   :maxdepth: 1")
+        content.append("Members")
+        content.append("-------")
         content.append("")
-
-        # Add inner classes to toctree (they have their own pages)
         for member_kind, member_name, member_refid in members:
-            content.append(f"   {member_refid}")
+            content.append(format_doc_reference(member_name, member_refid, "", as_list_item=True))
         content.append("")
 
     return "\n".join(content)

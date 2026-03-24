@@ -20,6 +20,36 @@ annotations are checked by the type system.
    :widths: 25 45 30
    :header-rows: 0
 
-   * - :ref:`<cuda/experimental/container.cuh> <cudax-containers-uninitialized-buffer>`
+   * - :ref:`<cuda/experimental/container.cuh> <libcudacxx-containers-uninitialized-async-buffer>`
      - Facilities providing uninitialized *heterogeneous* potentially stream ordered storage satisfying a set of properties
      - cudax 2.7.0 / CCCL 2.7.0
+   * - :ref:`<cuda/experimental/container.cuh> <libcudacxx-containers-heterogeneous-iterator>`
+     - Iterator providing type safe iteration and memory access through a set of properties
+     - cudax 2.7.0 / CCCL 2.7.0
+   * - :ref:`<cuda/experimental/container.cuh> <libcudacxx-containers-async-vector>`
+     - High level containers, that provide *heterogeneous* storage satisfying a set of properties
+     - cudax 2.7.0 / CCCL 2.7.0
+
+.. _libcudacxx-containers-uninitialized-async-buffer:
+
+Uninitialized async buffer
+--------------------------
+
+``__uninitialized_async_buffer`` provides uninitialized, stream-ordered storage backed by an async memory resource.
+See the API reference entries in this section for details.
+
+.. _libcudacxx-containers-heterogeneous-iterator:
+
+Heterogeneous iterator
+----------------------
+
+``heterogeneous_iterator`` provides type-safe iteration and memory access through a set of properties.
+This feature is under development.
+
+.. _libcudacxx-containers-async-vector:
+
+Async vector
+------------
+
+``async_vector`` provides high-level *heterogeneous* storage satisfying a set of properties.
+This feature is under development.
