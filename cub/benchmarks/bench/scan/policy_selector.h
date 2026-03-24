@@ -18,9 +18,9 @@ struct policy_selector
 #  if USES_WARPSPEED()
   _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::scan::scan_policy
   {
-    static constexpr int num_reduce_and_scan_warps = TUNE_NUM_REDUCE_SCAN_WARPS;
-    static constexpr int num_look_ahead_items      = TUNE_NUM_LOOKBACK_ITEMS;
-    static constexpr int items_per_thread          = TUNE_ITEMS_PLUS_ONE - 1;
+    static constexpr int num_reduce_and_scan_warps   = TUNE_NUM_REDUCE_SCAN_WARPS;
+    static constexpr int look_ahead_items_per_thread = TUNE_NUM_LOOKBACK_ITEMS;
+    static constexpr int items_per_thread            = TUNE_ITEMS_PLUS_ONE - 1;
 
     static constexpr int num_threads_per_warp = 32;
     static constexpr int num_load_warps       = 1;
@@ -40,7 +40,7 @@ struct policy_selector
       num_load_warps,
       num_sched_warps,
       num_look_ahead_warps,
-      num_look_ahead_items,
+      look_ahead_items_per_thread,
       num_total_threads,
       items_per_thread,
       tile_size};

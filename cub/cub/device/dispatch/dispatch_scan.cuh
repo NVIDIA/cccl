@@ -491,11 +491,10 @@ struct DispatchScan
       return cudaSuccess;
     }
 
-    CUB_DETAIL_CONSTEXPR_ISH auto active_policy          = policy_getter();
-    CUB_DETAIL_CONSTEXPR_ISH const auto warpspeed_policy = active_policy.warpspeed;
+    CUB_DETAIL_CONSTEXPR_ISH const detail::scan::scan_warpspeed_policy warpspeed_policy = policy_getter().warpspeed;
 
     const int grid_dim =
-      static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(warpspeed_policy.tile_size)));
+      static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(warpspeed_policy.tile_size())));
 
     if (d_temp_storage == nullptr)
     {
@@ -565,7 +564,7 @@ struct DispatchScan
                    // 1 CTA per SM +1 since it tends to improve performance
                    // TODO(bgruber): make the +1 a tuning parameter
                    const int max_stages_for_even_workload = static_cast<int>(
-                     ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * warpspeed_policy.tile_size)) + 1);
+                     ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * warpspeed_policy.tile_size())) + 1);
 
                    while (num_stages <= max_stages_for_even_workload)
                    {
@@ -647,7 +646,7 @@ struct DispatchScan
 
     // Invoke scan kernel
     {
-      const int block_dim = warpspeed_policy.num_total_threads;
+      const int block_dim = detail::scan::num_total_threads(warpspeed_policy);
 
 #  ifdef CUB_DEBUG_LOG
       _CubLog("Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
