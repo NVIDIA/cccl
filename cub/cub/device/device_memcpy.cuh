@@ -167,9 +167,8 @@ struct DeviceMemcpy
     // IDIV_CEIL(num_buffers, 64)
     using BlockOffsetT = uint32_t;
 
-    return detail::
-      DispatchBatchMemcpy<InputBufferIt, OutputBufferIt, BufferSizeIteratorT, BlockOffsetT, CopyAlg::Memcpy>::Dispatch(
-        d_temp_storage, temp_storage_bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream);
+    return detail::batch_memcpy::dispatch<CopyAlg::Memcpy, BlockOffsetT>(
+      d_temp_storage, temp_storage_bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream);
   }
 
   //! @rst
@@ -256,9 +255,8 @@ struct DeviceMemcpy
     using BlockOffsetT = uint32_t;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::
-        DispatchBatchMemcpy<InputBufferIt, OutputBufferIt, BufferSizeIteratorT, BlockOffsetT, CopyAlg::Memcpy>::Dispatch(
-          storage, bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream);
+      return detail::batch_memcpy::dispatch<CopyAlg::Memcpy, BlockOffsetT>(
+        storage, bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream);
     });
   }
 };
