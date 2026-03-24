@@ -29,7 +29,7 @@ bool isclose(T a, T b, T r_tol, T a_tol)
 template <typename T>
 bool isclose(T a, T b, T r_tol)
 {
-  return isclose(a, b, r_tol, T(0));
+  return isclose(a, b, r_tol, T{});
 }
 
 template <typename T>
@@ -37,7 +37,7 @@ bool isclose(T a, T b)
 {
   if constexpr (cuda::std::is_floating_point_v<T>)
   {
-    return isclose(a, b, T(1 << 8) * cuda::std::numeric_limits<T>::epsilon(), T(0));
+    return isclose(a, b, T(1 << 8) * cuda::std::numeric_limits<T>::epsilon(), T{});
   }
   else
   {
