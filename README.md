@@ -511,7 +511,7 @@ Does your project use CCCL? [Open a PR to add your project to this list!](https:
 - [Qiskit](https://github.com/Qiskit/qiskit-aer) - High performance simulator for quantum circuits
 - [QUDA](https://github.com/lattice/quda) - Lattice quantum chromodynamics (QCD) computations
 - [RAFT](https://github.com/rapidsai/raft) - Algorithms and primitives for machine learning
-- [SGLang](https://github.com/sgl-project/sglang) - LLM serving framework 
+- [SGLang](https://github.com/sgl-project/sglang) - LLM serving framework
 - [TensorFlow](https://github.com/tensorflow/tensorflow) - End-to-end platform for machine learning
 - [TensorRT](https://github.com/NVIDIA/TensorRT) - Deep learning inference
 - [TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM) - Optimized LLM inference
