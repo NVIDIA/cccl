@@ -138,17 +138,16 @@ struct policy_selector
     };
     return batch_memcpy_policy{
       small_buffer_policy{
-        128,
-        4,
-        8,
-        /* prefer_pow2_bits */ arch < ::cuda::arch_id::sm_70,
-        large.block_threads * large.bytes_per_thread,
-        128,
-        8 * 1024,
+        /* .block_threads = */ 128,
+        /* .buffers_per_thread = */ 4,
+        /* .tlev_bytes_per_thread = */ 8,
+        /* .prefer_pow2_bits = */ arch < ::cuda::arch_id::sm_70,
+        /* .block_level_tile_size = */ large.block_threads * large.bytes_per_thread,
+        /* .warp_level_threshold = */ 128,
+        /* .block_level_threshold = */ 8 * 1024,
         // BufferOffsetT and BlockOffsetT are primitive/trivially copyable
-        default_delay_constructor_policy(true),
-        default_delay_constructor_policy(true),
-      },
+        /* .buff_delay_constructor = */ default_delay_constructor_policy(true),
+        /* .block_delay_constructor = */ default_delay_constructor_policy(true)},
       large,
     };
   }
