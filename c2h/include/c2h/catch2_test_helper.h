@@ -215,49 +215,49 @@ std::vector<T> to_vec(std::vector<T> const& vec)
 }
 } // namespace detail
 
-#define REQUIRE_APPROX_EQ(ref, out)                                                \
-  {                                                                                \
-    auto vec_ref = detail::to_vec(ref);                                            \
-    auto vec_out = detail::to_vec(out);                                            \
-    for (size_t i = 0; i < vec_ref.size(); i++)                                    \
-    {                                                                              \
-      bool close = isclose(vec_ref[i], vec_out[i]);                                \
-      if (!close)                                                                  \
-      {                                                                            \
-        INFO("index " << i << ": " << vec_ref[i] << " vs " << vec_out[i]);         \
-      }                                                                            \
-      REQUIRE(close);                                                              \
-    }                                                                              \
+#define REQUIRE_APPROX_EQ(ref, out)                                        \
+  {                                                                        \
+    auto vec_ref = detail::to_vec(ref);                                    \
+    auto vec_out = detail::to_vec(out);                                    \
+    for (size_t i = 0; i < vec_ref.size(); i++)                            \
+    {                                                                      \
+      bool close = isclose(vec_ref[i], vec_out[i]);                        \
+      if (!close)                                                          \
+      {                                                                    \
+        INFO("index " << i << ": " << vec_ref[i] << " vs " << vec_out[i]); \
+      }                                                                    \
+      REQUIRE(close);                                                      \
+    }                                                                      \
   }
 
-#define REQUIRE_APPROX_EQ_EPSILON(ref, out, eps)                                   \
-  {                                                                                \
-    auto vec_ref = detail::to_vec(ref);                                            \
-    auto vec_out = detail::to_vec(out);                                            \
-    for (size_t i = 0; i < vec_ref.size(); i++)                                    \
-    {                                                                              \
-      bool close = isclose(vec_ref[i], vec_out[i], eps);                           \
-      if (!close)                                                                  \
-      {                                                                            \
-        INFO("index " << i << ": " << vec_ref[i] << " vs " << vec_out[i]);         \
-      }                                                                            \
-      REQUIRE(close);                                                              \
-    }                                                                              \
+#define REQUIRE_APPROX_EQ_EPSILON(ref, out, eps)                           \
+  {                                                                        \
+    auto vec_ref = detail::to_vec(ref);                                    \
+    auto vec_out = detail::to_vec(out);                                    \
+    for (size_t i = 0; i < vec_ref.size(); i++)                            \
+    {                                                                      \
+      bool close = isclose(vec_ref[i], vec_out[i], eps);                   \
+      if (!close)                                                          \
+      {                                                                    \
+        INFO("index " << i << ": " << vec_ref[i] << " vs " << vec_out[i]); \
+      }                                                                    \
+      REQUIRE(close);                                                      \
+    }                                                                      \
   }
 
-#define REQUIRE_APPROX_EQ_ABS(ref, out, abs)                                       \
-  {                                                                                \
-    auto vec_ref = detail::to_vec(ref);                                            \
-    auto vec_out = detail::to_vec(out);                                            \
-    for (size_t i = 0; i < vec_ref.size(); i++)                                    \
-    {                                                                              \
-      bool close = isclose(vec_ref[i], vec_out[i], 0 * vec_ref[i], abs);           \
-      if (!close)                                                                  \
-      {                                                                            \
-        INFO("index " << i << ": " << vec_ref[i] << " vs " << vec_out[i]);         \
-      }                                                                            \
-      REQUIRE(close);                                                              \
-    }                                                                              \
+#define REQUIRE_APPROX_EQ_ABS(ref, out, abs)                               \
+  {                                                                        \
+    auto vec_ref = detail::to_vec(ref);                                    \
+    auto vec_out = detail::to_vec(out);                                    \
+    for (size_t i = 0; i < vec_ref.size(); i++)                            \
+    {                                                                      \
+      bool close = isclose(vec_ref[i], vec_out[i], 0 * vec_ref[i], abs);   \
+      if (!close)                                                          \
+      {                                                                    \
+        INFO("index " << i << ": " << vec_ref[i] << " vs " << vec_out[i]); \
+      }                                                                    \
+      REQUIRE(close);                                                      \
+    }                                                                      \
   }
 
 namespace c2h::detail

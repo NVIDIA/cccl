@@ -45,7 +45,8 @@ bool isclose(T a, T b)
 {
   if constexpr (cuda::is_floating_point_v<T>)
   {
-    return isclose(a, b, T(1 << 8) * cuda::std::numeric_limits<T>::epsilon(), T{});
+    return isclose(
+      a, b, T(1 << (cuda::std::numeric_limits<T>::digits / 4)) * cuda::std::numeric_limits<T>::epsilon(), T{});
   }
   else
   {

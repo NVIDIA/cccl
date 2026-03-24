@@ -54,7 +54,7 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
   }
   else if constexpr (cuda::std::is_same_v<T, __nv_bfloat162> || cuda::std::is_same_v<T, __half2>)
   {
-    using elem_t           = decltype(expected_data[0].x);
+    using elem_t             = decltype(expected_data[0].x);
     constexpr elem_t rel_err = cuda::std::is_same_v<T, __half2> ? elem_t{0.08f} : elem_t{0.2f};
     for (size_t i = 0; i < test_results.size(); ++i)
     {
@@ -71,7 +71,7 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
   else if constexpr (cuda::std::is_same_v<T, cuda::std::complex<__nv_bfloat16>>
                      || cuda::std::is_same_v<T, cuda::std::complex<__half>>)
   {
-    using real_t           = decltype(expected_data[0].real());
+    using real_t             = decltype(expected_data[0].real());
     constexpr real_t rel_err = cuda::std::is_same_v<T, cuda::std::complex<__half>> ? real_t{0.08f} : real_t{0.2f};
     for (size_t i = 0; i < test_results.size(); ++i)
     {
