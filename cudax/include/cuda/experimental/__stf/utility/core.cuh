@@ -544,7 +544,7 @@ public:
   /**
    * @brief Constructor that initializes a dynamic value. Works only if `static_v == reserved`.
    *
-   * @param dynamic The dynamic value.
+   * @param dynamic_value The dynamic value.
    */
   constexpr optionally_static(type dynamic_value)
       : payload(dynamic_value)

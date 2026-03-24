@@ -144,6 +144,7 @@ PREDEFINED             = __device__= \
                         "CCCL_IGNORE_DEPRECATED_CPP_DIALECT" \
                         "CUB_DISABLE_NAMESPACE_MAGIC" \
                         "CUB_IGNORE_NAMESPACE_MAGIC_ERROR" \
+                        "CUB_RDC_ENABLED" \
                         "CUB_NAMESPACE_BEGIN=namespace cub {" \
                         "CUB_NAMESPACE_END=}" \
                         "CUB_RUNTIME_FUNCTION="

@@ -90,15 +90,19 @@ public:
 
   //! @brief Equality comparison with another \c legacy_pinned_memory_resource.
   //! @return Whether both \c legacy_pinned_memory_resource were constructed with the same flags.
-  [[nodiscard]] _CCCL_HOST_API constexpr bool operator==(legacy_pinned_memory_resource const&) const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr bool
+  operator==(legacy_pinned_memory_resource const& __other) const noexcept
   {
+    (void) __other;
     return true;
   }
 #  if _CCCL_STD_VER <= 2017
   //! @brief Equality comparison with another \c legacy_pinned_memory_resource.
   //! @return Whether both \c legacy_pinned_memory_resource were constructed with different flags.
-  [[nodiscard]] _CCCL_HOST_API constexpr bool operator!=(legacy_pinned_memory_resource const&) const noexcept
+  [[nodiscard]] _CCCL_HOST_API constexpr bool
+  operator!=(legacy_pinned_memory_resource const& __other) const noexcept
   {
+    (void) __other;
     return false;
   }
 #  endif // _CCCL_STD_VER <= 2017

@@ -15,7 +15,6 @@ INPUT                  = ../../cudax/include/cuda/experimental/__copy_bytes \
                          ../../cudax/include/cuda/experimental/__device \
                          ../../cudax/include/cuda/experimental/graph.cuh \
                          ../../cudax/include/cuda/experimental/__graph \
-                         ../../cudax/include/cuda/experimental/__hierarchy \
                          ../../cudax/include/cuda/experimental/__launch \
                          ../../cudax/include/cuda/experimental/__stream \
                          ../../cudax/include/cuda/experimental/stf.cuh \

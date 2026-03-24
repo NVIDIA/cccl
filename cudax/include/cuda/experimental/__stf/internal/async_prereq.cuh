@@ -126,6 +126,7 @@ public:
 
   /**
    * @brief Sets a symbolic name for the event, useful for debugging or tracing.
+   * @param dot The per-context DOT graph helper used for tracing.
    * @param s The symbolic name to associate with this event.
    */
   void set_symbol_with_dot(reserved::per_ctx_dot& dot, ::std::string s)
@@ -139,6 +140,7 @@ public:
 
   /**
    * @brief Sets a symbolic name for the event, useful for debugging or tracing.
+   * @param ctx The context providing access to the DOT graph helper.
    * @param s The symbolic name to associate with this event.
    */
   template <typename context_t>

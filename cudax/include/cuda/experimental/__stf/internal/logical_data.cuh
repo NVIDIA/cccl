@@ -939,6 +939,8 @@ public:
   /** @name Constructors */
   logical_data_untyped() = default;
 
+  /// @brief Constructs a logical_data_untyped from an existing implementation.
+  /// @param p Shared implementation pointer.
   logical_data_untyped(::std::shared_ptr<reserved::logical_data_untyped_impl> p)
       : pimpl(mv(p))
   {}
