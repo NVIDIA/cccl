@@ -452,13 +452,13 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending decomposer+bits env-based API
   thrust::device_vector<custom_key_t> keys_out(7);
 
   cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}}};
+  cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceRadixSort::SortKeysDescending(
     keys_in.data().get(),
     keys_out.data().get(),
     static_cast<int>(keys_in.size()),
-    custom_decomposer_t{},
+    keys_decomposer_t{},
     0,
     sizeof(int) * 8,
     env);
@@ -481,10 +481,10 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending decomposer env-based API", "[
   thrust::device_vector<custom_key_t> keys_out(7);
 
   cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}}};
+  cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceRadixSort::SortKeysDescending(
-    keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size()), custom_decomposer_t{}, env);
+    keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size()), keys_decomposer_t{}, stream_ref);
 
   stream.sync();
   // example-end radix-sort-keys-descending-decomposer-env
@@ -506,10 +506,10 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending DB decomposer env-based API",
   cub::DoubleBuffer<custom_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
 
   cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}}};
+  cuda::stream_ref stream_ref{stream};
 
   auto error =
-    cub::DeviceRadixSort::SortKeysDescending(d_keys, static_cast<int>(keys_buf0.size()), custom_decomposer_t{}, env);
+    cub::DeviceRadixSort::SortKeysDescending(d_keys, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, stream_ref);
 
   stream.sync();
   // example-end radix-sort-keys-descending-db-decomposer-env
@@ -532,10 +532,10 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending DB decomposer+bits env-based 
   cub::DoubleBuffer<custom_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
 
   cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}}};
+  cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceRadixSort::SortKeysDescending(
-    d_keys, static_cast<int>(keys_buf0.size()), custom_decomposer_t{}, 0, sizeof(int) * 8, env);
+    d_keys, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, 0, sizeof(int) * 8, stream_ref);
 
   stream.sync();
   // example-end radix-sort-keys-descending-db-decomposer-bits-env
@@ -558,7 +558,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending decomposer+bits env-based AP
   auto values_out = thrust::device_vector<int>(7);
 
   cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}}};
+  cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceRadixSort::SortPairsDescending(
     keys_in.data().get(),
@@ -566,7 +566,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending decomposer+bits env-based AP
     values_in.data().get(),
     values_out.data().get(),
     static_cast<int>(keys_in.size()),
-    custom_decomposer_t{},
+    keys_decomposer_t{},
     0,
     sizeof(int) * 8,
     env);
@@ -593,7 +593,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending decomposer env-based API", "
   auto values_out = thrust::device_vector<int>(7);
 
   cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}}};
+  cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceRadixSort::SortPairsDescending(
     keys_in.data().get(),
@@ -601,7 +601,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending decomposer env-based API", "
     values_in.data().get(),
     values_out.data().get(),
     static_cast<int>(keys_in.size()),
-    custom_decomposer_t{},
+    keys_decomposer_t{},
     env);
 
   stream.sync();
@@ -629,10 +629,10 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending DB decomposer env-based API"
   cub::DoubleBuffer<int> d_values(values_buf0.data().get(), values_buf1.data().get());
 
   cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}}};
+  cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceRadixSort::SortPairsDescending(
-    d_keys, d_values, static_cast<int>(keys_buf0.size()), custom_decomposer_t{}, env);
+    d_keys, d_values, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, stream_ref);
 
   stream.sync();
   // example-end radix-sort-pairs-descending-db-decomposer-env
@@ -661,10 +661,10 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending DB decomposer+bits env-based
   cub::DoubleBuffer<int> d_values(values_buf0.data().get(), values_buf1.data().get());
 
   cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}}};
+  cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceRadixSort::SortPairsDescending(
-    d_keys, d_values, static_cast<int>(keys_buf0.size()), custom_decomposer_t{}, 0, sizeof(int) * 8, env);
+    d_keys, d_values, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, 0, sizeof(int) * 8, stream_ref);
 
   stream.sync();
   // example-end radix-sort-pairs-descending-db-decomposer-bits-env
