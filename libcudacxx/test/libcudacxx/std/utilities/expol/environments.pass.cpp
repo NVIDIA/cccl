@@ -20,8 +20,9 @@ struct SomeValue
 
 struct SomeProperty
 {
-  template <class T, cuda::std::enable_if_t<cuda::std::execution::__queryable_with<const T&, SomeProperty>, int> = 0>
-  constexpr SomeValue operator()(const T& env)
+  _CCCL_TEMPLATE(class Env)
+  _CCCL_REQUIRES(cuda::std::execution::__queryable_with<const Env&, SomeProperty>)
+  [[nodiscard]] constexpr SomeValue operator()(const Env& env) const
   {
     return env.query(SomeProperty{});
   }
@@ -132,7 +133,7 @@ void test(const Policy& policy)
   { // the policy can take a memory resource by lvalue
     test_resource resource{};
     static_assert(!cuda::std::__is_callable_v<cuda::mr::get_memory_resource_t, const Policy&>);
-    const auto new_policy = policy.with(resource);
+    const auto new_policy = policy.with(cuda::mr::get_memory_resource, resource);
     static_assert(cuda::std::__is_callable_v<cuda::mr::get_memory_resource_t, decltype(new_policy)>);
     auto&& result = cuda::mr::get_memory_resource(new_policy);
     static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::resource_ref<cuda::mr::device_accessible>&>);
@@ -245,10 +246,10 @@ void test(const Policy& policy)
   }
 
   { // the policy can take an arbitrary tag that is queryable
-    SomeProperty property{};
-    static_assert(!cuda::std::__is_callable_v<SomeProperty, const Policy&>);
+    const SomeProperty property{};
+    static_assert(!cuda::std::__is_callable_v<const SomeProperty&, const Policy&>);
     const auto new_policy = policy.with(property, SomeValue{42});
-    static_assert(cuda::std::__is_callable_v<SomeProperty, decltype(new_policy)>);
+    static_assert(cuda::std::__is_callable_v<const SomeProperty&, decltype(new_policy)>);
     auto&& result = property(new_policy);
     assert(result.value == 42);
   }
