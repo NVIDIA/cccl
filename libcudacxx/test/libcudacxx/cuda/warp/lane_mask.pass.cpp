@@ -62,6 +62,16 @@ __device__ constexpr void test_conversion_operators()
     const auto value = static_cast<cuda::std::uint32_t>(lm);
     assert(lm.value() == value);
   }
+
+  // explicit conversion to bool
+  static_assert(cuda::std::is_constructible_v<bool, lane_mask>);
+  static_assert(!cuda::std::is_convertible_v<lane_mask, bool>);
+  static_assert(noexcept(lane_mask{}.operator bool()));
+  {
+    assert(!lane_mask::none());
+    assert(lane_mask{0x1});
+    assert(lane_mask::all());
+  }
 }
 
 __device__ constexpr void test_bitwise_operators()

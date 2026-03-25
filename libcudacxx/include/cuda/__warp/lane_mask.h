@@ -63,6 +63,14 @@ public:
     return __value_;
   }
 
+  //! @brief Converts the lane mask to a bool.
+  //!
+  //! @return \c true if the mask is not zero, \c false otherwise.
+  _CCCL_DEVICE_API explicit constexpr operator bool() const noexcept
+  {
+    return __value_ != 0;
+  }
+
   //! @brief Returns a lane mask object with no lane bits set.
   //!
   //! @return A lane mask with no lane bits set.

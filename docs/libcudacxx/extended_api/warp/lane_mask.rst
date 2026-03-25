@@ -22,6 +22,7 @@ Defined in ``<cuda/warp>`` header.
 
         // conversion operators
         __device__ explicit constexpr operator cuda::std::uint32_t() const noexcept;
+        __device__ explicit constexpr operator bool() const noexcept;
 
         // static member functions
         [[nodiscard]] __device__ static constexpr lane_mask none() noexcept;
