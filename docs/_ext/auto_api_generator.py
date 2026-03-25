@@ -1081,7 +1081,9 @@ def generate_namespace_api_page(project_name, items, title=None, doc_prefix=""):
         items["typedefs"].sort(key=lambda x: x[0].lower())
         for name, refid in items["typedefs"]:
             if name in _BREATHE_SKIP_SYMBOLS:
-                logger.info(f"Skipping typedef reference {name} (in _BREATHE_SKIP_SYMBOLS)")
+                logger.info(
+                    f"Skipping typedef reference {name} (in _BREATHE_SKIP_SYMBOLS)"
+                )
                 continue
             content.append(format_doc_reference(name, refid, doc_prefix))
         content.append("")
@@ -1108,7 +1110,9 @@ def generate_namespace_api_page(project_name, items, title=None, doc_prefix=""):
         items["variables"].sort(key=lambda x: x[0].lower())
         for name, refid in items["variables"]:
             if name in _BREATHE_SKIP_SYMBOLS:
-                logger.info(f"Skipping variable reference {name} (in _BREATHE_SKIP_SYMBOLS)")
+                logger.info(
+                    f"Skipping variable reference {name} (in _BREATHE_SKIP_SYMBOLS)"
+                )
                 continue
             content.append(format_doc_reference(name, refid, doc_prefix))
         content.append("")
