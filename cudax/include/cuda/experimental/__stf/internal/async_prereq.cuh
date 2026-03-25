@@ -151,11 +151,12 @@ public:
 
   /**
    * @brief Optionally simplifies the event vector to remove redundant entries.
-   * @param unused A vector of events potentially containing redundant entries.
+   * @param ctx Backend context.
+   * @param events A vector of events potentially containing redundant entries.
    * @return True if redundant entries were removed and further uniqueness processing is unnecessary, false otherwise.
    * @note This function provides a hook for derived classes to implement optimization strategies.
    */
-  virtual bool factorize(const backend_ctx_untyped&, reserved::event_vector&)
+  virtual bool factorize(const backend_ctx_untyped& ctx, reserved::event_vector& events)
   {
     return false;
   }

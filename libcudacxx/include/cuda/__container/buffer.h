@@ -58,7 +58,8 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-//! @file The \c buffer class provides a container of contiguous memory
+//! @file
+//! @brief The \c buffer class provides a container of contiguous memory
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Env>

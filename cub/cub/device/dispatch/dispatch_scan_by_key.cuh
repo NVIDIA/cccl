@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: BSD-3
 
 /**
- * @file DeviceScan provides device-wide, parallel operations for computing a
- *       prefix scan across a sequence of data items residing within
- *       device-accessible memory.
+ * @file
+ * @brief DeviceScan provides device-wide, parallel operations for computing a
+ *        prefix scan across a sequence of data items residing within
+ *        device-accessible memory.
  */
 
 #pragma once

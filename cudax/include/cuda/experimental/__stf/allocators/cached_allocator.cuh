@@ -94,7 +94,7 @@ public:
    * @param sz Size of the memory block.
    */
   void
-  deallocate(backend_ctx_untyped&, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
+  deallocate(backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
     ::std::lock_guard<::std::mutex> g(allocator_mutex);
     // We do not call the deallocate method of the root allocator, we discard buffers instead
@@ -278,7 +278,7 @@ public:
    * @param sz Size of the memory block.
    */
   void
-  deallocate(backend_ctx_untyped&, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
+  deallocate(backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
     ::std::lock_guard<::std::mutex> g(allocator_mutex);
     // We do not call the deallocate method of the root allocator, we discard buffers instead.

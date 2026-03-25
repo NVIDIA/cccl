@@ -216,7 +216,7 @@ public:
    * @param instance_id The ID of the data instance
    * @return true if the instance was pinned, false otherwise
    */
-  virtual bool pin_host_memory(instance_id_t /*instance_id*/)
+  virtual bool pin_host_memory(instance_id_t instance_id)
   {
     return false;
   }
@@ -229,7 +229,7 @@ public:
   /// @brief Unpin host memory.
   ///
   /// @param instance_id The ID of the data instance
-  virtual void unpin_host_memory(instance_id_t /*instance_id*/) {}
+  virtual void unpin_host_memory(instance_id_t instance_id) {}
 
   /**
    * @brief Get the hash of the data representation for the given instance ID.

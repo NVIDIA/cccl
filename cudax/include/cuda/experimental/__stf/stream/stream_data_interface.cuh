@@ -116,7 +116,7 @@ public:
 
   void data_allocate(
     backend_ctx_untyped& ctx,
-    block_allocator_untyped& /*unused*/,
+    block_allocator_untyped& custom_allocator,
     const data_place& memory_node,
     instance_id_t instance_id,
     ::std::ptrdiff_t& s,
@@ -144,7 +144,7 @@ public:
 
   void data_deallocate(
     backend_ctx_untyped& ctx,
-    block_allocator_untyped& /*custom_allocator*/,
+    block_allocator_untyped& custom_allocator,
     const data_place& memory_node,
     instance_id_t instance_id,
     void* extra_args,

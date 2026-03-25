@@ -447,7 +447,7 @@ public:
   }
 
   void deallocate(
-    backend_ctx_untyped&, const data_place& memory_node, event_list& prereqs, void* ptr, size_t block_size) override
+    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t block_size) override
   {
     pool_set.release_pool_entry(memory_node, block_size, prereqs, ptr);
   }
@@ -499,7 +499,7 @@ public:
   }
 
   void
-  deallocate(backend_ctx_untyped&, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
+  deallocate(backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
     EXPECT(sz <= block_size);
     pool_set.release_pool_entry(memory_node, block_size, prereqs, ptr);

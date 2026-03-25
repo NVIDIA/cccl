@@ -179,12 +179,26 @@ if which ${DOXYGEN} > /dev/null 2>&1; then
         cp img/*.png ${BUILDDIR}/doxygen/${project}/xml/ 2>/dev/null || true
     done
 
-    # Run all Doxygen builds in parallel
+    # Run all Doxygen builds in parallel, fail if any produce warnings/errors
     (cd cub && ${DOXYGEN} Doxyfile) &
+    pids+=($!)
     (cd thrust && ${DOXYGEN} Doxyfile) &
+    pids+=($!)
     (cd cudax && ${DOXYGEN} Doxyfile) &
+    pids+=($!)
     (cd libcudacxx && ${DOXYGEN} Doxyfile) &
-    wait
+    pids+=($!)
+
+    doxygen_failed=0
+    for pid in "${pids[@]}"; do
+        if ! wait "$pid"; then
+            doxygen_failed=1
+        fi
+    done
+    if [ "$doxygen_failed" -ne 0 ]; then
+        echo "Error: one or more Doxygen builds failed (see warnings above)"
+        exit 1
+    fi
 
     echo "Doxygen complete"
 else
