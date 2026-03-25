@@ -106,6 +106,93 @@ TEST_CASE("DeviceSegmentedSort::StableSortKeysDescending works with default envi
   REQUIRE(keys_out == expected);
 }
 
+TEST_CASE("DeviceSegmentedSort::SortKeys DoubleBuffer works with default environment", "[segmented_sort][keys][device]")
+{
+  auto keys_buf0 = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_buf1 = c2h::device_vector<int>(7);
+  auto offsets   = c2h::device_vector<int>{0, 3, 7};
+
+  cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSegmentedSort::SortKeys(
+            d_keys,
+            static_cast<cuda::std::int64_t>(keys_buf0.size()),
+            2,
+            thrust::raw_pointer_cast(offsets.data()),
+            thrust::raw_pointer_cast(offsets.data()) + 1));
+
+  c2h::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
+  c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
+  REQUIRE(result == expected);
+}
+
+TEST_CASE("DeviceSegmentedSort::SortKeysDescending DoubleBuffer works with default environment",
+          "[segmented_sort][keys][device]")
+{
+  auto keys_buf0 = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_buf1 = c2h::device_vector<int>(7);
+  auto offsets   = c2h::device_vector<int>{0, 3, 7};
+
+  cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSegmentedSort::SortKeysDescending(
+            d_keys,
+            static_cast<cuda::std::int64_t>(keys_buf0.size()),
+            2,
+            thrust::raw_pointer_cast(offsets.data()),
+            thrust::raw_pointer_cast(offsets.data()) + 1));
+
+  c2h::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
+  c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
+  REQUIRE(result == expected);
+}
+
+TEST_CASE("DeviceSegmentedSort::StableSortKeys DoubleBuffer works with default environment",
+          "[segmented_sort][keys][device]")
+{
+  auto keys_buf0 = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_buf1 = c2h::device_vector<int>(7);
+  auto offsets   = c2h::device_vector<int>{0, 3, 7};
+
+  cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSegmentedSort::StableSortKeys(
+            d_keys,
+            static_cast<cuda::std::int64_t>(keys_buf0.size()),
+            2,
+            thrust::raw_pointer_cast(offsets.data()),
+            thrust::raw_pointer_cast(offsets.data()) + 1));
+
+  c2h::device_vector<int> expected{6, 7, 8, 0, 3, 5, 9};
+  c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
+  REQUIRE(result == expected);
+}
+
+TEST_CASE("DeviceSegmentedSort::StableSortKeysDescending DoubleBuffer works with default environment",
+          "[segmented_sort][keys][device]")
+{
+  auto keys_buf0 = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_buf1 = c2h::device_vector<int>(7);
+  auto offsets   = c2h::device_vector<int>{0, 3, 7};
+
+  cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceSegmentedSort::StableSortKeysDescending(
+            d_keys,
+            static_cast<cuda::std::int64_t>(keys_buf0.size()),
+            2,
+            thrust::raw_pointer_cast(offsets.data()),
+            thrust::raw_pointer_cast(offsets.data()) + 1));
+
+  c2h::device_vector<int> expected{8, 7, 6, 9, 5, 3, 0};
+  c2h::device_vector<int> result(d_keys.Current(), d_keys.Current() + 7);
+  REQUIRE(result == expected);
+}
+
 #endif
 
 C2H_TEST("DeviceSegmentedSort::SortKeys uses environment", "[segmented_sort][keys][device]")

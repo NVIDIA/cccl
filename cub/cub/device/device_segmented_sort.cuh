@@ -23,7 +23,6 @@
 #include <cub/util_namespace.cuh>
 
 #include <cuda/std/cstdint>
-#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
