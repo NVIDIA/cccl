@@ -5,8 +5,6 @@
 
 #include <cub/config.cuh>
 
-#include <cub/detail/warpspeed/squad/squad_desc.cuh>
-
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
 #endif
@@ -29,7 +27,7 @@ struct scan_warpspeed_policy
 
   _CCCL_API constexpr int tile_size() const noexcept
   {
-    return items_per_thread * num_reduce_and_scan_warps * 32;
+    return items_per_thread * num_reduce_and_scan_warps * warp_threads;
   }
 
   _CCCL_API constexpr friend bool operator==(const scan_warpspeed_policy& lhs, const scan_warpspeed_policy& rhs)

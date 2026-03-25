@@ -649,7 +649,7 @@ concept scan_policy_selector = policy_selector<T, scan_policy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 // TODO(bgruber): put this somewhere else
-constexpr _CCCL_HOST_DEVICE bool is_arithmetic_type(type_t type)
+constexpr _CCCL_API bool is_arithmetic_type(type_t type)
 {
   switch (type)
   {

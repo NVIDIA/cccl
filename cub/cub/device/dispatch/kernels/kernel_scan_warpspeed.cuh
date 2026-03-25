@@ -73,7 +73,7 @@ _CCCL_API constexpr int num_total_threads(const scan_warpspeed_policy& policy)
 {
   const auto num_total_warps = 2 * policy.num_reduce_and_scan_warps + 1 /*num_load_warps*/
                              + 1 /*num_sched_warps*/ + 1 /*num_look_ahead_warps*/;
-  return num_total_warps * 32;
+  return num_total_warps * warp_threads;
 }
 
 template <typename PolicySelector>
@@ -133,15 +133,12 @@ struct scan_stage_counts
 
 _CCCL_API constexpr scan_stage_counts make_scan_stage_counts(int num_stages)
 {
-  // If numBlockIdxStages is one less than the number of stages, we find a small
-  // speedup compared to setting it equal to num_stages. Not sure why.
-  int num_block_idx_stages = num_stages - 1;
-  // Ensure we have at least 1 stage
-  num_block_idx_stages = num_block_idx_stages < 1 ? 1 : num_block_idx_stages;
+  // If numBlockIdxStages is one less than the number of stages, we find a small speedup compared to setting it equal to
+  // num_stages. Not sure why. TODO(bgruber): make this tunable
+  const int num_block_idx_stages = ::cuda::std::max(1, num_stages - 1);
 
-  // We do not need too many sumExclusiveCta stages. The lookback warp is the
-  // bottleneck. As soon as it produces a new value, it will be consumed by the
-  // scanStore squad, releasing the stage.
+  // We do not need too many sumExclusiveCta stages. The lookback warp is the bottleneck. As soon as it produces a new
+  // value, it will be consumed by the scanStore squad, releasing the stage.
   return {num_block_idx_stages, 2};
 }
 
