@@ -254,7 +254,7 @@ extlinks = {
 # bridge) limitations.  These cannot be fixed in our source headers or RST files.
 #
 # See also _BREATHE_SKIP_SYMBOLS in _ext/auto_api_generator.py for symbols that
-# are excluded from page generation entirely due to unparseable declarations.
+# are excluded from page generation entirely due to unparsable declarations.
 suppress_warnings = [
     # Breathe walks each Doxygen XML file independently.  When a symbol appears
     # in both a namespace XML and a class/group XML (which is normal for Doxygen),

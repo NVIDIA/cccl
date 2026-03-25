@@ -16,22 +16,24 @@ logger = logging.getLogger(__name__)
 # cannot parse.  Skip generating individual API pages for these to avoid
 # unfixable build warnings under -W.  Names must match the unqualified form
 # used by extract_namespace_items (i.e. without the project namespace prefix).
-_BREATHE_SKIP_SYMBOLS = frozenset({
-    # cuda::experimental::stf::get_executor_func_t — function-pointer typedef.
-    # Breathe renders as "pos4(*)(pos4, dim4, dim4)" which Sphinx's C++ parser
-    # rejects ("Expected end of definition").
-    # Listed both qualified (cudax) and unqualified (libcudacxx) since the
-    # generator uses different naming conventions per project.
-    "get_executor_func_t",
-    "cuda::experimental::stf::get_executor_func_t",
-    # cuda::property_with_value — variable template using _CCCL_REQUIRES_EXPR
-    # with a typename(...) inside the expression.  Sphinx cannot parse the
-    # requires-expression expansion.
-    "property_with_value",
-    # cuda::has_property — variable template with _CCCL_REQUIRES_EXPR
-    # containing a const keyword inside the expression body.
-    "has_property",
-})
+_BREATHE_SKIP_SYMBOLS = frozenset(
+    {
+        # cuda::experimental::stf::get_executor_func_t — function-pointer typedef.
+        # Breathe renders as "pos4(*)(pos4, dim4, dim4)" which Sphinx's C++ parser
+        # rejects ("Expected end of definition").
+        # Listed both qualified (cudax) and unqualified (libcudacxx) since the
+        # generator uses different naming conventions per project.
+        "get_executor_func_t",
+        "cuda::experimental::stf::get_executor_func_t",
+        # cuda::property_with_value — variable template using _CCCL_REQUIRES_EXPR
+        # with a typename(...) inside the expression.  Sphinx cannot parse the
+        # requires-expression expansion.
+        "property_with_value",
+        # cuda::has_property — variable template with _CCCL_REQUIRES_EXPR
+        # containing a const keyword inside the expression body.
+        "has_property",
+    }
+)
 
 
 def extract_param_summary(params):
@@ -555,7 +557,9 @@ def generate_group_index_page(group_name, group_refid, project_name, xml_dir, ap
         content.append("-------")
         content.append("")
         for member_kind, member_name, member_refid in members:
-            content.append(format_doc_reference(member_name, member_refid, "", as_list_item=True))
+            content.append(
+                format_doc_reference(member_name, member_refid, "", as_list_item=True)
+            )
         content.append("")
 
     return "\n".join(content)
