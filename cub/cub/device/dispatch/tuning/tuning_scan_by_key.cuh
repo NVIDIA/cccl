@@ -1126,6 +1126,7 @@ struct policy_selector
               case 1:
                 if (primitive_value_t == primitive_accum::yes)
                 {
+                  // ipt_13.tpb_288.ns_420.dcid_0.l2w_745.trp_1.ld_0 1.030222  0.998162  1.027506  1.068348
                   return {288,
                           13,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1138,6 +1139,7 @@ struct policy_selector
               case 2:
                 if (primitive_value_t == primitive_accum::yes)
                 {
+                  // ipt_13.tpb_288.ns_388.dcid_1.l2w_570.trp_1.ld_0 1.228612   1.0  1.216841  1.416167
                   return {288,
                           13,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1150,6 +1152,7 @@ struct policy_selector
               case 4:
                 if (primitive_value_t == primitive_accum::yes)
                 {
+                  // ipt_19.tpb_224.ns_1028.dcid_5.l2w_910.trp_1.ld_1 1.163440   1.0  1.146400  1.260684
                   return {
                     224,
                     19,
@@ -1163,6 +1166,7 @@ struct policy_selector
               case 8:
                 if (primitive_value_t == primitive_accum::yes)
                 {
+                  // ipt_18.tpb_192.ns_432.dcid_1.l2w_1035.trp_1.ld_1 1.177638  0.985417  1.157164  1.296477
                   return {192,
                           18,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1182,6 +1186,7 @@ struct policy_selector
               case 1:
                 if (primitive_value_t == primitive_accum::yes)
                 {
+                  // ipt_12.tpb_384.ns_1900.dcid_0.l2w_840.trp_1.ld_0 1.010828  0.985782  1.007993  1.048859
                   return {384,
                           12,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1194,6 +1199,7 @@ struct policy_selector
               case 2:
                 if (primitive_value_t == primitive_accum::yes)
                 {
+                  // ipt_14.tpb_160.ns_1736.dcid_7.l2w_170.trp_1.ld_0 1.095207  1.065061  1.100302  1.142857
                   return {160,
                           14,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1206,6 +1212,7 @@ struct policy_selector
               case 4:
                 if (primitive_value_t == primitive_accum::yes)
                 {
+                  // ipt_14.tpb_160.ns_336.dcid_1.l2w_805.trp_1.ld_0 1.119313  1.095238  1.122013  1.148681
                   return {160,
                           14,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1237,6 +1244,8 @@ struct policy_selector
               case 1:
                 if (primitive_value_t == primitive_accum::yes)
                 {
+                  // todo(gonidlelis): Significant regression. Search more workloads.
+                  // ipt_20.tpb_224.ns_1436.dcid_7.l2w_155.trp_1.ld_1 1.135878  0.866667  1.106600  1.339708
                   return {224,
                           20,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1249,6 +1258,7 @@ struct policy_selector
               case 2:
                 if (primitive_value_t == primitive_accum::yes)
                 {
+                  // ipt_13.tpb_288.ns_620.dcid_7.l2w_925.trp_1.ld_2 1.050929  1.000000  1.047178  1.115809
                   return {288,
                           13,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1261,6 +1271,7 @@ struct policy_selector
               case 4:
                 if (primitive_value_t == primitive_accum::yes)
                 {
+                  // ipt_20.tpb_224.ns_1856.dcid_5.l2w_280.trp_1.ld_1 1.247248  1.000000  1.220196  1.446328
                   return {
                     224,
                     20,
@@ -1274,6 +1285,7 @@ struct policy_selector
               case 8:
                 if (primitive_value_t == primitive_accum::yes)
                 {
+                  // ipt_14.tpb_224.ns_464.dcid_2.l2w_680.trp_1.ld_1 1.070831  1.002088  1.064736  1.105437
                   return {224,
                           14,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1293,6 +1305,7 @@ struct policy_selector
               case 1:
                 if (primitive_value_t == primitive_accum::yes)
                 {
+                  // ipt_12.tpb_160.ns_532.dcid_0.l2w_850.trp_1.ld_0 1.041966  1.000000  1.037010  1.078399
                   return {160,
                           12,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1305,6 +1318,8 @@ struct policy_selector
               case 2:
                 if (primitive_value_t == primitive_accum::yes)
                 {
+                  // todo(gonidlelis): Significant regression. Search more workloads.
+                  // ipt_15.tpb_288.ns_988.dcid_7.l2w_335.trp_1.ld_0 1.064413  0.866667  1.045946  1.116803
                   return {288,
                           15,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1317,6 +1332,7 @@ struct policy_selector
               case 4:
                 if (primitive_value_t == primitive_accum::yes)
                 {
+                  // ipt_22.tpb_160.ns_1032.dcid_5.l2w_505.trp_1.ld_2 1.184805  1.000000  1.164843  1.338536
                   return {
                     160,
                     22,
@@ -1330,6 +1346,7 @@ struct policy_selector
               case 8:
                 if (primitive_value_t == primitive_accum::yes)
                 {
+                  // ipt_23.tpb_256.ns_1232.dcid_0.l2w_810.trp_1.ld_0 1.067631  1.000000  1.059607  1.135646
                   return {256,
                           23,
                           BLOCK_LOAD_WARP_TRANSPOSE,
