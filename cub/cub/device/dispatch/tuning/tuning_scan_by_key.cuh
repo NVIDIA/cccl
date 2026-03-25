@@ -1067,7 +1067,7 @@ public:
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       ({
-                        const int ptx_version = static_cast<int>(arch) * 10;
+                        const int ptx_version = static_cast<int>(::cuda::compute_capability{arch});
                         scan_by_key_policy policy{};
                         extract_policy_dispatch_t dispatch{policy};
                         PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
@@ -1082,26 +1082,27 @@ struct policy_selector
   int key_size;
   int value_size;
   int accum_size;
+  bool value_is_primitive;
+  bool value_is_trivially_copyable;
+  type_t key_type;
   type_t value_type;
   type_t accum_type;
   op_kind_t operation_t;
-  bool accum_is_primitive_or_trivially_copy_constructible;
 
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_by_key_policy
   {
     const primitive_accum primitive_accum_t =
-      value_type != type_t::other && value_type != type_t::int128 && value_type != type_t::uint128
+      accum_type != type_t::other && accum_type != type_t::int128 && accum_type != type_t::uint128
         ? primitive_accum::yes
         : primitive_accum::no;
+    const primitive_accum primitive_value_t =
+      value_is_primitive && value_type != type_t::int128 && value_type != type_t::uint128
+        ? primitive_accum::yes
+        : primitive_accum::no;
+    const bool value_is_primitive_or_trivially_copyable = value_is_primitive || value_is_trivially_copyable;
     const primitive_op primitive_op_t = operation_t != op_kind_t::other ? primitive_op::yes : primitive_op::no;
-    const auto default_delay          = default_reduce_by_key_delay_constructor_policy(
-      key_size,
-      accum_size,
-      accum_is_primitive_or_trivially_copy_constructible,
-      accum_is_primitive_or_trivially_copy_constructible);
-
-    const int max_input_bytes      = (::cuda::std::max) (key_size, accum_size);
-    const int combined_input_bytes = key_size + accum_size;
+    const int max_input_bytes         = (::cuda::std::max) (key_size, accum_size);
+    const int combined_input_bytes    = key_size + accum_size;
 
     const auto default_items =
       max_input_bytes <= 8
@@ -1123,7 +1124,7 @@ struct policy_selector
             switch (value_size)
             {
               case 1:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {288,
                           13,
@@ -1135,7 +1136,7 @@ struct policy_selector
                 }
                 break;
               case 2:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {288,
                           13,
@@ -1147,7 +1148,7 @@ struct policy_selector
                 }
                 break;
               case 4:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {
                     224,
@@ -1160,7 +1161,7 @@ struct policy_selector
                 }
                 break;
               case 8:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {192,
                           18,
@@ -1179,7 +1180,7 @@ struct policy_selector
             switch (value_size)
             {
               case 1:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {384,
                           12,
@@ -1191,7 +1192,7 @@ struct policy_selector
                 }
                 break;
               case 2:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {160,
                           14,
@@ -1203,7 +1204,7 @@ struct policy_selector
                 }
                 break;
               case 4:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {160,
                           14,
@@ -1215,7 +1216,7 @@ struct policy_selector
                 }
                 break;
               case 8:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {224,
                           13,
@@ -1234,7 +1235,7 @@ struct policy_selector
             switch (value_size)
             {
               case 1:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {224,
                           20,
@@ -1246,7 +1247,7 @@ struct policy_selector
                 }
                 break;
               case 2:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {288,
                           13,
@@ -1258,7 +1259,7 @@ struct policy_selector
                 }
                 break;
               case 4:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {
                     224,
@@ -1271,7 +1272,7 @@ struct policy_selector
                 }
                 break;
               case 8:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {224,
                           14,
@@ -1290,7 +1291,7 @@ struct policy_selector
             switch (value_size)
             {
               case 1:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {160,
                           12,
@@ -1302,7 +1303,7 @@ struct policy_selector
                 }
                 break;
               case 2:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {288,
                           15,
@@ -1314,7 +1315,7 @@ struct policy_selector
                 }
                 break;
               case 4:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {
                     160,
@@ -1327,7 +1328,7 @@ struct policy_selector
                 }
                 break;
               case 8:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {256,
                           23,
@@ -1346,6 +1347,8 @@ struct policy_selector
             break;
         }
       }
+
+      arch = ::cuda::arch_id::sm_80;
     }
 
     if (arch >= ::cuda::arch_id::sm_90)
@@ -1358,7 +1361,7 @@ struct policy_selector
             switch (value_size)
             {
               case 1:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {128,
                           12,
@@ -1370,7 +1373,7 @@ struct policy_selector
                 }
                 break;
               case 2:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {256,
                           16,
@@ -1382,7 +1385,7 @@ struct policy_selector
                 }
                 break;
               case 4:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {128,
                           15,
@@ -1394,7 +1397,7 @@ struct policy_selector
                 }
                 break;
               case 8:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {224,
                           10,
@@ -1428,7 +1431,7 @@ struct policy_selector
             switch (value_size)
             {
               case 1:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {128,
                           12,
@@ -1440,7 +1443,7 @@ struct policy_selector
                 }
                 break;
               case 2:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {128,
                           20,
@@ -1452,7 +1455,7 @@ struct policy_selector
                 }
                 break;
               case 4:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {128,
                           22,
@@ -1464,7 +1467,7 @@ struct policy_selector
                 }
                 break;
               case 8:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {224,
                           10,
@@ -1498,7 +1501,7 @@ struct policy_selector
             switch (value_size)
             {
               case 1:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {128,
                           12,
@@ -1510,7 +1513,7 @@ struct policy_selector
                 }
                 break;
               case 2:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {256,
                           14,
@@ -1522,7 +1525,7 @@ struct policy_selector
                 }
                 break;
               case 4:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {288,
                           14,
@@ -1534,7 +1537,7 @@ struct policy_selector
                 }
                 break;
               case 8:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {224,
                           14,
@@ -1568,7 +1571,7 @@ struct policy_selector
             switch (value_size)
             {
               case 1:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {128,
                           12,
@@ -1580,7 +1583,7 @@ struct policy_selector
                 }
                 break;
               case 2:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {224,
                           10,
@@ -1592,7 +1595,7 @@ struct policy_selector
                 }
                 break;
               case 4:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {192,
                           10,
@@ -1604,7 +1607,7 @@ struct policy_selector
                 }
                 break;
               case 8:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {224,
                           11,
@@ -1635,7 +1638,7 @@ struct policy_selector
             }
             break;
           case 16:
-            switch (value_size)
+            switch (accum_size)
             {
               case 1:
                 if (primitive_accum_t == primitive_accum::yes)
@@ -1708,6 +1711,8 @@ struct policy_selector
             break;
         }
       }
+
+      arch = ::cuda::arch_id::sm_80;
     }
 
     if (arch >= ::cuda::arch_id::sm_86)
@@ -1718,7 +1723,8 @@ struct policy_selector
               LOAD_CA,
               BLOCK_SCAN_WARP_SCANS,
               BLOCK_STORE_WARP_TRANSPOSE,
-              default_delay};
+              default_reduce_by_key_delay_constructor_policy(
+                sizeof(int), accum_size, true, primitive_accum_t == primitive_accum::yes)};
     }
 
     if (arch >= ::cuda::arch_id::sm_80)
@@ -1731,7 +1737,7 @@ struct policy_selector
             switch (value_size)
             {
               case 1:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {128,
                           12,
@@ -1743,7 +1749,7 @@ struct policy_selector
                 }
                 break;
               case 2:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {288,
                           12,
@@ -1755,7 +1761,7 @@ struct policy_selector
                 }
                 break;
               case 4:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {256,
                           15,
@@ -1767,7 +1773,7 @@ struct policy_selector
                 }
                 break;
               case 8:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {192,
                           10,
@@ -1801,7 +1807,7 @@ struct policy_selector
             switch (value_size)
             {
               case 1:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {256,
                           8,
@@ -1813,7 +1819,7 @@ struct policy_selector
                 }
                 break;
               case 2:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {320,
                           14,
@@ -1825,7 +1831,7 @@ struct policy_selector
                 }
                 break;
               case 4:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {256,
                           15,
@@ -1837,7 +1843,7 @@ struct policy_selector
                 }
                 break;
               case 8:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {160,
                           17,
@@ -1871,7 +1877,7 @@ struct policy_selector
             switch (value_size)
             {
               case 1:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {128,
                           12,
@@ -1883,7 +1889,7 @@ struct policy_selector
                 }
                 break;
               case 2:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {256,
                           12,
@@ -1895,7 +1901,7 @@ struct policy_selector
                 }
                 break;
               case 4:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {256,
                           15,
@@ -1907,7 +1913,7 @@ struct policy_selector
                 }
                 break;
               case 8:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {256,
                           9,
@@ -1941,7 +1947,7 @@ struct policy_selector
             switch (value_size)
             {
               case 1:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {128,
                           11,
@@ -1953,7 +1959,7 @@ struct policy_selector
                 }
                 break;
               case 2:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {256,
                           10,
@@ -1965,7 +1971,7 @@ struct policy_selector
                 }
                 break;
               case 4:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {224,
                           13,
@@ -1977,7 +1983,7 @@ struct policy_selector
                 }
                 break;
               case 8:
-                if (primitive_accum_t == primitive_accum::yes)
+                if (primitive_value_t == primitive_accum::yes)
                 {
                   return {224,
                           10,
@@ -2008,7 +2014,7 @@ struct policy_selector
             }
             break;
           case 16:
-            switch (value_size)
+            switch (accum_size)
             {
               case 1:
                 if (primitive_accum_t == primitive_accum::yes)
@@ -2082,13 +2088,18 @@ struct policy_selector
         }
       }
 
-      return {256,
-              default_items,
-              BLOCK_LOAD_WARP_TRANSPOSE,
-              LOAD_DEFAULT,
-              BLOCK_SCAN_WARP_SCANS,
-              BLOCK_STORE_WARP_TRANSPOSE,
-              default_delay};
+      return {
+        256,
+        default_items,
+        BLOCK_LOAD_WARP_TRANSPOSE,
+        LOAD_DEFAULT,
+        BLOCK_SCAN_WARP_SCANS,
+        BLOCK_STORE_WARP_TRANSPOSE,
+        default_reduce_by_key_delay_constructor_policy(
+          sizeof(int),
+          value_size,
+          true,
+          value_is_primitive_or_trivially_copyable && (key_size + value_size < largest_atomic_message_size))};
     }
 
     if (arch >= ::cuda::arch_id::sm_60)
@@ -2099,7 +2110,8 @@ struct policy_selector
               LOAD_CA,
               BLOCK_SCAN_WARP_SCANS,
               BLOCK_STORE_WARP_TRANSPOSE,
-              default_delay};
+              default_reduce_by_key_delay_constructor_policy(
+                sizeof(int), accum_size, true, primitive_accum_t == primitive_accum::yes)};
     }
 
     return {128,
@@ -2108,7 +2120,8 @@ struct policy_selector
             LOAD_CA,
             BLOCK_SCAN_WARP_SCANS,
             BLOCK_STORE_WARP_TRANSPOSE,
-            default_delay};
+            default_reduce_by_key_delay_constructor_policy(
+              sizeof(int), accum_size, true, primitive_accum_t == primitive_accum::yes)};
   }
 };
 
@@ -2121,10 +2134,12 @@ struct policy_selector_from_types
       static_cast<int>(sizeof(KeyT)),
       static_cast<int>(sizeof(ValueT)),
       static_cast<int>(sizeof(AccumT)),
+      is_primitive<ValueT>::value,
+      ::cuda::std::is_trivially_copyable_v<ValueT>,
+      classify_type<KeyT>,
       classify_type<ValueT>,
       classify_type<AccumT>,
-      classify_op<ScanOpT>,
-      is_primitive<AccumT>::value || ::cuda::std::is_trivially_copy_constructible_v<AccumT>}(arch);
+      classify_op<ScanOpT>}(arch);
   }
 };
 } // namespace detail::scan_by_key

@@ -127,7 +127,7 @@ template <typename PolicySelector,
           typename KeyT = cub::detail::it_value_t<KeysInputIteratorT>>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_CONSTEVAL int get_device_scan_by_key_launch_bounds() noexcept
 {
-  constexpr scan_by_key_policy policy = PolicySelector{}(::cuda::arch_id{});
+  constexpr scan_by_key_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
   return policy.block_threads;
 }
 
@@ -168,7 +168,7 @@ __launch_bounds__(
     InitValueT init_value,
     OffsetT num_items)
 {
-  static constexpr scan_by_key_policy policy = PolicySelector{}(::cuda::arch_id{});
+  static constexpr scan_by_key_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
 
   using scan_by_key_policy_t = AgentScanByKeyPolicy<
     policy.block_threads,
