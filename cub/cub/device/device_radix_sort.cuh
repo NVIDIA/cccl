@@ -34,22 +34,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::radix_sort
 {
-struct get_tuning_query_t
-{};
-
-template <class Derived>
-struct tuning
-{
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_tuning_query_t&) const noexcept -> Derived
-  {
-    return static_cast<const Derived&>(*this);
-  }
-};
-
-struct default_tuning : tuning<default_tuning>
-{};
-} // namespace detail::radix_sort
-
 //! @rst
 //! DeviceRadixSort provides device-wide, parallel operations for
 //! computing a radix sort across a sequence of data items residing

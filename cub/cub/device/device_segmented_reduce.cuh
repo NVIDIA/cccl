@@ -53,12 +53,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::segmented_reduce
-{
-struct get_tuning_query_t
-{};
-} // namespace detail::segmented_reduce
-
 //! @rst
 //! DeviceSegmentedReduce provides device-wide, parallel operations for
 //! computing a reduction across multiple sequences of data items
@@ -113,12 +107,12 @@ private:
     if constexpr (::cuda::std::is_integral_v<OffsetT>)
     {
       return detail::dispatch_with_env(
-        env, [&](auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
           using default_policy_selector_t =
             detail::segmented_reduce::policy_selector_from_types<AccumT, OffsetT, ReductionOpT>;
           using policy_selector_t =
             ::cuda::std::execution::__query_result_or_t<decltype(tuning),
-                                                        detail::segmented_reduce::get_tuning_query_t,
+                                                        detail::segmented_reduce::segmented_reduce_policy,
                                                         default_policy_selector_t>;
           // TODO: in most cases we can just take the default AccumT and OffsetT. Refactor this
           return detail::segmented_reduce::dispatch<AccumT, OffsetT>(
@@ -133,7 +127,7 @@ private:
             initial_value,
             0, // max_segment_size
             stream,
-            default_policy_selector_t{});
+            policy_selector_t{});
         });
     }
     _CCCL_UNREACHABLE();
