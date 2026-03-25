@@ -28,7 +28,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeys env-based API", "[segmented_sort][k
   auto error = cub::DeviceSegmentedSort::SortKeys(
     thrust::raw_pointer_cast(keys_in.data()),
     thrust::raw_pointer_cast(keys_out.data()),
-    static_cast<int>(keys_in.size()),
+    static_cast<cuda::std::int64_t>(keys_in.size()),
     2,
     thrust::raw_pointer_cast(offsets.data()),
     thrust::raw_pointer_cast(offsets.data()) + 1,
@@ -59,7 +59,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortKeysDescending env-based API", "[segment
   auto error = cub::DeviceSegmentedSort::SortKeysDescending(
     thrust::raw_pointer_cast(keys_in.data()),
     thrust::raw_pointer_cast(keys_out.data()),
-    static_cast<int>(keys_in.size()),
+    static_cast<cuda::std::int64_t>(keys_in.size()),
     2,
     thrust::raw_pointer_cast(offsets.data()),
     thrust::raw_pointer_cast(offsets.data()) + 1,
@@ -157,7 +157,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeys env-based API", "[segmented_s
   auto error = cub::DeviceSegmentedSort::StableSortKeys(
     thrust::raw_pointer_cast(keys_in.data()),
     thrust::raw_pointer_cast(keys_out.data()),
-    static_cast<int>(keys_in.size()),
+    static_cast<cuda::std::int64_t>(keys_in.size()),
     2,
     thrust::raw_pointer_cast(offsets.data()),
     thrust::raw_pointer_cast(offsets.data()) + 1,
@@ -188,7 +188,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortKeysDescending env-based API", "[s
   auto error = cub::DeviceSegmentedSort::StableSortKeysDescending(
     thrust::raw_pointer_cast(keys_in.data()),
     thrust::raw_pointer_cast(keys_out.data()),
-    static_cast<int>(keys_in.size()),
+    static_cast<cuda::std::int64_t>(keys_in.size()),
     2,
     thrust::raw_pointer_cast(offsets.data()),
     thrust::raw_pointer_cast(offsets.data()) + 1,

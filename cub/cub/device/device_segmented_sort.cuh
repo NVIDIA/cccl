@@ -372,8 +372,7 @@ public:
   template <typename KeyT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename EnvT                                                      = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -385,16 +384,15 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+
     constexpr bool is_overwrite_okay = false;
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<NullType> d_values;
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        using OffsetT =
-          detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-        DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-        DoubleBuffer<NullType> d_values;
-
         return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
           d_temp_storage,
           temp_storage_bytes,
@@ -664,8 +662,7 @@ public:
   template <typename KeyT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename EnvT                                                      = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -677,16 +674,15 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+
     constexpr bool is_overwrite_okay = false;
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<NullType> d_values;
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        using OffsetT =
-          detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-        DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-        DoubleBuffer<NullType> d_values;
-
         return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
           d_temp_storage,
           temp_storage_bytes,
@@ -741,11 +737,11 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
-  //!   DoubleBuffer structure that indicates which of the two buffers is
+  //!   ``DoubleBuffer`` structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
   //! - The contents of both buffers may be altered by the sorting operation.
   //! - Upon completion, the sorting operation will update the "current"
-  //!   indicator within the DoubleBuffer wrapper to reference which of the two
+  //!   indicator within the ``DoubleBuffer`` wrapper to reference which of the two
   //!   buffers now contains the sorted output sequence (a function of the number
   //!   of key bits and the targeted device architecture).
   //! - When the input is a contiguous sequence of segments, a single sequence
@@ -963,8 +959,7 @@ public:
   template <typename KeyT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename EnvT                                                      = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     DoubleBuffer<KeyT>& d_keys,
     ::cuda::std::int64_t num_items,
@@ -975,15 +970,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+
     constexpr bool is_overwrite_okay = true;
+    DoubleBuffer<NullType> d_values;
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        using OffsetT =
-          detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-        DoubleBuffer<NullType> d_values;
-
         return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
           d_temp_storage,
           temp_storage_bytes,
@@ -1039,11 +1033,11 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
-  //!   DoubleBuffer structure that indicates which of the two buffers is
+  //!   ``DoubleBuffer`` structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
   //! - The contents of both buffers may be altered by the sorting operation.
   //! - Upon completion, the sorting operation will update the "current"
-  //!   indicator within the DoubleBuffer wrapper to reference which of the two
+  //!   indicator within the ``DoubleBuffer`` wrapper to reference which of the two
   //!   buffers now contains the sorted output sequence (a function of the number
   //!   of key bits and the targeted device architecture).
   //! - When the input is a contiguous sequence of segments, a single sequence
@@ -1261,8 +1255,7 @@ public:
   template <typename KeyT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename EnvT                                                      = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     DoubleBuffer<KeyT>& d_keys,
     ::cuda::std::int64_t num_items,
@@ -1273,15 +1266,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+
     constexpr bool is_overwrite_okay = true;
+    DoubleBuffer<NullType> d_values;
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        using OffsetT =
-          detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-        DoubleBuffer<NullType> d_values;
-
         return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
           d_temp_storage,
           temp_storage_bytes,
@@ -1520,8 +1512,7 @@ public:
   template <typename KeyT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename EnvT                                                      = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -1533,16 +1524,15 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+
     constexpr bool is_overwrite_okay = false;
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<NullType> d_values;
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        using OffsetT =
-          detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-        DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-        DoubleBuffer<NullType> d_values;
-
         return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
           d_temp_storage,
           temp_storage_bytes,
@@ -1782,8 +1772,7 @@ public:
   template <typename KeyT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename EnvT                                                      = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysDescending(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
@@ -1795,16 +1784,15 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+
     constexpr bool is_overwrite_okay = false;
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<NullType> d_values;
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        using OffsetT =
-          detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-        DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-        DoubleBuffer<NullType> d_values;
-
         return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
           d_temp_storage,
           temp_storage_bytes,
@@ -1827,11 +1815,11 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
-  //!   DoubleBuffer structure that indicates which of the two buffers is
+  //!   ``DoubleBuffer`` structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
   //! - The contents of both buffers may be altered by the sorting operation.
   //! - Upon completion, the sorting operation will update the "current"
-  //!   indicator within the DoubleBuffer wrapper to reference which of the two
+  //!   indicator within the ``DoubleBuffer`` wrapper to reference which of the two
   //!   buffers now contains the sorted output sequence (a function of the number
   //!   of key bits and the targeted device architecture).
   //! - When the input is a contiguous sequence of segments, a single sequence
@@ -2053,8 +2041,7 @@ public:
   template <typename KeyT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename EnvT                                                      = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
     DoubleBuffer<KeyT>& d_keys,
     ::cuda::std::int64_t num_items,
@@ -2065,15 +2052,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+
     constexpr bool is_overwrite_okay = true;
+    DoubleBuffer<NullType> d_values;
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        using OffsetT =
-          detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-        DoubleBuffer<NullType> d_values;
-
         return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
           d_temp_storage,
           temp_storage_bytes,
@@ -2096,11 +2082,11 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
-  //!   DoubleBuffer structure that indicates which of the two buffers is
+  //!   ``DoubleBuffer`` structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
   //! - The contents of both buffers may be altered by the sorting operation.
   //! - Upon completion, the sorting operation will update the "current"
-  //!   indicator within the DoubleBuffer wrapper to reference which of the two
+  //!   indicator within the ``DoubleBuffer`` wrapper to reference which of the two
   //!   buffers now contains the sorted output sequence (a function of the number
   //!   of key bits and the targeted device architecture).
   //! - When the input is a contiguous sequence of segments, a single sequence
@@ -2321,8 +2307,7 @@ public:
   template <typename KeyT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename EnvT                                                      = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyT, void>, int> = 0>
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysDescending(
     DoubleBuffer<KeyT>& d_keys,
     ::cuda::std::int64_t num_items,
@@ -2333,15 +2318,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
+    using OffsetT =
+      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+
     constexpr bool is_overwrite_okay = true;
+    DoubleBuffer<NullType> d_values;
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        using OffsetT =
-          detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-        DoubleBuffer<NullType> d_values;
-
         return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
           d_temp_storage,
           temp_storage_bytes,

@@ -36,7 +36,7 @@ TEST_CASE("DeviceSegmentedSort::SortKeys works with default environment", "[segm
     == cub::DeviceSegmentedSort::SortKeys(
       thrust::raw_pointer_cast(keys_in.data()),
       thrust::raw_pointer_cast(keys_out.data()),
-      static_cast<int>(keys_in.size()),
+      static_cast<cuda::std::int64_t>(keys_in.size()),
       2,
       thrust::raw_pointer_cast(offsets.data()),
       thrust::raw_pointer_cast(offsets.data()) + 1));
@@ -56,7 +56,7 @@ TEST_CASE("DeviceSegmentedSort::SortKeysDescending works with default environmen
     == cub::DeviceSegmentedSort::SortKeysDescending(
       thrust::raw_pointer_cast(keys_in.data()),
       thrust::raw_pointer_cast(keys_out.data()),
-      static_cast<int>(keys_in.size()),
+      static_cast<cuda::std::int64_t>(keys_in.size()),
       2,
       thrust::raw_pointer_cast(offsets.data()),
       thrust::raw_pointer_cast(offsets.data()) + 1));
@@ -76,7 +76,7 @@ TEST_CASE("DeviceSegmentedSort::StableSortKeys works with default environment", 
     == cub::DeviceSegmentedSort::StableSortKeys(
       thrust::raw_pointer_cast(keys_in.data()),
       thrust::raw_pointer_cast(keys_out.data()),
-      static_cast<int>(keys_in.size()),
+      static_cast<cuda::std::int64_t>(keys_in.size()),
       2,
       thrust::raw_pointer_cast(offsets.data()),
       thrust::raw_pointer_cast(offsets.data()) + 1));
@@ -97,7 +97,7 @@ TEST_CASE("DeviceSegmentedSort::StableSortKeysDescending works with default envi
     == cub::DeviceSegmentedSort::StableSortKeysDescending(
       thrust::raw_pointer_cast(keys_in.data()),
       thrust::raw_pointer_cast(keys_out.data()),
-      static_cast<int>(keys_in.size()),
+      static_cast<cuda::std::int64_t>(keys_in.size()),
       2,
       thrust::raw_pointer_cast(offsets.data()),
       thrust::raw_pointer_cast(offsets.data()) + 1));
@@ -131,7 +131,7 @@ C2H_TEST("DeviceSegmentedSort::SortKeys uses environment", "[segmented_sort][key
 
   sort_keys(thrust::raw_pointer_cast(keys_in.data()),
             thrust::raw_pointer_cast(keys_out.data()),
-            static_cast<int>(keys_in.size()),
+            static_cast<cuda::std::int64_t>(keys_in.size()),
             2,
             thrust::raw_pointer_cast(offsets.data()),
             thrust::raw_pointer_cast(offsets.data()) + 1,
@@ -165,7 +165,7 @@ C2H_TEST("DeviceSegmentedSort::SortKeysDescending uses environment", "[segmented
   sort_keys_descending(
     thrust::raw_pointer_cast(keys_in.data()),
     thrust::raw_pointer_cast(keys_out.data()),
-    static_cast<int>(keys_in.size()),
+    static_cast<cuda::std::int64_t>(keys_in.size()),
     2,
     thrust::raw_pointer_cast(offsets.data()),
     thrust::raw_pointer_cast(offsets.data()) + 1,
@@ -199,7 +199,7 @@ C2H_TEST("DeviceSegmentedSort::StableSortKeys uses environment", "[segmented_sor
   stable_sort_keys(
     thrust::raw_pointer_cast(keys_in.data()),
     thrust::raw_pointer_cast(keys_out.data()),
-    static_cast<int>(keys_in.size()),
+    static_cast<cuda::std::int64_t>(keys_in.size()),
     2,
     thrust::raw_pointer_cast(offsets.data()),
     thrust::raw_pointer_cast(offsets.data()) + 1,
@@ -233,7 +233,7 @@ C2H_TEST("DeviceSegmentedSort::StableSortKeysDescending uses environment", "[seg
   stable_sort_keys_descending(
     thrust::raw_pointer_cast(keys_in.data()),
     thrust::raw_pointer_cast(keys_out.data()),
-    static_cast<int>(keys_in.size()),
+    static_cast<cuda::std::int64_t>(keys_in.size()),
     2,
     thrust::raw_pointer_cast(offsets.data()),
     thrust::raw_pointer_cast(offsets.data()) + 1,
