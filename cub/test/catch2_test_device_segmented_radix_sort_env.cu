@@ -803,3 +803,121 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairs DoubleBuffer uses custom stream",
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
+
+template <typename KeyT, typename ValueT, int RadixBits>
+struct segmented_radix_bits_policy_selector
+{
+  _CCCL_API constexpr auto operator()(cuda::arch_id arch) const -> cub::detail::radix_sort::radix_sort_policy
+  {
+    using default_selector_t        = cub::detail::radix_sort::policy_selector_from_types<KeyT, ValueT, int>;
+    auto policy                     = default_selector_t{}(arch);
+    policy.segmented.radix_bits     = RadixBits;
+    policy.alt_segmented.radix_bits = RadixBits;
+    return policy;
+  }
+};
+
+template <typename CallableT, typename PolicySelector>
+std::size_t measure_kernel_launches(CallableT&& run, PolicySelector policy_selector)
+{
+  auto env = stdexec::env{cuda::execution::__tune(policy_selector)};
+  reset_kernel_launches();
+  REQUIRE(cudaSuccess == run(env));
+  auto launches = get_kernel_launches();
+  CHECK(launches > 0);
+  return launches;
+}
+
+TEST_CASE("DeviceSegmentedRadixSort::SortPairs can be tuned", "[segmented_radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto keys    = c2h::device_vector<int>(10'000);
+    auto values  = c2h::device_vector<int>(10'000);
+    auto offsets = c2h::device_vector<int>{0, 5'000, 10'000};
+    return cub::DeviceSegmentedRadixSort::SortPairs(
+      thrust::raw_pointer_cast(keys.data()),
+      thrust::raw_pointer_cast(keys.data()),
+      thrust::raw_pointer_cast(values.data()),
+      thrust::raw_pointer_cast(values.data()),
+      static_cast<int>(keys.size()),
+      2,
+      offsets.begin(),
+      offsets.begin() + 1,
+      0,
+      32,
+      env);
+  };
+
+  auto launches_4b = measure_kernel_launches(l, segmented_radix_bits_policy_selector<int, int, 4>{});
+  auto launches_5b = measure_kernel_launches(l, segmented_radix_bits_policy_selector<int, int, 5>{});
+  CHECK(launches_4b != launches_5b);
+}
+
+TEST_CASE("DeviceSegmentedRadixSort::SortPairsDescending can be tuned", "[segmented_radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto keys    = c2h::device_vector<int>(10'000);
+    auto values  = c2h::device_vector<int>(10'000);
+    auto offsets = c2h::device_vector<int>{0, 5'000, 10'000};
+    return cub::DeviceSegmentedRadixSort::SortPairsDescending(
+      thrust::raw_pointer_cast(keys.data()),
+      thrust::raw_pointer_cast(keys.data()),
+      thrust::raw_pointer_cast(values.data()),
+      thrust::raw_pointer_cast(values.data()),
+      static_cast<int>(keys.size()),
+      2,
+      offsets.begin(),
+      offsets.begin() + 1,
+      0,
+      32,
+      env);
+  };
+
+  auto launches_4b = measure_kernel_launches(l, segmented_radix_bits_policy_selector<int, int, 4>{});
+  auto launches_5b = measure_kernel_launches(l, segmented_radix_bits_policy_selector<int, int, 5>{});
+  CHECK(launches_4b != launches_5b);
+}
+
+TEST_CASE("DeviceSegmentedRadixSort::SortKeys can be tuned", "[segmented_radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto keys    = c2h::device_vector<int>(10'000);
+    auto offsets = c2h::device_vector<int>{0, 5'000, 10'000};
+    return cub::DeviceSegmentedRadixSort::SortKeys(
+      thrust::raw_pointer_cast(keys.data()),
+      thrust::raw_pointer_cast(keys.data()),
+      static_cast<int>(keys.size()),
+      2,
+      offsets.begin(),
+      offsets.begin() + 1,
+      0,
+      32,
+      env);
+  };
+
+  auto launches_4b = measure_kernel_launches(l, segmented_radix_bits_policy_selector<int, cub::NullType, 4>{});
+  auto launches_5b = measure_kernel_launches(l, segmented_radix_bits_policy_selector<int, cub::NullType, 5>{});
+  CHECK(launches_4b != launches_5b);
+}
+
+TEST_CASE("DeviceSegmentedRadixSort::SortKeysDescending can be tuned", "[segmented_radix_sort][device]")
+{
+  auto l = [&](auto env) {
+    auto keys    = c2h::device_vector<int>(10'000);
+    auto offsets = c2h::device_vector<int>{0, 5'000, 10'000};
+    return cub::DeviceSegmentedRadixSort::SortKeysDescending(
+      thrust::raw_pointer_cast(keys.data()),
+      thrust::raw_pointer_cast(keys.data()),
+      static_cast<int>(keys.size()),
+      2,
+      offsets.begin(),
+      offsets.begin() + 1,
+      0,
+      32,
+      env);
+  };
+
+  auto launches_4b = measure_kernel_launches(l, segmented_radix_bits_policy_selector<int, cub::NullType, 4>{});
+  auto launches_5b = measure_kernel_launches(l, segmented_radix_bits_policy_selector<int, cub::NullType, 5>{});
+  CHECK(launches_4b != launches_5b);
+}
