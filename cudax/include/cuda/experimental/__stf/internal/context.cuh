@@ -77,6 +77,11 @@ decltype(auto) operator->*(const ::std::variant<Ts...>& v, F&& f)
  */
 class context
 {
+public:
+  template <typename T>
+  using logical_data_t = ::cuda::experimental::stf::logical_data<T>;
+
+private:
   template <typename T1, typename T2>
   class unified_scope
   {
@@ -296,6 +301,22 @@ public:
     {
       return payload->*[&](auto& self) {
         return self.get_stream();
+      };
+    }
+
+    // Get the underlying task base class - both stream_task and graph_task inherit from task. This is convenient when
+    // we do not need the "typed" task, for example when using the "low-level" add_deps method.
+    ::cuda::experimental::stf::task& get_base_task()
+    {
+      return payload->*[](auto& self) -> ::cuda::experimental::stf::task& {
+        return self.get_base_task();
+      };
+    }
+
+    const ::cuda::experimental::stf::task& get_base_task() const
+    {
+      return payload->*[](auto& self) -> const ::cuda::experimental::stf::task& {
+        return self.get_base_task();
       };
     }
 
@@ -718,26 +739,23 @@ public:
     };
   }
 
-  //! Release context resources using the provided stream.
-  //!
-  //! Normally this is called automatically during finalize(), but when using
-  //! finalize_as_graph() to create a CUDA graph that can be launched multiple
-  //! times, resources must be released manually once the graph will no longer
-  //! be used, since the same resources may be accessed repeatedly during graph replay.
-  void release_resources(cudaStream_t stream)
-  {
-    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-    payload->*[stream](auto& self) {
-      self.release_resources(stream);
-    };
-  }
-
   //! Add a resource to be managed by this context
   void add_resource(::std::shared_ptr<ctx_resource> resource)
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     payload->*[&resource](auto& self) {
       self.add_resource(mv(resource));
+    };
+  }
+
+  //! Release context resources using the provided stream.
+  //! Normally called automatically during finalize(); when using finalize_as_graph()
+  //! for replayable graphs, call once the graph will no longer be used.
+  void release_resources(cudaStream_t stream)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    payload->*[stream](auto& self) {
+      self.release_resources(stream);
     };
   }
 
@@ -943,6 +961,31 @@ public:
     return payload->*[](auto& self) {
       return self.pick_stream();
     };
+  }
+
+  /**
+   * @brief Get a reference to the underlying untyped backend context
+   *
+   * @return Reference to the backend_ctx_untyped base class from the variant payload
+   */
+  backend_ctx_untyped& get_backend()
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [](auto& ctx) -> backend_ctx_untyped& {
+        return static_cast<backend_ctx_untyped&>(ctx);
+      },
+      payload);
+  }
+
+  const backend_ctx_untyped& get_backend() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [](const auto& ctx) -> const backend_ctx_untyped& {
+        return static_cast<const backend_ctx_untyped&>(ctx);
+      },
+      payload);
   }
 
 public:

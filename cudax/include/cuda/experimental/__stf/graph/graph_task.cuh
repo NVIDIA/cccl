@@ -501,6 +501,7 @@ private:
 
   size_t stage = 0;
 
+  // same as ready_prereqs converted to a vector of cudaGraphNode_t
   ::std::vector<cudaGraphNode_t> ready_dependencies;
 
   // If we are building our graph by hand

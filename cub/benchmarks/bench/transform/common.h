@@ -26,8 +26,7 @@
 #include <nvbench_helper.cuh>
 
 #if !TUNE_BASE
-// TODO(bgruber): can we get by without the base class?
-struct policy_selector : cub::detail::transform::tuning<policy_selector>
+struct policy_selector
 {
   _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::transform::transform_policy
   {

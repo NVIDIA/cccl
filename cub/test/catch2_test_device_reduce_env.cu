@@ -17,6 +17,8 @@ struct stream_registry_factory_t;
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_reduce_sum);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_reduce);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -105,7 +107,7 @@ TEST_CASE("Device sum works with default environment", "[reduce][device]")
 }
 
 template <int BlockThreads>
-struct reduce_tuning : cub::detail::reduce::tuning<reduce_tuning<BlockThreads>>
+struct reduce_tuning
 {
   _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::detail::reduce::reduce_policy
   {
@@ -115,20 +117,16 @@ struct reduce_tuning : cub::detail::reduce::tuning<reduce_tuning<BlockThreads>>
   }
 };
 
-struct get_scan_tuning_query_t
+struct unrelated_policy
 {};
 
-struct scan_tuning
+struct unrelated_tuning
 {
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const get_scan_tuning_query_t&) const noexcept
+  // should never be called
+  auto operator()(cuda::arch_id /*arch*/) const -> unrelated_policy
   {
-    return *this;
+    throw 1337;
   }
-
-  // Make sure this is not used
-  template <class /* AccumT */, class /* Offset */, class /* OpT */>
-  struct fn
-  {};
 };
 
 using block_sizes = c2h::type_list<cuda::std::integral_constant<int, 32>, cuda::std::integral_constant<int, 64>>;
@@ -143,8 +141,8 @@ C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
   auto d_in      = cuda::constant_iterator(1);
   auto d_out     = thrust::device_vector<int>(1);
 
-  // We are expecting that `scan_tuning` is ignored
-  auto env = cuda::execution::__tune(reduce_tuning<target_block_size>{}, scan_tuning{});
+  // We are expecting that `unrelated_tuning` is ignored
+  auto env = cuda::execution::__tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
 
   REQUIRE(cudaSuccess == cub::DeviceReduce::Reduce(d_in, d_out.begin(), num_items, block_size_check, 0, env));
   REQUIRE(d_out[0] == num_items);
@@ -159,8 +157,8 @@ C2H_TEST("Device sum can be tuned", "[reduce][device]", block_sizes)
   auto d_in      = cuda::constant_iterator(1);
   auto d_out     = thrust::device_vector<int>(1);
 
-  // We are expecting that `scan_tuning` is ignored
-  auto env = cuda::execution::__tune(reduce_tuning<target_block_size>{}, scan_tuning{});
+  // We are expecting that `unrelated_tuning` is ignored
+  auto env = cuda::execution::__tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
 
   REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(d_in, d_out.begin(), num_items, env));
   REQUIRE(d_out[0] == num_items);
@@ -408,4 +406,121 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
   device_reduce_sum(d_in, d_out.begin(), num_items, env);
 
   REQUIRE(d_out[0] == num_items);
+}
+
+#if TEST_LAUNCH == 0
+
+TEST_CASE("Device TransformReduce works with default environment", "[reduce][device]")
+{
+  auto d_in  = c2h::device_vector<int>{1, 2, 3, 4};
+  auto d_out = thrust::device_vector<int>(1);
+
+  auto negate = cuda::std::negate<int>{};
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceReduce::TransformReduce(
+            d_in.begin(), d_out.begin(), static_cast<int>(d_in.size()), cuda::std::plus<int>{}, negate, 0));
+
+  REQUIRE(d_out[0] == -10);
+}
+
+TEST_CASE("Device ReduceByKey works with default environment", "[reduce][device]")
+{
+  auto d_keys_in        = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto d_values_in      = c2h::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
+  auto d_unique_out     = c2h::device_vector<int>(8);
+  auto d_aggregates_out = c2h::device_vector<int>(8);
+  auto d_num_runs_out   = c2h::device_vector<int>(1);
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceReduce::ReduceByKey(
+      d_keys_in.begin(),
+      d_unique_out.begin(),
+      d_values_in.begin(),
+      d_aggregates_out.begin(),
+      d_num_runs_out.begin(),
+      cuda::minimum<int>{},
+      static_cast<int>(d_keys_in.size())));
+
+  REQUIRE(d_num_runs_out[0] == 5);
+  c2h::device_vector<int> expected_keys{0, 2, 9, 5, 8};
+  c2h::device_vector<int> expected_aggregates{0, 1, 6, 2, 4};
+  d_unique_out.resize(5);
+  d_aggregates_out.resize(5);
+  REQUIRE(d_unique_out == expected_keys);
+  REQUIRE(d_aggregates_out == expected_aggregates);
+}
+
+#endif
+
+C2H_TEST("Device TransformReduce uses environment", "[reduce][device]")
+{
+  auto d_in  = c2h::device_vector<int>{1, 2, 3, 4};
+  auto d_out = thrust::device_vector<int>(1);
+
+  auto negate = cuda::std::negate<int>{};
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceReduce::TransformReduce(
+      nullptr,
+      expected_bytes_allocated,
+      d_in.begin(),
+      d_out.begin(),
+      static_cast<int>(d_in.size()),
+      cuda::std::plus<int>{},
+      negate,
+      0));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_transform_reduce(
+    d_in.begin(), d_out.begin(), static_cast<int>(d_in.size()), cuda::std::plus<int>{}, negate, 0, env);
+
+  REQUIRE(d_out[0] == -10);
+}
+
+C2H_TEST("Device ReduceByKey uses environment", "[reduce][device]")
+{
+  auto d_keys_in        = c2h::device_vector<int>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto d_values_in      = c2h::device_vector<int>{0, 7, 1, 6, 2, 5, 3, 4};
+  auto d_unique_out     = c2h::device_vector<int>(8);
+  auto d_aggregates_out = c2h::device_vector<int>(8);
+  auto d_num_runs_out   = c2h::device_vector<int>(1);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceReduce::ReduceByKey(
+      nullptr,
+      expected_bytes_allocated,
+      d_keys_in.begin(),
+      d_unique_out.begin(),
+      d_values_in.begin(),
+      d_aggregates_out.begin(),
+      d_num_runs_out.begin(),
+      cuda::minimum<int>{},
+      static_cast<int>(d_keys_in.size())));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_reduce_by_key(
+    d_keys_in.begin(),
+    d_unique_out.begin(),
+    d_values_in.begin(),
+    d_aggregates_out.begin(),
+    d_num_runs_out.begin(),
+    cuda::minimum<int>{},
+    static_cast<int>(d_keys_in.size()),
+    env);
+
+  REQUIRE(d_num_runs_out[0] == 5);
+  c2h::device_vector<int> expected_keys{0, 2, 9, 5, 8};
+  c2h::device_vector<int> expected_aggregates{0, 1, 6, 2, 4};
+  d_unique_out.resize(5);
+  d_aggregates_out.resize(5);
+  REQUIRE(d_unique_out == expected_keys);
+  REQUIRE(d_aggregates_out == expected_aggregates);
 }
