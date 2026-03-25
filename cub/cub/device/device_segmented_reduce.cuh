@@ -104,7 +104,6 @@ private:
     using requested_determinism_t =
       ::cuda::std::execution::__query_result_or_t<requirements_t,
                                                   ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::not_guaranteed_t,
                                                   ::cuda::execution::determinism::run_to_run_t>;
 
     static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
@@ -121,6 +120,7 @@ private:
             ::cuda::std::execution::__query_result_or_t<decltype(tuning),
                                                         detail::segmented_reduce::get_tuning_query_t,
                                                         default_policy_selector_t>;
+          // TODO: in most cases we can just take the default AccumT and OffsetT. Refactor this
           return detail::segmented_reduce::dispatch<AccumT, OffsetT>(
             d_temp_storage,
             temp_storage_bytes,
