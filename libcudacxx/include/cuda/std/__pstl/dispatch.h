@@ -75,7 +75,7 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 //! @brief Top layer dispatcher that returns a concrete dispatch if possible
 template <__pstl_algorithm _Algorithm, class _Policy>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __pstl_select_dispatch() noexcept
+[[nodiscard]] _CCCL_HOST_API _CCCL_CONSTEVAL auto __pstl_select_dispatch() noexcept
 {
   // First extract the desired backend from the policy
   constexpr __execution_backend __backend = _Policy::__get_backend();

@@ -63,8 +63,25 @@ template <uint32_t _Policy>
 inline constexpr __execution_backend __policy_to_execution_backend =
   __execution_backend{(_Policy & uint32_t{0x0000FF00}) >> 8};
 
-template <uint32_t _Policy, __execution_backend _Backend = __policy_to_execution_backend<_Policy>>
+template <uint32_t _Policy, class... _Envs>
 struct __execution_policy_base;
+
+//! @brief Sets the execution backend to cuda
+template <uint32_t _Policy, __execution_backend _Backend>
+[[nodiscard]] _CCCL_API constexpr uint32_t __with_backend() noexcept
+{
+  constexpr uint32_t __backend_mask{0xFFFF00FF};
+  constexpr uint32_t __new_policy = (_Policy & __backend_mask) | (static_cast<uint32_t>(_Backend) << 8);
+  return __new_policy;
+}
+
+//! @brief Checks whether a policy supports the cuda backend
+template <uint32_t _Policy, __execution_backend _Backend>
+[[nodiscard]] _CCCL_API constexpr bool __has_backend() noexcept
+{
+  constexpr uint32_t __backend_mask{0xFFFF00FF};
+  return (_Policy & __backend_mask) & (static_cast<uint32_t>(_Backend) << 8);
+}
 
 _CCCL_END_NAMESPACE_CUDA_STD_EXECUTION
 

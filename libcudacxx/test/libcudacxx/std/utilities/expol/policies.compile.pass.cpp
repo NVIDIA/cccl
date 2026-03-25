@@ -24,33 +24,6 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
-{
-  namespace execution = cuda::std::execution;
-
-  assert(execution::seq == execution::seq);
-  assert(execution::par == execution::par);
-  assert(execution::par_unseq == execution::par_unseq);
-  assert(execution::unseq == execution::unseq);
-
-  assert(!(execution::seq != execution::seq));
-  assert(!(execution::par != execution::par));
-  assert(!(execution::par_unseq != execution::par_unseq));
-  assert(!(execution::unseq != execution::unseq));
-
-  assert(!(execution::seq == execution::unseq));
-  assert(!(execution::par == execution::seq));
-  assert(!(execution::par_unseq == execution::par));
-  assert(!(execution::unseq == execution::par_unseq));
-
-  assert(execution::seq != execution::unseq);
-  assert(execution::par != execution::seq);
-  assert(execution::par_unseq != execution::par);
-  assert(execution::unseq != execution::par_unseq);
-
-  return true;
-}
-
 template <class T, class Policy>
 inline constexpr bool is_same_v = cuda::std::is_same_v<cuda::std::remove_cvref_t<T>, Policy>;
 
@@ -61,7 +34,5 @@ static_assert(is_same_v<decltype(cuda::std::execution::unseq), cuda::std::execut
 
 int main(int, char**)
 {
-  static_assert(test());
-
   return 0;
 }

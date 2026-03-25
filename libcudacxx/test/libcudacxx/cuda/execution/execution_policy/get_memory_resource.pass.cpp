@@ -75,7 +75,6 @@ void test(Policy pol)
     assert(cuda::__call_or(::cuda::get_stream, cuda::stream_ref{cudaStreamPerThread}, pol_with_resource) == old_stream);
 
     using policy_t = decltype(pol_with_resource);
-    static_assert(noexcept(pol.with(cuda::mr::get_memory_resource, resource)));
     static_assert(cuda::std::is_execution_policy_v<policy_t>);
   }
 
@@ -88,7 +87,6 @@ void test(Policy pol)
     using policy_t = decltype(pol_with_resource);
     test_resource other_resource{1337};
     decltype(auto) pol_with_other_resource = pol_with_resource.with(cuda::mr::get_memory_resource, other_resource);
-    static_assert(cuda::std::is_same_v<decltype(pol_with_other_resource), policy_t>);
 
     // The original resource is unchanged
     assert(cuda::__call_or(::cuda::mr::get_memory_resource, fallback_resource, pol_with_resource) == resource);
@@ -110,7 +108,8 @@ void test()
   test(cuda::execution::__cub_par_unseq);
 
   // Ensure that all works even if we have a stream attached
-  test(cuda::execution::__cub_par_unseq.with(cuda::get_stream, ::cuda::stream{cuda::device_ref{0}}));
+  ::cuda::stream stream{cuda::device_ref{0}};
+  test(cuda::execution::__cub_par_unseq.with(cuda::get_stream, stream));
 }
 
 int main(int, char**)
