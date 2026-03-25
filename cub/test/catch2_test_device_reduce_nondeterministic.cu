@@ -34,13 +34,15 @@ struct custom_policy_selector
 {
   _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> cub::detail::reduce::reduce_policy
   {
-    auto rp = cub::detail::reduce::agent_reduce_policy{
+    const auto rp = cub::detail::reduce::agent_reduce_policy{
       BlockSize,
       ItemsPerThread,
       4,
-      cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
+      cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS,
       cub::CacheLoadModifier::LOAD_DEFAULT};
-    return {rp, rp, rp};
+    auto rp_nd            = rp;
+    rp_nd.block_algorithm = cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
+    return {rp, rp, rp_nd};
   }
 };
 
@@ -95,6 +97,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 
   const int num_items = GENERATE_COPY(values({0, 1, 20, 100, 2000, 1 << 20}));
 
+  // TODO(bgruber): not using cuda::std::plus falls back to run_to_run determinism. Is this intended?
   constexpr auto min_op = cuda::minimum<type>{};
   constexpr auto init   = cuda::std::numeric_limits<type>::max();
 
