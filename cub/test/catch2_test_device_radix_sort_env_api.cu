@@ -407,8 +407,8 @@ C2H_TEST("cub::DeviceRadixSort::SortKeys DB decomposer env-based API", "[radix_s
   auto error =
     cub::DeviceRadixSort::SortKeys(d_keys, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, stream_ref);
 
-    // example-end radix-sort-keys-db-decomposer-env
-    stream.sync();
+  // example-end radix-sort-keys-db-decomposer-env
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   thrust::device_vector<custom_key_t> expected{{0}, {3}, {5}, {6}, {7}, {8}, {9}};
