@@ -96,6 +96,7 @@ public:
   void deallocate(
     backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
+    (void) ctx;
     ::std::lock_guard<::std::mutex> g(allocator_mutex);
     // We do not call the deallocate method of the root allocator, we discard buffers instead
     free_cache[memory_node].emplace(sz, alloc_cache_entry{ptr, prereqs});
@@ -280,6 +281,7 @@ public:
   void deallocate(
     backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
+    (void) ctx;
     ::std::lock_guard<::std::mutex> g(allocator_mutex);
     // We do not call the deallocate method of the root allocator, we discard buffers instead.
     // Note that we do not need to keep track of the "large buffer" from which this originated
