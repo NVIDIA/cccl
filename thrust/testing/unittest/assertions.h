@@ -25,11 +25,11 @@ auto promote(const T1& a, const T2& b)
                 && cuda::std::is_arithmetic_v<cuda::std::decay_t<T2>>)
   {
     using common_t = cuda::std::common_type_t<cuda::std::decay_t<T1>, cuda::std::decay_t<T2>>;
-    return std::pair<common_t, common_t>{static_cast<common_t>(a), static_cast<common_t>(b)};
+    return cuda::std::pair{static_cast<common_t>(a), static_cast<common_t>(b)};
   }
   else
   {
-    return std::pair<const T1&, const T2&>{a, b};
+    return cuda::std::pair{a, b};
   }
 }
 } // namespace unittest::detail
