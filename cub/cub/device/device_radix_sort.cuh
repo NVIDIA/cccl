@@ -32,8 +32,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::radix_sort
-{
 //! @rst
 //! DeviceRadixSort provides device-wide, parallel operations for
 //! computing a radix sort across a sequence of data items residing
