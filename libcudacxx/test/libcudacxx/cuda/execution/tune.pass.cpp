@@ -42,13 +42,14 @@ __host__ __device__ void test()
   constexpr int nominal_block_threads = 256;
   constexpr int block_threads         = nominal_block_threads / sizeof(int);
 
-  using env_t           = decltype(cuda::execution::__tune(reduce<nominal_block_threads, int>{}, scan_tuning{}));
+  using env_t =
+    decltype(cuda::execution::__tune(reduce_policy_selector<nominal_block_threads, int>{}, scan_policy_selector{}));
   using tuning_t        = cuda::std::execution::__query_result_t<env_t, cuda::execution::__get_tuning_t>;
   using reduce_policy_t = cuda::std::execution::__query_result_t<tuning_t, reduce_policy>;
   using scan_policy_t   = cuda::std::execution::__query_result_t<tuning_t, scan_policy>;
 
-  static_assert(reduce_policy_t{}(cuda::arch_id::sm_75). : block_threads == block_threads);
-  static_assert(scan_policy_t{}(cuda::arch_id::sm_75). : block_threads == 1);
+  static_assert(reduce_policy_t{}(cuda::arch_id::sm_75).block_threads == block_threads);
+  static_assert(scan_policy_t{}(cuda::arch_id::sm_75).block_threads == 1);
 }
 
 int main(int, char**)
