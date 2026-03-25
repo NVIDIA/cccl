@@ -1082,6 +1082,7 @@ struct policy_selector
   int key_size;
   int value_size;
   int accum_size;
+  type_t value_type;
   type_t accum_type;
   op_kind_t operation_t;
   bool accum_is_primitive_or_trivially_copy_constructible;
@@ -1089,11 +1090,15 @@ struct policy_selector
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_by_key_policy
   {
     const primitive_accum primitive_accum_t =
-      accum_type != type_t::other && accum_type != type_t::int128 && accum_type != type_t::uint128
+      value_type != type_t::other && value_type != type_t::int128 && value_type != type_t::uint128
         ? primitive_accum::yes
         : primitive_accum::no;
     const primitive_op primitive_op_t = operation_t != op_kind_t::other ? primitive_op::yes : primitive_op::no;
-    const auto default_delay = default_delay_constructor_policy(accum_is_primitive_or_trivially_copy_constructible);
+    const auto default_delay          = default_reduce_by_key_delay_constructor_policy(
+      key_size,
+      accum_size,
+      accum_is_primitive_or_trivially_copy_constructible,
+      accum_is_primitive_or_trivially_copy_constructible);
 
     const int max_input_bytes      = (::cuda::std::max) (key_size, accum_size);
     const int combined_input_bytes = key_size + accum_size;
@@ -1102,6 +1107,11 @@ struct policy_selector
       max_input_bytes <= 8
         ? 9
         : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 9, combined_input_bytes);
+
+    const auto policy500_items =
+      max_input_bytes <= 8
+        ? 6
+        : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 6, combined_input_bytes);
 
     if (arch >= ::cuda::arch_id::sm_100)
     {
@@ -1336,14 +1346,6 @@ struct policy_selector
             break;
         }
       }
-
-      return {256,
-              default_items,
-              BLOCK_LOAD_WARP_TRANSPOSE,
-              LOAD_DEFAULT,
-              BLOCK_SCAN_WARP_SCANS,
-              BLOCK_STORE_WARP_TRANSPOSE,
-              default_delay};
     }
 
     if (arch >= ::cuda::arch_id::sm_90)
@@ -1706,14 +1708,6 @@ struct policy_selector
             break;
         }
       }
-
-      return {256,
-              default_items,
-              BLOCK_LOAD_WARP_TRANSPOSE,
-              LOAD_CA,
-              BLOCK_SCAN_WARP_SCANS,
-              BLOCK_STORE_WARP_TRANSPOSE,
-              default_delay};
     }
 
     if (arch >= ::cuda::arch_id::sm_86)
@@ -2108,8 +2102,8 @@ struct policy_selector
               default_delay};
     }
 
-    return {256,
-            default_items,
+    return {128,
+            policy500_items,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_CA,
             BLOCK_SCAN_WARP_SCANS,
@@ -2127,6 +2121,7 @@ struct policy_selector_from_types
       static_cast<int>(sizeof(KeyT)),
       static_cast<int>(sizeof(ValueT)),
       static_cast<int>(sizeof(AccumT)),
+      classify_type<ValueT>,
       classify_type<AccumT>,
       classify_op<ScanOpT>,
       is_primitive<AccumT>::value || ::cuda::std::is_trivially_copy_constructible_v<AccumT>}(arch);
