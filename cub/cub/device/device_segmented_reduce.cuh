@@ -104,6 +104,7 @@ private:
     using requested_determinism_t =
       ::cuda::std::execution::__query_result_or_t<requirements_t,
                                                   ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::not_guaranteed_t,
                                                   ::cuda::execution::determinism::run_to_run_t>;
 
     static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
