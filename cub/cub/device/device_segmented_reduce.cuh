@@ -169,7 +169,7 @@ public:
   //!
   //! The code snippet below illustrates a custom min-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-reduce
@@ -298,20 +298,20 @@ public:
   //!   overlap ``[d_in + d_begin_offsets[s], d_in + d_end_offsets[s])``,
   //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
   //!   ``[d_end_offsets, d_end_offsets + num_segments)``.
-  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates a custom min-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-reduce-env
   //!     :end-before: example-end segmented-reduce-reduce-env
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-reduce-env-determinism
@@ -420,7 +420,7 @@ public:
   //!
   //! The code snippet below illustrates a custom min-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin fixed-size-segmented-reduce-reduce
@@ -516,7 +516,7 @@ public:
   //!
   //! The code snippet below illustrates the sum reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-sum
@@ -628,7 +628,7 @@ public:
   //!   overlap ``[d_in + d_begin_offsets[s], d_in + d_end_offsets[s])``,
   //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
   //!   ``[d_end_offsets, d_end_offsets + num_segments)``.
-  //! - Can use a specific stream or cuda memory resource through the `env` parameter
+  //! - Can use a specific stream or cuda memory resource through the `env` parameter.
   //! - @devicestorage
   //!
   //! Snippet
@@ -636,7 +636,7 @@ public:
   //!
   //! The code snippet below illustrates the sum reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-sum-env
@@ -728,7 +728,7 @@ public:
   //!
   //! The code snippet below illustrates the sum reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin fixed-size-segmented-reduce-sum
@@ -819,13 +819,13 @@ public:
   //!
   //! The code snippet below illustrates the min-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-custommin
   //!     :end-before: example-end segmented-reduce-custommin
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-min
@@ -939,14 +939,14 @@ public:
   //!   overlap ``[d_in + d_begin_offsets[s], d_in + d_end_offsets[s])``,
   //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
   //!   ``[d_end_offsets, d_end_offsets + num_segments)``.
-  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the min-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-min-env
@@ -1038,13 +1038,13 @@ public:
   //!
   //! The code snippet below illustrates the min-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-custommin
   //!     :end-before: example-end segmented-reduce-custommin
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin fixed-size-segmented-reduce-min
@@ -1145,7 +1145,7 @@ public:
   //!
   //! The code snippet below illustrates the argmin-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-argmin
@@ -1290,14 +1290,14 @@ public:
   //!   overlap ``[d_in + d_begin_offsets[s], d_in + d_end_offsets[s])``,
   //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
   //!   ``[d_end_offsets, d_end_offsets + num_segments)``.
-  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the argmin-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-argmin-env
@@ -1408,7 +1408,7 @@ public:
   //!
   //! The code snippet below illustrates the argmin-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin fixed-size-segmented-reduce-argmin
@@ -1530,7 +1530,7 @@ public:
   //!
   //! The code snippet below illustrates the max-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-max
@@ -1645,14 +1645,14 @@ public:
   //!   overlap ``[d_in + d_begin_offsets[s], d_in + d_end_offsets[s])``,
   //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
   //!   ``[d_end_offsets, d_end_offsets + num_segments)``.
-  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the max-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-max-env
@@ -1751,7 +1751,7 @@ public:
   //!
   //! The code snippet below illustrates the max-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin fixed-size-segmented-reduce-max
@@ -1853,7 +1853,7 @@ public:
   //! The code snippet below illustrates the argmax-reduction of a device vector
   //! of `int` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-argmax
@@ -2000,14 +2000,14 @@ public:
   //!   overlap ``[d_in + d_begin_offsets[s], d_in + d_end_offsets[s])``,
   //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
   //!   ``[d_end_offsets, d_end_offsets + num_segments)``.
-  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the argmax-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-argmax-env
@@ -2119,7 +2119,7 @@ public:
   //! The code snippet below illustrates the argmax-reduction of a device vector
   //! of `int` data elements.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin fixed-size-segmented-reduce-argmax
