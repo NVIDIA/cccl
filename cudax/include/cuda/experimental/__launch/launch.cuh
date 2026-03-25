@@ -463,11 +463,14 @@ _CCCL_API constexpr auto launch(kernel_config<_Dimensions, _Config...> __config,
   return {{}, {_CCCL_MOVE(__config), _CCCL_MOVE(__fn), _CCCL_MOVE(__args)...}};
 }
 
+// Hide from Doxygen — uses internal __kernel_t::__sndr_t types excluded by EXCLUDE_SYMBOLS.
+#ifndef _CCCL_DOXYGEN_INVOKED
 namespace execution
 {
 template <class _Config, class _Fn, class... _Args>
 inline constexpr int structured_binding_size<__kernel_t::__sndr_t<_Config, _Fn, _Args...>> = 2;
 } // namespace execution
+#endif // !_CCCL_DOXYGEN_INVOKED
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
