@@ -32,6 +32,9 @@ _BREATHE_SKIP_SYMBOLS = frozenset(
         # cuda::has_property — variable template with _CCCL_REQUIRES_EXPR
         # containing a const keyword inside the expression body.
         "has_property",
+        # cuda::experimental::group — variable with complex type expression
+        # that Sphinx's C++ parser cannot handle.
+        "cuda::experimental::group",
     }
 )
 
