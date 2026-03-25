@@ -798,7 +798,7 @@ TEST_CASE("Device radix sort pairs DB decomposer with bits works with default en
 
   REQUIRE(cudaSuccess
           == cub::DeviceRadixSort::SortPairs(
-            d_keys, d_values, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, 0, sizeof(int) * 8));
+            d_keys, d_values, static_cast<int>(keys_buf0.size()), pairs_decomposer_t{}, 0, sizeof(int) * 8));
 
   auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
   c2h::host_vector<custom_pair_key_t> h_keys(keys);

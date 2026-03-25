@@ -461,7 +461,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending decomposer+bits env-based API
     keys_decomposer_t{},
     0,
     sizeof(int) * 8,
-    env);
+    stream_ref);
 
   // example-end radix-sort-keys-descending-decomposer-bits-env
   stream.sync();
@@ -569,7 +569,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending decomposer+bits env-based AP
     keys_decomposer_t{},
     0,
     sizeof(int) * 8,
-    env);
+    stream_ref);
 
   // example-end radix-sort-pairs-descending-decomposer-bits-env
   stream.sync();
@@ -602,7 +602,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending decomposer env-based API", "
     values_out.data().get(),
     static_cast<int>(keys_in.size()),
     keys_decomposer_t{},
-    env);
+    stream_ref);
 
   // example-end radix-sort-pairs-descending-decomposer-env
   stream.sync();
