@@ -955,16 +955,16 @@ public:
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::reduce::
-          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, int, ::cuda::std::plus<output_t>, output_t>::
-            Dispatch(d_temp_storage,
-                     temp_storage_bytes,
-                     d_in,
-                     d_out,
-                     num_segments,
-                     segment_size,
-                     ::cuda::std::plus<output_t>{},
-                     output_t{},
-                     stream);
+          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, int, ::cuda::std::plus<>, output_t>::Dispatch(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_in,
+            d_out,
+            num_segments,
+            segment_size,
+            ::cuda::std::plus<>{},
+            output_t{},
+            stream);
       });
   }
 
@@ -1359,16 +1359,16 @@ public:
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::reduce::
-          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, int, ::cuda::minimum<input_t>, input_t>::
-            Dispatch(d_temp_storage,
-                     temp_storage_bytes,
-                     d_in,
-                     d_out,
-                     num_segments,
-                     segment_size,
-                     ::cuda::minimum<input_t>{},
-                     ::cuda::std::numeric_limits<input_t>::max(),
-                     stream);
+          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, int, ::cuda::minimum<>, input_t>::Dispatch(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_in,
+            d_out,
+            num_segments,
+            segment_size,
+            ::cuda::minimum<>{},
+            ::cuda::std::numeric_limits<input_t>::max(),
+            stream);
       });
   }
 
@@ -2261,16 +2261,16 @@ public:
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::reduce::
-          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, int, ::cuda::maximum<input_t>, input_t>::
-            Dispatch(d_temp_storage,
-                     temp_storage_bytes,
-                     d_in,
-                     d_out,
-                     num_segments,
-                     segment_size,
-                     ::cuda::maximum<input_t>{},
-                     ::cuda::std::numeric_limits<input_t>::lowest(),
-                     stream);
+          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, int, ::cuda::maximum<>, input_t>::Dispatch(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_in,
+            d_out,
+            num_segments,
+            segment_size,
+            ::cuda::maximum<>{},
+            ::cuda::std::numeric_limits<input_t>::lowest(),
+            stream);
       });
   }
 
