@@ -1929,7 +1929,7 @@ public:
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>,
             typename ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairsDescending(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -2468,7 +2468,7 @@ public:
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>,
             typename ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairsDescending(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     NumItemsT num_items,
@@ -2828,7 +2828,7 @@ public:
             typename DecomposerT,
             typename EnvT = ::cuda::std::execution::env<>,
             typename ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairsDescending(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -2914,7 +2914,7 @@ public:
             typename DecomposerT,
             typename EnvT = ::cuda::std::execution::env<>,
             typename ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairsDescending(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -2996,7 +2996,7 @@ public:
             typename DecomposerT,
             typename EnvT = ::cuda::std::execution::env<>,
             typename ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairsDescending(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     NumItemsT num_items,
@@ -3076,7 +3076,7 @@ public:
             typename DecomposerT,
             typename EnvT = ::cuda::std::execution::env<>,
             typename ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairsDescending(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     NumItemsT num_items,
@@ -4613,7 +4613,7 @@ public:
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>,
             typename ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysDescending(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     NumItemsT num_items,
@@ -5109,7 +5109,7 @@ public:
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>,
             typename ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysDescending(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, int begin_bit = 0, int end_bit = sizeof(KeyT) * 8, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
@@ -5439,7 +5439,7 @@ public:
             typename DecomposerT,
             typename EnvT = ::cuda::std::execution::env<>,
             typename ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysDescending(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     NumItemsT num_items,
@@ -5518,7 +5518,7 @@ public:
             typename DecomposerT,
             typename EnvT = ::cuda::std::execution::env<>,
             typename ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysDescending(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, DecomposerT decomposer, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
@@ -5590,7 +5590,7 @@ public:
             typename DecomposerT,
             typename EnvT = ::cuda::std::execution::env<>,
             typename ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   SortKeysDescending(DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
@@ -5663,7 +5663,7 @@ public:
             typename DecomposerT,
             typename EnvT = ::cuda::std::execution::env<>,
             typename ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysDescending(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, int begin_bit, int end_bit, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
