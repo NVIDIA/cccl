@@ -448,7 +448,7 @@ public:
   //!
   //! Snippet
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_radix_sort_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_radix_sort_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-radix-sort-pairs-env
@@ -948,7 +948,7 @@ public:
   //!
   //! Snippet
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_radix_sort_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_radix_sort_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-radix-sort-pairs-descending-env
@@ -1423,7 +1423,7 @@ public:
   //!
   //! Snippet
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_radix_sort_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_radix_sort_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-radix-sort-keys-env
@@ -1880,7 +1880,7 @@ public:
   //!
   //! Snippet
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_radix_sort_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_radix_sort_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin segmented-radix-sort-keys-descending-env
