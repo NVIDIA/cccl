@@ -524,7 +524,7 @@ public:
             typename EndOffsetIteratorT,
             typename EnvT                                                        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairs(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -1048,7 +1048,7 @@ public:
             typename EndOffsetIteratorT,
             typename EnvT                                                        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairsDescending(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     const ValueT* d_values_in,
@@ -1530,7 +1530,7 @@ public:
             typename EndOffsetIteratorT,
             typename EnvT                                                        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeys(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     NumItemsT num_items,
@@ -2004,7 +2004,7 @@ public:
             typename EndOffsetIteratorT,
             typename EnvT                                                        = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysDescending(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     NumItemsT num_items,
