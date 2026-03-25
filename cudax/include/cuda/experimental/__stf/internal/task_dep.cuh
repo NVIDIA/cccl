@@ -318,9 +318,9 @@ public:
   }
 
   /**
-   * @brief Extracts physical data from this object to an `%::std::tuple<Data...>` object.
+   * @brief Extracts physical data from this object to a ``std::tuple<Data...>`` object.
    *
-   * @return %::std::tuple<Data...>
+   * @return ``std::tuple<Data...>``
    *
    * The physical data extracted is usable only after the dependencies have been satisfied.
    */
