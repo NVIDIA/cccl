@@ -11,7 +11,7 @@
 #include <cuda/std/type_traits>
 
 template <typename T>
-bool isclose(T a, T b, T r_tol, T a_tol)
+bool isclose(T a, T b, [[maybe_unused]] T r_tol, [[maybe_unused]] T a_tol)
 {
   if constexpr (cuda::is_floating_point_v<T>)
   {
