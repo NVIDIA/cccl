@@ -493,7 +493,6 @@ struct DispatchScan
     return cudaSuccess;
   }
 
-#if __cccl_ptx_isa >= 860
   // do check in separate function, so error message contains the required SMEM in the error novel
   template <int SMemSizeForSingleStage>
   CUB_RUNTIME_FUNCTION static void __check_smem()
@@ -505,6 +504,7 @@ struct DispatchScan
   template <typename PolicyGetter>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(PolicyGetter policy_getter)
   {
+#if __cccl_ptx_isa >= 860
     if (num_items == 0)
     {
       temp_storage_bytes = 1; // just fulfill the contract that CUB always requires some temporary storage
@@ -670,8 +670,11 @@ struct DispatchScan
     }
 
     return cudaSuccess;
-  }
+#else // __cccl_ptx_isa >= 860
+    static_assert(sizeof(policy_getter) == 0,
+                  "Implementation bug: Tuning policy selected warpspeed, but supported PTX ISA is too low");
 #endif // __cccl_ptx_isa >= 860
+  }
 
   template <typename PolicyGetter>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookback_algorithm(PolicyGetter policy_getter)
