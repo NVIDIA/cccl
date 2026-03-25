@@ -353,7 +353,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is `%::cuda::std::execution::env<>`.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -366,7 +366,7 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is `%::cuda::std::execution::env{}`.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
@@ -644,7 +644,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is `%::cuda::std::execution::env<>`.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -663,7 +663,7 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is `%::cuda::std::execution::env{}`.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
@@ -1603,7 +1603,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is `%::cuda::std::execution::env<>`.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -1619,7 +1619,7 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is `%::cuda::std::execution::env{}`.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
@@ -1678,7 +1678,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is `%::cuda::std::execution::env<>`.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -1698,7 +1698,7 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is `%::cuda::std::execution::env{}`.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
@@ -2407,7 +2407,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is `%::cuda::std::execution::env<>`.
   //!
   //! @param[in] d_keys_in
   //!   Random-access input iterator to the input sequence of key items
@@ -2427,7 +2427,7 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is `%::cuda::std::execution::env{}`.
   //!   @endrst
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
@@ -2530,7 +2530,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is `%::cuda::std::execution::env<>`.
   //!
   //! @param[in] d_keys_in
   //!   Random-access input iterator to the input sequence of key items
@@ -2557,7 +2557,7 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is `%::cuda::std::execution::env{}`.
   //!   @endrst
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
@@ -2652,7 +2652,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is `%::cuda::std::execution::env<>`.
   //!
   //! @param[in] d_keys_in
   //!   Random-access input iterator to the input sequence of key items
@@ -2672,7 +2672,7 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is `%::cuda::std::execution::env{}`.
   //!   @endrst
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
@@ -2767,7 +2767,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is `%::cuda::std::execution::env<>`.
   //!
   //! @param[in] d_keys_in
   //!   Random-access input iterator to the input sequence of key items
@@ -2790,7 +2790,7 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is `%::cuda::std::execution::env{}`.
   //!   @endrst
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
