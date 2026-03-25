@@ -3170,6 +3170,12 @@ public:
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
   //!     :language: c++
   //!     :dedent:
+  //!     :start-after: example-begin radix-sort-keys-custom-decomposer
+  //!     :end-before: example-end radix-sort-keys-custom-decomposer
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
   //!     :start-after: example-begin radix-sort-keys-decomposer-bits-env
   //!     :end-before: example-end radix-sort-keys-decomposer-bits-env
   //!
@@ -3378,6 +3384,12 @@ public:
   //!
   //! Snippet
   //! --------------------------------------------------
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-keys-custom-decomposer
+  //!     :end-before: example-end radix-sort-keys-custom-decomposer
   //!
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
   //!     :language: c++
@@ -3795,6 +3807,12 @@ public:
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
   //!     :language: c++
   //!     :dedent:
+  //!     :start-after: example-begin radix-sort-keys-custom-decomposer
+  //!     :end-before: example-end radix-sort-keys-custom-decomposer
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
   //!     :start-after: example-begin radix-sort-keys-db-decomposer-env
   //!     :end-before: example-end radix-sort-keys-db-decomposer-env
   //!
@@ -4002,6 +4020,12 @@ public:
   //!
   //! Snippet
   //! --------------------------------------------------
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-keys-custom-decomposer
+  //!     :end-before: example-end radix-sort-keys-custom-decomposer
   //!
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
   //!     :language: c++

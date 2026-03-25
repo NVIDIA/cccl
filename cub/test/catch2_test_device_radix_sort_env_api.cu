@@ -16,31 +16,36 @@
 
 #include <c2h/catch2_test_helper.h>
 
+// example-begin radix-sort-keys-custom-decomposer
 struct custom_key_t
 {
   int key;
 };
 
+struct keys_decomposer_t
+{
+  __host__ __device__ auto operator()(custom_key_t& k) const -> ::cuda::std::tuple<int&>
+  {
+    return {k.key};
+  }
+};
+// example-end radix-sort-keys-custom-decomposer
+
+// example-begin radix-sort-pairs-custom-decomposer
 struct custom_pair_key_t
 {
   int key;
   int payload;
 };
 
-// example-begin radix-sort-custom-decomposer
-struct custom_decomposer_t
+struct pairs_decomposer_t
 {
-  __host__ __device__ auto operator()(custom_key_t& k) const -> ::cuda::std::tuple<int&>
-  {
-    return {k.key};
-  }
-
   __host__ __device__ auto operator()(custom_pair_key_t& k) const -> ::cuda::std::tuple<int&>
   {
     return {k.key};
   }
 };
-// example-end radix-sort-custom-decomposer
+// example-end radix-sort-pairs-custom-decomposer
 
 C2H_TEST("cub::DeviceRadixSort::SortPairs env-based API", "[radix_sort][env]")
 {
@@ -205,7 +210,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs decomposer with bits env-based API", "
     values_in.data().get(),
     values_out.data().get(),
     static_cast<int>(keys_in.size()),
-    custom_decomposer_t{},
+    pairs_decomposer_t{},
     0,
     sizeof(int) * 8,
     stream_ref);
@@ -244,7 +249,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs decomposer env-based API", "[radix_sor
     values_in.data().get(),
     values_out.data().get(),
     static_cast<int>(keys_in.size()),
-    custom_decomposer_t{},
+    pairs_decomposer_t{},
     stream_ref);
   if (error != cudaSuccess)
   {
@@ -279,7 +284,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs DoubleBuffer decomposer env-based API"
   cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceRadixSort::SortPairs(
-    d_keys, d_values, static_cast<int>(keys_buf0.size()), custom_decomposer_t{}, stream_ref);
+    d_keys, d_values, static_cast<int>(keys_buf0.size()), pairs_decomposer_t{}, stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceRadixSort::SortPairs (DB decomposer) failed with status: " << error << std::endl;
@@ -315,7 +320,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs DoubleBuffer decomposer with bits env-
   cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceRadixSort::SortPairs(
-    d_keys, d_values, static_cast<int>(keys_buf0.size()), custom_decomposer_t{}, 0, sizeof(int) * 8, stream_ref);
+    d_keys, d_values, static_cast<int>(keys_buf0.size()), pairs_decomposer_t{}, 0, sizeof(int) * 8, stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceRadixSort::SortPairs (DB decomposer+bits) failed with status: " << error << std::endl;
@@ -349,7 +354,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeys decomposer+bits env-based API", "[radix
     keys_in.data().get(),
     keys_out.data().get(),
     static_cast<int>(keys_in.size()),
-    custom_decomposer_t{},
+    keys_decomposer_t{},
     0,
     sizeof(int) * 8,
     stream_ref);
@@ -375,7 +380,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeys decomposer env-based API", "[radix_sort
   cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceRadixSort::SortKeys(
-    keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size()), custom_decomposer_t{}, stream_ref);
+    keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size()), keys_decomposer_t{}, stream_ref);
 
   stream.sync();
   // example-end radix-sort-keys-decomposer-env
@@ -399,7 +404,8 @@ C2H_TEST("cub::DeviceRadixSort::SortKeys DB decomposer env-based API", "[radix_s
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
 
-  auto error = cub::DeviceRadixSort::SortKeys(d_keys, static_cast<int>(keys_buf0.size()), custom_decomposer_t{}, stream_ref);
+  auto error =
+    cub::DeviceRadixSort::SortKeys(d_keys, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, stream_ref);
 
   stream.sync();
   // example-end radix-sort-keys-db-decomposer-env
@@ -425,7 +431,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeys DB decomposer+bits env-based API", "[ra
   cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceRadixSort::SortKeys(
-    d_keys, static_cast<int>(keys_buf0.size()), custom_decomposer_t{}, 0, sizeof(int) * 8, stream_ref);
+    d_keys, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, 0, sizeof(int) * 8, stream_ref);
 
   stream.sync();
   // example-end radix-sort-keys-db-decomposer-bits-env
