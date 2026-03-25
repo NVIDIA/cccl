@@ -53,9 +53,7 @@ struct BlockHistogramAtomic
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_60,
-                   (atomicAdd_block(histogram + items[i], 1);),
-                   (atomicAdd(histogram + items[i], 1);));
+      atomicAdd_block(histogram + items[i], 1);
     }
   }
 };
