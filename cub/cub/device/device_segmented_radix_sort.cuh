@@ -443,6 +443,14 @@ public:
   //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
   //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
+  //! - Let ``in`` be one of ``{d_keys_in, d_values_in}`` and ``out`` be any of
+  //!   ``{d_keys_out, d_values_out}``. The range ``[out, out + num_items)`` shall
+  //!   not overlap ``[in, in + num_items)``,
+  //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
+  //!   ``[d_end_offsets, d_end_offsets + num_segments)`` in any way.
+  //! - Segments are not required to be contiguous. For all index values ``i``
+  //!   outside the specified segments ``d_keys_in[i]``, ``d_values_in[i]``,
+  //!   ``d_keys_out[i]``, ``d_values_out[i]`` will not be accessed nor modified.
   //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
   //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //!
@@ -938,35 +946,20 @@ public:
   //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When input a contiguous sequence of segments, a single sequence
-  //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
-  //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
-  //!   the latter is specified as ``segment_offsets + 1``).
-  //! - The sorting operation is given a pair of key buffers and a corresponding
-  //!   pair of associated value buffers. Each pair is managed by a DoubleBuffer
-  //!   structure that indicates which of the two buffers is "current" (and thus
-  //!   contains the input data to be sorted).
-  //! - The contents of both buffers within each pair may be altered by the sorting operation.
-  //! - Upon completion, the sorting operation will update the "current"
-  //!   indicator within each DoubleBuffer wrapper to reference which of the two
-  //!   buffers now contains the sorted output sequence (a function of the number
-  //!   of key bits specified and the targeted device architecture).
-  //! - When input a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased for both
   //!   the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where the latter is
   //!   specified as ``segment_offsets + 1``).
   //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
   //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
-  //! - Let ``cur`` be one of ``{d_keys.Current(), d_values.Current()}`` and ``alt``
-  //!   be any of ``{d_keys.Alternate(), d_values.Alternate()}``. The range
-  //!   ``[cur, cur + num_items)`` shall not overlap
-  //!   ``[alt, alt + num_items)``. Both ranges shall not overlap
+  //! - Let ``in`` be one of ``{d_keys_in, d_values_in}`` and ``out`` be any of
+  //!   ``{d_keys_out, d_values_out}``. The range ``[out, out + num_items)`` shall
+  //!   not overlap ``[in, in + num_items)``,
   //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
   //!   ``[d_end_offsets, d_end_offsets + num_segments)`` in any way.
   //! - Segments are not required to be contiguous. For all index values ``i``
-  //!   outside the specified segments ``d_keys.Current()[i]``,
-  //!   ``d_values.Current()[i]``, ``d_keys.Alternate()[i]``,
-  //!   ``d_values.Alternate()[i]`` will not be accessed nor modified.
+  //!   outside the specified segments ``d_keys_in[i]``, ``d_values_in[i]``,
+  //!   ``d_keys_out[i]``, ``d_values_out[i]`` will not be accessed nor modified.
   //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
   //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //!
@@ -1436,29 +1429,20 @@ public:
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! - The contents of the input data are not altered by the sorting operation.
-  //! - The sorting operation is given a pair of key buffers managed by a
-  //!   DoubleBuffer structure that indicates which of the two buffers is
-  //!   "current" (and thus contains the input data to be sorted).
-  //! - The contents of both buffers may be altered by the sorting operation.
-  //! - Upon completion, the sorting operation will update the "current"
-  //!   indicator within the DoubleBuffer wrapper to reference which of the two
-  //!   buffers now contains the sorted output sequence (a function of the
-  //!   number of key bits specified and the targeted device architecture).
   //! - When input a contiguous sequence of segments, a single sequence
-  //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
-  //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
-  //!   the latter is specified as ``segment_offsets + 1``).
+  //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased for both
+  //!   the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where the latter
+  //!   is specified as ``segment_offsets + 1``).
   //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
   //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
-  //! - Let ``cur = d_keys.Current()`` and ``alt = d_keys.Alternate()``.
-  //!   The range ``[cur, cur + num_items)`` shall not overlap
-  //!   ``[alt, alt + num_items)``. Both ranges shall not overlap
+  //! - The range ``[d_keys_out, d_keys_out + num_items)`` shall not overlap
+  //!   ``[d_keys_in, d_keys_in + num_items)``,
   //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
   //!   ``[d_end_offsets, d_end_offsets + num_segments)`` in any way.
   //! - Segments are not required to be contiguous. For all index values ``i``
-  //!   outside the specified segments ``d_keys.Current()[i]``,
-  //!   ``d_keys[i].Alternate()[i]`` will not be accessed nor modified.
+  //!   outside the specified segments ``d_keys_in[i]``, ``d_keys_out[i]`` will not
+  //!   be accessed nor modified.
   //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
   //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //!
@@ -1910,29 +1894,20 @@ public:
   //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! - The contents of the input data are not altered by the sorting operation.
-  //! - The sorting operation is given a pair of key buffers managed by a
-  //!   DoubleBuffer structure that indicates which of the two buffers is
-  //!   "current" (and thus contains the input data to be sorted).
-  //! - The contents of both buffers may be altered by the sorting operation.
-  //! - Upon completion, the sorting operation will update the "current"
-  //!   indicator within the DoubleBuffer wrapper to reference which of the two
-  //!   buffers now contains the sorted output sequence (a function of the
-  //!   number of key bits specified and the targeted device architecture).
   //! - When input a contiguous sequence of segments, a single sequence
-  //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
-  //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
-  //!   the latter is specified as ``segment_offsets + 1``).
+  //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased for both
+  //!   the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where the latter
+  //!   is specified as ``segment_offsets + 1``).
   //! - An optional bit subrange ``[begin_bit, end_bit)`` of differentiating key
   //!   bits can be specified. This can reduce overall sorting overhead and
   //!   yield a corresponding performance improvement.
-  //! - Let ``cur = d_keys.Current()`` and ``alt = d_keys.Alternate()``.
-  //!   The range ``[cur, cur + num_items)`` shall not overlap
-  //!   ``[alt, alt + num_items)``. Both ranges shall not overlap
+  //! - The range ``[d_keys_out, d_keys_out + num_items)`` shall not overlap
+  //!   ``[d_keys_in, d_keys_in + num_items)``,
   //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
   //!   ``[d_end_offsets, d_end_offsets + num_segments)`` in any way.
   //! - Segments are not required to be contiguous. For all index values ``i``
-  //!   outside the specified segments ``d_keys.Current()[i]``,
-  //!   ``d_keys[i].Alternate()[i]`` will not be accessed nor modified.
+  //!   outside the specified segments ``d_keys_in[i]``, ``d_keys_out[i]`` will not
+  //!   be accessed nor modified.
   //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
   //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //!
