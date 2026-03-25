@@ -48,17 +48,6 @@ At a high level, the header provides:
      - Adapter that enables synchronous resources to work with streams.
      - stable CCCL 3.2.0 / CUDA 13.2, experimental CCCL 2.2.0 / CUDA 12.3
 
-.. _libcudacxx-memory-resource-any-resource:
-.. _libcudacxx-memory-resource-any-async-resource:
-
-Type-erased owning resources
-----------------------------
-
-``any_synchronous_resource`` and ``any_resource`` are owning, type-erased wrappers around synchronous and asynchronous
-memory resources, respectively. They store the wrapped resource by value and are useful for APIs and containers that
-need to manage resource lifetimes while still enforcing the :ref:`resource concepts
-<libcudacxx-extended-api-memory-resources-resource>`.
-
 These features are an evolution of `std::pmr::memory_resource <https://en.cppreference.com/w/cpp/header/memory_resource>`__
 that was introduced in C++17. While ``std::pmr::memory_resource`` provides a polymorphic memory resource that can be
 adopted through inheritance, it is not properly suited for heterogeneous systems.

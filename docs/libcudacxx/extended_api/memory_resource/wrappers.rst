@@ -1,6 +1,8 @@
 .. _libcudacxx-extended-api-memory-resources-wrappers:
 .. _libcudacxx-extended-api-memory-resources-resource-ref:
 .. _cccl-runtime-memory-resource-resource-ref:
+.. _libcudacxx-memory-resource-any-resource:
+.. _libcudacxx-memory-resource-any-async-resource:
 
 Type-erased resource wrappers
 -----------------------------
