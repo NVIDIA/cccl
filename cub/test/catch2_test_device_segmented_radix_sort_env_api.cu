@@ -32,12 +32,12 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairs env with stream", "[segmented
     thrust::raw_pointer_cast(keys_out.data()),
     thrust::raw_pointer_cast(values_in.data()),
     thrust::raw_pointer_cast(values_out.data()),
-    static_cast<int>(keys_in.size()),
-    3,
+    static_cast<cuda::std::int64_t>(keys_in.size()),
+    cuda::std::int64_t{3},
     offsets.begin(),
     offsets.begin() + 1,
     0,
-    sizeof(int) * 8,
+    static_cast<int>(sizeof(int) * 8),
     env);
   if (error != cudaSuccess)
   {
@@ -71,12 +71,12 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairsDescending env with stream", "
     thrust::raw_pointer_cast(keys_out.data()),
     thrust::raw_pointer_cast(values_in.data()),
     thrust::raw_pointer_cast(values_out.data()),
-    static_cast<int>(keys_in.size()),
-    3,
+    static_cast<cuda::std::int64_t>(keys_in.size()),
+    cuda::std::int64_t{3},
     offsets.begin(),
     offsets.begin() + 1,
     0,
-    sizeof(int) * 8,
+    static_cast<int>(sizeof(int) * 8),
     env);
   if (error != cudaSuccess)
   {
@@ -106,12 +106,12 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys env with stream", "[segmented_
   auto error = cub::DeviceSegmentedRadixSort::SortKeys(
     thrust::raw_pointer_cast(keys_in.data()),
     thrust::raw_pointer_cast(keys_out.data()),
-    static_cast<int>(keys_in.size()),
-    3,
+    static_cast<cuda::std::int64_t>(keys_in.size()),
+    cuda::std::int64_t{3},
     offsets.begin(),
     offsets.begin() + 1,
     0,
-    sizeof(int) * 8,
+    static_cast<int>(sizeof(int) * 8),
     env);
   if (error != cudaSuccess)
   {
@@ -139,12 +139,12 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeysDescending env with stream", "[
   auto error = cub::DeviceSegmentedRadixSort::SortKeysDescending(
     thrust::raw_pointer_cast(keys_in.data()),
     thrust::raw_pointer_cast(keys_out.data()),
-    static_cast<int>(keys_in.size()),
-    3,
+    static_cast<cuda::std::int64_t>(keys_in.size()),
+    cuda::std::int64_t{3},
     offsets.begin(),
     offsets.begin() + 1,
     0,
-    sizeof(int) * 8,
+    static_cast<int>(sizeof(int) * 8),
     env);
   if (error != cudaSuccess)
   {
