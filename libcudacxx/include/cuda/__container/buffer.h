@@ -509,8 +509,6 @@ public:
   }
 #  endif // _CCCL_DOXYGEN_INVOKED
 
-  //! @}
-
   //! @brief Returns a reference to the \p __n 'th element of the async_vector
   //! @param __n The index of the element we want to access
   //! @note Does not synchronize with the stored stream

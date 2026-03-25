@@ -89,7 +89,7 @@ constexpr ::std::string_view type_name_impl()
  *
  * @tparam T The type to show.
  *
- * @snippet unittest.h type_name
+ * @snippet unittest.cuh type_name
  */
 template <class T>
 inline constexpr ::std::string_view type_name = reserved::type_name_impl<T>();
