@@ -333,3 +333,143 @@ TEST_CASE("DeviceSegmentedRadixSort::SortPairs uses custom stream", "[segmented_
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
+
+TEST_CASE("DeviceSegmentedRadixSort::SortPairsDescending uses custom stream", "[segmented_radix_sort][device]")
+{
+  auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out   = c2h::device_vector<int>(7);
+  auto values_in  = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+  auto values_out = c2h::device_vector<int>(7);
+  auto offsets    = c2h::device_vector<int>{0, 3, 3, 7};
+
+  cudaStream_t custom_stream;
+  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedRadixSort::SortPairsDescending(
+      nullptr,
+      expected_bytes_allocated,
+      thrust::raw_pointer_cast(keys_in.data()),
+      thrust::raw_pointer_cast(keys_out.data()),
+      thrust::raw_pointer_cast(values_in.data()),
+      thrust::raw_pointer_cast(values_out.data()),
+      static_cast<::cuda::std::int64_t>(keys_in.size()),
+      static_cast<::cuda::std::int64_t>(3),
+      offsets.begin(),
+      offsets.begin() + 1));
+
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
+
+  sort_pairs_descending(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    thrust::raw_pointer_cast(values_in.data()),
+    thrust::raw_pointer_cast(values_out.data()),
+    static_cast<int>(keys_in.size()),
+    3,
+    offsets.begin(),
+    offsets.begin() + 1,
+    0,
+    static_cast<int>(sizeof(int) * 8),
+    env);
+
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+
+  c2h::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};
+  c2h::device_vector<int> expected_values{0, 2, 1, 6, 3, 4, 5};
+  REQUIRE(keys_out == expected_keys);
+  REQUIRE(values_out == expected_values);
+
+  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+}
+
+TEST_CASE("DeviceSegmentedRadixSort::SortKeys uses custom stream", "[segmented_radix_sort][device]")
+{
+  auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out = c2h::device_vector<int>(7);
+  auto offsets  = c2h::device_vector<int>{0, 3, 3, 7};
+
+  cudaStream_t custom_stream;
+  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedRadixSort::SortKeys(
+      nullptr,
+      expected_bytes_allocated,
+      thrust::raw_pointer_cast(keys_in.data()),
+      thrust::raw_pointer_cast(keys_out.data()),
+      static_cast<::cuda::std::int64_t>(keys_in.size()),
+      static_cast<::cuda::std::int64_t>(3),
+      offsets.begin(),
+      offsets.begin() + 1));
+
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
+
+  sort_keys(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    static_cast<int>(keys_in.size()),
+    3,
+    offsets.begin(),
+    offsets.begin() + 1,
+    0,
+    static_cast<int>(sizeof(int) * 8),
+    env);
+
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+
+  c2h::device_vector<int> expected_keys{6, 7, 8, 0, 3, 5, 9};
+  REQUIRE(keys_out == expected_keys);
+
+  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+}
+
+TEST_CASE("DeviceSegmentedRadixSort::SortKeysDescending uses custom stream", "[segmented_radix_sort][device]")
+{
+  auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out = c2h::device_vector<int>(7);
+  auto offsets  = c2h::device_vector<int>{0, 3, 3, 7};
+
+  cudaStream_t custom_stream;
+  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSegmentedRadixSort::SortKeysDescending(
+      nullptr,
+      expected_bytes_allocated,
+      thrust::raw_pointer_cast(keys_in.data()),
+      thrust::raw_pointer_cast(keys_out.data()),
+      static_cast<::cuda::std::int64_t>(keys_in.size()),
+      static_cast<::cuda::std::int64_t>(3),
+      offsets.begin(),
+      offsets.begin() + 1));
+
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
+
+  sort_keys_descending(
+    thrust::raw_pointer_cast(keys_in.data()),
+    thrust::raw_pointer_cast(keys_out.data()),
+    static_cast<int>(keys_in.size()),
+    3,
+    offsets.begin(),
+    offsets.begin() + 1,
+    0,
+    static_cast<int>(sizeof(int) * 8),
+    env);
+
+  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+
+  c2h::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};
+  REQUIRE(keys_out == expected_keys);
+
+  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+}
