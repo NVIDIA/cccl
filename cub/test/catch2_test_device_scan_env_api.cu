@@ -80,8 +80,8 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan accepts stream and not_guaranteed deter
   }
 
   thrust::device_vector<float> expected{1.0f, 1.0f, 2.0f, 4.0f};
-  stream.sync();
   // example-end exclusive-scan-env-stream
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
@@ -126,8 +126,8 @@ C2H_TEST("cub::DeviceScan::ExclusiveSum accepts stream and not_guaranteed determ
   }
 
   thrust::device_vector<float> expected{0.0f, 0.0f, 1.0f, 3.0f};
-  stream.sync();
   // example-end exclusive-sum-env-stream
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
@@ -172,8 +172,8 @@ C2H_TEST("cub::DeviceScan::InclusiveSum accepts stream and not_guaranteed determ
   }
 
   thrust::device_vector<float> expected{1.0f, 3.0f, 6.0f, 10.0f};
-  stream.sync();
   // example-end inclusive-sum-env-stream
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
@@ -225,8 +225,8 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan with FutureValue accepts stream environ
   }
 
   thrust::device_vector<int> expected{10, 11, 13, 16};
-  stream.sync();
   // example-end exclusive-scan-future-env-stream
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
@@ -270,8 +270,8 @@ C2H_TEST("cub::DeviceScan::InclusiveScan accepts stream environment", "[scan][en
   }
 
   thrust::device_vector<float> expected{1.0f, 3.0f, 6.0f, 10.0f};
-  stream.sync();
   // example-end inclusive-scan-env-stream
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
@@ -317,8 +317,8 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit accepts stream environment", "[scan
   }
 
   thrust::device_vector<float> expected{11.0f, 13.0f, 16.0f, 20.0f};
-  stream.sync();
   // example-end inclusive-scan-init-env-stream
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);

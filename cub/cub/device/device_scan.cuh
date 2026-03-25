@@ -316,6 +316,9 @@ struct DeviceScan
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
+  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
+  //!   The range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
+  //!   shall not overlap in any other way.
   //!
   //! Preconditions
   //! +++++++++++++
@@ -626,6 +629,15 @@ struct DeviceScan
   //!     :dedent:
   //!     :start-after: example-begin exclusive-scan-env-determinism
   //!     :end-before: example-end exclusive-scan-env-determinism
+  //!
+  //! The code snippet below illustrates an exclusive-scan using a custom stream
+  //! and ``not_guaranteed`` determinism.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-scan-env-stream
+  //!     :end-before: example-end exclusive-scan-env-stream
   //!
   //! @endrst
   //!
@@ -1067,6 +1079,7 @@ struct DeviceScan
   //! Computes a device-wide exclusive prefix scan using the specified binary associative ``scan_op`` functor.
   //! The ``init_value`` value is provided as a future value.
   //!
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //! - Supports non-commutative scan operators.
   //! - Results are not deterministic for pseudo-associative operators (e.g.,
   //!   addition of floating-point types). Results for pseudo-associative
