@@ -39,21 +39,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::scan
-{
-struct get_tuning_query_t
-{};
-
-template <class Derived>
-struct tuning
-{
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr Derived query(const get_tuning_query_t&) const noexcept
-  {
-    return static_cast<const Derived&>(*this);
-  }
-};
-} // namespace detail::scan
-
 //! @rst
 //! DeviceScan provides device-wide, parallel operations for computing a
 //! prefix scan across a sequence of data items residing within
@@ -138,8 +123,8 @@ struct DeviceScan
       offset_t,
       ScanOpT>;
 
-    using policy_selector_t = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::scan::get_tuning_query_t, default_policy_selector_t>;
+    using policy_selector_t =
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::scan::scan_policy, default_policy_selector_t>;
 
     return detail::scan::dispatch<EnforceInclusive>(
       d_temp_storage,

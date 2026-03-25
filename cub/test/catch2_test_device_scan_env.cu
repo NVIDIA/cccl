@@ -101,9 +101,8 @@ TEST_CASE("Device scan exclusive sum works with default environment", "[sum][dev
   REQUIRE(d_out[0] == value_t{0});
 }
 
-// TODO(bgruber): convert to the new tuning API
 template <int BlockThreads>
-struct scan_tuning : cub::detail::scan::tuning<scan_tuning<BlockThreads>>
+struct scan_tuning
 {
   _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::detail::scan::scan_policy
   {
@@ -113,7 +112,8 @@ struct scan_tuning : cub::detail::scan::tuning<scan_tuning<BlockThreads>>
             cub::CacheLoadModifier::LOAD_DEFAULT,
             cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE,
             cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
-            cub::detail::delay_constructor_policy{cub::detail::delay_constructor_kind::fixed_delay, 350, 450}};
+            cub::detail::delay_constructor_policy{cub::detail::delay_constructor_kind::fixed_delay, 350, 450},
+            {}};
   }
 };
 
