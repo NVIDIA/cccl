@@ -1098,10 +1098,6 @@ struct policy_selector
     const int max_input_bytes      = (::cuda::std::max) (key_size, accum_size);
     const int combined_input_bytes = key_size + accum_size;
 
-    const auto policy500_items =
-      max_input_bytes <= 8
-        ? 6
-        : Nominal4BItemsToItemsCombined(/* nominal_4b_items_per_thread */ 6, combined_input_bytes);
     const auto default_items =
       max_input_bytes <= 8
         ? 9
