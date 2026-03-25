@@ -373,11 +373,11 @@ struct DeviceScan
             typename NumItemsT,
             typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
 #ifdef _CCCL_DOXYGEN_INVOKED
-              void
+            void
 #else
-              ::cuda::std::execution::env<>
+            ::cuda::std::execution::env<>
 #endif
-              >
+            >
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
   {
@@ -678,11 +678,11 @@ struct DeviceScan
             typename NumItemsT,
             typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
 #ifdef _CCCL_DOXYGEN_INVOKED
-              void
+            void
 #else
-              ::cuda::std::execution::env<>
+            ::cuda::std::execution::env<>
 #endif
-              >
+            >
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -1639,11 +1639,11 @@ struct DeviceScan
             typename NumItemsT,
             typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
 #ifdef _CCCL_DOXYGEN_INVOKED
-              void
+            void
 #else
-              ::cuda::std::execution::env<>
+            ::cuda::std::execution::env<>
 #endif
-              >
+            >
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveScan(InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, NumItemsT num_items, EnvT env = {})
   {
@@ -1725,11 +1725,11 @@ struct DeviceScan
             typename NumItemsT,
             typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
 #ifdef _CCCL_DOXYGEN_INVOKED
-              void
+            void
 #else
-              ::cuda::std::execution::env<>
+            ::cuda::std::execution::env<>
 #endif
-              >
+            >
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -2460,9 +2460,9 @@ struct DeviceScan
             typename NumItemsT   = uint32_t,
             typename EnvT        = // Doxygen cannot resolve ::cuda::std::execution::env
 #ifdef _CCCL_DOXYGEN_INVOKED
-              void,
+            void,
 #else
-              ::cuda::std::execution::env<>,
+            ::cuda::std::execution::env<>,
 #endif
             ::cuda::std::enable_if_t<
               !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
@@ -2597,9 +2597,9 @@ struct DeviceScan
             typename NumItemsT   = uint32_t,
             typename EnvT        = // Doxygen cannot resolve ::cuda::std::execution::env
 #ifdef _CCCL_DOXYGEN_INVOKED
-              void,
+            void,
 #else
-              ::cuda::std::execution::env<>,
+            ::cuda::std::execution::env<>,
 #endif
             ::cuda::std::enable_if_t<
               !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
@@ -2715,9 +2715,9 @@ struct DeviceScan
             typename NumItemsT   = uint32_t,
             typename EnvT        = // Doxygen cannot resolve ::cuda::std::execution::env
 #ifdef _CCCL_DOXYGEN_INVOKED
-              void,
+            void,
 #else
-              ::cuda::std::execution::env<>,
+            ::cuda::std::execution::env<>,
 #endif
             ::cuda::std::enable_if_t<
               !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
@@ -2839,9 +2839,9 @@ struct DeviceScan
             typename NumItemsT   = uint32_t,
             typename EnvT        = // Doxygen cannot resolve ::cuda::std::execution::env
 #ifdef _CCCL_DOXYGEN_INVOKED
-              void,
+            void,
 #else
-              ::cuda::std::execution::env<>,
+            ::cuda::std::execution::env<>,
 #endif
             ::cuda::std::enable_if_t<
               !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>

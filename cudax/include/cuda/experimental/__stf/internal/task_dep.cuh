@@ -241,7 +241,7 @@ template <typename T, typename reduce_op, bool initialize>
 class task_dep
 // Hide recursive base from Doxygen — it cannot handle self-referential inheritance.
 #ifndef _CCCL_DOXYGEN_INVOKED
-  : public task_dep<T, void, false>
+    : public task_dep<T, void, false>
 #endif
 {
 public:

@@ -519,7 +519,7 @@ template <typename... Deps>
 class graph_task
 // Hide recursive base from Doxygen — it cannot handle self-referential inheritance.
 #ifndef _CCCL_DOXYGEN_INVOKED
-  : public graph_task<>
+    : public graph_task<>
 #endif
 {
 public:

@@ -282,8 +282,8 @@ public:
     return static_cast<char*>(m.base) + offset;
   }
 
-  void
-  deallocate(backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
+  void deallocate(
+    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
     // There should be exactly one entry in the map
     assert(map.count(memory_node) == 1);
