@@ -31,7 +31,7 @@ static_assert(alignof(dim4) == alignof(stf_dim4), "dim4 and stf_dim4 must have i
 extern "C" {
 
 /* Convert the C-API stf_data_place to a C++ data_place object */
-static data_place to_data_place(stf_data_place* data_p)
+static data_place to_data_place(const stf_data_place* data_p)
 {
   _CCCL_ASSERT(data_p != nullptr, "data_place pointer must not be null");
 
@@ -58,9 +58,9 @@ static data_place to_data_place(stf_data_place* data_p)
       {
         return data_place::invalid();
       }
-      exec_place* grid_ptr = static_cast<exec_place*>(grid_handle);
+      auto grid_ptr = static_cast<exec_place*>(grid_handle);
       // Layout-compatible: pass C mapper directly so the runtime calls it
-      get_executor_func_t cpp_mapper = reinterpret_cast<get_executor_func_t>(mapper);
+      partition_fn_t cpp_mapper = reinterpret_cast<partition_fn_t>(mapper);
       return data_place::composite(cpp_mapper, *grid_ptr);
     }
 
@@ -398,7 +398,7 @@ void stf_cuda_kernel_end(stf_cuda_kernel_handle k)
   _CCCL_ASSERT(k != nullptr, "cuda kernel handle must not be null");
 
   using kernel_type = decltype(::std::declval<context>().cuda_kernel());
-  auto* kernel_ptr  = static_cast<kernel_type*>(k);
+  auto kernel_ptr   = static_cast<kernel_type*>(k);
   kernel_ptr->end();
 }
 
@@ -425,8 +425,7 @@ stf_exec_place_grid_handle stf_exec_place_grid_from_devices(const int* device_id
   {
     places.push_back(exec_place::device(device_ids[i]));
   }
-  exec_place grid = make_grid(::std::move(places));
-  return new exec_place(::std::move(grid));
+  return new exec_place(make_grid(::std::move(places)));
 }
 
 stf_exec_place_grid_handle

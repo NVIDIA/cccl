@@ -53,7 +53,7 @@ class exec_place;
 // Green contexts are only supported since CUDA 12.4
 
 //! Function type for computing executor placement from data coordinates
-using get_executor_func_t = pos4 (*)(pos4, dim4, dim4);
+using partition_fn_t = pos4 (*)(pos4, dim4, dim4);
 
 // Forward declaration for composite implementation
 class data_place_composite;
@@ -165,7 +165,7 @@ public:
   template <typename partitioner_t /*, typename scalar_exec_place_t */>
   static data_place composite(partitioner_t p, const exec_place& g);
 
-  static data_place composite(get_executor_func_t f, const exec_place& grid);
+  static data_place composite(partition_fn_t f, const exec_place& grid);
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
   static data_place green_ctx(const green_ctx_view& gc_view);
@@ -294,7 +294,7 @@ public:
     return p.pimpl_->get_device_ordinal();
   }
 
-  const get_executor_func_t& get_partitioner() const
+  const partition_fn_t& get_partitioner() const
   {
     return pimpl_->get_partitioner();
   }
@@ -750,7 +750,7 @@ private:
  * For grids, the index specifies which sub-place to activate. For scalar places, the index
  * should be 0 (the default).
  *
- * The guard is non-copyable and non-movable to ensure proper RAII semantics.
+ * The guard is non-copyable but movable (like std::unique_lock).
  *
  * Example usage:
  * @code
@@ -850,10 +850,6 @@ public:
   /**
    * @brief Get the currently active sub-place
    */
-  exec_place& place()
-  {
-    return current_;
-  }
   const exec_place& place() const
   {
     return current_;
@@ -873,6 +869,21 @@ public:
   bool is_active() const
   {
     return place_.get_impl() != nullptr;
+  }
+
+  /**
+   * @brief Early deactivation - restores previous state and marks scope as inactive.
+   *
+   * After calling reset(), the destructor becomes a no-op.
+   * Calling reset() on an inactive scope is safe (no-op).
+   */
+  void reset()
+  {
+    if (place_.get_impl())
+    {
+      place_.get_impl()->deactivate(prev_, idx_);
+      place_ = exec_place(); // Mark as inactive
+    }
   }
 
 private:
@@ -1162,6 +1173,31 @@ UNITTEST("exec_place copyable")
   exec_place e  = exec_place::device(0);
   exec_place e2 = e;
 };
+
+UNITTEST("exec_place_scope reset")
+{
+  int original_dev = cuda_try<cudaGetDevice>();
+
+  // Activate device 0
+  {
+    auto scope = exec_place::device(0).activate();
+    EXPECT(scope.is_active());
+    EXPECT(cuda_try<cudaGetDevice>() == 0);
+
+    // Early reset
+    scope.reset();
+    EXPECT(!scope.is_active());
+
+    // Device should be restored
+    EXPECT(cuda_try<cudaGetDevice>() == original_dev);
+
+    // Reset on inactive scope is safe (no-op)
+    scope.reset();
+    EXPECT(!scope.is_active());
+  }
+  // Destructor is no-op since already reset
+  EXPECT(cuda_try<cudaGetDevice>() == original_dev);
+};
 #endif // UNITTESTED_FILE
 
 /**
@@ -1287,8 +1323,7 @@ inline exec_place make_grid(::std::vector<exec_place> places, const dim4& dims)
 inline exec_place make_grid(::std::vector<exec_place> places)
 {
   _CCCL_ASSERT(!places.empty(), "invalid places");
-  auto grid_dim = dim4(places.size(), 1, 1, 1);
-  return make_grid(mv(places), grid_dim);
+  return make_grid(mv(places), dim4(places.size(), 1, 1, 1));
 }
 
 // === data_place::affine_exec_place implementation ===
@@ -1492,7 +1527,7 @@ inline exec_place partition_tile(exec_place e_place, dim4 tile_sizes, pos4 tile_
 class data_place_composite final : public data_place_interface
 {
 public:
-  data_place_composite(exec_place grid, get_executor_func_t partitioner_func)
+  data_place_composite(exec_place grid, partition_fn_t partitioner_func)
       : grid_(mv(grid))
       , partitioner_func_(mv(partitioner_func))
   {}
@@ -1527,7 +1562,7 @@ public:
     const auto& o = static_cast<const data_place_composite&>(other);
     if (get_partitioner() != o.get_partitioner())
     {
-      return ::std::less<get_executor_func_t>{}(o.get_partitioner(), get_partitioner()) ? 1 : -1;
+      return ::std::less<partition_fn_t>{}(o.get_partitioner(), get_partitioner()) ? 1 : -1;
     }
     if (grid_ == o.grid_)
     {
@@ -1557,14 +1592,14 @@ public:
     return grid_.get_impl();
   }
 
-  const get_executor_func_t& get_partitioner() const override
+  const partition_fn_t& get_partitioner() const override
   {
     return partitioner_func_;
   }
 
 private:
   exec_place grid_;
-  get_executor_func_t partitioner_func_;
+  partition_fn_t partitioner_func_;
 };
 
 inline bool data_place::is_composite() const
@@ -1573,7 +1608,7 @@ inline bool data_place::is_composite() const
   return typeid(ref) == typeid(data_place_composite);
 }
 
-inline data_place data_place::composite(get_executor_func_t f, const exec_place& grid)
+inline data_place data_place::composite(partition_fn_t f, const exec_place& grid)
 {
   return data_place(::std::make_shared<data_place_composite>(grid, f));
 }

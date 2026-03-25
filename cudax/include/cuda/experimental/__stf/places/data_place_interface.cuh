@@ -50,7 +50,7 @@ class pos4;
 class dim4;
 
 //! Function type for computing executor placement from data coordinates
-using get_executor_func_t = pos4 (*)(pos4, dim4, dim4);
+using partition_fn_t = pos4 (*)(pos4, dim4, dim4);
 
 /**
  * @brief Abstract interface for data_place implementations
@@ -183,7 +183,7 @@ public:
    * @brief Get the partitioner function for composite places
    * @throws std::logic_error if not a composite place
    */
-  virtual const get_executor_func_t& get_partitioner() const
+  virtual const partition_fn_t& get_partitioner() const
   {
     throw ::std::logic_error("get_partitioner() called on non-composite data_place");
   }

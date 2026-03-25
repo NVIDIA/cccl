@@ -246,8 +246,7 @@ private:
       auto& pool = scalar_place.get_stream_pool(true);
       for (size_t i = 0; i < pool.size(); i++)
       {
-        decorated_stream dstream = pool.next(scalar_place);
-        sub_places.push_back(exec_place::cuda_stream(dstream));
+        sub_places.push_back(exec_place::cuda_stream(pool.next(scalar_place)));
       }
       return;
     }
