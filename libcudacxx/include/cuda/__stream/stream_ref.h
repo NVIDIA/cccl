@@ -105,9 +105,8 @@ public:
   //!
   //! @param __lhs The `stream_ref` to compare
   //! @return true if equal, false if unequal
-  [[nodiscard]] _CCCL_API friend bool operator==(const stream_ref& __lhs, const invalid_stream_t& __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend bool operator==(const stream_ref& __lhs, const invalid_stream_t&) noexcept
   {
-    (void) __rhs;
     return __lhs.__stream == ::cuda::__invalid_stream();
   }
 
@@ -118,9 +117,8 @@ public:
   //!
   //! @param __rhs The `stream_ref` to compare
   //! @return true if equal, false if unequal
-  [[nodiscard]] _CCCL_API friend bool operator==(const invalid_stream_t& __lhs, const stream_ref& __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend bool operator==(const invalid_stream_t&, const stream_ref& __rhs) noexcept
   {
-    (void) __lhs;
     return ::cuda::__invalid_stream() == __rhs.__stream;
   }
 
@@ -144,9 +142,8 @@ public:
   //!
   //! @param __lhs The `stream_ref` to compare
   //! @return false if equal, true if unequal
-  [[nodiscard]] _CCCL_API friend bool operator!=(const stream_ref& __lhs, const invalid_stream_t& __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend bool operator!=(const stream_ref& __lhs, const invalid_stream_t&) noexcept
   {
-    (void) __rhs;
     return __lhs.__stream != ::cuda::__invalid_stream();
   }
 
@@ -157,9 +154,8 @@ public:
   //!
   //! @param __rhs The `stream_ref` to compare
   //! @return false if equal, true if unequal
-  [[nodiscard]] _CCCL_API friend bool operator!=(const invalid_stream_t& __lhs, const stream_ref& __rhs) noexcept
+  [[nodiscard]] _CCCL_API friend bool operator!=(const invalid_stream_t&, const stream_ref& __rhs) noexcept
   {
-    (void) __lhs;
     return ::cuda::__invalid_stream() != __rhs.__stream;
   }
 
