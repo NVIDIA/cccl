@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 //! @file
@@ -296,14 +296,27 @@ public:
   //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - The contents of the input data are not altered by the sorting operation.
-  //! - SortKeys is not guaranteed to be stable. That is, suppose that ``i`` and
+  //! - When the input is a contiguous sequence of segments, a single sequence
+  //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
+  //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
+  //!   the latter is specified as ``segment_offsets + 1``).
+  //! - ``SortKeys`` is not guaranteed to be stable. That is, suppose that ``i`` and
   //!   ``j`` are equivalent: neither one is less than the other. It is not
   //!   guaranteed that the relative order of these two elements will be
   //!   preserved by sort.
+  //! - The range ``[d_keys_out, d_keys_out + num_items)`` shall not overlap
+  //!   ``[d_keys_in, d_keys_in + num_items)``,
+  //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
+  //!   ``[d_end_offsets, d_end_offsets + num_segments)`` in any way.
+  //! - Segments are not required to be contiguous. For all index values ``i``
+  //!   outside the specified segments ``d_keys_in[i]``, ``d_keys_out[i]`` will not
+  //!   be accessed nor modified.
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_sort_keys_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin sort-keys-env
@@ -575,14 +588,27 @@ public:
   //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - The contents of the input data are not altered by the sorting operation.
-  //! - SortKeysDescending is not guaranteed to be stable. That is, suppose that
+  //! - When the input is a contiguous sequence of segments, a single sequence
+  //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
+  //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
+  //!   the latter is specified as ``segment_offsets + 1``).
+  //! - ``SortKeysDescending`` is not guaranteed to be stable. That is, suppose that
   //!   ``i`` and ``j`` are equivalent: neither one is less than the other. It is
   //!   not guaranteed that the relative order of these two elements will be
   //!   preserved by sort.
+  //! - The range ``[d_keys_out, d_keys_out + num_items)`` shall not overlap
+  //!   ``[d_keys_in, d_keys_in + num_items)``,
+  //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
+  //!   ``[d_end_offsets, d_end_offsets + num_segments)`` in any way.
+  //! - Segments are not required to be contiguous. For all index values ``i``
+  //!   outside the specified segments ``d_keys_in[i]``, ``d_keys_out[i]`` will not
+  //!   be accessed nor modified.
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_sort_keys_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin sort-keys-descending-env
@@ -854,21 +880,35 @@ public:
   //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
-  //!   DoubleBuffer structure that indicates which of the two buffers is
+  //!   ``DoubleBuffer`` structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
   //! - The contents of both buffers may be altered by the sorting operation.
   //! - Upon completion, the sorting operation will update the "current"
-  //!   indicator within the DoubleBuffer wrapper to reference which of the two
+  //!   indicator within the ``DoubleBuffer`` wrapper to reference which of the two
   //!   buffers now contains the sorted output sequence (a function of the number
   //!   of key bits and the targeted device architecture).
-  //! - SortKeys is not guaranteed to be stable. That is, suppose that
+  //! - When the input is a contiguous sequence of segments, a single sequence
+  //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
+  //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
+  //!   the latter is specified as ``segment_offsets + 1``).
+  //! - ``SortKeys`` is not guaranteed to be stable. That is, suppose that
   //!   ``i`` and ``j`` are equivalent: neither one is less than the other. It is
   //!   not guaranteed that the relative order of these two elements will be
   //!   preserved by sort.
+  //! - Let ``cur = d_keys.Current()`` and ``alt = d_keys.Alternate()``.
+  //!   The range ``[cur, cur + num_items)`` shall not overlap
+  //!   ``[alt, alt + num_items)``. Both ranges shall not overlap
+  //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
+  //!   ``[d_end_offsets, d_end_offsets + num_segments)`` in any way.
+  //! - Segments are not required to be contiguous. For all index values ``i``
+  //!   outside the specified segments ``d_keys.Current()[i]``,
+  //!   ``d_keys[i].Alternate()[i]`` will not be accessed nor modified.
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_sort_keys_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin sort-keys-db-env
@@ -1138,21 +1178,35 @@ public:
   //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
-  //!   DoubleBuffer structure that indicates which of the two buffers is
+  //!   ``DoubleBuffer`` structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
   //! - The contents of both buffers may be altered by the sorting operation.
   //! - Upon completion, the sorting operation will update the "current"
-  //!   indicator within the DoubleBuffer wrapper to reference which of the two
+  //!   indicator within the ``DoubleBuffer`` wrapper to reference which of the two
   //!   buffers now contains the sorted output sequence (a function of the number
   //!   of key bits and the targeted device architecture).
-  //! - SortKeysDescending is not guaranteed to be stable. That is, suppose that
+  //! - When the input is a contiguous sequence of segments, a single sequence
+  //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
+  //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
+  //!   the latter is specified as ``segment_offsets + 1``).
+  //! - ``SortKeysDescending`` is not guaranteed to be stable. That is, suppose that
   //!   ``i`` and ``j`` are equivalent: neither one is less than the other. It is
   //!   not guaranteed that the relative order of these two elements will be
   //!   preserved by sort.
+  //! - Let ``cur = d_keys.Current()`` and ``alt = d_keys.Alternate()``.
+  //!   The range ``[cur, cur + num_items)`` shall not overlap
+  //!   ``[alt, alt + num_items)``. Both ranges shall not overlap
+  //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
+  //!   ``[d_end_offsets, d_end_offsets + num_segments)`` in any way.
+  //! - Segments are not required to be contiguous. For all index values ``i``
+  //!   outside the specified segments ``d_keys.Current()[i]``,
+  //!   ``d_keys[i].Alternate()[i]`` will not be accessed nor modified.
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_sort_keys_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin sort-keys-descending-db-env
@@ -1389,15 +1443,28 @@ public:
   //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - The contents of the input data are not altered by the sorting operation.
-  //! - StableSortKeys is stable: it preserves the relative ordering of
+  //! - When the input is a contiguous sequence of segments, a single sequence
+  //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
+  //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
+  //!   the latter is specified as ``segment_offsets + 1``).
+  //! - ``StableSortKeys`` is stable: it preserves the relative ordering of
   //!   equivalent elements. That is, if ``x`` and ``y`` are elements such that
   //!   ``x`` precedes ``y``, and if the two elements are equivalent (neither
   //!   ``x < y`` nor ``y < x``) then a postcondition of stable sort is that
   //!   ``x`` still precedes ``y``.
+  //! - The range ``[d_keys_out, d_keys_out + num_items)`` shall not overlap
+  //!   ``[d_keys_in, d_keys_in + num_items)``,
+  //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
+  //!   ``[d_end_offsets, d_end_offsets + num_segments)`` in any way.
+  //! - Segments are not required to be contiguous. For all index values ``i``
+  //!   outside the specified segments ``d_keys_in[i]``, ``d_keys_out[i]`` will not
+  //!   be accessed nor modified.
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_sort_keys_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin stable-sort-keys-env
@@ -1637,14 +1704,27 @@ public:
   //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - The contents of the input data are not altered by the sorting operation.
-  //! - StableSortKeysDescending is stable: it preserves the relative ordering of
+  //! - When the input is a contiguous sequence of segments, a single sequence
+  //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
+  //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
+  //!   the latter is specified as ``segment_offsets + 1``).
+  //! - ``StableSortKeysDescending`` is stable: it preserves the relative ordering of
   //!   equivalent elements. That is, if ``x`` and ``y`` are elements such that
   //!   ``x`` precedes ``y``, and if the two elements are equivalent (neither ``x < y`` nor ``y < x``)
   //!   then a postcondition of stable sort is that ``x`` still precedes ``y``.
+  //! - The range ``[d_keys_out, d_keys_out + num_items)`` shall not overlap
+  //!   ``[d_keys_in, d_keys_in + num_items)``,
+  //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
+  //!   ``[d_end_offsets, d_end_offsets + num_segments)`` in any way.
+  //! - Segments are not required to be contiguous. For all index values ``i``
+  //!   outside the specified segments ``d_keys_in[i]``, ``d_keys_out[i]`` will not
+  //!   be accessed nor modified.
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_sort_keys_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin stable-sort-keys-descending-env
@@ -1888,22 +1968,36 @@ public:
   //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
-  //!   DoubleBuffer structure that indicates which of the two buffers is
+  //!   ``DoubleBuffer`` structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
   //! - The contents of both buffers may be altered by the sorting operation.
   //! - Upon completion, the sorting operation will update the "current"
-  //!   indicator within the DoubleBuffer wrapper to reference which of the two
+  //!   indicator within the ``DoubleBuffer`` wrapper to reference which of the two
   //!   buffers now contains the sorted output sequence (a function of the number
   //!   of key bits and the targeted device architecture).
-  //! - StableSortKeys is stable: it preserves the relative ordering of
+  //! - When the input is a contiguous sequence of segments, a single sequence
+  //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
+  //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
+  //!   the latter is specified as ``segment_offsets + 1``).
+  //! - ``StableSortKeys`` is stable: it preserves the relative ordering of
   //!   equivalent elements. That is, if ``x`` and ``y`` are elements such that
   //!   ``x`` precedes ``y``, and if the two elements are equivalent (neither
   //!   ``x < y`` nor ``y < x``) then a postcondition of stable sort is that
   //!   ``x`` still precedes ``y``.
+  //! - Let ``cur = d_keys.Current()`` and ``alt = d_keys.Alternate()``.
+  //!   The range ``[cur, cur + num_items)`` shall not overlap
+  //!   ``[alt, alt + num_items)``. Both ranges shall not overlap
+  //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
+  //!   ``[d_end_offsets, d_end_offsets + num_segments)`` in any way.
+  //! - Segments are not required to be contiguous. For all index values ``i``
+  //!   outside the specified segments ``d_keys.Current()[i]``,
+  //!   ``d_keys[i].Alternate()[i]`` will not be accessed nor modified.
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_sort_keys_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin stable-sort-keys-db-env
@@ -2142,22 +2236,36 @@ public:
   //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - The sorting operation is given a pair of key buffers managed by a
-  //!   DoubleBuffer structure that indicates which of the two buffers is
+  //!   ``DoubleBuffer`` structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
   //! - The contents of both buffers may be altered by the sorting operation.
   //! - Upon completion, the sorting operation will update the "current"
-  //!   indicator within the DoubleBuffer wrapper to reference which of the two
+  //!   indicator within the ``DoubleBuffer`` wrapper to reference which of the two
   //!   buffers now contains the sorted output sequence (a function of the number
   //!   of key bits and the targeted device architecture).
-  //! - StableSortKeysDescending is stable: it preserves the relative ordering of
+  //! - When the input is a contiguous sequence of segments, a single sequence
+  //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
+  //!   for both the ``d_begin_offsets`` and ``d_end_offsets`` parameters (where
+  //!   the latter is specified as ``segment_offsets + 1``).
+  //! - ``StableSortKeysDescending`` is stable: it preserves the relative ordering of
   //!   equivalent elements. That is, if ``x`` and ``y`` are elements such that
   //!   ``x`` precedes ``y``, and if the two elements are equivalent (neither
   //!   ``x < y`` nor ``y < x``) then a postcondition of stable sort is that
   //!   ``x`` still precedes ``y``.
+  //! - Let ``cur = d_keys.Current()`` and ``alt = d_keys.Alternate()``.
+  //!   The range ``[cur, cur + num_items)`` shall not overlap
+  //!   ``[alt, alt + num_items)``. Both ranges shall not overlap
+  //!   ``[d_begin_offsets, d_begin_offsets + num_segments)`` nor
+  //!   ``[d_end_offsets, d_end_offsets + num_segments)`` in any way.
+  //! - Segments are not required to be contiguous. For all index values ``i``
+  //!   outside the specified segments ``d_keys.Current()[i]``,
+  //!   ``d_keys[i].Alternate()[i]`` will not be accessed nor modified.
+  //! - Can use a specific stream or cuda memory resource through the ``env`` parameter.
   //!
   //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_sort_keys_env_api.cu
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_sort_keys_env_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin stable-sort-keys-descending-db-env
