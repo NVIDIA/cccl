@@ -1079,7 +1079,7 @@ int CompareResults(float* computed, float* reference, OffsetT len, bool verbose 
     {
       if (verbose)
       {
-        float difference = std::abs(computed[i] - reference[i]);
+        float difference = cuda::std::abs(computed[i] - reference[i]);
         std::cout
           << "INCORRECT: [" << i << "]: "
           << "(computed) " << CoutCast(computed[i]) << " != " << CoutCast(reference[i]) << " (difference:" << difference
