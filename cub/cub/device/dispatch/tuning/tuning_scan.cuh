@@ -18,17 +18,25 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
-#include <cub/detail/warpspeed/squad/squad_desc.cuh>
+#include <cub/detail/delay_constructor.cuh>
+#include <cub/device/dispatch/kernels/scan_warpspeed_policy.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__device/arch_id.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 #include <cuda/std/__type_traits/void_t.h>
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif
 
 CUB_NAMESPACE_BEGIN
 
@@ -114,6 +122,69 @@ template <class OffsetT>
 constexpr _CCCL_HOST_DEVICE offset_size classify_offset_size()
 {
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
+}
+
+struct scan_policy
+{
+  int block_threads;
+  int items_per_thread;
+  BlockLoadAlgorithm load_algorithm;
+  CacheLoadModifier load_modifier;
+  BlockStoreAlgorithm store_algorithm;
+  BlockScanAlgorithm scan_algorithm;
+  delay_constructor_policy delay_constructor;
+  scan_warpspeed_policy warpspeed = {};
+
+  _CCCL_API constexpr friend bool operator==(const scan_policy& lhs, const scan_policy& rhs)
+  {
+    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
+        && lhs.store_algorithm == rhs.store_algorithm && lhs.scan_algorithm == rhs.scan_algorithm
+        && lhs.delay_constructor == rhs.delay_constructor && lhs.warpspeed == rhs.warpspeed;
+  }
+
+  _CCCL_API constexpr friend bool operator!=(const scan_policy& lhs, const scan_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const scan_policy& p)
+  {
+    os << "scan_policy { .block_threads = " << p.block_threads << ", .items_per_thread = " << p.items_per_thread
+       << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+       << ", .store_algorithm = " << p.store_algorithm << ", .scan_algorithm = " << p.scan_algorithm
+       << ", .delay_constructor = " << p.delay_constructor;
+    if (p.warpspeed)
+    {
+      os << ", .warpspeed = " << p.warpspeed;
+    }
+    return os << " }";
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+};
+
+_CCCL_API constexpr auto make_mem_scaled_scan_policy(
+  int nominal_4b_block_threads,
+  int nominal_4b_items_per_thread,
+  int compute_t_size,
+  BlockLoadAlgorithm load_algorithm,
+  CacheLoadModifier load_modifier,
+  BlockStoreAlgorithm store_algorithm,
+  BlockScanAlgorithm scan_algorithm,
+  delay_constructor_policy delay_constructor = {delay_constructor_kind::fixed_delay, 350, 450},
+  scan_warpspeed_policy warpspeed            = {}) -> scan_policy
+{
+  const auto scaled = scale_mem_bound(nominal_4b_block_threads, nominal_4b_items_per_thread, compute_t_size);
+  return scan_policy{
+    scaled.block_threads,
+    scaled.items_per_thread,
+    load_algorithm,
+    load_modifier,
+    store_algorithm,
+    scan_algorithm,
+    delay_constructor,
+    warpspeed};
 }
 
 template <class ValueT,
@@ -219,6 +290,7 @@ struct sm80_tuning<type_t::uint128, primitive_op::yes, primitive_accum::no, accu
 {};
 #endif
 
+// TODO(griwes): remove for CCCL 4.0 when we drop the public scan dispatcher
 template <class AccumT,
           primitive_op PrimitiveOp,
           primitive_accum PrimitiveAccumulator = is_primitive_accum<AccumT>(),
@@ -257,6 +329,7 @@ struct sm90_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_si
 #endif
 // clang-format on
 
+// TODO(griwes): remove for CCCL 4.0 when we drop the public scan dispatcher
 template <class ValueT,
           class AccumT,
           class OffsetT,
@@ -438,6 +511,7 @@ _CCCL_HOST_DEVICE ScanPolicyWrapper<PolicyT> MakeScanPolicyWrapper(PolicyT polic
   return ScanPolicyWrapper<PolicyT>{policy};
 }
 
+// TODO(griwes): remove this in CCCL 4.0 when we remove the public scan dispatcher
 template <typename InputValueT, typename OutputValueT, typename AccumT, typename OffsetT, typename ScanOpT>
 struct policy_hub
 {
@@ -679,6 +753,616 @@ struct policy_hub
   };
 
   using MaxPolicy = Policy1200;
+};
+
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept scan_policy_selector = policy_selector<T, scan_policy>;
+#endif // _CCCL_HAS_CONCEPTS()
+
+constexpr _CCCL_HOST_DEVICE bool is_arithmetic_type(type_t type)
+{
+  switch (type)
+  {
+    case type_t::boolean:
+    case type_t::int8:
+    case type_t::int16:
+    case type_t::int32:
+    case type_t::int64:
+    case type_t::int128:
+    case type_t::uint8:
+    case type_t::uint16:
+    case type_t::uint32:
+    case type_t::uint64:
+    case type_t::uint128:
+    case type_t::float32:
+    case type_t::float64:
+      return true;
+    case type_t::other:
+      return false;
+  }
+
+  return false;
+}
+
+constexpr _CCCL_HOST_DEVICE scan_warpspeed_policy get_warpspeed_policy(
+  ::cuda::arch_id arch, int input_value_size, int accum_size, type_t input_type, op_kind_t operation_t)
+{
+  if (arch >= ::cuda::arch_id::sm_100)
+  {
+    scan_warpspeed_policy warpspeed_policy{};
+    warpspeed_policy.valid = true;
+
+    // TODO(bgruber): tune this
+#if _CCCL_COMPILER(NVHPC)
+    warpspeed_policy.num_reduce_warps    = 2;
+    warpspeed_policy.num_scan_stor_warps = 2;
+#else // _CCCL_COMPILER(NVHPC)
+    warpspeed_policy.num_reduce_warps    = 4;
+    warpspeed_policy.num_scan_stor_warps = 4;
+#endif // _CCCL_COMPILER(NVHPC)
+    warpspeed_policy.num_load_warps       = 1;
+    warpspeed_policy.num_sched_warps      = 1;
+    warpspeed_policy.num_look_ahead_warps = 1;
+
+    // TODO(bgruber): 5 is a bit better for complex<float>
+    warpspeed_policy.num_look_ahead_items = accum_size == 2 ? 3 : 4;
+
+    // Deduced definitions
+    const auto num_threads_per_warp = 32;
+    const auto num_total_warps =
+      warpspeed_policy.num_reduce_warps + warpspeed_policy.num_scan_stor_warps + warpspeed_policy.num_load_warps
+      + warpspeed_policy.num_sched_warps + warpspeed_policy.num_look_ahead_warps;
+    warpspeed_policy.num_total_threads = num_total_warps * num_threads_per_warp;
+
+    const auto squad_reduce_thread_count = warpspeed_policy.num_reduce_warps * num_threads_per_warp;
+
+    // 256 / sizeof(InputValueT) - 1 should minimize bank conflicts (and fits into 48KiB SMEM)
+    // 2-byte types and double needed special handling
+    auto items_per_thread = ::cuda::std::max(256 / (input_value_size == 2 ? 2 : accum_size) - 1, 1);
+
+    if (arch >= ::cuda::arch_id::sm_120 && operation_t == op_kind_t::other && is_arithmetic_type(input_type))
+    {
+      if (input_value_size == 4 || input_value_size == 8)
+      {
+        items_per_thread = 127;
+      }
+      else
+      {
+        items_per_thread = ::cuda::std::min(items_per_thread, input_value_size <= 2 ? 63 : 127);
+      }
+    }
+
+    warpspeed_policy.items_per_thread = items_per_thread;
+    // TODO(bgruber): the special handling of double below is a LOT faster, but exceeds 48KiB SMEM
+    // clang-format off
+    // |   F64   |      I32      |     72576      |  11.295 us |       2.44% |  11.917 us |       8.02% |     0.622 us |   5.50% |   SLOW   |
+    // |   F64   |      I32      |    1056384     |  16.162 us |       6.24% |  15.847 us |       5.57% |    -0.315 us |  -1.95% |   SAME   |
+    // |   F64   |      I32      |    16781184    |  65.696 us |       1.64% |  60.650 us |       3.37% |    -5.046 us |  -7.68% |   FAST   |
+    // |   F64   |      I32      |   268442496    | 863.896 us |       0.22% | 679.100 us |       0.93% |  -184.796 us | -21.39% |   FAST   |
+    // |   F64   |      I32      |   1073745792   |   3.418 ms |       0.12% |   2.662 ms |       0.46% |  -755.740 us | -22.11% |   FAST   |
+    // |   F64   |      I64      |     72576      |  12.301 us |       8.18% |  12.987 us |       5.75% |     0.686 us |   5.58% |   SAME   |
+    // |   F64   |      I64      |    1056384     |  16.775 us |       5.70% |  16.091 us |       6.14% |    -0.684 us |  -4.08% |   SAME   |
+    // |   F64   |      I64      |    16781184    |  66.970 us |       1.41% |  58.024 us |       3.17% |    -8.946 us | -13.36% |   FAST   |
+    // |   F64   |      I64      |   268442496    | 863.826 us |       0.23% | 676.465 us |       0.98% |  -187.360 us | -21.69% |   FAST   |
+    // |   F64   |      I64      |   1073745792   |   3.419 ms |       0.11% |   2.664 ms |       0.48% |  -755.409 us | -22.09% |   FAST   |
+    // |   F64   |      I64      |   4294975104   |  13.641 ms |       0.05% |  10.575 ms |       0.24% | -3065.815 us | -22.48% |   FAST   |
+    // clang-format on
+    // (256 / (sizeof(InputValueT) == 2 ? 2 : (::cuda::std::is_same_v<InputValueT, double> ? 4 : sizeof(AccumT))) -
+    // 1);
+
+    warpspeed_policy.tile_size = warpspeed_policy.items_per_thread * squad_reduce_thread_count;
+
+    return warpspeed_policy;
+  }
+
+  return {};
+}
+
+struct policy_selector
+{
+  int input_value_size;
+  int input_value_alignment;
+  int output_value_size;
+  int output_value_alignment;
+  int accum_size;
+  int accum_alignment;
+  int offset_size;
+  type_t input_type;
+  type_t accum_type;
+  op_kind_t operation_t;
+  bool accum_is_primitive_or_trivially_copy_constructible;
+  // TODO(griwes): remove this field before policy_selector is publicly exposed
+  bool benchmark_match;
+
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_policy
+  {
+    const primitive_accum primitive_accum_t =
+      accum_type != type_t::other && accum_type != type_t::int128 ? primitive_accum::yes : primitive_accum::no;
+    const primitive_op primitive_op_t = operation_t != op_kind_t::other ? primitive_op::yes : primitive_op::no;
+
+    const bool large_values = accum_size > 128;
+    const BlockLoadAlgorithm scan_transposed_load =
+      large_values ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : BLOCK_LOAD_WARP_TRANSPOSE;
+    const BlockStoreAlgorithm scan_transposed_store =
+      large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
+    const auto default_delay = default_delay_constructor_policy(accum_is_primitive_or_trivially_copy_constructible);
+
+    const auto warpspeed_policy = get_warpspeed_policy(arch, input_value_size, accum_size, input_type, operation_t);
+
+    if (arch >= ::cuda::arch_id::sm_100)
+    {
+      if (benchmark_match && operation_t == op_kind_t::plus && primitive_accum_t == primitive_accum::yes)
+      {
+        if (offset_size == 4)
+        {
+          switch (input_value_size)
+          {
+            case 1:
+              // ipt_18.tpb_512.ns_768.dcid_7.l2w_820.trp_1.ld_0 1.188818  1.005682  1.173041  1.305288
+              return make_mem_scaled_scan_policy(
+                512,
+                18,
+                accum_size,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon, 768, 820},
+                warpspeed_policy);
+            case 2:
+              // ipt_13.tpb_512.ns_1384.dcid_7.l2w_720.trp_1.ld_0 1.128443  1.002841  1.119688  1.307692
+              return make_mem_scaled_scan_policy(
+                512,
+                13,
+                accum_size,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon, 1384, 720},
+                warpspeed_policy);
+            case 4:
+              // ipt_22.tpb_384.ns_1904.dcid_6.l2w_830.trp_1.ld_0 1.148442  0.997167  1.139902  1.462651
+              return make_mem_scaled_scan_policy(
+                384,
+                22,
+                accum_size,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 1904, 830},
+                warpspeed_policy);
+            case 8:
+              // ipt_23.tpb_416.ns_772.dcid_5.l2w_710.trp_1.ld_0 1.089468  1.015581  1.085630  1.264583
+              return make_mem_scaled_scan_policy(
+                416,
+                23,
+                accum_size,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 772, 710},
+                warpspeed_policy);
+            default:
+              break;
+          }
+        }
+        else if (offset_size == 8)
+        {
+          switch (input_value_size)
+          {
+            case 1:
+              // ipt_14.tpb_384.ns_228.dcid_7.l2w_775.trp_1.ld_1 1.107210  1.000000  1.100637  1.307692
+              return make_mem_scaled_scan_policy(
+                384,
+                14,
+                accum_size,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_CA,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon, 228, 775},
+                warpspeed_policy);
+            case 2:
+              // todo(gonidelis): Regresses for large inputs. Find better tuning.
+              // ipt_13.tpb_288.ns_1520.dcid_5.l2w_895.trp_1.ld_1 1.080934  0.983509  1.077724  1.305288
+              break;
+            case 4:
+              // ipt_19.tpb_416.ns_956.dcid_7.l2w_550.trp_1.ld_1 1.146142  0.994350  1.137459  1.455636
+              return make_mem_scaled_scan_policy(
+                416,
+                19,
+                accum_size,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_CA,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon, 956, 550},
+                warpspeed_policy);
+            case 8:
+              if (accum_type == type_t::float64)
+              {
+                break;
+              }
+              // ipt_22.tpb_320.ns_328.dcid_2.l2w_965.trp_1.ld_0 1.080133  1.000000  1.075577  1.248963
+              return make_mem_scaled_scan_policy(
+                320,
+                22,
+                accum_size,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backoff, 328, 965},
+                warpspeed_policy);
+            default:
+              break;
+          }
+        }
+      }
+    }
+
+    if (arch >= ::cuda::arch_id::sm_90)
+    {
+      if (primitive_op_t == primitive_op::yes)
+      {
+        if (primitive_accum_t == primitive_accum::yes)
+        {
+          switch (accum_size)
+          {
+            case 1:
+              return make_mem_scaled_scan_policy(
+                192,
+                22,
+                accum_size,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 168, 1140},
+                warpspeed_policy);
+            case 2:
+              return make_mem_scaled_scan_policy(
+                512,
+                12,
+                accum_size,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 376, 1125},
+                warpspeed_policy);
+            case 4:
+              if (accum_type == type_t::float32)
+              {
+                return make_mem_scaled_scan_policy(
+                  128,
+                  24,
+                  accum_size,
+                  BLOCK_LOAD_WARP_TRANSPOSE,
+                  LOAD_DEFAULT,
+                  BLOCK_STORE_WARP_TRANSPOSE,
+                  BLOCK_SCAN_WARP_SCANS,
+                  delay_constructor_policy{delay_constructor_kind::fixed_delay, 688, 1140},
+                  warpspeed_policy);
+              }
+              return make_mem_scaled_scan_policy(
+                128,
+                24,
+                accum_size,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 648, 1245},
+                warpspeed_policy);
+            case 8:
+              if (accum_type == type_t::float64)
+              {
+                return make_mem_scaled_scan_policy(
+                  224,
+                  24,
+                  accum_size,
+                  BLOCK_LOAD_WARP_TRANSPOSE,
+                  LOAD_DEFAULT,
+                  BLOCK_STORE_WARP_TRANSPOSE,
+                  BLOCK_SCAN_WARP_SCANS,
+                  delay_constructor_policy{delay_constructor_kind::fixed_delay, 576, 1215},
+                  warpspeed_policy);
+              }
+              return make_mem_scaled_scan_policy(
+                224,
+                24,
+                accum_size,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 632, 1290},
+                warpspeed_policy);
+            default:
+              break;
+          }
+        }
+
+#if _CCCL_HAS_INT128()
+        if (primitive_accum_t == primitive_accum::no && accum_size == 16
+            && (accum_type == type_t::int128 || accum_type == type_t::uint128))
+        {
+          return make_mem_scaled_scan_policy(
+            576,
+            21,
+            accum_size,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            BLOCK_STORE_WARP_TRANSPOSE,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 860, 630},
+            warpspeed_policy);
+        }
+#endif
+      }
+    }
+
+    // Keep sm_86 aligned with legacy policy_hub behavior: policy_hub resets to default policy for 86.
+    if (arch >= ::cuda::arch_id::sm_86)
+    {
+      return make_mem_scaled_scan_policy(
+        128,
+        15,
+        accum_size,
+        scan_transposed_load,
+        LOAD_DEFAULT,
+        scan_transposed_store,
+        BLOCK_SCAN_WARP_SCANS,
+        default_delay,
+        warpspeed_policy);
+    }
+
+    if (arch >= ::cuda::arch_id::sm_80)
+    {
+      if (primitive_op_t == primitive_op::yes)
+      {
+        if (primitive_accum_t == primitive_accum::yes)
+        {
+          switch (accum_size)
+          {
+            case 1:
+              return make_mem_scaled_scan_policy(
+                320,
+                14,
+                accum_size,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 368, 725},
+                warpspeed_policy);
+            case 2:
+              return make_mem_scaled_scan_policy(
+                352,
+                16,
+                accum_size,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 488, 1040},
+                warpspeed_policy);
+            case 4:
+              if (accum_type == type_t::float32)
+              {
+                return make_mem_scaled_scan_policy(
+                  288,
+                  8,
+                  accum_size,
+                  BLOCK_LOAD_WARP_TRANSPOSE,
+                  LOAD_DEFAULT,
+                  BLOCK_STORE_WARP_TRANSPOSE,
+                  BLOCK_SCAN_WARP_SCANS,
+                  delay_constructor_policy{delay_constructor_kind::fixed_delay, 724, 1050},
+                  warpspeed_policy);
+              }
+              return make_mem_scaled_scan_policy(
+                320,
+                12,
+                accum_size,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 268, 1180},
+                warpspeed_policy);
+            case 8:
+              if (accum_type == type_t::float64)
+              {
+                return make_mem_scaled_scan_policy(
+                  384,
+                  12,
+                  accum_size,
+                  BLOCK_LOAD_WARP_TRANSPOSE,
+                  LOAD_DEFAULT,
+                  BLOCK_STORE_WARP_TRANSPOSE,
+                  BLOCK_SCAN_WARP_SCANS,
+                  delay_constructor_policy{delay_constructor_kind::fixed_delay, 388, 1100},
+                  warpspeed_policy);
+              }
+              return make_mem_scaled_scan_policy(
+                288,
+                22,
+                accum_size,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_STORE_WARP_TRANSPOSE,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 716, 785},
+                warpspeed_policy);
+            default:
+              break;
+          }
+        }
+
+#if _CCCL_HAS_INT128()
+        if (primitive_accum_t == primitive_accum::no && accum_size == 16
+            && (accum_type == type_t::int128 || accum_type == type_t::uint128))
+        {
+          return make_mem_scaled_scan_policy(
+            640,
+            24,
+            accum_size,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_STORE_DIRECT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1200},
+            warpspeed_policy);
+        }
+#endif
+      }
+    }
+
+    if (arch >= ::cuda::arch_id::sm_75)
+    {
+      if (benchmark_match && operation_t == op_kind_t::plus && primitive_accum_t == primitive_accum::yes
+          && offset_size == 8 && input_value_size == 4)
+      {
+        // ipt_7.tpb_128.ns_628.dcid_1.l2w_520.trp_1.ld_0
+        return make_mem_scaled_scan_policy(
+          128,
+          7,
+          accum_size,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_STORE_WARP_TRANSPOSE,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::fixed_delay, 628, 520},
+          warpspeed_policy);
+      }
+
+      return make_mem_scaled_scan_policy(
+        128,
+        15,
+        accum_size,
+        scan_transposed_load,
+        LOAD_DEFAULT,
+        scan_transposed_store,
+        BLOCK_SCAN_WARP_SCANS,
+        default_delay,
+        warpspeed_policy);
+    }
+
+    if (arch >= ::cuda::arch_id::sm_60)
+    {
+      return make_mem_scaled_scan_policy(
+        128,
+        15,
+        accum_size,
+        scan_transposed_load,
+        LOAD_DEFAULT,
+        scan_transposed_store,
+        BLOCK_SCAN_WARP_SCANS,
+        default_delay,
+        warpspeed_policy);
+    }
+
+    return make_mem_scaled_scan_policy(
+      128,
+      12,
+      accum_size,
+      BLOCK_LOAD_DIRECT,
+      LOAD_CA,
+      BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED,
+      BLOCK_SCAN_RAKING,
+      default_delay,
+      warpspeed_policy);
+  }
+};
+
+#if _CCCL_HAS_CONCEPTS()
+static_assert(scan_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
+
+template <typename ScanOpT, typename InputValueT, typename OutputValueT, typename AccumT, typename = void>
+struct benchmark_match_for_policy_selector
+{
+  static constexpr bool value = false;
+};
+
+template <typename ScanOpT, typename InputValueT, typename OutputValueT, typename AccumT>
+struct benchmark_match_for_policy_selector<
+  ScanOpT,
+  InputValueT,
+  OutputValueT,
+  AccumT,
+  ::cuda::std::void_t<::cuda::std::__accumulator_t<ScanOpT, InputValueT, InputValueT>>>
+{
+  static constexpr bool value =
+    sizeof(AccumT) == sizeof(::cuda::std::__accumulator_t<ScanOpT, InputValueT, InputValueT>)
+    && sizeof(InputValueT) == sizeof(OutputValueT);
+};
+
+// stateless version which can be passed to kernels
+template <typename InputValueT, typename OutputValueT, typename AccumT, typename OffsetT, typename ScanOpT>
+struct policy_selector_from_types
+{
+  static constexpr int input_value_size       = int{sizeof(InputValueT)};
+  static constexpr int input_value_alignment  = int{alignof(InputValueT)};
+  static constexpr int output_value_size      = int{sizeof(OutputValueT)};
+  static constexpr int output_value_alignment = int{alignof(OutputValueT)};
+  static constexpr int accum_size             = int{sizeof(AccumT)};
+  static constexpr int accum_alignment        = int{alignof(AccumT)};
+  static constexpr type_t input_type          = classify_type<InputValueT>;
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_policy
+  {
+    constexpr bool benchmark_match =
+      benchmark_match_for_policy_selector<ScanOpT, InputValueT, OutputValueT, AccumT>::value;
+
+    constexpr bool accum_is_primitive_or_trivially_copy_constructible =
+      is_primitive<AccumT>::value || ::cuda::std::is_trivially_copy_constructible_v<AccumT>;
+
+    constexpr auto policies = policy_selector{
+      input_value_size,
+      input_value_alignment,
+      output_value_size,
+      output_value_alignment,
+      accum_size,
+      accum_alignment,
+      int{sizeof(OffsetT)},
+      input_type,
+      classify_type<AccumT>,
+      classify_op<ScanOpT>,
+      accum_is_primitive_or_trivially_copy_constructible,
+      benchmark_match};
+    return policies(arch);
+  }
+};
+
+template <typename PolicySelectorT, typename = void>
+struct selector_smem_info
+{
+  static constexpr bool has_static_layout = false;
+};
+
+template <typename PolicySelectorT>
+struct selector_smem_info<
+  PolicySelectorT,
+  ::cuda::std::void_t<decltype(::cuda::std::integral_constant<int, PolicySelectorT::input_value_size>{}),
+                      decltype(::cuda::std::integral_constant<int, PolicySelectorT::input_value_alignment>{}),
+                      decltype(::cuda::std::integral_constant<int, PolicySelectorT::output_value_size>{}),
+                      decltype(::cuda::std::integral_constant<int, PolicySelectorT::output_value_alignment>{}),
+                      decltype(::cuda::std::integral_constant<int, PolicySelectorT::accum_size>{}),
+                      decltype(::cuda::std::integral_constant<int, PolicySelectorT::accum_alignment>{})>>
+{
+  static constexpr bool has_static_layout     = true;
+  static constexpr int input_value_size       = PolicySelectorT::input_value_size;
+  static constexpr int input_value_alignment  = PolicySelectorT::input_value_alignment;
+  static constexpr int output_value_size      = PolicySelectorT::output_value_size;
+  static constexpr int output_value_alignment = PolicySelectorT::output_value_alignment;
+  static constexpr int accum_size             = PolicySelectorT::accum_size;
+  static constexpr int accum_alignment        = PolicySelectorT::accum_alignment;
 };
 } // namespace detail::scan
 

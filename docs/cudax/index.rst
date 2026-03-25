@@ -19,7 +19,7 @@ However, any feature within this library has important use cases and we encourag
 
 Specifically, ``cudax`` provides:
    - :ref:`asynchronous host<->device byte-wise mdspan copy <cudax-copy-bytes>`
-   - :ref:`uninitialized storage <libcudacxx-containers-uninitialized-buffer>`
+   - :ref:`uninitialized storage <libcudacxx-containers-uninitialized-async-buffer>`
    - :ref:`an owning type erased memory resource <libcudacxx-memory-resource-any-async-resource>`
    - :ref:`stream-ordered memory resources <libcudacxx-memory-resource-async>`
    - :ref:`graph functionality <cudax-graph>`

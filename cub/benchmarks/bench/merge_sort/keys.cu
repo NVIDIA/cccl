@@ -18,60 +18,28 @@
 using value_t = cub::NullType;
 
 #if !TUNE_BASE
-
-#  if TUNE_TRANSPOSE == 0
-#    define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_DIRECT
-#    define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_DIRECT
-#  else // TUNE_TRANSPOSE == 1
-#    define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_WARP_TRANSPOSE
-#    define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_WARP_TRANSPOSE
-#  endif // TUNE_TRANSPOSE
-
-#  if TUNE_LOAD == 0
-#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  elif TUNE_LOAD == 1
-#    define TUNE_LOAD_MODIFIER cub::LOAD_LDG
-#  else // TUNE_LOAD == 2
-#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_LOAD
-
 template <typename KeyT>
-struct policy_hub_t
+struct policy_selector
 {
-  struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
+  _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> cub::detail::merge_sort::merge_sort_policy
   {
-    using MergeSortPolicy =
-      cub::AgentMergeSortPolicy<TUNE_THREADS_PER_BLOCK,
-                                cub::Nominal4BItemsToItems<KeyT>(TUNE_ITEMS_PER_THREAD),
-                                TUNE_LOAD_ALGORITHM,
-                                TUNE_LOAD_MODIFIER,
-                                TUNE_STORE_ALGORITHM>;
-  };
-
-  using MaxPolicy = policy_t;
+    return cub::detail::merge_sort::merge_sort_policy{
+      TUNE_THREADS_PER_BLOCK,
+      cub::Nominal4BItemsToItems<KeyT>(TUNE_ITEMS_PER_THREAD),
+      (TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE),
+      (TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : (TUNE_LOAD == 1 ? cub::LOAD_LDG : cub::LOAD_CA)),
+      (TUNE_TRANSPOSE == 0 ? cub::BLOCK_STORE_DIRECT : cub::BLOCK_STORE_WARP_TRANSPOSE)};
+  }
 };
 #endif // !TUNE_BASE
 
 template <typename T, typename OffsetT>
 void keys(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using key_t            = T;
-  using value_t          = cub::NullType;
-  using key_input_it_t   = key_t*;
-  using value_input_it_t = value_t*;
-  using key_it_t         = key_t*;
-  using value_it_t       = value_t*;
-  using offset_t         = cub::detail::choose_offset_t<OffsetT>;
-  using compare_op_t     = less_t;
-
-#if !TUNE_BASE
-  using policy_t = policy_hub_t<key_t>;
-  using dispatch_t =
-    cub::DispatchMergeSort<key_input_it_t, value_input_it_t, key_it_t, value_it_t, offset_t, compare_op_t, policy_t>;
-#else // TUNE_BASE
-  using dispatch_t =
-    cub::DispatchMergeSort<key_input_it_t, value_input_it_t, key_it_t, value_it_t, offset_t, compare_op_t>;
-#endif // TUNE_BASE
+  using key_t        = T;
+  using value_t      = cub::NullType;
+  using offset_t     = cub::detail::choose_offset_t<OffsetT>;
+  using compare_op_t = less_t;
 
   // Retrieve axis parameters
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
@@ -90,31 +58,41 @@ void keys(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   // Allocate temporary storage:
   std::size_t temp_size{};
-  dispatch_t::Dispatch(
+  cub::detail::merge_sort::dispatch(
     nullptr,
     temp_size,
     d_buffer_1,
-    nullptr,
+    static_cast<value_t*>(nullptr),
     d_buffer_2,
-    nullptr,
+    static_cast<value_t*>(nullptr),
     static_cast<offset_t>(elements),
     compare_op_t{},
-    0 /* stream */);
+    0 /* stream */
+#if !TUNE_BASE
+    ,
+    policy_selector<key_t>{}
+#endif // !TUNE_BASE
+  );
 
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size);
+  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
+    cub::detail::merge_sort::dispatch(
       temp_storage,
       temp_size,
       d_buffer_1,
-      nullptr,
+      static_cast<value_t*>(nullptr),
       d_buffer_2,
-      nullptr,
+      static_cast<value_t*>(nullptr),
       static_cast<offset_t>(elements),
       compare_op_t{},
-      launch.get_stream());
+      launch.get_stream()
+#if !TUNE_BASE
+        ,
+      policy_selector<key_t>{}
+#endif // !TUNE_BASE
+    );
   });
 }
 

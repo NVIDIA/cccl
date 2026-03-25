@@ -23,7 +23,7 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/derived_from.h>
-#include <cuda/std/__functional/reference_wrapper.h>
+#include <cuda/std/__fwd/reference_wrapper.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_callable.h>
@@ -31,10 +31,6 @@
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/pod_tuple.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <functional> // IWYU pragma: keep for ::std::reference_wrapper
-#endif // !_CCCL_COMPILER(NVRTC)
 
 //! @file env.h
 //! @brief Provides utilities for querying and managing environments, an unordered

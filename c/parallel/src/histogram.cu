@@ -470,7 +470,7 @@ CUresult cccl_device_histogram_even_impl(
     indirect_arg_t upper_level_arg{upper_level};
     indirect_arg_t lower_level_arg{lower_level};
 
-    auto exec_status = cub::DispatchHistogram<
+    auto exec_status = cub::detail::histogram::__dispatch_even_device_init<
       NUM_CHANNELS,
       NUM_ACTIVE_CHANNELS,
       indirect_arg_t, // SampleIteratorT
@@ -481,9 +481,7 @@ CUresult cccl_device_histogram_even_impl(
       indirect_arg_t, // SampleT
       histogram::histogram_kernel_source, // KernelSource
       cub::detail::CudaDriverLauncherFactory // KernelLauncherFactory
-      >::
-      __dispatch_even_device_init(
-        d_temp_storage,
+      >(d_temp_storage,
         *temp_storage_bytes,
         d_samples,
         d_output_histogram_arr,

@@ -3,7 +3,7 @@
 #include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 
-#include <cuda/__cccl_config>
+#include <cuda/std/cstddef>
 
 #include <unittest/unittest.h>
 
@@ -63,7 +63,7 @@ struct TestAllocatorAttachment
       (::cuda::std::is_same<T,
                             typename PolicyInfo::template apply_base_second<
                               thrust::detail::execute_with_allocator,
-                              thrust::mr::allocator<thrust::detail::max_align_t, ExpectedResource>>::type>::value),
+                              thrust::mr::allocator<cuda::std::max_align_t, ExpectedResource>>::type>::value),
       true);
   }
 

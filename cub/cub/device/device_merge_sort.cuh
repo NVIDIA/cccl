@@ -110,11 +110,16 @@ private:
   {
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
-    using DispatchMergeSortT =
-      DispatchMergeSort<KeyIteratorT, ValueIteratorT, KeyIteratorT, ValueIteratorT, ChooseOffsetT, CompareOpT>;
-
-    return DispatchMergeSortT::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_keys, d_items, d_keys, d_items, num_items, compare_op, stream);
+    return detail::merge_sort::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_items,
+      d_keys,
+      d_items,
+      static_cast<ChooseOffsetT>(num_items),
+      compare_op,
+      stream);
   }
 
 public:
@@ -297,11 +302,8 @@ public:
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using DispatchMergeSortT =
-        DispatchMergeSort<KeyIteratorT, ValueIteratorT, KeyIteratorT, ValueIteratorT, ChooseOffsetT, CompareOpT>;
-
-      return DispatchMergeSortT::Dispatch(
-        storage, bytes, d_keys, d_items, d_keys, d_items, num_items, compare_op, stream);
+      return detail::merge_sort::dispatch(
+        storage, bytes, d_keys, d_items, d_keys, d_items, static_cast<ChooseOffsetT>(num_items), compare_op, stream);
     });
   }
 
@@ -441,17 +443,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
-    using DispatchMergeSortT =
-      DispatchMergeSort<KeyInputIteratorT, ValueInputIteratorT, KeyIteratorT, ValueIteratorT, ChooseOffsetT, CompareOpT>;
-
-    return DispatchMergeSortT::Dispatch(
+    return detail::merge_sort::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_input_keys,
       d_input_items,
       d_output_keys,
       d_output_items,
-      num_items,
+      static_cast<ChooseOffsetT>(num_items),
       compare_op,
       stream);
   }
@@ -546,11 +545,16 @@ public:
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using DispatchMergeSortT =
-        DispatchMergeSort<KeyInputIteratorT, ValueInputIteratorT, KeyIteratorT, ValueIteratorT, ChooseOffsetT, CompareOpT>;
-
-      return DispatchMergeSortT::Dispatch(
-        storage, bytes, d_input_keys, d_input_items, d_output_keys, d_output_items, num_items, compare_op, stream);
+      return detail::merge_sort::dispatch(
+        storage,
+        bytes,
+        d_input_keys,
+        d_input_items,
+        d_output_keys,
+        d_output_items,
+        static_cast<ChooseOffsetT>(num_items),
+        compare_op,
+        stream);
     });
   }
 
@@ -567,17 +571,14 @@ private:
   {
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
-    using DispatchMergeSortT =
-      DispatchMergeSort<KeyIteratorT, NullType*, KeyIteratorT, NullType*, ChooseOffsetT, CompareOpT>;
-
-    return DispatchMergeSortT::Dispatch(
+    return detail::merge_sort::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
       static_cast<NullType*>(nullptr),
       d_keys,
       static_cast<NullType*>(nullptr),
-      num_items,
+      static_cast<ChooseOffsetT>(num_items),
       compare_op,
       stream);
   }
@@ -742,17 +743,14 @@ public:
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using DispatchMergeSortT =
-        DispatchMergeSort<KeyIteratorT, NullType*, KeyIteratorT, NullType*, ChooseOffsetT, CompareOpT>;
-
-      return DispatchMergeSortT::Dispatch(
+      return detail::merge_sort::dispatch(
         storage,
         bytes,
         d_keys,
         static_cast<NullType*>(nullptr),
         d_keys,
         static_cast<NullType*>(nullptr),
-        num_items,
+        static_cast<ChooseOffsetT>(num_items),
         compare_op,
         stream);
     });
@@ -772,17 +770,14 @@ private:
   {
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
-    using DispatchMergeSortT =
-      DispatchMergeSort<KeyInputIteratorT, NullType*, KeyIteratorT, NullType*, ChooseOffsetT, CompareOpT>;
-
-    return DispatchMergeSortT::Dispatch(
+    return detail::merge_sort::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_input_keys,
       static_cast<NullType*>(nullptr),
       d_output_keys,
       static_cast<NullType*>(nullptr),
-      num_items,
+      static_cast<ChooseOffsetT>(num_items),
       compare_op,
       stream);
   }
@@ -974,17 +969,14 @@ public:
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using DispatchMergeSortT =
-        DispatchMergeSort<KeyInputIteratorT, NullType*, KeyIteratorT, NullType*, ChooseOffsetT, CompareOpT>;
-
-      return DispatchMergeSortT::Dispatch(
+      return detail::merge_sort::dispatch(
         storage,
         bytes,
         d_input_keys,
         static_cast<NullType*>(nullptr),
         d_output_keys,
         static_cast<NullType*>(nullptr),
-        num_items,
+        static_cast<ChooseOffsetT>(num_items),
         compare_op,
         stream);
     });
@@ -1171,11 +1163,8 @@ public:
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using DispatchMergeSortT =
-        DispatchMergeSort<KeyIteratorT, ValueIteratorT, KeyIteratorT, ValueIteratorT, ChooseOffsetT, CompareOpT>;
-
-      return DispatchMergeSortT::Dispatch(
-        storage, bytes, d_keys, d_items, d_keys, d_items, num_items, compare_op, stream);
+      return detail::merge_sort::dispatch(
+        storage, bytes, d_keys, d_items, d_keys, d_items, static_cast<ChooseOffsetT>(num_items), compare_op, stream);
     });
   }
 
@@ -1341,17 +1330,14 @@ public:
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using DispatchMergeSortT =
-        DispatchMergeSort<KeyIteratorT, NullType*, KeyIteratorT, NullType*, ChooseOffsetT, CompareOpT>;
-
-      return DispatchMergeSortT::Dispatch(
+      return detail::merge_sort::dispatch(
         storage,
         bytes,
         d_keys,
         static_cast<NullType*>(nullptr),
         d_keys,
         static_cast<NullType*>(nullptr),
-        num_items,
+        static_cast<ChooseOffsetT>(num_items),
         compare_op,
         stream);
     });
@@ -1544,17 +1530,14 @@ public:
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using DispatchMergeSortT =
-        DispatchMergeSort<KeyInputIteratorT, NullType*, KeyIteratorT, NullType*, ChooseOffsetT, CompareOpT>;
-
-      return DispatchMergeSortT::Dispatch(
+      return detail::merge_sort::dispatch(
         storage,
         bytes,
         d_input_keys,
         static_cast<NullType*>(nullptr),
         d_output_keys,
         static_cast<NullType*>(nullptr),
-        num_items,
+        static_cast<ChooseOffsetT>(num_items),
         compare_op,
         stream);
     });

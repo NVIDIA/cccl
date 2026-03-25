@@ -99,7 +99,10 @@ struct pool_options
     {
       return false;
     }
-    if (::cuda::__is_valid_alignment(alignment))
+
+    // Forcing the alignment to be always valid would be a breaking change, because if the user didn't set the
+    // alignment, this method would return false. So, we still accept 0.
+    if (!::cuda::__is_valid_alignment(alignment) && alignment != 0)
     {
       return false;
     }
