@@ -71,36 +71,28 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
   else if constexpr (cuda::std::is_same_v<T, cuda::std::complex<__nv_bfloat16>>
                      || cuda::std::is_same_v<T, cuda::std::complex<__half>>)
   {
-    using real_t             = decltype(expected_data[0].real());
+    using real_t             = typename T::value_type;
     constexpr real_t rel_err = cuda::std::is_same_v<T, cuda::std::complex<__half>> ? real_t{0.08f} : real_t{0.2f};
     for (size_t i = 0; i < test_results.size(); ++i)
     {
-      bool close_real = isclose(expected_data[i].real(), test_results[i].real(), rel_err);
-      bool close_imag = isclose(expected_data[i].imag(), test_results[i].imag(), rel_err);
-      if (!close_real || !close_imag)
+      bool close = isclose(expected_data[i], test_results[i], rel_err);
+      if (!close)
       {
         INFO("index " << i);
       }
-      REQUIRE(close_real);
-      REQUIRE(close_imag);
+      REQUIRE(close);
     }
   }
   else if constexpr (cuda::std::__is_cuda_std_complex_v<T>)
   {
     for (size_t i = 0; i < test_results.size(); ++i)
     {
-      auto expected_real = expected_data[i].real();
-      auto test_real     = test_results[i].real();
-      auto expected_imag = expected_data[i].imag();
-      auto test_imag     = test_results[i].imag();
-      bool close_real    = isclose(expected_real, test_real);
-      bool close_imag    = isclose(expected_imag, test_imag);
-      if (!close_real || !close_imag)
+      bool close = isclose(expected_data[i], test_results[i]);
+      if (!close)
       {
         INFO("index " << i);
       }
-      REQUIRE(close_real);
-      REQUIRE(close_imag);
+      REQUIRE(close);
     }
   }
   else
