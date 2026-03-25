@@ -223,7 +223,7 @@ struct DeviceScan
                                                       ScanOpT>;
 
     using policy_selector_t = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::scan_by_key::get_tuning_query_t, default_policy_selector_t>;
+      __query_result_or_t<TuningEnvT, detail::scan_by_key::scan_by_key_policy, default_policy_selector_t>;
 
     return detail::scan_by_key::dispatch<
       KeysInputIteratorT,
@@ -2479,7 +2479,7 @@ struct DeviceScan
                                                         cub::detail::it_value_t<ValuesInputIteratorT>,
                                                         ::cuda::std::plus<>>;
       using policy_selector_t = ::cuda::std::execution::
-        __query_result_or_t<tuning_t, detail::scan_by_key::get_tuning_query_t, default_policy_selector_t>;
+        __query_result_or_t<tuning_t, detail::scan_by_key::scan_by_key_policy, default_policy_selector_t>;
 
       return detail::scan_by_key::dispatch<
         KeysInputIteratorT,
