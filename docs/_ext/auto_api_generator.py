@@ -12,6 +12,27 @@ from sphinx.util import logging
 
 logger = logging.getLogger(__name__)
 
+# Symbols whose Doxygen XML produces C++ declarations that breathe/Sphinx
+# cannot parse.  Skip generating individual API pages for these to avoid
+# unfixable build warnings under -W.  Names must match the unqualified form
+# used by extract_namespace_items (i.e. without the project namespace prefix).
+_BREATHE_SKIP_SYMBOLS = frozenset({
+    # cuda::experimental::stf::get_executor_func_t — function-pointer typedef.
+    # Breathe renders as "pos4(*)(pos4, dim4, dim4)" which Sphinx's C++ parser
+    # rejects ("Expected end of definition").
+    # Listed both qualified (cudax) and unqualified (libcudacxx) since the
+    # generator uses different naming conventions per project.
+    "get_executor_func_t",
+    "cuda::experimental::stf::get_executor_func_t",
+    # cuda::property_with_value — variable template using _CCCL_REQUIRES_EXPR
+    # with a typename(...) inside the expression.  Sphinx cannot parse the
+    # requires-expression expansion.
+    "property_with_value",
+    # cuda::has_property — variable template with _CCCL_REQUIRES_EXPR
+    # containing a const keyword inside the expression body.
+    "has_property",
+})
+
 
 def extract_param_summary(params):
     """Extract a simplified parameter summary for section headers."""
@@ -1052,6 +1073,8 @@ def generate_namespace_api_page(project_name, items, title=None, doc_prefix=""):
         # Sort typedefs alphabetically
         items["typedefs"].sort(key=lambda x: x[0].lower())
         for name, refid in items["typedefs"]:
+            if name in _BREATHE_SKIP_SYMBOLS:
+                continue
             content.append(format_doc_reference(name, refid, doc_prefix))
         content.append("")
 
@@ -1076,6 +1099,8 @@ def generate_namespace_api_page(project_name, items, title=None, doc_prefix=""):
         # Sort variables alphabetically
         items["variables"].sort(key=lambda x: x[0].lower())
         for name, refid in items["variables"]:
+            if name in _BREATHE_SKIP_SYMBOLS:
+                continue
             content.append(format_doc_reference(name, refid, doc_prefix))
         content.append("")
 
@@ -1219,6 +1244,9 @@ def generate_api_docs(app, config):
 
         # Generate individual pages for typedefs
         for name, refid in items["typedefs"]:
+            if name in _BREATHE_SKIP_SYMBOLS:
+                logger.info(f"Skipping typedef {name} (in _BREATHE_SKIP_SYMBOLS)")
+                continue
             content = generate_member_api_page(name, "typedef", project_name, refid)
             output_file = api_dir / f"{refid}.rst"
             with open(output_file, "w") as f:
@@ -1235,6 +1263,9 @@ def generate_api_docs(app, config):
 
         # Generate individual pages for variables
         for name, refid in items["variables"]:
+            if name in _BREATHE_SKIP_SYMBOLS:
+                logger.info(f"Skipping variable {name} (in _BREATHE_SKIP_SYMBOLS)")
+                continue
             content = generate_member_api_page(name, "variable", project_name, refid)
             output_file = api_dir / f"{refid}.rst"
             with open(output_file, "w") as f:
