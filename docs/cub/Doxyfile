@@ -18,7 +18,7 @@ INPUT                  = ../../cub/cub \
                          ../../cub/cub/iterator
 
 RECURSIVE              = YES
-EXCLUDE_PATTERNS       = */detail/* */test/* */examples/*
+EXCLUDE_PATTERNS       = */detail/* */dispatch/* */kernels/* */test/* */examples/*
 EXCLUDE_SYMBOLS        = *detail* CUB_DETAIL*
 
 FILE_PATTERNS          = *.cuh *.h
