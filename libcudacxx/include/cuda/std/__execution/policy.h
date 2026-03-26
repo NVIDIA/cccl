@@ -20,13 +20,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory_resource/any_resource.h>
-#include <cuda/__memory_resource/get_memory_resource.h>
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/__memory_resource/resource.h>
-#include <cuda/__stream/get_stream.h>
-#include <cuda/__stream/stream.h>
-#include <cuda/__stream/stream_ref.h>
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
+#  include <cuda/__memory_resource/any_resource.h>
+#  include <cuda/__memory_resource/get_memory_resource.h>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__memory_resource/resource.h>
+#  include <cuda/__stream/get_stream.h>
+#  include <cuda/__stream/stream.h>
+#  include <cuda/__stream/stream_ref.h>
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 #include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
@@ -71,6 +73,7 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
   //! Forwards queries to the env
   using env<__unwrap_reference_t<_Envs>...>::query;
 
+#if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
   //! @brief create a new policy with additional environments attached
   template <class _Env, size_t... _Indices>
   [[nodiscard]] _CCCL_API constexpr __execution_policy_base<_Policy, _Env, _Envs...>
@@ -92,8 +95,8 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
   template <class _Env>
   [[nodiscard]] _CCCL_API constexpr auto with(_Env&& __env) const
   {
-#if _CCCL_HAS_CTK()
-    if constexpr (__convertible_to_stream_ref<_Env> && (is_lvalue_reference_v<_Env> || is_pointer_v<_Env>) )
+    if constexpr (__convertible_to_stream_ref<_Env>
+                  && (is_lvalue_reference_v<_Env> || is_same_v<remove_cvref_t<_Env>, ::cudaStream_t>) )
     { // streams are special in that they are their own environment, but we always want to store a stream_ref
       // We must reject prvalue cuda::stream because they are not copyable
       static_assert(!is_same_v<remove_cvref_t<_Env>, ::cuda::stream> || is_lvalue_reference_v<_Env>,
@@ -124,7 +127,6 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
       }
     }
     else
-#endif // _CCCL_HAS_CTK()
     {
       return __with(::cuda::std::forward<_Env>(__env), ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
     }
@@ -134,7 +136,6 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
   template <class _Tag, class _Value>
   [[nodiscard]] _CCCL_API constexpr auto with(const _Tag& __tag, _Value&& __value) const
   {
-#if _CCCL_HAS_CTK()
     if constexpr (is_same_v<remove_cvref_t<_Tag>, ::cuda::get_stream_t>)
     { // We want to force the use of ::cuda::stream_ref
       // We must reject prvalue cuda::stream because they are not copyable
@@ -166,12 +167,12 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
       }
     }
     else
-#endif // _CCCL_HAS_CTK()
     {
       return __with(prop{__tag, ::cuda::std::forward<_Value>(__value)},
                     ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
     }
   }
+#endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 };
 
 using sequenced_policy = __execution_policy_base<static_cast<uint32_t>(__execution_policy::__sequenced)>;

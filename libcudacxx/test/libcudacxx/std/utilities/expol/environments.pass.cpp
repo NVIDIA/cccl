@@ -7,6 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: nvrtc
+
 #include <cuda/std/execution>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
