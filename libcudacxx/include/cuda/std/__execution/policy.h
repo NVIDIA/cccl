@@ -43,7 +43,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_EXECUTION
 
-[[nodiscard]] _CCCL_HOST_API constexpr bool __has_unique_backend(const __execution_backend __backends) noexcept
+[[nodiscard]] _CCCL_API constexpr bool __has_unique_backend(const __execution_backend __backends) noexcept
 {
   return ::cuda::std::has_single_bit(static_cast<uint32_t>(__backends));
 }
@@ -57,13 +57,13 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
   static constexpr uint32_t __cccl_policy_ = _Policy;
 
   //! @brief Extracts the execution policy from the stored _Policy
-  [[nodiscard]] _CCCL_HOST_API static constexpr __execution_policy __get_policy() noexcept
+  [[nodiscard]] _CCCL_API static constexpr __execution_policy __get_policy() noexcept
   {
     return __policy_to_execution_policy<_Policy>;
   }
 
   //! @brief Extracts the execution backend from the stored _Policy
-  [[nodiscard]] _CCCL_HOST_API static constexpr __execution_backend __get_backend() noexcept
+  [[nodiscard]] _CCCL_API static constexpr __execution_backend __get_backend() noexcept
   {
     return __policy_to_execution_backend<_Policy>;
   }
@@ -73,7 +73,7 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
 
   //! @brief create a new policy with additional environments attached
   template <class _Env, size_t... _Indices>
-  [[nodiscard]] _CCCL_HOST_API constexpr __execution_policy_base<_Policy, _Env, _Envs...>
+  [[nodiscard]] _CCCL_API constexpr __execution_policy_base<_Policy, _Env, _Envs...>
   __with(_Env&& __env, index_sequence<_Indices...>) const
   {
     if constexpr (sizeof...(_Envs) == 2)
@@ -90,7 +90,7 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
 
   //! @brief Prepend an environment to the current ones
   template <class _Env>
-  [[nodiscard]] _CCCL_HOST_API constexpr auto with(_Env&& __env) const
+  [[nodiscard]] _CCCL_API constexpr auto with(_Env&& __env) const
   {
 #if _CCCL_HAS_CTK()
     if constexpr (__convertible_to_stream_ref<_Env> && (is_lvalue_reference_v<_Env> || is_pointer_v<_Env>) )
@@ -132,7 +132,7 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
 
   //! @brief Create a new environment from a tag and a value and prepend
   template <class _Tag, class _Value>
-  [[nodiscard]] _CCCL_HOST_API constexpr auto with(const _Tag& __tag, _Value&& __value) const
+  [[nodiscard]] _CCCL_API constexpr auto with(const _Tag& __tag, _Value&& __value) const
   {
 #if _CCCL_HAS_CTK()
     if constexpr (is_same_v<remove_cvref_t<_Tag>, ::cuda::get_stream_t>)
