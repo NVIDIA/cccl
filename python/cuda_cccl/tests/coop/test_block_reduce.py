@@ -103,7 +103,6 @@ def test_block_reduction_of_user_defined_type(threads_per_block, algorithm):
             Complex(input[tid], input[num_threads_per_block + tid]),
             items_per_thread=1,
             binary_op=op,
-            threads_per_block=threads_per_block,
             algorithm=algorithm,
         )
 
