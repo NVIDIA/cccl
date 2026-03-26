@@ -170,6 +170,13 @@ struct hierarchy_level_base
 
   _CCCL_TEMPLATE(class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
+  [[nodiscard]] _CCCL_API static constexpr auto static_count(const _InLevel& __level, const _Hierarchy& __hier) noexcept
+  {
+    return __static_count_impl(__level, ::cuda::__unpack_hierarchy_if_needed(__hier));
+  }
+
+  _CCCL_TEMPLATE(class _InLevel, class _Hierarchy)
+  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
   [[nodiscard]] _CCCL_API static constexpr ::cuda::std::size_t
   count(const _InLevel& __level, const _Hierarchy& __hier) noexcept
   {
@@ -384,6 +391,20 @@ struct hierarchy_level_base
       return _Level::rank(typename _Group::level_type{} /*, __group.hierarchy()*/);
     }
   }
+
+  _CCCL_TEMPLATE(class _Group)
+  _CCCL_REQUIRES(::cuda::experimental::__is_this_hierarchy_group_v<_Group>)
+  [[nodiscard]] _CCCL_API static constexpr bool is_root_rank(const _Group& __group) noexcept
+  {
+    return _Level::rank(__group) == 0;
+  }
+
+  _CCCL_TEMPLATE(class _Group)
+  _CCCL_REQUIRES(::cuda::experimental::__is_this_hierarchy_group_v<_Group>)
+  [[nodiscard]] _CCCL_API static constexpr bool is_part_of(const _Group& __group) noexcept
+  {
+    return true;
+  }
 #    endif // _CCCL_CUDA_COMPILATION()
 #  endif // _CUDAX_HIERARCHY
 
@@ -417,6 +438,26 @@ private:
       __ret[__i] = _Exts::static_extent(__i);
     }
     return __ret;
+  }
+
+  template <class... _Args>
+  [[nodiscard]] _CCCL_API static constexpr auto __static_count_impl(const _Args&... __args) noexcept
+  {
+    using _Exts = decltype(_Level::extents(__args...));
+
+    if constexpr (_Exts::rank_dynamic() == 0)
+    {
+      ::cuda::std::size_t __ret{1};
+      for (::cuda::std::size_t __i = 0; __i < _Exts::rank(); ++__i)
+      {
+        __ret *= _Exts::static_extent(__i);
+      }
+      return __ret;
+    }
+    else
+    {
+      return ::cuda::std::dynamic_extent;
+    }
   }
 
   _CCCL_EXEC_CHECK_DISABLE

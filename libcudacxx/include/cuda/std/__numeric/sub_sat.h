@@ -20,9 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__numeric/sub_overflow.h>
+#include <cuda/__numeric/sub_sat_overflow.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__numeric/saturate_cast.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
@@ -42,24 +41,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr _Tp __sub_sat_impl_generic(_Tp __x, _Tp __y) noexcept
-{
-  const auto [__result, __overflow] = ::cuda::sub_overflow(__x, __y);
-  if (__overflow)
-  {
-    if constexpr (is_signed_v<_Tp>)
-    {
-      return (__y > _Tp{0}) ? numeric_limits<_Tp>::min() : numeric_limits<_Tp>::max();
-    }
-    else
-    {
-      return numeric_limits<_Tp>::min();
-    }
-  }
-  return __result;
-}
-
 #if !_CCCL_COMPILER(NVRTC)
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_API _Tp __sub_sat_impl_host(_Tp __x, _Tp __y) noexcept
@@ -69,7 +50,7 @@ template <class _Tp>
 #    if _CCCL_COMPILER(CLANG, <, 21)
   if constexpr (sizeof(_Tp) < sizeof(int32_t))
   {
-    return ::cuda::std::__sub_sat_impl_generic(__x, __y);
+    return ::cuda::sub_sat_overflow(__x, __y).value;
   }
   else
 #    endif // _CCCL_COMPILER(CLANG, <, 21)
@@ -99,7 +80,7 @@ template <class _Tp>
     else
 #    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
     {
-      return ::cuda::std::__sub_sat_impl_generic(__x, __y);
+      return ::cuda::sub_sat_overflow(__x, __y).value;
     }
   }
   else
@@ -124,7 +105,7 @@ template <class _Tp>
     else
 #    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
     {
-      return ::cuda::std::__sub_sat_impl_generic(__x, __y);
+      return ::cuda::sub_sat_overflow(__x, __y).value;
     }
   }
 #  endif // ^^^ !_CCCL_BUILTIN_ELEMENTWISE_SUB_SAT ^^^
@@ -150,12 +131,12 @@ template <class _Tp>
     // }
     else
     {
-      return ::cuda::std::__sub_sat_impl_generic(__x, __y);
+      return ::cuda::sub_sat_overflow(__x, __y).value;
     }
   }
   else
   {
-    return ::cuda::std::__sub_sat_impl_generic(__x, __y);
+    return ::cuda::sub_sat_overflow(__x, __y).value;
   }
 }
 #endif // _CCCL_CUDA_COMPILATION()
@@ -170,7 +151,7 @@ _CCCL_REQUIRES(__cccl_is_integer_v<_Tp>)
                       (return ::cuda::std::__sub_sat_impl_host(__x, __y);),
                       (return ::cuda::std::__sub_sat_impl_device(__x, __y);))
   }
-  return ::cuda::std::__sub_sat_impl_generic(__x, __y);
+  return ::cuda::sub_sat_overflow(__x, __y).value;
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

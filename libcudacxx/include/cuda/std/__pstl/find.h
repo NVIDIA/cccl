@@ -55,16 +55,17 @@ find([[maybe_unused]] const _Policy& __policy, _Iter __first, _Iter __last, cons
   static_assert(__is_cpp17_equality_comparable_v<_Tp, iter_value_t<_Iter>>,
                 "Parallel cuda::std::find requires that T is equality comparable with iter_value_t<Iter>");
 
-  if (__first == __last)
-  {
-    return __first;
-  }
-
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__find_if, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
     _CCCL_NVTX_RANGE_SCOPE("cuda::std::find");
+
+    if (__first == __last)
+    {
+      return __first;
+    }
+
     return __dispatch(
       __policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::equal_to_value<_Tp>{__val});
   }

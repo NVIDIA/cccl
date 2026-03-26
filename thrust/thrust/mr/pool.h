@@ -25,7 +25,7 @@
 #include <thrust/mr/pool_options.h>
 
 #include <cuda/__cmath/ilog.h>
-#include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__host_stdlib/algorithm>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
@@ -248,7 +248,7 @@ public:
   do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     bytes = (std::max) (bytes, m_options.smallest_block_size);
-    assert(::cuda::is_power_of_two(alignment));
+    assert(::cuda::__is_valid_alignment(alignment));
 
     // an oversized and/or overaligned allocation requested; needs to be allocated separately
     if (bytes > m_options.largest_block_size || alignment > m_options.alignment)
@@ -427,7 +427,7 @@ public:
   virtual void do_deallocate(void_ptr p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     n = (std::max) (n, m_options.smallest_block_size);
-    assert(::cuda::is_power_of_two(alignment));
+    assert(::cuda::__is_valid_alignment(alignment));
 
     // verify that the pointer is at least as aligned as claimed
     assert(reinterpret_cast<::cuda::std::intmax_t>(void_ptr_traits::get(p)) % alignment == 0);

@@ -83,17 +83,16 @@ void bench_transform(nvbench::state& state,
                      TransformOp transform_op)
 {
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](const nvbench::launch& launch) {
-    cub::detail::transform::dispatch<cub::detail::transform::requires_stable_address::no>(
+    cub::DeviceTransform::Transform(
       inputs,
       output,
       num_items,
-      cub::detail::transform::always_true_predicate{},
       transform_op,
-      launch.get_stream()
+      cuda::std::execution::env{::cuda::stream_ref{launch.get_stream().get_stream()}
 #if !TUNE_BASE
-        ,
-      policy_selector{}
+                                ,
+                                cuda::execution::__tune(policy_selector{})
 #endif // !TUNE_BASE
-    );
+      });
   });
 }

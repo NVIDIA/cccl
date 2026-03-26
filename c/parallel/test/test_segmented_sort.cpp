@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <optional> // std::optional
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <cuda_runtime.h>
@@ -72,8 +73,14 @@ auto& get_cache()
   return fixture<segmented_sort_build_cache_t, Tag>::get_or_create().get_value();
 }
 
+template <bool DisableSassCheckOnSm120 = false>
 struct segmented_sort_build
 {
+  static bool should_check_sass(int cc_major)
+  {
+    return !(DisableSassCheckOnSm120 && cc_major >= 12);
+  }
+
   CUresult operator()(
     BuildResultT* build_ptr,
     cccl_sort_order_t sort_order,
@@ -144,7 +151,9 @@ struct segmented_sort_run
   }
 };
 
-template <typename BuildCache = segmented_sort_build_cache_t, typename KeyT = std::string>
+template <bool DisableSassCheckOnSm120 = false,
+          typename BuildCache          = segmented_sort_build_cache_t,
+          typename KeyT                = std::string>
 void segmented_sort(
   cccl_sort_order_t sort_order,
   cccl_iterator_t keys_in,
@@ -160,7 +169,12 @@ void segmented_sort(
   std::optional<BuildCache>& cache,
   const std::optional<KeyT>& lookup_key)
 {
-  AlgorithmExecute<BuildResultT, segmented_sort_build, segmented_sort_cleanup, segmented_sort_run, BuildCache, KeyT>(
+  AlgorithmExecute<BuildResultT,
+                   segmented_sort_build<DisableSassCheckOnSm120>,
+                   segmented_sort_cleanup,
+                   segmented_sort_run,
+                   BuildCache,
+                   KeyT>(
     cache,
     lookup_key,
     sort_order,
@@ -186,10 +200,11 @@ C2H_TEST("segmented_sort can sort keys-only", "[segmented_sort][keys_only]", tes
   using T     = c2h::get<0, TestType>;
   using key_t = typename T::KeyT;
 
-  constexpr auto this_test_params  = T();
-  constexpr bool is_descending     = this_test_params.is_descending();
-  constexpr auto order             = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
-  constexpr bool is_overwrite_okay = this_test_params.is_overwrite_okay();
+  constexpr auto this_test_params            = T();
+  constexpr bool is_descending               = this_test_params.is_descending();
+  constexpr auto order                       = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
+  constexpr bool is_overwrite_okay           = this_test_params.is_overwrite_okay();
+  constexpr bool disable_sass_check_on_sm120 = std::is_same_v<key_t, c2h::get<3, key_types>>;
 
   const std::size_t n_segments   = GENERATE(0, 13, take(2, random(1 << 10, 1 << 12)));
   const std::size_t segment_size = GENERATE(1, 12, take(2, random(1 << 10, 1 << 12)));
@@ -272,7 +287,7 @@ C2H_TEST("segmented_sort can sort keys-only", "[segmented_sort][keys_only]", tes
 
   int selector = -1;
 
-  segmented_sort(
+  segmented_sort<disable_sass_check_on_sm120>(
     order,
     keys_in_ptr,
     keys_out_ptr,
@@ -315,10 +330,11 @@ C2H_TEST("segmented_sort can sort key-value pairs", "[segmented_sort][key_value]
   using T     = c2h::get<0, TestType>;
   using key_t = typename T::KeyT;
 
-  constexpr auto this_test_params  = T();
-  constexpr bool is_descending     = this_test_params.is_descending();
-  constexpr auto order             = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
-  constexpr bool is_overwrite_okay = this_test_params.is_overwrite_okay();
+  constexpr auto this_test_params            = T();
+  constexpr bool is_descending               = this_test_params.is_descending();
+  constexpr auto order                       = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
+  constexpr bool is_overwrite_okay           = this_test_params.is_overwrite_okay();
+  constexpr bool disable_sass_check_on_sm120 = !std::is_same_v<key_t, c2h::get<0, key_types>>;
 
   const std::size_t n_segments   = GENERATE(0, 13, take(2, random(1 << 10, 1 << 12)));
   const std::size_t segment_size = GENERATE(1, 12, take(2, random(1 << 10, 1 << 12)));
@@ -371,7 +387,7 @@ C2H_TEST("segmented_sort can sort key-value pairs", "[segmented_sort][key_value]
 
   int selector = -1;
 
-  segmented_sort(
+  segmented_sort<disable_sass_check_on_sm120>(
     order,
     keys_in_ptr,
     keys_out_ptr,
@@ -583,6 +599,8 @@ C2H_TEST("SegmentedSort works with variable segment sizes", "[segmented_sort][va
   constexpr bool is_descending     = this_test_params.is_descending();
   constexpr auto order             = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
   constexpr bool is_overwrite_okay = this_test_params.is_overwrite_okay();
+  constexpr bool disable_sass_check_on_sm120 =
+    std::is_same_v<key_t, c2h::get<1, key_types>> || std::is_same_v<key_t, c2h::get<2, key_types>>;
 
   const std::size_t n_segments = GENERATE(20, 600);
 
@@ -644,7 +662,7 @@ C2H_TEST("SegmentedSort works with variable segment sizes", "[segmented_sort][va
 
   int selector = -1;
 
-  segmented_sort(
+  segmented_sort<disable_sass_check_on_sm120>(
     order,
     keys_in_ptr,
     keys_out_ptr,

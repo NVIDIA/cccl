@@ -182,6 +182,8 @@ Specifies dynamic shared memory configuration. It provides a type-safe way to sp
 - For non-array ``T`` (e.g., a struct), call ``cuda::dynamic_shared_memory<T>()`` with no size argument.
 - For bounded array ``T[n]`` (e.g., ``int[10]``), call ``cuda::dynamic_shared_memory<T[n]>()`` with no size argument.
 - For unbounded array ``T[]`` (e.g., ``float[]``), pass the element count: ``cuda::dynamic_shared_memory<T[]>(n)``.
+- To opt in to non-portable dynamic shared memory sizes (greater than 48 KiB per block), pass ``cuda::non_portable``:
+  ``cuda::dynamic_shared_memory<T>(cuda::non_portable)`` or ``cuda::dynamic_shared_memory<T[]>(n, cuda::non_portable)``.
 
 Availability: CCCL 3.2.0 / CUDA 13.2
 
@@ -202,6 +204,15 @@ Example:
       cuda::block_dims<128>(),
       cuda::grid_dims(4),
       cuda::dynamic_shared_memory<float[]>(1024)
+     );
+     cuda::launch(stream, config, kernel<decltype(config)>);
+   }
+
+   void launch_non_portable(cuda::stream_ref stream) {
+     auto config = cuda::make_config(
+      cuda::block_dims<128>(),
+      cuda::grid_dims(4),
+      cuda::dynamic_shared_memory<float[]>(32768, cuda::non_portable)
      );
      cuda::launch(stream, config, kernel<decltype(config)>);
    }

@@ -64,7 +64,11 @@ C2H_TEST("Device bulk works with temporary storage", "[bulk][device]")
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // 3) Perform bulk operation
-  cub::DeviceFor::Bulk(d_temp_storage, temp_storage_bytes, vec.size(), op);
+  auto result = cub::DeviceFor::Bulk(d_temp_storage, temp_storage_bytes, vec.size(), op);
+  if (result != cudaSuccess)
+  {
+    std::cerr << "Bulk operation failed with error code: " << result << std::endl;
+  }
 
   c2h::device_vector<int> expected = {1, 4, 9, 16};
   // example-end bulk-temp-storage
@@ -78,7 +82,11 @@ C2H_TEST("Device bulk works without temporary storage", "[bulk][device]")
   c2h::device_vector<int> vec = {1, 2, 3, 4};
   square_t op{thrust::raw_pointer_cast(vec.data())};
 
-  cub::DeviceFor::Bulk(vec.size(), op);
+  auto result = cub::DeviceFor::Bulk(vec.size(), op);
+  if (result != cudaSuccess)
+  {
+    std::cerr << "Bulk operation failed with error code: " << result << std::endl;
+  }
 
   c2h::device_vector<int> expected = {1, 4, 9, 16};
   // example-end bulk-wo-temp-storage
@@ -95,14 +103,22 @@ C2H_TEST("Device for each n works with temporary storage", "[for_each][device]")
   // 1) Get temp storage size
   std::uint8_t* d_temp_storage{};
   std::size_t temp_storage_bytes{};
-  cub::DeviceFor::ForEachN(d_temp_storage, temp_storage_bytes, vec.begin(), vec.size(), op);
+  auto result = cub::DeviceFor::ForEachN(d_temp_storage, temp_storage_bytes, vec.begin(), vec.size(), op);
+  if (result != cudaSuccess)
+  {
+    std::cerr << "ForEachN operation failed with error code: " << result << std::endl;
+  }
 
   // 2) Allocate temp storage
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // 3) Perform for each n operation
-  cub::DeviceFor::ForEachN(d_temp_storage, temp_storage_bytes, vec.begin(), vec.size(), op);
+  result = cub::DeviceFor::ForEachN(d_temp_storage, temp_storage_bytes, vec.begin(), vec.size(), op);
+  if (result != cudaSuccess)
+  {
+    std::cerr << "ForEachN operation failed with error code: " << result << std::endl;
+  }
 
   c2h::device_vector<int> expected = {1, 4, 9, 16};
   // example-end for-each-n-temp-storage
@@ -116,7 +132,11 @@ C2H_TEST("Device for each n works without temporary storage", "[for_each][device
   c2h::device_vector<int> vec = {1, 2, 3, 4};
   square_ref_t op{};
 
-  cub::DeviceFor::ForEachN(vec.begin(), vec.size(), op);
+  auto result = cub::DeviceFor::ForEachN(vec.begin(), vec.size(), op);
+  if (result != cudaSuccess)
+  {
+    std::cerr << "ForEachN operation failed with error code: " << result << std::endl;
+  }
 
   c2h::device_vector<int> expected = {1, 4, 9, 16};
   // example-end for-each-n-wo-temp-storage
@@ -133,14 +153,22 @@ C2H_TEST("Device for each works with temporary storage", "[for_each][device]")
   // 1) Get temp storage size
   std::uint8_t* d_temp_storage{};
   std::size_t temp_storage_bytes{};
-  cub::DeviceFor::ForEach(d_temp_storage, temp_storage_bytes, vec.begin(), vec.end(), op);
+  auto result = cub::DeviceFor::ForEach(d_temp_storage, temp_storage_bytes, vec.begin(), vec.end(), op);
+  if (result != cudaSuccess)
+  {
+    std::cerr << "ForEach operation failed with error code: " << result << std::endl;
+  }
 
   // 2) Allocate temp storage
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // 3) Perform for each operation
-  cub::DeviceFor::ForEach(d_temp_storage, temp_storage_bytes, vec.begin(), vec.end(), op);
+  result = cub::DeviceFor::ForEach(d_temp_storage, temp_storage_bytes, vec.begin(), vec.end(), op);
+  if (result != cudaSuccess)
+  {
+    std::cerr << "ForEach operation failed with error code: " << result << std::endl;
+  }
 
   c2h::device_vector<int> expected = {1, 4, 9, 16};
   // example-end for-each-temp-storage
@@ -154,7 +182,11 @@ C2H_TEST("Device for each works without temporary storage", "[for_each][device]"
   c2h::device_vector<int> vec = {1, 2, 3, 4};
   square_ref_t op{};
 
-  cub::DeviceFor::ForEach(vec.begin(), vec.end(), op);
+  auto result = cub::DeviceFor::ForEach(vec.begin(), vec.end(), op);
+  if (result != cudaSuccess)
+  {
+    std::cerr << "ForEach operation failed with error code: " << result << std::endl;
+  }
 
   c2h::device_vector<int> expected = {1, 4, 9, 16};
   // example-end for-each-wo-temp-storage
@@ -172,14 +204,22 @@ C2H_TEST("Device for each n copy works with temporary storage", "[for_each][devi
   // 1) Get temp storage size
   std::uint8_t* d_temp_storage{};
   std::size_t temp_storage_bytes{};
-  cub::DeviceFor::ForEachCopyN(d_temp_storage, temp_storage_bytes, vec.begin(), vec.size(), op);
+  auto result = cub::DeviceFor::ForEachCopyN(d_temp_storage, temp_storage_bytes, vec.begin(), vec.size(), op);
+  if (result != cudaSuccess)
+  {
+    std::cerr << "ForEachCopyN operation failed with error code: " << result << std::endl;
+  }
 
   // 2) Allocate temp storage
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // 3) Perform for each n operation
-  cub::DeviceFor::ForEachCopyN(d_temp_storage, temp_storage_bytes, vec.begin(), vec.size(), op);
+  result = cub::DeviceFor::ForEachCopyN(d_temp_storage, temp_storage_bytes, vec.begin(), vec.size(), op);
+  if (result != cudaSuccess)
+  {
+    std::cerr << "ForEachCopyN operation failed with error code: " << result << std::endl;
+  }
 
   c2h::device_vector<int> expected = {2};
   // example-end for-each-copy-n-temp-storage
@@ -194,7 +234,11 @@ C2H_TEST("Device for each n copy works without temporary storage", "[for_each][d
   c2h::device_vector<int> count(1);
   odd_count_t op{thrust::raw_pointer_cast(count.data())};
 
-  cub::DeviceFor::ForEachCopyN(vec.begin(), vec.size(), op);
+  auto result = cub::DeviceFor::ForEachCopyN(vec.begin(), vec.size(), op);
+  if (result != cudaSuccess)
+  {
+    std::cerr << "ForEachCopyN operation failed with error code: " << result << std::endl;
+  }
 
   c2h::device_vector<int> expected = {2};
   // example-end for-each-copy-n-wo-temp-storage
@@ -212,14 +256,22 @@ C2H_TEST("Device for each copy works with temporary storage", "[for_each][device
   // 1) Get temp storage size
   std::uint8_t* d_temp_storage{};
   std::size_t temp_storage_bytes{};
-  cub::DeviceFor::ForEachCopy(d_temp_storage, temp_storage_bytes, vec.begin(), vec.end(), op);
+  auto result = cub::DeviceFor::ForEachCopy(d_temp_storage, temp_storage_bytes, vec.begin(), vec.end(), op);
+  if (result != cudaSuccess)
+  {
+    std::cerr << "ForEachCopy operation failed with error code: " << result << std::endl;
+  }
 
   // 2) Allocate temp storage
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // 3) Perform for each n operation
-  cub::DeviceFor::ForEachCopy(d_temp_storage, temp_storage_bytes, vec.begin(), vec.end(), op);
+  result = cub::DeviceFor::ForEachCopy(d_temp_storage, temp_storage_bytes, vec.begin(), vec.end(), op);
+  if (result != cudaSuccess)
+  {
+    std::cerr << "ForEachCopy operation failed with error code: " << result << std::endl;
+  }
 
   c2h::device_vector<int> expected = {2};
   // example-end for-each-copy-temp-storage
@@ -234,7 +286,11 @@ C2H_TEST("Device for each copy works without temporary storage", "[for_each][dev
   c2h::device_vector<int> count(1);
   odd_count_t op{thrust::raw_pointer_cast(count.data())};
 
-  cub::DeviceFor::ForEachCopy(vec.begin(), vec.end(), op);
+  auto result = cub::DeviceFor::ForEachCopy(vec.begin(), vec.end(), op);
+  if (result != cudaSuccess)
+  {
+    std::cerr << "ForEachCopy operation failed with error code: " << result << std::endl;
+  }
 
   c2h::device_vector<int> expected = {2};
   // example-end for-each-copy-wo-temp-storage

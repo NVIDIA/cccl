@@ -6,10 +6,10 @@
 
 #include <thrust/iterator/constant_iterator.h>
 
+#include <cuda/cmath>
 #include <cuda/functional>
 #include <cuda/ptx>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/bit>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -42,7 +42,7 @@ __device__ void warp_reduce_function(T& thread_data, Output* output, ReductionOp
   using warp_reduce_t = cub::WarpReduce<Output, LogicalWarpThreads>;
   using storage_t     = typename warp_reduce_t::TempStorage;
   __shared__ storage_t storage[total_warps];
-  constexpr bool is_power_of_two = cuda::std::has_single_bit(LogicalWarpThreads);
+  constexpr bool is_power_of_two = cuda::is_power_of_two(LogicalWarpThreads);
   auto lane                      = cuda::ptx::get_sreg_laneid();
   auto logical_warp              = is_power_of_two ? threadIdx.x / LogicalWarpThreads : threadIdx.x / warp_size;
   auto logical_lane              = is_power_of_two ? threadIdx.x % LogicalWarpThreads : lane;
@@ -212,7 +212,7 @@ _CCCL_DIAG_POP
 
 std::array<unsigned, 3> get_test_config(unsigned logical_warp_threads, unsigned items_per_thread = 1)
 {
-  bool is_power_of_two = cuda::std::has_single_bit(logical_warp_threads);
+  bool is_power_of_two = cuda::is_power_of_two(logical_warp_threads);
   auto logical_warps   = is_power_of_two ? warp_size / logical_warp_threads : 1;
   auto input_size      = total_warps * warp_size * items_per_thread;
   auto output_size     = total_warps * logical_warps;

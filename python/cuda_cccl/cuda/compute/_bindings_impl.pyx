@@ -978,7 +978,7 @@ cdef class DeviceReduceBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during reduce result cleanup")
 
-    cpdef int compute(
+    cpdef size_t compute(
         DeviceReduceBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1012,7 +1012,7 @@ cdef class DeviceReduceBuildResult:
             )
         return storage_sz
 
-    cpdef int compute_nondeterministic(
+    cpdef size_t compute_nondeterministic(
         DeviceReduceBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1187,7 +1187,7 @@ cdef class DeviceScanBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during scan result cleanup")
 
-    cpdef int compute_inclusive(
+    cpdef size_t compute_inclusive(
         DeviceScanBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1221,7 +1221,7 @@ cdef class DeviceScanBuildResult:
             )
         return storage_sz
 
-    cpdef int compute_exclusive(
+    cpdef size_t compute_exclusive(
         DeviceScanBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1255,7 +1255,7 @@ cdef class DeviceScanBuildResult:
             )
         return storage_sz
 
-    cpdef int compute_inclusive_future_value(
+    cpdef size_t compute_inclusive_future_value(
         DeviceScanBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1289,7 +1289,7 @@ cdef class DeviceScanBuildResult:
             )
         return storage_sz
 
-    cpdef int compute_exclusive_future_value(
+    cpdef size_t compute_exclusive_future_value(
         DeviceScanBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1323,7 +1323,7 @@ cdef class DeviceScanBuildResult:
             )
         return storage_sz
 
-    cpdef int compute_inclusive_no_init(
+    cpdef size_t compute_inclusive_no_init(
         DeviceScanBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1452,7 +1452,7 @@ cdef class DeviceSegmentedReduceBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during segmented_reduce result cleanup")
 
-    cpdef int compute(
+    cpdef size_t compute(
         DeviceSegmentedReduceBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1582,7 +1582,7 @@ cdef class DeviceMergeSortBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during merge_sort result cleanup")
 
-    cpdef int compute(
+    cpdef size_t compute(
         DeviceMergeSortBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1715,7 +1715,7 @@ cdef class DeviceUniqueByKeyBuildResult:
         if (status != 0):
             print(f"Return code {status} encountered during unique_by_key result cleanup")
 
-    cpdef int compute(
+    cpdef size_t compute(
         DeviceUniqueByKeyBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -2197,7 +2197,7 @@ cdef class DeviceHistogramBuildResult:
                 f"Failed building histogram, error code: {status}"
             )
 
-    cpdef int compute_even(
+    cpdef size_t compute_even(
         DeviceHistogramBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -2459,7 +2459,7 @@ cdef class DeviceThreeWayPartitionBuildResult:
                 f"Failed building three_way_partition, error code: {status}"
             )
 
-    cpdef int compute(
+    cpdef size_t compute(
         DeviceThreeWayPartitionBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,

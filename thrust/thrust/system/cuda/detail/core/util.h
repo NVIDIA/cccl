@@ -399,7 +399,8 @@ public:
 };
 
 #if !_CCCL_COMPILER(NVRTC)
-THRUST_RUNTIME_FUNCTION inline int get_ptx_version()
+template <class = void>
+THRUST_RUNTIME_FUNCTION int get_ptx_version()
 {
   int ptx_version = 0;
   if (cub::PtxVersion(ptx_version) != cudaSuccess)

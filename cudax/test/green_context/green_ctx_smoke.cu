@@ -80,11 +80,20 @@ C2H_TEST("Green context", "[green_context]")
       auto id2 = ctx2.id();
 
       // Test that different contexts have different IDs
+#    if _CCCL_COMPILER(NVHPC, <, 25, 11)
+      CUDAX_REQUIRE(cuda::std::to_underlying(id1) != cuda::std::to_underlying(id2));
+#    else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 11) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 11) vvv
       CUDAX_REQUIRE(id1 != id2);
+#    endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
 
       // Test that the same context returns the same ID when called multiple times
+#    if _CCCL_COMPILER(NVHPC, <, 25, 11)
+      CUDAX_REQUIRE(cuda::std::to_underlying(ctx1.id()) == cuda::std::to_underlying(id1));
+      CUDAX_REQUIRE(cuda::std::to_underlying(ctx2.id()) == cuda::std::to_underlying(id2));
+#    else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 11) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 11) vvv
       CUDAX_REQUIRE(ctx1.id() == id1);
       CUDAX_REQUIRE(ctx2.id() == id2);
+#    endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
     }
   }
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)

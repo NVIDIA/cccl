@@ -9,7 +9,7 @@ Memory pool objects implement the :ref:`cuda::memory_resource <libcudacxx-extend
 
 For the full memory resource model and property system, see :ref:`Memory Resources (Extended API) <libcudacxx-extended-api-memory-resources>`.
 
-Host memory pools are supported on CUDA 12.6 and later. Managed memory pools are supported on CUDA 13.0 and later and are not supported on Windows. For those cases use :ref:`cuda::mr::legacy_pinned_memory_resource <libcudacxx-memory-resource-legacy-pinned-memory-resource>` and :ref:`cuda::mr::legacy_managed_memory_resource <libcudacxx-memory-resource-legacy-managed-memory-resource>` instead.
+Host memory pools are supported on CUDA 12.9 and later. Managed memory pools are supported on CUDA 13.0 and later and are not supported on Windows. For those cases use :ref:`cuda::mr::legacy_pinned_memory_resource <libcudacxx-memory-resource-legacy-pinned-memory-resource>` and :ref:`cuda::mr::legacy_managed_memory_resource <libcudacxx-memory-resource-legacy-managed-memory-resource>` instead.
 
 ``cuda::device_memory_pool``
 ----------------------------
@@ -102,7 +102,7 @@ Availability: CCCL 3.2.0 / CUDA 13.2 (requires CTK 13.0+). Not supported on Wind
 
 ``cuda::pinned_memory_pool`` allocates pinned (page-locked) host memory using CUDA's memory pool API. Pinned memory enables faster host-to-device transfers and can be accessed from all devices. The pool can be optionally created for a specific host NUMA node.
 
-Availability: CCCL 3.2.0 / CUDA 13.2 (requires CTK 12.6+)
+Availability: CCCL 3.2.0 / CUDA 13.2 (requires CTK 12.9+)
 
 Example:
 
@@ -137,7 +137,7 @@ Example:
 
 ``cuda::pinned_memory_pool_ref`` is a non-owning reference to a pinned memory pool.
 
-Availability: CCCL 3.2.0 / CUDA 13.2 (requires CTK 12.6+)
+Availability: CCCL 3.2.0 / CUDA 13.2 (requires CTK 12.9+)
 
 Default Memory Pools
 --------------------

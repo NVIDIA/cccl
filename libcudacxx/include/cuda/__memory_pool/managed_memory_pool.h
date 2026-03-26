@@ -34,6 +34,10 @@
 //! allocates managed memory.
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
+// clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
+
 //! @rst
 //! .. _libcudacxx-memory-resource-async:
 //!
@@ -77,11 +81,11 @@ public:
 //! @brief Returns the default managed memory pool.
 //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
 //! @returns The default managed memory pool.
-[[nodiscard]] inline managed_memory_pool_ref managed_default_memory_pool()
+[[nodiscard]] inline managed_memory_pool_ref& managed_default_memory_pool()
 {
-  static ::cudaMemPool_t __pool = ::cuda::__get_default_memory_pool(
-    ::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED);
-  return managed_memory_pool_ref(__pool);
+  static managed_memory_pool_ref __pool{::cuda::__get_default_memory_pool(
+    ::CUmemLocation{::CU_MEM_LOCATION_TYPE_NONE, 0}, ::CU_MEM_ALLOCATION_TYPE_MANAGED)};
+  return __pool;
 }
 
 //! @rst
@@ -150,6 +154,8 @@ static_assert(::cuda::mr::resource_with<managed_memory_pool_ref, ::cuda::mr::hos
 
 static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::device_accessible>, "");
 static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::host_accessible>, "");
+
+_CCCL_DIAG_POP
 
 _CCCL_END_NAMESPACE_CUDA
 

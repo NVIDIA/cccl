@@ -49,14 +49,14 @@ void test_for_each_n(const Policy& policy, thrust::device_vector<bool>& res)
   }
 
   { // same type
-    thrust::fill(res.begin(), res.end(), false);
+    cuda::std::fill(policy, res.begin(), res.end(), false);
     const auto result = cuda::std::for_each_n(policy, cuda::counting_iterator{0}, size, fn);
     CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
     CHECK(result == cuda::counting_iterator{size});
   }
 
   { // convertible type
-    thrust::fill(res.begin(), res.end(), false);
+    cuda::std::fill(policy, res.begin(), res.end(), false);
     const auto result = cuda::std::for_each_n(policy, cuda::counting_iterator<short>{0}, size, fn);
     CHECK(thrust::all_of(res.begin(), res.end(), cuda::std::identity{}));
     CHECK(result == cuda::counting_iterator<short>{size});
@@ -76,14 +76,14 @@ C2H_TEST("cuda::std::for_each_n", "[parallel algorithm]")
   SECTION("with provided stream")
   {
     cuda::stream stream{cuda::device_ref{0}};
-    const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream);
+    const auto policy = cuda::execution::__cub_par_unseq.with(cuda::get_stream, stream);
     test_for_each_n(policy, res);
   }
 
   SECTION("with provided memory_resource")
   {
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
-    const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
+    const auto policy = cuda::execution::__cub_par_unseq.with(cuda::mr::get_memory_resource, device_resource);
     test_for_each_n(policy, res);
   }
 
@@ -91,7 +91,8 @@ C2H_TEST("cuda::std::for_each_n", "[parallel algorithm]")
   {
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
-    const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource).with_stream(stream);
+    const auto policy = cuda::execution::__cub_par_unseq.with(cuda::mr::get_memory_resource, device_resource)
+                          .with(cuda::get_stream, stream);
     test_for_each_n(policy, res);
   }
 }

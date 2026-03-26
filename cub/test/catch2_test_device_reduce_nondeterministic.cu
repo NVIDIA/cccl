@@ -29,42 +29,21 @@ using float_type_list =
 #endif
                  >;
 
-template <int NOMINAL_BLOCK_THREADS_4B, int NOMINAL_ITEMS_PER_THREAD_4B>
-struct AgentReducePolicy
-{
-  /// Number of items per vectorized load
-  static constexpr int VECTOR_LOAD_LENGTH = 4;
-
-  /// Cooperative block-wide reduction algorithm to use
-  static constexpr cub::BlockReduceAlgorithm BLOCK_ALGORITHM =
-    cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
-
-  /// Cache load modifier for reading input elements
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::CacheLoadModifier::LOAD_DEFAULT;
-  constexpr static int ITEMS_PER_THREAD                 = NOMINAL_ITEMS_PER_THREAD_4B;
-  constexpr static int BLOCK_THREADS                    = NOMINAL_BLOCK_THREADS_4B;
-};
-
 template <int ItemsPerThread, int BlockSize>
-struct hub_t
+struct custom_policy_selector
 {
-  struct Policy : cub::ChainedPolicy<300, Policy, Policy>
+  _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> cub::detail::reduce::reduce_policy
   {
-    constexpr static int ITEMS_PER_THREAD = ItemsPerThread;
-
-    using ReducePolicy = AgentReducePolicy<BlockSize, ItemsPerThread>;
-
-    // SingleTilePolicy
-    using SingleTilePolicy = ReducePolicy;
-
-    // SegmentedReducePolicy
-    using SegmentedReducePolicy = ReducePolicy;
-
-    // ReduceNondeterministicPolicy
-    using ReduceNondeterministicPolicy = ReducePolicy;
-  };
-
-  using MaxPolicy = Policy;
+    const auto rp = cub::detail::reduce::agent_reduce_policy{
+      BlockSize,
+      ItemsPerThread,
+      4,
+      cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS,
+      cub::CacheLoadModifier::LOAD_DEFAULT};
+    auto rp_nd            = rp;
+    rp_nd.block_algorithm = cub::BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC;
+    return {rp, rp, rp_nd};
+  }
 };
 
 C2H_TEST("Nondeterministic Device reduce works with float and double on gpu",
@@ -85,19 +64,28 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu",
     cudaSuccess
     == cub::DeviceReduce::Reduce(d_input.begin(), d_output.begin(), num_items, cuda::std::plus<type>{}, type{}, env));
 
-  c2h::host_vector<type> h_input = d_input;
+  c2h::host_vector<type> h_input  = d_input;
+  c2h::host_vector<type> h_actual = d_output;
 
   c2h::host_vector<type> h_expected(1);
   // TODO: Use std::reduce once we drop support for GCC 7 and 8
   h_expected[0] = std::accumulate(h_input.begin(), h_input.end(), type{}, cuda::std::plus<type>());
 
+  auto plus_abs = [](type a, type b) {
+    const type aa = cuda::std::fabs(a);
+    const type ab = cuda::std::fabs(b);
+    return cuda::std::plus<type>{}(aa, ab);
+  };
+  type sum_abs = std::accumulate(h_input.begin(), h_input.end(), type{}, plus_abs);
+
   // relative round-off error of recursive summation is proportional to n * type::epsilon,
   // see https://epubs.siam.org/doi/epdf/10.1137/19M1257780
 
-  type relative_err = std::min((num_items + 1) * std::numeric_limits<type>::epsilon(), static_cast<type>(1));
-  c2h::host_vector<type> h_actual = d_output;
+  constexpr type eps      = std::numeric_limits<type>::epsilon();
+  const type relative_err = (num_items + 1) * eps;
+  const type abs_err      = relative_err * sum_abs;
 
-  REQUIRE_APPROX_EQ_EPSILON(h_expected, h_actual, relative_err);
+  REQUIRE_APPROX_EQ_ABS(h_expected, h_actual, abs_err);
 }
 
 C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with NaN",
@@ -109,6 +97,7 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
 
   const int num_items = GENERATE_COPY(values({0, 1, 20, 100, 2000, 1 << 20}));
 
+  // TODO(bgruber): not using cuda::std::plus falls back to run_to_run determinism. Is this intended?
   constexpr auto min_op = cuda::minimum<type>{};
   constexpr auto init   = cuda::std::numeric_limits<type>::max();
 
@@ -148,11 +137,11 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   c2h::device_vector<type> d_output_p1(1);
   c2h::device_vector<type> d_output_p2(1);
 
-  auto env1 = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed), cuda::execution::__tune(hub_t<1, 128>{})};
+  auto env1 = cuda::std::execution::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
+                                        cuda::execution::__tune(custom_policy_selector<1, 128>{})};
 
-  auto env2 = cuda::std::execution::env{
-    cuda::execution::require(cuda::execution::determinism::not_guaranteed), cuda::execution::__tune(hub_t<2, 256>{})};
+  auto env2 = cuda::std::execution::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
+                                        cuda::execution::__tune(custom_policy_selector<2, 256>{})};
 
   REQUIRE(
     cudaSuccess == cub::DeviceReduce::Reduce(d_input.begin(), d_output_p1.begin(), num_items, min_op, init, env1));

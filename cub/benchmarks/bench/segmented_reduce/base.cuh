@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cub/device/device_reduce.cuh>
+#include <cub/device/dispatch/dispatch_fixed_size_segmented_reduce.cuh>
 
 #include <cuda/std/type_traits>
 

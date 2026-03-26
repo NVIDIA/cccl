@@ -465,7 +465,7 @@ C2H_CCCLRT_TEST("cuda::buffer constructors with legacy resource", "[container][b
   STATIC_CHECK(!decltype(buffer2)::properties_list::has_property(cuda::mr::device_accessible{}));
 }
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 9)
 C2H_CCCLRT_TEST("cuda::make_buffer narrowing properties", "[container][buffer]")
 {
   if (!cuda::__is_host_memory_pool_supported())
@@ -492,7 +492,7 @@ C2H_CCCLRT_TEST("cuda::make_buffer narrowing properties", "[container][buffer]")
   CCCLRT_CHECK(equal_range(buf_host));
   CCCLRT_CHECK(buf_device.size() == 2);
 }
-#endif // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^
+#endif // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^
 
 C2H_CCCLRT_TEST("cuda::make_buffer with memory_pool_ref", "[container][buffer]")
 {

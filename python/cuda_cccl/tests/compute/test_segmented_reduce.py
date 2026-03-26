@@ -22,8 +22,14 @@ def offset_dtype(request):
     return np.dtype(request.param)
 
 
-def test_segmented_reduce(input_array, offset_dtype):
+def test_segmented_reduce(input_array, offset_dtype, monkeypatch):
     "Test for all supported input types and for some offset types"
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
 
     def binary_op(a, b):
         return a + b
@@ -66,7 +72,13 @@ def test_segmented_reduce(input_array, offset_dtype):
     assert cp.all(d_out == d_expected)
 
 
-def test_segmented_reduce_struct_type():
+def test_segmented_reduce_struct_type(monkeypatch):
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
     import cupy as cp
     import numpy as np
 
@@ -106,11 +118,17 @@ def test_segmented_reduce_struct_type():
 
 
 @pytest.mark.large
-def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
+def test_large_num_segments_uniform_segment_sizes_nonuniform_input(monkeypatch):
     """
     This test verifies that segmented_reduce raises an error when
     num_segments exceeds 2^31-1.
     """
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
 
     def make_difference(idx: np.int64) -> np.uint8:
         p = np.uint8(7)
@@ -159,11 +177,17 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
 
 
 @pytest.mark.large
-def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
+def test_large_num_segments_nonuniform_segment_sizes_uniform_input(monkeypatch):
     """
     This test verifies that segmented_reduce raises an error when
     num_segments exceeds 2^31-1.
     """
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
     input_it = ConstantIterator(np.int16(1))
 
     def offset_functor(m0: np.int64, p: np.int64):
@@ -216,7 +240,13 @@ def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
         )
 
 
-def test_segmented_reduce_well_known_plus():
+def test_segmented_reduce_well_known_plus(monkeypatch):
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
     dtype = np.int32
     h_init = np.array([0], dtype=dtype)
 
@@ -234,7 +264,13 @@ def test_segmented_reduce_well_known_plus():
     np.testing.assert_equal(d_output.get(), expected)
 
 
-def test_segmented_reduce_well_known_maximum():
+def test_segmented_reduce_well_known_maximum(monkeypatch):
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
     dtype = np.int32
     h_init = np.array([-100], dtype=dtype)
 
@@ -252,7 +288,13 @@ def test_segmented_reduce_well_known_maximum():
     np.testing.assert_equal(d_output.get(), expected)
 
 
-def test_segmented_reduce_bool_maximum():
+def test_segmented_reduce_bool_maximum(monkeypatch):
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
     h_init = np.array([False], dtype=np.bool_)
 
     # Create segmented data: [False, True] | [False, False] | [True]
@@ -269,8 +311,14 @@ def test_segmented_reduce_bool_maximum():
     np.testing.assert_equal(d_output.get(), expected)
 
 
-def test_segmented_reduce_transform_output_iterator(floating_array):
+def test_segmented_reduce_transform_output_iterator(floating_array, monkeypatch):
     """Test segmented reduce with TransformOutputIterator."""
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
     dtype = floating_array.dtype
     h_init = np.array([0], dtype=dtype)
 
@@ -303,7 +351,14 @@ def test_segmented_reduce_transform_output_iterator(floating_array):
     np.testing.assert_allclose(d_output.get(), expected.get(), atol=1e-6)
 
 
-def test_device_segmented_reduce_for_rowwise_sum():
+def test_device_segmented_reduce_for_rowwise_sum(monkeypatch):
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
+
     def add_op(a, b):
         return a + b
 
@@ -335,8 +390,14 @@ def test_device_segmented_reduce_for_rowwise_sum():
     assert cp.all(d_output == expected)
 
 
-def test_segmented_reduce_with_lambda():
+def test_segmented_reduce_with_lambda(monkeypatch):
     """Test segmented_reduce with a lambda function as the reducer."""
+    # Disable SASS verification for this test (LDL instruction in SASS).
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
     dtype = np.int32
     h_init = np.array([0], dtype=dtype)
 

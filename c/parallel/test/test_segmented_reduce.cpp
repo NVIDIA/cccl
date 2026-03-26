@@ -67,6 +67,11 @@ struct segmented_reduce_build
       libcudacxx_path,
       ctk_path);
   }
+
+  static constexpr bool should_check_sass(int)
+  {
+    return false;
+  }
 };
 
 struct segmented_reduce_run

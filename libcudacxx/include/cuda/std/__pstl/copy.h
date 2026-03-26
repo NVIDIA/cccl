@@ -60,6 +60,7 @@ copy([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIte
     {
       return __result;
     }
+
     const auto __count = ::cuda::std::distance(__first, __last);
     return __dispatch(__policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__result));
   }

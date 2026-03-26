@@ -61,12 +61,14 @@ workflows:
     # c.parallel -- pinned to gcc13 on Linux to match python
     - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '12.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080']}
     - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080', 'l4', 'h100']}
+    # RTX PRO 6000 coverage (limited due to small number of runners):
+    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13'], gpu: ['rtxpro6000']}
     # c.experimental.stf-- pinned to gcc13 to match python
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
     # Python -- pinned to gcc13 on Linux for consistency across CTK images
-    - {jobs: ['test'], project: 'python', ctk: ['12.0',                 '13.X'], py_version: ['3.10'], gpu: 'l4', cxx: ['gcc13', 'msvc']}
-    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.13'], gpu: 'l4', cxx: ['gcc13', 'msvc']}
+    - {jobs: ['test'], project: 'python', ctk: ['12.X',        '13.X'], py_version: ['3.10'], gpu: 'l4', cxx: ['gcc13', 'msvc']}
+    - {jobs: ['test'], project: 'python', ctk: ['12.X','13.0', '13.X'], py_version: ['3.13'], gpu: 'l4', cxx: ['gcc13', 'msvc']}
     - {jobs: ['test'], project: 'python', py_version: '3.13', gpu: 'h100', cxx: 'gcc13'}
     # CCCL packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080', args: '-min-cmake'}
@@ -182,11 +184,13 @@ workflows:
     # c.parallel -- pinned to gcc13 to match python
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080', 'l4', 'h100']}
+    # RTX PRO 6000 coverage (limited due to small number of runners):
+    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13'], gpu: ['rtxpro6000']}
     # c.experimental.stf -- pinned to gcc13 to match python
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
     # Python -- pinned to gcc13 on Linux for consistency across CTK images
-    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: ['gcc13', 'msvc']}
+    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: ['gcc13', 'msvc']}
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.13', gpu: 'h100', cxx: 'gcc13'}
     # CCCL packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080', args: '-min-cmake'}
@@ -267,11 +271,13 @@ workflows:
     # c.parallel -- pinned to gcc13 to match python
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '12.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: ['gcc13', 'msvc'], gpu: ['rtx2080', 'l4', 'h100']}
+    # RTX PRO 6000 coverage (limited due to small number of runners):
+    - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13'], gpu: ['rtxpro6000']}
     # c.experimental.stf -- pinned to gcc13 to match python
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '13.X', cxx: 'gcc13', gpu: ['rtx2080', 'l4', 'h100']}
     # Python -- pinned to gcc13 for consistency across CTK images
-    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: ['gcc13', 'msvc']}
+    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: ['gcc13', 'msvc']}
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.13', gpu: 'h100', cxx: ['gcc13', 'msvc']}
     # CCCL packaging:
     - {jobs: ['test'], project: 'packaging', ctk: '12.0', cxx: ['gcc10', 'clang14'], gpu: 'rtx2080', args: '-min-cmake'}
@@ -293,7 +299,7 @@ workflows:
     - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
 
   python-wheels:
-    - {jobs: ['test'], project: 'python', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: ['gcc13', 'msvc']}
+    - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: ['gcc13', 'msvc']}
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.X'], py_version: '3.13', gpu: 'h100', cxx: ['gcc13', 'msvc']}
     - {jobs: ['test'], project: 'python', cpu: 'arm64', ctk: ['12.X', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: 'gcc13'}
 

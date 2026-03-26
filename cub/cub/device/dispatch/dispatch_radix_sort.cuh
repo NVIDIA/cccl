@@ -94,103 +94,15 @@ struct DeviceRadixSortKernelSource
   {
     return sizeof(ValueT);
   }
-};
 
-// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
-template <typename LegacyActivePolicy>
-_CCCL_API constexpr auto convert_policy() -> radix_sort_policy
-{
-  using active_policy = LegacyActivePolicy;
-
-  auto convert_downsweep_policy = [](auto p) {
-    // MSVC will error if we put a [[maybe_unused]] on the parameter p above:
-    //   C2187: syntax error: 'attribute specifier' was unexpected here
-    (void) p;
-    using p_t = decltype(p);
-    return radix_sort_downsweep_policy{
-      p_t::BLOCK_THREADS,
-      p_t::ITEMS_PER_THREAD,
-      p_t::RADIX_BITS,
-      p_t::LOAD_ALGORITHM,
-      p_t::LOAD_MODIFIER,
-      p_t::RANK_ALGORITHM,
-      p_t::SCAN_ALGORITHM};
-  };
-
-  using hist_pol       = typename active_policy::HistogramPolicy;
-  const auto histogram = radix_sort_histogram_policy{
-    hist_pol::BLOCK_THREADS, hist_pol::ITEMS_PER_THREAD, hist_pol::NUM_PARTS, hist_pol::RADIX_BITS};
-
-  using exc_sum_pol        = typename active_policy::ExclusiveSumPolicy;
-  const auto exclusive_sum = radix_sort_exclusive_sum_policy{exc_sum_pol::BLOCK_THREADS, exc_sum_pol::RADIX_BITS};
-
-  using one_pol       = typename active_policy::OnesweepPolicy;
-  const auto onesweep = radix_sort_onesweep_policy{
-    one_pol::BLOCK_THREADS,
-    one_pol::ITEMS_PER_THREAD,
-    one_pol::RANK_NUM_PARTS,
-    one_pol::RADIX_BITS,
-    one_pol::RANK_ALGORITHM,
-    one_pol::SCAN_ALGORITHM,
-    one_pol::STORE_ALGORITHM};
-
-  using scan_pol  = typename active_policy::ScanPolicy;
-  const auto scan = scan_policy{
-    scan_pol::BLOCK_THREADS,
-    scan_pol::ITEMS_PER_THREAD,
-    scan_pol::LOAD_ALGORITHM,
-    scan_pol::LOAD_MODIFIER,
-    scan_pol::STORE_ALGORITHM,
-    scan_pol::SCAN_ALGORITHM,
-    delay_constructor_policy_from_type<typename scan_pol::detail::delay_constructor_t>};
-
-  const auto downsweep     = convert_downsweep_policy(typename active_policy::DownsweepPolicy{});
-  const auto alt_downsweep = convert_downsweep_policy(typename active_policy::AltDownsweepPolicy{});
-
-  using up_pol       = typename active_policy::UpsweepPolicy;
-  const auto upsweep = radix_sort_upsweep_policy{
-    up_pol::BLOCK_THREADS, up_pol::ITEMS_PER_THREAD, up_pol::RADIX_BITS, up_pol::LOAD_MODIFIER};
-
-  using alt_up_pol       = typename active_policy::AltUpsweepPolicy;
-  const auto alt_upsweep = radix_sort_upsweep_policy{
-    alt_up_pol::BLOCK_THREADS, alt_up_pol::ITEMS_PER_THREAD, alt_up_pol::RADIX_BITS, alt_up_pol::LOAD_MODIFIER};
-
-  const auto single_tile   = convert_downsweep_policy(typename active_policy::SingleTilePolicy{});
-  const auto segmented     = convert_downsweep_policy(typename active_policy::SegmentedPolicy{});
-  const auto alt_segmented = convert_downsweep_policy(typename active_policy::AltSegmentedPolicy{});
-
-  return radix_sort_policy{
-    active_policy::ONESWEEP,
-    active_policy::ONESWEEP_RADIX_BITS,
-    histogram,
-    exclusive_sum,
-    onesweep,
-    scan,
-    downsweep,
-    alt_downsweep,
-    upsweep,
-    alt_upsweep,
-    single_tile,
-    segmented,
-    alt_segmented};
-}
-
-// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
-template <typename LegacyActivePolicy>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE constexpr auto convert_policy(RadixSortPolicyWrapper<LegacyActivePolicy> policy)
-  -> radix_sort_policy
-{
-  return convert_policy<LegacyActivePolicy>();
-}
-
-// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
-template <typename PolicyHub>
-struct policy_selector_from_hub
-{
-  // this is only called in device code
-  _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> radix_sort_policy
+  CUB_RUNTIME_FUNCTION static constexpr KeyT* AdvanceKeys(KeyT* ptr, OffsetT offset)
   {
-    return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
+    return ptr + offset;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr ValueT* AdvanceValues(ValueT* ptr, OffsetT offset)
+  {
+    return ptr + offset;
   }
 };
 } // namespace detail::radix_sort
@@ -812,9 +724,9 @@ private:
                   portion < num_portions - 1 ? d_bins + ((portion + 1) * num_passes + pass) * RADIX_DIGITS : nullptr,
                   d_bins + (portion * num_passes + pass) * RADIX_DIGITS,
                   d_keys.Alternate(),
-                  d_keys.Current() + portion * PORTION_SIZE,
+                  kernel_source.AdvanceKeys(d_keys.Current(), portion * PORTION_SIZE),
                   d_values.Alternate(),
-                  d_values.Current() + portion * PORTION_SIZE,
+                  kernel_source.AdvanceValues(d_values.Current(), portion * PORTION_SIZE),
                   portion_num_items,
                   current_bit,
                   num_bits,

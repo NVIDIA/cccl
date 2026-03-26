@@ -20,14 +20,14 @@
 #include "helper.h"
 #include "types.h"
 
-#if _CCCL_CTK_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 9)
 using property_test_types =
   c2h::type_list<cuda::buffer<int, cuda::mr::host_accessible>,
                  cuda::buffer<int, cuda::mr::device_accessible>,
                  cuda::buffer<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
-#else // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^ / vvv _CCCL_CTK_BELOW(12, 6) vvv
+#else // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^ / vvv _CCCL_CTK_BELOW(12, 9) vvv
 using property_test_types = c2h::type_list<cuda::buffer<int, cuda::mr::device_accessible>>;
-#endif // ^^^ _CCCL_CTK_BELOW(12, 6) ^^^
+#endif // ^^^ _CCCL_CTK_BELOW(12, 9) ^^^
 
 C2H_CCCLRT_TEST("cuda::buffer properties", "[container][buffer]", property_test_types)
 {

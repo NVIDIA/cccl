@@ -17,7 +17,7 @@
 #include <thrust/scan.h>
 #include <thrust/system/detail/generic/scan.h>
 
-#include <cuda/functional>
+#include <cuda/std/__functional/operations.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic

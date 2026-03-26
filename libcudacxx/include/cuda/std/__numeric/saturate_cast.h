@@ -20,10 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__numeric/saturate_overflow_cast.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__utility/cmp.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -33,15 +32,7 @@ _CCCL_TEMPLATE(class _Up, class _Tp)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Up> _CCCL_AND __cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Up saturate_cast(_Tp __x) noexcept
 {
-  if (::cuda::std::cmp_less(__x, numeric_limits<_Up>::min()))
-  {
-    return numeric_limits<_Up>::min();
-  }
-  if (::cuda::std::cmp_greater(__x, numeric_limits<_Up>::max()))
-  {
-    return numeric_limits<_Up>::max();
-  }
-  return static_cast<_Up>(__x);
+  return ::cuda::saturate_overflow_cast<_Up>(__x).value;
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

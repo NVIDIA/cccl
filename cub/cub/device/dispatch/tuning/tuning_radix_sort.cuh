@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 #pragma once
@@ -20,6 +20,7 @@
 #include <cub/agent/agent_scan.cuh>
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/util_device.cuh>
 
 #include <cuda/__device/arch_id.h>
@@ -32,6 +33,9 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::radix_sort
 {
+using detail::scan::make_mem_scaled_scan_policy;
+using detail::scan::scan_policy;
+
 struct radix_sort_histogram_policy
 {
   int block_threads;
@@ -143,63 +147,6 @@ _CCCL_API constexpr auto make_reg_scaled_radix_sort_onesweep_policy(
     rank_algorith,
     scan_algorithm,
     store_algorithm};
-}
-
-// TODO(bgruber): move this into the scan tuning header
-struct scan_policy
-{
-  int block_threads;
-  int items_per_thread;
-  BlockLoadAlgorithm load_algorithm;
-  CacheLoadModifier load_modifier;
-  BlockStoreAlgorithm store_algorithm;
-  BlockScanAlgorithm scan_algorithm;
-  delay_constructor_policy delay_constructor;
-
-  _CCCL_API constexpr friend bool operator==(const scan_policy& lhs, const scan_policy& rhs)
-  {
-    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.store_algorithm == rhs.store_algorithm && lhs.scan_algorithm == rhs.scan_algorithm
-        && lhs.delay_constructor == rhs.delay_constructor;
-  }
-
-  _CCCL_API constexpr friend bool operator!=(const scan_policy& lhs, const scan_policy& rhs)
-  {
-    return !(lhs == rhs);
-  }
-
-#if !_CCCL_COMPILER(NVRTC)
-  friend ::std::ostream& operator<<(::std::ostream& os, const scan_policy& p)
-  {
-    return os
-        << "scan_policy { .block_threads = " << p.block_threads << ", .items_per_thread = " << p.items_per_thread
-        << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .store_algorithm = " << p.store_algorithm << ", .scan_algorithm = " << p.scan_algorithm
-        << ", .delay_constructor = " << p.delay_constructor << " }";
-  }
-#endif // !_CCCL_COMPILER(NVRTC)
-};
-
-_CCCL_API constexpr auto make_mem_scaled_scan_policy(
-  int nominal_4b_block_threads,
-  int nominal_4b_items_per_thread,
-  int compute_t_size,
-  BlockLoadAlgorithm load_algorithm,
-  CacheLoadModifier load_modifier,
-  BlockStoreAlgorithm store_algorithm,
-  BlockScanAlgorithm scan_algorithm,
-  delay_constructor_policy delay_constructor = {delay_constructor_kind::fixed_delay, 350, 450}) -> scan_policy
-{
-  const auto scaled = scale_mem_bound(nominal_4b_block_threads, nominal_4b_items_per_thread, compute_t_size);
-  return scan_policy{
-    scaled.block_threads,
-    scaled.items_per_thread,
-    load_algorithm,
-    load_modifier,
-    store_algorithm,
-    scan_algorithm,
-    delay_constructor};
 }
 
 struct radix_sort_downsweep_policy
@@ -839,7 +786,7 @@ _CCCL_API constexpr auto get_sm100_tuning(int key_size, int value_size, int offs
   return get_sm90_tuning(key_size, value_size, offset_size);
 }
 
-// TODO(bgruber): remove when segmented radix sort is ported to the new tuning API
+// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 template <typename PolicyT, typename = void>
 struct RadixSortPolicyWrapper : PolicyT
 {
@@ -852,7 +799,7 @@ struct RadixSortPolicyWrapper : PolicyT
 using namespace radix_sort_runtime_policies;
 #endif
 
-// TODO(bgruber): remove when segmented radix sort is ported to the new tuning API
+// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 template <typename StaticPolicyT>
 struct RadixSortPolicyWrapper<
   StaticPolicyT,
@@ -921,12 +868,107 @@ struct RadixSortPolicyWrapper<
 #endif
 };
 
-// TODO(bgruber): remove when segmented radix sort is ported to the new tuning API
+// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
 template <typename PolicyT>
 _CCCL_HOST_DEVICE RadixSortPolicyWrapper<PolicyT> MakeRadixSortPolicyWrapper(PolicyT policy)
 {
   return RadixSortPolicyWrapper<PolicyT>{policy};
 }
+
+// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
+template <typename LegacyActivePolicy>
+_CCCL_API constexpr auto convert_policy() -> radix_sort_policy
+{
+  using active_policy = LegacyActivePolicy;
+
+  auto convert_downsweep_policy = [](auto p) {
+    (void) p;
+    using p_t = decltype(p);
+    return radix_sort_downsweep_policy{
+      p_t::BLOCK_THREADS,
+      p_t::ITEMS_PER_THREAD,
+      p_t::RADIX_BITS,
+      p_t::LOAD_ALGORITHM,
+      p_t::LOAD_MODIFIER,
+      p_t::RANK_ALGORITHM,
+      p_t::SCAN_ALGORITHM};
+  };
+
+  using hist_pol       = typename active_policy::HistogramPolicy;
+  const auto histogram = radix_sort_histogram_policy{
+    hist_pol::BLOCK_THREADS, hist_pol::ITEMS_PER_THREAD, hist_pol::NUM_PARTS, hist_pol::RADIX_BITS};
+
+  using exc_sum_pol        = typename active_policy::ExclusiveSumPolicy;
+  const auto exclusive_sum = radix_sort_exclusive_sum_policy{exc_sum_pol::BLOCK_THREADS, exc_sum_pol::RADIX_BITS};
+
+  using one_pol       = typename active_policy::OnesweepPolicy;
+  const auto onesweep = radix_sort_onesweep_policy{
+    one_pol::BLOCK_THREADS,
+    one_pol::ITEMS_PER_THREAD,
+    one_pol::RANK_NUM_PARTS,
+    one_pol::RADIX_BITS,
+    one_pol::RANK_ALGORITHM,
+    one_pol::SCAN_ALGORITHM,
+    one_pol::STORE_ALGORITHM};
+
+  using scan_pol  = typename active_policy::ScanPolicy;
+  const auto scan = scan_policy{
+    scan_pol::BLOCK_THREADS,
+    scan_pol::ITEMS_PER_THREAD,
+    scan_pol::LOAD_ALGORITHM,
+    scan_pol::LOAD_MODIFIER,
+    scan_pol::STORE_ALGORITHM,
+    scan_pol::SCAN_ALGORITHM,
+    delay_constructor_policy_from_type<typename scan_pol::detail::delay_constructor_t>};
+
+  const auto downsweep     = convert_downsweep_policy(typename active_policy::DownsweepPolicy{});
+  const auto alt_downsweep = convert_downsweep_policy(typename active_policy::AltDownsweepPolicy{});
+
+  using up_pol       = typename active_policy::UpsweepPolicy;
+  const auto upsweep = radix_sort_upsweep_policy{
+    up_pol::BLOCK_THREADS, up_pol::ITEMS_PER_THREAD, up_pol::RADIX_BITS, up_pol::LOAD_MODIFIER};
+
+  using alt_up_pol       = typename active_policy::AltUpsweepPolicy;
+  const auto alt_upsweep = radix_sort_upsweep_policy{
+    alt_up_pol::BLOCK_THREADS, alt_up_pol::ITEMS_PER_THREAD, alt_up_pol::RADIX_BITS, alt_up_pol::LOAD_MODIFIER};
+
+  const auto single_tile   = convert_downsweep_policy(typename active_policy::SingleTilePolicy{});
+  const auto segmented     = convert_downsweep_policy(typename active_policy::SegmentedPolicy{});
+  const auto alt_segmented = convert_downsweep_policy(typename active_policy::AltSegmentedPolicy{});
+
+  return radix_sort_policy{
+    active_policy::ONESWEEP,
+    active_policy::ONESWEEP_RADIX_BITS,
+    histogram,
+    exclusive_sum,
+    onesweep,
+    scan,
+    downsweep,
+    alt_downsweep,
+    upsweep,
+    alt_upsweep,
+    single_tile,
+    segmented,
+    alt_segmented};
+}
+
+// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
+template <typename LegacyActivePolicy>
+_CCCL_API _CCCL_FORCEINLINE constexpr auto convert_policy(RadixSortPolicyWrapper<LegacyActivePolicy> policy)
+  -> radix_sort_policy
+{
+  return convert_policy<LegacyActivePolicy>();
+}
+
+// TODO(bgruber): remove in CCCL 4.0 when we drop the radix sort dispatcher after publishing the tuning API
+template <typename PolicyHub>
+struct policy_selector_from_hub
+{
+  _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> radix_sort_policy
+  {
+    return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
+  }
+};
 
 /**
  * @brief Tuning policy for kernel specialization
@@ -1635,6 +1677,11 @@ struct policy_hub
 {
   return ::cuda::std::max(1, nominal_4b_num_parts * 4 / ::cuda::std::max(compute_t_size, 4));
 }
+
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept radix_sort_policy_selector = detail::policy_selector<T, radix_sort_policy>;
+#endif // _CCCL_HAS_CONCEPTS()
 
 struct policy_selector
 {
@@ -2417,6 +2464,10 @@ struct policy_selector
       alt_segmented};
   }
 };
+
+#if _CCCL_HAS_CONCEPTS()
+static_assert(radix_sort_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
 
 template <typename KeyT, typename ValueT, typename OffsetT>
 struct policy_selector_from_types

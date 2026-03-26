@@ -10,10 +10,11 @@
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
-#include <cub/detail/ptx-json-parser.cuh>
 #include <cub/device/device_merge_sort.cuh>
+#include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 
 #include <format>
+#include <sstream>
 #include <vector>
 
 #include "kernels/iterators.h"
@@ -39,25 +40,6 @@ struct output_items_iterator_t;
 
 namespace merge_sort
 {
-struct merge_sort_runtime_tuning_policy
-{
-  cub::detail::RuntimeMergeSortAgentPolicy merge_sort;
-
-  auto MergeSort() const
-  {
-    return merge_sort;
-  }
-
-  using MergeSortPolicy = cub::detail::RuntimeMergeSortAgentPolicy;
-  using MaxPolicy       = merge_sort_runtime_tuning_policy;
-
-  template <typename F>
-  cudaError_t Invoke(int, F& op)
-  {
-    return op.template Invoke<merge_sort_runtime_tuning_policy>(*this);
-  }
-};
-
 enum class merge_sort_iterator_t
 {
   input_keys   = 0,
@@ -137,7 +119,7 @@ std::string get_merge_sort_kernel_name(
       : cccl_type_enum_to_name<items_storage_t>(output_items_it.value_type.type);
 
   return std::format(
-    "cub::detail::merge_sort::{0}<{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, device_merge_sort_vsmem_helper>",
+    "cub::detail::merge_sort::{0}<{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}>",
     kernel_name,
     chained_policy_t,
     input_keys_iterator_t,
@@ -199,33 +181,6 @@ struct merge_sort_kernel_source
     return build.item_type.size;
   }
 };
-
-struct dynamic_vsmem_helper_t
-{
-  template <typename PolicyT, typename... Ts>
-  static ::cuda::std::size_t BlockSortVSMemPerBlock(PolicyT /*policy*/)
-  {
-    return 0;
-  }
-
-  template <typename PolicyT, typename... Ts>
-  static ::cuda::std::size_t MergeVSMemPerBlock(PolicyT /*policy*/)
-  {
-    return 0;
-  }
-
-  template <typename PolicyT, typename... Ts>
-  static int BlockThreads(PolicyT policy)
-  {
-    return policy.BlockThreads();
-  }
-
-  template <typename PolicyT, typename... Ts>
-  static int ItemsPerTile(PolicyT policy)
-  {
-    return policy.ItemsPerTile();
-  }
-};
 } // namespace merge_sort
 
 CUresult cccl_device_merge_sort_build_ex(
@@ -277,8 +232,14 @@ try
 
   const std::string op_src = make_kernel_user_comparison_operator(input_keys_it_value_t, op);
 
-  std::string policy_hub_expr =
-    std::format("cub::detail::merge_sort::policy_hub<{}>",
+  const auto policy_sel = cub::detail::merge_sort::policy_selector{static_cast<int>(input_keys_it.value_type.size)};
+
+  // TODO(bgruber): drop this if tuning policies become formattable
+  std::stringstream policy_sel_str;
+  policy_sel_str << policy_sel(cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor}));
+
+  auto policy_selector_expr =
+    std::format("cub::detail::merge_sort::policy_selector_from_types<{}>",
                 get_iterator_name(input_keys_it, merge_sort::merge_sort_iterator_t::input_keys));
 
   std::string final_src = std::format(
@@ -297,36 +258,10 @@ struct __align__({3}) items_storage_t {{
 {6}
 {7}
 {8}
-using device_merge_sort_policy = {9}::MaxPolicy;
-
-struct device_merge_sort_vsmem_helper {{
-  template<typename ActivePolicyT, typename KeyInputIteratorT, typename ValueInputIteratorT, typename... Ts>
-  struct MergeSortVSMemHelperT {{
-    using policy_t = device_merge_sort_policy::ActivePolicy::MergeSortPolicy;
-    using block_sort_agent_t = cub::detail::merge_sort::AgentBlockSort<policy_t, KeyInputIteratorT, ValueInputIteratorT, Ts...>;
-    using merge_agent_t = cub::detail::merge_sort::AgentMerge<policy_t, Ts...>;
-  }};
-  template <typename AgentT>
-  struct VSmemHelperT {{
-    using static_temp_storage_t = typename AgentT::TempStorage;
-    static _CCCL_DEVICE _CCCL_FORCEINLINE static_temp_storage_t& get_temp_storage(
-      static_temp_storage_t& static_temp_storage, cub::detail::vsmem_t& vsmem)
-    {{
-        return static_temp_storage;
-    }}
-    template <bool needs_vsmem_ = false, ::cuda::std::enable_if_t<!needs_vsmem_, int> = 0>
-    static _CCCL_DEVICE _CCCL_FORCEINLINE bool discard_temp_storage(static_temp_storage_t& temp_storage)
-    {{
-      return false;
-    }}
-  }};
-}};
-
-#include <cub/detail/ptx-json/json.cuh>
-__device__ consteval auto& policy_generator() {{
-  return ptx_json::id<ptx_json::string("device_merge_sort_policy")>()
-    = cub::detail::merge_sort::MergeSortPolicyWrapper<device_merge_sort_policy::ActivePolicy>::EncodedPolicy();
-}}
+using device_merge_sort_policy = {9};
+using namespace cub;
+using namespace cub::detail::merge_sort;
+static_assert(device_merge_sort_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {10}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     input_keys_it.value_type.size, // 0
     input_keys_it.value_type.alignment, // 1
@@ -337,7 +272,8 @@ __device__ consteval auto& policy_generator() {{
     output_keys_iterator_src, // 6
     output_items_iterator_src, // 7
     op_src, // 8
-    policy_hub_expr); // 9
+    policy_selector_expr, // 9
+    policy_sel_str.view()); // 10
 
 #if false // CCCL_DEBUGGING_SWITCH
   fflush(stderr);
@@ -365,7 +301,6 @@ __device__ consteval auto& policy_generator() {{
     "-rdc=true",
     "-dlto",
     "-DCUB_DISABLE_CDP",
-    "-DCUB_ENABLE_POLICY_PTX_JSON",
     "-std=c++20"};
 
   cccl::detail::extend_args_with_build_config(args, config);
@@ -402,18 +337,12 @@ __device__ consteval auto& policy_generator() {{
   check(cuLibraryGetKernel(&build_ptr->partition_kernel, build_ptr->library, partition_kernel_lowered_name.c_str()));
   check(cuLibraryGetKernel(&build_ptr->merge_kernel, build_ptr->library, merge_kernel_lowered_name.c_str()));
 
-  nlohmann::json runtime_policy =
-    cub::detail::ptx_json::parse("device_merge_sort_policy", {result.data.get(), result.size});
-
-  using cub::detail::RuntimeMergeSortAgentPolicy;
-  auto ms_policy = RuntimeMergeSortAgentPolicy::from_json(runtime_policy, "MergeSortPolicy");
-
   build_ptr->cc             = cc;
   build_ptr->cubin          = (void*) result.data.release();
   build_ptr->cubin_size     = result.size;
   build_ptr->key_type       = input_keys_it.value_type;
   build_ptr->item_type      = input_items_it.value_type;
-  build_ptr->runtime_policy = new merge_sort::merge_sort_runtime_tuning_policy{ms_policy};
+  build_ptr->runtime_policy = new cub::detail::merge_sort::policy_selector{policy_sel};
 
   return CUDA_SUCCESS;
 }
@@ -456,30 +385,21 @@ CUresult cccl_device_merge_sort(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    auto exec_status = cub::DispatchMergeSort<
-      indirect_arg_t,
-      indirect_arg_t,
-      indirect_arg_t,
-      indirect_arg_t,
-      OffsetT,
-      indirect_arg_t,
-      merge_sort::merge_sort_runtime_tuning_policy,
-      merge_sort::merge_sort_kernel_source,
-      cub::detail::CudaDriverLauncherFactory,
-      merge_sort::dynamic_vsmem_helper_t,
-      indirect_arg_t,
-      indirect_arg_t>::Dispatch(d_temp_storage,
-                                *temp_storage_bytes,
-                                d_in_keys,
-                                d_in_items,
-                                d_out_keys,
-                                d_out_items,
-                                num_items,
-                                op,
-                                stream,
-                                {build},
-                                cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-                                *reinterpret_cast<merge_sort::merge_sort_runtime_tuning_policy*>(build.runtime_policy));
+    auto exec_status = cub::detail::merge_sort::dispatch(
+      d_temp_storage,
+      *temp_storage_bytes,
+      indirect_iterator_t{d_in_keys},
+      indirect_iterator_t{d_in_items},
+      indirect_iterator_t{d_out_keys},
+      indirect_iterator_t{d_out_items},
+      static_cast<OffsetT>(num_items),
+      indirect_arg_t{op},
+      stream,
+      *static_cast<cub::detail::merge_sort::policy_selector*>(build.runtime_policy),
+      merge_sort::merge_sort_kernel_source{build},
+      cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
+      static_cast<indirect_arg_t*>(nullptr),
+      static_cast<indirect_arg_t*>(nullptr));
 
     error = static_cast<CUresult>(exec_status);
   }
@@ -539,7 +459,8 @@ try
   }
 
   std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-  std::unique_ptr<char[]> policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
+  std::unique_ptr<cub::detail::merge_sort::policy_selector> policy(
+    static_cast<cub::detail::merge_sort::policy_selector*>(build_ptr->runtime_policy));
   check(cuLibraryUnload(build_ptr->library));
 
   return CUDA_SUCCESS;

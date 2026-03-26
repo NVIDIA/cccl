@@ -24,12 +24,16 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(is_volatile)
+#  define _CCCL_BUILTIN_IS_VOLATILE(...) __is_volatile(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_volatile)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_IS_VOLATILE) && !defined(_LIBCUDACXX_USE_IS_VOLATILE_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_VOLATILE)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_volatile : : public bool_constant<_CCCL_BUILTIN_IS_VOLATILE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_volatile : bool_constant<_CCCL_BUILTIN_IS_VOLATILE(_Tp)>
 {};
 
 template <class _Tp>
@@ -44,7 +48,7 @@ template <class _Tp>
 inline constexpr bool is_volatile_v<volatile _Tp> = true;
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_volatile : public bool_constant<is_volatile_v<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_volatile : bool_constant<is_volatile_v<_Tp>>
 {};
 
 #endif // !_CCCL_BUILTIN_IS_VOLATILE

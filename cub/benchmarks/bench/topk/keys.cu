@@ -10,61 +10,40 @@
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
 // %RANGE% TUNE_BLOCK_LOAD_ALGORITHM ld 0:2:1
 
-#if TUNE_BLOCK_LOAD_ALGORITHM == 0
-#  define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
-#elif TUNE_BLOCK_LOAD_ALGORITHM == 1
-#  define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
-#elif TUNE_BLOCK_LOAD_ALGORITHM == 2
-#  define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_VECTORIZE
-#endif
-
 #if !TUNE_BASE
 template <class KeyInT, class OffsetT>
-struct policy_hub_t
+struct policy_selector_t
 {
-  struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
+  _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::arch_id) const -> cub::detail::topk::topk_policy
   {
-    static constexpr int nominal_4b_items_per_thread = TUNE_ITEMS_PER_THREAD;
-    static constexpr int items_per_thread = cuda::std::max(1, (nominal_4b_items_per_thread * 4 / sizeof(KeyInT)));
+#  if TUNE_BLOCK_LOAD_ALGORITHM == 0
+    constexpr auto load_alg = cub::BLOCK_LOAD_DIRECT;
+#  elif TUNE_BLOCK_LOAD_ALGORITHM == 1
+    constexpr auto load_alg = cub::BLOCK_LOAD_WARP_TRANSPOSE;
+#  elif TUNE_BLOCK_LOAD_ALGORITHM == 2
+    constexpr auto load_alg = cub::BLOCK_LOAD_VECTORIZE;
+#  endif
 
-    static constexpr int bits_per_pass = cub::detail::topk::calc_bits_per_pass<KeyInT>();
-
-    using topk_policy_t =
-      cub::detail::topk::AgentTopKPolicy<TUNE_THREADS_PER_BLOCK,
-                                         items_per_thread,
-                                         bits_per_pass,
-                                         TUNE_LOAD_ALGORITHM,
-                                         cub::BLOCK_SCAN_WARP_SCANS>;
-  };
-
-  using MaxPolicy = policy_t;
+    constexpr int nominal_4b_items_per_thread = TUNE_ITEMS_PER_THREAD;
+    constexpr int items_per_thread            = cuda::std::max(1, (nominal_4b_items_per_thread * 4 / sizeof(KeyInT)));
+    return cub::detail::topk::topk_policy{
+      TUNE_THREADS_PER_BLOCK,
+      items_per_thread,
+      cub::detail::topk::calc_bits_per_pass<KeyInT>(),
+      load_alg,
+      cub::BLOCK_SCAN_WARP_SCANS};
+  }
 };
 #endif // !TUNE_BASE
 
 template <typename KeyT, typename OffsetT, typename OutOffsetT>
 void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffsetT>)
 {
-  using key_input_it_t  = const KeyT*;
-  using key_output_it_t = KeyT*;
-  using offset_t        = cub::detail::choose_offset_t<OffsetT>;
+  using offset_t = cub::detail::choose_offset_t<OffsetT>;
   using out_offset_t =
     cuda::std::conditional_t<sizeof(offset_t) < sizeof(cub::detail::choose_offset_t<OutOffsetT>),
                              offset_t,
                              cub::detail::choose_offset_t<OutOffsetT>>;
-
-  using dispatch_t = cub::detail::topk::DispatchTopK<
-    key_input_it_t,
-    key_output_it_t,
-    cub::NullType*,
-    cub::NullType*,
-    offset_t,
-    out_offset_t,
-    cub::detail::topk::select::max
-#if !TUNE_BASE
-    ,
-    policy_hub_t<KeyT, OffsetT>
-#endif // !TUNE_BASE
-    >;
 
   // Retrieve axis parameters
   const auto elements          = static_cast<size_t>(state.get_int64("Elements{io}"));
@@ -81,8 +60,8 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
 
   thrust::device_vector<KeyT> in_keys = generate(elements, entropy);
   thrust::device_vector<KeyT> out_keys(selected_elements, thrust::no_init);
-  key_input_it_t d_keys_in   = thrust::raw_pointer_cast(in_keys.data());
-  key_output_it_t d_keys_out = thrust::raw_pointer_cast(out_keys.data());
+  const KeyT* d_keys_in = thrust::raw_pointer_cast(in_keys.data());
+  KeyT* d_keys_out      = thrust::raw_pointer_cast(out_keys.data());
 
   state.add_element_count(elements, "NumElements");
   state.add_element_count(selected_elements, "NumSelectedElements");
@@ -91,31 +70,43 @@ void topk_keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT, OutOffse
 
   // allocate temporary storage
   size_t temp_size;
-  dispatch_t::Dispatch(
+  cub::detail::topk::dispatch<cub::detail::topk::select::max>(
     nullptr,
     temp_size,
     d_keys_in,
     d_keys_out,
+    static_cast<const cub::NullType*>(nullptr),
     static_cast<cub::NullType*>(nullptr),
-    static_cast<cub::NullType*>(nullptr),
-    elements,
-    selected_elements,
-    0);
+    static_cast<offset_t>(elements),
+    static_cast<out_offset_t>(selected_elements),
+    cub::detail::identity_decomposer_t{},
+    0
+#if !TUNE_BASE
+    ,
+    policy_selector_t<KeyT, OffsetT>{}
+#endif // !TUNE_BASE
+  );
   thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   // run the algorithm
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
+    cub::detail::topk::dispatch<cub::detail::topk::select::max>(
       temp_storage,
       temp_size,
       d_keys_in,
       d_keys_out,
+      static_cast<const cub::NullType*>(nullptr),
       static_cast<cub::NullType*>(nullptr),
-      static_cast<cub::NullType*>(nullptr),
-      elements,
-      selected_elements,
-      launch.get_stream());
+      static_cast<offset_t>(elements),
+      static_cast<out_offset_t>(selected_elements),
+      cub::detail::identity_decomposer_t{},
+      launch.get_stream()
+#if !TUNE_BASE
+        ,
+      policy_selector_t<KeyT, OffsetT>{}
+#endif // !TUNE_BASE
+    );
   });
 }
 

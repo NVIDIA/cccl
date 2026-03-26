@@ -18,7 +18,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
 #include <thrust/execution_policy.h>
-#include <thrust/fill.h>
 
 #include <cuda/cmath>
 #include <cuda/iterator>
@@ -42,7 +41,7 @@ void test_remove_copy(const Policy& policy, thrust::device_vector<int>& output)
   }
 
   { // With matching value
-    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::fill(policy, output.begin(), output.end(), 0);
     const auto res =
       cuda::std::remove_copy(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, output.begin(), 42);
     CHECK(cuda::std::distance(output.begin(), res) == size - 1);
@@ -53,7 +52,7 @@ void test_remove_copy(const Policy& policy, thrust::device_vector<int>& output)
   }
 
   { // With conversion for value type
-    thrust::fill(output.begin(), output.end(), 0);
+    cuda::std::fill(policy, output.begin(), output.end(), 0);
     const auto res = cuda::std::remove_copy(
       policy, cuda::counting_iterator{0}, cuda::counting_iterator{size}, output.begin(), short{42});
     CHECK(cuda::std::distance(output.begin(), res) == size - 1);
@@ -77,14 +76,14 @@ C2H_TEST("cuda::std::remove_copy", "[parallel algorithm]")
   SECTION("with provided stream")
   {
     cuda::stream stream{cuda::device_ref{0}};
-    const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream);
+    const auto policy = cuda::execution::__cub_par_unseq.with(cuda::get_stream, stream);
     test_remove_copy(policy, output);
   }
 
   SECTION("with provided memory_resource")
   {
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
-    const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
+    const auto policy = cuda::execution::__cub_par_unseq.with(cuda::mr::get_memory_resource, device_resource);
     test_remove_copy(policy, output);
   }
 
@@ -92,7 +91,8 @@ C2H_TEST("cuda::std::remove_copy", "[parallel algorithm]")
   {
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
-    const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource).with_stream(stream);
+    const auto policy = cuda::execution::__cub_par_unseq.with(cuda::mr::get_memory_resource, device_resource)
+                          .with(cuda::get_stream, stream);
     test_remove_copy(policy, output);
   }
 }

@@ -8,7 +8,9 @@
     "--ulimit",
     "nofile=500000"
   ],
-  "hostRequirements": {"gpu": "optional"},
+  "hostRequirements": {
+    "gpu": "optional"
+  },
   "containerEnv": {
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "CI": "${localEnv:CI}",

@@ -81,6 +81,11 @@ cudax_add_catch2_test(test_target containers
     containers/uninitialized_buffer.cu
 )
 
+cudax_add_catch2_test(test_target copy_bytes
+    copy_bytes/mdspan_d2h_h2d.cu
+    copy_bytes/mdspan_d2h_h2d_relaxed.cu
+)
+
 cudax_add_catch2_test(test_target cuco
     cuco/utility/test_hashers.cu
 )

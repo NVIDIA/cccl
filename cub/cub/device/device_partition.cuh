@@ -32,9 +32,11 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::partition
 {
+// TODO(bgruber): drop this after rewriting to the new tuning API
 struct get_tuning_query_t
 {};
 
+// TODO(bgruber): drop this after rewriting to the new tuning API
 template <class Derived>
 struct tuning
 {
@@ -44,6 +46,7 @@ struct tuning
   }
 };
 
+// TODO(bgruber): drop this after rewriting to the new tuning API
 struct default_tuning : tuning<default_tuning>
 {
   template <class InputT, class FlagT, class OffsetT, bool DistinctPartitions, SelectImpl Impl>
@@ -676,27 +679,17 @@ private:
     SelectSecondPartOp select_second_part_op,
     cudaStream_t stream = 0)
   {
-    using ChooseOffsetT                = detail::choose_signed_offset<NumItemsT>;
-    using OffsetT                      = typename ChooseOffsetT::type;
-    using DispatchThreeWayPartitionIfT = DispatchThreeWayPartitionIf<
-      InputIteratorT,
-      FirstOutputIteratorT,
-      SecondOutputIteratorT,
-      UnselectedOutputIteratorT,
-      NumSelectedIteratorT,
-      SelectFirstPartOp,
-      SelectSecondPartOp,
-      OffsetT>;
+    using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
+    using OffsetT       = typename ChooseOffsetT::type;
 
     // Signed integer type for global offsets
     // Check if the number of items exceeds the range covered by the selected signed offset type
-    cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items);
-    if (error)
+    if (const auto error = ChooseOffsetT::is_exceeding_offset_type(num_items))
     {
       return error;
     }
 
-    return DispatchThreeWayPartitionIfT::Dispatch(
+    return detail::three_way_partition::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -706,7 +699,7 @@ private:
       d_num_selected_out,
       select_first_part_op,
       select_second_part_op,
-      num_items,
+      static_cast<OffsetT>(num_items),
       stream);
   }
 

@@ -228,7 +228,7 @@ void test_fixed_size_segmented_reduce(
   using offset_t       = SegmentIdxT;
   using segment_size_t = int;
 
-  using policy_hub_t = cub::detail::fixed_size_segmented_reduce::policy_hub<AccumT, offset_t, OpT>;
+  using policy_hub_t = cub::detail::segmented_reduce::policy_hub<AccumT, offset_t, OpT>;
 
   // Get small and medium segment size thresholds from dispatch helper
   const cuda::std::tuple<int, int, int> thresholds = dispatch_helper<policy_hub_t>::get_thresholds();

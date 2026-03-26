@@ -26,7 +26,6 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
-#include <thrust/fill.h>
 #include <thrust/sequence.h>
 
 #include <cuda/iterator>
@@ -41,7 +40,7 @@
 
 #include "test_macros.h"
 
-inline constexpr int size = 100;
+inline constexpr int size = 1000;
 
 template <class Policy, class Iter>
 void test_transform_reduce(const Policy policy, const thrust::device_vector<int>& Input1, Iter input2)
@@ -107,9 +106,8 @@ void test_transform_reduce(const Policy policy, const thrust::device_vector<int>
 C2H_TEST("cuda::std::transform_reduce(Iter1, Iter1, Iter2, Init)", "[parallel algorithm]")
 {
   thrust::device_vector<int> input1(size, thrust::no_init);
-  thrust::device_vector<int> input2(size, thrust::no_init);
+  thrust::device_vector<int> input2(size, 1);
   thrust::sequence(input1.begin(), input1.end(), 1);
-  thrust::fill(input2.begin(), input2.end(), 1);
 
   SECTION("with default stream")
   {
@@ -121,7 +119,7 @@ C2H_TEST("cuda::std::transform_reduce(Iter1, Iter1, Iter2, Init)", "[parallel al
   SECTION("with provided stream")
   {
     cuda::stream stream{cuda::device_ref{0}};
-    const auto policy = cuda::execution::__cub_par_unseq.with_stream(stream);
+    const auto policy = cuda::execution::__cub_par_unseq.with(cuda::get_stream, stream);
     test_transform_reduce(policy, input1, input2.begin());
     test_transform_reduce(policy, input1, ::cuda::constant_iterator<int>{1});
   }
@@ -129,7 +127,7 @@ C2H_TEST("cuda::std::transform_reduce(Iter1, Iter1, Iter2, Init)", "[parallel al
   SECTION("with provided memory_resource")
   {
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
-    const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource);
+    const auto policy = cuda::execution::__cub_par_unseq.with(cuda::mr::get_memory_resource, device_resource);
     test_transform_reduce(policy, input1, input2.begin());
     test_transform_reduce(policy, input1, ::cuda::constant_iterator<int>{1});
   }
@@ -138,7 +136,8 @@ C2H_TEST("cuda::std::transform_reduce(Iter1, Iter1, Iter2, Init)", "[parallel al
   {
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
-    const auto policy = cuda::execution::__cub_par_unseq.with_memory_resource(device_resource).with_stream(stream);
+    const auto policy = cuda::execution::__cub_par_unseq.with(cuda::mr::get_memory_resource, device_resource)
+                          .with(cuda::get_stream, stream);
     test_transform_reduce(policy, input1, input2.begin());
     test_transform_reduce(policy, input1, ::cuda::constant_iterator<int>{1});
   }

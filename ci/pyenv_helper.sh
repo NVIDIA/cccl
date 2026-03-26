@@ -1,5 +1,3 @@
-#!/bin/bash
-
 setup_python_env() {
     local py_version=$1
 

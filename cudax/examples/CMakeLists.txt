@@ -37,7 +37,7 @@ file(
 cccl_get_cudatoolkit()
 
 # Example requires pinned_memory_resource.
-if (CUDAToolkit_VERSION VERSION_LESS 12.6)
+if (CUDAToolkit_VERSION VERSION_LESS 12.9)
   list(REMOVE_ITEM example_srcs async_buffer_add.cu cub_reduce.cu)
 endif()
 

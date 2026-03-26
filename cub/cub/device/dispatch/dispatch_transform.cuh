@@ -53,6 +53,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4702)
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
+_CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 CUB_NAMESPACE_BEGIN
 
@@ -531,10 +532,7 @@ template <requires_stable_address StableAddress,
           typename Offset,
           typename Predicate,
           typename TransformOp,
-          typename PolicySelector        = policy_selector_from_types<StableAddress == requires_stable_address::yes,
-                                                                      ::cuda::std::is_same_v<Predicate, always_true_predicate>,
-                                                                      ::cuda::std::tuple<RandomAccessIteratorsIn...>,
-                                                                      RandomAccessIteratorOut>,
+          typename PolicySelector,
           typename KernelSource          = TransformKernelSource<PolicySelector,
                                                                  Offset,
                                                                  ::cuda::std::tuple<RandomAccessIteratorsIn...>,

@@ -3,6 +3,8 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/iterator/transform_iterator.h>
 
+#include <cuda/iterator>
+
 #include <unittest/unittest.h>
 
 template <class Vector>
@@ -111,3 +113,10 @@ void TestMaxElementWithBigIndexes()
 #endif
 }
 DECLARE_UNITTEST(TestMaxElementWithBigIndexes);
+
+void TestMaxElementCudaIterator()
+{
+  auto pos = thrust::max_element(thrust::device, cuda::counting_iterator{0}, cuda::counting_iterator{0} + 100);
+  ASSERT_EQUAL(*pos, 99);
+}
+DECLARE_UNITTEST(TestMaxElementCudaIterator);

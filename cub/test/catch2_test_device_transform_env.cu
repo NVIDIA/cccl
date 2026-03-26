@@ -22,6 +22,24 @@ struct stream_convertible
     return stream;
   }
 };
+struct stream_convertible_non_copyable
+{
+  cudaStream_t stream;
+
+  stream_convertible_non_copyable(cudaStream_t stream)
+      : stream(stream)
+  {}
+
+  stream_convertible_non_copyable(const stream_convertible_non_copyable&)                    = delete;
+  auto operator=(const stream_convertible_non_copyable&) -> stream_convertible_non_copyable& = delete;
+  stream_convertible_non_copyable(stream_convertible_non_copyable&&)                         = default;
+  auto operator=(stream_convertible_non_copyable&&) -> stream_convertible_non_copyable&      = default;
+
+  operator cudaStream_t() const noexcept
+  {
+    return stream;
+  }
+};
 
 struct with_stream_method
 {
@@ -64,6 +82,10 @@ void check_graph_nodes_with_different_streams(F call_cub_api)
   {
     call_cub_api(stream_convertible{stream.get()});
   }
+  SECTION("stream_convertible_non_copyable")
+  {
+    call_cub_api(stream_convertible_non_copyable{stream.get()});
+  }
   SECTION("with_stream_method")
   {
     call_cub_api(with_stream_method{stream.get()});
@@ -71,6 +93,10 @@ void check_graph_nodes_with_different_streams(F call_cub_api)
   SECTION("with_get_stream_method")
   {
     call_cub_api(with_get_stream_method{stream.get()});
+  }
+  SECTION("environment with cuda::stream_ref")
+  {
+    call_cub_api(cuda::std::execution::env{cuda::stream_ref{stream}});
   }
   SECTION("environment with prop with cudaStream_t")
   {
@@ -217,4 +243,51 @@ C2H_TEST("DeviceTransform::TransformStableArgumentAddresses custom stream", "[de
   });
 
   CHECK(thrust::equal(result.begin(), result.end(), cuda::counting_iterator<type>{42 + 13}));
+}
+
+// use a policy selector that prescribes to run with exactly 8 threads per block and 3 items per thread
+struct my_policy_selector
+{
+  _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::transform::transform_policy
+  {
+    constexpr int min_bytes_in_flight = 64 * 1024;
+    constexpr auto algorithm          = cub::detail::transform::Algorithm::prefetch;
+    constexpr auto policy             = cub::detail::transform::prefetch_policy{8, 3, 3, 3};
+    return {min_bytes_in_flight, algorithm, policy, {}, {}};
+  }
+};
+
+struct get_thread_id
+{
+  _CCCL_DEVICE auto operator()() const -> unsigned
+  {
+    return threadIdx.x;
+  }
+};
+
+C2H_TEST("DeviceTransform::Transform can be tuned", "[reduce][device]")
+{
+  c2h::device_vector<unsigned> result(3 * 8, thrust::no_init);
+
+  auto env = cuda::execution::__tune(my_policy_selector{});
+  REQUIRE(cudaSuccess
+          == cub::DeviceTransform::Transform(cuda::std::tuple{}, result.data(), result.size(), get_thread_id{}, env));
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  c2h::device_vector<unsigned> expected{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7};
+  REQUIRE(result == expected);
+}
+
+C2H_TEST("DeviceTransform::Transform can be tuned with custom stream", "[reduce][device]")
+{
+  c2h::device_vector<unsigned> result(3 * 8, thrust::no_init);
+
+  cuda::stream stream{cuda::devices[0]};
+  auto env = cuda::std::execution::env{cuda::stream_ref{stream}, cuda::execution::__tune(my_policy_selector{})};
+  REQUIRE(cudaSuccess
+          == cub::DeviceTransform::Transform(cuda::std::tuple{}, result.data(), result.size(), get_thread_id{}, env));
+  stream.sync();
+
+  c2h::device_vector<unsigned> expected{0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7};
+  REQUIRE(result == expected);
 }

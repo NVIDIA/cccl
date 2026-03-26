@@ -195,6 +195,8 @@ struct __with_try_get_property
   }
 };
 
+_CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
+
 template <class... _Properties>
 struct _CCCL_DECLSPEC_EMPTY_BASES any_resource;
 
@@ -359,6 +361,8 @@ private:
     return *this;
   }
 };
+
+_CCCL_END_NAMESPACE_ABI_VER4_BUMP
 
 template <class... _Properties>
 inline constexpr bool __disable_default_dynamic_accessibility_property<any_resource<_Properties...>> = true;

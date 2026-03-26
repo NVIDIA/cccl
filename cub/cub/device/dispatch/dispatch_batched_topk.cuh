@@ -27,7 +27,7 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/cmath>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
@@ -198,13 +198,9 @@ struct dispatch_batched_topk
   static constexpr bool keys_only = ::cuda::std::is_same_v<ValueInputItItT, NullType**>;
 
   template <typename ActiveWorkerPerSegmentPolicyTPolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_fixed_segment_size()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_one_worker_per_segment()
   {
     using max_policy_t = typename SelectedPolicy::max_policy;
-
-    // Currently, only uniform segment sizes are supported
-    static_assert(!params::is_per_segment_param_v<SegmentSizeParameterT>,
-                  "Only uniform segment sizes are currently supported.");
 
     // Instantiate the kernel with the selected policy and check shared memory requirements
     using topk_policy_t = ActiveWorkerPerSegmentPolicyTPolicyT;
@@ -268,8 +264,9 @@ struct dispatch_batched_topk
   {
     // Helper that determines (a) whether there's any one-worker-per-segment policy supporting the range of segment
     // sizes and k, and (b) if so, which set of one-worker-per-segment policies to use
-    using find_valid_policy_t = find_valid_policy<
+    using find_smallest_covering_policy_t = find_smallest_covering_policy<
       ActivePolicyT,
+      SegmentSizeParameterT,
       agent_batched_topk_worker_per_segment,
       KeyInputItItT,
       KeyOutputItItT,
@@ -280,12 +277,14 @@ struct dispatch_batched_topk
       SelectDirectionParameterT,
       NumSegmentsParameterT>;
 
-    // Currently, we only support fixed-size segments that fit into shared memory
+    // Currently, we only support segments that fit into shared memory
     // TODO (elstehle): extend support for variable-size segments
-    if constexpr (!params::is_per_segment_param_v<SegmentSizeParameterT>
-                  && find_valid_policy_t::supports_one_worker_per_segment)
+    static_assert(find_smallest_covering_policy_t::supports_one_worker_per_segment,
+                  "Currently only small segments are supported, where each segment can be processed by a single thread "
+                  "block.");
+    if constexpr (find_smallest_covering_policy_t::supports_one_worker_per_segment)
     {
-      return invoke_fixed_segment_size<typename find_valid_policy_t::worker_per_segment_policy_t>();
+      return invoke_one_worker_per_segment<typename find_smallest_covering_policy_t::worker_per_segment_policy_t>();
     }
     else
     {

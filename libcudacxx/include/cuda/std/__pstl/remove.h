@@ -78,6 +78,7 @@ remove([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputI
     {
       return __first;
     }
+
     const auto __count = ::cuda::std::distance(__first, __last);
     return __dispatch(__policy, __first, __count, __remove_compare_not_eq{__value});
   }

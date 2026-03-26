@@ -37,7 +37,7 @@ The function ``cuda::mul_overflow`` performs multiplication of two values ``lhs`
 
 **Constraints**
 
-- ``Result``, ``Lhs``, and ``Rhs`` must be integer types.
+- ``Result``, ``Lhs``, and ``Rhs`` must be `integer types <https://eel.is/c++draft/basic.fundamental#1>`_.
 
 **Performance considerations**
 

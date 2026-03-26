@@ -37,8 +37,6 @@ struct custom_int
   _CCCL_HOST_DEVICE custom_int(int) {}
   _CCCL_HOST_DEVICE operator int() const;
 };
-static_assert(thrust::detail::is_numeric<custom_int>::value);
-
 static_assert(diff_type_is<custom_int, ptrdiff_t>);
 
 _CCCL_DIAG_PUSH

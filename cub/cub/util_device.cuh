@@ -25,8 +25,10 @@
 
 #include <cuda/__device/arch_id.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__concepts/regular.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
@@ -82,7 +84,7 @@ CUB_RUNTIME_FUNCTION inline int CurrentDevice()
 
 //! @brief RAII helper which saves the current device and switches to the specified device on construction and switches
 //! to the saved device on destruction.
-class SwitchDevice
+class [[maybe_unused]] SwitchDevice
 {
   int target_device_;
   int original_device_;
@@ -273,53 +275,32 @@ public:
 /**
  * \brief Retrieves the PTX version that will be used on the current device (major * 100 + minor * 10).
  */
-CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
+template <class T = void>
+CUB_RUNTIME_FUNCTION cudaError_t PtxVersionUncached(int& ptx_version)
 {
   // Instantiate `EmptyKernel<void>` in both host and device code to ensure
   // it can be called.
-  using EmptyKernelPtr                         = void (*)();
-  [[maybe_unused]] EmptyKernelPtr empty_kernel = detail::EmptyKernel<void>;
-
-  // Define a temporary macro that expands to the current target ptx version
-  // in device code.
-  // <nv/target> may provide an abstraction for this eventually. For now,
-  // we have to keep this usage of __CUDA_ARCH__.
-#  if _CCCL_CUDA_COMPILER(NVHPC)
-#    define CUB_TEMP_GET_PTX __builtin_current_device_sm()
-#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
-#    define CUB_TEMP_GET_PTX _CCCL_PTX_ARCH()
-#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
+  [[maybe_unused]] const auto empty_kernel = detail::EmptyKernel<T>;
 
   cudaError_t result = cudaSuccess;
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (cudaFuncAttributes empty_kernel_attrs;
-
-     result = CubDebug(cudaFuncGetAttributes(&empty_kernel_attrs, reinterpret_cast<void*>(empty_kernel)));
-
-     ptx_version = empty_kernel_attrs.ptxVersion * 10;),
-    // NV_IS_DEVICE
-    (
-      // This is necessary to ensure instantiation of EmptyKernel in device
-      // code. The `reinterpret_cast` is necessary to suppress a
-      // set-but-unused warnings. This is a meme now:
-      // https://twitter.com/blelbach/status/1222391615576100864
-      (void) reinterpret_cast<EmptyKernelPtr>(empty_kernel);
-
-      ptx_version = CUB_TEMP_GET_PTX;));
-
-#  undef CUB_TEMP_GET_PTX
-
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    ({
+                      cudaFuncAttributes empty_kernel_attrs;
+                      result      = CubDebug(cudaFuncGetAttributes(&empty_kernel_attrs, (const void*) empty_kernel));
+                      ptx_version = empty_kernel_attrs.ptxVersion * 10;
+                    }),
+                    ({ ptx_version = ::cuda::device::current_compute_capability().get() * 10; }));
   return result;
 }
 
 /**
  * \brief Retrieves the PTX version that will be used on \p device (major * 100 + minor * 10).
  */
-_CCCL_HOST inline cudaError_t PtxVersionUncached(int& ptx_version, int device)
+template <class T = void>
+_CCCL_HOST cudaError_t PtxVersionUncached(int& ptx_version, int device)
 {
-  [[maybe_unused]] SwitchDevice sd(device);
-  return PtxVersionUncached(ptx_version);
+  SwitchDevice sd(device);
+  return PtxVersionUncached<T>(ptx_version);
 }
 
 template <typename Tag>
@@ -341,14 +322,15 @@ struct SmVersionCacheTag
  * \note This function may cache the result internally.
  * \note This function is thread safe.
  */
-_CCCL_HOST inline cudaError_t PtxVersion(int& ptx_version, int device)
+template <class T = void>
+_CCCL_HOST cudaError_t PtxVersion(int& ptx_version, int device)
 {
   // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
   // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
   auto const payload = GetPerDeviceAttributeCache<PtxVersionCacheTag>()(
     // If this call fails, then we get the error code back in the payload, which we check with `CubDebug` below.
     [=](int& pv) {
-      return PtxVersionUncached(pv, device);
+      return PtxVersionUncached<T>(pv, device);
     },
     device);
 
@@ -366,25 +348,27 @@ _CCCL_HOST inline cudaError_t PtxVersion(int& ptx_version, int device)
  * \note This function may cache the result internally.
  * \note This function is thread safe.
  */
-CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersion(int& ptx_version)
+template <class T = void>
+CUB_RUNTIME_FUNCTION cudaError_t PtxVersion(int& ptx_version)
 {
   // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
   // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
   cudaError_t result = cudaErrorUnknown;
   NV_IF_TARGET(NV_IS_HOST,
-               (result = PtxVersion(ptx_version, CurrentDevice());),
+               (result = PtxVersion<T>(ptx_version, CurrentDevice());),
                ( // NV_IS_DEVICE:
-                 result = PtxVersionUncached(ptx_version);));
+                 result = PtxVersionUncached<T>(ptx_version);));
   return result;
 }
 
 namespace detail
 {
 //! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the current device.
-CUB_RUNTIME_FUNCTION inline cudaError_t ptx_arch_id(::cuda::arch_id& arch_id)
+template <class T = void>
+CUB_RUNTIME_FUNCTION cudaError_t ptx_arch_id(::cuda::arch_id& arch_id)
 {
   int ptx_version = 0;
-  if (const auto error = PtxVersion(ptx_version))
+  if (const auto error = PtxVersion<T>(ptx_version))
   {
     return error;
   }
@@ -393,10 +377,11 @@ CUB_RUNTIME_FUNCTION inline cudaError_t ptx_arch_id(::cuda::arch_id& arch_id)
 }
 
 //! @brief Retrieves the GPU architecture of the PTX or SASS that will be used on the given device.
-_CCCL_HOST_API inline cudaError_t ptx_arch_id(::cuda::arch_id& arch_id, int device)
+template <class T = void>
+_CCCL_HOST_API cudaError_t ptx_arch_id(::cuda::arch_id& arch_id, int device)
 {
   int ptx_version = 0;
-  if (const auto error = PtxVersion(ptx_version, device))
+  if (const auto error = PtxVersion<T>(ptx_version, device))
   {
     return error;
   }
@@ -623,15 +608,14 @@ _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferAlignBytes()
 //!   Guaranteed alignment in bytes of the source range (both begin and end) in global memory
 //! @param[in] num_items
 //!   Size of the source range in global memory
-template <typename T, int GmemAlign = alignof(T)>
+template <typename T, ::cuda::std::size_t GmemAlign = alignof(T)>
 _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t num_items)
 {
-  static_assert(::cuda::std::has_single_bit(unsigned{GmemAlign}));
-  static_assert(GmemAlign >= int{alignof(T)});
+  static_assert(::cuda::__is_valid_alignment<T>(GmemAlign));
   _CCCL_ASSERT(num_items <= ::cuda::std::size_t{::cuda::std::numeric_limits<int>::max()},
                "num_items must fit into an int");
   const int num_bytes = static_cast<int>(num_items) * int{sizeof(T)};
-  if constexpr (GmemAlign >= detail::bulk_copy_min_align)
+  if constexpr (GmemAlign >= static_cast<::cuda::std::size_t>(detail::bulk_copy_min_align))
   {
     return num_bytes;
   }
@@ -829,7 +813,7 @@ public:
 #if !_CCCL_COMPILER(NVRTC)
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
   template <typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int device_ptx_version, FunctorT& op)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static constexpr cudaError_t Invoke(int device_ptx_version, FunctorT& op)
   {
     // __CUDA_ARCH_LIST__ is available from CTK 11.5 onwards and contains values like 860
     // NV_TARGET_SM_INTEGER_LIST is defined by NVHPC and contains values like 86, so we need to scale by 10
@@ -857,7 +841,7 @@ private:
 
 #if !_CCCL_COMPILER(NVRTC)
   template <int ArchMult, int... CudaArches, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static constexpr cudaError_t
   runtime_arch_to_compiletime(int device_ptx_version, FunctorT& op)
   {
     // We instantiate find_and_invoke_policy for each CudaArches (the arches we are compiling for), but only call the
@@ -875,7 +859,7 @@ private:
   }
 
   template <int DevicePtxVersion, typename FunctorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t find_and_invoke_policy(FunctorT& op)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static constexpr cudaError_t find_and_invoke_policy(FunctorT& op)
   {
     // find the first policy we can use on DevicePtxVersion
     if constexpr (DevicePtxVersion < PolicyPtxVersion && have_previous_policy)

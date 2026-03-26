@@ -279,12 +279,12 @@ struct __dev_attr<::cudaDevAttrNumaConfig> //
 };
 #  endif // _CCCL_CTK_AT_LEAST(12, 2)
 
-#  if _CCCL_CTK_AT_LEAST(12, 6)
+#  if _CCCL_CTK_AT_LEAST(12, 9)
 template <>
 struct __dev_attr<::cudaDevAttrHostNumaMemoryPoolsSupported>
     : __dev_attr_impl<::cudaDevAttrHostNumaMemoryPoolsSupported, bool>
 {};
-#  endif // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^
+#  endif // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^
 
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 template <>
@@ -749,10 +749,10 @@ using numa_id_t = __dev_attr<::cudaDevAttrNumaId>;
 static constexpr numa_id_t numa_id{};
 #  endif // _CCCL_CTK_AT_LEAST(12, 2)
 
-#  if _CCCL_CTK_AT_LEAST(12, 6)
+#  if _CCCL_CTK_AT_LEAST(12, 9)
 using host_numa_memory_pools_supported_t = __dev_attr<::cudaDevAttrHostNumaMemoryPoolsSupported>;
 static constexpr host_numa_memory_pools_supported_t host_numa_memory_pools_supported{};
-#  endif // ^^^ _CCCL_CTK_AT_LEAST(12, 6) ^^^
+#  endif // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^
 
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 using host_memory_pools_supported_t = __dev_attr<::cudaDevAttrHostMemoryPoolsSupported>;

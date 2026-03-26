@@ -47,6 +47,16 @@
   }                              \
   _CCCL_END_NAMESPACE_NOVERSION(_NS)
 
+// Open a namespace for APIs that were version bumped in a minor release
+// Version bump namespace should be removed from the APIs at the next major release
+#define _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP                                           \
+  static_assert(_LIBCUDACXX_CUDA_ABI_VERSION == 4, "Version bump should be removed"); \
+  inline namespace __version_bump_ver4_                                               \
+  {
+#define _CCCL_END_NAMESPACE_ABI_VER4_BUMP                                             \
+  static_assert(_LIBCUDACXX_CUDA_ABI_VERSION == 4, "Version bump should be removed"); \
+  }
+
 // Standard namespaces with or without versioning
 #define _CCCL_BEGIN_NAMESPACE_CUDA_STD_NOVERSION _CCCL_BEGIN_NAMESPACE_NOVERSION(cuda::std)
 #define _CCCL_END_NAMESPACE_CUDA_STD_NOVERSION   _CCCL_END_NAMESPACE_NOVERSION(cuda::std)

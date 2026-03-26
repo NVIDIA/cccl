@@ -30,14 +30,29 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(make_signed)
+#  define _CCCL_BUILTIN_MAKE_SIGNED(...) __make_signed(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(make_signed)
+
+// __make_signed doesn't work with clang < 20 or clang + nvcc
+#if _CCCL_COMPILER(CLANG, <, 20) || (_CCCL_COMPILER(CLANG) && _CCCL_CUDA_COMPILER(NVCC))
+#  undef _CCCL_BUILTIN_MAKE_SIGNED
+#endif // _CCCL_COMPILER(CLANG, <, 20) || (_CCCL_COMPILER(CLANG) && _CCCL_CUDA_COMPILER(NVCC))
+
+// nvrtc doesn't handle enums properly, see nvbug 5554624
+#if _CCCL_COMPILER(NVRTC, <, 13, 3)
+#  undef _CCCL_BUILTIN_MAKE_SIGNED
+#endif // _CCCL_COMPILER(NVRTC, <, 13, 3)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if defined(_CCCL_BUILTIN_MAKE_SIGNED) && !defined(_LIBCUDACXX_USE_MAKE_SIGNED_FALLBACK)
+#if defined(_CCCL_BUILTIN_MAKE_SIGNED)
 
 template <class _Tp>
 using make_signed_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_MAKE_SIGNED(_Tp);
 
-#else
+#else // ^^^ _CCCL_BUILTIN_MAKE_SIGNED ^^^ / vvv !_CCCL_BUILTIN_MAKE_SIGNED vvv
+
 using __signed_types =
   __type_list<signed char,
               signed short,
@@ -125,7 +140,7 @@ struct __make_signed_impl<__uint128_t, true>
 template <class _Tp>
 using make_signed_t _CCCL_NODEBUG_ALIAS = __copy_cvref_t<_Tp, typename __make_signed_impl<remove_cv_t<_Tp>>::type>;
 
-#endif // defined(_CCCL_BUILTIN_MAKE_SIGNED) && !defined(_LIBCUDACXX_USE_MAKE_SIGNED_FALLBACK)
+#endif // ^^^ !_CCCL_BUILTIN_MAKE_SIGNED !!!
 
 template <class _Tp>
 struct make_signed

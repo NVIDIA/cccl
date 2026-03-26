@@ -71,7 +71,7 @@ struct __pstl_dispatch<__pstl_algorithm::__for_each_n, __execution_backend::__cu
     auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
 
     _CCCL_TRY_CUDA_API(
-      ::cub::DeviceFor::ForEachN,
+      CUB_NS_QUALIFIER::DeviceFor::ForEachN,
       "__pstl_dispatch: kernel launch failed",
       __first,
       __count,

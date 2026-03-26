@@ -31,16 +31,20 @@ __device__ void test_query_signatures(const Level& level)
   static_assert(cuda::std::is_same_v<cuda::std::dims<3, unsigned>, decltype(cuda::cluster_level::extents(level))>);
   static_assert(noexcept(cuda::cluster_level::extents(level)));
 
-  // 4. Test cuda::cluster_level::count(x) signature.
+  // 4. Test cuda::cluster_level::static_count(x) signature.
+  static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::cluster_level::static_count(level))>);
+  static_assert(noexcept(cuda::cluster_level::static_count(level)));
+
+  // 5. Test cuda::cluster_level::count(x) signature.
   static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::cluster_level::count(level))>);
   static_assert(noexcept(cuda::cluster_level::count(level)));
 
-  // 5. Test cuda::cluster_level::index(x) signature.
+  // 6. Test cuda::cluster_level::index(x) signature.
   static_assert(
     cuda::std::is_same_v<cuda::hierarchy_query_result<unsigned>, decltype(cuda::cluster_level::index(level))>);
   static_assert(noexcept(cuda::cluster_level::index(level)));
 
-  // 6. Test cuda::cluster_level::rank(x) signature.
+  // 7. Test cuda::cluster_level::rank(x) signature.
   static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::cluster_level::rank(level))>);
   static_assert(noexcept(cuda::cluster_level::rank(level)));
 }

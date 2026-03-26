@@ -34,8 +34,6 @@ _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
-#  include <cuda/__memory_pool/device_memory_pool.h>
-#  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
@@ -68,15 +66,13 @@ struct __pstl_dispatch<__pstl_algorithm::__remove_if, __execution_backend::__cud
     using _OffsetType = iter_difference_t<_InputIterator>;
     _OffsetType __ret;
 
-    auto __stream   = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-    auto __resource = ::cuda::__call_or(
-      ::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(__stream.device()), __policy);
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
 
     // Determine temporary device storage requirements
     void* __temp_storage = nullptr;
     size_t __num_bytes   = 0;
     _CCCL_TRY_CUDA_API(
-      ::cub::DeviceSelect::If,
+      CUB_NS_QUALIFIER::DeviceSelect::If,
       "__pstl_cuda_select_if: determination of device storage for cub::DeviceSelect::If failed",
       __temp_storage,
       __num_bytes,
@@ -87,16 +83,16 @@ struct __pstl_dispatch<__pstl_algorithm::__remove_if, __execution_backend::__cud
       __stream.get());
 
     {
-      __temporary_storage<_OffsetType, decltype(__resource)> __storage{__stream, __resource, __num_bytes};
+      __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};
 
       // Run the kernel
       _CCCL_TRY_CUDA_API(
-        ::cub::DeviceSelect::If,
+        CUB_NS_QUALIFIER::DeviceSelect::If,
         "__pstl_cuda_select_if: kernel launch of cub::DeviceSelect::If failed",
         __storage.__get_temp_storage(),
         __num_bytes,
         ::cuda::std::move(__first),
-        __storage.__get_result_iter(),
+        __storage.template __get_ptr<0>(),
         __count,
         ::cuda::std::move(__pred),
         __stream.get());
@@ -106,7 +102,7 @@ struct __pstl_dispatch<__pstl_algorithm::__remove_if, __execution_backend::__cud
         ::cudaMemcpyAsync,
         "__pstl_cuda_select_if: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),
-        __storage.__res_,
+        __storage.template __get_ptr<0>(),
         sizeof(_OffsetType),
         ::cudaMemcpyDefault,
         __stream.get());

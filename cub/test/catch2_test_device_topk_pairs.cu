@@ -117,6 +117,8 @@ using value_types     = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>
 using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 using k_items_types   = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 
+using custom_value_t = cuda::std::uint32_t;
+
 C2H_TEST("DeviceTopK::MaxPairs: Basic testing", "[pairs][topk][device]", key_types, value_types, directions)
 {
   using key_t              = c2h::get<0, TestType>;
@@ -235,7 +237,7 @@ C2H_TEST("DeviceTopK::MaxPairs: Test for large num_items", "[pairs][topk][device
   // Set the k value
   constexpr num_items_t min_k = 1;
   constexpr num_items_t max_k = 1 << 20;
-  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, cuda::std::min(num_items, max_k))));
+  const num_items_t k         = GENERATE_COPY(take(3, random(min_k, (cuda::std::min) (num_items, max_k))));
 
   // Prepare input and output
   auto keys_in   = cuda::make_transform_iterator(cuda::make_counting_iterator(num_items_t{}), inc_t<key_t>{num_items});
@@ -257,5 +259,106 @@ C2H_TEST("DeviceTopK::MaxPairs: Test for large num_items", "[pairs][topk][device
   auto values_expected_it = cuda::std::make_reverse_iterator(values_in + num_items);
   bool res                = check_results(
     keys_expected_it, values_expected_it, keys_out, values_out, num_items, static_cast<num_items_t>(k), comparator_t{});
+  REQUIRE(res == true);
+}
+
+C2H_TEST("DeviceTopK::{Min,Max}Pairs works with custom keys and decomposers", "[pairs][topk][device]", directions)
+{
+  using key_t              = topk_custom_key_t;
+  using value_t            = custom_value_t;
+  constexpr auto direction = c2h::get<0, TestType>::value;
+  using num_items_t        = cuda::std::uint32_t;
+  using comparator_t       = direction_to_comparator_t<direction>;
+
+  constexpr num_items_t min_num_items = 1;
+  constexpr num_items_t max_num_items = 1 << 18;
+  const num_items_t num_items         = GENERATE_COPY(
+    values({min_num_items, num_items_t{3}, max_num_items}), take(1, random(min_num_items, max_num_items)));
+  const num_items_t k = GENERATE_COPY(take(3, random(num_items_t{1}, num_items)));
+
+  CAPTURE(num_items, k, direction);
+
+  c2h::device_vector<key_t> keys_in(num_items);
+  c2h::device_vector<value_t> values_in(num_items);
+  c2h::device_vector<key_t> keys_out(k);
+  c2h::device_vector<value_t> values_out(k);
+  gen_topk_custom_keys(C2H_SEED(3), keys_in);
+  c2h::gen(C2H_SEED(5), values_in);
+
+  auto requirements =
+    cuda::execution::require(cuda::execution::determinism::not_guaranteed, cuda::execution::output_ordering::unsorted);
+  auto env = cuda::std::execution::env{cuda::stream_ref{cudaStream_t{}}, requirements};
+
+  size_t temp_storage_bytes = 0;
+  if constexpr (direction == cub::detail::topk::select::max)
+  {
+    cub::DeviceTopK::MaxPairs(
+      nullptr,
+      temp_storage_bytes,
+      keys_in.begin(),
+      keys_out.begin(),
+      values_in.begin(),
+      values_out.begin(),
+      num_items,
+      k,
+      topk_custom_key_decomposer_t{},
+      env);
+  }
+  else
+  {
+    cub::DeviceTopK::MinPairs(
+      nullptr,
+      temp_storage_bytes,
+      keys_in.begin(),
+      keys_out.begin(),
+      values_in.begin(),
+      values_out.begin(),
+      num_items,
+      k,
+      topk_custom_key_decomposer_t{},
+      env);
+  }
+
+  c2h::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
+  if constexpr (direction == cub::detail::topk::select::max)
+  {
+    cub::DeviceTopK::MaxPairs(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_storage_bytes,
+      keys_in.begin(),
+      keys_out.begin(),
+      values_in.begin(),
+      values_out.begin(),
+      num_items,
+      k,
+      topk_custom_key_decomposer_t{},
+      env);
+  }
+  else
+  {
+    cub::DeviceTopK::MinPairs(
+      thrust::raw_pointer_cast(temp_storage.data()),
+      temp_storage_bytes,
+      keys_in.begin(),
+      keys_out.begin(),
+      values_in.begin(),
+      values_out.begin(),
+      num_items,
+      k,
+      topk_custom_key_decomposer_t{},
+      env);
+  }
+
+  sort_keys_and_values(keys_in, values_in, num_items, comparator_t{});
+  c2h::host_vector<key_t> h_keys(keys_in);
+  c2h::host_vector<value_t> h_values(values_in);
+  const bool res = check_results(
+    thrust::raw_pointer_cast(h_keys.data()),
+    thrust::raw_pointer_cast(h_values.data()),
+    keys_out,
+    values_out,
+    num_items,
+    k,
+    comparator_t{});
   REQUIRE(res == true);
 }

@@ -25,9 +25,9 @@
 template <class T>
 __host__ __device__ constexpr void test()
 {
-  constexpr size_t max_capacity         = 6ull;
-  using inplace_vector                  = cuda::std::inplace_vector<T, max_capacity>;
-  const cuda::std::array<T, 6> expected = {T(0), T(1), T(2), T(3), T(4), T(5)};
+  [[maybe_unused]] constexpr size_t max_capacity = 6ull;
+  using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
+  const cuda::std::array<T, 6> expected          = {T(0), T(1), T(2), T(3), T(4), T(5)};
 
   { // inplace_vector<T, N>::emplace(iter, args...)
     inplace_vector vec = {T(0), T(1), T(2), T(4), T(5)};

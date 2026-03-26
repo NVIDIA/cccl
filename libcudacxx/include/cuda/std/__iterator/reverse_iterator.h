@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/unwrap_iter.h>
+#include <cuda/std/__fwd/iterator.h>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/compare_three_way_result.h>
 #  include <cuda/std/__compare/three_way_comparable.h>

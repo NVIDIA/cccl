@@ -14,8 +14,12 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/env_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_merge_sort.cuh>
 #include <cub/util_namespace.cuh>
+
+#include <cuda/__execution/require.h>
+#include <cuda/std/__execution/env.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -106,11 +110,16 @@ private:
   {
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
-    using DispatchMergeSortT =
-      DispatchMergeSort<KeyIteratorT, ValueIteratorT, KeyIteratorT, ValueIteratorT, ChooseOffsetT, CompareOpT>;
-
-    return DispatchMergeSortT::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_keys, d_items, d_keys, d_items, num_items, compare_op, stream);
+    return detail::merge_sort::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      d_items,
+      d_keys,
+      d_items,
+      static_cast<ChooseOffsetT>(num_items),
+      compare_op,
+      stream);
   }
 
 public:
@@ -223,6 +232,79 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortPairsNoNVTX(d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, stream);
+  }
+
+  //! @rst
+  //! Sorts items using a merge sorting method.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - SortPairs is not guaranteed to be stable.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_merge_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin sort-pairs-env
+  //!     :end-before: example-end sort-pairs-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyIteratorT
+  //!   **[inferred]** Random-access iterator type for keys @iterator
+  //!
+  //! @tparam ValueIteratorT
+  //!   **[inferred]** Random-access iterator type for values @iterator
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Integer type for offsets
+  //!
+  //! @tparam CompareOpT
+  //!   **[inferred]** Comparison function object type
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type
+  //!
+  //! @param[in,out] d_keys
+  //!   Keys to sort
+  //!
+  //! @param[in,out] d_items
+  //!   Values corresponding to keys
+  //!
+  //! @param[in] num_items
+  //!   Number of items to sort
+  //!
+  //! @param[in] compare_op
+  //!   Comparison function object
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename KeyIteratorT,
+            typename ValueIteratorT,
+            typename OffsetT,
+            typename CompareOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  SortPairs(KeyIteratorT d_keys, ValueIteratorT d_items, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return detail::merge_sort::dispatch(
+        storage, bytes, d_keys, d_items, d_keys, d_items, static_cast<ChooseOffsetT>(num_items), compare_op, stream);
+    });
   }
 
   /**
@@ -361,19 +443,119 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
-    using DispatchMergeSortT =
-      DispatchMergeSort<KeyInputIteratorT, ValueInputIteratorT, KeyIteratorT, ValueIteratorT, ChooseOffsetT, CompareOpT>;
-
-    return DispatchMergeSortT::Dispatch(
+    return detail::merge_sort::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_input_keys,
       d_input_items,
       d_output_keys,
       d_output_items,
-      num_items,
+      static_cast<ChooseOffsetT>(num_items),
       compare_op,
       stream);
+  }
+
+  //! @rst
+  //! Sorts items using a merge sorting method.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - SortPairsCopy is not guaranteed to be stable.
+  //! - Input arrays ``d_input_keys`` and ``d_input_items`` are not modified.
+  //! - The behavior is undefined if the input and output ranges overlap in any way.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_merge_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin sort-pairs-copy-env
+  //!     :end-before: example-end sort-pairs-copy-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyInputIteratorT
+  //!   **[inferred]** Random-access iterator type for input keys @iterator
+  //!
+  //! @tparam ValueInputIteratorT
+  //!   **[inferred]** Random-access iterator type for input values @iterator
+  //!
+  //! @tparam KeyIteratorT
+  //!   **[inferred]** Random-access iterator type for output keys @iterator
+  //!
+  //! @tparam ValueIteratorT
+  //!   **[inferred]** Random-access iterator type for output values @iterator
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Integer type for offsets
+  //!
+  //! @tparam CompareOpT
+  //!   **[inferred]** Comparison function object type
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type
+  //!
+  //! @param[in] d_input_keys
+  //!   Pointer to the input sequence of unsorted input keys
+  //!
+  //! @param[in] d_input_items
+  //!   Pointer to the input sequence of unsorted input values
+  //!
+  //! @param[out] d_output_keys
+  //!   Pointer to the output sequence of sorted input keys
+  //!
+  //! @param[out] d_output_items
+  //!   Pointer to the output sequence of sorted input values
+  //!
+  //! @param[in] num_items
+  //!   Number of items to sort
+  //!
+  //! @param[in] compare_op
+  //!   Comparison function object
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename KeyInputIteratorT,
+            typename ValueInputIteratorT,
+            typename KeyIteratorT,
+            typename ValueIteratorT,
+            typename OffsetT,
+            typename CompareOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairsCopy(
+    KeyInputIteratorT d_input_keys,
+    ValueInputIteratorT d_input_items,
+    KeyIteratorT d_output_keys,
+    ValueIteratorT d_output_items,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return detail::merge_sort::dispatch(
+        storage,
+        bytes,
+        d_input_keys,
+        d_input_items,
+        d_output_keys,
+        d_output_items,
+        static_cast<ChooseOffsetT>(num_items),
+        compare_op,
+        stream);
+    });
   }
 
 private:
@@ -389,17 +571,14 @@ private:
   {
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
-    using DispatchMergeSortT =
-      DispatchMergeSort<KeyIteratorT, NullType*, KeyIteratorT, NullType*, ChooseOffsetT, CompareOpT>;
-
-    return DispatchMergeSortT::Dispatch(
+    return detail::merge_sort::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
       static_cast<NullType*>(nullptr),
       d_keys,
       static_cast<NullType*>(nullptr),
-      num_items,
+      static_cast<ChooseOffsetT>(num_items),
       compare_op,
       stream);
   }
@@ -506,6 +685,77 @@ public:
     return SortKeysNoNVTX(d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
   }
 
+  //! @rst
+  //! Sorts keys using a merge sorting method.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - SortKeys is not guaranteed to be stable.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_merge_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin sort-keys-env
+  //!     :end-before: example-end sort-keys-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyIteratorT
+  //!   **[inferred]** Random-access iterator type for keys @iterator
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Integer type for offsets
+  //!
+  //! @tparam CompareOpT
+  //!   **[inferred]** Comparison function object type
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type
+  //!
+  //! @param[in,out] d_keys
+  //!   Keys to sort
+  //!
+  //! @param[in] num_items
+  //!   Number of items to sort
+  //!
+  //! @param[in] compare_op
+  //!   Comparison function object
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  SortKeys(KeyIteratorT d_keys, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return detail::merge_sort::dispatch(
+        storage,
+        bytes,
+        d_keys,
+        static_cast<NullType*>(nullptr),
+        d_keys,
+        static_cast<NullType*>(nullptr),
+        static_cast<ChooseOffsetT>(num_items),
+        compare_op,
+        stream);
+    });
+  }
+
 private:
   // Internal version without NVTX range
   template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT>
@@ -520,17 +770,14 @@ private:
   {
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
-    using DispatchMergeSortT =
-      DispatchMergeSort<KeyInputIteratorT, NullType*, KeyIteratorT, NullType*, ChooseOffsetT, CompareOpT>;
-
-    return DispatchMergeSortT::Dispatch(
+    return detail::merge_sort::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_input_keys,
       static_cast<NullType*>(nullptr),
       d_output_keys,
       static_cast<NullType*>(nullptr),
-      num_items,
+      static_cast<ChooseOffsetT>(num_items),
       compare_op,
       stream);
   }
@@ -652,6 +899,89 @@ public:
       d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, stream);
   }
 
+  //! @rst
+  //! Sorts keys using a merge sorting method.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - SortKeysCopy is not guaranteed to be stable.
+  //! - Input array ``d_input_keys`` is not modified.
+  //! - The behavior is undefined if the input and output ranges overlap in any way.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_merge_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin sort-keys-copy-env
+  //!     :end-before: example-end sort-keys-copy-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyInputIteratorT
+  //!   **[inferred]** Random-access iterator type for input keys @iterator
+  //!
+  //! @tparam KeyIteratorT
+  //!   **[inferred]** Random-access iterator type for output keys @iterator
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Integer type for offsets
+  //!
+  //! @tparam CompareOpT
+  //!   **[inferred]** Comparison function object type
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type
+  //!
+  //! @param[in] d_input_keys
+  //!   Pointer to the input sequence of unsorted input keys
+  //!
+  //! @param[out] d_output_keys
+  //!   Pointer to the output sequence of sorted input keys
+  //!
+  //! @param[in] num_items
+  //!   Number of items to sort
+  //!
+  //! @param[in] compare_op
+  //!   Comparison function object
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename KeyInputIteratorT,
+            typename KeyIteratorT,
+            typename OffsetT,
+            typename CompareOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeysCopy(
+    KeyInputIteratorT d_input_keys, KeyIteratorT d_output_keys, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return detail::merge_sort::dispatch(
+        storage,
+        bytes,
+        d_input_keys,
+        static_cast<NullType*>(nullptr),
+        d_output_keys,
+        static_cast<NullType*>(nullptr),
+        static_cast<ChooseOffsetT>(num_items),
+        compare_op,
+        stream);
+    });
+  }
+
   /**
    * @brief Sorts items using a merge sorting method.
    *
@@ -765,6 +1095,79 @@ public:
       d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, stream);
   }
 
+  //! @rst
+  //! Stably sorts items using a merge sorting method.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - StableSortPairs preserves the relative ordering of equivalent elements.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_merge_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin stable-sort-pairs-env
+  //!     :end-before: example-end stable-sort-pairs-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyIteratorT
+  //!   **[inferred]** Random-access iterator type for keys @iterator
+  //!
+  //! @tparam ValueIteratorT
+  //!   **[inferred]** Random-access iterator type for values @iterator
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Integer type for offsets
+  //!
+  //! @tparam CompareOpT
+  //!   **[inferred]** Comparison function object type
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type
+  //!
+  //! @param[in,out] d_keys
+  //!   Keys to sort
+  //!
+  //! @param[in,out] d_items
+  //!   Values corresponding to keys
+  //!
+  //! @param[in] num_items
+  //!   Number of items to sort
+  //!
+  //! @param[in] compare_op
+  //!   Comparison function object
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename KeyIteratorT,
+            typename ValueIteratorT,
+            typename OffsetT,
+            typename CompareOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  StableSortPairs(KeyIteratorT d_keys, ValueIteratorT d_items, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return detail::merge_sort::dispatch(
+        storage, bytes, d_keys, d_items, d_keys, d_items, static_cast<ChooseOffsetT>(num_items), compare_op, stream);
+    });
+  }
+
   /**
    * @brief Sorts items using a merge sorting method.
    *
@@ -867,6 +1270,77 @@ public:
 
     return SortKeysNoNVTX<KeyIteratorT, OffsetT, CompareOpT>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
+  }
+
+  //! @rst
+  //! Stably sorts keys using a merge sorting method.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - StableSortKeys preserves the relative ordering of equivalent elements.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_merge_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin stable-sort-keys-env
+  //!     :end-before: example-end stable-sort-keys-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyIteratorT
+  //!   **[inferred]** Random-access iterator type for keys @iterator
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Integer type for offsets
+  //!
+  //! @tparam CompareOpT
+  //!   **[inferred]** Comparison function object type
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type
+  //!
+  //! @param[in,out] d_keys
+  //!   Keys to sort
+  //!
+  //! @param[in] num_items
+  //!   Number of items to sort
+  //!
+  //! @param[in] compare_op
+  //!   Comparison function object
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  StableSortKeys(KeyIteratorT d_keys, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return detail::merge_sort::dispatch(
+        storage,
+        bytes,
+        d_keys,
+        static_cast<NullType*>(nullptr),
+        d_keys,
+        static_cast<NullType*>(nullptr),
+        static_cast<ChooseOffsetT>(num_items),
+        compare_op,
+        stream);
+    });
   }
 
   /**
@@ -984,6 +1458,89 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysCopyNoNVTX<KeyInputIteratorT, KeyIteratorT, OffsetT, CompareOpT>(
       d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, stream);
+  }
+
+  //! @rst
+  //! Stably sorts keys using a merge sorting method.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - StableSortKeysCopy preserves the relative ordering of equivalent elements.
+  //! - Input array ``d_input_keys`` is not modified.
+  //! - The behavior is undefined if the input and output ranges overlap in any way.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_merge_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin stable-sort-keys-copy-env
+  //!     :end-before: example-end stable-sort-keys-copy-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyInputIteratorT
+  //!   **[inferred]** Random-access iterator type for input keys @iterator
+  //!
+  //! @tparam KeyIteratorT
+  //!   **[inferred]** Random-access iterator type for output keys @iterator
+  //!
+  //! @tparam OffsetT
+  //!   **[inferred]** Integer type for offsets
+  //!
+  //! @tparam CompareOpT
+  //!   **[inferred]** Comparison function object type
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type
+  //!
+  //! @param[in] d_input_keys
+  //!   Pointer to the input sequence of unsorted input keys
+  //!
+  //! @param[out] d_output_keys
+  //!   Pointer to the output sequence of sorted input keys
+  //!
+  //! @param[in] num_items
+  //!   Number of items to sort
+  //!
+  //! @param[in] compare_op
+  //!   Comparison function object
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename KeyInputIteratorT,
+            typename KeyIteratorT,
+            typename OffsetT,
+            typename CompareOpT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t StableSortKeysCopy(
+    KeyInputIteratorT d_input_keys, KeyIteratorT d_output_keys, OffsetT num_items, CompareOpT compare_op, EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return detail::merge_sort::dispatch(
+        storage,
+        bytes,
+        d_input_keys,
+        static_cast<NullType*>(nullptr),
+        d_output_keys,
+        static_cast<NullType*>(nullptr),
+        static_cast<ChooseOffsetT>(num_items),
+        compare_op,
+        stream);
+    });
   }
 };
 
