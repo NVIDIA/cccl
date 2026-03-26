@@ -76,7 +76,10 @@ function(add_bench_dir bench_dir)
       target_link_libraries(${bench_name} PRIVATE ${thrust_target})
 
       if ("CUDA" STREQUAL "${config_device}")
-        target_compile_options(${bench_name} PRIVATE "--extended-lambda")
+        target_compile_options(
+          ${bench_name}
+          PRIVATE "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>"
+        )
       endif()
     endforeach()
   endforeach()

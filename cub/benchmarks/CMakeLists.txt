@@ -97,7 +97,10 @@ function(add_bench_dir bench_dir)
     add_bench(base_bench_target ${base_bench_name} "${bench_src}")
     add_dependencies(${benches_meta_target} ${base_bench_target})
     target_compile_definitions(${base_bench_target} PRIVATE TUNE_BASE=1)
-    target_compile_options(${base_bench_target} PRIVATE "--extended-lambda")
+    target_compile_options(
+      ${base_bench_target}
+      PRIVATE "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>"
+    )
 
     if (CUB_ENABLE_TUNING)
       # tuning
@@ -115,7 +118,7 @@ function(add_bench_dir bench_dir)
       target_compile_options(
         ${bench_target}
         PRIVATE #
-          "--extended-lambda"
+          "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>"
           "-include${tuning_path}"
       )
     else()
