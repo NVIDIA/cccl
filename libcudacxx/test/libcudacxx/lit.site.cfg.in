@@ -8,7 +8,6 @@ config.cxx_library_root         = "@LIBCUDACXX_LIBRARY_DIR@"
 config.std                      = "@LIBCUDACXX_TEST_STANDARD_VER@"
 config.enable_tile              = "@LIBCUDACXX_ENABLE_TILE@"
 config.enable_exceptions        = True
-config.enable_experimental      = False
 config.cxx_abi                  = "none"
 config.is_nvrtc                 = @LIBCUDACXX_CUDA_TEST_WITH_NVRTC@
 config.configuration_variant    = "libcudacxx"

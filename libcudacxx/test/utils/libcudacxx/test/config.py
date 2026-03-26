@@ -585,13 +585,6 @@ class Configuration(object):
                 % self.cxx_stdlib_under_test
             )
         self.config.available_features.add(self.cxx_stdlib_under_test)
-        if self.cxx_stdlib_under_test == "libstdc++":
-            self.config.available_features.add("libstdc++")
-            # Manually enable the experimental and filesystem tests for libstdc++
-            # if the options aren't present.
-            # FIXME this is a hack.
-            if self.get_lit_conf("enable_experimental") is None:
-                self.config.enable_experimental = "true"
 
     def configure_use_clang_verify(self):
         if self.cxx.type == "nvrtcc":
@@ -1227,12 +1220,6 @@ class Configuration(object):
                     self.cxx.link_flags += ["-Wl,-rpath," + self.abi_library_root]
             else:
                 self.add_path(self.exec_env, self.abi_library_root)
-
-    def configure_link_flags_cxx_library(self):
-        libcxx_experimental = self.get_lit_bool("enable_experimental", default=False)
-        if libcxx_experimental:
-            self.config.available_features.add("c++experimental")
-            self.cxx.link_flags += ["-lc++experimental"]
 
     def configure_link_flags_abi_library(self):
         cxx_abi = self.get_lit_conf("cxx_abi", "libcxxabi")
