@@ -55,15 +55,18 @@ if (nvbench_helper_ENABLE_TESTING)
 
   function(add_nvbench_helper_test device_system)
     set(nvbench_helper_test_target nvbench_helper.test.${device_system})
-    add_executable(
+    cccl_add_executable(
       ${nvbench_helper_test_target}
-      test/gen_seed.cu
-      test/gen_range.cu
-      test/gen_entropy.cu
-      test/gen_uniform_distribution.cu
-      test/gen_power_law_distribution.cu
+      ADD_CTEST
+      NO_METATARGETS
+      DIALECT 17
+      SOURCES
+        test/gen_seed.cu
+        test/gen_range.cu
+        test/gen_entropy.cu
+        test/gen_uniform_distribution.cu
+        test/gen_power_law_distribution.cu
     )
-    cccl_configure_target(${nvbench_helper_test_target} DIALECT 17)
     target_link_libraries(
       ${nvbench_helper_test_target}
       PRIVATE
@@ -72,11 +75,6 @@ if (nvbench_helper_ENABLE_TESTING)
         cccl.nvbench_helper.test.Thrust.cpp.${device_system}
         Catch2::Catch2WithMain
         Boost::math
-    )
-
-    add_test(
-      NAME ${nvbench_helper_test_target}
-      COMMAND ${nvbench_helper_test_target}
     )
   endfunction()
 

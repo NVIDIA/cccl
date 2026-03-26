@@ -25,8 +25,13 @@ if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
     string(REGEX REPLACE "\\.[^.]+$" "" target_name "${target_name}")
     set(${target_name_var} ${target_name} PARENT_SCOPE)
 
-    add_executable(${target_name} "${source}")
-    cccl_configure_target(${target_name} DIALECT ${CMAKE_CUDA_STANDARD})
+    cccl_add_executable(
+      ${target_name}
+      ADD_CTEST
+      NO_METATARGETS
+      DIALECT ${CMAKE_CUDA_STANDARD}
+      SOURCES "${source}"
+    )
     target_include_directories(
       ${target_name}
       PRIVATE
@@ -45,8 +50,6 @@ if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
     endif()
 
     add_dependencies(${c2h_all_target} ${target_name})
-
-    add_test(NAME ${target_name} COMMAND ${target_name})
   endfunction()
 
   foreach (test_src IN LISTS test_srcs)
