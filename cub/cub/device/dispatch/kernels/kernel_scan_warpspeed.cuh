@@ -177,6 +177,23 @@ _CCCL_DEVICE_API Tp warpScanExclusive(const Tp regInput, ScanOpT& scan_op)
   return result;
 }
 
+template <typename Tp, typename ScanOpT>
+_CCCL_DEVICE_API Tp warpScanExclusivePartial(const Tp regInput, ScanOpT& scan_op, const int num_items)
+{
+  using warp_scan_t = WarpScan<Tp>;
+
+  // TODO (elstehle): Do proper temporary storage allocation in case WarpReduce may rely on it
+  static_assert(sizeof(typename warp_scan_t::TempStorage) <= 4,
+                "WarpScan with non-trivial temporary storage is not supported yet in this kernel.");
+
+  Tp result;
+  typename warp_scan_t::TempStorage temp_storage;
+
+  warp_scan_t{temp_storage}.ExclusiveScanPartial(regInput, result, scan_op, num_items);
+
+  return result;
+}
+
 // The kernelBody device function is a straight-line implementation of the
 // warp-specialized kernel.
 //
@@ -436,6 +453,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
     {
       static_assert(tile_size % squadScanStore.threadCount() == 0);
 
+      const int valid_items_this_thread =
+        cuda::std::clamp(valid_items - squad.threadRank() * elemPerThread, 0, elemPerThread);
+      const int valid_threads_this_warp =
+        cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - squad.warpRank() * 32, 0, 32);
+      const int valid_warps = ::cuda::ceil_div(valid_items, elemPerThread * 32);
+      _CCCL_ASSERT(0 < valid_warps && valid_warps <= squad.warpCount(), "");
+
       // Sum of all threads up to but not including this one
       AccumT sumExclusive;
 
@@ -455,7 +479,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         for (int i = 0; i < squadScanStore.warpCount(); ++i)
         {
           // We want a predicated unrolled loop here.
-          if (i < squad.warpRank())
+          if (i < squad.warpRank() && i < valid_warps)
           {
             if (i == 0)
             {
@@ -473,7 +497,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         // It has a valid value in
         // - tile*::warp{1,2, ..}      (sum of previous warps)
         //
-        // It it not yet initialized in
+        // It is not yet initialized in
         // - tile*::warp0
 
         // Add the sums of preceding threads in this warp to the cumulative sum.
@@ -492,8 +516,17 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         // If the warp contains partial data, we pass invalid elements to
         // scan_op, and sumExclusiveIntraWarp is invalid when the inputs were
         // invalid.
-        AccumT regSumThread          = refSumThreadAndWarpR.data()[squad.threadRank()];
-        AccumT sumExclusiveIntraWarp = __scan_detail::warpScanExclusive(regSumThread, scan_op);
+        AccumT regSumThread = refSumThreadAndWarpR.data()[squad.threadRank()];
+        AccumT sumExclusiveIntraWarp;
+        if (is_last_tile)
+        {
+          sumExclusiveIntraWarp =
+            __scan_detail::warpScanExclusivePartial(regSumThread, scan_op, valid_threads_this_warp);
+        }
+        else
+        {
+          sumExclusiveIntraWarp = __scan_detail::warpScanExclusive(regSumThread, scan_op);
+        }
 
         if (squad.warpRank() == 0)
         {
@@ -502,7 +535,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
           // value for sumExclusive.
           sumExclusive = sumExclusiveIntraWarp;
         }
-        else if (specialRegisters.laneIdx != 0)
+        else if (specialRegisters.laneIdx != 0 && specialRegisters.laneIdx < valid_threads_this_warp)
         {
           // lane0 has an undefined value for sumIntraWarp. Other lanes update
           // sumExclusive using sumIntraWarp.
@@ -563,13 +596,12 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       ////////////////////////////////////////////////////////////////////////////////
       // Scan across elements allocated to this thread
       ////////////////////////////////////////////////////////////////////////////////
-      AccumT regSumInclusive[elemPerThread] = {{}};
+      AccumT regSumInclusive[elemPerThread];
 
       // Acquire refInOut for remainder of scope.
       warpspeed::SmemRef refInOutRW = phaseInOutRW.acquireRef();
 
-      // We are always loading a full tile even for the last one. That will call scan_op on invalid data
-      // loading partial tiles here regresses perf for about 10-15%
+      // We are always loading a full tile even for the last tile, so we are loading invalid data
       warpspeed::squadLoadSmem(
         squad,
         regSumInclusive,
@@ -578,13 +610,29 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       // Perform inclusive scan of register array in current thread.
       // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use sumExclusive
       const bool use_prefix = hasInit ? true : !(is_first_tile && squad.threadRank() == 0);
-      if constexpr (isInclusive)
+      if (is_last_tile)
       {
-        __cub_detail::ThreadScanInclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive, use_prefix);
+        if constexpr (isInclusive)
+        {
+          __cub_detail::ThreadScanInclusivePartial(
+            regSumInclusive, regSumInclusive, scan_op, valid_items_this_thread, sumExclusive, use_prefix);
+        }
+        else
+        {
+          __cub_detail::ThreadScanExclusivePartial(
+            regSumInclusive, regSumInclusive, scan_op, valid_items_this_thread, sumExclusive, use_prefix);
+        }
       }
       else
       {
-        __cub_detail::ThreadScanExclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive, use_prefix);
+        if constexpr (isInclusive)
+        {
+          __cub_detail::ThreadScanInclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive, use_prefix);
+        }
+        else
+        {
+          __cub_detail::ThreadScanExclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive, use_prefix);
+        }
       }
 
       ////////////////////////////////////////////////////////////////////////////////
