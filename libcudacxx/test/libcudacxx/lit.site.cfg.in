@@ -33,7 +33,6 @@ config.executor                 = "@LIBCUDACXX_EXECUTOR@"
 config.has_libatomic            = False
 config.use_libatomic            = False
 config.debug_build              = False
-config.cxx_ext_threads          = False
 config.maxIndividualTestTime    = @LIBCUDACXX_TEST_TIMEOUT@
 
 # Let the main config do the real work.

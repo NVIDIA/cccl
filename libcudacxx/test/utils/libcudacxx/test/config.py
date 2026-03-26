@@ -1341,8 +1341,6 @@ class Configuration(object):
             self.lit_config.fatal("C++ ABI setting %s unsupported for tests" % cxx_abi)
 
     def configure_extra_library_flags(self):
-        if self.get_lit_bool("cxx_ext_threads", default=False):
-            self.cxx.link_flags += ["-lc++external_threads"]
         self.target_info.add_cxx_link_flags(self.cxx.link_flags)
 
     def configure_color_diagnostics(self):
