@@ -479,7 +479,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         for (int i = 0; i < squadScanStore.warpCount(); ++i)
         {
           // We want a predicated unrolled loop here.
-          if (i < squad.warpRank() && i < valid_warps)
+          if (i < squad.warpRank() && i < valid_warps) // this is free
           {
             if (i == 0)
             {
@@ -518,7 +518,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         // invalid.
         AccumT regSumThread = refSumThreadAndWarpR.data()[squad.threadRank()];
         AccumT sumExclusiveIntraWarp;
-        if (is_last_tile)
+        if (is_last_tile) // this extra branch costs us up to 4% performance for I8 and I16
         {
           sumExclusiveIntraWarp =
             __scan_detail::warpScanExclusivePartial(regSumThread, scan_op, valid_threads_this_warp);
@@ -535,7 +535,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
           // value for sumExclusive.
           sumExclusive = sumExclusiveIntraWarp;
         }
-        else if (specialRegisters.laneIdx != 0 && specialRegisters.laneIdx < valid_threads_this_warp)
+        else if (specialRegisters.laneIdx != 0 && specialRegisters.laneIdx < valid_threads_this_warp) // this is free
         {
           // lane0 has an undefined value for sumIntraWarp. Other lanes update
           // sumExclusive using sumIntraWarp.
@@ -610,7 +610,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       // Perform inclusive scan of register array in current thread.
       // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use sumExclusive
       const bool use_prefix = hasInit ? true : !(is_first_tile && squad.threadRank() == 0);
-      if (is_last_tile)
+      if (is_last_tile) // this costs up to 14% performance, especially for I8 and I16
       {
         if constexpr (isInclusive)
         {
