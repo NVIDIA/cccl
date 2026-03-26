@@ -77,7 +77,6 @@ class Configuration(object):
         self.cxx_runtime_root = None
         self.abi_library_root = None
         self.link_shared = self.get_lit_bool("enable_shared", default=True)
-        self.debug_build = self.get_lit_bool("debug_build", default=False)
         self.exec_env = dict(os.environ)
         self.exec_env["CUDA_MODULE_LOADING"] = "EAGER"
         self.use_target = False
@@ -977,12 +976,7 @@ class Configuration(object):
         gcc_toolchain = self.get_lit_conf("gcc_toolchain")
         if gcc_toolchain:
             self.cxx.flags += ["--gcc-toolchain=" + gcc_toolchain]
-        # NOTE: the _DEBUG definition must precede the triple check because for
-        # the Windows build of libc++, the forced inclusion of a header requires
-        # that _DEBUG is defined.  Incorrect ordering will result in -target
-        # being elided.
-        if self.is_windows and self.debug_build:
-            self.cxx.compile_flags += ["-D_DEBUG"]
+
         if self.use_target:
             if not self.cxx.addFlagIfSupported(
                 ["--target=" + self.config.target_triple]
@@ -1032,15 +1026,7 @@ class Configuration(object):
                 os.path.join(support_path, "msvc_stdlib_force_include.h"),
             ]
             pass
-        if (
-            self.is_windows
-            and self.debug_build
-            and self.cxx_stdlib_under_test != "msvc"
-        ):
-            self.cxx.compile_flags += [
-                "-include",
-                os.path.join(support_path, "set_windows_crt_report_mode.h"),
-            ]
+
         cxx_headers = self.get_lit_conf("cxx_headers")
         if cxx_headers == "" or (
             cxx_headers is None and self.cxx_stdlib_under_test != "libc++"
@@ -1325,14 +1311,14 @@ class Configuration(object):
         elif cxx_abi == "libcxxrt":
             self.cxx.link_flags += ["-lcxxrt"]
         elif cxx_abi == "vcruntime":
-            debug_suffix = "d" if self.debug_build else ""
+            debug_suffix = "d"
             self.cxx.link_flags += [
                 "-l%s%s" % (lib, debug_suffix)
                 for lib in ["vcruntime", "ucrt", "msvcrt"]
             ]
         elif cxx_abi == "none" or cxx_abi == "default":
             if self.is_windows:
-                debug_suffix = "d" if self.debug_build else ""
+                debug_suffix = "d"
                 self.cxx.link_flags += ["-lmsvcrt%s" % debug_suffix]
         else:
             self.lit_config.fatal("C++ ABI setting %s unsupported for tests" % cxx_abi)

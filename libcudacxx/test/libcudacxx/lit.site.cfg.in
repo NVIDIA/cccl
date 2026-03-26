@@ -30,7 +30,6 @@ config.nvcc_host_compiler       = "@CMAKE_CUDA_HOST_COMPILER@"
 config.cuda_path                = "@CMAKE_CUDA_COMPILER_TOOLKIT_ROOT@"
 
 config.executor                 = "@LIBCUDACXX_EXECUTOR@"
-config.debug_build              = False
 config.maxIndividualTestTime    = @LIBCUDACXX_TEST_TIMEOUT@
 
 # Let the main config do the real work.
