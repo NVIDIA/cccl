@@ -1324,17 +1324,7 @@ class Configuration(object):
             # then link it.
             testing_libcxxabi = self.get_lit_conf("name", "") == "libc++abi"
             if self.target_info.allow_cxxabi_link() or testing_libcxxabi:
-                libcxxabi_shared = self.get_lit_bool("libcxxabi_shared", default=True)
-                if libcxxabi_shared:
-                    self.cxx.link_flags += ["-lc++abi"]
-                else:
-                    cxxabi_library_root = self.get_lit_conf("abi_library_path")
-                    if cxxabi_library_root:
-                        libname = self.make_static_lib_name("c++abi")
-                        abs_path = os.path.join(cxxabi_library_root, libname)
-                        self.cxx.link_flags += [abs_path]
-                    else:
-                        self.cxx.link_flags += ["-lc++abi"]
+                self.cxx.link_flags += ["-lc++abi"]
         elif cxx_abi == "libcxxrt":
             self.cxx.link_flags += ["-lcxxrt"]
         elif cxx_abi == "vcruntime":
