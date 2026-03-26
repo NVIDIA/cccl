@@ -43,12 +43,11 @@ from numba.cuda.core.rewrites import Rewrite, register_rewrite
 from numba.cuda.cudadecl import register_global
 from numba.cuda.cudadrv.devicearray import DeviceNDArray
 from numba.cuda.cudaimpl import lower
-
-from .. import _launch_config as coop_launch_config
-from .._launch_config import (
+from numba.cuda.launchconfig import (
     current_launch_config,
     ensure_current_launch_config,
 )
+
 from .._types import Algorithm as CoopAlgorithm
 from .._types import algo_coalesce_key
 from .block import (
@@ -59,7 +58,16 @@ from .warp import (
 )
 
 if TYPE_CHECKING:
-    from .._launch_config import LaunchConfig
+    from collections.abc import Sequence
+    from typing import Protocol
+
+    class LaunchConfig(Protocol):
+        args: Sequence[Any]
+        dispatcher: Any
+        blockdim: Any
+        sharedmem: int
+        pre_launch_callbacks: list[Any]
+
 
 # Select the IR implementation once imports are complete.
 ir = cuda_ir if cuda_ir is not None else core_ir
@@ -154,28 +162,10 @@ def get_kernel_param_index_safe(code, name: str, *, include_kwonly=True):
         return None
 
 
-class LaunchConfigUnavailableError(RuntimeError):
-    pass
-
-
-def _launch_config_required_message(context: str) -> str:
-    return (
-        f"{context} requires `numba.cuda.launchconfig`, which is currently "
-        "unavailable or disabled in this process."
-    )
-
-
-def get_kernel_param_value(name: str, launch_config: Optional["LaunchConfig"]) -> Any:
+def get_kernel_param_value(name: str, launch_config: "LaunchConfig") -> Any:
     """
     Return the value of the parameter *name* from the launch configuration.
     """
-    if launch_config is None:
-        raise LaunchConfigUnavailableError(
-            _launch_config_required_message(
-                f"Resolving kernel argument {name!r} during cuda.coop rewrite",
-            )
-        )
-
     args = launch_config.args
     code = launch_config.dispatcher.func_code
     idx = get_kernel_param_index_safe(code, name)
@@ -190,16 +180,14 @@ def get_kernel_param_value(name: str, launch_config: Optional["LaunchConfig"]) -
     return args[idx]
 
 
-def get_kernel_param_value_safe(
-    name: str, launch_config: Optional["LaunchConfig"]
-) -> Any:
+def get_kernel_param_value_safe(name: str, launch_config: "LaunchConfig") -> Any:
     """
     Return the value of the parameter *name* from the launch configuration.
     Returns None if the parameter is not found.
     """
     try:
         return get_kernel_param_value(name, launch_config)
-    except (LookupError, LaunchConfigUnavailableError):
+    except LookupError:
         # If the parameter is not found, return None.
         return None
 
@@ -680,7 +668,7 @@ def get_root_definition(
     func_ir: ir.FunctionIR,
     typemap: dict[str, types.Type],
     calltypes: dict[ir.Expr, types.Type],
-    launch_config: Optional["LaunchConfig"],
+    launch_config: "LaunchConfig",
     assignments_map: dict[ir.Var, ir.Assign],
     rewriter: Optional["CoopNodeRewriter"],
 ) -> Optional[RootDefinition]:
@@ -762,7 +750,7 @@ def get_root_definition(
             break
         elif isinstance(instr, ir.Arg):
             root_instr = instr
-            instance = get_kernel_param_value_safe(
+            instance = get_kernel_param_value(
                 instr.name,
                 launch_config,
             )
@@ -782,12 +770,6 @@ def get_root_definition(
                         "Expected attr_name to be set, but got "
                         f"None for {original_instr!r}"
                     )
-                if instance is None:
-                    raise LaunchConfigUnavailableError(
-                        _launch_config_required_message(
-                            "Resolving kernel-traits attributes from kernel arguments"
-                        )
-                    )
                 attr_instance = getattr(instance, attr_name)
 
             last_instr = all_instructions[-1]
@@ -804,12 +786,6 @@ def get_root_definition(
                     raise RuntimeError(
                         "Expected attr_name to be set, but got None for "
                         f"{last_instr!r}, instr: {instr!r}"
-                    )
-                if instance is None:
-                    raise LaunchConfigUnavailableError(
-                        _launch_config_required_message(
-                            "Resolving getattr expressions from kernel arguments"
-                        )
                     )
                 attr_instance = getattr(instance, attr_name)
             break
@@ -1050,14 +1026,6 @@ def get_root_definition(
                             # if we're dealing with a device array.
                             shape = shape.shape
 
-                    if shape is None:
-                        raise LaunchConfigUnavailableError(
-                            _launch_config_required_message(
-                                "Resolving coop/local/shared array shapes from "
-                                "kernel arguments"
-                            )
-                        )
-
                     # Normalize the shape into a 1D value.
                     shape = get_element_count(shape)
 
@@ -1072,13 +1040,6 @@ def get_root_definition(
                                 "but got None."
                             )
                         alignment = alignment_root.instance
-                        if alignment is None:
-                            raise LaunchConfigUnavailableError(
-                                _launch_config_required_message(
-                                    "Resolving coop/local/shared array alignment "
-                                    "from kernel arguments"
-                                )
-                            )
                         if not isinstance(alignment, int):
                             raise TypeError(
                                 "Expected alignment to be an int, got "
@@ -1327,14 +1288,7 @@ class CoopNode:
             # is necessary in order for numba not to balk in the _Kernel's
             # _prepare_args() method when it doesn't know how to handle one
             # of our two-phase primitive instances.
-            config = self.launch_config
-            if config is None:
-                raise LaunchConfigUnavailableError(
-                    _launch_config_required_message(
-                        "Kernel-argument two-phase primitive handling"
-                    )
-                )
-            config.pre_launch_callbacks.append(self.pre_launch_callback)
+            self.launch_config.pre_launch_callbacks.append(self.pre_launch_callback)
 
         if self.parent_node is not None:
             self.parent_node.add_child(self)
@@ -1401,11 +1355,11 @@ class CoopNode:
     def is_two_phase(self):
         return self.type_instance is not None
 
-    def _resolve_var_value_safe(self, arg_var: Any) -> Any:
+    def get_arg_value_safe(self, arg_name: str) -> Any:
         """
-        Resolve a value from an IR variable/constant in the current rewrite
-        context. Returns None when the value cannot be resolved.
+        Get the value of an argument by name from the expression arguments.
         """
+        arg_var = self.bound.arguments.get(arg_name, None)
         if arg_var is None:
             return
         if isinstance(arg_var, ir.Const):
@@ -1414,9 +1368,7 @@ class CoopNode:
             # Two-phase defaults are injected as concrete values; return as-is.
             return arg_var
 
-        arg_ty = self.typemap.get(arg_var.name, None)
-        if arg_ty is None:
-            return None
+        arg_ty = self.typemap[arg_var.name]
 
         if isinstance(arg_ty, types.IntegerLiteral):
             # If the argument is an integer literal, return its value.
@@ -1460,34 +1412,6 @@ class CoopNode:
         # If we reach here, the argument is not found.
         return None
 
-    def _expr_kwds_as_dict(self) -> dict[str, Any]:
-        expr_kws = self.expr.kws
-        if isinstance(expr_kws, dict):
-            return expr_kws
-        if isinstance(expr_kws, (tuple, list)):
-            return dict(expr_kws)
-        return {}
-
-    def get_call_kwarg_value_safe(self, *arg_names: str) -> Any:
-        """
-        Resolve call-kwarg values directly from the underlying IR expression.
-        This is used for kwargs not modeled in typing signatures.
-        """
-        if not arg_names:
-            return None
-        kwds = self._expr_kwds_as_dict()
-        for name in arg_names:
-            if name in kwds:
-                return self._resolve_var_value_safe(kwds[name])
-        return None
-
-    def get_arg_value_safe(self, arg_name: str) -> Any:
-        """
-        Get the value of an argument by name from the expression arguments.
-        """
-        arg_var = self.bound.arguments.get(arg_name, None)
-        return self._resolve_var_value_safe(arg_var)
-
     def get_arg_value(self, arg_name: str) -> Any:
         """
         Get the value of an argument by name from the expression arguments.
@@ -1511,13 +1435,6 @@ class CoopNode:
         )
 
     def resolve_threads_per_block(self) -> Any:
-        explicit_threads_per_block = self.get_call_kwarg_value_safe(
-            "threads_per_block",
-            "dim",
-        )
-        if explicit_threads_per_block is not None:
-            return explicit_threads_per_block
-
         launch_config = self.launch_config
         if launch_config is not None:
             return launch_config.blockdim
@@ -1531,13 +1448,8 @@ class CoopNode:
                 return dim
 
         primitive_name = getattr(self, "primitive_name", "<unknown primitive>")
-        raise LaunchConfigUnavailableError(
-            _launch_config_required_message(
-                "Resolving threads-per-block for "
-                f"{primitive_name}; pass explicit "
-                "`threads_per_block=<int|tuple>` (or `dim=...`) to the "
-                "primitive call when launch-config support is unavailable"
-            )
+        raise RuntimeError(
+            f"Could not determine threads-per-block for {primitive_name}"
         )
 
     @cached_property
@@ -1580,21 +1492,6 @@ class CoopNode:
                         "temp_storage syntax."
                     )
                 kwds["temp_storage"] = getitem_temp_storage
-
-        primitive_name = getattr(self, "primitive_name", "")
-        if primitive_name.startswith("coop.block."):
-            has_threads_per_block = "threads_per_block" in kwds
-            has_dim = "dim" in kwds
-            if has_threads_per_block and has_dim:
-                raise RuntimeError(
-                    f"{primitive_name} cannot use both 'threads_per_block' and 'dim'"
-                )
-            # These kwargs are consumed directly from IR call keywords for
-            # rewrite-time block-dimension resolution.
-            if "threads_per_block" not in sig.parameters:
-                kwds.pop("threads_per_block", None)
-            if "dim" not in sig.parameters:
-                kwds.pop("dim", None)
 
         if self.is_two_phase:
             # Fill in any missing arguments from the two-phase instance.
@@ -3996,7 +3893,7 @@ class CoopNodeRewriter(Rewrite):
         parent_root_def: RootDefinition,
         calltypes: dict[ir.Expr, types.Type],
         typemap: dict[str, types.Type],
-        launch_config: Optional["LaunchConfig"],
+        launch_config: "LaunchConfig",
         child_expr: ir.Expr,
         child_template: Any,
     ) -> CoopNode:
@@ -4072,15 +3969,8 @@ class CoopNodeRewriter(Rewrite):
         return node
 
     def handle_new_kernel_traits_struct(
-        self, struct: Any, name: str, launch_config: Optional["LaunchConfig"]
+        self, struct: Any, name: str, launch_config: "LaunchConfig"
     ):
-        if launch_config is None:
-            raise LaunchConfigUnavailableError(
-                _launch_config_required_message(
-                    "Kernel-traits struct argument handling"
-                )
-            )
-
         # N.B. See the comment in the `match()` method for more details about
         #      the purpose of this method and the `CustomPrepareArgs` class.
         needs_custom = not hasattr(struct, "prepare_args") or not hasattr(
@@ -4122,8 +4012,7 @@ class CoopNodeRewriter(Rewrite):
     @property
     def launch_config(self):
         config = ensure_current_launch_config()
-        if config is not None:
-            config.mark_kernel_as_launch_config_sensitive()
+        config.dispatcher.mark_launch_config_sensitive()
         return config
 
     @property
@@ -4190,10 +4079,7 @@ class CoopNodeRewriter(Rewrite):
         # as part of a two-phase one-shot primitive instantiation where one
         # of the parameters is something user-defined (custom type, stateful
         # callback, etc.).  We can skip processing in these cases.
-        #
-        # If launch-config support itself is unavailable/disabled, continue in
-        # a degraded mode and allow rewrites that do not need launch metadata.
-        if launch_config is None and coop_launch_config.is_launch_config_active():
+        if not launch_config:
             return False
 
         self.func_ir = func_ir
