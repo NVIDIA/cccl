@@ -1126,18 +1126,16 @@ class Configuration(object):
             self.config.available_features.add("libcpp-no-exceptions")
 
     def configure_compile_flags_rtti(self):
-        enable_rtti = self.get_lit_bool("enable_rtti", True)
-        if not enable_rtti:
-            self.config.available_features.add("libcpp-no-rtti")
-            if self.cxx.type == "nvcc":
-                self.cxx.compile_flags += ["-Xcompiler"]
-            if "nvhpc" in self.config.available_features:
-                self.cxx.compile_flags += ["--no_rtti"]
-            elif "msvc" in self.config.available_features:
-                self.cxx.compile_flags += ["/GR-"]
-                self.cxx.compile_flags += ["-D_SILENCE_CXX20_CISO646_REMOVED_WARNING"]
-            else:
-                self.cxx.compile_flags += ["-fno-rtti"]
+        self.config.available_features.add("libcpp-no-rtti")
+        if self.cxx.type == "nvcc":
+            self.cxx.compile_flags += ["-Xcompiler"]
+        if "nvhpc" in self.config.available_features:
+            self.cxx.compile_flags += ["--no_rtti"]
+        elif "msvc" in self.config.available_features:
+            self.cxx.compile_flags += ["/GR-"]
+            self.cxx.compile_flags += ["-D_SILENCE_CXX20_CISO646_REMOVED_WARNING"]
+        else:
+            self.cxx.compile_flags += ["-fno-rtti"]
 
     def configure_compile_flags_abi_version(self):
         abi_unstable = self.get_lit_bool("abi_unstable")
