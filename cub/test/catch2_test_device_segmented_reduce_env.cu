@@ -202,11 +202,8 @@ TEST_CASE("Device fixed-size segmented argmin works with default environment", "
 
   REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::ArgMin(d_in.begin(), d_out.begin(), num_segments, segment_size));
 
-  thrust::host_vector<cuda::std::pair<int, int>> h_out(d_out);
-  REQUIRE(h_out[0].first == 1);
-  REQUIRE(h_out[0].second == 6);
-  REQUIRE(h_out[1].first == 2);
-  REQUIRE(h_out[1].second == 0);
+  thrust::device_vector<cuda::std::pair<int, int>> expected{{1, 6}, {2, 0}};
+  REQUIRE(d_out == expected);
 }
 
 TEST_CASE("Device fixed-size segmented argmax works with default environment", "[segmented_reduce][device]")
@@ -218,11 +215,8 @@ TEST_CASE("Device fixed-size segmented argmax works with default environment", "
 
   REQUIRE(cudaSuccess == cub::DeviceSegmentedReduce::ArgMax(d_in.begin(), d_out.begin(), num_segments, segment_size));
 
-  thrust::host_vector<cuda::std::pair<int, int>> h_out(d_out);
-  REQUIRE(h_out[0].first == 0);
-  REQUIRE(h_out[0].second == 8);
-  REQUIRE(h_out[1].first == 0);
-  REQUIRE(h_out[1].second == 5);
+  thrust::device_vector<cuda::std::pair<int, int>> expected{{0, 8}, {0, 5}};
+  REQUIRE(d_out == expected);
 }
 
 #endif
@@ -339,11 +333,8 @@ TEST_CASE("Device fixed-size segmented argmin uses custom stream", "[segmented_r
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
 
-  thrust::host_vector<cuda::std::pair<int, int>> h_out(d_out);
-  REQUIRE(h_out[0].first == 1);
-  REQUIRE(h_out[0].second == 6);
-  REQUIRE(h_out[1].first == 2);
-  REQUIRE(h_out[1].second == 0);
+  thrust::device_vector<cuda::std::pair<int, int>> expected{{1, 6}, {2, 0}};
+  REQUIRE(d_out == expected);
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
@@ -366,11 +357,8 @@ TEST_CASE("Device fixed-size segmented argmax uses custom stream", "[segmented_r
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
 
-  thrust::host_vector<cuda::std::pair<int, int>> h_out(d_out);
-  REQUIRE(h_out[0].first == 0);
-  REQUIRE(h_out[0].second == 8);
-  REQUIRE(h_out[1].first == 0);
-  REQUIRE(h_out[1].second == 5);
+  thrust::device_vector<cuda::std::pair<int, int>> expected{{0, 8}, {0, 5}};
+  REQUIRE(d_out == expected);
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
@@ -490,13 +478,8 @@ C2H_TEST("Device segmented argmin uses environment", "[segmented_reduce][device]
 
   device_segmented_reduce_argmin(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
 
-  thrust::host_vector<cub::KeyValuePair<int, int>> h_out(d_out);
-  REQUIRE(h_out[0].key == 3);
-  REQUIRE(h_out[0].value == 5);
-  REQUIRE(h_out[1].key == 1);
-  REQUIRE(h_out[1].value == 0);
-  REQUIRE(h_out[2].key == 0);
-  REQUIRE(h_out[2].value == 1);
+  thrust::device_vector<cub::KeyValuePair<int, int>> expected{{3, 5}, {1, 0}, {0, 1}};
+  REQUIRE(d_out == expected);
 }
 
 C2H_TEST("Device segmented argmax uses environment", "[segmented_reduce][device]")
@@ -517,13 +500,8 @@ C2H_TEST("Device segmented argmax uses environment", "[segmented_reduce][device]
 
   device_segmented_reduce_argmax(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);
 
-  thrust::host_vector<cub::KeyValuePair<int, int>> h_out(d_out);
-  REQUIRE(h_out[0].key == 0);
-  REQUIRE(h_out[0].value == 8);
-  REQUIRE(h_out[1].key == 2);
-  REQUIRE(h_out[1].value == 9);
-  REQUIRE(h_out[2].key == 1);
-  REQUIRE(h_out[2].value == 2);
+  thrust::device_vector<cub::KeyValuePair<int, int>> expected{{0, 8}, {2, 9}, {1, 2}};
+  REQUIRE(d_out == expected);
 }
 
 TEST_CASE("Device segmented reduce uses custom stream", "[segmented_reduce][device]")
@@ -679,13 +657,8 @@ TEST_CASE("Device segmented argmin uses custom stream", "[segmented_reduce][devi
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
 
-  thrust::host_vector<cub::KeyValuePair<int, int>> h_out(d_out);
-  REQUIRE(h_out[0].key == 3);
-  REQUIRE(h_out[0].value == 5);
-  REQUIRE(h_out[1].key == 1);
-  REQUIRE(h_out[1].value == 0);
-  REQUIRE(h_out[2].key == 0);
-  REQUIRE(h_out[2].value == 1);
+  thrust::device_vector<cub::KeyValuePair<int, int>> expected{{3, 5}, {1, 0}, {0, 1}};
+  REQUIRE(d_out == expected);
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
@@ -714,13 +687,8 @@ TEST_CASE("Device segmented argmax uses custom stream", "[segmented_reduce][devi
 
   REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
 
-  thrust::host_vector<cub::KeyValuePair<int, int>> h_out(d_out);
-  REQUIRE(h_out[0].key == 0);
-  REQUIRE(h_out[0].value == 8);
-  REQUIRE(h_out[1].key == 2);
-  REQUIRE(h_out[1].value == 9);
-  REQUIRE(h_out[2].key == 1);
-  REQUIRE(h_out[2].value == 2);
+  thrust::device_vector<cub::KeyValuePair<int, int>> expected{{0, 8}, {2, 9}, {1, 2}};
+  REQUIRE(d_out == expected);
 
   REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
