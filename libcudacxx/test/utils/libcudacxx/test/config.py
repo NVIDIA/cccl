@@ -294,7 +294,6 @@ class Configuration(object):
             self.configure_debug_mode()
             self.configure_warnings()
             self.configure_sanitizer()
-            self.configure_coverage()
             self.configure_modules()
             self.configure_coroutines()
             self.configure_substitutions()
@@ -1456,12 +1455,6 @@ class Configuration(object):
                     ]
                 else:
                     self.cxx.link_flags += ["-Wl,-rpath," + os.path.dirname(san_lib)]
-
-    def configure_coverage(self):
-        self.generate_coverage = self.get_lit_bool("generate_coverage", False)
-        if self.generate_coverage:
-            self.cxx.flags += ["-g", "--coverage"]
-            self.cxx.compile_flags += ["-O0"]
 
     def configure_coroutines(self):
         if self.cxx.hasCompileFlag("-fcoroutines-ts"):
