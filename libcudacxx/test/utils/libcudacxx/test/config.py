@@ -287,7 +287,6 @@ class Configuration(object):
         self.configure_no_execute()
         self.configure_execute_external()
         self.configure_compile_flags()
-        self.configure_filesystem_compile_flags()
         self.configure_link_flags()
         self.configure_env()
         self.configure_color_diagnostics()
@@ -703,9 +702,8 @@ class Configuration(object):
         if self.long_tests:
             self.config.available_features.add("long_tests")
 
-        if not self.get_lit_bool("enable_filesystem", default=True):
-            self.config.available_features.add("c++filesystem-disabled")
-            self.config.available_features.add("dylib-has-no-filesystem")
+        self.config.available_features.add("c++filesystem-disabled")
+        self.config.available_features.add("dylib-has-no-filesystem")
 
         # Run a compile test for the -fsized-deallocation flag. This is needed
         # in test/std/language.support/support.dynamic/new.delete
@@ -1142,50 +1140,6 @@ class Configuration(object):
         if abi_unstable:
             self.config.available_features.add("libcpp-abi-unstable")
             self.cxx.compile_flags += ["-D_LIBCUDACXX_ABI_UNSTABLE"]
-
-    def configure_filesystem_compile_flags(self):
-        if not self.get_lit_bool("enable_filesystem", default=True):
-            return
-
-        static_env = os.path.join(
-            self.libcudacxx_src_root,
-            "test",
-            "libcudacxx",
-            "std",
-            "input.output",
-            "filesystems",
-            "Inputs",
-            "static_test_env",
-        )
-        static_env = os.path.realpath(static_env)
-        assert os.path.isdir(static_env)
-        self.cxx.compile_flags += [
-            '-DLIBCXX_FILESYSTEM_STATIC_TEST_ROOT="%s"' % static_env
-        ]
-
-        dynamic_env = os.path.join(
-            self.config.test_exec_root, "filesystem", "Output", "dynamic_env"
-        )
-        dynamic_env = os.path.realpath(dynamic_env)
-        if not os.path.isdir(dynamic_env):
-            os.makedirs(dynamic_env)
-        self.cxx.compile_flags += [
-            '-DLIBCXX_FILESYSTEM_DYNAMIC_TEST_ROOT="%s"' % dynamic_env
-        ]
-        self.exec_env["LIBCXX_FILESYSTEM_DYNAMIC_TEST_ROOT"] = "%s" % dynamic_env
-
-        dynamic_helper = os.path.join(
-            self.libcudacxx_src_root,
-            "test",
-            "support",
-            "filesystem_dynamic_test_helper.py",
-        )
-        assert os.path.isfile(dynamic_helper)
-
-        self.cxx.compile_flags += [
-            '-DLIBCXX_FILESYSTEM_DYNAMIC_TEST_HELPER="%s %s"'
-            % (sys.executable, dynamic_helper)
-        ]
 
     def configure_link_flags(self):
         nvcc_host_compiler = self.get_lit_conf("nvcc_host_compiler")
