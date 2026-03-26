@@ -1323,7 +1323,8 @@ inline exec_place make_grid(::std::vector<exec_place> places, const dim4& dims)
 inline exec_place make_grid(::std::vector<exec_place> places)
 {
   _CCCL_ASSERT(!places.empty(), "invalid places");
-  return make_grid(mv(places), dim4(places.size(), 1, 1, 1));
+  const size_t n = places.size();
+  return make_grid(mv(places), dim4(n, 1, 1, 1));
 }
 
 // === data_place::affine_exec_place implementation ===
