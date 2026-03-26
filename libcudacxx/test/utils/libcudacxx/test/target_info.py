@@ -231,9 +231,6 @@ class LinuxLocalTI(DefaultTargetInfo):
             flags += [builtins_lib]
         else:
             flags += ["-lgcc"]
-        use_libatomic = self.full_config.get_lit_bool("use_libatomic", False)
-        if use_libatomic:
-            flags += ["-latomic"]
         san = self.full_config.get_lit_conf("use_sanitizer", "").strip()
         if san:
             # The libraries and their order are taken from the

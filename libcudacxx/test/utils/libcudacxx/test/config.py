@@ -724,9 +724,6 @@ class Configuration(object):
         if self.cxx.hasCompileFlag("-fdelayed-template-parsing"):
             self.config.available_features.add("fdelayed-template-parsing")
 
-        if self.get_lit_bool("has_libatomic", False):
-            self.config.available_features.add("libatomic")
-
         if self.get_lit_bool("enable_tile", False):
             self.config.available_features.add("enable-tile")
 
