@@ -1161,8 +1161,9 @@ class Configuration(object):
                         if self.cxx.type == "nvcc":
                             self.cxx.link_flags += ["-Xcompiler"]
                         self.cxx.link_flags += ["-nostdlib"]
-            self.configure_link_flags_abi_library()
-            self.configure_extra_library_flags()
+            if self.is_windows:
+                self.cxx.link_flags += ["-lmsvcrtd"]
+            self.target_info.add_cxx_link_flags(self.cxx.link_flags)
         elif self.cxx_stdlib_under_test == "libstdc++":
             self.config.available_features.add("c++experimental")
             self.cxx.link_flags += ["-lstdc++fs", "-lm", "-pthread"]
@@ -1219,37 +1220,6 @@ class Configuration(object):
                     self.cxx.link_flags += ["-Wl,-rpath," + self.abi_library_root]
             else:
                 self.add_path(self.exec_env, self.abi_library_root)
-
-    def configure_link_flags_abi_library(self):
-        cxx_abi = self.get_lit_conf("cxx_abi", "libcxxabi")
-        if cxx_abi == "libstdc++":
-            self.cxx.link_flags += ["-lstdc++"]
-        elif cxx_abi == "libsupc++":
-            self.cxx.link_flags += ["-lsupc++"]
-        elif cxx_abi == "libcxxabi":
-            # If the C++ library requires explicitly linking to libc++abi, or
-            # if we're testing libc++abi itself (the test configs are shared),
-            # then link it.
-            testing_libcxxabi = self.get_lit_conf("name", "") == "libc++abi"
-            if self.target_info.allow_cxxabi_link() or testing_libcxxabi:
-                self.cxx.link_flags += ["-lc++abi"]
-        elif cxx_abi == "libcxxrt":
-            self.cxx.link_flags += ["-lcxxrt"]
-        elif cxx_abi == "vcruntime":
-            debug_suffix = "d"
-            self.cxx.link_flags += [
-                "-l%s%s" % (lib, debug_suffix)
-                for lib in ["vcruntime", "ucrt", "msvcrt"]
-            ]
-        elif cxx_abi == "none" or cxx_abi == "default":
-            if self.is_windows:
-                debug_suffix = "d"
-                self.cxx.link_flags += ["-lmsvcrt%s" % debug_suffix]
-        else:
-            self.lit_config.fatal("C++ ABI setting %s unsupported for tests" % cxx_abi)
-
-    def configure_extra_library_flags(self):
-        self.target_info.add_cxx_link_flags(self.cxx.link_flags)
 
     def configure_color_diagnostics(self):
         use_color = self.get_lit_conf("color_diagnostics")
