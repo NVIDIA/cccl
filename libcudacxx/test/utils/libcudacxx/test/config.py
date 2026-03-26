@@ -79,7 +79,6 @@ class Configuration(object):
         self.exec_env = dict(os.environ)
         self.exec_env["CUDA_MODULE_LOADING"] = "EAGER"
         self.use_target = False
-        self.use_system_cxx_lib = False
         self.use_clang_verify = False
         self.long_tests = None
         self.execute_external = False
@@ -273,7 +272,6 @@ class Configuration(object):
 
     def configure(self):
         self.configure_executor()
-        self.configure_use_system_cxx_lib()
         self.configure_target_info()
         self.configure_cxx()
         self.configure_triple()
@@ -548,27 +546,6 @@ class Configuration(object):
             "cxx_runtime_root", self.cxx_library_root
         )
 
-    def configure_use_system_cxx_lib(self):
-        # This test suite supports testing against either the system library or
-        # the locally built one; the former mode is useful for testing ABI
-        # compatibility between the current headers and a shipping dynamic
-        # library.
-        # Default to testing against the locally built libc++ library.
-        self.use_system_cxx_lib = self.get_lit_conf("use_system_cxx_lib")
-        if self.use_system_cxx_lib == "true":
-            self.use_system_cxx_lib = True
-        elif self.use_system_cxx_lib == "false":
-            self.use_system_cxx_lib = False
-        elif self.use_system_cxx_lib:
-            assert os.path.isdir(self.use_system_cxx_lib), (
-                "the specified use_system_cxx_lib parameter (%s) is not a valid directory"
-                % self.use_system_cxx_lib
-            )
-            self.use_system_cxx_lib = os.path.abspath(self.use_system_cxx_lib)
-        self.lit_config.note(
-            "inferred use_system_cxx_lib as: %r" % self.use_system_cxx_lib
-        )
-
     def configure_cxx_stdlib_under_test(self):
         self.cxx_stdlib_under_test = self.get_lit_conf(
             "cxx_stdlib_under_test", "libc++"
@@ -649,26 +626,6 @@ class Configuration(object):
         self.target_info.add_locale_features(self.config.available_features)
 
         target_platform = self.target_info.platform()
-
-        # Write an "available feature" that combines the triple when
-        # use_system_cxx_lib is enabled. This is so that we can easily write
-        # XFAIL markers for tests that are known to fail with versions of
-        # libc++ as were shipped with a particular triple.
-        if self.use_system_cxx_lib:
-            self.config.available_features.add("with_system_cxx_lib")
-            self.config.available_features.add(
-                "with_system_cxx_lib=%s" % self.config.target_triple
-            )
-
-            # Add subcomponents individually.
-            target_components = self.config.target_triple.split("-")
-            for component in target_components:
-                self.config.available_features.add("with_system_cxx_lib=%s" % component)
-
-            # Add available features for more generic versions of the target
-            # triple attached to  with_system_cxx_lib.
-            if self.use_deployment:
-                self.add_deployment_feature("with_system_cxx_lib")
 
         # Configure the availability feature. Availability is only enabled
         # with libc++, because other standard libraries do not provide
@@ -1179,20 +1136,9 @@ class Configuration(object):
         self.cxx.link_flags += shlex.split(link_flags_str)
 
     def configure_link_flags_cxx_library_path(self):
-        if not self.use_system_cxx_lib:
-            if self.cxx_library_root:
-                self.cxx.link_flags += ["-L" + self.cxx_library_root]
-            if self.cxx_runtime_root:
-                if not self.is_windows:
-                    if self.cxx.type == "nvcc":
-                        self.cxx.link_flags += [
-                            "-Xcompiler",
-                            '"-Wl,-rpath,' + self.cxx_runtime_root + '"',
-                        ]
-                    else:
-                        self.cxx.link_flags += ["-Wl,-rpath," + self.cxx_runtime_root]
-        elif os.path.isdir(str(self.use_system_cxx_lib)):
-            self.cxx.link_flags += ["-L" + self.use_system_cxx_lib]
+        if self.cxx_library_root:
+            self.cxx.link_flags += ["-L" + self.cxx_library_root]
+        if self.cxx_runtime_root:
             if not self.is_windows:
                 if self.cxx.type == "nvcc":
                     self.cxx.link_flags += [
@@ -1200,7 +1146,7 @@ class Configuration(object):
                         '"-Wl,-rpath,' + self.cxx_runtime_root + '"',
                     ]
                 else:
-                    self.cxx.link_flags += ["-Wl,-rpath," + self.use_system_cxx_lib]
+                    self.cxx.link_flags += ["-Wl,-rpath," + self.cxx_runtime_root]
         additional_flags = self.get_lit_conf("test_linker_flags")
         if additional_flags:
             self.cxx.link_flags += shlex.split(additional_flags)
@@ -1599,41 +1545,6 @@ class Configuration(object):
         self.lit_config.note(
             "computed target_triple as: %r" % self.config.target_triple
         )
-
-        # If we're testing a system libc++ as opposed to the upstream LLVM one,
-        # take the version of the system libc++ into account to compute which
-        # features are enabled/disabled. Otherwise, disable availability markup,
-        # which is not relevant for non-shipped flavors of libc++.
-        if self.use_system_cxx_lib:
-            # Dylib support for shared_mutex was added in macosx10.12.
-            if name == "macosx" and version in ("10.%s" % v for v in range(7, 12)):
-                self.config.available_features.add("dylib-has-no-shared_mutex")
-                self.lit_config.note(
-                    "shared_mutex is not supported by the deployment target"
-                )
-            # Throwing bad_optional_access, bad_variant_access and bad_any_cast is
-            # supported starting in macosx10.14.
-            if name == "macosx" and version in ("10.%s" % v for v in range(7, 14)):
-                self.config.available_features.add("dylib-has-no-bad_optional_access")
-                self.lit_config.note(
-                    "throwing bad_optional_access is not supported by the deployment target"
-                )
-
-                self.config.available_features.add("dylib-has-no-bad_variant_access")
-                self.lit_config.note(
-                    "throwing bad_variant_access is not supported by the deployment target"
-                )
-
-                self.config.available_features.add("dylib-has-no-bad_any_cast")
-                self.lit_config.note(
-                    "throwing bad_any_cast is not supported by the deployment target"
-                )
-            # Filesystem is support on Apple platforms starting with macosx10.15.
-            if name == "macosx" and version in ("10.%s" % v for v in range(7, 15)):
-                self.config.available_features.add("dylib-has-no-filesystem")
-                self.lit_config.note(
-                    "the deployment target does not support <filesystem>"
-                )
 
     def configure_env(self):
         self.target_info.configure_env(self.exec_env)
