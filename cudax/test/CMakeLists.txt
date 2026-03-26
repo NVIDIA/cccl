@@ -75,6 +75,7 @@ cudax_add_catch2_test(test_target stream
 
 cudax_add_catch2_test(test_target misc
     utility/ensure_current_device.cu
+    utility/optionally_static.cu
 )
 
 cudax_add_catch2_test(test_target containers
