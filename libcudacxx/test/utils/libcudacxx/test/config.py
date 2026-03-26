@@ -634,9 +634,6 @@ class Configuration(object):
             self.config.available_features.add("availability")
             self.add_deployment_feature("availability")
 
-        if platform.system() == "Darwin":
-            self.config.available_features.add("apple-darwin")
-
         # Insert the platform name into the available features as a lower case.
         self.config.available_features.add(target_platform)
 
@@ -1476,37 +1473,6 @@ class Configuration(object):
 
         # Save the triple (and warn on Apple platforms).
         self.config.target_triple = target_triple
-        if self.use_target and "apple" in target_triple:
-            self.lit_config.warning(
-                "consider using arch and platform instead"
-                " of target_triple on Apple platforms"
-            )
-
-        # If no target triple was given, try to infer it from the compiler
-        # under test.
-        if not self.config.target_triple:
-            target_triple = (
-                self.cxx if self.cxx.type != "nvcc" else self.cxx.host_cxx
-            ).getTriple()
-            # Drop sub-major version components from the triple, because the
-            # current XFAIL handling expects exact matches for feature checks.
-            # Example: x86_64-apple-darwin14.0.0 -> x86_64-apple-darwin14
-            # The 5th group handles triples greater than 3 parts
-            # (ex x86_64-pc-linux-gnu).
-            target_triple = re.sub(
-                r"([^-]+)-([^-]+)-([^.]+)([^-]*)(.*)", r"\1-\2-\3\5", target_triple
-            )
-            # linux-gnu is needed in the triple to properly identify linuxes
-            # that use GLIBC. Handle redhat and opensuse triples as special
-            # cases and append the missing `-gnu` portion.
-            if target_triple.endswith("redhat-linux") or target_triple.endswith(
-                "suse-linux"
-            ):
-                target_triple += "-gnu"
-            self.config.target_triple = target_triple
-            self.lit_config.note(
-                "inferred target_triple as: %r" % self.config.target_triple
-            )
 
     def configure_deployment(self):
         assert self.use_deployment is not None
