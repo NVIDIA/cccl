@@ -964,9 +964,6 @@ class Configuration(object):
         self.configure_compile_flags_exceptions()
         self.configure_compile_flags_rtti()
         self.configure_compile_flags_abi_version()
-        enable_32bit = self.get_lit_bool("enable_32bit", False)
-        if enable_32bit:
-            self.cxx.flags += ["-m32"]
         # Use verbose output for better errors
         if not self.cxx.use_ccache or self.cxx.type == "msvc":
             self.cxx.flags += ["-v"]
