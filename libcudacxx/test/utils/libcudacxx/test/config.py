@@ -76,7 +76,6 @@ class Configuration(object):
         self.cxx_library_root = None
         self.cxx_runtime_root = None
         self.abi_library_root = None
-        self.link_shared = self.get_lit_bool("enable_shared", default=True)
         self.exec_env = dict(os.environ)
         self.exec_env["CUDA_MODULE_LOADING"] = "EAGER"
         self.use_target = False
@@ -1218,7 +1217,6 @@ class Configuration(object):
                         if self.cxx.type == "nvcc":
                             self.cxx.link_flags += ["-Xcompiler"]
                         self.cxx.link_flags += ["-nostdlib"]
-            self.configure_link_flags_cxx_library()
             self.configure_link_flags_abi_library()
             self.configure_extra_library_flags()
         elif self.cxx_stdlib_under_test == "libstdc++":
@@ -1239,8 +1237,6 @@ class Configuration(object):
         if not self.use_system_cxx_lib:
             if self.cxx_library_root:
                 self.cxx.link_flags += ["-L" + self.cxx_library_root]
-                if self.is_windows and self.link_shared:
-                    self.add_path(self.cxx.compile_env, self.cxx_library_root)
             if self.cxx_runtime_root:
                 if not self.is_windows:
                     if self.cxx.type == "nvcc":
@@ -1250,8 +1246,6 @@ class Configuration(object):
                         ]
                     else:
                         self.cxx.link_flags += ["-Wl,-rpath," + self.cxx_runtime_root]
-                elif self.is_windows and self.link_shared:
-                    self.add_path(self.exec_env, self.cxx_runtime_root)
         elif os.path.isdir(str(self.use_system_cxx_lib)):
             self.cxx.link_flags += ["-L" + self.use_system_cxx_lib]
             if not self.is_windows:
@@ -1262,8 +1256,6 @@ class Configuration(object):
                     ]
                 else:
                     self.cxx.link_flags += ["-Wl,-rpath," + self.use_system_cxx_lib]
-            if self.is_windows and self.link_shared:
-                self.add_path(self.cxx.compile_env, self.use_system_cxx_lib)
         additional_flags = self.get_lit_conf("test_linker_flags")
         if additional_flags:
             self.cxx.link_flags += shlex.split(additional_flags)
@@ -1289,8 +1281,6 @@ class Configuration(object):
         if libcxx_experimental:
             self.config.available_features.add("c++experimental")
             self.cxx.link_flags += ["-lc++experimental"]
-        if self.link_shared:
-            self.cxx.link_flags += ["-lc++"]
 
     def configure_link_flags_abi_library(self):
         cxx_abi = self.get_lit_conf("cxx_abi", "libcxxabi")

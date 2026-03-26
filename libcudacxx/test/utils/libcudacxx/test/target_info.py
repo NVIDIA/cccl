@@ -219,12 +219,9 @@ class LinuxLocalTI(DefaultTargetInfo):
         enable_threads = (
             "libcpp-has-no-threads" not in self.full_config.config.available_features
         )
-        shared_libcxx = self.full_config.get_lit_bool("enable_shared", True)
         flags += ["-lm", "-lgcc_s", "-lgcc"]
         if enable_threads:
-            flags += ["-lpthread"]
-            if not shared_libcxx:
-                flags += ["-lrt"]
+            flags += ["-lpthread", "-lrt"]
         flags += ["-lc"]
         builtins_lib = self.full_config.get_lit_conf("builtins_library")
         if builtins_lib:
