@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <cuda/std/__utility/exception_guard.h>
+#include <cuda/std/__utility/typeid.h>
 #include <cuda/std/mdspan>
 
 #include <cuda/experimental/__stf/utility/core.cuh>
@@ -37,62 +38,19 @@
 
 namespace cuda::experimental::stf
 {
-namespace reserved
-{
-// We use this function as a detector for what __PRETTY_FUNCTION__ looks like
-template <typename T>
-constexpr ::std::string_view type_name_IMPL()
-{
-#if _CCCL_COMPILER(MSVC)
-  return __FUNCSIG__;
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-  return __PRETTY_FUNCTION__;
-#endif // !_CCCL_COMPILER(MSVC)
-}
-
-// Length of prefix and suffix in __PRETTY_FUNCTION__ when used with `type_name`.
-inline constexpr ::std::pair<size_t, size_t> type_name_affixes = [] {
-  const auto p      = type_name_IMPL<double>();
-  const auto target = ::std::string_view("double");
-  const auto len    = target.size();
-  // Simulate p.find() by hand because clang can't do it.
-  size_t i = target.npos;
-  for (std::size_t start = 0; start <= p.size() - len; ++start)
-  {
-    if (p.substr(start, len) == target)
-    {
-      i = start; // Found the substring, set i to the starting position
-      break; // Exit loop after finding the first match
-    }
-  }
-  auto j = p.size() - i - len;
-  return ::std::pair{i, j};
-}();
-
-template <class T>
-constexpr ::std::string_view type_name_impl()
-{
-#if _CCCL_COMPILER(MSVC)
-  constexpr ::std::string_view p = __FUNCSIG__;
-  // MSVC does not provide constexpr methods so we make this utility much simpler and return __FUNCSIG__ directly
-  return p;
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-  ::std::string_view p = __PRETTY_FUNCTION__;
-  return p.substr(type_name_affixes.first, p.size() - type_name_affixes.first - type_name_affixes.second);
-#endif // !_CCCL_COMPILER(MSVC)
-}
-} // namespace reserved
-
 /**
  * @brief Yields a string form of type name. Exact spelling not guaranteed (e.g. `type_name<int*>` may be `"int*"`,
  * `"int *"` etc).
+ *
+ * Thin wrapper around `cuda::std::__pretty_nameof<T>()` returning `::std::string_view`.
  *
  * @tparam T The type to show.
  *
  * @snippet unittest.h type_name
  */
 template <class T>
-inline constexpr ::std::string_view type_name = reserved::type_name_impl<T>();
+inline const ::std::string_view type_name{
+  ::cuda::std::__pretty_nameof<T>().data(), ::cuda::std::__pretty_nameof<T>().size()};
 
 /**
  * @brief Converts each element in `t` to a new value by calling `f`, then returns a tuple collecting the values thus

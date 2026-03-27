@@ -62,9 +62,9 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
 
   // This will explode the targs tuple into a pack of data
   // Help the compiler which may not detect that a device lambda is calling a device lambda
-  CUDASTF_NO_DEVICE_STACK
+  _CCCL_DIAG_SUPPRESS_NVHPC(no_device_stack)
   auto const explode_args = [&](auto&... data) {
-    CUDASTF_NO_DEVICE_STACK
+    _CCCL_DIAG_SUPPRESS_NVHPC(no_device_stack)
     auto const explode_coords = [&](auto&&... coords) {
       // No move/forward for `data` because it's used multiple times.
       f(::std::forward<decltype(coords)>(coords)..., data...);
@@ -304,9 +304,9 @@ __global__ void loop_redux(
   // This is used to build the arguments passed to the user-provided lambda function.
 
   // Help the compiler which may not detect that a device lambda is calling a device lambda
-  CUDASTF_NO_DEVICE_STACK
+  _CCCL_DIAG_SUPPRESS_NVHPC(no_device_stack)
   const auto explode_args = [&](auto&&... data) {
-    CUDASTF_NO_DEVICE_STACK
+    _CCCL_DIAG_SUPPRESS_NVHPC(no_device_stack)
     const auto explode_coords = [&](auto&&... coords) {
       // No move/forward for `data` because it's used multiple times.
       f(::std::forward<decltype(coords)>(coords)..., data...);

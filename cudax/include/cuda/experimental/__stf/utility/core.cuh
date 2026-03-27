@@ -30,54 +30,12 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
-#include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 
 namespace cuda::experimental::stf
 {
-// Hack setenv on Windows
-#if _CCCL_COMPILER(MSVC)
-/**
- * @brief Sets an environment variable, mimicking the behavior of `std::setenv` on Windows.
- *
- * This function attempts to set the value of the environment variable `name` to `value`.
- * If `overwrite` is 0 and the variable already exists, the function does nothing.
- *
- * @param name The name of the environment variable.
- * @param value The value to assign to the environment variable.
- * @param overwrite If non-zero, the function will overwrite the existing value of the variable.
- * @return 0 on success, or -1 on failure (invalid input or memory allocation failure).
- * @note This function is designed for MSVC, which lacks a standard `setenv` function.
- */
-inline int setenv(const char* name, const char* value, int overwrite)
-{
-  if (!name || !value || !name[0])
-  {
-    // Invalid input: name or value is null, or name is an empty string
-    return -1;
-  }
-
-  // Check if the variable already exists and if overwrite is allowed
-  if (!overwrite && ::std::getenv(name) != nullptr)
-  {
-    return 0; // Variable exists, and we're not allowed to overwrite it
-  }
-
-  // Construct the string in the form "NAME=VALUE"
-  auto env_var = ::std::string(name) + "=" + value;
-
-  // Use _putenv to set the environment variable in MSVC
-  if (_putenv(env_var.c_str()) != 0)
-  {
-    return -1; // _putenv failed
-  }
-
-  return 0; // Success
-}
-#endif
-
 #ifndef _CCCL_DOXYGEN_INVOKED // FIXME Doxygen is lost with decltype(auto)
 /**
  * @brief Custom move function that performs checks on the argument type.
@@ -97,38 +55,6 @@ _CCCL_HOST_DEVICE constexpr decltype(auto) mv(T&& obj)
   return ::std::move(obj);
 }
 #endif // _CCCL_DOXYGEN_INVOKED
-
-/**
- * @brief Creates a `std::shared_ptr` managing a copy of the given object.
- *
- * This function takes an object of any type and returns a `std::shared_ptr`
- * that manages a copy of that object. If the object is an lvalue reference,
- * it will be copied into the `shared_ptr`. If the object is an rvalue reference,
- * it will be moved into the `shared_ptr`.
- *
- * The type managed by the `shared_ptr` has all references and `const`/`volatile`
- * qualifiers removed from the original type.
- *
- * @tparam T The type of the object, deduced automatically. May be an lvalue or rvalue reference.
- * @param obj The object to copy into the instance managed by the `shared_ptr`.
- * @return A `std::shared_ptr` managing a new copy of the object.
- *
- * @note This function simplifies the creation of `std::shared_ptr`s by handling
- * the type deduction and appropriate forwarding of the object. It's particularly
- * useful when you want to create a `shared_ptr` from temporary objects or when
- * the object's type includes references or cv-qualifiers.
- *
- * @code
- * int value = 42;
- * auto sp1 = to_shared(value);            // New shared_ptr<int>
- * assert(*sp1 == 42);                     // sp1 points to an int valued at 42
- * @endcode
- */
-template <typename T>
-auto to_shared(T&& obj)
-{
-  return ::std::make_shared<::std::remove_cv_t<::std::remove_reference_t<T>>>(::std::forward<T>(obj));
-}
 
 /**
  * @brief   Create an iterable range from 'from' to 'to'
