@@ -885,14 +885,14 @@ void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T&
     return;
   }
 
-  if (n <= capacity() - m_size)
+  if (n <= static_cast<size_type>(capacity() - m_size))
   {
     // we've got room for all of them
     const size_type num_displaced_elements = end() - position;
     iterator old_end                       = end();
     iterator mid                           = position + n;
 
-    if (mid < old_end)
+    if (num_displaced_elements > n)
     {
       // construct copy n displaced elements to new elements following the insertion
       m_storage.uninitialized_copy(old_end - n, old_end, old_end);
