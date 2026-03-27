@@ -25,6 +25,7 @@
 
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__utility/optionally_static.cuh>
 
 #include <cassert>
 #include <variant>
@@ -395,7 +396,7 @@ private:
   /// @brief The inner thread hierarchy.
   [[no_unique_address]] thread_hierarchy_spec<lower_levels...> inner;
   /// @brief The dynamic width, if applicable.
-  [[no_unique_address]] optionally_static<width, 0> dynamic_width;
+  [[no_unique_address]] ::cuda::experimental::optionally_static<width, 0> dynamic_width;
   /// @brief Synchronization level(s)
   hw_scope sync_scope = hw_scope::none;
   /// @brief The memory bytes.
@@ -639,76 +640,6 @@ UNITTEST("con") {
     }
 };
 // clang-format on
-
-// These trigger a segfault in nvcc 12.9. Temporarily disabling until they can be investigated.
-#  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 9)
-// unittest for core.h that can't be there
-UNITTEST("optionally_static")
-{
-  optionally_static<size_t(42), 0> v1;
-  static_assert(v1.get() == 42);
-  static_assert(v1 == v1);
-  static_assert(v1 == 42UL);
-
-  optionally_static<size_t(43), 0> v2;
-  static_assert(v2.get() == 43UL);
-
-  optionally_static<size_t(0), 0> v3;
-  EXPECT(v3.get() == 0);
-  v3 = 44;
-  EXPECT(v3.get() == 44UL);
-
-#    if 0
-  // TODO clarify these tests !
-
-  // Make sure the size is optimized properly
-  struct S1
-  {
-    [[no_unique_address]] optionally_static<size_t(42)> x;
-    int y;
-  };
-  static_assert(sizeof(S1) == sizeof(int));
-  struct S2
-  {
-    int y;
-    [[no_unique_address]] optionally_static<size_t(42)> x;
-  };
-  static_assert(sizeof(S1) == sizeof(int));
-#    endif
-
-  // Multiplication
-  static_assert(v1 * v1 == 42UL * 42UL);
-  static_assert(v1 * v2 == 42UL * 43UL);
-  static_assert(v1 * 44 == 42UL * 44UL);
-  static_assert(44 * v1 == 42UL * 44UL);
-  EXPECT(v1 * v3 == 42 * 44);
-
-  // Odds and ends
-  optionally_static<3, 18> v4;
-  optionally_static<6, 18> v5;
-  static_assert(v4 * v5 == 18UL);
-  static_assert(v4 * v5 == (optionally_static<18, 18>(18)));
-
-// TODO solve these there are some ambiguities !
-#    if 0
-  // Mutating operators
-  optionally_static<1, 1> v6;
-  v6 += v6;
-  EXPECT(v6 == 0);
-  v6 += 2;
-  EXPECT(v6 == 2);
-  v6 -= 1;
-  EXPECT(v6 == 1);
-  v6++;
-  ++v6;
-  EXPECT(v6 == 3);
-  --v6;
-  v6--;
-  EXPECT(v6 == 1);
-  EXPECT(-v6 == -1);
-#    endif
-};
-#  endif
 
 UNITTEST("thread hierarchy spec equality")
 {
