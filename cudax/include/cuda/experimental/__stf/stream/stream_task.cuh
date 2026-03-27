@@ -328,52 +328,12 @@ public:
     }
   }
 
-  void populate_deps_scheduling_info() const
-  {
-    // Error checking copied from acquire() in acquire_release()
-
-    int index        = 0;
-    const auto& deps = get_task_deps();
-    for (const auto& dep : deps)
-    {
-      if (!dep.get_data().is_initialized())
-      {
-        fprintf(stderr, "Error: dependency number %d is an uninitialized logical data.\n", index);
-        abort();
-      }
-      dep.set_symbol(dep.get_data().get_symbol());
-      dep.set_data_footprint(dep.get_data().get_data_interface().data_footprint());
-      index++;
-    }
-  }
-
   /**
-   * @brief Use the scheduler to assign a device to this task
-   *
-   * @return returns true if the task's time needs to be recorded
+   * @brief Determine if the task's time needs to be recorded (for DOT visualization)
    */
-  bool schedule_task()
+  bool should_record_time()
   {
-    reserved::dot& dot = reserved::dot::instance();
-    auto& statistics   = reserved::task_statistics::instance();
-
-    const bool is_auto = get_exec_place().affine_data_place().is_device_auto();
-    bool calibrate     = false;
-
-    // We need to know the data footprint if scheduling or calibrating tasks
-    if (is_auto || statistics.is_calibrating())
-    {
-      populate_deps_scheduling_info();
-    }
-
-    if (is_auto)
-    {
-      auto [place, needs_calibration] = ctx.schedule_task(*this);
-      set_exec_place(place);
-      calibrate = needs_calibration;
-    }
-
-    return dot.is_timing() || (calibrate && statistics.is_calibrating());
+    return reserved::dot::instance().is_timing();
   }
 
 private:
@@ -524,25 +484,17 @@ public:
   template <typename Fun>
   auto operator->*(Fun&& fun)
   {
-    // Apply function to the stream (in the first position) and the data tuple
-    auto& dot        = ctx.get_dot();
-    auto& statistics = reserved::task_statistics::instance();
+    auto& dot = ctx.get_dot();
 
     cudaEvent_t start_event, end_event;
 
-    bool record_time = schedule_task();
-
-    if (statistics.is_calibrating_to_file())
-    {
-      record_time = true;
-    }
+    bool record_time = should_record_time();
 
     nvtx_range nr(get_symbol().c_str());
     start();
 
     if (record_time)
     {
-      // Events must be created here to avoid issues with multi-gpu
       cuda_safe_call(cudaEventCreate(&start_event));
       cuda_safe_call(cudaEventCreate(&end_event));
       cuda_safe_call(cudaEventRecord(start_event, get_stream()));
@@ -563,11 +515,6 @@ public:
         if (dot->is_tracing())
         {
           dot->template add_vertex_timing<task>(*this, milliseconds);
-        }
-
-        if (statistics.is_calibrating())
-        {
-          statistics.log_task_time(*this, milliseconds);
         }
       }
 
@@ -616,272 +563,4 @@ private:
     });
   }
 };
-
-/*
- * @brief Deferred tasks are tasks that are not executed immediately, but rather upon `ctx.submit()`.
- */
-template <typename... Data>
-class deferred_stream_task;
-
-#ifndef _CCCL_DOXYGEN_INVOKED // doxygen has issues with this code
-/*
- * Base of all deferred tasks. Stores the needed information for typed deferred tasks to run (see below).
- */
-template <>
-class deferred_stream_task<>
-{
-protected:
-  // Type stored
-  struct payload_t
-  {
-    virtual ~payload_t()                                         = default;
-    virtual void set_symbol(::std::string s)                     = 0;
-    virtual const ::std::string& get_symbol() const              = 0;
-    virtual int get_mapping_id() const                           = 0;
-    virtual void run()                                           = 0;
-    virtual void populate_deps_scheduling_info()                 = 0;
-    virtual const task_dep_vector_untyped& get_task_deps() const = 0;
-    virtual void set_exec_place(exec_place e_place)              = 0;
-
-    void add_successor(int succ)
-    {
-      successors.insert(succ);
-    }
-    void add_predecessor(int pred)
-    {
-      predecessors.insert(pred);
-    }
-
-    const ::std::unordered_set<int>& get_successors() const
-    {
-      return successors;
-    }
-    const ::std::unordered_set<int>& get_predecessors() const
-    {
-      return predecessors;
-    }
-
-    virtual void set_cost(double c)
-    {
-      assert(c >= 0.0);
-      cost = c;
-    }
-    virtual double get_cost() const
-    {
-      assert(cost >= 0.0);
-      return cost;
-    }
-
-  private:
-    // Sets of mapping ids
-    ::std::unordered_set<int> predecessors;
-    ::std::unordered_set<int> successors;
-    double cost = -1.0;
-  };
-
-  ::std::shared_ptr<payload_t> payload;
-
-  deferred_stream_task(::std::shared_ptr<payload_t> payload)
-      : payload(mv(payload))
-  {}
-
-public:
-  void run()
-  {
-    assert(payload);
-    payload->run();
-  }
-
-  const task_dep_vector_untyped& get_task_deps() const
-  {
-    assert(payload);
-    return payload->get_task_deps();
-  }
-
-  void add_successor(int succ)
-  {
-    assert(payload);
-    payload->add_successor(succ);
-  }
-
-  void add_predecessor(int pred)
-  {
-    assert(payload);
-    payload->add_predecessor(pred);
-  }
-
-  const ::std::unordered_set<int>& get_successors() const
-  {
-    assert(payload);
-    return payload->get_successors();
-  }
-
-  const ::std::unordered_set<int>& get_predecessors() const
-  {
-    assert(payload);
-    return payload->get_predecessors();
-  }
-
-  const ::std::string& get_symbol() const
-  {
-    assert(payload);
-    return payload->get_symbol();
-  }
-
-  void set_symbol(::std::string s) const
-  {
-    return payload->set_symbol(mv(s));
-  }
-
-  int get_mapping_id() const
-  {
-    assert(payload);
-    return payload->get_mapping_id();
-  }
-
-  double get_cost() const
-  {
-    assert(payload);
-    return payload->get_cost();
-  }
-
-  void set_cost(double cost)
-  {
-    assert(payload);
-    payload->set_cost(cost);
-  }
-
-  auto get_reorderer_payload() const
-  {
-    assert(payload);
-    payload->populate_deps_scheduling_info();
-    return reserved::reorderer_payload(
-      payload->get_symbol(),
-      payload->get_mapping_id(),
-      payload->get_successors(),
-      payload->get_predecessors(),
-      payload->get_task_deps());
-  }
-
-  void set_exec_place(exec_place e_place)
-  {
-    assert(payload);
-    payload->set_exec_place(e_place);
-  }
-};
-
-/**
- * @brief Deferred tasks are tasks that are not executed immediately, but rather upon `ctx.submit()`. This allows
- * the library to perform optimizations on the task graph before it is executed.
- *
- * @tparam Data The dependencies of the task
- */
-template <typename... Data>
-class deferred_stream_task : public deferred_stream_task<>
-{
-  struct payload_t : public deferred_stream_task<>::payload_t
-  {
-    template <typename... Deps>
-    payload_t(backend_ctx_untyped ctx, exec_place e_place, task_dep<Deps>... deps)
-        : task(mv(ctx), mv(e_place))
-    {
-      task.add_deps(mv(deps)...);
-    }
-
-    // Untyped task information. Will be needed later for launching the task.
-    stream_task<> task;
-    // Function that launches the task.
-    ::std::function<void(stream_task<>&)> todo;
-    // More data could go here
-
-    void set_symbol(::std::string s) override
-    {
-      task.set_symbol(mv(s));
-    }
-
-    const ::std::string& get_symbol() const override
-    {
-      return task.get_symbol();
-    }
-
-    int get_mapping_id() const override
-    {
-      return task.get_mapping_id();
-    }
-
-    void run() override
-    {
-      todo(task);
-    }
-
-    void populate_deps_scheduling_info() override
-    {
-      task.populate_deps_scheduling_info();
-    }
-
-    const task_dep_vector_untyped& get_task_deps() const override
-    {
-      return task.get_task_deps();
-    }
-
-    void set_exec_place(exec_place e_place) override
-    {
-      task.set_exec_place(e_place);
-    }
-  };
-
-  payload_t& my_payload() const
-  {
-    // Safe to do the cast because we've set the pointer earlier ourselves
-    return *static_cast<payload_t*>(payload.get());
-  }
-
-public:
-  /**
-   * @brief Construct a new deferred stream task object from a context, execution place, and dependencies.
-   *
-   * @param ctx the parent context
-   * @param e_place the place where the task will execute
-   * @param deps task dependencies
-   */
-  deferred_stream_task(backend_ctx_untyped ctx, exec_place e_place, task_dep<Data>... deps)
-      : deferred_stream_task<>(::std::make_shared<payload_t>(mv(ctx), mv(e_place), mv(deps)...))
-  {}
-
-  ///@{
-  /**
-   * @name Set the symbol of the task. This is used for profiling and debugging.
-   *
-   * @param s
-   * @return deferred_stream_task&
-   */
-  deferred_stream_task& set_symbol(::std::string s) &
-  {
-    payload->set_symbol(mv(s));
-    return *this;
-  }
-
-  deferred_stream_task&& set_symbol(::std::string s) &&
-  {
-    set_symbol(mv(s));
-    return mv(*this);
-  }
-  ///@}
-
-  void populate_deps_scheduling_info()
-  {
-    payload->populate_deps_scheduling_info();
-  }
-
-  template <typename Fun>
-  void operator->*(Fun fun)
-  {
-    my_payload().todo = [f = mv(fun)](stream_task<>& untyped_task) {
-      // Here we have full type info; we can downcast to typed stream_task
-      auto& task = static_cast<stream_task<Data...>&>(untyped_task);
-      task.operator->*(f);
-    };
-  }
-};
-#endif // _CCCL_DOXYGEN_INVOKED
 } // namespace cuda::experimental::stf

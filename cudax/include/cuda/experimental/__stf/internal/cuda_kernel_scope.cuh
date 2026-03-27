@@ -29,7 +29,6 @@
 
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
-#include <cuda/experimental/__stf/internal/task_statistics.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -353,9 +352,7 @@ public:
       t.set_symbol(symbol);
     }
 
-    // Do we need to measure the duration of the kernel(s) ?
-    auto& statistics   = reserved::task_statistics::instance();
-    record_time        = t.schedule_task() || statistics.is_calibrating_to_file();
+    record_time        = t.should_record_time();
     record_time_device = -1;
 
     t.start();
@@ -400,12 +397,6 @@ public:
         if (dot.is_tracing())
         {
           dot.template add_vertex_timing<typename Ctx::task_type>(t, milliseconds, record_time_device);
-        }
-
-        auto& statistics = reserved::task_statistics::instance();
-        if (statistics.is_calibrating())
-        {
-          statistics.log_task_time(t, milliseconds);
         }
       }
     }

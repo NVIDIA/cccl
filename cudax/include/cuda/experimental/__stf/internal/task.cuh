@@ -38,14 +38,6 @@
 
 namespace cuda::experimental::stf
 {
-namespace reserved
-{
-class mapping_id_tag
-{};
-
-using mapping_id_t = reserved::unique_id<reserved::mapping_id_tag>;
-} // end namespace reserved
-
 class backend_ctx_untyped;
 class logical_data_untyped;
 class exec_place;
@@ -135,9 +127,6 @@ private:
 
     // Used to uniquely identify the task
     reserved::unique_id_t unique_id;
-
-    // Used to uniquely identify the task for mapping purposes
-    reserved::mapping_id_t mapping_id;
 
     // RAII guard for the task's execution place activation.
     // Created in acquire_deps, destroyed in release_deps.
@@ -373,12 +362,6 @@ public:
     return pimpl->unique_id;
   }
 
-  // Get the unique task mapping identifier
-  int get_mapping_id() const
-  {
-    return pimpl->mapping_id;
-  }
-
   size_t hash() const
   {
     return ::std::hash<impl*>()(pimpl.get());
@@ -553,12 +536,7 @@ public:
   data_instance(bool used, data_place dplace)
       : used(used)
       , dplace(mv(dplace))
-  {
-#if 0
-        // Since this will default construct a task, we need to decrement the id
-        reserved::mapping_id_t::decrement_id();
-#endif
-  }
+  {}
 
   void set_used(bool flag)
   {

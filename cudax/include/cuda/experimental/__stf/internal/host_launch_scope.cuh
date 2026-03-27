@@ -30,7 +30,6 @@
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/internal/ctx_resource.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
-#include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 
@@ -114,8 +113,7 @@ public:
   template <typename Fun>
   void operator->*(Fun&& f)
   {
-    auto& dot        = *ctx.get_dot();
-    auto& statistics = reserved::task_statistics::instance();
+    auto& dot = *ctx.get_dot();
 
     auto t = ctx.task(exec_place::host());
     t.add_deps(deps);
@@ -125,7 +123,7 @@ public:
     }
 
     cudaEvent_t start_event, end_event;
-    const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
+    const bool record_time = t.should_record_time();
 
     t.start();
 
@@ -155,11 +153,6 @@ public:
           if (dot.is_tracing())
           {
             dot.template add_vertex_timing<typename Ctx::task_type>(t, milliseconds, -1);
-          }
-
-          if (statistics.is_calibrating())
-          {
-            statistics.log_task_time(t, milliseconds);
           }
         }
       }

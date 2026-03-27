@@ -248,52 +248,12 @@ public:
     return *this;
   }
 
-  void populate_deps_scheduling_info() const
-  {
-    // Error checking copied from acquire() in acquire_release()
-
-    int index        = 0;
-    const auto& deps = get_task_deps();
-    for (const auto& dep : deps)
-    {
-      if (!dep.get_data().is_initialized())
-      {
-        fprintf(stderr, "Error: dependency number %d is an uninitialized logical data.\n", index);
-        abort();
-      }
-      dep.set_symbol(dep.get_data().get_symbol());
-      dep.set_data_footprint(dep.get_data().get_data_interface().data_footprint());
-      index++;
-    }
-  }
-
   /**
-   * @brief Use the scheduler to assign a device to this task
-   *
-   * @return returns true if the task's time needs to be recorded
+   * @brief Determine if the task's time needs to be recorded (for DOT visualization)
    */
-  bool schedule_task()
+  bool should_record_time()
   {
-    auto& dot        = *ctx.get_dot();
-    auto& statistics = reserved::task_statistics::instance();
-
-    const bool is_auto = get_exec_place().affine_data_place() == data_place::device_auto();
-    bool calibrate     = false;
-
-    // We need to know the data footprint if scheduling or calibrating tasks
-    if (is_auto || statistics.is_calibrating())
-    {
-      populate_deps_scheduling_info();
-    }
-
-    if (is_auto)
-    {
-      auto [place, needs_calibration] = ctx.schedule_task(*this);
-      set_exec_place(place);
-      calibrate = needs_calibration;
-    }
-
-    return dot.is_timing() || (calibrate && statistics.is_calibrating());
+    return ctx.get_dot()->is_timing();
   }
 
   // Only valid if we have defined a capture stream
@@ -312,47 +272,22 @@ public:
   template <typename Fun>
   void operator->*(Fun&& f)
   {
-    auto& dot        = *ctx.get_dot();
-    auto& statistics = reserved::task_statistics::instance();
+    auto& dot = *ctx.get_dot();
 
-    // cudaEvent_t start_event, end_event;
-
-    bool record_time = schedule_task();
-
-    if (statistics.is_calibrating_to_file())
-    {
-      record_time = true;
-    }
+    bool record_time = should_record_time();
 
     start();
-
-    if (record_time)
-    {
-      // Events must be created here to avoid issues with multi-gpu
-      // cuda_safe_call(cudaEventCreate(&start_event));
-      // cuda_safe_call(cudaEventCreate(&end_event));
-      // cuda_safe_call(cudaEventRecord(start_event));
-    }
 
     SCOPE(exit)
     {
       end_uncleared();
       if (record_time)
       {
-        // cuda_safe_call(cudaEventRecord(end_event));
-        // cuda_safe_call(cudaEventSynchronize(end_event));
-
         float milliseconds = 0;
-        // cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
 
         if (dot.is_tracing())
         {
           dot.template add_vertex_timing<task>(*this, milliseconds);
-        }
-
-        if (statistics.is_calibrating())
-        {
-          statistics.log_task_time(*this, milliseconds);
         }
       }
       clear();
@@ -569,47 +504,22 @@ public:
   template <typename Fun>
   void operator->*(Fun&& f)
   {
-    auto& dot        = *ctx.get_dot();
-    auto& statistics = reserved::task_statistics::instance();
+    auto& dot = *ctx.get_dot();
 
-    // cudaEvent_t start_event, end_event;
-
-    bool record_time = schedule_task();
-
-    if (statistics.is_calibrating_to_file())
-    {
-      record_time = true;
-    }
+    bool record_time = should_record_time();
 
     start();
-
-    if (record_time)
-    {
-      // Events must be created here to avoid issues with multi-gpu
-      // cuda_safe_call(cudaEventCreate(&start_event));
-      // cuda_safe_call(cudaEventCreate(&end_event));
-      // cuda_safe_call(cudaEventRecord(start_event));
-    }
 
     SCOPE(exit)
     {
       end_uncleared();
       if (record_time)
       {
-        // cuda_safe_call(cudaEventRecord(end_event));
-        // cuda_safe_call(cudaEventSynchronize(end_event));
-
         float milliseconds = 0;
-        // cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
 
         if (dot.is_tracing())
         {
           dot.template add_vertex_timing<task>(*this, milliseconds);
-        }
-
-        if (statistics.is_calibrating())
-        {
-          statistics.log_task_time(*this, milliseconds);
         }
       }
       clear();

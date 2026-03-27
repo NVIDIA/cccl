@@ -26,7 +26,6 @@
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // for null_partition
 #include <cuda/experimental/__stf/internal/ctx_resource.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
-#include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 
 namespace cuda::experimental::stf
@@ -541,19 +540,15 @@ public:
   template <typename Fun>
   void operator->*(Fun&& f)
   {
-    auto& dot        = *ctx.get_dot();
-    auto& statistics = reserved::task_statistics::instance();
-    auto t           = ctx.task(e_place);
+    auto& dot = *ctx.get_dot();
+    auto t    = ctx.task(e_place);
 
     assert(e_place.affine_data_place() == t.get_affine_data_place());
 
-    // If there is a partitioner, we ensure there is a proper affine data place for this execution place
     if constexpr (!::std::is_same_v<partitioner_t, null_partition>)
     {
-      // Grids need a composite data place
       if (e_place.size() > 1)
       {
-        // Create a composite data place defined by the grid of places + the partitioning function
         t.set_affine_data_place(data_place::composite(partitioner_t(), e_place.as_grid()));
       }
     }
@@ -564,7 +559,7 @@ public:
       t.set_symbol(symbol);
     }
 
-    const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
+    const bool record_time = t.should_record_time();
 
     nvtx_range nr(t.get_symbol().c_str());
     t.start();
@@ -588,11 +583,6 @@ public:
           if (dot.is_tracing())
           {
             dot.template add_vertex_timing<typename context::task_type>(t, milliseconds, device);
-          }
-
-          if (statistics.is_calibrating())
-          {
-            statistics.log_task_time(t, milliseconds);
           }
         }
       }
@@ -711,7 +701,6 @@ public:
   {
     // parallel_for never calls this function with a host.
     _CCCL_ASSERT(sub_exec_place != exec_place::host(), "Internal CUDASTF error.");
-    _CCCL_ASSERT(sub_exec_place != exec_place::device_auto(), "Internal CUDASTF error.");
 
     using Fun_no_ref = ::std::remove_reference_t<Fun>;
 
@@ -897,12 +886,6 @@ public:
   {
     // parallel_for never calls this function with a host.
     _CCCL_ASSERT(sub_exec_place != exec_place::host(), "Internal CUDASTF error.");
-
-    if (sub_exec_place == exec_place::device_auto())
-    {
-      // We have all latitude - recurse with the current device.
-      return do_parallel_for(::std::forward<Fun>(f), exec_place::current_device(), sub_shape, t);
-    }
 
     using Fun_no_ref = ::std::remove_reference_t<Fun>;
 

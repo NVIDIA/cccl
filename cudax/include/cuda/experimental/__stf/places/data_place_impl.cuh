@@ -13,7 +13,7 @@
  * @brief Concrete implementations of data_place_interface
  *
  * This file contains implementations for standard data place types:
- * host, managed, device, invalid, affine, and device_auto.
+ * host, managed, device, invalid, and affine.
  */
 
 #pragma once
@@ -356,57 +356,6 @@ public:
   bool allocation_is_stream_ordered() const override
   {
     return false;
-  }
-};
-
-/**
- * @brief Implementation for device_auto data place (auto-select device)
- */
-class data_place_device_auto final : public data_place_interface
-{
-public:
-  bool is_resolved() const override
-  {
-    return false;
-  }
-
-  int get_device_ordinal() const override
-  {
-    return data_place_interface::device_auto;
-  }
-
-  ::std::string to_string() const override
-  {
-    return "auto";
-  }
-
-  size_t hash() const override
-  {
-    return ::std::hash<int>()(data_place_interface::device_auto);
-  }
-
-  int cmp(const data_place_interface& other) const override
-  {
-    if (typeid(*this) != typeid(other))
-    {
-      return typeid(*this).before(typeid(other)) ? -1 : 1;
-    }
-    return 0;
-  }
-
-  void* allocate(::std::ptrdiff_t, cudaStream_t) const override
-  {
-    throw ::std::logic_error("Cannot allocate from device_auto data_place directly");
-  }
-
-  void deallocate(void*, size_t, cudaStream_t) const override
-  {
-    throw ::std::logic_error("Cannot deallocate from device_auto data_place directly");
-  }
-
-  bool allocation_is_stream_ordered() const override
-  {
-    return true;
   }
 };
 } // end namespace cuda::experimental::stf

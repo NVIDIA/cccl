@@ -23,7 +23,6 @@
 #include <cuda/experimental/__stf/internal/execution_policy.cuh> // launch_impl() uses execution_policy
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy_impl.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
-#include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
 #include <cuda/experimental/__stf/utility/scope_guard.cuh> // graph_launch_impl() uses SCOPE
 
@@ -322,21 +321,14 @@ public:
 
     EXPECT(e_place != exec_place::host(), "Attempt to run a launch on the host.");
 
-    auto& dot        = *ctx.get_dot();
-    auto& statistics = reserved::task_statistics::instance();
+    auto& dot = *ctx.get_dot();
 
     auto t = ctx.task(e_place);
 
     _CCCL_ASSERT(e_place.affine_data_place() == t.get_affine_data_place(), "Affine data places must match");
 
-    /*
-     * If we have a grid (including 1-element grids), the implicit affine partitioner is the blocked_partition.
-     *
-     * An explicit composite data place is required per data dependency to customize this behaviour.
-     */
     if (e_place.size() > 1)
     {
-      // Create a composite data place defined by the grid of places + the partitioning function
       t.set_affine_data_place(data_place::composite(blocked_partition(), e_place.as_grid()));
     }
 
@@ -346,14 +338,8 @@ public:
       t.set_symbol(symbol);
     }
 
-    bool record_time = t.schedule_task();
-    // Execution place may have changed during scheduling task
-    e_place = t.get_exec_place();
-
-    if (statistics.is_calibrating_to_file())
-    {
-      record_time = true;
-    }
+    bool record_time = t.should_record_time();
+    e_place          = t.get_exec_place();
 
     nvtx_range nr(t.get_symbol().c_str());
     t.start();
@@ -414,11 +400,6 @@ public:
           if (dot.is_tracing())
           {
             dot.template add_vertex_timing<stream_task<>>(t, milliseconds, device);
-          }
-
-          if (statistics.is_calibrating())
-          {
-            statistics.log_task_time(t, milliseconds);
           }
         }
       }

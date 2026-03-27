@@ -72,12 +72,11 @@ public:
    */
   enum ord : int
   {
-    invalid     = ::std::numeric_limits<int>::min(),
-    composite   = -5,
-    device_auto = -4,
-    affine      = -3,
-    managed     = -2,
-    host        = -1,
+    invalid   = ::std::numeric_limits<int>::min(),
+    composite = -5,
+    affine    = -3,
+    managed   = -2,
+    host      = -1,
   };
 
   // === Core properties ===
@@ -88,7 +87,7 @@ public:
    * Returns true for places that represent a concrete memory target:
    * host, managed, device(N), composite, green_ctx, etc.
    * Returns false for abstract/deferred places that need further
-   * resolution: invalid, affine, device_auto.
+   * resolution: invalid, affine.
    */
   virtual bool is_resolved() const = 0;
 
@@ -100,7 +99,6 @@ public:
    * - data_place_ordinals::host (-1) for host
    * - data_place_ordinals::managed (-2) for managed
    * - data_place_ordinals::affine (-3) for affine
-   * - data_place_ordinals::device_auto (-4) for device_auto
    * - data_place_ordinals::composite (-5) for composite
    * - data_place_ordinals::invalid for invalid
    */

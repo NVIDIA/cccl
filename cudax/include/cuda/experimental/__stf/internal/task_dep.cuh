@@ -146,16 +146,6 @@ public:
     return symbol;
   }
 
-  void set_data_footprint(size_t f) const
-  {
-    data_footprint = f;
-  }
-
-  size_t get_data_footprint() const
-  {
-    return data_footprint;
-  }
-
   void reset_logical_data()
   {
     data = nullptr;
@@ -171,7 +161,6 @@ private:
   // setting them only during scheduling (since task_dep can only be accessed
   // as const ref)
   mutable ::std::string symbol;
-  mutable size_t data_footprint = 0;
 
   mutable data_place dplace;
   ::std::shared_ptr<reduction_operator_base> redux_op;

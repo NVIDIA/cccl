@@ -122,15 +122,6 @@ public:
     return data_place(make_static_instance<data_place_affine>());
   }
 
-  /**
-   * @brief Constant representing a placeholder that lets the library automatically select a GPU device as the
-   * `data_place`.
-   */
-  static data_place device_auto()
-  {
-    return data_place(make_static_instance<data_place_device_auto>());
-  }
-
   /** @brief Data is placed on device with index dev_id. */
   static data_place device(int dev_id = 0)
   {
@@ -238,12 +229,6 @@ public:
   {
     const auto& ref = *pimpl_;
     return typeid(ref) == typeid(data_place_device);
-  }
-
-  bool is_device_auto() const
-  {
-    const auto& ref = *pimpl_;
-    return typeid(ref) == typeid(data_place_device_auto);
   }
 
   bool is_resolved() const
@@ -673,7 +658,6 @@ public:
    * for example exec_place::host or exec_place::device(4).
    */
   static exec_place host();
-  static exec_place device_auto();
 
   static exec_place device(int devid);
 
@@ -998,47 +982,6 @@ inline exec_place exec_place::host()
   return exec_place(make_static_instance<exec_place_host_impl>());
 }
 
-// Implementation for device_auto placeholder
-class exec_place_device_auto_impl : public exec_place::impl
-{
-public:
-  exec_place_device_auto_impl()
-      : exec_place::impl(data_place::device_auto())
-  {}
-
-  exec_place activate(size_t) const override
-  {
-    throw ::std::logic_error("activate() called on device_auto exec_place - should be resolved first");
-  }
-
-  void deactivate(const exec_place&, size_t) const override
-  {
-    throw ::std::logic_error("deactivate() called on device_auto exec_place - should be resolved first");
-  }
-
-  bool is_device() const override
-  {
-    return true;
-  }
-
-  ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
-  {
-    _CCCL_ASSERT(idx == 0, "Index out of bounds for device_auto exec_place");
-    // Static instance - use no-op deleter instead of shared_from_this()
-    return ::std::shared_ptr<impl>(this, [](impl*) {});
-  }
-
-  ::std::string to_string() const override
-  {
-    return "device_auto";
-  }
-};
-
-inline exec_place exec_place::device_auto()
-{
-  return make_static_instance<exec_place_device_auto_impl>();
-}
-
 UNITTEST("exec_place::host operator->*")
 {
   bool witness = false;
@@ -1355,7 +1298,7 @@ inline exec_place data_place::affine_exec_place() const
     return exec_place(::std::static_pointer_cast<exec_place::impl>(custom_impl));
   }
 
-  // For invalid, affine, device_auto - throw
+  // For invalid, affine - throw
   throw ::std::logic_error("affine_exec_place() not meaningful for data_place type with ordinal "
                            + ::std::to_string(pimpl_->get_device_ordinal()));
 }

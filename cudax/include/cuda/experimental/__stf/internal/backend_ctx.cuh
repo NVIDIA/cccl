@@ -33,9 +33,7 @@
 #include <cuda/experimental/__stf/internal/execution_policy.cuh> // backend_ctx<T>::launch() uses execution_policy
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
 #include <cuda/experimental/__stf/internal/machine.cuh> // backend_ctx_untyped::impl usese machine
-#include <cuda/experimental/__stf/internal/reorderer.cuh> // backend_ctx_untyped::impl uses reorderer
 #include <cuda/experimental/__stf/internal/repeat.cuh>
-#include <cuda/experimental/__stf/internal/scheduler.cuh> // backend_ctx_untyped::impl uses scheduler
 #include <cuda/experimental/__stf/internal/slice.cuh> // backend_ctx<T> uses shape_of
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
@@ -114,9 +112,7 @@ protected:
     friend class backend_ctx_untyped;
 
     impl(async_resources_handle async_resources = async_resources_handle())
-        : auto_scheduler(reserved::scheduler::make(getenv("CUDASTF_SCHEDULE")))
-        , auto_reorderer(reserved::reorderer::make(getenv("CUDASTF_TASK_ORDER")))
-        , async_resources(async_resources ? mv(async_resources) : async_resources_handle())
+        : async_resources(async_resources ? mv(async_resources) : async_resources_handle())
     {
       // Forces init
       cudaError_t ret = cudaFree(0);
@@ -320,7 +316,7 @@ protected:
     void cleanup()
     {
       attached_allocators.clear();
-      // Leave custom_allocator, auto_scheduler, and auto_reordered as they were.
+      // Leave custom_allocator as it was.
     }
 
     /* Current context-wide allocator (same as default_allocator unless it is changed) */
@@ -333,8 +329,6 @@ protected:
     ::std::vector<block_allocator_untyped> attached_allocators;
     reserved::composite_slice_cache composite_cache;
 
-    ::std::unique_ptr<reserved::scheduler> auto_scheduler;
-    ::std::unique_ptr<reserved::reorderer> auto_reorderer;
     // Stats-related stuff
     ::std::unordered_map<::std::pair<int, int>,
                          ::std::pair<size_t, size_t>,
@@ -664,29 +658,9 @@ public:
     return pimpl->async_resources;
   }
 
-  bool reordering_tasks() const
-  {
-    assert(pimpl);
-    return pimpl->auto_reorderer != nullptr;
-  }
-
   auto& get_composite_cache()
   {
     return pimpl->composite_cache;
-  }
-
-  ::std::pair<exec_place, bool> schedule_task(const task& t) const
-  {
-    assert(pimpl);
-    assert(pimpl->auto_scheduler);
-    return pimpl->auto_scheduler->schedule_task(t);
-  }
-
-  void reorder_tasks(::std::vector<int>& tasks, ::std::unordered_map<int, reserved::reorderer_payload>& task_map)
-  {
-    assert(pimpl);
-    assert(pimpl->auto_reorderer);
-    pimpl->auto_reorderer->reorder_tasks(tasks, task_map);
   }
 
   void increment_task_count()
