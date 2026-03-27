@@ -31,7 +31,6 @@
 
 namespace cuda::experimental
 {
-
 template <typename _Vp>
 constexpr _Vp __get_reserved_default()
 {
@@ -65,8 +64,8 @@ public:
 
   static constexpr auto reserved_v = _Reserved;
 
-  constexpr optionally_static()                                  = default;
-  constexpr optionally_static(const optionally_static&)          = default;
+  constexpr optionally_static()                                    = default;
+  constexpr optionally_static(const optionally_static&)            = default;
   constexpr optionally_static& operator=(const optionally_static&) = default;
 
   //! @brief Construct a dynamic value. Only valid when `_StaticV == _Reserved`.
@@ -152,7 +151,7 @@ public:
 private:
   struct __nonesuch
   {};
-  using __state_t                              = ::cuda::std::conditional_t<is_static, __nonesuch, type>;
+  using __state_t                           = ::cuda::std::conditional_t<is_static, __nonesuch, type>;
   [[no_unique_address]] __state_t __payload = __state_t();
 };
 
@@ -242,7 +241,6 @@ _CUDAX_OPTIONALLY_STATIC_COMPARISON_OP(>=)
 // clang-format on
 
 #endif // _CCCL_DOXYGEN_INVOKED
-
 } // namespace cuda::experimental
 
 #endif // _CUDAX__UTILITY_OPTIONALLY_STATIC

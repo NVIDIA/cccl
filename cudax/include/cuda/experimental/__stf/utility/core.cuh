@@ -24,8 +24,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__utility/optionally_static.cuh>
-
 #include <cstddef>
 #include <functional>
 #include <limits>
@@ -425,7 +423,4 @@ auto as_underlying(E value)
 {
   return static_cast<::std::underlying_type_t<E>>(value);
 }
-
-using ::cuda::experimental::optionally_static;
-
 } // namespace cuda::experimental::stf

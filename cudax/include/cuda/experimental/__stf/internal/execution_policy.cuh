@@ -25,6 +25,7 @@
 
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__utility/optionally_static.cuh>
 
 #include <cassert>
 #include <variant>
@@ -395,7 +396,7 @@ private:
   /// @brief The inner thread hierarchy.
   [[no_unique_address]] thread_hierarchy_spec<lower_levels...> inner;
   /// @brief The dynamic width, if applicable.
-  [[no_unique_address]] optionally_static<width, 0> dynamic_width;
+  [[no_unique_address]] ::cuda::experimental::optionally_static<width, 0> dynamic_width;
   /// @brief Synchronization level(s)
   hw_scope sync_scope = hw_scope::none;
   /// @brief The memory bytes.
