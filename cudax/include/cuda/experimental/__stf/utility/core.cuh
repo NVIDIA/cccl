@@ -28,7 +28,7 @@
 
 #include <cstddef>
 #include <functional>
-#include <memory>
+#include <limits>
 #include <tuple>
 #include <type_traits>
 #include <utility>
