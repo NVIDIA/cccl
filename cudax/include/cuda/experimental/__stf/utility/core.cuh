@@ -24,7 +24,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
 #include <cuda/experimental/__utility/optionally_static.cuh>
 
 #include <cstddef>
