@@ -14,6 +14,7 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
+#include <cuda/__device/arch_id.h>
 #include <cuda/iterator>
 
 #include "catch2_test_env_launch_helper.h"
@@ -47,36 +48,23 @@ struct block_size_check_t
   }
 };
 
-struct block_size_retreiver_t
-{
-  int* ptr;
-
-  template <class ActivePolicyT>
-  cudaError_t Invoke()
-  {
-    *ptr = ActivePolicyT::ScanPolicyT::BLOCK_THREADS;
-    return cudaSuccess;
-  }
-};
-
 TEST_CASE("Device scan exclusive scan works with default environment", "[scan][device]")
 {
   using num_items_t = int;
   using value_t     = int;
   using offset_t    = cub::detail::choose_offset_t<num_items_t>;
 
-  using policy_t =
-    cub::detail::scan::default_tuning::fn<value_t, value_t, value_t, offset_t, block_size_check_t>::MaxPolicy;
+  using selector_t =
+    cub::detail::scan::policy_selector_from_types<value_t, value_t, value_t, offset_t, block_size_check_t>;
 
   int current_device{};
   REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
 
-  int ptx_version{};
-  REQUIRE(cudaSuccess == cub::PtxVersion(ptx_version, current_device));
+  cudaDeviceProp device_props{};
+  REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
 
-  int target_block_size{};
-  block_size_retreiver_t block_size_retreiver{&target_block_size};
-  REQUIRE(cudaSuccess == policy_t::Invoke(ptx_version, block_size_retreiver));
+  const auto target_block_size =
+    selector_t{}(cuda::to_arch_id(cuda::compute_capability{device_props.major, device_props.minor})).block_threads;
 
   num_items_t num_items = 1;
   c2h::device_vector<int> d_block_size(1);
@@ -114,53 +102,31 @@ TEST_CASE("Device scan exclusive sum works with default environment", "[sum][dev
 }
 
 template <int BlockThreads>
-struct scan_tuning : cub::detail::scan::tuning<scan_tuning<BlockThreads>>
+struct scan_tuning
 {
-  template <class /* InputValueT */, class /* OutputValueT */, class AccumT, class /* Offset */, class /* ScanOpT */>
-  struct fn
+  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::detail::scan::scan_policy
   {
-    struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
-    {
-      struct ScanPolicyT
-      {
-        static constexpr int BLOCK_THREADS                      = BlockThreads;
-        static constexpr int ITEMS_PER_THREAD                   = 1;
-        static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE;
-
-        static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::CacheLoadModifier::LOAD_DEFAULT;
-        static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM =
-          cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE;
-        static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING;
-
-        struct detail
-        {
-          using delay_constructor_t = cub::detail::default_delay_constructor_t<AccumT>;
-        };
-      };
-    };
-
-    using MaxPolicy = Policy500;
-  };
+    return {BlockThreads,
+            1,
+            cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
+            cub::CacheLoadModifier::LOAD_DEFAULT,
+            cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE,
+            cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
+            cub::detail::delay_constructor_policy{cub::detail::delay_constructor_kind::fixed_delay, 350, 450},
+            {}};
+  }
 };
 
-struct get_reduce_tuning_query_t
+struct unrelated_policy
 {};
 
-struct reduce_tuning
+struct unrelated_tuning
 {
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const get_reduce_tuning_query_t&) const noexcept
+  // should never be called
+  auto operator()(cuda::arch_id /*arch*/) const -> unrelated_policy
   {
-    return *this;
+    throw 1337;
   }
-
-  // Make sure this is not used
-  template <class /* InputValueT */,
-            class /* OutputValueT */,
-            class /* AccumT */,
-            class /* Offset */,
-            class /* ScanOpT */>
-  struct fn
-  {};
 };
 
 using block_sizes = c2h::type_list<cuda::std::integral_constant<int, 32>, cuda::std::integral_constant<int, 64>>;
@@ -175,8 +141,8 @@ C2H_TEST("Device scan exclusive-scan can be tuned", "[scan][device]", block_size
   auto d_in      = cuda::constant_iterator(1);
   auto d_out     = thrust::device_vector<int>(num_items);
 
-  // We are expecting that `reduce_tuning` is ignored
-  auto env = cuda::execution::__tune(scan_tuning<target_block_size>{}, reduce_tuning{});
+  // We are expecting that `unrelated_tuning` is ignored
+  auto env = cuda::execution::__tune(scan_tuning<target_block_size>{}, unrelated_tuning{});
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveScan(d_in, d_out.begin(), block_size_check, 0, num_items, env));
 
@@ -195,8 +161,8 @@ C2H_TEST("Device scan exclusive-sum can be tuned", "[scan][device]", block_sizes
   auto d_in      = cuda::constant_iterator(1);
   auto d_out     = thrust::device_vector<int>(num_items);
 
-  // We are expecting that `reduce_tuning` is ignored
-  auto env = cuda::execution::__tune(scan_tuning<target_block_size>{}, reduce_tuning{});
+  // We are expecting that `unrelated_tuning` is ignored
+  auto env = cuda::execution::__tune(scan_tuning<target_block_size>{}, unrelated_tuning{});
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(d_in, d_out.begin(), num_items, env));
 
@@ -212,18 +178,17 @@ TEST_CASE("Device scan inclusive-scan works with default environment", "[scan][d
   using value_t     = int;
   using offset_t    = cub::detail::choose_offset_t<num_items_t>;
 
-  using policy_t =
-    cub::detail::scan::default_tuning::fn<value_t, value_t, value_t, offset_t, block_size_check_t>::MaxPolicy;
+  using selector_t =
+    cub::detail::scan::policy_selector_from_types<value_t, value_t, value_t, offset_t, block_size_check_t>;
 
   int current_device{};
   REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
 
-  int ptx_version{};
-  REQUIRE(cudaSuccess == cub::PtxVersion(ptx_version, current_device));
+  cudaDeviceProp device_props{};
+  REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
 
-  int target_block_size{};
-  block_size_retreiver_t block_size_retreiver{&target_block_size};
-  REQUIRE(cudaSuccess == policy_t::Invoke(ptx_version, block_size_retreiver));
+  const auto target_block_size =
+    selector_t{}(cuda::to_arch_id(cuda::compute_capability{device_props.major, device_props.minor})).block_threads;
 
   num_items_t num_items = 1;
   c2h::device_vector<int> d_block_size(1);
@@ -248,8 +213,8 @@ C2H_TEST("Device scan inclusive-scan can be tuned", "[scan][device]", block_size
   auto d_in      = cuda::constant_iterator(1);
   auto d_out     = thrust::device_vector<int>(num_items);
 
-  // We are expecting that `reduce_tuning` is ignored
-  auto env = cuda::execution::__tune(scan_tuning<target_block_size>{}, reduce_tuning{});
+  // We are expecting that `unrelated_tuning` is ignored
+  auto env = cuda::execution::__tune(scan_tuning<target_block_size>{}, unrelated_tuning{});
 
   REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScan(d_in, d_out.begin(), block_size_check, num_items, env));
 
@@ -291,8 +256,8 @@ C2H_TEST("Device scan inclusive-scan-init can be tuned", "[scan][device]", block
 
   int init{10};
 
-  // We are expecting that `reduce_tuning` is ignored
-  auto env = cuda::execution::__tune(scan_tuning<target_block_size>{}, reduce_tuning{});
+  // We are expecting that `unrelated_tuning` is ignored
+  auto env = cuda::execution::__tune(scan_tuning<target_block_size>{}, unrelated_tuning{});
 
   REQUIRE(
     cudaSuccess == cub::DeviceScan::InclusiveScanInit(d_in, d_out.begin(), block_size_check, init, num_items, env));

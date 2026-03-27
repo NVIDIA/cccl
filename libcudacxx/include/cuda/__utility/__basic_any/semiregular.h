@@ -56,17 +56,17 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-_CCCL_PUBLIC_API auto __move_fn(_Tp& __src, void* __dst) noexcept
-  -> ::cuda::std::enable_if_t<::cuda::std::movable<_Tp>, void>
+_CCCL_PUBLIC_API auto __move_fn(_Tp& __src, void* __dst) noexcept -> void
 {
+  static_assert(::cuda::std::movable<_Tp>, "type must be movable");
   ::new (__dst) _Tp(static_cast<_Tp&&>(__src));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-[[nodiscard]] _CCCL_PUBLIC_API auto __try_move_fn(_Tp& __src, void* __dst, size_t __size, size_t __align)
-  -> ::cuda::std::enable_if_t<::cuda::std::movable<_Tp>, bool>
+[[nodiscard]] _CCCL_PUBLIC_API auto __try_move_fn(_Tp& __src, void* __dst, size_t __size, size_t __align) -> bool
 {
+  static_assert(::cuda::std::movable<_Tp>, "type must be movable");
   if (::cuda::__is_small<_Tp>(__size, __align))
   {
     ::new (__dst) _Tp(static_cast<_Tp&&>(__src));
@@ -81,9 +81,9 @@ template <class _Tp>
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-[[nodiscard]] _CCCL_PUBLIC_API auto __copy_fn(_Tp const& __src, void* __dst, size_t __size, size_t __align)
-  -> ::cuda::std::enable_if_t<::cuda::std::copyable<_Tp>, bool>
+[[nodiscard]] _CCCL_PUBLIC_API auto __copy_fn(_Tp const& __src, void* __dst, size_t __size, size_t __align) -> bool
 {
+  static_assert(::cuda::std::copyable<_Tp>, "type must be copyable");
   if (::cuda::__is_small<_Tp>(__size, __align))
   {
     ::new (__dst) _Tp(__src);

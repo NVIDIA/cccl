@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/cstddef> // size_t
 #include <cuda/std/cstdint> // uintptr_t
@@ -34,8 +34,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <size_t _Align, class _Tp>
 [[nodiscard]] _CCCL_API constexpr _Tp* assume_aligned(_Tp* __ptr) noexcept
 {
-  static_assert(::cuda::is_power_of_two(_Align), "std::assume_aligned requires the alignment to be a power of 2");
-  static_assert(_Align >= alignof(_Tp), "Alignment must be greater than or equal to the alignment of the input type");
+  static_assert(::cuda::__is_valid_alignment<_Tp>(_Align), "invalid _Align value for _Tp");
 #if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   return __ptr;
 #else

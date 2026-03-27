@@ -21,6 +21,7 @@
 #include <cub/detail/warpspeed/squad/load_store.cuh>
 #include <cub/detail/warpspeed/squad/squad.cuh>
 #include <cub/detail/warpspeed/values.cuh>
+#include <cub/device/dispatch/kernels/scan_warpspeed_policy.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/thread/thread_scan.cuh>
 #include <cub/warp/warp_reduce.cuh>
@@ -29,6 +30,7 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/arch_id.h>
 #include <cuda/__memory/align_down.h>
 #include <cuda/__memory/align_up.h>
 #include <cuda/__ptx/instructions/clusterlaunchcontrol.h>
@@ -42,6 +44,68 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
+template <typename PolicySelector>
+_CCCL_API constexpr scan_warpspeed_policy get_warpspeed_policy() noexcept
+{
+  return PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warpspeed;
+}
+
+template <typename PolicySelector>
+struct static_warpspeed_policy_adapter
+{
+  _CCCL_API static constexpr scan_warpspeed_policy policy() noexcept
+  {
+    return get_warpspeed_policy<PolicySelector>();
+  }
+
+  _CCCL_API constexpr warpspeed::SquadDesc squadReduce() const
+  {
+    return policy().squadReduce();
+  }
+  _CCCL_API constexpr warpspeed::SquadDesc squadScanStore() const
+  {
+    return policy().squadScanStore();
+  }
+  _CCCL_API constexpr warpspeed::SquadDesc squadLoad() const
+  {
+    return policy().squadLoad();
+  }
+  _CCCL_API constexpr warpspeed::SquadDesc squadSched() const
+  {
+    return policy().squadSched();
+  }
+  _CCCL_API constexpr warpspeed::SquadDesc squadLookback() const
+  {
+    return policy().squadLookback();
+  }
+};
+
+struct runtime_warpspeed_policy_adapter
+{
+  const scan_warpspeed_policy& policy;
+
+  _CCCL_API constexpr warpspeed::SquadDesc squadReduce() const
+  {
+    return policy.squadReduce();
+  }
+  _CCCL_API constexpr warpspeed::SquadDesc squadScanStore() const
+  {
+    return policy.squadScanStore();
+  }
+  _CCCL_API constexpr warpspeed::SquadDesc squadLoad() const
+  {
+    return policy.squadLoad();
+  }
+  _CCCL_API constexpr warpspeed::SquadDesc squadSched() const
+  {
+    return policy.squadSched();
+  }
+  _CCCL_API constexpr warpspeed::SquadDesc squadLookback() const
+  {
+    return policy.squadLookback();
+  }
+};
+
 template <typename InputT, typename OutputT, typename AccumT>
 struct scanKernelParams
 {
@@ -53,76 +117,117 @@ struct scanKernelParams
 };
 
 // Struct holding all scan kernel resources
-template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename AccumT>
+template <typename PolicySelector, typename InputT, typename OutputT, typename AccumT>
 struct ScanResources
 {
+  _CCCL_API static constexpr scan_warpspeed_policy warpspeed_policy() noexcept
+  {
+    return get_warpspeed_policy<PolicySelector>();
+  }
+
   // align to at least 16 bytes (InputT/OutputT may be aligned higher) so each stage starts correctly aligned
   struct alignas(::cuda::std::max({::cuda::std::size_t{16}, alignof(InputT), alignof(OutputT)})) InOutT
   {
     // the tile_size size is a multiple of the warp size, and thus for sure a multiple of 16
-    static_assert(WarpspeedPolicy::tile_size % 16 == 0, "tile_size must be multiple of 16");
+    static_assert(ScanResources::warpspeed_policy().tile_size % 16 == 0, "tile_size must be multiple of 16");
 
     // therefore, unaligned inputs need exactly 16 bytes extra for overcopying (tail padding = 16 - head padding)
-    ::cuda::std::byte inout[WarpspeedPolicy::tile_size * sizeof(InputT) + 16];
+    ::cuda::std::byte inout[ScanResources::warpspeed_policy().tile_size * sizeof(InputT) + 16];
   };
   static_assert(alignof(InOutT) >= alignof(InputT));
   static_assert(alignof(InOutT) >= alignof(OutputT));
-  using SumThreadAndWarpT =
-    AccumT[WarpspeedPolicy::squadReduce().threadCount() + WarpspeedPolicy::squadReduce().warpCount()];
+  using SumThreadAndWarpT = AccumT[ScanResources::warpspeed_policy().squadReduce().threadCount()
+                                   + ScanResources::warpspeed_policy().squadReduce().warpCount()];
 
   warpspeed::SmemResource<InOutT> smemInOut; // will also be used to stage the output (as OutputT) for the bulk copy
   warpspeed::SmemResource<uint4> smemNextBlockIdx;
   warpspeed::SmemResource<AccumT> smemSumExclusiveCta;
   warpspeed::SmemResource<SumThreadAndWarpT> smemSumThreadAndWarp;
 };
+
+struct ScanResourcesRaw
+{
+  warpspeed::SmemResourceRaw smemInOut;
+  warpspeed::SmemResourceRaw smemNextBlockIdx;
+  warpspeed::SmemResourceRaw smemSumExclusiveCta;
+  warpspeed::SmemResourceRaw smemSumThreadAndWarp;
+};
+
+struct scan_stage_counts
+{
+  int num_block_idx_stages;
+  int num_sum_exclusive_cta_stages;
+};
+
+_CCCL_API constexpr scan_stage_counts make_scan_stage_counts(int num_stages)
+{
+  int num_block_idx_stages = num_stages - 1;
+  num_block_idx_stages     = num_block_idx_stages < 1 ? 1 : num_block_idx_stages;
+  return {num_block_idx_stages, 2};
+}
+
+template <typename PolicyAdapter,
+          typename SmemInOutT,
+          typename SmemNextBlockIdxT,
+          typename SmemSumExclusiveCtaT,
+          typename SmemSumThreadAndWarpT>
+_CCCL_API constexpr void setup_scan_resources(
+  const PolicyAdapter& policy,
+  warpspeed::SyncHandler& syncHandler,
+  warpspeed::SmemAllocator& smemAllocator,
+  SmemInOutT& smemInOut,
+  SmemNextBlockIdxT& smemNextBlockIdx,
+  SmemSumExclusiveCtaT& smemSumExclusiveCta,
+  SmemSumThreadAndWarpT& smemSumThreadAndWarp)
+{
+  const warpspeed::SquadDesc scanSquads[scan_warpspeed_policy::num_squads] = {
+    policy.squadReduce(),
+    policy.squadScanStore(),
+    policy.squadLoad(),
+    policy.squadSched(),
+    policy.squadLookback(),
+  };
+
+  smemInOut.addPhase(syncHandler, smemAllocator, policy.squadLoad());
+  smemInOut.addPhase(syncHandler, smemAllocator, {policy.squadReduce(), policy.squadScanStore()});
+
+  smemNextBlockIdx.addPhase(syncHandler, smemAllocator, policy.squadSched());
+  smemNextBlockIdx.addPhase(syncHandler, smemAllocator, scanSquads);
+
+  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, policy.squadLookback());
+  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, policy.squadScanStore());
+
+  smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, policy.squadReduce());
+  smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, policy.squadScanStore());
+}
+
 // Function to allocate resources.
 
-template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename AccumT>
-[[nodiscard]] _CCCL_API constexpr ScanResources<WarpspeedPolicy, InputT, OutputT, AccumT>
+template <typename PolicySelector, typename InputT, typename OutputT, typename AccumT>
+[[nodiscard]] _CCCL_API constexpr ScanResources<PolicySelector, InputT, OutputT, AccumT>
 allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& smemAllocator, int numStages)
 {
-  using ScanResourcesT    = ScanResources<WarpspeedPolicy, InputT, OutputT, AccumT>;
+  using ScanResourcesT    = ScanResources<PolicySelector, InputT, OutputT, AccumT>;
   using InOutT            = typename ScanResourcesT::InOutT;
   using SumThreadAndWarpT = typename ScanResourcesT::SumThreadAndWarpT;
 
-  // If numBlockIdxStages is one less than the number of stages, we find a small
-  // speedup compared to setting it equal to num_stages. Not sure why.
-  int numBlockIdxStages = numStages - 1;
-  // Ensure we have at least 1 stage
-  numBlockIdxStages = numBlockIdxStages < 1 ? 1 : numBlockIdxStages;
-
-  // We do not need too many sumExclusiveCta stages. The lookback warp is the
-  // bottleneck. As soon as it produces a new value, it will be consumed by the
-  // scanStore squad, releasing the stage.
-  int numSumExclusiveCtaStages = 2;
+  const auto [num_block_idx_stages, num_sum_exclusive_cta_stages] = make_scan_stage_counts(numStages);
 
   ScanResourcesT res = {
     warpspeed::SmemResource<InOutT>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
-    warpspeed::SmemResource<uint4>(syncHandler, smemAllocator, warpspeed::Stages{numBlockIdxStages}),
-    warpspeed::SmemResource<AccumT>(syncHandler, smemAllocator, warpspeed::Stages{numSumExclusiveCtaStages}),
+    warpspeed::SmemResource<uint4>(syncHandler, smemAllocator, warpspeed::Stages{num_block_idx_stages}),
+    warpspeed::SmemResource<AccumT>(syncHandler, smemAllocator, warpspeed::Stages{num_sum_exclusive_cta_stages}),
     warpspeed::SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
   };
-  // asdfasdf
-  constexpr warpspeed::SquadDesc scanSquads[WarpspeedPolicy::num_squads] = {
-    WarpspeedPolicy::squadReduce(),
-    WarpspeedPolicy::squadScanStore(),
-    WarpspeedPolicy::squadLoad(),
-    WarpspeedPolicy::squadSched(),
-    WarpspeedPolicy::squadLookback(),
-  };
 
-  res.smemInOut.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadLoad());
-  res.smemInOut.addPhase(
-    syncHandler, smemAllocator, {WarpspeedPolicy::squadReduce(), WarpspeedPolicy::squadScanStore()});
-
-  res.smemNextBlockIdx.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadSched());
-  res.smemNextBlockIdx.addPhase(syncHandler, smemAllocator, scanSquads);
-
-  res.smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadLookback());
-  res.smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadScanStore());
-
-  res.smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadReduce());
-  res.smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, WarpspeedPolicy::squadScanStore());
+  setup_scan_resources(
+    static_warpspeed_policy_adapter<PolicySelector>{},
+    syncHandler,
+    smemAllocator,
+    res.smemInOut,
+    res.smemNextBlockIdx,
+    res.smemSumExclusiveCta,
+    res.smemSumThreadAndWarp);
 
   return res;
 }
@@ -192,7 +297,7 @@ _CCCL_DEVICE_API Tp warpScanExclusive(const Tp regInput, ScanOpT& scan_op)
 // warp-specialization dispatch is performed once at the start of the kernel and
 // not in any of the hot loops (even if that may seem the case from a first
 // glance at the code).
-template <typename WarpspeedPolicy,
+template <typename PolicySelector,
           typename InputT,
           typename OutputT,
           typename AccumT,
@@ -209,17 +314,18 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   ////////////////////////////////////////////////////////////////////////////////
   // Tuning dependent variables
   ////////////////////////////////////////////////////////////////////////////////
-  static constexpr warpspeed::SquadDesc squadReduce    = WarpspeedPolicy::squadReduce();
-  static constexpr warpspeed::SquadDesc squadScanStore = WarpspeedPolicy::squadScanStore();
-  static constexpr warpspeed::SquadDesc squadLoad      = WarpspeedPolicy::squadLoad();
-  static constexpr warpspeed::SquadDesc squadSched     = WarpspeedPolicy::squadSched();
-  static constexpr warpspeed::SquadDesc squadLookback  = WarpspeedPolicy::squadLookback();
+  static constexpr scan_warpspeed_policy policy        = get_warpspeed_policy<PolicySelector>();
+  static constexpr warpspeed::SquadDesc squadReduce    = policy.squadReduce();
+  static constexpr warpspeed::SquadDesc squadScanStore = policy.squadScanStore();
+  static constexpr warpspeed::SquadDesc squadLoad      = policy.squadLoad();
+  static constexpr warpspeed::SquadDesc squadSched     = policy.squadSched();
+  static constexpr warpspeed::SquadDesc squadLookback  = policy.squadLookback();
 
-  constexpr int tile_size            = WarpspeedPolicy::tile_size;
-  constexpr int num_look_ahead_items = WarpspeedPolicy::num_look_ahead_items;
+  constexpr int tile_size            = policy.tile_size;
+  constexpr int num_look_ahead_items = policy.num_look_ahead_items;
 
   // We might try to instantiate the kernel with hughe types which would lead to a small tile size. Ensure its never 0
-  constexpr int elemPerThread = WarpspeedPolicy::items_per_thread;
+  constexpr int elemPerThread = policy.items_per_thread;
   static_assert(elemPerThread * squadReduce.threadCount() == tile_size, "Invalid tuning policy");
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -228,8 +334,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   warpspeed::SyncHandler syncHandler{};
   warpspeed::SmemAllocator smemAllocator{};
 
-  ScanResources<WarpspeedPolicy, InputT, OutputT, AccumT> res =
-    allocResources<WarpspeedPolicy, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params.numStages);
+  ScanResources<PolicySelector, InputT, OutputT, AccumT> res =
+    allocResources<PolicySelector, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params.numStages);
 
   syncHandler.clusterInitSync(specialRegisters);
 
@@ -617,8 +723,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       {
         // otherwise, issue multiple bulk copies in chunks of the input tile size
         // TODO(bgruber): I am sure this could be implemented a lot more efficiently
-        static constexpr int elem_per_chunk =
-          static_cast<int>(WarpspeedPolicy::tile_size * sizeof(InputT) / sizeof(OutputT));
+        static constexpr int elem_per_chunk = static_cast<int>(policy.tile_size * sizeof(InputT) / sizeof(OutputT));
         for (int chunk_offset = 0; chunk_offset < valid_items; chunk_offset += elem_per_chunk)
         {
           const int chunk_size = ::cuda::std::min(valid_items - chunk_offset, elem_per_chunk);
@@ -673,14 +778,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
 
 #endif // __cccl_ptx_isa >= 860
 
-template <typename ActivePolicy, class = void>
-inline constexpr int get_scan_block_threads = 1;
-
-template <typename ActivePolicy>
-inline constexpr int get_scan_block_threads<ActivePolicy, ::cuda::std::void_t<typename ActivePolicy::WarpspeedPolicy>> =
-  ActivePolicy::WarpspeedPolicy::num_total_threads;
-
-template <typename WarpspeedPolicy,
+template <typename PolicySelector,
           bool ForceInclusive,
           typename RealInitValueT,
           typename InputT,
@@ -695,18 +793,20 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
   // Cache special registers at start of kernel
   warpspeed::SpecialRegisters specialRegisters = warpspeed::getSpecialRegisters();
 
+  static constexpr scan_warpspeed_policy policy = get_warpspeed_policy<PolicySelector>();
+
   // Dispatch for warp-specialization
-  static constexpr warpspeed::SquadDesc scanSquads[WarpspeedPolicy::num_squads] = {
-    WarpspeedPolicy::squadReduce(),
-    WarpspeedPolicy::squadScanStore(),
-    WarpspeedPolicy::squadLoad(),
-    WarpspeedPolicy::squadSched(),
-    WarpspeedPolicy::squadLookback(),
+  static constexpr warpspeed::SquadDesc scanSquads[scan_warpspeed_policy::num_squads] = {
+    policy.squadReduce(),
+    policy.squadScanStore(),
+    policy.squadLoad(),
+    policy.squadSched(),
+    policy.squadLookback(),
   };
 
   // we need to force inline the lambda, but clang in CUDA mode only likes the GNU syntax
   warpspeed::squadDispatch(specialRegisters, scanSquads, [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
-    kernelBody<WarpspeedPolicy, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>(
+    kernelBody<PolicySelector, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>(
       squad, specialRegisters, params, ::cuda::std::move(scan_op), static_cast<RealInitValueT>(init_value));
   });
 #endif // __cccl_ptx_isa >= 860
@@ -746,66 +846,137 @@ device_scan_init_lookahead_body(warpspeed::tile_state_t<AccumT>* tile_states, co
   }
 }
 
-template <typename WarpspeedPolicy, typename InputT, typename OutputT, typename AccumT>
-_CCCL_API constexpr auto smem_for_stages(int num_stages) -> int
+_CCCL_API constexpr auto smem_for_stages(
+  const scan_warpspeed_policy& policy,
+  int num_stages,
+  int input_size,
+  int input_align,
+  int output_size,
+  int output_align,
+  int accum_size,
+  int accum_align) -> int
 {
   warpspeed::SyncHandler syncHandler{};
   warpspeed::SmemAllocator smemAllocator{};
-  (void) scan::allocResources<WarpspeedPolicy, InputT, OutputT, AccumT>(syncHandler, smemAllocator, num_stages);
+  (void) output_size;
+  const auto counts = make_scan_stage_counts(num_stages);
+
+  const int align_inout = ::cuda::std::max({16, input_align, output_align});
+  const int inout_bytes = policy.tile_size * input_size + 16;
+  // Match sizeof(InOutT): round up to the alignment so each stage matches SmemResource<InOutT>.
+  const int inout_stride    = (inout_bytes + align_inout - 1) & ~(align_inout - 1);
+  const auto reduce_squad   = policy.squadReduce();
+  const int sum_thread_warp = (reduce_squad.threadCount() + reduce_squad.warpCount()) * accum_size;
+
+  void* inout_base = smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(inout_stride * num_stages), align_inout);
+  void* next_block_idx_base = smemAllocator.alloc(
+    static_cast<::cuda::std::uint32_t>(sizeof(uint4) * counts.num_block_idx_stages), alignof(uint4));
+  void* sum_exclusive_base = smemAllocator.alloc(
+    static_cast<::cuda::std::uint32_t>(accum_size * counts.num_sum_exclusive_cta_stages), accum_align);
+  void* sum_thread_warp_base =
+    smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(sum_thread_warp * num_stages), accum_align);
+
+  ScanResourcesRaw res = {
+    warpspeed::SmemResourceRaw{syncHandler, inout_base, inout_stride, inout_stride, num_stages},
+    warpspeed::SmemResourceRaw{
+      syncHandler,
+      next_block_idx_base,
+      static_cast<int>(sizeof(uint4)),
+      static_cast<int>(sizeof(uint4)),
+      counts.num_block_idx_stages},
+    warpspeed::SmemResourceRaw{
+      syncHandler, sum_exclusive_base, accum_size, accum_size, counts.num_sum_exclusive_cta_stages},
+    warpspeed::SmemResourceRaw{syncHandler, sum_thread_warp_base, sum_thread_warp, sum_thread_warp, num_stages},
+  };
+
+  setup_scan_resources(
+    runtime_warpspeed_policy_adapter{policy},
+    syncHandler,
+    smemAllocator,
+    res.smemInOut,
+    res.smemNextBlockIdx,
+    res.smemSumExclusiveCta,
+    res.smemSumThreadAndWarp);
   syncHandler.mHasInitialized = true; // avoid assertion in destructor
   return static_cast<int>(smemAllocator.sizeBytes());
 }
 
-#if 0
-// we check the required shared memory inside a template, so the error message shows the amount in case of failure
-template <int RequiredSharedMemory>
-_CCCL_API constexpr void verify_smem()
+template <typename InputT, typename OutputT, typename AccumT>
+_CCCL_API constexpr auto smem_for_stages(const scan_warpspeed_policy& policy, int num_stages) -> int
 {
-  static_assert(RequiredSharedMemory <= max_smem_per_block,
-                "Single stage configuration exceeds architecture independent SMEM (48KiB)");
-}
-#endif
-
-template <typename WarpspeedPolicy, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
-_CCCL_API constexpr auto one_stage_fits_48KiB_SMEM() -> bool
-{
-  using InputT                    = it_value_t<InputIteratorT>;
-  using OutputT                   = it_value_t<OutputIteratorT>;
-  constexpr int smem_size_1_stage = smem_for_stages<WarpspeedPolicy, InputT, OutputT, AccumT>(1);
-// We can turn this on to report if a single stage of the warpspeed scan would exceed 48KiB if SMEM.
-#if 0
-  verify_smem<smem_size_1_stage>();
-#endif
-  return smem_size_1_stage <= max_smem_per_block;
+  return smem_for_stages(
+    policy,
+    num_stages,
+    static_cast<int>(sizeof(InputT)),
+    static_cast<int>(alignof(InputT)),
+    static_cast<int>(sizeof(OutputT)),
+    static_cast<int>(alignof(OutputT)),
+    static_cast<int>(sizeof(AccumT)),
+    static_cast<int>(alignof(AccumT)));
 }
 
-template <typename Policy, typename InputIterator, typename OutputIterator, typename AccumT, typename = void>
-inline constexpr bool scan_use_warpspeed = false;
-
-// detect the use via CCCL.C (pre-compiled dispatch and JIT pass) and disable the new kernel.
-// See https://github.com/NVIDIA/cccl/issues/6821 for more details.
-// We also need `cuda::std::is_constant_evaluated` for the compile-time SMEM computation. And we need PTX ISA 8.6.
+_CCCL_API constexpr bool use_warpspeed(
+  const scan_warpspeed_policy& policy,
+  int input_size,
+  int input_align,
+  int output_size,
+  int output_align,
+  int accum_size,
+  int accum_align,
+  bool input_contiguous,
+  bool output_contiguous,
+  bool input_trivially_copyable,
+  bool output_trivially_copyable,
+  bool output_default_constructible)
+{
+// We need `cuda::std::is_constant_evaluated` for the compile-time SMEM computation. And we need PTX ISA 8.6.
 // MSVC + nvcc < 13.1 just fails to compile `cub.test.device.scan.lid_1.types_0` with `Internal error` and nothing else.
-#if !defined(CUB_ENABLE_POLICY_PTX_JSON) && !defined(CUB_DEFINE_RUNTIME_POLICIES) \
-  && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && __cccl_ptx_isa >= 860        \
-  && !(_CCCL_COMPILER(MSVC) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 1))
-template <typename Policy, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
-inline constexpr bool scan_use_warpspeed<Policy,
-                                         InputIteratorT,
-                                         OutputIteratorT,
-                                         AccumT,
-                                         ::cuda::std::void_t<typename Policy::WarpspeedPolicy>> =
-  // for bulk copy: input and output iterators must be contiguous and their value types must be trivially copyable
-  THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>
-  && ::cuda::std::is_trivially_copyable_v<it_value_t<InputIteratorT>>
-  && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>
-  && ::cuda::std::is_trivially_copyable_v<it_value_t<OutputIteratorT>>
-  // for bulk copy store: we need to prepare a buffer of output types in SMEM
-  && ::cuda::std::is_default_constructible_v<it_value_t<OutputIteratorT>>
-  // need to fit one stage into 48KiB so binaries stay forward compatible with future GPUs
-  && one_stage_fits_48KiB_SMEM<typename Policy::WarpspeedPolicy, InputIteratorT, OutputIteratorT, AccumT>();
-#endif // !defined(CUB_ENABLE_POLICY_PTX_JSON) && !defined(CUB_DEFINE_RUNTIME_POLICIES) &&
-       // defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && __cccl_ptx_isa >= 860
+#if (defined(__CUDA_ARCH__) && __cccl_ptx_isa < 860) || !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) \
+  || ((_CCCL_COMPILER(MSVC) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 1)))
+  (void) policy;
+  (void) input_size;
+  (void) input_align;
+  (void) output_size;
+  (void) output_align;
+  (void) accum_size;
+  (void) accum_align;
+  (void) input_contiguous;
+  (void) output_contiguous;
+  (void) input_trivially_copyable;
+  (void) output_trivially_copyable;
+  (void) output_default_constructible;
+  return false;
+#else
+  if (!input_contiguous || !output_contiguous || !input_trivially_copyable || !output_trivially_copyable
+      || !output_default_constructible)
+  {
+    return false;
+  }
+
+  return smem_for_stages(policy, 1, input_size, input_align, output_size, output_align, accum_size, accum_align)
+      <= static_cast<int>(max_smem_per_block);
+#endif
+}
+
+template <typename InputIteratorT, typename OutputIteratorT, typename AccumT>
+_CCCL_API constexpr bool use_warpspeed(const scan_warpspeed_policy& policy)
+{
+  using InputT  = it_value_t<InputIteratorT>;
+  using OutputT = it_value_t<OutputIteratorT>;
+  return use_warpspeed(
+    policy,
+    static_cast<int>(sizeof(InputT)),
+    static_cast<int>(alignof(InputT)),
+    static_cast<int>(sizeof(OutputT)),
+    static_cast<int>(alignof(OutputT)),
+    static_cast<int>(sizeof(AccumT)),
+    static_cast<int>(alignof(AccumT)),
+    THRUST_NS_QUALIFIER::is_contiguous_iterator_v<InputIteratorT>,
+    THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>,
+    ::cuda::std::is_trivially_copyable_v<InputT>,
+    ::cuda::std::is_trivially_copyable_v<OutputT>,
+    ::cuda::std::is_default_constructible_v<OutputT>);
+}
 } // namespace detail::scan
 
 CUB_NAMESPACE_END

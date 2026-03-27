@@ -139,9 +139,10 @@ private:
     // Used to uniquely identify the task for mapping purposes
     reserved::mapping_id_t mapping_id;
 
-    // This is a pointer to a generic data structure used by "unset_place" to
-    // restore previous context
-    exec_place saved_place_ctx;
+    // RAII guard for the task's execution place activation.
+    // Created in acquire_deps, destroyed in release_deps.
+    // Empty (inactive) scope when not in use.
+    exec_place_scope saved_place_ctx;
 
     // Indicate the status of the task
     task::phase phase = task::phase::setup;
@@ -391,6 +392,17 @@ public:
   bool is_capture_enabled() const
   {
     return pimpl->enable_capture;
+  }
+
+  // Get the base task - for consistency with unified_task, stream_task, graph_task
+  ::cuda::experimental::stf::task& get_base_task()
+  {
+    return *this;
+  }
+
+  const ::cuda::experimental::stf::task& get_base_task() const
+  {
+    return *this;
   }
 
   /**

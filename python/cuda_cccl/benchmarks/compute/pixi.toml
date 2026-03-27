@@ -1,0 +1,88 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+channel-priority = "disabled"
+
+# CUDA 13.1 system requirement
+[feature.cu13.system-requirements]
+cuda = "13"
+
+[feature.cu13.dependencies]
+cuda-version = "13.1.*"
+
+# Python benchmark dependencies
+[feature.bench.dependencies]
+python = "3.13.*"
+numpy = "*"
+cupy = "*"
+pyyaml = "*"
+pre-commit = "*"
+
+[feature.bench.pypi-dependencies]
+cuda-bench = ">=0.2.0"
+
+# C++ benchmark build dependencies
+[feature.cpp-bench.dependencies]
+cmake = "*"
+ninja = "*"
+cxx-compiler = "*"
+fmt = "*"
+cuda-cudart-dev = "*"
+
+[feature.cpp-bench.target.linux-64.dependencies]
+cuda-crt-dev_linux-64 = "*"
+cuda-driver-dev_linux-64 = "*"
+
+[feature.cpp-bench.target.linux-64.activation.env]
+CUDA_HOME = "$CONDA_PREFIX/targets/x86_64-linux"
+
+# Important: cuda-cccl installation variants
+
+# Released version from PyPI
+[feature.cccl-wheel.pypi-dependencies]
+cuda-cccl = { version = ">=0.1.0", extras = ["cu13"] }
+
+# Local source build (editable install from repo)
+# Needs nvcc, compilers, and CUDA dev libraries for scikit-build-core to build cuda-cccl
+[feature.cccl-source.dependencies]
+cuda-nvcc = "*"
+cuda-nvrtc-dev = "*"
+libnvjitlink-dev = "*"
+cuda-cudart-dev = "*"
+cuda-driver-dev = "*"
+c-compiler = "*"
+cxx-compiler = "*"
+
+[feature.cccl-source.pypi-dependencies]
+cuda-cccl = { path = "../..", editable = true, extras = ["cu13"] }
+
+# Environments
+[environments]
+wheel = { features = ["cu13", "bench", "cpp-bench", "cccl-wheel"] }
+source = { features = ["cu13", "bench", "cpp-bench", "cccl-source"] }
+
+# Tasks
+[tasks.bench]
+cmd = ["python", "run_benchmarks.py", "--py"]
+description = "Run Python cuda.compute benchmarks"
+
+[tasks.bench-quick]
+cmd = ["python", "run_benchmarks.py", "--py", "--quick"]
+description = "Run Python benchmarks with reduced parameter set"
+
+[tasks.bench-cpp]
+cmd = ["python", "run_benchmarks.py", "--cpp"]
+description = "Run C++ CUB benchmarks"
+
+[tasks.bench-all]
+cmd = ["python", "run_benchmarks.py"]
+description = "Run both Python and C++ benchmarks"
+
+[tasks.pre-commit]
+cmd = ["pre-commit", "run", "--all-files"]
+cwd = "../../../.."
+description = "Run pre-commit checks on the entire repo"

@@ -494,9 +494,11 @@ Does your project use CCCL? [Open a PR to add your project to this list!](https:
 - [cuDF](https://github.com/rapidsai/cudf) - Algorithms and file readers for ETL data analytics
 - [cuGraph](https://github.com/rapidsai/cugraph) - Algorithms for graph analytics
 - [cuML](https://github.com/rapidsai/cuml) - Machine learning algorithms and primitives
+- [cuOpt](https://github.com/NVIDIA/cuopt) - Accelerated decision optimization
 - [CuPy](https://cupy.dev) - NumPy & SciPy for GPU
 - [cuSOLVER](https://developer.nvidia.com/cusolver) - Dense and sparse linear solvers
 - [CUSP](https://github.com/cusplibrary/cusplibrary) - Sparse matrix operations, iterative methods, and algebraic multigrid
+- [cuVS](https://github.com/rapidsai/cuvs) - Approximate clustering and vector search
 - [GooFit](https://github.com/GooFit/GooFit) - Library for maximum-likelihood fits
 - [HeavyDB](https://github.com/heavyai/heavydb) - SQL database engine
 - [HOOMD](https://github.com/glotzerlab/hoomd-blue) - Monte Carlo and molecular dynamics simulations
@@ -509,8 +511,11 @@ Does your project use CCCL? [Open a PR to add your project to this list!](https:
 - [Qiskit](https://github.com/Qiskit/qiskit-aer) - High performance simulator for quantum circuits
 - [QUDA](https://github.com/lattice/quda) - Lattice quantum chromodynamics (QCD) computations
 - [RAFT](https://github.com/rapidsai/raft) - Algorithms and primitives for machine learning
+- [SGLang](https://github.com/sgl-project/sglang) - LLM serving framework
 - [TensorFlow](https://github.com/tensorflow/tensorflow) - End-to-end platform for machine learning
 - [TensorRT](https://github.com/NVIDIA/TensorRT) - Deep learning inference
+- [TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM) - Optimized LLM inference
 - [tsne-cuda](https://github.com/CannyLab/tsne-cuda) - Stochastic Neighborhood Embedding library
 - [Visualization Toolkit (VTK)](https://gitlab.kitware.com/vtk/vtk) - Rendering and visualization library
+- [vLLM](https://github.com/vllm-project/vllm) - LLM inference and serving
 - [XGBoost](https://github.com/dmlc/xgboost) - Gradient boosting machine learning algorithms

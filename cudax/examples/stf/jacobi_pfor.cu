@@ -27,8 +27,8 @@ int main(int argc, char** argv)
 
   size_t n        = 4096;
   size_t m        = 4096;
-  size_t iter_max = 100;
-  double tol      = 0.0000001;
+  double tol      = 0.5;
+  size_t iter_max = 1000;
 
   if (argc > 2)
   {
@@ -38,12 +38,12 @@ int main(int argc, char** argv)
 
   if (argc > 3)
   {
-    iter_max = atoi(argv[3]);
+    tol = atof(argv[3]);
   }
 
   if (argc > 4)
   {
-    tol = atof(argv[4]);
+    iter_max = atoi(argv[4]);
   }
 
   auto lA    = ctx.logical_data(shape_of<slice<double, 2>>(m, n));
@@ -51,7 +51,8 @@ int main(int argc, char** argv)
 
   ctx.parallel_for(lA.shape(), lA.write(), lAnew.write()).set_symbol("init")->*
     [=] __device__(size_t i, size_t j, auto A, auto Anew) {
-      A(i, j) = (i == j) ? 10.0 : -1.0;
+      A(i, j)    = (i == j) ? 10.0 : -1.0;
+      Anew(i, j) = A(i, j);
     };
 
   cudaEvent_t start, stop;
@@ -66,8 +67,8 @@ int main(int argc, char** argv)
   size_t iter = 0;
   do
   {
-    ctx.parallel_for(inner<1>(lA.shape()), lA.read(), lAnew.write(), lresidual.reduce(reducer::maxval<double>{}))
-        ->*[] __device__(size_t i, size_t j, auto A, auto Anew, auto residual) {
+    ctx.parallel_for(inner<1>(lA.shape()), lA.read(), lAnew.rw(), lresidual.reduce(reducer::maxval<double>{}))
+        ->*[] __device__(size_t i, size_t j, auto A, auto Anew, auto& residual) {
               Anew(i, j) = 0.25 * (A(i - 1, j) + A(i + 1, j) + A(i, j - 1) + A(i, j + 1));
               residual   = ::std::max(residual, fabs(A(i, j) - Anew(i, j)));
             };
@@ -81,6 +82,10 @@ int main(int argc, char** argv)
   } while (ctx.wait(lresidual) > tol && iter < iter_max);
 
   cuda_safe_call(cudaEventRecord(stop, ctx.fence()));
+
+  double final_residual = ctx.wait(lresidual);
+
+  printf("Converged after %ld iterations, residual = %lf\n", iter, final_residual);
 
   ctx.finalize();
 

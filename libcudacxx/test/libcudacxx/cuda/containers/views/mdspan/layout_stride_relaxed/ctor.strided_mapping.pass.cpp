@@ -95,12 +95,14 @@ template <class FromL, class T1, class T2>
 __host__ __device__ constexpr void test_conversion()
 {
   using cuda::std::is_same_v;
-  constexpr size_t D             = cuda::std::dynamic_extent;
-  constexpr bool idx_convertible = static_cast<size_t>(cuda::std::numeric_limits<T1>::max())
-                                >= static_cast<size_t>(cuda::std::numeric_limits<T2>::max());
-  constexpr bool l_convertible = is_same_v<FromL, cuda::std::layout_right> || is_same_v<FromL, cuda::std::layout_left>
-                              || is_same_v<FromL, cuda::std::layout_stride>;
-  constexpr bool idx_l_convertible = idx_convertible && l_convertible;
+  [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
+  [[maybe_unused]] constexpr bool idx_convertible =
+    static_cast<size_t>(cuda::std::numeric_limits<T1>::max())
+    >= static_cast<size_t>(cuda::std::numeric_limits<T2>::max());
+  [[maybe_unused]] constexpr bool l_convertible =
+    is_same_v<FromL, cuda::std::layout_right> || is_same_v<FromL, cuda::std::layout_left>
+    || is_same_v<FromL, cuda::std::layout_stride>;
+  [[maybe_unused]] constexpr bool idx_l_convertible = idx_convertible && l_convertible;
 
   // clang-format off
   test_conversion<idx_l_convertible, FromL, cuda::std::extents<T1>>(

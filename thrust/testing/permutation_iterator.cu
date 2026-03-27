@@ -8,6 +8,12 @@
 
 #include <unittest/unittest.h>
 
+#if _CCCL_COMPILER(GCC, >=, 11)
+#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
+#else
+#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
+#endif
+
 // ensure that we properly support thrust::permutation_iterator from cuda::std
 void TestPermutationIteratorTraits()
 {
@@ -243,7 +249,7 @@ void TestPermutationIteratorHostDeviceScatter()
 DECLARE_UNITTEST(TestPermutationIteratorHostDeviceScatter);
 
 template <typename Vector>
-void TestPermutationIteratorWithCountingIterator()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestPermutationIteratorWithCountingIterator()
 {
   using T      = typename Vector::value_type;
   using diff_t = typename thrust::counting_iterator<T>::difference_type;

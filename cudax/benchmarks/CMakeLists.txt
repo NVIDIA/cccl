@@ -52,7 +52,10 @@ function(add_bench_dir bench_dir)
 
     add_bench(base_bench_target ${bench_name} "${bench_src}")
     target_link_libraries(${bench_name} PRIVATE cudax.compiler_interface)
-    target_compile_options(${bench_name} PRIVATE "--extended-lambda")
+    target_compile_options(
+      ${bench_name}
+      PRIVATE "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>"
+    )
   endforeach()
 endfunction()
 

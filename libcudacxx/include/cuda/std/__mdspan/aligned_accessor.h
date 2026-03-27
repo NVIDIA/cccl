@@ -29,7 +29,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__mdspan/default_accessor.h>
 #include <cuda/std/__memory/assume_aligned.h>
@@ -48,9 +48,7 @@ class aligned_accessor
 public:
   static constexpr auto byte_alignment = _ByteAlignment;
 
-  static_assert(::cuda::is_power_of_two(byte_alignment), "byte_alignment must be a power of two.");
-
-  static_assert(byte_alignment >= alignof(_ElementType), "Insufficient byte alignment for _ElementType");
+  static_assert(::cuda::__is_valid_alignment<_ElementType>(byte_alignment), "Invalid _ByteAlignment for _ElementType");
 
   static_assert(is_object_v<_ElementType> && !is_abstract_v<_ElementType> && !is_array_v<_ElementType>,
                 "_ElementType must be a complete object type that is neither an abstract class type nor an array "

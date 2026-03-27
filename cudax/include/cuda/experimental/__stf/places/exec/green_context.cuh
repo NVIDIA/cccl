@@ -252,135 +252,109 @@ private:
 };
 
 /**
- * @brief Designates execution that is to run on a green context. Initialize with the device ordinal and green_context
+ * @brief Implementation for green context execution places
  */
-class exec_place_green_ctx : public exec_place
+class exec_place_green_ctx_impl : public exec_place::impl
 {
 public:
-  class impl : public exec_place::impl
+  /**
+   * @brief Construct a green context execution place
+   *
+   * @param gc_view The green context view
+   * @param use_green_ctx_data_place If true, use a green context data place as the
+   *        affine data place. If false (default), use a regular device data place instead.
+   */
+  exec_place_green_ctx_impl(green_ctx_view gc_view, bool use_green_ctx_data_place = false)
+      : exec_place::impl(
+          use_green_ctx_data_place ? make_green_ctx_data_place(gc_view) : data_place::device(gc_view.devid))
+      , devid_(gc_view.devid)
+      , g_ctx_(gc_view.g_ctx)
+      , pool_(mv(gc_view.pool))
+  {}
+
+  // This is used to implement deactivate and wrap an existing context
+  exec_place_green_ctx_impl(CUcontext saved_context)
+      : driver_context_(saved_context)
+  {}
+
+  ::std::shared_ptr<exec_place::impl> get_place(size_t idx) override
   {
-  public:
-    /**
-     * @brief Construct a green context execution place
-     *
-     * @param gc_view The green context view
-     * @param use_green_ctx_data_place If true, use a green context data place as the
-     *        affine data place. If false (default), use a regular device data place instead.
-     */
-    impl(green_ctx_view gc_view, bool use_green_ctx_data_place = false)
-        : exec_place::impl(
-            use_green_ctx_data_place ? make_green_ctx_data_place(gc_view) : data_place::device(gc_view.devid))
-        , devid(gc_view.devid)
-        , g_ctx(gc_view.g_ctx)
-        , pool(mv(gc_view.pool))
-    {}
+    _CCCL_ASSERT(idx == 0, "Index out of bounds for green_ctx exec_place");
+    return shared_from_this();
+  }
 
-    // This is used to implement deactivate and wrap an existing context
-    impl(CUcontext saved_context)
-        : driver_context(saved_context)
-    {}
+  exec_place activate(size_t idx) const override
+  {
+    _CCCL_ASSERT(idx == 0, "Index out of bounds for green_ctx exec_place");
 
-    exec_place activate() const override
-    {
-      // Save the current context and transform it into a fake green context place
-      CUcontext current_ctx;
-      cuda_safe_call(cuCtxGetCurrent(&current_ctx));
-      exec_place result = exec_place(::std::make_shared<impl>(current_ctx));
+    // Save the current context and transform it into a fake green context place
+    CUcontext current_ctx;
+    cuda_safe_call(cuCtxGetCurrent(&current_ctx));
+    exec_place result = exec_place(::std::make_shared<exec_place_green_ctx_impl>(current_ctx));
 
-      // Convert the green context to a primary context (TODO cache this ?)
-      cuda_safe_call(cuCtxFromGreenCtx(&driver_context, g_ctx));
+    // Convert the green context to a primary context
+    cuda_safe_call(cuCtxFromGreenCtx(&driver_context_, g_ctx_));
+    cuda_safe_call(cuCtxSetCurrent(driver_context_));
 
-#  if 0
-            // for debug purposes, display the affinity
-            {
-                CUdevResource check_resource;
-                cuda_safe_call(cuGreenCtxGetDevResource(g_ctx, &check_resource, CU_DEV_RESOURCE_TYPE_SM));
-                unsigned long long check_ctxId;
-                cuda_safe_call(cuCtxGetId(driver_context, &check_ctxId));
-                fprintf(stderr, "ACTIVATE : set affinity with %d SMs (ctx ID = %llu)\n", check_resource.sm.smCount,
-                        check_ctxId);
-            }
-#  endif
+    return result;
+  }
 
-      cuda_safe_call(cuCtxSetCurrent(driver_context));
+  void deactivate(const exec_place& prev, size_t idx = 0) const override
+  {
+    _CCCL_ASSERT(idx == 0, "Index out of bounds for green_ctx exec_place");
 
-      return result;
-    }
-
-    void deactivate(const exec_place& prev) const override
-    {
-      auto prev_impl      = ::std::static_pointer_cast<impl>(prev.get_impl());
-      CUcontext saved_ctx = prev_impl->driver_context;
+    auto prev_impl      = ::std::static_pointer_cast<exec_place_green_ctx_impl>(prev.get_impl());
+    CUcontext saved_ctx = prev_impl->driver_context_;
 
 #  ifdef DEBUG
-      // Ensure that the current context is the green context that we have activated before
-      CUcontext current_ctx;
-      cuda_safe_call(cuCtxGetCurrent(&current_ctx));
-      assert(get_cuda_context_id(current_ctx) == get_cuda_context_id(driver_context));
+    CUcontext current_ctx;
+    cuda_safe_call(cuCtxGetCurrent(&current_ctx));
+    assert(get_cuda_context_id(current_ctx) == get_cuda_context_id(driver_context_));
 #  endif
 
-      cuda_safe_call(cuCtxSetCurrent(saved_ctx));
-    }
-
-    ::std::string to_string() const override
-    {
-      return "green ctx ( id=" + ::std::to_string(get_cuda_context_id(g_ctx)) + " dev_id =" + ::std::to_string(devid)
-           + ")";
-    }
-
-    stream_pool& get_stream_pool(bool) const override
-    {
-      return pool;
-    }
-
-    bool operator==(const exec_place::impl& rhs) const override
-    {
-      if (typeid(*this) != typeid(rhs))
-      {
-        return false;
-      }
-      const auto& other = static_cast<const impl&>(rhs);
-      // Compare green context handles
-      return g_ctx == other.g_ctx;
-    }
-
-    size_t hash() const override
-    {
-      // Hash the green context handle, not the affine data place
-      return ::std::hash<CUgreenCtx>()(g_ctx);
-    }
-
-    bool operator<(const exec_place::impl& rhs) const override
-    {
-      if (typeid(*this) != typeid(rhs))
-      {
-        return typeid(*this).before(typeid(rhs));
-      }
-      const auto& other = static_cast<const impl&>(rhs);
-      return g_ctx < other.g_ctx;
-    }
-
-  private:
-    int devid        = -1;
-    CUgreenCtx g_ctx = {};
-    // a context created from the green context (or used to store an existing context to implement
-    // activate/deactivate)
-    mutable CUcontext driver_context = {};
-    mutable stream_pool pool;
-  };
-
-public:
-  exec_place_green_ctx(green_ctx_view gc_view, bool use_green_ctx_data_place = false)
-      : exec_place(::std::make_shared<impl>(mv(gc_view), use_green_ctx_data_place))
-  {
-    static_assert(sizeof(exec_place_green_ctx) <= sizeof(exec_place),
-                  "exec_place_green_ctx cannot add state; it would be sliced away.");
+    cuda_safe_call(cuCtxSetCurrent(saved_ctx));
   }
+
+  bool is_device() const override
+  {
+    return true;
+  }
+
+  ::std::string to_string() const override
+  {
+    return "green_ctx(id=" + ::std::to_string(get_cuda_context_id(g_ctx_)) + " dev=" + ::std::to_string(devid_) + ")";
+  }
+
+  stream_pool& get_stream_pool(bool) const override
+  {
+    return pool_;
+  }
+
+  int cmp(const exec_place::impl& rhs) const override
+  {
+    if (typeid(*this) != typeid(rhs))
+    {
+      return typeid(*this).before(typeid(rhs)) ? -1 : 1;
+    }
+    const auto& other = static_cast<const exec_place_green_ctx_impl&>(rhs);
+    return (other.g_ctx_ < g_ctx_) - (g_ctx_ < other.g_ctx_);
+  }
+
+  size_t hash() const override
+  {
+    return ::std::hash<CUgreenCtx>()(g_ctx_);
+  }
+
+private:
+  int devid_                        = -1;
+  CUgreenCtx g_ctx_                 = {};
+  mutable CUcontext driver_context_ = {};
+  mutable stream_pool pool_;
 };
 
 inline exec_place exec_place::green_ctx(const green_ctx_view& gc_view, bool use_green_ctx_data_place)
 {
-  return exec_place_green_ctx(gc_view, use_green_ctx_data_place);
+  return exec_place(::std::make_shared<exec_place_green_ctx_impl>(gc_view, use_green_ctx_data_place));
 }
 
 inline ::std::shared_ptr<void> green_ctx_data_place_impl::get_affine_exec_impl() const

@@ -30,10 +30,15 @@
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__mdspan/default_accessor.h>
+#  include <cuda/std/__mdspan/mdspan.h>
 #  include <cuda/std/__memory/is_sufficiently_aligned.h>
 #  include <cuda/std/__type_traits/common_type.h>
+#  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__type_traits/is_trivially_copyable.h>
+#  include <cuda/std/__type_traits/remove_cv.h>
 
 #  include <cuda/experimental/__copy_bytes/memcpy_batch_tiles.cuh>
 #  include <cuda/experimental/__copy_bytes/simplify_paired.cuh>
@@ -115,14 +120,25 @@ _CCCL_HOST_API void __copy_bytes_impl(
 
   if (__tensor_size == 1) // rank == 0 also falls into this case
   {
-    ::cuda::__driver::__memcpyAsync(__dst.data_handle(), __src.data_handle(), sizeof(_TpIn), __stream.get());
+    auto __src_ptr = __src.data_handle();
+    auto __dst_ptr = __dst.data_handle();
+    if constexpr (::cuda::__is_layout_stride_relaxed_v<_LayoutPolicyIn>)
+    {
+      __src_ptr += __src.mapping().offset();
+    }
+    if constexpr (::cuda::__is_layout_stride_relaxed_v<_LayoutPolicyOut>)
+    {
+      __dst_ptr += __dst.mapping().offset();
+    }
+    ::cuda::__driver::__memcpyAsync(__dst_ptr, __src_ptr, sizeof(_TpIn), __stream.get());
     return;
   }
   if constexpr (_ExtentsIn::rank() > 0 && _ExtentsOut::rank() > 0)
   {
     using __extent_t = ::cuda::std::common_type_t<typename _ExtentsIn::index_type, typename _ExtentsOut::index_type>;
-    using __stride_t = ::cuda::std::common_type_t<cudax::__mdspan_stride_t<_ExtentsIn, _LayoutPolicyIn>,
-                                                  cudax::__mdspan_stride_t<_ExtentsOut, _LayoutPolicyOut>>;
+    using __stride_t =
+      ::cuda::std::common_type_t<cudax::__mdspan_stride_t<_LayoutPolicyIn, decltype(__src.mapping())>,
+                                 cudax::__mdspan_stride_t<_LayoutPolicyOut, decltype(__dst.mapping())>>;
     constexpr auto __max_rank = ::cuda::std::max(_ExtentsIn::rank(), _ExtentsOut::rank());
     const auto __src_raw      = cudax::__to_raw_tensor<__extent_t, __stride_t, __max_rank>(__src);
     const auto __dst_raw      = cudax::__to_raw_tensor<__extent_t, __stride_t, __max_rank>(__dst);
@@ -178,7 +194,8 @@ _CCCL_HOST_API void __copy_bytes_impl(
 //!   (after removing extent-1 dimensions).
 //! - The implementation supports any stride value independently for source and destination mdspans.
 //! - Element types must be trivially copyable and (ignoring cv-qualification) the same type.
-//! - Layout policies must be one of the predefined ``cuda::std`` layout policies.
+//! - Layout policies must be one of the predefined ``cuda::std`` layout policies
+//!   (``layout_right``, ``layout_left``, ``layout_stride``) or ``cuda::layout_stride_relaxed``.
 //! - Accessor policies must be convertible to ``cuda::std::default_accessor``.
 //! - The destination must not have an interleaved stride order.
 //!

@@ -95,7 +95,7 @@ void cuda_launcher_graph(interpreted_spec interpreted_policy, Fun&& f, void** ar
 template <typename Fun, typename interpreted_spec, typename Arg>
 void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg arg, cudaStream_t stream, size_t rank)
 {
-  assert(!p.is_grid());
+  _CCCL_ASSERT(p.size() == 1, "Expected scalar exec_place");
 
   p->*[&] {
     auto th = thread_hierarchy(static_cast<int>(rank), interpreted_policy);
@@ -114,7 +114,7 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
         interpreted_policy.set_system_mem(sys_mem);
       }
 
-      assert(sys_mem);
+      _CCCL_ASSERT(sys_mem, "System memory allocation failed");
       th.set_system_tmp(sys_mem);
     }
 
@@ -140,7 +140,7 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
 template <typename task_t, typename Fun, typename interpreted_spec, typename Arg>
 void graph_launch_impl(task_t& t, interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg arg, size_t rank)
 {
-  assert(!p.is_grid());
+  _CCCL_ASSERT(p.size() == 1, "Expected scalar exec_place");
 
   auto kernel_args = tuple_prepend(thread_hierarchy(static_cast<int>(rank), interpreted_policy), mv(arg));
   using args_type  = decltype(kernel_args);
@@ -235,11 +235,10 @@ public:
     }
 
     // t.get_stream_grid should return the stream from get_stream if this is not a grid ?
-    size_t p_rank = 0;
-    for (auto&& p : e_place)
+    for (size_t p_rank = 0; p_rank < e_place.size(); ++p_rank)
     {
+      auto p = e_place.get_place(p_rank);
       launch_impl(interpreted_policy, p, f, arg, streams[p_rank], p_rank);
-      p_rank++;
     }
   }
 
@@ -247,7 +246,7 @@ private:
   template <typename Fun>
   void run_on_host(Fun&& f)
   {
-    assert(!"Not yet implemented");
+    _CCCL_ASSERT(false, "Not yet implemented");
     abort();
   }
 
@@ -328,14 +327,14 @@ public:
 
     auto t = ctx.task(e_place);
 
-    assert(e_place.affine_data_place() == t.get_affine_data_place());
+    _CCCL_ASSERT(e_place.affine_data_place() == t.get_affine_data_place(), "Affine data places must match");
 
     /*
-     * If we have a grid of places, the implicit affine partitioner is the blocked_partition.
+     * If we have a grid (including 1-element grids), the implicit affine partitioner is the blocked_partition.
      *
      * An explicit composite data place is required per data dependency to customize this behaviour.
      */
-    if (e_place.is_grid())
+    if (e_place.size() > 1)
     {
       // Create a composite data place defined by the grid of places + the partitioning function
       t.set_affine_data_place(data_place::composite(blocked_partition(), e_place.as_grid()));
@@ -440,9 +439,9 @@ public:
       }
     }
 
-    size_t p_rank = 0;
-    for (auto p : e_place)
+    for (size_t p_rank = 0; p_rank < e_place.size(); ++p_rank)
     {
+      auto p = e_place.get_place(p_rank);
       if constexpr (::std::is_same_v<Ctx, stream_ctx>)
       {
         reserved::launch_impl(interpreted_policy, p, f, args, t.get_stream(p_rank), p_rank);
@@ -451,7 +450,6 @@ public:
       {
         reserved::graph_launch_impl(t, interpreted_policy, p, f, args, p_rank);
       }
-      p_rank++;
     }
   }
 

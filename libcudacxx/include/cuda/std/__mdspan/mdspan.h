@@ -538,7 +538,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr index_type stride(rank_type __r) const
   {
     const auto& __tmp = mapping(); // workaround for clang with nodiscard
-    return __tmp.stride(__r);
+    return static_cast<index_type>(__tmp.stride(__r));
   }
 };
 

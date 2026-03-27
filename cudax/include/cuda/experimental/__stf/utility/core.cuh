@@ -24,13 +24,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
-
 #include <cstddef>
 #include <functional>
 #include <limits>
-#include <memory>
-#include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -97,38 +93,6 @@ _CCCL_HOST_DEVICE constexpr decltype(auto) mv(T&& obj)
   return ::std::move(obj);
 }
 #endif // _CCCL_DOXYGEN_INVOKED
-
-/**
- * @brief Creates a `std::shared_ptr` managing a copy of the given object.
- *
- * This function takes an object of any type and returns a `std::shared_ptr`
- * that manages a copy of that object. If the object is an lvalue reference,
- * it will be copied into the `shared_ptr`. If the object is an rvalue reference,
- * it will be moved into the `shared_ptr`.
- *
- * The type managed by the `shared_ptr` has all references and `const`/`volatile`
- * qualifiers removed from the original type.
- *
- * @tparam T The type of the object, deduced automatically. May be an lvalue or rvalue reference.
- * @param obj The object to copy into the instance managed by the `shared_ptr`.
- * @return A `std::shared_ptr` managing a new copy of the object.
- *
- * @note This function simplifies the creation of `std::shared_ptr`s by handling
- * the type deduction and appropriate forwarding of the object. It's particularly
- * useful when you want to create a `shared_ptr` from temporary objects or when
- * the object's type includes references or cv-qualifiers.
- *
- * @code
- * int value = 42;
- * auto sp1 = to_shared(value);            // New shared_ptr<int>
- * assert(*sp1 == 42);                     // sp1 points to an int valued at 42
- * @endcode
- */
-template <typename T>
-auto to_shared(T&& obj)
-{
-  return ::std::make_shared<::std::remove_cv_t<::std::remove_reference_t<T>>>(::std::forward<T>(obj));
-}
 
 /**
  * @brief   Create an iterable range from 'from' to 'to'

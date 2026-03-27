@@ -329,4 +329,23 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "Empty property set", "[container][resou
     mr.deallocate_sync(this, this->bytes(0), this->align(0));
   }
 }
+
+struct my_resource_wrapper
+{
+  explicit my_resource_wrapper(cuda::mr::resource_ref<cuda::mr::device_accessible>);
+
+  void* allocate(cuda::stream_ref, ::cuda::std::size_t, ::cuda::std::size_t);
+  void deallocate(cuda::stream_ref, void*, ::cuda::std::size_t, ::cuda::std::size_t) noexcept;
+  void* allocate_sync(::cuda::std::size_t, ::cuda::std::size_t);
+  void deallocate_sync(void*, ::cuda::std::size_t, ::cuda::std::size_t) noexcept;
+  bool operator==(my_resource_wrapper const&) const;
+  bool operator!=(my_resource_wrapper const&) const;
+  friend void get_property(my_resource_wrapper const&, cuda::mr::device_accessible) noexcept {}
+};
+
+// See https://github.com/NVIDIA/cccl/issues/8037
+TEST_CASE("regression test for NVIDIA/cccl#8037", "[container][resource]")
+{
+  STATIC_REQUIRE(cuda::std::move_constructible<my_resource_wrapper>);
+}
 #endif // __CUDA_ARCH__

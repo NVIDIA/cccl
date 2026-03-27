@@ -125,8 +125,8 @@ public:
 
   //! @brief Convert to a policy that holds a stream
   //! @note This cannot be merged with the other case where we already have a stream as this needs to be const qualified
-  //!       This is because we start with a constexpr global and modify that through with_stream
-  [[nodiscard]] _CCCL_HOST_API auto with_stream(::cuda::stream_ref __stream) const noexcept
+  //!       This is because we start with a constexpr global and modify that through with
+  [[nodiscard]] _CCCL_HOST_API auto with(const ::cuda::get_stream_t&, ::cuda::stream_ref __stream) const noexcept
   {
     constexpr uint32_t __new_policy = __set_cuda_backend_option<_Policy, __cuda_backend_options::__with_stream>;
     if constexpr (__cuda_policy_with_memory_resource<_Policy>)
@@ -150,13 +150,13 @@ public:
   //! @brief Convert to a policy that holds a memory resource
   //! @warning We hold the memory resource by reference, so passing rvalue is a bug
   template <class _Resource>
-  [[nodiscard]] _CCCL_HOST_API auto with_memory_resource(_Resource&&) const = delete;
+  [[nodiscard]] _CCCL_HOST_API auto with(const cuda::mr::get_memory_resource_t&, _Resource&&) const = delete;
 
   //! @brief Convert to a policy that holds a memory resource
   //! @note This cannot be merged with the other case as this needs to be const qualified
-  //!       This is because we start with a constexpr global and modify that through with_stream
+  //!       This is because we start with a constexpr global and modify that through with
   template <class _Resource>
-  [[nodiscard]] _CCCL_HOST_API auto with_memory_resource(_Resource& __resource) const noexcept
+  [[nodiscard]] _CCCL_HOST_API auto with(const cuda::mr::get_memory_resource_t&, _Resource& __resource) const noexcept
   {
     constexpr uint32_t __new_policy =
       __set_cuda_backend_option<_Policy, __cuda_backend_options::__with_memory_resource>;

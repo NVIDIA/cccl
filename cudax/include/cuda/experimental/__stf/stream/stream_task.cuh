@@ -75,24 +75,21 @@ public:
   cudaStream_t get_stream() const
   {
     const auto& e_place = get_exec_place();
-    if (e_place.is_grid())
+    if (e_place.size() > 1)
     {
-      // Even with a grid, when we have a ctx.task construct we have not
-      // yet selected/activated a specific place. So we take the main
-      // stream associated to the whole task in that case.
-      ::std::ptrdiff_t current_place_id = e_place.as_grid().current_place_id();
-      return (current_place_id < 0 ? dstream.stream : stream_grid[current_place_id].stream);
+      // For grids, use get_stream(idx) to specify which place's stream.
+      // Without an index, return the main task stream.
+      return dstream.stream;
     }
 
     return dstream.stream;
   }
 
-  // TODO use a pos4 and check that we have a grid, of the proper dimension
   cudaStream_t get_stream(size_t pos) const
   {
     const auto& e_place = get_exec_place();
 
-    if (e_place.is_grid())
+    if (e_place.size() > 1)
     {
       return stream_grid[pos].stream;
     }
@@ -111,24 +108,20 @@ public:
 
   stream_task<>& start()
   {
-    const auto& e_place = get_exec_place();
+    auto& e_place = get_exec_place();
 
     event_list ready_prereqs = acquire(ctx);
 
     /* Select the stream(s) */
-    if (e_place.is_grid())
+    if (e_place.size() > 1)
     {
       // We have currently no way to pass an array of per-place streams
       _CCCL_ASSERT(automatic_stream, "automatic stream is not enabled");
 
-      // Note: we store grid in a variable to avoid dangling references
-      // because the compiler does not know we are making a reference to
-      // a vector that remains valid
-      const auto& grid   = e_place.as_grid();
-      const auto& places = grid.get_places();
-      for (const exec_place& p : places)
+      // Get stream for each place in the grid
+      for (size_t i = 0; i < e_place.size(); ++i)
       {
-        stream_grid.push_back(p.getStream(true));
+        stream_grid.push_back(e_place.get_place(i).getStream(true));
       }
 
       EXPECT(stream_grid.size() > 0UL);
@@ -187,7 +180,7 @@ public:
     }
 
     // Select one stream to sync with all prereqs
-    auto& s0 = e_place.is_grid() ? stream_grid[0] : dstream;
+    auto& s0 = (e_place.size() > 1) ? stream_grid[0] : dstream;
 
     /* Ensure that stream depend(s) on prereqs */
     submitted_events = stream_async_op(ctx, s0, ready_prereqs);
@@ -196,8 +189,8 @@ public:
       submitted_events.set_symbol("Submitted" + get_symbol());
     }
 
-    /* If this is a grid, all other streams must wait on s0 too */
-    if (e_place.is_grid())
+    /* If this is a multi-place grid, all other streams must wait on s0 too */
+    if (e_place.size() > 1)
     {
       insert_dependencies(stream_grid);
     }
@@ -213,19 +206,29 @@ public:
     return *this;
   }
 
-  void set_current_place(pos4 p)
+  /**
+   * @brief Activate a sub-place within the task's execution place grid
+   *
+   * Returns an exec_place_scope RAII guard. The sub-place is automatically
+   * deactivated when the guard is destroyed.
+   *
+   * @param p The position within the grid
+   * @return An exec_place_scope guard managing the activation lifetime
+   */
+  exec_place_scope activate_place(pos4 p)
   {
-    get_exec_place().as_grid().set_current_place(p);
+    return get_exec_place().activate(get_exec_place().get_dims().get_index(p));
   }
 
-  void unset_current_place()
+  /**
+   * @brief Activate a sub-place within the task's execution place grid
+   *
+   * @param idx The linear index within the grid
+   * @return An exec_place_scope guard managing the activation lifetime
+   */
+  exec_place_scope activate_place(size_t idx)
   {
-    return get_exec_place().as_grid().unset_current_place();
-  }
-
-  const exec_place& get_current_place()
-  {
-    return get_exec_place().as_grid().get_current_place();
+    return get_exec_place().activate(idx);
   }
 
   /* End the task, but do not clear its data structures yet */
@@ -236,9 +239,8 @@ public:
     event_list end_list;
 
     const auto& e_place = get_exec_place();
-    // Create an event with this stream
 
-    if (e_place.is_grid())
+    if (e_place.size() > 1)
     {
       // s0 depends on all other streams
       for (size_t i = 1; i < stream_grid.size(); i++)

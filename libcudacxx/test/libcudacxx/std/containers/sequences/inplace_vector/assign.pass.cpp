@@ -242,8 +242,8 @@ __host__ __device__ constexpr bool test()
 template <template <class, size_t> class Range>
 void test_exceptions()
 { // assign_range throws std::bad_alloc
-  constexpr size_t capacity = 4;
-  using inplace_vector      = cuda::std::inplace_vector<int, 4>; // NVCC complains about invalid second argument...
+  [[maybe_unused]] constexpr size_t capacity = 4;
+  using inplace_vector = cuda::std::inplace_vector<int, 4>; // NVCC complains about invalid second argument...
   try
   {
     [[maybe_unused]] inplace_vector too_small{};
@@ -260,8 +260,8 @@ void test_exceptions()
 
 void test_exceptions()
 { // assign throws std::bad_alloc
-  constexpr size_t capacity = 4;
-  using inplace_vector      = cuda::std::inplace_vector<int, capacity>;
+  [[maybe_unused]] constexpr size_t capacity = 4;
+  using inplace_vector                       = cuda::std::inplace_vector<int, capacity>;
   [[maybe_unused]] inplace_vector too_small{};
   [[maybe_unused]] const cuda::std::array<int, 7> input{0, 1, 2, 3, 4, 5, 6};
 
