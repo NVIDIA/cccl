@@ -28,9 +28,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-//! Aligned byte storage for \p _Size elements of \p _Tp; does not construct \p _Tp. Callers must fill storage
-//! (e.g. vectorized loads) before indexing. Suitable for kernel scratch with types where
-//! \c is_trivially_copyable may be false (e.g. some \c cuda::std::complex specializations).
+//! Aligned storage for _Tp elements (not constructed).
+//! Initialize before use with the `data()` method
 template <class _Tp, size_t _Size, size_t _Alignment = alignof(_Tp)>
 struct uninitialized_array
 {
