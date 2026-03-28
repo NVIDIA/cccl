@@ -27,6 +27,7 @@
 #include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__memory/align_down.h>
 #include <cuda/__memory/aligned_size.h>
+#include <cuda/__memory/uninitialized_array.h>
 #include <cuda/__ptx/instructions/cp_async_bulk.h>
 #include <cuda/__ptx/instructions/elect_sync.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
@@ -274,7 +275,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
                                     && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t>;
 
   // if we can vectorize, we convert f's return type to the output type right away, so we can reinterpret later
-  using THRUST_NS_QUALIFIER::cuda_cub::core::detail::uninitialized_array;
+  using ::cuda::uninitialized_array;
   using output_array_t                  = ::cuda::std::conditional_t<can_vectorize_store, output_t, result_t>;
   constexpr auto output_array_alignment = can_vectorize_store ? sizeof(output_t) * vec_size : alignof(result_t);
   uninitialized_array<output_array_t, items_per_thread, output_array_alignment> output;

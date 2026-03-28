@@ -23,20 +23,17 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__new/launder.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+//! Aligned byte storage for \p _Size elements of \p _Tp; does not construct \p _Tp. Callers must fill storage
+//! (e.g. vectorized loads) before indexing. Suitable for kernel scratch with types where
+//! \c is_trivially_copyable may be false (e.g. some \c cuda::std::complex specializations).
 template <class _Tp, size_t _Size, size_t _Alignment = alignof(_Tp)>
 struct uninitialized_array
 {
-  static_assert(::cuda::std::is_trivially_copyable<_Tp>::value
-                  && ::cuda::std::is_trivially_move_constructible<_Tp>::value,
-                "uninitialized_array requires trivially copyable and trivially move constructible types");
-
   alignas(_Alignment) unsigned char __data[_Size * sizeof(_Tp)];
 
   [[nodiscard]] _CCCL_API _Tp* data() noexcept
