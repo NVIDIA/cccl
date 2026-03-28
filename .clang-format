@@ -42,7 +42,6 @@ AttributeMacros: [
                   'CUB_RUNTIME_FUNCTION',
                   'CCCL_DETAIL_KERNEL_ATTRIBUTES',
                   'THRUST_RUNTIME_FUNCTION',
-                  'THRUST_DETAIL_KERNEL_ATTRIBUTES',
                   'CCCL_DEPRECATED',
                   'CCCL_DEPRECATED_BECAUSE',
                   '_CCCL_DEPRECATED_IN_CXX20',
