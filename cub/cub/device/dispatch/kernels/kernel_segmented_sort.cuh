@@ -137,8 +137,8 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_seg
     const ValueT* d_values_in_orig,
     ValueT* d_values_out_orig,
     device_double_buffer<ValueT> d_values_double_buffer,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets)
+    _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
+    _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets)
 {
   static constexpr segmented_sort_policy active_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
   static constexpr auto large_policy                   = active_policy.large_segment;
@@ -328,17 +328,17 @@ template <SortOrder Order,
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).small_segment.block_threads)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelSmall(
-    local_segment_index_t small_segments,
-    local_segment_index_t medium_segments,
-    local_segment_index_t medium_blocks,
-    const local_segment_index_t* d_small_segments_indices,
-    const local_segment_index_t* d_medium_segments_indices,
-    const KeyT* d_keys_in,
-    KeyT* d_keys_out,
-    const ValueT* d_values_in,
-    ValueT* d_values_out,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets)
+    _CCCL_GRID_CONSTANT const local_segment_index_t small_segments,
+    _CCCL_GRID_CONSTANT const local_segment_index_t medium_segments,
+    _CCCL_GRID_CONSTANT const local_segment_index_t medium_blocks,
+    _CCCL_GRID_CONSTANT const local_segment_index_t* const d_small_segments_indices,
+    _CCCL_GRID_CONSTANT const local_segment_index_t* const d_medium_segments_indices,
+    _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
+    _CCCL_GRID_CONSTANT KeyT* const d_keys_out,
+    _CCCL_GRID_CONSTANT const ValueT* const d_values_in,
+    _CCCL_GRID_CONSTANT ValueT* const d_values_out,
+    _CCCL_GRID_CONSTANT const BeginOffsetIteratorT d_begin_offsets,
+    _CCCL_GRID_CONSTANT const EndOffsetIteratorT d_end_offsets)
 {
   using local_segment_index_t = local_segment_index_t;
 
@@ -466,15 +466,15 @@ template <SortOrder Order,
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_segment.block_threads)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelLarge(
-    const local_segment_index_t* d_segments_indices,
+    _CCCL_GRID_CONSTANT const local_segment_index_t* const d_segments_indices,
     const KeyT* d_keys_in_orig,
     KeyT* d_keys_out_orig,
     device_double_buffer<KeyT> d_keys_double_buffer,
     const ValueT* d_values_in_orig,
     ValueT* d_values_out_orig,
     device_double_buffer<ValueT> d_values_double_buffer,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets)
+    const _CCCL_GRID_CONSTANT BeginOffsetIteratorT d_begin_offsets,
+    const _CCCL_GRID_CONSTANT EndOffsetIteratorT d_end_offsets)
 {
   static constexpr segmented_radix_sort_policy large_policy =
     PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_segment;

@@ -87,8 +87,8 @@ public:
       return;
     }
 
-    exec_place_grid grid = memory_node.get_grid();
-    size_t total_size    = this->shape.size();
+    exec_place grid   = memory_node.affine_exec_place();
+    size_t total_size = this->shape.size();
 
     // position (x,y,z,t) on (nx,ny,nz,nt)
     // * index = x + nx*y + nx*ny*z + nx*ny*nz*t

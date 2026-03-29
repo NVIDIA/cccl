@@ -39,8 +39,11 @@ CUB_NAMESPACE_BEGIN
 namespace detail::adjacent_difference
 {
 template <typename AgentDifferenceInitT, typename InputIteratorT, typename InputT, typename OffsetT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void
-DeviceAdjacentDifferenceInitKernel(InputIteratorT first, InputT* result, OffsetT num_tiles, int items_per_tile)
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceInitKernel(
+  _CCCL_GRID_CONSTANT const InputIteratorT first,
+  _CCCL_GRID_CONSTANT InputT* const result,
+  _CCCL_GRID_CONSTANT const OffsetT num_tiles,
+  _CCCL_GRID_CONSTANT const int items_per_tile)
 {
   const int tile_idx = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   AgentDifferenceInitT::Process(tile_idx, first, result, num_tiles, items_per_tile);
@@ -55,11 +58,11 @@ template <typename PolicySelector,
           bool MayAlias,
           bool ReadLeft>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
-  InputIteratorT input,
-  InputT* first_tile_previous,
-  OutputIteratorT result,
+  _CCCL_GRID_CONSTANT const InputIteratorT input,
+  _CCCL_GRID_CONSTANT InputT* const first_tile_previous,
+  _CCCL_GRID_CONSTANT const OutputIteratorT result,
   DifferenceOpT difference_op,
-  OffsetT num_items)
+  _CCCL_GRID_CONSTANT const OffsetT num_items)
 {
   static_assert(::cuda::std::is_empty_v<PolicySelector>);
   static constexpr adjacent_difference_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});

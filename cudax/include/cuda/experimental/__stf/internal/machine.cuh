@@ -28,7 +28,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
-#include <cuda/experimental/__stf/utility/traits.cuh>
+#include <cuda/experimental/__utility/meyers_singleton.cuh>
 
 #include <cstdio>
 
@@ -40,7 +40,7 @@ namespace cuda::experimental::stf::reserved
  * @brief Singleton object abstracting a machine able to set up CUDA peer accesses.
  *
  */
-class machine : public reserved::meyers_singleton<machine>
+class machine : public ::cuda::experimental::meyers_singleton<machine>
 {
 protected:
   machine()

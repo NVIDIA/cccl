@@ -449,19 +449,29 @@ public:
     return ::std::unique_lock<::std::mutex>(graph_mutex);
   }
 
-  void set_current_place(pos4 p)
+  /**
+   * @brief Activate a sub-place within the task's execution place grid
+   *
+   * Returns an exec_place_scope RAII guard. The sub-place is automatically
+   * deactivated when the guard is destroyed.
+   *
+   * @param p The position within the grid
+   * @return An exec_place_scope guard managing the activation lifetime
+   */
+  exec_place_scope activate_place(pos4 p)
   {
-    get_exec_place().as_grid().set_current_place(p);
+    return get_exec_place().activate(get_exec_place().get_dims().get_index(p));
   }
 
-  void unset_current_place()
+  /**
+   * @brief Activate a sub-place within the task's execution place grid
+   *
+   * @param idx The linear index within the grid
+   * @return An exec_place_scope guard managing the activation lifetime
+   */
+  exec_place_scope activate_place(size_t idx)
   {
-    get_exec_place().as_grid().unset_current_place();
-  }
-
-  const exec_place& get_current_place() const
-  {
-    return get_exec_place().as_grid().get_current_place();
+    return get_exec_place().activate(idx);
   }
 
 private:
@@ -501,6 +511,7 @@ private:
 
   size_t stage = 0;
 
+  // same as ready_prereqs converted to a vector of cudaGraphNode_t
   ::std::vector<cudaGraphNode_t> ready_dependencies;
 
   // If we are building our graph by hand

@@ -181,15 +181,13 @@ def test_radix_sort_keys(dtype, num_items, monkeypatch):
     DTYPE_SIZE,
 )
 def test_radix_sort_pairs(dtype, num_items, monkeypatch):
-    cc_major, _ = numba.cuda.get_current_device().compute_capability
-    if cc_major >= 9 or np.isdtype(dtype, (np.int8, np.uint8, np.int16, np.uint32)):
-        import cuda.compute._cccl_interop
+    import cuda.compute._cccl_interop
 
-        monkeypatch.setattr(
-            cuda.compute._cccl_interop,
-            "_check_sass",
-            False,
-        )
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
 
     order = SortOrder.DESCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)

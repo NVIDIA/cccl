@@ -91,9 +91,8 @@ void run()
 
     for (size_t i = 0; i < grid_size; i++)
     {
-      t.set_current_place(pos4(i));
-      axpy<<<16, 128, 0, t.get_stream()>>>(i * N / grid_size, N / grid_size, alpha, sX.data_handle(), sY.data_handle());
-      t.unset_current_place();
+      auto active = t.activate_place(i);
+      axpy<<<16, 128, 0, t.get_stream(i)>>>(i * N / grid_size, N / grid_size, alpha, sX.data_handle(), sY.data_handle());
     }
   };
 
