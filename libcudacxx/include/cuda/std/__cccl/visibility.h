@@ -84,10 +84,15 @@
 #  define _CCCL_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION inline
 #endif // !_CCCL_COMPILER(NVHPC)
 
-// Note: we will allow the user to redefine _CCCL_KERNEL_ATTRIBUTES until at least CCCL 4.0, since they may have
+// Note: we will allow the user to redefine _CCCL_KERNEL_ATTRIBUTES until CCCL 4.0, since they may have
 // redefined CUB_DETAIL_KERNEL_ATTRIBUTES or THRUST_DETAIL_KERNEL_ATTRIBUTES.
 #if !defined(_CCCL_KERNEL_ATTRIBUTES)
 #  define _CCCL_KERNEL_ATTRIBUTES __global__ _CCCL_VISIBILITY_HIDDEN
+#endif // !_CCCL_KERNEL_ATTRIBUTES
+
+#if defined(CUB_DETAIL_KERNEL_ATTRIBUTES) || defined(THRUST_DETAIL_KERNEL_ATTRIBUTES)
+#  error \
+    "Redefining CCCL's kernel attributes via CUB_DETAIL_KERNEL_ATTRIBUTES or THRUST_DETAIL_KERNEL_ATTRIBUTES is not allowed. If you absolutely rely on this, you can override them by defining _CCCL_KERNEL_ATTRIBUTES, but this will be disallowed in CCCL 4.0."
 #endif // !_CCCL_KERNEL_ATTRIBUTES
 
 //! @brief \c _CCCL_HIDE_FROM_ABI and \c _CCCL_FORCEINLINE cannot be used together because
