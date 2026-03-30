@@ -4504,8 +4504,6 @@ class CoopNodeRewriter(Rewrite):
                     template,
                 )
 
-                # Allow two-phase parents (e.g. instances created outside the kernel).
-
                 impl_class = func.key[0]
 
             else:
