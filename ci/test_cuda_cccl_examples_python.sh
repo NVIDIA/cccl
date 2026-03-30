@@ -4,6 +4,7 @@ set -euo pipefail
 
 ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$ci_dir/pyenv_helper.sh"
+source "$ci_dir/test_cuda_cccl_python_common.sh"
 
 # Parse common arguments
 source "$ci_dir/util/python/common_arg_parser.sh"
@@ -23,7 +24,7 @@ fi
 
 # Install cuda_cccl
 CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]"
+install_cuda_cccl_wheel_for_tests "${CUDA_CCCL_WHEEL_PATH}" "${cuda_major_version}"
 
 # Run tests for parallel module
 cd "/home/coder/cccl/python/cuda_cccl/tests/"
