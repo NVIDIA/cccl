@@ -4456,8 +4456,6 @@ class CoopNodeRewriter(Rewrite):
                 # Thus, our parent's target name is 'histo', and we can get
                 # that directly from our `self.nodes` map.
 
-                # bound_func = func
-                # type_instance = func
                 template = func.template
                 if not hasattr(template, "primitive_name"):
                     # This isn't one of our bound functions.
