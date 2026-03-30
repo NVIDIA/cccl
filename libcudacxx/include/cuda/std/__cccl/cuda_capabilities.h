@@ -25,6 +25,14 @@
 
 #include <nv/target>
 
+/// In device code, _CCCL_PTX_ARCH() expands to the PTX version for which we are compiling.
+/// In host code, _CCCL_PTX_ARCH()'s value is implementation defined.
+#if !defined(__CUDA_ARCH__)
+#  define _CCCL_PTX_ARCH() 0
+#else
+#  define _CCCL_PTX_ARCH() __CUDA_ARCH__
+#endif
+
 #ifdef _CCCL_DOXYGEN_INVOKED // Only parse this during doxygen passes:
 //! When this macro is defined, Programmatic Dependent Launch (PDL) is disabled across CCCL
 #  define CCCL_DISABLE_PDL
