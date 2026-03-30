@@ -25,6 +25,10 @@ _BREATHE_SKIP_SYMBOLS = frozenset(
         # generator uses different naming conventions per project.
         "get_executor_func_t",
         "cuda::experimental::stf::get_executor_func_t",
+        # cuda::experimental::stf::partition_fn_t — same issue as get_executor_func_t.
+        # Function-pointer typedef that Breathe renders in a form Sphinx rejects.
+        "partition_fn_t",
+        "cuda::experimental::stf::partition_fn_t",
         # cuda::property_with_value — variable template using _CCCL_REQUIRES_EXPR
         # with a typename(...) inside the expression.  Sphinx cannot parse the
         # requires-expression expansion.

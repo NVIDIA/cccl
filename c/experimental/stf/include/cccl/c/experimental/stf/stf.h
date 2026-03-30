@@ -235,7 +235,7 @@ typedef struct stf_dim4
 typedef stf_pos4 (*stf_get_executor_fn)(stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims);
 
 //! \brief Opaque handle for an execution place grid (e.g. one place per stream).
-typedef void* stf_exec_place_grid_handle;
+typedef struct stf_exec_place_grid_handle_t* stf_exec_place_grid_handle;
 
 //! \}
 
@@ -414,7 +414,7 @@ void stf_exec_place_grid_destroy(stf_exec_place_grid_handle grid);
 //! Context stores the state of the STF library and serves as entry point for all API calls.
 //! Must be created with stf_ctx_create() or stf_ctx_create_graph() and destroyed with stf_ctx_finalize().
 
-typedef void* stf_ctx_handle;
+typedef struct stf_ctx_handle_t* stf_ctx_handle;
 
 //!
 //! \brief Opaque handle for logical data
@@ -422,7 +422,7 @@ typedef void* stf_ctx_handle;
 //! Represents abstract data that may exist in multiple memory locations.
 //! Created with stf_logical_data() or stf_logical_data_empty() and destroyed with stf_logical_data_destroy().
 
-typedef void* stf_logical_data_handle;
+typedef struct stf_logical_data_handle_t* stf_logical_data_handle;
 
 //!
 //! \brief Opaque handle for task
@@ -430,7 +430,7 @@ typedef void* stf_logical_data_handle;
 //! Represents a computational task that operates on logical data.
 //! Created with stf_task_create() and destroyed with stf_task_destroy().
 
-typedef void* stf_task_handle;
+typedef struct stf_task_handle_t* stf_task_handle;
 
 //!
 //! \brief Opaque handle for CUDA kernel task
@@ -438,7 +438,7 @@ typedef void* stf_task_handle;
 //! Specialized task optimized for CUDA kernel execution.
 //! Created with stf_cuda_kernel_create() and destroyed with stf_cuda_kernel_destroy().
 
-typedef void* stf_cuda_kernel_handle;
+typedef struct stf_cuda_kernel_handle_t* stf_cuda_kernel_handle;
 
 //! \}
 

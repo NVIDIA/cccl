@@ -1,7 +1,7 @@
 .. _stf:
 
 CUDASTF
-=======
+========
 
 .. contents::
    :depth: 2

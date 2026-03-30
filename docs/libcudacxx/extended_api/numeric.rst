@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-numeric:
 
 Numeric
-=======
+========
 
 .. toctree::
    :hidden:

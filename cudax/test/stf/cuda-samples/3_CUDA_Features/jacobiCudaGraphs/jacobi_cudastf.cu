@@ -39,6 +39,7 @@
 // where A is diagonally dominant and the exact solution consists
 // of all ones.
 
+#include <cuda/experimental/__stf/internal/scalar_interface.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
 #define N_ROWS 512
@@ -212,10 +213,7 @@ double JacobiMethodGpu(
   // grid size
   dim3 nblocks((N_ROWS / ROWS_PER_CTA) + 2, 1, 1);
 
-  double sum = 0.0;
-
-  // Task for the whole Jacobi
-  auto sum_handle = ctx.logical_data(&sum, 1).set_symbol("sum");
+  auto sum_handle = ctx.logical_data(shape_of<scalar_view<double>>()).set_symbol("sum");
 
   int k;
   for (k = 0; k < max_iter; k++)
@@ -229,62 +227,38 @@ double JacobiMethodGpu(
              task_dep<slice<double>>(x_new_handle, x_new_mode),
              sum_handle.write())
         .set_symbol("JacobiMethod")
-        ->*
-      [&](cudaStream_t stream, auto A, auto b, auto x, auto x_new, auto d_sum) {
-        cuda_try(cudaMemsetAsync(d_sum.data_handle(), 0, sizeof(double), stream));
+        ->*[&](cudaStream_t stream, auto A, auto b, auto x, auto x_new, auto d_sum) {
+              cuda_try(cudaMemsetAsync(d_sum.addr, 0, sizeof(double), stream));
 
-        if ((k & 1) == 0)
-        {
-          JacobiMethod<<<nblocks, nthreads, 0, stream>>>(
-            A.data_handle(), b.data_handle(), conv_threshold, x.data_handle(), x_new.data_handle(), d_sum.data_handle());
-        }
-        else
-        {
-          JacobiMethod<<<nblocks, nthreads, 0, stream>>>(
-            A.data_handle(), b.data_handle(), conv_threshold, x_new.data_handle(), x.data_handle(), d_sum.data_handle());
-        }
-      };
+              if ((k & 1) == 0)
+              {
+                JacobiMethod<<<nblocks, nthreads, 0, stream>>>(
+                  A.data_handle(), b.data_handle(), conv_threshold, x.data_handle(), x_new.data_handle(), d_sum.addr);
+              }
+              else
+              {
+                JacobiMethod<<<nblocks, nthreads, 0, stream>>>(
+                  A.data_handle(), b.data_handle(), conv_threshold, x_new.data_handle(), x.data_handle(), d_sum.addr);
+              }
+            };
 
-    bool converged;
-    // Check if sum is smaller than the threshold and halt the loop if this is true
-    auto t_host = ctx.task(sum_handle.read());
-    t_host.on(exec_place::host());
-    t_host.set_symbol("check_converged");
-    t_host->*[&](cudaStream_t stream, auto sum2) {
-      cuda_try(cudaStreamSynchronize(stream));
-      // fprintf(stderr, "SUM %e\n", sum);
-      assert(*sum2.data_handle() == sum);
-      converged = (*sum2.data_handle() <= conv_threshold);
-    };
-
-    // read sum
-    if (converged)
+    if (ctx.wait(sum_handle) <= conv_threshold)
     {
       break;
     }
   }
 
   auto final_x_handle = ((k & 1) == 0) ? &x_new_handle : &x_handle;
-  auto t              = ctx.task(sum_handle.write(), final_x_handle->read());
-  t.set_symbol("finalError");
-  t->*[&](cudaStream_t stream, auto d_sum, auto final_x) {
-    cuda_try(cudaMemsetAsync(d_sum.data_handle(), 0, sizeof(double), stream));
+  ctx.task(sum_handle.write(), final_x_handle->read()).set_symbol("finalError")
+      ->*[&](cudaStream_t stream, auto d_sum, auto final_x) {
+            cuda_try(cudaMemsetAsync(d_sum.addr, 0, sizeof(double), stream));
 
-    nblocks.x            = (N_ROWS / nthreads.x) + 1;
-    size_t sharedMemSize = ((nthreads.x / 32) + 1) * sizeof(double);
-    finalError<<<nblocks, nthreads, sharedMemSize, stream>>>(final_x.data_handle(), d_sum.data_handle());
-  };
+            nblocks.x            = (N_ROWS / nthreads.x) + 1;
+            size_t sharedMemSize = ((nthreads.x / 32) + 1) * sizeof(double);
+            finalError<<<nblocks, nthreads, sharedMemSize, stream>>>(final_x.data_handle(), d_sum.addr);
+          };
 
-  auto t_display = ctx.task(sum_handle.read());
-  t_display.on(exec_place::host());
-  t_display.set_symbol("finalError");
-  t_display->*[&](cudaStream_t stream, auto /*unused*/) {
-    cuda_try(cudaStreamSynchronize(stream));
-    // printf("GPU iterations : %d\n", k + 1);
-    // printf("GPU error: %.3e\n", *h_sum.data_handle());
-  };
-
-  return sum;
+  return ctx.wait(sum_handle);
 }
 
 // Run the Jacobi method for A*x = b on CPU.
@@ -356,15 +330,10 @@ int run()
     free(x);
   };
 
-  auto A_handle     = ctx.logical_data(A, N_ROWS * N_ROWS);
-  auto b_handle     = ctx.logical_data(b, N_ROWS);
-  auto x_handle     = ctx.logical_data(x, N_ROWS);
-  auto x_new_handle = ctx.template logical_data<double>(N_ROWS);
-
-  A_handle.set_symbol("A");
-  b_handle.set_symbol("b");
-  x_handle.set_symbol("x");
-  x_new_handle.set_symbol("x_new");
+  auto A_handle     = ctx.logical_data(A, N_ROWS * N_ROWS).set_symbol("A");
+  auto b_handle     = ctx.logical_data(b, N_ROWS).set_symbol("b");
+  auto x_handle     = ctx.logical_data(x, N_ROWS).set_symbol("x");
+  auto x_new_handle = ctx.logical_data(shape_of<slice<double>>(N_ROWS)).set_symbol("x_new");
 
   float conv_threshold = 1.0e-2;
   int max_iter         = 4 * N_ROWS * N_ROWS;

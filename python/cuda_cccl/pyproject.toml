@@ -106,6 +106,7 @@ git_describe_command = ["git", "describe", "--tags", "--match", "v[0-9]*"]
 "cuda" = "cuda"
 
 [tool.mypy]
+cache_dir = "../../.cache/mypy"
 python_version = "3.10"
 
 [[tool.mypy.overrides]]

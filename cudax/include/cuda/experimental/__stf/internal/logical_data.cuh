@@ -1482,7 +1482,8 @@ public:
 
       exec_place e_place_n = memory_node.affine_exec_place();
 
-      auto saved_place = e_place_n.activate();
+      // Activate the execution place - automatically restores when active goes out of scope
+      auto active = e_place_n.activate();
 
       // Reduce instances if there are more than one
       if (per_node[n].size() > 1)
@@ -1561,9 +1562,7 @@ public:
         per_node[to_index(target_memory_node)].push_back(copy_instance_id);
       }
 
-      // Restore the execution place to its previous state (e.g. current CUDA device)
-      // fprintf(stderr, "RESET CTX\n");
-      e_place_n.deactivate(saved_place);
+      // Execution place automatically restored when 'active' goes out of scope
     }
 
     if (per_node[to_index(target_memory_node)].size() > 1)

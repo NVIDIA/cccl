@@ -490,16 +490,16 @@ _CCCL_CONCEPT work_submitter = ::cuda::std::is_convertible_v<_Submitter, ::cuda:
 //! }
 //! @endcode
 //!
-//! @param stream
+//! @param __submitter
 //! cuda::stream_ref to launch the kernel into
 //!
-//! @param conf
+//! @param __conf
 //! configuration for this launch
 //!
-//! @param kernel
+//! @param __kernel
 //! kernel functor to be launched
 //!
-//! @param args
+//! @param __args
 //! arguments to be passed into the kernel functor
 _CCCL_TEMPLATE(typename... _Args, typename... _Config, typename _Submitter, typename _Dimensions, typename _Kernel)
 _CCCL_REQUIRES(work_submitter<_Submitter> _CCCL_AND(!::cuda::std::is_pointer_v<_Kernel>)
@@ -552,16 +552,16 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 //! }
 //! @endcode
 //!
-//! @param stream
+//! @param __submitter
 //! cuda::stream_ref to launch the kernel into
 //!
-//! @param conf
+//! @param __conf
 //! configuration for this launch
 //!
-//! @param kernel
+//! @param __kernel
 //! kernel function to be launched
 //!
-//! @param args
+//! @param __args
 //! arguments to be passed into the kernel function
 //!
 _CCCL_TEMPLATE(
@@ -609,7 +609,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 //! }
 //! @endcode
 //!
-//! @param __stream
+//! @param __submitter
 //! cuda::stream_ref to launch the kernel into
 //!
 //! @param __conf

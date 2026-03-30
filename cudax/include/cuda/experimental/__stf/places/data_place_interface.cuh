@@ -46,12 +46,11 @@ namespace cuda::experimental::stf
 {
 // Forward declarations
 class exec_place;
-class exec_place_grid;
 class pos4;
 class dim4;
 
 //! Function type for computing executor placement from data coordinates
-using get_executor_func_t = pos4 (*)(pos4, dim4, dim4);
+using partition_fn_t = pos4 (*)(pos4, dim4, dim4);
 
 /**
  * @brief Abstract interface for data_place implementations
@@ -181,19 +180,10 @@ public:
   // === Composite-specific (throw by default) ===
 
   /**
-   * @brief Get the grid for composite places
-   * @throws std::logic_error if not a composite place
-   */
-  virtual const exec_place_grid& get_grid() const
-  {
-    throw ::std::logic_error("get_grid() called on non-composite data_place");
-  }
-
-  /**
    * @brief Get the partitioner function for composite places
    * @throws std::logic_error if not a composite place
    */
-  virtual const get_executor_func_t& get_partitioner() const
+  virtual const partition_fn_t& get_partitioner() const
   {
     throw ::std::logic_error("get_partitioner() called on non-composite data_place");
   }

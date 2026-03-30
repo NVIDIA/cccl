@@ -965,6 +965,9 @@ template <typename Engine>
 class backend_ctx : public backend_ctx_untyped
 {
 public:
+  template <typename T>
+  using logical_data_t = ::cuda::experimental::stf::logical_data<T>;
+
   backend_ctx(::std::shared_ptr<impl> impl)
       : backend_ctx_untyped(mv(impl))
   {
@@ -972,6 +975,21 @@ public:
   }
 
   ~backend_ctx() = default;
+
+  /**
+   * @brief Get a reference to the underlying untyped backend context
+   *
+   * @return Reference to the backend_ctx_untyped base class
+   */
+  backend_ctx_untyped& get_backend()
+  {
+    return static_cast<backend_ctx_untyped&>(*this);
+  }
+
+  const backend_ctx_untyped& get_backend() const
+  {
+    return static_cast<const backend_ctx_untyped&>(*this);
+  }
 
   /**
    * @brief Returns a `logical_data` object with the given shape, tied to this graph. Initial data place is invalid.
@@ -1082,13 +1100,6 @@ public:
     return reserved::launch_scope<Engine, thread_hierarchy_spec_t, Deps...>(self(), mv(spec), mv(e_place), mv(deps)...);
   }
 
-  /* Using ctx.launch with a host place */
-  template <typename... Deps>
-  auto launch(exec_place_host, task_dep<Deps>... deps)
-  {
-    return reserved::host_launch_scope<Engine, true, Deps...>(self(), mv(deps)...);
-  }
-
   /* Default execution policy, explicit place */
   // default depth to avoid breaking all codes (XXX temporary)
   template <typename... Deps>
@@ -1152,9 +1163,6 @@ public:
         self(), mv(e_place), mv(shape), mv(deps)...);
     }
   }
-
-  template <typename S, typename... Deps>
-  auto parallel_for(exec_place_grid e_place, S shape, Deps... deps) = delete;
 
   template <typename S, typename... Deps>
   auto parallel_for(S shape, Deps... deps)

@@ -197,11 +197,18 @@ function(
       endif()
     endif()
   else() # Not catch2:
-    cccl_add_executable(
-      ${test_target}
-      SOURCES "${test_src}"
-      NO_METATARGETS # Added manually for non-fail tests
-    )
+    _cub_is_fail_test(is_fail_test "${test_src}")
+
+    if (is_fail_test)
+      cccl_add_executable(${test_target} SOURCES "${test_src}" NO_METATARGETS)
+    else()
+      cccl_add_executable(
+        ${test_target}
+        SOURCES "${test_src}"
+        METATARGET_PATH ${metatarget_path}
+      )
+    endif()
+
     target_link_libraries(
       ${test_target}
       PRIVATE #
@@ -215,7 +222,6 @@ function(
       target_link_libraries(${test_target} PRIVATE nvtx3-cpp)
     endif()
 
-    _cub_is_fail_test(is_fail_test "${test_src}")
     if (is_fail_test)
       cccl_add_xfail_compile_target_test(
         ${test_target}
@@ -224,8 +230,6 @@ function(
         ERROR_NUMBER_TARGET_NAME_REGEX "\\.err_([0-9]+)"
       )
     else()
-      cccl_ensure_metatargets(${test_target} METATARGET_PATH ${metatarget_path})
-
       add_test(
         NAME ${test_target}
         # gersemi: off

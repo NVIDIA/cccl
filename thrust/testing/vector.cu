@@ -143,6 +143,134 @@ void TestVectorFillAssign()
 DECLARE_VECTOR_UNITTEST(TestVectorFillAssign);
 
 template <class Vector>
+void TestVectorFillInsert()
+{
+  { // Insert into empty vector
+    Vector v;
+    v.insert(v.end(), 3, 13);
+
+    ASSERT_EQUAL(v.size(), 3lu);
+    Vector ref{13, 13, 13};
+    ASSERT_EQUAL(v, ref);
+  }
+
+  { // Insert into non-empty vector at end
+    Vector v{13, 13, 13};
+    v.insert(v.end(), 2, 42);
+
+    ASSERT_EQUAL(v.size(), 5lu);
+    Vector ref{13, 13, 13, 42, 42};
+    ASSERT_EQUAL(v, ref);
+  }
+
+  { // Insert into non-empty vector at front, existing elements inserted before end
+    Vector v{13, 13, 13};
+    v.insert(v.begin(), 2, 42);
+
+    ASSERT_EQUAL(v.size(), 5lu);
+    Vector ref{42, 42, 13, 13, 13};
+    ASSERT_EQUAL(v, ref);
+  }
+
+  { // Insert into non-empty vector at front, existing elements inserted after end
+    Vector v{13, 13, 13};
+    v.insert(v.begin(), 4, 42);
+
+    ASSERT_EQUAL(v.size(), 7lu);
+    Vector ref{42, 42, 42, 42, 13, 13, 13};
+    ASSERT_EQUAL(v, ref);
+  }
+
+  { // Insert into non-empty vector in middle, existing elements inserted before end
+    Vector v{13, 13, 13};
+    v.insert(v.begin() + 1, 1, 42);
+
+    ASSERT_EQUAL(v.size(), 4lu);
+    Vector ref{13, 42, 13, 13};
+    ASSERT_EQUAL(v, ref);
+  }
+
+  { // Insert into non-empty vector in middle, existing elements inserted at end
+    Vector v{13, 13, 13};
+    v.insert(v.begin() + 1, 2, 42);
+
+    ASSERT_EQUAL(v.size(), 5lu);
+    Vector ref{13, 42, 42, 13, 13};
+    ASSERT_EQUAL(v, ref);
+  }
+
+  { // Insert into non-empty vector in middle, existing elements inserted after end
+    Vector v{13, 13, 13};
+    v.insert(v.begin() + 1, 4, 42);
+
+    ASSERT_EQUAL(v.size(), 7lu);
+    Vector ref{13, 42, 42, 42, 42, 13, 13};
+    ASSERT_EQUAL(v, ref);
+  }
+
+  { // Insert into empty vector, with sufficient capacity
+    Vector v;
+    v.reserve(42);
+    v.insert(v.end(), 3, 13);
+
+    ASSERT_EQUAL(v.size(), 3lu);
+    Vector ref{13, 13, 13};
+    ASSERT_EQUAL(v, ref);
+  }
+
+  { // Insert into non-empty vector at end, with sufficient capacity
+    Vector v{13, 13, 13};
+    v.reserve(42);
+    v.insert(v.end(), 2, 42);
+
+    ASSERT_EQUAL(v.size(), 5lu);
+    Vector ref{13, 13, 13, 42, 42};
+    ASSERT_EQUAL(v, ref);
+  }
+
+  { // Insert into non-empty vector at front, existing elements inserted after end, with sufficient capacity
+    Vector v{13, 13, 13};
+    v.reserve(42);
+    v.insert(v.begin(), 4, 42);
+
+    ASSERT_EQUAL(v.size(), 7lu);
+    Vector ref{42, 42, 42, 42, 13, 13, 13};
+    ASSERT_EQUAL(v, ref);
+  }
+
+  { // Insert into non-empty vector in middle, existing elements inserted before end, with sufficient capacity
+    Vector v{13, 13, 13};
+    v.reserve(42);
+    v.insert(v.begin() + 1, 1, 42);
+
+    ASSERT_EQUAL(v.size(), 4lu);
+    Vector ref{13, 42, 13, 13};
+    ASSERT_EQUAL(v, ref);
+  }
+
+  { // Insert into non-empty vector in middle, existing elements inserted at end, with sufficient capacity
+    Vector v{13, 13, 13};
+    v.reserve(42);
+    v.insert(v.begin() + 1, 2, 42);
+
+    ASSERT_EQUAL(v.size(), 5lu);
+    Vector ref{13, 42, 42, 13, 13};
+    ASSERT_EQUAL(v, ref);
+  }
+
+  { // Insert into non-empty vector in middle, existing elements inserted after end, with sufficient capacity
+    Vector v{13, 13, 13};
+    v.reserve(42);
+    v.insert(v.begin() + 1, 4, 42);
+
+    ASSERT_EQUAL(v.size(), 7lu);
+    Vector ref{13, 42, 42, 42, 42, 13, 13};
+    ASSERT_EQUAL(v, ref);
+  }
+}
+DECLARE_VECTOR_UNITTEST(TestVectorFillInsert);
+
+template <class Vector>
 void TestVectorAssignFromSTLVector()
 {
   using T = typename Vector::value_type;

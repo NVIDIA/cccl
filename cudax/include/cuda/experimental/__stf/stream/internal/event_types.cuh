@@ -23,7 +23,6 @@
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
-#include <cuda/experimental/__stf/utility/getenv_cache.cuh>
 #include <cuda/experimental/__stf/utility/memory.cuh>
 #include <cuda/experimental/__stf/utility/unstable_unique.cuh>
 
@@ -388,7 +387,11 @@ private:
    * prereq list */
   static decorated_stream device_lookup_in_event_list(backend_ctx_untyped& /* bctx */, event_list& prereq_in, int devid)
   {
-    if (reserved::cached_getenv("CUDASTF_NO_LOOKUP"))
+    static const bool no_lookup = [] {
+      const char* env = ::std::getenv("CUDASTF_NO_LOOKUP");
+      return env != nullptr;
+    }();
+    if (no_lookup)
     {
       return decorated_stream(nullptr);
     }

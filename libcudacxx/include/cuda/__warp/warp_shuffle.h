@@ -32,7 +32,9 @@
 #    include <cuda/std/__memory/addressof.h>
 #    include <cuda/std/__type_traits/enable_if.h>
 #    include <cuda/std/__type_traits/integral_constant.h>
+#    include <cuda/std/__type_traits/is_default_constructible.h>
 #    include <cuda/std/__type_traits/is_pointer.h>
+#    include <cuda/std/__type_traits/is_trivially_copyable.h>
 #    include <cuda/std/__type_traits/is_void.h>
 #    include <cuda/std/__type_traits/remove_cvref.h>
 #    include <cuda/std/cstdint>
@@ -58,12 +60,16 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
 [[nodiscard]] _CCCL_DEVICE_API warp_shuffle_result<_Up> warp_shuffle_idx(
   const _Tp& __data, int __src_lane, uint32_t __lane_mask = 0xFFFFFFFF, ::cuda::std::integral_constant<int, _Width> = {})
 {
+  static_assert(::cuda::std::is_default_constructible_v<_Tp>, "_Tp must be default constructible");
+  static_assert(::cuda::std::is_trivially_copyable_v<_Tp>, "_Tp must be trivially copyable");
+
   constexpr auto __warp_size   = 32u;
   constexpr bool __is_void_ptr = ::cuda::std::is_same_v<_Up, void*> || ::cuda::std::is_same_v<_Up, const void*>;
   static_assert(!::cuda::std::is_pointer_v<_Up> || __is_void_ptr,
                 "non-void pointers are not allowed to prevent bug-prone code");
   static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && _Width <= __warp_size,
                 "_Width must be a power of 2 and less or equal to the warp size");
+
   if constexpr (_Width == 1)
   {
     return warp_shuffle_result<_Up>{__data, true};
@@ -101,6 +107,9 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
 [[nodiscard]] _CCCL_DEVICE_API warp_shuffle_result<_Tp> warp_shuffle_up(
   const _Tp& __data, int __delta, uint32_t __lane_mask = 0xFFFFFFFF, ::cuda::std::integral_constant<int, _Width> = {})
 {
+  static_assert(::cuda::std::is_default_constructible_v<_Tp>, "_Tp must be default constructible");
+  static_assert(::cuda::std::is_trivially_copyable_v<_Tp>, "_Tp must be trivially copyable");
+
   constexpr auto __warp_size   = 32u;
   constexpr bool __is_void_ptr = ::cuda::std::is_same_v<_Up, void*> || ::cuda::std::is_same_v<_Up, const void*>;
   static_assert(!::cuda::std::is_pointer_v<_Up> || __is_void_ptr,
@@ -149,6 +158,9 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
 [[nodiscard]] _CCCL_DEVICE_API warp_shuffle_result<_Up> warp_shuffle_down(
   const _Tp& __data, int __delta, uint32_t __lane_mask = 0xFFFFFFFF, ::cuda::std::integral_constant<int, _Width> = {})
 {
+  static_assert(::cuda::std::is_default_constructible_v<_Tp>, "_Tp must be default constructible");
+  static_assert(::cuda::std::is_trivially_copyable_v<_Tp>, "_Tp must be trivially copyable");
+
   constexpr auto __warp_size   = 32u;
   constexpr bool __is_void_ptr = ::cuda::std::is_same_v<_Up, void*> || ::cuda::std::is_same_v<_Up, const void*>;
   static_assert(!::cuda::std::is_pointer_v<_Up> || __is_void_ptr,
@@ -197,6 +209,9 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
 [[nodiscard]] _CCCL_DEVICE_API warp_shuffle_result<_Up> warp_shuffle_xor(
   const _Tp& __data, int __xor_mask, uint32_t __lane_mask = 0xFFFFFFFF, ::cuda::std::integral_constant<int, _Width> = {})
 {
+  static_assert(::cuda::std::is_default_constructible_v<_Tp>, "_Tp must be default constructible");
+  static_assert(::cuda::std::is_trivially_copyable_v<_Tp>, "_Tp must be trivially copyable");
+
   constexpr auto __warp_size   = 32u;
   constexpr bool __is_void_ptr = ::cuda::std::is_same_v<_Up, void*> || ::cuda::std::is_same_v<_Up, const void*>;
   static_assert(!::cuda::std::is_pointer_v<_Up> || __is_void_ptr,

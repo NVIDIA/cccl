@@ -1,7 +1,7 @@
 .. _libcudacxx-runtime-api:
 
 Runtime
-=======
+========
 
 The Runtime API provides higher-level building blocks for core CUDA functionality. It takes the existing CUDA Runtime API
 set and removes or replaces some problematic patterns, such as implicit state. It is designed to make common operations
