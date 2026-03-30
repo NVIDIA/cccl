@@ -87,14 +87,6 @@ THREAD_DATA_DTYPE_INFERENCE_ARG_PAIRS: dict[str, tuple[tuple[str, str], ...]] = 
 }
 
 
-def debug_print(*args, **kwargs):
-    """
-    Print debug information if DEBUG_PRINT is enabled.
-    """
-    if DEBUG_PRINT:
-        print(*args, **kwargs)
-
-
 def _warn_ltoir_bundle_failure(exc: Exception):
     warnings.warn(
         (
@@ -1804,7 +1796,6 @@ class CoopNode:
         for param in parameters:
             dtype_fn = getattr(param, "dtype", None)
             param_dtypes.append(dtype_fn() if callable(dtype_fn) else None)
-        debug_print(f"param_dtypes: {param_dtypes}")
 
         sig = Signature(
             return_type,
@@ -1817,30 +1808,13 @@ class CoopNode:
 
         self.codegens = algo.create_codegens()
 
-        outer_node = self
-
         @register_global(invocable)
         class ImplDecl(AbstractTemplate):
             key = invocable
 
             def generic(self, outer_args, outer_kws):
-                msg = (
-                    f"{outer_node.primitive_name}:generic("
-                    f"outer_args={outer_args}, "
-                    f"outer_kws={outer_kws})"
-                )
-                debug_print(msg)
-
                 @lower(invocable, types.VarArg(types.Any))
                 def codegen(context, builder, sig, args):
-                    msg = (
-                        f"{outer_node.primitive_name}:codegen("
-                        f"context={context}, "
-                        f"builder={builder}, "
-                        f"sig={sig}, "
-                        f"args={args})"
-                    )
-                    debug_print(msg)
                     node = invocable.node
                     rewriter = getattr(node, "rewriter", None)
                     if rewriter is not None:
@@ -2595,7 +2569,6 @@ class CoopNodeRewriter(Rewrite):
         except Exception as exc:
             self._bundle_ltoir_failed = True
             _warn_ltoir_bundle_failure(exc)
-            debug_print("cuda.coop ltoir bundle failed:", exc)
 
     def _get_or_create_global_module(
         self,
@@ -4061,28 +4034,9 @@ class CoopNodeRewriter(Rewrite):
         self._all_match_invocations_count += 1
         self._match_invocations_per_block_offset[block_offset] += 1
 
-        all_match_invocations_count = self._all_match_invocations_count
         invocation_count = self._match_invocations_per_block_offset[block_offset]
-        num_block_instructions = len(block.body)
-        block_hash = hash(block)
-
-        debug_print(
-            f"Processing rewriter.match(): block_no: {block_no}, "
-            f"block_offset: {block_offset}, "
-            f"num_block_instructions: {num_block_instructions}, "
-            f"block_hash: {block_hash}, "
-            f"invocation_count for block offset: {invocation_count}, "
-            f"all_match_invocations_count: {all_match_invocations_count}, "
-            f"num nodes: {len(self.nodes)}"
-        )
 
         for i, instr in enumerate(block.body):
-            if False and isinstance(instr, (ir.SetItem, ir.StaticSetItem)):
-                import debugpy
-
-                debugpy.breakpoint()
-                debug_print(f"Found: {instr!r} at {instr.loc}")
-
             # We're only interested in ir.Assign nodes.  Skip the rest.
             if not isinstance(instr, ir.Assign):
                 continue
@@ -4144,7 +4098,6 @@ class CoopNodeRewriter(Rewrite):
                         f"({instr.loc})"
                     )
 
-                debug_print(f"Found existing node for {target_name!r} skipping...")
                 continue
 
             if isinstance(rhs, ir.Global) and isinstance(rhs.value, PyModuleType):
@@ -4577,26 +4530,10 @@ class CoopNodeRewriter(Rewrite):
                     # If the node wants a rewrite, request apply.
                     we_want_apply = True
 
-        # Uncomment this to assist with debugging if needed.  It's kept
-        # commented-out to avoid the f-string cost when not needed.
-        # debug_print(
-        #    f"Returning from rewriter.match(): block_no: {block_no}, "
-        #    f"we_want_apply: {we_want_apply}, "
-        #    f"num nodes: {len(self.nodes)}"
-        # )
         self.current_block_no = block_no
         return we_want_apply
 
     def apply(self):
-        # Uncomment this to assist with debugging if needed.  It's kept
-        # commented-out to avoid the f-string cost when not needed.
-        # debug_print(
-        #    f"Entered rewriter.apply(): block_no: {self.current_block_no!r}, "
-        #    f"num_block_instructions: {num_block_instructions}, "
-        #    f"block_hash: {block_hash}, "
-        #    f"num nodes: {len(self.nodes)}"
-        # )
-
         new_block = ir.Block(self.current_block.scope, self.current_block.loc)
 
         if (
@@ -4682,15 +4619,4 @@ class CoopNodeRewriter(Rewrite):
                 no_new_instructions += 1
                 new_block.append(instr)
 
-        # Uncomment this to assist with debugging if needed.  It's kept
-        # commented-out to avoid the f-string cost when not needed.
-        # debug_print(
-        #    f"Rewriter.apply() results: "
-        #    f"skipped: {skipped}, "
-        #    f"ignored: {ignored}, "
-        #    f"rewrote: {rewrote}, "
-        #    f"desugared_getitems: {desugared_getitems}, "
-        #    f"no_new_instructions: {no_new_instructions}, "
-        #    f"num nodes: {len(self.nodes)}"
-        # )
         return new_block
