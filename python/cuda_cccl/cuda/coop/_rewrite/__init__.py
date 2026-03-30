@@ -1216,7 +1216,6 @@ class CoopNode:
     # if this node is created for one of those methods, this will be set to
     # the parent/containing struct.
     parent_struct_instance_type: Optional[Any] = None
-    parent_node: Optional["CoopNode"] = None
 
     impl_kwds: dict[str, Any] = None
     codegen_return_type: Optional[types.Type] = types.void
@@ -1868,107 +1867,6 @@ class CoopNode:
             instrs.extend(prelude)
 
 
-_rewrite_block_load_store = __import__(
-    "cuda.coop._rewrite.block._block_load_store",
-    fromlist=["CoopBlockLoadNode", "CoopBlockStoreNode", "CoopLoadStoreNode"],
-)
-CoopBlockLoadNode = _rewrite_block_load_store.CoopBlockLoadNode
-CoopBlockStoreNode = _rewrite_block_load_store.CoopBlockStoreNode
-CoopLoadStoreNode = _rewrite_block_load_store.CoopLoadStoreNode
-
-
-_rewrite_warp_load_store = __import__(
-    "cuda.coop._rewrite.warp._warp_load_store",
-    fromlist=[
-        "CoopWarpLoadNode",
-        "CoopWarpLoadStoreNode",
-        "CoopWarpStoreNode",
-    ],
-)
-CoopWarpLoadStoreNode = _rewrite_warp_load_store.CoopWarpLoadStoreNode
-CoopWarpLoadNode = _rewrite_warp_load_store.CoopWarpLoadNode
-CoopWarpStoreNode = _rewrite_warp_load_store.CoopWarpStoreNode
-
-
-_rewrite_block_exchange = __import__(
-    "cuda.coop._rewrite.block._block_exchange",
-    fromlist=["CoopBlockExchangeNode"],
-)
-CoopBlockExchangeNode = _rewrite_block_exchange.CoopBlockExchangeNode
-
-
-_rewrite_warp_exchange = __import__(
-    "cuda.coop._rewrite.warp._warp_exchange",
-    fromlist=["CoopWarpExchangeNode"],
-)
-CoopWarpExchangeNode = _rewrite_warp_exchange.CoopWarpExchangeNode
-
-
-_rewrite_block_shuffle = __import__(
-    "cuda.coop._rewrite.block._block_shuffle",
-    fromlist=["CoopBlockShuffleNode"],
-)
-CoopBlockShuffleNode = _rewrite_block_shuffle.CoopBlockShuffleNode
-
-
-_rewrite_block_adjacent_difference = __import__(
-    "cuda.coop._rewrite.block._block_adjacent_difference",
-    fromlist=["CoopBlockAdjacentDifferenceNode"],
-)
-CoopBlockAdjacentDifferenceNode = (
-    _rewrite_block_adjacent_difference.CoopBlockAdjacentDifferenceNode
-)
-
-
-_rewrite_block_discontinuity = __import__(
-    "cuda.coop._rewrite.block._block_discontinuity",
-    fromlist=["CoopBlockDiscontinuityNode"],
-)
-CoopBlockDiscontinuityNode = _rewrite_block_discontinuity.CoopBlockDiscontinuityNode
-
-
-_rewrite_block_merge_sort = __import__(
-    "cuda.coop._rewrite.block._block_merge_sort",
-    fromlist=[
-        "CoopBlockMergeSortNode",
-        "CoopBlockMergeSortPairsNode",
-    ],
-)
-CoopBlockMergeSortNode = _rewrite_block_merge_sort.CoopBlockMergeSortNode
-CoopBlockMergeSortPairsNode = _rewrite_block_merge_sort.CoopBlockMergeSortPairsNode
-
-
-_rewrite_warp_merge_sort = __import__(
-    "cuda.coop._rewrite.warp._warp_merge_sort",
-    fromlist=[
-        "CoopWarpMergeSortNode",
-        "CoopWarpMergeSortPairsNode",
-    ],
-)
-CoopWarpMergeSortNode = _rewrite_warp_merge_sort.CoopWarpMergeSortNode
-CoopWarpMergeSortPairsNode = _rewrite_warp_merge_sort.CoopWarpMergeSortPairsNode
-
-
-_rewrite_block_radix_sort = __import__(
-    "cuda.coop._rewrite.block._block_radix_sort",
-    fromlist=[
-        "CoopBlockRadixSortNode",
-        "CoopBlockRadixSortDescendingNode",
-    ],
-)
-CoopBlockRadixSortNode = _rewrite_block_radix_sort.CoopBlockRadixSortNode
-CoopBlockRadixSortDescendingNode = (
-    _rewrite_block_radix_sort.CoopBlockRadixSortDescendingNode
-)
-
-
-_rewrite_block_radix_rank = __import__(
-    "cuda.coop._rewrite.block._block_radix_rank",
-    fromlist=["CoopBlockRadixRankNode"],
-)
-CoopBlockRadixRankNode = _rewrite_block_radix_rank.CoopBlockRadixRankNode
-
-
 @dataclass
 class CoopArrayNode(CoopNode):
     shape = None
@@ -2330,6 +2228,111 @@ class CoopTempStorageNode:
         return instrs
 
 
+# #############################################################################
+# Begin primitive rewrite imports
+# #############################################################################
+
+_rewrite_block_load_store = __import__(
+    "cuda.coop._rewrite.block._block_load_store",
+    fromlist=["CoopBlockLoadNode", "CoopBlockStoreNode", "CoopLoadStoreNode"],
+)
+CoopBlockLoadNode = _rewrite_block_load_store.CoopBlockLoadNode
+CoopBlockStoreNode = _rewrite_block_load_store.CoopBlockStoreNode
+CoopLoadStoreNode = _rewrite_block_load_store.CoopLoadStoreNode
+
+
+_rewrite_warp_load_store = __import__(
+    "cuda.coop._rewrite.warp._warp_load_store",
+    fromlist=[
+        "CoopWarpLoadNode",
+        "CoopWarpLoadStoreNode",
+        "CoopWarpStoreNode",
+    ],
+)
+CoopWarpLoadStoreNode = _rewrite_warp_load_store.CoopWarpLoadStoreNode
+CoopWarpLoadNode = _rewrite_warp_load_store.CoopWarpLoadNode
+CoopWarpStoreNode = _rewrite_warp_load_store.CoopWarpStoreNode
+
+
+_rewrite_block_exchange = __import__(
+    "cuda.coop._rewrite.block._block_exchange",
+    fromlist=["CoopBlockExchangeNode"],
+)
+CoopBlockExchangeNode = _rewrite_block_exchange.CoopBlockExchangeNode
+
+
+_rewrite_warp_exchange = __import__(
+    "cuda.coop._rewrite.warp._warp_exchange",
+    fromlist=["CoopWarpExchangeNode"],
+)
+CoopWarpExchangeNode = _rewrite_warp_exchange.CoopWarpExchangeNode
+
+
+_rewrite_block_shuffle = __import__(
+    "cuda.coop._rewrite.block._block_shuffle",
+    fromlist=["CoopBlockShuffleNode"],
+)
+CoopBlockShuffleNode = _rewrite_block_shuffle.CoopBlockShuffleNode
+
+
+_rewrite_block_adjacent_difference = __import__(
+    "cuda.coop._rewrite.block._block_adjacent_difference",
+    fromlist=["CoopBlockAdjacentDifferenceNode"],
+)
+CoopBlockAdjacentDifferenceNode = (
+    _rewrite_block_adjacent_difference.CoopBlockAdjacentDifferenceNode
+)
+
+
+_rewrite_block_discontinuity = __import__(
+    "cuda.coop._rewrite.block._block_discontinuity",
+    fromlist=["CoopBlockDiscontinuityNode"],
+)
+CoopBlockDiscontinuityNode = _rewrite_block_discontinuity.CoopBlockDiscontinuityNode
+
+
+_rewrite_block_merge_sort = __import__(
+    "cuda.coop._rewrite.block._block_merge_sort",
+    fromlist=[
+        "CoopBlockMergeSortNode",
+        "CoopBlockMergeSortPairsNode",
+    ],
+)
+CoopBlockMergeSortNode = _rewrite_block_merge_sort.CoopBlockMergeSortNode
+CoopBlockMergeSortPairsNode = _rewrite_block_merge_sort.CoopBlockMergeSortPairsNode
+
+
+_rewrite_warp_merge_sort = __import__(
+    "cuda.coop._rewrite.warp._warp_merge_sort",
+    fromlist=[
+        "CoopWarpMergeSortNode",
+        "CoopWarpMergeSortPairsNode",
+    ],
+)
+CoopWarpMergeSortNode = _rewrite_warp_merge_sort.CoopWarpMergeSortNode
+CoopWarpMergeSortPairsNode = _rewrite_warp_merge_sort.CoopWarpMergeSortPairsNode
+
+
+_rewrite_block_radix_sort = __import__(
+    "cuda.coop._rewrite.block._block_radix_sort",
+    fromlist=[
+        "CoopBlockRadixSortNode",
+        "CoopBlockRadixSortDescendingNode",
+    ],
+)
+CoopBlockRadixSortNode = _rewrite_block_radix_sort.CoopBlockRadixSortNode
+CoopBlockRadixSortDescendingNode = (
+    _rewrite_block_radix_sort.CoopBlockRadixSortDescendingNode
+)
+
+
+_rewrite_block_radix_rank = __import__(
+    "cuda.coop._rewrite.block._block_radix_rank",
+    fromlist=["CoopBlockRadixRankNode"],
+)
+CoopBlockRadixRankNode = _rewrite_block_radix_rank.CoopBlockRadixRankNode
+
+
 _rewrite_block_histogram = __import__(
     "cuda.coop._rewrite.block._block_histogram",
     fromlist=[
@@ -2401,9 +2404,20 @@ CoopWarpMinNode = _rewrite_warp_reduce.CoopWarpMinNode
 CoopWarpReduceNode = _rewrite_warp_reduce.CoopWarpReduceNode
 CoopWarpSumNode = _rewrite_warp_reduce.CoopWarpSumNode
 
+# #############################################################################
+# End primitive rewrite imports
+# #############################################################################
+
 
 @register_rewrite("after-inference")
 class CoopNodeRewriter(Rewrite):
+    # This class is our cuda.coop rewriting workhorse.  It is responsible for
+    # identifying calls to cooperative primitives, matching them to the
+    # appropriate CoopNode subclass, and then invoking the rewrite logic on the
+    # node to perform the actual IR transformation to lower the high-level
+    # primitive call into the appropriate low-level IR that corresponds to the
+    # underlying CUDA cooperative primitive implementation.
+
     interesting_modules = {
         "numba",
         "numba.cuda",
@@ -2419,8 +2433,6 @@ class CoopNodeRewriter(Rewrite):
         self.first_match = True
 
         self.func_ir = None
-        self.typemap = None
-        self.calltypes = None
 
         maps = get_coop_class_and_instance_maps()
         self._decl_classes = maps.decls
