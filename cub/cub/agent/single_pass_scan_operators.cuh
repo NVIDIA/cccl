@@ -690,6 +690,7 @@ struct ScanTileState<T, true>
     StatusWord status;
     T value;
   };
+  static_assert(sizeof(TileDescriptor) <= sizeof(TxnWord), "Tile descriptor must fit into the atomic transaction word");
   static_assert(sizeof(TileDescriptor) <= detail::largest_atomic_message_size);
 
   static constexpr int TILE_STATUS_PADDING = detail::warp_threads;
