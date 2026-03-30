@@ -1985,7 +1985,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         RADIX_SORT_STORE_DIRECT);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -2087,7 +2087,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         RADIX_SORT_STORE_DIRECT);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -2176,7 +2176,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         RADIX_SORT_STORE_DIRECT);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -2280,7 +2280,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         RADIX_SORT_STORE_DIRECT);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -2385,7 +2385,7 @@ struct policy_selector
       BLOCK_SCAN_WARP_SCANS,
       RADIX_SORT_STORE_DIRECT);
 
-    const auto scan = make_mem_scaled_scan_policy(
+    const auto scan = make_mem_scaled_lookback_scan_policy(
       512,
       23,
       offset_size,
