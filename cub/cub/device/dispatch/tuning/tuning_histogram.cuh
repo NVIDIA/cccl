@@ -255,10 +255,8 @@ struct histogram_policy
   {
     return os
         << "histogram_policy { .block_threads = " << p.block_threads << ", .pixels_per_thread = " << p.pixels_per_thread
-        << ", .load_algorithm = static_cast<BlockLoadAlgorithm>(" << static_cast<int>(p.load_algorithm) << ")"
-        << ", .load_modifier = static_cast<CacheLoadModifier>(" << static_cast<int>(p.load_modifier) << ")"
-        << ", .rle_compress = " << p.rle_compress << ", .mem_preference = static_cast<BlockHistogramMemoryPreference>("
-        << static_cast<int>(p.mem_preference) << ")"
+        << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .rle_compress = " << p.rle_compress << ", .mem_preference = " << p.mem_preference
         << ", .work_stealing = " << p.work_stealing << ", .vec_size = " << p.vec_size
         << ", .pdl_trigger_next_launch_in_init_kernel_max_bin_count = "
         << p.pdl_trigger_next_launch_in_init_kernel_max_bin_count << " }";
