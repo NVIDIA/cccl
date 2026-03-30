@@ -4353,9 +4353,19 @@ class CoopNodeRewriter(Rewrite):
 
                 root_def = self.get_root_def(def_instr)
                 if was_getattr:
-                    assert root_def.attr_instance is two_phase_instance
+                    if root_def.attr_instance is not two_phase_instance:
+                        msg = (
+                            "Invariant violation: getattr root attribute "
+                            "instance does not match two-phase instance"
+                        )
+                        raise RuntimeError(msg)
                 else:
-                    assert root_def.instance is two_phase_instance
+                    if root_def.instance is not two_phase_instance:
+                        msg = (
+                            "Invariant violation: root instance does not "
+                            "match two-phase instance"
+                        )
+                        raise RuntimeError(msg)
 
                 value_type = typemap[func_name]
                 primitive_name = repr(value_type)
