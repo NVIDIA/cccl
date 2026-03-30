@@ -30,12 +30,14 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::histogram
 {
+// TODO(bgruber): drop in CCCL 4.0
 enum class primitive_sample
 {
   no,
   yes
 };
 
+// TODO(bgruber): drop in CCCL 4.0
 enum class sample_size
 {
   _1,
@@ -45,30 +47,35 @@ enum class sample_size
   unknown
 };
 
+// TODO(bgruber): drop in CCCL 4.0
 enum class counter_size
 {
   _4,
   unknown
 };
 
+// TODO(bgruber): drop in CCCL 4.0
 template <class T>
 constexpr primitive_sample is_primitive_sample()
 {
   return is_primitive<T>::value ? primitive_sample::yes : primitive_sample::no;
 }
 
+// TODO(bgruber): drop in CCCL 4.0
 template <class CounterT>
 constexpr counter_size classify_counter_size()
 {
   return sizeof(CounterT) == 4 ? counter_size::_4 : counter_size::unknown;
 }
 
+// TODO(bgruber): drop in CCCL 4.0
 template <class SampleT>
 constexpr sample_size classify_sample_size()
 {
   return sizeof(SampleT) == 1 ? sample_size::_1 : sizeof(SampleT) == 2 ? sample_size::_2 : sample_size::unknown;
 }
 
+// TODO(bgruber): drop in CCCL 4.0
 template <class SampleT,
           int NumChannels,
           int NumActiveChannels,
@@ -107,6 +114,7 @@ struct sm90_tuning<SampleT, 1, 1, counter_size::_4, primitive_sample::yes, sampl
   static constexpr bool work_stealing = false;
 };
 
+// TODO(bgruber): drop in CCCL 4.0
 template <bool IsEven,
           class SampleT,
           int NumChannels,
@@ -152,6 +160,7 @@ struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::ye
 
 // multi.even and multi.range: none of the found tunings surpassed the SM90 tuning during verification benchmarks
 
+// TODO(bgruber): drop in CCCL 4.0
 template <class SampleT, class CounterT, int NumChannels, int NumActiveChannels, bool IsEven>
 struct policy_hub
 {
