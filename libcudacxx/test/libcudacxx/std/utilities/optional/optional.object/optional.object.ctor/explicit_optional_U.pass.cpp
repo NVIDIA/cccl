@@ -43,7 +43,6 @@ public:
   }
 };
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
 template <class T>
 struct ConvertibleToReference
 {
@@ -75,7 +74,6 @@ struct ExplicitlyConvertibleToReference
     return lhs == rhs.val_;
   }
 };
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
 template <class T, class U>
 TEST_FUNC constexpr void test()
@@ -105,13 +103,11 @@ TEST_FUNC constexpr bool test()
 {
   test<X, int>();
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test<int&, ConvertibleToReference<int>>();
   test<int&, ExplicitlyConvertibleToReference<int>>();
 
   test<const int&, ConvertibleToReference<int>>();
   test<const int&, ExplicitlyConvertibleToReference<int>>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   return true;
 }
