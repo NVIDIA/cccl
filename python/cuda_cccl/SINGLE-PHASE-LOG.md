@@ -2571,3 +2571,88 @@
   - Keep test-side `# example-begin imports` markers unchanged for now; only rendered-doc include blocks were removed.
 - Tests:
   - Pending: `pre-commit run --files <changed files>`.
+
+## 2026-03-30 (surface LTO-IR bundle fallback failures)
+- Request: Review the rewrite-time LTO-IR bundling exception handling around
+  `prepare_ltoir_bundle(...)` and make fallback behavior more robust/visible.
+- Changes:
+  - `cuda/coop/_rewrite/__init__.py`:
+    - Imported `warnings`.
+    - Added `_warn_ltoir_bundle_failure(exc)` helper that emits a
+      `RuntimeWarning` explaining that cuda.coop is falling back to
+      per-primitive compilation and that performance may degrade.
+    - Wired the existing broad exception fallback in the bundle-preparation
+      path to emit the warning before keeping the existing debug print.
+- Decisions:
+  - Keep the fallback non-fatal because bundling is an optimization, not a
+    correctness requirement.
+  - Make the fallback visible by default because silently suppressing the
+    original exception makes performance regressions difficult to diagnose.
+- Validation:
+  - `python -m py_compile cuda/coop/_rewrite/__init__.py`
+    - Result: pending.
+
+## 2026-03-30 (remove bogus TempStorageType import fallbacks)
+- Request: Review rewrite-time `TempStorageType` import guards that used broad
+  `except Exception` fallbacks even though `TempStorageType` is expected to
+  exist.
+- Changes:
+  - `cuda/coop/_rewrite/__init__.py`:
+    - Imported `TempStorageType` once at module scope.
+    - Removed the local `try/except Exception` import fallback in
+      `_getitem_expr_temp_storage_arg()` and used direct `isinstance(...)`
+      checking against the typemap result.
+    - Removed the same fallback pattern from temp-storage typemap patching in
+      the rewrite refinement path.
+    - Removed the same fallback pattern from explicit temp-storage lowering.
+- Decisions:
+  - Treat `TempStorageType` as required rewrite infrastructure, not an optional
+    symbol.
+  - Prefer deterministic import failures at module load over silently changing
+    rewrite behavior at runtime.
+- Validation:
+  - `python -m py_compile cuda/coop/_rewrite/__init__.py`
+    - Result: passed.
+
+## 2026-03-30 (remove numba-cuda compatibility fallbacks)
+- Request: Remove `cuda.coop` compatibility fallbacks that assumed older or
+  vanilla Numba layouts where current/future packaging will require
+  `numba-cuda` and modern `cuda.core`.
+- Changes:
+  - `cuda/coop/_rewrite/__init__.py`:
+    - Removed the fallback from `numba.cuda.core.ir` / `ir_utils` to
+      `numba.core.ir` / `ir_utils`.
+    - Imported `ir` and `ir_utils` directly from `numba.cuda.core`.
+  - `cuda/coop/_types.py`:
+    - Removed the fallback from `cuda.core` to `cuda.core.experimental` for
+      `Linker`, `LinkerOptions`, and `ObjectCode`.
+    - Imported those symbols directly from `cuda.core`.
+- Decisions:
+  - Treat `numba-cuda` and current `cuda.core` as required dependencies for
+    `cuda.coop` internals.
+  - Prefer immediate import failures over silent compatibility shims that hide
+    packaging/version drift.
+- Validation:
+  - `python -m py_compile cuda/coop/_rewrite/__init__.py cuda/coop/_types.py`
+    - Result: passed.
+
+## 2026-03-30 (require launch config in rewrite)
+- Request: Remove stale `launch_config`-may-be-missing fallback behavior now
+  that the recent `numba-cuda` launch-config work is available.
+- Changes:
+  - `cuda/coop/_rewrite/__init__.py`:
+    - Updated `_maybe_register_temp_storage_launch_callback()` to use
+      `self.launch_config` directly instead of the nullable
+      `launch_config_safe` path.
+    - Updated `match()` to require `self.launch_config` instead of silently
+      skipping rewrite when no current launch config is present.
+    - Removed the now-unused `launch_config_safe` property and its
+      `current_launch_config` import.
+- Decisions:
+  - Treat launch-config availability as a required invariant for rewrite-time
+    coop processing.
+  - Prefer immediate failures over silent non-rewrite behavior if the launch
+    config contract regresses.
+- Validation:
+  - `python -m py_compile cuda/coop/_rewrite/__init__.py`
+    - Result: passed.
