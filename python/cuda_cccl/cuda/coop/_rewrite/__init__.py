@@ -23,6 +23,9 @@ from types import ModuleType as PyModuleType
 from types import SimpleNamespace
 from typing import Any, Optional, Union
 
+import numba
+import numba.cuda
+import numba.cuda.cudadecl
 from numba.core import types
 from numba.core.typing.templates import (
     AbstractTemplate,
@@ -31,16 +34,25 @@ from numba.core.typing.templates import (
 from numba.cuda import LTOIR
 from numba.cuda.core import ir, ir_utils
 from numba.cuda.core.rewrites import Rewrite, register_rewrite
-from numba.cuda.cudadecl import register_global
+from numba.cuda.cudadecl import (
+    CudaLocalModuleTemplate,
+    CudaSharedModuleTemplate,
+    register_global,
+)
 from numba.cuda.cudadrv.devicearray import DeviceNDArray
 from numba.cuda.cudaimpl import lower
 from numba.cuda.launchconfig import ensure_current_launch_config
 
+import cuda.coop as coop
+
 # The runtime launch-config object is owned by numba-cuda
 # (`numba.cuda.dispatcher._LaunchConfiguration`).
-from .._decls import TempStorageType
+from .._common import normalize_dtype_param
+from .._decls import CoopArrayBaseTemplate, TempStorageType
 from .._types import Algorithm as CoopAlgorithm
-from .._types import algo_coalesce_key
+from .._types import TempStorage as TempStorageClass
+from .._types import ThreadData as ThreadDataClass
+from .._types import algo_coalesce_key, prepare_ltoir_bundle
 from .block import (
     import_side_effect_modules as _import_block_rewrite_side_effect_modules,
 )
@@ -680,9 +692,6 @@ def get_root_definition(
     all_assignments = []
     definitions = []
 
-    from .._types import TempStorage as TempStorageClass
-    from .._types import ThreadData as ThreadDataClass
-
     while instructions:
         counter += 1
         instr = instructions.pop()
@@ -978,8 +987,6 @@ def get_root_definition(
 
                     if instr_kws is None:
                         instr_kws = {}
-
-                    from .._decls import CoopArrayBaseTemplate
 
                     bound = CoopArrayBaseTemplate.signature(*instr_args, **instr_kws)
 
@@ -2060,8 +2067,6 @@ class CoopArrayNode(CoopNode):
         new_dtype_var = ir.Var(scope, new_dtype_name, expr.loc)
         dtype_ty = types.DType(self.dtype)
         self.typemap[new_dtype_var.name] = dtype_ty
-        import numba
-
         if hasattr(numba, dtype_attr):
             # Prefer well-known dtypes off the numba module (e.g. numba.int32).
             g_numba_module_assign = rewriter.get_or_create_global_numba_module_instr(
@@ -2129,9 +2134,6 @@ class CoopArrayNode(CoopNode):
         attr_name = self.attr_name
 
         # Get the array primitive.
-        import numba.cuda
-        import numba.cuda.cudadecl
-
         array_module = getattr(numba.cuda, attr_name)
         # array_func = getattr(array_module, "array")
         array_decl_name = f"Cuda_{attr_name}_array"
@@ -2140,9 +2142,9 @@ class CoopArrayNode(CoopNode):
 
         # I'm 100% certain this is absolutely not the way to achieve this.
         if self.is_shared:
-            from numba.cuda.cudadecl import CudaSharedModuleTemplate as mod_ty
+            mod_ty = CudaSharedModuleTemplate
         else:
-            from numba.cuda.cudadecl import CudaLocalModuleTemplate as mod_ty
+            mod_ty = CudaLocalModuleTemplate
 
         mod = mod_ty(context=None)
         array_func_ty = mod.resolve_array(None)
@@ -2580,8 +2582,6 @@ class CoopNodeRewriter(Rewrite):
             return
 
         try:
-            from .._types import prepare_ltoir_bundle
-
             coalesce_keys = {algo_coalesce_key(algo) for algo in algorithms}
             allow_single = len(coalesce_keys) == 1 and len(algorithms) > 1
             bundle = prepare_ltoir_bundle(
@@ -2629,13 +2629,9 @@ class CoopNodeRewriter(Rewrite):
         return instr
 
     def get_or_create_global_numba_module_instr(self, scope, loc, new_nodes):
-        import numba
-
         return self._get_or_create_global_module("numba", numba, scope, loc, new_nodes)
 
     def get_or_create_global_numba_cuda_module_instr(self, scope, loc, new_nodes):
-        import numba.cuda
-
         return self._get_or_create_global_module(
             "numba.cuda", numba.cuda, scope, loc, new_nodes
         )
@@ -3014,8 +3010,6 @@ class CoopNodeRewriter(Rewrite):
         max_default = DEFAULT_STATIC_SHARED_MEMORY_BYTES
         max_optin = max_default
         try:
-            import numba.cuda
-
             device = numba.cuda.current_context().device
             max_default = int(
                 getattr(device, "MAX_SHARED_MEMORY_PER_BLOCK", max_default)
@@ -3185,8 +3179,6 @@ class CoopNodeRewriter(Rewrite):
 
         var_name = ir_utils.mk_unique_var("$coop_temp_storage_backing")
         backing_var = ir.Var(scope, var_name, loc)
-
-        import numba
 
         instrs = self.emit_cuda_array_call(
             scope,
@@ -3453,8 +3445,6 @@ class CoopNodeRewriter(Rewrite):
 
         dtype = None
         if leaf.dtype is not None:
-            from .._common import normalize_dtype_param
-
             try:
                 dtype = normalize_dtype_param(leaf.dtype)
             except Exception as exc:
@@ -3641,8 +3631,6 @@ class CoopNodeRewriter(Rewrite):
         new_dtype_var = ir.Var(scope, new_dtype_name, loc)
         dtype_ty = types.DType(dtype)
         self.typemap[new_dtype_var.name] = dtype_ty
-        import numba
-
         if hasattr(numba, dtype_attr):
             g_numba_module_assign = self.get_or_create_global_numba_module_instr(
                 scope,
@@ -3687,18 +3675,15 @@ class CoopNodeRewriter(Rewrite):
         )
 
         attr_name = "shared" if shared else "local"
-        import numba.cuda
-        import numba.cuda.cudadecl
-
         array_module = getattr(numba.cuda, attr_name)
         array_decl_name = f"Cuda_{attr_name}_array"
         array_decl = getattr(numba.cuda.cudadecl, array_decl_name)
         array_decl_ty = types.Function(array_decl)
 
         if shared:
-            from numba.cuda.cudadecl import CudaSharedModuleTemplate as mod_ty
+            mod_ty = CudaSharedModuleTemplate
         else:
-            from numba.cuda.cudadecl import CudaLocalModuleTemplate as mod_ty
+            mod_ty = CudaLocalModuleTemplate
 
         mod = mod_ty(context=None)
         array_func_ty = mod.resolve_array(None)
@@ -3780,8 +3765,6 @@ class CoopNodeRewriter(Rewrite):
 
     def emit_syncthreads_call(self, scope, loc):
         new_nodes = []
-        import numba.cuda
-
         g_numba_cuda_module_assign = self.get_or_create_global_numba_cuda_module_instr(
             scope,
             loc,
@@ -4220,8 +4203,6 @@ class CoopNodeRewriter(Rewrite):
                 func_obj = func_def.value
 
             py_func = getattr(func, "typing_key", None)
-            import cuda.coop as coop
-
             if py_func is coop.ThreadData or func_obj is coop.ThreadData:
                 node = CoopThreadDataNode(
                     expr=expr,
