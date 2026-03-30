@@ -211,3 +211,5 @@
 
 - BlockRadixSort decomposer support (requires a C++ tuple-of-references adapter).
 - Multi-channel BlockHistogram outputs (not exposed via current CUB BlockHistogram API).
+
+- [x] Surface LTO-IR bundling failures with a RuntimeWarning fallback message.
