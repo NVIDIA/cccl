@@ -744,7 +744,6 @@ _CCCL_API constexpr auto smem_for_stages(const scan_warpspeed_policy& policy, in
     num_stages,
     static_cast<int>(sizeof(InputT)),
     static_cast<int>(alignof(InputT)),
-    static_cast<int>(sizeof(OutputT)),
     static_cast<int>(alignof(OutputT)),
     static_cast<int>(sizeof(AccumT)),
     static_cast<int>(alignof(AccumT)));

@@ -550,7 +550,6 @@ struct DispatchScan
       1,
       static_cast<int>(kernel_src.InputSize()),
       static_cast<int>(kernel_src.InputAlign()),
-      static_cast<int>(kernel_src.OutputSize()),
       static_cast<int>(kernel_src.OutputAlign()),
       static_cast<int>(kernel_src.AccumSize()),
       static_cast<int>(kernel_src.AccumAlign()));
@@ -579,7 +578,6 @@ struct DispatchScan
                        num_stages + 1,
                        static_cast<int>(kernel_source.InputSize()),
                        static_cast<int>(kernel_source.InputAlign()),
-                       static_cast<int>(kernel_source.OutputSize()),
                        static_cast<int>(kernel_source.OutputAlign()),
                        static_cast<int>(kernel_source.AccumSize()),
                        static_cast<int>(kernel_source.AccumAlign()));

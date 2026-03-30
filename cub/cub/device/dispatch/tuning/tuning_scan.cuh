@@ -803,14 +803,12 @@ _CCCL_API constexpr auto smem_for_stages(
   int num_stages,
   int input_size,
   int input_align,
-  int output_size,
   int output_align,
   int accum_size,
   int accum_align) -> int
 {
   warpspeed::SyncHandler syncHandler{};
   warpspeed::SmemAllocator smemAllocator{};
-  (void) output_size;
   const auto counts = make_scan_stage_counts(num_stages);
 
   const int align_inout = ::cuda::std::max({16, input_align, output_align});
@@ -857,7 +855,7 @@ struct policy_selector
 {
   int input_value_size;
   int input_value_alignment;
-  int output_value_size;
+  int output_value_size; // TODO(bgruber): unused at the moment
   int output_value_alignment;
   int accum_size;
   int accum_alignment;
@@ -953,7 +951,6 @@ struct policy_selector
           /* num_stages */ 1,
           input_value_size,
           input_value_alignment,
-          output_value_size,
           output_value_alignment,
           accum_size,
           accum_alignment)
