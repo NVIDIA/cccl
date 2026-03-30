@@ -766,7 +766,7 @@ public:
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       ({
-                        const int ptx_version = static_cast<int>(arch_id);
+                        const int ptx_version = static_cast<int>(arch_id) * 10;
                         histogram_policy policy{};
                         extract_policy_dispatch_t dispatch{policy};
                         MaxPolicy::Invoke(ptx_version, dispatch);
