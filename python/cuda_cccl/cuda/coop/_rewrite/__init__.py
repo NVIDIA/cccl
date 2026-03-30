@@ -64,7 +64,6 @@ CUDA_CCCL_COOP_MODULE_NAME = "cuda.coop"
 CUDA_CCCL_COOP_ARRAY_MODULE_NAME = f"{CUDA_CCCL_COOP_MODULE_NAME}._array"
 NUMBA_CUDA_ARRAY_MODULE_NAME = "numba.cuda.stubs"
 
-DEBUG_PRINT = False
 _GLOBAL_SYMBOL_ID_COUNTER = itertools.count(0)
 DEFAULT_STATIC_SHARED_MEMORY_BYTES = 48 * 1024
 MAX_SHARED_MEMORY_CARVEOUT_PERCENT = 100
@@ -2015,7 +2014,6 @@ class CoopArrayNode(CoopNode):
         array_decl = getattr(numba.cuda.cudadecl, array_decl_name)
         array_decl_ty = types.Function(array_decl)
 
-        # I'm 100% certain this is absolutely not the way to achieve this.
         if self.is_shared:
             mod_ty = CudaSharedModuleTemplate
         else:
@@ -2418,6 +2416,8 @@ class CoopNodeRewriter(Rewrite):
     # primitive call into the appropriate low-level IR that corresponds to the
     # underlying CUDA cooperative primitive implementation.
 
+    # IR module globals we track so rewrite-generated calls can reuse
+    # cached `numba` / `numba.cuda` module bindings.
     interesting_modules = {
         "numba",
         "numba.cuda",
