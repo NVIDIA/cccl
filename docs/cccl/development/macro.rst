@@ -424,6 +424,12 @@ Visibility Macros
 +-------------------------------+-----------------------------------------------------------------------------------------------------+
 | ``_CCCL_API``                 | Host/device function with hidden visibility. Most CCCL functions are hidden with this attribute     |
 +-------------------------------+-----------------------------------------------------------------------------------------------------+
+| ``_CCCL_HOST_API``            | Host function with hidden visibility. Most CCCL functions are hidden with this attribute            |
++-------------------------------+-----------------------------------------------------------------------------------------------------+
+| ``_CCCL_DEVICE_API``          | Device function with hidden visibility. Most CCCL functions are hidden with this attribute          |
++-------------------------------+-----------------------------------------------------------------------------------------------------+
+| ``_CCCL_KERNEL_ATTRIBUTES``   | Global function with hidden visibility. Most CCCL functions are hidden with this attribute          |
++-------------------------------+-----------------------------------------------------------------------------------------------------+
 
 ----
 
