@@ -14,20 +14,20 @@
 
 __host__ __device__ void test_size_and_alignment()
 {
-  using arr_t = cuda::uninitialized_array<int, 4>;
+  using arr_t = cuda::__uninitialized_array<int, 4>;
   static_assert(sizeof(arr_t) >= 4 * sizeof(int), "");
   static_assert(alignof(arr_t) == alignof(int), "");
 }
 
 __host__ __device__ void test_custom_alignment()
 {
-  using arr_t = cuda::uninitialized_array<int, 4, 32>;
+  using arr_t = cuda::__uninitialized_array<int, 4, 32>;
   static_assert(alignof(arr_t) == 32, "");
 }
 
 __host__ __device__ void test_element_access()
 {
-  cuda::uninitialized_array<int, 4> arr{};
+  cuda::__uninitialized_array<int, 4> arr{};
   arr[0] = 10;
   arr[1] = 20;
   arr[2] = 30;
@@ -40,7 +40,7 @@ __host__ __device__ void test_element_access()
 
 __host__ __device__ void test_data_pointer_const_correctness()
 {
-  using arr_t = cuda::uninitialized_array<int, 4>;
+  using arr_t = cuda::__uninitialized_array<int, 4>;
   static_assert(cuda::std::is_same<decltype(cuda::std::declval<arr_t&>().data()), int*>::value, "");
   static_assert(cuda::std::is_same<decltype(cuda::std::declval<const arr_t&>().data()), const int*>::value, "");
   arr_t arr{};
@@ -53,7 +53,7 @@ __host__ __device__ void test_no_value_initialization()
   {
     int x = 42;
   };
-  cuda::uninitialized_array<with_default_member_t, 4> arr{};
+  cuda::__uninitialized_array<with_default_member_t, 4> arr{};
   const auto* raw = reinterpret_cast<const unsigned char*>(arr.__data);
   for (size_t i = 0; i < sizeof(arr); ++i)
   {
@@ -63,11 +63,11 @@ __host__ __device__ void test_no_value_initialization()
 
 __host__ __device__ void test_basic_integers()
 {
-  cuda::uninitialized_array<char, 4> arr_char{};
-  cuda::uninitialized_array<short, 4> arr_short{};
-  cuda::uninitialized_array<int, 4> arr_int{};
-  cuda::uninitialized_array<long, 4> arr_long{};
-  cuda::uninitialized_array<long long, 4> arr_longlong{};
+  cuda::__uninitialized_array<char, 4> arr_char{};
+  cuda::__uninitialized_array<short, 4> arr_short{};
+  cuda::__uninitialized_array<int, 4> arr_int{};
+  cuda::__uninitialized_array<long, 4> arr_long{};
+  cuda::__uninitialized_array<long long, 4> arr_longlong{};
 
   arr_char[0] = 'a';
   assert(arr_char[0] == 'a');
@@ -83,8 +83,8 @@ __host__ __device__ void test_basic_integers()
 
 __host__ __device__ void test_floating_point()
 {
-  cuda::uninitialized_array<float, 4> arr_float{};
-  cuda::uninitialized_array<double, 4> arr_double{};
+  cuda::__uninitialized_array<float, 4> arr_float{};
+  cuda::__uninitialized_array<double, 4> arr_double{};
 
   arr_float[0] = 3.14f;
   assert(arr_float[0] == 3.14f);

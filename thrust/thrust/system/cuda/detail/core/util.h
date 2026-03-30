@@ -491,7 +491,7 @@ struct uninitialized
 // --------------
 // allocates uninitialized data on stack
 template <class T, size_t N, size_t Alignment = alignof(T)>
-using uninitialized_array = ::cuda::uninitialized_array<T, N, Alignment>;
+using uninitialized_array = ::cuda::__uninitialized_array<T, N, Alignment>;
 
 #if !_CCCL_COMPILER(NVRTC)
 namespace host

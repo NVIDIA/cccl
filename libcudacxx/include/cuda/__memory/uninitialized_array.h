@@ -31,7 +31,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! Aligned storage for _Tp elements (not constructed).
 //! Initialize before use with the `data()` method
 template <class _Tp, size_t _Size, size_t _Alignment = alignof(_Tp)>
-struct uninitialized_array
+struct __uninitialized_array
 {
   alignas(_Alignment) unsigned char __data[_Size * sizeof(_Tp)];
 
