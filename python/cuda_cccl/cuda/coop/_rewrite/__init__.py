@@ -149,7 +149,7 @@ def get_kernel_param_index_safe(code, name: str, *, include_kwonly=True):
         return None
 
 
-def get_kernel_param_value(name: str, launch_config: Any) -> Any:
+def get_kernel_param_value(name: str, launch_config) -> Any:
     """
     Return the value of the parameter *name* from the launch configuration.
     """
@@ -167,7 +167,7 @@ def get_kernel_param_value(name: str, launch_config: Any) -> Any:
     return args[idx]
 
 
-def get_kernel_param_value_safe(name: str, launch_config: Any) -> Any:
+def get_kernel_param_value_safe(name: str, launch_config) -> Any:
     """
     Return the value of the parameter *name* from the launch configuration.
     Returns None if the parameter is not found.
@@ -655,7 +655,7 @@ def get_root_definition(
     func_ir: ir.FunctionIR,
     typemap: dict[str, types.Type],
     calltypes: dict[ir.Expr, types.Type],
-    launch_config: Any,
+    launch_config,
     assignments_map: dict[ir.Var, ir.Assign],
     rewriter: Optional["CoopNodeRewriter"],
 ) -> Optional[RootDefinition]:
@@ -3859,7 +3859,7 @@ class CoopNodeRewriter(Rewrite):
         parent_root_def: RootDefinition,
         calltypes: dict[ir.Expr, types.Type],
         typemap: dict[str, types.Type],
-        launch_config: Any,
+        launch_config,
         child_expr: ir.Expr,
         child_template: Any,
     ) -> CoopNode:
@@ -3934,9 +3934,7 @@ class CoopNodeRewriter(Rewrite):
 
         return node
 
-    def handle_new_kernel_traits_struct(
-        self, struct: Any, name: str, launch_config: Any
-    ):
+    def handle_new_kernel_traits_struct(self, struct, name: str, launch_config):
         # N.B. See the comment in the `match()` method for more details about
         #      the purpose of this method and the `CustomPrepareArgs` class.
         needs_custom = not hasattr(struct, "prepare_args") or not hasattr(
