@@ -56,21 +56,21 @@ enum class counter_size
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class T>
-constexpr primitive_sample is_primitive_sample()
+_CCCL_API constexpr primitive_sample is_primitive_sample()
 {
   return is_primitive<T>::value ? primitive_sample::yes : primitive_sample::no;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class CounterT>
-constexpr counter_size classify_counter_size()
+_CCCL_API constexpr counter_size classify_counter_size()
 {
   return sizeof(CounterT) == 4 ? counter_size::_4 : counter_size::unknown;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class SampleT>
-constexpr sample_size classify_sample_size()
+_CCCL_API constexpr sample_size classify_sample_size()
 {
   return sizeof(SampleT) == 1 ? sample_size::_1 : sizeof(SampleT) == 2 ? sample_size::_2 : sample_size::unknown;
 }
@@ -167,7 +167,7 @@ struct policy_hub
   // TODO(bgruber): move inside t_scale in C++14
   static constexpr int v_scale = (sizeof(SampleT) + sizeof(int) - 1) / sizeof(int);
 
-  static constexpr int t_scale(int nominalItemsPerThread)
+  _CCCL_API static constexpr int t_scale(int nominalItemsPerThread)
   {
     return (::cuda::std::max) (nominalItemsPerThread / NumActiveChannels / v_scale, 1);
   }
@@ -185,7 +185,7 @@ struct policy_hub
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy500
     template <typename Tuning>
-    static auto select_agent_policy(int)
+    _CCCL_API static auto select_agent_policy(int)
       -> AgentHistogramPolicy<Tuning::threads,
                               Tuning::items,
                               Tuning::load_algorithm,
@@ -195,7 +195,7 @@ struct policy_hub
                               Tuning::work_stealing>;
 
     template <typename Tuning>
-    static auto select_agent_policy(long) -> typename Policy500::AgentHistogramPolicyT;
+    _CCCL_API static auto select_agent_policy(long) -> typename Policy500::AgentHistogramPolicyT;
 
     using AgentHistogramPolicyT =
       decltype(select_agent_policy<
@@ -208,7 +208,7 @@ struct policy_hub
   {
     // Use values from tuning if a specialization exists, otherwise pick Policy900
     template <typename Tuning>
-    static auto select_agent_policy(int)
+    _CCCL_API static auto select_agent_policy(int)
       -> AgentHistogramPolicy<Tuning::threads,
                               Tuning::items,
                               Tuning::load_algorithm,
@@ -219,7 +219,7 @@ struct policy_hub
                               Tuning::vec_size>;
 
     template <typename Tuning>
-    static auto select_agent_policy(long) -> typename Policy900::AgentHistogramPolicyT;
+    _CCCL_API static auto select_agent_policy(long) -> typename Policy900::AgentHistogramPolicyT;
 
     using AgentHistogramPolicyT =
       decltype(select_agent_policy<
