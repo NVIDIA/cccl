@@ -363,7 +363,7 @@ struct policy_selector_from_types
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> histogram_policy
   {
     constexpr auto policies = policy_selector{
-      is_primitive_sample<SampleT>() == primitive_sample::yes,
+      is_primitive_v<SampleT>,
       int{sizeof(SampleT)},
       int{sizeof(CounterT)},
       int{sizeof(SampleT)},
