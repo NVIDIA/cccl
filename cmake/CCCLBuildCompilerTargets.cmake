@@ -12,7 +12,11 @@ set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 option(CCCL_ENABLE_EXCEPTIONS "Enable exceptions within CCCL libraries." ON)
 option(CCCL_ENABLE_RTTI "Enable RTTI within CCCL libraries." ON)
 option(CCCL_ENABLE_WERROR "Treat warnings as errors for CCCL targets." ON)
-option(CCCL_ENABLE_PRAGMA_SYSTEM_HEADER "When OFF, disables the system header pragma in CCCL headers so that their warnings are visible." OFF)
+option(
+  CCCL_ENABLE_PRAGMA_SYSTEM_HEADER
+  "When OFF, disables the system header pragma in CCCL headers so that their warnings are visible."
+  OFF
+)
 option(CCCL_ENABLE_PTXAS_WARNINGS "Enable ptxas warnings" OFF) # currently used only in CUB
 
 function(
