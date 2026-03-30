@@ -295,61 +295,46 @@ private:
     return (::cuda::std::max) (nominal_items_per_thread / num_active_channels / sample_scale, 1);
   }
 
-  [[nodiscard]] _CCCL_API constexpr auto fallback_policy() const -> histogram_policy
-  {
-    return histogram_policy{384, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0};
-  }
-
 public:
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> histogram_policy
   {
-    auto policy = fallback_policy();
-    if (arch >= ::cuda::arch_id::sm_90)
-    {
-      policy.pdl_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
-      if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive)
-      {
-        if (sample_size == 1)
-        {
-          policy.block_threads     = 768;
-          policy.pixels_per_thread = 12;
-          policy.load_algorithm    = BLOCK_LOAD_DIRECT;
-          policy.load_modifier     = LOAD_LDG;
-          policy.rle_compress      = false;
-          policy.mem_preference    = SMEM;
-          policy.work_stealing     = false;
-          policy.vec_size          = 4;
-        }
-        else if (sample_size == 2)
-        {
-          policy.block_threads     = 960;
-          policy.pixels_per_thread = 10;
-          policy.load_algorithm    = BLOCK_LOAD_DIRECT;
-          policy.load_modifier     = LOAD_DEFAULT;
-          policy.rle_compress      = true;
-          policy.mem_preference    = SMEM;
-          policy.work_stealing     = false;
-          policy.vec_size          = 4;
-        }
-      }
-    }
-
     if (arch >= ::cuda::arch_id::sm_100)
     {
       if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && sample_size == 1)
       {
-        policy.block_threads     = is_even ? 928 : 448;
-        policy.pixels_per_thread = 12;
-        policy.load_algorithm    = BLOCK_LOAD_DIRECT;
-        policy.load_modifier     = is_even ? LOAD_CA : LOAD_LDG;
-        policy.rle_compress      = false;
-        policy.mem_preference    = SMEM;
-        policy.work_stealing     = false;
-        policy.vec_size          = 4;
+        if (is_even)
+        {
+          // ipt_12.tpb_928.rle_0.ws_0.mem_1.ld_2.laid_0.vec_2 1.033332  0.940517  1.031835  1.195876
+          return histogram_policy{928, 12, BLOCK_LOAD_DIRECT, LOAD_CA, false, SMEM, false, 1 << 2, 2048};
+        }
+        else
+        {
+          // ipt_12.tpb_448.rle_0.ws_0.mem_1.ld_1.laid_0.vec_2 1.078987  0.985542  1.085118  1.175637
+          return histogram_policy{448, 12, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 1 << 2, 2048};
+        }
+      }
+
+      // sample_size 2/4/8 showed no benefit over SM90 during verification benchmarks
+      // multi.even and multi.range: none of the found tunings surpassed the SM90 tuning during verification benchmarks
+    }
+
+    if (arch >= ::cuda::arch_id::sm_90)
+    {
+      if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive)
+      {
+        if (sample_size == 1)
+        {
+          return histogram_policy{768, 12, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 1 << 2, 2048};
+        }
+        else if (sample_size == 2)
+        {
+          return histogram_policy{960, 10, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, true, SMEM, false, 1 << 2, 2048};
+        }
       }
     }
 
-    return policy;
+    // fallback from SM50
+    return histogram_policy{384, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0};
   }
 };
 
