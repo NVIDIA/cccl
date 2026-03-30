@@ -763,6 +763,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
   return cudaSuccess;
 }
 
+// TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
 _CCCL_API constexpr auto convert_pdl_trigger(int)
   -> decltype(ActivePolicy::pdl_trigger_next_launch_in_init_kernel_max_bin_count)
@@ -770,12 +771,14 @@ _CCCL_API constexpr auto convert_pdl_trigger(int)
   return ActivePolicy::pdl_trigger_next_launch_in_init_kernel_max_bin_count;
 }
 
+// TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
 _CCCL_API constexpr auto convert_pdl_trigger(long)
 {
   return 0;
 }
 
+// TODO(bgruber): drop in CCCL 4.0
 template <typename ActivePolicy>
 _CCCL_API constexpr auto convert_policy() -> histogram_policy
 {
@@ -792,12 +795,34 @@ _CCCL_API constexpr auto convert_policy() -> histogram_policy
     convert_pdl_trigger<ActivePolicy>(0)};
 }
 
+// TODO(bgruber): drop in CCCL 4.0
 template <typename MaxPolicy>
 struct policy_selector_from_max_policy
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> histogram_policy
+private:
+  struct extract_policy_dispatch_t
   {
-    return convert_policy<typename MaxPolicy::ActivePolicy>();
+    histogram_policy& policy;
+
+    template <typename ActivePolicyT>
+    _CCCL_API constexpr cudaError_t Invoke()
+    {
+      policy = convert_policy<ActivePolicyT>();
+      return cudaSuccess;
+    }
+  };
+
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch_id) const -> histogram_policy
+  {
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      ({
+                        const int ptx_version = static_cast<int>(::cuda::compute_capability{arch_id});
+                        histogram_policy policy{};
+                        extract_policy_dispatch_t dispatch{policy};
+                        MaxPolicy::Invoke(ptx_version, dispatch);
+                        return policy;
+                      }),
+                      ({ return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>(); }));
   }
 };
 } // namespace detail::histogram
