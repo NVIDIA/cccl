@@ -159,16 +159,22 @@ struct DeviceHistogramKernelSource
 
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
+          int PRIVATIZED_SMEM_BINS,
+          bool IsDeviceInit,
+          bool IsEven,
+          bool IsByteSample,
           typename SampleIteratorT,
           typename CounterT,
           typename FirstLevelArrayT,
           typename SecondLevelArrayT,
           typename OffsetT,
-          typename DeviceHistogramInitKernelT,
-          typename DeviceHistogramSweepKernelT,
+          typename PolicySelector,
           typename KernelSource,
           typename KernelLauncherFactory>
-CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invoke_dispatch(
+#if _CCCL_HAS_CONCEPTS()
+  requires histogram_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   SampleIteratorT d_samples,
@@ -182,12 +188,45 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   OffsetT num_rows,
   OffsetT row_stride_samples,
   cudaStream_t stream,
-  DeviceHistogramInitKernelT histogram_init_kernel,
-  DeviceHistogramSweepKernelT histogram_sweep_kernel,
-  histogram_policy active_policy,
-  KernelSource kernel_source,
-  KernelLauncherFactory launcher_factory)
+  PolicySelector policy_selector         = {},
+  KernelSource kernel_source             = {},
+  KernelLauncherFactory launcher_factory = {})
 {
+  ::cuda::arch_id arch_id{};
+  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  {
+    return error;
+  }
+
+  const histogram_policy active_policy = policy_selector(arch_id);
+
+#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST,
+               (std::stringstream ss; ss << active_policy;
+                _CubLog("Dispatching DeviceHistogram to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
+#endif
+
+  const auto init_kernel = kernel_source.template HistogramInitKernel<PolicySelector>();
+  auto sweep_kernel      = [&] {
+    if constexpr (IsDeviceInit)
+    {
+      return kernel_source.template HistogramSweepKernelDeviceInit<
+             PolicySelector,
+             PRIVATIZED_SMEM_BINS,
+             FirstLevelArrayT,
+             SecondLevelArrayT,
+             IsEven,
+             IsByteSample>();
+    }
+    else
+    {
+      using output_decode_op_t     = typename FirstLevelArrayT::value_type;
+      using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
+      return kernel_source
+        .template HistogramSweepKernel<PolicySelector, PRIVATIZED_SMEM_BINS, privatized_decode_op_t, output_decode_op_t>();
+    }
+  }();
+
   const int block_threads     = active_policy.block_threads;
   const int pixels_per_thread = active_policy.pixels_per_thread;
 
@@ -198,15 +237,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     return error;
   }
 
-  // Get SM occupancy for histogram_sweep_kernel
+  // Get SM occupancy for sweep_kernel
   int histogram_sweep_sm_occupancy;
   if (const auto error =
-        CubDebug(launcher_factory.MaxSmOccupancy(histogram_sweep_sm_occupancy, histogram_sweep_kernel, block_threads)))
+        CubDebug(launcher_factory.MaxSmOccupancy(histogram_sweep_sm_occupancy, sweep_kernel, block_threads)))
   {
     return error;
   }
 
-  // Get device occupancy for histogram_sweep_kernel
+  // Get device occupancy for sweep_kernel
   int histogram_sweep_occupancy = histogram_sweep_sm_occupancy * sm_count;
 
   if (num_row_pixels * NUM_CHANNELS == row_stride_samples)
@@ -292,7 +331,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   // Invoke histogram_init_kernel
   if (const auto error = CubDebug(
         launcher_factory(histogram_init_grid_dims, histogram_init_block_threads, 0, stream, true)
-          .doit(histogram_init_kernel, num_output_bins_wrapper, d_output_histograms, tile_queue)))
+          .doit(init_kernel, num_output_bins_wrapper, d_output_histograms, tile_queue)))
   {
     return error;
   }
@@ -318,7 +357,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
 
   if (const auto error = CubDebug(
         launcher_factory(sweep_grid_dims, block_threads, 0, stream, true)
-          .doit(histogram_sweep_kernel,
+          .doit(sweep_kernel,
                 d_samples,
                 num_output_bins_wrapper,
                 num_privatized_bins_wrapper,
@@ -348,96 +387,6 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   }
 
   return cudaSuccess;
-}
-
-template <int NUM_CHANNELS,
-          int NUM_ACTIVE_CHANNELS,
-          int PRIVATIZED_SMEM_BINS,
-          bool IsDeviceInit,
-          bool IsEven,
-          bool IsByteSample,
-          typename SampleIteratorT,
-          typename CounterT,
-          typename FirstLevelArrayT,
-          typename SecondLevelArrayT,
-          typename OffsetT,
-          typename PolicySelector,
-          typename KernelSource,
-          typename KernelLauncherFactory>
-#if _CCCL_HAS_CONCEPTS()
-  requires histogram_policy_selector<PolicySelector>
-#endif // _CCCL_HAS_CONCEPTS()
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  SampleIteratorT d_samples,
-  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
-  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels,
-  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
-  FirstLevelArrayT first_level_array,
-  SecondLevelArrayT second_level_array,
-  int max_num_output_bins,
-  OffsetT num_row_pixels,
-  OffsetT num_rows,
-  OffsetT row_stride_samples,
-  cudaStream_t stream,
-  PolicySelector policy_selector         = {},
-  KernelSource kernel_source             = {},
-  KernelLauncherFactory launcher_factory = {})
-{
-  ::cuda::arch_id arch_id{};
-  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
-  {
-    return error;
-  }
-
-  const histogram_policy active_policy = policy_selector(arch_id);
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST,
-               (std::stringstream ss; ss << active_policy;
-                _CubLog("Dispatching DeviceHistogram to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
-#endif
-
-  auto sweep_kernel = [&] {
-    if constexpr (IsDeviceInit)
-    {
-      return kernel_source.template HistogramSweepKernelDeviceInit<
-        PolicySelector,
-        PRIVATIZED_SMEM_BINS,
-        FirstLevelArrayT,
-        SecondLevelArrayT,
-        IsEven,
-        IsByteSample>();
-    }
-    else
-    {
-      using output_decode_op_t     = typename FirstLevelArrayT::value_type;
-      using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
-      return kernel_source
-        .template HistogramSweepKernel<PolicySelector, PRIVATIZED_SMEM_BINS, privatized_decode_op_t, output_decode_op_t>();
-    }
-  }();
-
-  return invoke_dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_samples,
-    d_output_histograms,
-    num_privatized_levels,
-    num_output_levels,
-    first_level_array,
-    second_level_array,
-    max_num_output_bins,
-    num_row_pixels,
-    num_rows,
-    row_stride_samples,
-    stream,
-    kernel_source.template HistogramInitKernel<PolicySelector>(),
-    sweep_kernel,
-    active_policy,
-    kernel_source,
-    launcher_factory);
 }
 
 // Dispatch routines for device-side decode operator initialization. These differ from the default dispatch routines in
