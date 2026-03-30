@@ -4356,14 +4356,17 @@ class CoopNodeRewriter(Rewrite):
                     if root_def.attr_instance is not two_phase_instance:
                         msg = (
                             "Invariant violation: getattr root attribute "
-                            "instance does not match two-phase instance"
+                            "instance mismatch; "
+                            f"got {root_def.attr_instance!r}, "
+                            f"expected {two_phase_instance!r}"
                         )
                         raise RuntimeError(msg)
                 else:
                     if root_def.instance is not two_phase_instance:
                         msg = (
-                            "Invariant violation: root instance does not "
-                            "match two-phase instance"
+                            "Invariant violation: root instance mismatch; "
+                            f"got {root_def.instance!r}, "
+                            f"expected {two_phase_instance!r}"
                         )
                         raise RuntimeError(msg)
 
