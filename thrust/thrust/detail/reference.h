@@ -23,13 +23,12 @@
 #include <thrust/system/detail/generic/memory.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
-
-#include <ostream>
 
 // Include all active backend system implementations (sequential, host and device) (there is no generic implementation)
 #include <thrust/system/detail/sequential/assign_value.h>

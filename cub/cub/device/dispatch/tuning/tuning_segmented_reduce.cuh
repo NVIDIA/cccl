@@ -15,9 +15,7 @@
 
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif
+#include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::segmented_reduce

@@ -20,9 +20,9 @@
 
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/cstdint>
-
-#include <iostream>
 
 THRUST_NAMESPACE_BEGIN
 

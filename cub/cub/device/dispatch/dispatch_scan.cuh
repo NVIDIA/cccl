@@ -41,6 +41,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -52,10 +53,6 @@
 
 #include <cuda_runtime_api.h>
 #include <cudaTypedefs.h>
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif
 
 CUB_NAMESPACE_BEGIN
 
