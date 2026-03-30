@@ -163,33 +163,41 @@ _CCCL_HOST_DEVICE complex<T>& complex<T>::operator/=(const U& z)
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE bool operator==(const complex<T0>& x, const complex<T1>& y)
 {
-  return x.real() == y.real() && x.imag() == y.imag();
+  using T = ::cuda::std::common_type_t<T0, T1>;
+  return static_cast<T>(x.real()) == static_cast<T>(y.real())
+      && static_cast<T>(x.imag()) == static_cast<T>(y.imag());
 }
 
 #if !_CCCL_COMPILER(NVRTC)
 template <typename T0, typename T1>
 _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const complex<T0>& x, const ::std::complex<T1>& y)
 {
-  return x.real() == THRUST_STD_COMPLEX_REAL(y) && x.imag() == THRUST_STD_COMPLEX_IMAG(y);
+  using T = ::cuda::std::common_type_t<T0, T1>;
+  return static_cast<T>(x.real()) == static_cast<T>(THRUST_STD_COMPLEX_REAL(y))
+      && static_cast<T>(x.imag()) == static_cast<T>(THRUST_STD_COMPLEX_IMAG(y));
 }
 
 template <typename T0, typename T1>
 _CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const ::std::complex<T0>& x, const complex<T1>& y)
 {
-  return THRUST_STD_COMPLEX_REAL(x) == y.real() && THRUST_STD_COMPLEX_IMAG(x) == y.imag();
+  using T = ::cuda::std::common_type_t<T0, T1>;
+  return static_cast<T>(THRUST_STD_COMPLEX_REAL(x)) == static_cast<T>(y.real())
+      && static_cast<T>(THRUST_STD_COMPLEX_IMAG(x)) == static_cast<T>(y.imag());
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE bool operator==(const T0& x, const complex<T1>& y)
 {
-  return x == y.real() && y.imag() == T1();
+  using T = ::cuda::std::common_type_t<T0, T1>;
+  return static_cast<T>(x) == static_cast<T>(y.real()) && static_cast<T>(y.imag()) == T();
 }
 
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE bool operator==(const complex<T0>& x, const T1& y)
 {
-  return x.real() == y && x.imag() == T1();
+  using T = ::cuda::std::common_type_t<T0, T1>;
+  return static_cast<T>(x.real()) == static_cast<T>(y) && static_cast<T>(x.imag()) == T();
 }
 
 template <typename T0, typename T1>

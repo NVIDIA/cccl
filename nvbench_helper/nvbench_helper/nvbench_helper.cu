@@ -344,8 +344,8 @@ void generator_t::generate(
     case bit_entropy::_0_000: {
       std::mt19937 rng;
       rng.seed(static_cast<std::mt19937::result_type>(seed.get()));
-      std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-      T random_value = random_to_item_t<T>(min, max)(dist(rng));
+      std::uniform_real_distribution<float> float_dist(0.0f, 1.0f);
+      T random_value = random_to_item_t<T>(min, max)(static_cast<double>(float_dist(rng)));
       thrust::fill(exec, span.data(), span.data() + span.size(), random_value);
       return;
     }
@@ -415,9 +415,9 @@ void generator_t::generate(
     case bit_entropy::_0_000: {
       std::mt19937 rng;
       rng.seed(static_cast<std::mt19937::result_type>(seed.get()));
-      std::uniform_real_distribution<double> dist(0.0f, 1.0f);
-      const float random_imag = random_to_item_t<double>(min.imag(), max.imag())(dist(rng));
-      const float random_real = random_to_item_t<double>(min.imag(), max.imag())(dist(rng));
+      std::uniform_real_distribution<double> double_dist(0.0, 1.0);
+      const float random_imag = random_to_item_t<double>(min.imag(), max.imag())(double_dist(rng));
+      const float random_real = random_to_item_t<double>(min.imag(), max.imag())(double_dist(rng));
       thrust::fill(exec, span.data(), span.data() + span.size(), cuda::std::complex<T>{random_real, random_imag});
       return;
     }

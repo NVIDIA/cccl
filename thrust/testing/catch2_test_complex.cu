@@ -213,8 +213,8 @@ TEMPLATE_LIST_TEST_CASE("ComplexConstructionAndAssignmentWithPromoting", "[compl
     thrust::complex<T0> copy_assign{};
     const thrust::complex<T1> expected{real_T1, imag_T1};
     copy_assign = expected;
-    CHECK(expected.real() == copy_assign.real());
-    CHECK(expected.imag() == copy_assign.imag());
+    CHECK(static_cast<double>(expected.real()) == static_cast<double>(copy_assign.real()));
+    CHECK(static_cast<double>(expected.imag()) == static_cast<double>(copy_assign.imag()));
   }
 
   {
@@ -223,7 +223,7 @@ TEMPLATE_LIST_TEST_CASE("ComplexConstructionAndAssignmentWithPromoting", "[compl
     const T1 to_be_copied = real_T1;
     assign_from_lvalue_T  = to_be_copied;
     require_almost_equal(expected.real(), assign_from_lvalue_T.real());
-    CHECK(expected.imag() == assign_from_lvalue_T.imag());
+    CHECK(static_cast<double>(expected.imag()) == static_cast<double>(assign_from_lvalue_T.imag()));
   }
 
   {

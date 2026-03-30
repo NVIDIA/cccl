@@ -179,25 +179,29 @@ function(cccl_build_compiler_targets)
     append_option_if_available("-Wvla" cxx_compile_options)
 
     # Strict warnings: catch shadowed variables, missing virtual destructors,
-    # null dereference, implicit float-to-double, and format string issues.
+    # implicit float-to-double, and format string issues.
     # Note: -Wpedantic is intentionally omitted — nvcc's preprocessor emits
     # GCC-style line directives that trigger unavoidable pedantic warnings.
+    # Note: -Wnull-dereference is intentionally omitted — GCC produces many
+    # false positives in system headers (e.g. streambuf) when inlining user code.
     append_option_if_available("-Wshadow=local" cxx_compile_options)
     append_option_if_available("-Wnon-virtual-dtor" cxx_compile_options)
-    append_option_if_available("-Wnull-dereference" cxx_compile_options)
     append_option_if_available("-Wdouble-promotion" cxx_compile_options)
     append_option_if_available("-Wformat=2" cxx_compile_options)
 
-    # Disable GNU extensions (flag is clang only)
-    append_option_if_available("-Wgnu" cxx_compile_options)
-    append_option_if_available("-Wno-gnu-line-marker" cxx_compile_options) # WAR 3916341
-    # Calling a variadic macro with zero args is a GNU extension until C++20,
-    # but the THRUST_PP_ARITY macro is used with zero args. Need to see if this
-    # is a real problem worth fixing.
-    append_option_if_available(
-      "-Wno-gnu-zero-variadic-macro-arguments"
-      cxx_compile_options
-    )
+    # Disable GNU extensions (flags are clang only — GCC rejects unknown
+    # -Wno-* flags under -Werror)
+    if ("Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+      append_option_if_available("-Wgnu" cxx_compile_options)
+      append_option_if_available("-Wno-gnu-line-marker" cxx_compile_options) # WAR 3916341
+      # Calling a variadic macro with zero args is a GNU extension until C++20,
+      # but the THRUST_PP_ARITY macro is used with zero args. Need to see if this
+      # is a real problem worth fixing.
+      append_option_if_available(
+        "-Wno-gnu-zero-variadic-macro-arguments"
+        cxx_compile_options
+      )
+    endif()
 
     # This complains about functions in CUDA system headers when used with nvcc.
     append_option_if_available("-Wno-unused-function" cxx_compile_options)

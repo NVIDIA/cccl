@@ -36,7 +36,7 @@ int main()
     for (size_t j = 0; j < 2; j++)
     {
       // Section named "baz" using RAII
-      auto s_bar = ctx.dot_section("baz");
+      auto s_baz = ctx.dot_section("baz");
       ctx.task(lA.read(), lC.rw()).set_symbol("t2")->*[](cudaStream_t) {};
       ctx.task(lB.read(), lC.read(), lA.rw()).set_symbol("t3")->*[](cudaStream_t) {};
       // Implicit end of section "baz"

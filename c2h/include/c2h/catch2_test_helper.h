@@ -251,7 +251,7 @@ public:
       , m_matcher(matcher)
   {}
 
-  ~QuietMatchExpr() override = default;
+  virtual ~QuietMatchExpr() = default;
 
   void streamReconstructedExpression(std::ostream& os) const override
   {
