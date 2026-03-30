@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_histogram.cuh>
+#include <cub/device/dispatch/tuning/tuning_histogram.cuh>
 #include <cub/grid/grid_queue.cuh>
 
 #include <cuda/std/__numeric/reduce.h>
@@ -312,6 +313,9 @@ struct Transforms
 
 //! Histogram initialization kernel entry point
 //!
+//! @tparam PolicySelector
+//!   Selects the tuning policy
+//!
 //! @tparam NumActiveChannels
 //!   Number of channels actively being histogrammed
 //!
@@ -329,21 +333,24 @@ struct Transforms
 //!
 //! @param tile_queue
 //!   Drain queue descriptor for dynamically mapping tile data onto thread blocks
-template <typename ChainedPolicyT, int NumActiveChannels, typename CounterT, typename OffsetT>
+template <typename PolicySelector, int NumActiveChannels, typename CounterT, typename OffsetT>
+#if _CCCL_HAS_CONCEPTS()
+  requires histogram_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
   ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
   ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
   GridQueue<int> tile_queue)
 {
+  [[maybe_unused]] static constexpr histogram_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
   _CCCL_PDL_GRID_DEPENDENCY_SYNC(); // TODO(bgruber): if we had the guarantee that there would be no pending
                                     // writes/reads to the temp storage, we could omit the sync here
 
   // we trigger the sweep kernel only if we have a small number of remaining writes in this kernel
-  NV_IF_TARGET(NV_PROVIDES_SM_90,
-               (if (::cuda::std::reduce(num_output_bins_wrapper.begin(), num_output_bins_wrapper.end())
-                    <= ChainedPolicyT::ActivePolicy::pdl_trigger_next_launch_in_init_kernel_max_bin_count) {
-                 _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
-               }));
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (if (::cuda::std::reduce(num_output_bins_wrapper.begin(), num_output_bins_wrapper.end())
+         <= policy.pdl_trigger_next_launch_in_init_kernel_max_bin_count) { _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); }));
 
   if ((threadIdx.x == 0) && (blockIdx.x == 0))
   {
@@ -366,8 +373,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
 //! Computes privatized histograms, one per thread block.
 //! This kernel receives pre-initialized decode operators from the host.
 //!
-//! @tparam ChainedPolicyT
-//!   Max policy from a policy hub containing the AgentHistogramPolicy policy
+//! @tparam PolicySelector
+//!   Selects the tuning policy
 //!
 //! @tparam PrivatizedSmemBins
 //!   Maximum number of histogram bins per channel (e.g., up to 256)
@@ -433,7 +440,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
 //!
 //! @param tile_queue
 //!   Drain queue descriptor for dynamically mapping tile data onto thread blocks
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           int PrivatizedSmemBins,
           int NumChannels,
           int NumActiveChannels,
@@ -442,7 +449,10 @@ template <typename ChainedPolicyT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
           typename OffsetT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK_THREADS))
+#if _CCCL_HAS_CONCEPTS()
+  requires histogram_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -457,8 +467,18 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
     _CCCL_GRID_CONSTANT const int tiles_per_row,
     GridQueue<int> tile_queue)
 {
+  static constexpr histogram_policy hp = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+
   // Thread block type for compositing input tiles
-  using AgentHistogramPolicyT = typename ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT;
+  using AgentHistogramPolicyT =
+    AgentHistogramPolicy<hp.block_threads,
+                         hp.pixels_per_thread,
+                         hp.load_algorithm,
+                         hp.load_modifier,
+                         hp.rle_compress,
+                         hp.mem_preference,
+                         hp.work_stealing,
+                         hp.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
                    PrivatizedSmemBins,
@@ -497,8 +517,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
 //! Computes privatized histograms, one per thread block.
 //! This kernel initializes decode operators from level arrays inside the kernel.
 //!
-//! @tparam ChainedPolicyT
-//!   Max policy from a policy hub containing the AgentHistogramPolicy policy
+//! @tparam PolicySelector
+//!   Selects the tuning policy
 //!
 //! @tparam PrivatizedSmemBins
 //!   Maximum number of histogram bins per channel (e.g., up to 256)
@@ -576,7 +596,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
 //!
 //! @param tile_queue
 //!   Drain queue descriptor for dynamically mapping tile data onto thread blocks
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           int PrivatizedSmemBins,
           int NumChannels,
           int NumActiveChannels,
@@ -589,7 +609,10 @@ template <typename ChainedPolicyT,
           typename OutputDecodeOpT,
           typename OffsetT,
           bool IsEven>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK_THREADS))
+#if _CCCL_HAS_CONCEPTS()
+  requires histogram_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDeviceInitKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
@@ -604,6 +627,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
     _CCCL_GRID_CONSTANT const int tiles_per_row,
     _CCCL_GRID_CONSTANT const GridQueue<int> tile_queue)
 {
+  static constexpr histogram_policy hp = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+
   OutputDecodeOpT output_decode_op[NumActiveChannels];
   PrivatizedDecodeOpT privatized_decode_op[NumActiveChannels];
   if constexpr (IsEven)
@@ -631,7 +656,15 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK
   }
 
   // Thread block type for compositing input tiles
-  using AgentHistogramPolicyT = typename ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT;
+  using AgentHistogramPolicyT =
+    AgentHistogramPolicy<hp.block_threads,
+                         hp.pixels_per_thread,
+                         hp.load_algorithm,
+                         hp.load_modifier,
+                         hp.rle_compress,
+                         hp.mem_preference,
+                         hp.work_stealing,
+                         hp.vec_size>;
   using AgentHistogramT =
     AgentHistogram<AgentHistogramPolicyT,
                    PrivatizedSmemBins,
