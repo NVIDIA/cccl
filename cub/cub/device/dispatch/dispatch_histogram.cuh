@@ -812,19 +812,399 @@ private:
     }
   };
 
+public:
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch_id) const -> histogram_policy
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       ({
-                        const int ptx_version = static_cast<int>(::cuda::compute_capability{arch_id});
+                        const int ptx_version = static_cast<int>(arch_id);
                         histogram_policy policy{};
                         extract_policy_dispatch_t dispatch{policy};
                         MaxPolicy::Invoke(ptx_version, dispatch);
                         return policy;
                       }),
-                      ({ return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>(); }));
+                      ({ return convert_policy<typename MaxPolicy::ActivePolicy>(); }));
   }
 };
+
+template <typename PolicyHub>
+struct policy_selector_from_hub
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::arch_id) const -> histogram_policy
+  {
+    return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
+  }
+};
+
+template <
+  int NUM_CHANNELS,
+  int NUM_ACTIVE_CHANNELS,
+  typename SampleIteratorT,
+  typename CounterT,
+  typename LevelT,
+  typename OffsetT,
+  bool IsByteSample,
+  typename PolicySelector,
+  typename SampleT = it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
+  typename KernelSource =
+    DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, SampleT>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+CUB_RUNTIME_FUNCTION static cudaError_t dispatch_range(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  SampleIteratorT d_samples,
+  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
+  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
+  ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS> d_levels,
+  OffsetT num_row_pixels,
+  OffsetT num_rows,
+  OffsetT row_stride_samples,
+  cudaStream_t stream,
+  ::cuda::std::bool_constant<IsByteSample>,
+  PolicySelector policy_selector,
+  KernelSource kernel_source             = {},
+  KernelLauncherFactory launcher_factory = {})
+{
+  if constexpr (IsByteSample)
+  {
+    using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
+
+    // Use the pass-thru transform op for converting samples to privatized bins
+    using PrivatizedDecodeOpT = typename TransformsT::PassThruTransform;
+
+    // Use the search transform op for converting privatized bins to output bins
+    using OutputDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
+
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
+    ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+    ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
+    int max_levels = num_output_levels[0];
+
+    for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+    {
+      num_privatized_levels[channel] = 257;
+      output_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
+
+      if (num_output_levels[channel] > max_levels)
+      {
+        max_levels = num_output_levels[channel];
+      }
+    }
+    int max_num_output_bins = max_levels - 1;
+
+    constexpr int PRIVATIZED_SMEM_BINS = 256;
+
+    if (const auto error = CubDebug(
+          (detail::histogram::dispatch<
+            NUM_CHANNELS,
+            NUM_ACTIVE_CHANNELS,
+            PRIVATIZED_SMEM_BINS,
+            false, // IsDeviceInit
+            false, // IsEven (unused for host-init)
+            false // IsByteSample (unused for host-init)
+            >(d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_privatized_levels,
+              num_output_levels,
+              output_decode_op,
+              privatized_decode_op,
+              max_num_output_bins,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream,
+              policy_selector,
+              kernel_source,
+              launcher_factory))))
+    {
+      return error;
+    }
+  }
+  else
+  {
+    using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
+
+    // Use the search transform op for converting samples to privatized bins
+    using PrivatizedDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
+
+    // Use the pass-thru transform op for converting privatized bins to output bins
+    using OutputDecodeOpT = typename TransformsT::PassThruTransform;
+
+    ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+    ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
+    int max_levels = num_output_levels[0];
+
+    for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+    {
+      privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
+      if (num_output_levels[channel] > max_levels)
+      {
+        max_levels = num_output_levels[channel];
+      }
+    }
+    int max_num_output_bins = max_levels - 1;
+
+    // Dispatch
+    if (max_num_output_bins > max_privatized_smem_bins)
+    {
+      // Too many bins to keep in shared memory.
+      constexpr int PRIVATIZED_SMEM_BINS = 0;
+
+      if (const auto error = CubDebug(
+            (detail::histogram::dispatch<
+              NUM_CHANNELS,
+              NUM_ACTIVE_CHANNELS,
+              PRIVATIZED_SMEM_BINS,
+              false, // IsDeviceInit
+              false, // IsEven (unused for host-init)
+              false // IsByteSample (unused for host-init)
+              >(d_temp_storage,
+                temp_storage_bytes,
+                d_samples,
+                d_output_histograms,
+                num_output_levels,
+                num_output_levels,
+                output_decode_op,
+                privatized_decode_op,
+                max_num_output_bins,
+                num_row_pixels,
+                num_rows,
+                row_stride_samples,
+                stream,
+                policy_selector,
+                kernel_source,
+                launcher_factory))))
+      {
+        return error;
+      }
+    }
+    else
+    {
+      // Dispatch shared-privatized approach
+      constexpr int PRIVATIZED_SMEM_BINS = max_privatized_smem_bins;
+
+      if (const auto error = CubDebug(
+            (detail::histogram::dispatch<
+              NUM_CHANNELS,
+              NUM_ACTIVE_CHANNELS,
+              PRIVATIZED_SMEM_BINS,
+              false, // IsDeviceInit
+              false, // IsEven (unused for host-init)
+              false // IsByteSample (unused for host-init)
+              >(d_temp_storage,
+                temp_storage_bytes,
+                d_samples,
+                d_output_histograms,
+                num_output_levels,
+                num_output_levels,
+                output_decode_op,
+                privatized_decode_op,
+                max_num_output_bins,
+                num_row_pixels,
+                num_rows,
+                row_stride_samples,
+                stream,
+                policy_selector,
+                kernel_source,
+                launcher_factory))))
+      {
+        return error;
+      }
+    }
+  }
+
+  return cudaSuccess;
+}
+
+template <
+  int NUM_CHANNELS,
+  int NUM_ACTIVE_CHANNELS,
+  typename SampleIteratorT,
+  typename CounterT,
+  typename LevelT,
+  typename OffsetT,
+  bool IsByteSample,
+  typename PolicySelector,
+  typename SampleT = it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
+  typename KernelSource =
+    DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, SampleT>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_even(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  SampleIteratorT d_samples,
+  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
+  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
+  ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level,
+  ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level,
+  OffsetT num_row_pixels,
+  OffsetT num_rows,
+  OffsetT row_stride_samples,
+  cudaStream_t stream,
+  ::cuda::std::bool_constant<IsByteSample>,
+  PolicySelector policy_selector,
+  KernelSource kernel_source             = {},
+  KernelLauncherFactory launcher_factory = {})
+{
+  if constexpr (IsByteSample)
+  {
+    using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
+
+    // Use the pass-thru transform op for converting samples to privatized bins
+    using PrivatizedDecodeOpT = typename TransformsT::PassThruTransform;
+
+    // Use the scale transform op for converting privatized bins to output bins
+    using OutputDecodeOpT = typename TransformsT::ScaleTransform;
+
+    using CommonT = typename TransformsT::ScaleTransform::CommonT;
+
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
+    ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+    ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
+    int max_levels = num_output_levels[0];
+
+    for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+    {
+      num_privatized_levels[channel] = 257;
+
+      int num_levels = num_output_levels[channel];
+      if (kernel_source.MayOverflow(static_cast<CommonT>(num_levels - 1), upper_level, lower_level, channel))
+      {
+        if (!d_temp_storage)
+        {
+          temp_storage_bytes = 1U;
+        }
+        return cudaErrorInvalidValue;
+      }
+
+      output_decode_op[channel].Init(num_levels, upper_level[channel], lower_level[channel]);
+
+      if (num_levels > max_levels)
+      {
+        max_levels = num_levels;
+      }
+    }
+    int max_num_output_bins = max_levels - 1;
+
+    constexpr int PRIVATIZED_SMEM_BINS = 256;
+
+    if (const auto error = CubDebug(
+          (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_samples,
+            d_output_histograms,
+            num_privatized_levels,
+            num_output_levels,
+            output_decode_op,
+            privatized_decode_op,
+            max_num_output_bins,
+            num_row_pixels,
+            num_rows,
+            row_stride_samples,
+            stream,
+            policy_selector,
+            kernel_source,
+            launcher_factory))))
+    {
+      return error;
+    }
+  }
+  else
+  {
+    using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
+
+    // Use the scale transform op for converting samples to privatized bins
+    using PrivatizedDecodeOpT = typename TransformsT::ScaleTransform;
+
+    // Use the pass-thru transform op for converting privatized bins to output bins
+    using OutputDecodeOpT = typename TransformsT::PassThruTransform;
+
+    using CommonT = typename TransformsT::ScaleTransform::CommonT;
+
+    ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
+    ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
+    int max_levels = num_output_levels[0];
+
+    for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
+    {
+      int num_levels = num_output_levels[channel];
+      if (kernel_source.MayOverflow(static_cast<CommonT>(num_levels - 1), upper_level, lower_level, channel))
+      {
+        if (!d_temp_storage)
+        {
+          temp_storage_bytes = 1U;
+        }
+        return cudaErrorInvalidValue;
+      }
+
+      privatized_decode_op[channel].Init(num_levels, upper_level[channel], lower_level[channel]);
+
+      if (num_levels > max_levels)
+      {
+        max_levels = num_levels;
+      }
+    }
+    int max_num_output_bins = max_levels - 1;
+
+    if (max_num_output_bins > max_privatized_smem_bins)
+    {
+      constexpr int PRIVATIZED_SMEM_BINS = 0;
+
+      if (const auto error = CubDebug(
+            (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              num_output_levels,
+              output_decode_op,
+              privatized_decode_op,
+              max_num_output_bins,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream,
+              policy_selector,
+              kernel_source,
+              launcher_factory))))
+      {
+        return error;
+      }
+    }
+    else
+    {
+      constexpr int PRIVATIZED_SMEM_BINS = max_privatized_smem_bins;
+
+      if (const auto error = CubDebug(
+            (detail::histogram::dispatch<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, PRIVATIZED_SMEM_BINS, false, false, false>(
+              d_temp_storage,
+              temp_storage_bytes,
+              d_samples,
+              d_output_histograms,
+              num_output_levels,
+              num_output_levels,
+              output_decode_op,
+              privatized_decode_op,
+              max_num_output_bins,
+              num_row_pixels,
+              num_rows,
+              row_stride_samples,
+              stream,
+              policy_selector,
+              kernel_source,
+              launcher_factory))))
+      {
+        return error;
+      }
+    }
+  }
+
+  return cudaSuccess;
+}
 } // namespace detail::histogram
 
 /******************************************************************************
@@ -886,8 +1266,7 @@ struct DispatchHistogram
   //---------------------------------------------------------------------
 
   /**
-   * Dispatch routine for HistogramRange with host-side decode operator initialization,
-   * specialized for sample types larger than 8bit.
+   * Dispatch routine for HistogramRange with host-side decode operator initialization.
    * This variant initializes the decode operators on the host before kernel launch.
    *
    * @param d_temp_storage
@@ -934,7 +1313,8 @@ struct DispatchHistogram
               ::cuda::std::is_void_v<PolicyHub>,
               /* fallback_policy_hub */
               detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 0>,
-              PolicyHub>::MaxPolicy>
+              PolicyHub>::MaxPolicy,
+            bool IsByteSample>
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -946,233 +1326,30 @@ struct DispatchHistogram
     OffsetT num_rows,
     OffsetT row_stride_samples,
     cudaStream_t stream,
-    ::cuda::std::false_type /*is_byte_sample*/,
+    ::cuda::std::bool_constant<IsByteSample> is_byte_sample,
     KernelSource kernel_source             = {},
     KernelLauncherFactory launcher_factory = {},
     [[maybe_unused]] MaxPolicyT max_policy = {})
   {
-    using TransformsT = detail::histogram::Transforms<LevelT, OffsetT, SampleT>;
-
-    // Use the search transform op for converting samples to privatized bins
-    using PrivatizedDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
-
-    // Use the pass-thru transform op for converting privatized bins to output bins
-    using OutputDecodeOpT = typename TransformsT::PassThruTransform;
-
-    ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
-    ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
-    int max_levels = num_output_levels[0];
-
-    for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
-    {
-      privatized_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
-      if (num_output_levels[channel] > max_levels)
-      {
-        max_levels = num_output_levels[channel];
-      }
-    }
-    int max_num_output_bins = max_levels - 1;
-
-    // Dispatch
-    if (max_num_output_bins > detail::histogram::max_privatized_smem_bins)
-    {
-      // Too many bins to keep in shared memory.
-      constexpr int PRIVATIZED_SMEM_BINS = 0;
-
-      if (const auto error = CubDebug(
-            (detail::histogram::dispatch<
-              NUM_CHANNELS,
-              NUM_ACTIVE_CHANNELS,
-              PRIVATIZED_SMEM_BINS,
-              false, // IsDeviceInit
-              false, // IsEven (unused for host-init)
-              false // IsByteSample (unused for host-init)
-              >(d_temp_storage,
-                temp_storage_bytes,
-                d_samples,
-                d_output_histograms,
-                num_output_levels,
-                num_output_levels,
-                output_decode_op,
-                privatized_decode_op,
-                max_num_output_bins,
-                num_row_pixels,
-                num_rows,
-                row_stride_samples,
-                stream,
-                detail::histogram::policy_selector_from_max_policy<MaxPolicyT>{},
-                kernel_source,
-                launcher_factory))))
-      {
-        return error;
-      }
-    }
-    else
-    {
-      // Dispatch shared-privatized approach
-      constexpr int PRIVATIZED_SMEM_BINS = detail::histogram::max_privatized_smem_bins;
-
-      if (const auto error = CubDebug(
-            (detail::histogram::dispatch<
-              NUM_CHANNELS,
-              NUM_ACTIVE_CHANNELS,
-              PRIVATIZED_SMEM_BINS,
-              false, // IsDeviceInit
-              false, // IsEven (unused for host-init)
-              false // IsByteSample (unused for host-init)
-              >(d_temp_storage,
-                temp_storage_bytes,
-                d_samples,
-                d_output_histograms,
-                num_output_levels,
-                num_output_levels,
-                output_decode_op,
-                privatized_decode_op,
-                max_num_output_bins,
-                num_row_pixels,
-                num_rows,
-                row_stride_samples,
-                stream,
-                detail::histogram::policy_selector_from_max_policy<MaxPolicyT>{},
-                kernel_source,
-                launcher_factory))))
-      {
-        return error;
-      }
-    }
-
-    return cudaSuccess;
+    return detail::histogram::dispatch_range<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_samples,
+      d_output_histograms,
+      num_output_levels,
+      d_levels,
+      num_row_pixels,
+      num_rows,
+      row_stride_samples,
+      stream,
+      is_byte_sample,
+      detail::histogram::policy_selector_from_max_policy<MaxPolicyT>{},
+      kernel_source,
+      launcher_factory);
   }
 
   /**
-   * Dispatch routine for HistogramRange with host-side decode operator initialization,
-   * specialized for 8-bit sample types
-   * (computes 256-bin privatized histograms and then reduces to user-specified levels).
-   * This variant initializes the decode operators on the host before kernel launch.
-   *
-   * @param d_temp_storage
-   *   Device-accessible allocation of temporary storage.
-   *   When nullptr, the required allocation size is written to `temp_storage_bytes` and
-   *   no work is done.
-   *
-   * @param temp_storage_bytes
-   *   Reference to size in bytes of `d_temp_storage` allocation
-   *
-   * @param d_samples
-   *   The pointer to the multi-channel input sequence of data samples.
-   *   The samples from different channels are assumed to be interleaved
-   *   (e.g., an array of 32-bit pixels where each pixel consists of four RGBA 8-bit samples).
-   *
-   * @param d_output_histograms
-   *   The pointers to the histogram counter output arrays, one for each active channel.
-   *   For channel<sub><em>i</em></sub>, the allocation length of
-   *   `d_histograms[i]` should be `num_output_levels[i] - 1`.
-   *
-   * @param num_output_levels
-   *   The number of boundaries (levels) for delineating histogram samples in each active channel.
-   *   Implies that the number of bins for channel<sub><em>i</em></sub> is
-   *   `num_output_levels[i] - 1`.
-   *
-   * @param d_levels
-   *   The pointers to the arrays of boundaries (levels), one for each active channel.
-   *   Bin ranges are defined by consecutive boundary pairings: lower sample value boundaries are
-   *   inclusive and upper sample value boundaries are exclusive.
-   *
-   * @param num_row_pixels
-   *   The number of multi-channel pixels per row in the region of interest
-   *
-   * @param num_rows
-   *   The number of rows in the region of interest
-   *
-   * @param row_stride_samples
-   *   The number of samples between starts of consecutive rows in the region of interest
-   *
-   * @param stream
-   *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
-   *
-   */
-  template <typename MaxPolicyT = typename ::cuda::std::_If<
-              ::cuda::std::is_void_v<PolicyHub>,
-              /* fallback_policy_hub */
-              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 0>,
-              PolicyHub>::MaxPolicy>
-  CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
-    ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS> d_levels,
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    OffsetT row_stride_samples,
-    cudaStream_t stream,
-    ::cuda::std::true_type /*is_byte_sample*/,
-    KernelSource kernel_source             = {},
-    KernelLauncherFactory launcher_factory = {},
-    [[maybe_unused]] MaxPolicyT max_policy = {})
-  {
-    using TransformsT = detail::histogram::Transforms<LevelT, OffsetT, SampleT>;
-
-    // Use the pass-thru transform op for converting samples to privatized bins
-    using PrivatizedDecodeOpT = typename TransformsT::PassThruTransform;
-
-    // Use the search transform op for converting privatized bins to output bins
-    using OutputDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
-
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
-    ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
-    ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
-    int max_levels = num_output_levels[0]; // Maximum number of levels in any channel
-
-    for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
-    {
-      num_privatized_levels[channel] = 257;
-      output_decode_op[channel].Init(d_levels[channel], num_output_levels[channel]);
-
-      if (num_output_levels[channel] > max_levels)
-      {
-        max_levels = num_output_levels[channel];
-      }
-    }
-    int max_num_output_bins = max_levels - 1;
-
-    constexpr int PRIVATIZED_SMEM_BINS = 256;
-
-    if (const auto error = CubDebug(
-          (detail::histogram::dispatch<
-            NUM_CHANNELS,
-            NUM_ACTIVE_CHANNELS,
-            PRIVATIZED_SMEM_BINS,
-            false, // IsDeviceInit
-            false, // IsEven (unused for host-init)
-            false // IsByteSample (unused for host-init)
-            >(d_temp_storage,
-              temp_storage_bytes,
-              d_samples,
-              d_output_histograms,
-              num_privatized_levels,
-              num_output_levels,
-              output_decode_op,
-              privatized_decode_op,
-              max_num_output_bins,
-              num_row_pixels,
-              num_rows,
-              row_stride_samples,
-              stream,
-              detail::histogram::policy_selector_from_max_policy<MaxPolicyT>{},
-              kernel_source,
-              launcher_factory))))
-    {
-      return error;
-    }
-
-    return cudaSuccess;
-  }
-
-  /**
-   * Dispatch routine for HistogramEven with host-side decode operator initialization,
-   * specialized for sample types larger than 8-bit.
+   * Dispatch routine for HistogramEven with host-side decode operator initialization.
    * This variant initializes the decode operators on the host before kernel launch.
    *
    * @param d_temp_storage
@@ -1222,7 +1399,8 @@ struct DispatchHistogram
               ::cuda::std::is_void_v<PolicyHub>,
               /* fallback_policy_hub */
               detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 1>,
-              PolicyHub>::MaxPolicy>
+              PolicyHub>::MaxPolicy,
+            bool IsByteSample>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1235,262 +1413,27 @@ struct DispatchHistogram
     OffsetT num_rows,
     OffsetT row_stride_samples,
     cudaStream_t stream,
-    ::cuda::std::false_type /*is_byte_sample*/,
+    ::cuda::std::bool_constant<IsByteSample> is_byte_sample,
     KernelSource kernel_source             = {},
     KernelLauncherFactory launcher_factory = {},
     [[maybe_unused]] MaxPolicyT max_policy = {})
   {
-    using TransformsT = detail::histogram::Transforms<LevelT, OffsetT, SampleT>;
-
-    // Use the scale transform op for converting samples to privatized bins
-    using PrivatizedDecodeOpT = typename TransformsT::ScaleTransform;
-
-    // Use the pass-thru transform op for converting privatized bins to output bins
-    using OutputDecodeOpT = typename TransformsT::PassThruTransform;
-
-    using CommonT = typename TransformsT::ScaleTransform::CommonT;
-
-    ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
-    ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
-    int max_levels = num_output_levels[0];
-
-    for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
-    {
-      int num_levels = num_output_levels[channel];
-      if (kernel_source.MayOverflow(static_cast<CommonT>(num_levels - 1), upper_level, lower_level, channel))
-      {
-        // Make sure to also return a reasonable value for `temp_storage_bytes` in case of
-        // an overflow of the bin computation, in which case a subsequent algorithm
-        // invocation will also fail
-        if (!d_temp_storage)
-        {
-          temp_storage_bytes = 1U;
-        }
-        return cudaErrorInvalidValue;
-      }
-
-      privatized_decode_op[channel].Init(num_levels, upper_level[channel], lower_level[channel]);
-
-      if (num_levels > max_levels)
-      {
-        max_levels = num_levels;
-      }
-    }
-    int max_num_output_bins = max_levels - 1;
-
-    if (max_num_output_bins > detail::histogram::max_privatized_smem_bins)
-    {
-      // Dispatch shared-privatized approach
-      constexpr int PRIVATIZED_SMEM_BINS = 0;
-
-      if (const auto error = CubDebug(
-            (detail::histogram::dispatch<
-              NUM_CHANNELS,
-              NUM_ACTIVE_CHANNELS,
-              PRIVATIZED_SMEM_BINS,
-              false, // IsDeviceInit
-              false, // IsEven (unused for host-init)
-              false // IsByteSample (unused for host-init)
-              >(d_temp_storage,
-                temp_storage_bytes,
-                d_samples,
-                d_output_histograms,
-                num_output_levels,
-                num_output_levels,
-                output_decode_op,
-                privatized_decode_op,
-                max_num_output_bins,
-                num_row_pixels,
-                num_rows,
-                row_stride_samples,
-                stream,
-                detail::histogram::policy_selector_from_max_policy<MaxPolicyT>{},
-                kernel_source,
-                launcher_factory))))
-      {
-        return error;
-      }
-    }
-    else
-    {
-      // Dispatch shared-privatized approach
-      constexpr int PRIVATIZED_SMEM_BINS = detail::histogram::max_privatized_smem_bins;
-
-      if (const auto error = CubDebug(
-            (detail::histogram::dispatch<
-              NUM_CHANNELS,
-              NUM_ACTIVE_CHANNELS,
-              PRIVATIZED_SMEM_BINS,
-              false, // IsDeviceInit
-              false, // IsEven (unused for host-init)
-              false // IsByteSample (unused for host-init)
-              >(d_temp_storage,
-                temp_storage_bytes,
-                d_samples,
-                d_output_histograms,
-                num_output_levels,
-                num_output_levels,
-                output_decode_op,
-                privatized_decode_op,
-                max_num_output_bins,
-                num_row_pixels,
-                num_rows,
-                row_stride_samples,
-                stream,
-                detail::histogram::policy_selector_from_max_policy<MaxPolicyT>{},
-                kernel_source,
-                launcher_factory))))
-      {
-        return error;
-      }
-    }
-
-    return cudaSuccess;
-  }
-
-  /**
-   * Dispatch routine for HistogramEven with host-side decode operator initialization,
-   * specialized for 8-bit sample types
-   * (computes 256-bin privatized histograms and then reduces to user-specified levels).
-   * This variant initializes the decode operators on the host before kernel launch.
-   *
-   * @param d_temp_storage
-   *   Device-accessible allocation of temporary storage.
-   *   When nullptr, the required allocation size is written to `temp_storage_bytes` and
-   *   no work is done.
-   *
-   * @param temp_storage_bytes
-   *   Reference to size in bytes of `d_temp_storage` allocation
-   *
-   * @param d_samples
-   *   The pointer to the input sequence of sample items. The samples from different channels are
-   *   assumed to be interleaved (e.g., an array of 32-bit pixels where each pixel consists of
-   *   four RGBA 8-bit samples).
-   *
-   * @param d_output_histograms
-   *   The pointers to the histogram counter output arrays, one for each active channel.
-   *   For channel<sub><em>i</em></sub>, the allocation length of `d_histograms[i]` should be
-   *   `num_output_levels[i] - 1`.
-   *
-   * @param num_output_levels
-   *   The number of bin level boundaries for delineating histogram samples in each active channel.
-   *   Implies that the number of bins for channel<sub><em>i</em></sub> is
-   *   `num_output_levels[i] - 1`.
-   *
-   * @param lower_level
-   *   The lower sample value bound (inclusive) for the lowest histogram bin in each active channel.
-   *
-   * @param upper_level
-   *   The upper sample value bound (exclusive) for the highest histogram bin in each active
-   * channel.
-   *
-   * @param num_row_pixels
-   *   The number of multi-channel pixels per row in the region of interest
-   *
-   * @param num_rows
-   *   The number of rows in the region of interest
-   *
-   * @param row_stride_samples
-   *   The number of samples between starts of consecutive rows in the region of interest
-   *
-   * @param stream
-   *   CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
-   *
-   */
-  template <typename MaxPolicyT = typename ::cuda::std::_If<
-              ::cuda::std::is_void_v<PolicyHub>,
-              /* fallback_policy_hub */
-              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 1>,
-              PolicyHub>::MaxPolicy>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
-    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level,
-    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level,
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    OffsetT row_stride_samples,
-    cudaStream_t stream,
-    ::cuda::std::true_type /*is_byte_sample*/,
-    KernelSource kernel_source             = {},
-    KernelLauncherFactory launcher_factory = {},
-    [[maybe_unused]] MaxPolicyT max_policy = {})
-  {
-    using TransformsT = detail::histogram::Transforms<LevelT, OffsetT, SampleT>;
-
-    // Use the pass-thru transform op for converting samples to privatized bins
-    using PrivatizedDecodeOpT = typename TransformsT::PassThruTransform;
-
-    // Use the scale transform op for converting privatized bins to output bins
-    using OutputDecodeOpT = typename TransformsT::ScaleTransform;
-
-    using CommonT = typename TransformsT::ScaleTransform::CommonT;
-
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
-    ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
-    ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
-    int max_levels = num_output_levels[0];
-
-    for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
-    {
-      num_privatized_levels[channel] = 257;
-
-      int num_levels = num_output_levels[channel];
-      if (kernel_source.MayOverflow(static_cast<CommonT>(num_levels - 1), upper_level, lower_level, channel))
-      {
-        // Make sure to also return a reasonable value for `temp_storage_bytes` in case of
-        // an overflow of the bin computation, in which case a subsequent algorithm
-        // invocation will also fail
-        if (!d_temp_storage)
-        {
-          temp_storage_bytes = 1U;
-        }
-        return cudaErrorInvalidValue;
-      }
-
-      output_decode_op[channel].Init(num_levels, upper_level[channel], lower_level[channel]);
-
-      if (num_levels > max_levels)
-      {
-        max_levels = num_levels;
-      }
-    }
-    int max_num_output_bins = max_levels - 1;
-
-    constexpr int PRIVATIZED_SMEM_BINS = 256;
-
-    if (const auto error = CubDebug(
-          (detail::histogram::dispatch<
-            NUM_CHANNELS,
-            NUM_ACTIVE_CHANNELS,
-            PRIVATIZED_SMEM_BINS,
-            false, // IsDeviceInit
-            false, // IsEven (unused for host-init)
-            false // IsByteSample (unused for host-init)
-            >(d_temp_storage,
-              temp_storage_bytes,
-              d_samples,
-              d_output_histograms,
-              num_privatized_levels,
-              num_output_levels,
-              output_decode_op,
-              privatized_decode_op,
-              max_num_output_bins,
-              num_row_pixels,
-              num_rows,
-              row_stride_samples,
-              stream,
-              detail::histogram::policy_selector_from_max_policy<MaxPolicyT>{},
-              kernel_source,
-              launcher_factory))))
-    {
-      return error;
-    }
-
-    return cudaSuccess;
+    return detail::histogram::dispatch_even<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_samples,
+      d_output_histograms,
+      num_output_levels,
+      lower_level,
+      upper_level,
+      num_row_pixels,
+      num_rows,
+      row_stride_samples,
+      stream,
+      is_byte_sample,
+      detail::histogram::policy_selector_from_max_policy<MaxPolicyT>{},
+      kernel_source,
+      launcher_factory);
   }
 };
 
