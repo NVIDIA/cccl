@@ -159,6 +159,7 @@ set(
   interface/data_from_device_2.cu
   interface/data_from_device_wb.cu
   interface/graph_use_device_data.cu
+  interface/host_launch_deps.cu
   interface/mix_stream_and_graph.cu
   interface/mix_stream_and_graph_2.cu
   interface/scal.cu

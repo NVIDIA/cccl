@@ -128,8 +128,18 @@ projects:
     lite_dependencies: [cccl_c_parallel_public]
     full_dependencies: []
     include_regexes:
-    - "python/"
+    - "python/cuda_cccl/"
     - "pyproject.toml"
+    exclude_regexes:
+    - "python/cuda_cccl_experimental/"
+
+  python_experimental:
+    name: "Python Experimental"
+    matrix_project: "python_experimental"
+    lite_dependencies: [cccl_c_stf, python]
+    full_dependencies: []
+    include_regexes:
+    - "python/cuda_cccl_experimental/"
 
   packaging:
     name: "CCCL Packaging"

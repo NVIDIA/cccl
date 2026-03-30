@@ -440,6 +440,30 @@ typedef struct stf_task_handle_t* stf_task_handle;
 
 typedef struct stf_cuda_kernel_handle_t* stf_cuda_kernel_handle;
 
+//!
+//! \brief Opaque handle for a host launch scope
+//!
+//! A host launch scope schedules a user-provided C callback on the host
+//! as a proper task graph node, with full dependency tracking.
+//! Created with stf_host_launch_create() and destroyed with stf_host_launch_destroy().
+
+typedef struct stf_host_launch_handle_t* stf_host_launch_handle;
+
+//!
+//! \brief Opaque handle for host launch dependency data
+//!
+//! Passed to the host callback at invocation time.  Provides indexed
+//! access to the data of each dependency and to optional user data.
+
+typedef struct stf_host_launch_deps_handle_t* stf_host_launch_deps_handle;
+
+//!
+//! \brief C callback type for host launch
+//!
+//! \param deps Opaque handle to dependency data and user data
+
+typedef void (*stf_host_callback_fn)(stf_host_launch_deps_handle deps);
+
 //! \}
 
 //! \defgroup Context Context Management
@@ -1274,6 +1298,329 @@ void stf_cuda_kernel_end(stf_cuda_kernel_handle k);
 //! \see stf_cuda_kernel_create()
 
 void stf_cuda_kernel_destroy(stf_cuda_kernel_handle k);
+
+//! \}
+
+//! \defgroup HostLaunch Host Launch
+//! \brief Schedule a host callback as a task graph node with dependency tracking
+//!
+//! \details
+//! Host launch provides a way to run arbitrary host-side functions as part of
+//! the task graph. Unlike generic tasks where the user manually launches work
+//! on a stream, host launch automatically schedules a C callback via
+//! `cudaLaunchHostFunc` (stream context) or `cudaGraphAddHostNode` (graph context).
+//!
+//! This is the untyped counterpart of the C++ `ctx.host_launch(deps...)->*lambda`
+//! construct, designed for use from C and Python bindings.
+//! \{
+
+//! \brief Create a host launch scope on a regular context
+//!
+//! \param ctx Context handle
+//! \param[out] h Pointer to receive host launch handle
+//!
+//! \see stf_host_launch_destroy()
+void stf_host_launch_create(stf_ctx_handle ctx, stf_host_launch_handle* h);
+
+//! \brief Add a dependency to a host launch scope
+//!
+//! \param h Host launch handle
+//! \param ld Logical data handle
+//! \param m Access mode (STF_READ, STF_WRITE, STF_RW)
+//!
+//! \see stf_task_add_dep()
+void stf_host_launch_add_dep(stf_host_launch_handle h, stf_logical_data_handle ld, stf_access_mode m);
+
+//! \brief Set the debug symbol for a host launch scope
+//!
+//! \param h Host launch handle
+//! \param symbol Null-terminated string
+void stf_host_launch_set_symbol(stf_host_launch_handle h, const char* symbol);
+
+//! \brief Copy user data into the host launch scope
+//!
+//! The data is copied and later accessible via
+//! stf_host_launch_deps_get_user_data() inside the callback.
+//! An optional destructor is called on the copied buffer when the
+//! dependency handle is destroyed.
+//!
+//! \param h Host launch handle
+//! \param data Pointer to user data
+//! \param size Size of user data in bytes
+//! \param dtor Optional destructor for the copied data (may be NULL)
+void stf_host_launch_set_user_data(stf_host_launch_handle h, const void* data, size_t size, void (*dtor)(void*));
+
+//! \brief Submit the host callback and finalize the scope
+//!
+//! After this call, the callback will be invoked on the host when all
+//! read/write dependencies are satisfied.  The callback receives an
+//! opaque deps handle for accessing dependency data and user data.
+//!
+//! \param h Host launch handle
+//! \param callback Function pointer invoked on the host
+//!
+//! \see stf_host_launch_create()
+void stf_host_launch_submit(stf_host_launch_handle h, stf_host_callback_fn callback);
+
+//! \brief Destroy a host launch handle
+//!
+//! \param h Host launch handle
+//!
+//! \see stf_host_launch_create()
+void stf_host_launch_destroy(stf_host_launch_handle h);
+
+//! \brief Get the raw data pointer for a dependency
+//!
+//! Returns the host-side pointer to the data of the dependency at \p index.
+//! The pointer is valid only during the callback execution.
+//!
+//! \param deps Dependency handle
+//! \param index Zero-based dependency index
+//! \return Pointer to the data (as `slice<char>` data handle)
+void* stf_host_launch_deps_get(stf_host_launch_deps_handle deps, size_t index);
+
+//! \brief Get the byte size of a dependency
+//!
+//! \param deps Dependency handle
+//! \param index Zero-based dependency index
+//! \return Size in bytes
+size_t stf_host_launch_deps_get_size(stf_host_launch_deps_handle deps, size_t index);
+
+//! \brief Get the number of dependencies
+//!
+//! \param deps Dependency handle
+//! \return Number of dependencies
+size_t stf_host_launch_deps_size(stf_host_launch_deps_handle deps);
+
+//! \brief Get the user data pointer
+//!
+//! \param deps Dependency handle
+//! \return Pointer to the copied user data, or NULL if none was set
+void* stf_host_launch_deps_get_user_data(stf_host_launch_deps_handle deps);
+
+//! \}
+
+//! \defgroup StackableContext Stackable Context
+//! \brief Nestable context with graph scopes, while loops, and repeat
+//!
+//! \details
+//! The stackable context provides hierarchical task graph nesting. The root
+//! context is a stream backend; nested scopes create graph contexts that
+//! capture work into CUDA graphs. While loops and repeat scopes use CUDA 12.4+
+//! conditional graph nodes.
+//! \{
+
+//! \brief Create a stackable context (root is stream backend)
+//!
+//! \param[out] ctx Pointer to receive context handle
+void stf_stackable_ctx_create(stf_ctx_handle* ctx);
+
+//! \brief Finalize a stackable context
+//!
+//! \param ctx Stackable context handle
+void stf_stackable_ctx_finalize(stf_ctx_handle ctx);
+
+//! \brief Get fence stream for a stackable context (must be at root level)
+//!
+//! \param ctx Stackable context handle
+//! \return CUDA stream for synchronization
+cudaStream_t stf_stackable_ctx_fence(stf_ctx_handle ctx);
+
+//! \brief Push a graph scope (nested graph context)
+//!
+//! \param ctx Stackable context handle
+void stf_stackable_push_graph(stf_ctx_handle ctx);
+
+//! \brief Pop the current scope (graph scope only; use specific pop for while/repeat)
+//!
+//! \param ctx Stackable context handle
+void stf_stackable_pop(stf_ctx_handle ctx);
+
+//! \brief Opaque handle for a while loop scope
+typedef struct stf_while_scope_handle_t* stf_while_scope_handle;
+
+//! \brief Opaque handle for a repeat scope
+typedef struct stf_repeat_scope_handle_t* stf_repeat_scope_handle;
+
+#if CUDART_VERSION >= 12040
+
+//! \brief Push a while loop scope (CUDA 12.4+ conditional graph node)
+//!
+//! \param ctx Stackable context handle
+//! \param[out] scope Pointer to receive while scope handle
+void stf_stackable_push_while(stf_ctx_handle ctx, stf_while_scope_handle* scope);
+
+//! \brief Pop (destroy) a while loop scope
+//!
+//! \param scope While scope handle from stf_stackable_push_while()
+void stf_stackable_pop_while(stf_while_scope_handle scope);
+
+//! \brief Get the cudaGraphConditionalHandle for manual condition setting
+//!
+//! \param scope While scope handle
+//! \return The conditional handle as a 64-bit integer (cast of cudaGraphConditionalHandle)
+uint64_t stf_while_scope_get_cond_handle(stf_while_scope_handle scope);
+
+//! \brief Push a repeat scope (fixed iteration count, CUDA 12.4+)
+//!
+//! The repeat scope automatically creates a counter, initializes it, and sets
+//! up the decrement-and-check condition. The user only needs to provide the
+//! loop body tasks between push and pop.
+//!
+//! \param ctx Stackable context handle
+//! \param count Number of iterations
+//! \param[out] scope Pointer to receive repeat scope handle
+void stf_stackable_push_repeat(stf_ctx_handle ctx, size_t count, stf_repeat_scope_handle* scope);
+
+//! \brief Pop (destroy) a repeat scope
+//!
+//! \param scope Repeat scope handle from stf_stackable_push_repeat()
+void stf_stackable_pop_repeat(stf_repeat_scope_handle scope);
+
+//! \brief Comparison operator for built-in while conditions
+typedef enum stf_compare_op
+{
+  STF_CMP_GT = 0, //!< Greater than (>)
+  STF_CMP_LT = 1, //!< Less than (<)
+  STF_CMP_GE = 2, //!< Greater than or equal (>=)
+  STF_CMP_LE = 3, //!< Less than or equal (<=)
+} stf_compare_op;
+
+//! \brief Data type for built-in while condition scalars
+typedef enum stf_dtype
+{
+  STF_DTYPE_FLOAT32 = 0,
+  STF_DTYPE_FLOAT64 = 1,
+  STF_DTYPE_INT32   = 2,
+  STF_DTYPE_INT64   = 3,
+} stf_dtype;
+
+//! \brief Set a built-in while loop condition: continue while scalar <op> threshold
+//!
+//! Creates an internal task that reads the scalar logical data, compares it
+//! against the threshold, and calls cudaGraphSetConditional accordingly.
+//! Call this inside the while scope, after all loop body tasks.
+//!
+//! \param ctx Stackable context handle
+//! \param scope While scope handle
+//! \param ld Logical data handle for a scalar value (1 element)
+//! \param op Comparison operator
+//! \param threshold Threshold value for comparison
+//! \param dtype Data type of the scalar
+void stf_stackable_while_cond_scalar(
+  stf_ctx_handle ctx,
+  stf_while_scope_handle scope,
+  stf_logical_data_handle ld,
+  stf_compare_op op,
+  double threshold,
+  stf_dtype dtype);
+
+#endif // CUDART_VERSION >= 12040
+
+//! \brief Create logical data on a stackable context from existing memory
+//!
+//! \param ctx Stackable context handle
+//! \param[out] ld Pointer to receive logical data handle
+//! \param addr Pointer to existing data
+//! \param sz Size in bytes
+//! \param dplace Data place specification
+void stf_stackable_logical_data_with_place(
+  stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz, stf_data_place dplace);
+
+//! \brief Create logical data on a stackable context (convenience: host data place)
+//!
+//! \param ctx Stackable context handle
+//! \param[out] ld Pointer to receive logical data handle
+//! \param addr Pointer to existing host data
+//! \param sz Size in bytes
+void stf_stackable_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz);
+
+//! \brief Create empty logical data on a stackable context
+//!
+//! \param ctx Stackable context handle
+//! \param length Size in bytes
+//! \param[out] to Pointer to receive logical data handle
+void stf_stackable_logical_data_empty(stf_ctx_handle ctx, size_t length, stf_logical_data_handle* to);
+
+//! \brief Create a synchronization token on a stackable context
+//!
+//! \param ctx Stackable context handle
+//! \param[out] ld Pointer to receive token handle
+void stf_stackable_token(stf_ctx_handle ctx, stf_logical_data_handle* ld);
+
+//! \brief Set symbol on stackable logical data
+void stf_stackable_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol);
+
+//! \brief Mark stackable logical data as read-only (enables concurrent reads across scopes)
+void stf_stackable_logical_data_set_read_only(stf_logical_data_handle ld);
+
+//! \brief Destroy stackable logical data
+void stf_stackable_logical_data_destroy(stf_logical_data_handle ld);
+
+//! \brief Destroy a stackable token (separate from logical data due to internal type difference)
+void stf_stackable_token_destroy(stf_logical_data_handle ld);
+
+//! \brief Create a task on a stackable context
+//!
+//! Creates a task on the current (head) underlying context. Dependencies
+//! are added with stf_stackable_task_add_dep which handles auto-push of
+//! data across scope boundaries.
+//!
+//! After creation, use stf_task_start(), stf_task_end(), stf_task_get_custream(),
+//! and stf_task_get() as normal.
+//!
+//! \param ctx Stackable context handle
+//! \param[out] t Pointer to receive task handle
+void stf_stackable_task_create(stf_ctx_handle ctx, stf_task_handle* t);
+
+//! \brief Add dependency to a stackable task (validates and auto-pushes data across scopes)
+//!
+//! \param ctx Stackable context handle (needed for auto-push validation)
+//! \param t Task handle
+//! \param ld Stackable logical data handle
+//! \param m Access mode
+void stf_stackable_task_add_dep(stf_ctx_handle ctx, stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m);
+
+//! \brief Add dependency with data place to a stackable task
+//!
+//! \param ctx Stackable context handle
+//! \param t Task handle
+//! \param ld Stackable logical data handle
+//! \param m Access mode
+//! \param data_p Data place specification
+void stf_stackable_task_add_dep_with_dplace(
+  stf_ctx_handle ctx, stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m, stf_data_place* data_p);
+
+//! \brief Create a host launch scope on a stackable context
+//!
+//! Creates the scope on the current (head) underlying context.
+//!
+//! \param ctx Stackable context handle
+//! \param[out] h Pointer to receive host launch handle
+void stf_stackable_host_launch_create(stf_ctx_handle ctx, stf_host_launch_handle* h);
+
+//! \brief Add a dependency to a stackable host launch scope
+//!
+//! Validates access and auto-pushes data across scope boundaries,
+//! just like stf_stackable_task_add_dep().
+//!
+//! \param ctx Stackable context handle (needed for auto-push validation)
+//! \param h Host launch handle
+//! \param ld Stackable logical data handle
+//! \param m Access mode
+void stf_stackable_host_launch_add_dep(
+  stf_ctx_handle ctx, stf_host_launch_handle h, stf_logical_data_handle ld, stf_access_mode m);
+
+//! \brief Submit the host callback on a stackable host launch scope
+//!
+//! \param h Host launch handle
+//! \param callback Function pointer invoked on the host
+void stf_stackable_host_launch_submit(stf_host_launch_handle h, stf_host_callback_fn callback);
+
+//! \brief Destroy a stackable host launch handle
+//!
+//! \param h Host launch handle
+void stf_stackable_host_launch_destroy(stf_host_launch_handle h);
 
 //! \}
 
