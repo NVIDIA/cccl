@@ -4164,41 +4164,14 @@ class CoopNodeRewriter(Rewrite):
                 debug_print(f"Found existing node for {target_name!r} skipping...")
                 continue
 
-            # N.B. This code block used to have a lot more functionality, but
-            #      has shrunk considerably after hoisting out logic elsewhere.
-            #      It now looks ridiculous and will certainly get refactored
-            #      in the future.
-            is_variable_kind = isinstance(
-                rhs,
-                (
-                    ir.Arg,
-                    ir.Var,
-                    ir.Global,
-                    ir.FreeVar,
-                ),
-            )
-            if is_variable_kind:
-                value = None
-                if isinstance(rhs, ir.Arg):
-                    pass
-                elif isinstance(rhs, ir.Var):
-                    pass
-                elif isinstance(rhs, ir.FreeVar):
-                    pass
-                else:
-                    value = rhs.value
-
-                if value is None:
-                    continue
-
-                # If the rhs is a module, check to see if it's in our list
-                # of interesting modules, and, if so, make a note of it.
-                if isinstance(value, PyModuleType):
-                    module = value
-                    module_name = module.__name__
-                    if module_name in interesting_modules:
-                        if module_name not in self._modules:
-                            self._modules[module_name] = instr
+            if isinstance(rhs, ir.Global) and isinstance(rhs.value, PyModuleType):
+                module_name = rhs.value.__name__
+                if (
+                    module_name in interesting_modules
+                    and module_name not in self._modules
+                ):
+                    self._modules[module_name] = instr
+                continue
 
             if not isinstance(rhs, ir.Expr):
                 continue
@@ -4228,13 +4201,6 @@ class CoopNodeRewriter(Rewrite):
                                 )
                                 self.seen_structs.add(arg_name)
                 continue
-
-            if False and expr.op in ("getitem", "static_getitem"):
-                import debugpy
-
-                debugpy.breakpoint()
-                debug_print(f"Found: {expr!r} at {expr.loc}")
-                # We can ignore these; they are not function calls.
 
             # We can ignore nodes that aren't function calls herein.
             if expr.op != "call":
