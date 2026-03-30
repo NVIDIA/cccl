@@ -95,7 +95,7 @@
 // This attribute should be used only for cluster launches.
 #if (_CCCL_CUDA_COMPILER(NVCC, >=, 12, 9) || _CCCL_CUDA_COMPILER(NVRTC, >=, 12, 9)) && _CCCL_PTX_ARCH() >= 900
 #  define _CCCL_BLOCK_SIZE(_NTID, _NCTA_PER_CLUSTER) __block_size__(_NTID, _NCTA_PER_CLUSTER)
-#elif (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)) && _CCCL_PTX_ARCH >= 900
+#elif (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)) && _CCCL_PTX_ARCH() >= 900
 #  define _CCCL_BLOCK_SIZE(_NTID, _NCTA_PER_CLUSTER) __cluster_dims__ _NCTA_PER_CLUSTER
 #else // ^^ has __block_size__ attribute ^^^ / vvv no __block_size__ attribute vvv
 #  define _CCCL_BLOCK_SIZE(_NTID, _NCTA_PER_CLUSTER)
