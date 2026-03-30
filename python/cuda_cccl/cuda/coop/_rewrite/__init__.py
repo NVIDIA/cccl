@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# This module is responsible for rewriting cuda.coop single-phase
-# primitives detected in typed Numba IR into equivalent two-phase invocations.
+# This module is responsible for rewriting cuda.coop single-phase primitives
+# detected in typed Numba IR into equivalent two-phase invocations.
 
 import functools
 import inspect
@@ -12,6 +12,7 @@ import operator
 import os
 import struct
 import sys
+import warnings
 from collections import OrderedDict, defaultdict
 from dataclasses import dataclass, field
 from enum import IntEnum, auto
@@ -22,32 +23,20 @@ from types import ModuleType as PyModuleType
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, Optional, Union
 
-# Numba-CUDA uses its own IR classes; prefer those when available so
-# isinstance checks line up with the compiler's IR objects.
-try:
-    from numba.cuda.core import ir as cuda_ir
-    from numba.cuda.core import ir_utils as cuda_ir_utils
-except ImportError:  # Fall back to core IR for older/vanilla numba
-    cuda_ir = None
-    cuda_ir_utils = None
-
-from numba.core import ir as core_ir
-from numba.core import ir_utils as core_ir_utils
 from numba.core import types
 from numba.core.typing.templates import (
     AbstractTemplate,
     Signature,
 )
 from numba.cuda import LTOIR
+from numba.cuda.core import ir, ir_utils
 from numba.cuda.core.rewrites import Rewrite, register_rewrite
 from numba.cuda.cudadecl import register_global
 from numba.cuda.cudadrv.devicearray import DeviceNDArray
 from numba.cuda.cudaimpl import lower
-from numba.cuda.launchconfig import (
-    current_launch_config,
-    ensure_current_launch_config,
-)
+from numba.cuda.launchconfig import ensure_current_launch_config
 
+from .._decls import TempStorageType
 from .._types import Algorithm as CoopAlgorithm
 from .._types import algo_coalesce_key
 from .block import (
@@ -68,10 +57,6 @@ if TYPE_CHECKING:
         sharedmem: int
         pre_launch_callbacks: list[Any]
 
-
-# Select the IR implementation once imports are complete.
-ir = cuda_ir if cuda_ir is not None else core_ir
-ir_utils = cuda_ir_utils if cuda_ir_utils is not None else core_ir_utils
 
 CUDA_CCCL_COOP_MODULE_NAME = "cuda.coop"
 CUDA_CCCL_COOP_ARRAY_MODULE_NAME = f"{CUDA_CCCL_COOP_MODULE_NAME}._array"
@@ -106,6 +91,18 @@ def debug_print(*args, **kwargs):
     """
     if DEBUG_PRINT:
         print(*args, **kwargs)
+
+
+def _warn_ltoir_bundle_failure(exc: Exception):
+    warnings.warn(
+        (
+            "cuda.coop failed to prepare an LTO-IR bundle; falling back to "
+            "per-primitive compilation. Performance may be worse. "
+            f"Original error: {exc!r}"
+        ),
+        RuntimeWarning,
+        stacklevel=3,
+    )
 
 
 def _get_env_bool(name: str, default: bool = False) -> bool:
@@ -2607,6 +2604,7 @@ class CoopNodeRewriter(Rewrite):
             self._bundle_ltoir_done = True
         except Exception as exc:
             self._bundle_ltoir_failed = True
+            _warn_ltoir_bundle_failure(exc)
             debug_print("cuda.coop ltoir bundle failed:", exc)
 
     def _get_or_create_global_module(
@@ -2726,17 +2724,9 @@ class CoopNodeRewriter(Rewrite):
         if not isinstance(index_var, ir.Var):
             return None
 
-        try:
-            from .._decls import TempStorageType
-        except Exception:
-            TempStorageType = None
-
-        if TempStorageType is None:
-            index_ty = None
-        else:
-            index_ty = self.typemap.get(index_var.name)
-            if isinstance(index_ty, TempStorageType):
-                return index_var
+        index_ty = self.typemap.get(index_var.name)
+        if isinstance(index_ty, TempStorageType):
+            return index_var
 
         try:
             root = self.get_root_def(index_var)
@@ -2913,14 +2903,7 @@ class CoopNodeRewriter(Rewrite):
             original_ty = self.typemap.get(var_name)
             patched_typemap = False
             try:
-                try:
-                    from .._decls import TempStorageType
-                except Exception:
-                    TempStorageType = None
-
-                if TempStorageType is not None and isinstance(
-                    original_ty, TempStorageType
-                ):
+                if isinstance(original_ty, TempStorageType):
                     del self.typemap[var_name]
                     self.typemap[var_name] = types.Array(types.uint8, 1, "C")
                     patched_typemap = True
@@ -3080,9 +3063,7 @@ class CoopNodeRewriter(Rewrite):
         if self._temp_storage_state.launch_callback_registered:
             return
 
-        launch_config = self.launch_config_safe
-        if launch_config is None:
-            return
+        launch_config = self.launch_config
 
         if dynamic_shared_bytes <= 0:
             return
@@ -3333,12 +3314,7 @@ class CoopNodeRewriter(Rewrite):
         temp_storage_ty = self.typemap[temp_storage.name]
         temp_storage_info = None
 
-        try:
-            from .._decls import TempStorageType
-        except Exception:
-            TempStorageType = None
-
-        if TempStorageType is not None and isinstance(temp_storage_ty, TempStorageType):
+        if isinstance(temp_storage_ty, TempStorageType):
             temp_storage_info = self.get_temp_storage_info(temp_storage)
             temp_storage_ty = types.Array(types.uint8, 1, "C")
 
@@ -4015,10 +3991,6 @@ class CoopNodeRewriter(Rewrite):
         config.dispatcher.mark_launch_config_sensitive()
         return config
 
-    @property
-    def launch_config_safe(self):
-        return current_launch_config()
-
     @cached_property
     def all_assignments(self) -> dict[ir.Assign, ir.Block]:
         """
@@ -4074,13 +4046,7 @@ class CoopNodeRewriter(Rewrite):
         if num_calltypes == 0:
             return False
 
-        launch_config = self.launch_config_safe
-        # If we don't have a launch config yet, we're presumably being invoked
-        # as part of a two-phase one-shot primitive instantiation where one
-        # of the parameters is something user-defined (custom type, stateful
-        # callback, etc.).  We can skip processing in these cases.
-        if not launch_config:
-            return False
+        launch_config = self.launch_config
 
         self.func_ir = func_ir
         self.typemap = typemap
