@@ -21,7 +21,7 @@ from operator import mul
 from textwrap import dedent
 from types import ModuleType as PyModuleType
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import Any, Optional, Union
 
 from numba.core import types
 from numba.core.typing.templates import (
@@ -36,6 +36,8 @@ from numba.cuda.cudadrv.devicearray import DeviceNDArray
 from numba.cuda.cudaimpl import lower
 from numba.cuda.launchconfig import ensure_current_launch_config
 
+# The runtime launch-config object is owned by numba-cuda
+# (`numba.cuda.dispatcher._LaunchConfiguration`).
 from .._decls import TempStorageType
 from .._types import Algorithm as CoopAlgorithm
 from .._types import algo_coalesce_key
@@ -45,18 +47,6 @@ from .block import (
 from .warp import (
     import_side_effect_modules as _import_warp_rewrite_side_effect_modules,
 )
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
-    from typing import Protocol
-
-    class LaunchConfig(Protocol):
-        args: Sequence[Any]
-        dispatcher: Any
-        blockdim: Any
-        sharedmem: int
-        pre_launch_callbacks: list[Any]
-
 
 CUDA_CCCL_COOP_MODULE_NAME = "cuda.coop"
 CUDA_CCCL_COOP_ARRAY_MODULE_NAME = f"{CUDA_CCCL_COOP_MODULE_NAME}._array"
@@ -159,7 +149,7 @@ def get_kernel_param_index_safe(code, name: str, *, include_kwonly=True):
         return None
 
 
-def get_kernel_param_value(name: str, launch_config: "LaunchConfig") -> Any:
+def get_kernel_param_value(name: str, launch_config: Any) -> Any:
     """
     Return the value of the parameter *name* from the launch configuration.
     """
@@ -177,7 +167,7 @@ def get_kernel_param_value(name: str, launch_config: "LaunchConfig") -> Any:
     return args[idx]
 
 
-def get_kernel_param_value_safe(name: str, launch_config: "LaunchConfig") -> Any:
+def get_kernel_param_value_safe(name: str, launch_config: Any) -> Any:
     """
     Return the value of the parameter *name* from the launch configuration.
     Returns None if the parameter is not found.
@@ -665,7 +655,7 @@ def get_root_definition(
     func_ir: ir.FunctionIR,
     typemap: dict[str, types.Type],
     calltypes: dict[ir.Expr, types.Type],
-    launch_config: "LaunchConfig",
+    launch_config: Any,
     assignments_map: dict[ir.Var, ir.Assign],
     rewriter: Optional["CoopNodeRewriter"],
 ) -> Optional[RootDefinition]:
@@ -3869,7 +3859,7 @@ class CoopNodeRewriter(Rewrite):
         parent_root_def: RootDefinition,
         calltypes: dict[ir.Expr, types.Type],
         typemap: dict[str, types.Type],
-        launch_config: "LaunchConfig",
+        launch_config: Any,
         child_expr: ir.Expr,
         child_template: Any,
     ) -> CoopNode:
@@ -3945,7 +3935,7 @@ class CoopNodeRewriter(Rewrite):
         return node
 
     def handle_new_kernel_traits_struct(
-        self, struct: Any, name: str, launch_config: "LaunchConfig"
+        self, struct: Any, name: str, launch_config: Any
     ):
         # N.B. See the comment in the `match()` method for more details about
         #      the purpose of this method and the `CustomPrepareArgs` class.
