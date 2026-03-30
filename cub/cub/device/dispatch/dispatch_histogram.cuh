@@ -353,14 +353,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
           int PRIVATIZED_SMEM_BINS,
+          bool IsDeviceInit,
+          bool IsEven,
+          bool IsByteSample,
           typename SampleIteratorT,
           typename CounterT,
           typename FirstLevelArrayT,
           typename SecondLevelArrayT,
           typename OffsetT,
-          bool IsDeviceInit,
-          bool IsEven,
-          bool IsByteSample,
           typename PolicySelector,
           typename KernelSource,
           typename KernelLauncherFactory>
@@ -563,11 +563,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
             NUM_CHANNELS,
             NUM_ACTIVE_CHANNELS,
             PRIVATIZED_SMEM_BINS,
-            SampleIteratorT,
-            CounterT,
-            UpperLevelArrayT,
-            LowerLevelArrayT,
-            OffsetT,
             true, // IsDeviceInit
             true, // IsEven
             false // IsByteSample
@@ -601,11 +596,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
             NUM_CHANNELS,
             NUM_ACTIVE_CHANNELS,
             PRIVATIZED_SMEM_BINS,
-            SampleIteratorT,
-            CounterT,
-            UpperLevelArrayT,
-            LowerLevelArrayT,
-            OffsetT,
             true, // IsDeviceInit
             true, // IsEven
             false // IsByteSample
@@ -747,11 +737,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t __dispatch_even_device
           NUM_CHANNELS,
           NUM_ACTIVE_CHANNELS,
           PRIVATIZED_SMEM_BINS,
-          SampleIteratorT,
-          CounterT,
-          UpperLevelArrayT,
-          LowerLevelArrayT,
-          OffsetT,
           true, // IsDeviceInit
           true, // IsEven
           true // IsByteSample
@@ -973,11 +958,6 @@ struct DispatchHistogram
               NUM_CHANNELS,
               NUM_ACTIVE_CHANNELS,
               PRIVATIZED_SMEM_BINS,
-              SampleIteratorT,
-              CounterT,
-              ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS>,
-              ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS>,
-              OffsetT,
               false, // IsDeviceInit
               false, // IsEven (unused for host-init)
               false // IsByteSample (unused for host-init)
@@ -1011,11 +991,6 @@ struct DispatchHistogram
               NUM_CHANNELS,
               NUM_ACTIVE_CHANNELS,
               PRIVATIZED_SMEM_BINS,
-              SampleIteratorT,
-              CounterT,
-              ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS>,
-              ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS>,
-              OffsetT,
               false, // IsDeviceInit
               false, // IsEven (unused for host-init)
               false // IsByteSample (unused for host-init)
@@ -1143,11 +1118,6 @@ struct DispatchHistogram
             NUM_CHANNELS,
             NUM_ACTIVE_CHANNELS,
             PRIVATIZED_SMEM_BINS,
-            SampleIteratorT,
-            CounterT,
-            ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS>,
-            ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS>,
-            OffsetT,
             false, // IsDeviceInit
             false, // IsEven (unused for host-init)
             false // IsByteSample (unused for host-init)
@@ -1292,11 +1262,6 @@ struct DispatchHistogram
               NUM_CHANNELS,
               NUM_ACTIVE_CHANNELS,
               PRIVATIZED_SMEM_BINS,
-              SampleIteratorT,
-              CounterT,
-              ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS>,
-              ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS>,
-              OffsetT,
               false, // IsDeviceInit
               false, // IsEven (unused for host-init)
               false // IsByteSample (unused for host-init)
@@ -1330,11 +1295,6 @@ struct DispatchHistogram
               NUM_CHANNELS,
               NUM_ACTIVE_CHANNELS,
               PRIVATIZED_SMEM_BINS,
-              SampleIteratorT,
-              CounterT,
-              ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS>,
-              ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS>,
-              OffsetT,
               false, // IsDeviceInit
               false, // IsEven (unused for host-init)
               false // IsByteSample (unused for host-init)
@@ -1481,11 +1441,6 @@ struct DispatchHistogram
             NUM_CHANNELS,
             NUM_ACTIVE_CHANNELS,
             PRIVATIZED_SMEM_BINS,
-            SampleIteratorT,
-            CounterT,
-            ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS>,
-            ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS>,
-            OffsetT,
             false, // IsDeviceInit
             false, // IsEven (unused for host-init)
             false // IsByteSample (unused for host-init)
