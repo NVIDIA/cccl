@@ -42,14 +42,11 @@ def _get_env_boolean(name: str, default: bool = False) -> bool:
 
 
 def _init_extension() -> None:
-    # import cuda.coop._rewrite
-    from ._rewrite import _init_rewriter
-
-    _init_rewriter()
-
+    # Import rewrite machinery for registration side effects.
     # Is this the idiomatic way of registering a Numba extension?!
     from numba.cuda.target import CUDATypingContext
 
+    from . import _rewrite  # noqa: F401
     from ._decls import registry
 
     if not hasattr(CUDATypingContext, "_cccl_patched"):

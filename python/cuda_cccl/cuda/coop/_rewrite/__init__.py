@@ -4596,24 +4596,25 @@ class CoopNodeRewriter(Rewrite):
                     # If the node wants a rewrite, request apply.
                     we_want_apply = True
 
-        debug_print(
-            f"Returning from rewriter.match(): block_no: {block_no}, "
-            f"we_want_apply: {we_want_apply}, "
-            f"num nodes: {len(self.nodes)}"
-        )
+        # Uncomment this to assist with debugging if needed.  It's kept
+        # commented-out to avoid the f-string cost when not needed.
+        # debug_print(
+        #    f"Returning from rewriter.match(): block_no: {block_no}, "
+        #    f"we_want_apply: {we_want_apply}, "
+        #    f"num nodes: {len(self.nodes)}"
+        # )
         self.current_block_no = block_no
         return we_want_apply
 
     def apply(self):
-        block = self.current_block
-        num_block_instructions = len(block.body)
-        block_hash = hash(block)
-        debug_print(
-            f"Entered rewriter.apply(): block_no: {self.current_block_no!r}, "
-            f"num_block_instructions: {num_block_instructions}, "
-            f"block_hash: {block_hash}, "
-            f"num nodes: {len(self.nodes)}"
-        )
+        # Uncomment this to assist with debugging if needed.  It's kept
+        # commented-out to avoid the f-string cost when not needed.
+        # debug_print(
+        #    f"Entered rewriter.apply(): block_no: {self.current_block_no!r}, "
+        #    f"num_block_instructions: {num_block_instructions}, "
+        #    f"block_hash: {block_hash}, "
+        #    f"num nodes: {len(self.nodes)}"
+        # )
 
         new_block = ir.Block(self.current_block.scope, self.current_block.loc)
 
@@ -4700,20 +4701,15 @@ class CoopNodeRewriter(Rewrite):
                 no_new_instructions += 1
                 new_block.append(instr)
 
-        debug_print(
-            f"Rewriter.apply() results: "
-            f"skipped: {skipped}, "
-            f"ignored: {ignored}, "
-            f"rewrote: {rewrote}, "
-            f"desugared_getitems: {desugared_getitems}, "
-            f"no_new_instructions: {no_new_instructions}, "
-            f"num nodes: {len(self.nodes)}"
-        )
+        # Uncomment this to assist with debugging if needed.  It's kept
+        # commented-out to avoid the f-string cost when not needed.
+        # debug_print(
+        #    f"Rewriter.apply() results: "
+        #    f"skipped: {skipped}, "
+        #    f"ignored: {ignored}, "
+        #    f"rewrote: {rewrote}, "
+        #    f"desugared_getitems: {desugared_getitems}, "
+        #    f"no_new_instructions: {no_new_instructions}, "
+        #    f"num nodes: {len(self.nodes)}"
+        # )
         return new_block
-
-
-def _init_rewriter():
-    # Dummy function that allows us to do the following in `_init_extension`:
-    # from ._rewrite import _init_rewriter
-    # _init_rewriter()
-    pass
