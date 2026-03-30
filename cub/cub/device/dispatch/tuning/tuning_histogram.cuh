@@ -24,7 +24,7 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
-#endif
+#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -52,19 +52,19 @@ enum class counter_size
 };
 
 template <class T>
-_CCCL_HOST_DEVICE constexpr primitive_sample is_primitive_sample()
+constexpr primitive_sample is_primitive_sample()
 {
   return is_primitive<T>::value ? primitive_sample::yes : primitive_sample::no;
 }
 
 template <class CounterT>
-_CCCL_HOST_DEVICE constexpr counter_size classify_counter_size()
+constexpr counter_size classify_counter_size()
 {
   return sizeof(CounterT) == 4 ? counter_size::_4 : counter_size::unknown;
 }
 
 template <class SampleT>
-_CCCL_HOST_DEVICE constexpr sample_size classify_sample_size()
+constexpr sample_size classify_sample_size()
 {
   return sizeof(SampleT) == 1 ? sample_size::_1 : sizeof(SampleT) == 2 ? sample_size::_2 : sample_size::unknown;
 }
@@ -146,6 +146,81 @@ struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::ye
   static constexpr CacheLoadModifier load_modifier               = LOAD_LDG;
   static constexpr BlockLoadAlgorithm load_algorithm             = BLOCK_LOAD_DIRECT;
   static constexpr int vec_size                                  = 1 << 2;
+};
+
+// sample_size 2/4/8 showed no benefit over SM90 during verification benchmarks
+
+// multi.even and multi.range: none of the found tunings surpassed the SM90 tuning during verification benchmarks
+
+template <class SampleT, class CounterT, int NumChannels, int NumActiveChannels, bool IsEven>
+struct policy_hub
+{
+  // TODO(bgruber): move inside t_scale in C++14
+  static constexpr int v_scale = (sizeof(SampleT) + sizeof(int) - 1) / sizeof(int);
+
+  static constexpr int t_scale(int nominalItemsPerThread)
+  {
+    return (::cuda::std::max) (nominalItemsPerThread / NumActiveChannels / v_scale, 1);
+  }
+
+  // SM50
+  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
+  {
+    // TODO This might be worth it to separate usual histogram and the multi one
+    using AgentHistogramPolicyT =
+      AgentHistogramPolicy<384, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false>;
+  };
+
+  // SM90
+  struct Policy900 : ChainedPolicy<900, Policy900, Policy500>
+  {
+    // Use values from tuning if a specialization exists, otherwise pick Policy500
+    template <typename Tuning>
+    static auto select_agent_policy(int)
+      -> AgentHistogramPolicy<Tuning::threads,
+                              Tuning::items,
+                              Tuning::load_algorithm,
+                              Tuning::load_modifier,
+                              Tuning::rle_compress,
+                              Tuning::mem_preference,
+                              Tuning::work_stealing>;
+
+    template <typename Tuning>
+    static auto select_agent_policy(long) -> typename Policy500::AgentHistogramPolicyT;
+
+    using AgentHistogramPolicyT =
+      decltype(select_agent_policy<
+               sm90_tuning<SampleT, NumChannels, NumActiveChannels, histogram::classify_counter_size<CounterT>()>>(0));
+
+    static constexpr int pdl_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
+  };
+
+  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
+  {
+    // Use values from tuning if a specialization exists, otherwise pick Policy900
+    template <typename Tuning>
+    static auto select_agent_policy(int)
+      -> AgentHistogramPolicy<Tuning::threads,
+                              Tuning::items,
+                              Tuning::load_algorithm,
+                              Tuning::load_modifier,
+                              Tuning::rle_compress,
+                              Tuning::mem_preference,
+                              Tuning::work_stealing,
+                              Tuning::vec_size>;
+
+    template <typename Tuning>
+    static auto select_agent_policy(long) -> typename Policy900::AgentHistogramPolicyT;
+
+    using AgentHistogramPolicyT =
+      decltype(select_agent_policy<
+               sm100_tuning<IsEven, SampleT, NumChannels, NumActiveChannels, histogram::classify_counter_size<CounterT>()>>(
+        0));
+
+    static constexpr int pdl_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
+  };
+
+  using MaxPolicy = Policy1000;
 };
 
 struct histogram_policy
@@ -274,81 +349,6 @@ public:
 #if _CCCL_HAS_CONCEPTS()
 static_assert(histogram_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
-
-// sample_size 2/4/8 showed no benefit over SM90 during verification benchmarks
-
-// multi.even and multi.range: none of the found tunings surpassed the SM90 tuning during verification benchmarks
-
-template <class SampleT, class CounterT, int NumChannels, int NumActiveChannels, bool IsEven>
-struct policy_hub
-{
-  // TODO(bgruber): move inside t_scale in C++14
-  static constexpr int v_scale = (sizeof(SampleT) + sizeof(int) - 1) / sizeof(int);
-
-  static constexpr int t_scale(int nominalItemsPerThread)
-  {
-    return (::cuda::std::max) (nominalItemsPerThread / NumActiveChannels / v_scale, 1);
-  }
-
-  // SM50
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
-  {
-    // TODO This might be worth it to separate usual histogram and the multi one
-    using AgentHistogramPolicyT =
-      AgentHistogramPolicy<384, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false>;
-  };
-
-  // SM90
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy500>
-  {
-    // Use values from tuning if a specialization exists, otherwise pick Policy500
-    template <typename Tuning>
-    static auto select_agent_policy(int)
-      -> AgentHistogramPolicy<Tuning::threads,
-                              Tuning::items,
-                              Tuning::load_algorithm,
-                              Tuning::load_modifier,
-                              Tuning::rle_compress,
-                              Tuning::mem_preference,
-                              Tuning::work_stealing>;
-
-    template <typename Tuning>
-    static auto select_agent_policy(long) -> typename Policy500::AgentHistogramPolicyT;
-
-    using AgentHistogramPolicyT =
-      decltype(select_agent_policy<
-               sm90_tuning<SampleT, NumChannels, NumActiveChannels, histogram::classify_counter_size<CounterT>()>>(0));
-
-    static constexpr int pdl_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
-  };
-
-  struct Policy1000 : ChainedPolicy<1000, Policy1000, Policy900>
-  {
-    // Use values from tuning if a specialization exists, otherwise pick Policy900
-    template <typename Tuning>
-    static auto select_agent_policy(int)
-      -> AgentHistogramPolicy<Tuning::threads,
-                              Tuning::items,
-                              Tuning::load_algorithm,
-                              Tuning::load_modifier,
-                              Tuning::rle_compress,
-                              Tuning::mem_preference,
-                              Tuning::work_stealing,
-                              Tuning::vec_size>;
-
-    template <typename Tuning>
-    static auto select_agent_policy(long) -> typename Policy900::AgentHistogramPolicyT;
-
-    using AgentHistogramPolicyT =
-      decltype(select_agent_policy<
-               sm100_tuning<IsEven, SampleT, NumChannels, NumActiveChannels, histogram::classify_counter_size<CounterT>()>>(
-        0));
-
-    static constexpr int pdl_trigger_next_launch_in_init_kernel_max_bin_count = 2048;
-  };
-
-  using MaxPolicy = Policy1000;
-};
 
 template <class SampleT, class CounterT, int NumChannels, int NumActiveChannels, bool IsEven>
 struct policy_selector_from_types

@@ -806,6 +806,7 @@ struct policy_selector_from_max_policy
  * Dispatch
  ******************************************************************************/
 
+// TODO(bgruber): deprecate once we make the tuning API public and remove in CCCL 4.0
 /**
  * Utility class for dispatching the appropriately-tuned kernels for DeviceHistogram
  *
