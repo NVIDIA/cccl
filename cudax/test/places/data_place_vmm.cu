@@ -19,7 +19,7 @@
  * into a contiguous virtual address space.
  */
 
-#include <cuda/experimental/__stf/places/places.cuh>
+#include <cuda/experimental/__places/places.cuh>
 
 #include <cstdio>
 

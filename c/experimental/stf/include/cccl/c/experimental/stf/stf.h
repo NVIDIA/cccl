@@ -440,6 +440,30 @@ typedef struct stf_task_handle_t* stf_task_handle;
 
 typedef struct stf_cuda_kernel_handle_t* stf_cuda_kernel_handle;
 
+//!
+//! \brief Opaque handle for a host launch scope
+//!
+//! A host launch scope schedules a user-provided C callback on the host
+//! as a proper task graph node, with full dependency tracking.
+//! Created with stf_host_launch_create() and destroyed with stf_host_launch_destroy().
+
+typedef struct stf_host_launch_handle_t* stf_host_launch_handle;
+
+//!
+//! \brief Opaque handle for host launch dependency data
+//!
+//! Passed to the host callback at invocation time.  Provides indexed
+//! access to the data of each dependency and to optional user data.
+
+typedef struct stf_host_launch_deps_handle_t* stf_host_launch_deps_handle;
+
+//!
+//! \brief C callback type for host launch
+//!
+//! \param deps Opaque handle to dependency data and user data
+
+typedef void (*stf_host_callback_fn)(stf_host_launch_deps_handle deps);
+
 //! \}
 
 //! \defgroup Context Context Management
@@ -1274,6 +1298,105 @@ void stf_cuda_kernel_end(stf_cuda_kernel_handle k);
 //! \see stf_cuda_kernel_create()
 
 void stf_cuda_kernel_destroy(stf_cuda_kernel_handle k);
+
+//! \}
+
+//! \defgroup HostLaunch Host Launch
+//! \brief Schedule a host callback as a task graph node with dependency tracking
+//!
+//! \details
+//! Host launch provides a way to run arbitrary host-side functions as part of
+//! the task graph. Unlike generic tasks where the user manually launches work
+//! on a stream, host launch automatically schedules a C callback via
+//! `cudaLaunchHostFunc` (stream context) or `cudaGraphAddHostNode` (graph context).
+//!
+//! This is the untyped counterpart of the C++ `ctx.host_launch(deps...)->*lambda`
+//! construct, designed for use from C and Python bindings.
+//! \{
+
+//! \brief Create a host launch scope on a regular context
+//!
+//! \param ctx Context handle
+//! \param[out] h Pointer to receive host launch handle
+//!
+//! \see stf_host_launch_destroy()
+void stf_host_launch_create(stf_ctx_handle ctx, stf_host_launch_handle* h);
+
+//! \brief Add a dependency to a host launch scope
+//!
+//! \param h Host launch handle
+//! \param ld Logical data handle
+//! \param m Access mode (STF_READ, STF_WRITE, STF_RW)
+//!
+//! \see stf_task_add_dep()
+void stf_host_launch_add_dep(stf_host_launch_handle h, stf_logical_data_handle ld, stf_access_mode m);
+
+//! \brief Set the debug symbol for a host launch scope
+//!
+//! \param h Host launch handle
+//! \param symbol Null-terminated string
+void stf_host_launch_set_symbol(stf_host_launch_handle h, const char* symbol);
+
+//! \brief Copy user data into the host launch scope
+//!
+//! The data is copied and later accessible via
+//! stf_host_launch_deps_get_user_data() inside the callback.
+//! An optional destructor is called on the copied buffer when the
+//! dependency handle is destroyed.
+//!
+//! \param h Host launch handle
+//! \param data Pointer to user data
+//! \param size Size of user data in bytes
+//! \param dtor Optional destructor for the copied data (may be NULL)
+void stf_host_launch_set_user_data(stf_host_launch_handle h, const void* data, size_t size, void (*dtor)(void*));
+
+//! \brief Submit the host callback and finalize the scope
+//!
+//! After this call, the callback will be invoked on the host when all
+//! read/write dependencies are satisfied.  The callback receives an
+//! opaque deps handle for accessing dependency data and user data.
+//!
+//! \param h Host launch handle
+//! \param callback Function pointer invoked on the host
+//!
+//! \see stf_host_launch_create()
+void stf_host_launch_submit(stf_host_launch_handle h, stf_host_callback_fn callback);
+
+//! \brief Destroy a host launch handle
+//!
+//! \param h Host launch handle
+//!
+//! \see stf_host_launch_create()
+void stf_host_launch_destroy(stf_host_launch_handle h);
+
+//! \brief Get the raw data pointer for a dependency
+//!
+//! Returns the host-side pointer to the data of the dependency at \p index.
+//! The pointer is valid only during the callback execution.
+//!
+//! \param deps Dependency handle
+//! \param index Zero-based dependency index
+//! \return Pointer to the data (as `slice<char>` data handle)
+void* stf_host_launch_deps_get(stf_host_launch_deps_handle deps, size_t index);
+
+//! \brief Get the byte size of a dependency
+//!
+//! \param deps Dependency handle
+//! \param index Zero-based dependency index
+//! \return Size in bytes
+size_t stf_host_launch_deps_get_size(stf_host_launch_deps_handle deps, size_t index);
+
+//! \brief Get the number of dependencies
+//!
+//! \param deps Dependency handle
+//! \return Number of dependencies
+size_t stf_host_launch_deps_size(stf_host_launch_deps_handle deps);
+
+//! \brief Get the user data pointer
+//!
+//! \param deps Dependency handle
+//! \return Pointer to the copied user data, or NULL if none was set
+void* stf_host_launch_deps_get_user_data(stf_host_launch_deps_handle deps);
 
 //! \}
 

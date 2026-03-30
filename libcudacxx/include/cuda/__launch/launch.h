@@ -145,9 +145,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void __assume_known_info() noexcept
     using _ClusterDesc = typename _Hierarchy::template level_desc_type<cluster_level>;
     using _ClusterExts = typename _ClusterDesc::extents_type;
 
-    // nvc++ doesn't implement clusters yet, so we can just use _CCCL_PTX_ARCH here. Once the support is there, we can
+    // nvc++ doesn't implement clusters yet, so we can just use _CCCL_PTX_ARCH() here. Once the support is there, we can
     // just add `|| _CCCL_CUDA_COMPILER(NVHPC)`
-#    if _CCCL_PTX_ARCH >= 900
+#    if _CCCL_PTX_ARCH() >= 900
     if constexpr (_ClusterExts::static_extent(0) != __dext)
     {
       _CCCL_ASSUME(_CCCL_CLUSTER_DIM_X == _ClusterExts::static_extent(0));
@@ -186,7 +186,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void __assume_known_info() noexcept
       _CCCL_ASSUME(_CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Z == _GridExts::static_extent(2));
       _CCCL_ASSUME(_CCCL_CLUSTER_IDX_Z < _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Z);
     }
-#    endif // _CCCL_PTX_ARCH >= 900
+#    endif // _CCCL_PTX_ARCH() >= 900
 
     if constexpr (_ClusterExts::static_extent(0) != __dext && _GridExts::static_extent(0) != __dext)
     {

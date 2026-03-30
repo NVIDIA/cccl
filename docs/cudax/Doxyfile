@@ -17,6 +17,8 @@ INPUT                  = ../../cudax/include/cuda/experimental/__copy_bytes \
                          ../../cudax/include/cuda/experimental/__graph \
                          ../../cudax/include/cuda/experimental/__hierarchy \
                          ../../cudax/include/cuda/experimental/__launch \
+                         ../../cudax/include/cuda/experimental/__places \
+                         ../../cudax/include/cuda/experimental/__places/exec \
                          ../../cudax/include/cuda/experimental/__stream \
                          ../../cudax/include/cuda/experimental/stf.cuh \
                          ../../cudax/include/cuda/experimental/__stf \
@@ -28,7 +30,6 @@ INPUT                  = ../../cudax/include/cuda/experimental/__copy_bytes \
                          ../../cudax/include/cuda/experimental/__stf/graph/internal \
                          ../../cudax/include/cuda/experimental/__stf/graph/interfaces \
                          ../../cudax/include/cuda/experimental/__stf/places \
-                         ../../cudax/include/cuda/experimental/__stf/places/exec \
                          ../../cudax/include/cuda/experimental/__stf/places/exec/host \
                          ../../cudax/include/cuda/experimental/__stf/stream \
                          ../../cudax/include/cuda/experimental/__stf/stream/internal \

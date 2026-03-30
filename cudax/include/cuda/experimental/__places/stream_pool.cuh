@@ -160,7 +160,7 @@ public:
 
   /**
    * @brief Get the next stream in the pool; when a slot is empty, activate the place (RAII guard) and call
-   * place.create_stream(). Defined in places.cuh so the pool can use exec_place_guard and exec_place::create_stream().
+   * place.create_stream(). Defined in places.cuh so the pool can use exec_place_scope and exec_place::create_stream().
    */
   decorated_stream next(const exec_place& place);
 

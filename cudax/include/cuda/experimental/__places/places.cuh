@@ -27,9 +27,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
-#include <cuda/experimental/__stf/places/data_place_impl.cuh>
-#include <cuda/experimental/__stf/places/exec/green_ctx_view.cuh>
+#include <cuda/experimental/__places/data_place_impl.cuh>
+#include <cuda/experimental/__places/exec/green_ctx_view.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 
 #include <typeinfo>
@@ -40,7 +39,6 @@
 #endif
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
-#include <cuda/experimental/__stf/utility/occupancy.cuh>
 #include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 // Sync only will not move data....
@@ -55,8 +53,13 @@ class exec_place;
 //! Function type for computing executor placement from data coordinates
 using partition_fn_t = pos4 (*)(pos4, dim4, dim4);
 
-// Forward declaration for composite implementation
 class data_place_composite;
+
+namespace reserved
+{
+void* allocate_composite_data_place(const data_place_composite& p, ::std::ptrdiff_t size);
+void deallocate_composite_data_place(void* ptr);
+} // namespace reserved
 
 /**
  * @brief Designates where data will be stored (CPU memory vs. on device 0 (first GPU), device 1 (second GPU), ...)
@@ -893,9 +896,6 @@ private:
   exec_place prev_; // Previous state to restore
 };
 
-// Deprecated: Use exec_place_scope instead
-using exec_place_guard = exec_place_scope;
-
 inline exec_place_scope exec_place::activate(size_t idx) const
 {
   return exec_place_scope(*this, idx);
@@ -1573,14 +1573,14 @@ public:
     return (grid_ < o.grid_) ? -1 : 1;
   }
 
-  void* allocate(::std::ptrdiff_t, cudaStream_t) const override
+  void* allocate(::std::ptrdiff_t size, cudaStream_t) const override
   {
-    throw ::std::logic_error("Composite places don't support direct allocation");
+    return reserved::allocate_composite_data_place(*this, size);
   }
 
-  void deallocate(void*, size_t, cudaStream_t) const override
+  void deallocate(void* ptr, size_t, cudaStream_t) const override
   {
-    throw ::std::logic_error("Composite places don't support direct deallocation");
+    reserved::deallocate_composite_data_place(ptr);
   }
 
   bool allocation_is_stream_ordered() const override
@@ -1596,6 +1596,11 @@ public:
   const partition_fn_t& get_partitioner() const override
   {
     return partitioner_func_;
+  }
+
+  const exec_place& get_grid() const
+  {
+    return grid_;
   }
 
 private:
@@ -1898,3 +1903,5 @@ UNITTEST("Exec place as std::map key")
 };
 #endif // UNITTESTED_FILE
 } // end namespace cuda::experimental::stf
+
+#include <cuda/experimental/__stf/localization/composite_slice.cuh>

@@ -18,7 +18,7 @@
  * outside of the task-based programming model.
  */
 
-#include <cuda/experimental/__stf/places/places.cuh>
+#include <cuda/experimental/__places/places.cuh>
 
 #include <cstdio>
 

@@ -10,16 +10,17 @@
 
 /**
  * @file
- * @brief Static error check: exec_place_guard should not accept data_place
+ * @brief Static error check: exec_place_scope should not accept data_place
  */
 
-#include <cuda/experimental/__stf/places/places.cuh>
+#include <cuda/experimental/__places/places.cuh>
 
 using namespace cuda::experimental::stf;
 
 int main()
 {
-  // This should fail to compile: exec_place_guard only accepts exec_place, not data_place
-  exec_place_guard guard(data_place::device(0));
+  // expected-error {{"exec_place_scope cannot be constructed from data_place; use data_place::affine_exec_place() to
+  // get the exec_place first"}}
+  exec_place_scope scope(data_place::device(0));
   return EXIT_FAILURE;
 }

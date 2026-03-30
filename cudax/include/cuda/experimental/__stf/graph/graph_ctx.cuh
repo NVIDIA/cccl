@@ -25,6 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__places/partitions/blocked_partition.cuh> // for unit test!
 #include <cuda/experimental/__stf/graph/graph_task.cuh>
 #include <cuda/experimental/__stf/graph/interfaces/slice.cuh>
 #include <cuda/experimental/__stf/graph/interfaces/void_interface.cuh>
@@ -34,7 +35,6 @@
 #include <cuda/experimental/__stf/internal/host_launch_scope.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
-#include <cuda/experimental/__stf/places/blocked_partition.cuh> // for unit test!
 
 #include <mutex>
 

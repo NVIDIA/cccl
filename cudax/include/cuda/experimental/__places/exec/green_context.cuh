@@ -25,9 +25,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/places/data_place_interface.cuh>
-#include <cuda/experimental/__stf/places/exec/green_ctx_view.cuh>
-#include <cuda/experimental/__stf/places/places.cuh>
+#include <cuda/experimental/__places/data_place_interface.cuh>
+#include <cuda/experimental/__places/exec/green_ctx_view.cuh>
+#include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
 // Used only for unit tests, not in the actual implementation

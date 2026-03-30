@@ -119,7 +119,7 @@ template <typename PolicySelector, typename InputIteratorT, typename OutputItera
   if constexpr (policy.warpspeed
                 && detail::scan::use_warpspeed<InputIteratorT, OutputIteratorT, AccumT>(policy.warpspeed))
   {
-    return policy.warpspeed.num_total_threads;
+    return num_total_threads(policy.warpspeed);
   }
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
   return policy.block_threads;

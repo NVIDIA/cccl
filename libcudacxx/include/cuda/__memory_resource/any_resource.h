@@ -93,6 +93,20 @@ using __iproperty_set =
 
 // Wrap the calls of the allocate and deallocate member functions
 // because of NVBUG#4967486
+template <class _Resource>
+_CCCL_PUBLIC_HOST_API auto __allocate_sync_fn(_Resource& __mr, size_t __bytes, size_t __alignment)
+  -> decltype(__mr.allocate_sync(__bytes, __alignment))
+{
+  return __mr.allocate_sync(__bytes, __alignment);
+}
+
+template <class _Resource>
+_CCCL_PUBLIC_HOST_API auto __deallocate_sync_fn(_Resource& __mr, void* __pv, size_t __bytes, size_t __alignment)
+  -> decltype(__mr.deallocate_sync(__pv, __bytes, __alignment))
+{
+  __mr.deallocate_sync(__pv, __bytes, __alignment);
+}
+
 // Needs to keep the _async because of fun windows macros
 template <class _Resource>
 _CCCL_PUBLIC_HOST_API auto
@@ -113,20 +127,32 @@ __deallocate_async(_Resource& __mr, ::cuda::stream_ref __stream, void* __pv, siz
 template <class...>
 struct __ibasic_resource : __basic_interface<__ibasic_resource>
 {
-  _CCCL_PUBLIC_HOST_API void* allocate_sync(size_t __bytes, size_t __alignment = alignof(::cuda::std::max_align_t))
+  _CCCL_PUBLIC_HOST_API void* allocate_sync(size_t __bytes, size_t __alignment)
   {
-    return ::cuda::__virtcall<&__ibasic_resource::allocate_sync>(this, __bytes, __alignment);
+    return ::cuda::__virtcall<&__allocate_sync_fn<__ibasic_resource>>(this, __bytes, __alignment);
   }
 
-  _CCCL_PUBLIC_HOST_API void
-
-  deallocate_sync(void* __pv, size_t __bytes, size_t __alignment = alignof(::cuda::std::max_align_t)) noexcept
+  CCCL_DEPRECATED_BECAUSE("Specify an explicit alignment argument. The default alignment will be removed in a future "
+                          "release.") _CCCL_PUBLIC_HOST_API void*
+  allocate_sync(size_t __bytes)
   {
-    return ::cuda::__virtcall<&__ibasic_resource::deallocate_sync>(this, __pv, __bytes, __alignment);
+    return allocate_sync(__bytes, alignof(::cuda::std::max_align_t));
+  }
+
+  _CCCL_PUBLIC_HOST_API void deallocate_sync(void* __pv, size_t __bytes, size_t __alignment) noexcept
+  {
+    return ::cuda::__virtcall<&__deallocate_sync_fn<__ibasic_resource>>(this, __pv, __bytes, __alignment);
+  }
+
+  CCCL_DEPRECATED_BECAUSE("Specify an explicit alignment argument. The default alignment will be removed in a future "
+                          "release.") _CCCL_PUBLIC_HOST_API void
+  deallocate_sync(void* __pv, size_t __bytes) noexcept
+  {
+    return deallocate_sync(__pv, __bytes, alignof(::cuda::std::max_align_t));
   }
 
   template <class _Ty>
-  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Ty, &_Ty::allocate_sync, &_Ty::deallocate_sync>;
+  using overrides _CCCL_NODEBUG_ALIAS = __overrides_for<_Ty, &__allocate_sync_fn<_Ty>, &__deallocate_sync_fn<_Ty>>;
 };
 
 template <class...>
@@ -137,7 +163,9 @@ struct __ibasic_async_resource : __basic_interface<__ibasic_async_resource>
     return ::cuda::__virtcall<&__allocate_async<__ibasic_async_resource>>(this, __stream, __bytes, __alignment);
   }
 
-  _CCCL_PUBLIC_HOST_API void* allocate(::cuda::stream_ref __stream, size_t __bytes)
+  CCCL_DEPRECATED_BECAUSE("Specify an explicit alignment argument. The default alignment will be removed in a future "
+                          "release.") _CCCL_PUBLIC_HOST_API void*
+  allocate(::cuda::stream_ref __stream, size_t __bytes)
   {
     return ::cuda::__virtcall<&__allocate_async<__ibasic_async_resource>>(
       this, __stream, __bytes, alignof(::cuda::std::max_align_t));
@@ -149,7 +177,9 @@ struct __ibasic_async_resource : __basic_interface<__ibasic_async_resource>
     return ::cuda::__virtcall<&__deallocate_async<__ibasic_async_resource>>(this, __stream, __pv, __bytes, __alignment);
   }
 
-  _CCCL_PUBLIC_HOST_API void deallocate(::cuda::stream_ref __stream, void* __pv, size_t __bytes) noexcept
+  CCCL_DEPRECATED_BECAUSE("Specify an explicit alignment argument. The default alignment will be removed in a future "
+                          "release.") _CCCL_PUBLIC_HOST_API void
+  deallocate(::cuda::stream_ref __stream, void* __pv, size_t __bytes) noexcept
   {
     return ::cuda::__virtcall<&__deallocate_async<__ibasic_async_resource>>(
       this, __stream, __pv, __bytes, alignof(::cuda::std::max_align_t));
@@ -543,7 +573,13 @@ public:
   //! @pre `has_value()` is `true`.
   //! @return `obj.allocate_sync(__size, __align)`, where `obj` is the wrapped
   //! object.
-  [[nodiscard]] void* allocate_sync(size_t __size, size_t __align = alignof(cuda::std::max_align_t));
+  [[nodiscard]] void* allocate_sync(size_t __size, size_t __align);
+
+  //! @brief Calls `allocate_sync` on the wrapped object with
+  //! `alignof(::cuda::std::max_align_t)` as the alignment.
+  //! @deprecated Specify an explicit alignment argument.
+  //! @pre `has_value()` is `true`.
+  [[deprecated]] [[nodiscard]] void* allocate_sync(size_t __size);
 
   //! @brief Calls `deallocate_sync` on the wrapped object with the specified
   //! arguments.
@@ -552,7 +588,13 @@ public:
   //! allocate on the object wrapped by `*this`.
   //! @return `obj.deallocate_sync(__pv, __size, __align)`, where `obj` is the
   //! wrapped object.
-  void deallocate_sync(void* __pv, size_t __size, size_t __align = alignof(cuda::std::max_align_t));
+  void deallocate_sync(void* __pv, size_t __size, size_t __align);
+
+  //! @brief Calls `deallocate_sync` on the wrapped object with
+  //! `alignof(::cuda::std::max_align_t)` as the alignment.
+  //! @deprecated Specify an explicit alignment argument.
+  //! @pre `has_value()` is `true`.
+  [[deprecated]] void deallocate_sync(void* __pv, size_t __size);
 
   //! @brief Calls `allocate` on the wrapped object with the specified
   //! arguments.
@@ -566,7 +608,8 @@ public:
 
   //! @brief Equivalent to `allocate(__stream, __size,
   //! alignof(::cuda::std::max_align_t))`.
-  [[nodiscard]] void* allocate(cuda::stream_ref __stream, size_t __size);
+  //! @deprecated Specify an explicit alignment argument.
+  [[deprecated]] [[nodiscard]] void* allocate(cuda::stream_ref __stream, size_t __size);
 
   //! @brief Calls `deallocate` on the wrapped object with the specified
   //! arguments.
@@ -580,7 +623,8 @@ public:
 
   //! @brief Equivalent to `deallocate(__stream, __pv, __size,
   //! alignof(::cuda::std::max_align_t), __stream)`.
-  void deallocate(cuda::stream_ref __stream, void* __pv, size_t __size);
+  //! @deprecated Specify an explicit alignment argument.
+  [[deprecated]] void deallocate(cuda::stream_ref __stream, void* __pv, size_t __size);
 
   //! @brief Checks if `*this` holds a value.
   //! @return `true` if `*this` holds a value; `false` otherwise.
@@ -708,7 +752,12 @@ public:
   //! arguments.
   //! @return `obj.allocate_sync(__size, __align)`, where `obj` is the wrapped
   //! reference.
-  [[nodiscard]] void* allocate_sync(size_t __size, size_t __align = alignof(cuda::std::max_align_t));
+  [[nodiscard]] void* allocate_sync(size_t __size, size_t __align);
+
+  //! @brief Calls `allocate_sync` on the wrapped reference with
+  //! `alignof(::cuda::std::max_align_t)` as the alignment.
+  //! @deprecated Specify an explicit alignment argument.
+  [[deprecated]] [[nodiscard]] void* allocate_sync(size_t __size);
 
   //! @brief Calls `deallocate_sync` on the wrapped reference with the specified
   //! arguments.
@@ -716,7 +765,12 @@ public:
   //! \c allocate on the object referenced by `*this`.
   //! @return `obj.deallocate_sync(__pv, __size, __align)`, where `obj` is the
   //! wrapped reference.
-  void deallocate_sync(void* __pv, size_t __size, size_t __align = alignof(cuda::std::max_align_t));
+  void deallocate_sync(void* __pv, size_t __size, size_t __align);
+
+  //! @brief Calls `deallocate_sync` on the wrapped reference with
+  //! `alignof(::cuda::std::max_align_t)` as the alignment.
+  //! @deprecated Specify an explicit alignment argument.
+  [[deprecated]] void deallocate_sync(void* __pv, size_t __size);
 
   //! @brief Calls `allocate` on the wrapped reference with the specified
   //! arguments.
@@ -729,7 +783,8 @@ public:
 
   //! @brief Equivalent to `allocate(__stream, __size,
   //! alignof(::cuda::std::max_align_t))`.
-  [[nodiscard]] void* allocate(cuda::stream_ref __stream, size_t __size);
+  //! @deprecated Specify an explicit alignment argument.
+  [[deprecated]] [[nodiscard]] void* allocate(cuda::stream_ref __stream, size_t __size);
 
   //! @brief Calls `deallocate` on the wrapped reference with the specified
   //! arguments.
@@ -742,7 +797,8 @@ public:
 
   //! @brief Equivalent to `deallocate(__stream, __pv, __size,
   //! alignof(::cuda::std::max_align_t), __stream)`.
-  void deallocate(cuda::stream_ref __stream, void* __pv, size_t __size);
+  //! @deprecated Specify an explicit alignment argument.
+  [[deprecated]] void deallocate(cuda::stream_ref __stream, void* __pv, size_t __size);
 
   //! @return A reference to the \c type_info object for the type of the object
   //! to which `*this` refers.
