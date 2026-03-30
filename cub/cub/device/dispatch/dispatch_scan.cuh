@@ -88,9 +88,34 @@ struct DeviceScanKernelSource
                      AccumT,
                      EnforceInclusive == ForceInclusive::Yes>)
 
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t InputSize()
+  {
+    return sizeof(it_value_t<UnwrappedInputIteratorT>);
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t InputAlign()
+  {
+    return alignof(it_value_t<UnwrappedInputIteratorT>);
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t OutputSize()
+  {
+    return sizeof(it_value_t<UnwrappedOutputIteratorT>);
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t OutputAlign()
+  {
+    return alignof(it_value_t<UnwrappedOutputIteratorT>);
+  }
+
   CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t AccumSize()
   {
     return sizeof(AccumT);
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t AccumAlign()
+  {
+    return alignof(AccumT);
   }
 
   CUB_RUNTIME_FUNCTION static ScanTileStateT TileState()
@@ -481,9 +506,8 @@ struct DispatchScan
   }
 
 #if __cccl_ptx_isa >= 860
-  template <typename PolicyGetter, typename PolicySelectorT>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
-  __invoke_lookahead_algorithm(PolicyGetter policy_getter, const PolicySelectorT& policy_selector)
+  template <typename PolicyGetter>
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(PolicyGetter policy_getter)
   {
     if (num_items == 0)
     {
@@ -491,11 +515,10 @@ struct DispatchScan
       return cudaSuccess;
     }
 
-    CUB_DETAIL_CONSTEXPR_ISH auto active_policy          = policy_getter();
-    CUB_DETAIL_CONSTEXPR_ISH const auto warpspeed_policy = active_policy.warpspeed;
+    CUB_DETAIL_CONSTEXPR_ISH const detail::scan::scan_warpspeed_policy warpspeed_policy = policy_getter().warpspeed;
 
     const int grid_dim =
-      static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(warpspeed_policy.tile_size)));
+      static_cast<int>(::cuda::ceil_div(num_items, static_cast<OffsetT>(warpspeed_policy.tile_size())));
 
     if (d_temp_storage == nullptr)
     {
@@ -524,37 +547,19 @@ struct DispatchScan
     // TODO(bgruber): we probably need to ensure alignment of d_temp_storage
     _CCCL_ASSERT(::cuda::is_aligned(d_temp_storage, kernel_source.look_ahead_tile_state_alignment()), "");
 
-    using selector_smem_info_t = detail::scan::selector_smem_info<PolicySelectorT>;
-
-    auto scan_kernel      = kernel_source.ScanKernel();
-    int smem_size_1_stage = 0;
-    if constexpr (selector_smem_info_t::has_static_layout)
-    {
-      CUB_DETAIL_CONSTEXPR_ISH int static_smem_size_1_stage = detail::scan::smem_for_stages(
-        warpspeed_policy,
-        1,
-        selector_smem_info_t::input_value_size,
-        selector_smem_info_t::input_value_alignment,
-        selector_smem_info_t::output_value_size,
-        selector_smem_info_t::output_value_alignment,
-        selector_smem_info_t::accum_size,
-        selector_smem_info_t::accum_alignment);
-      CUB_DETAIL_STATIC_ISH_ASSERT(static_smem_size_1_stage <= detail::max_smem_per_block,
-                                   "Single-stage warpspeed scan exceeds architecture independent SMEM (48KiB)");
-      smem_size_1_stage = static_smem_size_1_stage;
-    }
-    else
-    {
-      smem_size_1_stage = detail::scan::smem_for_stages(
-        warpspeed_policy,
-        1,
-        policy_selector.input_value_size,
-        policy_selector.input_value_alignment,
-        policy_selector.output_value_size,
-        policy_selector.output_value_alignment,
-        policy_selector.accum_size,
-        policy_selector.accum_alignment);
-    }
+    auto scan_kernel                 = kernel_source.ScanKernel();
+    [[maybe_unused]] auto kernel_src = kernel_source; // need to pull a copy to not access `this` during const. eval.
+    CUB_DETAIL_CONSTEXPR_ISH int smem_size_1_stage = detail::scan::smem_for_stages(
+      warpspeed_policy,
+      1,
+      static_cast<int>(kernel_src.InputSize()),
+      static_cast<int>(kernel_src.InputAlign()),
+      static_cast<int>(kernel_src.OutputSize()),
+      static_cast<int>(kernel_src.OutputAlign()),
+      static_cast<int>(kernel_src.AccumSize()),
+      static_cast<int>(kernel_src.AccumAlign()));
+    CUB_DETAIL_STATIC_ISH_ASSERT(smem_size_1_stage <= detail::max_smem_per_block,
+                                 "Single-stage warpspeed scan exceeds architecture independent SMEM (48KiB)");
 
     int num_stages = 1;
     int smem_size  = smem_size_1_stage;
@@ -565,36 +570,19 @@ struct DispatchScan
                    // 1 CTA per SM +1 since it tends to improve performance
                    // TODO(bgruber): make the +1 a tuning parameter
                    const int max_stages_for_even_workload = static_cast<int>(
-                     ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * warpspeed_policy.tile_size)) + 1);
+                     ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * warpspeed_policy.tile_size())) + 1);
 
                    while (num_stages <= max_stages_for_even_workload)
                    {
-                     const auto next_smem_size = [&] {
-                       if constexpr (selector_smem_info_t::has_static_layout)
-                       {
-                         return detail::scan::smem_for_stages(
-                           warpspeed_policy,
-                           num_stages + 1,
-                           selector_smem_info_t::input_value_size,
-                           selector_smem_info_t::input_value_alignment,
-                           selector_smem_info_t::output_value_size,
-                           selector_smem_info_t::output_value_alignment,
-                           selector_smem_info_t::accum_size,
-                           selector_smem_info_t::accum_alignment);
-                       }
-                       else
-                       {
-                         return detail::scan::smem_for_stages(
-                           warpspeed_policy,
-                           num_stages + 1,
-                           policy_selector.input_value_size,
-                           policy_selector.input_value_alignment,
-                           policy_selector.output_value_size,
-                           policy_selector.output_value_alignment,
-                           policy_selector.accum_size,
-                           policy_selector.accum_alignment);
-                       }
-                     }();
+                     const int next_smem_size = detail::scan::smem_for_stages(
+                       warpspeed_policy,
+                       num_stages + 1,
+                       static_cast<int>(kernel_source.InputSize()),
+                       static_cast<int>(kernel_source.InputAlign()),
+                       static_cast<int>(kernel_source.OutputSize()),
+                       static_cast<int>(kernel_source.OutputAlign()),
+                       static_cast<int>(kernel_source.AccumSize()),
+                       static_cast<int>(kernel_source.AccumAlign()));
                      if (next_smem_size > max_dynamic_smem_size)
                      {
                        // This number of stages failed, so stay at the current settings
@@ -647,7 +635,7 @@ struct DispatchScan
 
     // Invoke scan kernel
     {
-      const int block_dim = warpspeed_policy.num_total_threads;
+      const int block_dim = detail::scan::num_total_threads(warpspeed_policy);
 
 #  ifdef CUB_DEBUG_LOG
       _CubLog("Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
@@ -689,9 +677,8 @@ struct DispatchScan
   _CCCL_DIAG_PUSH
   _CCCL_DIAG_SUPPRESS_MSVC(4702)
 
-  template <typename PolicyGetter, typename PolicySelectorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  __invoke(PolicyGetter policy_getter, [[maybe_unused]] const PolicySelectorT& policy_selector)
+  template <typename PolicyGetter>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(PolicyGetter policy_getter)
   {
     CUB_DETAIL_CONSTEXPR_ISH auto active_policy = policy_getter();
 
@@ -702,12 +689,12 @@ struct DispatchScan
 #  if defined(CUB_DEFINE_RUNTIME_POLICIES)
     if (kernel_source.use_warpspeed(active_policy))
     {
-      return __invoke_lookahead_algorithm(policy_getter, policy_selector);
+      return __invoke_lookahead_algorithm(policy_getter);
     }
 #  else
     if CUB_DETAIL_CONSTEXPR_ISH (KernelSource::use_warpspeed(active_policy))
     {
-      return __invoke_lookahead_algorithm(policy_getter, policy_selector);
+      return __invoke_lookahead_algorithm(policy_getter);
     }
 #  endif
 #endif // __cccl_ptx_isa >= 860
@@ -851,13 +838,7 @@ struct DispatchScan
       }
     };
 
-    using policy_selector_t = detail::scan::policy_selector_from_types<
-      detail::it_value_t<InputIteratorT>,
-      detail::it_value_t<OutputIteratorT>,
-      AccumT,
-      OffsetT,
-      ScanOpT>;
-    return __invoke(policy_getter{}, policy_selector_t{});
+    return __invoke(policy_getter{});
   }
 
   /**
@@ -1027,7 +1008,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       -1 /* ptx_version, not used actually */,
       kernel_source,
       launcher_factory}
-      .__invoke(policy_getter, policy_selector);
+      .__invoke(policy_getter);
   });
 }
 

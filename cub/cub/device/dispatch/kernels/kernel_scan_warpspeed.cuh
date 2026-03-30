@@ -44,67 +44,43 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
-template <typename PolicySelector>
-_CCCL_API constexpr scan_warpspeed_policy get_warpspeed_policy() noexcept
+_CCCL_API constexpr warpspeed::SquadDesc squad_reduce(const scan_warpspeed_policy& policy)
 {
-  return PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warpspeed;
+  return warpspeed::SquadDesc{0, policy.num_reduce_and_scan_warps};
+}
+
+_CCCL_API constexpr warpspeed::SquadDesc squad_scan_store(const scan_warpspeed_policy& policy)
+{
+  return warpspeed::SquadDesc{1, policy.num_reduce_and_scan_warps};
+}
+
+_CCCL_API constexpr warpspeed::SquadDesc squad_load(const scan_warpspeed_policy&)
+{
+  return warpspeed::SquadDesc{2, 1}; // no point in being more than 1 warp
+}
+
+_CCCL_API constexpr warpspeed::SquadDesc squad_sched(const scan_warpspeed_policy&)
+{
+  return warpspeed::SquadDesc{3, 1}; // no point in being more than 1 warp
+}
+
+_CCCL_API constexpr warpspeed::SquadDesc squad_lookback(const scan_warpspeed_policy&)
+{
+  return warpspeed::SquadDesc{4, 1}; // must have 1 warp
+}
+
+_CCCL_API constexpr int num_total_threads(const scan_warpspeed_policy& policy)
+{
+  const auto num_total_warps = 2 * policy.num_reduce_and_scan_warps + 1 /*num_load_warps*/
+                             + 1 /*num_sched_warps*/ + 1 /*num_look_ahead_warps*/;
+  return num_total_warps * warp_threads;
 }
 
 template <typename PolicySelector>
-struct static_warpspeed_policy_adapter
+_CCCL_DEVICE_API constexpr scan_warpspeed_policy get_warpspeed_policy() noexcept
 {
-  _CCCL_API static constexpr scan_warpspeed_policy policy() noexcept
-  {
-    return get_warpspeed_policy<PolicySelector>();
-  }
-
-  _CCCL_API constexpr warpspeed::SquadDesc squadReduce() const
-  {
-    return policy().squadReduce();
-  }
-  _CCCL_API constexpr warpspeed::SquadDesc squadScanStore() const
-  {
-    return policy().squadScanStore();
-  }
-  _CCCL_API constexpr warpspeed::SquadDesc squadLoad() const
-  {
-    return policy().squadLoad();
-  }
-  _CCCL_API constexpr warpspeed::SquadDesc squadSched() const
-  {
-    return policy().squadSched();
-  }
-  _CCCL_API constexpr warpspeed::SquadDesc squadLookback() const
-  {
-    return policy().squadLookback();
-  }
-};
-
-struct runtime_warpspeed_policy_adapter
-{
-  const scan_warpspeed_policy& policy;
-
-  _CCCL_API constexpr warpspeed::SquadDesc squadReduce() const
-  {
-    return policy.squadReduce();
-  }
-  _CCCL_API constexpr warpspeed::SquadDesc squadScanStore() const
-  {
-    return policy.squadScanStore();
-  }
-  _CCCL_API constexpr warpspeed::SquadDesc squadLoad() const
-  {
-    return policy.squadLoad();
-  }
-  _CCCL_API constexpr warpspeed::SquadDesc squadSched() const
-  {
-    return policy.squadSched();
-  }
-  _CCCL_API constexpr warpspeed::SquadDesc squadLookback() const
-  {
-    return policy.squadLookback();
-  }
-};
+  return PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warpspeed;
+}
 
 template <typename InputT, typename OutputT, typename AccumT>
 struct scanKernelParams
@@ -120,24 +96,20 @@ struct scanKernelParams
 template <typename PolicySelector, typename InputT, typename OutputT, typename AccumT>
 struct ScanResources
 {
-  _CCCL_API static constexpr scan_warpspeed_policy warpspeed_policy() noexcept
-  {
-    return get_warpspeed_policy<PolicySelector>();
-  }
+  static constexpr scan_warpspeed_policy policy = get_warpspeed_policy<PolicySelector>();
 
   // align to at least 16 bytes (InputT/OutputT may be aligned higher) so each stage starts correctly aligned
   struct alignas(::cuda::std::max({::cuda::std::size_t{16}, alignof(InputT), alignof(OutputT)})) InOutT
   {
     // the tile_size size is a multiple of the warp size, and thus for sure a multiple of 16
-    static_assert(ScanResources::warpspeed_policy().tile_size % 16 == 0, "tile_size must be multiple of 16");
+    static_assert(policy.tile_size() % 16 == 0, "tile_size must be multiple of 16");
 
     // therefore, unaligned inputs need exactly 16 bytes extra for overcopying (tail padding = 16 - head padding)
-    ::cuda::std::byte inout[ScanResources::warpspeed_policy().tile_size * sizeof(InputT) + 16];
+    ::cuda::std::byte inout[policy.tile_size() * sizeof(InputT) + 16];
   };
   static_assert(alignof(InOutT) >= alignof(InputT));
   static_assert(alignof(InOutT) >= alignof(OutputT));
-  using SumThreadAndWarpT = AccumT[ScanResources::warpspeed_policy().squadReduce().threadCount()
-                                   + ScanResources::warpspeed_policy().squadReduce().warpCount()];
+  using SumThreadAndWarpT = AccumT[squad_reduce(policy).threadCount() + squad_reduce(policy).warpCount()];
 
   warpspeed::SmemResource<InOutT> smemInOut; // will also be used to stage the output (as OutputT) for the bulk copy
   warpspeed::SmemResource<uint4> smemNextBlockIdx;
@@ -161,18 +133,18 @@ struct scan_stage_counts
 
 _CCCL_API constexpr scan_stage_counts make_scan_stage_counts(int num_stages)
 {
-  int num_block_idx_stages = num_stages - 1;
-  num_block_idx_stages     = num_block_idx_stages < 1 ? 1 : num_block_idx_stages;
+  // If numBlockIdxStages is one less than the number of stages, we find a small speedup compared to setting it equal to
+  // num_stages. Not sure why. TODO(bgruber): make this tunable
+  const int num_block_idx_stages = ::cuda::std::max(1, num_stages - 1);
+
+  // We do not need too many sumExclusiveCta stages. The lookback warp is the bottleneck. As soon as it produces a new
+  // value, it will be consumed by the scanStore squad, releasing the stage.
   return {num_block_idx_stages, 2};
 }
 
-template <typename PolicyAdapter,
-          typename SmemInOutT,
-          typename SmemNextBlockIdxT,
-          typename SmemSumExclusiveCtaT,
-          typename SmemSumThreadAndWarpT>
+template <typename SmemInOutT, typename SmemNextBlockIdxT, typename SmemSumExclusiveCtaT, typename SmemSumThreadAndWarpT>
 _CCCL_API constexpr void setup_scan_resources(
-  const PolicyAdapter& policy,
+  const scan_warpspeed_policy& policy,
   warpspeed::SyncHandler& syncHandler,
   warpspeed::SmemAllocator& smemAllocator,
   SmemInOutT& smemInOut,
@@ -180,25 +152,25 @@ _CCCL_API constexpr void setup_scan_resources(
   SmemSumExclusiveCtaT& smemSumExclusiveCta,
   SmemSumThreadAndWarpT& smemSumThreadAndWarp)
 {
-  const warpspeed::SquadDesc scanSquads[scan_warpspeed_policy::num_squads] = {
-    policy.squadReduce(),
-    policy.squadScanStore(),
-    policy.squadLoad(),
-    policy.squadSched(),
-    policy.squadLookback(),
+  const warpspeed::SquadDesc scanSquads[] = {
+    squad_reduce(policy),
+    squad_scan_store(policy),
+    squad_load(policy),
+    squad_sched(policy),
+    squad_lookback(policy),
   };
 
-  smemInOut.addPhase(syncHandler, smemAllocator, policy.squadLoad());
-  smemInOut.addPhase(syncHandler, smemAllocator, {policy.squadReduce(), policy.squadScanStore()});
+  smemInOut.addPhase(syncHandler, smemAllocator, squad_load(policy));
+  smemInOut.addPhase(syncHandler, smemAllocator, {squad_reduce(policy), squad_scan_store(policy)});
 
-  smemNextBlockIdx.addPhase(syncHandler, smemAllocator, policy.squadSched());
+  smemNextBlockIdx.addPhase(syncHandler, smemAllocator, squad_sched(policy));
   smemNextBlockIdx.addPhase(syncHandler, smemAllocator, scanSquads);
 
-  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, policy.squadLookback());
-  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, policy.squadScanStore());
+  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_lookback(policy));
+  smemSumExclusiveCta.addPhase(syncHandler, smemAllocator, squad_scan_store(policy));
 
-  smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, policy.squadReduce());
-  smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, policy.squadScanStore());
+  smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, squad_reduce(policy));
+  smemSumThreadAndWarp.addPhase(syncHandler, smemAllocator, squad_scan_store(policy));
 }
 
 // Function to allocate resources.
@@ -221,7 +193,7 @@ allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& sm
   };
 
   setup_scan_resources(
-    static_warpspeed_policy_adapter<PolicySelector>{},
+    get_warpspeed_policy<PolicySelector>(),
     syncHandler,
     smemAllocator,
     res.smemInOut,
@@ -315,14 +287,14 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   // Tuning dependent variables
   ////////////////////////////////////////////////////////////////////////////////
   static constexpr scan_warpspeed_policy policy        = get_warpspeed_policy<PolicySelector>();
-  static constexpr warpspeed::SquadDesc squadReduce    = policy.squadReduce();
-  static constexpr warpspeed::SquadDesc squadScanStore = policy.squadScanStore();
-  static constexpr warpspeed::SquadDesc squadLoad      = policy.squadLoad();
-  static constexpr warpspeed::SquadDesc squadSched     = policy.squadSched();
-  static constexpr warpspeed::SquadDesc squadLookback  = policy.squadLookback();
+  static constexpr warpspeed::SquadDesc squadReduce    = squad_reduce(policy);
+  static constexpr warpspeed::SquadDesc squadScanStore = squad_scan_store(policy);
+  static constexpr warpspeed::SquadDesc squadLoad      = squad_load(policy);
+  static constexpr warpspeed::SquadDesc squadSched     = squad_sched(policy);
+  static constexpr warpspeed::SquadDesc squadLookback  = squad_lookback(policy);
 
-  constexpr int tile_size            = policy.tile_size;
-  constexpr int num_look_ahead_items = policy.num_look_ahead_items;
+  constexpr int tile_size                   = policy.tile_size();
+  constexpr int look_ahead_items_per_thread = policy.look_ahead_items_per_thread;
 
   // We might try to instantiate the kernel with hughe types which would lead to a small tile size. Ensure its never 0
   constexpr int elemPerThread = policy.items_per_thread;
@@ -530,7 +502,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
 
       if (!is_first_tile)
       {
-        AccumT regSumExclusiveCta = warpspeed::warpIncrementalLookback<num_look_ahead_items>(
+        AccumT regSumExclusiveCta = warpspeed::warpIncrementalLookback<look_ahead_items_per_thread>(
           specialRegisters, params.ptrTileStates, idxTilePrev, sumExclusiveCtaPrev, idxTile, scan_op);
         if (squad.isLeaderThread())
         {
@@ -555,7 +527,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         // Acquire refSumThread briefly
         warpspeed::SmemRef refSumThreadAndWarpR = phaseSumThreadAndWarpR.acquireRef();
         // Add the sums of the preceding warps in this CTA to the cumulative
-        // sum. These sums have been calculated in squadReduce(). We need
+        // sum. These sums have been calculated in reduce squad. We need
         // the reduce and scan squads to be the same size to do this.
         static_assert(squadReduce.warpCount() == squadScanStore.warpCount());
 
@@ -723,7 +695,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       {
         // otherwise, issue multiple bulk copies in chunks of the input tile size
         // TODO(bgruber): I am sure this could be implemented a lot more efficiently
-        static constexpr int elem_per_chunk = static_cast<int>(policy.tile_size * sizeof(InputT) / sizeof(OutputT));
+        static constexpr int elem_per_chunk = static_cast<int>(policy.tile_size() * sizeof(InputT) / sizeof(OutputT));
         for (int chunk_offset = 0; chunk_offset < valid_items; chunk_offset += elem_per_chunk)
         {
           const int chunk_size = ::cuda::std::min(valid_items - chunk_offset, elem_per_chunk);
@@ -796,12 +768,12 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
   static constexpr scan_warpspeed_policy policy = get_warpspeed_policy<PolicySelector>();
 
   // Dispatch for warp-specialization
-  static constexpr warpspeed::SquadDesc scanSquads[scan_warpspeed_policy::num_squads] = {
-    policy.squadReduce(),
-    policy.squadScanStore(),
-    policy.squadLoad(),
-    policy.squadSched(),
-    policy.squadLookback(),
+  static constexpr warpspeed::SquadDesc scanSquads[] = {
+    squad_reduce(policy),
+    squad_scan_store(policy),
+    squad_load(policy),
+    squad_sched(policy),
+    squad_lookback(policy),
   };
 
   // we need to force inline the lambda, but clang in CUDA mode only likes the GNU syntax
@@ -862,10 +834,10 @@ _CCCL_API constexpr auto smem_for_stages(
   const auto counts = make_scan_stage_counts(num_stages);
 
   const int align_inout = ::cuda::std::max({16, input_align, output_align});
-  const int inout_bytes = policy.tile_size * input_size + 16;
+  const int inout_bytes = policy.tile_size() * input_size + 16;
   // Match sizeof(InOutT): round up to the alignment so each stage matches SmemResource<InOutT>.
   const int inout_stride    = (inout_bytes + align_inout - 1) & ~(align_inout - 1);
-  const auto reduce_squad   = policy.squadReduce();
+  const auto reduce_squad   = squad_reduce(policy);
   const int sum_thread_warp = (reduce_squad.threadCount() + reduce_squad.warpCount()) * accum_size;
 
   void* inout_base = smemAllocator.alloc(static_cast<::cuda::std::uint32_t>(inout_stride * num_stages), align_inout);
@@ -890,7 +862,7 @@ _CCCL_API constexpr auto smem_for_stages(
   };
 
   setup_scan_resources(
-    runtime_warpspeed_policy_adapter{policy},
+    policy,
     syncHandler,
     smemAllocator,
     res.smemInOut,
