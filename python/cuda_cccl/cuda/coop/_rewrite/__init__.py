@@ -748,11 +748,14 @@ def get_root_definition(
             # pre-launch callback to register the extension.
             if original_instr_is_getattr:
                 if original_instr.value.name != instr.name:
-                    raise RuntimeError(
-                        f"XXX TODO Ummm unexpected code path? {original_instr!r} "
+                    msg = (
+                        "Invariant violation: original getattr base name "
+                        f"{original_instr.value.name!r} does not match "
+                        f"argument name {instr.name!r}; "
+                        f"original_instr={original_instr!r}"
                     )
-                else:
-                    needs_pre_launch_callback = True
+                    raise RuntimeError(msg)
+                needs_pre_launch_callback = True
                 if attr_name is None:
                     raise RuntimeError(
                         "Expected attr_name to be set, but got "
