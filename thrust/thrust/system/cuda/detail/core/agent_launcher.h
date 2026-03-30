@@ -39,14 +39,14 @@ namespace cuda_cub::core::detail
 {
 #  if _CCCL_DEVICE_COMPILATION()
 template <class Agent, class... Args>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS) _kernel_agent(Args... args)
+_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS) _kernel_agent(Args... args)
 {
   extern __shared__ char shmem[];
   Agent::entry(args..., shmem);
 }
 
 template <class Agent, class... Args>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS)
+_CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS)
   _kernel_agent_vshmem(char* vshmem, Args... args)
 {
   extern __shared__ char shmem[];
@@ -56,11 +56,11 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THRE
 
 #  else // ^^^ _CCCL_DEVICE_COMPILATION() ^^^ / vvv !_CCCL_DEVICE_COMPILATION() vvv
 template <class, class... Args>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void _kernel_agent(Args... args)
+_CCCL_KERNEL_ATTRIBUTES void _kernel_agent(Args... args)
 {}
 
 template <class, class... Args>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void _kernel_agent_vshmem(char*, Args... args)
+_CCCL_KERNEL_ATTRIBUTES void _kernel_agent_vshmem(char*, Args... args)
 {}
 #  endif // ^^^ !_CCCL_DEVICE_COMPILATION() ^^^
 
