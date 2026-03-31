@@ -8,7 +8,7 @@
 # which runs the executable with no arguments.
 function(cccl_add_executable target_name)
   set(options ADD_CTEST NO_METATARGETS)
-  set(oneValueArgs METATARGET_PATH)
+  set(oneValueArgs METATARGET_PATH DIALECT)
   set(multiValueArgs SOURCES)
   cmake_parse_arguments(
     _cccl
@@ -27,7 +27,13 @@ function(cccl_add_executable target_name)
   endif()
 
   add_executable(${target_name} ${_cccl_SOURCES})
-  cccl_configure_target(${target_name})
+
+  if (_cccl_DIALECT)
+    set(configure_args DIALECT "${_cccl_DIALECT}")
+  else()
+    set(configure_args)
+  endif()
+  cccl_configure_target(${target_name} ${configure_args})
 
   if (_cccl_ADD_CTEST)
     add_test(NAME ${target_name} COMMAND "$<TARGET_FILE:${target_name}>")

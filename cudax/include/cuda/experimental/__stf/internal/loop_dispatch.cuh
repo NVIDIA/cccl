@@ -26,7 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/places/place_partition.cuh>
+#include <cuda/experimental/__places/place_partition.cuh>
 
 #include <thread>
 

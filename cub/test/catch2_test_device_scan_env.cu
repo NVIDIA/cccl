@@ -60,11 +60,9 @@ TEST_CASE("Device scan exclusive scan works with default environment", "[scan][d
   int current_device{};
   REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
 
-  cudaDeviceProp device_props{};
-  REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
-
-  const auto target_block_size =
-    selector_t{}(cuda::to_arch_id(cuda::compute_capability{device_props.major, device_props.minor})).block_threads;
+  cuda::arch_id arch_id;
+  REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id));
+  const auto target_block_size = selector_t{}(arch_id).block_threads;
 
   num_items_t num_items = 1;
   c2h::device_vector<int> d_block_size(1);
@@ -112,7 +110,7 @@ struct scan_tuning
             cub::CacheLoadModifier::LOAD_DEFAULT,
             cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE,
             cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
-            cub::detail::delay_constructor_policy{cub::detail::delay_constructor_kind::fixed_delay, 350, 450},
+            cub::detail::default_delay_constructor_policy(true),
             {}};
   }
 };
@@ -184,11 +182,9 @@ TEST_CASE("Device scan inclusive-scan works with default environment", "[scan][d
   int current_device{};
   REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
 
-  cudaDeviceProp device_props{};
-  REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
-
-  const auto target_block_size =
-    selector_t{}(cuda::to_arch_id(cuda::compute_capability{device_props.major, device_props.minor})).block_threads;
+  cuda::arch_id arch_id;
+  REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id));
+  const auto target_block_size = selector_t{}(arch_id).block_threads;
 
   num_items_t num_items = 1;
   c2h::device_vector<int> d_block_size(1);

@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/stream/reduction.cuh>
+#include <cuda/experimental/__stf/utility/occupancy.cuh>
 
 namespace cuda::experimental::stf
 {

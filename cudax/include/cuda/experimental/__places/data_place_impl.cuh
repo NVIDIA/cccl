@@ -28,7 +28,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/places/data_place_interface.cuh>
+#include <cuda/experimental/__places/data_place_interface.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/scope_guard.cuh>
 

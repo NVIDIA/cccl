@@ -25,8 +25,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/places/cyclic_shape.cuh>
-#include <cuda/experimental/__stf/places/places.cuh>
+#include <cuda/experimental/__places/partitions/cyclic_shape.cuh>
+#include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 
 namespace cuda::experimental::stf
@@ -135,36 +135,30 @@ using blocked_partition = blocked_partition_custom<>;
 #ifdef UNITTESTED_FILE
 UNITTEST("blocked partition with very large data arrays")
 {
-  // Test 4D blocked partitioning with massive coordinate spaces
-  // 400 x 300 x 200 x 1000 = 24,000,000,000 elements (~24 billion, ~192GB of doubles)
+  // blocked_partition splits along a single dimension (the highest-rank one
+  // by default) and maps to grid_dims.x places.
+
+  // 400 x 300 x 200 x 1000 = 24,000,000,000 elements (~24 billion)
   dim4 massive_4d_dims(400, 300, 200, 1000);
-  const size_t total_elements = massive_4d_dims.size();
+  EXPECT(massive_4d_dims.size() == 24000000000ULL);
+  EXPECT(massive_4d_dims.size() > (1ULL << 34));
 
-  EXPECT(total_elements == 24000000000ULL);
-  EXPECT(total_elements > (1ULL << 34)); // Verify > 16GB worth of elements
+  // Partition the t-dimension (rank 3, extent 1000) into 4 blocks
+  dim4 grid_dims(4);
 
-  // Test blocked partitioning into 2x2x2x1 = 8 blocks
-  dim4 grid_dims(2, 2, 2, 1);
-
-  // Test get_executor for position in the middle
+  pos4 first_coord(0, 0, 0, 0);
   pos4 middle_coord(200, 150, 100, 500);
-  pos4 block_pos = blocked_partition::get_executor(middle_coord, massive_4d_dims, grid_dims);
+  pos4 last_coord(399, 299, 199, 999);
 
-  // Verify block position is within grid bounds
-  EXPECT(block_pos.x >= 0);
-  EXPECT(block_pos.x < 2);
-  EXPECT(block_pos.y >= 0);
-  EXPECT(block_pos.y < 2);
-  EXPECT(block_pos.z >= 0);
-  EXPECT(block_pos.z < 2);
-  EXPECT(block_pos.t == 0);
+  pos4 first_pos  = blocked_partition::get_executor(first_coord, massive_4d_dims, grid_dims);
+  pos4 middle_pos = blocked_partition::get_executor(middle_coord, massive_4d_dims, grid_dims);
+  pos4 last_pos   = blocked_partition::get_executor(last_coord, massive_4d_dims, grid_dims);
 
-  // Expected block position: middle should map to block (1,1,1,0)
-  // 200/(400/2)=1, 150/(300/2)=1, 100/(200/2)=1, 500/(1000/1)=0
-  EXPECT(block_pos.x == 1);
-  EXPECT(block_pos.y == 1);
-  EXPECT(block_pos.z == 1);
-  EXPECT(block_pos.t == 0);
+  // part_size = ceil(1000/4) = 250
+  // t=0   -> block 0, t=500 -> block 2, t=999 -> block 3
+  EXPECT(first_pos.x == 0);
+  EXPECT(middle_pos.x == 2);
+  EXPECT(last_pos.x == 3);
 };
 
 #endif // UNITTESTED_FILE

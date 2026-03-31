@@ -11,6 +11,7 @@ CUDA Experimental
    container
    memory_resource
    graph
+   places
    stf
    API reference <api/index>
 
@@ -24,6 +25,7 @@ Specifically, ``cudax`` provides:
    - :ref:`stream-ordered memory resources <libcudacxx-memory-resource-async>`
    - :ref:`graph functionality <cudax-graph>`
    - dimensions description functionality
+   - :ref:`places <cudax-places>` for managing execution and data affinity across devices
    - :ref:`an implementation of the STF (Sequential Task Flow) programming model <stf>`
 
 Stability Guarantees

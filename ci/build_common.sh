@@ -18,6 +18,7 @@ CUDA_COMPILER=${CUDACXX:-nvcc} # $CUDACXX if set, otherwise `nvcc`
 CUDA_ARCHS= # Empty, use presets by default.
 GLOBAL_CMAKE_OPTIONS=()
 DISABLE_CUB_BENCHMARKS= # Enable to force-disable building CUB benchmarks.
+PEDANTIC=${PEDANTIC:-} # Enable strict warnings. Default: on in CI, off locally.
 CONFIGURE_ONLY=false
 
 # Check if the correct number of arguments has been provided
@@ -33,6 +34,7 @@ function usage {
     echo "  -cxx: Host compiler (Defaults to \$CXX if set, otherwise g++)"
     echo "  -std: CUDA/C++ standard (Defaults to 17)"
     echo "  -arch: Target CUDA arches, e.g. \"60-real;70;80-virtual\" (Defaults to value in presets file)"
+    echo "  -pedantic/--pedantic: Enable strict warnings-as-errors and expose CCCL header warnings (default in CI)"
     echo "  -cmake-options: Additional options to pass to CMake"
     echo
     echo "Examples:"
@@ -76,6 +78,7 @@ while [ "${#args[@]}" -ne 0 ]; do
     -std)  CXX_STANDARD="${args[1]}";  args=("${args[@]:2}");;
     -cuda) CUDA_COMPILER="${args[1]}"; args=("${args[@]:2}");;
     -arch) CUDA_ARCHS="${args[1]}";    args=("${args[@]:2}");;
+    -pedantic | --pedantic) PEDANTIC=1; args=("${args[@]:1}");;
     -disable-benchmarks) DISABLE_CUB_BENCHMARKS=1; args=("${args[@]:1}");;
     -cmake-options)
         if [ -n "${args[1]}" ]; then
@@ -125,6 +128,17 @@ fi
 
 if [[ -n "${CUDA_ARCHS}" ]]; then
     GLOBAL_CMAKE_OPTIONS+=("-DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCHS}")
+fi
+
+# Default to pedantic mode in CI
+if [[ -z "${PEDANTIC}" && -n "${GITHUB_ACTIONS:-}" ]]; then
+    PEDANTIC=1
+fi
+
+if [[ -n "${PEDANTIC}" ]]; then
+    GLOBAL_CMAKE_OPTIONS+=("-DCCCL_ENABLE_WERROR=ON" "-DCCCL_ENABLE_PRAGMA_SYSTEM_HEADER=OFF")
+else
+    GLOBAL_CMAKE_OPTIONS+=("-DCCCL_ENABLE_WERROR=OFF" "-DCCCL_ENABLE_PRAGMA_SYSTEM_HEADER=ON")
 fi
 
 if [ $VERBOSE ]; then
@@ -205,6 +219,7 @@ print_environment_details() {
       CCCL_CI_COMMAND_TIMEOUT \
       CCCL_CUDA_EXTENDED \
       CCCL_BUILD_INFIX \
+      PEDANTIC \
       GLOBAL_CMAKE_OPTIONS \
       TBB_ROOT
 

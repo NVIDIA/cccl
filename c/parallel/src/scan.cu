@@ -166,10 +166,36 @@ struct scan_kernel_source
 {
   cccl_device_scan_build_result_t& build;
 
+  std::size_t InputSize() const
+  {
+    return build.input_type.size;
+  }
+
+  std::size_t InputAlign() const
+  {
+    return build.input_type.alignment;
+  }
+
+  std::size_t OutputSize() const
+  {
+    return build.output_type.size;
+  }
+
+  std::size_t OutputAlign() const
+  {
+    return build.output_type.alignment;
+  }
+
   std::size_t AccumSize() const
   {
     return build.accumulator_type.size;
   }
+
+  std::size_t AccumAlign() const
+  {
+    return build.accumulator_type.alignment;
+  }
+
   CUkernel InitKernel() const
   {
     return build.init_kernel;
@@ -414,6 +440,8 @@ static_assert(device_scan_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {6},
   build_ptr->cc                         = cc;
   build_ptr->cubin                      = (void*) result.data.release();
   build_ptr->cubin_size                 = result.size;
+  build_ptr->input_type                 = input_it.value_type;
+  build_ptr->output_type                = output_it.value_type;
   build_ptr->accumulator_type           = accum_t;
   build_ptr->force_inclusive            = force_inclusive;
   build_ptr->init_kind                  = init_kind;

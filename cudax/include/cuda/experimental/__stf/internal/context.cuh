@@ -17,6 +17,7 @@
 
 #include <cuda/std/__exception/exception_macros.h>
 
+#include <cuda/experimental/__places/exec/cuda_stream.cuh>
 #include <cuda/experimental/__stf/allocators/adapters.cuh>
 #include <cuda/experimental/__stf/allocators/buddy_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/cached_allocator.cuh>
@@ -28,7 +29,6 @@
 #include <cuda/experimental/__stf/internal/scalar_interface.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
-#include <cuda/experimental/__stf/places/exec/cuda_stream.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
 #include <map>
@@ -139,6 +139,15 @@ private:
       payload->*[&](auto& self) {
         self->*::std::forward<Fun>(f);
       };
+    }
+
+    // Attach opaque user data to the scope; an optional destructor is called when the scope is destroyed
+    auto& set_user_data(const void* data, size_t sz, void (*dtor)(void*) = nullptr)
+    {
+      payload->*[&](auto& self) {
+        self.set_user_data(data, sz, dtor);
+      };
+      return *this;
     }
 
     template <typename... Args>

@@ -425,7 +425,9 @@ public:
   {
     _CCCL_TRY
     {
-      constexpr bool __parallelize = _Policy() == par || _Policy() == par_unseq;
+      constexpr bool __parallelize =
+        ::cuda::std::is_same_v<_Policy, ::cuda::std::execution::parallel_policy>
+        || ::cuda::std::is_same_v<_Policy, ::cuda::std::execution::parallel_unsequenced_policy>;
       __visit(__detail::__get_execute_bulk_fn<__parallelize>(_BulkTag(), __fn_, __shape_, __begin, __end), __values_);
     }
     _CCCL_CATCH_ALL

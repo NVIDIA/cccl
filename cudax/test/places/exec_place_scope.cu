@@ -10,22 +10,23 @@
 
 /**
  * @file
- * @brief Unit tests for exec_place_guard RAII helper
+ * @brief Unit tests for exec_place_scope RAII helper
  */
 
-#include <cuda/experimental/__stf/stream/stream_ctx.cuh>
+#include <cuda/experimental/__places/places.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 #include <thread>
 #include <vector>
 
 using namespace cuda::experimental::stf;
 
-// Test 1: Basic guard functionality - single device switch
-void test_basic_guard(int ndevs)
+// Test 1: Basic scope functionality - single device switch
+void test_basic_scope(int ndevs)
 {
   if (ndevs < 2)
   {
-    fprintf(stderr, "test_basic_guard: skipping (need at least 2 devices).\n");
+    fprintf(stderr, "test_basic_scope: skipping (need at least 2 devices).\n");
     return;
   }
 
@@ -36,63 +37,63 @@ void test_basic_guard(int ndevs)
   cuda_safe_call(cudaGetDevice(&dev_before));
   EXPECT(dev_before == 0);
 
-  // Use guard to switch to device 1
+  // Use scope to switch to device 1
   {
-    exec_place_guard guard(exec_place::device(1));
+    exec_place_scope scope(exec_place::device(1));
 
     int dev_inside = -1;
     cuda_safe_call(cudaGetDevice(&dev_inside));
     EXPECT(dev_inside == 1);
   }
 
-  // After guard destruction, should be back to device 0
+  // After scope destruction, should be back to device 0
   int dev_after = -1;
   cuda_safe_call(cudaGetDevice(&dev_after));
   EXPECT(dev_after == 0);
 }
 
-// Test 2: Nested guards
-void test_nested_guards(int ndevs)
+// Test 2: Nested scopes
+void test_nested_scopes(int ndevs)
 {
   if (ndevs < 3)
   {
-    fprintf(stderr, "test_nested_guards: skipping (need at least 3 devices).\n");
+    fprintf(stderr, "test_nested_scopes: skipping (need at least 3 devices).\n");
     return;
   }
 
   cuda_safe_call(cudaSetDevice(0));
 
   {
-    exec_place_guard guard1(exec_place::device(1));
+    exec_place_scope scope1(exec_place::device(1));
 
     int dev = -1;
     cuda_safe_call(cudaGetDevice(&dev));
     EXPECT(dev == 1);
 
     {
-      exec_place_guard guard2(exec_place::device(2));
+      exec_place_scope scope2(exec_place::device(2));
 
       cuda_safe_call(cudaGetDevice(&dev));
       EXPECT(dev == 2);
     }
 
-    // After inner guard destruction, should be back to device 1
+    // After inner scope destruction, should be back to device 1
     cuda_safe_call(cudaGetDevice(&dev));
     EXPECT(dev == 1);
   }
 
-  // After outer guard destruction, should be back to device 0
+  // After outer scope destruction, should be back to device 0
   int dev = -1;
   cuda_safe_call(cudaGetDevice(&dev));
   EXPECT(dev == 0);
 }
 
-// Test 3: Guard with host execution place (should be no-op for device)
-void test_host_place_guard(int ndevs)
+// Test 3: Scope with host execution place (should be no-op for device)
+void test_host_place_scope(int ndevs)
 {
   if (ndevs < 1)
   {
-    fprintf(stderr, "test_host_place_guard: skipping (need at least 1 device).\n");
+    fprintf(stderr, "test_host_place_scope: skipping (need at least 1 device).\n");
     return;
   }
 
@@ -102,7 +103,7 @@ void test_host_place_guard(int ndevs)
   cuda_safe_call(cudaGetDevice(&dev_before));
 
   {
-    exec_place_guard guard(exec_place::host());
+    exec_place_scope scope(exec_place::host());
 
     // Device should remain unchanged when using host place
     int dev_inside = -1;
@@ -115,19 +116,19 @@ void test_host_place_guard(int ndevs)
   EXPECT(dev_after == dev_before);
 }
 
-// Test 4: Guard with same device (should be efficient no-op)
-void test_same_device_guard(int ndevs)
+// Test 4: Scope with same device (should be efficient no-op)
+void test_same_device_scope(int ndevs)
 {
   if (ndevs < 1)
   {
-    fprintf(stderr, "test_same_device_guard: skipping (need at least 1 device).\n");
+    fprintf(stderr, "test_same_device_scope: skipping (need at least 1 device).\n");
     return;
   }
 
   cuda_safe_call(cudaSetDevice(0));
 
   {
-    exec_place_guard guard(exec_place::device(0));
+    exec_place_scope scope(exec_place::device(0));
 
     int dev = -1;
     cuda_safe_call(cudaGetDevice(&dev));
@@ -139,12 +140,12 @@ void test_same_device_guard(int ndevs)
   EXPECT(dev == 0);
 }
 
-// Test 5: Stream creation within guard scope
-void test_stream_creation_in_guard(int ndevs)
+// Test 5: Stream creation within scope
+void test_stream_creation_in_scope(int ndevs)
 {
   if (ndevs < 2)
   {
-    fprintf(stderr, "test_stream_creation_in_guard: skipping (need at least 2 devices).\n");
+    fprintf(stderr, "test_stream_creation_in_scope: skipping (need at least 2 devices).\n");
     return;
   }
 
@@ -153,7 +154,7 @@ void test_stream_creation_in_guard(int ndevs)
   cudaStream_t stream;
 
   {
-    exec_place_guard guard(exec_place::device(1));
+    exec_place_scope scope(exec_place::device(1));
     cuda_safe_call(cudaStreamCreate(&stream));
   }
 
@@ -166,17 +167,17 @@ void test_stream_creation_in_guard(int ndevs)
 
   // Clean up (need to be on correct device for some operations)
   {
-    exec_place_guard guard(exec_place::device(1));
+    exec_place_scope scope(exec_place::device(1));
     cuda_safe_call(cudaStreamDestroy(stream));
   }
 }
 
-// Test 6: Multiple threads with guards
-void test_multithreaded_guards(int ndevs)
+// Test 6: Multiple threads with scopes
+void test_multithreaded_scopes(int ndevs)
 {
   if (ndevs < 2)
   {
-    fprintf(stderr, "test_multithreaded_guards: skipping (need at least 2 devices).\n");
+    fprintf(stderr, "test_multithreaded_scopes: skipping (need at least 2 devices).\n");
     return;
   }
 
@@ -193,7 +194,7 @@ void test_multithreaded_guards(int ndevs)
       int target_dev = i % ndevs;
 
       {
-        exec_place_guard guard(exec_place::device(target_dev));
+        exec_place_scope scope(exec_place::device(target_dev));
 
         int dev = -1;
         cuda_safe_call(cudaGetDevice(&dev));
@@ -249,7 +250,7 @@ void test_stress_iterations(int ndevs)
     int target_dev = iter % ndevs;
 
     {
-      exec_place_guard guard(exec_place::device(target_dev));
+      exec_place_scope scope(exec_place::device(target_dev));
 
       int dev = -1;
       cuda_safe_call(cudaGetDevice(&dev));
@@ -270,12 +271,12 @@ int main()
   int ndevs;
   cuda_safe_call(cudaGetDeviceCount(&ndevs));
 
-  test_basic_guard(ndevs);
-  test_nested_guards(ndevs);
-  test_host_place_guard(ndevs);
-  test_same_device_guard(ndevs);
-  test_stream_creation_in_guard(ndevs);
-  test_multithreaded_guards(ndevs);
+  test_basic_scope(ndevs);
+  test_nested_scopes(ndevs);
+  test_host_place_scope(ndevs);
+  test_same_device_scope(ndevs);
+  test_stream_creation_in_scope(ndevs);
+  test_multithreaded_scopes(ndevs);
   test_stress_iterations(ndevs);
 
   return 0;

@@ -25,9 +25,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__places/exec/green_context.cuh>
 #include <cuda/experimental/__stf/internal/exec_affinity.cuh>
 #include <cuda/experimental/__stf/internal/executable_graph_cache.cuh>
-#include <cuda/experimental/__stf/places/exec/green_context.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh> // for ::std::hash<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>>
