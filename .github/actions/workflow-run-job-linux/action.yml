@@ -95,6 +95,8 @@ runs:
         AWS_ACCESS_KEY_ID: "${{env.AWS_ACCESS_KEY_ID}}"
         AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
         AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
+        NUMBA_CUDA_GIT_REF: "${{env.NUMBA_CUDA_GIT_REF}}"
+        NUMBA_CUDA_GIT_URL: "${{env.NUMBA_CUDA_GIT_URL}}"
       run: |
         cat <<'EOF' > ci.sh
         #! /usr/bin/env bash
@@ -192,6 +194,8 @@ runs:
             --env "HOST_WORKSPACE=${{github.workspace}}" \
             --env "JOB_ID=$JOB_ID" \
             --env "NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-}" \
+            --env "NUMBA_CUDA_GIT_REF=${NUMBA_CUDA_GIT_REF:-}" \
+            --env "NUMBA_CUDA_GIT_URL=${NUMBA_CUDA_GIT_URL:-}" \
             --env "RUNNER_TEMP=$RUNNER_TEMP" \
             --volume "${ARTIFACT_ARCHIVES}:${ARTIFACT_ARCHIVES}" \
             --volume "${ARTIFACT_UPLOAD_STAGE}:${ARTIFACT_UPLOAD_STAGE}" \
