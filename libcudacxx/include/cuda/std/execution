@@ -66,6 +66,8 @@
 #  include <cuda/std/__pstl/reverse.h>
 #  include <cuda/std/__pstl/reverse_copy.h>
 #  include <cuda/std/__pstl/transform.h>
+#  include <cuda/std/__pstl/transform_exclusive_scan.h>
+#  include <cuda/std/__pstl/transform_inclusive_scan.h>
 #  include <cuda/std/__pstl/transform_reduce.h>
 #  include <cuda/std/__pstl/unique.h>
 #  include <cuda/std/__pstl/unique_copy.h>
