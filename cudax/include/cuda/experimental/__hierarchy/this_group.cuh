@@ -63,13 +63,13 @@ _CCCL_DEVICE_API void __cluster_sync() noexcept
                     ({
                       if constexpr (_Aligned)
                       {
-                        ::__cluster_barrier_arrive();
-                        ::__cluster_barrier_wait();
+                        asm volatile("barrier.cluster.arrive.aligned;");
+                        asm volatile("barrier.cluster.wait.aligned;");
                       }
                       else
                       {
-                        asm volatile("barrier.cluster.arrive.aligned;");
-                        asm volatile("barrier.cluster.wait.aligned;");
+                        ::__cluster_barrier_arrive();
+                        ::__cluster_barrier_wait();
                       }
                     }),
                     ({ ::cuda::experimental::__block_sync<_Aligned>(); }))
@@ -292,12 +292,26 @@ public:
 
   _CCCL_DEVICE_API void sync() noexcept
   {
-    ::cuda::experimental::__cluster_sync<false>();
+    if constexpr (_Hierarchy::has_level(cluster))
+    {
+      ::cuda::experimental::__cluster_sync<false>();
+    }
+    else
+    {
+      ::cuda::experimental::__block_sync<false>();
+    }
   }
 
   _CCCL_DEVICE_API void sync_aligned() noexcept
   {
-    ::cuda::experimental::__cluster_sync<true>();
+    if constexpr (_Hierarchy::has_level(cluster))
+    {
+      ::cuda::experimental::__cluster_sync<true>();
+    }
+    else
+    {
+      ::cuda::experimental::__block_sync<true>();
+    }
   }
 
   [[nodiscard]] _CCCL_DEVICE_API const _Hierarchy& hierarchy() const noexcept
