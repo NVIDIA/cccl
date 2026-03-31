@@ -320,14 +320,6 @@ struct DeviceScan
   //!   The range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
   //!   shall not overlap in any other way.
   //!
-  //! Preconditions
-  //! +++++++++++++
-  //!
-  //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
-  //!   The range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
-  //!   shall not overlap in any other way.
-  //! - ``d_in`` and ``d_out`` must not be null pointers
-  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
