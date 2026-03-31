@@ -24,7 +24,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   thrust::device_vector<T> in = generate(elements, bit_entropy::_1_000, T{0}, T{42});
   thrust::device_vector<T> out(elements, thrust::no_init);
-  const auto count = cuda::std::count(cuda::execution::__cub_par_unseq, in.begin(), in.end(), T{42});
+  const auto count = cuda::std::count(cuda::execution::gpu, in.begin(), in.end(), T{42});
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);
