@@ -204,6 +204,48 @@ _CCCL_DEVICE_API Tp warpScanExclusivePartial(Tp regInput, ScanOpT& scan_op, cons
   }
 }
 
+template <bool isInclusive, bool is_last_tile, typename Tp, size_t elemPerThread, typename ScanOpT>
+_CCCL_DEVICE_API void
+threadScanPartial(Tp (&regSumInclusive)[elemPerThread], ScanOpT& scan_op, Tp prefix, bool use_prefix, int valid_items)
+{
+  // if we are in the last tile and have an identity, fill the invalid array items with it
+  constexpr bool have_identity = ::cuda::has_identity_element_v<ScanOpT, Tp>;
+  if constexpr (is_last_tile && have_identity)
+  {
+    static_assert(have_identity);
+    static_assert(
+      !::cuda::std::is_same_v<decltype(::cuda::identity_element<ScanOpT, Tp>()), cuda::__no_identity_element>);
+    const auto a = ::cuda::identity_element<ScanOpT, Tp>();
+    for (int i = valid_items; i < elemPerThread; ++i)
+    {
+      regSumInclusive[i] = a;
+    }
+  }
+
+  if constexpr (is_last_tile && !have_identity)
+  {
+    if constexpr (isInclusive)
+    {
+      __cub_detail::ThreadScanInclusivePartial(regSumInclusive, regSumInclusive, scan_op, valid_items, prefix, use_prefix);
+    }
+    else
+    {
+      __cub_detail::ThreadScanExclusivePartial(regSumInclusive, regSumInclusive, scan_op, valid_items, prefix, use_prefix);
+    }
+  }
+  else
+  {
+    if constexpr (isInclusive)
+    {
+      __cub_detail::ThreadScanInclusive(regSumInclusive, regSumInclusive, scan_op, prefix, use_prefix);
+    }
+    else
+    {
+      __cub_detail::ThreadScanExclusive(regSumInclusive, regSumInclusive, scan_op, prefix, use_prefix);
+    }
+  }
+}
+
 // The kernelBody device function is a straight-line implementation of the
 // warp-specialized kernel.
 //
@@ -467,9 +509,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       auto scan_and_store =
         [&](auto is_last_tile_ic, auto& phaseSumThreadAndWarpR, auto& phaseSumExclusiveCtaR, auto& phaseInOutRW)
           _CCCL_FORCEINLINE_LAMBDA {
-            [[maybe_unused]] int valid_items_this_thread;
-            [[maybe_unused]] int valid_threads_this_warp;
-            [[maybe_unused]] int valid_warps;
+            // need to init these to silence nvcc warning about reading uninitialized data
+            [[maybe_unused]] int valid_items_this_thread = 0;
+            [[maybe_unused]] int valid_threads_this_warp = 0;
+            [[maybe_unused]] int valid_warps             = 0;
             if constexpr (is_last_tile_ic)
             {
               valid_items_this_thread =
@@ -631,16 +674,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
             ////////////////////////////////////////////////////////////////////////////////
             AccumT regSumInclusive[elemPerThread];
 
-            // if we are in the last tile and have an identity, fill the invalid array items with it
-            constexpr bool have_identity = cuda::has_identity_element_v<ScanOpT, AccumT>;
-            if constexpr (is_last_tile_ic && have_identity)
-            {
-              for (int i = valid_items_this_thread; i < elemPerThread; ++i)
-              {
-                regSumInclusive[i] = cuda::identity_element<ScanOpT, AccumT>();
-              }
-            }
-
             // Acquire refInOut for remainder of scope.
             warpspeed::SmemRef refInOutRW = phaseInOutRW.acquireRef();
 
@@ -653,32 +686,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
             // Perform inclusive scan of register array in current thread.
             // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use sumExclusive
             const bool use_prefix = hasInit ? true : !(is_first_tile && squad.threadRank() == 0);
-
-            // this branch would cost up to 14% BW for I8 and I16 if it were at runtime
-            if constexpr (is_last_tile_ic && !have_identity)
-            {
-              if constexpr (isInclusive)
-              {
-                __cub_detail::ThreadScanInclusivePartial(
-                  regSumInclusive, regSumInclusive, scan_op, valid_items_this_thread, sumExclusive, use_prefix);
-              }
-              else
-              {
-                __cub_detail::ThreadScanExclusivePartial(
-                  regSumInclusive, regSumInclusive, scan_op, valid_items_this_thread, sumExclusive, use_prefix);
-              }
-            }
-            else
-            {
-              if constexpr (isInclusive)
-              {
-                __cub_detail::ThreadScanInclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive, use_prefix);
-              }
-              else
-              {
-                __cub_detail::ThreadScanExclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive, use_prefix);
-              }
-            }
+            threadScanPartial<isInclusive, is_last_tile_ic>(
+              regSumInclusive, scan_op, sumExclusive, use_prefix, valid_items_this_thread);
 
             ////////////////////////////////////////////////////////////////////////////////
             // Store result to shared memory
