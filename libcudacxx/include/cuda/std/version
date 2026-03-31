@@ -147,7 +147,7 @@
 // #  define __cccl_lib_unordered_map_try_emplace     201411L
 #define __cccl_lib_variant 201606L
 
-#define __cccl_lib_saturation_arithmetic 202311L
+#define __cccl_lib_saturation_arithmetic 202603L
 
 #if _CCCL_STD_VER >= 2020
 #  undef __cccl_lib_array_constexpr

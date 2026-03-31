@@ -21,7 +21,7 @@
 
 #include <cuda/iterator>
 #include <cuda/memory_pool>
-#include <cuda/std/__pstl_algorithm>
+#include <cuda/std/algorithm>
 #include <cuda/std/execution>
 #include <cuda/std/functional>
 #include <cuda/stream>
@@ -90,21 +90,21 @@ C2H_TEST("cuda::std::exclusive_scan(Iter1, Iter1, Iter2, Init)", "[parallel algo
 
   SECTION("with default stream")
   {
-    const auto policy = cuda::execution::__cub_par_unseq;
+    const auto policy = cuda::execution::gpu;
     test_exclusive_scan(policy, input, output);
   }
 
   SECTION("with provided stream")
   {
     cuda::stream stream{cuda::device_ref{0}};
-    const auto policy = cuda::execution::__cub_par_unseq.with(cuda::get_stream, stream);
+    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_exclusive_scan(policy, input, output);
   }
 
   SECTION("with provided memory_resource")
   {
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
-    const auto policy = cuda::execution::__cub_par_unseq.with(cuda::mr::get_memory_resource, device_resource);
+    const auto policy = cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource);
     test_exclusive_scan(policy, input, output);
   }
 
@@ -112,8 +112,8 @@ C2H_TEST("cuda::std::exclusive_scan(Iter1, Iter1, Iter2, Init)", "[parallel algo
   {
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
-    const auto policy                            = cuda::execution::__cub_par_unseq.with(cuda::get_stream, stream)
-                          .with(cuda::mr::get_memory_resource, device_resource);
+    const auto policy =
+      cuda::execution::gpu.with(cuda::get_stream, stream).with(cuda::mr::get_memory_resource, device_resource);
     test_exclusive_scan(policy, input, output);
   }
 }
