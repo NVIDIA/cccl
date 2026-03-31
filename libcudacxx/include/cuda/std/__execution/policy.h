@@ -76,7 +76,7 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
   //! @brief create a new policy with additional environments attached
   template <class _Env, size_t... _Indices>
-  [[nodiscard]] _CCCL_API constexpr __execution_policy_base<_Policy, _Env, _Envs...>
+  [[nodiscard]] _CCCL_HOST_API constexpr __execution_policy_base<_Policy, _Env, _Envs...>
   __with(_Env&& __env, index_sequence<_Indices...>) const
   {
     if constexpr (sizeof...(_Envs) == 2)
@@ -93,7 +93,7 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
 
   //! @brief Prepend an environment to the current ones
   template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto with(_Env&& __env) const
+  [[nodiscard]] _CCCL_HOST_API constexpr auto with(_Env&& __env) const
   {
     if constexpr (__convertible_to_stream_ref<_Env>
                   && (is_lvalue_reference_v<_Env> || is_same_v<remove_cvref_t<_Env>, ::cudaStream_t>) )
@@ -105,14 +105,12 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
       return __with(prop{::cuda::get_stream, __stream}, ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
     }
     else if constexpr (::cuda::mr::resource<_Env>)
-    { // TODO(miscco): If we support more than one backend, we need to change this to satisfy the backends needs
-      static_assert(::cuda::mr::resource_with<_Env, ::cuda::mr::device_accessible>,
-                    "Memory resources need to provide device accessible memory");
+    {
       static_assert(!is_const_v<_Env>, "A memory resource must be passed by non-const reference");
       if constexpr (!is_lvalue_reference_v<_Env> && !::cuda::mr::__is_resource_ref<remove_cvref_t<_Env>>)
       { // The user passed a prvalue, which indicates we should own the resource
         return __with(prop{::cuda::mr::get_memory_resource,
-                           ::cuda::mr::any_resource<::cuda::mr::device_accessible> {
+                           ::cuda::mr::any_resource<> {
                              ::cuda::std::move(__env)
                            }},
                       ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
@@ -120,7 +118,7 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
       else
       {
         return __with(prop{::cuda::mr::get_memory_resource,
-                           ::cuda::mr::resource_ref<::cuda::mr::device_accessible> {
+                           ::cuda::mr::resource_ref<> {
                              __env
                            }},
                       ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
@@ -134,7 +132,7 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
 
   //! @brief Create a new environment from a tag and a value and prepend
   template <class _Tag, class _Value>
-  [[nodiscard]] _CCCL_API constexpr auto with(const _Tag& __tag, _Value&& __value) const
+  [[nodiscard]] _CCCL_HOST_API constexpr auto with(const _Tag& __tag, _Value&& __value) const
   {
     if constexpr (is_same_v<remove_cvref_t<_Tag>, ::cuda::get_stream_t>)
     { // We want to force the use of ::cuda::stream_ref
@@ -145,14 +143,12 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
       return __with(prop{__tag, __stream}, ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
     }
     else if constexpr (is_same_v<remove_cvref_t<_Tag>, ::cuda::mr::get_memory_resource_t>)
-    { // TODO(miscco): If we support more than one backend, we need to change this to satisfy the backends needs
-      static_assert(::cuda::mr::resource_with<_Value, ::cuda::mr::device_accessible>,
-                    "Memory resources need to provide device accessible memory");
+    {
       static_assert(!is_const_v<_Value>, "A memory resource must be passed by non-const reference");
       if constexpr (!is_lvalue_reference_v<_Value> && !::cuda::mr::__is_resource_ref<remove_cvref_t<_Value>>)
       { // The user passed a prvalue, which indicates we should own the resource
         return __with(prop{__tag,
-                           ::cuda::mr::any_resource<::cuda::mr::device_accessible> {
+                           ::cuda::mr::any_resource<> {
                              ::cuda::std::move(__value)
                            }},
                       ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
@@ -160,7 +156,7 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
       else
       {
         return __with(prop{__tag,
-                           ::cuda::mr::resource_ref<::cuda::mr::device_accessible> {
+                           ::cuda::mr::resource_ref<> {
                              __value
                            }},
                       ::cuda::std::make_index_sequence<sizeof...(_Envs)>());

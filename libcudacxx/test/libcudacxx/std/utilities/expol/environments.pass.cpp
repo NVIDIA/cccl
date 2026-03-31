@@ -92,7 +92,7 @@ void test(const Policy& policy)
     assert(stream == result);
   }
 
-  { // the policy can take a cuStream_t
+  { // the policy can take a cudaStream_t
     cuda::stream stream{cuda::device_ref{0}};
     static_assert(!cuda::std::__is_callable_v<cuda::get_stream_t, const Policy&>);
     const auto new_policy = policy.with(cuda::get_stream, stream.get());
@@ -122,7 +122,7 @@ void test(const Policy& policy)
     assert(stream == result);
   }
 
-  { // the policy can take a cuStream_t as an environment
+  { // the policy can take a cudaStream_t as an environment
     cuda::stream stream{cuda::device_ref{0}};
     static_assert(!cuda::std::__is_callable_v<cuda::get_stream_t, const Policy&>);
     const auto new_policy = policy.with(stream.get());
@@ -138,7 +138,7 @@ void test(const Policy& policy)
     const auto new_policy = policy.with(cuda::mr::get_memory_resource, resource);
     static_assert(cuda::std::__is_callable_v<cuda::mr::get_memory_resource_t, decltype(new_policy)>);
     auto&& result = cuda::mr::get_memory_resource(new_policy);
-    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::resource_ref<cuda::mr::device_accessible>&>);
+    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::resource_ref<>&>);
     assert(resource == result);
   }
 
@@ -147,7 +147,7 @@ void test(const Policy& policy)
     const auto new_policy = policy.with(cuda::mr::get_memory_resource, test_resource{});
     static_assert(cuda::std::__is_callable_v<cuda::mr::get_memory_resource_t, decltype(new_policy)>);
     auto&& result = cuda::mr::get_memory_resource(new_policy);
-    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::any_resource<cuda::mr::device_accessible>&>);
+    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::any_resource<>&>);
   }
 
   { // the policy can take a resource_ref by lvalue
@@ -157,7 +157,7 @@ void test(const Policy& policy)
     const auto new_policy = policy.with(cuda::mr::get_memory_resource, resource_ref);
     static_assert(cuda::std::__is_callable_v<cuda::mr::get_memory_resource_t, decltype(new_policy)>);
     auto&& result = cuda::mr::get_memory_resource(new_policy);
-    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::resource_ref<cuda::mr::device_accessible>&>);
+    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::resource_ref<>&>);
     assert(resource == result);
   }
 
@@ -168,7 +168,7 @@ void test(const Policy& policy)
       policy.with(cuda::mr::get_memory_resource, cuda::mr::resource_ref<::cuda::mr::device_accessible>{resource});
     static_assert(cuda::std::__is_callable_v<cuda::mr::get_memory_resource_t, decltype(new_policy)>);
     auto&& result = cuda::mr::get_memory_resource(new_policy);
-    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::resource_ref<cuda::mr::device_accessible>&>);
+    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::resource_ref<>&>);
   }
 
   { // the policy can take a cuda::mr::any_resource by lvalue
@@ -177,7 +177,7 @@ void test(const Policy& policy)
     const auto new_policy = policy.with(cuda::mr::get_memory_resource, resource);
     static_assert(cuda::std::__is_callable_v<cuda::mr::get_memory_resource_t, decltype(new_policy)>);
     auto&& result = cuda::mr::get_memory_resource(new_policy);
-    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::resource_ref<cuda::mr::device_accessible>&>);
+    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::resource_ref<>&>);
     assert(resource == result);
   }
 
@@ -187,7 +187,7 @@ void test(const Policy& policy)
       cuda::mr::get_memory_resource, cuda::mr::any_resource<::cuda::mr::device_accessible>{test_resource{}});
     static_assert(cuda::std::__is_callable_v<cuda::mr::get_memory_resource_t, decltype(new_policy)>);
     auto&& result = cuda::mr::get_memory_resource(new_policy);
-    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::any_resource<cuda::mr::device_accessible>&>);
+    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::any_resource<>&>);
   }
 
   { // the policy can take a memory resource by lvalue as an environment
@@ -196,7 +196,7 @@ void test(const Policy& policy)
     const auto new_policy = policy.with(resource);
     static_assert(cuda::std::__is_callable_v<cuda::mr::get_memory_resource_t, decltype(new_policy)>);
     auto&& result = cuda::mr::get_memory_resource(new_policy);
-    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::resource_ref<cuda::mr::device_accessible>&>);
+    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::resource_ref<>&>);
     assert(resource == result);
   }
 
@@ -205,7 +205,7 @@ void test(const Policy& policy)
     const auto new_policy = policy.with(test_resource{});
     static_assert(cuda::std::__is_callable_v<cuda::mr::get_memory_resource_t, decltype(new_policy)>);
     auto&& result = cuda::mr::get_memory_resource(new_policy);
-    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::any_resource<cuda::mr::device_accessible>&>);
+    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::any_resource<>&>);
   }
 
   { // the policy can take a resource_ref by lvalue as an environment
@@ -215,7 +215,7 @@ void test(const Policy& policy)
     const auto new_policy = policy.with(resource_ref);
     static_assert(cuda::std::__is_callable_v<cuda::mr::get_memory_resource_t, decltype(new_policy)>);
     auto&& result = cuda::mr::get_memory_resource(new_policy);
-    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::resource_ref<cuda::mr::device_accessible>&>);
+    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::resource_ref<>&>);
     assert(resource == result);
   }
 
@@ -225,7 +225,7 @@ void test(const Policy& policy)
     const auto new_policy = policy.with(cuda::mr::resource_ref<::cuda::mr::device_accessible>{resource});
     static_assert(cuda::std::__is_callable_v<cuda::mr::get_memory_resource_t, decltype(new_policy)>);
     auto&& result = cuda::mr::get_memory_resource(new_policy);
-    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::resource_ref<cuda::mr::device_accessible>&>);
+    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::resource_ref<>&>);
   }
 
   { // the policy can take a cuda::mr::any_resource by lvalue as an environment
@@ -234,7 +234,7 @@ void test(const Policy& policy)
     const auto new_policy = policy.with(resource);
     static_assert(cuda::std::__is_callable_v<cuda::mr::get_memory_resource_t, decltype(new_policy)>);
     auto&& result = cuda::mr::get_memory_resource(new_policy);
-    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::resource_ref<cuda::mr::device_accessible>&>);
+    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::resource_ref<>&>);
     assert(resource == result);
   }
 
@@ -244,7 +244,7 @@ void test(const Policy& policy)
       cuda::mr::get_memory_resource, cuda::mr::any_resource<::cuda::mr::device_accessible>{test_resource{}});
     static_assert(cuda::std::__is_callable_v<cuda::mr::get_memory_resource_t, decltype(new_policy)>);
     auto&& result = cuda::mr::get_memory_resource(new_policy);
-    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::any_resource<cuda::mr::device_accessible>&>);
+    static_assert(cuda::std::is_same_v<decltype(result), const cuda::mr::any_resource<>&>);
   }
 
   { // the policy can take an arbitrary tag that is queryable
