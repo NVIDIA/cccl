@@ -14,7 +14,6 @@
 //   ForwardIterator for_each_n(ExecutionPolicy&& exec, ForwardIterator first, Size n,
 //                              Function f);
 
-#include <cuda/std/__pstl_algorithm>
 #include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 

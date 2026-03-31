@@ -12,7 +12,7 @@
 #include <thrust/execution_policy.h>
 
 #include <cuda/memory_pool>
-#include <cuda/std/__pstl_algorithm>
+#include <cuda/std/execution>
 #include <cuda/stream>
 
 #include <nvbench_helper.cuh>

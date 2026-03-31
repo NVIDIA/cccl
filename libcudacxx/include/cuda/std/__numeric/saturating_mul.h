@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___NUMERIC_DIV_SAT_H
-#define _CUDA_STD___NUMERIC_DIV_SAT_H
+#ifndef _CUDA_STD___NUMERIC_SATURATING_MUL_H
+#define _CUDA_STD___NUMERIC_SATURATING_MUL_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__numeric/div_sat_overflow.h>
+#include <cuda/__numeric/mul_sat_overflow.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_integer.h>
 
@@ -30,13 +30,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Tp div_sat(_Tp __x, _Tp __y) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp saturating_mul(_Tp __x, _Tp __y) noexcept
 {
-  return ::cuda::div_sat_overflow(__x, __y).value;
+  return ::cuda::mul_sat_overflow(__x, __y).value;
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___NUMERIC_DIV_SAT_H
+#endif // _CUDA_STD___NUMERIC_SATURATING_MUL_H

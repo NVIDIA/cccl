@@ -734,7 +734,9 @@ struct composition_op_t
     permutation_t result;
     for (std::size_t i = 0; i < lhs.size(); i++)
     {
-      result[i] = rhs[lhs[i]];
+      const int sub = lhs[i];
+      _CCCL_ASSERT(sub >= 0 && sub < 5, "Permutation index out of range. Reading invalid data?");
+      result[i] = rhs[sub];
     }
     return result;
   }

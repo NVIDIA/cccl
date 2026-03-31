@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___INTERNAL_PSTL_CONFIG_H
-#define _CUDA_STD___INTERNAL_PSTL_CONFIG_H
+#ifndef _CUDA___FWD_GET_MEMORY_RESOURCE_H
+#define _CUDA___FWD_GET_MEMORY_RESOURCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,14 +21,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/prologue.h>
+#if _CCCL_HAS_CTK()
 
-#define _CCCL_HAS_BACKEND_CUDA() _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
-#define _CCCL_HAS_BACKEND_OMP()  0
-#define _CCCL_HAS_BACKEND_TBB()  0
+#  include <cuda/std/__cccl/prologue.h>
 
-#define _CCCL_HAS_PSTL_BACKEND() (_CCCL_HAS_BACKEND_CUDA() || _CCCL_HAS_BACKEND_OMP() || _CCCL_HAS_BACKEND_TBB())
+_CCCL_BEGIN_NAMESPACE_CUDA_MR
 
-#include <cuda/std/__cccl/epilogue.h>
+struct __get_memory_resource_t;
 
-#endif // _CUDA_STD___INTERNAL_PSTL_CONFIG_H
+_CCCL_END_NAMESPACE_CUDA_MR
+
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CTK()
+
+#endif // _CUDA___FWD_GET_MEMORY_RESOURCE_H
