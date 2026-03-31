@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -29,6 +29,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
 
+#include <cuda/experimental/__driver/driver_api.cuh>
 #include <cuda/experimental/__graph/fwd.cuh>
 #include <cuda/experimental/__graph/graph_node_type.cuh>
 
@@ -190,9 +191,7 @@ struct graph_node_ref
   [[nodiscard]] _CCCL_HOST_API auto type() const -> graph_node_type
   {
     _CCCL_ASSERT(__node_ != nullptr, "cannot get the type of a null graph node");
-    cudaGraphNodeType __type;
-    _CCCL_ASSERT_CUDA_API(cudaGraphNodeGetType, "cudaGraphNodeGetType failed", __node_, &__type);
-    return static_cast<graph_node_type>(__type);
+    return static_cast<graph_node_type>(::cuda::experimental::__driver::__graphNodeGetType(__node_));
   }
 
   //! \brief Establishes dependencies between this node and other nodes.
@@ -244,24 +243,11 @@ struct graph_node_ref
       ::cuda::std::fill(__src_arr.get(), __src_arr.get() + __deps.size(), __node_);
 
       // Add the dependencies using __src_arr array and the span of dependencies.
-#if _CCCL_CTK_AT_LEAST(13, 0)
-      _CCCL_TRY_CUDA_API(
-        cudaGraphAddDependencies,
-        "cudaGraphAddDependencies failed",
-        __graph_,
-        __deps.data(), // dependencies
-        __src_arr.get(), // dependant nodes
-        nullptr, // no edge data
-        __deps.size()); // number of dependencies
-#else
-      _CCCL_TRY_CUDA_API(
-        cudaGraphAddDependencies,
-        "cudaGraphAddDependencies failed",
+      ::cuda::experimental::__driver::__graphAddDependencies(
         __graph_,
         __deps.data(), // dependencies
         __src_arr.get(), // dependant nodes
         __deps.size()); // number of dependencies
-#endif
     }
   }
 

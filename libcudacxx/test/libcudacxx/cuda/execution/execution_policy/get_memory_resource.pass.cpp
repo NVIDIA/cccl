@@ -12,7 +12,6 @@
 
 #include <cuda/functional>
 #include <cuda/memory_resource>
-#include <cuda/std/__pstl_algorithm>
 #include <cuda/std/execution>
 #include <cuda/std/memory>
 #include <cuda/std/type_traits>
@@ -103,11 +102,11 @@ void test()
     !execution::__queryable_with<execution::parallel_unsequenced_policy, ::cuda::mr::get_memory_resource_t>);
   static_assert(!execution::__queryable_with<execution::unsequenced_policy, ::cuda::mr::get_memory_resource_t>);
 
-  test(cuda::execution::__cub_par_unseq);
+  test(cuda::execution::gpu);
 
   // Ensure that all works even if we have a stream attached
   ::cuda::stream stream{cuda::device_ref{0}};
-  test(cuda::execution::__cub_par_unseq.with(cuda::get_stream, stream));
+  test(cuda::execution::gpu.with(cuda::get_stream, stream));
 }
 
 int main(int, char**)
