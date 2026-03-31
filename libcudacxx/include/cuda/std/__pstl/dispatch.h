@@ -45,6 +45,8 @@ enum class __pstl_algorithm
   __partition_copy,
   __reduce,
   __remove_if,
+  __rotate,
+  __rotate_copy,
   __transform,
   __transform_reduce,
   __unique,
