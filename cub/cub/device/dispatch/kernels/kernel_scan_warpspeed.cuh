@@ -419,12 +419,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         {
           // TODO(bgruber): for operators where we know the identity we can probably optimize further here
           regThreadSum = ThreadReducePartial(regInput, scan_op, valid_items_this_thread);
-          regWarpSum   = warpReducePartial(regThreadSum, scan_op, valid_threads_this_warp);
+          regWarpSum =
+            CUB_NS_QUALIFIER::detail::scan::warpReducePartial(regThreadSum, scan_op, valid_threads_this_warp);
         }
         else
         {
           regThreadSum = ThreadReduce(regInput, scan_op);
-          regWarpSum   = warpReduce(regThreadSum, scan_op);
+          regWarpSum   = CUB_NS_QUALIFIER::detail::scan::warpReduce(regThreadSum, scan_op);
         }
       }
 
