@@ -510,8 +510,8 @@ struct DispatchScan
   template <int SMemSizeForSingleStage>
   CUB_RUNTIME_FUNCTION static void __check_smem()
   {
-    CUB_DETAIL_STATIC_ISH_ASSERT(SMemSizeForSingleStage <= detail::max_smem_per_block,
-                                 "Single-stage warpspeed scan exceeds architecture independent SMEM (48KiB)");
+    static_assert(SMemSizeForSingleStage <= detail::max_smem_per_block,
+                  "Single-stage warpspeed scan exceeds architecture independent SMEM (48KiB)");
   }
 
   template <typename PolicyGetter>
@@ -566,7 +566,12 @@ struct DispatchScan
       static_cast<int>(kernel_src.OutputAlign()),
       static_cast<int>(kernel_src.AccumSize()),
       static_cast<int>(kernel_src.AccumAlign()));
+#  if defined(CUB_DEFINE_RUNTIME_POLICIES)
+    _CCCL_ASSERT(SMemSizeForSingleStage <= detail::max_smem_per_block,
+                 "Single-stage warpspeed scan exceeds architecture independent SMEM (48KiB)");
+#  else // defined(CUB_DEFINE_RUNTIME_POLICIES)
     __check_smem<smem_size_1_stage>();
+#  endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
     int num_stages = 1;
     int smem_size  = smem_size_1_stage;
