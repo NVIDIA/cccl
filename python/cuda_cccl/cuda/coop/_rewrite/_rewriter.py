@@ -13,7 +13,6 @@ from typing import Any
 from numba.core import types
 from numba.cuda.core import ir, ir_utils
 from numba.cuda.core.rewrites import Rewrite, register_rewrite
-from numba.cuda.launchconfig import ensure_current_launch_config
 
 from ._core import (
     _GLOBAL_SYMBOL_ID_COUNTER,
@@ -52,6 +51,12 @@ from ._core import (
     register_kernel_extension,
     struct,
 )
+
+
+def _ensure_current_launch_config():
+    from . import ensure_current_launch_config
+
+    return ensure_current_launch_config()
 
 
 @register_rewrite("after-inference")
@@ -1593,7 +1598,7 @@ class CoopNodeRewriter(Rewrite):
 
     @property
     def launch_config(self):
-        config = ensure_current_launch_config()
+        config = _ensure_current_launch_config()
         config.dispatcher.mark_launch_config_sensitive()
         return config
 
@@ -1652,7 +1657,10 @@ class CoopNodeRewriter(Rewrite):
         if num_calltypes == 0:
             return False
 
-        launch_config = self.launch_config
+        try:
+            launch_config = self.launch_config
+        except RuntimeError:
+            return False
 
         self.func_ir = func_ir
         self.typemap = typemap
