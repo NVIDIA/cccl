@@ -499,7 +499,12 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
               for (int i = 0; i < squadScanStore.warpCount(); ++i)
               {
                 // We want a predicated unrolled loop here.
-                if (i < squad.warpRank() && (!is_last_tile_ic || i < valid_warps))
+                bool include_warp = i < squad.warpRank();
+                if constexpr (is_last_tile_ic)
+                {
+                  include_warp &= i < valid_warps;
+                }
+                if (include_warp)
                 {
                   if (i == 0)
                   {
