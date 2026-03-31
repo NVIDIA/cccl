@@ -419,13 +419,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         if (is_last_tile)
         {
           // TODO(bgruber): for operators where we know the identity we can probably optimize further here
-          regThreadSum = CUB_NS_QUALIFIER::ThreadReducePartial(regInput, scan_op, valid_items_this_thread);
-          regWarpSum   = ::__scan_detail::warpReducePartial(regThreadSum, scan_op, valid_threads_this_warp);
+          regThreadSum = CUB_NS_QUALIFIER::detail::ThreadReducePartial(regInput, scan_op, valid_items_this_thread);
+          regWarpSum   = __scan_detail::warpReducePartial(regThreadSum, scan_op, valid_threads_this_warp);
         }
         else
         {
           regThreadSum = CUB_NS_QUALIFIER::ThreadReduce(regInput, scan_op);
-          regWarpSum   = ::__scan_detail::warpReduce(regThreadSum, scan_op);
+          regWarpSum   = __scan_detail::warpReduce(regThreadSum, scan_op);
         }
       }
 
@@ -575,7 +575,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         // scan_op, and sumExclusiveIntraWarp is invalid when the inputs were
         // invalid.
         AccumT regSumThread          = refSumThreadAndWarpR.data()[squad.threadRank()];
-        AccumT sumExclusiveIntraWarp = ::__scan_detail::warpScanExclusive(regSumThread, scan_op);
+        AccumT sumExclusiveIntraWarp = __scan_detail::warpScanExclusive(regSumThread, scan_op);
 
         if (squad.warpRank() == 0)
         {
@@ -662,11 +662,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       const bool use_prefix = hasInit ? true : !(is_first_tile && squad.threadRank() == 0);
       if constexpr (isInclusive)
       {
-        CUB_NS_QUALIFIER::ThreadScanInclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive, use_prefix);
+        CUB_NS_QUALIFIER::detail::ThreadScanInclusive(
+          regSumInclusive, regSumInclusive, scan_op, sumExclusive, use_prefix);
       }
       else
       {
-        CUB_NS_QUALIFIER::ThreadScanExclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive, use_prefix);
+        CUB_NS_QUALIFIER::detail::ThreadScanExclusive(
+          regSumInclusive, regSumInclusive, scan_op, sumExclusive, use_prefix);
       }
 
       ////////////////////////////////////////////////////////////////////////////////
