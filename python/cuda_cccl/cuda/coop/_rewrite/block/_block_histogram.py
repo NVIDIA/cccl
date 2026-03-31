@@ -5,13 +5,12 @@
 from dataclasses import dataclass
 from functools import cached_property
 
-import cuda.coop._rewrite as _core
-
-ArrayCallDefinition = _core.ArrayCallDefinition
-CoopNode = _core.CoopNode
-CoopNodeMixin = _core.CoopNodeMixin
-Disposition = _core.Disposition
-ir = _core.ir
+from .._core import (
+    ArrayCallDefinition,
+    CoopNode,
+    CoopNodeMixin,
+    Disposition,
+)
 
 
 # =============================================================================
