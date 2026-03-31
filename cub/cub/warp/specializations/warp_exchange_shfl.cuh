@@ -179,7 +179,10 @@ class WarpExchangeShfl
     v         = __shfl_xor_sync(mask, v, NUM_ENTRIES, LOGICAL_WARP_THREADS);
 
     constexpr int next_idx = IDX + 1 + ((IDX + 1) % NUM_ENTRIES == 0) * NUM_ENTRIES;
-    transpose_foreach<next_idx, NUM_ENTRIES>(vals, xor_bit_set, mask);
+    if constexpr (next_idx < NUM_ENTRIES)
+    {
+      transpose_foreach<NUM_ENTRIES, next_idx>(vals, xor_bit_set, mask);
+    }
   }
 
   template <int NUM_ENTRIES>
@@ -189,7 +192,7 @@ class WarpExchangeShfl
     if constexpr (NUM_ENTRIES != 0)
     {
       const bool xor_bit_set = lane_id & NUM_ENTRIES;
-      transpose_foreach<0, NUM_ENTRIES>(vals, xor_bit_set, mask);
+      transpose_foreach<NUM_ENTRIES, 0>(vals, xor_bit_set, mask);
 
       transpose<NUM_ENTRIES / 2>(vals, lane_id, mask);
     }
@@ -215,6 +218,8 @@ public:
   BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
   {
     InputT vals[ITEMS_PER_THREAD];
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       vals[i] = input_items[i];
@@ -222,6 +227,7 @@ public:
 
     transpose<ITEMS_PER_THREAD / 2>(lane_id, member_mask);
 
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       output_items[i] = vals[i];
