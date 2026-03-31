@@ -43,7 +43,7 @@ CCCL provides an implementation for the standard `parallel algorithms library <h
 Currently the CUDA backend is the only supported backend. It can be selected by passing the `cuda::execution::gpu`
 execution policy to one of the supported algorithms. The CUDA backend requires the passed in sequences to reside in
 device accessible memory and the iterators into those sequences to be at least random access iterators. The CUDA backend
-is enabled if the program im compiled with a CUDA compile in CUDA mode.
+is enabled if the program is compiled with a CUDA compiler in CUDA mode.
 
 The use of any other execution policy is currently not supported and results in a compile time error.
 
