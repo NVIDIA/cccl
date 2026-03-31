@@ -7,7 +7,7 @@ function install_cuda_cccl_wheel_for_tests() {
   local cuda_major_version="$2"
 
   local numba_cuda_git_url="${NUMBA_CUDA_GIT_URL:-https://github.com/NVIDIA/numba-cuda.git}"
-  local numba_cuda_git_ref="${NUMBA_CUDA_GIT_REF:-}"
+  local numba_cuda_git_ref="${NUMBA_CUDA_GIT_REF:-05922fc4}"
   local numba_cuda_extra="cu${cuda_major_version}"
 
   if [[ -n "${numba_cuda_git_ref}" ]]; then
