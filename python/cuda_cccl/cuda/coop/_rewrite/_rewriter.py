@@ -47,7 +47,6 @@ from ._core import (
     normalize_dtype_param,
     numba,
     operator,
-    prepare_ltoir_bundle,
     register_kernel_extension,
     struct,
 )
@@ -223,9 +222,12 @@ class CoopNodeRewriter(Rewrite):
             return
 
         try:
+            from .. import _types
+            from . import algo_coalesce_key
+
             coalesce_keys = {algo_coalesce_key(algo) for algo in algorithms}
             allow_single = len(coalesce_keys) == 1 and len(algorithms) > 1
-            bundle = prepare_ltoir_bundle(
+            bundle = _types.prepare_ltoir_bundle(
                 algorithms,
                 bundle_name=f"cuda_coop_bundle_{id(self)}",
                 allow_single=allow_single,
