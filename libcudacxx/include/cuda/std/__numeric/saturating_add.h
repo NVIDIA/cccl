@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___NUMERIC_ADD_SAT_H
-#define _CUDA_STD___NUMERIC_ADD_SAT_H
+#ifndef _CUDA_STD___NUMERIC_SATURATING_ADD_H
+#define _CUDA_STD___NUMERIC_SATURATING_ADD_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,7 +22,7 @@
 
 #include <cuda/__numeric/add_sat_overflow.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__numeric/saturate_cast.h>
+#include <cuda/std/__numeric/saturating_cast.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/cstdint>
@@ -43,7 +43,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _Tp>
-[[nodiscard]] _CCCL_HOST_API _Tp __add_sat_impl_host(_Tp __x, _Tp __y) noexcept
+[[nodiscard]] _CCCL_HOST_API _Tp __saturating_add_impl_host(_Tp __x, _Tp __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ELEMENTWISE_ADD_SAT)
 // Clang below 21 seems not to be working correctly for 8 and 16-bit types.
@@ -114,13 +114,13 @@ template <class _Tp>
 
 #if _CCCL_CUDA_COMPILATION()
 template <class _Tp>
-[[nodiscard]] _CCCL_DEVICE_API _Tp __add_sat_impl_device(_Tp __x, _Tp __y) noexcept
+[[nodiscard]] _CCCL_DEVICE_API _Tp __saturating_add_impl_device(_Tp __x, _Tp __y) noexcept
 {
   if constexpr (is_signed_v<_Tp>)
   {
     if constexpr (sizeof(_Tp) < sizeof(int32_t))
     {
-      return ::cuda::std::saturate_cast<_Tp>(int32_t{__x} + int32_t{__y});
+      return ::cuda::std::saturating_cast<_Tp>(int32_t{__x} + int32_t{__y});
     }
     else if constexpr (sizeof(_Tp) == sizeof(int32_t))
     {
@@ -142,13 +142,13 @@ template <class _Tp>
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr _Tp add_sat(_Tp __x, _Tp __y) noexcept
+[[nodiscard]] _CCCL_API constexpr _Tp saturating_add(_Tp __x, _Tp __y) noexcept
 {
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      (return ::cuda::std::__add_sat_impl_host(__x, __y);),
-                      (return ::cuda::std::__add_sat_impl_device(__x, __y);))
+                      (return ::cuda::std::__saturating_add_impl_host(__x, __y);),
+                      (return ::cuda::std::__saturating_add_impl_device(__x, __y);))
   }
   return ::cuda::add_sat_overflow(__x, __y).value;
 }
@@ -157,4 +157,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___NUMERIC_ADD_SAT_H
+#endif // _CUDA_STD___NUMERIC_SATURATING_ADD_H
