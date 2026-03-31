@@ -7,9 +7,12 @@
 
 from __future__ import annotations
 
+import functools as _functools
 import inspect
 import itertools
+import operator as _operator
 import os
+import struct as _struct
 import sys
 import warnings
 from dataclasses import dataclass, field
@@ -21,7 +24,7 @@ from types import ModuleType as PyModuleType
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, Optional, Union
 
-import numba
+import numba as _numba
 import numba.cuda
 import numba.cuda.cudadecl
 from numba.core import types
@@ -39,12 +42,18 @@ from numba.cuda.cudadecl import (
 from numba.cuda.cudadrv.devicearray import DeviceNDArray
 from numba.cuda.cudaimpl import lower
 
+import cuda.coop as _coop
+
 # The runtime launch-config object is owned by numba-cuda
 # (`numba.cuda.dispatcher._LaunchConfiguration`).
+from .._common import normalize_dtype_param as _normalize_dtype_param
 from .._decls import CoopArrayBaseTemplate
+from .._decls import TempStorageType as TempStorageType
 from .._types import Algorithm as CoopAlgorithm
 from .._types import TempStorage as TempStorageClass
 from .._types import ThreadData as ThreadDataClass
+from .._types import algo_coalesce_key as _algo_coalesce_key
+from .._types import prepare_ltoir_bundle as _prepare_ltoir_bundle
 from .block import (
     import_side_effect_modules as _import_block_rewrite_side_effect_modules,
 )
@@ -65,6 +74,16 @@ MAX_SHARED_MEMORY_CARVEOUT_PERCENT = 100
 # Only primitives with a guaranteed same-dtype peer argument are included here.
 # Primitives that operate purely on ThreadData (for example, sort/reduce forms
 # without a typed array peer) cannot reliably infer dtype from call usage alone.
+algo_coalesce_key = _algo_coalesce_key
+prepare_ltoir_bundle = _prepare_ltoir_bundle
+normalize_dtype_param = _normalize_dtype_param
+
+coop = _coop
+functools = _functools
+numba = _numba
+operator = _operator
+struct = _struct
+
 THREAD_DATA_DTYPE_INFERENCE_ARG_PAIRS: dict[str, tuple[tuple[str, str], ...]] = {
     "coop.block.load": (("dst", "src"), ("src", "dst")),
     "coop.block.store": (("src", "dst"), ("dst", "src")),
