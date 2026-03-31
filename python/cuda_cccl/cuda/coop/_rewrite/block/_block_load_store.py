@@ -14,16 +14,15 @@ from numba.core.typing.templates import (
 from numba.cuda.cudadecl import register_global
 from numba.cuda.cudaimpl import lower
 
-import cuda.coop._rewrite as _core
-
-ArrayCallDefinition = _core.ArrayCallDefinition
-CoopNode = _core.CoopNode
-CoopNodeMixin = _core.CoopNodeMixin
-Disposition = _core.Disposition
-RewriteDetails = _core.RewriteDetails
-ThreadDataCallDefinition = _core.ThreadDataCallDefinition
-add_ltoirs = _core.add_ltoirs
-ir = _core.ir
+from .._core import (
+    ArrayCallDefinition,
+    CoopNode,
+    CoopNodeMixin,
+    Disposition,
+    ThreadDataCallDefinition,
+    add_ltoirs,
+    ir,
+)
 
 
 # =============================================================================
