@@ -205,7 +205,7 @@ _CCCL_DEVICE_API Tp warpScanExclusivePartial(Tp regInput, ScanOpT& scan_op, cons
 }
 
 template <bool isInclusive, bool is_last_tile, typename Tp, size_t elemPerThread, typename ScanOpT>
-_CCCL_DEVICE_API void
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
 threadScanPartial(Tp (&regSumInclusive)[elemPerThread], ScanOpT& scan_op, Tp prefix, bool use_prefix, int valid_items)
 {
   // if we are in the last tile and have an identity, fill the invalid array items with it
@@ -215,10 +215,13 @@ threadScanPartial(Tp (&regSumInclusive)[elemPerThread], ScanOpT& scan_op, Tp pre
     static_assert(have_identity);
     static_assert(
       !::cuda::std::is_same_v<decltype(::cuda::identity_element<ScanOpT, Tp>()), cuda::__no_identity_element>);
-    const auto a = ::cuda::identity_element<ScanOpT, Tp>();
-    for (int i = valid_items; i < elemPerThread; ++i)
+
+    for (int i = 0; i < elemPerThread; ++i)
     {
-      regSumInclusive[i] = a;
+      if (i >= valid_items)
+      {
+        regSumInclusive[i] = ::cuda::identity_element<ScanOpT, Tp>();
+      }
     }
   }
 
