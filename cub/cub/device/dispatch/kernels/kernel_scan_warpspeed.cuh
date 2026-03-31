@@ -532,7 +532,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
               _CCCL_ASSERT(0 < valid_warps && valid_warps <= squad.warpCount(), "");
             }
 
-            // Fill the registers with the scan identity, if there is one
+            // Fill the registers with the scan identity, if there is one, before acquiring/waiting on any resources
             AccumT regSumInclusive[elemPerThread];
             fillWithIdentity<is_last_tile_ic, ScanOpT>(regSumInclusive, valid_items_this_thread);
 
