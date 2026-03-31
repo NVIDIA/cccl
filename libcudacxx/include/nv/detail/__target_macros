@@ -454,7 +454,7 @@
 // architecture-specific SM versions
 
 #  if defined(__CUDA_ARCH_SPECIFIC__)
-#    define _NV_TARGET_CHECK_ARCH_SPECIFIC(_MAJOR, _MINOR) (__CUDA_ARCH_SPECIFIC__ == _MAJOR##_MINOR##0)
+#    define _NV_TARGET_CHECK_ARCH_SPECIFIC(_MAJOR, _MINOR) (__CUDA_ARCH_SPECIFIC__ == (_MAJOR * 100 + _MINOR * 10))
 #  else
 #    define _NV_TARGET_CHECK_ARCH_SPECIFIC(_MAJOR, _MINOR) (0)
 #  endif
