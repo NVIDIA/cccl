@@ -178,7 +178,8 @@ _CCCL_DEVICE_API Tp warpScanExclusive(const Tp regInput, ScanOpT& scan_op)
 }
 
 template <typename Tp, typename ScanOpT>
-_CCCL_DEVICE_API Tp warpScanExclusivePartial(Tp regInput, ScanOpT& scan_op, const int num_items, bool this_lane_is_valid)
+_CCCL_DEVICE_API _CCCL_FORCEINLINE Tp
+warpScanExclusivePartial(Tp regInput, ScanOpT& scan_op, const int num_items, bool this_lane_is_valid)
 {
   // if we have an identity, just fill the out-of-bounds items with it and use the full warp scan, since it's faster
   if constexpr (cuda::has_identity_element_v<ScanOpT, Tp>)
