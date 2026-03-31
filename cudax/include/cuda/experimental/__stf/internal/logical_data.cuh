@@ -1215,7 +1215,7 @@ public:
    * @return task_dep_untyped The dependency object corresponding to this logical data
    */
   ///@{
-  task_dep_untyped read(data_place dp = data_place::affine())
+  task_dep_untyped read(data_place dp = data_place::affine()) const
   {
     return task_dep_untyped(*this, access_mode::read, mv(dp));
   }
@@ -1467,8 +1467,7 @@ public:
         continue;
       }
 
-      // TODO THIS MAY BE A BUG: do we care about managed devices or host?
-      const auto memory_node = data_place::device(static_cast<int>(n - 2));
+      const auto memory_node = from_index(n);
       // Skip the target memory node in this step
       if (memory_node == target_memory_node)
       {
@@ -1484,7 +1483,8 @@ public:
 
       exec_place e_place_n = memory_node.affine_exec_place();
 
-      auto saved_place = e_place_n.activate();
+      // Activate the execution place - automatically restores when active goes out of scope
+      auto active = e_place_n.activate();
 
       // Reduce instances if there are more than one
       if (per_node[n].size() > 1)
@@ -1563,9 +1563,7 @@ public:
         per_node[to_index(target_memory_node)].push_back(copy_instance_id);
       }
 
-      // Restore the execution place to its previous state (e.g. current CUDA device)
-      // fprintf(stderr, "RESET CTX\n");
-      e_place_n.deactivate(saved_place);
+      // Execution place automatically restored when 'active' goes out of scope
     }
 
     if (per_node[to_index(target_memory_node)].size() > 1)
@@ -1732,7 +1730,8 @@ inline void reserved::logical_data_untyped_impl::erase()
 
       data_instance& ref_instance  = get_data_instance(ref_id);
       const data_place& ref_dplace = ref_instance.get_dplace();
-      auto e                       = ref_dplace.affine_exec_place();
+      _CCCL_ASSERT(ref_dplace.is_resolved(), "ref_dplace must be resolved before erase");
+      auto e = ref_dplace.affine_exec_place();
       l.reconstruct_after_redux(ctx, ref_id, e, wb_prereqs);
 
       h_state.current_mode = access_mode::none;

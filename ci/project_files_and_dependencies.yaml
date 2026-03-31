@@ -194,6 +194,7 @@ ignore_regexes:
   - '\.github/ISSUE_TEMPLATE/'
   - '\.github/problem-matchers/problem-matcher\.json'
   - '\.github/workflows/backport-prs\.yml'
+  - '\.github/workflows/bench.*\.yml'
   - '\.github/workflows/build-docs\.yml'
   - '\.github/workflows/build-matx\.yml'
   - '\.github/workflows/build-pytorch\.yml'
@@ -207,6 +208,8 @@ ignore_regexes:
   - '\.gitignore'
   - "benchmarks/scripts/" # Python+bash scripts for running benchmarks, not used in tests.
   - 'cccl-version.json'
+  - 'ci/bench/'
+  - 'ci/bench.+yaml'
   - 'ci/matx/'
   - 'ci/pytorch/'
   - 'ci/rapids/'

@@ -14,7 +14,7 @@
 
 #include <thrust/system/cuda/config.h>
 
-#include <cuda/cmath>
+#include <cuda/__cmath/ceil_div.h>
 
 THRUST_NAMESPACE_BEGIN
 

@@ -59,16 +59,17 @@ _CCCL_HOST_API _OutputIterator remove_copy(
   _OutputIterator __result,
   const _Tp& __value)
 {
-  if (__first == __last)
-  {
-    return __result;
-  }
-
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__copy_if, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
     _CCCL_NVTX_RANGE_SCOPE("cuda::std::remove_copy");
+
+    if (__first == __last)
+    {
+      return __result;
+    }
+
     const auto __count = ::cuda::std::distance(__first, __last);
     return __dispatch(
       __policy, ::cuda::std::move(__first), __count, ::cuda::std::move(__result), __remove_compare_not_eq{__value});

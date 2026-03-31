@@ -35,34 +35,19 @@ struct square_t
   }
 };
 
+// TODO(bgruber): why do we even need a transpose iterator version? Is this just an artifact of a performance comparison
+// done for https://github.com/NVIDIA/cccl/pull/1091? Can we delete this?
 #define USE_TRANSPOSE_ITERATOR 0
 
 #if USE_TRANSPOSE_ITERATOR
 template <typename T, typename OffsetT>
 void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using accum_t        = T;
   using input_it_t     = thrust::transform_iterator<square_t<T>, typename thrust::device_vector<T>::iterator>;
   using output_it_t    = T*;
   using offset_t       = cub::detail::choose_offset_t<OffsetT>;
-  using output_t       = T;
   using init_t         = T;
   using reduction_op_t = ::cuda::std::plus<>;
-  using transform_op_t = square_t<T>;
-
-  using dispatch_t = cub::DispatchReduce<
-    input_it_t,
-    output_it_t,
-    offset_t,
-    reduction_op_t,
-    init_t,
-    accum_t
-#  if !TUNE_BASE
-    ,
-    cuda::std::identity,
-    policy_hub_t<accum_t, offset_t>
-#  endif // TUNE_BASE
-    >;
 
   // Retrieve axis parameters
   const auto elements         = static_cast<std::size_t>(state.get_int64("Elements{io}"));
@@ -79,14 +64,27 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   // Allocate temporary storage:
   std::size_t temp_size;
-  dispatch_t::Dispatch(
-    nullptr, temp_size, d_in, d_out, static_cast<offset_t>(elements), reduction_op_t{}, init_t{}, 0 /* stream */);
+  cub::detail::reduce::dispatch</* OverrideAccumT = */ T>(
+    nullptr,
+    temp_size,
+    d_in,
+    d_out,
+    static_cast<offset_t>(elements),
+    reduction_op_t{},
+    init_t{},
+    0 /* stream */,
+    cuda::std::identity{}
+#  if !TUNE_BASE
+    ,
+    policy_selector{}
+#  endif
+  );
 
-  thrust::device_vector<nvbench::uint8_t> temp(temp_size);
+  thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
+    cub::detail::reduce::dispatch</* OverrideAccumT = */ T>(
       temp_storage,
       temp_size,
       d_in,
@@ -94,7 +92,13 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       static_cast<offset_t>(elements),
       reduction_op_t{},
       init_t{},
-      launch.get_stream());
+      launch.get_stream(),
+      cuda::std::identity{}
+#  if !TUNE_BASE
+      ,
+      policy_selector{}
+#  endif
+    );
   });
 }
 #else

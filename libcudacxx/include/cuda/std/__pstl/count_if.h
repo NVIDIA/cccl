@@ -62,6 +62,12 @@ _CCCL_REQUIRES(__has_forward_traversal<_InputIterator> _CCCL_AND is_execution_po
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
     _CCCL_NVTX_RANGE_SCOPE("cuda::std::count_if");
+
+    if (__first == __last)
+    {
+      return iter_difference_t<_InputIterator>{0};
+    }
+
     const auto __count = ::cuda::std::distance(__first, __last);
     return __dispatch(
       __policy,

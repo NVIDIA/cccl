@@ -59,17 +59,18 @@ _CCCL_HOST_API _Tp transform_reduce(
   _ReductionOp __reduction_op,
   _TransformOp __transform_op)
 {
-  if (__first == __last)
-  {
-    return __init;
-  }
-
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__transform_reduce,
                                                    _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
     _CCCL_NVTX_RANGE_SCOPE("cuda::std::transform_reduce");
+
+    if (__first == __last)
+    {
+      return __init;
+    }
+
     const auto __count = ::cuda::std::distance(__first, __last);
     return __dispatch(
       __policy,

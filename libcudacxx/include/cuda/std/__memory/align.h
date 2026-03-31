@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/pow2.h>
+#include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__memory/assume_aligned.h>
 #include <cuda/std/__memory/runtime_assume_aligned.h>
 #include <cuda/std/cstddef>
@@ -37,7 +37,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_API inline void* align(size_t __alignment, size_t __size, void*& __ptr, size_t& __space)
 {
-  _CCCL_ASSERT(::cuda::is_power_of_two(__alignment), "cuda::std::align: alignment must be a power of two!");
+  _CCCL_ASSERT(::cuda::__is_valid_alignment(__alignment), "cuda::std::align: invalid alignment");
   if (__space < __size)
   {
     return nullptr;

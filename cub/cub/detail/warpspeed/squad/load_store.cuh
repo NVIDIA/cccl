@@ -236,7 +236,7 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
 
     constexpr ::cuda::std::uint16_t byteMask  = 0xFFFF;
     const ::cuda::std::uint16_t byteMaskStart = byteMask << cpAsyncOobInfo.smemStartSkipBytes;
-    const ::cuda::std::uint16_t byteMaskEnd   = byteMask >> (16 - cpAsyncOobInfo.smemEndBytesAfter16BBoundary);
+    const ::cuda::std::uint16_t byteMaskEnd   = byteMask >> (16 - cpAsyncOobInfo.smemEndBytesAfter16BBoundary) % 16;
     // byteMaskStart contains zeroes at the left
 #  if _CCCL_CUDA_COMPILER(NVCC, >=, 13, 2)
     const ::cuda::std::uint16_t byteMaskSmall = byteMaskStart & byteMaskEnd;

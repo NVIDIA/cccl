@@ -179,12 +179,14 @@ struct __is_always_equal<_Alloc, true>
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 
+// Allocator::rebind is deprecated since C++17
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 // __allocator_traits_rebind
 template <class _Tp, class _Up>
 _CCCL_CONCEPT __has_member_rebind_other =
   _CCCL_REQUIRES_EXPR((_Tp, _Up))(typename(typename _Tp::template rebind<_Up>::other));
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp, class _Up, bool = __has_member_rebind_other<_Tp, _Up>>
 struct __allocator_traits_rebind
 {

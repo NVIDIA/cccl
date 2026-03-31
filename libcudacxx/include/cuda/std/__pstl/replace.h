@@ -77,16 +77,17 @@ _CCCL_HOST_API void replace(
   static_assert(__is_cpp17_equality_comparable_v<_Tp, iter_reference_t<_InputIterator>>,
                 "cuda::std::replace requires T to be comparable with iter_reference_t<InputIterator>");
 
-  if (__first == __last)
-  {
-    return;
-  }
-
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__transform, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
     _CCCL_NVTX_RANGE_SCOPE("cuda::std::replace");
+
+    if (__first == __last)
+    {
+      return;
+    }
+
     (void) __dispatch(
       __policy,
       __first,

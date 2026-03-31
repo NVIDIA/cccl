@@ -101,10 +101,6 @@ template <typename T1, typename T2, typename T = void>
 struct disable_if_convertible : disable_if<::cuda::std::is_convertible<T1, T2>::value, T>
 {};
 
-template <typename T>
-struct is_numeric : ::cuda::std::_And<::cuda::std::is_convertible<int, T>, ::cuda::std::is_convertible<T, int>>
-{}; // end is_numeric
-
 struct largest_available_float
 {
   using type = double;

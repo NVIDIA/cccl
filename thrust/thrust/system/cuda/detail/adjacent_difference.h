@@ -65,16 +65,10 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     return cudaSuccess;
   }
 
-  constexpr cub::ReadOption read_left = cub::ReadOption::Left;
-
-  using Dispatch32 = cub::DispatchAdjacentDifference<InputIt, OutputIt, BinaryOp, std::int32_t, AliasOpt, read_left>;
-  using Dispatch64 = cub::DispatchAdjacentDifference<InputIt, OutputIt, BinaryOp, std::int64_t, AliasOpt, read_left>;
-
   cudaError_t status;
-  THRUST_INDEX_TYPE_DISPATCH2(
+  THRUST_INDEX_TYPE_DISPATCH(
     status,
-    Dispatch32::Dispatch,
-    Dispatch64::Dispatch,
+    (cub::detail::adjacent_difference::dispatch<AliasOpt, cub::ReadOption::Left>),
     num_items,
     (d_temp_storage, temp_storage_bytes, first, result, num_items_fixed, binary_op, stream));
   return status;

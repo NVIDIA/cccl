@@ -56,7 +56,7 @@ template <
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_by_key_policy_selector<PolicySelector>
 #endif
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_reduce_by_key(
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   KeysInputIteratorT d_keys_in,

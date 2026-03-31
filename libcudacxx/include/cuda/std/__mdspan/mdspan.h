@@ -438,21 +438,19 @@ public:
     return accessor().access(data_handle(), mapping()(__indices...));
   }
 
-  [[nodiscard]] _CCCL_API static constexpr bool __mul_overflow(size_t x, size_t y, size_t* res) noexcept
-  {
-    *res = x * y;
-    return x && ((*res / x) != y);
-  }
-
   template <size_t... _Idxs>
   [[nodiscard]] _CCCL_API constexpr bool __check_size() const noexcept
   {
-    size_t __prod = 1;
-    for (size_t __r = 0; __r != extents_type::rank(); ++__r)
+    if constexpr (extents_type::rank() > 0) // MSVC raises a warning even with __r != extents_type::rank()
     {
-      if (__mul_overflow(__prod, mapping().extents().extent(__r), &__prod))
+      size_t __prod = 1;
+      for (size_t __r = 0; __r < extents_type::rank(); ++__r)
       {
-        return false;
+        const auto __extent = static_cast<size_t>(mapping().extents().extent(__r));
+        if (__mdspan_detail::__mul_overflow(__prod, __extent, &__prod))
+        {
+          return false;
+        }
       }
     }
     return true;
@@ -540,7 +538,7 @@ public:
   [[nodiscard]] _CCCL_API constexpr index_type stride(rank_type __r) const
   {
     const auto& __tmp = mapping(); // workaround for clang with nodiscard
-    return __tmp.stride(__r);
+    return static_cast<index_type>(__tmp.stride(__r));
   }
 };
 

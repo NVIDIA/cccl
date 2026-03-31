@@ -12,6 +12,11 @@ set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 option(CCCL_ENABLE_EXCEPTIONS "Enable exceptions within CCCL libraries." ON)
 option(CCCL_ENABLE_RTTI "Enable RTTI within CCCL libraries." ON)
 option(CCCL_ENABLE_WERROR "Treat warnings as errors for CCCL targets." ON)
+option(
+  CCCL_ENABLE_PRAGMA_SYSTEM_HEADER
+  "When OFF, disables the system header pragma in CCCL headers so that their warnings are visible."
+  OFF
+)
 option(CCCL_ENABLE_PTXAS_WARNINGS "Enable ptxas warnings" OFF) # currently used only in CUB
 
 function(
@@ -98,8 +103,10 @@ function(cccl_build_compiler_targets)
     list(APPEND cuda_compile_options "-Xcudafe=--promote_warnings")
   endif()
 
-  # Ensure that we build our tests without treating ourself as system header
-  list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
+  if (NOT CCCL_ENABLE_PRAGMA_SYSTEM_HEADER)
+    # Ensure that we build our tests without treating ourself as system header
+    list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
+  endif()
 
   if (NOT CCCL_ENABLE_EXCEPTIONS)
     list(APPEND cxx_compile_definitions "CCCL_DISABLE_EXCEPTIONS")

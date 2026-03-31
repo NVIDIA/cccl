@@ -94,8 +94,8 @@ public:
       return;
     }
 
-    exec_place_grid grid = memory_node.get_grid();
-    size_t total_size    = this->shape.size();
+    exec_place grid   = memory_node.affine_exec_place();
+    size_t total_size = this->shape.size();
 
     // position (x,y,z,t) on (nx,ny,nz,nt)
     // * index = x + nx*y + nx*ny*z + nx*ny*nz*t
@@ -203,7 +203,7 @@ public:
     // static_assert(dimensions <= 2, "unsupported yet.");
     //_CCCL_ASSERT(dimensions <= 2, "unsupported yet.");
 
-    auto decorated_s = dst_memory_node.getDataStream(bctx.async_resources());
+    auto decorated_s = dst_memory_node.getDataStream();
     auto op          = stream_async_op(bctx, decorated_s, prereqs);
 
     if (bctx.generate_event_symbols())

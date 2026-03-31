@@ -112,7 +112,7 @@ struct agent_batched_topk_worker_per_segment
   // -------------------------------------------------------------------------
   // Constructor
   // -------------------------------------------------------------------------
-  _CCCL_DEVICE _CCCL_FORCEINLINE agent_batched_topk_worker_per_segment(
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE agent_batched_topk_worker_per_segment(
     TempStorage& temp_storage,
     KeyInputItItT d_key_segments_it,
     KeyOutputItItT d_key_segments_out_it,
@@ -133,7 +133,7 @@ struct agent_batched_topk_worker_per_segment
       , num_segments(num_segments)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Process()
   {
     // Identify Segment
     const int segment_id = static_cast<int>(blockIdx.x);
@@ -145,9 +145,13 @@ struct agent_batched_topk_worker_per_segment
       return;
     }
 
+    constexpr bool is_full_tile = params::has_single_static_value_v<SegmentSizeParameterT>
+                               && params::static_min_value_v<SegmentSizeParameterT> == tile_size;
+
     // Resolve Segment Parameters
     const auto segment_size = segment_sizes.get_param(segment_id);
-    const auto k            = k_param.get_param(segment_id);
+    const auto k            = (::cuda::std::min) (k_param.get_param(segment_id),
+                                       static_cast<decltype(k_param.get_param(segment_id))>(segment_size));
     const auto direction    = select_directions.get_param(segment_id);
 
     // Determine padding key based on direction
@@ -161,8 +165,7 @@ struct agent_batched_topk_worker_per_segment
 
     // Load Keys
     key_t thread_keys[items_per_thread];
-    if constexpr (params::has_single_static_value_v<SegmentSizeParameterT>
-                  && params::static_min_value_v<SegmentSizeParameterT> == tile_size)
+    if constexpr (is_full_tile)
     {
       // No padding needed
       block_load_keys_t(temp_storage.load_keys).Load(block_keys_in, thread_keys);
@@ -171,7 +174,7 @@ struct agent_batched_topk_worker_per_segment
     {
       // Potentially partial final load with padding
       // TODO (elstehle): explore whether a runtime check for segment_size == tile_size improves performance
-      block_load_keys_t(temp_storage.load_keys).Load(block_keys_in, thread_keys, segment_size, padding_key);
+      block_load_keys_t(temp_storage.load_keys).Load(block_keys_in, thread_keys, segment_size);
     }
 
     // Load Values (if applicable)
@@ -182,8 +185,7 @@ struct agent_batched_topk_worker_per_segment
       __syncthreads();
       auto block_vals_in = d_value_segments_it[segment_id];
 
-      if constexpr (params::has_single_static_value_v<SegmentSizeParameterT>
-                    && params::static_min_value_v<SegmentSizeParameterT> == tile_size)
+      if constexpr (is_full_tile)
       {
         // No padding needed
         block_load_vals_t(temp_storage.load_vals).Load(block_vals_in, thread_values);
@@ -201,15 +203,15 @@ struct agent_batched_topk_worker_per_segment
     // Perform Block Top-K
     if constexpr (is_keys_only)
     {
-      const bool is_successful_dispatch =
-        detail::params::dispatch_discrete(select_directions, segment_id, [this, &thread_keys, k](auto direction_tag) {
+      const bool is_successful_dispatch = cub::detail::params::dispatch_discrete(
+        select_directions, segment_id, [this, &thread_keys, k, segment_size](auto direction_tag) {
           if constexpr (decltype(direction_tag)::value == detail::topk::select::max)
           {
-            block_topk_t(temp_storage.topk).max_keys(thread_keys, k);
+            block_topk_t(temp_storage.topk).template max_keys<is_full_tile>(thread_keys, k, segment_size);
           }
           else
           {
-            block_topk_t(temp_storage.topk).min_keys(thread_keys, k);
+            block_topk_t(temp_storage.topk).template min_keys<is_full_tile>(thread_keys, k, segment_size);
           }
         });
       _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");
@@ -217,15 +219,17 @@ struct agent_batched_topk_worker_per_segment
     else
     {
       // Pass both keys and values
-      const bool is_successful_dispatch = detail::params::dispatch_discrete(
-        select_directions, segment_id, [this, &thread_keys, &thread_values, k](auto direction_tag) {
+      const bool is_successful_dispatch = cub::detail::params::dispatch_discrete(
+        select_directions, segment_id, [this, &thread_keys, &thread_values, k, segment_size](auto direction_tag) {
           if constexpr (decltype(direction_tag)::value == detail::topk::select::max)
           {
-            block_topk_t(temp_storage.topk).max_pairs(thread_keys, thread_values, k);
+            block_topk_t(temp_storage.topk)
+              .template max_pairs<is_full_tile>(thread_keys, thread_values, k, segment_size);
           }
           else
           {
-            block_topk_t(temp_storage.topk).min_pairs(thread_keys, thread_values, k);
+            block_topk_t(temp_storage.topk)
+              .template min_pairs<is_full_tile>(thread_keys, thread_values, k, segment_size);
           }
         });
       _CCCL_ASSERT(is_successful_dispatch, "Error: Unsupported select direction");

@@ -22,6 +22,24 @@ struct stream_convertible
     return stream;
   }
 };
+struct stream_convertible_non_copyable
+{
+  cudaStream_t stream;
+
+  stream_convertible_non_copyable(cudaStream_t stream)
+      : stream(stream)
+  {}
+
+  stream_convertible_non_copyable(const stream_convertible_non_copyable&)                    = delete;
+  auto operator=(const stream_convertible_non_copyable&) -> stream_convertible_non_copyable& = delete;
+  stream_convertible_non_copyable(stream_convertible_non_copyable&&)                         = default;
+  auto operator=(stream_convertible_non_copyable&&) -> stream_convertible_non_copyable&      = default;
+
+  operator cudaStream_t() const noexcept
+  {
+    return stream;
+  }
+};
 
 struct with_stream_method
 {
@@ -63,6 +81,10 @@ void check_graph_nodes_with_different_streams(F call_cub_api)
   SECTION("stream_convertible")
   {
     call_cub_api(stream_convertible{stream.get()});
+  }
+  SECTION("stream_convertible_non_copyable")
+  {
+    call_cub_api(stream_convertible_non_copyable{stream.get()});
   }
   SECTION("with_stream_method")
   {
@@ -224,8 +246,7 @@ C2H_TEST("DeviceTransform::TransformStableArgumentAddresses custom stream", "[de
 }
 
 // use a policy selector that prescribes to run with exactly 8 threads per block and 3 items per thread
-// TODO(bgruber): can we get by without the base class?
-struct my_policy_selector : cub::detail::transform::tuning<my_policy_selector>
+struct my_policy_selector
 {
   _CCCL_API constexpr auto operator()(cuda::arch_id) const -> cub::detail::transform::transform_policy
   {

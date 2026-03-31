@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_three_way_partition.cuh>
+#include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
 
 CUB_NAMESPACE_BEGIN
 
@@ -101,7 +102,7 @@ public:
 /******************************************************************************
  * Kernel entry points
  *****************************************************************************/
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           typename InputIteratorT,
           typename FirstOutputIteratorT,
           typename SecondOutputIteratorT,
@@ -112,21 +113,33 @@ template <typename ChainedPolicyT,
           typename SelectSecondPartOp,
           typename OffsetT,
           typename StreamingContextT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLOCK_THREADS))
+#if _CCCL_HAS_CONCEPTS()
+  requires three_way_partition_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads)
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionKernel(
-    InputIteratorT d_in,
-    FirstOutputIteratorT d_first_part_out,
-    SecondOutputIteratorT d_second_part_out,
-    UnselectedOutputIteratorT d_unselected_out,
-    NumSelectedIteratorT d_num_selected_out,
+    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
+    _CCCL_GRID_CONSTANT const FirstOutputIteratorT d_first_part_out,
+    _CCCL_GRID_CONSTANT const SecondOutputIteratorT d_second_part_out,
+    _CCCL_GRID_CONSTANT const UnselectedOutputIteratorT d_unselected_out,
+    _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out,
     ScanTileStateT tile_status,
     SelectFirstPartOp select_first_part_op,
     SelectSecondPartOp select_second_part_op,
-    OffsetT num_items,
-    int num_tiles,
+    _CCCL_GRID_CONSTANT const OffsetT num_items,
+    _CCCL_GRID_CONSTANT const int num_tiles,
     _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
 {
-  using AgentThreeWayPartitionPolicyT = typename ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy;
+  static constexpr auto active_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  using AgentThreeWayPartitionPolicyT = AgentThreeWayPartitionPolicy<
+    active_policy.block_threads,
+    active_policy.items_per_thread,
+    active_policy.load_algorithm,
+    active_policy.load_modifier,
+    active_policy.block_scan_algorithm,
+    delay_constructor_t<active_policy.delay_constructor.kind,
+                        active_policy.delay_constructor.delay,
+                        active_policy.delay_constructor.l2_write_latency>>;
 
   // Thread block type for selecting data from input tiles
   using AgentThreeWayPartitionT = AgentThreeWayPartition<
@@ -180,8 +193,10 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLO
  *   (i.e., length of @p d_selected_out)
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void
-DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state, int num_tiles, NumSelectedIteratorT d_num_selected_out)
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionInitKernel(
+  ScanTileStateT tile_state,
+  _CCCL_GRID_CONSTANT const int num_tiles,
+  _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);

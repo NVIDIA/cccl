@@ -27,6 +27,10 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
+
 CUB_NAMESPACE_BEGIN
 
 enum BlockHistogramMemoryPreference
@@ -35,6 +39,23 @@ enum BlockHistogramMemoryPreference
   SMEM,
   BLEND
 };
+
+#if !_CCCL_COMPILER(NVRTC)
+inline ::std::ostream& operator<<(::std::ostream& os, BlockHistogramMemoryPreference mempref)
+{
+  switch (mempref)
+  {
+    case GMEM:
+      return os << "GMEM";
+    case SMEM:
+      return os << "SMEM";
+    case BLEND:
+      return os << "BLEND";
+    default:
+      return os << "<unknown BlockHistogramMemoryPreference: " << static_cast<int>(mempref) << ">";
+  }
+}
+#endif // !_CCCL_COMPILER(NVRTC)
 
 //! Parameterizable tuning policy type for AgentHistogram
 //!
@@ -226,12 +247,14 @@ struct AgentHistogram
   _TempStorage& temp_storage;
   WrappedSampleIteratorT d_wrapped_samples; // with cache modifier applied, if possible
   SampleT* d_native_samples; // possibly nullptr if unavailable
-  int* num_output_bins; // one for each channel
-  int* num_privatized_bins; // one for each channel
+  const int* num_output_bins; // one for each channel
+  const int* num_privatized_bins; // one for each channel
   CounterT* d_privatized_histograms[NumActiveChannels]; // one for each channel
   CounterT** d_output_histograms; // in global memory
-  OutputDecodeOpT* output_decode_op; // determines output bin-id from privatized counter index, one for each channel
-  PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each channel
+  const OutputDecodeOpT* output_decode_op; // determines output bin-id from privatized counter index, one for each
+                                           // channel
+  const PrivatizedDecodeOpT* privatized_decode_op; // determines privatized counter index from sample, one for each
+                                                   // channel
   bool prefer_smem; // for privatized counterss
 
   template <typename TwoDimSubscriptableCounterT>
@@ -587,12 +610,12 @@ struct AgentHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentHistogram(
     TempStorage& temp_storage,
     SampleIteratorT d_samples,
-    int* num_output_bins,
-    int* num_privatized_bins,
+    const int* num_output_bins,
+    const int* num_privatized_bins,
     CounterT** d_output_histograms,
     CounterT** d_privatized_histograms,
-    OutputDecodeOpT* output_decode_op,
-    PrivatizedDecodeOpT* privatized_decode_op)
+    const OutputDecodeOpT* output_decode_op,
+    const PrivatizedDecodeOpT* privatized_decode_op)
       : temp_storage(temp_storage.Alias())
       , d_wrapped_samples(d_samples)
       , d_native_samples(NativePointer(d_wrapped_samples))
@@ -636,8 +659,8 @@ struct AgentHistogram
     OffsetT num_row_pixels, OffsetT num_rows, OffsetT row_stride_samples, int tiles_per_row, GridQueue<int> tile_queue)
   {
     // Check whether all row starting offsets are vec-aligned (in single-channel) or pixel-aligned (in multi-channel)
-    constexpr int vec_mask   = AlignBytes<VecT>::ALIGN_BYTES - 1;
-    constexpr int pixel_mask = AlignBytes<PixelT>::ALIGN_BYTES - 1;
+    constexpr int vec_mask   = alignof(VecT) - 1;
+    constexpr int pixel_mask = alignof(PixelT) - 1;
     const size_t row_bytes   = sizeof(SampleT) * row_stride_samples;
 
     const bool vec_aligned_rows =

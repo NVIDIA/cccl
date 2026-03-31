@@ -145,9 +145,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void __assume_known_info() noexcept
     using _ClusterDesc = typename _Hierarchy::template level_desc_type<cluster_level>;
     using _ClusterExts = typename _ClusterDesc::extents_type;
 
-    // nvc++ doesn't implement clusters yet, so we can just use _CCCL_PTX_ARCH here. Once the support is there, we can
+    // nvc++ doesn't implement clusters yet, so we can just use _CCCL_PTX_ARCH() here. Once the support is there, we can
     // just add `|| _CCCL_CUDA_COMPILER(NVHPC)`
-#    if _CCCL_PTX_ARCH >= 900
+#    if _CCCL_PTX_ARCH() >= 900
     if constexpr (_ClusterExts::static_extent(0) != __dext)
     {
       _CCCL_ASSUME(_CCCL_CLUSTER_DIM_X == _ClusterExts::static_extent(0));
@@ -186,7 +186,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void __assume_known_info() noexcept
       _CCCL_ASSUME(_CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Z == _GridExts::static_extent(2));
       _CCCL_ASSUME(_CCCL_CLUSTER_IDX_Z < _CCCL_CLUSTER_GRID_DIM_IN_CLUSTERS_Z);
     }
-#    endif // _CCCL_PTX_ARCH >= 900
+#    endif // _CCCL_PTX_ARCH() >= 900
 
     if constexpr (_ClusterExts::static_extent(0) != __dext && _GridExts::static_extent(0) != __dext)
     {
@@ -286,7 +286,7 @@ inline constexpr bool __invoke_kernel_functor_with_config_v =
   ;
 
 // We create 3 kernel functor launchers:
-// 1. With __block_size__ + __launch_bounds__ for cluster launches with compile-time known dims.
+// 1. With __block_size__ for cluster launches with compile-time known dims.
 // 2. With __launch_bounds__ for non-cluster launches with compile-time known block size.
 // 3. Fallback without any attributes.
 
@@ -298,7 +298,6 @@ __global__ static void
                    (::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(0),
                     ::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(1),
                     ::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(2)))
-  _CCCL_LAUNCH_BOUNDS(::cuda::__max_nthreads_per_block<typename _Config::hierarchy_type>())
   __kernel_launcher_with_block_size(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
 {
   ::cuda::__assume_known_info<typename _Config::hierarchy_type>();
@@ -351,20 +350,26 @@ template <class _Kernel, class _Config, class... _Args>
   using _BlockDesc = typename _Hierarchy::template level_desc_type<block_level>;
   using _BlockExts = typename _BlockDesc::extents_type;
 
-  if constexpr (_Hierarchy::has_level(cluster))
-  {
-    using _ClusterDesc = typename _Hierarchy::template level_desc_type<cluster_level>;
-    using _ClusterExts = typename _ClusterDesc::extents_type;
-
-    if constexpr (_BlockExts::rank_dynamic() == 0 && _ClusterExts::rank_dynamic() == 0)
-    {
-      return ::cuda::__kernel_launcher_with_block_size<_Config, _Kernel, _Args...>;
-    }
-  }
-
   if constexpr (_BlockExts::rank_dynamic() == 0)
   {
-    return ::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>;
+    if constexpr (_Hierarchy::has_level(cluster))
+    {
+      using _ClusterDesc = typename _Hierarchy::template level_desc_type<cluster_level>;
+      using _ClusterExts = typename _ClusterDesc::extents_type;
+
+      if constexpr (_ClusterExts::rank_dynamic() == 0)
+      {
+        return ::cuda::__kernel_launcher_with_block_size<_Config, _Kernel, _Args...>;
+      }
+      else
+      {
+        return ::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>;
+      }
+    }
+    else
+    {
+      return ::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>;
+    }
   }
   else
   {

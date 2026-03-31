@@ -42,6 +42,7 @@
 #include <cuda/experimental/__stf/utility/nvtx.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh>
 #include <cuda/experimental/__stf/utility/unique_id.cuh>
+#include <cuda/experimental/__utility/meyers_singleton.cuh>
 
 #include <algorithm>
 #include <fstream>
@@ -687,7 +688,7 @@ private:
   ::std::optional<int> proxy_end_unique_id;
 };
 
-class dot : public reserved::meyers_singleton<dot>
+class dot : public ::cuda::experimental::meyers_singleton<dot>
 {
 public:
 

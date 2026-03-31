@@ -11,6 +11,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/sequence.h>
 
+#include <cuda/functional>
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
 

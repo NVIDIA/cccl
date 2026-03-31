@@ -35,8 +35,6 @@ _CCCL_DIAG_POP
 
 #  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
-#  include <cuda/__memory_pool/device_memory_pool.h>
-#  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__algorithm/merge.h>
@@ -80,7 +78,7 @@ struct __pstl_dispatch<__pstl_algorithm::__merge, __execution_backend::__cuda>
     // Determine temporary device storage requirements for device_merge
     size_t __num_bytes = 0;
     _CCCL_TRY_CUDA_API(
-      ::cub::DeviceMerge::MergeKeys,
+      CUB_NS_QUALIFIER::DeviceMerge::MergeKeys,
       "__pstl_cuda_merge: determination of device storage for cub::DeviceMerge::MergeKeys failed",
       static_cast<void*>(nullptr),
       __num_bytes,
@@ -92,15 +90,14 @@ struct __pstl_dispatch<__pstl_algorithm::__merge, __execution_backend::__cuda>
       __comp);
 
     // Allocate memory for result
-    auto __stream   = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-    auto __resource = ::cuda::__call_or(
-      ::cuda::mr::get_memory_resource, ::cuda::device_default_memory_pool(__stream.device()), __policy);
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
+
     {
-      __temporary_storage<void, decltype(__resource)> __storage{__stream, __resource, __num_bytes};
+      __temporary_storage<> __storage{__policy, __num_bytes};
 
       // Run the kernel
       _CCCL_TRY_CUDA_API(
-        ::cub::DeviceMerge::MergeKeys,
+        CUB_NS_QUALIFIER::DeviceMerge::MergeKeys,
         "__pstl_cuda_merge: kernel launch of cub::DeviceMerge::MergeKeys failed",
         __storage.__get_temp_storage(),
         __num_bytes,

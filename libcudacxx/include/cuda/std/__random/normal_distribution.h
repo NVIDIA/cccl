@@ -12,12 +12,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cuda/std/__cmath/logarithms.h>
-#include <cuda/std/__cmath/roots.h>
-#include <cuda/std/__limits/numeric_limits.h>
-#include <cuda/std/__random/is_valid.h>
-#include <cuda/std/__random/uniform_real_distribution.h>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -25,6 +19,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/__cmath/roots.h>
+#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__random/is_valid.h>
+#include <cuda/std/__random/uniform_real_distribution.h>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ios>
@@ -168,8 +168,8 @@ public:
     return __x.__p_ == __y.__p_ && __x.__v_hot_ == __y.__v_hot_ && (!__x.__v_hot_ || __x.__v_ == __y.__v_);
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(const normal_distribution& __x, const normal_distribution& __y) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator!=(const normal_distribution& __x, const normal_distribution& __y) noexcept
   {
     return !(__x == __y);
   }

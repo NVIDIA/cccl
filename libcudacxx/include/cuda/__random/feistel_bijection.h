@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/random.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/integral.h>

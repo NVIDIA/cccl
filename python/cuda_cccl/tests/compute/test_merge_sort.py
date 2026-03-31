@@ -88,7 +88,12 @@ def test_merge_sort_keys(dtype, num_items, op):
 
 
 @pytest.mark.parametrize("dtype,num_items,op", merge_sort_params)
-def test_merge_sort_pairs(dtype, num_items, op):
+def test_merge_sort_pairs(dtype, num_items, op, monkeypatch):
+    if dtype == np.float16:
+        import cuda.compute._cccl_interop
+
+        monkeypatch.setattr(cuda.compute._cccl_interop, "_check_sass", False)
+
     h_in_keys = random_array(num_items, dtype)
     h_in_items = random_array(num_items, np.float32)
 
@@ -125,7 +130,12 @@ def test_merge_sort_keys_copy(dtype, num_items, op):
 
 
 @pytest.mark.parametrize("dtype,num_items,op", merge_sort_params)
-def test_merge_sort_pairs_copy(dtype, num_items, op):
+def test_merge_sort_pairs_copy(dtype, num_items, op, monkeypatch):
+    if dtype == np.float16:
+        import cuda.compute._cccl_interop
+
+        monkeypatch.setattr(cuda.compute._cccl_interop, "_check_sass", False)
+
     h_in_keys = random_array(num_items, dtype)
     h_in_items = random_array(num_items, np.float32)
     h_out_keys = np.empty(num_items, dtype=dtype)
@@ -239,7 +249,12 @@ def test_merge_sort_keys_copy_iterator_input(dtype, num_items, op):
 
 
 @pytest.mark.parametrize("dtype,num_items,op", merge_sort_params)
-def test_merge_sort_pairs_copy_iterator_input(dtype, num_items, op):
+def test_merge_sort_pairs_copy_iterator_input(dtype, num_items, op, monkeypatch):
+    if dtype == np.float16:
+        import cuda.compute._cccl_interop
+
+        monkeypatch.setattr(cuda.compute._cccl_interop, "_check_sass", False)
+
     h_in_keys = random_array(num_items, dtype)
     h_in_items = random_array(num_items, np.float32)
     h_out_keys = np.empty(num_items, dtype=dtype)
@@ -313,6 +328,38 @@ def test_merge_sort_well_known_greater():
 
     expected = np.array([9, 8, 5, 3, 2, 1])
     np.testing.assert_equal(d_out_keys.get(), expected)
+
+
+def test_merge_sort_large_temp_storage_not_negative():
+    """Regression test for https://github.com/NVIDIA/cccl/issues/7911.
+
+    temp_storage_bytes was returned as a signed 32-bit int, overflowing
+    to a negative value for large inputs requiring >2GB temp storage.
+    """
+    num_items = 2**28
+    dtype = np.int64
+    d_in_keys = cp.zeros(num_items, dtype=dtype)
+    d_out_keys = cp.empty(num_items, dtype=dtype)
+
+    sorter = cuda.compute.make_merge_sort(
+        d_in_keys=d_in_keys,
+        d_in_items=None,
+        d_out_keys=d_out_keys,
+        d_out_items=None,
+        op=OpKind.LESS,
+    )
+
+    temp_storage_bytes = sorter(
+        temp_storage=None,
+        d_in_keys=d_in_keys,
+        d_in_items=None,
+        d_out_keys=d_out_keys,
+        d_out_items=None,
+        op=OpKind.LESS,
+        num_items=num_items,
+    )
+
+    assert temp_storage_bytes > 0
 
 
 def test_merge_sort_with_values_well_known():

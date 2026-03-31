@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
-// SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 //! @file
@@ -33,29 +33,11 @@
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_null_pointer.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
-
-namespace detail::scan
-{
-struct get_tuning_query_t
-{};
-
-template <class Derived>
-struct tuning
-{
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr Derived query(const get_tuning_query_t&) const noexcept
-  {
-    return static_cast<const Derived&>(*this);
-  }
-};
-
-struct default_tuning : tuning<default_tuning>
-{
-  template <typename InputValueT, typename OutputValueT, typename AccumT, typename OffsetT, typename ScanOpT>
-  using fn = policy_hub<InputValueT, OutputValueT, AccumT, OffsetT, ScanOpT>;
-};
-} // namespace detail::scan
 
 //! @rst
 //! DeviceScan provides device-wide, parallel operations for computing a
@@ -124,9 +106,6 @@ struct DeviceScan
     ::cuda::execution::determinism::__determinism_holder_t<Determinism>,
     cudaStream_t stream)
   {
-    using scan_tuning_t = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::scan::get_tuning_query_t, detail::scan::default_tuning>;
-
     // Unsigned integer type for global offsets
     using offset_t = detail::choose_offset_t<NumItemsT>;
 
@@ -137,14 +116,26 @@ struct DeviceScan
                                                     cub::detail::it_value_t<InputIteratorT>,
                                                     typename InitValueT::value_type>>;
 
-    using policy_t = typename scan_tuning_t::
-      template fn<detail::it_value_t<InputIteratorT>, detail::it_value_t<OutputIteratorT>, accum_t, offset_t, ScanOpT>;
+    using default_policy_selector_t = detail::scan::policy_selector_from_types<
+      detail::it_value_t<InputIteratorT>,
+      detail::it_value_t<OutputIteratorT>,
+      accum_t,
+      offset_t,
+      ScanOpT>;
 
-    using dispatch_t =
-      DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, offset_t, accum_t, EnforceInclusive, policy_t>;
+    using policy_selector_t =
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::scan::scan_policy, default_policy_selector_t>;
 
-    return dispatch_t::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init, static_cast<offset_t>(num_items), stream);
+    return detail::scan::dispatch<EnforceInclusive>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      scan_op,
+      init,
+      static_cast<offset_t>(num_items),
+      stream,
+      policy_selector_t{});
   }
 
   template <ForceInclusive EnforceInclusive = ForceInclusive::No,
@@ -184,7 +175,6 @@ struct DeviceScan
     static_assert(!is_determinism_required || is_safe_integral_op,
                   "run_to_run or gpu_to_gpu is only supported for integral types with known operators");
 
-    // Dispatch with environment - handles all boilerplate
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
       return scan_impl_determinism<
@@ -303,15 +293,15 @@ struct DeviceScan
     // Initial value
     InitT init_value{};
 
-    return DispatchScan<InputIteratorT, OutputIteratorT, ::cuda::std::plus<>, detail::InputValue<InitT>, OffsetT>::
-      Dispatch(d_temp_storage,
-               temp_storage_bytes,
-               d_in,
-               d_out,
-               ::cuda::std::plus<>{},
-               detail::InputValue<InitT>(init_value),
-               num_items,
-               stream);
+    return detail::scan::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      ::cuda::std::plus<>{},
+      detail::InputValue<InitT>(init_value),
+      static_cast<OffsetT>(num_items),
+      stream);
   }
 
   //! @rst
@@ -387,10 +377,10 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSum");
 
-    using InitT = cub::detail::it_value_t<InputIteratorT>;
-    InitT init_value{};
+    using init_t = cub::detail::it_value_t<InputIteratorT>;
+    init_t init_value{};
 
-    return scan_impl_env(d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<InitT>(init_value), num_items, env);
+    return scan_impl_env(d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<init_t>(init_value), num_items, env);
   }
 
   //! @rst
@@ -595,14 +585,14 @@ struct DeviceScan
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, detail::InputValue<InitValueT>, OffsetT>::Dispatch(
+    return detail::scan::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       scan_op,
       detail::InputValue<InitValueT>(init_value),
-      num_items,
+      static_cast<OffsetT>(num_items),
       stream);
   }
 
@@ -937,14 +927,14 @@ struct DeviceScan
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, detail::InputValue<InitValueT>, OffsetT>::Dispatch(
+    return detail::scan::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       scan_op,
       detail::InputValue<InitValueT>(init_value),
-      num_items,
+      static_cast<OffsetT>(num_items),
       stream);
   }
 
@@ -1166,8 +1156,15 @@ struct DeviceScan
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return DispatchScan<InputIteratorT, OutputIteratorT, ::cuda::std::plus<>, NullType, OffsetT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, ::cuda::std::plus<>{}, NullType{}, num_items, stream);
+    return detail::scan::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      ::cuda::std::plus<>{},
+      NullType{},
+      static_cast<OffsetT>(num_items),
+      stream);
   }
 
   //! @rst
@@ -1363,8 +1360,8 @@ struct DeviceScan
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, NullType, OffsetT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, NullType(), num_items, stream);
+    return detail::scan::dispatch(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, NullType(), static_cast<OffsetT>(num_items), stream);
   }
 
   //! @rst
@@ -1454,23 +1451,16 @@ struct DeviceScan
 
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using AccumT  = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
 
-    return DispatchScan<
-      InputIteratorT,
-      OutputIteratorT,
-      ScanOpT,
-      detail::InputValue<InitValueT>,
-      OffsetT,
-      AccumT,
-      ForceInclusive::Yes>::Dispatch(d_temp_storage,
-                                     temp_storage_bytes,
-                                     d_in,
-                                     d_out,
-                                     scan_op,
-                                     detail::InputValue<InitValueT>(init_value),
-                                     num_items,
-                                     stream);
+    return detail::scan::dispatch<ForceInclusive::Yes>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      scan_op,
+      detail::InputValue<InitValueT>(init_value),
+      static_cast<OffsetT>(num_items),
+      stream);
   }
 
   //! @rst
@@ -2366,6 +2356,484 @@ struct DeviceScan
                          NullType(),
                          num_items,
                          stream);
+  }
+
+  //! @rst
+  //! Computes a device-wide exclusive prefix sum-by-key with key equality
+  //! defined by ``equality_op``. The value of ``0`` is applied as the initial
+  //! value, and is assigned to the beginning of each segment in ``d_values_out``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - Supports non-commutative sum operators.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run. Additional details can be found in
+  //!   the @lookback description.
+  //! - ``d_keys_in`` may equal ``d_values_out`` but the range
+  //!   ``[d_keys_in, d_keys_in + num_items)`` and the range
+  //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
+  //! - ``d_values_in`` may equal ``d_values_out`` but the range
+  //!   ``[d_values_in, d_values_in + num_items)`` and the range
+  //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
+  //!
+  //! Snippet
+  //!
+  //! The code snippet below illustrates the exclusive prefix sum-by-key of an ``int`` device vector.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_by_key_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-sum-by-key-env
+  //!     :end-before: example-end exclusive-sum-by-key-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeysInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading scan keys inputs @iterator
+  //!
+  //! @tparam ValuesInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading scan values inputs @iterator
+  //!
+  //! @tparam ValuesOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing scan values outputs @iterator
+  //!
+  //! @tparam EqualityOpT
+  //!   **[inferred]** Functor type having member
+  //!   `T operator()(const T &a, const T &b)` for binary operations that defines the equality of keys
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!
+  //! @param[in] d_keys_in
+  //!   Random-access input iterator to the input sequence of key items
+  //!
+  //! @param[in] d_values_in
+  //!   Random-access input iterator to the input sequence of value items
+  //!
+  //! @param[out] d_values_out
+  //!   Random-access output iterator to the output sequence of value items
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., the length of `d_keys_in` and `d_values_in`)
+  //!
+  //! @param[in] equality_op
+  //!   Binary functor that defines the equality of keys.
+  //!   Default is cuda::std::equal_to<>{}.
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   @endrst
+  template <typename KeysInputIteratorT,
+            typename ValuesInputIteratorT,
+            typename ValuesOutputIteratorT,
+            typename EqualityOpT = ::cuda::std::equal_to<>,
+            typename NumItemsT   = uint32_t,
+            typename EnvT        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<
+              !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
+                && !::cuda::std::is_same_v<ValuesInputIteratorT, size_t>,
+              int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSumByKey(
+    KeysInputIteratorT d_keys_in,
+    ValuesInputIteratorT d_values_in,
+    ValuesOutputIteratorT d_values_out,
+    NumItemsT num_items,
+    EqualityOpT equality_op = EqualityOpT(),
+    EnvT env                = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSumByKey");
+
+    using init_t = cub::detail::it_value_t<ValuesInputIteratorT>;
+    init_t init_value{};
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using offset_t = detail::choose_offset_t<NumItemsT>;
+      return DispatchScanByKey<
+        KeysInputIteratorT,
+        ValuesInputIteratorT,
+        ValuesOutputIteratorT,
+        EqualityOpT,
+        ::cuda::std::plus<>,
+        init_t,
+        offset_t>::Dispatch(storage,
+                            bytes,
+                            d_keys_in,
+                            d_values_in,
+                            d_values_out,
+                            equality_op,
+                            ::cuda::std::plus<>{},
+                            init_value,
+                            static_cast<offset_t>(num_items),
+                            stream);
+    });
+  }
+
+  //! @rst
+  //! Computes a device-wide exclusive prefix scan-by-key using the
+  //! specified binary associative ``scan_op`` functor. The key equality is defined by
+  //! ``equality_op``.  The ``init_value`` value is applied as the initial
+  //! value, and is assigned to the beginning of each segment in ``d_values_out``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run. Additional details can be found in
+  //!   the @lookback description.
+  //! - ``d_keys_in`` may equal ``d_values_out`` but the range
+  //!   ``[d_keys_in, d_keys_in + num_items)`` and the range
+  //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
+  //! - ``d_values_in`` may equal ``d_values_out`` but the range
+  //!   ``[d_values_in, d_values_in + num_items)`` and the range
+  //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
+  //!
+  //! Snippet
+  //!
+  //! The code snippet below illustrates the exclusive prefix scan-by-key of an ``int`` device vector.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_by_key_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-scan-by-key-env
+  //!     :end-before: example-end exclusive-scan-by-key-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeysInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading scan keys inputs @iterator
+  //!
+  //! @tparam ValuesInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading scan values inputs @iterator
+  //!
+  //! @tparam ValuesOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing scan values outputs @iterator
+  //!
+  //! @tparam ScanOpT
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam InitValueT
+  //!   **[inferred]** Type of the `init_value`
+  //!
+  //! @tparam EqualityOpT
+  //!   **[inferred]** Functor type having member
+  //!   `T operator()(const T &a, const T &b)` for binary operations that defines the equality of keys
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!
+  //! @param[in] d_keys_in
+  //!   Random-access input iterator to the input sequence of key items
+  //!
+  //! @param[in] d_values_in
+  //!   Random-access input iterator to the input sequence of value items
+  //!
+  //! @param[out] d_values_out
+  //!   Random-access output iterator to the output sequence of value items
+  //!
+  //! @param[in] scan_op
+  //!   Binary associative scan functor
+  //!
+  //! @param[in] init_value
+  //!   Initial value to seed the exclusive scan (and is assigned to the
+  //!   beginning of each segment in `d_values_out`)
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., the length of `d_keys_in` and `d_values_in`)
+  //!
+  //! @param[in] equality_op
+  //!   Binary functor that defines the equality of keys.
+  //!   Default is cuda::std::equal_to<>{}.
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   @endrst
+  template <typename KeysInputIteratorT,
+            typename ValuesInputIteratorT,
+            typename ValuesOutputIteratorT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename EqualityOpT = ::cuda::std::equal_to<>,
+            typename NumItemsT   = uint32_t,
+            typename EnvT        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<
+              !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
+                && !::cuda::std::is_same_v<ValuesInputIteratorT, size_t>,
+              int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScanByKey(
+    KeysInputIteratorT d_keys_in,
+    ValuesInputIteratorT d_values_in,
+    ValuesOutputIteratorT d_values_out,
+    ScanOpT scan_op,
+    InitValueT init_value,
+    NumItemsT num_items,
+    EqualityOpT equality_op = EqualityOpT(),
+    EnvT env                = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScanByKey");
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using offset_t = detail::choose_offset_t<NumItemsT>;
+      return DispatchScanByKey<
+        KeysInputIteratorT,
+        ValuesInputIteratorT,
+        ValuesOutputIteratorT,
+        EqualityOpT,
+        ScanOpT,
+        InitValueT,
+        offset_t>::Dispatch(storage,
+                            bytes,
+                            d_keys_in,
+                            d_values_in,
+                            d_values_out,
+                            equality_op,
+                            scan_op,
+                            init_value,
+                            static_cast<offset_t>(num_items),
+                            stream);
+    });
+  }
+
+  //! @rst
+  //! Computes a device-wide inclusive prefix sum-by-key with key equality defined by ``equality_op``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - Supports non-commutative sum operators.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run. Additional details can be found in
+  //!   the @lookback description.
+  //! - ``d_keys_in`` may equal ``d_values_out`` but the range
+  //!   ``[d_keys_in, d_keys_in + num_items)`` and the range
+  //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
+  //! - ``d_values_in`` may equal ``d_values_out`` but the range
+  //!   ``[d_values_in, d_values_in + num_items)`` and the range
+  //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
+  //!
+  //! Snippet
+  //!
+  //! The code snippet below illustrates the inclusive prefix sum-by-key of an ``int`` device vector.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_by_key_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-sum-by-key-env
+  //!     :end-before: example-end inclusive-sum-by-key-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeysInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading scan keys inputs @iterator
+  //!
+  //! @tparam ValuesInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading scan values inputs @iterator
+  //!
+  //! @tparam ValuesOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing scan values outputs @iterator
+  //!
+  //! @tparam EqualityOpT
+  //!   **[inferred]** Functor type having member
+  //!   `T operator()(const T &a, const T &b)` for binary operations that defines the equality of keys
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!
+  //! @param[in] d_keys_in
+  //!   Random-access input iterator to the input sequence of key items
+  //!
+  //! @param[in] d_values_in
+  //!   Random-access input iterator to the input sequence of value items
+  //!
+  //! @param[out] d_values_out
+  //!   Random-access output iterator to the output sequence of value items
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., the length of `d_keys_in` and `d_values_in`)
+  //!
+  //! @param[in] equality_op
+  //!   Binary functor that defines the equality of keys.
+  //!   Default is cuda::std::equal_to<>{}.
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   @endrst
+  template <typename KeysInputIteratorT,
+            typename ValuesInputIteratorT,
+            typename ValuesOutputIteratorT,
+            typename EqualityOpT = ::cuda::std::equal_to<>,
+            typename NumItemsT   = uint32_t,
+            typename EnvT        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<
+              !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
+                && !::cuda::std::is_same_v<ValuesInputIteratorT, size_t>,
+              int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSumByKey(
+    KeysInputIteratorT d_keys_in,
+    ValuesInputIteratorT d_values_in,
+    ValuesOutputIteratorT d_values_out,
+    NumItemsT num_items,
+    EqualityOpT equality_op = EqualityOpT(),
+    EnvT env                = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveSumByKey");
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using offset_t = detail::choose_offset_t<NumItemsT>;
+      return DispatchScanByKey<
+        KeysInputIteratorT,
+        ValuesInputIteratorT,
+        ValuesOutputIteratorT,
+        EqualityOpT,
+        ::cuda::std::plus<>,
+        NullType,
+        offset_t>::Dispatch(storage,
+                            bytes,
+                            d_keys_in,
+                            d_values_in,
+                            d_values_out,
+                            equality_op,
+                            ::cuda::std::plus<>{},
+                            NullType{},
+                            static_cast<offset_t>(num_items),
+                            stream);
+    });
+  }
+
+  //! @rst
+  //! Computes a device-wide inclusive prefix scan-by-key using the
+  //! specified binary associative ``scan_op`` functor. The key equality is defined by ``equality_op``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run. Additional details can be found in
+  //!   the @lookback description.
+  //! - ``d_keys_in`` may equal ``d_values_out`` but the range
+  //!   ``[d_keys_in, d_keys_in + num_items)`` and the range
+  //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
+  //! - ``d_values_in`` may equal ``d_values_out`` but the range
+  //!   ``[d_values_in, d_values_in + num_items)`` and the range
+  //!   ``[d_values_out, d_values_out + num_items)`` shall not overlap otherwise.
+  //!
+  //! Snippet
+  //!
+  //! The code snippet below illustrates the inclusive prefix scan-by-key of an ``int`` device vector.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_by_key_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-scan-by-key-env
+  //!     :end-before: example-end inclusive-scan-by-key-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeysInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading scan keys inputs @iterator
+  //!
+  //! @tparam ValuesInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading scan values inputs @iterator
+  //!
+  //! @tparam ValuesOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing scan values outputs @iterator
+  //!
+  //! @tparam ScanOpT
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam EqualityOpT
+  //!   **[inferred]** Functor type having member
+  //!   `T operator()(const T &a, const T &b)` for binary operations that defines the equality of keys
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!
+  //! @param[in] d_keys_in
+  //!   Random-access input iterator to the input sequence of key items
+  //!
+  //! @param[in] d_values_in
+  //!   Random-access input iterator to the input sequence of value items
+  //!
+  //! @param[out] d_values_out
+  //!   Random-access output iterator to the output sequence of value items
+  //!
+  //! @param[in] scan_op
+  //!   Binary associative scan functor
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., the length of `d_keys_in` and `d_values_in`)
+  //!
+  //! @param[in] equality_op
+  //!   Binary functor that defines the equality of keys.
+  //!   Default is cuda::std::equal_to<>{}.
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   @endrst
+  template <typename KeysInputIteratorT,
+            typename ValuesInputIteratorT,
+            typename ValuesOutputIteratorT,
+            typename ScanOpT,
+            typename EqualityOpT = ::cuda::std::equal_to<>,
+            typename NumItemsT   = uint32_t,
+            typename EnvT        = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<
+              !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
+                && !::cuda::std::is_same_v<ValuesInputIteratorT, size_t>,
+              int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanByKey(
+    KeysInputIteratorT d_keys_in,
+    ValuesInputIteratorT d_values_in,
+    ValuesOutputIteratorT d_values_out,
+    ScanOpT scan_op,
+    NumItemsT num_items,
+    EqualityOpT equality_op = EqualityOpT(),
+    EnvT env                = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScanByKey");
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      using offset_t = detail::choose_offset_t<NumItemsT>;
+      return DispatchScanByKey<
+        KeysInputIteratorT,
+        ValuesInputIteratorT,
+        ValuesOutputIteratorT,
+        EqualityOpT,
+        ScanOpT,
+        NullType,
+        offset_t>::Dispatch(storage,
+                            bytes,
+                            d_keys_in,
+                            d_values_in,
+                            d_values_out,
+                            equality_op,
+                            scan_op,
+                            NullType{},
+                            static_cast<offset_t>(num_items),
+                            stream);
+    });
   }
 
   //! @}

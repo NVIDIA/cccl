@@ -128,13 +128,11 @@ private:
 
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-    using DispatchT =
-      DispatchSegmentedSort<SortOrder::Ascending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DispatchT::Dispatch(
+    return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -306,13 +304,11 @@ private:
 
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-    using DispatchT =
-      DispatchSegmentedSort<SortOrder::Descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DispatchT::Dispatch(
+    return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -477,12 +473,10 @@ private:
     constexpr bool is_overwrite_okay = true;
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-    using DispatchT =
-      DispatchSegmentedSort<SortOrder::Ascending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<NullType> d_values;
 
-    return DispatchT::Dispatch(
+    return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -650,12 +644,10 @@ private:
     constexpr bool is_overwrite_okay = true;
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-    using DispatchT =
-      DispatchSegmentedSort<SortOrder::Descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<NullType> d_values;
 
-    return DispatchT::Dispatch(
+    return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -1387,13 +1379,11 @@ private:
 
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-    using DispatchT =
-      DispatchSegmentedSort<SortOrder::Ascending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DispatchT::Dispatch(
+    return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -1592,13 +1582,11 @@ private:
 
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-    using DispatchT =
-      DispatchSegmentedSort<SortOrder::Descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DispatchT::Dispatch(
+    return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -1791,10 +1779,8 @@ private:
 
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-    using DispatchT =
-      DispatchSegmentedSort<SortOrder::Ascending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
-    return DispatchT::Dispatch(
+    return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -1992,10 +1978,8 @@ private:
 
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-    using DispatchT =
-      DispatchSegmentedSort<SortOrder::Descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
-    return DispatchT::Dispatch(
+    return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,

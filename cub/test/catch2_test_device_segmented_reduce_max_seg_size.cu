@@ -1,0 +1,126 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+#include "insert_nested_NVTX_range_guard.h"
+
+#include <cub/device/device_segmented_reduce.cuh>
+
+#include <thrust/device_vector.h>
+
+#include "catch2_test_device_reduce.cuh"
+#include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
+
+// only lid 0 is enabled, as this test only tests max_segment_size functionality through dispatch directly
+
+// %PARAM% TEST_LAUNCH lid 0
+
+using full_type_list = c2h::type_list<uint8_t, int16_t, uint32_t, int64_t>;
+using offsets        = c2h::type_list<std::int32_t, std::uint64_t>;
+
+C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
+         "[segmented][reduce][device]",
+         full_type_list,
+         offsets)
+{
+  using input_t  = typename c2h::get<0, TestType>;
+  using output_t = input_t;
+  using offset_t = typename c2h::get<1, TestType>;
+
+  using op_t    = cuda::std::plus<>;
+  using accum_t = cuda::std::__accumulator_t<op_t, input_t, output_t>;
+  using init_t  = input_t;
+
+  cuda::arch_id arch_id{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id));
+  auto full_policy = cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{}(arch_id);
+
+  const int small_segment_size  = full_policy.small_reduce.items_per_tile();
+  const int medium_segment_size = full_policy.medium_reduce.items_per_tile();
+  const int large_segment_size  = full_policy.large_reduce.block_threads * full_policy.large_reduce.items_per_thread;
+
+  constexpr int min_items = 1;
+  constexpr int max_items = 10000;
+
+  // Number of items
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
+  const int num_items = GENERATE_COPY(
+    take(c2h::adjust_seed_count(2), random(min_items, max_items)),
+    values({
+      min_items,
+      max_items,
+    }));
+
+  // Take one random segment size from each of the segment sizes
+  const offset_t guaranteed_max_seg_size = GENERATE_COPY(
+    values({0}),
+    take(2, random(1, small_segment_size)),
+    take(2, random(small_segment_size, medium_segment_size)),
+    take(2, random(medium_segment_size, large_segment_size)),
+    take(2, random(large_segment_size, max_items)));
+
+  // Range of segment sizes to generate
+  // Note that the segment range [0, 1] may also include one last segment with more than 1 items
+  const auto [seg_size_min, seg_size_max] = GENERATE_COPY(table<offset_t, offset_t>(
+    {{0, 1}, {1, guaranteed_max_seg_size}, {guaranteed_max_seg_size, guaranteed_max_seg_size}}));
+
+  CAPTURE(num_items, seg_size_min, seg_size_max);
+
+  // Generate input segments
+  c2h::device_vector<offset_t> segment_offsets =
+    c2h::gen_uniform_offsets<offset_t>(C2H_SEED(1), num_items, seg_size_min, seg_size_max);
+  const offset_t num_segments = static_cast<offset_t>(segment_offsets.size() - 1);
+  auto d_offsets_it           = thrust::raw_pointer_cast(segment_offsets.data());
+
+  // Generate input data
+  c2h::device_vector<input_t> in_items(num_items);
+  c2h::gen(C2H_SEED(2), in_items);
+  auto d_in_it = thrust::raw_pointer_cast(in_items.data());
+
+  // Prepare verification data
+  c2h::host_vector<output_t> expected_result(num_segments);
+  compute_segmented_problem_reference(in_items, segment_offsets, op_t{}, accum_t{}, expected_result.begin());
+
+  // Run test
+  c2h::device_vector<output_t> out_result(num_segments);
+  auto d_out_it = unwrap_it(thrust::raw_pointer_cast(out_result.data()));
+
+  // Allocate temporary storage
+  std::size_t temp_size{};
+
+  cub::detail::segmented_reduce::dispatch<accum_t>(
+    nullptr,
+    temp_size,
+    d_in_it,
+    d_out_it,
+    static_cast<::cuda::std::int64_t>(num_segments),
+    d_offsets_it,
+    d_offsets_it + 1,
+    op_t{},
+    init_t{},
+    guaranteed_max_seg_size,
+    0,
+    cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{});
+
+  c2h::device_vector<::cuda::std::uint8_t> temp(temp_size, thrust::no_init);
+  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
+
+  cub::detail::segmented_reduce::dispatch<accum_t>(
+    temp_storage,
+    temp_size,
+    d_in_it,
+    d_out_it,
+    static_cast<::cuda::std::int64_t>(num_segments),
+    d_offsets_it,
+    d_offsets_it + 1,
+    op_t{},
+    init_t{},
+    guaranteed_max_seg_size,
+    0,
+    cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{});
+
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+
+  // Verify result
+  REQUIRE(expected_result == out_result);
+}

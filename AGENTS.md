@@ -372,6 +372,7 @@ CCCL's CI is built on GitHub Actions and relies on a dynamically generated job m
 
 Tags appended to the commit summary (case-sensitive) control CI behavior:
 
+* `[bench-only]`: Skip all non-benchmark CI jobs. Equivalent to `[skip-matrix][skip-vdc][skip-docs][skip-tpt]`.
 * `[skip-matrix]`: Skip CCCL project build/test jobs. (Docs, devcontainers, and third-party builds still run.)
 * `[skip-vdc]`: Skip "Verify Devcontainer" jobs. Safe unless CI or devcontainer infra is modified.
 * `[skip-docs]`: Skip doc tests/previews. Safe if docs are unaffected.

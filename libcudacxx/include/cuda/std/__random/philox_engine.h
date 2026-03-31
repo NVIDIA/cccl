@@ -25,8 +25,9 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__random/is_seed_sequence.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/array>
-#include <cuda/std/cstddef> // for size_t
+#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -84,19 +85,14 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 //!
 //! @see cuda::std::philox4x32
 //! @see cuda::std::philox4x64
-template <typename _UIntType,
-          ::cuda::std::size_t _WordSize,
-          ::cuda::std::size_t _WordCount,
-          ::cuda::std::size_t _NumRounds,
-          _UIntType... _Constants>
+template <typename _UIntType, size_t _WordSize, size_t _WordCount, size_t _NumRounds, _UIntType... _Constants>
 class philox_engine
 {
-  static_assert(::cuda::std::__cccl_is_unsigned_integer_v<_UIntType>,
-                "philox_engine: _UIntType must be an unsigned integer type");
+  static_assert(__cccl_is_unsigned_integer_v<_UIntType>, "philox_engine: _UIntType must be an unsigned integer type");
   static_assert(_WordCount == 2 || _WordCount == 4, "N argument must be either 2 or 4");
   static_assert(sizeof...(_Constants) == _WordCount, "consts array must be of length N");
   static_assert(_NumRounds > 0, "rounds must be a strictly positive number");
-  static_assert((0 < _WordSize && _WordSize <= ::cuda::std::numeric_limits<_UIntType>::digits),
+  static_assert((0 < _WordSize && _WordSize <= numeric_limits<_UIntType>::digits),
                 "Word size w must satisfy 0 < w <= numeric_limits<_UIntType>::digits");
 
   [[nodiscard]] _CCCL_API static constexpr auto __multipliers() noexcept
@@ -104,11 +100,11 @@ class philox_engine
     constexpr _UIntType __constants[] = {_Constants...};
     if constexpr (_WordCount == 2)
     {
-      return ::cuda::std::array<_UIntType, 1>{__constants[0]};
+      return array<_UIntType, 1>{__constants[0]};
     }
     else
     {
-      return ::cuda::std::array<_UIntType, 2>{__constants[0], __constants[2]};
+      return array<_UIntType, 2>{__constants[0], __constants[2]};
     }
   }
 
@@ -117,22 +113,22 @@ class philox_engine
     constexpr _UIntType __constants[] = {_Constants...};
     if constexpr (_WordCount == 2)
     {
-      return ::cuda::std::array<_UIntType, 1>{__constants[1]};
+      return array<_UIntType, 1>{__constants[1]};
     }
     else
     {
-      return ::cuda::std::array<_UIntType, 2>{__constants[1], __constants[3]};
+      return array<_UIntType, 2>{__constants[1], __constants[3]};
     }
   }
 
 public:
-  using result_type                                = _UIntType;
-  static constexpr ::cuda::std::size_t word_size   = _WordSize;
-  static constexpr ::cuda::std::size_t word_count  = _WordCount;
-  static constexpr ::cuda::std::size_t round_count = _NumRounds;
-  static constexpr auto multipliers                = __multipliers();
-  static constexpr auto round_consts               = __round_consts();
-  static constexpr result_type default_seed        = 20111115u;
+  using result_type                         = _UIntType;
+  static constexpr size_t word_size         = _WordSize;
+  static constexpr size_t word_count        = _WordCount;
+  static constexpr size_t round_count       = _NumRounds;
+  static constexpr auto multipliers         = __multipliers();
+  static constexpr auto round_consts        = __round_consts();
+  static constexpr result_type default_seed = 20111115u;
 
   //! The smallest value this engine may potentially produce.
   [[nodiscard]] _CCCL_API static constexpr result_type min() noexcept
@@ -183,17 +179,17 @@ public:
   _CCCL_REQUIRES(__is_seed_sequence<_Sseq, philox_engine>)
   _CCCL_API constexpr void seed(_Sseq& __seq)
   {
-    __x_                                                              = {};
-    __y_                                                              = {};
-    __k_                                                              = {};
-    __j_                                                              = word_count - 1;
-    constexpr auto __p                                                = (word_size - 1) / 32 + 1;
-    ::cuda::std::array<std::uint_least32_t, word_count / 2 * __p> __a = {};
+    __x_                                            = {};
+    __y_                                            = {};
+    __k_                                            = {};
+    __j_                                            = word_count - 1;
+    constexpr auto __p                              = (word_size - 1) / 32 + 1;
+    array<uint_least32_t, word_count / 2 * __p> __a = {};
     __seq.generate(__a.begin(), __a.end());
-    for (::cuda::std::size_t __k = 0; __k < word_count / 2; ++__k)
+    for (size_t __k = 0; __k < word_count / 2; ++__k)
     {
       result_type __sum = 0;
-      for (::cuda::std::size_t __i = 0; __i < __p; ++__i)
+      for (size_t __i = 0; __i < __p; ++__i)
       {
         const size_t __current = __k * __p;
         __sum += static_cast<result_type>(__a[__current + __i]) << (32 * __i);
@@ -221,10 +217,10 @@ public:
   //!    e2.set_counter({0, 0, 1, 100}); // e2 is now 4*2^w values ahead of e1
   //!
   //! @param __counter The counter.
-  _CCCL_API constexpr void set_counter(const ::cuda::std::array<result_type, word_count>& __counter) noexcept
+  _CCCL_API constexpr void set_counter(const array<result_type, word_count>& __counter) noexcept
   {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (::cuda::std::size_t __j = 0; __j < word_count; ++__j)
+    for (size_t __j = 0; __j < word_count; ++__j)
     {
       __x_[__j] = __counter[word_count - 1 - __j] & max();
     }
@@ -255,15 +251,15 @@ public:
   {
     // Advance __j_ until we are at n - 1
     auto __advance = ::cuda::std::min(__z, static_cast<unsigned long long>(word_count - 1 - __j_));
-    __j_ += static_cast<::cuda::std::size_t>(__advance);
+    __j_ += static_cast<size_t>(__advance);
     __z -= __advance;
 
     // Increment the big integer counter, handling overflow
     unsigned long long __increment       = __z / word_count;
     const unsigned long long __remainder = __z % word_count;
-    ::cuda::std::size_t __carry          = 0;
+    size_t __carry                       = 0;
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (::cuda::std::size_t __j = 0; __j < word_count; ++__j)
+    for (size_t __j = 0; __j < word_count; ++__j)
     {
       if (__increment == 0 && __carry == 0)
       {
@@ -287,7 +283,7 @@ public:
     {
       __philox();
       __increment_counter();
-      __j_ = static_cast<::cuda::std::size_t>(__remainder - 1);
+      __j_ = static_cast<size_t>(__remainder - 1);
     }
   }
 
@@ -347,7 +343,7 @@ public:
     __os.fill(__os.widen(' '));
 
     // output counter array (__x_)
-    for (::cuda::std::size_t __i = 0; __i < word_count; ++__i)
+    for (size_t __i = 0; __i < word_count; ++__i)
     {
       __os << __e.__x_[__i];
       if (__i < word_count - 1)
@@ -358,7 +354,7 @@ public:
     __os << __os.widen(' ');
 
     // output key array (__k_)
-    for (::cuda::std::size_t __i = 0; __i < word_count / 2; ++__i)
+    for (size_t __i = 0; __i < word_count / 2; ++__i)
     {
       __os << __e.__k_[__i];
       if (__i < word_count / 2 - 1)
@@ -369,7 +365,7 @@ public:
     __os << __os.widen(' ');
 
     // output output buffer (__y_)
-    for (::cuda::std::size_t __i = 0; __i < word_count; ++__i)
+    for (size_t __i = 0; __i < word_count; ++__i)
     {
       __os << __e.__y_[__i];
       if (__i < word_count - 1)
@@ -406,19 +402,19 @@ public:
     __is.flags(ios_base::dec);
 
     // input counter array (__x_)
-    for (::cuda::std::size_t __i = 0; __i < word_count; ++__i)
+    for (size_t __i = 0; __i < word_count; ++__i)
     {
       __is >> __e.__x_[__i];
     }
 
     // input key array (__k_)
-    for (::cuda::std::size_t __i = 0; __i < word_count / 2; ++__i)
+    for (size_t __i = 0; __i < word_count / 2; ++__i)
     {
       __is >> __e.__k_[__i];
     }
 
     // input output buffer (__y_)
-    for (::cuda::std::size_t __i = 0; __i < word_count; ++__i)
+    for (size_t __i = 0; __i < word_count; ++__i)
     {
       __is >> __e.__y_[__i];
     }
@@ -438,7 +434,7 @@ private:
   {
     // Increment the big integer __x_ by 1, handling overflow.
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (::cuda::std::size_t __i = 0; __i < word_count; ++__i)
+    for (size_t __i = 0; __i < word_count; ++__i)
     {
       __x_[__i] = (__x_[__i] + 1) & max();
       if (__x_[__i] != 0)
@@ -468,17 +464,17 @@ private:
     __hi += __ahbl_albh >> __w_half;
     __hi += ((__lo >> __w_half) < (__ahbl_albh & __lo_mask));
 
-    return ::cuda::std::pair{__hi & max(), __lo & max()};
+    return pair{__hi & max(), __lo & max()};
   }
 
   static _CCCL_API constexpr auto __mulhilo(result_type __a, result_type __b) noexcept
   {
     if constexpr (word_size == 32 || word_size == 64)
     {
-      using _Up       = ::cuda::std::__make_nbit_uint_t<word_size>;
+      using _Up       = __make_nbit_uint_t<word_size>;
       auto __hi       = static_cast<result_type>(::cuda::mul_hi(static_cast<_Up>(__a), static_cast<_Up>(__b)));
       const auto __lo = (__a * __b) & max();
-      return ::cuda::std::pair{__hi, __lo};
+      return pair{__hi, __lo};
     }
     else
     {
@@ -489,11 +485,11 @@ private:
   _CCCL_API constexpr void __philox() noexcept
   {
     // Only two variants are allowed, n=2 or n=4
-    ::cuda::std::array<result_type, word_count> __S     = __x_;
-    ::cuda::std::array<result_type, word_count / 2> __K = __k_;
+    array<result_type, word_count> __S     = __x_;
+    array<result_type, word_count / 2> __K = __k_;
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (::cuda::std::size_t __j = 0; __j < round_count; ++__j)
+    for (size_t __j = 0; __j < round_count; ++__j)
     {
       // Only two variants are allowed, n=2 or n=4
       if constexpr (word_count == 2)
@@ -505,15 +501,15 @@ private:
       }
       else // word_count == 4
       {
-        ::cuda::std::array<result_type, word_count> __V = {__S[2], __S[1], __S[0], __S[3]};
-        auto [__hi0, __lo0]                             = __mulhilo(__V[0], multipliers[0]);
-        auto [__hi2, __lo2]                             = __mulhilo(__V[2], multipliers[1]);
-        __S[0]                                          = __hi0 ^ __K[0] ^ __V[1];
-        __S[1]                                          = __lo0;
-        __S[2]                                          = __hi2 ^ __K[1] ^ __V[3];
-        __S[3]                                          = __lo2;
-        __K[0]                                          = (__K[0] + round_consts[0]) & max();
-        __K[1]                                          = (__K[1] + round_consts[1]) & max();
+        array<result_type, word_count> __V = {__S[2], __S[1], __S[0], __S[3]};
+        auto [__hi0, __lo0]                = __mulhilo(__V[0], multipliers[0]);
+        auto [__hi2, __lo2]                = __mulhilo(__V[2], multipliers[1]);
+        __S[0]                             = __hi0 ^ __K[0] ^ __V[1];
+        __S[1]                             = __lo0;
+        __S[2]                             = __hi2 ^ __K[1] ^ __V[3];
+        __S[3]                             = __lo2;
+        __K[0]                             = (__K[0] + round_consts[0]) & max();
+        __K[1]                             = (__K[1] + round_consts[1]) & max();
       }
     }
     __y_ = __S;
@@ -521,15 +517,15 @@ private:
 
   // The counter X, a big integer stored as word_count w-bit words.
   // The least significant word is __x_[0].
-  ::cuda::std::array<result_type, word_count> __x_ = {};
+  array<result_type, word_count> __x_ = {};
   // K is the "Key", storing the seed
-  ::cuda::std::array<result_type, word_count / 2> __k_ = {};
+  array<result_type, word_count / 2> __k_ = {};
   // The output buffer Y
   // Each time __j_ reaches word_count, we generate word_count new values and store them in __y_.
-  ::cuda::std::array<result_type, word_count> __y_ = {};
+  array<result_type, word_count> __y_ = {};
   // Each generation produces n random numbers, which are returned one at a time.
   // __j_ cycles through [0, n-1].
-  ::cuda::std::size_t __j_ = 0;
+  size_t __j_ = 0;
 
 }; // end philox_engine
 
@@ -538,7 +534,7 @@ private:
 //!        Philox counter based random number generation algorithm.
 //! @note The 10000th consecutive invocation of a default-constructed object of type philox4x32
 //!       shall produce the value 1955073260.
-using philox4x32 = philox_engine<::cuda::std::uint_fast32_t, 32, 4, 10, 0xCD9E8D57, 0x9E3779B9, 0xD2511F53, 0xBB67AE85>;
+using philox4x32 = philox_engine<uint_fast32_t, 32, 4, 10, 0xCD9E8D57, 0x9E3779B9, 0xD2511F53, 0xBB67AE85>;
 
 //! @typedef philox4x64
 //! @brief A random number engine with predefined parameters which implements the
@@ -546,14 +542,7 @@ using philox4x32 = philox_engine<::cuda::std::uint_fast32_t, 32, 4, 10, 0xCD9E8D
 //! @note The 10000th consecutive invocation of a default-constructed object of type philox4x64
 //!       shall produce the value 3409172418970261260.
 using philox4x64 =
-  philox_engine<::cuda::std::uint_fast64_t,
-                64,
-                4,
-                10,
-                0xCA5A826395121157,
-                0x9E3779B97F4A7C15,
-                0xD2E7470EE14C6C93,
-                0xBB67AE8584CAA73B>;
+  philox_engine<uint_fast64_t, 64, 4, 10, 0xCA5A826395121157, 0x9E3779B97F4A7C15, 0xD2E7470EE14C6C93, 0xBB67AE8584CAA73B>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -26,17 +26,103 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
-#include <cuda/experimental/__stf/places/places.cuh>
-#include <cuda/experimental/__stf/utility/memory.cuh>
 #include <cuda/experimental/__stf/utility/traits.cuh>
 
+#include <array>
 #include <list>
 #include <random>
 #include <unordered_map>
+#include <vector>
 
 namespace cuda::experimental::stf::reserved
 {
+/*!
+ * @brief A simple object pool with linear search for managing objects of type `T`.
+ *
+ * The `linear_pool` class provides a basic mechanism for reusing objects of a
+ * specific type. It stores a collection of objects and allows retrieval of
+ * existing objects with matching parameters or creation of new objects if
+ * necessary.
+ *
+ * @tparam T The type of objects to be managed by the pool.
+ */
+template <class T>
+class linear_pool
+{
+public:
+  /*!
+   * @brief Constructs a new, empty linear pool.
+   */
+  linear_pool() = default;
+
+  /*!
+   * @brief Adds an object to the pool.
+   *
+   * @param p A pointer to the object to be added. Must be non-null.
+   */
+  void put(::std::unique_ptr<T> p)
+  {
+    EXPECT(p); // Enforce that the pointer is not null.
+    payload.push_back(mv(p));
+  }
+
+  /*!
+   * @brief Retrieves an object from the pool with matching parameters or
+   *        creates a new one if necessary.
+   *
+   * @tparam P The types of the parameters to match.
+   * @param p The parameters to match.
+   * @return A pointer to an object with the specified parameters.
+   */
+  template <typename... P>
+  ::std::unique_ptr<T> get(P&&... p)
+  {
+    for (auto it = payload.begin(); it != payload.end(); ++it)
+    {
+      T* e = it->get();
+      assert(e);
+      if (*e == ::std::tuple<const P&...>(p...))
+      {
+        it->release();
+        // Move the last element to replace the retrieved element,
+        // maintaining a compact pool.
+        if (it + 1 < payload.end())
+        {
+          *it = mv(payload.back());
+        }
+        payload.pop_back();
+        return ::std::unique_ptr<T>(e);
+      }
+    }
+
+    // If no matching object is found, create a new one.
+    return ::std::make_unique<T>(::std::forward<P>(p)...);
+  }
+
+  /*!
+   * @brief Calls a function object on each object in the pool.
+   *
+   * @tparam F The type of the function to be called.
+   * @param f The function to call on each object.
+   */
+  template <typename F>
+  void each(F&& f)
+  {
+    for (auto& ptr : payload)
+    {
+      assert(ptr);
+      f(*ptr);
+    }
+  }
+
+private:
+  /*!
+   * @brief The collection of objects in the pool.
+   */
+  ::std::vector<::std::unique_ptr<T>> payload;
+};
 /**
  * @brief Check if localized allocation statistics should be printed
  */
@@ -75,18 +161,18 @@ public:
   // ::std::function<pos4(size_t)> delinearize : translate the index in a buffer into a position in the data
   // TODO pass mv(place)
   template <typename F>
-  localized_array(exec_place_grid grid,
-                  get_executor_func_t mapper,
-                  F&& delinearize,
-                  size_t total_size,
-                  size_t elemsize,
-                  dim4 data_dims)
+  localized_array(
+    exec_place grid, partition_fn_t mapper, F&& delinearize, size_t total_size, size_t elemsize, dim4 data_dims)
       : grid(mv(grid))
       , mapper(mv(mapper))
       , total_size_bytes(total_size * elemsize)
       , data_dims(data_dims)
       , elemsize(elemsize)
   {
+    // Ensure a CUDA context exists so cuCtxGetDevice() and other driver
+    // APIs succeed (e.g. when called outside of a stream_ctx).
+    cuda_safe_call(cudaFree(nullptr));
+
     // Regardless of the grid, we allow all devices to access that localized array
     const int ndevs = cuda_try<cudaGetDeviceCount>();
     CUdevice dev    = cuda_try<cuCtxGetDevice>();
@@ -264,7 +350,7 @@ public:
       int item_dev = device_ordinal(item.place);
 
       // Physically allocate this block on the appropriate device/place
-      // Use the data_place's mem_create which delegates to extensions for custom behavior
+      // Use the data_place's mem_create which may implement custom behavior
       cuda_safe_call(item.place.mem_create(&item.alloc_handle, item.size));
 
       _CCCL_ASSERT(item.offset + item.size <= vm_total_size_bytes, "Allocation offset out of bounds");
@@ -422,8 +508,8 @@ private:
   }
 
   event_list prereqs; // To allow reuse in a cache
-  exec_place_grid grid;
-  get_executor_func_t mapper = nullptr;
+  exec_place grid;
+  partition_fn_t mapper = nullptr;
   ::std::vector<metadata> meta;
 
   // sizes in number of elements, not bytes !! TODO rename
@@ -471,19 +557,40 @@ public:
 
   // Look if there is a matching entry. Return it if found, create otherwise
   template <typename F>
-  ::std::unique_ptr<localized_array>
-  get(const data_place& place,
-      get_executor_func_t mapper,
-      F&& delinearize,
-      size_t total_size,
-      size_t elem_size,
-      dim4 data_dims)
+  ::std::unique_ptr<localized_array> get(
+    const data_place& place, partition_fn_t mapper, F&& delinearize, size_t total_size, size_t elem_size, dim4 data_dims)
   {
     EXPECT(place.is_composite());
-    return cache.get(place.get_grid(), mapper, ::std::forward<F>(delinearize), total_size, elem_size, data_dims);
+    return cache.get(
+      place.affine_exec_place(), mapper, ::std::forward<F>(delinearize), total_size, elem_size, data_dims);
   }
 
 private:
   reserved::linear_pool<localized_array> cache;
 };
+// Registry that maps base pointers to their localized_array for composite allocate/deallocate.
+inline ::std::unordered_map<void*, ::std::unique_ptr<localized_array>>& get_composite_alloc_registry()
+{
+  static ::std::unordered_map<void*, ::std::unique_ptr<localized_array>> reg;
+  return reg;
+}
+
+inline void* allocate_composite_data_place(const data_place_composite& p, ::std::ptrdiff_t size)
+{
+  const size_t size_u          = static_cast<size_t>(size);
+  const exec_place& grid       = p.get_grid();
+  const partition_fn_t& mapper = p.get_partitioner();
+  auto delinearize_1d          = [](size_t i) {
+    return pos4(static_cast<ssize_t>(i), 0, 0, 0);
+  };
+  auto arr  = ::std::make_unique<localized_array>(grid, mapper, delinearize_1d, size_u, 1, dim4(size_u));
+  void* ptr = arr->get_base_ptr();
+  get_composite_alloc_registry()[ptr] = ::std::move(arr);
+  return ptr;
+}
+
+inline void deallocate_composite_data_place(void* ptr)
+{
+  get_composite_alloc_registry().erase(ptr);
+}
 } // end namespace cuda::experimental::stf::reserved

@@ -77,6 +77,11 @@ THRUST_NAMESPACE_END
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)               \
     _THRUST_INDEX_TYPE_DISPATCH(std::int64_t, status, call, count, arguments)
 
+//! @brief Always dispatches to unsigned 64 bit offset version of an algorithm
+#  define THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(status, call, count, arguments) \
+    _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                        \
+    _THRUST_INDEX_TYPE_DISPATCH(std::uint64_t, status, call, count, arguments)
+
 //! Like \ref THRUST_INDEX_TYPE_DISPATCH but with two counts
 #  define THRUST_DOUBLE_INDEX_TYPE_DISPATCH(status, call, count1, count2, arguments) \
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW2(count1, count2)                     \
@@ -124,6 +129,12 @@ THRUST_NAMESPACE_END
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW(std::int32_t, count)  \
     _THRUST_INDEX_TYPE_DISPATCH(std::int32_t, status, call, count, arguments)
 
+//! @brief Always dispatches to unsigned 32 bit offset version of an algorithm but throws if count would overflow
+#  define THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(status, call, count, arguments) \
+    _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                        \
+    _THRUST_INDEX_TYPE_DISPATCH_GUARD_OVERFLOW(std::uint32_t, count)          \
+    _THRUST_INDEX_TYPE_DISPATCH(std::uint32_t, status, call, count, arguments)
+
 //! Like \ref THRUST_INDEX_TYPE_DISPATCH but with two counts
 #  define THRUST_DOUBLE_INDEX_TYPE_DISPATCH(status, call, count1, count2, arguments) \
     _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW2(count1, count2)                     \
@@ -160,6 +171,16 @@ THRUST_NAMESPACE_END
       _THRUST_INDEX_TYPE_DISPATCH(std::int32_t, status, call, count, arguments) \
     else                                                                        \
       _THRUST_INDEX_TYPE_DISPATCH(std::int64_t, status, call, count, arguments)
+
+//! Dispatch between unsigned 32-bit and 64-bit index_type based versions of the same algorithm implementation. This
+//! version assumes that callables for both branches consist of the same tokens, and is intended to be used with
+//! Thrust-style dispatch interfaces, that always deduce the size type from the arguments.
+#  define THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(status, call, count, arguments)    \
+    _THRUST_INDEX_TYPE_DISPATCH_GUARD_UNDERFLOW(count)                           \
+    if _THRUST_INDEX_TYPE_DISPATCH_SELECT (std::int32_t, count)                  \
+      _THRUST_INDEX_TYPE_DISPATCH(std::uint32_t, status, call, count, arguments) \
+    else                                                                         \
+      _THRUST_INDEX_TYPE_DISPATCH(std::uint64_t, status, call, count, arguments)
 
 //! Dispatch between 32-bit and 64-bit index_type based versions of the same algorithm implementation. This version
 //! assumes that callables for both branches consist of the same tokens, and is intended to be used with Thrust-style

@@ -822,19 +822,18 @@ _CCCL_HOST_DEVICE basic_string_view(_Range&&) -> basic_string_view<::cuda::std::
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _CharT, class _Alloc>
-_CCCL_HOST basic_string_view(::std::basic_string<_CharT, ::std::char_traits<_CharT>, _Alloc>)
-  -> basic_string_view<_CharT>;
+basic_string_view(::std::basic_string<_CharT, ::std::char_traits<_CharT>, _Alloc>) -> basic_string_view<_CharT>;
 
 template <class _CharT, class _Traits, class _Alloc>
-_CCCL_HOST basic_string_view(::std::basic_string<_CharT, _Traits, _Alloc>) -> basic_string_view<_CharT, _Traits>;
+basic_string_view(::std::basic_string<_CharT, _Traits, _Alloc>) -> basic_string_view<_CharT, _Traits>;
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #if __cpp_lib_string_view >= 201606L
 template <class _CharT>
-_CCCL_HOST basic_string_view(::std::basic_string_view<_CharT>) -> basic_string_view<_CharT>;
+basic_string_view(::std::basic_string_view<_CharT>) -> basic_string_view<_CharT>;
 
 template <class _CharT, class _Traits>
-_CCCL_HOST basic_string_view(::std::basic_string_view<_CharT, _Traits>) -> basic_string_view<_CharT, _Traits>;
+basic_string_view(::std::basic_string_view<_CharT, _Traits>) -> basic_string_view<_CharT, _Traits>;
 #endif // __cpp_lib_string_view >= 201606L
 
 // operator <<

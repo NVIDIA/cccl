@@ -62,6 +62,12 @@ count([[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIt
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
     _CCCL_NVTX_RANGE_SCOPE("cuda::std::count");
+
+    if (__first == __last)
+    {
+      return iter_difference_t<_InputIterator>{0};
+    }
+
     const auto __count = ::cuda::std::distance(__first, __last);
     return __dispatch(
       __policy,

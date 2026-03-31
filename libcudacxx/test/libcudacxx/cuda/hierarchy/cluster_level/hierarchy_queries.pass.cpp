@@ -47,13 +47,16 @@ __device__ void test_cluster(const Hierarchy& hier, const GridExts& grid_exts, c
     test_extents(exp, cuda::cluster, cuda::grid, hier);
   }
 
-  // 4. Test cuda::cluster.count(x, hier)
+  // 4. Test cuda::cluster.static_count(x, hier)
+  test_static_count(cuda::cluster, cuda::grid, hier);
+
+  // 5. Test cuda::cluster.count(x, hier)
   test_count(cuda::std::size_t{dims.z} * dims.y * dims.x, cuda::cluster, cuda::grid, hier);
 
-  // 5. test cuda::cluster.index(x, hier)
+  // 6. test cuda::cluster.index(x, hier)
   test_index(index, cuda::cluster, cuda::grid, hier);
 
-  // 6. Test cuda::cluster.rank(x, hier)
+  // 7. Test cuda::cluster.rank(x, hier)
   {
     const cuda::std::size_t exp = (index.z * dims.y + index.y) * dims.x + index.x;
     test_rank(exp, cuda::cluster, cuda::grid, hier);
