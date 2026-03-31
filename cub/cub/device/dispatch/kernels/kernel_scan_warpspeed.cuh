@@ -458,9 +458,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         [&](auto is_last_tile_ic, auto& phaseSumThreadAndWarpR, auto& phaseSumExclusiveCtaR, auto& phaseInOutRW)
           _CCCL_FORCEINLINE_LAMBDA {
             const int valid_items_this_thread =
-              cuda::std::clamp(valid_items - squad.threadRank() * elemPerThread, 0, elemPerThread);
+              ::cuda::std::clamp(valid_items - squad.threadRank() * elemPerThread, 0, elemPerThread);
             const int valid_threads_this_warp =
-              cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - squad.warpRank() * 32, 0, 32);
+              ::cuda::std::clamp(::cuda::ceil_div(valid_items, elemPerThread) - squad.warpRank() * 32, 0, 32);
             const int valid_warps = ::cuda::ceil_div(valid_items, elemPerThread * 32);
             _CCCL_ASSERT(0 < valid_warps && valid_warps <= squad.warpCount(), "");
 
