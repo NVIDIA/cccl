@@ -178,20 +178,30 @@ _CCCL_DEVICE_API Tp warpScanExclusive(const Tp regInput, ScanOpT& scan_op)
 }
 
 template <typename Tp, typename ScanOpT>
-_CCCL_DEVICE_API Tp warpScanExclusivePartial(const Tp regInput, ScanOpT& scan_op, const int num_items)
+_CCCL_DEVICE_API Tp warpScanExclusivePartial(Tp regInput, ScanOpT& scan_op, const int num_items, bool this_lane_is_valid)
 {
-  using warp_scan_t = WarpScan<Tp>;
+  // if we have an identity, just fill the out-of-bounds items with it and use the full warp scan, since it's faster
+  if constexpr (cuda::has_identity_element_v<ScanOpT, Tp>)
+  {
+    if (!this_lane_is_valid)
+    {
+      regInput = cuda::identity_element<ScanOpT, Tp>();
+    }
+    return warpScanExclusive(regInput, scan_op);
+  }
+  else
+  {
+    using warp_scan_t = WarpScan<Tp>;
 
-  // TODO (elstehle): Do proper temporary storage allocation in case WarpReduce may rely on it
-  static_assert(sizeof(typename warp_scan_t::TempStorage) <= 4,
-                "WarpScan with non-trivial temporary storage is not supported yet in this kernel.");
+    // TODO (elstehle): Do proper temporary storage allocation in case WarpReduce may rely on it
+    static_assert(sizeof(typename warp_scan_t::TempStorage) <= 4,
+                  "WarpScan with non-trivial temporary storage is not supported yet in this kernel.");
 
-  Tp result;
-  typename warp_scan_t::TempStorage temp_storage;
-
-  warp_scan_t{temp_storage}.ExclusiveScanPartial(regInput, result, scan_op, num_items);
-
-  return result;
+    Tp result;
+    typename warp_scan_t::TempStorage temp_storage;
+    warp_scan_t{temp_storage}.ExclusiveScanPartial(regInput, result, scan_op, num_items);
+    return result;
+  }
 }
 
 // The kernelBody device function is a straight-line implementation of the
@@ -530,8 +540,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
               AccumT sumExclusiveIntraWarp;
               if constexpr (is_last_tile_ic) // this branch would cost up to 4% BW for I8 and I16 if it were at runtime
               {
-                sumExclusiveIntraWarp =
-                  __scan_detail::warpScanExclusivePartial(regSumThread, scan_op, valid_threads_this_warp);
+                sumExclusiveIntraWarp = __scan_detail::warpScanExclusivePartial(
+                  regSumThread, scan_op, valid_threads_this_warp, specialRegisters.laneIdx < valid_threads_this_warp);
               }
               else
               {
@@ -545,12 +555,19 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
                 // value for sumExclusive.
                 sumExclusive = sumExclusiveIntraWarp;
               }
-              else if (specialRegisters.laneIdx != 0
-                       && (!is_last_tile_ic || specialRegisters.laneIdx < valid_threads_this_warp))
+              else
               {
-                // lane0 has an undefined value for sumIntraWarp. Other lanes update
-                // sumExclusive using sumIntraWarp.
-                sumExclusive = scan_op(sumExclusive, sumExclusiveIntraWarp);
+                // lane0 has an undefined value for sumExclusiveIntraWarp, so skip it
+                bool includeIntraWarpSum = specialRegisters.laneIdx != 0;
+                if constexpr (is_last_tile_ic)
+                {
+                  includeIntraWarpSum &= specialRegisters.laneIdx < valid_threads_this_warp;
+                }
+
+                if (includeIntraWarpSum)
+                {
+                  sumExclusive = scan_op(sumExclusive, sumExclusiveIntraWarp);
+                }
               }
             }
             // sumExclusive contains the sum of previous warps and sum of previous threads.
@@ -621,7 +638,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
             // Perform inclusive scan of register array in current thread.
             // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use sumExclusive
             const bool use_prefix = hasInit ? true : !(is_first_tile && squad.threadRank() == 0);
-            if constexpr (is_last_tile_ic) // this branch would cost up to 14% BW for I8 and I16 if it were at runtime
+            if constexpr (is_last_tile_ic) // this branch would cost up to 14% BW for I8 and I16 if it
+                                           // were at runtime
             {
               if constexpr (isInclusive)
               {
