@@ -29,6 +29,10 @@ concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
   cancel-in-progress: true
 
+env:
+  NUMBA_CUDA_GIT_REF: "05922fc4"
+  NUMBA_CUDA_GIT_URL: "https://github.com/NVIDIA/numba-cuda.git"
+
 jobs:
   build-workflow:
     name: Build workflow from matrix
