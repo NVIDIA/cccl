@@ -631,6 +631,16 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
             ////////////////////////////////////////////////////////////////////////////////
             AccumT regSumInclusive[elemPerThread];
 
+            // if we are in the last tile and have an identity, fill the invalid array items with it
+            constexpr bool have_identity = cuda::has_identity_element_v<ScanOpT, AccumT>;
+            if constexpr (is_last_tile_ic && have_identity)
+            {
+              for (int i = valid_items_this_thread; i < elemPerThread; ++i)
+              {
+                regSumInclusive[i] = cuda::identity_element<ScanOpT, AccumT>();
+              }
+            }
+
             // Acquire refInOut for remainder of scope.
             warpspeed::SmemRef refInOutRW = phaseInOutRW.acquireRef();
 
@@ -643,8 +653,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
             // Perform inclusive scan of register array in current thread.
             // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use sumExclusive
             const bool use_prefix = hasInit ? true : !(is_first_tile && squad.threadRank() == 0);
-            if constexpr (is_last_tile_ic) // this branch would cost up to 14% BW for I8 and I16 if it
-                                           // were at runtime
+
+            // this branch would cost up to 14% BW for I8 and I16 if it were at runtime
+            if constexpr (is_last_tile_ic && !have_identity)
             {
               if constexpr (isInclusive)
               {
