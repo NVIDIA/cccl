@@ -204,9 +204,8 @@ _CCCL_DEVICE_API Tp warpScanExclusivePartial(Tp regInput, ScanOpT& scan_op, cons
   }
 }
 
-template <bool isInclusive, bool is_last_tile, typename Tp, size_t elemPerThread, typename ScanOpT>
-_CCCL_DEVICE_API _CCCL_FORCEINLINE void
-threadScanPartial(Tp (&regSumInclusive)[elemPerThread], ScanOpT& scan_op, Tp prefix, bool use_prefix, int valid_items)
+template <bool is_last_tile, typename ScanOpT, typename Tp, size_t elemPerThread>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void fillWithIdentity(Tp (&regSumInclusive)[elemPerThread], int valid_items)
 {
   // if we are in the last tile and have an identity, fill the invalid array items with it
   constexpr bool have_identity = ::cuda::has_identity_element_v<ScanOpT, Tp>;
@@ -224,7 +223,14 @@ threadScanPartial(Tp (&regSumInclusive)[elemPerThread], ScanOpT& scan_op, Tp pre
       }
     }
   }
+}
 
+template <bool isInclusive, bool is_last_tile, typename Tp, size_t elemPerThread, typename ScanOpT>
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void
+threadScanPartial(Tp (&regSumInclusive)[elemPerThread], ScanOpT& scan_op, Tp prefix, bool use_prefix, int valid_items)
+{
+  // skip the partial scan if we have an identity
+  constexpr bool have_identity = ::cuda::has_identity_element_v<ScanOpT, Tp>;
   if constexpr (is_last_tile && !have_identity)
   {
     if constexpr (isInclusive)
@@ -526,6 +532,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
               _CCCL_ASSERT(0 < valid_warps && valid_warps <= squad.warpCount(), "");
             }
 
+            // Fill the registers with the scan identity, if there is one
+            AccumT regSumInclusive[elemPerThread];
+            fillWithIdentity<is_last_tile_ic, ScanOpT>(regSumInclusive, valid_items_this_thread);
+
             // Sum of all threads up to but not including this one
             AccumT sumExclusive;
 
@@ -675,7 +685,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
             ////////////////////////////////////////////////////////////////////////////////
             // Scan across elements allocated to this thread
             ////////////////////////////////////////////////////////////////////////////////
-            AccumT regSumInclusive[elemPerThread];
 
             // Acquire refInOut for remainder of scope.
             warpspeed::SmemRef refInOutRW = phaseInOutRW.acquireRef();
