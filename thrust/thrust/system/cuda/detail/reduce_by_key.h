@@ -34,6 +34,7 @@
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/__memory/uninitialized_array.h>
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__functional/operations.h>
@@ -160,7 +161,7 @@ struct ReduceByKeyAgent
       typename BlockLoadKeys::TempStorage load_keys;
       typename BlockLoadValues::TempStorage load_values;
 
-      core::detail::uninitialized_array<key_value_pair_t, PtxPlan::ITEMS_PER_TILE + 1> raw_exchange;
+      ::cuda::__uninitialized_array<key_value_pair_t, PtxPlan::ITEMS_PER_TILE + 1> raw_exchange;
     }; // union TempStorage
   }; // struct PtxPlan
 

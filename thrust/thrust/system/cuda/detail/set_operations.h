@@ -28,6 +28,7 @@
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/__memory/uninitialized_array.h>
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__bit/popcount.h>
@@ -281,7 +282,7 @@ struct SetOpAgent
 
       struct LoadStorage
       {
-        core::detail::uninitialized_array<int, PtxPlan::BLOCK_THREADS> offset;
+        ::cuda::__uninitialized_array<int, PtxPlan::BLOCK_THREADS> offset;
         union
         {
           // FIXME These don't appear to be used anywhere?
@@ -293,9 +294,9 @@ struct SetOpAgent
           // Allocate extra shmem than truly necessary
           // This will permit to avoid range checks in
           // serial set operations, e.g. serial_set_difference
-          core::detail::uninitialized_array<key_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> keys_shared;
+          ::cuda::__uninitialized_array<key_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> keys_shared;
 
-          core::detail::uninitialized_array<value_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> values_shared;
+          ::cuda::__uninitialized_array<value_type, PtxPlan::ITEMS_PER_TILE + PtxPlan::BLOCK_THREADS> values_shared;
         }; // anon union
       } load_storage; // struct LoadStorage
     }; // union TempStorage
@@ -444,8 +445,6 @@ struct SetOpAgent
     template <bool IS_LAST_TILE>
     void _CCCL_DEVICE_API _CCCL_FORCEINLINE consume_tile(Size tile_idx)
     {
-      using core::detail::uninitialized_array;
-
       ::cuda::std::pair<Size, Size> partition_beg = partitions[tile_idx + 0];
       ::cuda::std::pair<Size, Size> partition_end = partitions[tile_idx + 1];
 
