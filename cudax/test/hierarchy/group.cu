@@ -17,6 +17,7 @@
 #include <cuda/devices>
 #include <cuda/hierarchy>
 #include <cuda/launch>
+#include <cuda/std/optional>
 #include <cuda/std/utility>
 #include <cuda/stream>
 
@@ -27,24 +28,25 @@
 #include "testing.cuh"
 
 template <class Hierarchy, class T, cuda::std::size_t N>
-__device__ T sum(cudax::this_thread<Hierarchy> group, T (&array)[N])
+__device__ cuda::std::optional<T> sum(cudax::this_thread<Hierarchy> group, T (&array)[N])
 {
-  return cub::ThreadReduce(array, cuda::std::plus<T>{});
+  return {cub::ThreadReduce(array, cuda::std::plus<T>{})};
 }
 
 template <class Hierarchy, class T, cuda::std::size_t N>
-__device__ T sum(cudax::this_warp<Hierarchy> group, T (&array)[N])
+__device__ cuda::std::optional<T> sum(cudax::this_warp<Hierarchy> group, T (&array)[N])
 {
   using WarpReduce = cub::WarpReduce<T>;
 
   __shared__ typename WarpReduce::TempStorage scratch;
 
   const auto partial = cub::ThreadReduce(array, cuda::std::plus<T>{});
-  return WarpReduce{scratch}.Sum(partial);
+  const auto result  = WarpReduce{scratch}.Sum(partial);
+  return (cuda::gpu_thread.is_root_rank(group)) ? cuda::std::optional{result} : cuda::std::nullopt;
 }
 
 template <class Hierarchy, class T, cuda::std::size_t N>
-__device__ T sum(cudax::this_block<Hierarchy> group, T (&array)[N])
+__device__ cuda::std::optional<T> sum(cudax::this_block<Hierarchy> group, T (&array)[N])
 {
   using BlockExts = decltype(cuda::gpu_thread.extents(cuda::block, group.hierarchy()));
   static_assert(BlockExts::rank_dynamic() == 0, "This algorithm requires all static extents.");
@@ -57,11 +59,12 @@ __device__ T sum(cudax::this_block<Hierarchy> group, T (&array)[N])
                      static_cast<int>(BlockExts::static_extent(2))>;
 
   __shared__ typename BlockReduce::TempStorage scratch;
-  return BlockReduce{scratch}.Sum(array);
+  const auto result = BlockReduce{scratch}.Sum(array);
+  return (cuda::gpu_thread.is_root_rank(group)) ? cuda::std::optional{result} : cuda::std::nullopt;
 }
 
 template <class Hierarchy, class T, cuda::std::size_t N>
-__device__ T sum(cudax::this_cluster<Hierarchy> group, T (&array)[N])
+__device__ cuda::std::optional<T> sum(cudax::this_cluster<Hierarchy> group, T (&array)[N])
 {
   using BlockExts = decltype(cuda::gpu_thread.extents(cuda::block, group.hierarchy()));
   static_assert(BlockExts::rank_dynamic() == 0, "This algorithm requires all static extents.");
@@ -108,7 +111,7 @@ __device__ T sum(cudax::this_cluster<Hierarchy> group, T (&array)[N])
                  }
                }))
 
-  return result;
+  return (cuda::gpu_thread.is_root_rank(group)) ? cuda::std::optional{result} : cuda::std::nullopt;
 }
 
 struct TestKernel
@@ -162,7 +165,12 @@ struct TestKernel
       const auto result = sum(this_warp, array);
       if (cuda::gpu_thread.is_root_rank(this_warp))
       {
+        CUDAX_REQUIRE(result.has_value());
         CUDAX_REQUIRE(result == 6 * cuda::gpu_thread.count(cuda::warp));
+      }
+      else
+      {
+        CUDAX_REQUIRE(!result.has_value());
       }
 
       CUDAX_REQUIRE(cuda::gpu_thread.count(this_warp) == cuda::gpu_thread.count(cuda::warp));
@@ -198,7 +206,12 @@ struct TestKernel
       const auto result = sum(this_block, array);
       if (cuda::gpu_thread.is_root_rank(this_block))
       {
+        CUDAX_REQUIRE(result.has_value());
         CUDAX_REQUIRE(result == 6 * cuda::gpu_thread.count(cuda::block));
+      }
+      else
+      {
+        CUDAX_REQUIRE(!result.has_value());
       }
 
       CUDAX_REQUIRE(cuda::gpu_thread.count(this_block) == cuda::gpu_thread.count(cuda::block));
@@ -236,7 +249,12 @@ struct TestKernel
       const auto result = sum(this_cluster, array);
       if (cuda::gpu_thread.is_root_rank(this_cluster))
       {
+        CUDAX_REQUIRE(result.has_value());
         CUDAX_REQUIRE(result == 6 * cuda::gpu_thread.count(cuda::cluster));
+      }
+      else
+      {
+        CUDAX_REQUIRE(!result.has_value());
       }
 
       CUDAX_REQUIRE(cuda::gpu_thread.count(this_cluster) == cuda::gpu_thread.count(cuda::cluster));
