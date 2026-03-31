@@ -4,5 +4,9 @@
 
 # ruff: noqa: F403
 
+from numba.cuda.launchconfig import (
+    ensure_current_launch_config as ensure_current_launch_config,
+)
+
 from ._core import *
 from ._rewriter import CoopNodeRewriter as CoopNodeRewriter
