@@ -286,7 +286,7 @@ inline constexpr bool __invoke_kernel_functor_with_config_v =
   ;
 
 // We create 3 kernel functor launchers:
-// 1. With __block_size__ + __launch_bounds__ for cluster launches with compile-time known dims.
+// 1. With __block_size__ for cluster launches with compile-time known dims.
 // 2. With __launch_bounds__ for non-cluster launches with compile-time known block size.
 // 3. Fallback without any attributes.
 
@@ -298,7 +298,6 @@ __global__ static void
                    (::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(0),
                     ::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(1),
                     ::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(2)))
-  _CCCL_LAUNCH_BOUNDS(::cuda::__max_nthreads_per_block<typename _Config::hierarchy_type>())
   __kernel_launcher_with_block_size(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
 {
   ::cuda::__assume_known_info<typename _Config::hierarchy_type>();
