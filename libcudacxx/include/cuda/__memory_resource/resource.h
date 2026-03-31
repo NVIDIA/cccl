@@ -43,8 +43,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_MR
 //! @rst
 //! We require that a resource supports the following interface
 //!
-//!   - ``allocate(size_t bytes, size_t alignment)``
-//!   - ``deallocate(void* ptr, size_t bytes, size_t alignment)``
+//!   - ``allocate_sync(size_t bytes, size_t alignment)``
+//!   - ``deallocate_sync(void* ptr, size_t bytes, size_t alignment)``
 //!   - ``T() == T()``
 //!   - ``T() != T()``
 //!
@@ -62,8 +62,8 @@ _CCCL_CONCEPT synchronous_resource =
 //! @rst
 //! We require that an resource supports the following interface
 //!
-//!   - ``allocate(size_t bytes, size_t alignment)``
-//!   - ``deallocate(void* ptr, size_t bytes, size_t alignment)``
+//!   - ``allocate_sync(size_t bytes, size_t alignment)``
+//!   - ``deallocate_sync(void* ptr, size_t bytes, size_t alignment)``
 //!   - ``T() == T()``
 //!   - ``T() != T()``
 //!

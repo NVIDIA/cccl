@@ -207,6 +207,13 @@ set(
 
 set(LIBCUDACXX_TEST_STANDARD_VER "c++${CMAKE_CUDA_STANDARD}")
 
+# Pedantic = werror ON and system header pragma OFF (both at their cmake defaults)
+if (CCCL_ENABLE_WERROR AND NOT CCCL_ENABLE_PRAGMA_SYSTEM_HEADER)
+  set(LIBCUDACXX_ENABLE_PEDANTIC_WARNINGS True)
+else()
+  set(LIBCUDACXX_ENABLE_PEDANTIC_WARNINGS False)
+endif()
+
 set(lit_site_cfg_path "${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg")
 configure_lit_site_cfg(
   "${CMAKE_CURRENT_SOURCE_DIR}/lit.site.cfg.in"

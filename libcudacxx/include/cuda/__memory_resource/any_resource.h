@@ -895,6 +895,12 @@ using resource_ref = basic_resource_ref<_ResourceKind::_Asynchronous, _Propertie
 
 #  endif // _CCCL_DOXYGEN_INVOKED
 
+template <class _Tp>
+inline constexpr bool __is_resource_ref = false;
+
+template <class... _Properties>
+inline constexpr bool __is_resource_ref<resource_ref<_Properties...>> = true;
+
 //! @rst
 //! .. _libcudacxx-memory-resource-make-any-resource:
 //!

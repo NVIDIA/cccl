@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___FWD_GET_STREAM_H
-#define _CUDA___FWD_GET_STREAM_H
+#ifndef _CUDA___FWD_GET_MEMORY_RESOURCE_H
+#define _CUDA___FWD_GET_MEMORY_RESOURCE_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,14 +25,14 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-_CCCL_BEGIN_NAMESPACE_CUDA
+_CCCL_BEGIN_NAMESPACE_CUDA_MR
 
-struct get_stream_t;
+struct __get_memory_resource_t;
 
-_CCCL_END_NAMESPACE_CUDA
+_CCCL_END_NAMESPACE_CUDA_MR
 
 #  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CCCL_HAS_CTK()
 
-#endif // _CUDA___FWD_GET_STREAM_H
+#endif // _CUDA___FWD_GET_MEMORY_RESOURCE_H
