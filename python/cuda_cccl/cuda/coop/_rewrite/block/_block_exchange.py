@@ -6,13 +6,13 @@ from functools import cached_property
 
 from numba.core import types
 
-import cuda.coop._rewrite as _core
-
-ArrayCallDefinition = _core.ArrayCallDefinition
-CoopNode = _core.CoopNode
-CoopNodeMixin = _core.CoopNodeMixin
-Disposition = _core.Disposition
-ir = _core.ir
+from .._core import (
+    ArrayCallDefinition,
+    CoopNode,
+    CoopNodeMixin,
+    Disposition,
+    ir,
+)
 
 
 # =============================================================================
