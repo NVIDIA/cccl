@@ -666,12 +666,11 @@ struct DispatchScan
         return error;
       }
     }
-
-    return cudaSuccess;
 #else // __cccl_ptx_isa >= 860
     static_assert(sizeof(policy_getter) == 0,
                   "Implementation bug: Tuning policy selected warpspeed, but supported PTX ISA is too low");
 #endif // __cccl_ptx_isa >= 860
+    return cudaSuccess;
   }
 
   template <typename PolicyGetter>
