@@ -265,7 +265,7 @@ bool test()
   test(cuda::std::execution::unseq);
 
   // Cuda specific execution policy
-  test(cuda::execution::__cub_par_unseq);
+  test(cuda::execution::gpu);
 
   return true;
 }

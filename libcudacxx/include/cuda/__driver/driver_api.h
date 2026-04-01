@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -95,7 +95,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 //! @brief Makes the driver version from major and minor version.
 [[nodiscard]] _CCCL_HOST_API constexpr int __make_version(int __major, int __minor) noexcept
 {
-  _CCCL_ASSERT(__major >= 12, "invalid major CUDA Driver version");
+  _CCCL_ASSERT(__major >= 2, "invalid major CUDA Driver version");
   _CCCL_ASSERT(__minor >= 0 && __minor < 100, "invalid minor CUDA Driver version");
   return __major * 1000 + __minor * 10;
 }

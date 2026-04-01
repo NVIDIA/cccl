@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -29,6 +29,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
 
+#include <cuda/experimental/__driver/driver_api.cuh>
 #include <cuda/experimental/__graph/graph.cuh>
 #include <cuda/experimental/__graph/graph_node_ref.cuh>
 
@@ -242,9 +243,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
   //! \throws cuda::std::cuda_error if `cudaGraphGetNodes` fails.
   [[nodiscard]] _CCCL_HOST_API size_t node_count() const
   {
-    size_t __count = 0;
-    _CCCL_TRY_CUDA_API(cudaGraphGetNodes, "cudaGraphGetNodes failed", __graph_, nullptr, &__count);
-    return __count;
+    return ::cuda::experimental::__driver::__graphGetNodeCount(__graph_);
   }
 
   //! \brief Instantiates the CUDA graph into a `graph_exec` object.
@@ -253,14 +252,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
   _CCCL_HOST_API auto instantiate() -> graph
   {
     _CCCL_ASSERT(__graph_ != nullptr, "cannot instantiate a NULL graph");
-    graph __exec;
-    _CCCL_TRY_CUDA_API(
-      cudaGraphInstantiate,
-      "cudaGraphInstantiate failed",
-      &__exec.__exec_, // output
-      __graph_, // graph to instantiate
-      0); // flags
-    return __exec;
+    return graph{::cuda::experimental::__driver::__graphInstantiate(__graph_)};
   }
 
 private:
@@ -276,14 +268,8 @@ private:
   {
     graph_node_ref __child;
     __child.__graph_ = __graph_;
-    _CCCL_ASSERT_CUDA_API(
-      cudaGraphAddChildGraphNode,
-      "cudaGraphAddChildGraphNode failed",
-      &__child.__node_, // output
-      __parent, // graph to which we are adding the child graph
-      __deps.data(), // dependencies
-      __deps.size(), // number of dependencies
-      __graph_); // the child graph to add
+    __child.__node_ =
+      ::cuda::experimental::__driver::__graphAddChildGraphNode(__parent, __deps.data(), __deps.size(), __graph_);
     return __child;
   }
 

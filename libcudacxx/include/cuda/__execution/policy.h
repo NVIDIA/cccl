@@ -32,7 +32,7 @@ using __cub_parallel_unsequenced_policy =
   ::cuda::std::execution::__execution_policy_base<::cuda::std::execution::__with_backend<
     static_cast<uint32_t>(::cuda::std::execution::__execution_policy::__parallel_unsequenced),
     ::cuda::std::execution::__execution_backend::__cuda>()>;
-_CCCL_GLOBAL_CONSTANT __cub_parallel_unsequenced_policy __cub_par_unseq{};
+_CCCL_GLOBAL_CONSTANT __cub_parallel_unsequenced_policy gpu{};
 
 _CCCL_END_NAMESPACE_CUDA_EXECUTION
 
