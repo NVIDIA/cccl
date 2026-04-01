@@ -76,7 +76,7 @@ jobs:
         run: |
           echo "base_sha=${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}" | tee -a "${GITHUB_OUTPUT}"
           echo "pr_number=${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}" | tee -a "${GITHUB_OUTPUT}"
-      - name: Build CUB benchmark dispatch matrix
+      - name: Build benchmark dispatch matrix
         id: build-bench-matrix
         run: |
           { # Defaults:
@@ -86,7 +86,7 @@ jobs:
 
           # Compare ci/bench.yaml against its template. If they match, no benchmarks requested.
           if diff -q "ci/bench.template.yaml" "ci/bench.yaml" > /dev/null 2>&1; then
-            echo "ci/bench.yaml matches template; skipping CUB benchmark dispatch matrix."
+            echo "ci/bench.yaml matches template; skipping benchmark dispatch."
             exit 0
           fi
 
@@ -395,8 +395,8 @@ jobs:
           print('All CPU-only import tests passed!')
           "
 
-  dispatch-cub-bench:
-    name: CUB Bench Compare (${{ matrix.gpu }})
+  dispatch-bench:
+    name: Bench Compare (${{ matrix.gpu }})
     if: >-
       ${{
         needs.build-workflow.outputs.bench_enabled == 'true' &&
@@ -409,14 +409,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.build-workflow.outputs.bench_matrix) }}
-    uses: ./.github/workflows/bench_cub.yml
+    uses: ./.github/workflows/bench.yml
     with:
       gpu: ${{ matrix.gpu }}
       launch_args: ${{ matrix.launch_args }}
       arch: ${{ matrix.arch }}
       base_ref: ${{ matrix.base_ref }}
       test_ref: ${{ matrix.test_ref }}
-      filters: ${{ matrix.filters }}
+      cub_filters: ${{ matrix.cub_filters }}
+      python_filters: ${{ matrix.python_filters }}
       nvbench_args: ${{ matrix.nvbench_args }}
       nvbench_compare_args: ${{ matrix.nvbench_compare_args }}
 
@@ -428,7 +429,7 @@ jobs:
         needs.build-workflow.outputs.bench_enabled == 'true' &&
         needs.build-workflow.outputs.pr_number != ''
       }}
-    needs: [build-workflow, dispatch-cub-bench]
+    needs: [build-workflow, dispatch-bench]
     permissions:
       pull-requests: write
     runs-on: ubuntu-latest
@@ -436,7 +437,7 @@ jobs:
       - name: Determine outcome
         id: outcome
         run: |
-          result="${{ needs.dispatch-cub-bench.result }}"
+          result="${{ needs.dispatch-bench.result }}"
           case "${result}" in
             success)  icon=":white_check_mark:"; status="completed successfully" ;;
             failure)  icon=":x:";                status="had failures" ;;
@@ -452,7 +453,7 @@ jobs:
           message: |
             ## ${{ steps.outcome.outputs.icon }} Benchmark Results
 
-            CUB benchmark comparison ${{ steps.outcome.outputs.status }}.
+            Benchmark comparison ${{ steps.outcome.outputs.status }}.
 
             **[Results](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})**
             **[Artifacts](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)**
@@ -473,7 +474,7 @@ jobs:
       - verify-devcontainers
       - docs-build
       - test-cpu-import
-      - dispatch-cub-bench
+      - dispatch-bench
     runs-on: ubuntu-latest
     steps:
       - name: Check results
@@ -498,12 +499,12 @@ jobs:
           check_result "docs-build"           "success" "${{needs.docs-build.result}}"
           check_result "test-cpu-import"      "success" "${{needs.test-cpu-import.result}}"
 
-          expected_cub_bench_result="skipped"
+          expected_bench_result="skipped"
           if [[ "${{ needs.build-workflow.outputs.bench_enabled }}" == "true" ]] \
             && [[ "${{ toJSON(fromJSON(needs.build-workflow.outputs.bench_matrix).include) }}" != "[]" ]]; then
-            expected_cub_bench_result="success"
+            expected_bench_result="success"
           fi
-          check_result "dispatch-cub-bench" "${expected_cub_bench_result}" "${{needs.dispatch-cub-bench.result}}"
+          check_result "dispatch-bench" "${expected_bench_result}" "${{needs.dispatch-bench.result}}"
 
           bench_enabled="${{ needs.build-workflow.outputs.bench_enabled }}"
           if [[ "${bench_enabled}" == "true" ]]; then

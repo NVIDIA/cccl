@@ -13,7 +13,7 @@ usage() {
   cat <<EOF
 Usage: $0 <base-ref> <test-ref> [compare_paths args...]
 
-Compare CUB benchmark performance between two git refs from the current CCCL repo.
+Compare benchmark performance between two git refs from the current CCCL repo.
 Each ref is checked out in an isolated worktree and compared via compare_paths.sh.
 EOF
 }
