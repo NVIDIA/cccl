@@ -44,6 +44,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
+namespace __cub_detail  = CUB_NS_QUALIFIER::detail;
 namespace __scan_detail = CUB_NS_QUALIFIER::detail::scan;
 _CCCL_API constexpr warpspeed::SquadDesc squad_reduce(const scan_warpspeed_policy& policy)
 {
@@ -419,7 +420,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         if (is_last_tile)
         {
           // TODO(bgruber): for operators where we know the identity we can probably optimize further here
-          regThreadSum = CUB_NS_QUALIFIER::detail::ThreadReducePartial(regInput, scan_op, valid_items_this_thread);
+          regThreadSum = __cub_detail::ThreadReducePartial(regInput, scan_op, valid_items_this_thread);
           regWarpSum   = __scan_detail::warpReducePartial(regThreadSum, scan_op, valid_threads_this_warp);
         }
         else
@@ -662,13 +663,11 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       const bool use_prefix = hasInit ? true : !(is_first_tile && squad.threadRank() == 0);
       if constexpr (isInclusive)
       {
-        CUB_NS_QUALIFIER::detail::ThreadScanInclusive(
-          regSumInclusive, regSumInclusive, scan_op, sumExclusive, use_prefix);
+        __cub_detail::ThreadScanInclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive, use_prefix);
       }
       else
       {
-        CUB_NS_QUALIFIER::detail::ThreadScanExclusive(
-          regSumInclusive, regSumInclusive, scan_op, sumExclusive, use_prefix);
+        __cub_detail::ThreadScanExclusive(regSumInclusive, regSumInclusive, scan_op, sumExclusive, use_prefix);
       }
 
       ////////////////////////////////////////////////////////////////////////////////
