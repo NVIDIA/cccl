@@ -130,14 +130,14 @@ public:
     return static_cast<difference_type>(__index());
   }
 
-  //! @brief Returns a const reference to the stored value
-  [[nodiscard]] _CCCL_API constexpr const _Tp& operator*() const noexcept
+  //! @brief Returns the stored value
+  [[nodiscard]] _CCCL_API constexpr reference operator*() const noexcept
   {
     return __value();
   }
 
-  //! @brief Returns a const reference to the stored value
-  [[nodiscard]] _CCCL_API constexpr const _Tp& operator[](difference_type) const noexcept
+  //! @brief Returns the stored value
+  [[nodiscard]] _CCCL_API constexpr reference operator[](difference_type) const noexcept
   {
     return __value();
   }
