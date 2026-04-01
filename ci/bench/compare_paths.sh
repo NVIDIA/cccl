@@ -619,6 +619,7 @@ write_summary() {
     fi
 
     if [[ "${#selected_py_targets[@]}" -gt 0 ]]; then
+      echo
       echo "## Python Compare Reports"
       local py_target_path=""
       local py_target_name=""
