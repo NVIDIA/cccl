@@ -27,7 +27,8 @@
  *    Ref: https://en.wikipedia.org/wiki/Monoid
  */
 
-/* PropagateLastWrite: an associative, non-commutative operator over a symbol alphabet.
+/**
+ * PropagateLastWrite: an associative, non-commutative operator over a symbol alphabet.
  *
  * Given a read_symbol r, the operator is:
  *     op(lhs, rhs) = lhs  if  rhs == r  and  lhs != r
@@ -56,7 +57,6 @@
 
 namespace impl
 {
-
 // bicyclic monoid operator: associative and non-commutative
 template <typename UnsignedIntegralT>
 struct bicyclic_monoid_op
@@ -119,7 +119,6 @@ struct populate_sparse_write_input
     return (idx % static_cast<size_t>(write_period) == 0) ? write_symbol : read_symbol;
   }
 };
-
 } // namespace impl
 
 // Sizes chosen to cover: single-element, small, medium, the original bug-report size (8160),
@@ -178,7 +177,7 @@ C2H_TEST("Device exclusive scan works with PropagateLastWrite operator", "[scan]
   // in the wrong order when combining the inter-tile exclusive prefix with the intra-tile prefix,
   // producing incorrect results for non-commutative operators like this one.
 
-  using symbol_t = char;
+  using symbol_t                        = char;
   constexpr symbol_t read_symbol        = 'x';
   constexpr symbol_t empty_stack_symbol = '_'; // init_value for the exclusive scan
   constexpr symbol_t write_symbol       = '[';
@@ -196,9 +195,7 @@ C2H_TEST("Device exclusive scan works with PropagateLastWrite operator", "[scan]
 
   c2h::device_vector<symbol_t> input(num_items);
   thrust::tabulate(
-    input.begin(),
-    input.end(),
-    impl::populate_sparse_write_input<symbol_t>{read_symbol, write_symbol, write_period});
+    input.begin(), input.end(), impl::populate_sparse_write_input<symbol_t>{read_symbol, write_symbol, write_period});
   c2h::device_vector<symbol_t> output(num_items);
 
   symbol_t* d_input  = thrust::raw_pointer_cast(input.data());
@@ -235,7 +232,7 @@ C2H_TEST("Device exclusive scan PropagateLastWrite reproduces original bug-repor
   // This input has a cluster of write symbols near the end that must be correctly
   // propagated across a tile boundary by the inter-tile lookback mechanism.
 
-  using symbol_t = char;
+  using symbol_t                        = char;
   constexpr symbol_t read_symbol        = 'x';
   constexpr symbol_t empty_stack_symbol = '_';
   constexpr int num_elements            = 8160;
