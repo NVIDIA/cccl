@@ -38,7 +38,7 @@ fi
 
 readonly cuda12_version=12.9.1
 readonly cuda13_version=13.0.2
-readonly devcontainer_version=26.06
+readonly devcontainer_version=26.04
 readonly devcontainer_distro=rockylinux8
 
 if [[ "$(uname -m)" == "aarch64" ]]; then
