@@ -107,6 +107,19 @@ function(thrust_add_header_test thrust_target label definitions)
     endif()
 
     if ("TBB" IN_LIST config_systems)
+      # In some cases cudafe++ doesn't implement certain builtins that are used in <immintrin.h> which causes the
+      # compilation to fail. In tbb_nvcc_preinclude.h, we forward declare those functions, so cudafe++ has no problems.
+      if (
+        "${lang}" STREQUAL "CUDA"
+        AND "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
+        AND NOT MSVC
+      )
+        target_compile_options(
+          ${headertest_target}
+          PUBLIC "-include" "${Thrust_SOURCE_DIR}/testing/tbb_nvcc_preinclude.h"
+        )
+      endif()
+
       # Disable macro checks on TBB; the TBB atomic implementation uses `I` and
       # our checks will issue false errors.
       target_compile_definitions(

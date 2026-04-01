@@ -41,6 +41,8 @@ enum class __pstl_algorithm
   __generate_n,
   __inclusive_scan,
   __merge,
+  __partition,
+  __partition_copy,
   __reduce,
   __remove_if,
   __transform,
