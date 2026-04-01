@@ -166,6 +166,14 @@ def _make_struct_type(struct_class_or_name, field_names, field_types):
 
     field_names_list = list(field_spec.keys())
 
+    # Validate that all field names are valid Python identifiers before
+    # we exec any generated code that accesses them:
+    for name in field_names_list:
+        if not name.isidentifier():
+            raise ValueError(
+                f"Struct field name {name!r} is not a valid Python identifier"
+            )
+
     @overload(operator.getitem)
     def struct_getitem(struct_val, idx):
         if not isinstance(struct_val, StructType):
