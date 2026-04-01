@@ -40,9 +40,10 @@ C2H_TEST("stf_logical_data_with_place - host place (malloc)", "[logical_data_wit
     A[i] = static_cast<float>(i);
   }
 
-  stf_data_place host_place = make_host_data_place();
+  stf_data_place_handle host_place = stf_data_place_host();
   stf_logical_data_handle lA;
   stf_logical_data_with_place(ctx, &lA, A, N * sizeof(float), host_place);
+  stf_data_place_destroy(host_place);
 
   stf_task_handle t;
   stf_task_create(ctx, &t);
@@ -76,9 +77,10 @@ C2H_TEST("stf_logical_data_with_place - host place (pinned memory)", "[logical_d
     A[i] = static_cast<float>(i);
   }
 
-  stf_data_place host_place = make_host_data_place();
+  stf_data_place_handle host_place = stf_data_place_host();
   stf_logical_data_handle lA;
   stf_logical_data_with_place(ctx, &lA, A, N * sizeof(float), host_place);
+  stf_data_place_destroy(host_place);
 
   stf_task_handle t;
   stf_task_create(ctx, &t);
@@ -118,9 +120,10 @@ C2H_TEST("stf_logical_data_with_place - device place (data on current device)", 
   REQUIRE(err == cudaSuccess);
   free(h_init);
 
-  stf_data_place dev_place = make_device_data_place(0);
+  stf_data_place_handle dev_place = stf_data_place_device(0);
   stf_logical_data_handle lD;
   stf_logical_data_with_place(ctx, &lD, d_data, N * sizeof(float), dev_place);
+  stf_data_place_destroy(dev_place);
   stf_logical_data_set_symbol(lD, "device_buf");
 
   stf_cuda_kernel_handle k;

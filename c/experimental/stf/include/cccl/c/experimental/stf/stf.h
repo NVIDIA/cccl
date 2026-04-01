@@ -96,115 +96,15 @@ typedef enum stf_access_mode
 
 //! \}
 
-//! \defgroup ExecPlace Execution Places
-//! \brief Specify where tasks should execute
+//! \defgroup Places Opaque execution and data places
+//! \brief Heap-allocated handles wrapping C++ \c exec_place and \c data_place
 //! \{
 
-//! \brief Device execution place configuration
-typedef struct stf_exec_place_device
-{
-  int dev_id; //!< CUDA device ID (0-based)
-} stf_exec_place_device;
+//! \brief Opaque handle to an \c exec_place (including grids — all execution places are grids in C++).
+typedef struct stf_exec_place_opaque_t* stf_exec_place_handle;
 
-//! \brief Host execution place configuration
-typedef struct stf_exec_place_host
-{
-  char dummy; //!< Dummy field for standard C compatibility
-} stf_exec_place_host;
-
-//! \brief Execution place type discriminator
-typedef enum stf_exec_place_kind
-{
-  STF_EXEC_PLACE_DEVICE, //!< Task executes on CUDA device
-  STF_EXEC_PLACE_HOST //!< Task executes on host (CPU)
-} stf_exec_place_kind;
-
-//! \brief Execution place specification
-//!
-//! Tagged union specifying where a task should execute.
-//! Use helper functions make_device_place() and make_host_place() to create.
-typedef struct stf_exec_place
-{
-  enum stf_exec_place_kind kind; //!< Type of execution place
-  union
-  {
-    stf_exec_place_device device; //!< Device configuration (when kind == STF_EXEC_PLACE_DEVICE)
-    stf_exec_place_host host; //!< Host configuration (when kind == STF_EXEC_PLACE_HOST)
-  } u; //!< Configuration union
-} stf_exec_place;
-
-//! \brief Create execution place for CUDA device
-//!
-//! \param dev_id CUDA device index (0-based)
-//! \return Execution place configured for specified device
-//!
-//! \par Example:
-//! \code
-//! // Execute task on device 1
-//! stf_exec_place place = make_device_place(1);
-//! stf_task_set_exec_place(task, &place);
-//! \endcode
-static inline stf_exec_place make_device_place(int dev_id)
-{
-  stf_exec_place p;
-  p.kind            = STF_EXEC_PLACE_DEVICE;
-  p.u.device.dev_id = dev_id;
-  return p;
-}
-
-//! \brief Create execution place for host (CPU)
-//!
-//! \return Execution place configured for host execution
-//!
-//! \par Example:
-//! \code
-//! // Execute task on host
-//! stf_exec_place place = make_host_place();
-//! stf_task_set_exec_place(task, &place);
-//! \endcode
-static inline stf_exec_place make_host_place()
-{
-  stf_exec_place p;
-  p.kind         = STF_EXEC_PLACE_HOST;
-  p.u.host.dummy = 0; /* to avoid uninitialized memory warnings */
-  return p;
-}
-
-//! \}
-
-//! \defgroup DataPlace Data Places
-//! \brief Specify where logical data should be located
-//! \{
-
-//! \brief Device data place configuration
-typedef struct stf_data_place_device
-{
-  int dev_id; //!< CUDA device ID for data placement
-} stf_data_place_device;
-
-//! \brief Host data place configuration
-typedef struct stf_data_place_host
-{
-  char dummy; //!< Dummy field for standard C compatibility
-} stf_data_place_host;
-
-//! \brief Managed memory data place configuration
-typedef struct stf_data_place_managed
-{
-  char dummy; //!< Dummy field for standard C compatibility
-} stf_data_place_managed;
-
-//! \brief Affine data place configuration
-//!
-//! Affine placement means data follows the execution location automatically.
-typedef struct stf_data_place_affine
-{
-  char dummy; //!< Dummy field for standard C compatibility
-} stf_data_place_affine;
-
-//! \defgroup CompositePlace Composite data places (grid + partition)
-//! \brief Types for composite data places with a user-provided partition function
-//! \{
+//! \brief Opaque handle to a \c data_place.
+typedef struct stf_data_place_opaque_t* stf_data_place_handle;
 
 //! \brief 4D position (coordinates) for partition mapping.
 //! Layout matches C++ pos4 for use as partition function arguments/result.
@@ -228,179 +128,77 @@ typedef struct stf_dim4
 
 //! \brief Partition (mapper) function: data coordinates -> grid position.
 //! Can be implemented in C or provided from Python via ctypes/cffi.
-//! \param data_coords Logical position in the data space
-//! \param data_dims Full shape of the data
-//! \param grid_dims Shape of the execution place grid
-//! \return Position in the place grid (which place owns this data)
 typedef stf_pos4 (*stf_get_executor_fn)(stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims);
 
-//! \brief Opaque handle for an execution place grid (e.g. one place per stream).
-typedef struct stf_exec_place_grid_handle_t* stf_exec_place_grid_handle;
+//! \brief Create host execution place (CPU).
+stf_exec_place_handle stf_exec_place_host(void);
 
-//! \}
+//! \brief Create device execution place for CUDA device \p dev_id.
+stf_exec_place_handle stf_exec_place_device(int dev_id);
 
-//! \brief Data place type discriminator
-typedef enum stf_data_place_kind
-{
-  STF_DATA_PLACE_DEVICE, //!< Data on specific device memory
-  STF_DATA_PLACE_HOST, //!< Data on host (CPU) memory
-  STF_DATA_PLACE_MANAGED, //!< Data in CUDA managed (unified) memory
-  STF_DATA_PLACE_AFFINE, //!< Data follows execution place (default)
-  STF_DATA_PLACE_COMPOSITE //!< Data partitioned over a grid via a partition function
-} stf_data_place_kind;
+//! \brief Create execution place for the current CUDA device.
+stf_exec_place_handle stf_exec_place_current_device(void);
 
-//! \brief Composite data place configuration (grid + partition function)
-typedef struct stf_data_place_composite
-{
-  stf_exec_place_grid_handle grid; //!< Grid of execution places
-  stf_get_executor_fn mapper; //!< Partition function (e.g. from Python)
-} stf_data_place_composite;
+//! \brief Deep copy of an execution place handle (caller must stf_exec_place_destroy the result).
+stf_exec_place_handle stf_exec_place_clone(stf_exec_place_handle h);
 
-//! \brief Data placement specification
-//!
-//! Tagged union specifying where logical data should be located.
-//! Use helper functions to create (make_device_data_place(), etc.).
-typedef struct stf_data_place
-{
-  enum stf_data_place_kind kind; //!< Type of data placement
-  union
-  {
-    stf_data_place_device device; //!< Device placement configuration
-    stf_data_place_host host; //!< Host placement configuration
-    stf_data_place_managed managed; //!< Managed memory configuration
-    stf_data_place_affine affine; //!< Affine placement configuration
-    stf_data_place_composite composite; //!< Composite (grid + partition function)
-  } u; //!< Configuration union
-} stf_data_place;
+//! \brief Release an execution place handle (including grids from stf_exec_place_grid_*).
+void stf_exec_place_destroy(stf_exec_place_handle h);
 
-//! \brief Create data place for specific CUDA device
-//!
-//! \param dev_id CUDA device index (0-based)
-//! \return Data place configured for device memory
-//!
-//! \par Example:
-//! \code
-//! // Force data to device 1 even if task runs elsewhere
-//! stf_data_place dplace = make_device_data_place(1);
-//! stf_task_add_dep_with_dplace(task, data, STF_READ, &dplace);
-//! \endcode
-static inline stf_data_place make_device_data_place(int dev_id)
-{
-  stf_data_place p;
-  p.kind            = STF_DATA_PLACE_DEVICE;
-  p.u.device.dev_id = dev_id;
-  return p;
-}
+//! \return Non-zero if this place is host execution.
+int stf_exec_place_is_host(stf_exec_place_handle h);
 
-//! \brief Create data place for host memory
-//!
-//! \return Data place configured for host (CPU) memory
-//!
-//! \par Example:
-//! \code
-//! // Keep data on host even for device tasks (sparse access)
-//! stf_data_place dplace = make_host_data_place();
-//! stf_task_add_dep_with_dplace(task, data, STF_READ, &dplace);
-//! \endcode
-static inline struct stf_data_place make_host_data_place()
-{
-  stf_data_place p;
-  p.kind         = STF_DATA_PLACE_HOST;
-  p.u.host.dummy = 0; /* to avoid uninitialized memory warnings */
-  return p;
-}
+//! \return Non-zero if this place is a CUDA device execution context.
+int stf_exec_place_is_device(stf_exec_place_handle h);
 
-//!
-//! \brief Create data place for CUDA managed memory
-//!
-//! \return Data place configured for managed (unified) memory
-//!
-//! \par Example:
-//! \code
-//! // Use managed memory for flexible access patterns
-//! stf_data_place dplace = make_managed_data_place();
-//! stf_task_add_dep_with_dplace(task, data, STF_RW, &dplace);
-//! \endcode
+//! \brief Writes grid dimensions into \p out_dims (all scalars are 1x1x1x1 for non-grid places).
+void stf_exec_place_get_dims(stf_exec_place_handle h, stf_dim4* out_dims);
 
-static inline struct stf_data_place make_managed_data_place()
-{
-  stf_data_place p;
-  p.kind            = STF_DATA_PLACE_MANAGED;
-  p.u.managed.dummy = 0; /* to avoid uninitialized memory warnings */
-  return p;
-}
+//! \brief Number of sub-places in the grid (1 for scalar places).
+size_t stf_exec_place_size(stf_exec_place_handle h);
 
-//!
-//! \brief Create affine data place (follows execution location)
-//!
-//! \return Data place configured for affine placement (default behavior)
-//!
-//! \par Example:
-//! \code
-//! // Explicitly specify default behavior
-//! stf_data_place dplace = make_affine_data_place();
-//! stf_task_add_dep_with_dplace(task, data, STF_RW, &dplace);
-//! \endcode
+//! \brief Sets the affine data place used when logical data uses affine placement with this exec grid.
+void stf_exec_place_set_affine_data_place(stf_exec_place_handle h, stf_data_place_handle affine_dplace);
 
-static inline struct stf_data_place make_affine_data_place()
-{
-  stf_data_place p;
-  p.kind           = STF_DATA_PLACE_AFFINE;
-  p.u.affine.dummy = 0; /* to avoid uninitialized memory warnings */
-  return p;
-}
+//! \brief Build a grid of device execution places from device IDs (one scalar place per ID).
+stf_exec_place_handle stf_exec_place_grid_from_devices(const int* device_ids, size_t count);
 
-//! \brief Create a composite data place (grid + partition function).
-//!
-//! The partition function (\p mapper) maps data coordinates to a position in the
-//! place grid. It can be implemented in C or provided from Python (e.g. ctypes).
-//! \param[out] out Composite data place (kind = STF_DATA_PLACE_COMPOSITE)
-//! \param grid Grid of execution places (from stf_exec_place_grid_from_devices or stf_exec_place_grid_create)
-//! \param mapper Partition function: (data_coords, data_dims, grid_dims) -> grid position
-//!
-//! \par Example (C):
-//! \code
-//! stf_pos4 my_mapper(stf_pos4 coords, stf_dim4 data_dims, stf_dim4 grid_dims) {
-//!   stf_pos4 p = { coords.x / ((int64_t)data_dims.x / (int64_t)grid_dims.x), 0, 0, 0 };
-//!   return p;
-//! }
-//! int devs[] = { 0, 1 };
-//! stf_exec_place_grid_handle grid = stf_exec_place_grid_from_devices(devs, 2);
-//! // Or: stf_exec_place places[] = { make_device_place(0), make_device_place(1) };
-//! //      grid = stf_exec_place_grid_create(places, 2, nullptr);
-//! stf_data_place dplace;
-//! stf_make_composite_data_place(&dplace, grid, my_mapper);
-//! stf_task_add_dep_with_dplace(task, ld, STF_RW, &dplace);
-//! \endcode
-void stf_make_composite_data_place(stf_data_place* out, stf_exec_place_grid_handle grid, stf_get_executor_fn mapper);
+//! \brief Build a grid from an array of execution place handles.
+stf_exec_place_handle
+stf_exec_place_grid_create(const stf_exec_place_handle* places, size_t count, const stf_dim4* grid_dims);
 
-//! \}
+//! \brief Same as stf_exec_place_destroy (grids are exec_place handles).
+void stf_exec_place_grid_destroy(stf_exec_place_handle grid);
 
-//! \defgroup ExecPlaceGrid Execution place grid
-//! \brief Create a grid of execution places for composite data places
-//! \{
+//! \brief Host (CPU/pinned) data placement.
+stf_data_place_handle stf_data_place_host(void);
 
-//! \brief Create an execution place grid from device IDs (one place per device).
-//! Convenience for the common case; equivalent to building an array of device places
-//! and calling stf_exec_place_grid_create(places, count, nullptr).
-//! \param device_ids Array of CUDA device IDs (0-based)
-//! \param count Number of devices (must be at least 1)
-//! \return Opaque grid handle; destroy with stf_exec_place_grid_destroy()
-stf_exec_place_grid_handle stf_exec_place_grid_from_devices(const int* device_ids, size_t count);
+//! \brief Device-local memory for \p dev_id.
+stf_data_place_handle stf_data_place_device(int dev_id);
 
-//! \brief Create an execution place grid from an array of execution places.
-//! \param places Array of execution places (e.g. from make_device_place(), make_host_place())
-//! \param count Number of places
-//! \param grid_dims Optional grid shape; if NULL, uses (count, 1, 1, 1) for a linear grid.
-//!                  Product of dimensions should equal \p count.
-//! \return Opaque grid handle; destroy with stf_exec_place_grid_destroy()
-stf_exec_place_grid_handle
-stf_exec_place_grid_create(const stf_exec_place* places, size_t count, const stf_dim4* grid_dims);
+//! \brief CUDA managed (unified) memory.
+stf_data_place_handle stf_data_place_managed(void);
 
-//! \brief Destroy an execution place grid created with stf_exec_place_grid_from_devices() or
-//! stf_exec_place_grid_create().
-//! \param grid Grid handle (may be NULL; no-op in that case)
-void stf_exec_place_grid_destroy(stf_exec_place_grid_handle grid);
+//! \brief Affine placement (follows the task execution place).
+stf_data_place_handle stf_data_place_affine(void);
+
+//! \brief Data on the current CUDA device.
+stf_data_place_handle stf_data_place_current_device(void);
+
+//! \brief Composite partitioned placement over a grid of execution places.
+stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_get_executor_fn mapper);
+
+//! \brief Deep copy (caller must stf_data_place_destroy).
+stf_data_place_handle stf_data_place_clone(stf_data_place_handle h);
+
+//! \brief Release a data place handle.
+void stf_data_place_destroy(stf_data_place_handle h);
+
+//! \brief Device ordinal from \c data_place_interface::get_device_ordinal() (see C++ docs for sentinel values).
+int stf_data_place_get_device_ordinal(stf_data_place_handle h);
+
+//! \brief Human-readable description; pointer valid until the next call on this thread.
+const char* stf_data_place_to_string(stf_data_place_handle h);
 
 //! \}
 
@@ -595,7 +393,7 @@ cudaStream_t stf_fence(stf_ctx_handle ctx);
 //! \post *ld contains valid logical data handle
 //!
 //! \note This function assumes host memory. For device/managed memory, use stf_logical_data_with_place()
-//! \note Equivalent to: stf_logical_data_with_place(ctx, ld, addr, sz, make_host_data_place())
+//! \note Equivalent to host placement via stf_data_place_host() passed to stf_logical_data_with_place()
 //!
 //! \par Example:
 //! \code
@@ -638,28 +436,31 @@ void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* add
 //! // GPU device memory (recommended for CUDA arrays)
 //! float* device_ptr;
 //! cudaMalloc(&device_ptr, 1000 * sizeof(float));
-//! stf_data_place dplace = make_device_data_place(0);
+//! stf_data_place_handle dplace = stf_data_place_device(0);
 //! stf_logical_data_handle ld;
 //! stf_logical_data_with_place(ctx, &ld, device_ptr, 1000 * sizeof(float), dplace);
+//! stf_data_place_destroy(dplace);
 //!
 //! // Host memory
 //! float* host_data = new float[1000];
-//! stf_data_place host_place = make_host_data_place();
+//! stf_data_place_handle host_place = stf_data_place_host();
 //! stf_logical_data_handle ld_host;
 //! stf_logical_data_with_place(ctx, &ld_host, host_data, 1000 * sizeof(float), host_place);
+//! stf_data_place_destroy(host_place);
 //!
 //! // Managed memory
 //! float* managed_ptr;
 //! cudaMallocManaged(&managed_ptr, 1000 * sizeof(float));
-//! stf_data_place managed_place = make_managed_data_place();
+//! stf_data_place_handle managed_place = stf_data_place_managed();
 //! stf_logical_data_handle ld_managed;
 //! stf_logical_data_with_place(ctx, &ld_managed, managed_ptr, 1000 * sizeof(float), managed_place);
+//! stf_data_place_destroy(managed_place);
 //! \endcode
 //!
-//! \see make_device_data_place(), make_host_data_place(), make_managed_data_place()
+//! \see stf_data_place_device(), stf_data_place_host(), stf_data_place_managed()
 
 void stf_logical_data_with_place(
-  stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz, stf_data_place dplace);
+  stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz, stf_data_place_handle dplace);
 
 //!
 //! \brief Set symbolic name for logical data
@@ -825,13 +626,14 @@ void stf_task_create(stf_ctx_handle ctx, stf_task_handle* t);
 //! stf_task_create(ctx, &task);
 //!
 //! // Execute on device 1
-//! stf_exec_place place = make_device_place(1);
-//! stf_task_set_exec_place(task, &place);
+//! stf_exec_place_handle place = stf_exec_place_device(1);
+//! stf_task_set_exec_place(task, place);
+//! stf_exec_place_destroy(place);
 //! \endcode
 //!
-//! \see make_device_place(), make_host_place()
+//! \see stf_exec_place_device(), stf_exec_place_host()
 
-void stf_task_set_exec_place(stf_task_handle t, stf_exec_place* exec_p);
+void stf_task_set_exec_place(stf_task_handle t, stf_exec_place_handle exec_p);
 
 //!
 //! \brief Set symbolic name for task
@@ -903,14 +705,15 @@ void stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_
 //! \par Example:
 //! \code
 //! // Force data to device 0 even if task runs elsewhere
-//! stf_data_place dplace = make_device_data_place(0);
-//! stf_task_add_dep_with_dplace(task, ld, STF_READ, &dplace);
+//! stf_data_place_handle dplace = stf_data_place_device(0);
+//! stf_task_add_dep_with_dplace(task, ld, STF_READ, dplace);
+//! stf_data_place_destroy(dplace);
 //! \endcode
 //!
-//! \see stf_task_add_dep(), make_device_data_place(), make_host_data_place()
+//! \see stf_task_add_dep(), stf_data_place_device(), stf_data_place_host()
 
 void stf_task_add_dep_with_dplace(
-  stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m, stf_data_place* data_p);
+  stf_task_handle t, stf_logical_data_handle ld, stf_access_mode m, stf_data_place_handle data_p);
 
 //!
 //! \brief Begin task execution
@@ -1107,9 +910,9 @@ void stf_cuda_kernel_create(stf_ctx_handle ctx, stf_cuda_kernel_handle* k);
 //! \pre k must be valid kernel handle
 //! \pre exec_p must not be NULL
 //!
-//! \see make_device_place(), stf_task_set_exec_place()
+//! \see stf_exec_place_device(), stf_task_set_exec_place()
 
-void stf_cuda_kernel_set_exec_place(stf_cuda_kernel_handle k, stf_exec_place* exec_p);
+void stf_cuda_kernel_set_exec_place(stf_cuda_kernel_handle k, stf_exec_place_handle exec_p);
 
 //!
 //! \brief Set symbolic name for kernel
