@@ -35,6 +35,7 @@
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__iterator/next.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
@@ -77,18 +78,6 @@ struct __swap_ranges_transform_fn
   }
 };
 
-_CCCL_END_NAMESPACE_CUDA_STD
-
-_CCCL_BEGIN_NAMESPACE_CUDA
-
-template <>
-struct proclaims_copyable_arguments<::cuda::std::__swap_ranges_transform_fn> : public ::cuda::std::true_type
-{};
-
-_CCCL_END_NAMESPACE_CUDA
-
-_CCCL_BEGIN_NAMESPACE_CUDA_STD
-
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 _CCCL_TEMPLATE(class _Policy, class _InputIterator1, class _InputIterator2)
@@ -112,7 +101,7 @@ _CCCL_HOST_API _InputIterator2 swap_ranges(
     }
 
     const auto __count = ::cuda::std::distance(__first1, __last1);
-    auto __ret         = __first2 + static_cast<iter_difference_t<_InputIterator2>>(__count);
+    auto __ret         = ::cuda::std::next(__first2, static_cast<iter_difference_t<_InputIterator2>>(__count));
 
     auto __zip_first = ::cuda::zip_iterator{__first1, __first2};
 
@@ -127,9 +116,9 @@ _CCCL_HOST_API _InputIterator2 swap_ranges(
   }
   else
   {
-    [[maybe_unused]] auto __dispatch =
+    [[maybe_unused]] auto __for_each_dispatch =
       ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__for_each_n, _Policy>();
-    if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
+    if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__for_each_dispatch)>)
     {
       _CCCL_NVTX_RANGE_SCOPE("cuda::std::swap_ranges");
 
@@ -140,7 +129,7 @@ _CCCL_HOST_API _InputIterator2 swap_ranges(
 
       const auto __count = ::cuda::std::distance(__first1, __last1);
       auto __ret         = __first2 + static_cast<iter_difference_t<_InputIterator2>>(__count);
-      (void) __dispatch(
+      (void) __for_each_dispatch(
         __policy,
         ::cuda::counting_iterator<iter_difference_t<_InputIterator1>>{0},
         __count,
