@@ -63,12 +63,7 @@ test-cu12 = [
   "pytest-xdist",
   "cupy-cuda12x",
 ]
-test-cu13 = [
-  "cuda-cccl[cu13]",
-  "pytest",
-  "pytest-xdist",
-  "cupy-cuda13x",
-]
+test-cu13 = ["cuda-cccl[cu13]", "pytest", "pytest-xdist", "cupy-cuda13x"]
 bench-cu12 = ["cuda-cccl[cu12]", "cuda-bench[cu12]", "cupy-cuda12x"]
 bench-cu13 = ["cuda-cccl[cu13]", "cuda-bench[cu13]", "cupy-cuda13x"]
 
