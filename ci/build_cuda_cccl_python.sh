@@ -37,7 +37,7 @@ fi
 # then merge them into a single wheel.
 
 readonly cuda12_version=12.9.1
-readonly cuda13_version=13.0.2
+readonly cuda13_version=13.1.1
 readonly devcontainer_version=26.04
 readonly devcontainer_distro=rockylinux8
 
