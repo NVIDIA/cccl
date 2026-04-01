@@ -32,10 +32,7 @@ benchmarks:
   # Python benchmark filters (regex matched against paths under benchmarks/).
   python:
     filters:
-      # Examples:
-      # - 'compute/reduce/sum\.py'
-      # - 'compute/transform/.*\.py'
-      # - 'coop/bench_warp_reduce\.py'
+      - 'compute/reduce/sum\.py'
 
   # Select GPUs. These are limited and shared, be intentional and conservative.
   gpus:
