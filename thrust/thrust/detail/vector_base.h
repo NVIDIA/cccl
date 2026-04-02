@@ -26,6 +26,7 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/initializer_list>
@@ -427,7 +428,8 @@ public:
   /*! This method swaps the contents of this vector_base with another vector_base.
    *  \param v The vector_base with which to swap.
    */
-  void swap(vector_base& v)
+  void swap(vector_base& v) noexcept(::cuda::std::is_nothrow_swappable_v<storage_type>
+                                     && ::cuda::std::is_nothrow_swappable_v<size_type>)
   {
     using ::cuda::std::swap;
     swap(m_storage, v.m_storage);

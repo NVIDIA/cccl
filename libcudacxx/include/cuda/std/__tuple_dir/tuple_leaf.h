@@ -440,7 +440,19 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   _CCCL_HIDE_FROM_ABI __tuple_impl& operator=(__tuple_impl&&)      = default;
 
   // Using a fold exppression here breaks nvrtc
-  _CCCL_API inline void swap(__tuple_impl& __t) noexcept(__fold_and_v<is_nothrow_swappable_v<_Tp>...>)
+  _CCCL_API inline void swap(__tuple_impl& __t)
+  // NVCC 12.0.X has a bug where it instantiates friend functions eagerly. This leads to errors
+  // because the friend swap() in tuple causes this swap() to (transitively) be instantiated
+  // regardless of whether it is called or not.
+  //
+  // When using tuples of incomplete types this causes errors with is_nothrow_swappable (or
+  // rather, any is_swappable trait) as they require the types to be complete. In this case we
+  // need to lazily instantiate these templates so we can short-circuit if _Tp is incomplete.
+#if _CCCL_CUDA_COMPILER(NVCC, <, 12, 1)
+    noexcept(__fold_and_v<__is_complete_and_nothrow_swappable_v<remove_cvref_t<_Tp>>...>)
+#else // ^^^  _CCCL_CUDA_COMPILER(NVCC, <, 12, 1) ^^^ / vvv  _CCCL_CUDA_COMPILER(NVCC, >=, 12, 1) vvv
+    noexcept(__fold_and_v<is_nothrow_swappable_v<_Tp>...>)
+#endif //  _CCCL_CUDA_COMPILER(NVCC, <, 12, 1)
   {
     (__tuple_leaf<_Indx, _Tp>::swap(static_cast<__tuple_leaf<_Indx, _Tp>&>(__t)), ...);
   }
