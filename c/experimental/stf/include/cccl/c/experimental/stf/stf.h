@@ -97,7 +97,9 @@ typedef enum stf_access_mode
 //! \}
 
 //! \defgroup Places Opaque execution and data places
-//! \brief Heap-allocated handles wrapping C++ \c exec_place and \c data_place
+//! \brief Heap-allocated handles wrapping C++ \c exec_place and \c data_place.
+//! Callers own handles: every successful \c stf_*_place_* factory or \c *_clone allocates;
+//! release with the matching \c *_destroy (idempotent for \c NULL).
 //! \{
 
 //! \brief Opaque handle to an \c exec_place (including grids — all execution places are grids in C++).
