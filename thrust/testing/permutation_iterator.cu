@@ -243,7 +243,7 @@ void TestPermutationIteratorHostDeviceScatter()
   // scatter device->host
   thrust::copy(d_source.begin(), d_source.end(), p_h_output);
 
-  HostVector href(dref);
+  HostVector href = dref;
   ASSERT_EQUAL(h_output, href);
 }
 DECLARE_UNITTEST(TestPermutationIteratorHostDeviceScatter);

@@ -65,7 +65,8 @@ _CCCL_HOST_DEVICE ForwardIt destroy(Allocator const& alloc, ForwardIt first, For
   using traits =
     typename ::cuda::std::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
 
-  typename traits::allocator_type alloc_T(alloc);
+  // allocator_type might not be same as Allocator
+  const typename traits::allocator_type alloc_T(alloc); // NOLINT(performance-unnecessary-copy-initialization)
 
   for (; first != last; ++first)
   {
@@ -93,7 +94,8 @@ _CCCL_HOST_DEVICE ForwardIt destroy_n(Allocator const& alloc, ForwardIt first, S
   using traits =
     typename ::cuda::std::allocator_traits<::cuda::std::remove_cvref_t<Allocator>>::template rebind_traits<T>;
 
-  typename traits::allocator_type alloc_T(alloc);
+  // allocator_type might not be same as Allocator
+  const typename traits::allocator_type alloc_T(alloc); // NOLINT(performance-unnecessary-copy-initialization)
 
   for (; n > 0; (void) ++first, --n)
   {

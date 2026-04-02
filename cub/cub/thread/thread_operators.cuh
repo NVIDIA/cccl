@@ -257,10 +257,7 @@ public:
   template <typename T>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T operator()(const T& a, const T& b)
   {
-    T _a(a);
-    T _b(b);
-
-    return scan_op(_b, _a);
+    return scan_op(b, a);
   }
 };
 

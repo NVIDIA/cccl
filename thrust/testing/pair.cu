@@ -33,7 +33,7 @@ struct TestPairManipulation
     ASSERT_EQUAL(p1.second, sp.second);
 
     // test initialization
-    P p3 = p2;
+    P p3 = p2; // NOLINT(performance-unnecessary-copy-initialization)
     ASSERT_EQUAL(p2.first, p3.first);
     ASSERT_EQUAL(p2.second, p3.second);
 
