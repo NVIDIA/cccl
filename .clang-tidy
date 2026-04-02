@@ -21,7 +21,6 @@ Checks:
   # TODO: BEGIN REMOVE ME
   - '-*'
   - 'performance-*'
-  - '-performance-avoid-endl'
   - '-performance-noexcept-move-constructor'
   - '-performance-noexcept-swap'
   - '-performance-enum-size'

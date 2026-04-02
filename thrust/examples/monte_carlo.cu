@@ -70,7 +70,7 @@ int main()
   estimate /= M;
 
   std::cout << std::setprecision(3);
-  std::cout << "pi is approximately " << estimate << std::endl;
+  std::cout << "pi is approximately " << estimate << '\n';
 
   return 0;
 }

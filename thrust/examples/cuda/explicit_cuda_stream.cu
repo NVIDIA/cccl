@@ -71,7 +71,7 @@ int main()
   }
 
   // Print the sum:
-  std::cout << "sum is " << sum << std::endl;
+  std::cout << "sum is " << sum << '\n';
 
   return 0;
 }
