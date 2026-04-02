@@ -129,7 +129,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_DETAIL_KERNEL_ATTRIBUTES
+_CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).reduce.block_threads)) void DeviceReduceKernel(
   _CCCL_GRID_CONSTANT const InputIteratorT d_in,
   _CCCL_GRID_CONSTANT AccumT* const d_out,
@@ -222,7 +222,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
+_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile.block_threads),
   1) void DeviceReduceSingleTileKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
                                        OutputIteratorT d_out,
@@ -285,7 +285,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(
+_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10})
     .reduce_nondeterministic
     .block_threads)) void NondeterministicDeviceReduceAtomicKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,

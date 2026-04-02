@@ -144,10 +144,9 @@ public:
     // Get the extents stored as a dim4
     const dim4 data_dims = this->shape.get_data_dims();
 
-    auto array = bctx.get_composite_cache().get(
+    auto [array, cached_prereqs] = bctx.get_composite_cache().get(
       memory_node, memory_node.get_partitioner(), delinearize, total_size, sizeof(T), data_dims);
-    // We need to wait for its pending dependencies if any...
-    array->merge_into(prereqs);
+    prereqs.merge(mv(cached_prereqs));
     base_ptr = static_cast<T*>(array->get_base_ptr());
 
     // Store this localized array in the extra_args associated to the

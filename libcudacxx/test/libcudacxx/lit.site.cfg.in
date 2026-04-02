@@ -22,6 +22,7 @@ config.generate_coverage        = False
 config.target_info              = "@LIBCUDACXX_TARGET_INFO@"
 config.test_linker_flags        = "@LIBCUDACXX_TEST_LINKER_FLAGS@"
 config.test_compiler_flags      = "@LIBCUDACXX_TEST_COMPILER_FLAGS@"
+config.enable_pedantic_warnings = @LIBCUDACXX_ENABLE_PEDANTIC_WARNINGS@
 
 config.compute_archs            = "@CMAKE_CUDA_ARCHITECTURES@"
 config.nvcc_host_compiler       = "@CMAKE_CUDA_HOST_COMPILER@"

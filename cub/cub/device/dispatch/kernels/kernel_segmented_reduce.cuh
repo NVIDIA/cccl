@@ -109,7 +109,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_DETAIL_KERNEL_ATTRIBUTES
+_CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_reduce.block_threads) //
   void DeviceSegmentedReduceKernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
@@ -312,7 +312,7 @@ template <typename ChainedPolicyT,
           typename ReductionOpT,
           typename InitT,
           typename AccumT>
-CUB_DETAIL_KERNEL_ATTRIBUTES
+_CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeviceFixedSizeSegmentedReduceKernel(
   _CCCL_GRID_CONSTANT const InputIteratorT d_in,
   _CCCL_GRID_CONSTANT const OutputIteratorT d_out,

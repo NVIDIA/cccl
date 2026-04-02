@@ -4,14 +4,14 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 /**
  * @file
- * @brief Implementation of the localized_array class which is used to allocate a piece
- * of data that is dispatched over multiple data places
+ * @brief Async caching layer for localized_array allocations, used by
+ *        the STF backends to recycle composite VMM allocations.
  */
 
 #pragma once
@@ -26,14 +26,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__places/places.cuh>
+#include <cuda/experimental/__places/localized_array.cuh>
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
-#include <cuda/experimental/__stf/utility/traits.cuh>
 
-#include <array>
-#include <list>
-#include <random>
-#include <unordered_map>
 #include <vector>
 
 namespace cuda::experimental::stf::reserved
@@ -52,30 +47,14 @@ template <class T>
 class linear_pool
 {
 public:
-  /*!
-   * @brief Constructs a new, empty linear pool.
-   */
   linear_pool() = default;
 
-  /*!
-   * @brief Adds an object to the pool.
-   *
-   * @param p A pointer to the object to be added. Must be non-null.
-   */
   void put(::std::unique_ptr<T> p)
   {
-    EXPECT(p); // Enforce that the pointer is not null.
+    EXPECT(p);
     payload.push_back(mv(p));
   }
 
-  /*!
-   * @brief Retrieves an object from the pool with matching parameters or
-   *        creates a new one if necessary.
-   *
-   * @tparam P The types of the parameters to match.
-   * @param p The parameters to match.
-   * @return A pointer to an object with the specified parameters.
-   */
   template <typename... P>
   ::std::unique_ptr<T> get(P&&... p)
   {
@@ -86,8 +65,6 @@ public:
       if (*e == ::std::tuple<const P&...>(p...))
       {
         it->release();
-        // Move the last element to replace the retrieved element,
-        // maintaining a compact pool.
         if (it + 1 < payload.end())
         {
           *it = mv(payload.back());
@@ -97,16 +74,9 @@ public:
       }
     }
 
-    // If no matching object is found, create a new one.
     return ::std::make_unique<T>(::std::forward<P>(p)...);
   }
 
-  /*!
-   * @brief Calls a function object on each object in the pool.
-   *
-   * @tparam F The type of the function to be called.
-   * @param f The function to call on each object.
-   */
   template <typename F>
   void each(F&& f)
   {
@@ -118,413 +88,35 @@ public:
   }
 
 private:
-  /*!
-   * @brief The collection of objects in the pool.
-   */
   ::std::vector<::std::unique_ptr<T>> payload;
 };
-/**
- * @brief Check if localized allocation statistics should be printed
- */
-inline bool localized_alloc_stats_enabled()
-{
-  static bool enabled = [] {
-    const char* env = ::std::getenv("CUDASTF_LOCALIZED_ALLOC_STATS");
-    return env != nullptr && ::std::string(env) != "0";
-  }();
-  return enabled;
-}
 
 /**
- * @brief An allocator that takes a mapping function to dispatch an allocation over multiple data places.
+ * @brief Pairs a localized_array with an event_list for async cache reuse.
  *
- * This is the mechanism used to implement the data_place of a grid of execution places.
+ * When a localized_array is returned to the cache after deallocation, we
+ * record the outstanding prereqs so that the next consumer waits for them
+ * before reusing the VMM allocation.
  */
-class localized_array
+struct cached_localized_array
 {
-  struct metadata
-  {
-    metadata(data_place place_, size_t size_, size_t offset_)
-        : alloc_handle{}
-        , place(mv(place_))
-        , size(size_)
-        , offset(offset_)
-    {}
+  explicit cached_localized_array(::std::unique_ptr<localized_array> arr)
+      : array(mv(arr))
+  {}
 
-    CUmemGenericAllocationHandle alloc_handle;
-    const data_place place;
-    size_t size;
-    size_t offset;
-  };
+  template <typename... Args, typename = ::std::enable_if_t<::std::is_constructible_v<localized_array, Args...>>>
+  explicit cached_localized_array(Args&&... args)
+      : array(::std::make_unique<localized_array>(::std::forward<Args>(args)...))
+  {}
 
-public:
-  // ::std::function<pos4(size_t)> delinearize : translate the index in a buffer into a position in the data
-  // TODO pass mv(place)
-  template <typename F>
-  localized_array(
-    exec_place grid, partition_fn_t mapper, F&& delinearize, size_t total_size, size_t elemsize, dim4 data_dims)
-      : grid(mv(grid))
-      , mapper(mv(mapper))
-      , total_size_bytes(total_size * elemsize)
-      , data_dims(data_dims)
-      , elemsize(elemsize)
-  {
-    // Ensure a CUDA context exists so cuCtxGetDevice() and other driver
-    // APIs succeed (e.g. when called outside of a stream_ctx).
-    cuda_safe_call(cudaFree(nullptr));
-
-    // Regardless of the grid, we allow all devices to access that localized array
-    const int ndevs = cuda_try<cudaGetDeviceCount>();
-    CUdevice dev    = cuda_try<cuCtxGetDevice>();
-
-    /* Check whether the current device supports UVA */
-    int supportsVMM = cuda_try<cuDeviceGetAttribute>(CU_DEVICE_ATTRIBUTE_VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED, dev);
-    //        fprintf(stderr, "VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED ? %d\n", supportsVMM);
-    EXPECT(supportsVMM == 1, "Cannot create a localized_array object on this machine because it does not support VMM.");
-
-    /* Get allocation granularity */
-
-    CUmemAllocationProp prop = {};
-    prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
-    prop.location            = {.type = CU_MEM_LOCATION_TYPE_DEVICE, .id = dev};
-
-    size_t alloc_granularity_bytes = cuda_try<cuMemGetAllocationGranularity>(&prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM);
-    //        fprintf(stderr, "GRANULARITY = %ld KB\n", alloc_granularity_bytes / 1024);
-
-    // To make our life simpler for now: we assume that we only allocate full blocks
-    block_size_bytes = alloc_granularity_bytes;
-
-    vm_total_size_bytes =
-      ((total_size_bytes + alloc_granularity_bytes - 1) / alloc_granularity_bytes) * alloc_granularity_bytes;
-
-    // Number of pages to assign (note that we will try to make less allocations in practice by grouping pages)
-    size_t nblocks = vm_total_size_bytes / alloc_granularity_bytes;
-
-    // Reserve a range of virtual addresses, round up size to accommodate granularity requirements
-    cuda_try(cuMemAddressReserve(&base_ptr, vm_total_size_bytes, 0ULL, 0ULL, 0ULL));
-
-    // fprintf(stderr, "cuMemAddressReserve => %p + %ld (%ld KB)\n", (void *)base_ptr, vm_total_size_bytes,
-    //                 vm_total_size_bytes / 1024);
-
-    ::std::vector<CUmemAccessDesc> accessDesc(ndevs);
-    for (int d = 0; d < ndevs; d++)
-    {
-      accessDesc[d].location.type = CU_MEM_LOCATION_TYPE_DEVICE;
-      accessDesc[d].location.id   = d;
-      accessDesc[d].flags         = CU_MEM_ACCESS_FLAGS_PROT_READWRITE;
-    }
-
-    // Statistics tracking
-    block_stats stats;
-
-    // Compute mapping at allocation granularity
-    ::std::vector<pos4> owner;
-    owner.reserve(nblocks);
-    for (size_t i = 0; i < nblocks; i++)
-    {
-      owner.push_back(
-        block_to_grid_pos(i * block_size_bytes / elemsize, alloc_granularity_bytes / elemsize, delinearize, stats));
-    }
-
-    // We create one allocation handle per block
-    meta.reserve(nblocks);
-
-    // Track bytes per place for statistics
-    ::std::unordered_map<::std::string, size_t> bytes_per_place;
-
-    // Try to merge blocks with the same position
-    for (size_t i = 0; i < nblocks;)
-    {
-      pos4 p   = owner[i];
-      size_t j = 0;
-      // Count consecutive blocks with the same position in the grid
-      while ((i + j < nblocks) && (owner[i + j] == p))
-      {
-        j++;
-      }
-
-      data_place place  = grid_pos_to_place(p);
-      size_t alloc_size = j * alloc_granularity_bytes;
-      bytes_per_place[place.to_string()] += alloc_size;
-
-      meta.emplace_back(mv(place), alloc_size, i * block_size_bytes);
-
-      i += j;
-    }
-
-    // Print statistics if enabled
-    if (localized_alloc_stats_enabled())
-    {
-      fprintf(stderr, "\n=== Localized Array Allocation Statistics ===\n");
-      fprintf(stderr, "Total size: %zu bytes (%.2f MB)\n", total_size_bytes, total_size_bytes / (1024.0 * 1024.0));
-      fprintf(
-        stderr, "VM reservation: %zu bytes (%.2f MB)\n", vm_total_size_bytes, vm_total_size_bytes / (1024.0 * 1024.0));
-      fprintf(stderr, "Block size: %zu bytes (%.2f KB)\n", block_size_bytes, block_size_bytes / 1024.0);
-      fprintf(stderr, "Number of blocks: %zu (merged into %zu allocations)\n", nblocks, meta.size());
-      fprintf(stderr, "Number of places: %zu\n", bytes_per_place.size());
-
-      fprintf(stderr, "\nAllocation distribution by place:\n");
-      for (const auto& entry : bytes_per_place)
-      {
-        double pct = 100.0 * entry.second / vm_total_size_bytes;
-        fprintf(stderr,
-                "  %s: %zu bytes (%.2f MB, %.1f%%)\n",
-                entry.first.c_str(),
-                entry.second,
-                entry.second / (1024.0 * 1024.0),
-                pct);
-      }
-
-      if (stats.total_samples > 0)
-      {
-        double accuracy = 100.0 * stats.matching_samples / stats.total_samples;
-        fprintf(stderr,
-                "\nPlacement accuracy: %.1f%% (%zu/%zu samples matched chosen position)\n",
-                accuracy,
-                stats.matching_samples,
-                stats.total_samples);
-      }
-
-      // Print allocation map
-      fprintf(stderr, "\nAllocation map (%zu allocations):\n", meta.size());
-      fprintf(stderr, "  %-6s  %-12s  %-12s  %-10s  %s\n", "Index", "Offset", "Size", "Blocks", "Place");
-      fprintf(stderr, "  %-6s  %-12s  %-12s  %-10s  %s\n", "-----", "------", "----", "------", "-----");
-      for (size_t idx = 0; idx < meta.size(); idx++)
-      {
-        const auto& item   = meta[idx];
-        size_t num_blocks  = item.size / alloc_granularity_bytes;
-        size_t start_block = item.offset / alloc_granularity_bytes;
-        fprintf(stderr,
-                "  %-6zu  %-12zu  %-12zu  %-10zu  %s\n",
-                idx,
-                item.offset,
-                item.size,
-                num_blocks,
-                item.place.to_string().c_str());
-      }
-
-      // Print visual block map (compact representation)
-      fprintf(stderr, "\nBlock ownership map (each char = 1 block, 0-9/a-z = place index):\n  ");
-      // Build a map of place names to single-char indices
-      ::std::unordered_map<::std::string, char> place_to_char;
-      char next_char = '0';
-      for (size_t i = 0; i < nblocks; i++)
-      {
-        ::std::string place_str = grid_pos_to_place(owner[i]).to_string();
-        if (place_to_char.find(place_str) == place_to_char.end())
-        {
-          place_to_char[place_str] = next_char;
-          if (next_char == '9')
-          {
-            next_char = 'a';
-          }
-          else
-          {
-            next_char++;
-          }
-        }
-        fprintf(stderr, "%c", place_to_char[place_str]);
-        if ((i + 1) % 80 == 0)
-        {
-          fprintf(stderr, "\n  ");
-        }
-      }
-      fprintf(stderr, "\n");
-
-      // Print legend
-      fprintf(stderr, "\n  Legend:\n");
-      for (const auto& entry : place_to_char)
-      {
-        fprintf(stderr, "    %c = %s\n", entry.second, entry.first.c_str());
-      }
-
-      fprintf(stderr, "==============================================\n\n");
-    }
-
-    // fprintf(stderr, "GOT %ld effective blocks (%ld blocks)\n", nblocks_effective, nblocks);
-
-    // Create a physical allocation per block, this is not mapped in
-    // virtual memory yet.
-    for (auto& item : meta)
-    {
-      int item_dev = device_ordinal(item.place);
-
-      // Physically allocate this block on the appropriate device/place
-      // Use the data_place's mem_create which may implement custom behavior
-      cuda_safe_call(item.place.mem_create(&item.alloc_handle, item.size));
-
-      _CCCL_ASSERT(item.offset + item.size <= vm_total_size_bytes, "Allocation offset out of bounds");
-      cuda_safe_call(cuMemMap(base_ptr + item.offset, item.size, 0ULL, item.alloc_handle, 0ULL));
-
-      for (int d = 0; d < ndevs; d++)
-      {
-        int set_access = 1;
-        if (item_dev != d)
-        {
-          cuda_safe_call(cudaDeviceCanAccessPeer(&set_access, d, item_dev));
-
-          if (!set_access)
-          {
-            fprintf(stderr, "Warning : Cannot enable peer access between devices %d and %d\n", d, item_dev);
-          }
-        }
-
-        if (set_access == 1)
-        {
-          cuda_safe_call(cuMemSetAccess(base_ptr + item.offset, item.size, &accessDesc[d], 1ULL));
-        }
-      }
-    }
-    // fprintf(stderr, "localized_array (this = %p) : nblocks_effective %ld\n", this, nblocks_effective);
-  }
-
-  localized_array()                                  = delete;
-  localized_array(const localized_array&)            = delete;
-  localized_array(localized_array&&)                 = delete;
-  localized_array& operator=(const localized_array&) = delete;
-  localized_array& operator=(localized_array&&)      = delete;
-
-  ~localized_array()
-  {
-    // fprintf(stderr, "~localized_array (this = %p) ... base ptr %p vm_total_size_bytes %ld - nblocks_effective
-    // %ld\n", this, (void *)base_ptr, vm_total_size_bytes, nblocks_effective);
-    for (auto& item : meta)
-    {
-      size_t offset = item.offset;
-      size_t sz     = item.size;
-      cuda_safe_call(cuMemUnmap(base_ptr + offset, sz));
-      cuda_safe_call(cuMemRelease(item.alloc_handle));
-    }
-
-    cuda_safe_call(cuMemAddressFree(base_ptr, vm_total_size_bytes));
-  }
-
-  // Convert the device pointer in the device API back to a raw void * pointer
-  void* get_base_ptr() const
-  {
-    return reinterpret_cast<void*>(base_ptr);
-  }
-
-  /*
-   * This equality operator is for example used to find entries in an allocation cache which match a specific request
-   */
   template <typename... P>
   bool operator==(::std::tuple<P&...> t) const
   {
-    // tuple arguments :
-    // 0 : grid, 1 : mapper, 2 : delinearize function, 3 : total size, 4 elem_size, 5 : data_dims
-    bool result = grid == ::std::get<0>(t) && mapper == ::std::get<1>(t)
-               && this->total_size_bytes == ::std::get<3>(t) * ::std::get<4>(t) && elemsize == ::std::get<4>(t);
-    if (result)
-    {
-      assert(this->total_size_bytes == ::std::get<3>(t) * ::std::get<4>(t));
-      assert(data_dims == ::std::get<5>(t));
-    }
-    return result;
+    return *array == t;
   }
 
-  void merge(const event_list& source)
-  {
-    prereqs.merge(source);
-  }
-
-  void merge_into(event_list& target)
-  {
-    target.merge(mv(prereqs));
-    prereqs.clear();
-  }
-
-private:
-  data_place grid_pos_to_place(pos4 grid_pos)
-  {
-    return grid.get_place(grid_pos).affine_data_place();
-  }
-
-  // Statistics for block placement accuracy
-  struct block_stats
-  {
-    size_t total_samples    = 0;
-    size_t matching_samples = 0; // samples that matched the chosen position
-  };
-
-  // linearized_index : expressed in number of entries from the base, not bytes
-  // allocation_granularity expressed in number of entries
-  template <typename F>
-  pos4 block_to_grid_pos(size_t linearized_index, size_t allocation_granularity, F&& delinearize, block_stats& stats)
-  {
-#if 0
-        // Our first strategy consists in mapping the block at the location of the first entry of the block
-        return index_to_grid_pos(linearized_index, delinearize);
-#else
-    ::std::random_device rd;
-    ::std::mt19937 gen(rd());
-    ::std::uniform_int_distribution<> dis(0, static_cast<int>(allocation_granularity - 1));
-
-    const size_t nsamples = 10;
-    ::std::array<pos4, nsamples> sampled_pos;
-    for (size_t sample = 0; sample < nsamples; sample++)
-    {
-      size_t index        = linearized_index + dis(gen);
-      sampled_pos[sample] = index_to_grid_pos(index, delinearize);
-    }
-
-    // Count the number of occurrences of each pos
-    ::std::unordered_map<pos4, size_t, hash<pos4>> sample_cnt;
-    for (auto& s : sampled_pos)
-    {
-      ++sample_cnt[s];
-    }
-
-    size_t max_cnt = 0;
-    pos4 max_pos;
-    for (auto& s : sample_cnt)
-    {
-      if (s.second > max_cnt)
-      {
-        max_pos = s.first;
-        max_cnt = s.second;
-      }
-    }
-
-    // Track statistics
-    stats.total_samples += nsamples;
-    stats.matching_samples += max_cnt;
-
-    // ::std::cout << "GOT BEST POS for offset " << linearized_index << " -> " << max_pos.string() << ::std::endl;
-
-    return max_pos;
-#endif
-  }
-
-  template <typename F>
-  pos4 index_to_grid_pos(size_t linearized_index, F&& delinearize)
-  {
-    // Logical coordinates of this index
-    pos4 coords = delinearize(linearized_index);
-
-    pos4 eplace_coords = mapper(coords, data_dims, grid.get_dims());
-
-    return eplace_coords;
-  }
-
-  event_list prereqs; // To allow reuse in a cache
-  exec_place grid;
-  partition_fn_t mapper = nullptr;
-  ::std::vector<metadata> meta;
-
-  // sizes in number of elements, not bytes !! TODO rename
-  size_t block_size_bytes = 0;
-  size_t total_size_bytes = 0;
-
-  // size of the VA reservation in bytes
-  size_t vm_total_size_bytes = 0;
-
-  // Start of the VA reservation
-  CUdeviceptr base_ptr = 0;
-
-  // Parameter saved to allow reusing data
-  dim4 data_dims;
-  size_t elemsize = 0;
+  ::std::unique_ptr<localized_array> array;
+  event_list prereqs;
 };
 
 /**
@@ -541,56 +133,33 @@ public:
   [[nodiscard]] event_list deinit()
   {
     event_list result;
-    cache.each([&](auto& obj) {
-      obj.merge_into(result);
+    cache.each([&](auto& entry) {
+      result.merge(mv(entry.prereqs));
+      entry.prereqs.clear();
     });
     return result;
   }
 
-  // Save one localized array in the cache
   void put(::std::unique_ptr<localized_array> a, const event_list& prereqs)
   {
     EXPECT(a.get());
-    a->merge(prereqs);
-    cache.put(mv(a));
+    auto entry = ::std::make_unique<cached_localized_array>(mv(a));
+    entry->prereqs.merge(prereqs);
+    cache.put(mv(entry));
   }
 
-  // Look if there is a matching entry. Return it if found, create otherwise
   template <typename F>
-  ::std::unique_ptr<localized_array> get(
+  ::std::pair<::std::unique_ptr<localized_array>, event_list> get(
     const data_place& place, partition_fn_t mapper, F&& delinearize, size_t total_size, size_t elem_size, dim4 data_dims)
   {
     EXPECT(place.is_composite());
-    return cache.get(
-      place.affine_exec_place(), mapper, ::std::forward<F>(delinearize), total_size, elem_size, data_dims);
+    auto entry =
+      cache.get(place.affine_exec_place(), mapper, ::std::forward<F>(delinearize), total_size, elem_size, data_dims);
+    event_list prereqs = mv(entry->prereqs);
+    return {mv(entry->array), mv(prereqs)};
   }
 
 private:
-  reserved::linear_pool<localized_array> cache;
+  linear_pool<cached_localized_array> cache;
 };
-// Registry that maps base pointers to their localized_array for composite allocate/deallocate.
-inline ::std::unordered_map<void*, ::std::unique_ptr<localized_array>>& get_composite_alloc_registry()
-{
-  static ::std::unordered_map<void*, ::std::unique_ptr<localized_array>> reg;
-  return reg;
-}
-
-inline void* allocate_composite_data_place(const data_place_composite& p, ::std::ptrdiff_t size)
-{
-  const size_t size_u          = static_cast<size_t>(size);
-  const exec_place& grid       = p.get_grid();
-  const partition_fn_t& mapper = p.get_partitioner();
-  auto delinearize_1d          = [](size_t i) {
-    return pos4(static_cast<ssize_t>(i), 0, 0, 0);
-  };
-  auto arr  = ::std::make_unique<localized_array>(grid, mapper, delinearize_1d, size_u, 1, dim4(size_u));
-  void* ptr = arr->get_base_ptr();
-  get_composite_alloc_registry()[ptr] = ::std::move(arr);
-  return ptr;
-}
-
-inline void deallocate_composite_data_place(void* ptr)
-{
-  get_composite_alloc_registry().erase(ptr);
-}
 } // end namespace cuda::experimental::stf::reserved

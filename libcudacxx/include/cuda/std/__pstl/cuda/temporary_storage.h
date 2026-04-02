@@ -30,12 +30,14 @@
 #  include <cuda/__memory_pool/device_memory_pool.h>
 #  include <cuda/__memory_resource/any_resource.h>
 #  include <cuda/__memory_resource/get_memory_resource.h>
+#  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__memory/construct_at.h>
 #  include <cuda/std/__type_traits/is_callable.h>
+#  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/__type_traits/type_list.h>
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/integer_sequence.h>
@@ -68,7 +70,7 @@ template <class... _StoredTypes>
 class __temporary_storage
 {
   ::cuda::stream_ref __stream_;
-  ::cuda::mr::resource_ref<::cuda::mr::device_accessible> __resource_;
+  ::cuda::mr::resource_ref<> __resource_;
   size_t __total_bytes_allocated_;
   array<void*, 1 + sizeof...(_StoredTypes)> __storage_;
 
@@ -114,14 +116,26 @@ class __temporary_storage
   //! @brief Helper function to retrieve a memory resource from a policy
   //!        In contrast to `__call_or` it does not require us to always call .device() on the stream
   template <class _Policy>
-  [[nodiscard]] _CCCL_HOST_API static ::cuda::mr::resource_ref<::cuda::mr::device_accessible>
+  [[nodiscard]] _CCCL_HOST_API static ::cuda::mr::resource_ref<>
   __get_memory_resource_or(const _Policy& __policy) noexcept
   {
-    if constexpr (::cuda::std::__is_callable_v<::cuda::mr::get_memory_resource_t, const _Policy&>)
+    if constexpr (__is_callable_v<::cuda::mr::get_memory_resource_t, const _Policy&>)
     {
-      return ::cuda::mr::get_memory_resource(__policy);
+      const auto& __resource = ::cuda::mr::get_memory_resource(__policy);
+      using __resource_t     = remove_cvref_t<decltype(__resource)>;
+
+      if constexpr (!::cuda::mr::resource_with<::cuda::mr::device_accessible>
+                    && ::cuda::has_property<decltype(__resource), ::cuda::mr::dynamic_accessibility_property>)
+      { //
+        [[maybe_unused]] const ::cuda::mr::__memory_accessibility __dynamic_accessibility =
+          get_property(__resource, ::cuda::mr::dynamic_accessibility_property{});
+        _CCCL_ASSERT(__dynamic_accessibility == ::cuda::mr::__memory_accessibility::__device
+                       || __dynamic_accessibility == ::cuda::mr::__memory_accessibility::__host_device,
+                     "Memory resources need to provide device accessible memory");
+      }
+      return ::cuda::mr::resource_ref<>{const_cast<__resource_t&>(__resource)};
     }
-    else if constexpr (::cuda::std::__is_callable_v<::cuda::get_stream_t, const _Policy&>)
+    else if constexpr (__is_callable_v<::cuda::get_stream_t, const _Policy&>)
     {
       return ::cuda::device_default_memory_pool(::cuda::get_stream(__policy).device());
     }

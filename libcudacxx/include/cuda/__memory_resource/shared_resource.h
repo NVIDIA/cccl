@@ -45,8 +45,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA_MR
 //!
 //! ``shared_resource`` holds a reference counted instance of a memory resource. This allows
 //! the user to pass a resource around with reference semantics while avoiding lifetime issues.
+//! Shared resource works with both synchronous and stream-ordered resources. Depending if the contained resource
+//! satisfies the `cuda::mr::synchronous_resource` concept or the `cuda::mr::resource` concept, the shared resource
+//! will also satisfy the respective concept.
 //!
-//! @note ``shared_resource`` satisfies the ``cuda::mr::resource`` concept iff \tparam _Resource satisfies it.
 //! @tparam _Resource The resource type to hold.
 //! @endrst
 template <class _Resource>

@@ -152,7 +152,7 @@ struct device_for_policy
   }};
 }};
 
-CUB_DETAIL_KERNEL_ATTRIBUTES
+_CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(device_for_policy::ActivePolicy::for_policy_t::block_threads)
 void binary_search_kernel({1} d_data, OffsetT num_data, {3} d_values, OffsetT num_values, {5} d_out, {7} op)
 {{

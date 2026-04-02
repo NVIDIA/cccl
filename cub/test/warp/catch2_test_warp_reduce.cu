@@ -4,10 +4,9 @@
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-
 #include <cuda/cmath>
 #include <cuda/functional>
+#include <cuda/iterator>
 #include <cuda/ptx>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/functional>

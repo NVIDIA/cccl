@@ -12,7 +12,7 @@
 
 #include <cuda/functional>
 #include <cuda/memory_pool>
-#include <cuda/std/__pstl_algorithm>
+#include <cuda/std/execution>
 #include <cuda/stream>
 
 #include "nvbench_helper.cuh"
@@ -27,8 +27,8 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   const auto mismatch_point = static_cast<std::size_t>(elements * common_prefix);
 
   thrust::device_vector<T> dinput(elements, thrust::no_init);
-  cuda::std::fill(cuda::execution::__cub_par_unseq, dinput.begin(), dinput.begin() + mismatch_point, T{0});
-  cuda::std::fill(cuda::execution::__cub_par_unseq, dinput.begin() + mismatch_point, dinput.end(), val);
+  cuda::std::fill(cuda::execution::gpu, dinput.begin(), dinput.begin() + mismatch_point, T{0});
+  cuda::std::fill(cuda::execution::gpu, dinput.begin() + mismatch_point, dinput.end(), val);
 
   state.add_global_memory_reads<T>(mismatch_point + 1);
   state.add_global_memory_writes<size_t>(1);

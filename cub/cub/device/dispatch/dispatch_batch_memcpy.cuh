@@ -27,7 +27,6 @@
 #include <cub/util_device.cuh>
 #include <cub/util_ptx.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
@@ -58,7 +57,7 @@ using per_invocation_buffer_offset_t = ::cuda::std::uint32_t;
  * Initialization kernel for tile status initialization (multi-block)
  */
 template <typename BufferOffsetScanTileStateT, typename BlockOffsetScanTileStateT, typename TileOffsetT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void InitTileStateKernel(
+_CCCL_KERNEL_ATTRIBUTES void InitTileStateKernel(
   BufferOffsetScanTileStateT buffer_offset_scan_tile_state,
   BlockOffsetScanTileStateT block_offset_scan_tile_state,
   _CCCL_GRID_CONSTANT const TileOffsetT num_tiles)
@@ -85,7 +84,7 @@ template <typename PolicySelector,
   requires batch_memcpy_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_buffer.block_threads))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void MultiBlockBatchMemcpyKernel(
+  _CCCL_KERNEL_ATTRIBUTES void MultiBlockBatchMemcpyKernel(
     _CCCL_GRID_CONSTANT const InputBufferIt input_buffer_it,
     _CCCL_GRID_CONSTANT const OutputBufferIt output_buffer_it,
     _CCCL_GRID_CONSTANT const BufferSizeIteratorT buffer_sizes,
@@ -215,7 +214,7 @@ template <typename PolicySelector,
   requires batch_memcpy_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).small_buffer.block_threads))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void BatchMemcpyKernel(
+  _CCCL_KERNEL_ATTRIBUTES void BatchMemcpyKernel(
     _CCCL_GRID_CONSTANT const InputBufferIt input_buffer_it,
     _CCCL_GRID_CONSTANT const OutputBufferIt output_buffer_it,
     _CCCL_GRID_CONSTANT const BufferSizeIteratorT buffer_sizes,
