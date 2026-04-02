@@ -33,6 +33,7 @@
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
+#  include <cuda/std/__type_traits/is_nothrow_convertible.h>
 #  include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #  include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #  include <cuda/std/__utility/move.h>
@@ -57,10 +58,11 @@ struct __replace_copy_if_select
   {}
 
   template <class _Up>
-  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp operator()(const _Up& __val) const
-    noexcept(is_nothrow_invocable_v<const _UnaryPred&, const _Up&> && is_nothrow_copy_constructible_v<_Tp>)
+  [[nodiscard]] _CCCL_DEVICE_API constexpr _Up operator()(const _Up& __val) const
+    noexcept(is_nothrow_invocable_v<const _UnaryPred&, const _Up&> && is_nothrow_convertible_v<const _Tp&, _Up>
+             && is_nothrow_copy_constructible_v<_Up>)
   {
-    return ::cuda::std::invoke(__pred_, __val) ? __new_value_ : static_cast<_Tp>(__val);
+    return ::cuda::std::invoke(__pred_, __val) ? static_cast<_Up>(__new_value_) : __val;
   }
 };
 

@@ -29,10 +29,12 @@
 #  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__iterator/readable_traits.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_comparable.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
+#  include <cuda/std/__type_traits/is_nothrow_convertible.h>
 #  include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #  include <cuda/std/__utility/move.h>
 
@@ -57,10 +59,11 @@ struct __replace_copy_select
   {}
 
   template <class _Up>
-  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp operator()(const _Up& __val) const
-    noexcept(is_nothrow_copy_constructible_v<_Tp>)
+  [[nodiscard]] _CCCL_DEVICE_API constexpr _Up operator()(const _Up& __val) const
+    noexcept(is_nothrow_convertible_v<const _Tp&, _Up> && is_nothrow_copy_constructible_v<_Up>
+             && __is_cpp17_nothrow_equality_comparable_v<_Up, _Tp>)
   {
-    return __val == __old_value_ ? __new_value_ : static_cast<_Tp>(__val);
+    return __val == __old_value_ ? static_cast<_Up>(__new_value_) : __val;
   }
 };
 
