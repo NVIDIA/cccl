@@ -410,7 +410,7 @@ run_python_compare_target() {
   local elapsed_s=0
   local rc=0
   local -a compare_cmd
-  compare_cmd=("${venv_path}/bin/nvbench-compare" "${NVBENCH_COMPARE_ARGS[@]}" "${base_json}" "${test_json}")
+  compare_cmd=("${venv_path}/bin/nvbench-compare" --no-color "${NVBENCH_COMPARE_ARGS[@]}" "${base_json}" "${test_json}")
 
   : > "${compare_log}"
   echo "::group::${label}"
@@ -483,7 +483,7 @@ run_compare_target() {
   local rc=0
   local compare_pythonpath="${compare_script_dir}${PYTHONPATH:+:${PYTHONPATH}}"
   local -a compare_cmd
-  compare_cmd=(python3 "${compare_script}" "${NVBENCH_COMPARE_ARGS[@]}" "${base_json}" "${test_json}")
+  compare_cmd=(python3 "${compare_script}" --no-color "${NVBENCH_COMPARE_ARGS[@]}" "${base_json}" "${test_json}")
 
   : > "${compare_log}"
   echo "::group::${label}"
