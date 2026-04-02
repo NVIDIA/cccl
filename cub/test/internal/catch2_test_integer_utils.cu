@@ -25,11 +25,13 @@ using integral_types =
 using floating_point_types =
   c2h::type_list<float,
                  double
-#if TEST_HALF_T()
+// TODO(jfaibussowit): re-enable these, clang-tidy seems to choke on operator==() between
+// __half, __nv_bfloat16, and short below
+#if TEST_HALF_T() && !defined(_CCCL_CLANG_TIDY_INVOKED)
                  ,
                  __half
 #endif
-#if TEST_BF_T()
+#if TEST_BF_T() && !defined(_CCCL_CLANG_TIDY_INVOKED)
                  ,
                  __nv_bfloat16
 #endif

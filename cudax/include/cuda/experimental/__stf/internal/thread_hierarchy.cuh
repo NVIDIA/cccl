@@ -33,6 +33,7 @@
 #include <cuda/experimental/__stf/internal/cooperative_group_system.cuh>
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
 #include <cuda/experimental/__stf/internal/slice.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 
 namespace cuda::experimental::stf
 {

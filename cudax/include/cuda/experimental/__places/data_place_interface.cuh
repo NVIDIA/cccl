@@ -31,6 +31,8 @@
 
 #include <cuda/std/__cccl/assert.h>
 
+#include <cuda/experimental/__stf/utility/dimensions.cuh>
+
 #include <cstddef>
 #include <functional>
 #include <limits>
@@ -42,12 +44,13 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::places
 {
+using ::cuda::experimental::stf::dim4;
+using ::cuda::experimental::stf::pos4;
+
 // Forward declarations
 class exec_place;
-class pos4;
-class dim4;
 
 //! Function type for computing executor placement from data coordinates
 using partition_fn_t = pos4 (*)(pos4, dim4, dim4);
@@ -159,7 +162,7 @@ public:
    * @param size Size of the allocation in bytes
    * @return CUresult indicating success or failure
    */
-  virtual CUresult mem_create(CUmemGenericAllocationHandle*, size_t) const
+  virtual CUresult mem_create(CUmemGenericAllocationHandle* handle, size_t size) const
   {
     return CUDA_ERROR_NOT_SUPPORTED;
   }
@@ -188,4 +191,4 @@ public:
     throw ::std::logic_error("get_partitioner() called on non-composite data_place");
   }
 };
-} // end namespace cuda::experimental::stf
+} // end namespace cuda::experimental::places

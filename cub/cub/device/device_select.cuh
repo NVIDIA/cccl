@@ -402,7 +402,6 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  //!   @endrst
   template <
     typename InputIteratorT,
     typename FlagIterator,
@@ -602,7 +601,6 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  //!   @endrst
   template <
     typename InputIteratorT,
     typename OutputIteratorT,
@@ -1427,7 +1425,6 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  //!   @endrst
   template <
     typename InputIteratorT,
     typename FlagIterator,
@@ -1635,7 +1632,6 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  //!   @endrst
   template <
     typename InputIteratorT,
     typename OutputIteratorT,
@@ -1753,7 +1749,6 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  //!   @endrst
   template <
     typename KeyInputIteratorT,
     typename ValueInputIteratorT,

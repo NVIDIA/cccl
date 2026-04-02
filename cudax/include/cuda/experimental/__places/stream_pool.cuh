@@ -37,8 +37,11 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::places
 {
+using ::cuda::experimental::stf::cuda_try;
+using ::cuda::experimental::stf::mv;
+
 class exec_place;
 
 /**
@@ -48,18 +51,17 @@ inline int get_device_from_stream(cudaStream_t stream)
 {
 #if _CCCL_CTK_AT_LEAST(12, 8)
   int device = 0;
-  cuda_safe_call(cudaStreamGetDevice(stream, &device));
+  cuda_try(cudaStreamGetDevice(stream, &device));
   return device;
 #else
   auto stream_driver = CUstream(stream);
 
   CUcontext ctx;
-  cuda_safe_call(cuStreamGetCtx(stream_driver, &ctx));
+  cuda_try(cuStreamGetCtx(stream_driver, &ctx));
 
-  CUdevice stream_dev;
-  cuda_safe_call(cuCtxPushCurrent(ctx));
-  cuda_safe_call(cuCtxGetDevice(&stream_dev));
-  cuda_safe_call(cuCtxPopCurrent(&ctx));
+  cuda_try(cuCtxPushCurrent(ctx));
+  CUdevice stream_dev = cuda_try<cuCtxGetDevice>();
+  static_cast<void>(cuda_try<cuCtxPopCurrent>());
 
   return static_cast<int>(stream_dev);
 #endif
@@ -76,7 +78,7 @@ inline constexpr unsigned long long k_no_stream_id = static_cast<unsigned long l
 inline unsigned long long get_stream_id(cudaStream_t stream)
 {
   unsigned long long id = 0;
-  cuda_safe_call(cuStreamGetId(reinterpret_cast<CUstream>(stream), &id));
+  cuda_try(cuStreamGetId(reinterpret_cast<CUstream>(stream), &id));
   _CCCL_ASSERT(id != k_no_stream_id, "Internal error: cuStreamGetId returned k_no_stream_id");
   return id;
 }
@@ -201,4 +203,4 @@ public:
     return pimpl < other.pimpl;
   }
 };
-} // namespace cuda::experimental::stf
+} // namespace cuda::experimental::places

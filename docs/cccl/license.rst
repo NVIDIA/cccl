@@ -1,7 +1,7 @@
 .. _cccl-license:
 
 License
-=======
+========
 
 The CUDA Core Compute Libraries use a mix of several licenses, mostly for historical reasons.
 

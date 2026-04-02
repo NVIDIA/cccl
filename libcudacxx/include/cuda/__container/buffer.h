@@ -58,7 +58,8 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-//! @file The \c buffer class provides a container of contiguous memory
+//! @file
+//! @brief The \c buffer class provides a container of contiguous memory
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Env>
@@ -211,6 +212,8 @@ public:
   {}
 
   //! @brief Constructs an empty buffer using an environment
+  //! @param __stream The stream used for allocations.
+  //! @param __resource The memory resource used for allocations.
   //! @param __env The environment providing the needed information
   //! @note No memory is allocated.
   _CCCL_TEMPLATE(class _Resource, class _Env = ::cuda::std::execution::env<>)
@@ -229,6 +232,8 @@ public:
 
   //! @brief Constructs a buffer of size \p __size using a memory and leaves all
   //! elements uninitialized
+  //! @param __stream The stream used for allocations.
+  //! @param __resource The memory resource used for allocations.
   //! @param __env The environment used to query the memory resource.
   //! @param __size The size of the buffer.
   //! @warning This constructor does *NOT* initialize any elements. It is the
@@ -258,6 +263,8 @@ public:
   //! @brief Constructs a buffer using a memory resource and copy-constructs all
   //! elements from the forward range
   //! ``[__first, __last)``
+  //! @param __stream The stream used for allocations.
+  //! @param __resource The memory resource used for allocations.
   //! @param __env The environment used to query the memory resource.
   //! @param __first The start of the input sequence.
   //! @param __last The end of the input sequence.
@@ -284,6 +291,8 @@ public:
 
   //! @brief Constructs a buffer using a memory resource and copy-constructs all
   //! elements from \p __ilist
+  //! @param __stream The stream used for allocations.
+  //! @param __resource The memory resource used for allocations.
   //! @param __env The environment used to query the memory resource.
   //! @param __ilist The initializer_list being copied into the buffer.
   //! @note If `__ilist.size() == 0` then no memory is allocated
@@ -306,6 +315,8 @@ public:
   }
 
   //! @brief Constructs a buffer using a memory resource and an input range
+  //! @param __stream The stream used for allocations.
+  //! @param __resource The memory resource used for allocations.
   //! @param __env The environment used to query the memory resource.
   //! @param __range The input range to be moved into the buffer.
   //! @note If `__range.size() == 0` then no memory is allocated.
@@ -497,8 +508,6 @@ public:
     return __buf_.data() + __buf_.size();
   }
 #  endif // _CCCL_DOXYGEN_INVOKED
-
-  //! @}
 
   //! @brief Returns a reference to the \p __n 'th element of the async_vector
   //! @param __n The index of the element we want to access

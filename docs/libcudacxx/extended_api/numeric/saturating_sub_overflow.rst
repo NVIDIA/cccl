@@ -1,7 +1,7 @@
-.. _libcudacxx-extended-api-numeric-sub_sat_overflow:
+.. _libcudacxx-extended-api-numeric-saturating_sub_overflow:
 
-``cuda::sub_sat_overflow``
-======================
+``cuda::saturating_sub_overflow``
+=================================
 
 Defined in ``<cuda/numeric>`` header.
 
@@ -14,15 +14,15 @@ Defined in ``<cuda/numeric>`` header.
 
    template <class T>
    [[nodiscard]] __host__ __device__ constexpr
-   overflow_result<T> sub_sat_overflow(T lhs, T rhs) noexcept; // (1)
+   overflow_result<T> saturating_sub_overflow(T lhs, T rhs) noexcept; // (1)
 
    template <class T>
    [[nodiscard]] __host__ __device__ constexpr
-   bool sub_sat_overflow(T& result, T lhs, T rhs) noexcept; // (2)
+   bool saturating_sub_overflow(T& result, T lhs, T rhs) noexcept; // (2)
 
    } // namespace cuda
 
-The function ``cuda::sub_sat_overflow`` performs saturating subtraction of two values ``lhs`` and ``rhs`` with overflow detection.
+The function ``cuda::saturating_sub_overflow`` performs saturating subtraction of two values ``lhs`` and ``rhs`` with overflow detection.
 
 **Parameters**
 
@@ -57,12 +57,12 @@ Example
     {
         constexpr auto uint_max = cuda::std::numeric_limits<unsigned>::max();
 
-        const auto result = cuda::sub_sat_overflow(42, uint_max); // saturated
+        const auto result = cuda::saturating_sub_overflow(42, uint_max); // saturated
         assert(result.value == 0);
         assert(result.overflow);
 
         int value;
-        if (cuda::sub_sat_overflow(value, 42, 1024))
+        if (cuda::saturating_sub_overflow(value, 42, 1024))
         {
             assert(false); // shouldn't be reached
         }

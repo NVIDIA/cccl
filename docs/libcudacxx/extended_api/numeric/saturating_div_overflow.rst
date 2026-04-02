@@ -1,7 +1,7 @@
-.. _libcudacxx-extended-api-numeric-div_sat_overflow:
+.. _libcudacxx-extended-api-numeric-saturating_div_overflow:
 
-``cuda::div_sat_overflow``
-======================
+``cuda::saturating_div_overflow``
+=================================
 
 Defined in ``<cuda/numeric>`` header.
 
@@ -14,15 +14,15 @@ Defined in ``<cuda/numeric>`` header.
 
    template <class T>
    [[nodiscard]] __host__ __device__ constexpr
-   overflow_result<T> div_sat_overflow(T lhs, T rhs) noexcept; // (1)
+   overflow_result<T> saturating_div_overflow(T lhs, T rhs) noexcept; // (1)
 
    template <class T>
    [[nodiscard]] __host__ __device__ constexpr
-   bool div_sat_overflow(T& result, T lhs, T rhs) noexcept; // (2)
+   bool saturating_div_overflow(T& result, T lhs, T rhs) noexcept; // (2)
 
    } // namespace cuda
 
-The function ``cuda::div_sat_overflow`` performs saturating integer division of ``lhs`` by ``rhs`` with overflow and error detection.
+The function ``cuda::saturating_div_overflow`` performs saturating integer division of ``lhs`` by ``rhs`` with overflow and error detection.
 
 **Parameters**
 
@@ -62,12 +62,12 @@ Example
         constexpr auto int_max = cuda::std::numeric_limits<int>::max();
         constexpr auto int_min = cuda::std::numeric_limits<int>::min();
 
-        const auto result = cuda::div_sat_overflow(int_min, -1); // saturated
+        const auto result = cuda::saturating_div_overflow(int_min, -1); // saturated
         assert(result.value == int_max);
         assert(result.overflow);
 
         int value;
-        if (cuda::div_sat_overflow(value, 256, 8))
+        if (cuda::saturating_div_overflow(value, 256, 8))
         {
             assert(false); // shouldn't be reached
         }

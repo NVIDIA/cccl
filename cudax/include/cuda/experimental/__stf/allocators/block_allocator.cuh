@@ -27,6 +27,7 @@
 
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 
 #include <mutex>
 
@@ -67,7 +68,7 @@ public:
    * @return void* Pointer to the allocated memory
    */
   virtual void*
-  allocate(backend_ctx_untyped&, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) = 0;
+  allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) = 0;
 
   /**
    * @brief Deallocation of memory
@@ -81,7 +82,7 @@ public:
    * @param sz Size of the memory to be deallocated
    */
   virtual void
-  deallocate(backend_ctx_untyped&, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) = 0;
+  deallocate(backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) = 0;
 
   /**
    * @brief Deinitialization of the allocator

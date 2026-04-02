@@ -495,7 +495,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -588,6 +588,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -709,6 +710,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -769,7 +771,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -850,6 +852,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -961,6 +964,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -1261,7 +1265,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -1331,6 +1335,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -1432,6 +1437,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -1501,7 +1507,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -1583,6 +1589,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -1693,6 +1700,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -2002,7 +2010,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -2097,6 +2105,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -2157,7 +2166,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -2240,6 +2249,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -2540,7 +2550,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -2611,6 +2621,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -2680,7 +2691,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -2763,6 +2774,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @}
@@ -3045,7 +3057,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -3130,6 +3142,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3218,6 +3231,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3276,7 +3290,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -3349,6 +3363,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3428,6 +3443,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3702,7 +3718,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -3768,6 +3784,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3844,6 +3861,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3906,7 +3924,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -3984,6 +4002,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -4063,6 +4082,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst Sorts keys into descending order using :math:`\approx 2N` auxiliary storage.
@@ -4339,7 +4359,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -4425,6 +4445,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -4480,7 +4501,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -4554,6 +4575,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -4827,7 +4849,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -4894,6 +4916,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -4956,7 +4979,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -5035,6 +5058,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @}

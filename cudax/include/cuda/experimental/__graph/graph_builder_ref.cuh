@@ -80,6 +80,7 @@ namespace cuda::experimental
 struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
 {
   //! \brief Constructs a new, empty CUDA graph.
+  //! \param __graph The CUDA graph handle to wrap.
   //! \param __dev The device on which graph nodes will execute.
   //! \throws cuda::std::cuda_error if `cudaGraphCreate` fails.
   _CCCL_HOST_API constexpr graph_builder_ref(cudaGraph_t __graph, device_ref __dev) noexcept

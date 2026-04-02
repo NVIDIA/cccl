@@ -287,7 +287,7 @@ public:
      * index in a task.
      *
      * @tparam T
-     * @param submitted index
+     * @param submitted_index
      * @return slice<T>
      */
     template <typename T>

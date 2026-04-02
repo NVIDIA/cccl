@@ -23,7 +23,7 @@
 
 #include <cstdio>
 
-using namespace cuda::experimental::stf;
+using namespace cuda::experimental::places;
 
 __global__ void init_kernel(int* ptr, int n, int value)
 {
@@ -50,9 +50,9 @@ __global__ void check_kernel(int* ptr, int n, int value, int* result)
 bool vmm_supported(int dev_id = 0)
 {
   CUdevice dev;
-  cuda_safe_call(cuDeviceGet(&dev, dev_id));
+  cuda_try(cuDeviceGet(&dev, dev_id));
   int supportsVMM;
-  cuda_safe_call(cuDeviceGetAttribute(&supportsVMM, CU_DEVICE_ATTRIBUTE_VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED, dev));
+  cuda_try(cuDeviceGetAttribute(&supportsVMM, CU_DEVICE_ATTRIBUTE_VIRTUAL_ADDRESS_MANAGEMENT_SUPPORTED, dev));
   return supportsVMM == 1;
 }
 
@@ -65,7 +65,7 @@ size_t get_granularity(int dev_id)
   prop.location.id         = dev_id;
 
   size_t granularity;
-  cuda_safe_call(cuMemGetAllocationGranularity(&granularity, &prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM));
+  cuda_try(cuMemGetAllocationGranularity(&granularity, &prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM));
   return granularity;
 }
 
@@ -74,7 +74,7 @@ void test_device_vmm_allocation()
   printf("Testing device VMM allocation (mem_create)...\n");
 
   int dev_id = 0;
-  cuda_safe_call(cudaSetDevice(dev_id));
+  cuda_try(cudaSetDevice(dev_id));
 
   // Get allocation granularity - VMM allocations must be aligned to this
   size_t granularity = get_granularity(dev_id);
@@ -93,52 +93,52 @@ void test_device_vmm_allocation()
 
   // Reserve virtual address space
   CUdeviceptr va_ptr;
-  cuda_safe_call(cuMemAddressReserve(&va_ptr, alloc_size, 0, 0, 0));
+  cuda_try(cuMemAddressReserve(&va_ptr, alloc_size, 0, 0, 0));
 
   // Map the physical allocation to the virtual address
-  cuda_safe_call(cuMemMap(va_ptr, alloc_size, 0, handle, 0));
+  cuda_try(cuMemMap(va_ptr, alloc_size, 0, handle, 0));
 
   // Set access permissions for the current device
   CUmemAccessDesc accessDesc = {};
   accessDesc.location.type   = CU_MEM_LOCATION_TYPE_DEVICE;
   accessDesc.location.id     = dev_id;
   accessDesc.flags           = CU_MEM_ACCESS_FLAGS_PROT_READWRITE;
-  cuda_safe_call(cuMemSetAccess(va_ptr, alloc_size, &accessDesc, 1));
+  cuda_try(cuMemSetAccess(va_ptr, alloc_size, &accessDesc, 1));
 
   // Now we can use the memory!
   int* d_ptr = reinterpret_cast<int*>(va_ptr);
 
   // Create a stream for operations
   cudaStream_t stream;
-  cuda_safe_call(cudaStreamCreate(&stream));
+  cuda_try(cudaStreamCreate(&stream));
 
   // Initialize on device
   init_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value);
 
   // Allocate result flag for checking
   int* d_result;
-  cuda_safe_call(cudaMallocAsync(&d_result, sizeof(int), stream));
-  cuda_safe_call(cudaMemsetAsync(d_result, 0, sizeof(int), stream));
+  cuda_try(cudaMallocAsync(&d_result, sizeof(int), stream));
+  cuda_try(cudaMemsetAsync(d_result, 0, sizeof(int), stream));
 
   // Check on device
   check_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value, d_result);
 
   // Copy result back
   int h_result = 0;
-  cuda_safe_call(cudaMemcpyAsync(&h_result, d_result, sizeof(int), cudaMemcpyDeviceToHost, stream));
-  cuda_safe_call(cudaStreamSynchronize(stream));
+  cuda_try(cudaMemcpyAsync(&h_result, d_result, sizeof(int), cudaMemcpyDeviceToHost, stream));
+  cuda_try(cudaStreamSynchronize(stream));
 
   EXPECT(h_result == 0); // No errors
 
   // Cleanup
-  cuda_safe_call(cudaFreeAsync(d_result, stream));
-  cuda_safe_call(cudaStreamSynchronize(stream));
-  cuda_safe_call(cudaStreamDestroy(stream));
+  cuda_try(cudaFreeAsync(d_result, stream));
+  cuda_try(cudaStreamSynchronize(stream));
+  cuda_try(cudaStreamDestroy(stream));
 
   // Unmap and release VMM resources
-  cuda_safe_call(cuMemUnmap(va_ptr, alloc_size));
-  cuda_safe_call(cuMemRelease(handle));
-  cuda_safe_call(cuMemAddressFree(va_ptr, alloc_size));
+  cuda_try(cuMemUnmap(va_ptr, alloc_size));
+  cuda_try(cuMemRelease(handle));
+  cuda_try(cuMemAddressFree(va_ptr, alloc_size));
 
   printf("  Device VMM allocation test PASSED\n");
 }
@@ -183,17 +183,17 @@ void test_host_vmm_allocation()
 
   // Reserve virtual address space
   CUdeviceptr va_ptr;
-  cuda_safe_call(cuMemAddressReserve(&va_ptr, alloc_size, 0, 0, 0));
+  cuda_try(cuMemAddressReserve(&va_ptr, alloc_size, 0, 0, 0));
 
   // Map the physical allocation to the virtual address
-  cuda_safe_call(cuMemMap(va_ptr, alloc_size, 0, handle, 0));
+  cuda_try(cuMemMap(va_ptr, alloc_size, 0, handle, 0));
 
   // Set access permissions for the host
   CUmemAccessDesc accessDesc = {};
   accessDesc.location.type   = CU_MEM_LOCATION_TYPE_HOST;
   accessDesc.location.id     = 0;
   accessDesc.flags           = CU_MEM_ACCESS_FLAGS_PROT_READWRITE;
-  cuda_safe_call(cuMemSetAccess(va_ptr, alloc_size, &accessDesc, 1));
+  cuda_try(cuMemSetAccess(va_ptr, alloc_size, &accessDesc, 1));
 
   // Use the memory from the host
   int* ptr = reinterpret_cast<int*>(va_ptr);
@@ -211,9 +211,9 @@ void test_host_vmm_allocation()
   }
 
   // Cleanup VMM resources
-  cuda_safe_call(cuMemUnmap(va_ptr, alloc_size));
-  cuda_safe_call(cuMemRelease(handle));
-  cuda_safe_call(cuMemAddressFree(va_ptr, alloc_size));
+  cuda_try(cuMemUnmap(va_ptr, alloc_size));
+  cuda_try(cuMemRelease(handle));
+  cuda_try(cuMemAddressFree(va_ptr, alloc_size));
 
   printf("  Host VMM allocation test PASSED\n");
 }
@@ -224,7 +224,7 @@ void test_multi_segment_vmm()
   printf("Testing multi-segment VMM allocation...\n");
 
   int dev_id = 0;
-  cuda_safe_call(cudaSetDevice(dev_id));
+  cuda_try(cudaSetDevice(dev_id));
 
   size_t granularity = get_granularity(dev_id);
 
@@ -238,54 +238,54 @@ void test_multi_segment_vmm()
 
   // Create two physical allocations
   CUmemGenericAllocationHandle handle1, handle2;
-  cuda_safe_call(place.mem_create(&handle1, segment_size));
-  cuda_safe_call(place.mem_create(&handle2, segment_size));
+  cuda_try(place.mem_create(&handle1, segment_size));
+  cuda_try(place.mem_create(&handle2, segment_size));
 
   // Reserve contiguous virtual address space for both
   CUdeviceptr va_ptr;
-  cuda_safe_call(cuMemAddressReserve(&va_ptr, total_size, 0, 0, 0));
+  cuda_try(cuMemAddressReserve(&va_ptr, total_size, 0, 0, 0));
 
   // Map both segments contiguously
-  cuda_safe_call(cuMemMap(va_ptr, segment_size, 0, handle1, 0));
-  cuda_safe_call(cuMemMap(va_ptr + segment_size, segment_size, 0, handle2, 0));
+  cuda_try(cuMemMap(va_ptr, segment_size, 0, handle1, 0));
+  cuda_try(cuMemMap(va_ptr + segment_size, segment_size, 0, handle2, 0));
 
   // Set access for the entire range
   CUmemAccessDesc accessDesc = {};
   accessDesc.location.type   = CU_MEM_LOCATION_TYPE_DEVICE;
   accessDesc.location.id     = dev_id;
   accessDesc.flags           = CU_MEM_ACCESS_FLAGS_PROT_READWRITE;
-  cuda_safe_call(cuMemSetAccess(va_ptr, total_size, &accessDesc, 1));
+  cuda_try(cuMemSetAccess(va_ptr, total_size, &accessDesc, 1));
 
   int* d_ptr = reinterpret_cast<int*>(va_ptr);
 
   cudaStream_t stream;
-  cuda_safe_call(cudaStreamCreate(&stream));
+  cuda_try(cudaStreamCreate(&stream));
 
   // Initialize the entire contiguous range
   init_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value);
 
   // Check the entire range
   int* d_result;
-  cuda_safe_call(cudaMallocAsync(&d_result, sizeof(int), stream));
-  cuda_safe_call(cudaMemsetAsync(d_result, 0, sizeof(int), stream));
+  cuda_try(cudaMallocAsync(&d_result, sizeof(int), stream));
+  cuda_try(cudaMemsetAsync(d_result, 0, sizeof(int), stream));
   check_kernel<<<(n + 255) / 256, 256, 0, stream>>>(d_ptr, n, test_value, d_result);
 
   int h_result = 0;
-  cuda_safe_call(cudaMemcpyAsync(&h_result, d_result, sizeof(int), cudaMemcpyDeviceToHost, stream));
-  cuda_safe_call(cudaStreamSynchronize(stream));
+  cuda_try(cudaMemcpyAsync(&h_result, d_result, sizeof(int), cudaMemcpyDeviceToHost, stream));
+  cuda_try(cudaStreamSynchronize(stream));
 
   EXPECT(h_result == 0);
 
   // Cleanup
-  cuda_safe_call(cudaFreeAsync(d_result, stream));
-  cuda_safe_call(cudaStreamSynchronize(stream));
-  cuda_safe_call(cudaStreamDestroy(stream));
+  cuda_try(cudaFreeAsync(d_result, stream));
+  cuda_try(cudaStreamSynchronize(stream));
+  cuda_try(cudaStreamDestroy(stream));
 
-  cuda_safe_call(cuMemUnmap(va_ptr, segment_size));
-  cuda_safe_call(cuMemUnmap(va_ptr + segment_size, segment_size));
-  cuda_safe_call(cuMemRelease(handle1));
-  cuda_safe_call(cuMemRelease(handle2));
-  cuda_safe_call(cuMemAddressFree(va_ptr, total_size));
+  cuda_try(cuMemUnmap(va_ptr, segment_size));
+  cuda_try(cuMemUnmap(va_ptr + segment_size, segment_size));
+  cuda_try(cuMemRelease(handle1));
+  cuda_try(cuMemRelease(handle2));
+  cuda_try(cuMemAddressFree(va_ptr, total_size));
 
   printf("  Multi-segment VMM allocation test PASSED\n");
 }
@@ -295,7 +295,7 @@ int main()
   printf("=== Testing data_place VMM allocation (mem_create) ===\n\n");
 
   // Initialize CUDA driver API
-  cuda_safe_call(cuInit(0));
+  cuda_try(cuInit(0));
 
   // Check VMM support
   if (!vmm_supported())

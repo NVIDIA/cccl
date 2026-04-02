@@ -200,7 +200,12 @@ function(
     _cub_is_fail_test(is_fail_test "${test_src}")
 
     if (is_fail_test)
-      cccl_add_executable(${test_target} SOURCES "${test_src}" NO_METATARGETS)
+      cccl_add_executable(
+        ${test_target}
+        SOURCES "${test_src}"
+        NO_CLANG_TIDY
+        NO_METATARGETS
+      )
     else()
       cccl_add_executable(
         ${test_target}

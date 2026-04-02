@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/experimental/__places/place_partition.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_partition_into_stf.cuh>
 #include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;

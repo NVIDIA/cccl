@@ -126,7 +126,7 @@ protected:
       EXPECT((ret == cudaSuccess || ret == cudaErrorNotPermitted));
 
       // Enable peer memory accesses (if not done already)
-      reserved::machine::instance().enable_peer_accesses();
+      machine::instance().enable_peer_accesses();
 
       // If CUDASTF_DISPLAY_STATS is set to a non 0 value, record stats
       const char* record_stats_env = getenv("CUDASTF_DISPLAY_STATS");

@@ -483,14 +483,19 @@ void stf_cuda_kernel_destroy(stf_cuda_kernel_handle t)
   delete kernel_ptr;
 }
 
+// -----------------------------------------------------------------------------
+// Host launch
+// -----------------------------------------------------------------------------
+
+using host_launch_type = decltype(::std::declval<context>().host_launch());
+
 void stf_host_launch_create(stf_ctx_handle ctx, stf_host_launch_handle* h)
 {
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
   _CCCL_ASSERT(h != nullptr, "host launch handle output pointer must not be null");
 
   auto* context_ptr = reinterpret_cast<context*>(ctx);
-  using scope_type  = decltype(context_ptr->host_launch());
-  *h                = reinterpret_cast<stf_host_launch_handle>(new scope_type{context_ptr->host_launch()});
+  *h                = reinterpret_cast<stf_host_launch_handle>(new host_launch_type{context_ptr->host_launch()});
 }
 
 void stf_host_launch_set_symbol(stf_host_launch_handle h, const char* symbol)
@@ -498,8 +503,7 @@ void stf_host_launch_set_symbol(stf_host_launch_handle h, const char* symbol)
   _CCCL_ASSERT(h != nullptr, "host launch handle must not be null");
   _CCCL_ASSERT(symbol != nullptr, "symbol string must not be null");
 
-  using scope_type = decltype(::std::declval<context>().host_launch());
-  auto* scope_ptr  = reinterpret_cast<scope_type*>(h);
+  auto* scope_ptr = reinterpret_cast<host_launch_type*>(h);
   scope_ptr->set_symbol(symbol);
 }
 
@@ -508,9 +512,8 @@ void stf_host_launch_add_dep(stf_host_launch_handle h, stf_logical_data_handle l
   _CCCL_ASSERT(h != nullptr, "host launch handle must not be null");
   _CCCL_ASSERT(ld != nullptr, "logical data handle must not be null");
 
-  using scope_type = decltype(::std::declval<context>().host_launch());
-  auto* scope_ptr  = reinterpret_cast<scope_type*>(h);
-  auto* ld_ptr     = reinterpret_cast<logical_data_untyped*>(ld);
+  auto* scope_ptr = reinterpret_cast<host_launch_type*>(h);
+  auto* ld_ptr    = reinterpret_cast<logical_data_untyped*>(ld);
   scope_ptr->add_deps(task_dep_untyped(*ld_ptr, access_mode(m)));
 }
 
@@ -518,8 +521,7 @@ void stf_host_launch_set_user_data(stf_host_launch_handle h, const void* data, s
 {
   _CCCL_ASSERT(h != nullptr, "host launch handle must not be null");
 
-  using scope_type = decltype(::std::declval<context>().host_launch());
-  auto* scope_ptr  = reinterpret_cast<scope_type*>(h);
+  auto* scope_ptr = reinterpret_cast<host_launch_type*>(h);
   scope_ptr->set_user_data(data, size, dtor);
 }
 
@@ -528,9 +530,8 @@ void stf_host_launch_submit(stf_host_launch_handle h, stf_host_callback_fn callb
   _CCCL_ASSERT(h != nullptr, "host launch handle must not be null");
   _CCCL_ASSERT(callback != nullptr, "callback must not be null");
 
-  using scope_type = decltype(::std::declval<context>().host_launch());
-  auto* scope_ptr  = reinterpret_cast<scope_type*>(h);
-  (*scope_ptr)->*[callback](reserved::host_launch_deps& deps) {
+  auto* scope_ptr = reinterpret_cast<host_launch_type*>(h);
+  (*scope_ptr)->*[callback](cuda::experimental::stf::reserved::host_launch_deps& deps) {
     callback(reinterpret_cast<stf_host_launch_deps_handle>(&deps));
   };
 }
@@ -542,33 +543,30 @@ void stf_host_launch_destroy(stf_host_launch_handle h)
     return;
   }
 
-  using scope_type = decltype(::std::declval<context>().host_launch());
-  delete reinterpret_cast<scope_type*>(h);
+  delete reinterpret_cast<host_launch_type*>(h);
 }
 
 void* stf_host_launch_deps_get(stf_host_launch_deps_handle deps, size_t index)
 {
   _CCCL_ASSERT(deps != nullptr, "deps handle must not be null");
 
-  auto* d = reinterpret_cast<reserved::host_launch_deps*>(deps);
-  auto s  = d->get<slice<char>>(index);
-  return static_cast<void*>(s.data_handle());
+  auto* d = reinterpret_cast<cuda::experimental::stf::reserved::host_launch_deps*>(deps);
+  return d->get<slice<char>>(index).data_handle();
 }
 
 size_t stf_host_launch_deps_get_size(stf_host_launch_deps_handle deps, size_t index)
 {
   _CCCL_ASSERT(deps != nullptr, "deps handle must not be null");
 
-  auto* d = reinterpret_cast<reserved::host_launch_deps*>(deps);
-  auto s  = d->get<slice<char>>(index);
-  return s.size();
+  auto* d = reinterpret_cast<cuda::experimental::stf::reserved::host_launch_deps*>(deps);
+  return d->get<slice<char>>(index).extent(0);
 }
 
 size_t stf_host_launch_deps_size(stf_host_launch_deps_handle deps)
 {
   _CCCL_ASSERT(deps != nullptr, "deps handle must not be null");
 
-  auto* d = reinterpret_cast<reserved::host_launch_deps*>(deps);
+  auto* d = reinterpret_cast<cuda::experimental::stf::reserved::host_launch_deps*>(deps);
   return d->size();
 }
 
@@ -576,7 +574,7 @@ void* stf_host_launch_deps_get_user_data(stf_host_launch_deps_handle deps)
 {
   _CCCL_ASSERT(deps != nullptr, "deps handle must not be null");
 
-  auto* d = reinterpret_cast<reserved::host_launch_deps*>(deps);
+  auto* d = reinterpret_cast<cuda::experimental::stf::reserved::host_launch_deps*>(deps);
   return d->user_data();
 }
 

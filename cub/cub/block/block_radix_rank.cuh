@@ -688,6 +688,9 @@ public:
    *
    * @param[in] digit_extractor
    *   The digit extractor
+   *
+   * @param[in] callback
+   *   Callback to receive digit counts
    */
   template <typename UnsignedBits, int KEYS_PER_THREAD, typename DigitExtractorT, typename CountsCallback>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
@@ -814,6 +817,9 @@ public:
    *   [(threadIdx.x * BINS_TRACKED_PER_THREAD)
    *                   ...
    *    (threadIdx.x * BINS_TRACKED_PER_THREAD) + BINS_TRACKED_PER_THREAD - 1]
+   *
+   * @param[in] callback
+   *   Callback to receive digit counts
    */
   template <typename UnsignedBits, int KEYS_PER_THREAD, typename DigitExtractorT, typename CountsCallback>
   _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(
