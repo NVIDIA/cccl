@@ -12,7 +12,9 @@
  *
  * @brief Defines abstractions for places where data is stored and places where execution is carried.
  *
- * TODO Add more documentation about this file here.
+ * @note Places should not depend on STF. Remaining STF utility includes below are legacy coupling;
+ *       new code should avoid deepening it. STF pulls `places` API into `cuda::experimental::stf`
+ *       from STF-only headers (e.g. `stf_places_into_stf_core.cuh`), not the other way around.
  */
 
 #pragma once
@@ -44,22 +46,29 @@
 // Sync only will not move data....
 // Data place none?
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::places
 {
+using ::cuda::experimental::stf::box;
+using ::cuda::experimental::stf::cuda_try;
+using ::cuda::experimental::stf::dim4;
+using ::cuda::experimental::stf::each;
+using ::cuda::experimental::stf::hash_all;
+using ::cuda::experimental::stf::hash_combine;
+using ::cuda::experimental::stf::mv;
+using ::cuda::experimental::stf::pos4;
+
+template <typename T>
+struct hash;
+
 class exec_place;
 
 // Green contexts are only supported since CUDA 12.4
 
-//! Function type for computing executor placement from data coordinates
-using partition_fn_t = pos4 (*)(pos4, dim4, dim4);
-
 class data_place_composite;
 
-namespace reserved
-{
+// Forward declarations of composite allocator functions — defined in localized_array.cuh
 void* allocate_composite_data_place(const data_place_composite& p, ::std::ptrdiff_t size);
 void deallocate_composite_data_place(void* ptr);
-} // namespace reserved
 
 /**
  * @brief Designates where data will be stored (CPU memory vs. on device 0 (first GPU), device 1 (second GPU), ...)
@@ -137,11 +146,7 @@ public:
   /** @brief Data is placed on device with index dev_id. */
   static data_place device(int dev_id = 0)
   {
-    static int const ndevs = [] {
-      int result;
-      cuda_safe_call(cudaGetDeviceCount(&result));
-      return result;
-    }();
+    static int const ndevs = cuda_try<cudaGetDeviceCount>();
 
     EXPECT((dev_id >= 0 && dev_id < ndevs), "Invalid device ID ", dev_id);
 
@@ -363,8 +368,10 @@ private:
   ::std::shared_ptr<data_place_interface> pimpl_;
 };
 
-/** Declaration for unqualified lookup (friend is only found via ADL when a \c data_place argument is present). */
+/** Declarations for unqualified lookup (friends are only found via ADL when a \c data_place argument is present). */
 inline data_place from_index(size_t n);
+inline size_t to_index(const data_place& p);
+inline int device_ordinal(const data_place& p);
 
 // Forward declaration
 class exec_place_scope;
@@ -918,8 +925,8 @@ inline decorated_stream stream_pool::next(const exec_place& place)
 
   if (!result.stream)
   {
-    auto active = place.activate();
-    cuda_safe_call(cudaStreamCreateWithFlags(&result.stream, cudaStreamNonBlocking));
+    auto active   = place.activate();
+    result.stream = cuda_try<cudaStreamCreateWithFlags>(cudaStreamNonBlocking);
     result.id     = get_stream_id(result.stream);
     result.dev_id = get_device_from_stream(result.stream);
   }
@@ -1076,7 +1083,7 @@ public:
       auto old_dev_id = cuda_try<cudaGetDevice>();
       if (old_dev_id != devid_)
       {
-        cuda_safe_call(cudaSetDevice(devid_));
+        cuda_try(cudaSetDevice(devid_));
       }
       return exec_place::device(old_dev_id);
     }
@@ -1088,7 +1095,7 @@ public:
       auto restored_dev_id = device_ordinal(prev.affine_data_place());
       if (current_dev_id != restored_dev_id)
       {
-        cuda_safe_call(cudaSetDevice(restored_dev_id));
+        cuda_try(cudaSetDevice(restored_dev_id));
       }
     }
 
@@ -1116,7 +1123,7 @@ inline exec_place exec_place::device(int devid)
 {
   static int ndevices;
   static exec_place_device::impl* impls = [] {
-    cuda_safe_call(cudaGetDeviceCount(&ndevices));
+    ndevices    = cuda_try<cudaGetDeviceCount>();
     auto result = static_cast<exec_place_device::impl*>(::operator new[](ndevices * sizeof(exec_place_device::impl)));
     for (int i : each(ndevices))
     {
@@ -1575,12 +1582,12 @@ public:
 
   void* allocate(::std::ptrdiff_t size, cudaStream_t) const override
   {
-    return reserved::allocate_composite_data_place(*this, size);
+    return allocate_composite_data_place(*this, size);
   }
 
   void deallocate(void* ptr, size_t, cudaStream_t) const override
   {
-    reserved::deallocate_composite_data_place(ptr);
+    deallocate_composite_data_place(ptr);
   }
 
   bool allocation_is_stream_ordered() const override
@@ -1659,16 +1666,6 @@ UNITTEST("Data place equality")
 
 #endif // UNITTESTED_FILE
 
-/**
- * @brief ID of a data instance. A logical data can have multiple instances in various parts of memory
- * (CPU and several GPUs). This type identifies the index of such an instance in the internal data structures.
- *
- */
-enum class instance_id_t : size_t
-{
-  invalid = static_cast<size_t>(-1)
-};
-
 #ifdef UNITTESTED_FILE
 UNITTEST("places to_symbol")
 {
@@ -1687,7 +1684,7 @@ UNITTEST("exec place equality")
 
   EXPECT(exec_place::host() != exec_place::current_device());
 
-  cuda_safe_call(cudaSetDevice(0)); // just in case the environment was somehow messed up
+  cuda_try(cudaSetDevice(0)); // just in case the environment was somehow messed up
   EXPECT(exec_place::device(0) == exec_place::current_device());
 };
 
@@ -1748,8 +1745,7 @@ UNITTEST("dim4 very large total size calculation")
 #endif // UNITTESTED_FILE
 
 /**
- * @brief Specialization of `std::hash` for `cuda::experimental::stf::data_place` to allow it to be used as a key in
- * `std::unordered_map`.
+ * @brief Specialization of `places::hash` for `data_place`
  */
 template <>
 struct hash<data_place>
@@ -1761,8 +1757,7 @@ struct hash<data_place>
 };
 
 /**
- * @brief Specialization of `std::hash` for `cuda::experimental::stf::exec_place` to allow it to be used as a key in
- * `std::unordered_map`.
+ * @brief Specialization of `places::hash` for `exec_place`
  */
 template <>
 struct hash<exec_place>
@@ -1772,8 +1767,11 @@ struct hash<exec_place>
     return k.hash();
   }
 };
+} // end namespace cuda::experimental::places
 
 #ifdef UNITTESTED_FILE
+namespace cuda::experimental::places
+{
 UNITTEST("Data place as unordered_map key")
 {
   ::std::unordered_map<data_place, int, hash<data_place>> map;
@@ -1901,7 +1899,7 @@ UNITTEST("Exec place as std::map key")
     EXPECT(map[exec_place::device(1)] == 3);
   }
 };
+} // namespace cuda::experimental::places
 #endif // UNITTESTED_FILE
-} // end namespace cuda::experimental::stf
 
 #include <cuda/experimental/__places/localized_array.cuh>

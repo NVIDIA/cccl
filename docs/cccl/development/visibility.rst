@@ -17,7 +17,7 @@ and their host stubs, but also ODR violations that arise from compiling with dif
 To alleviate those issues we have derived the following rules to ensure that users can safely rely on CCCL features in
 shared libraries.
 
-1. Every kernel should be annotated as ``hidden`` through ``CCCL_DETAIL_KERNEL_ATTRIBUTES``
+1. Every kernel should be annotated as ``hidden`` through ``_CCCL_KERNEL_ATTRIBUTES``
 2. Every function or type that eventually calls a kernel in a subsequent function call or member function must be put in
    a namespace that disambiguates the CUDA architectures the library was compiled with.
 3. It is important that an API accepting kernel pointers (e.g. ``triple_chevron``) always resides in the same

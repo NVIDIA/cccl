@@ -189,7 +189,7 @@ template <typename PolicySelector,
   requires reduce_by_key_policy_selector<PolicySelector>
 #endif
 __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceReduceByKeyKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceReduceByKeyKernel(
     _CCCL_GRID_CONSTANT const KeysInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT const UniqueOutputIteratorT d_unique_out,
     _CCCL_GRID_CONSTANT const ValuesInputIteratorT d_values_in,

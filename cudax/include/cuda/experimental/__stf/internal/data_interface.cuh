@@ -40,7 +40,6 @@
 namespace cuda::experimental::stf
 {
 class logical_data_untyped;
-class data_place;
 class task;
 template <typename T>
 class shape_of;

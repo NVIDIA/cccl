@@ -182,7 +182,7 @@ template <typename LargeKernelT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
           typename KernelLauncherFactory>
-__launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContinuationKernel(
+__launch_bounds__(1) _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContinuationKernel(
   _CCCL_GRID_CONSTANT const LargeKernelT large_kernel,
   _CCCL_GRID_CONSTANT const SmallKernelT small_kernel,
   _CCCL_GRID_CONSTANT const local_segment_index_t num_segments,

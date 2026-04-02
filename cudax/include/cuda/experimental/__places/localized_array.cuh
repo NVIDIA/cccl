@@ -33,7 +33,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace cuda::experimental::stf::reserved
+namespace cuda::experimental::places
 {
 /**
  * @brief Check if localized allocation statistics should be printed
@@ -81,7 +81,7 @@ public:
       , data_dims(data_dims)
       , elemsize(elemsize)
   {
-    cuda_safe_call(cudaFree(nullptr));
+    cuda_try(cudaFree(nullptr));
 
     const int ndevs = cuda_try<cudaGetDeviceCount>();
     CUdevice dev    = cuda_try<cuCtxGetDevice>();
@@ -102,7 +102,7 @@ public:
 
     size_t nblocks = vm_total_size_bytes / alloc_granularity_bytes;
 
-    cuda_try(cuMemAddressReserve(&base_ptr, vm_total_size_bytes, 0ULL, 0ULL, 0ULL));
+    base_ptr = cuda_try<cuMemAddressReserve>(vm_total_size_bytes, 0ULL, 0ULL, 0ULL);
 
     ::std::vector<CUmemAccessDesc> accessDesc(ndevs);
     for (int d = 0; d < ndevs; d++)
@@ -232,17 +232,17 @@ public:
     {
       int item_dev = device_ordinal(item.place);
 
-      cuda_safe_call(item.place.mem_create(&item.alloc_handle, item.size));
+      cuda_try(item.place.mem_create(&item.alloc_handle, item.size));
 
       _CCCL_ASSERT(item.offset + item.size <= vm_total_size_bytes, "Allocation offset out of bounds");
-      cuda_safe_call(cuMemMap(base_ptr + item.offset, item.size, 0ULL, item.alloc_handle, 0ULL));
+      cuda_try(cuMemMap(base_ptr + item.offset, item.size, 0ULL, item.alloc_handle, 0ULL));
 
       for (int d = 0; d < ndevs; d++)
       {
         int set_access = 1;
         if (item_dev != d)
         {
-          cuda_safe_call(cudaDeviceCanAccessPeer(&set_access, d, item_dev));
+          cuda_try(cudaDeviceCanAccessPeer(&set_access, d, item_dev));
 
           if (!set_access)
           {
@@ -252,7 +252,7 @@ public:
 
         if (set_access == 1)
         {
-          cuda_safe_call(cuMemSetAccess(base_ptr + item.offset, item.size, &accessDesc[d], 1ULL));
+          cuda_try(cuMemSetAccess(base_ptr + item.offset, item.size, &accessDesc[d], 1ULL));
         }
       }
     }
@@ -270,11 +270,11 @@ public:
     {
       size_t offset = item.offset;
       size_t sz     = item.size;
-      cuda_safe_call(cuMemUnmap(base_ptr + offset, sz));
-      cuda_safe_call(cuMemRelease(item.alloc_handle));
+      cuda_try(cuMemUnmap(base_ptr + offset, sz));
+      cuda_try(cuMemRelease(item.alloc_handle));
     }
 
-    cuda_safe_call(cuMemAddressFree(base_ptr, vm_total_size_bytes));
+    cuda_try(cuMemAddressFree(base_ptr, vm_total_size_bytes));
   }
 
   void* get_base_ptr() const
@@ -330,7 +330,7 @@ private:
       sampled_pos[sample] = index_to_grid_pos(index, delinearize);
     }
 
-    ::std::unordered_map<pos4, size_t, hash<pos4>> sample_cnt;
+    ::std::unordered_map<pos4, size_t, ::cuda::experimental::stf::hash<pos4>> sample_cnt;
     for (auto& s : sampled_pos)
     {
       ++sample_cnt[s];
@@ -401,4 +401,4 @@ inline void deallocate_composite_data_place(void* ptr)
 {
   get_composite_alloc_registry().erase(ptr);
 }
-} // namespace cuda::experimental::stf::reserved
+} // namespace cuda::experimental::places

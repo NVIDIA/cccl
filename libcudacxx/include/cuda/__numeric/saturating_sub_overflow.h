@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___NUMERIC_DIV_SAT_OVERFLOW_H
-#define _CUDA___NUMERIC_DIV_SAT_OVERFLOW_H
+#ifndef _CUDA___NUMERIC_SATURATING_SUB_OVERFLOW_H
+#define _CUDA___NUMERIC_SATURATING_SUB_OVERFLOW_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/__numeric/overflow_result.h>
+#include <cuda/__numeric/sub_overflow.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_integer.h>
@@ -32,24 +33,29 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr overflow_result<_Tp> div_sat_overflow(_Tp __x, _Tp __y) noexcept
+[[nodiscard]] _CCCL_API constexpr overflow_result<_Tp> saturating_sub_overflow(_Tp __x, _Tp __y) noexcept
 {
-  _CCCL_ASSERT(__y != _Tp{0}, "division by zero");
-  if constexpr (::cuda::std::is_signed_v<_Tp>)
+  auto __result = ::cuda::sub_overflow(__x, __y);
+  if (__result.overflow)
   {
-    if (__x == ::cuda::std::numeric_limits<_Tp>::min() && __y == _Tp{-1})
+    if constexpr (::cuda::std::is_signed_v<_Tp>)
     {
-      return {::cuda::std::numeric_limits<_Tp>::max(), true};
+      __result.value =
+        (__y > _Tp{0}) ? ::cuda::std::numeric_limits<_Tp>::min() : ::cuda::std::numeric_limits<_Tp>::max();
+    }
+    else
+    {
+      __result.value = ::cuda::std::numeric_limits<_Tp>::min();
     }
   }
-  return {static_cast<_Tp>(__x / __y), false};
+  return __result;
 }
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr bool div_sat_overflow(_Tp& __result, _Tp __x, _Tp __y) noexcept
+[[nodiscard]] _CCCL_API constexpr bool saturating_sub_overflow(_Tp& __result, _Tp __x, _Tp __y) noexcept
 {
-  const auto [__value, __overflow] = ::cuda::div_sat_overflow(__x, __y);
+  const auto [__value, __overflow] = ::cuda::saturating_sub_overflow(__x, __y);
   __result                         = __value;
   return __overflow;
 }
@@ -58,4 +64,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___NUMERIC_DIV_SAT_OVERFLOW_H
+#endif // _CUDA___NUMERIC_SATURATING_SUB_OVERFLOW_H

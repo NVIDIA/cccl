@@ -30,8 +30,11 @@
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::places
 {
+template <typename T>
+struct hash;
+
 // Green contexts are only supported since CUDA 12.4
 /**
  * @brief View of a green context and a pool of CUDA streams
@@ -41,7 +44,7 @@ class green_ctx_view
 public:
   green_ctx_view(CUgreenCtx g_ctx, stream_pool pool, int devid)
       : g_ctx(g_ctx)
-      , pool(mv(pool))
+      , pool(::cuda::experimental::stf::mv(pool))
       , devid(devid)
   {}
 
@@ -64,14 +67,17 @@ public:
   }
 };
 
+/**
+ * @brief Specialization of `places::hash` for `green_ctx_view`
+ */
 template <>
-struct hash<cuda::experimental::stf::green_ctx_view>
+struct hash<green_ctx_view>
 {
   ::std::size_t operator()(const green_ctx_view& k) const
   {
-    return hash_all(k.g_ctx, k.devid);
+    return ::cuda::experimental::stf::hash_all(k.g_ctx, k.devid);
   }
 };
-} // end namespace cuda::experimental::stf
+} // end namespace cuda::experimental::places
 
 #endif // _CCCL_CTK_AT_LEAST(12, 4)

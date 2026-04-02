@@ -35,6 +35,7 @@
 #include <cuda/experimental/__stf/internal/host_launch_scope.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 
 #include <mutex>
 

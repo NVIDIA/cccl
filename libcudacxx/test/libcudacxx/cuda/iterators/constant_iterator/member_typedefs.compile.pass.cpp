@@ -24,6 +24,8 @@ __host__ __device__ void test()
   static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
   static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::random_access_iterator_tag>);
   static_assert(cuda::std::same_as<Iter::value_type, int>);
+  static_assert(cuda::std::same_as<Iter::reference, int>);
+  static_assert(cuda::std::same_as<Iter::pointer, void>);
   static_assert(cuda::std::is_signed_v<Iter::difference_type>);
   static_assert(cuda::std::same_as<Iter::difference_type, cuda::std::ptrdiff_t>);
   static_assert(cuda::std::random_access_iterator<Iter>);

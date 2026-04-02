@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__stf/internal/instance_id.cuh>
 #include <cuda/experimental/__stf/internal/reduction_base.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>

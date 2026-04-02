@@ -422,11 +422,11 @@ public:
             instance_id_t dst_node = dst_place.memory_node;
 
             // Force initialization
-            auto& machine = reserved::machine::instance();
+            auto& mach = ::cuda::experimental::places::reserved::machine::instance();
 
             // We iterate over nodes, in an order that is could improve locality
             for (int n = 0; n < nnodes(); n++) {
-                int n_aux = machine.get_ith_closest_node(dst_node, n);
+                int n_aux = mach.get_ith_closest_node(dst_node, n);
                 if (get_data_instance(n_aux).get_msir() != reserved::msir_state_id::invalid) {
                     return data_place(n_aux);
                 }

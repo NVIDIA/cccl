@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 
 #include <mutex>
 
