@@ -190,7 +190,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
 
   // Wrapped input iterator to produce index-value tuples, i.e., <PerPartitionOffsetT, InputT>-tuples
   // We make sure to offset the user-provided input iterator by the current partition's offset
-  using indexed_input_iterator_t = ArgIndexInputIterator<InputIteratorT, PerPartitionOffsetT, output_extremum_t>;
+  using arg_index_input_iterator_t = ArgIndexInputIterator<InputIteratorT, PerPartitionOffsetT, output_extremum_t>;
 
   // The output tuple type (i.e., extremum plus index tuples)
   using per_partition_accum_t = KeyValuePair<PerPartitionOffsetT, output_extremum_t>;
@@ -203,7 +203,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   // The current partition's input iterator is an ArgIndex iterator that generates indices relative to the beginning
   // of the current partition, i.e., [0, partition_size) along with an OffsetIterator that offsets the user-provided
   // input iterator by the current partition's offset
-  indexed_input_iterator_t d_indexed_offset_in(d_in);
+  arg_index_input_iterator_t d_indexed_offset_in(d_in);
 
   // Transforms the per-partition result to a global result by adding the current partition's offset to the arg result
   // of a partition
@@ -290,7 +290,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
     const GlobalOffsetT current_num_items =
       (remaining_items < max_partition_size) ? remaining_items : max_partition_size;
 
-    d_indexed_offset_in = indexed_input_iterator_t(d_in + current_partition_offset);
+    d_indexed_offset_in = arg_index_input_iterator_t(d_in + current_partition_offset);
 
     if (const auto error = reduce::dispatch<per_partition_accum_t>(
           d_temp_storage,
