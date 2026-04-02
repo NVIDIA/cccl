@@ -139,7 +139,7 @@ vector_base<T, Alloc>::vector_base(const vector_base& v, const Alloc& alloc)
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::vector_base(vector_base&& v)
+vector_base<T, Alloc>::vector_base(vector_base&& v) noexcept
     : m_storage(copy_allocator_t(), v.m_storage)
     , m_size(0)
 {
@@ -169,7 +169,7 @@ vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(const vector_base& v)
 } // end vector_base::operator=()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(vector_base&& v)
+vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(vector_base&& v) noexcept
 {
   m_storage.destroy(begin(), end());
   m_storage = ::cuda::std::move(v.m_storage);

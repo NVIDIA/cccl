@@ -98,7 +98,7 @@ struct test_buffer
   }
 
   test_buffer(const test_buffer&) = delete;
-  test_buffer(test_buffer&& other)
+  test_buffer(test_buffer&& other) noexcept
       : type(other.type)
       , data_ptr(other.data_ptr)
       , buffer_size(other.buffer_size)
@@ -108,7 +108,7 @@ struct test_buffer
   }
 
   test_buffer& operator=(const test_buffer&) = delete;
-  test_buffer& operator=(test_buffer&& other)
+  test_buffer& operator=(test_buffer&& other) noexcept
   {
     ::cuda::std::exchange(type, other.type);
     ::cuda::std::exchange(data_ptr, other.data_ptr);
