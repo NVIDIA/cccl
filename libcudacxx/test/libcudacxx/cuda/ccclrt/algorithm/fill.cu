@@ -38,7 +38,7 @@ C2H_CCCLRT_TEST("Fill", "[algorithm]")
 
     cuda::std::span<int> span(buffer.data(), 0);
     cuda::fill_bytes(_stream, span, fill_byte);
-    printf("0 sized span: %p\n", span.data());
+    printf("0 sized span: %p\n", static_cast<void*>(span.data()));
   }
 }
 

@@ -115,6 +115,9 @@ int main(int argc, char** argv)
 
   ::std::vector<logical_data<slice<char>>> handles(nblocks);
 
+  EXPECT(nblocks > 0);
+  EXPECT(block_size > 0);
+
   char* h_buffer = new char[nblocks * block_size];
 
   for (int i = 0; i < nblocks; i++)

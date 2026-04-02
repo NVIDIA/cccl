@@ -185,6 +185,40 @@ function(cccl_build_compiler_targets)
     append_option_if_available("-Wunused-local-typedefs" cxx_compile_options)
     append_option_if_available("-Wvla" cxx_compile_options)
 
+    # Clang-only
+    append_option_if_available("-Wnvcc-compat" cxx_compile_options)
+    append_option_if_available("-Wimplicit-fallthrough" cxx_compile_options)
+    append_option_if_available(
+      "-fdiagnostics-show-template-tree"
+      cxx_compile_options
+    )
+    append_option_if_available("-Wignored-qualifiers" cxx_compile_options)
+    append_option_if_available(
+      "-Wmissing-field-initializers"
+      cxx_compile_options
+    )
+    # Inundated with error: ISO C++11 requires at least one argument for the "..." in a
+    # variadic macro for _CCCL_REQUIRES_EXPR(), so cannot enable this.
+    #
+    # append_option_if_available("-pedantic" cxx_compile_options)
+    append_option_if_available("-Wsign-compare" cxx_compile_options)
+    append_option_if_available(
+      "-Warray-bounds-pointer-arithmetic"
+      cxx_compile_options
+    )
+    append_option_if_available("-Wassign-enum" cxx_compile_options)
+    append_option_if_available("-Wformat-pedantic" cxx_compile_options)
+    append_option_if_available("-Walloc-size" cxx_compile_options)
+    append_option_if_available("-Walloc-zero" cxx_compile_options)
+    append_option_if_available("-Wtsan" cxx_compile_options)
+    append_option_if_available("-Wenum-conversion" cxx_compile_options)
+    append_option_if_available("-Wpacked" cxx_compile_options)
+    # Clang and GCC
+    append_option_if_available(
+      "-ftemplate-backtrace-limit=0"
+      cxx_compile_options
+    )
+    append_option_if_available("-fmacro-backtrace-limit=0" cxx_compile_options)
     # Disable GNU extensions (flag is clang only)
     append_option_if_available("-Wgnu" cxx_compile_options)
     append_option_if_available("-Wno-gnu-line-marker" cxx_compile_options) # WAR 3916341
