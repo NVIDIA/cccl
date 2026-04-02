@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__numeric/div_sat_overflow.h>
+#include <cuda/__numeric/saturating_div_overflow.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_integer.h>
 
@@ -32,7 +32,7 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp saturating_div(_Tp __x, _Tp __y) noexcept
 {
-  return ::cuda::div_sat_overflow(__x, __y).value;
+  return ::cuda::saturating_div_overflow(__x, __y).value;
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

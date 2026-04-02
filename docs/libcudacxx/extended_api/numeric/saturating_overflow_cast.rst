@@ -1,4 +1,4 @@
-.. _libcudacxx-extended-api-numeric-saturate_overflow_cast:
+.. _libcudacxx-extended-api-numeric-saturating_overflow_cast:
 
 ``cuda::overflow_cast``
 ==========================
@@ -10,9 +10,9 @@
 
    template <class To, class From>
    [[nodiscard]] __host__ __device__ inline constexpr
-   overflow_result<To> saturate_overflow_cast(From from) noexcept;
+   overflow_result<To> saturating_overflow_cast(From from) noexcept;
 
-The function ``cuda::saturate_overflow_cast`` does saturating cast of a value of type ``From`` to type ``To`` with overflow checking.
+The function ``cuda::saturating_overflow_cast`` does saturating cast of a value of type ``From`` to type ``To`` with overflow checking.
 
 **Parameters**
 
@@ -40,7 +40,7 @@ Example
         constexpr auto int_max = cuda::std::numeric_limits<int>::max();
         constexpr auto int_min = cuda::std::numeric_limits<int>::min();
 
-        if (auto result = cuda::saturate_overflow_cast<unsigned>(int_max))
+        if (auto result = cuda::saturating_overflow_cast<unsigned>(int_max))
         {
             assert(false); // Should not be reached
         }
@@ -49,7 +49,7 @@ Example
             assert(result.value == static_cast<unsigned>(int_max));
         }
 
-        if (auto result = cuda::saturate_overflow_cast<unsigned>(int_min)) // saturated
+        if (auto result = cuda::saturating_overflow_cast<unsigned>(int_min)) // saturated
         {
             assert(result.value == 0);
         }
