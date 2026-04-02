@@ -41,10 +41,11 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan accepts run_to_run determinism requirem
 
 C2H_TEST("cub::DeviceScan::ExclusiveScan accepts not_guaranteed determinism requirements", "[scan][env]")
 {
+  // example-begin exclusive-scan-env-not-guaranteed
   auto op     = cuda::std::plus{};
-  auto input  = thrust::device_vector<int>{0, 1, 2, 3};
+  auto input  = thrust::device_vector<int>{1, 2, 3, 4};
   auto output = thrust::device_vector<int>(4);
-  auto init   = 0;
+  auto init   = 10;
 
   auto env = cuda::execution::require(cuda::execution::determinism::not_guaranteed);
 
@@ -54,7 +55,8 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan accepts not_guaranteed determinism requ
     std::cerr << "cub::DeviceScan::ExclusiveScan failed with status: " << error << std::endl;
   }
 
-  thrust::device_vector<int> expected{0, 0, 1, 3};
+  thrust::device_vector<int> expected{10, 11, 13, 16};
+  // example-end exclusive-scan-env-not-guaranteed
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
@@ -185,7 +187,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan with FutureValue accepts environment", 
   auto input  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto output = thrust::device_vector<int>(7);
 
-  auto init_value_vec = thrust::device_vector<int>{0};
+  auto init_value_vec = thrust::device_vector<int>{5};
   auto future_init    = cub::FutureValue<int>(thrust::raw_pointer_cast(init_value_vec.data()));
 
   auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
@@ -197,7 +199,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan with FutureValue accepts environment", 
     std::cerr << "cub::DeviceScan::ExclusiveScan (FutureValue) failed with status: " << error << std::endl;
   }
 
-  thrust::device_vector<int> expected{0, 8, 14, 21, 26, 29, 29};
+  thrust::device_vector<int> expected{5, 13, 19, 26, 31, 34, 34};
   // example-end exclusive-scan-future-env
 
   REQUIRE(error == cudaSuccess);
@@ -271,7 +273,6 @@ C2H_TEST("cub::DeviceScan::InclusiveScan accepts stream environment", "[scan][en
 
   thrust::device_vector<float> expected{1.0f, 3.0f, 6.0f, 10.0f};
   // example-end inclusive-scan-env-stream
-  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
@@ -318,7 +319,6 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit accepts stream environment", "[scan
 
   thrust::device_vector<float> expected{11.0f, 13.0f, 16.0f, 20.0f};
   // example-end inclusive-scan-init-env-stream
-  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);

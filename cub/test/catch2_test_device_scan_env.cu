@@ -13,6 +13,7 @@ struct stream_registry_factory_t;
 #include <cub/device/device_scan.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 
 #include <cuda/__device/arch_id.h>
 #include <cuda/iterator>
@@ -90,16 +91,14 @@ TEST_CASE("Device scan exclusive scan with FutureValue works with default enviro
   auto d_in  = thrust::device_vector<int>{1, 1, 1, 1};
   auto d_out = thrust::device_vector<int>(num_items);
 
-  auto init_value_vec = thrust::device_vector<int>{0};
+  auto init_value_vec = thrust::device_vector<int>{42};
   auto future_init    = cub::FutureValue<int>(thrust::raw_pointer_cast(init_value_vec.data()));
 
   REQUIRE(cudaSuccess
           == cub::DeviceScan::ExclusiveScan(d_in.begin(), d_out.begin(), cuda::std::plus{}, future_init, num_items));
 
-  for (int i = 0; i < num_items; i++)
-  {
-    REQUIRE(d_out[i] == i);
-  }
+  auto expected = thrust::device_vector<int>{42, 43, 44, 45};
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), expected.begin()));
 }
 
 TEST_CASE("Device scan exclusive sum works with default environment", "[sum][device]")
@@ -199,10 +198,8 @@ TEST_CASE("Device scan inclusive sum works with default environment", "[sum][dev
 
   REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveSum(d_in.begin(), d_out.begin(), num_items));
 
-  for (int i = 0; i < num_items; i++)
-  {
-    REQUIRE(d_out[i] == (i + 1));
-  }
+  auto expected = thrust::device_vector<value_t>{1, 2, 3};
+  REQUIRE(d_out == expected);
 }
 
 TEST_CASE("Device scan inclusive-scan works with default environment", "[scan][device]")
@@ -325,7 +322,7 @@ C2H_TEST("Device scan exclusive-scan with FutureValue uses environment", "[scan]
   auto d_in             = cuda::constant_iterator(1);
   auto d_out            = thrust::device_vector<int>(num_items);
 
-  auto init_value_vec = thrust::device_vector<int>{0};
+  auto init_value_vec = thrust::device_vector<int>{42};
   auto future_init    = cub::FutureValue<int>(thrust::raw_pointer_cast(init_value_vec.data()));
 
   size_t expected_bytes_allocated{};
@@ -338,10 +335,7 @@ C2H_TEST("Device scan exclusive-scan with FutureValue uses environment", "[scan]
 
   device_scan_exclusive(d_in, d_out.begin(), scan_op_t{}, future_init, num_items, env);
 
-  for (int i = 0; i < num_items; i++)
-  {
-    REQUIRE(d_out[i] == i);
-  }
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::counting_iterator<int>(42)));
 }
 
 C2H_TEST("Device scan exclusive-sum uses environment", "[scan][device]")
@@ -362,7 +356,17 @@ C2H_TEST("Device scan exclusive-sum uses environment", "[scan][device]")
 
   device_scan_exclusive_sum(d_in, d_out.begin(), num_items, env);
 
+<<<<<<< HEAD
   REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(0)));
+=======
+  thrust::host_vector<float> h_expected(num_items);
+  for (int i = 0; i < num_items; i++)
+  {
+    h_expected[i] = static_cast<float>(i);
+  }
+  thrust::device_vector<float> expected = h_expected;
+  REQUIRE(d_out == expected);
+>>>>>>> 5aafee7df6 ( Improve DeviceScan env test coverage and clean up duplicate doc comments)
 }
 
 C2H_TEST("Device scan inclusive-sum uses environment", "[scan][device]")
@@ -370,7 +374,7 @@ C2H_TEST("Device scan inclusive-sum uses environment", "[scan][device]")
   using num_items_t = int;
 
   num_items_t num_items = 10;
-  auto d_in             = thrust::device_vector<int>(num_items, 1);
+  auto d_in             = thrust::device_vector<int>(num_items, 3);
   auto d_out            = thrust::device_vector<int>(num_items);
 
   size_t expected_bytes_allocated{};
@@ -382,10 +386,13 @@ C2H_TEST("Device scan inclusive-sum uses environment", "[scan][device]")
 
   device_scan_inclusive_sum(d_in.begin(), d_out.begin(), num_items, env);
 
+  thrust::host_vector<int> h_expected(num_items);
   for (int i = 0; i < num_items; i++)
   {
-    REQUIRE(d_out[i] == (i + 1));
+    h_expected[i] = 3 * (i + 1);
   }
+  thrust::device_vector<int> expected = h_expected;
+  REQUIRE(d_out == expected);
 }
 
 C2H_TEST("Device scan inclusive-scan uses environment", "[scan][device]")
@@ -406,30 +413,41 @@ C2H_TEST("Device scan inclusive-scan uses environment", "[scan][device]")
 
   device_scan_inclusive(d_in, d_out.begin(), scan_op_t{}, num_items, env);
 
+<<<<<<< HEAD
   REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(1)));
+=======
+  thrust::host_vector<float> h_expected(num_items);
+  for (int i = 0; i < num_items; i++)
+  {
+    h_expected[i] = static_cast<float>(i + 1);
+  }
+  thrust::device_vector<float> expected = h_expected;
+  REQUIRE(d_out == expected);
+>>>>>>> 5aafee7df6 ( Improve DeviceScan env test coverage and clean up duplicate doc comments)
 }
 
 C2H_TEST("Device scan inclusive-scan-init uses environment", "[scan][device]")
 {
-  using scan_op_t   = cuda::std::plus<>;
   using num_items_t = int;
 
-  num_items_t num_items = 10;
-  auto d_in             = cuda::constant_iterator(1.0f);
+  num_items_t num_items = 4;
+  auto d_in             = thrust::device_vector<float>{1.0f, 2.0f, 3.0f, 4.0f};
   auto d_out            = thrust::device_vector<float>(num_items);
-
-  using init_t = float;
-
-  init_t init{10.0f};
+  float init            = 10.0f;
 
   size_t expected_bytes_allocated{};
   REQUIRE(cudaSuccess
           == cub::DeviceScan::InclusiveScanInit(
-            nullptr, expected_bytes_allocated, d_in, d_out.begin(), scan_op_t{}, init, num_items));
+            nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), cuda::std::plus{}, init, num_items));
 
   auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)}; // temp storage size
 
-  device_scan_inclusive_init(d_in, d_out.begin(), scan_op_t{}, init, num_items, env);
+  device_scan_inclusive_init(d_in.begin(), d_out.begin(), cuda::std::plus{}, init, num_items, env);
 
+<<<<<<< HEAD
   REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(static_cast<int>(init + 1))));
+=======
+  auto expected = thrust::device_vector<float>{11.0f, 13.0f, 16.0f, 20.0f};
+  REQUIRE(d_out == expected);
+>>>>>>> 5aafee7df6 ( Improve DeviceScan env test coverage and clean up duplicate doc comments)
 }
