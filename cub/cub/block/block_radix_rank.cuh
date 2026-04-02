@@ -45,7 +45,7 @@ CUB_NAMESPACE_BEGIN
 //! @brief Radix ranking algorithm, the algorithm used to implement stable ranking of the
 //!        keys from a single tile. Note that different ranking algorithms require different
 //!        initial arrangements of keys to function properly.
-enum RadixRankAlgorithm
+enum RadixRankAlgorithm : ::cuda::std::uint8_t
 {
   //! Ranking using the BlockRadixRank algorithm with `MemoizeOuterScan == false`.
   //! It uses thread-private histograms, and thus uses more shared memory.
@@ -876,7 +876,7 @@ public:
   //! @}
 };
 
-enum WarpMatchAlgorithm
+enum WarpMatchAlgorithm : ::cuda::std::uint8_t
 {
   WARP_MATCH_ANY,
   WARP_MATCH_ATOMIC_OR

@@ -93,7 +93,7 @@ private:
   };
 
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
-  enum struct State
+  enum struct State : ::cuda::std::uint8_t
   {
     ready_to_copy,
     ready_to_copy_or_commit,

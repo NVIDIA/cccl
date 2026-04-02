@@ -21,21 +21,23 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/cstdint>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::unique_by_key
 {
-enum class primitive_key
+enum class primitive_key : ::cuda::std::uint8_t
 {
   no,
   yes
 };
-enum class primitive_val
+enum class primitive_val : ::cuda::std::uint8_t
 {
   no,
   yes
 };
-enum class key_size
+enum class key_size : ::cuda::std::uint8_t
 {
   _1,
   _2,
@@ -44,7 +46,7 @@ enum class key_size
   _16,
   unknown
 };
-enum class val_size
+enum class val_size : ::cuda::std::uint8_t
 {
   _1,
   _2,

@@ -23,21 +23,23 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/cstdint>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::scan_by_key
 {
-enum class primitive_accum
+enum class primitive_accum : ::cuda::std::uint8_t
 {
   no,
   yes
 };
-enum class primitive_op
+enum class primitive_op : ::cuda::std::uint8_t
 {
   no,
   yes
 };
-enum class val_size
+enum class val_size : ::cuda::std::uint8_t
 {
   _1,
   _2,
@@ -46,7 +48,7 @@ enum class val_size
   _16,
   unknown
 };
-enum class key_size
+enum class key_size : ::cuda::std::uint8_t
 {
   _1,
   _2,

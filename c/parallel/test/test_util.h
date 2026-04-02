@@ -868,7 +868,7 @@ struct iterator_t
   }
 };
 
-enum class iterator_kind
+enum class iterator_kind : std::uint8_t
 {
   INPUT  = 0,
   OUTPUT = 1,

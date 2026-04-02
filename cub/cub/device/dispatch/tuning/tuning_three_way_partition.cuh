@@ -72,7 +72,7 @@ _CCCL_HOST_DEVICE ThreeWayPartitionPolicyWrapper<PolicyT> MakeThreeWayPartitionP
   return ThreeWayPartitionPolicyWrapper<PolicyT>{policy};
 }
 
-enum class input_size
+enum class input_size : ::cuda::std::uint8_t
 {
   _1,
   _2,
@@ -82,7 +82,7 @@ enum class input_size
   unknown
 };
 
-enum class offset_size
+enum class offset_size : ::cuda::std::uint8_t
 {
   _4,
   _8,

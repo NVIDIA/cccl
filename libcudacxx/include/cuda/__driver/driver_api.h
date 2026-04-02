@@ -32,6 +32,7 @@
 #  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/cstdint>
 #  if _CCCL_OS(WINDOWS)
 #    include <windows.h>
 #  else
@@ -636,7 +637,7 @@ _CCCL_HOST_API inline void __streamSynchronize(::CUstream __stream)
 #  if _CCCL_CTK_AT_LEAST(12, 5)
 struct __ctx_from_stream
 {
-  enum class __kind
+  enum class __kind : ::cuda::std::uint8_t
   {
     __device,
     __green

@@ -7,6 +7,7 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/universal_vector.h>
 
+#include <cuda/std/cstdint>
 #include <cuda/std/utility>
 
 #include <unittest/exceptions.h>
@@ -724,7 +725,7 @@ void assert_almost_equal(
   assert_almost_equal(A.begin(), A.end(), B.begin(), B.end(), filename, lineno, a_tol, r_tol);
 }
 
-enum threw_status
+enum threw_status : ::cuda::std::uint8_t
 {
   did_not_throw,
   threw_wrong_type,

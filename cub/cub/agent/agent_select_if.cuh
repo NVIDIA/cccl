@@ -242,7 +242,7 @@ struct AgentSelectIf
   using FlagT = it_value_t<FlagsInputIteratorT>;
 
   // Constants
-  enum
+  enum : ::cuda::std::uint8_t
   {
     USE_SELECT_OP,
     USE_SELECT_FLAGS,

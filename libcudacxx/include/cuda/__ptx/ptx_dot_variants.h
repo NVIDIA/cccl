@@ -25,6 +25,7 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/cstdint>
 
 /*
  * Public integral constant types and values for ".variant"s:
@@ -64,7 +65,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#operation-types
-enum class dot_sem
+enum class dot_sem : ::cuda::std::uint8_t
 {
   acq_rel,
   acquire,
@@ -75,7 +76,7 @@ enum class dot_sem
 };
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#state-spaces
-enum class dot_space
+enum class dot_space : ::cuda::std::uint8_t
 {
   global,
   cluster, // The PTX spelling is shared::cluster
@@ -93,7 +94,7 @@ enum class dot_space
 };
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#scope
-enum class dot_scope
+enum class dot_scope : ::cuda::std::uint8_t
 {
   cta,
   cluster,
@@ -101,7 +102,7 @@ enum class dot_scope
   sys
 };
 
-enum class dot_op
+enum class dot_op : ::cuda::std::uint8_t
 {
   add,
   dec,
@@ -115,13 +116,13 @@ enum class dot_op
   exch
 };
 
-enum class dot_cta_group
+enum class dot_cta_group : ::cuda::std::uint8_t
 {
   cta_group_1,
   cta_group_2
 };
 
-enum class dot_kind
+enum class dot_kind : ::cuda::std::uint8_t
 {
   f16,
   f8f6f4,

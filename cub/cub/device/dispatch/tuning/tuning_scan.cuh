@@ -42,28 +42,28 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
-enum class keep_rejects
+enum class keep_rejects : ::cuda::std::uint8_t
 {
   no,
   yes
 };
-enum class primitive_accum
+enum class primitive_accum : ::cuda::std::uint8_t
 {
   no,
   yes
 };
-enum class primitive_op
+enum class primitive_op : ::cuda::std::uint8_t
 {
   no,
   yes
 };
-enum class offset_size
+enum class offset_size : ::cuda::std::uint8_t
 {
   _4,
   _8,
   unknown
 };
-enum class value_size
+enum class value_size : ::cuda::std::uint8_t
 {
   _1,
   _2,
@@ -72,7 +72,7 @@ enum class value_size
   _16,
   unknown
 };
-enum class accum_size
+enum class accum_size : ::cuda::std::uint8_t
 {
   _1,
   _2,

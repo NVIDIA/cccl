@@ -123,19 +123,19 @@ _CCCL_HOST_DEVICE ReducePolicyWrapper<PolicyT> MakeReducePolicyWrapper(PolicyT p
   return ReducePolicyWrapper<PolicyT>{policy};
 }
 
-enum class offset_size
+enum class offset_size : ::cuda::std::uint8_t
 {
   _4,
   _8,
   unknown
 };
-enum class op_type
+enum class op_type : ::cuda::std::uint8_t
 {
   plus,
   min_or_max,
   unknown
 };
-enum class accum_size
+enum class accum_size : ::cuda::std::uint8_t
 {
   _1,
   _2,

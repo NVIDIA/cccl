@@ -23,7 +23,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-enum class delay_constructor_kind
+enum class delay_constructor_kind : ::cuda::std::uint8_t
 {
   no_delay,
   fixed_delay,

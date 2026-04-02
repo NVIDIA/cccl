@@ -23,6 +23,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/std/__new/device_new.h>
+#include <cuda/std/cstdint>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
@@ -605,7 +606,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectWarpStriped(
 
 //! @brief cub::BlockLoadAlgorithm enumerates alternative algorithms for cub::BlockLoad to read a linear segment of data
 //!        from memory into a blocked arrangement across a CUDA thread block.
-enum BlockLoadAlgorithm
+enum BlockLoadAlgorithm : ::cuda::std::uint8_t
 {
   //! @rst
   //! Overview

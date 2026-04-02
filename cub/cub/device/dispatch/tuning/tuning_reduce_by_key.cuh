@@ -37,28 +37,28 @@ CUB_NAMESPACE_BEGIN
 namespace detail::reduce_by_key
 {
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
-enum class primitive_key
+enum class primitive_key : ::cuda::std::uint8_t
 {
   no,
   yes
 };
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
-enum class primitive_accum
+enum class primitive_accum : ::cuda::std::uint8_t
 {
   no,
   yes
 };
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
-enum class primitive_op
+enum class primitive_op : ::cuda::std::uint8_t
 {
   no,
   yes
 };
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
-enum class key_size
+enum class key_size : ::cuda::std::uint8_t
 {
   _1,
   _2,
@@ -69,7 +69,7 @@ enum class key_size
 };
 
 // TODO(bgruber): remove in CCCL 4.0 when we drop the reduce-by-key dispatchers
-enum class accum_size
+enum class accum_size : ::cuda::std::uint8_t
 {
   _1,
   _2,

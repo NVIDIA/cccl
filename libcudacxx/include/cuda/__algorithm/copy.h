@@ -29,6 +29,7 @@
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/cstdint>
 #  include <cuda/std/mdspan>
 #  include <cuda/std/span>
 
@@ -37,7 +38,7 @@
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief Source access order for copy_bytes
-enum class source_access_order
+enum class source_access_order : ::cuda::std::uint8_t
 {
 #  if _CCCL_CTK_AT_LEAST(13, 0)
   //! @brief Access source in stream order

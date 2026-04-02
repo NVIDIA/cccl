@@ -25,6 +25,7 @@
 
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__utility/to_underlying.h>
+#  include <cuda/std/cstdint>
 
 #  include <nv/target>
 
@@ -35,7 +36,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 //! @brief Address space enumeration for CUDA device code.
 //!
 //!        See https://docs.nvidia.com/cuda/parallel-thread-execution/#state-spaces for more details.
-enum class address_space
+enum class address_space : ::cuda::std::uint8_t
 {
   global, //!< Global state space
   shared, //!< Shared state space

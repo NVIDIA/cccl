@@ -22,6 +22,7 @@
 #include <cuda/__functional/minimum.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -29,7 +30,7 @@ namespace detail
 {
 // copy of cccl_type_enum from cccl/c/types.h, which we cannot share, since CCCL.C's public interface does not depend on
 // libcu++
-enum class type_t
+enum class type_t : ::cuda::std::uint8_t
 {
   boolean,
   int8,
@@ -92,7 +93,7 @@ template <>
 inline constexpr auto classify_type<double> = type_t::float64;
 
 // similar to cccl_op_kind_t from cccl/c/types.h
-enum class op_kind_t
+enum class op_kind_t : ::cuda::std::uint8_t
 {
   plus,
   min,
@@ -131,17 +132,17 @@ template <typename It>
     THRUST_NS_QUALIFIER::is_contiguous_iterator_v<It>};
 }
 
-enum class primitive_key
+enum class primitive_key : ::cuda::std::uint8_t
 {
   no,
   yes
 };
-enum class primitive_length
+enum class primitive_length : ::cuda::std::uint8_t
 {
   no,
   yes
 };
-enum class key_size
+enum class key_size : ::cuda::std::uint8_t
 {
   _1,
   _2,
@@ -150,7 +151,7 @@ enum class key_size
   _16,
   unknown
 };
-enum class length_size
+enum class length_size : ::cuda::std::uint8_t
 {
   _4,
   unknown

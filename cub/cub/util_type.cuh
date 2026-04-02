@@ -802,7 +802,7 @@ struct BinaryOpHasIdxParam<T,
 /**
  * \brief Basic type traits categories
  */
-enum Category
+enum Category : ::cuda::std::uint8_t
 {
   NOT_A_NUMBER,
   SIGNED_INTEGER,

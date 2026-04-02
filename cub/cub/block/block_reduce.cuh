@@ -27,6 +27,7 @@
 
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/cstdint>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
@@ -40,7 +41,7 @@ CUB_NAMESPACE_BEGIN
 
 //! BlockReduceAlgorithm enumerates alternative algorithms for parallel reduction across a CUDA thread
 //! block.
-enum BlockReduceAlgorithm
+enum BlockReduceAlgorithm : ::cuda::std::uint8_t
 {
 
   //! @rst

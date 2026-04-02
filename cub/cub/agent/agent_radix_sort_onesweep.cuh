@@ -33,6 +33,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
@@ -45,7 +46,7 @@ CUB_NAMESPACE_BEGIN
  * memory. Currently applies only to writing 4B keys in full tiles; in all other cases,
  * RADIX_SORT_STORE_DIRECT is used.
  */
-enum RadixSortStoreAlgorithm
+enum RadixSortStoreAlgorithm : ::cuda::std::uint8_t
 {
   /** \brief Elements are statically distributed among block threads, which write them
    * into the appropriate partition in global memory. This results in fewer instructions

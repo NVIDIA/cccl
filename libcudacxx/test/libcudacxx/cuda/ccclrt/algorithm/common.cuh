@@ -13,6 +13,7 @@
 
 #include <cuda/algorithm>
 #include <cuda/memory_resource>
+#include <cuda/std/cstdint>
 #include <cuda/std/mdspan>
 #include <cuda/stream>
 
@@ -42,7 +43,7 @@ void check_result_and_erase(cuda::stream_ref stream, Result&& result, uint8_t pa
   }
 }
 
-enum class test_buffer_type
+enum class test_buffer_type : ::cuda::std::uint8_t
 {
   pinned,
   device,

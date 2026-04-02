@@ -21,6 +21,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/cstdint>
+
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -417,7 +419,7 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[Ite
 
 //! cub::BlockStoreAlgorithm enumerates alternative algorithms for cub::BlockStore to write a
 //! blocked arrangement of items across a CUDA thread block to a linear segment of memory.
-enum BlockStoreAlgorithm
+enum BlockStoreAlgorithm : ::cuda::std::uint8_t
 {
   //! @rst
   //! Overview

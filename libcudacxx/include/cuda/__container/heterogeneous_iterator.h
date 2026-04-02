@@ -39,7 +39,7 @@
 //! @brief The \c heterogeneous_iterator class is an iterator that provides typed execution space safety.
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-enum class __is_heterogeneous_const_iter
+enum class __is_heterogeneous_const_iter : ::cuda::std::uint8_t
 {
   __no,
   __yes,

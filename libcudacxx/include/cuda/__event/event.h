@@ -37,8 +37,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 class timed_event;
 
+// Underlying type of event_flags is deliberate. They are meant to be XOR-ed together and
+// passed to cudaEventCreate() which expects an unsigned int.
+
 //! @brief Flags to use when creating the event.
-enum class event_flags : unsigned
+enum class event_flags : unsigned // NOLINT(performance-enum-size)
 {
   none          = cudaEventDefault,
   blocking_sync = cudaEventBlockingSync,

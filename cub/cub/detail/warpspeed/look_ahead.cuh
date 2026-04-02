@@ -45,7 +45,9 @@ namespace detail::warpspeed
 #endif // !_CCCL_CUDA_COMPILER(NVHPC)
 }
 
-enum scan_state : ::cuda::std::uint32_t
+// Likely the larger size is intentional here, since this state is used in atomic loads/stores
+// below, and device atomics usually operate in chunks of 32 bits.
+enum scan_state : ::cuda::std::uint32_t // NOLINT(performance-enum-size)
 {
   empty          = 0,
   tile_aggregate = 1,

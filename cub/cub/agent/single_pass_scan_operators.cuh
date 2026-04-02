@@ -32,6 +32,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/cstdint>
 
 #include <nv/target>
 
@@ -94,7 +95,7 @@ struct BlockScanRunningPrefixOp
 /**
  * Enumerations of tile status
  */
-enum ScanTileStatus
+enum ScanTileStatus : ::cuda::std::uint8_t
 {
   SCAN_TILE_OOB, // Out-of-bounds (e.g., padding)
   SCAN_TILE_INVALID = 99, // Not yet processed
@@ -105,7 +106,7 @@ enum ScanTileStatus
 /**
  * Enum class used for specifying the memory order that shall be enforced while reading and writing the tile status.
  */
-enum class MemoryOrder
+enum class MemoryOrder : ::cuda::std::uint8_t
 {
   // Uses relaxed loads when reading a tile's status and relaxed stores when updating a tile's status
   relaxed,

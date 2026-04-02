@@ -33,6 +33,7 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
+#include <cuda/std/cstdint>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <atomic> // saves 146ms compile-time over <cuda/std/atomic> (CCCL 3.1)
@@ -172,7 +173,7 @@ struct PerDeviceAttributeCache
   // `DeviceEntryInitializing` state, and then proceeds to the
   // `DeviceEntryReady` state. These are the only state transitions allowed;
   // i.e. a linear sequence of transitions.
-  enum DeviceEntryStatus
+  enum DeviceEntryStatus : ::cuda::std::uint8_t
   {
     DeviceEntryEmpty = 0,
     DeviceEntryInitializing,

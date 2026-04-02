@@ -23,39 +23,40 @@
 
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::select
 {
-enum class may_alias
+enum class may_alias : ::cuda::std::uint8_t
 {
   no,
   yes
 };
 
-enum class flagged
+enum class flagged : ::cuda::std::uint8_t
 {
   no,
   yes
 };
-enum class keep_rejects
+enum class keep_rejects : ::cuda::std::uint8_t
 {
   no,
   yes
 };
-enum class primitive
+enum class primitive : ::cuda::std::uint8_t
 {
   no,
   yes
 };
-enum class offset_size
+enum class offset_size : ::cuda::std::uint8_t
 {
   _4,
   _8,
   unknown
 };
-enum class input_size
+enum class input_size : ::cuda::std::uint8_t
 {
   _1,
   _2,
@@ -64,7 +65,7 @@ enum class input_size
   _16,
   unknown
 };
-enum class distinct_partitions
+enum class distinct_partitions : ::cuda::std::uint8_t
 {
   no,
   yes

@@ -5,6 +5,8 @@
 
 #include <cub/config.cuh>
 
+#include <cuda/std/cstdint>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -16,21 +18,21 @@
 CUB_NAMESPACE_BEGIN
 
 //! @brief Options for specifying memory aliasing
-enum class MayAlias
+enum class MayAlias : ::cuda::std::uint8_t
 {
   Yes,
   No
 };
 
 //! @brief Options for specifying sorting order.
-enum class SortOrder
+enum class SortOrder : ::cuda::std::uint8_t
 {
   Ascending,
   Descending
 };
 
 //! @brief Options for specifying the behavior of the stream compaction algorithm.
-enum class SelectImpl
+enum class SelectImpl : ::cuda::std::uint8_t
 {
   //! Stream compaction, discarding rejected items. It's required that memory of input and output are disjoint.
   Select,
@@ -41,7 +43,7 @@ enum class SelectImpl
 };
 
 //! @brief Options for forcing inclusive prefix-scan even when initial value has been provided
-enum class ForceInclusive
+enum class ForceInclusive : ::cuda::std::uint8_t
 {
   Yes,
   No
@@ -50,7 +52,7 @@ enum class ForceInclusive
 // Options for specifying selection direction (e.g., for top-k selection).
 namespace detail::topk
 {
-enum class select
+enum class select : ::cuda::std::uint8_t
 {
   // Select the elements with the lowest values
   min,

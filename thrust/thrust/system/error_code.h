@@ -20,6 +20,8 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/system/detail/errno.h>
 
+#include <cuda/std/cstdint>
+
 #if !_CCCL_COMPILER(NVRTC)
 #  include <iostream>
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -52,7 +54,7 @@ namespace errc
 {
 /*! An enum containing common error codes.
  */
-enum errc_t
+enum errc_t : ::cuda::std::uint16_t
 {
   address_family_not_supported       = detail::eafnosupport,
   address_in_use                     = detail::eaddrinuse,

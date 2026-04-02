@@ -85,7 +85,7 @@ struct _NV_BITSET_ATTRIBUTE target_description
 };
 
 // The type of the user-visible names of the NVIDIA GPU targets
-enum class sm_selector : base_int_t
+enum class sm_selector : base_int_t // NOLINT(performance-enum-size)
 {
   sm_35  = 35,
   sm_37  = 37,

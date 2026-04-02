@@ -25,6 +25,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_one_of.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -34,7 +35,7 @@ namespace determinism
 {
 struct __get_determinism_t;
 
-enum class __determinism_t
+enum class __determinism_t : ::cuda::std::uint8_t
 {
   __not_guaranteed,
   __run_to_run,

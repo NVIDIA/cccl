@@ -7,6 +7,7 @@
 
 #include <cuda/std/cmath>
 #include <cuda/std/complex>
+#include <cuda/std/cstdint>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/span>
@@ -150,7 +151,7 @@ public:
   {}
 };
 
-enum class bit_entropy
+enum class bit_entropy : ::cuda::std::uint16_t
 {
   _1_000 = 0,
   _0_811 = 1,

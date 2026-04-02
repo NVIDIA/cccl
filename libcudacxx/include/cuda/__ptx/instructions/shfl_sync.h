@@ -34,7 +34,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_PTX
 
 #if __cccl_ptx_isa >= 600
 
-enum class __dot_shfl_mode
+enum class __dot_shfl_mode : ::cuda::std::uint8_t
 {
   __up,
   __down,

@@ -25,10 +25,11 @@
 #include <cub/warp/specializations/warp_exchange_smem.cuh>
 
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
-enum WarpExchangeAlgorithm
+enum WarpExchangeAlgorithm : ::cuda::std::uint8_t
 {
   WARP_EXCHANGE_SMEM,
   WARP_EXCHANGE_SHUFFLE,

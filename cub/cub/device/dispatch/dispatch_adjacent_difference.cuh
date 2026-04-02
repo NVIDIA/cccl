@@ -111,7 +111,7 @@ struct policy_selector_from_hub
 };
 } // namespace detail::adjacent_difference
 
-enum class ReadOption
+enum class ReadOption : ::cuda::std::uint8_t
 {
   Left,
   Right

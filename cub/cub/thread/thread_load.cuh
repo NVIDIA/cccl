@@ -26,6 +26,7 @@
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/cstdint>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
@@ -38,7 +39,7 @@ CUB_NAMESPACE_BEGIN
 //-----------------------------------------------------------------------------
 
 //! @brief Enumeration of cache modifiers for memory load operations.
-enum CacheLoadModifier
+enum CacheLoadModifier : ::cuda::std::uint8_t
 {
   LOAD_DEFAULT, ///< Default (no modifier)
   LOAD_CA, ///< Cache at all levels

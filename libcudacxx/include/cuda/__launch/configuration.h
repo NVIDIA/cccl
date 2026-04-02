@@ -34,6 +34,7 @@
 #  include <cuda/std/__type_traits/is_reference.h>
 #  include <cuda/std/__type_traits/is_unbounded_array.h>
 #  include <cuda/std/__type_traits/rank.h>
+#  include <cuda/std/cstdint>
 #  include <cuda/std/span>
 #  include <cuda/std/tuple>
 
@@ -53,7 +54,7 @@ struct launch_option
 };
 
 // Might need to go to the main namespace?
-enum class launch_option_kind
+enum class launch_option_kind : ::cuda::std::uint8_t
 {
   cooperative_launch,
   dynamic_shared_memory,

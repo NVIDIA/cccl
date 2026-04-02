@@ -7,6 +7,7 @@
 #include <thrust/mr/host_memory_resource.h>
 #include <thrust/mr/universal_memory_resource.h>
 
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
 #include <cstdio>
@@ -272,7 +273,7 @@ inline std::string base_class_name(const std::string& name)
   }
 }
 
-enum TestStatus
+enum TestStatus : ::cuda::std::uint8_t
 {
   Pass             = 0,
   Failure          = 1,

@@ -53,7 +53,7 @@ struct ::cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform:
 CUB_NAMESPACE_BEGIN
 namespace detail::transform
 {
-enum class Algorithm
+enum class Algorithm : ::cuda::std::uint8_t
 {
   // We previously had a fallback algorithm that would use cub::DeviceFor. Benchmarks showed that the prefetch algorithm
   // is always superior to that fallback, so it was removed.

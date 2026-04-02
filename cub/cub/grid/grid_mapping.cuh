@@ -20,6 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cstdint>
+
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -30,7 +32,7 @@ CUB_NAMESPACE_BEGIN
  * \brief cub::GridMappingStrategy enumerates alternative strategies for mapping constant-sized tiles of device-wide
  * data onto a grid of CUDA thread blocks.
  */
-enum GridMappingStrategy
+enum GridMappingStrategy : ::cuda::std::uint8_t
 {
   /**
    * \brief An a "raking" access pattern in which each thread block is

@@ -24,7 +24,6 @@ Checks:
   - '-performance-avoid-endl'
   - '-performance-noexcept-move-constructor'
   - '-performance-noexcept-swap'
-  - '-performance-enum-size'
   - '-performance-unnecessary-copy-initialization'
   - '-performance-unnecessary-value-param'
   # END REMOVE ME

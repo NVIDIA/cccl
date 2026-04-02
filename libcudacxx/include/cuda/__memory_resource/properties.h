@@ -26,6 +26,7 @@
 #  include <cuda/std/__type_traits/decay.h>
 #  include <cuda/std/__type_traits/type_set.h>
 #  include <cuda/std/cstddef>
+#  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -108,7 +109,7 @@ template <typename _Resource>
 struct __copy_default_queries<_Resource, false>
 {};
 
-enum class __memory_accessibility
+enum class __memory_accessibility : ::cuda::std::uint8_t
 {
   __unknown,
   __host,

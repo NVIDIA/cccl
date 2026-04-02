@@ -166,7 +166,7 @@ public:
   }
 };
 
-enum class requires_stable_address
+enum class requires_stable_address : ::cuda::std::uint8_t
 {
   no,
   yes

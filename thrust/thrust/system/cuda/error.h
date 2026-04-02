@@ -19,6 +19,8 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/system/error_code.h>
 
+#include <cuda/std/cstdint>
+
 THRUST_NAMESPACE_BEGIN
 
 namespace system
@@ -34,7 +36,7 @@ namespace cuda::errc
 {
 /*! \p errc_t enumerates the kinds of CUDA Runtime errors.
  */
-enum errc_t
+enum errc_t : ::cuda::std::uint16_t
 {
   // from cuda/include/driver_types.h
   // mirror their order
