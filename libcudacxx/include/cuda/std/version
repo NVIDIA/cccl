@@ -92,9 +92,8 @@
 #define __cccl_lib_result_of_sfinae            201210L
 #define __cccl_lib_robust_nonmodifying_seq_ops 201304L
 // #   define __cccl_lib_shared_timed_mutex                 201402L
-#define __cccl_lib_source_location       201907L
-#define __cccl_lib_span                  202311L
-#define __cccl_lib_span_initializer_list 202311L
+#define __cccl_lib_source_location 201907L
+#define __cccl_lib_span            202311L
 // # define __cccl_lib_string_udls                          201304L
 #define __cccl_lib_submdspan      202207L
 #define __cccl_lib_tuples_by_type 201304L

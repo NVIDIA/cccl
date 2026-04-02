@@ -23,10 +23,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef CUB_DETAIL_KERNEL_ATTRIBUTES
-#  define CUB_DETAIL_KERNEL_ATTRIBUTES CCCL_DETAIL_KERNEL_ATTRIBUTES
-#endif
-
 /**
  * @def CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
  * If defined, the default suppression of kernel visibility attribute warning is disabled.

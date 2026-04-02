@@ -612,7 +612,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
           // Add the sums of preceding CTAs to the cumulative sum.
           AccumT regSumExclusiveCta = refSumExclusiveCtaR.data();
           // sumExclusive is invalid in warp_0/thread_0, so only include it in other threads/warps
-          sumExclusive = squad.threadRank() == 0 ? regSumExclusiveCta : scan_op(sumExclusive, regSumExclusiveCta);
+          sumExclusive = squad.threadRank() == 0 ? regSumExclusiveCta : scan_op(regSumExclusiveCta, sumExclusive);
         }
       }
 

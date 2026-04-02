@@ -249,7 +249,7 @@ template <typename PolicySelector,
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceTopKKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceTopKKernel(
     _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
     _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
@@ -314,7 +314,7 @@ template <typename PolicySelector,
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceTopKLastFilterKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceTopKLastFilterKernel(
     _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
     _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,

@@ -1,6 +1,6 @@
-.. _libcudacxx-extended-api-numeric-add_sat_overflow:
+.. _libcudacxx-extended-api-numeric-saturating_add_overflow:
 
-``cuda::add_sat_overflow``
+``cuda::saturating_add_overflow``
 ======================
 
 Defined in ``<cuda/numeric>`` header.
@@ -14,15 +14,15 @@ Defined in ``<cuda/numeric>`` header.
 
    template <class T>
    [[nodiscard]] __host__ __device__ constexpr
-   overflow_result<T> add_sat_overflow(T lhs, T rhs) noexcept; // (1)
+   overflow_result<T> saturating_add_overflow(T lhs, T rhs) noexcept; // (1)
 
    template <class T>
    [[nodiscard]] __host__ __device__ constexpr
-   bool add_sat_overflow(T& result, T lhs, T rhs) noexcept; // (2)
+   bool saturating_add_overflow(T& result, T lhs, T rhs) noexcept; // (2)
 
    } // namespace cuda
 
-The function ``cuda::add_sat_overflow`` performs saturating addition of two values ``lhs`` and ``rhs`` with overflow checking.
+The function ``cuda::saturating_add_overflow`` performs saturating addition of two values ``lhs`` and ``rhs`` with overflow checking.
 
 **Parameters**
 
@@ -57,12 +57,12 @@ Example
     {
         constexpr auto int_max = cuda::std::numeric_limits<int>::max();
 
-        const auto result = cuda::add_sat_overflow(1, int_max); // saturated
+        const auto result = cuda::saturating_add_overflow(1, int_max); // saturated
         assert(result.value == int_max);
         assert(result.overflow);
 
         int value;
-        if (cuda::add_sat_overflow(value, 42, 1024))
+        if (cuda::saturating_add_overflow(value, 42, 1024))
         {
             assert(false); // shouldn't be reached
         }
