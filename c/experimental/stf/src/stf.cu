@@ -459,7 +459,7 @@ void stf_host_launch_submit(stf_host_launch_handle h, stf_host_callback_fn callb
   _CCCL_ASSERT(callback != nullptr, "callback must not be null");
 
   auto* scope_ptr = reinterpret_cast<host_launch_type*>(h);
-  (*scope_ptr)->*[callback](reserved::host_launch_deps& deps) {
+  (*scope_ptr)->*[callback](host_launch_deps& deps) {
     callback(reinterpret_cast<stf_host_launch_deps_handle>(&deps));
   };
 }
@@ -476,7 +476,7 @@ void* stf_host_launch_deps_get(stf_host_launch_deps_handle deps, size_t index)
 {
   _CCCL_ASSERT(deps != nullptr, "deps handle must not be null");
 
-  auto* d = reinterpret_cast<reserved::host_launch_deps*>(deps);
+  auto* d = reinterpret_cast<host_launch_deps*>(deps);
   return d->get<slice<char>>(index).data_handle();
 }
 
@@ -484,7 +484,7 @@ size_t stf_host_launch_deps_get_size(stf_host_launch_deps_handle deps, size_t in
 {
   _CCCL_ASSERT(deps != nullptr, "deps handle must not be null");
 
-  auto* d = reinterpret_cast<reserved::host_launch_deps*>(deps);
+  auto* d = reinterpret_cast<host_launch_deps*>(deps);
   return d->get<slice<char>>(index).extent(0);
 }
 
@@ -492,7 +492,7 @@ size_t stf_host_launch_deps_size(stf_host_launch_deps_handle deps)
 {
   _CCCL_ASSERT(deps != nullptr, "deps handle must not be null");
 
-  auto* d = reinterpret_cast<reserved::host_launch_deps*>(deps);
+  auto* d = reinterpret_cast<host_launch_deps*>(deps);
   return d->size();
 }
 
@@ -500,7 +500,7 @@ void* stf_host_launch_deps_get_user_data(stf_host_launch_deps_handle deps)
 {
   _CCCL_ASSERT(deps != nullptr, "deps handle must not be null");
 
-  auto* d = reinterpret_cast<reserved::host_launch_deps*>(deps);
+  auto* d = reinterpret_cast<host_launch_deps*>(deps);
   return d->user_data();
 }
 

@@ -44,6 +44,10 @@ class stream_ctx;
 
 namespace reserved
 {
+template <typename Ctx, bool called_from_launch, typename... Deps>
+class host_launch_scope;
+} // namespace reserved
+
 /**
  * @brief Opaque handle passed to untyped host_launch callbacks.
  *
@@ -60,7 +64,6 @@ public:
   host_launch_deps(host_launch_deps&&)                 = default;
   host_launch_deps& operator=(host_launch_deps&&)      = default;
 
-  // If user data was attached with a custom destructor, invoke it before freeing the buffer
   ~host_launch_deps()
   {
     if (dtor_ && !user_data_buf_.empty())
@@ -100,14 +103,16 @@ public:
 
 private:
   template <typename, bool, typename...>
-  friend class host_launch_scope;
+  friend class reserved::host_launch_scope;
 
   ::std::vector<logical_data_untyped> lds_;
   ::std::vector<instance_id_t> ids_;
-  ::std::vector<char> user_data_buf_; // byte-copied snapshot of the user data attached to the scope
-  void (*dtor_)(void*) = nullptr; // optional destructor for user_data_buf_ contents
+  ::std::vector<char> user_data_buf_;
+  void (*dtor_)(void*) = nullptr;
 };
 
+namespace reserved
+{
 //! \brief Resource wrapper for managing host callback arguments
 //!
 //! This manages the memory allocated for host callback arguments using the
