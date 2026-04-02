@@ -588,6 +588,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -709,6 +710,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -850,6 +852,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -961,6 +964,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -1331,6 +1335,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -1432,6 +1437,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -1583,6 +1589,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -1693,6 +1700,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -2097,6 +2105,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -2240,6 +2249,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -2611,6 +2621,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -2763,6 +2774,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @}
@@ -3130,6 +3142,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3218,6 +3231,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3349,6 +3363,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3428,6 +3443,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3768,6 +3784,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3844,6 +3861,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3984,6 +4002,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -4063,6 +4082,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst Sorts keys into descending order using :math:`\approx 2N` auxiliary storage.
@@ -4425,6 +4445,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -4554,6 +4575,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -4894,6 +4916,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -5035,6 +5058,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @}

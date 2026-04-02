@@ -106,6 +106,22 @@
       }
     },
     {
+      "name": "all-tidy",
+      "displayName": "clang-tidy",
+      "inherits": "all-dev-debug",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "17",
+        "CMAKE_CUDA_STANDARD": "17",
+        "THRUST_MULTICONFIG_WORKLOAD": "MEDIUM",
+        "CCCL_ENABLE_BENCHMARKS": true,
+        "CCCL_ENABLE_CLANG_TIDY": true,
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CUDA_FLAGS": "",
+        "CMAKE_CUDA_COMPILER": "clang++"
+      }
+    },
+    {
       "name": "libcudacxx-codegen",
       "displayName": "libcu++: codegen",
       "inherits": "base",
@@ -468,6 +484,13 @@
     {
       "name": "all-dev-debug",
       "configurePreset": "all-dev-debug"
+    },
+    {
+      "name": "all-tidy",
+      "configurePreset": "all-tidy",
+      "targets": [
+        "cccl.tidy"
+      ]
     },
     {
       "name": "install",
