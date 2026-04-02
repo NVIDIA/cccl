@@ -229,9 +229,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   auto accumulating_out_op = accumulating_transform_output_op_t{
     true, is_single_partition, nullptr, nullptr, d_result_out, local_to_global_op, reduce_op};
 
-  // TODO(bgruber): what should we return if the range is empty? min_element yields last (one past the end iterator)
-  // Initial value
-  auto initial_value = empty_problem_init_t<per_partition_accum_t>{{PerPartitionOffsetT{1}, output_extremum_t{}}};
+  // Initial value for empty problems, according to documented contract
+  const auto empty_problem_extremum = output_extremum_t{[] {
+    if constexpr (::cuda::std::is_same_v<ReductionOpT, arg_min>)
+    {
+      return ::cuda::std::numeric_limits<input_value_t>::max();
+    }
+    if constexpr (::cuda::std::is_same_v<ReductionOpT, arg_max>)
+    {
+      return ::cuda::std::numeric_limits<input_value_t>::lowest();
+    }
+    return input_value_t{};
+  }()};
+  auto initial_value = empty_problem_init_t<per_partition_accum_t>{{PerPartitionOffsetT{1}, empty_problem_extremum}};
 
   void* allocations[2]       = {nullptr, nullptr};
   size_t allocation_sizes[2] = {0, 2 * sizeof(global_accum_t)};

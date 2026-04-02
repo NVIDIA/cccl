@@ -933,17 +933,17 @@ public:
   }
 
   //! @rst
-  //! Finds the first device-wide minimum using the less-than (``<``) operator and also returns the index of that item.
+  //! Finds the first device-wide minimum based on a given comparison operator and also returns the index of that item.
   //!
-  //! .. versionadded:: 2.2.0
-  //!    First appears in CUDA Toolkit 12.3.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - The minimum is written to ``d_min_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
   //!   ``cuda::std::int64_t``.
-  //! - For zero-length inputs, ``cuda::std::numeric_limits<T>::max()}`` is written to ``d_min_out``  and the index
-  //!   ``1`` is written to ``d_index_out``.
-  //! - Does not support ``<`` operators that are non-commutative.
+  //! - For zero-length inputs, the index ``1`` is written to ``d_index_out`` and, if ``compare_op`` is
+  //! ``cuda::std::less``, ``cuda::std::numeric_limits<T>::max()}`` is written to ``d_min_out``, otherwise ``T{}``.
+  //! - Does not support comparison operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
   //!   However, results for pseudo-associative reduction may be inconsistent
@@ -966,25 +966,33 @@ public:
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
   //!    int                num_items;    // e.g., 7
-  //!    int                *d_in;        // e.g., [8, 6, 7, 5, 3, 0, 9]
+  //!    int                *d_in;        // e.g., [8, 6, -7, 5, 3, 1, -9]
   //!    int                *d_min_out;   // memory for the minimum value
   //!    cuda::std::int64_t *d_index_out; // memory for the index of the returned value
   //!    ...
+  //!
+  //!    // Define the comparison operator
+  //!    struct abs_less_t {
+  //!      template <typename T>
+  //!      __host__ __device__ bool operator()(const T& a, const T& b) const {
+  //!        return cuda::std::abs(a) < cuda::std::abs(b);
+  //!      }
+  //!    };
   //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out,
-  //!    num_items);
+  //!    num_items, abs_less_t{});
   //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
   //!
   //!    // Run argmin-reduction
   //!    cub::DeviceReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out,
-  //!    num_items);
+  //!    num_items, abs_less_t{});
   //!
-  //!    // d_min_out   <-- 0
+  //!    // d_min_out   <-- 1
   //!    // d_index_out <-- 5
   //!
   //! @endrst
