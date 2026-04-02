@@ -2,17 +2,20 @@
 
 set -euo pipefail
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../" && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../" && pwd)"
+readonly ci_dir
+# shellcheck source=ci/util/artifacts/common.sh
 source "$ci_dir/util/artifacts/common.sh"
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Prints the Github Actions matrix for uploading all registered artifacts.
 EOF
 )
+readonly usage
 
-if [ "$#" -ne 0 ]; then
+if [[ "$#" -ne 0 ]]; then
   echo "$usage" >&2
   exit 1
 fi
 
-cat $ARTIFACT_UPLOAD_REGISTERY | jq -c '.'
+jq -c '.' "${ARTIFACT_UPLOAD_REGISTERY:?}"

@@ -9,7 +9,7 @@ jobtime="4:00:00"
 benchmark_preset="benchmark"
 
 batch_script=$scratch/batch.sh
-cat << BATCH_SCRIPT > $batch_script
+cat << BATCH_SCRIPT > "$batch_script"
 #!/bin/bash
 
 pip install --break-system-packages fpzip pandas scipy
@@ -37,11 +37,11 @@ export PYTHONPATH=../benchmarks/scripts/
 
 echo "Benchmark done. Results in $scratch/\$host/cccl/build_perf/cccl_meta_bench.db"
 BATCH_SCRIPT
-chmod +x $batch_script
+chmod +x "$batch_script"
 
 # schedule SLURM job
 echo "Scheduling script $batch_script"
 echo "#################################################################################"
-cat $batch_script
+cat "$batch_script"
 echo "#################################################################################"
-crun -q "$node_selector" -ex -t $jobtime -img $container_image -b $batch_script
+crun -q "$node_selector" -ex -t "$jobtime" -img "$container_image" -b "$batch_script"

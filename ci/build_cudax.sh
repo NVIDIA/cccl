@@ -2,6 +2,7 @@
 
 set -euo pipefail
 
+# shellcheck source=ci/build_common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/build_common.sh"
 
 print_environment_details
@@ -12,7 +13,7 @@ print_environment_details
 if [[ -z "${cudax_ENABLE_CUFILE:-}" ]]; then
   cudax_ENABLE_CUFILE="false"
   if [[ -n "${NVCC_VERSION:-}" ]] && [[ "$(basename "${HOST_COMPILER}")" != "nvc++" ]]; then
-    if util/version_compare.sh ${NVCC_VERSION} ge 12.9; then
+    if util/version_compare.sh "${NVCC_VERSION}" ge 12.9; then
       cudax_ENABLE_CUFILE="true"
     fi
   fi
@@ -26,6 +27,6 @@ CMAKE_OPTIONS=(
   "-DCMAKE_CUDA_STANDARD=${CXX_STANDARD}"
 )
 
-configure_and_build_preset "CUDA Experimental" "$PRESET" "${CMAKE_OPTIONS[*]}"
+configure_and_build_preset "CUDA Experimental" "$PRESET" "${CMAKE_OPTIONS[@]}"
 
 print_time_summary

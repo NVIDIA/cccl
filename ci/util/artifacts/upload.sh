@@ -2,15 +2,17 @@
 
 set -euo pipefail
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+readonly ci_dir
+# shellcheck source=ci/util/artifacts/common.sh
 source "$ci_dir/util/artifacts/common.sh"
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0 <name> [<regex> ...]
 
 Creates an artifact consisting of a zip file containing a single file or set of regex matches.
 
-Regexes are passed to the `find` command's -regex option in the current directory.
+Regexes are passed to the $(command -v find) command's -regex option in the current directory.
 './' is prepended to all regexes for convenience.
 The artifact will contain all matching files with paths relative to the current directory.
 
@@ -35,8 +37,9 @@ Example Usage:
        'lib/.*'
 EOF
 )
+readonly usage
 
-if [ "$#" -lt 1 ]; then
+if [[ "$#" -lt 1 ]]; then
   echo "Error: Missing artifact name." >&2
   echo "$usage" >&2
   exit 1
@@ -45,7 +48,7 @@ fi
 readonly artifact_name="$1"
 
 # If no regexes are provided, use the artifact name as the path:
-if [ "$#" -eq 1 ]; then
+if [[ "$#" -eq 1 ]]; then
   "$ci_dir/util/artifacts/upload/register.sh" "$artifact_name" "$artifact_name"
   exit
 fi

@@ -2,13 +2,15 @@
 
 set -euo pipefail
 
-if [ -z "${GITHUB_ACTIONS:-}" ]; then
+if [[ -z "${GITHUB_ACTIONS:-}" ]]; then
   echo "This script must be run in a GitHub Actions environment." >&2
   exit 1
 fi
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly repo_root="$(cd "${ci_dir}/.." && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly ci_dir
+repo_root="$(cd "${ci_dir}/.." && pwd)"
+readonly repo_root
 
 cd "$repo_root"
 
@@ -17,7 +19,7 @@ Usage: $0 <job_id> <exit code>
 EOF
 )
 
-if [ "$#" -ne 2 ]; then
+if [[ "$#" -ne 2 ]]; then
   echo "Error: Invalid number of arguments." >&2
   echo "$usage" >&2
   exit 1

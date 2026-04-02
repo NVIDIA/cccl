@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0 <run id> <job_id>
 
 Allows the scripts in ci/util/workflow and ci/util/artifacts to run as though they are running in a CI environment.
@@ -24,20 +24,21 @@ Caches and previously downloaded artifacts in /tmp are deleted to ensure a clean
        This is usually fine, but be might overwrite files in-use by other mock environments.
 EOF
 )
+readonly usage
 
-if [ "$#" -ne 2 ]; then
+if [[ "$#" -ne 2 ]]; then
   echo "Error: Invalid number of arguments." >&2
   echo "$usage" >&2
   exit 1
 fi
 
-if [ -n "${GITHUB_ACTIONS:-}" ]; then
+if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
   echo "$0: Detected another GITHUB_ACTIONS environment." >&2
   echo "unset GITHUB_ACTIONS if this is intentional." >&2
   exit 1
 fi
 
-if [ -z "${DEVCONTAINER_NAME:-}" ]; then
+if [[ -z "${DEVCONTAINER_NAME:-}" ]]; then
   echo "This script must be run inside a devcontainer." >&2
   exit 1
 else
@@ -51,7 +52,9 @@ export GITHUB_RUN_ID="$1"
 export JOB_ID="$2"
 
 (
+  # shellcheck source=ci/util/workflow/common.sh
   source "$ci_dir/util/workflow/common.sh"
+  # shellcheck source=ci/util/artifacts/common.sh
   source "$ci_dir/util/artifacts/common.sh"
 
   rm -rf "$WORKFLOW_DIR"

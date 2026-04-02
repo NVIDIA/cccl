@@ -57,7 +57,7 @@ function check_required_dependencies() {
         command -v "$tool" &>/dev/null || missing_deps+=("$tool")
     done
 
-    if [ ${#missing_deps[@]} -ne 0 ]; then
+    if [[ ${#missing_deps[@]} -ne 0 ]]; then
         echo "❌ Error: Missing required dependencies:" >&2
         printf "   • %s\n" "${missing_deps[@]}" >&2
         echo >&2
@@ -70,7 +70,7 @@ function check_required_dependencies() {
 # Copy the args into a temporary array, since we will modify them and
 # the parent script may still need them.
 args=("$@")
-while [ "${#args[@]}" -ne 0 ]; do
+while [[ "${#args[@]}" -ne 0 ]]; do
     case "${args[0]}" in
     -v | --verbose | -verbose) VERBOSE=1; args=("${args[@]:1}");;
     -configure) CONFIGURE_ONLY=true;   args=("${args[@]:1}");;
@@ -79,15 +79,18 @@ while [ "${#args[@]}" -ne 0 ]; do
     -cuda) CUDA_COMPILER="${args[1]}"; args=("${args[@]:2}");;
     -arch) CUDA_ARCHS="${args[1]}";    args=("${args[@]:2}");;
     -pedantic | --pedantic) PEDANTIC=1; args=("${args[@]:1}");;
-    -disable-benchmarks) DISABLE_CUB_BENCHMARKS=1; args=("${args[@]:1}");;
+    -disable-benchmarks) export DISABLE_CUB_BENCHMARKS=1; args=("${args[@]:1}");;
     -cmake-options)
-        if [ -n "${args[1]}" ]; then
+        if [[ -n "${args[1]}" ]]; then
             IFS=' ' read -ra split_args <<< "${args[1]}"
             GLOBAL_CMAKE_OPTIONS+=("${split_args[@]}")
             args=("${args[@]:2}")
         else
             echo "Error: No arguments provided for -cmake-options"
             usage
+            # usage will exit 1 for us, so below exit 1 is unreachable, but it does not
+            # hurt and guards against changes in usage.
+            # shellcheck disable=SC2317
             exit 1
         fi
         ;;
@@ -102,8 +105,8 @@ function validate_and_resolve_compiler() {
     local compiler_var="$2"
     local compiler_path
 
-    compiler_path=$(which "${compiler_var}" 2>/dev/null)
-    if [ -z "$compiler_path" ]; then
+    compiler_path=$(command -v "${compiler_var}" 2>/dev/null)
+    if [[ -z "$compiler_path" ]]; then
         echo "❌ Error: ${compiler_name} '${compiler_var}' not found in PATH" >&2
         exit 1
     fi
@@ -141,7 +144,7 @@ else
     GLOBAL_CMAKE_OPTIONS+=("-DCCCL_ENABLE_WERROR=OFF" "-DCCCL_ENABLE_PRAGMA_SYSTEM_HEADER=ON")
 fi
 
-if [ $VERBOSE ]; then
+if [[ -n "$VERBOSE" ]]; then
     set -x
 fi
 
@@ -153,7 +156,7 @@ set -u
 
 readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc --all --ignore=1)}
 
-if [ -z ${CCCL_BUILD_INFIX+x} ]; then
+if [[ -z ${CCCL_BUILD_INFIX+x} ]]; then
     CCCL_BUILD_INFIX=""
 fi
 
@@ -165,9 +168,9 @@ BUILD_ROOT=$(cd "../build" && pwd)
 BUILD_DIR="$BUILD_ROOT/$CCCL_BUILD_INFIX"
 
 # The most recent devcontainer build dir will always be symlinked to cccl/build/latest
-mkdir -p $BUILD_DIR
-rm -f $BUILD_ROOT/latest
-ln -sf $BUILD_DIR $BUILD_ROOT/latest
+mkdir -p "$BUILD_DIR"
+rm -f "$BUILD_ROOT"/latest
+ln -sf "$BUILD_DIR" "$BUILD_ROOT"/latest
 
 # The more recent preset build dir will always be symlinked to:
 # cccl/preset-latest
@@ -189,6 +192,7 @@ export CUDACXX="${CUDA_COMPILER}"
 export CUDAHOSTCXX="${HOST_COMPILER}"
 export CXX_STANDARD
 
+# shellcheck source=ci/pretty_printing.sh
 source ./pretty_printing.sh
 
 # Kill any build / test steps that exceed this time, otherwise CI jobs may be
@@ -282,15 +286,15 @@ function print_test_time_summary()
 {
     ctest_log=${1}
 
-    if [ -f ${ctest_log} ]; then
+    if [[ -f "${ctest_log}" ]]; then
         begin_group "⏱️ Longest Test Steps"
         # Only print the full output in CI:
-        if [ -n "${GITHUB_ACTIONS:-}" ]; then
-            cmake -DLOGFILE=${ctest_log} -P ../cmake/PrintCTestRunTimes.cmake
+        if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+            cmake -DLOGFILE="${ctest_log}" -P ../cmake/PrintCTestRunTimes.cmake
         else
             # `|| :` to avoid `set -o pipefail` from triggering when `head` closes the pipe before `cmake` finishes.
             # Otherwise the script will exit early with status 141 (SIGPIPE).
-            cmake -DLOGFILE=${ctest_log} -P ../cmake/PrintCTestRunTimes.cmake | head -n 15 || :
+            cmake -DLOGFILE="${ctest_log}" -P ../cmake/PrintCTestRunTimes.cmake | head -n 15 || :
         fi
         end_group "⏱️ Longest Test Steps"
     fi
@@ -301,7 +305,7 @@ function configure_preset()
     local BUILD_NAME=$1
     local PRESET=$2
     shift 2
-    local CMAKE_OPTIONS=$@
+    local CMAKE_OPTIONS=("$@")
 
     local GROUP_NAME="🛠️  CMake Configure ${BUILD_NAME}"
 
@@ -310,10 +314,10 @@ function configure_preset()
     pushd .. > /dev/null
     if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
       # Retry 5 times with 30 seconds between attempts to try to WAR network issues during CPM fetch on CI runners:
-      export RUN_COMMAND_RETRY_PARAMS="5 30"
+      export RUN_COMMAND_RETRY_PARAMS=(5 30)
     fi
     status=0
-    run_command "$GROUP_NAME" cmake --preset=$PRESET --log-level=VERBOSE $CMAKE_OPTIONS "${GLOBAL_CMAKE_OPTIONS[@]}" || status=$?
+    run_command "$GROUP_NAME" cmake --preset="$PRESET" --log-level=VERBOSE "${CMAKE_OPTIONS[@]}" "${GLOBAL_CMAKE_OPTIONS[@]}" || status=$?
     if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
         unset RUN_COMMAND_RETRY_PARAMS
     fi
@@ -323,18 +327,20 @@ function configure_preset()
         echo "${BUILD_NAME} configuration complete:"
         echo "  Exit code:       ${status}"
         echo "  CMake Preset:    ${PRESET}"
-        echo "  CMake Options:   ${CMAKE_OPTIONS}"
+        echo "  CMake Options:   ${CMAKE_OPTIONS[*]}"
         echo "  Build Directory: ${BUILD_DIR}/${PRESET}"
-        exit $status
+        exit "$status"
     fi
 
-    return $status
+    return "$status"
 }
 
 function build_preset() {
     local BUILD_NAME=$1
     local PRESET=$2
+    # shellcheck disable=SC2034
     local green="1;32"
+    # shellcheck disable=SC2034
     local red="1;31"
     local GROUP_NAME="🏗️  Build ${BUILD_NAME}"
     shift 2
@@ -355,10 +361,10 @@ function build_preset() {
     # Track memory usage on CI:
     if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then
       util/memmon.sh --start \
-          --log-threshold ${MEMMON_LOG_THRESHOLD:-2} \
-          --print-threshold ${MEMMON_PRINT_THRESHOLD:-5} \
+          --log-threshold "${MEMMON_LOG_THRESHOLD:-2}" \
+          --print-threshold "${MEMMON_PRINT_THRESHOLD:-5}" \
           --log-file "$memmon_log" \
-          --poll ${MEMMON_POLL_INTERVAL:-5} \
+          --poll "${MEMMON_POLL_INTERVAL:-5}" \
           || :
     fi
 
@@ -373,24 +379,24 @@ function build_preset() {
     fi
 
     # Only print detailed stats in actions workflow
-    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+    if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
         sccache --show-adv-stats --stats-format=json > "${sccache_json}" || :
         run_command "📊 sccache stats" sccache --show-adv-stats || :
 
         begin_group "🥷 ninja build times"
-        echo "The "weighted" time is the elapsed time of each build step divided by the number
+        echo "The \"weighted\" time is the elapsed time of each build step divided by the number
               of tasks that were running in parallel. This makes it an excellent approximation
-              of how "important" a slow step was. A link that is entirely or mostly serialized
+              of how \"important\" a slow step was. A link that is entirely or mostly serialized
               will have a weighted time that is the same or similar to its elapsed time. A
               compile that runs in parallel with 999 other compiles will have a weighted time
               that is tiny."
-        ./ninja_summary.py -C ${BUILD_DIR}/${PRESET} || echo "Warning: ninja_summary.py failed to execute properly."
+        ./ninja_summary.py -C "${BUILD_DIR}"/"${PRESET}" || echo "Warning: ninja_summary.py failed to execute properly."
         end_group
     else
       sccache -s || :
     fi
 
-    return $status
+    return "$status"
 }
 
 function test_preset()
@@ -419,9 +425,9 @@ function test_preset()
     run_ci_timed_command "$GROUP_NAME" ctest --output-log "${ctest_log}" --preset="$PRESET" || status=$?
     popd > /dev/null
 
-    print_test_time_summary ${ctest_log}
+    print_test_time_summary "${ctest_log}"
 
-    return $status
+    return "$status"
 }
 
 function configure_and_build_preset()
@@ -429,9 +435,9 @@ function configure_and_build_preset()
     local BUILD_NAME=$1
     local PRESET=$2
     shift 2
-    local CMAKE_OPTIONS=$@
+    local CMAKE_OPTIONS=("$@")
 
-    configure_preset "$BUILD_NAME" "$PRESET" "$CMAKE_OPTIONS"
+    configure_preset "$BUILD_NAME" "$PRESET" "${CMAKE_OPTIONS[@]}"
 
     if ! $CONFIGURE_ONLY; then
         build_preset "$BUILD_NAME" "$PRESET"

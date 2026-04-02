@@ -4,7 +4,8 @@
 #
 # Example Usage:
 #   new_args=$(extract_switches.sh -cpu-only -gpu-only -- "$@")
-#   eval set -- ${new_args}
+#   declare -a new_args="(${new_args})"
+#   set -- "${new_args[@]}"
 #   while true; do
 #     case "$1" in
 #     -cpu-only) CPU_ONLY=true; shift;;
@@ -28,8 +29,9 @@ for arg in "$@"; do
     Unrecognized switches are left in place.
 
     Example Usage:
-      new_args=$(extract_switches.sh -cpu-only -gpu-only -- "$@")
-      eval set -- ${new_args}
+      new_args="$(extract_switches.sh -cpu-only -gpu-only -- "$@")"
+      declare -a new_args="(${new_args})"
+      set -- "${new_args[@]}"
       while true; do
         case "$1" in
         -cpu-only) CPU_ONLY=true; shift;;
@@ -56,7 +58,7 @@ found_switches=()
 other_args=()
 for arg in "$@"; do
   for switch in "${switches[@]}"; do
-    if [ "$arg" = "$switch" ]; then
+    if [[ "$arg" = "$switch" ]]; then
       found_switches+=("\"$arg\"")
       continue 2
     fi
@@ -64,4 +66,4 @@ for arg in "$@"; do
   other_args+=("\"$arg\"")
 done
 
-echo "${found_switches[@]} -- ${other_args[@]}"
+echo "${found_switches[*]} -- ${other_args[*]}"

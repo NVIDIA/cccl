@@ -5,18 +5,17 @@
 ## [path] is the starting point for searching for HTML. Ideally this is the siteroot
 ## script will find all HTML files and record them into a CSV file that can be used for searching docs.
 
-set -e
+set -euo pipefail
 
-SCRIPT_PATH=$(cd $(dirname ${0}); pwd -P)
+SCRIPT_PATH=$(cd "$(dirname "$0")"; pwd -P)
 
-path_to_docs=$(realpath $1)
+path_to_docs=$(realpath "$1")
 
-cd $SCRIPT_PATH
+cd "$SCRIPT_PATH"
 
 pages=$(
-        cd $path_to_docs;
-        # Embed a token to artificially limit search results
-        find ./ -iname "*.html" -printf '/%P(end),'
-    )
+    cd "$path_to_docs";
+    find ./ -iname "*.html" -printf '/%P,'
+)
 
-echo "$pages" > $path_to_docs/pagelist.txt
+echo "$pages" > "$path_to_docs/pagelist.txt"

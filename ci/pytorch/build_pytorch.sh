@@ -58,13 +58,13 @@ echo "::group::Setting up clone of CUDA environment with custom CCCL..."
 export PATH="$PWD/cuda/bin:$PATH"
 export CUDA_HOME="$PWD/cuda"
 export CUDA_PATH="$PWD/cuda"
-which nvcc
+command -v nvcc
 nvcc --version
 echo "::endgroup::"
 
 echo "::group::Cloning PyTorch..."
 rm -rf pytorch
-git clone ${pytorch_repo} -b ${pytorch_branch} --recursive --depth 1
+git clone "${pytorch_repo}" -b "${pytorch_branch}" --recursive --depth 1
 echo "PyTorch HEAD:"
 git -C pytorch log -1 --format=short
 echo "::endgroup::"
@@ -120,7 +120,9 @@ fi
 echo "::endgroup::"
 
 echo "::group::Building $num_targets pytorch CUDA targets with custom CCCL..."
-ninja -C ./build $(xargs -a build/cuda_targets.txt)
+torch_cuda_targets="$(xargs -a build/cuda_targets.txt)"
+declare -a torch_cuda_targets="($torch_cuda_targets)"
+ninja -C ./build "${torch_cuda_targets[@]}"
 echo "::endgroup::"
 
 echo "PyTorch CUDA targets built successfully with custom CCCL."

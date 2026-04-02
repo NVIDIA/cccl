@@ -19,10 +19,8 @@ done
 major="$1"
 minor="$2"
 patch="$3"
-pymajor="0"
-pyminor="1"
 
-if [ -z "$major" ] || [ -z "$minor" ] || [ -z "$patch" ]; then
+if [[ -z "$major" ]] || [[ -z "$minor" ]] || [[ -z "$patch" ]]; then
     echo "Usage: $0 [--dry-run] <major> <minor> <patch>"
     exit 1
 fi
@@ -69,8 +67,9 @@ update_file () {
     local file=$1
     local pattern=$2
     local new_value=$3
-    if [ "$DRY_RUN" = true ]; then
-        local temp_file=$(mktemp)
+    if [[ "$DRY_RUN" = true ]]; then
+        local temp_file
+        temp_file=$(mktemp)
         sed "s/$pattern/$new_value/g" "$file" > "$temp_file"
         diff --color=auto -U 0 "$file" "$temp_file" || true
         rm "$temp_file"
@@ -115,7 +114,7 @@ update_file "$CUDAX_CMAKE_VERSION_FILE" "set(cudax_VERSION_PATCH \([0-9]\+\))" "
 update_file "$CUDA_CCCL_VERSION_FILE" "^__version__ = \"\([0-9.]\+\)\"" "__version__ = \"$major.$minor.$patch\""
 
 
-if [ "$DRY_RUN" = true ]; then
+if [[ "$DRY_RUN" = true ]]; then
     echo "Dry run completed. No changes made."
 else
     echo "Version updated to $major.$minor.$patch"

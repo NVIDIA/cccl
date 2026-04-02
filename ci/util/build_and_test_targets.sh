@@ -40,11 +40,11 @@ function elapsed_time {
 }
 
 PRESET=""
-BUILD_TARGETS=""
-CTEST_TARGETS=""
-LIT_PRECOMPILE_TESTS=""
-LIT_TESTS=""
-CMAKE_OPTIONS=""
+BUILD_TARGETS=()
+CTEST_TARGETS=()
+LIT_PRECOMPILE_TESTS=()
+LIT_TESTS=()
+CMAKE_OPTIONS=()
 CONFIGURE_OVERRIDE=""
 CUSTOM_TEST_CMD=""
 
@@ -52,11 +52,11 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help) usage; exit 0 ;;
     --preset)        PRESET="${2:-}"; shift 2 ;;
-    --build-targets) BUILD_TARGETS="${2:-}"; shift 2 ;;
-    --ctest-targets) CTEST_TARGETS="${2:-}"; shift 2 ;;
-    --lit-precompile-tests) LIT_PRECOMPILE_TESTS="${2:-}"; shift 2 ;;
-    --lit-tests)     LIT_TESTS="${2:-}"; shift 2 ;;
-    --cmake-options) CMAKE_OPTIONS="${2:-}"; shift 2 ;;
+    --build-targets) declare -a BUILD_TARGETS="(${2:-})"; shift 2 ;;
+    --ctest-targets) declare -a CTEST_TARGETS="(${2:-})"; shift 2 ;;
+    --lit-precompile-tests) declare -a LIT_PRECOMPILE_TESTS="(${2:-})"; shift 2 ;;
+    --lit-tests)     declare -a LIT_TESTS="(${2:-})"; shift 2 ;;
+    --cmake-options) declare -a CMAKE_OPTIONS="(${2:-})"; shift 2 ;;
     --configure-override) CONFIGURE_OVERRIDE="${2:-}"; shift 2 ;;
     --custom-test-cmd) CUSTOM_TEST_CMD="${2:-}"; shift 2 ;;
     *) echo "Unknown argument: $1" >&2; usage; exit 2 ;;
@@ -73,7 +73,7 @@ if [[ -n "${CONFIGURE_OVERRIDE}" ]]; then
   if [[ -n "${PRESET}" ]]; then
     echo "::warning:: --preset ignored due to --configure-override" >&2
   fi
-  if [[ -n "${CMAKE_OPTIONS}" ]]; then
+  if [[ "${#CMAKE_OPTIONS}" -gt 0 ]]; then
     echo "::warning:: --cmake-options ignored due to --configure-override" >&2
   fi
 fi
@@ -86,12 +86,11 @@ cmlog_file="$(mktemp /tmp/cmake-config-XXXXXX.log)"
 if [[ -n "${CONFIGURE_OVERRIDE}" ]]; then
   if ! (set -x; eval "${CONFIGURE_OVERRIDE}") 2>&1 | tee "${cmlog_file}"; then
     echo "::endgroup::"
-    echo "🔴📝 Configuration override failed ($(elapsed_time)):\n\t${CONFIGURE_OVERRIDE}"
+    echo -e "🔴📝 Configuration override failed ($(elapsed_time)):\n\t${CONFIGURE_OVERRIDE}"
     exit 1
   fi
 else
-  read -r -a _cmake_opts <<< "${CMAKE_OPTIONS}"
-  if ! (set -x; cmake --preset "${PRESET}" "${_cmake_opts[@]}") 2>&1 | tee "${cmlog_file}"; then
+  if ! (set -x; cmake --preset "${PRESET}" "${CMAKE_OPTIONS[@]}") 2>&1 | tee "${cmlog_file}"; then
     echo "::endgroup::"
     echo "🔴📝 CMake configure failed for preset ${PRESET} ($(elapsed_time))"
     exit 1
@@ -104,16 +103,16 @@ if [[ -z "${BUILD_DIR}" ]]; then
   exit 1
 fi
 
-if [[ -n "${BUILD_TARGETS}" ]]; then
-  if ! (set -x; ninja -C "${BUILD_DIR}" ${BUILD_TARGETS}); then
+if [[ "${#BUILD_TARGETS}" -gt 0 ]]; then
+  if ! (set -x; ninja -C "${BUILD_DIR}" "${BUILD_TARGETS[@]}"); then
     echo "::endgroup::"
-    echo "🔴🛠️ Ninja build failed for targets ($(elapsed_time)): ${BUILD_TARGETS}"
+    echo "🔴🛠️ Ninja build failed for targets ($(elapsed_time)): ${BUILD_TARGETS[*]@Q}"
     exit 1
   fi
 fi
 
-if [[ -n "${CTEST_TARGETS}" ]]; then
-  for t in ${CTEST_TARGETS}; do
+if [[ "${#CTEST_TARGETS}" -gt 0 ]]; then
+  for t in "${CTEST_TARGETS[@]}"; do
     if ! (set -x; ctest --test-dir "${BUILD_DIR}" -R "$t" -V --output-on-failure); then
       echo "::endgroup::"
       echo "🔴🔎 CTest failed for target $t ($(elapsed_time))"
@@ -122,7 +121,7 @@ if [[ -n "${CTEST_TARGETS}" ]]; then
   done
 fi
 
-if [[ -n "${LIT_PRECOMPILE_TESTS}" || -n "${LIT_TESTS}" ]]; then
+if [[ "${#LIT_PRECOMPILE_TESTS}" -gt 0 || "${#LIT_TESTS}" -gt 0 ]]; then
   lit_site_cfg="${BUILD_DIR}/libcudacxx/test/libcudacxx/lit.site.cfg"
   if [[ ! -f "${lit_site_cfg}" ]]; then
     echo "::endgroup::"
@@ -131,8 +130,8 @@ if [[ -n "${LIT_PRECOMPILE_TESTS}" || -n "${LIT_TESTS}" ]]; then
   fi
 fi
 
-if [[ -n "${LIT_PRECOMPILE_TESTS}" ]]; then
-  for t in ${LIT_PRECOMPILE_TESTS}; do
+if [[ "${#LIT_PRECOMPILE_TESTS}" -gt 0 ]]; then
+  for t in "${LIT_PRECOMPILE_TESTS[@]}"; do
     t_path="libcudacxx/test/libcudacxx/${t}"
     if ! (set -x; LIBCUDACXX_SITE_CONFIG="${lit_site_cfg}" lit -v "-Dexecutor=NoopExecutor()" "${t_path}"); then
       echo "::endgroup::"
@@ -142,8 +141,8 @@ if [[ -n "${LIT_PRECOMPILE_TESTS}" ]]; then
   done
 fi
 
-if [[ -n "${LIT_TESTS}" ]]; then
-  for t in ${LIT_TESTS}; do
+if [[ "${#LIT_TESTS}" -gt 0 ]]; then
+  for t in "${LIT_TESTS[@]}"; do
     t_path="libcudacxx/test/libcudacxx/${t}"
     if ! (set -x; LIBCUDACXX_SITE_CONFIG="${lit_site_cfg}" lit -v "${t_path}"); then
       echo "::endgroup::"

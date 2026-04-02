@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$#" -lt 3 ]; then
+if [[ "$#" -lt 3 ]]; then
     echo "Usage: $0 num_tries sleep_time command [args...]"
     echo "  num_tries: Number of attempts to run the command"
     echo "  sleep_time: Time to wait between attempts (in seconds)"
@@ -20,12 +20,12 @@ for ((i=1; i<=num_tries; i++)); do
     status=0
     eval "${command[*]}" || status=$?
 
-    if [ $status -eq 0 ]; then
+    if [[ "$status" -eq 0 ]]; then
         echo "Command '${command[*]}' succeeded on attempt ${i}."
         exit 0
     else
         echo "Command '${command[*]}' failed with status ${status}. Retrying in ${sleep_time} seconds..."
-        sleep $sleep_time
+        sleep "$sleep_time"
     fi
 done
 echo "Command '${command[*]}' failed after ${num_tries} attempts."

@@ -2,7 +2,9 @@ setup_python_env() {
     local py_version=$1
 
     # Source pretty_printing.sh for begin_group/end_group helpers
-    local script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    local script_dir
+    script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    # shellcheck source=ci/pretty_printing.sh
     source "${script_dir}/pretty_printing.sh"
 
     begin_group "🐍 Setting up Python ${py_version} (pyenv)"
@@ -14,9 +16,9 @@ setup_python_env() {
     fi
 
     # Install the build dependencies, check /etc/os-release to see if we are on ubuntu or rocky
-    if [ -f /etc/os-release ]; then
+    if [[ -f /etc/os-release ]]; then
         source /etc/os-release
-        if [ "$ID" = "ubuntu" ]; then
+        if [[ "$ID" = "ubuntu" ]]; then
             # Use the retry helper to mitigate issues with apt network errors:
             retry() {
               "${script_dir}/util/retry.sh" 5 30 "$@"
@@ -26,7 +28,7 @@ setup_python_env() {
             retry sudo apt install -y make libssl-dev zlib1g-dev \
             libbz2-dev libreadline-dev libsqlite3-dev curl git \
             libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
-        elif [ "$ID" = "rocky" ]; then
+        elif [[ "$ID" = "rocky" ]]; then
             # we're inside the rockylinux container, sudo not required/available
             dnf install -y make patch zlib-devel bzip2 bzip2-devel readline-devel \
             sqlite sqlite-devel openssl-devel tk-devel libffi-devel xz-devel libuuid-devel \

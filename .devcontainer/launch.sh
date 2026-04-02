@@ -30,9 +30,10 @@ print_help() {
 _upvar() {
     if unset -v "$1"; then
         if (( $# == 2 )); then
-            eval $1=\"\$2\";
+            eval "$1"=\"\$2\";
         else
-            eval $1=\(\"\${@:2}\"\);
+            # shellcheck disable=SC1083
+            eval "$1"=\(\"\${@:2}\"\);
         fi;
     fi
 }
@@ -47,7 +48,7 @@ parse_options() {
     # implementations of getopt(1), and this version if the environment variable
     # GETOPT_COMPATIBLE is set, will return '--' and error status 0.
     set +e
-    getopt -T 2>&1 > /dev/null
+    getopt -T >/dev/null 2>&1
     getopt_ret=$?
     set -e
 
@@ -135,6 +136,7 @@ launch_docker() {
     # Introduces the `DOCKER_IMAGE`, `ENTRYPOINTS`, `ENV_VARS`, `GPU_REQUEST`,
     # `INITIALIZE_COMMANDS`, `MOUNTS`, `REMOTE_USER`, `RUN_ARGS`, and
     # `WORKSPACE_FOLDER` variables
+    # shellcheck disable=SC2312,SC1090
     source <(python3 .devcontainer/launch.py "${path}/devcontainer.json")
 
     ###
@@ -142,6 +144,7 @@ launch_docker() {
     ###
 
     local init_cmd;
+    # shellcheck disable=SC2154
     for init_cmd in "${INITIALIZE_COMMANDS[@]}"; do
         eval "${init_cmd}"
     done
@@ -163,6 +166,7 @@ launch_docker() {
         RUN_ARGS+=(--gpus "${gpu_request}")
     else
         # Otherwise read and infer from hostRequirements.gpu
+        # shellcheck disable=SC2154,SC2153
         RUN_ARGS+=("${GPU_REQUEST[@]}")
     fi
 
@@ -176,6 +180,7 @@ launch_docker() {
                 ENV_VARS+=(--env NEW_UID="$(id -u)")
                 ENV_VARS+=(--env NEW_GID="$(id -g)")
                 ENV_VARS+=(--env REMOTE_USER="$REMOTE_USER")
+                # shellcheck disable=SC2154
                 ENTRYPOINTS+=("${WORKSPACE_FOLDER}/.devcontainer/docker-entrypoint.sh")
                 ;;
         esac
@@ -201,6 +206,7 @@ launch_docker() {
             echo "::group::Docker run command"
             set -x
         fi
+        # shellcheck disable=SC2154
         exec docker run \
           "${RUN_ARGS[@]}" \
           "${ENV_VARS[@]}" \
@@ -225,14 +231,17 @@ launch_vscode() {
     # and compiler environment into this temporary directory, adjusting paths to ensure the
     # correct workspace is loaded. A special URL is then generated to instruct VSCode to
     # launch the development container using this temporary configuration.
-    local workspace="$(basename "$(pwd)")"
-    local tmpdir="$(mktemp -d)/${workspace}"
+    local workspace
+    workspace="$(basename "$(pwd)")"
+    local tmpdir
+    tmpdir="$(mktemp -d)/${workspace}"
     mkdir -p "${tmpdir}"
     mkdir -p "${tmpdir}/.devcontainer"
     cp -arL "${path}/devcontainer.json" "${tmpdir}/.devcontainer"
     sed -i "s@\${localWorkspaceFolder}@$(pwd)@g" "${tmpdir}/.devcontainer/devcontainer.json"
     local path="${tmpdir}"
-    local hash="$(echo -n "${path}" | xxd -pu - | tr -d '[:space:]')"
+    local hash
+    hash="$(echo -n "${path}" | xxd -pu - | tr -d '[:space:]')"
     local url="vscode://vscode-remote/dev-container+${hash}/home/coder/cccl"
 
     local launch=""
@@ -242,7 +251,7 @@ launch_vscode() {
         launch="xdg-open"
     fi
 
-    if [ -n "${launch}" ]; then
+    if [[ -n "${launch}" ]]; then
         echo "Launching VSCode Dev Container URL: ${url}"
         code --new-window "${tmpdir}"
         exec "${launch}" "${url}" >/dev/null 2>&1

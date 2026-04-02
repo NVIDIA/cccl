@@ -33,7 +33,7 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-if [ $VERBOSE ]; then
+if [[ -n "$VERBOSE" ]]; then
     set -x
 fi
 
