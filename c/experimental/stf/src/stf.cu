@@ -27,7 +27,6 @@ static_assert(sizeof(dim4) == sizeof(stf_dim4), "dim4 and stf_dim4 must have ide
 static_assert(alignof(pos4) == alignof(stf_pos4), "pos4 and stf_pos4 must have identical alignment");
 static_assert(alignof(dim4) == alignof(stf_dim4), "dim4 and stf_dim4 must have identical alignment");
 
-
 static data_place deref_data_place(stf_data_place_handle h)
 {
   _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
