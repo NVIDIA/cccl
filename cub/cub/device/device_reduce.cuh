@@ -43,6 +43,7 @@
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/indirectly_comparable.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -1014,6 +1015,9 @@ public:
   //! @param[out] d_index_out
   //!   Iterator to which the index of the returned value is written
   //!
+  //! @param[in] compare_op
+  //!   Comparison operator returning ``true`` if the first argument is less than the second
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of ``d_in``)
   //!
@@ -1021,6 +1025,42 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
+  template <
+    typename InputIteratorT,
+    typename ExtremumOutIteratorT,
+    typename IndexOutIteratorT,
+    typename CompareOpT,
+    // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+    // ExtremumOutIteratorT, which is wrong IMO
+    ::cuda::std::enable_if_t<::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>, int> = 0>
+  CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    ExtremumOutIteratorT d_min_out,
+    IndexOutIteratorT d_index_out,
+    ::cuda::std::int64_t num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream = 0)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
+
+    using PerPartitionOffsetT = int; // used by the kernel to index within one partition
+    using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
+
+    return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_min_out,
+      d_index_out,
+      static_cast<GlobalOffsetT>(num_items),
+      detail::arg_less{compare_op},
+      stream);
+  }
+
+  //! @overload
+  //! @note Uses ``cuda::std::less`` as comparison operator
   template <typename InputIteratorT, typename ExtremumOutIteratorT, typename IndexOutIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
     void* d_temp_storage,
@@ -1031,21 +1071,8 @@ public:
     ::cuda::std::int64_t num_items,
     cudaStream_t stream = 0)
   {
-    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
-
-    using PerPartitionOffsetT = int; // used by the kernel to index within one partition
-    using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
-    using ReduceOpT           = cub::ArgMin;
-
-    return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_min_out,
-      d_index_out,
-      static_cast<GlobalOffsetT>(num_items),
-      ReduceOpT{},
-      stream);
+    return ArgMin(
+      d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out, num_items, ::cuda::std::less{}, stream);
   }
 
   //! @rst
@@ -1100,6 +1127,9 @@ public:
   //! @param[out] d_index_out
   //!   Iterator to which the index of the returned value is written
   //!
+  //! @param[in] compare_op
+  //!   Comparison operator returning ``true`` if the first argument is less than the second
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of ``d_in``)
   //!
@@ -1107,16 +1137,22 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename ExtremumOutIteratorT,
-            typename IndexOutIteratorT,
-            typename EnvT = ::cuda::std::execution::env<>>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  ArgMin(InputIteratorT d_in,
-         ExtremumOutIteratorT d_min_out,
-         IndexOutIteratorT d_index_out,
-         ::cuda::std::int64_t num_items,
-         EnvT env = {})
+  template <
+    typename InputIteratorT,
+    typename ExtremumOutIteratorT,
+    typename IndexOutIteratorT,
+    typename CompareOpT,
+    typename EnvT = ::cuda::std::execution::env<>,
+    // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+    // ExtremumOutIteratorT, which is wrong IMO
+    ::cuda::std::enable_if_t<::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
+    InputIteratorT d_in,
+    ExtremumOutIteratorT d_min_out,
+    IndexOutIteratorT d_index_out,
+    ::cuda::std::int64_t num_items,
+    CompareOpT compare_op,
+    EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMin");
 
@@ -1139,7 +1175,6 @@ public:
 
     using PerPartitionOffsetT = int; // used by the kernel to index within one partition
     using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
-    using ReduceOpT           = cub::ArgMin;
 
     void* d_temp_storage      = nullptr;
     size_t temp_storage_bytes = 0;
@@ -1152,7 +1187,7 @@ public:
           d_min_out,
           d_index_out,
           static_cast<GlobalOffsetT>(num_items),
-          ReduceOpT{},
+          detail::arg_less{compare_op},
           stream.get()))
     {
       return error;
@@ -1173,7 +1208,7 @@ public:
       d_min_out,
       d_index_out,
       static_cast<GlobalOffsetT>(num_items),
-      ReduceOpT{},
+      detail::arg_less{compare_op},
       stream.get());
 
     // Try to deallocate regardless of the error to avoid memory leaks
@@ -1187,6 +1222,25 @@ public:
     }
 
     return deallocate_error;
+  }
+
+  //! @overload
+  //! @note Uses ``cuda::std::less`` as comparison operator
+  template <typename InputIteratorT,
+            typename ExtremumOutIteratorT,
+            typename IndexOutIteratorT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+            // ExtremumOutIteratorT, which is wrong IMO
+            ::cuda::std::enable_if_t<!::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, EnvT>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  ArgMin(InputIteratorT d_in,
+         ExtremumOutIteratorT d_min_out,
+         IndexOutIteratorT d_index_out,
+         ::cuda::std::int64_t num_items,
+         EnvT env = {})
+  {
+    return ArgMin(d_in, d_min_out, d_index_out, num_items, ::cuda::std::less{}, env);
   }
 
   //! @rst
@@ -1308,7 +1362,14 @@ public:
     InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
 
     return detail::reduce::dispatch<AccumT>(
-      d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, OffsetT{num_items}, cub::ArgMin(), initial_value, stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_indexed_in,
+      d_out,
+      OffsetT{num_items},
+      detail::arg_min{},
+      initial_value,
+      stream);
   }
 
   //! @rst
@@ -1624,7 +1685,7 @@ public:
 
     using PerPartitionOffsetT = int; // used by the kernel to index within one partition
     using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
-    using ReduceOpT           = cub::ArgMax;
+    using ReduceOpT           = detail::arg_max;
 
     return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
       d_temp_storage,
@@ -1760,7 +1821,14 @@ public:
     InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
 
     return detail::reduce::dispatch<AccumT>(
-      d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, OffsetT{num_items}, cub::ArgMax(), initial_value, stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_indexed_in,
+      d_out,
+      OffsetT{num_items},
+      detail::arg_max{},
+      initial_value,
+      stream);
   }
 
   //! @rst

@@ -229,9 +229,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   auto accumulating_out_op = accumulating_transform_output_op_t{
     true, is_single_partition, nullptr, nullptr, d_result_out, local_to_global_op, reduce_op};
 
+  // TODO(bgruber): what should we return if the range is empty? min_element yields last (one past the end iterator)
   // Initial value
-  auto initial_value = empty_problem_init_t<per_partition_accum_t>{
-    {PerPartitionOffsetT{1}, output_extremum_t{::cuda::std::numeric_limits<input_value_t>::max()}}};
+  auto initial_value = empty_problem_init_t<per_partition_accum_t>{{PerPartitionOffsetT{1}, output_extremum_t{}}};
 
   void* allocations[2]       = {nullptr, nullptr};
   size_t allocation_sizes[2] = {0, 2 * sizeof(global_accum_t)};

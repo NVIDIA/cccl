@@ -45,7 +45,7 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OpT>)
   // Iterator providing the values being reduced
   using values_it_t = T*;
 
-  auto const init = ::cuda::std::is_same_v<OpT, cub::ArgMin>
+  auto const init = ::cuda::std::is_same_v<OpT, cub::detail::arg_min>
                     ? ::cuda::std::numeric_limits<T>::max()
                     : ::cuda::std::numeric_limits<T>::lowest();
 
@@ -104,7 +104,7 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OpT>)
   });
 }
 
-using op_types = nvbench::type_list<cub::ArgMin, cub::ArgMax>;
+using op_types = nvbench::type_list<cub::detail::arg_min, cub::detail::arg_max>;
 
 NVBENCH_BENCH_TYPES(arg_reduce, NVBENCH_TYPE_AXES(fundamental_types, op_types))
   .set_name("base")
