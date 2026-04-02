@@ -56,23 +56,6 @@ namespace detail
 template <typename DeterminismT>
 inline constexpr bool is_non_deterministic_v =
   ::cuda::std::is_same_v<DeterminismT, ::cuda::execution::determinism::not_guaranteed_t>;
-
-namespace reduce
-{
-template <typename ExtremumOutIteratorT, typename IndexOutIteratorT>
-struct unzip_and_write_arg_extremum_op
-{
-  ExtremumOutIteratorT result_out_it;
-  IndexOutIteratorT index_out_it;
-
-  template <typename IndexT, typename KeyValuePairT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(IndexT, KeyValuePairT reduced_result)
-  {
-    *result_out_it = reduced_result.value;
-    *index_out_it  = reduced_result.key;
-  }
-};
-} // namespace reduce
 } // namespace detail
 
 //! @rst
@@ -1050,36 +1033,18 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
 
-    // The input type
-    using InputValueT = cub::detail::it_value_t<InputIteratorT>;
-
-    // Offset type used within the kernel and to index within one partition
-    using PerPartitionOffsetT = int;
-
-    // Offset type used to index within the total input in the range [d_in, d_in + num_items)
-    using GlobalOffsetT = ::cuda::std::int64_t;
-
-    // The value type used for the extremum
-    using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
-
-    // Reduction operation
-    using ReduceOpT = cub::ArgMin;
-
-    // Initial value
-    OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::max()};
-
-    // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto out_it = ::cuda::make_tabulate_output_iterator(
-      detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
+    using PerPartitionOffsetT = int; // used by the kernel to index within one partition
+    using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
+    using ReduceOpT           = cub::ArgMin;
 
     return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
-      out_it,
+      d_min_out,
+      d_index_out,
       static_cast<GlobalOffsetT>(num_items),
       ReduceOpT{},
-      initial_value,
       stream);
   }
 
@@ -1172,33 +1137,22 @@ public:
     auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
     auto mr     = ::cuda::__call_or(::cuda::mr::get_memory_resource, detail::device_memory_resource{}, env);
 
+    using PerPartitionOffsetT = int; // used by the kernel to index within one partition
+    using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
+    using ReduceOpT           = cub::ArgMin;
+
     void* d_temp_storage      = nullptr;
     size_t temp_storage_bytes = 0;
-
-    // Reduction operation
-    using ReduceOpT           = cub::ArgMin;
-    using InputValueT         = cub::detail::it_value_t<InputIteratorT>;
-    using PerPartitionOffsetT = int;
-    using GlobalOffsetT       = ::cuda::std::int64_t;
-
-    using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
-
-    // Initial value
-    OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::max()};
-
-    // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto out_it = ::cuda::make_tabulate_output_iterator(
-      detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
 
     // Query the required temporary storage size
     if (const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
           d_temp_storage,
           temp_storage_bytes,
           d_in,
-          out_it,
+          d_min_out,
+          d_index_out,
           static_cast<GlobalOffsetT>(num_items),
           ReduceOpT{},
-          initial_value,
           stream.get()))
     {
       return error;
@@ -1216,10 +1170,10 @@ public:
       d_temp_storage,
       temp_storage_bytes,
       d_in,
-      out_it,
+      d_min_out,
+      d_index_out,
       static_cast<GlobalOffsetT>(num_items),
       ReduceOpT{},
-      initial_value,
       stream.get());
 
     // Try to deallocate regardless of the error to avoid memory leaks
@@ -1668,36 +1622,18 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
 
-    // The input type
-    using InputValueT = cub::detail::it_value_t<InputIteratorT>;
-
-    // Offset type used within the kernel and to index within one partition
-    using PerPartitionOffsetT = int;
-
-    // Offset type used to index within the total input in the range [d_in, d_in + num_items)
-    using GlobalOffsetT = ::cuda::std::int64_t;
-
-    // The value type used for the extremum
-    using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
-
-    // Reduction operation
-    using ReduceOpT = cub::ArgMax;
-
-    // Initial value
-    OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::lowest()};
-
-    // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto out_it = ::cuda::make_tabulate_output_iterator(
-      detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_max_out, d_index_out});
+    using PerPartitionOffsetT = int; // used by the kernel to index within one partition
+    using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
+    using ReduceOpT           = cub::ArgMax;
 
     return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
-      out_it,
+      d_max_out,
+      d_index_out,
       static_cast<GlobalOffsetT>(num_items),
       ReduceOpT{},
-      initial_value,
       stream);
   }
 
@@ -1917,33 +1853,22 @@ public:
     auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
     auto mr     = ::cuda::__call_or(::cuda::mr::get_memory_resource, detail::device_memory_resource{}, env);
 
+    using PerPartitionOffsetT = int; // used by the kernel to index within one partition
+    using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
+    using ReduceOpT           = cub::ArgMax;
+
     void* d_temp_storage      = nullptr;
     size_t temp_storage_bytes = 0;
-
-    // Reduction operation
-    using ReduceOpT           = cub::ArgMax;
-    using InputValueT         = cub::detail::it_value_t<InputIteratorT>;
-    using PerPartitionOffsetT = int;
-    using GlobalOffsetT       = ::cuda::std::int64_t;
-
-    using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
-
-    // Initial value
-    OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::lowest()};
-
-    // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto out_it = ::cuda::make_tabulate_output_iterator(
-      detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_max_out, d_index_out});
 
     // Query the required temporary storage size
     if (const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
           d_temp_storage,
           temp_storage_bytes,
           d_in,
-          out_it,
+          d_max_out,
+          d_index_out,
           static_cast<GlobalOffsetT>(num_items),
           ReduceOpT{},
-          initial_value,
           stream.get()))
     {
       return error;
@@ -1961,10 +1886,10 @@ public:
       d_temp_storage,
       temp_storage_bytes,
       d_in,
-      out_it,
+      d_max_out,
+      d_index_out,
       static_cast<GlobalOffsetT>(num_items),
       ReduceOpT{},
-      initial_value,
       stream.get());
 
     // Try to deallocate regardless of the error to avoid memory leaks
