@@ -21,13 +21,6 @@ workflows:
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
-    - {jobs: ['build'], cxx: 'nvhpc', ctk: 'nvhpc', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
-    - {project: 'libcudacxx', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc'}
-    - {project: 'cub', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', cmake_options: '-DCUB_ENABLE_LAUNCH_VARIANTS=OFF'}
-    - {project: 'thrust', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', sm: '75;120'}
-    - {project: 'cudax', jobs: ['build'], std: 'max', ctk: 'nvhpc', cxx: 'nvhpc', sm: '75;120'}
-    - {jobs: ['build'], cxx: 'nvhpc-prev', ctk: 'nvhpc-prev', std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
-    - {jobs: ['build'], cxx: 'nvhpc',      ctk: 'nvhpc',      std: 'all', project: ['libcudacxx', 'cub', 'thrust', 'cudax', 'stdpar'], cpu: ['amd64', 'arm64']}
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
