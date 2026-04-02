@@ -12,6 +12,7 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <cstddef>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -26,13 +27,6 @@ static_assert(sizeof(dim4) == sizeof(stf_dim4), "dim4 and stf_dim4 must have ide
 static_assert(alignof(pos4) == alignof(stf_pos4), "pos4 and stf_pos4 must have identical alignment");
 static_assert(alignof(dim4) == alignof(stf_dim4), "dim4 and stf_dim4 must have identical alignment");
 
-static void stf_dim4_from_dim4(const dim4& d, stf_dim4* out)
-{
-  out->x = static_cast<uint64_t>(d.x);
-  out->y = static_cast<uint64_t>(d.y);
-  out->z = static_cast<uint64_t>(d.z);
-  out->t = static_cast<uint64_t>(d.t);
-}
 
 static data_place deref_data_place(stf_data_place_handle h)
 {
@@ -96,7 +90,7 @@ void stf_exec_place_get_dims(stf_exec_place_handle h, stf_dim4* out_dims)
 {
   _CCCL_ASSERT(h != nullptr && out_dims != nullptr, "invalid arguments");
   dim4 d = reinterpret_cast<exec_place*>(h)->get_dims();
-  stf_dim4_from_dim4(d, out_dims);
+  ::std::memcpy(out_dims, &d, sizeof(d));
 }
 
 size_t stf_exec_place_size(stf_exec_place_handle h)
