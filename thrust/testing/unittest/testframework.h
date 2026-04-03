@@ -259,7 +259,7 @@ inline std::string base_class_name(const std::string& name)
   // if the name begins with "class ", chop it off
   chop_prefix(result, "class ");
 
-  const std::size_t first_lt = result.find_first_of("<");
+  const std::size_t first_lt = result.find_first_of('<');
 
   if (first_lt < result.size())
   {
