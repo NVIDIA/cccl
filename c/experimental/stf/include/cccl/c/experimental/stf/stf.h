@@ -30,18 +30,15 @@
 //! \par Basic Usage Pattern:
 //! \code
 //! // 1. Create STF context
-//! stf_ctx_handle ctx;
-//! stf_ctx_create(&ctx);
+//! stf_ctx_handle ctx = stf_ctx_create();
 //!
 //! // 2. Create logical data from arrays
 //! float X[1024], Y[1024];
-//! stf_logical_data_handle lX, lY;
-//! stf_logical_data(ctx, &lX, X, sizeof(X));
-//! stf_logical_data(ctx, &lY, Y, sizeof(Y));
+//! stf_logical_data_handle lX = stf_logical_data(ctx, X, sizeof(X));
+//! stf_logical_data_handle lY = stf_logical_data(ctx, Y, sizeof(Y));
 //!
 //! // 3. Create and configure task
-//! stf_task_handle task;
-//! stf_task_create(ctx, &task);
+//! stf_task_handle task = stf_task_create(ctx);
 //! stf_task_add_dep(task, lX, STF_READ);  // X is read-only
 //! stf_task_add_dep(task, lY, STF_RW);    // Y is read-write
 //!
@@ -54,10 +51,10 @@
 //! stf_task_end(task);
 //!
 //! // 5. Cleanup
-//! stf_ctx_finalize(ctx);
 //! stf_task_destroy(task);
 //! stf_logical_data_destroy(lX);
 //! stf_logical_data_destroy(lY);
+//! stf_ctx_finalize(ctx);
 //! \endcode
 //!
 //! \warning This API is experimental and subject to change.
@@ -276,22 +273,20 @@ typedef void (*stf_host_callback_fn)(stf_host_launch_deps_handle deps);
 //! Creates a new STF context using the default stream-based backend.
 //! Tasks are executed eagerly using CUDA streams and events.
 //!
-//! \param[out] ctx Pointer to receive context handle
+//! \return Context handle, or NULL if allocation failed
 //!
-//! \pre ctx must not be NULL
-//! \post *ctx contains valid context handle that must be finalized with stf_ctx_finalize()
+//! \post On success, caller must finalize with stf_ctx_finalize()
 //!
 //! \par Example:
 //! \code
-//! stf_ctx_handle ctx;
-//! stf_ctx_create(&ctx);
+//! stf_ctx_handle ctx = stf_ctx_create();
 //! // ... use context ...
 //! stf_ctx_finalize(ctx);
 //! \endcode
 //!
 //! \see stf_ctx_create_graph(), stf_ctx_finalize()
 
-void stf_ctx_create(stf_ctx_handle* ctx);
+stf_ctx_handle stf_ctx_create(void);
 
 //!
 //! \brief Create STF context with graph backend
@@ -300,24 +295,22 @@ void stf_ctx_create(stf_ctx_handle* ctx);
 //! Tasks are captured into CUDA graphs and launched when needed,
 //! potentially providing better performance for repeated patterns.
 //!
-//! \param[out] ctx Pointer to receive context handle
+//! \return Context handle, or NULL if allocation failed
 //!
-//! \pre ctx must not be NULL
-//! \post *ctx contains valid context handle that must be finalized with stf_ctx_finalize()
+//! \post On success, caller must finalize with stf_ctx_finalize()
 //!
 //! \note Graph backend has restrictions on stream synchronization within tasks
 //!
 //! \par Example:
 //! \code
-//! stf_ctx_handle ctx;
-//! stf_ctx_create_graph(&ctx);
+//! stf_ctx_handle ctx = stf_ctx_create_graph();
 //! // ... use context ...
 //! stf_ctx_finalize(ctx);
 //! \endcode
 //!
 //! \see stf_ctx_create(), stf_ctx_finalize()
 
-void stf_ctx_create_graph(stf_ctx_handle* ctx);
+stf_ctx_handle stf_ctx_create_graph(void);
 
 //!
 //! \brief Finalize STF context
@@ -334,8 +327,7 @@ void stf_ctx_create_graph(stf_ctx_handle* ctx);
 //!
 //! \par Example:
 //! \code
-//! stf_ctx_handle ctx;
-//! stf_ctx_create(&ctx);
+//! stf_ctx_handle ctx = stf_ctx_create();
 //! // ... submit tasks ...
 //! stf_ctx_finalize(ctx);  // Blocks until completion
 //! \endcode
@@ -358,8 +350,7 @@ void stf_ctx_finalize(stf_ctx_handle ctx);
 //!
 //! \par Example:
 //! \code
-//! stf_ctx_handle ctx;
-//! stf_ctx_create(&ctx);
+//! stf_ctx_handle ctx = stf_ctx_create();
 //! // ... submit tasks ...
 //!
 //! cudaStream_t fence = stf_fence(ctx);
@@ -384,15 +375,13 @@ cudaStream_t stf_fence(stf_ctx_handle ctx);
 //! This is a convenience wrapper around stf_logical_data_with_place() with host placement.
 //!
 //! \param ctx Context handle
-//! \param[out] ld Pointer to receive logical data handle
 //! \param addr Pointer to existing data buffer (assumed to be host memory)
 //! \param sz Size of data in bytes
 //!
 //! \pre ctx must be valid context handle
-//! \pre ld must not be NULL
 //! \pre addr must not be NULL and point to host-accessible memory
 //! \pre sz must be greater than 0
-//! \post *ld contains valid logical data handle
+//! \return Logical data handle, or NULL on allocation failure
 //!
 //! \note This function assumes host memory. For device/managed memory, use stf_logical_data_with_place()
 //! \note Equivalent to host placement via stf_data_place_host() passed to stf_logical_data_with_place()
@@ -400,15 +389,14 @@ cudaStream_t stf_fence(stf_ctx_handle ctx);
 //! \par Example:
 //! \code
 //! float data[1024];
-//! stf_logical_data_handle ld;
-//! stf_logical_data(ctx, &ld, data, sizeof(data));  // Assumes host memory
+//! stf_logical_data_handle ld = stf_logical_data(ctx, data, sizeof(data));  // Assumes host memory
 //! // ... use in tasks ...
 //! stf_logical_data_destroy(ld);
 //! \endcode
 //!
 //! \see stf_logical_data_with_place(), stf_logical_data_empty(), stf_logical_data_destroy()
 
-void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz);
+stf_logical_data_handle stf_logical_data(stf_ctx_handle ctx, void* addr, size_t sz);
 
 //!
 //! \brief Create logical data handle from address with data place specification
@@ -419,18 +407,16 @@ void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* add
 //! for optimal data movement and placement strategies.
 //!
 //! \param ctx Context handle
-//! \param[out] ld Pointer to receive logical data handle
 //! \param addr Pointer to existing memory buffer
 //! \param sz Size of buffer in bytes
 //! \param dplace Data place specifying memory location
 //!
 //! \pre ctx must be valid context handle
-//! \pre ld must be valid pointer to logical data handle pointer
 //! \pre addr must point to valid memory of at least sz bytes
 //! \pre sz must be greater than 0
 //! \pre dplace must be valid data place (not invalid)
 //!
-//! \post *ld contains valid logical data handle on success
+//! \return Logical data handle on success, or NULL on allocation failure
 //! \post Caller owns returned handle (must call stf_logical_data_destroy())
 //!
 //! \par Examples:
@@ -439,30 +425,30 @@ void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* add
 //! float* device_ptr;
 //! cudaMalloc(&device_ptr, 1000 * sizeof(float));
 //! stf_data_place_handle dplace = stf_data_place_device(0);
-//! stf_logical_data_handle ld;
-//! stf_logical_data_with_place(ctx, &ld, device_ptr, 1000 * sizeof(float), dplace);
+//! stf_logical_data_handle ld =
+//!   stf_logical_data_with_place(ctx, device_ptr, 1000 * sizeof(float), dplace);
 //! stf_data_place_destroy(dplace);
 //!
 //! // Host memory
 //! float* host_data = new float[1000];
 //! stf_data_place_handle host_place = stf_data_place_host();
-//! stf_logical_data_handle ld_host;
-//! stf_logical_data_with_place(ctx, &ld_host, host_data, 1000 * sizeof(float), host_place);
+//! stf_logical_data_handle ld_host =
+//!   stf_logical_data_with_place(ctx, host_data, 1000 * sizeof(float), host_place);
 //! stf_data_place_destroy(host_place);
 //!
 //! // Managed memory
 //! float* managed_ptr;
 //! cudaMallocManaged(&managed_ptr, 1000 * sizeof(float));
 //! stf_data_place_handle managed_place = stf_data_place_managed();
-//! stf_logical_data_handle ld_managed;
-//! stf_logical_data_with_place(ctx, &ld_managed, managed_ptr, 1000 * sizeof(float), managed_place);
+//! stf_logical_data_handle ld_managed =
+//!   stf_logical_data_with_place(ctx, managed_ptr, 1000 * sizeof(float), managed_place);
 //! stf_data_place_destroy(managed_place);
 //! \endcode
 //!
 //! \see stf_data_place_device(), stf_data_place_host(), stf_data_place_managed()
 
-void stf_logical_data_with_place(
-  stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz, stf_data_place_handle dplace);
+stf_logical_data_handle
+stf_logical_data_with_place(stf_ctx_handle ctx, void* addr, size_t sz, stf_data_place_handle dplace);
 
 //!
 //! \brief Set symbolic name for logical data
@@ -480,8 +466,7 @@ void stf_logical_data_with_place(
 //!
 //! \par Example:
 //! \code
-//! stf_logical_data_handle ld;
-//! stf_logical_data(ctx, &ld, data, size);
+//! stf_logical_data_handle ld = stf_logical_data(ctx, data, size);
 //! stf_logical_data_set_symbol(ld, "input_matrix");
 //! \endcode
 //!
@@ -504,8 +489,7 @@ void stf_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
 //!
 //! \par Example:
 //! \code
-//! stf_logical_data_handle ld;
-//! stf_logical_data(ctx, &ld, data, size);
+//! stf_logical_data_handle ld = stf_logical_data(ctx, data, size);
 //! // ... use in tasks ...
 //! stf_logical_data_destroy(ld);  // Cleanup
 //! \endcode
@@ -522,20 +506,17 @@ void stf_logical_data_destroy(stf_logical_data_handle ld);
 //!
 //! \param ctx Context handle
 //! \param length Size in bytes
-//! \param[out] to Pointer to receive logical data handle
 //!
 //! \pre ctx must be valid context handle
 //! \pre length must be greater than 0
-//! \pre to must not be NULL
-//! \post *to contains valid logical data handle
+//! \return Logical data handle, or NULL on allocation failure
 //!
 //! \note First access must be write-only (STF_WRITE)
 //! \note No write-back occurs since there's no host backing
 //!
 //! \par Example:
 //! \code
-//! stf_logical_data_handle temp;
-//! stf_logical_data_empty(ctx, 1024 * sizeof(float), &temp);
+//! stf_logical_data_handle temp = stf_logical_data_empty(ctx, 1024 * sizeof(float));
 //!
 //! // First access must be write-only
 //! stf_task_add_dep(task, temp, STF_WRITE);
@@ -543,7 +524,7 @@ void stf_logical_data_destroy(stf_logical_data_handle ld);
 //!
 //! \see stf_logical_data(), stf_logical_data_destroy()
 
-void stf_logical_data_empty(stf_ctx_handle ctx, size_t length, stf_logical_data_handle* to);
+stf_logical_data_handle stf_logical_data_empty(stf_ctx_handle ctx, size_t length);
 
 //!
 //! \brief Create synchronization token
@@ -552,19 +533,16 @@ void stf_logical_data_empty(stf_ctx_handle ctx, size_t length, stf_logical_data_
 //! Contains no actual data but can be used to enforce execution order.
 //!
 //! \param ctx Context handle
-//! \param[out] ld Pointer to receive token handle
 //!
 //! \pre ctx must be valid context handle
-//! \pre ld must not be NULL
-//! \post *ld contains valid token handle
+//! \return Token handle, or NULL on allocation failure
 //!
 //! \note More efficient than using dummy data for synchronization
 //! \note Can be accessed with any access mode
 //!
 //! \par Example:
 //! \code
-//! stf_logical_data_handle sync_token;
-//! stf_token(ctx, &sync_token);
+//! stf_logical_data_handle sync_token = stf_token(ctx);
 //!
 //! // Task 1 signals completion
 //! stf_task_add_dep(task1, sync_token, STF_WRITE);
@@ -575,7 +553,7 @@ void stf_logical_data_empty(stf_ctx_handle ctx, size_t length, stf_logical_data_
 //!
 //! \see stf_logical_data(), stf_logical_data_destroy()
 
-void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld);
+stf_logical_data_handle stf_token(stf_ctx_handle ctx);
 
 //! \}
 
@@ -591,23 +569,20 @@ void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld);
 //! to configure execution place, add dependencies, and execute.
 //!
 //! \param ctx Context handle
-//! \param[out] t Pointer to receive task handle
 //!
 //! \pre ctx must be valid context handle
-//! \pre t must not be NULL
-//! \post *t contains valid task handle
+//! \return Task handle, or NULL on allocation failure
 //!
 //! \par Example:
 //! \code
-//! stf_task_handle task;
-//! stf_task_create(ctx, &task);
+//! stf_task_handle task = stf_task_create(ctx);
 //! // ... configure task ...
 //! stf_task_destroy(task);
 //! \endcode
 //!
 //! \see stf_task_destroy(), stf_task_set_exec_place(), stf_task_add_dep()
 
-void stf_task_create(stf_ctx_handle ctx, stf_task_handle* t);
+stf_task_handle stf_task_create(stf_ctx_handle ctx);
 
 //!
 //! \brief Set task execution place
@@ -624,8 +599,7 @@ void stf_task_create(stf_ctx_handle ctx, stf_task_handle* t);
 //!
 //! \par Example:
 //! \code
-//! stf_task_handle task;
-//! stf_task_create(ctx, &task);
+//! stf_task_handle task = stf_task_create(ctx);
 //!
 //! // Execute on device 1
 //! stf_exec_place_handle place = stf_exec_place_device(1);
@@ -653,8 +627,7 @@ void stf_task_set_exec_place(stf_task_handle t, stf_exec_place_handle exec_p);
 //!
 //! \par Example:
 //! \code
-//! stf_task_handle task;
-//! stf_task_create(ctx, &task);
+//! stf_task_handle task = stf_task_create(ctx);
 //! stf_task_set_symbol(task, "matrix_multiply");
 //! \endcode
 //!
@@ -845,8 +818,7 @@ void* stf_task_get(stf_task_handle t, int submitted_index);
 //!
 //! \par Example:
 //! \code
-//! stf_task_handle task;
-//! stf_task_create(ctx, &task);
+//! stf_task_handle task = stf_task_create(ctx);
 //! // ... configure and execute task ...
 //! stf_task_destroy(task);
 //! \endcode
@@ -883,23 +855,20 @@ void stf_task_enable_capture(stf_task_handle t);
 //! especially with CUDA graph backend.
 //!
 //! \param ctx Context handle
-//! \param[out] k Pointer to receive kernel handle
 //!
 //! \pre ctx must be valid context handle
-//! \pre k must not be NULL
-//! \post *k contains valid kernel handle
+//! \return Kernel handle, or NULL on allocation failure
 //!
 //! \par Example:
 //! \code
-//! stf_cuda_kernel_handle kernel;
-//! stf_cuda_kernel_create(ctx, &kernel);
+//! stf_cuda_kernel_handle kernel = stf_cuda_kernel_create(ctx);
 //! // ... configure kernel ...
 //! stf_cuda_kernel_destroy(kernel);
 //! \endcode
 //!
 //! \see stf_cuda_kernel_destroy(), stf_task_create()
 
-void stf_cuda_kernel_create(stf_ctx_handle ctx, stf_cuda_kernel_handle* k);
+stf_cuda_kernel_handle stf_cuda_kernel_create(stf_ctx_handle ctx);
 
 //!
 //! \brief Set kernel execution place
@@ -1122,10 +1091,10 @@ void stf_cuda_kernel_destroy(stf_cuda_kernel_handle k);
 //! \brief Create a host launch scope on a regular context
 //!
 //! \param ctx Context handle
-//! \param[out] h Pointer to receive host launch handle
+//! \return Host launch handle, or NULL on allocation failure
 //!
 //! \see stf_host_launch_destroy()
-void stf_host_launch_create(stf_ctx_handle ctx, stf_host_launch_handle* h);
+stf_host_launch_handle stf_host_launch_create(stf_ctx_handle ctx);
 
 //! \brief Add a dependency to a host launch scope
 //!

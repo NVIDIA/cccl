@@ -210,7 +210,9 @@ int stf_exec_place_is_device(stf_exec_place_handle h)
 void stf_exec_place_get_dims(stf_exec_place_handle h, stf_dim4* out_dims)
 {
   _CCCL_ASSERT(h != nullptr && out_dims != nullptr, "invalid arguments");
-  *out_dims = from_opaque(h)->get_dims();
+  dim4 d = from_opaque(h)->get_dims();
+  static_assert(sizeof(d) == sizeof(stf_dim4), "dim4 and stf_dim4 must have the same size");
+  ::std::memcpy(out_dims, &d, sizeof(d));
 }
 
 size_t stf_exec_place_size(stf_exec_place_handle h)
@@ -338,18 +340,16 @@ const char* stf_data_place_to_string(stf_data_place_handle h)
   return s.c_str();
 }
 
-void stf_ctx_create(stf_ctx_handle* ctx)
+stf_ctx_handle stf_ctx_create(void)
 {
-  _CCCL_ASSERT(ctx != nullptr, "context handle pointer must not be null");
-  *ctx = to_opaque(stf_try_allocate([] {
+  return to_opaque(stf_try_allocate([] {
     return new context{};
   }));
 }
 
-void stf_ctx_create_graph(stf_ctx_handle* ctx)
+stf_ctx_handle stf_ctx_create_graph(void)
 {
-  _CCCL_ASSERT(ctx != nullptr, "context handle pointer must not be null");
-  *ctx = to_opaque(stf_try_allocate([] {
+  return to_opaque(stf_try_allocate([] {
     return new context{graph_ctx()};
   }));
 }
@@ -369,28 +369,26 @@ cudaStream_t stf_fence(stf_ctx_handle ctx)
   return context_ptr->fence();
 }
 
-void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz)
+stf_logical_data_handle stf_logical_data(stf_ctx_handle ctx, void* addr, size_t sz)
 {
-  _CCCL_ASSERT(ctx != nullptr, "context handle pointer must not be null");
-  _CCCL_ASSERT(ld != nullptr, "logical data handle pointer must not be null");
+  _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
 
   auto* context_ptr = from_opaque(ctx);
   auto ld_typed     = context_ptr->logical_data(make_slice((char*) addr, sz), data_place::host());
-  *ld               = to_opaque(stf_try_allocate([&ld_typed] {
+  return to_opaque(stf_try_allocate([&ld_typed] {
     return new logical_data_untyped{::std::move(ld_typed)};
   }));
 }
 
-void stf_logical_data_with_place(
-  stf_ctx_handle ctx, stf_logical_data_handle* ld, void* addr, size_t sz, stf_data_place_handle dplace)
+stf_logical_data_handle
+stf_logical_data_with_place(stf_ctx_handle ctx, void* addr, size_t sz, stf_data_place_handle dplace)
 {
-  _CCCL_ASSERT(ctx != nullptr, "context handle pointer must not be null");
-  _CCCL_ASSERT(ld != nullptr, "logical data handle pointer must not be null");
+  _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
   _CCCL_ASSERT(dplace != nullptr, "data_place handle must not be null");
 
   auto* context_ptr = from_opaque(ctx);
   auto ld_typed     = context_ptr->logical_data(make_slice((char*) addr, sz), *from_opaque(dplace));
-  *ld               = to_opaque(stf_try_allocate([&ld_typed] {
+  return to_opaque(stf_try_allocate([&ld_typed] {
     return new logical_data_untyped{::std::move(ld_typed)};
   }));
 }
@@ -412,36 +410,33 @@ void stf_logical_data_destroy(stf_logical_data_handle ld)
   delete ld_ptr;
 }
 
-void stf_logical_data_empty(stf_ctx_handle ctx, size_t length, stf_logical_data_handle* to)
+stf_logical_data_handle stf_logical_data_empty(stf_ctx_handle ctx, size_t length)
 {
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
-  _CCCL_ASSERT(to != nullptr, "logical data output pointer must not be null");
 
   auto* context_ptr = from_opaque(ctx);
   auto ld_typed     = context_ptr->logical_data(shape_of<slice<char>>(length));
-  *to               = to_opaque(stf_try_allocate([&ld_typed] {
+  return to_opaque(stf_try_allocate([&ld_typed] {
     return new logical_data_untyped{::std::move(ld_typed)};
   }));
 }
 
-void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld)
+stf_logical_data_handle stf_token(stf_ctx_handle ctx)
 {
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
-  _CCCL_ASSERT(ld != nullptr, "logical data handle output pointer must not be null");
 
   auto* context_ptr = from_opaque(ctx);
-  *ld               = to_opaque(stf_try_allocate([&] {
+  return to_opaque(stf_try_allocate([&] {
     return new logical_data_untyped{context_ptr->token()};
   }));
 }
 
-void stf_task_create(stf_ctx_handle ctx, stf_task_handle* t)
+stf_task_handle stf_task_create(stf_ctx_handle ctx)
 {
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
-  _CCCL_ASSERT(t != nullptr, "task handle output pointer must not be null");
 
   auto* context_ptr = from_opaque(ctx);
-  *t                = to_opaque(stf_try_allocate([&] {
+  return to_opaque(stf_try_allocate([&] {
     return new context::unified_task<>{context_ptr->task()};
   }));
 }
@@ -535,13 +530,12 @@ void stf_task_destroy(stf_task_handle t)
   delete task_ptr;
 }
 
-void stf_cuda_kernel_create(stf_ctx_handle ctx, stf_cuda_kernel_handle* k)
+stf_cuda_kernel_handle stf_cuda_kernel_create(stf_ctx_handle ctx)
 {
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
-  _CCCL_ASSERT(k != nullptr, "cuda kernel handle output pointer must not be null");
 
   auto* context_ptr = from_opaque(ctx);
-  *k                = to_opaque(stf_try_allocate([&] {
+  return to_opaque(stf_try_allocate([&] {
     return new context::cuda_kernel_builder{context_ptr->cuda_kernel()};
   }));
 }
@@ -629,13 +623,12 @@ void stf_cuda_kernel_destroy(stf_cuda_kernel_handle t)
 // Host launch
 // -----------------------------------------------------------------------------
 
-void stf_host_launch_create(stf_ctx_handle ctx, stf_host_launch_handle* h)
+stf_host_launch_handle stf_host_launch_create(stf_ctx_handle ctx)
 {
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
-  _CCCL_ASSERT(h != nullptr, "host launch handle output pointer must not be null");
 
   auto* context_ptr = from_opaque(ctx);
-  *h                = to_opaque(stf_try_allocate([&] {
+  return to_opaque(stf_try_allocate([&] {
     return new context::host_launch_builder{context_ptr->host_launch()};
   }));
 }

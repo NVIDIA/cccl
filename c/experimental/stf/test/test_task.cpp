@@ -17,54 +17,58 @@ C2H_TEST("empty stf tasks", "[task]")
 {
   size_t N = 1000000;
 
-  stf_ctx_handle ctx;
-  stf_ctx_create(&ctx);
+  stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
 
-  stf_logical_data_handle lX, lY, lZ;
+  float* X = (float*) malloc(N * sizeof(float));
+  float* Y = (float*) malloc(N * sizeof(float));
+  float* Z = (float*) malloc(N * sizeof(float));
 
-  float *X, *Y, *Z;
-  X = (float*) malloc(N * sizeof(float));
-  Y = (float*) malloc(N * sizeof(float));
-  Z = (float*) malloc(N * sizeof(float));
-
-  stf_logical_data(ctx, &lX, X, N * sizeof(float));
-  stf_logical_data(ctx, &lY, Y, N * sizeof(float));
-  stf_logical_data(ctx, &lZ, Z, N * sizeof(float));
+  stf_logical_data_handle lX = stf_logical_data(ctx, X, N * sizeof(float));
+  stf_logical_data_handle lY = stf_logical_data(ctx, Y, N * sizeof(float));
+  stf_logical_data_handle lZ = stf_logical_data(ctx, Z, N * sizeof(float));
+  REQUIRE(lX != nullptr);
+  REQUIRE(lY != nullptr);
+  REQUIRE(lZ != nullptr);
 
   stf_logical_data_set_symbol(lX, "X");
   stf_logical_data_set_symbol(lY, "Y");
   stf_logical_data_set_symbol(lZ, "Z");
 
-  stf_task_handle t1;
-  stf_task_create(ctx, &t1);
+  stf_task_handle t1 = stf_task_create(ctx);
+  REQUIRE(t1 != nullptr);
   stf_task_set_symbol(t1, "T1");
   stf_task_add_dep(t1, lX, STF_RW);
   stf_task_start(t1);
   stf_task_end(t1);
+  stf_task_destroy(t1);
 
-  stf_task_handle t2;
-  stf_task_create(ctx, &t2);
+  stf_task_handle t2 = stf_task_create(ctx);
+  REQUIRE(t2 != nullptr);
   stf_task_set_symbol(t2, "T2");
   stf_task_add_dep(t2, lX, STF_READ);
   stf_task_add_dep(t2, lY, STF_RW);
   stf_task_start(t2);
   stf_task_end(t2);
+  stf_task_destroy(t2);
 
-  stf_task_handle t3;
-  stf_task_create(ctx, &t3);
+  stf_task_handle t3 = stf_task_create(ctx);
+  REQUIRE(t3 != nullptr);
   stf_task_set_symbol(t3, "T3");
   stf_task_add_dep(t3, lX, STF_READ);
   stf_task_add_dep(t3, lZ, STF_RW);
   stf_task_start(t3);
   stf_task_end(t3);
+  stf_task_destroy(t3);
 
-  stf_task_handle t4;
-  stf_task_create(ctx, &t4);
+  stf_task_handle t4 = stf_task_create(ctx);
+  REQUIRE(t4 != nullptr);
   stf_task_set_symbol(t4, "T4");
   stf_task_add_dep(t4, lY, STF_READ);
   stf_task_add_dep(t4, lZ, STF_RW);
   stf_task_start(t4);
   stf_task_end(t4);
+  stf_task_destroy(t4);
 
   stf_logical_data_destroy(lX);
   stf_logical_data_destroy(lY);

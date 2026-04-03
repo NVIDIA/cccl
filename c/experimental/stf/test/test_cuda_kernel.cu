@@ -38,14 +38,11 @@ C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
 {
   size_t N = 1000000;
 
-  stf_ctx_handle ctx;
-  stf_ctx_create(&ctx);
+  stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
 
-  stf_logical_data_handle lX, lY;
-
-  double *X, *Y;
-  X = (double*) malloc(N * sizeof(double));
-  Y = (double*) malloc(N * sizeof(double));
+  double* X = (double*) malloc(N * sizeof(double));
+  double* Y = (double*) malloc(N * sizeof(double));
 
   for (size_t i = 0; i < N; i++)
   {
@@ -55,14 +52,16 @@ C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
 
   const double alpha = 3.14;
 
-  stf_logical_data(ctx, &lX, X, N * sizeof(double));
-  stf_logical_data(ctx, &lY, Y, N * sizeof(double));
+  stf_logical_data_handle lX = stf_logical_data(ctx, X, N * sizeof(double));
+  stf_logical_data_handle lY = stf_logical_data(ctx, Y, N * sizeof(double));
+  REQUIRE(lX != nullptr);
+  REQUIRE(lY != nullptr);
 
   stf_logical_data_set_symbol(lX, "X");
   stf_logical_data_set_symbol(lY, "Y");
 
-  stf_cuda_kernel_handle k;
-  stf_cuda_kernel_create(ctx, &k);
+  stf_cuda_kernel_handle k = stf_cuda_kernel_create(ctx);
+  REQUIRE(k != nullptr);
   stf_cuda_kernel_set_symbol(k, "axpy");
   stf_cuda_kernel_add_dep(k, lX, STF_READ);
   stf_cuda_kernel_add_dep(k, lY, STF_RW);
