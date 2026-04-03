@@ -17,6 +17,7 @@
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/readable_traits.h>
+#include <cuda/std/span>
 #include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
@@ -54,7 +55,7 @@ template <typename BinaryOpT, typename ValueT, typename FlagT = bool>
 struct schwarz_scan_op
 {
   using fv_t = augmented_value_t<ValueT, FlagT>;
-  BinaryOpT& scan_op;
+  BinaryOpT scan_op;
 
   _CCCL_DEVICE _CCCL_FORCEINLINE fv_t operator()(fv_t o1, fv_t o2)
   {
@@ -82,7 +83,7 @@ struct packer
 template <typename ScanOp, typename V, typename F = bool>
 struct packer_iv
 {
-  ScanOp& op;
+  ScanOp op;
   V init_v;
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
@@ -122,18 +123,18 @@ struct projector_iv
 // 0 <= elem_id < m_offsets[m_offsets.size()-1], to segment id and relative
 // offset within the segment and produces offset of the corresponding element
 // in the underlying allocation.
-template <typename SpanT, unsigned int LinearBinarySearchThreshold = 20>
+template <typename ValueT, unsigned int LinearBinarySearchThreshold = 20>
 struct bag_of_segments
 {
 private:
-  SpanT m_offsets;
+  ::cuda::std::span<ValueT> m_offsets;
 
 public:
-  using logical_offset_t = typename SpanT::value_type;
-  using segment_id_t     = typename SpanT::size_type;
+  using logical_offset_t = ValueT;
+  using segment_id_t     = ::cuda::std::size_t;
   using search_data_t    = ::cuda::std::tuple<segment_id_t, logical_offset_t>;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE bag_of_segments(SpanT cum_sizes)
+  _CCCL_DEVICE _CCCL_FORCEINLINE bag_of_segments(::cuda::std::span<ValueT> cum_sizes)
       : m_offsets(cum_sizes)
   {}
 
@@ -191,21 +192,21 @@ private:
   }
 };
 
-template <typename SpanT, unsigned int MaxBagSize, unsigned int LinearBinarySearchThreshold = 16>
+template <typename ValueT, unsigned int MaxBagSize, unsigned int LinearBinarySearchThreshold = 16>
 struct statically_bound_bag_of_segments
 {
 private:
-  SpanT m_offsets;
+  ::cuda::std::span<ValueT> m_offsets;
 
 public:
-  using logical_offset_t = typename SpanT::value_type;
-  using segment_id_t     = typename SpanT::size_type;
+  using logical_offset_t = ValueT;
+  using segment_id_t     = ::cuda::std::size_t;
   using search_data_t    = ::cuda::std::tuple<segment_id_t, logical_offset_t>;
 
   static constexpr segment_id_t max_offset_size = MaxBagSize;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE
-  statically_bound_bag_of_segments(SpanT cum_sizes, ::cuda::std::integral_constant<unsigned int, MaxBagSize>)
+  _CCCL_DEVICE _CCCL_FORCEINLINE statically_bound_bag_of_segments(
+    ::cuda::std::span<ValueT> cum_sizes, ::cuda::std::integral_constant<unsigned int, MaxBagSize>)
       : m_offsets(cum_sizes)
   {}
 
@@ -276,10 +277,10 @@ private:
   }
 };
 
-template <unsigned int MaxBagSize, typename SpanT>
-_CCCL_DEVICE _CCCL_FORCEINLINE auto make_statically_bound_bag_of_segments(SpanT span)
+template <unsigned int MaxBagSize, typename ValueT>
+_CCCL_DEVICE _CCCL_FORCEINLINE auto make_statically_bound_bag_of_segments(::cuda::std::span<ValueT> span)
 {
-  return statically_bound_bag_of_segments<SpanT, MaxBagSize>{span, {}};
+  return statically_bound_bag_of_segments<ValueT, MaxBagSize>{span, {}};
 }
 
 template <typename SizeT>
@@ -424,7 +425,7 @@ template <typename PrefixT, typename BinaryOpT>
 struct worker_prefix_callback_t
 {
   PrefixT& m_exclusive_prefix;
-  BinaryOpT& m_scan_op;
+  BinaryOpT m_scan_op;
 
   _CCCL_DEVICE _CCCL_FORCEINLINE worker_prefix_callback_t(PrefixT& prefix, BinaryOpT& op)
       : m_exclusive_prefix(prefix)
