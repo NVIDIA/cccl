@@ -110,28 +110,32 @@ extern "C" {
 
 stf_exec_place_handle stf_exec_place_host(void)
 {
-  return to_opaque<stf_exec_place_handle>(
-    stf_try_allocate([] { return new exec_place(exec_place::host()); }));
+  return to_opaque<stf_exec_place_handle>(stf_try_allocate([] {
+    return new exec_place(exec_place::host());
+  }));
 }
 
 stf_exec_place_handle stf_exec_place_device(int dev_id)
 {
-  return to_opaque<stf_exec_place_handle>(
-    stf_try_allocate([dev_id] { return new exec_place(exec_place::device(dev_id)); }));
+  return to_opaque<stf_exec_place_handle>(stf_try_allocate([dev_id] {
+    return new exec_place(exec_place::device(dev_id));
+  }));
 }
 
 stf_exec_place_handle stf_exec_place_current_device(void)
 {
-  return to_opaque<stf_exec_place_handle>(
-    stf_try_allocate([] { return new exec_place(exec_place::current_device()); }));
+  return to_opaque<stf_exec_place_handle>(stf_try_allocate([] {
+    return new exec_place(exec_place::current_device());
+  }));
 }
 
 stf_exec_place_handle stf_exec_place_clone(stf_exec_place_handle h)
 {
   _CCCL_ASSERT(h != nullptr, "exec_place handle must not be null");
   const auto* ep = from_opaque<const exec_place>(h);
-  return to_opaque<stf_exec_place_handle>(
-    stf_try_allocate([ep] { return new exec_place(*ep); }));
+  return to_opaque<stf_exec_place_handle>(stf_try_allocate([ep] {
+    return new exec_place(*ep);
+  }));
 }
 
 void stf_exec_place_destroy(stf_exec_place_handle h)
@@ -179,8 +183,9 @@ stf_exec_place_handle stf_exec_place_grid_from_devices(const int* device_ids, si
   {
     places.push_back(exec_place::device(device_ids[i]));
   }
-  return to_opaque<stf_exec_place_handle>(
-    stf_try_allocate([&places] { return new exec_place(make_grid(::std::move(places))); }));
+  return to_opaque<stf_exec_place_handle>(stf_try_allocate([&places] {
+    return new exec_place(make_grid(::std::move(places)));
+  }));
 }
 
 stf_exec_place_handle
@@ -196,8 +201,9 @@ stf_exec_place_grid_create(const stf_exec_place_handle* places, size_t count, co
   exec_place grid = (grid_dims != nullptr)
                     ? make_grid(::std::move(cpp_places), dim4(grid_dims->x, grid_dims->y, grid_dims->z, grid_dims->t))
                     : make_grid(::std::move(cpp_places));
-  return to_opaque<stf_exec_place_handle>(
-    stf_try_allocate([g = ::std::move(grid)]() mutable { return new exec_place(::std::move(g)); }));
+  return to_opaque<stf_exec_place_handle>(stf_try_allocate([g = ::std::move(grid)]() mutable {
+    return new exec_place(::std::move(g));
+  }));
 }
 
 void stf_exec_place_grid_destroy(stf_exec_place_handle grid)
@@ -207,39 +213,44 @@ void stf_exec_place_grid_destroy(stf_exec_place_handle grid)
 
 stf_data_place_handle stf_data_place_host(void)
 {
-  return to_opaque<stf_data_place_handle>(
-    stf_try_allocate([] { return new data_place(data_place::host()); }));
+  return to_opaque<stf_data_place_handle>(stf_try_allocate([] {
+    return new data_place(data_place::host());
+  }));
 }
 
 stf_data_place_handle stf_data_place_device(int dev_id)
 {
-  return to_opaque<stf_data_place_handle>(
-    stf_try_allocate([dev_id] { return new data_place(data_place::device(dev_id)); }));
+  return to_opaque<stf_data_place_handle>(stf_try_allocate([dev_id] {
+    return new data_place(data_place::device(dev_id));
+  }));
 }
 
 stf_data_place_handle stf_data_place_managed(void)
 {
-  return to_opaque<stf_data_place_handle>(
-    stf_try_allocate([] { return new data_place(data_place::managed()); }));
+  return to_opaque<stf_data_place_handle>(stf_try_allocate([] {
+    return new data_place(data_place::managed());
+  }));
 }
 
 stf_data_place_handle stf_data_place_affine(void)
 {
-  return to_opaque<stf_data_place_handle>(
-    stf_try_allocate([] { return new data_place(data_place::affine()); }));
+  return to_opaque<stf_data_place_handle>(stf_try_allocate([] {
+    return new data_place(data_place::affine());
+  }));
 }
 
 stf_data_place_handle stf_data_place_current_device(void)
 {
-  return to_opaque<stf_data_place_handle>(
-    stf_try_allocate([] { return new data_place(data_place::current_device()); }));
+  return to_opaque<stf_data_place_handle>(stf_try_allocate([] {
+    return new data_place(data_place::current_device());
+  }));
 }
 
 stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_get_executor_fn mapper)
 {
   _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
   _CCCL_ASSERT(mapper != nullptr, "partitioner function (mapper) must not be null");
-  auto* grid_ptr            = from_opaque<exec_place>(grid);
+  auto* grid_ptr = from_opaque<exec_place>(grid);
   // Distinct function pointer types (C typedef vs C++ alias); not convertible via static_cast under nvcc.
   partition_fn_t cpp_mapper = reinterpret_cast<partition_fn_t>(mapper);
   auto* dp                  = stf_try_allocate([cpp_mapper, grid_ptr] {
@@ -252,8 +263,9 @@ stf_data_place_handle stf_data_place_clone(stf_data_place_handle h)
 {
   _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
   const auto* dp = from_opaque<const data_place>(h);
-  return to_opaque<stf_data_place_handle>(
-    stf_try_allocate([dp] { return new data_place(*dp); }));
+  return to_opaque<stf_data_place_handle>(stf_try_allocate([dp] {
+    return new data_place(*dp);
+  }));
 }
 
 void stf_data_place_destroy(stf_data_place_handle h)
@@ -282,13 +294,17 @@ const char* stf_data_place_to_string(stf_data_place_handle h)
 void stf_ctx_create(stf_ctx_handle* ctx)
 {
   _CCCL_ASSERT(ctx != nullptr, "context handle pointer must not be null");
-  *ctx = to_opaque<stf_ctx_handle>(stf_try_allocate([] { return new context{}; }));
+  *ctx = to_opaque<stf_ctx_handle>(stf_try_allocate([] {
+    return new context{};
+  }));
 }
 
 void stf_ctx_create_graph(stf_ctx_handle* ctx)
 {
   _CCCL_ASSERT(ctx != nullptr, "context handle pointer must not be null");
-  *ctx = to_opaque<stf_ctx_handle>(stf_try_allocate([] { return new context{graph_ctx()}; }));
+  *ctx = to_opaque<stf_ctx_handle>(stf_try_allocate([] {
+    return new context{graph_ctx()};
+  }));
 }
 
 void stf_ctx_finalize(stf_ctx_handle ctx)
