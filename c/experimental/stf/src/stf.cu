@@ -12,8 +12,11 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <cstddef>
+#include <cstdio>
 #include <cstring>
+#include <exception>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <cccl/c/experimental/stf/stf.h>
@@ -27,16 +30,79 @@ static_assert(sizeof(dim4) == sizeof(stf_dim4), "dim4 and stf_dim4 must have ide
 static_assert(alignof(pos4) == alignof(stf_pos4), "pos4 and stf_pos4 must have identical alignment");
 static_assert(alignof(dim4) == alignof(stf_dim4), "dim4 and stf_dim4 must have identical alignment");
 
-static data_place deref_data_place(stf_data_place_handle h)
+template <class T, class = void>
+struct is_complete : ::std::false_type
+{};
+
+template <class T>
+struct is_complete<T, ::std::void_t<decltype(sizeof(T))>> : ::std::true_type
+{};
+
+template <class T>
+inline constexpr bool is_complete_v = is_complete<T>::value;
+
+// Wrap heap allocations that cross the extern "C" boundary. Parallel C APIs map failures to
+// CUresult; this STF surface returns null handles (or leaves out-params unset) instead.
+template <class F>
+[[nodiscard]] auto stf_try_allocate(F&& f) noexcept -> decltype(f())
 {
-  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
-  return *reinterpret_cast<data_place*>(h);
+  try
+  {
+    return f();
+  }
+  catch (const ::std::exception& exc)
+  {
+    ::fflush(stderr);
+    ::std::fprintf(stderr, "\nEXCEPTION in STF C API (allocation): %s\n", exc.what());
+  }
+  catch (...)
+  {
+    ::fflush(stderr);
+    ::std::fprintf(stderr, "\nEXCEPTION in STF C API (allocation): non-standard exception\n");
+  }
+  ::fflush(stdout);
+  return nullptr;
 }
 
-static exec_place deref_exec_place(stf_exec_place_handle h)
+// C opaque handles are pointers to incomplete (undefined) struct types; convert via void*.
+// to_opaque: heap Pointee* -> C handle. from_opaque: C handle -> Pointee*.
+// Private nested scope types from context (kernel / host_launch) use local double static_cast
+// in each function — not these templates — so access control is not violated.
+template <class Opaque, class Pointee>
+[[nodiscard]] Opaque to_opaque(Pointee* p) noexcept
+{
+  static_assert(::std::is_pointer_v<Opaque>);
+  static_assert(!is_complete_v<::std::remove_pointer_t<Opaque>>,
+                "Opaque must be a pointer to an incomplete struct (C handle typedef)");
+  return static_cast<Opaque>(static_cast<void*>(p));
+}
+
+template <class Pointee, class Opaque>
+[[nodiscard]] ::std::add_pointer_t<Pointee> from_opaque(Opaque h) noexcept
+{
+  static_assert(::std::is_pointer_v<Opaque>);
+  static_assert(!is_complete_v<::std::remove_pointer_t<Opaque>>,
+                "Opaque must be a pointer to an incomplete struct (C handle typedef)");
+  if constexpr (::std::is_const_v<Pointee>)
+  {
+    return static_cast<::std::add_pointer_t<Pointee>>(static_cast<const void*>(h));
+  }
+  else
+  {
+    return static_cast<::std::add_pointer_t<Pointee>>(static_cast<void*>(h));
+  }
+}
+
+static data_place& deref_data_place(stf_data_place_handle h)
+{
+  _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
+  return *from_opaque<data_place>(h);
+}
+
+static exec_place& deref_exec_place(stf_exec_place_handle h)
 {
   _CCCL_ASSERT(h != nullptr, "exec_place handle must not be null");
-  return *reinterpret_cast<exec_place*>(h);
+  return *from_opaque<exec_place>(h);
 }
 } // namespace
 
@@ -44,64 +110,64 @@ extern "C" {
 
 stf_exec_place_handle stf_exec_place_host(void)
 {
-  return reinterpret_cast<stf_exec_place_handle>(new exec_place(exec_place::host()));
+  return to_opaque<stf_exec_place_handle>(
+    stf_try_allocate([] { return new exec_place(exec_place::host()); }));
 }
 
 stf_exec_place_handle stf_exec_place_device(int dev_id)
 {
-  return reinterpret_cast<stf_exec_place_handle>(new exec_place(exec_place::device(dev_id)));
+  return to_opaque<stf_exec_place_handle>(
+    stf_try_allocate([dev_id] { return new exec_place(exec_place::device(dev_id)); }));
 }
 
 stf_exec_place_handle stf_exec_place_current_device(void)
 {
-  return reinterpret_cast<stf_exec_place_handle>(new exec_place(exec_place::current_device()));
+  return to_opaque<stf_exec_place_handle>(
+    stf_try_allocate([] { return new exec_place(exec_place::current_device()); }));
 }
 
 stf_exec_place_handle stf_exec_place_clone(stf_exec_place_handle h)
 {
   _CCCL_ASSERT(h != nullptr, "exec_place handle must not be null");
-  const auto* ep = reinterpret_cast<const exec_place*>(h);
-  return reinterpret_cast<stf_exec_place_handle>(new exec_place(*ep));
+  const auto* ep = from_opaque<const exec_place>(h);
+  return to_opaque<stf_exec_place_handle>(
+    stf_try_allocate([ep] { return new exec_place(*ep); }));
 }
 
 void stf_exec_place_destroy(stf_exec_place_handle h)
 {
-  if (h == nullptr)
-  {
-    return;
-  }
-  delete reinterpret_cast<exec_place*>(h);
+  delete from_opaque<exec_place>(h);
 }
 
 int stf_exec_place_is_host(stf_exec_place_handle h)
 {
   _CCCL_ASSERT(h != nullptr, "exec_place handle must not be null");
-  return reinterpret_cast<exec_place*>(h)->is_host() ? 1 : 0;
+  return from_opaque<exec_place>(h)->is_host() ? 1 : 0;
 }
 
 int stf_exec_place_is_device(stf_exec_place_handle h)
 {
   _CCCL_ASSERT(h != nullptr, "exec_place handle must not be null");
-  return reinterpret_cast<exec_place*>(h)->is_device() ? 1 : 0;
+  return from_opaque<exec_place>(h)->is_device() ? 1 : 0;
 }
 
 void stf_exec_place_get_dims(stf_exec_place_handle h, stf_dim4* out_dims)
 {
   _CCCL_ASSERT(h != nullptr && out_dims != nullptr, "invalid arguments");
-  dim4 d = reinterpret_cast<exec_place*>(h)->get_dims();
+  dim4 d = from_opaque<exec_place>(h)->get_dims();
   ::std::memcpy(out_dims, &d, sizeof(d));
 }
 
 size_t stf_exec_place_size(stf_exec_place_handle h)
 {
   _CCCL_ASSERT(h != nullptr, "exec_place handle must not be null");
-  return reinterpret_cast<exec_place*>(h)->size();
+  return from_opaque<exec_place>(h)->size();
 }
 
 void stf_exec_place_set_affine_data_place(stf_exec_place_handle h, stf_data_place_handle affine_dplace)
 {
   _CCCL_ASSERT(h != nullptr && affine_dplace != nullptr, "invalid arguments");
-  reinterpret_cast<exec_place*>(h)->set_affine_data_place(deref_data_place(affine_dplace));
+  from_opaque<exec_place>(h)->set_affine_data_place(deref_data_place(affine_dplace));
 }
 
 stf_exec_place_handle stf_exec_place_grid_from_devices(const int* device_ids, size_t count)
@@ -113,7 +179,8 @@ stf_exec_place_handle stf_exec_place_grid_from_devices(const int* device_ids, si
   {
     places.push_back(exec_place::device(device_ids[i]));
   }
-  return reinterpret_cast<stf_exec_place_handle>(new exec_place(make_grid(::std::move(places))));
+  return to_opaque<stf_exec_place_handle>(
+    stf_try_allocate([&places] { return new exec_place(make_grid(::std::move(places))); }));
 }
 
 stf_exec_place_handle
@@ -124,12 +191,13 @@ stf_exec_place_grid_create(const stf_exec_place_handle* places, size_t count, co
   cpp_places.reserve(count);
   for (size_t i = 0; i < count; i++)
   {
-    cpp_places.push_back(*reinterpret_cast<const exec_place*>(places[i]));
+    cpp_places.push_back(*from_opaque<const exec_place>(places[i]));
   }
   exec_place grid = (grid_dims != nullptr)
                     ? make_grid(::std::move(cpp_places), dim4(grid_dims->x, grid_dims->y, grid_dims->z, grid_dims->t))
                     : make_grid(::std::move(cpp_places));
-  return reinterpret_cast<stf_exec_place_handle>(new exec_place(::std::move(grid)));
+  return to_opaque<stf_exec_place_handle>(
+    stf_try_allocate([g = ::std::move(grid)]() mutable { return new exec_place(::std::move(g)); }));
 }
 
 void stf_exec_place_grid_destroy(stf_exec_place_handle grid)
@@ -139,44 +207,53 @@ void stf_exec_place_grid_destroy(stf_exec_place_handle grid)
 
 stf_data_place_handle stf_data_place_host(void)
 {
-  return reinterpret_cast<stf_data_place_handle>(new data_place(data_place::host()));
+  return to_opaque<stf_data_place_handle>(
+    stf_try_allocate([] { return new data_place(data_place::host()); }));
 }
 
 stf_data_place_handle stf_data_place_device(int dev_id)
 {
-  return reinterpret_cast<stf_data_place_handle>(new data_place(data_place::device(dev_id)));
+  return to_opaque<stf_data_place_handle>(
+    stf_try_allocate([dev_id] { return new data_place(data_place::device(dev_id)); }));
 }
 
 stf_data_place_handle stf_data_place_managed(void)
 {
-  return reinterpret_cast<stf_data_place_handle>(new data_place(data_place::managed()));
+  return to_opaque<stf_data_place_handle>(
+    stf_try_allocate([] { return new data_place(data_place::managed()); }));
 }
 
 stf_data_place_handle stf_data_place_affine(void)
 {
-  return reinterpret_cast<stf_data_place_handle>(new data_place(data_place::affine()));
+  return to_opaque<stf_data_place_handle>(
+    stf_try_allocate([] { return new data_place(data_place::affine()); }));
 }
 
 stf_data_place_handle stf_data_place_current_device(void)
 {
-  return reinterpret_cast<stf_data_place_handle>(new data_place(data_place::current_device()));
+  return to_opaque<stf_data_place_handle>(
+    stf_try_allocate([] { return new data_place(data_place::current_device()); }));
 }
 
 stf_data_place_handle stf_data_place_composite(stf_exec_place_handle grid, stf_get_executor_fn mapper)
 {
   _CCCL_ASSERT(grid != nullptr, "exec place grid handle must not be null");
   _CCCL_ASSERT(mapper != nullptr, "partitioner function (mapper) must not be null");
-  auto* grid_ptr            = reinterpret_cast<exec_place*>(grid);
+  auto* grid_ptr            = from_opaque<exec_place>(grid);
+  // Distinct function pointer types (C typedef vs C++ alias); not convertible via static_cast under nvcc.
   partition_fn_t cpp_mapper = reinterpret_cast<partition_fn_t>(mapper);
-  auto* dp                  = new data_place(data_place::composite(cpp_mapper, *grid_ptr));
-  return reinterpret_cast<stf_data_place_handle>(dp);
+  auto* dp                  = stf_try_allocate([cpp_mapper, grid_ptr] {
+    return new data_place(data_place::composite(cpp_mapper, *grid_ptr));
+  });
+  return to_opaque<stf_data_place_handle>(dp);
 }
 
 stf_data_place_handle stf_data_place_clone(stf_data_place_handle h)
 {
   _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
-  const auto* dp = reinterpret_cast<const data_place*>(h);
-  return reinterpret_cast<stf_data_place_handle>(new data_place(*dp));
+  const auto* dp = from_opaque<const data_place>(h);
+  return to_opaque<stf_data_place_handle>(
+    stf_try_allocate([dp] { return new data_place(*dp); }));
 }
 
 void stf_data_place_destroy(stf_data_place_handle h)
@@ -185,39 +262,39 @@ void stf_data_place_destroy(stf_data_place_handle h)
   {
     return;
   }
-  delete reinterpret_cast<data_place*>(h);
+  delete from_opaque<data_place>(h);
 }
 
 int stf_data_place_get_device_ordinal(stf_data_place_handle h)
 {
   _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
-  return device_ordinal(*reinterpret_cast<data_place*>(h));
+  return device_ordinal(deref_data_place(h));
 }
 
 const char* stf_data_place_to_string(stf_data_place_handle h)
 {
   _CCCL_ASSERT(h != nullptr, "data_place handle must not be null");
   static thread_local ::std::string s;
-  s = reinterpret_cast<data_place*>(h)->to_string();
+  s = from_opaque<data_place>(h)->to_string();
   return s.c_str();
 }
 
 void stf_ctx_create(stf_ctx_handle* ctx)
 {
   _CCCL_ASSERT(ctx != nullptr, "context handle pointer must not be null");
-  *ctx = reinterpret_cast<stf_ctx_handle>(new context{});
+  *ctx = to_opaque<stf_ctx_handle>(stf_try_allocate([] { return new context{}; }));
 }
 
 void stf_ctx_create_graph(stf_ctx_handle* ctx)
 {
   _CCCL_ASSERT(ctx != nullptr, "context handle pointer must not be null");
-  *ctx = reinterpret_cast<stf_ctx_handle>(new context{graph_ctx()});
+  *ctx = to_opaque<stf_ctx_handle>(stf_try_allocate([] { return new context{graph_ctx()}; }));
 }
 
 void stf_ctx_finalize(stf_ctx_handle ctx)
 {
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
-  auto* context_ptr = reinterpret_cast<context*>(ctx);
+  auto* context_ptr = from_opaque<context>(ctx);
   context_ptr->finalize();
   delete context_ptr;
 }
@@ -225,7 +302,7 @@ void stf_ctx_finalize(stf_ctx_handle ctx)
 cudaStream_t stf_fence(stf_ctx_handle ctx)
 {
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
-  auto* context_ptr = reinterpret_cast<context*>(ctx);
+  auto* context_ptr = from_opaque<context>(ctx);
   return context_ptr->fence();
 }
 
@@ -234,9 +311,11 @@ void stf_logical_data(stf_ctx_handle ctx, stf_logical_data_handle* ld, void* add
   _CCCL_ASSERT(ctx != nullptr, "context handle pointer must not be null");
   _CCCL_ASSERT(ld != nullptr, "logical data handle pointer must not be null");
 
-  auto* context_ptr = reinterpret_cast<context*>(ctx);
+  auto* context_ptr = from_opaque<context>(ctx);
   auto ld_typed     = context_ptr->logical_data(make_slice((char*) addr, sz), data_place::host());
-  *ld               = reinterpret_cast<stf_logical_data_handle>(new logical_data_untyped{ld_typed});
+  *ld               = to_opaque<stf_logical_data_handle>(stf_try_allocate([&ld_typed] {
+    return new logical_data_untyped{::std::move(ld_typed)};
+  }));
 }
 
 void stf_logical_data_with_place(
@@ -246,10 +325,12 @@ void stf_logical_data_with_place(
   _CCCL_ASSERT(ld != nullptr, "logical data handle pointer must not be null");
   _CCCL_ASSERT(dplace != nullptr, "data_place handle must not be null");
 
-  auto* context_ptr     = reinterpret_cast<context*>(ctx);
+  auto* context_ptr     = from_opaque<context>(ctx);
   data_place cpp_dplace = deref_data_place(dplace);
   auto ld_typed         = context_ptr->logical_data(make_slice((char*) addr, sz), cpp_dplace);
-  *ld                   = reinterpret_cast<stf_logical_data_handle>(new logical_data_untyped{ld_typed});
+  *ld                   = to_opaque<stf_logical_data_handle>(stf_try_allocate([&ld_typed] {
+    return new logical_data_untyped{::std::move(ld_typed)};
+  }));
 }
 
 void stf_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
@@ -257,7 +338,7 @@ void stf_logical_data_set_symbol(stf_logical_data_handle ld, const char* symbol)
   _CCCL_ASSERT(ld != nullptr, "logical data handle must not be null");
   _CCCL_ASSERT(symbol != nullptr, "symbol string must not be null");
 
-  auto* ld_ptr = reinterpret_cast<logical_data_untyped*>(ld);
+  auto* ld_ptr = from_opaque<logical_data_untyped>(ld);
   ld_ptr->set_symbol(symbol);
 }
 
@@ -265,7 +346,7 @@ void stf_logical_data_destroy(stf_logical_data_handle ld)
 {
   _CCCL_ASSERT(ld != nullptr, "logical data handle must not be null");
 
-  auto* ld_ptr = reinterpret_cast<logical_data_untyped*>(ld);
+  auto* ld_ptr = from_opaque<logical_data_untyped>(ld);
   delete ld_ptr;
 }
 
@@ -274,9 +355,11 @@ void stf_logical_data_empty(stf_ctx_handle ctx, size_t length, stf_logical_data_
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
   _CCCL_ASSERT(to != nullptr, "logical data output pointer must not be null");
 
-  auto* context_ptr = reinterpret_cast<context*>(ctx);
+  auto* context_ptr = from_opaque<context>(ctx);
   auto ld_typed     = context_ptr->logical_data(shape_of<slice<char>>(length));
-  *to               = reinterpret_cast<stf_logical_data_handle>(new logical_data_untyped{ld_typed});
+  *to               = to_opaque<stf_logical_data_handle>(stf_try_allocate([&ld_typed] {
+    return new logical_data_untyped{::std::move(ld_typed)};
+  }));
 }
 
 void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld)
@@ -284,8 +367,10 @@ void stf_token(stf_ctx_handle ctx, stf_logical_data_handle* ld)
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
   _CCCL_ASSERT(ld != nullptr, "logical data handle output pointer must not be null");
 
-  auto* context_ptr = reinterpret_cast<context*>(ctx);
-  *ld               = reinterpret_cast<stf_logical_data_handle>(new logical_data_untyped{context_ptr->token()});
+  auto* context_ptr = from_opaque<context>(ctx);
+  *ld               = to_opaque<stf_logical_data_handle>(stf_try_allocate([&] {
+    return new logical_data_untyped{context_ptr->token()};
+  }));
 }
 
 void stf_task_create(stf_ctx_handle ctx, stf_task_handle* t)
@@ -293,8 +378,10 @@ void stf_task_create(stf_ctx_handle ctx, stf_task_handle* t)
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
   _CCCL_ASSERT(t != nullptr, "task handle output pointer must not be null");
 
-  auto* context_ptr = reinterpret_cast<context*>(ctx);
-  *t                = reinterpret_cast<stf_task_handle>(new context::unified_task<>{context_ptr->task()});
+  auto* context_ptr = from_opaque<context>(ctx);
+  *t                = to_opaque<stf_task_handle>(stf_try_allocate([&] {
+    return new context::unified_task<>{context_ptr->task()};
+  }));
 }
 
 void stf_task_set_exec_place(stf_task_handle t, stf_exec_place_handle exec_p)
@@ -302,7 +389,7 @@ void stf_task_set_exec_place(stf_task_handle t, stf_exec_place_handle exec_p)
   _CCCL_ASSERT(t != nullptr, "task handle must not be null");
   _CCCL_ASSERT(exec_p != nullptr, "exec_place handle must not be null");
 
-  auto* task_ptr = reinterpret_cast<context::unified_task<>*>(t);
+  auto* task_ptr = from_opaque<context::unified_task<>>(t);
   task_ptr->set_exec_place(deref_exec_place(exec_p));
 }
 
@@ -311,7 +398,7 @@ void stf_task_set_symbol(stf_task_handle t, const char* symbol)
   _CCCL_ASSERT(t != nullptr, "task handle must not be null");
   _CCCL_ASSERT(symbol != nullptr, "symbol string must not be null");
 
-  auto* task_ptr = reinterpret_cast<context::unified_task<>*>(t);
+  auto* task_ptr = from_opaque<context::unified_task<>>(t);
   task_ptr->set_symbol(symbol);
 }
 
@@ -320,8 +407,8 @@ void stf_task_add_dep(stf_task_handle t, stf_logical_data_handle ld, stf_access_
   _CCCL_ASSERT(t != nullptr, "task handle must not be null");
   _CCCL_ASSERT(ld != nullptr, "logical data handle must not be null");
 
-  auto* task_ptr = reinterpret_cast<context::unified_task<>*>(t);
-  auto* ld_ptr   = reinterpret_cast<logical_data_untyped*>(ld);
+  auto* task_ptr = from_opaque<context::unified_task<>>(t);
+  auto* ld_ptr   = from_opaque<logical_data_untyped>(ld);
   task_ptr->add_deps(task_dep_untyped(*ld_ptr, access_mode(m)));
 }
 
@@ -332,8 +419,8 @@ void stf_task_add_dep_with_dplace(
   _CCCL_ASSERT(ld != nullptr, "logical data handle must not be null");
   _CCCL_ASSERT(data_p != nullptr, "data_place handle must not be null");
 
-  auto* task_ptr = reinterpret_cast<context::unified_task<>*>(t);
-  auto* ld_ptr   = reinterpret_cast<logical_data_untyped*>(ld);
+  auto* task_ptr = from_opaque<context::unified_task<>>(t);
+  auto* ld_ptr   = from_opaque<logical_data_untyped>(ld);
   task_ptr->add_deps(task_dep_untyped(*ld_ptr, access_mode(m), deref_data_place(data_p)));
 }
 
@@ -341,7 +428,7 @@ void* stf_task_get(stf_task_handle t, int index)
 {
   _CCCL_ASSERT(t != nullptr, "task handle must not be null");
 
-  auto* task_ptr = reinterpret_cast<context::unified_task<>*>(t);
+  auto* task_ptr = from_opaque<context::unified_task<>>(t);
   auto s         = task_ptr->template get<slice<const char>>(index);
   return (void*) s.data_handle();
 }
@@ -350,7 +437,7 @@ void stf_task_start(stf_task_handle t)
 {
   _CCCL_ASSERT(t != nullptr, "task handle must not be null");
 
-  auto* task_ptr = reinterpret_cast<context::unified_task<>*>(t);
+  auto* task_ptr = from_opaque<context::unified_task<>>(t);
   task_ptr->start();
 }
 
@@ -358,7 +445,7 @@ void stf_task_end(stf_task_handle t)
 {
   _CCCL_ASSERT(t != nullptr, "task handle must not be null");
 
-  auto* task_ptr = reinterpret_cast<context::unified_task<>*>(t);
+  auto* task_ptr = from_opaque<context::unified_task<>>(t);
   task_ptr->end();
 }
 
@@ -366,7 +453,7 @@ void stf_task_enable_capture(stf_task_handle t)
 {
   _CCCL_ASSERT(t != nullptr, "task handle must not be null");
 
-  auto* task_ptr = reinterpret_cast<context::unified_task<>*>(t);
+  auto* task_ptr = from_opaque<context::unified_task<>>(t);
   task_ptr->enable_capture();
 }
 
@@ -374,7 +461,7 @@ CUstream stf_task_get_custream(stf_task_handle t)
 {
   _CCCL_ASSERT(t != nullptr, "task handle must not be null");
 
-  auto* task_ptr = reinterpret_cast<context::unified_task<>*>(t);
+  auto* task_ptr = from_opaque<context::unified_task<>>(t);
   return static_cast<CUstream>(task_ptr->get_stream());
 }
 
@@ -382,7 +469,7 @@ void stf_task_destroy(stf_task_handle t)
 {
   _CCCL_ASSERT(t != nullptr, "task handle must not be null");
 
-  auto* task_ptr = reinterpret_cast<context::unified_task<>*>(t);
+  auto* task_ptr = from_opaque<context::unified_task<>>(t);
   delete task_ptr;
 }
 
@@ -391,9 +478,11 @@ void stf_cuda_kernel_create(stf_ctx_handle ctx, stf_cuda_kernel_handle* k)
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
   _CCCL_ASSERT(k != nullptr, "cuda kernel handle output pointer must not be null");
 
-  auto* context_ptr = reinterpret_cast<context*>(ctx);
-  using kernel_type = decltype(context_ptr->cuda_kernel());
-  *k                = reinterpret_cast<stf_cuda_kernel_handle>(new kernel_type{context_ptr->cuda_kernel()});
+  auto* context_ptr = from_opaque<context>(ctx);
+  *k                = to_opaque<stf_cuda_kernel_handle>(stf_try_allocate([&] {
+    using kernel_type = decltype(context_ptr->cuda_kernel());
+    return new kernel_type{context_ptr->cuda_kernel()};
+  }));
 }
 
 void stf_cuda_kernel_set_exec_place(stf_cuda_kernel_handle k, stf_exec_place_handle exec_p)
@@ -402,7 +491,7 @@ void stf_cuda_kernel_set_exec_place(stf_cuda_kernel_handle k, stf_exec_place_han
   _CCCL_ASSERT(exec_p != nullptr, "exec_place handle must not be null");
 
   using kernel_type = decltype(::std::declval<context>().cuda_kernel());
-  auto* kernel_ptr  = reinterpret_cast<kernel_type*>(k);
+  auto* kernel_ptr  = static_cast<kernel_type*>(static_cast<void*>(k));
   kernel_ptr->set_exec_place(deref_exec_place(exec_p));
 }
 
@@ -412,7 +501,7 @@ void stf_cuda_kernel_set_symbol(stf_cuda_kernel_handle k, const char* symbol)
   _CCCL_ASSERT(symbol != nullptr, "symbol string must not be null");
 
   using kernel_type = decltype(::std::declval<context>().cuda_kernel());
-  auto* kernel_ptr  = reinterpret_cast<kernel_type*>(k);
+  auto* kernel_ptr  = static_cast<kernel_type*>(static_cast<void*>(k));
   kernel_ptr->set_symbol(symbol);
 }
 
@@ -422,8 +511,8 @@ void stf_cuda_kernel_add_dep(stf_cuda_kernel_handle k, stf_logical_data_handle l
   _CCCL_ASSERT(ld != nullptr, "logical data handle must not be null");
 
   using kernel_type = decltype(::std::declval<context>().cuda_kernel());
-  auto* kernel_ptr  = reinterpret_cast<kernel_type*>(k);
-  auto* ld_ptr      = reinterpret_cast<logical_data_untyped*>(ld);
+  auto* kernel_ptr  = static_cast<kernel_type*>(static_cast<void*>(k));
+  auto* ld_ptr      = from_opaque<logical_data_untyped>(ld);
   kernel_ptr->add_deps(task_dep_untyped(*ld_ptr, access_mode(m)));
 }
 
@@ -432,7 +521,7 @@ void stf_cuda_kernel_start(stf_cuda_kernel_handle k)
   _CCCL_ASSERT(k != nullptr, "cuda kernel handle must not be null");
 
   using kernel_type = decltype(::std::declval<context>().cuda_kernel());
-  auto* kernel_ptr  = reinterpret_cast<kernel_type*>(k);
+  auto* kernel_ptr  = static_cast<kernel_type*>(static_cast<void*>(k));
   kernel_ptr->start();
 }
 
@@ -448,7 +537,7 @@ void stf_cuda_kernel_add_desc_cufunc(
   _CCCL_ASSERT(k != nullptr, "cuda kernel handle must not be null");
 
   using kernel_type = decltype(::std::declval<context>().cuda_kernel());
-  auto* kernel_ptr  = reinterpret_cast<kernel_type*>(k);
+  auto* kernel_ptr  = static_cast<kernel_type*>(static_cast<void*>(k));
 
   cuda_kernel_desc desc;
   desc.configure_raw(cufunc, grid_dim_, block_dim_, shared_mem_, arg_cnt, args);
@@ -460,7 +549,7 @@ void* stf_cuda_kernel_get_arg(stf_cuda_kernel_handle k, int index)
   _CCCL_ASSERT(k != nullptr, "cuda kernel handle must not be null");
 
   using kernel_type = decltype(::std::declval<context>().cuda_kernel());
-  auto* kernel_ptr  = reinterpret_cast<kernel_type*>(k);
+  auto* kernel_ptr  = static_cast<kernel_type*>(static_cast<void*>(k));
   auto s            = kernel_ptr->template get<slice<const char>>(index);
   return (void*) (s.data_handle());
 }
@@ -470,7 +559,7 @@ void stf_cuda_kernel_end(stf_cuda_kernel_handle k)
   _CCCL_ASSERT(k != nullptr, "cuda kernel handle must not be null");
 
   using kernel_type = decltype(::std::declval<context>().cuda_kernel());
-  auto kernel_ptr   = reinterpret_cast<kernel_type*>(k);
+  auto kernel_ptr   = static_cast<kernel_type*>(static_cast<void*>(k));
   kernel_ptr->end();
 }
 
@@ -479,7 +568,7 @@ void stf_cuda_kernel_destroy(stf_cuda_kernel_handle t)
   _CCCL_ASSERT(t != nullptr, "cuda kernel handle must not be null");
 
   using kernel_type = decltype(::std::declval<context>().cuda_kernel());
-  auto* kernel_ptr  = reinterpret_cast<kernel_type*>(t);
+  auto* kernel_ptr  = static_cast<kernel_type*>(static_cast<void*>(t));
   delete kernel_ptr;
 }
 
@@ -494,8 +583,10 @@ void stf_host_launch_create(stf_ctx_handle ctx, stf_host_launch_handle* h)
   _CCCL_ASSERT(ctx != nullptr, "context handle must not be null");
   _CCCL_ASSERT(h != nullptr, "host launch handle output pointer must not be null");
 
-  auto* context_ptr = reinterpret_cast<context*>(ctx);
-  *h                = reinterpret_cast<stf_host_launch_handle>(new host_launch_type{context_ptr->host_launch()});
+  auto* context_ptr = from_opaque<context>(ctx);
+  *h                = to_opaque<stf_host_launch_handle>(stf_try_allocate([&] {
+    return new host_launch_type{context_ptr->host_launch()};
+  }));
 }
 
 void stf_host_launch_set_symbol(stf_host_launch_handle h, const char* symbol)
@@ -503,7 +594,7 @@ void stf_host_launch_set_symbol(stf_host_launch_handle h, const char* symbol)
   _CCCL_ASSERT(h != nullptr, "host launch handle must not be null");
   _CCCL_ASSERT(symbol != nullptr, "symbol string must not be null");
 
-  auto* scope_ptr = reinterpret_cast<host_launch_type*>(h);
+  auto* scope_ptr = static_cast<host_launch_type*>(static_cast<void*>(h));
   scope_ptr->set_symbol(symbol);
 }
 
@@ -512,8 +603,8 @@ void stf_host_launch_add_dep(stf_host_launch_handle h, stf_logical_data_handle l
   _CCCL_ASSERT(h != nullptr, "host launch handle must not be null");
   _CCCL_ASSERT(ld != nullptr, "logical data handle must not be null");
 
-  auto* scope_ptr = reinterpret_cast<host_launch_type*>(h);
-  auto* ld_ptr    = reinterpret_cast<logical_data_untyped*>(ld);
+  auto* scope_ptr = static_cast<host_launch_type*>(static_cast<void*>(h));
+  auto* ld_ptr    = from_opaque<logical_data_untyped>(ld);
   scope_ptr->add_deps(task_dep_untyped(*ld_ptr, access_mode(m)));
 }
 
@@ -521,7 +612,7 @@ void stf_host_launch_set_user_data(stf_host_launch_handle h, const void* data, s
 {
   _CCCL_ASSERT(h != nullptr, "host launch handle must not be null");
 
-  auto* scope_ptr = reinterpret_cast<host_launch_type*>(h);
+  auto* scope_ptr = static_cast<host_launch_type*>(static_cast<void*>(h));
   scope_ptr->set_user_data(data, size, dtor);
 }
 
@@ -530,9 +621,9 @@ void stf_host_launch_submit(stf_host_launch_handle h, stf_host_callback_fn callb
   _CCCL_ASSERT(h != nullptr, "host launch handle must not be null");
   _CCCL_ASSERT(callback != nullptr, "callback must not be null");
 
-  auto* scope_ptr = reinterpret_cast<host_launch_type*>(h);
+  auto* scope_ptr = static_cast<host_launch_type*>(static_cast<void*>(h));
   (*scope_ptr)->*[callback](cuda::experimental::stf::reserved::host_launch_deps& deps) {
-    callback(reinterpret_cast<stf_host_launch_deps_handle>(&deps));
+    callback(to_opaque<stf_host_launch_deps_handle>(&deps));
   };
 }
 
@@ -543,14 +634,14 @@ void stf_host_launch_destroy(stf_host_launch_handle h)
     return;
   }
 
-  delete reinterpret_cast<host_launch_type*>(h);
+  delete static_cast<host_launch_type*>(static_cast<void*>(h));
 }
 
 void* stf_host_launch_deps_get(stf_host_launch_deps_handle deps, size_t index)
 {
   _CCCL_ASSERT(deps != nullptr, "deps handle must not be null");
 
-  auto* d = reinterpret_cast<cuda::experimental::stf::reserved::host_launch_deps*>(deps);
+  auto* d = from_opaque<cuda::experimental::stf::reserved::host_launch_deps>(deps);
   return d->get<slice<char>>(index).data_handle();
 }
 
@@ -558,7 +649,7 @@ size_t stf_host_launch_deps_get_size(stf_host_launch_deps_handle deps, size_t in
 {
   _CCCL_ASSERT(deps != nullptr, "deps handle must not be null");
 
-  auto* d = reinterpret_cast<cuda::experimental::stf::reserved::host_launch_deps*>(deps);
+  auto* d = from_opaque<cuda::experimental::stf::reserved::host_launch_deps>(deps);
   return d->get<slice<char>>(index).extent(0);
 }
 
@@ -566,7 +657,7 @@ size_t stf_host_launch_deps_size(stf_host_launch_deps_handle deps)
 {
   _CCCL_ASSERT(deps != nullptr, "deps handle must not be null");
 
-  auto* d = reinterpret_cast<cuda::experimental::stf::reserved::host_launch_deps*>(deps);
+  auto* d = from_opaque<cuda::experimental::stf::reserved::host_launch_deps>(deps);
   return d->size();
 }
 
@@ -574,7 +665,7 @@ void* stf_host_launch_deps_get_user_data(stf_host_launch_deps_handle deps)
 {
   _CCCL_ASSERT(deps != nullptr, "deps handle must not be null");
 
-  auto* d = reinterpret_cast<cuda::experimental::stf::reserved::host_launch_deps*>(deps);
+  auto* d = from_opaque<cuda::experimental::stf::reserved::host_launch_deps>(deps);
   return d->user_data();
 }
 
