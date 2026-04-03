@@ -37,15 +37,15 @@ template <typename ChainedPolicyT,
           typename AccumT,
           bool ForceInclusive,
           typename ActualInitValueT = typename InitValueT::value_type>
-_launch_bounds__(int(ChainedPolicyT::ActivePolicy::block_segmented_scan_policy_t::BLOCK_THREADS)) CUB_KERNEL_ATTRIBUTES
-  void device_segmented_scan_kernel(
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::block_segmented_scan_policy_t::BLOCK_THREADS))
+  _CCCL_KERNEL_ATTRIBUTES void device_segmented_scan_kernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
     _CCCL_GRID_CONSTANT const BeginOffsetIteratorInputT begin_offset_d_in,
     _CCCL_GRID_CONSTANT const EndOffsetIteratorInputT end_offset_d_in,
     _CCCL_GRID_CONSTANT const BeginOffsetIteratorOutputT begin_offset_d_out,
     _CCCL_GRID_CONSTANT const OffsetT n_segments,
-    _CCCL_GRID_CONSTANT const tScanOpT scan_op,
+    _CCCL_GRID_CONSTANT const ScanOpT scan_op,
     _CCCL_GRID_CONSTANT const InitValueT init_value,
     _CCCL_GRID_CONSTANT const int num_segments_per_worker)
 {
@@ -125,17 +125,17 @@ template <typename ChainedPolicyT,
           typename AccumT,
           bool ForceInclusive,
           typename ActualInitValueT = typename InitValueT::value_type>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t::BLOCK_THREADS)) CUB_KERNEL_ATTRIBUTES
-  void device_warp_segmented_scan_kernel(
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    BeginOffsetIteratorInputT begin_offset_d_in,
-    EndOffsetIteratorInputT end_offset_d_in,
-    BeginOffsetIteratorOutputT begin_offset_d_out,
-    OffsetT n_segments,
-    ScanOpT scan_op,
-    InitValueT init_value,
-    int num_segments_per_worker)
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t::BLOCK_THREADS))
+  _CCCL_KERNEL_ATTRIBUTES void device_warp_segmented_scan_kernel(
+    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
+    _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
+    _CCCL_GRID_CONSTANT const BeginOffsetIteratorInputT begin_offset_d_in,
+    _CCCL_GRID_CONSTANT const EndOffsetIteratorInputT end_offset_d_in,
+    _CCCL_GRID_CONSTANT const BeginOffsetIteratorOutputT begin_offset_d_out,
+    _CCCL_GRID_CONSTANT const OffsetT n_segments,
+    _CCCL_GRID_CONSTANT const ScanOpT scan_op,
+    _CCCL_GRID_CONSTANT const InitValueT init_value,
+    _CCCL_GRID_CONSTANT const int num_segments_per_worker)
 {
   using policy_t = typename ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t;
 
@@ -229,16 +229,16 @@ template <typename ChainedPolicyT,
           bool ForceInclusive,
           typename ActualInitValueT = typename InitValueT::value_type>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::thread_segmented_scan_policy_t::BLOCK_THREADS))
-  CUB_KERNEL_ATTRIBUTES void device_thread_segmented_scan_kernel(
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    BeginOffsetIteratorInputT begin_offset_d_in,
-    EndOffsetIteratorInputT end_offset_d_in,
-    BeginOffsetIteratorOutputT begin_offset_d_out,
-    OffsetT n_segments,
-    ScanOpT scan_op,
-    InitValueT init_value,
-    int num_segments_per_worker)
+  _CCCL_KERNEL_ATTRIBUTES void device_thread_segmented_scan_kernel(
+    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
+    _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
+    _CCCL_GRID_CONSTANT const BeginOffsetIteratorInputT begin_offset_d_in,
+    _CCCL_GRID_CONSTANT const EndOffsetIteratorInputT end_offset_d_in,
+    _CCCL_GRID_CONSTANT const BeginOffsetIteratorOutputT begin_offset_d_out,
+    _CCCL_GRID_CONSTANT const OffsetT n_segments,
+    _CCCL_GRID_CONSTANT const ScanOpT scan_op,
+    _CCCL_GRID_CONSTANT const InitValueT init_value,
+    _CCCL_GRID_CONSTANT const int num_segments_per_worker)
 {
   using policy_t = typename ChainedPolicyT::ActivePolicy::thread_segmented_scan_policy_t;
 
