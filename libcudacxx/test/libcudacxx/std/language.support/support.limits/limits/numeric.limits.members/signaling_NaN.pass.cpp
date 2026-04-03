@@ -19,6 +19,7 @@
 #include <cuda/std/type_traits>
 
 #include "common.h"
+#include "cuda_fp_types.h"
 #include "test_macros.h"
 
 template <class T>
