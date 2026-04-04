@@ -1,7 +1,7 @@
 .. _cccl-runtime-device:
 
 Devices
-=======
+========
 
 :cpp:class:`cuda::device_ref`
 -------------------------------

@@ -31,8 +31,8 @@ C2H_TEST("stf_logical_data_with_place - host place (malloc)", "[logical_data_wit
 {
   size_t N = 1024;
 
-  stf_ctx_handle ctx;
-  stf_ctx_create(&ctx);
+  stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
 
   float* A = static_cast<float*>(malloc(N * sizeof(float)));
   for (size_t i = 0; i < N; ++i)
@@ -40,15 +40,17 @@ C2H_TEST("stf_logical_data_with_place - host place (malloc)", "[logical_data_wit
     A[i] = static_cast<float>(i);
   }
 
-  stf_data_place host_place = make_host_data_place();
-  stf_logical_data_handle lA;
-  stf_logical_data_with_place(ctx, &lA, A, N * sizeof(float), host_place);
+  stf_data_place_handle host_place = stf_data_place_host();
+  stf_logical_data_handle lA       = stf_logical_data_with_place(ctx, A, N * sizeof(float), host_place);
+  REQUIRE(lA != nullptr);
+  stf_data_place_destroy(host_place);
 
-  stf_task_handle t;
-  stf_task_create(ctx, &t);
+  stf_task_handle t = stf_task_create(ctx);
+  REQUIRE(t != nullptr);
   stf_task_add_dep(t, lA, STF_RW);
   stf_task_start(t);
   stf_task_end(t);
+  stf_task_destroy(t);
 
   stf_logical_data_destroy(lA);
   stf_ctx_finalize(ctx);
@@ -65,8 +67,8 @@ C2H_TEST("stf_logical_data_with_place - host place (pinned memory)", "[logical_d
 {
   size_t N = 1024;
 
-  stf_ctx_handle ctx;
-  stf_ctx_create(&ctx);
+  stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
 
   float* A        = nullptr;
   cudaError_t err = cudaMallocHost(&A, N * sizeof(float));
@@ -76,15 +78,17 @@ C2H_TEST("stf_logical_data_with_place - host place (pinned memory)", "[logical_d
     A[i] = static_cast<float>(i);
   }
 
-  stf_data_place host_place = make_host_data_place();
-  stf_logical_data_handle lA;
-  stf_logical_data_with_place(ctx, &lA, A, N * sizeof(float), host_place);
+  stf_data_place_handle host_place = stf_data_place_host();
+  stf_logical_data_handle lA       = stf_logical_data_with_place(ctx, A, N * sizeof(float), host_place);
+  REQUIRE(lA != nullptr);
+  stf_data_place_destroy(host_place);
 
-  stf_task_handle t;
-  stf_task_create(ctx, &t);
+  stf_task_handle t = stf_task_create(ctx);
+  REQUIRE(t != nullptr);
   stf_task_add_dep(t, lA, STF_RW);
   stf_task_start(t);
   stf_task_end(t);
+  stf_task_destroy(t);
 
   stf_logical_data_destroy(lA);
   stf_ctx_finalize(ctx);
@@ -102,8 +106,8 @@ C2H_TEST("stf_logical_data_with_place - device place (data on current device)", 
   size_t N           = 1024;
   const float factor = 2.0f;
 
-  stf_ctx_handle ctx;
-  stf_ctx_create(&ctx);
+  stf_ctx_handle ctx = stf_ctx_create();
+  REQUIRE(ctx != nullptr);
 
   float* d_data   = nullptr;
   cudaError_t err = cudaMalloc(&d_data, N * sizeof(float));
@@ -118,13 +122,14 @@ C2H_TEST("stf_logical_data_with_place - device place (data on current device)", 
   REQUIRE(err == cudaSuccess);
   free(h_init);
 
-  stf_data_place dev_place = make_device_data_place(0);
-  stf_logical_data_handle lD;
-  stf_logical_data_with_place(ctx, &lD, d_data, N * sizeof(float), dev_place);
+  stf_data_place_handle dev_place = stf_data_place_device(0);
+  stf_logical_data_handle lD      = stf_logical_data_with_place(ctx, d_data, N * sizeof(float), dev_place);
+  REQUIRE(lD != nullptr);
+  stf_data_place_destroy(dev_place);
   stf_logical_data_set_symbol(lD, "device_buf");
 
-  stf_cuda_kernel_handle k;
-  stf_cuda_kernel_create(ctx, &k);
+  stf_cuda_kernel_handle k = stf_cuda_kernel_create(ctx);
+  REQUIRE(k != nullptr);
   stf_cuda_kernel_set_symbol(k, "scale_inplace");
   stf_cuda_kernel_add_dep(k, lD, STF_RW);
   stf_cuda_kernel_start(k);

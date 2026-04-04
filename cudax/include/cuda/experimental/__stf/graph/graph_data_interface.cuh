@@ -59,7 +59,7 @@ public:
     size_t input_cnt) = 0;
 
   // Returns prereq
-  void data_copy(backend_ctx_untyped& ctx_,
+  void data_copy(backend_ctx_untyped& ctx,
                  const data_place& dst_memory_node,
                  instance_id_t dst_instance_id,
                  const data_place& src_memory_node,
@@ -70,18 +70,18 @@ public:
     ::std::ignore = dst_memory_node;
     assert(src_memory_node != dst_memory_node);
 
-    cudaGraph_t graph  = ctx_.graph();
-    size_t graph_stage = ctx_.stage();
+    cudaGraph_t graph  = ctx.graph();
+    size_t graph_stage = ctx.stage();
     assert(graph && graph_stage != size_t(-1));
 
-    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(ctx_, prereqs, graph_stage);
+    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(ctx, prereqs, graph_stage);
 
     // Let CUDA figure out from pointers
     cudaMemcpyKind kind = cudaMemcpyDefault;
 
     cudaGraphNode_t out = graph_data_copy(kind, src_instance_id, dst_instance_id, graph, nodes.data(), nodes.size());
 
-    reserved::fork_from_graph_node(ctx_, out, graph, graph_stage, prereqs, "copy");
+    reserved::fork_from_graph_node(ctx, out, graph, graph_stage, prereqs, "copy");
   }
 };
 } // end namespace cuda::experimental::stf

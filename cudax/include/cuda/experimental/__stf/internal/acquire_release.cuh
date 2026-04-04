@@ -43,8 +43,6 @@ namespace cuda::experimental::stf
  *
  * @param ctx The backend context in which the task is executed. This context contains
  *            the execution stack and other execution-related information.
- * @param tsk The task to be prepared for execution. The task must be in the setup phase
- *            before calling this function.
  * @return An event_list containing all the input events and any additional events
  *         generated during the acquisition of dependencies. This list represents the
  *         prerequisites for the task to start execution.

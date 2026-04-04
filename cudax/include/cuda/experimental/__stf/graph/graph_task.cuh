@@ -527,7 +527,11 @@ private:
  * are typed appropriately.
  */
 template <typename... Deps>
-class graph_task : public graph_task<>
+class graph_task
+// Hide recursive base from Doxygen — it cannot handle self-referential inheritance.
+#ifndef _CCCL_DOXYGEN_INVOKED
+    : public graph_task<>
+#endif
 {
 public:
   graph_task(backend_ctx_untyped ctx,

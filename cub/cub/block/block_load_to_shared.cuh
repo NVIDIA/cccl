@@ -73,6 +73,7 @@ namespace detail
 //! - Uses special instructions/hardware acceleration when available (cp.async.bulk on Hopper+, copy.async on Ampere).
 //! - By guaranteeing 16 byte alignment and size multiple for the global span, a faster path is taken and less shared
 //!   memory is needed for the destination buffer.
+//! @endrst
 template <int BlockDimX, int BlockDimY = 1, int BlockDimZ = 1>
 struct BlockLoadToShared
 {

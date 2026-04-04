@@ -42,11 +42,11 @@ namespace cuda::experimental::stf
  * @brief Yields a string form of type name. Exact spelling not guaranteed (e.g. `type_name<int*>` may be `"int*"`,
  * `"int *"` etc).
  *
- * Thin wrapper around `cuda::std::__pretty_nameof<T>()` returning `::std::string_view`.
+ * Thin wrapper around `cuda::std::__pretty_nameof<T>()` returning ``std::string_view``.
  *
  * @tparam T The type to show.
  *
- * @snippet unittest.h type_name
+ * @snippet unittest.cuh type_name
  */
 template <class T>
 inline const ::std::string_view type_name{

@@ -220,6 +220,9 @@ workflows:
     - {jobs: ['build'], cudacxx: 'clang', ctk: 'clang-cuda', cxx: 'clang-cuda', std: 'all', sm: '75;80;90;100'}
     # clang-tidy
     - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang'], cudacxx: ['clang'], ctk: 'clang-cuda', sm: '75' }
+    # arch-specific and family-specific arch builds
+    - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '90a;100a;103a;110a;120a;121a'}
+    - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '100f;103f;110f;120f;121f'}
 
   weekly:
     # CTK 12.0 full matrix build: default projects
@@ -311,6 +314,9 @@ workflows:
     - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
     # clang-tidy
     - { jobs: ['build'], project: 'tidy', std: 'min', cxx: ['clang'], cudacxx: ['clang'], ctk: 'clang-cuda', sm: '75' }
+    # arch-specific and family-specific arch builds
+    - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '90a;100a;103a;110a;120a;121a'}
+    - {jobs: ['build'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], std: 'all', sm: '100f;103f;110f;120f;121f'}
 
   python-wheels:
     - {jobs: ['test'], project: 'python', ctk: ['12.X', '13.0', '13.X'], py_version: ['3.10', '3.11', '3.12', '3.13'], gpu: 'l4', cxx: ['gcc13', 'msvc']}

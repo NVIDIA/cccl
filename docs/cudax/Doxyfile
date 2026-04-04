@@ -42,6 +42,9 @@ EXCLUDE_PATTERNS       = */detail/* */test/* */tests/* */examples/* */__detail/*
 # Exclude symbols from repo.toml
 EXCLUDE_SYMBOLS        = *detail* *RESERVED* *reserved* *__* _A* _B* _C* _D* _E* _F* _G* _H* _I* _J* _K* _L* _M* _N* _O* _P* _Q* _R* _S* _T* _U* _V* _W* _X* _Y* _Z* UNITTEST
 
+# Path for @snippet references to test/example files
+EXAMPLE_PATH           = ../../cudax/include/cuda/experimental/__stf/utility
+
 FILE_PATTERNS          = *.h *.hpp *.cuh
 EXTENSION_MAPPING      = cuh=C++ cu=C++
 
@@ -168,7 +171,9 @@ ALIASES += "inlinerst=\verbatim embed:rst:inline"
 
 # Quiet mode
 QUIET                  = YES
-WARNINGS               = NO
+WARNINGS               = YES
+WARN_AS_ERROR          = FAIL_ON_WARNINGS
 WARN_IF_UNDOCUMENTED   = NO
-WARN_IF_DOC_ERROR      = NO
+WARN_IF_DOC_ERROR      = YES
+WARN_IF_INCOMPLETE_DOC = NO
 WARN_NO_PARAMDOC       = NO

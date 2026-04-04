@@ -45,14 +45,14 @@ struct DeviceFind
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_find_if_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin  find-if-predicate
-  //!     :end-before: example-end  find-if-predicate
+  //!     :start-after: example-begin find-if-predicate
+  //!     :end-before: example-end find-if-predicate
   //!
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_find_if_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin  device-find-if
-  //!     :end-before: example-end  device-find-if
+  //!     :start-after: example-begin device-find-if
+  //!     :end-before: example-end device-find-if
   //! @endrst
   //!
   //! @tparam InputIteratorT

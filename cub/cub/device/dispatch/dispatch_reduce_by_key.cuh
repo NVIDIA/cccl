@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: BSD-3
 
 /**
- * @file cub::DeviceReduceByKey provides device-wide, parallel operations for
- *       reducing segments of values residing within device-accessible memory.
+ * @file
+ * @brief cub::DeviceReduceByKey provides device-wide, parallel operations for
+ *        reducing segments of values residing within device-accessible memory.
  */
 
 #pragma once

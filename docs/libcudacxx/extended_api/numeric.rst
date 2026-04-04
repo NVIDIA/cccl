@@ -1,18 +1,24 @@
 .. _libcudacxx-extended-api-numeric:
 
 Numeric
-=======
+========
 
 .. toctree::
    :hidden:
    :maxdepth: 1
 
    numeric/add_overflow
+   numeric/saturating_add_overflow
    numeric/div_overflow
+   numeric/saturating_div_overflow
    numeric/mul_overflow
+   numeric/saturating_mul_overflow
    numeric/narrow
+   numeric/overflow_cast
    numeric/overflow_result
+   numeric/saturating_overflow_cast
    numeric/sub_overflow
+   numeric/saturating_sub_overflow
 
 .. list-table::
    :widths: 25 45 30 30

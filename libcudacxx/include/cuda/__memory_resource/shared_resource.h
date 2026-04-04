@@ -134,8 +134,8 @@ struct shared_resource
   }
 
   //! @brief Swaps a \c shared_resource with another one.
-  //! @param __left A \c shared_resource.
-  //! @param __right Another \c shared_resource.
+  //! @param __left The first \c shared_resource.
+  //! @param __right The second \c shared_resource.
   friend void swap(shared_resource& __left, shared_resource& __right) noexcept
   {
     __left.swap(__right);
@@ -204,6 +204,7 @@ struct shared_resource
   //! @brief Enqueues an allocation of memory of size at least \p __bytes using
   //! the wrapped resource. The allocation is performed asynchronously on stream \c __stream.
   //! @pre \c _Resource must satisfy \c resource.
+  //! @param __stream The stream on which the allocation is enqueued.
   //! @param __bytes The size in bytes of the allocation.
   //! @param __alignment The requested alignment of the allocation.
   //! @return Pointer to the newly allocated memory.
@@ -219,6 +220,7 @@ struct shared_resource
   //! @brief Enqueues the deallocation of memory pointed to by \c __ptr. The deallocation is
   //! performed asynchronously on stream \c __stream.
   //! @pre \c _Resource must satisfy \c resource.
+  //! @param __stream The stream on which the deallocation is enqueued.
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate` or `allocate_sync`
   //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
   //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
