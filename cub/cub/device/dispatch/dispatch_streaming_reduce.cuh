@@ -230,7 +230,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
     true, is_single_partition, nullptr, nullptr, d_result_out, local_to_global_op, reduce_op};
 
   // Initial value for empty problems, according to documented contract
-  const auto empty_problem_extremum = output_extremum_t{[] {
+  const auto empty_problem_extremum = static_cast<output_extremum_t>([] {
     if constexpr (::cuda::std::is_same_v<ReductionOpT, arg_min>)
     {
       return ::cuda::std::numeric_limits<input_value_t>::max();
@@ -240,7 +240,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
       return ::cuda::std::numeric_limits<input_value_t>::lowest();
     }
     return input_value_t{};
-  }()};
+  }());
   auto initial_value = empty_problem_init_t<per_partition_accum_t>{{PerPartitionOffsetT{1}, empty_problem_extremum}};
 
   void* allocations[2]       = {nullptr, nullptr};
