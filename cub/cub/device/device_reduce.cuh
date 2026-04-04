@@ -932,6 +932,33 @@ public:
     });
   }
 
+private:
+  template <typename InputIteratorT, typename ExtremumOutIteratorT, typename IndexOutIteratorT, typename CompareOpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t __arg_min(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    ExtremumOutIteratorT d_min_out,
+    IndexOutIteratorT d_index_out,
+    ::cuda::std::int64_t num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream)
+  {
+    using PerPartitionOffsetT = int; // used by the kernel to index within one partition
+    using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
+
+    return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_min_out,
+      d_index_out,
+      static_cast<GlobalOffsetT>(num_items),
+      detail::arg_less{compare_op},
+      stream);
+  }
+
+public:
   //! @rst
   //! Finds the first device-wide minimum based on a given comparison operator and also returns the index of that item.
   //!
@@ -1052,19 +1079,7 @@ public:
     cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
-
-    using PerPartitionOffsetT = int; // used by the kernel to index within one partition
-    using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
-
-    return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_min_out,
-      d_index_out,
-      static_cast<GlobalOffsetT>(num_items),
-      detail::arg_less{compare_op},
-      stream);
+    return __arg_min(d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out, num_items, compare_op, stream);
   }
 
   //! @overload
@@ -1081,6 +1096,87 @@ public:
   {
     return ArgMin(
       d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out, num_items, ::cuda::std::less{}, stream);
+  }
+
+  template <typename InputIteratorT,
+            typename ExtremumOutIteratorT,
+            typename IndexOutIteratorT,
+            typename CompareOpT,
+            typename EnvT>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __arg_min_env(
+    InputIteratorT d_in,
+    ExtremumOutIteratorT d_min_out,
+    IndexOutIteratorT d_index_out,
+    ::cuda::std::int64_t num_items,
+    CompareOpT compare_op,
+    EnvT env = {})
+  {
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
+                  "Determinism should be used inside requires to have an effect.");
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requested_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
+    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+                  "gpu_to_gpu determinism is not supported");
+
+    // Query relevant properties from the environment
+    auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
+    auto mr     = ::cuda::__call_or(::cuda::mr::get_memory_resource, detail::device_memory_resource{}, env);
+
+    using PerPartitionOffsetT = int; // used by the kernel to index within one partition
+    using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
+
+    void* d_temp_storage      = nullptr;
+    size_t temp_storage_bytes = 0;
+
+    // Query the required temporary storage size
+    if (const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in,
+          d_min_out,
+          d_index_out,
+          static_cast<GlobalOffsetT>(num_items),
+          detail::arg_less{compare_op},
+          stream.get()))
+    {
+      return error;
+    }
+
+    // TODO(gevtushenko): use uninitialized buffer when it's available
+    if (const auto error =
+          CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr)))
+    {
+      return error;
+    }
+
+    // Run the algorithm
+    const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_min_out,
+      d_index_out,
+      static_cast<GlobalOffsetT>(num_items),
+      detail::arg_less{compare_op},
+      stream.get());
+
+    // Try to deallocate regardless of the error to avoid memory leaks
+    const auto deallocate_error =
+      CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
+
+    if (error != cudaSuccess)
+    {
+      // Reduction error takes precedence over deallocation error since it happens first
+      return error;
+    }
+
+    return deallocate_error;
   }
 
   //! @rst
@@ -1163,73 +1259,7 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMin");
-
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t, //
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
-
-    // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
-                  "gpu_to_gpu determinism is not supported");
-
-    // Query relevant properties from the environment
-    auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
-    auto mr     = ::cuda::__call_or(::cuda::mr::get_memory_resource, detail::device_memory_resource{}, env);
-
-    using PerPartitionOffsetT = int; // used by the kernel to index within one partition
-    using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
-
-    void* d_temp_storage      = nullptr;
-    size_t temp_storage_bytes = 0;
-
-    // Query the required temporary storage size
-    if (const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_in,
-          d_min_out,
-          d_index_out,
-          static_cast<GlobalOffsetT>(num_items),
-          detail::arg_less{compare_op},
-          stream.get()))
-    {
-      return error;
-    }
-
-    // TODO(gevtushenko): use uninitialized buffer when it's available
-    if (const auto error =
-          CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr)))
-    {
-      return error;
-    }
-
-    // Run the algorithm
-    const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_min_out,
-      d_index_out,
-      static_cast<GlobalOffsetT>(num_items),
-      detail::arg_less{compare_op},
-      stream.get());
-
-    // Try to deallocate regardless of the error to avoid memory leaks
-    const auto deallocate_error =
-      CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
-
-    if (error != cudaSuccess)
-    {
-      // Reduction error takes precedence over deallocation error since it happens first
-      return error;
-    }
-
-    return deallocate_error;
+    return __arg_min_env(d_in, d_min_out, d_index_out, num_items, compare_op, env);
   }
 
   //! @overload
@@ -1690,20 +1720,8 @@ public:
     cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
-
-    using PerPartitionOffsetT = int; // used by the kernel to index within one partition
-    using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
-    using ReduceOpT           = detail::arg_max;
-
-    return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_max_out,
-      d_index_out,
-      static_cast<GlobalOffsetT>(num_items),
-      ReduceOpT{},
-      stream);
+    return __arg_min(
+      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items, detail::arg_max{}, stream);
   }
 
   //! @rst
@@ -1911,74 +1929,7 @@ public:
          EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMax");
-
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t, //
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
-
-    // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
-                  "gpu_to_gpu determinism is not supported");
-
-    // Query relevant properties from the environment
-    auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
-    auto mr     = ::cuda::__call_or(::cuda::mr::get_memory_resource, detail::device_memory_resource{}, env);
-
-    using PerPartitionOffsetT = int; // used by the kernel to index within one partition
-    using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
-    using ReduceOpT           = cub::ArgMax;
-
-    void* d_temp_storage      = nullptr;
-    size_t temp_storage_bytes = 0;
-
-    // Query the required temporary storage size
-    if (const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_in,
-          d_max_out,
-          d_index_out,
-          static_cast<GlobalOffsetT>(num_items),
-          ReduceOpT{},
-          stream.get()))
-    {
-      return error;
-    }
-
-    // TODO(gevtushenko): use uninitialized buffer when it's available
-    if (const auto error =
-          CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr)))
-    {
-      return error;
-    }
-
-    // Run the algorithm
-    const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_max_out,
-      d_index_out,
-      static_cast<GlobalOffsetT>(num_items),
-      ReduceOpT{},
-      stream.get());
-
-    // Try to deallocate regardless of the error to avoid memory leaks
-    const auto deallocate_error =
-      CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
-
-    if (error != cudaSuccess)
-    {
-      // Reduction error takes precedence over deallocation error since it happens first
-      return error;
-    }
-
-    return deallocate_error;
+    return __arg_min_env(d_in, d_max_out, d_index_out, num_items, detail::arg_max{}, env);
   }
 
   //! @rst
