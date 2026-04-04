@@ -235,11 +235,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
     {
       return ::cuda::std::numeric_limits<input_value_t>::max();
     }
-    if constexpr (::cuda::std::is_same_v<ReductionOpT, arg_max>)
+    else if constexpr (::cuda::std::is_same_v<ReductionOpT, arg_max>)
     {
       return ::cuda::std::numeric_limits<input_value_t>::lowest();
     }
-    return input_value_t{};
+    else
+    {
+      return input_value_t{};
+    }
   }());
   auto initial_value = empty_problem_init_t<per_partition_accum_t>{{PerPartitionOffsetT{1}, empty_problem_extremum}};
 
