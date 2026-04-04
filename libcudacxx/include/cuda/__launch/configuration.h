@@ -41,6 +41,16 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+struct __cccl_cukernel_handle
+{
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  ::CUkernel __kernel_;
+  ::CUdevice __device_;
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+  ::CUfunction __kernel_;
+#endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+};
+
 template <typename Dimensions, typename... Options>
 struct kernel_config;
 
@@ -139,16 +149,16 @@ struct cooperative_launch : public __detail::launch_option
   static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::cooperative_launch;
 };
 
-[[nodiscard]] _CCCL_API inline cudaError_t
-__apply_launch_option(const cooperative_launch&, CUlaunchConfig& config, CUfunction) noexcept
+[[nodiscard]] _CCCL_API inline ::cudaError_t
+__apply_launch_option(const cooperative_launch&, ::CUlaunchConfig& __config, __cccl_cukernel_handle) noexcept
 {
-  CUlaunchAttribute attr;
-  attr.id                = CU_LAUNCH_ATTRIBUTE_COOPERATIVE;
-  attr.value.cooperative = true;
+  ::CUlaunchAttribute __attr;
+  __attr.id                = ::CU_LAUNCH_ATTRIBUTE_COOPERATIVE;
+  __attr.value.cooperative = true;
 
-  config.attrs[config.numAttrs++] = attr;
+  __config.attrs[__config.numAttrs++] = __attr;
 
-  return cudaSuccess;
+  return ::cudaSuccess;
 }
 
 template <class _Tp>
@@ -318,10 +328,11 @@ private:
 
 template <class _Tp>
 [[nodiscard]] ::cudaError_t __apply_launch_option(
-  const dynamic_shared_memory_option<_Tp>& __opt, ::CUlaunchConfig& __config, ::CUfunction __kernel) noexcept
+  const dynamic_shared_memory_option<_Tp>& __opt, ::CUlaunchConfig& __config, __cccl_cukernel_handle __kernel_handle) noexcept
 {
   ::cudaError_t __status = ::cudaSuccess;
 
+#if _CCCL_CTK_BELOW(13, 0)
   // Since CUDA 12.4, querying CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES requires
   // the function to be loaded.
   if (::cuda::__driver::__version_at_least(12, 4))
@@ -332,21 +343,38 @@ template <class _Tp>
       return __status;
     }
   }
+#endif // _CCCL_CTK_BELOW(13, 0)
 
   int __static_smem_size{};
-  __status = ::cuda::__driver::__functionGetAttributeNoThrow(
-    __static_smem_size, ::CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, __kernel);
-  if (__status != ::cudaSuccess)
   {
-    return __status;
+    constexpr auto __attr = ::CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES;
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  __status = ::cuda::__driver::__kernelGetAttributeNoThrow(
+    __static_smem_size, __attr, __kernel_handle.__kernel_, __kernel_handle.__device_);
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+  __status = ::cuda::__driver::__functionGetAttributeNoThrow(
+    __static_smem_size, __attr, __kernel_handle.__kernel_);
+#endif // ^^^ _CCCL_CTK_BELOW(13, 0)
+    if (__status != ::cudaSuccess)
+    {
+      return __status;
+    }
   }
 
   int __max_dyn_smem_size{};
-  __status = ::cuda::__driver::__functionGetAttributeNoThrow(
-    __max_dyn_smem_size, ::CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, __kernel);
-  if (__status != ::cudaSuccess)
   {
-    return __status;
+    constexpr auto __attr = ::CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES;
+#if _CCCL_CTK_AT_LEAST(13, 0)
+    __status = ::cuda::__driver::__kernelGetAttributeNoThrow(
+      __max_dyn_smem_size, __attr, __kernel_handle.__kernel_, __kernel_handle.__device_);
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+    __status = ::cuda::__driver::__functionGetAttributeNoThrow(
+      __max_dyn_smem_size, __attr, __kernel_handle.__kernel_);
+#endif // ^^^ _CCCL_CTK_BELOW(13, 0)
+    if (__status != ::cudaSuccess)
+    {
+      return __status;
+    }
   }
 
   const auto __dyn_smem_size = ::cuda::overflow_cast<int>(__opt.size_bytes());
@@ -363,8 +391,14 @@ template <class _Tp>
 
   if (__max_dyn_smem_size < __dyn_smem_size.value)
   {
+    constexpr auto __attr = ::CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES;
+#if _CCCL_CTK_AT_LEAST(13, 0)
+    __status = ::cuda::__driver::__kernelSetAttributeNoThrow(
+      __attr, __dyn_smem_size.value, __kernel_handle.__kernel_, __kernel_handle.__device_);
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
     __status = ::cuda::__driver::__functionSetAttributeNoThrow(
-      __kernel, ::CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, __dyn_smem_size.value);
+      __kernel_handle.__kernel_, __attr, __dyn_smem_size.value);
+#endif // ^^^ _CCCL_CTK_BELOW(13, 0)
     if (__status != ::cudaSuccess)
     {
       return __status;
@@ -458,16 +492,16 @@ struct launch_priority : public __detail::launch_option
   {}
 };
 
-[[nodiscard]] _CCCL_HOST_API inline cudaError_t
-__apply_launch_option(const launch_priority& __opt, CUlaunchConfig& config, CUfunction) noexcept
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__apply_launch_option(const launch_priority& __opt, ::CUlaunchConfig& __config, __cccl_cukernel_handle) noexcept
 {
-  CUlaunchAttribute attr;
-  attr.id             = CU_LAUNCH_ATTRIBUTE_PRIORITY;
-  attr.value.priority = __opt.priority;
+  ::CUlaunchAttribute __attr;
+  __attr.id             = ::CU_LAUNCH_ATTRIBUTE_PRIORITY;
+  __attr.value.priority = __opt.priority;
 
-  config.attrs[config.numAttrs++] = attr;
+  __config.attrs[__config.numAttrs++] = __attr;
 
-  return cudaSuccess;
+  return ::cudaSuccess;
 }
 
 template <typename... _OptionsToFilter>
@@ -772,23 +806,23 @@ inline unsigned int constexpr kernel_config_count_attr_space(const kernel_config
 
 template <typename Dimensions, typename... Options>
 [[nodiscard]] cudaError_t apply_kernel_config(
-  const kernel_config<Dimensions, Options...>& config, CUlaunchConfig& cuda_config, CUfunction kernel) noexcept
+  const kernel_config<Dimensions, Options...>& __config, ::CUlaunchConfig& __cuda_config, __cccl_cukernel_handle __kernel_handle) noexcept
 {
   return ::cuda::std::apply(
-    [&](auto&... config_options) {
-      cudaError_t __status = cudaSuccess;
+    [&](auto&... __config_options) {
+      ::cudaError_t __status = ::cudaSuccess;
 
       // Use short-cutting && to skip the rest on error, is this too
       // convoluted?
       // For some reason gcc 7 complains about __status capture, so we pass it as a reference
-      (void) (... && [](cudaError_t call_status, cudaError_t& __status_out) {
-        __status_out = call_status;
-        return call_status == cudaSuccess;
-      }(::cuda::__apply_launch_option(config_options, cuda_config, kernel), __status));
+      (void) (... && [](::cudaError_t __call_status, ::cudaError_t& __status_out) {
+        __status_out = __call_status;
+        return __call_status == ::cudaSuccess;
+      }(::cuda::__apply_launch_option(__config_options, __cuda_config, __kernel_handle), __status));
 
       return __status;
     },
-    config.options());
+    __config.options());
 }
 } // namespace __detail
 
