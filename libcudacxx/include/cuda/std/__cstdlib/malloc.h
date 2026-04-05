@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/mul_hi.h>
+#include <cuda/__numeric/mul_overflow.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__cstring/memset.h>
 
@@ -41,19 +41,17 @@ using ::malloc;
 #if _CCCL_CUDA_COMPILATION()
 [[nodiscard]] _CCCL_DEVICE_API inline void* __calloc_device(size_t __n, size_t __size) noexcept
 {
-  void* __ptr{};
-  // check for overflow through a hypothetical larger integer
-  // TODO (miscco): use `mul_overflow` once implemented
-  if (::cuda::mul_hi(__n, __size) == 0)
+  const auto [__nbytes, __overflow] = ::cuda::mul_overflow(__n, __size);
+  if (__overflow)
   {
-    const size_t __nbytes = __n * __size;
-    __ptr                 = ::cuda::std::malloc(__nbytes);
-    if (__ptr != nullptr)
-    {
-      ::cuda::std::memset(__ptr, 0, __nbytes);
-    }
+    return nullptr;
   }
 
+  const auto __ptr = ::cuda::std::malloc(__nbytes);
+  if (__ptr != nullptr)
+  {
+    ::cuda::std::memset(__ptr, 0, __nbytes);
+  }
   return __ptr;
 }
 #endif // _CCCL_CUDA_COMPILATION()
