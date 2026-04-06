@@ -142,25 +142,30 @@ class CoopBlockAdjacentDifferenceDecl(CoopAbstractTemplate, CoopDeclMixin):
 
         tile_predecessor_item = bound.arguments.get("tile_predecessor_item")
         tile_successor_item = bound.arguments.get("tile_successor_item")
-        if tile_predecessor_item is not None and tile_successor_item is not None:
+        has_predecessor_item = tile_predecessor_item is not None
+        has_successor_item = tile_successor_item is not None
+        is_subtract_left = (
+            block_adjacent_difference_type
+            == coop.block.BlockAdjacentDifferenceType.SubtractLeft
+        )
+        is_subtract_right = (
+            block_adjacent_difference_type
+            == coop.block.BlockAdjacentDifferenceType.SubtractRight
+        )
+
+        if has_predecessor_item and has_successor_item:
             raise errors.TypingError(
                 f"{self.primitive_name} accepts only one of 'tile_predecessor_item' "
                 "or 'tile_successor_item'"
             )
-        if (
-            block_adjacent_difference_type
-            == coop.block.BlockAdjacentDifferenceType.SubtractLeft
-            and tile_successor_item is not None
-        ):
+
+        if is_subtract_left and has_successor_item:
             raise errors.TypingError(
                 f"{self.primitive_name} does not accept 'tile_successor_item' for "
                 "SubtractLeft"
             )
-        if (
-            block_adjacent_difference_type
-            == coop.block.BlockAdjacentDifferenceType.SubtractRight
-            and tile_predecessor_item is not None
-        ):
+
+        if is_subtract_right and has_predecessor_item:
             raise errors.TypingError(
                 f"{self.primitive_name} does not accept 'tile_predecessor_item' for "
                 "SubtractRight"
