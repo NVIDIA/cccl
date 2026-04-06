@@ -202,7 +202,9 @@ class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
         runtime_arg_types = []
         runtime_arg_names = []
 
-        parent_instance = self.parent_node.instance
+        parent_instance = (
+            self.parent_node.instance or self.parent_node.two_phase_instance
+        )
 
         bound_args = self.bound.arguments
         decoded_items = bound_args.get("decoded_items")
