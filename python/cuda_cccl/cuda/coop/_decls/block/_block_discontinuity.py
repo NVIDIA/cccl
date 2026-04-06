@@ -142,30 +142,34 @@ class CoopBlockDiscontinuityDecl(CoopAbstractTemplate, CoopDeclMixin):
 
         tile_predecessor_item = bound.arguments.get("tile_predecessor_item")
         tile_successor_item = bound.arguments.get("tile_successor_item")
-        if tile_predecessor_item is not None and isinstance(
+        has_predecessor_item = tile_predecessor_item is not None
+        has_successor_item = tile_successor_item is not None
+        is_heads = discontinuity_value == coop.block.BlockDiscontinuityType.HEADS
+        is_tails = discontinuity_value == coop.block.BlockDiscontinuityType.TAILS
+
+        if has_predecessor_item and isinstance(
             tile_predecessor_item, (types.Array, ThreadDataType)
         ):
             raise errors.TypingError(
                 f"{self.primitive_name} requires 'tile_predecessor_item' to be a scalar"
             )
-        if tile_successor_item is not None and isinstance(
+        if has_successor_item and isinstance(
             tile_successor_item, (types.Array, ThreadDataType)
         ):
             raise errors.TypingError(
                 f"{self.primitive_name} requires 'tile_successor_item' to be a scalar"
             )
-        if discontinuity_value == coop.block.BlockDiscontinuityType.HEADS:
-            if tile_successor_item is not None:
-                raise errors.TypingError(
-                    f"{self.primitive_name} does not accept 'tile_successor_item' "
-                    "for HEADS"
-                )
-        if discontinuity_value == coop.block.BlockDiscontinuityType.TAILS:
-            if tile_predecessor_item is not None:
-                raise errors.TypingError(
-                    f"{self.primitive_name} does not accept 'tile_predecessor_item' "
-                    "for TAILS"
-                )
+
+        if is_heads and has_successor_item:
+            raise errors.TypingError(
+                f"{self.primitive_name} does not accept 'tile_successor_item' for HEADS"
+            )
+
+        if is_tails and has_predecessor_item:
+            raise errors.TypingError(
+                f"{self.primitive_name} does not accept 'tile_predecessor_item' "
+                "for TAILS"
+            )
 
         temp_storage = bound.arguments.get("temp_storage")
         validate_temp_storage(self, temp_storage)
