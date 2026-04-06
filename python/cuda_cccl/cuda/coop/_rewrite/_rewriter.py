@@ -200,9 +200,20 @@ class CoopNodeRewriter(Rewrite):
         if self._bundle_ltoir_done or self._bundle_ltoir_failed:
             return
 
+        for node in self.nodes.values():
+            if getattr(node, "two_phase_instance", None) is None:
+                continue
+            if getattr(node, "parent_node", None) is not None or getattr(
+                node, "children", None
+            ):
+                self._bundle_ltoir_done = True
+                return
+
         algorithms = []
         seen = set()
         for node in self.nodes.values():
+            if getattr(node, "two_phase_instance", None) is not None:
+                continue
             instance = getattr(node, "instance", None)
             if instance is None:
                 continue
@@ -1475,6 +1486,14 @@ class CoopNodeRewriter(Rewrite):
         if node.symbol_name is None:
             node.symbol_name = algo.c_name
         algo.unique_id = symbol_id
+        for child in getattr(node, "children", ()) or ():
+            child_instance = getattr(child, "instance", None)
+            if child_instance is None:
+                continue
+            child_algo = getattr(child_instance, "specialization", None)
+            if child_algo is None:
+                continue
+            child_algo.unique_id = symbol_id
 
     def get_or_create_parent_node(
         self,

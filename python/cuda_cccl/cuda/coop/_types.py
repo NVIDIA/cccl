@@ -811,7 +811,8 @@ class Algorithm:
                 # the first parameter.
                 parent_node = primitive.parent.node
                 parent_instance_type = parent_node.return_type
-                parent_algo = parent_node.instance.specialization
+                parent_instance = parent_node.instance or parent_node.two_phase_instance
+                parent_algo = parent_instance.specialization
                 parent_names = parent_algo.names
                 injected = [
                     Pointer(
@@ -1510,7 +1511,8 @@ class Algorithm:
         primitive = self.primitive
         node = primitive.node
         parent_node = node.parent_node
-        parent_algo = parent_node.instance.specialization
+        parent_instance = parent_node.instance or parent_node.two_phase_instance
+        parent_algo = parent_instance.specialization
         names = parent_algo.names
         target_name = names.target_name
         c_name = primitive.c_name
@@ -1852,7 +1854,10 @@ class Algorithm:
                     node = primitive.node
                     parent_node = node.parent_node
                     parent_cg_details = parent_node.cg_details
-                    parent_algo = parent_node.instance.specialization
+                    parent_instance = (
+                        parent_node.instance or parent_node.two_phase_instance
+                    )
+                    parent_algo = parent_instance.specialization
                     func_name = f"{parent_algo.names.target_name}_{primitive.c_name}"
 
                     parent_ptr = parent_cg_details.result
