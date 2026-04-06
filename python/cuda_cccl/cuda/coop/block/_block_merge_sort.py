@@ -78,7 +78,7 @@ class merge_sort_keys(BasePrimitive):
 
             Below is the code snippet that demonstrates the usage of the ``merge_sort_keys`` API:
 
-            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_merge_sort.py
+            .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_merge_sort_api.py
                 :language: python
                 :dedent:
                 :start-after: example-begin merge-sort

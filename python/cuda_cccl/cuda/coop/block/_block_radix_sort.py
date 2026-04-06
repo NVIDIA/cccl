@@ -348,7 +348,7 @@ class radix_sort_keys(_radix_sort_base):
 
         Below is the code snippet that demonstrates the usage of the ``radix_sort_keys`` API:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_api.py
             :language: python
             :dedent:
             :start-after: example-begin radix-sort
@@ -457,7 +457,7 @@ class radix_sort_keys_descending(_radix_sort_base):
 
         Below is the code snippet that demonstrates the usage of the ``radix_sort_keys`` API:
 
-        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort.py
+        .. literalinclude:: ../../python/cuda_cccl/tests/coop/test_block_radix_sort_api.py
             :language: python
             :dedent:
             :start-after: example-begin radix-sort-descending
