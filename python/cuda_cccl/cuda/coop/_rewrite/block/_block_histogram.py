@@ -147,6 +147,9 @@ class CoopBlockHistogramInitNode(CoopNode, CoopNodeMixin):
             )
 
         self.instance = parent_instance.init(self)
+        self.instance.specialization.unique_id = (
+            parent_instance.specialization.unique_id
+        )
 
         self.runtime_args = [histogram]
         self.runtime_arg_types = [histogram_ty]
@@ -211,6 +214,9 @@ class CoopBlockHistogramCompositeNode(CoopNode, CoopNodeMixin):
             )
 
         self.instance = parent_instance.composite(self, items)
+        self.instance.specialization.unique_id = (
+            parent_instance.specialization.unique_id
+        )
 
         self.runtime_args = [items, histogram]
         self.runtime_arg_types = [items_ty, histogram_ty]

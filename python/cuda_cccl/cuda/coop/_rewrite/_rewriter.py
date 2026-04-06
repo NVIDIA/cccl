@@ -200,11 +200,6 @@ class CoopNodeRewriter(Rewrite):
         if self._bundle_ltoir_done or self._bundle_ltoir_failed:
             return
 
-        for node in self.nodes.values():
-            if getattr(node, "parent_node", None) is not None:
-                self._bundle_ltoir_done = True
-                return
-
         algorithms = []
         seen = set()
         for node in self.nodes.values():

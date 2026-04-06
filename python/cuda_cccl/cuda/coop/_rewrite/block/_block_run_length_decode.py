@@ -294,6 +294,9 @@ class CoopBlockRunLengthDecodeNode(CoopNode, CoopNodeMixin):
             decoded_window_offset_dtype=decoded_window_offset_dtype,
             relative_offsets_dtype=relative_offsets_dtype,
         )
+        self.instance.specialization.unique_id = (
+            parent_instance.specialization.unique_id
+        )
         self.instance.node = self
 
     def rewrite(self, rewriter):
