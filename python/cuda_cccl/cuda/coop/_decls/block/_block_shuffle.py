@@ -178,34 +178,39 @@ class CoopBlockShuffleDecl(CoopAbstractTemplate, CoopDeclMixin):
         block_suffix = bound.arguments.get("block_suffix")
 
         if block_prefix is not None or block_suffix is not None:
+            has_block_prefix = block_prefix is not None
+            has_block_suffix = block_suffix is not None
+            is_up_shuffle = block_shuffle_type_value == coop.block.BlockShuffleType.Up
+            is_down_shuffle = (
+                block_shuffle_type_value == coop.block.BlockShuffleType.Down
+            )
+
             if not items_is_array:
                 raise errors.TypingError(
                     f"{self.primitive_name} only supports block_prefix/block_suffix "
                     "for Up/Down shuffles with array inputs"
                 )
-            if block_prefix is not None and block_suffix is not None:
+            if has_block_prefix and has_block_suffix:
                 raise errors.TypingError(
                     f"{self.primitive_name} does not allow block_prefix and "
                     "block_suffix together"
                 )
             if block_shuffle_type_value is not None:
-                if block_shuffle_type_value == coop.block.BlockShuffleType.Up:
-                    if block_prefix is not None:
-                        raise errors.TypingError(
-                            f"{self.primitive_name} does not allow block_prefix for "
-                            "Up shuffles"
-                        )
-                if block_shuffle_type_value == coop.block.BlockShuffleType.Down:
-                    if block_suffix is not None:
-                        raise errors.TypingError(
-                            f"{self.primitive_name} does not allow block_suffix for "
-                            "Down shuffles"
-                        )
-            if block_prefix is not None and not isinstance(block_prefix, types.Array):
+                if is_up_shuffle and has_block_prefix:
+                    raise errors.TypingError(
+                        f"{self.primitive_name} does not allow block_prefix for "
+                        "Up shuffles"
+                    )
+                if is_down_shuffle and has_block_suffix:
+                    raise errors.TypingError(
+                        f"{self.primitive_name} does not allow block_suffix for "
+                        "Down shuffles"
+                    )
+            if has_block_prefix and not isinstance(block_prefix, types.Array):
                 raise errors.TypingError(
                     f"{self.primitive_name} requires block_prefix to be a device array"
                 )
-            if block_suffix is not None and not isinstance(block_suffix, types.Array):
+            if has_block_suffix and not isinstance(block_suffix, types.Array):
                 raise errors.TypingError(
                     f"{self.primitive_name} requires block_suffix to be a device array"
                 )
@@ -216,7 +221,7 @@ class CoopBlockShuffleDecl(CoopAbstractTemplate, CoopDeclMixin):
 
             if item_dtype is not None:
                 if (
-                    block_prefix is not None
+                    has_block_prefix
                     and isinstance(block_prefix, types.Array)
                     and block_prefix.dtype != item_dtype
                 ):
@@ -225,7 +230,7 @@ class CoopBlockShuffleDecl(CoopAbstractTemplate, CoopDeclMixin):
                         "same dtype as items"
                     )
                 if (
-                    block_suffix is not None
+                    has_block_suffix
                     and isinstance(block_suffix, types.Array)
                     and block_suffix.dtype != item_dtype
                 ):

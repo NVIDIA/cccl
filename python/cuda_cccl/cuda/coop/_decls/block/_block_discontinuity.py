@@ -126,10 +126,10 @@ class CoopBlockDiscontinuityDecl(CoopAbstractTemplate, CoopDeclMixin):
                     "to be a BlockDiscontinuityType enum value"
                 )
 
-        if (
+        is_heads_and_tails = (
             discontinuity_value == coop.block.BlockDiscontinuityType.HEADS_AND_TAILS
-            and tail_flags is None
-        ):
+        )
+        if is_heads_and_tails and tail_flags is None:
             raise errors.TypingError(
                 f"{self.primitive_name} requires 'tail_flags' for HEADS_AND_TAILS"
             )

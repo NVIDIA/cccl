@@ -134,11 +134,16 @@ class CoopWarpExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
                 threads_in_warp = maybe_literal
             arglist.append(threads_in_warp)
 
-        if warp_exchange_type == coop.warp.WarpExchangeType.ScatterToStriped:
-            if ranks is None:
-                raise errors.TypingError(
-                    f"{self.primitive_name} requires 'ranks' for ScatterToStriped"
-                )
+        is_scatter_to_striped = (
+            warp_exchange_type == coop.warp.WarpExchangeType.ScatterToStriped
+        )
+        has_ranks = ranks is not None
+
+        if is_scatter_to_striped and not has_ranks:
+            raise errors.TypingError(
+                f"{self.primitive_name} requires 'ranks' for ScatterToStriped"
+            )
+
         if ranks is not None:
             if not isinstance(ranks, types.Array):
                 raise errors.TypingError(
@@ -159,18 +164,18 @@ class CoopWarpExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
                 )
             if offset_dtype is not None:
                 arglist.append(offset_dtype)
-        elif ranks is None and warp_exchange_type is not None:
-            if warp_exchange_type != coop.warp.WarpExchangeType.ScatterToStriped:
+        elif warp_exchange_type is not None:
+            if not is_scatter_to_striped:
                 offset_dtype = bound.arguments.get("offset_dtype")
                 if offset_dtype is not None:
                     raise errors.TypingError(
                         f"{self.primitive_name} only accepts 'offset_dtype' with 'ranks'"
                     )
-        elif ranks is not None and warp_exchange_type is None and not two_phase:
+        elif has_ranks and not two_phase:
             raise errors.TypingError(
                 f"{self.primitive_name} only accepts 'ranks' for ScatterToStriped"
             )
-        elif ranks is None and warp_exchange_type is None and not two_phase:
+        elif not two_phase:
             offset_dtype = bound.arguments.get("offset_dtype")
             if offset_dtype is not None:
                 raise errors.TypingError(
