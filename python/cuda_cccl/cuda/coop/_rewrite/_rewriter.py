@@ -201,20 +201,16 @@ class CoopNodeRewriter(Rewrite):
             return
 
         for node in self.nodes.values():
-            if getattr(node, "two_phase_instance", None) is None:
-                continue
-            if getattr(node, "parent_node", None) is not None or getattr(
-                node, "children", None
-            ):
+            if getattr(node, "parent_node", None) is not None:
                 self._bundle_ltoir_done = True
                 return
 
         algorithms = []
         seen = set()
         for node in self.nodes.values():
-            if getattr(node, "two_phase_instance", None) is not None:
-                continue
             instance = getattr(node, "instance", None)
+            if instance is None:
+                instance = getattr(node, "two_phase_instance", None)
             if instance is None:
                 continue
             algo = getattr(instance, "specialization", None)
