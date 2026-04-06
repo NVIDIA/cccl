@@ -2106,6 +2106,14 @@ def _strip_source_preamble(src, algo, udf_decls):
     return body.lstrip()
 
 
+def _normalize_algo_source_for_bundle(src, algo, udf_decls):
+    primitive = getattr(algo, "primitive", None)
+    if primitive is not None and getattr(primitive, "is_child", False):
+        return src.rstrip() + "\n"
+    body = _strip_source_preamble(src, algo, udf_decls)
+    return body.rstrip() + "\n"
+
+
 def prepare_ltoir_bundle(algorithms, *, bundle_name=None, allow_single=False):
     if not algorithms:
         return None
@@ -2161,8 +2169,11 @@ def prepare_ltoir_bundle(algorithms, *, bundle_name=None, allow_single=False):
         src = algo.source_code
         if rewriter is not None:
             src = rewriter(src, algo)
-        body = _strip_source_preamble(src, algo, per_algo_udf_decls[algo])
-        body = body.rstrip() + "\n"
+        body = _normalize_algo_source_for_bundle(
+            src,
+            algo,
+            per_algo_udf_decls[algo],
+        )
         bodies.append(body)
 
     src = buf.getvalue() + "\n".join(bodies)

@@ -1675,7 +1675,6 @@ def test_block_load_store_scan_simple5():
     ext = cuda.CUSource(
         textwrap.dedent("""
         extern "C"
-        __device__
         struct BlockPrefixCallbackOpWithCount {
             int running_total;
             int call_count;
@@ -1877,7 +1876,6 @@ def test_block_load_store_scan_simple55():
     ext = cuda.CUSource(
         textwrap.dedent("""
         extern "C"
-        __device__
         struct BlockPrefixCallbackOpWithCount {
             int running_total;
             int call_count;
@@ -2002,7 +2000,6 @@ def test_block_load_store_scan_simple6():
     ext = cuda.CUSource(
         textwrap.dedent("""
         extern "C"
-        __device__
         struct BlockPrefixCallbackOpWithCount {
             int running_total;
             int call_count;
