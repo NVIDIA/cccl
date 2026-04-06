@@ -14,7 +14,6 @@ import operator as _operator
 import os
 import struct as _struct
 import sys
-import warnings
 from dataclasses import dataclass, field
 from enum import IntEnum, auto
 from functools import cached_property, lru_cache, reduce
@@ -101,17 +100,7 @@ THREAD_DATA_DTYPE_INFERENCE_ARG_PAIRS: dict[str, tuple[tuple[str, str], ...]] = 
 
 
 def _warn_ltoir_bundle_failure(exc: Exception):
-    if _get_env_bool("NUMBA_CCCL_COOP_STRICT_LTOIR_BUNDLE", default=False):
-        raise RuntimeError("cuda.coop failed to prepare an LTO-IR bundle") from exc
-    warnings.warn(
-        (
-            "cuda.coop failed to prepare an LTO-IR bundle; falling back to "
-            "per-primitive compilation. Performance may be worse. "
-            f"Original error: {exc!r}"
-        ),
-        RuntimeWarning,
-        stacklevel=3,
-    )
+    raise RuntimeError("cuda.coop failed to prepare an LTO-IR bundle") from exc
 
 
 def _get_env_bool(name: str, default: bool = False) -> bool:
