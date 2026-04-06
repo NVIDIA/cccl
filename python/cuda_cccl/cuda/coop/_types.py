@@ -1,9 +1,8 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import re
-import time
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from functools import cached_property
@@ -49,43 +48,6 @@ def maybe_print_src(src: str, name: str):
         print(f"----- BEGIN Source code for {name}:")
         print(src)
         print(f"----- END Source code for {name}")
-
-
-class ElapsedTimer:
-    """
-    Context manager and reusable timer to measure elapsed time.
-
-    Example:
-        timer = elapsed_timer()
-        with timer:
-            do_something()
-        print(f'Elapsed: {timer.elapsed:.3f}')
-
-        # Re-enterable:
-        with timer:
-            do_something_else()
-        print(f'Elapsed: {timer.elapsed:.3f}')
-    """
-
-    def __init__(self):
-        self.start = None
-        self._elapsed = None
-
-    def __enter__(self):
-        self.start = time.perf_counter()
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self._elapsed = time.perf_counter() - self.start
-
-    @property
-    def elapsed(self):
-        """
-        Return the elapsed time for the most recent context.
-        """
-        if self._elapsed is None:
-            raise ValueError("Timer has not been used in a context yet.")
-        return self._elapsed
 
 
 if TYPE_CHECKING:
