@@ -202,7 +202,7 @@ def make_kernel_traits(dtype, threads_per_block, items_per_thread):
         items_per_thread=items_per_thread,
         mode="inclusive",
         scan_op=ssm_scan_op,
-        block_prefix_callback_op=coop.StatefulFunction(
+        prefix_op=coop.StatefulFunction(
             SSMScanPrefixCallbackOp,
             ssm_prefix_callback_op_type,
             name="ssm_scan_prefix",
@@ -249,7 +249,7 @@ def make_selective_scan_fwd_kernel(traits):
             traits.block_scan(
                 thread_data,
                 thread_data,
-                block_prefix_callback_op=prefix_op,
+                prefix_op=prefix_op,
             )
 
             out_vals = coop.local.array(DEFAULT_ITEMS_PER_THREAD, dtype=out.dtype)
@@ -313,7 +313,7 @@ def make_selective_scan_fwd_kernel_single_phase_temp_storage(
                 items_per_thread=items_per_thread,
                 mode="inclusive",
                 scan_op=ssm_scan_op,
-                block_prefix_callback_op=prefix_op,
+                prefix_op=prefix_op,
                 algorithm=BlockScanAlgorithm.WARP_SCANS,
                 temp_storage=temp_storage,
             )
@@ -347,7 +347,7 @@ def make_selective_scan_fwd_kernel_single_phase_bleeding_edge_qol(
     def _build_kernel(decorator):
         @decorator
         def kernel(u, delta, out, A, B, C, D, delta_bias):
-            scan_data = coop.local.array(items_per_thread, dtype=float2_type)
+            scan_data = coop.ThreadData(items_per_thread, dtype=float2_type)
             u_vals = coop.ThreadData(items_per_thread, dtype=u.dtype)
             delta_vals = coop.ThreadData(items_per_thread, dtype=delta.dtype)
 
@@ -375,13 +375,11 @@ def make_selective_scan_fwd_kernel_single_phase_bleeding_edge_qol(
                 Float2(numba.float32(1.0), numba.float32(0.0))
             )
 
-            coop.block.scan[temp_storage](
+            coop.block.inclusive_scan[temp_storage](
                 scan_data,
                 scan_data,
-                items_per_thread=items_per_thread,
-                mode="inclusive",
                 scan_op=ssm_scan_op,
-                block_prefix_callback_op=prefix_op,
+                prefix_op=prefix_op,
                 algorithm=BlockScanAlgorithm.WARP_SCANS,
             )
 

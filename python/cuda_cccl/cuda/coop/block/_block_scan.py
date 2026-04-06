@@ -100,7 +100,7 @@ def _validate_initial_value(
     items_per_thread: int,
     mode: Literal["exclusive", "inclusive"],
     scan_op: ScanOpType,
-    block_prefix_callback_op: Callable = None,
+    prefix_op: Callable = None,
 ) -> Any:
     """
     Validates the initial value for a block scan operation.  Returns the
@@ -129,7 +129,7 @@ def _validate_initial_value(
         items_per_thread == 1
         and initial_value is not None
         and mode == "exclusive"
-        and block_prefix_callback_op is not None
+        and prefix_op is not None
     )
     if invalid_initial_value:
         raise ValueError(
@@ -140,7 +140,7 @@ def _validate_initial_value(
     # An initial value is required for both inclusive and exclusive scans
     # when items_per_thread > 1 and a block prefix callback operator is
     # not supplied by the caller.
-    initial_value_required = items_per_thread > 1 and block_prefix_callback_op is None
+    initial_value_required = items_per_thread > 1 and prefix_op is None
     if initial_value_required and initial_value is None:
         # We require an initial value, but one was not supplied.
         # Attempt to create a default value for the given dtype.
@@ -212,7 +212,7 @@ class scan(BasePrimitive):
         mode: Literal["exclusive", "inclusive"] = "exclusive",
         scan_op: ScanOpType = "+",
         initial_value: Any = None,
-        block_prefix_callback_op: Callable = None,
+        prefix_op: Callable = None,
         block_aggregate: Any = None,
         algorithm=None,
         methods: dict = None,
@@ -252,11 +252,11 @@ class scan(BasePrimitive):
             The default is the sum operator (``+``).
         :type  scan_op: ScanOpType, optional
 
-        :param block_prefix_callback_op: Optionally supplies a callable that will be
+        :param prefix_op: Optionally supplies a callable that will be
             invoked by the first warp of threads in a block with the block aggregate
             value; only the return value of the first lane in the warp is applied as
             the prefix value.
-        :type  block_prefix_callback_op: Callable, optional
+        :type  prefix_op: Callable, optional
 
         :param algorithm: Supplies the algorithm to use for the block-wide scan.
             Must be one of ``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``.
@@ -286,12 +286,12 @@ class scan(BasePrimitive):
 
         :raises ValueError: If ``initial_value`` is provided with an exclusive scan
             (``mode="exclusive"``), ``items_per_thread=1``, and
-            ``block_prefix_callback_op`` is not *None* (this combination is not
+            ``prefix_op`` is not *None* (this combination is not
             supported).
 
         :raises ValueError: If ``initial_value`` is required but not provided.
             An initial value is required when ``items_per_thread > 1`` and
-            ``block_prefix_callback_op`` is *None*.  If not provided, the function
+            ``prefix_op`` is *None*.  If not provided, the function
             will attempt to create a default value (``0``) for the given data type,
             but will raise an error if this is not possible.
 
@@ -335,7 +335,7 @@ class scan(BasePrimitive):
             items_per_thread,
             mode,
             scan_op,
-            block_prefix_callback_op,
+            prefix_op,
         )
         self.mode = mode
         self.scan_op = scan_op
@@ -350,12 +350,12 @@ class scan(BasePrimitive):
         self.algorithm_id = int(algorithm_enum)
         self.algorithm = algorithm_enum
         self.initial_value = initial_value
-        self.block_prefix_callback_op = block_prefix_callback_op
+        self.prefix_op = prefix_op
         self.block_aggregate = block_aggregate
 
-        if block_aggregate is not None and block_prefix_callback_op is not None:
+        if block_aggregate is not None and prefix_op is not None:
             raise ValueError(
-                "block_aggregate is not supported when block_prefix_callback_op is provided"
+                "block_aggregate is not supported when prefix_op is provided"
             )
 
         specialization_kwds = {
@@ -406,19 +406,19 @@ class scan(BasePrimitive):
                     name="scan_op",
                 )
 
-        if block_prefix_callback_op is not None:
+        if prefix_op is not None:
 
-            def make_dependent_block_prefix_callback_op():
+            def make_dependent_prefix_op():
                 return DependentPythonOperator(
                     ret_dtype=Dependency("T"),
                     arg_dtypes=[Dependency("T")],
                     op=Dependency("BlockPrefixCallbackOp"),
-                    name="block_prefix_callback_op",
+                    name="prefix_op",
                 )
 
         if scan_op.is_sum:
             if not use_array_inputs:
-                if block_prefix_callback_op is None:
+                if prefix_op is None:
                     parameters = [
                         # Signature:
                         # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
@@ -448,7 +448,7 @@ class scan(BasePrimitive):
                         # ).<Inclusive|Exclusive>Sum(
                         #     T,                     # input
                         #     T&,                    # output
-                        #     BlockPrefixCallbackOp& # block_prefix_callback_op
+                        #     BlockPrefixCallbackOp& # prefix_op
                         # )
                         [
                             # T input
@@ -457,13 +457,13 @@ class scan(BasePrimitive):
                             DependentReference(
                                 Dependency("T"), is_output=True, name="output"
                             ),
-                            # BlockPrefixCallbackOp& block_prefix_callback_op
-                            make_dependent_block_prefix_callback_op(),
+                            # BlockPrefixCallbackOp& prefix_op
+                            make_dependent_prefix_op(),
                         ],
                     ]
 
             else:
-                if block_prefix_callback_op is not None:
+                if prefix_op is not None:
                     parameters = [
                         # Signature:
                         # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
@@ -472,7 +472,7 @@ class scan(BasePrimitive):
                         # ).<Inclusive|Exclusive>Sum(
                         #     T (&)[ITEMS_PER_THREAD], # input
                         #     T (&)[ITEMS_PER_THREAD], # output
-                        #     BlockPrefixCallbackOp&   # block_prefix_callback_op
+                        #     BlockPrefixCallbackOp&   # prefix_op
                         # )
                         [
                             # T (&)[ITEMS_PER_THREAD] input
@@ -487,8 +487,8 @@ class scan(BasePrimitive):
                                 Dependency("ITEMS_PER_THREAD"),
                                 name="output",
                             ),
-                            # BlockPrefixCallbackOp& block_prefix_callback_op
-                            make_dependent_block_prefix_callback_op(),
+                            # BlockPrefixCallbackOp& prefix_op
+                            make_dependent_prefix_op(),
                         ],
                     ]
                 else:
@@ -520,7 +520,7 @@ class scan(BasePrimitive):
         elif scan_op.is_known or scan_op.is_callable:
             if not use_array_inputs:
                 if mode == "exclusive":
-                    if block_prefix_callback_op is not None:
+                    if prefix_op is not None:
                         assert initial_value is None
                         parameters = [
                             # Signature:
@@ -531,7 +531,7 @@ class scan(BasePrimitive):
                             #     T,                     # input
                             #     T&,                    # output
                             #     ScanOp,                # scan_op
-                            #     BlockPrefixCallbackOp& # block_prefix_callback_op
+                            #     BlockPrefixCallbackOp& # prefix_op
                             # )
                             [
                                 # T input
@@ -547,8 +547,8 @@ class scan(BasePrimitive):
                                 ),
                                 # ScanOp scan_op
                                 make_dependent_scan_op(),
-                                # BlockPrefixCallbackOp& block_prefix_callback_op
-                                make_dependent_block_prefix_callback_op(),
+                                # BlockPrefixCallbackOp& prefix_op
+                                make_dependent_prefix_op(),
                             ],
                         ]
                     else:
@@ -602,7 +602,7 @@ class scan(BasePrimitive):
 
                 else:
                     assert mode == "inclusive" or initial_value is None
-                    if block_prefix_callback_op is not None:
+                    if prefix_op is not None:
                         parameters = [
                             # Signature:
                             # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
@@ -612,7 +612,7 @@ class scan(BasePrimitive):
                             #     T,                     # input
                             #     T&,                    # output
                             #     ScanOp,                # scan_op
-                            #     BlockPrefixCallbackOp& # block_prefix_callback_op
+                            #     BlockPrefixCallbackOp& # prefix_op
                             # )
                             [
                                 # T input
@@ -623,8 +623,8 @@ class scan(BasePrimitive):
                                 ),
                                 # ScanOp scan_op
                                 make_dependent_scan_op(),
-                                # BlockPrefixCallbackOp& block_prefix_callback_op
-                                make_dependent_block_prefix_callback_op(),
+                                # BlockPrefixCallbackOp& prefix_op
+                                make_dependent_prefix_op(),
                             ],
                         ]
                     else:
@@ -651,7 +651,7 @@ class scan(BasePrimitive):
                         ]
 
             else:
-                if block_prefix_callback_op is not None:
+                if prefix_op is not None:
                     assert initial_value is None
                     parameters = [
                         # Signature:
@@ -662,7 +662,7 @@ class scan(BasePrimitive):
                         #     T (&)[ITEMS_PER_THREAD], # input
                         #     T (&)[ITEMS_PER_THREAD], # output
                         #     ScanOp,                  # scan_op
-                        #     BlockPrefixCallbackOp&   # block_prefix_callback_op
+                        #     BlockPrefixCallbackOp&   # prefix_op
                         # )
                         [
                             # T (&)[ITEMS_PER_THREAD] input
@@ -679,8 +679,8 @@ class scan(BasePrimitive):
                             ),
                             # ScanOp scan_op
                             make_dependent_scan_op(),
-                            # BlockPrefixCallbackOp& block_prefix_callback_op
-                            make_dependent_block_prefix_callback_op(),
+                            # BlockPrefixCallbackOp& prefix_op
+                            make_dependent_prefix_op(),
                         ],
                     ]
                 else:
@@ -785,8 +785,8 @@ class scan(BasePrimitive):
         if scan_op.is_callable:
             specialization_kwds["ScanOp"] = scan_op.op
 
-        if block_prefix_callback_op is not None:
-            specialization_kwds["BlockPrefixCallbackOp"] = block_prefix_callback_op
+        if prefix_op is not None:
+            specialization_kwds["BlockPrefixCallbackOp"] = prefix_op
 
         self.specialization = self.algorithm.specialize(specialization_kwds)
         self.temp_storage = temp_storage
@@ -800,7 +800,7 @@ class scan(BasePrimitive):
         initial_value: Any = None,
         mode: Literal["exclusive", "inclusive"] = "exclusive",
         scan_op: ScanOpType = "+",
-        block_prefix_callback_op: Callable = None,
+        prefix_op: Callable = None,
         algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
         methods: dict = None,
         temp_storage: Any = None,
@@ -812,7 +812,7 @@ class scan(BasePrimitive):
             initial_value=initial_value,
             mode=mode,
             scan_op=scan_op,
-            block_prefix_callback_op=block_prefix_callback_op,
+            prefix_op=prefix_op,
             block_aggregate=None,
             algorithm=algorithm,
             methods=methods,
@@ -943,7 +943,7 @@ class exclusive_sum(scan):
             items_per_thread=items_per_thread,
             mode="exclusive",
             scan_op="+",
-            block_prefix_callback_op=prefix_op,
+            prefix_op=prefix_op,
             algorithm=algorithm,
             methods=methods,
             unique_id=unique_id,
@@ -1038,7 +1038,7 @@ class inclusive_sum(scan):
             items_per_thread=items_per_thread,
             mode="inclusive",
             scan_op="+",
-            block_prefix_callback_op=prefix_op,
+            prefix_op=prefix_op,
             algorithm=algorithm,
             methods=methods,
             unique_id=unique_id,
@@ -1150,12 +1150,12 @@ class exclusive_scan(scan):
             is a sum operator (sum operators do not support initial values).
 
         :raises ValueError: If ``initial_value`` is provided with
-            ``items_per_thread=1``, and ``block_prefix_callback_op`` is not *None*
+            ``items_per_thread=1``, and ``prefix_op`` is not *None*
             (this combination is not supported).
 
         :raises ValueError: If ``initial_value`` is required but not provided.
             An initial value is required when ``items_per_thread > 1`` and
-            ``block_prefix_callback_op`` is *None*.  If not provided, the function
+            ``prefix_op`` is *None*.  If not provided, the function
             will attempt to create a default value (``0``) for the given data type,
             but will raise an error if this is not possible.
 
@@ -1170,7 +1170,7 @@ class exclusive_scan(scan):
             initial_value=initial_value,
             mode="exclusive",
             scan_op=scan_op,
-            block_prefix_callback_op=prefix_op,
+            prefix_op=prefix_op,
             algorithm=algorithm,
             methods=methods,
             unique_id=unique_id,
@@ -1294,7 +1294,7 @@ class inclusive_scan(scan):
             initial_value=initial_value,
             mode="inclusive",
             scan_op=scan_op,
-            block_prefix_callback_op=prefix_op,
+            prefix_op=prefix_op,
             algorithm=algorithm,
             methods=methods,
             unique_id=unique_id,
@@ -1314,7 +1314,7 @@ def _normalize_scan_prefix(kwargs, prefix_op, target_name):
     if prefix_op is None:
         prefix_op = kw.pop("prefix_op", None)
     if prefix_op is None:
-        prefix_op = kw.pop("block_prefix_callback_op", None)
+        prefix_op = kw.pop("prefix_op", None)
     if prefix_op is not None:
         kw[target_name] = prefix_op
     return kw
@@ -1327,14 +1327,14 @@ def _build_scan_spec(
     initial_value=None,
     mode="exclusive",
     scan_op="+",
-    block_prefix_callback_op=None,
+    prefix_op=None,
     **kwargs,
 ):
     kw, threads_per_block = _normalize_threads_per_block(kwargs, threads_per_block)
     kw = _normalize_scan_prefix(
         kw,
-        block_prefix_callback_op,
-        target_name="block_prefix_callback_op",
+        prefix_op,
+        target_name="prefix_op",
     )
     spec = {
         "dtype": dtype,
@@ -1443,7 +1443,7 @@ def _make_scan_two_phase(
     initial_value=None,
     mode="exclusive",
     scan_op="+",
-    block_prefix_callback_op=None,
+    prefix_op=None,
     **kwargs,
 ):
     spec = _build_scan_spec(
@@ -1453,7 +1453,7 @@ def _make_scan_two_phase(
         initial_value=initial_value,
         mode=mode,
         scan_op=scan_op,
-        block_prefix_callback_op=block_prefix_callback_op,
+        prefix_op=prefix_op,
         **kwargs,
     )
     return scan.create(**spec)
@@ -1466,7 +1466,7 @@ def _make_scan_rewrite(
     initial_value=None,
     mode="exclusive",
     scan_op="+",
-    block_prefix_callback_op=None,
+    prefix_op=None,
     **kwargs,
 ):
     spec = _build_scan_spec(
@@ -1476,7 +1476,7 @@ def _make_scan_rewrite(
         initial_value=initial_value,
         mode=mode,
         scan_op=scan_op,
-        block_prefix_callback_op=block_prefix_callback_op,
+        prefix_op=prefix_op,
         **kwargs,
     )
     return scan(**spec)

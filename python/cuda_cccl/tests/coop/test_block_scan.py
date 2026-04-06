@@ -326,7 +326,7 @@ def test_block_sum_prefix_op(threads_per_block, items_per_thread, mode, algorith
                 items_per_thread,
                 mode=mode,
                 scan_op="+",
-                block_prefix_callback_op=block_prefix_op,
+                prefix_op=block_prefix_op,
                 algorithm=algorithm,
             )
 
@@ -757,7 +757,7 @@ def test_block_scan_with_prefix_op_multi_items(
             items_per_thread,
             mode=mode,
             scan_op=add_op,
-            block_prefix_callback_op=block_prefix_op,
+            prefix_op=block_prefix_op,
             algorithm=BlockScanAlgorithm.RAKING,
         )
 
@@ -1589,7 +1589,7 @@ def test_block_load_store_scan_simple4():
             thread_in,
             thread_out,
             items_per_thread,
-            block_prefix_callback_op=block_prefix_op,
+            prefix_op=block_prefix_op,
         )
 
         tid = cuda.grid(1)
@@ -1798,7 +1798,7 @@ def test_block_load_store_scan_simple5():
             thread_in,
             thread_out,
             items_per_thread,
-            block_prefix_callback_op=block_prefix_op,
+            prefix_op=block_prefix_op,
         )
 
         tid = cuda.grid(1)
@@ -2157,7 +2157,7 @@ def test_block_load_store_scan_simple7():
             thread_in,
             thread_out,
             items_per_thread,
-            block_prefix_callback_op=block_prefix_op,
+            prefix_op=block_prefix_op,
         )
 
         # Store only valid items back to global memory
@@ -2259,7 +2259,7 @@ def test_block_load_store_num_valid_items_with_single_phase_scan():
                 thread_data,
                 thread_data,
                 items_per_thread,
-                block_prefix_callback_op=block_prefix_callback_op,
+                prefix_op=block_prefix_callback_op,
             )
 
             # Store only valid items back to global memory
@@ -2383,7 +2383,7 @@ def test_block_sum_prefix_op_stateful(threads_per_block, items_per_thread, mode)
                 thread_out,
                 items_per_thread,
                 mode=mode,
-                block_prefix_callback_op=block_prefix_op,
+                prefix_op=block_prefix_op,
             )
 
             cuda.syncthreads()

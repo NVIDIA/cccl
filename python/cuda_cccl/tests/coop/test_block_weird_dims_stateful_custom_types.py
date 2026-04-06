@@ -277,7 +277,7 @@ def test_block_scan_stateful_prefix_op_grid_stride():
         items_per_thread=items_per_thread,
         mode="exclusive",
         scan_op="+",
-        block_prefix_callback_op=prefix_op,
+        prefix_op=prefix_op,
     )
 
     @cuda.jit
@@ -294,7 +294,7 @@ def test_block_scan_stateful_prefix_op_grid_stride():
             block_scan(
                 thread_data,
                 thread_data,
-                block_prefix_callback_op=block_prefix_op,
+                prefix_op=block_prefix_op,
             )
 
             d_out[block_offset + tid] = thread_data[0]

@@ -42,7 +42,7 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
         initial_value = None
         mode = None
         scan_op = None
-        block_prefix_callback_op = None
+        prefix_op = None
         block_aggregate = None
         temp_storage = None
 
@@ -235,35 +235,31 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
 
         scan_op_obj = scan_op if isinstance(scan_op, ScanOp) else ScanOp(scan_op)
 
-        block_prefix_callback_op = bound.get("block_prefix_callback_op")
-        if block_prefix_callback_op is not None:
-            if not isinstance(block_prefix_callback_op, ir.Var):
+        prefix_op = bound.get("prefix_op")
+        if prefix_op is not None:
+            if not isinstance(prefix_op, ir.Var):
                 raise RuntimeError(
-                    f"Expected a variable for block_prefix_callback_op, "
-                    f"got {block_prefix_callback_op!r}"
+                    f"Expected a variable for prefix_op, got {prefix_op!r}"
                 )
 
-            block_prefix_callback_op_var = block_prefix_callback_op
-            prefix_state_ty = self.typemap[block_prefix_callback_op.name]
+            prefix_op_var = prefix_op
+            prefix_state_ty = self.typemap[prefix_op.name]
             runtime_prefix_ty = prefix_state_ty
-            prefix_op_root_def = rewriter.get_root_def(block_prefix_callback_op)
+            prefix_op_root_def = rewriter.get_root_def(prefix_op)
             if prefix_op_root_def is None:
                 raise RuntimeError(
-                    "Expected a root definition for "
-                    "{block_prefix_callback_op!r}, got None"
+                    "Expected a root definition for {prefix_op!r}, got None"
                 )
             instance = prefix_op_root_def.instance
             if instance is None:
-                raise RuntimeError(
-                    f"Expected an instance for {block_prefix_callback_op!r}, got None"
-                )
+                raise RuntimeError(f"Expected an instance for {prefix_op!r}, got None")
             if instance.__class__.__name__ == "module":
                 # Assume we've got the array-style invocation.
                 call_def = prefix_op_root_def.leaf_constructor_call
                 if not isinstance(call_def, ArrayCallDefinition):
                     raise RuntimeError(
                         f"Expected a leaf array call definition for "
-                        f"{block_prefix_callback_op!r}, got {call_def!r}"
+                        f"{prefix_op!r}, got {call_def!r}"
                     )
                 assert isinstance(prefix_state_ty, types.Array)
                 runtime_prefix_ty = prefix_state_ty
@@ -283,19 +279,19 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
                 )
             self.typemap[callback_name] = runtime_prefix_ty
 
-            block_prefix_callback_op = StatefulFunction(
+            prefix_op = StatefulFunction(
                 op,
                 prefix_state_ty,
                 name=callback_name,
             )
-            runtime_args.append(block_prefix_callback_op_var)
+            runtime_args.append(prefix_op_var)
             runtime_arg_types.append(runtime_prefix_ty)
-            runtime_arg_names.append("block_prefix_callback_op")
+            runtime_arg_names.append("prefix_op")
         if block_aggregate is not None:
-            if block_prefix_callback_op is not None:
+            if prefix_op is not None:
                 raise RuntimeError(
                     "coop.block.scan does not support block_aggregate when "
-                    "block_prefix_callback_op is provided"
+                    "prefix_op is provided"
                 )
             if dst is None:
                 raise RuntimeError(
@@ -333,14 +329,14 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
                         items_per_thread,
                         mode,
                         scan_op_obj,
-                        block_prefix_callback_op,
+                        prefix_op,
                     )
                 except ValueError as e:
                     raise RuntimeError(str(e)) from e
 
         include_initial_value = (
             not scan_op_obj.is_sum
-            and block_prefix_callback_op is None
+            and prefix_op is None
             and (initial_value_var is not None or initial_value_value is not None)
             and (use_array_inputs or mode == "exclusive")
         )
@@ -426,7 +422,7 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
         self.mode = mode
         self.scan_op = scan_op
         self.initial_value = initial_value_for_impl
-        self.block_prefix_callback_op = block_prefix_callback_op
+        self.prefix_op = prefix_op
         self.block_aggregate = block_aggregate
         self.algorithm = algorithm
         self.temp_storage = temp_storage
@@ -441,7 +437,7 @@ class CoopBlockScanNode(CoopNode, CoopNodeMixin):
             "initial_value": initial_value_for_impl,
             "mode": mode,
             "scan_op": scan_op,
-            "block_prefix_callback_op": block_prefix_callback_op,
+            "prefix_op": prefix_op,
             "block_aggregate": block_aggregate,
             "algorithm": algorithm,
             "unique_id": self.unique_id,

@@ -31,6 +31,19 @@ from .. import (
 )
 
 
+def _normalize_bound_scan_prefix(bound):
+    arguments = bound.arguments
+    prefix_op = arguments.pop("prefix_op", None)
+    prefix_op = arguments.get("prefix_op")
+    if prefix_op is not None and prefix_op is not None:
+        raise errors.TypingError(
+            "coop.block.scan accepts only one of 'prefix_op' or 'prefix_op'"
+        )
+    if prefix_op is None:
+        arguments["prefix_op"] = prefix_op
+    return bound
+
+
 # =============================================================================
 # Scan
 # =============================================================================
@@ -51,7 +64,7 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         initial_value: Optional[Any] = None,
         mode: Literal["exclusive", "inclusive"] = "exclusive",
         scan_op: ScanOpType = "+",
-        block_prefix_callback_op: Optional[Callable] = None,
+        prefix_op: Optional[Callable] = None,
         block_aggregate: types.Array = None,
         algorithm: coop.BlockScanAlgorithm = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
@@ -67,7 +80,7 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
             mode=mode,
             scan_op=scan_op,
             initial_value=initial_value,
-            block_prefix_callback_op=block_prefix_callback_op,
+            prefix_op=prefix_op,
             block_aggregate=block_aggregate,
             algorithm=algorithm,
             temp_storage=temp_storage,
@@ -82,7 +95,7 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         items_per_thread: int = None,
         mode: Optional[Literal["exclusive", "inclusive"]] = None,
         scan_op: ScanOpType = None,
-        block_prefix_callback_op: Optional[Callable] = None,
+        prefix_op: Optional[Callable] = None,
         block_aggregate: types.Array = None,
         algorithm: coop.BlockScanAlgorithm = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
@@ -94,7 +107,7 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
             items_per_thread=items_per_thread,
             mode=mode,
             scan_op=scan_op,
-            block_prefix_callback_op=block_prefix_callback_op,
+            prefix_op=prefix_op,
             block_aggregate=block_aggregate,
             algorithm=algorithm,
             temp_storage=temp_storage,
@@ -105,6 +118,7 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         return block_scan_instance_type
 
     def _validate_args_and_create_signature(self, bound, two_phase=False):
+        bound = _normalize_bound_scan_prefix(bound)
         src = bound.arguments["src"]
         dst = bound.arguments.get("dst")
 
@@ -290,24 +304,24 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
                     )
                 )
 
-        block_prefix_callback_op = bound.arguments.get("block_prefix_callback_op")
-        block_prefix_is_none_type = isinstance(block_prefix_callback_op, types.NoneType)
+        prefix_op = bound.arguments.get("prefix_op")
+        block_prefix_is_none_type = isinstance(prefix_op, types.NoneType)
         if block_prefix_is_none_type:
-            arglist.append(block_prefix_callback_op)
+            arglist.append(prefix_op)
             pysig_params.append(
                 inspect.Parameter(
-                    "block_prefix_callback_op",
+                    "prefix_op",
                     inspect.Parameter.POSITIONAL_OR_KEYWORD,
                     default=None,
                 )
             )
-            block_prefix_callback_op = None
-        if not block_prefix_is_none_type and block_prefix_callback_op is not None:
+            prefix_op = None
+        if not block_prefix_is_none_type and prefix_op is not None:
             # We can't do much validation here.
-            arglist.append(block_prefix_callback_op)
+            arglist.append(prefix_op)
             pysig_params.append(
                 inspect.Parameter(
-                    "block_prefix_callback_op",
+                    "prefix_op",
                     inspect.Parameter.POSITIONAL_OR_KEYWORD,
                     default=None,
                 )
@@ -326,10 +340,10 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
             )
             block_aggregate = None
         if not block_aggregate_is_none_type and block_aggregate is not None:
-            if block_prefix_callback_op is not None:
+            if prefix_op is not None:
                 raise errors.TypingError(
                     f"{self.primitive_name} does not support block_aggregate when "
-                    "block_prefix_callback_op is provided"
+                    "prefix_op is provided"
                 )
             if not isinstance(block_aggregate, types.Array):
                 raise errors.TypingError(
@@ -442,7 +456,7 @@ class CoopBlockExclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
             initial_value=None,
             mode="exclusive",
             scan_op="+",
-            block_prefix_callback_op=prefix_op,
+            prefix_op=prefix_op,
             block_aggregate=block_aggregate,
             algorithm=algorithm,
             temp_storage=temp_storage,
@@ -483,7 +497,7 @@ class CoopBlockInclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
             initial_value=None,
             mode="inclusive",
             scan_op="+",
-            block_prefix_callback_op=prefix_op,
+            prefix_op=prefix_op,
             block_aggregate=block_aggregate,
             algorithm=algorithm,
             temp_storage=temp_storage,
@@ -525,7 +539,7 @@ class CoopBlockExclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
             initial_value=initial_value,
             mode="exclusive",
             scan_op=scan_op,
-            block_prefix_callback_op=prefix_op,
+            prefix_op=prefix_op,
             block_aggregate=block_aggregate,
             algorithm=algorithm,
             temp_storage=temp_storage,
@@ -567,7 +581,7 @@ class CoopBlockInclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
             initial_value=initial_value,
             mode="inclusive",
             scan_op=scan_op,
-            block_prefix_callback_op=prefix_op,
+            prefix_op=prefix_op,
             block_aggregate=block_aggregate,
             algorithm=algorithm,
             temp_storage=temp_storage,
