@@ -100,6 +100,7 @@ class CoopBlockHistogramNode(CoopNode, CoopNodeMixin):
         self.children = []
 
         algo = self.instance.specialization
+        rewriter.maybe_coalesce_algo(self, algo)
         assert len(algo.parameters) == 1, algo.parameters
         self.runtime_args = tuple()
         self.runtime_arg_types = tuple()
