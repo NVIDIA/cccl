@@ -2359,6 +2359,67 @@ class BasePrimitive:
 
 
 class TempStorage:
+    """
+    Compile-time placeholder describing cooperative temporary storage.
+
+    ``TempStorage`` is not a concrete buffer type that users allocate or index
+    directly. Instead, it is a lightweight marker object that cooperative
+    primitives and the rewrite layer use to coordinate explicit temporary
+    storage requirements inside CUDA kernels.
+
+    In the most explicit form, a kernel can construct a ``TempStorage`` object
+    and pass it to primitives via either a normal keyword argument or the
+    ``func[temp_storage](...)`` shorthand. During typing and rewriting, the
+    object is lowered into an appropriately sized and aligned shared-memory
+    backing region plus any pointer/slice arithmetic needed by the primitive
+    call sites that use it.
+
+    The heavy lifting is implemented elsewhere:
+
+    - Typing for ``coop.TempStorage(...)`` lives in
+      ``cuda/coop/_decls/__init__.py``.
+    - Call-site analysis, requirement inference, coalescing, and backing-buffer
+      planning live in ``cuda/coop/_rewrite/_core.py``.
+    - Primitive specializations expose byte-size and alignment requirements via
+      their ``temp_storage_bytes`` and ``temp_storage_alignment`` metadata,
+      which are derived from generated C++/LTO-IR in this module.
+
+    In practice this means users usually do **not** need to hand-compute:
+
+    - the number of bytes required by a primitive,
+    - the minimum byte alignment,
+    - how multiple primitive uses should share one backing allocation, or
+    - where synchronization is required around shared temporary storage.
+
+    Those details are inferred and injected by the cooperative rewrite layer.
+
+    Parameters
+    ----------
+    size_in_bytes:
+        Optional explicit allocation size. When omitted, the rewrite layer
+        infers the required size from the primitive uses bound to this
+        ``TempStorage`` instance.
+    alignment:
+        Optional explicit alignment in bytes. When omitted, the rewrite layer
+        infers the minimum required alignment from the primitive uses bound to
+        this ``TempStorage`` instance.
+    auto_sync:
+        Optional synchronization policy override. When *None*, the rewrite
+        layer chooses a policy based on sharing mode and primitive semantics.
+        For shared temporary storage, this usually means inserting the
+        required synchronization around uses automatically.
+    sharing:
+        Either ``"shared"`` or ``"exclusive"``. ``"shared"`` allows multiple
+        primitive uses to be laid out within one backing allocation when safe;
+        ``"exclusive"`` forces a dedicated allocation slice for the binding.
+
+    Notes
+    -----
+    ``TempStorage`` is primarily for advanced or explicit-control scenarios.
+    Many single-phase cooperative calls can manage shared scratch storage
+    without users writing ``TempStorage`` directly.
+    """
+
     def __init__(
         self,
         size_in_bytes: int = None,
@@ -2373,6 +2434,56 @@ class TempStorage:
 
 
 class ThreadData:
+    """
+    Logical per-thread collection of items used by cooperative primitives.
+
+    ``ThreadData`` is a convenience descriptor for the common pattern where a
+    thread owns a fixed number of items (``items_per_thread``) that participate
+    in block- or warp-wide cooperative operations such as load, store, scan,
+    shuffle, exchange, and similar primitives.
+
+    Conceptually, ``ThreadData`` plays the same role as a per-thread local
+    array, but it also carries structural metadata that the typing and rewrite
+    layers can use directly. In particular, it lets the implementation reason
+    about the thread-local item count even when the user does not repeat that
+    value on every primitive call.
+
+    The heavy lifting is implemented elsewhere:
+
+    - Typing for ``coop.ThreadData(...)`` lives in
+      ``cuda/coop/_decls/__init__.py``.
+    - Rewrite-time inference and lowering live in
+      ``cuda/coop/_rewrite/_core.py`` and primitive-specific rewrite modules.
+    - Lowering ultimately materializes an ordinary local array of the inferred
+      dtype and length for use by generated CUDA code.
+
+    This means ``ThreadData`` itself is mostly declarative. The surrounding
+    machinery can often infer details such as:
+
+    - the effective ``items_per_thread`` at primitive call sites,
+    - the dtype from neighboring array arguments or primitive instances, and
+    - the appropriate local-array lowering used in the final IR.
+
+    Parameters
+    ----------
+    items_per_thread:
+        Number of logical items owned by the current thread. This must be a
+        positive integer.
+    dtype:
+        Optional element dtype. When omitted, cooperative typing/rewrite may
+        infer it from use sites (for example, from a peer source/destination
+        array or a bound primitive instance). If inference is ambiguous, an
+        explicit dtype is required.
+
+    Notes
+    -----
+    ``ThreadData`` is most useful when you want the cooperative API surface to
+    carry per-thread layout information explicitly without manually threading
+    ``items_per_thread`` through every operation. It does not itself implement
+    any synchronization or storage-sharing policy; those behaviors belong to
+    the primitives that consume it and the rewrite logic that lowers them.
+    """
+
     def __init__(self, items_per_thread: int, dtype=None):
         if items_per_thread <= 0:
             raise ValueError("items_per_thread must be a positive integer")
