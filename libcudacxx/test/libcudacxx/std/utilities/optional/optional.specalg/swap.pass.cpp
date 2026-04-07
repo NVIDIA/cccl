@@ -185,8 +185,7 @@ struct NonSwappable
   NonSwappable(NonSwappable const&) = delete;
 };
 __host__ __device__ // what in the world, nvrtc?!
-  void
-  swap(NonSwappable&, NonSwappable&) = delete;
+  void swap(NonSwappable&, NonSwappable&) = delete;
 
 __host__ __device__ void test_swap_sfinae()
 {

@@ -236,8 +236,8 @@ private:
   }
 
 #if _CCCL_CUDA_COMPILATION()
-  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
-  __try_wait_sm90(arrival_token __token, ::cuda::std::chrono::nanoseconds __nanosec) const
+  [[nodiscard]] _CCCL_DEVICE_API
+  _CCCL_FORCEINLINE bool __try_wait_sm90(arrival_token __token, ::cuda::std::chrono::nanoseconds __nanosec) const
   {
     if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
     {
@@ -336,8 +336,8 @@ private:
   }
 
 #if _CCCL_CUDA_COMPILATION()
-  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
-  __try_wait_parity_sm90(bool __phase_parity, ::cuda::std::chrono::nanoseconds __nanosec) const
+  [[nodiscard]] _CCCL_DEVICE_API
+  _CCCL_FORCEINLINE bool __try_wait_parity_sm90(bool __phase_parity, ::cuda::std::chrono::nanoseconds __nanosec) const
   {
     if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
     {

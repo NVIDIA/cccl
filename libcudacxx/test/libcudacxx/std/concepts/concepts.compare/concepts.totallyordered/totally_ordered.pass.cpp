@@ -92,7 +92,7 @@ static_assert(!totally_ordered<int (S::*)() const noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() const&>, "");
 static_assert(!totally_ordered<int (S::*)() const & noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() const&&>, "");
-static_assert(!totally_ordered < int (S::*)() const&& noexcept >, "");
+static_assert(!totally_ordered < int (S::*)() const && noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() volatile>, "");
 static_assert(!totally_ordered<int (S::*)() volatile noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() volatile&>, "");
@@ -104,7 +104,7 @@ static_assert(!totally_ordered<int (S::*)() const volatile noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() const volatile&>, "");
 static_assert(!totally_ordered<int (S::*)() const volatile & noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() const volatile&&>, "");
-static_assert(!totally_ordered < int (S::*)() const volatile&& noexcept >, "");
+static_assert(!totally_ordered < int (S::*)() const volatile && noexcept >, "");
 
 static_assert(!totally_ordered<void>, "");
 } // namespace fundamentals

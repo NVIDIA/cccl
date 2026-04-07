@@ -243,7 +243,7 @@ __host__ __device__ constexpr void test_comparison_with()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   bool is_left_based                  = cuda::std::is_same_v<OtherLayout, cuda::std::layout_left>
-                    || cuda::std::is_same_v<OtherLayout, always_convertible_layout>;
+                                     || cuda::std::is_same_v<OtherLayout, always_convertible_layout>;
   test_comparison_with<OtherLayout>(
     true, cuda::std::extents<int>(), cuda::std::array<int, 0>{}, cuda::std::extents<unsigned>());
   test_comparison_with<OtherLayout>(

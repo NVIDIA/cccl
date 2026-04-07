@@ -1003,10 +1003,10 @@ inline std::tuple<std::string, std::string, std::string> make_counting_iterator_
   std::string iterator_state_def_src = std::format("struct {0} {{ {1} value; }};\n", iterator_state_name, value_type);
   std::string advance_fn_def_src     = std::format(
     "extern \"C\" __device__ void {0}(void* state, const void* offset) {{\n"
-        "  auto* typed_state = static_cast<{1}*>(state);\n"
-        "  auto offset_val = *static_cast<const unsigned long long*>(offset);\n"
-        "  typed_state->value += offset_val;\n"
-        "}}",
+    "  auto* typed_state = static_cast<{1}*>(state);\n"
+    "  auto offset_val = *static_cast<const unsigned long long*>(offset);\n"
+    "  typed_state->value += offset_val;\n"
+    "}}",
     advance_fn_name,
     iterator_state_name);
 
@@ -1090,10 +1090,10 @@ inline std::tuple<std::string, std::string, std::string> make_reverse_iterator_s
   std::string iterator_state_src = std::format("struct {0} {{ {1}* data; }};\n", iterator_state_name, value_type);
   std::string advance_fn_src     = std::format(
     "extern \"C\" __device__ void {0}(void* state, const void* offset) {{\n"
-        "  auto* typed_state = static_cast<{1}*>(state);\n"
-        "  auto offset_val = *static_cast<const unsigned long long*>(offset);\n"
-        "  typed_state->data -= offset_val;\n"
-        "}}",
+    "  auto* typed_state = static_cast<{1}*>(state);\n"
+    "  auto offset_val = *static_cast<const unsigned long long*>(offset);\n"
+    "  typed_state->data -= offset_val;\n"
+    "}}",
     advance_fn_name,
     iterator_state_name);
   std::string dereference_fn_src;

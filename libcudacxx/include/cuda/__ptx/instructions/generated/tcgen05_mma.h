@@ -105,8 +105,8 @@ __device__ static inline void tcgen05_mma(
   cuda::ptx::n32_t<N32> scale_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_is_only_supported_on_SM_100a_100f_103a_103f_depending_on_the_variant__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_is_only_supported_on_SM_100a_100f_103a_103f_depending_on_the_variant__();
 template <int _N32, ::cuda::ptx::dot_kind _Kind>
 _CCCL_DEVICE static inline void tcgen05_mma(
   ::cuda::ptx::kind_t<_Kind> __kind,
@@ -457,8 +457,8 @@ __device__ static inline void tcgen05_mma(
   cuda::ptx::n32_t<N32> scale_input_d);
 */
 #if __cccl_ptx_isa >= 860
-extern "C" _CCCL_DEVICE void
-__cuda_ptx_tcgen05_mma_is_only_supported_on_SM_100a_100f_103a_103f_depending_on_the_variant__();
+extern "C"
+  _CCCL_DEVICE void __cuda_ptx_tcgen05_mma_is_only_supported_on_SM_100a_100f_103a_103f_depending_on_the_variant__();
 template <int _N32, ::cuda::ptx::dot_kind _Kind, ::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_mma(
   ::cuda::ptx::kind_t<_Kind> __kind,

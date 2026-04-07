@@ -2,8 +2,7 @@ cccl_get_c2h()
 
 function(cccl_c_experimental_stf_add_test target_name_var source)
   string(
-    REGEX REPLACE
-    "test_([^.]*)"
+    REGEX REPLACE "test_([^.]*)"
     "cccl.c.experimental.stf.test.\\1"
     target_name
     "${source}"

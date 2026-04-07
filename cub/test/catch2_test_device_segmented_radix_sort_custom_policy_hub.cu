@@ -30,14 +30,14 @@ struct my_policy_hub
     using HistogramPolicy    = AgentRadixSortHistogramPolicy<256, 8, 1, KeyT, ONESWEEP_RADIX_BITS>;
     using ExclusiveSumPolicy = AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
     using OnesweepPolicy     = AgentRadixSortOnesweepPolicy<
-          256,
-          21,
-          KeyT,
-          1,
-          RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-          BLOCK_SCAN_WARP_SCANS,
-          RADIX_SORT_STORE_DIRECT,
-          ONESWEEP_RADIX_BITS>;
+      256,
+      21,
+      KeyT,
+      1,
+      RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
+      BLOCK_SCAN_WARP_SCANS,
+      RADIX_SORT_STORE_DIRECT,
+      ONESWEEP_RADIX_BITS>;
     using ScanPolicy =
       AgentScanPolicy<512,
                       23,
@@ -116,13 +116,13 @@ C2H_TEST("DispatchSegmentedRadixSort::Dispatch: custom policy hub", "[keys][segm
 
   using policy_hub_t = my_policy_hub<key_t, segment_size_t>;
   using dispatch_t   = DispatchSegmentedRadixSort<
-      SortOrder::Ascending,
-      key_t,
-      value_t,
-      const offset_t*,
-      const offset_t*,
-      segment_size_t,
-      policy_hub_t>;
+    SortOrder::Ascending,
+    key_t,
+    value_t,
+    const offset_t*,
+    const offset_t*,
+    segment_size_t,
+    policy_hub_t>;
 
   size_t temp_size = 0;
   dispatch_t::Dispatch(

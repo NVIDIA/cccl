@@ -161,7 +161,7 @@ public:
     _CCCL_ASSERT(static_cast<size_t>(num_bits + BitSize - BitOffset) < sizeof(larger_t) * CHAR_BIT, "overflow error");
     // without explicit power-of-two check, num_bits needs to replace +1 with !::cuda::is_power_of_two(udivisor)
     _multiplier  = static_cast<unsigned_t>(::cuda::ceil_div(larger_t{1} << (num_bits + BitSize - BitOffset), //
-                                                           static_cast<larger_t>(divisor)));
+                                                            static_cast<larger_t>(divisor)));
     _shift_right = num_bits - BitOffset;
     _CCCL_ASSERT(_multiplier != 0, "overflow error");
   }

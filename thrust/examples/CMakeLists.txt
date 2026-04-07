@@ -114,8 +114,7 @@ function(
   # Get the name of FileCheck input by stripping out the config name.
   # (e.g. "thrust.cpp.cuda.cpp14.example.xxx" -> "thrust.example.xxx.filecheck")
   string(
-    REPLACE
-    "${config_prefix}"
+    REPLACE "${config_prefix}"
     "thrust"
     filecheck_reference_file
     "${example_target}.filecheck"

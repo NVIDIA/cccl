@@ -150,14 +150,14 @@ template <typename OverrideAccumT = nondeterministic_no_override,
             static_cast<OverrideAccumT*>(nullptr))),
           typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
           typename KernelSource   = DeviceReduceNondeterministicKernelSource<
-              PolicySelector,
-              InputIteratorT,
-              OutputIteratorT,
-              OffsetT,
-              ReductionOpT,
-              InitT,
-              AccumT,
-              TransformOpT>,
+            PolicySelector,
+            InputIteratorT,
+            OutputIteratorT,
+            OffsetT,
+            ReductionOpT,
+            InitT,
+            AccumT,
+            TransformOpT>,
           typename KernelLauncherFactory = TripleChevronFactory>
 #if _CCCL_HAS_CONCEPTS()
   requires reduce_policy_selector<PolicySelector>

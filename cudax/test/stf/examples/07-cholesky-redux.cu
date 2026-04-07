@@ -257,9 +257,9 @@ void DGEMM(
   // an accumulation with the add operator
   auto dep_c = (beta == 1.0) ? C.handle(C_row, C_col).relaxed(redux_op) : C.handle(C_row, C_col).rw();
   auto t     = ctx.task(exec_place::device(A.get_preferred_devid(C_row, C_col)),
-                    A.handle(A_row, A_col).read(),
-                    B.handle(B_row, B_col).read(),
-                    dep_c);
+                        A.handle(A_row, A_col).read(),
+                        B.handle(B_row, B_col).read(),
+                        dep_c);
   t.set_symbol("DGEMM");
   t->*[transa, transb, alpha, beta](cudaStream_t s, auto sA, auto sB, auto sC) {
     EXPECT(sC.data_handle() != nullptr);
@@ -670,7 +670,9 @@ int main(int argc, char** argv)
 
   if (check_result)
   {
-    auto rhs_vals = [] __host__ __device__(size_t row, size_t /*unused*/) { return 1.0 * (row + 1); };
+    auto rhs_vals = [] __host__ __device__(size_t row, size_t /*unused*/) {
+      return 1.0 * (row + 1);
+    };
     B_potrs.fill(rhs_vals);
     Bref_potrs.fill(rhs_vals);
   }

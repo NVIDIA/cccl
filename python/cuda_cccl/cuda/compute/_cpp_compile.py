@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import functools
 
-from cuda.cccl import get_include_paths
 from cuda.core import Device, Program, ProgramOptions
+
+from cuda.cccl import get_include_paths
 
 from ._bindings import TypeEnum
 

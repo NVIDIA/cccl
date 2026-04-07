@@ -50,15 +50,15 @@ C2H_TEST("DispatchSegmentedReduce::Dispatch: custom policy hub", "[segmented][re
 
   using policy_hub_t = my_policy_hub<accum_t, offset_t, reduction_t>;
   using dispatch_t   = DispatchSegmentedReduce<
-      input_t*,
-      output_t*,
-      const offset_t*,
-      const offset_t*,
-      offset_t,
-      reduction_t,
-      output_t,
-      accum_t,
-      policy_hub_t>;
+    input_t*,
+    output_t*,
+    const offset_t*,
+    const offset_t*,
+    offset_t,
+    reduction_t,
+    output_t,
+    accum_t,
+    policy_hub_t>;
 
   size_t temp_size = 0;
   dispatch_t::Dispatch(

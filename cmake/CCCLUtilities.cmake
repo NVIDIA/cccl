@@ -183,7 +183,7 @@ function(cccl_add_xfail_compile_target_test target_name)
       file(READ "${src_absolute}" source_contents)
       string(
         REGEX MATCHALL
-        "//[ \t]*${error_label_regex}(-[0-9]+)?[ \t]*{{\"([^\"]+)\"}}"
+          "//[ \t]*${error_label_regex}(-[0-9]+)?[ \t]*{{\"([^\"]+)\"}}"
         error_cache
         "${source_contents}"
       )
@@ -202,8 +202,7 @@ function(cccl_add_xfail_compile_target_test target_name)
       set(error_number "${cccl_xfail_ERROR_NUMBER}")
     elseif (DEFINED cccl_xfail_ERROR_NUMBER_TARGET_NAME_REGEX)
       string(
-        REGEX MATCH
-        "${cccl_xfail_ERROR_NUMBER_TARGET_NAME_REGEX}"
+        REGEX MATCH "${cccl_xfail_ERROR_NUMBER_TARGET_NAME_REGEX}"
         matched
         ${target_name}
       )
@@ -216,7 +215,7 @@ function(cccl_add_xfail_compile_target_test target_name)
     if (NOT "${error_number}" STREQUAL "") # Check strings to allow "0"
       string(
         REGEX MATCH
-        "//[ \t]*${error_label_regex}-${error_number}[ \t]*{{\"([^\"]+)\"}}"
+          "//[ \t]*${error_label_regex}-${error_number}[ \t]*{{\"([^\"]+)\"}}"
         matched
         "${error_cache}"
       )
@@ -228,8 +227,7 @@ function(cccl_add_xfail_compile_target_test target_name)
     if (NOT regex)
       # Look for a labeled error without an error number.
       string(
-        REGEX MATCH
-        "//[ \t]*${error_label_regex}[ \t]*{{\"([^\"]+)\"}}"
+        REGEX MATCH "//[ \t]*${error_label_regex}[ \t]*{{\"([^\"]+)\"}}"
         matched
         "${error_cache}"
       )

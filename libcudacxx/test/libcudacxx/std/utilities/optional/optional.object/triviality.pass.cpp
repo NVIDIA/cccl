@@ -45,8 +45,8 @@ struct SpecialMemberTest
                         cuda::std::is_trivially_move_constructible_v<O>),
                 "optional<T> is trivially move constructible if T is trivially move constructible");
 
-  static_assert(implies(cuda::std::is_trivially_copy_constructible_v<T> && cuda::std::is_trivially_copy_assignable_v<T>
-                          && cuda::std::is_trivially_destructible_v<T>,
+  static_assert(implies(cuda::std::is_trivially_copy_constructible_v<T>&& cuda::std::is_trivially_copy_assignable_v<T>&&
+                          cuda::std::is_trivially_destructible_v<T>,
 
                         cuda::std::is_trivially_copy_assignable_v<O>),
                 "optional<T> is trivially copy assignable if T is "
@@ -54,8 +54,8 @@ struct SpecialMemberTest
                 "trivially copy assignable, and "
                 "trivially destructible");
 
-  static_assert(implies(cuda::std::is_trivially_move_constructible_v<T> && cuda::std::is_trivially_move_assignable_v<T>
-                          && cuda::std::is_trivially_destructible_v<T>,
+  static_assert(implies(cuda::std::is_trivially_move_constructible_v<T>&& cuda::std::is_trivially_move_assignable_v<T>&&
+                          cuda::std::is_trivially_destructible_v<T>,
 
                         cuda::std::is_trivially_move_assignable_v<O>),
                 "optional<T> is trivially move assignable if T is "

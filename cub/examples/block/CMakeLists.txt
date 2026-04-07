@@ -8,8 +8,7 @@ file(
 foreach (example_src IN LISTS example_srcs)
   get_filename_component(example_name "${example_src}" NAME_WE)
   string(
-    REGEX REPLACE
-    "^example_block_"
+    REGEX REPLACE "^example_block_"
     "block."
     example_name
     "${example_name}"

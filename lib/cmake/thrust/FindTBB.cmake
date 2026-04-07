@@ -466,32 +466,28 @@ if (NOT TBB_VERSION)
   file(STRINGS "${version_file}" TBB_VERSION_CONTENTS REGEX "VERSION")
 
   string(
-    REGEX REPLACE
-    ".*#define TBB_VERSION_MAJOR ([0-9]+).*"
+    REGEX REPLACE ".*#define TBB_VERSION_MAJOR ([0-9]+).*"
     "\\1"
     TBB_VERSION_MAJOR
     "${TBB_VERSION_CONTENTS}"
   )
 
   string(
-    REGEX REPLACE
-    ".*#define TBB_VERSION_MINOR ([0-9]+).*"
+    REGEX REPLACE ".*#define TBB_VERSION_MINOR ([0-9]+).*"
     "\\1"
     TBB_VERSION_MINOR
     "${TBB_VERSION_CONTENTS}"
   )
 
   string(
-    REGEX REPLACE
-    ".*#define TBB_INTERFACE_VERSION ([0-9]+).*"
+    REGEX REPLACE ".*#define TBB_INTERFACE_VERSION ([0-9]+).*"
     "\\1"
     TBB_INTERFACE_VERSION
     "${TBB_VERSION_CONTENTS}"
   )
 
   string(
-    REGEX REPLACE
-    ".*#define TBB_COMPATIBLE_INTERFACE_VERSION ([0-9]+).*"
+    REGEX REPLACE ".*#define TBB_COMPATIBLE_INTERFACE_VERSION ([0-9]+).*"
     "\\1"
     TBB_COMPATIBLE_INTERFACE_VERSION
     "${TBB_VERSION_CONTENTS}"

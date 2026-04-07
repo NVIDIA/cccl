@@ -3,8 +3,7 @@ cccl_get_c2h()
 function(cccl_c_parallel_add_test target_name_var source)
   get_filename_component(target_name "${source}" NAME_WE)
   string(
-    REGEX REPLACE
-    "test_([^.]*)"
+    REGEX REPLACE "test_([^.]*)"
     "cccl.c.parallel.test.\\1"
     target_name
     "${target_name}"

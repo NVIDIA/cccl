@@ -211,12 +211,12 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     if constexpr (IsDeviceInit)
     {
       return kernel_source.template HistogramSweepKernelDeviceInit<
-             PolicySelector,
-             PRIVATIZED_SMEM_BINS,
-             FirstLevelArrayT,
-             SecondLevelArrayT,
-             IsEven,
-             IsByteSample>();
+        PolicySelector,
+        PRIVATIZED_SMEM_BINS,
+        FirstLevelArrayT,
+        SecondLevelArrayT,
+        IsEven,
+        IsByteSample>();
     }
     else
     {

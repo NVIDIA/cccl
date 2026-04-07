@@ -88,9 +88,7 @@ def alg_bws(dfs, verbose):
     medians["hue"] = medians["hue"] + gpuname + " "
     if medians["variant"].unique().size > 1:
         variant = (
-            medians["variant"]
-            .astype(str)
-            .map(lambda x: (" " + x if x != "base" else ""))
+            medians["variant"].astype(str).map(lambda x: " " + x if x != "base" else "")
         )
         medians["hue"] = medians["hue"] + variant + " "
     if verbose or medians["ctk"].unique().size > 1:

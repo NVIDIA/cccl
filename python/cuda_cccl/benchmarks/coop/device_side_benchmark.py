@@ -4,13 +4,13 @@
 
 import math
 
+import cuda.bindings.driver as driver
+from cuda.core import Device
 from llvmlite import ir
 from numba import cuda, types
 from numba.core.extending import intrinsic
 
-import cuda.bindings.driver as driver
 from cuda import coop
-from cuda.core import Device
 
 
 @intrinsic

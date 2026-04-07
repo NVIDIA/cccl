@@ -79,15 +79,15 @@ C2H_TEST("DispatchThreeWayPartitionIf::Dispatch: custom policy hub", "[partition
 
   using policy_hub_t = my_policy_hub<value_t, offset_t>;
   using dispatch_t   = DispatchThreeWayPartitionIf<
-      value_t*,
-      value_t*,
-      value_t*,
-      value_t*,
-      offset_t*,
-      less_than_zero_t,
-      equal_zero_t,
-      offset_t,
-      policy_hub_t>;
+    value_t*,
+    value_t*,
+    value_t*,
+    value_t*,
+    offset_t*,
+    less_than_zero_t,
+    equal_zero_t,
+    offset_t,
+    policy_hub_t>;
 
   size_t temp_size = 0;
   dispatch_t::Dispatch(

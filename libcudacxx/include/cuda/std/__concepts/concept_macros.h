@@ -60,9 +60,9 @@ using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
 #  define _CCCL_TRAILING_REQUIRES(...)       ->__VA_ARGS__ _CCCL_TRAILING_REQUIRES_IMPL_
 #  define _CCCL_CONCEPT                      concept
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
-#  define _CCCL_TEMPLATE(...)                template <__VA_ARGS__
-#  define _CCCL_REQUIRES(...)                , bool __cccl_true_ = true, __cccl_enable_if_t < __VA_ARGS__ && __cccl_true_, int > = 0 >
-#  define _CCCL_AND                          &&__cccl_true_, int > = 0, __cccl_enable_if_t <
+#  define _CCCL_TEMPLATE(...) template <__VA_ARGS__
+#  define _CCCL_REQUIRES(...) , bool __cccl_true_ = true, __cccl_enable_if_t < __VA_ARGS__ && __cccl_true_, int > = 0 >
+#  define _CCCL_AND           &&__cccl_true_, int > = 0, __cccl_enable_if_t <
 #  define _CCCL_TRAILING_REQUIRES(...)       ->__cccl_requires_t < __VA_ARGS__ _CCCL_TRAILING_REQUIRES_IMPL_
 #  define _CCCL_TRAILING_REQUIRES_IMPL_(...) , __VA_ARGS__ >
 #  define _CCCL_CONCEPT                      inline constexpr bool
@@ -202,7 +202,7 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
 
 // "_CCCL_CONCEPT_FRAGMENT(NAME, ARGS...)(REQS...)" expands into
 // "concept NAME = requires(ARGS...) { _CCCL_CONCEPT_REQUIREMENT_(REQS)... }"
-#  define _CCCL_CONCEPT_FRAGMENT(_NAME, ...)                concept _NAME = _CCCL_CONCEPT_FRAGMENT_REQUIREMENTS_##__VA_ARGS__
+#  define _CCCL_CONCEPT_FRAGMENT(_NAME, ...) concept _NAME = _CCCL_CONCEPT_FRAGMENT_REQUIREMENTS_##__VA_ARGS__
 #  define _CCCL_CONCEPT_FRAGMENT_REQUIREMENTS_requires(...) requires(__VA_ARGS__) _CCCL_CONCEPT_FRAGMENT_REQUIREMENTS_
 #  define _CCCL_CONCEPT_FRAGMENT_REQUIREMENTS_(...)         {_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_REQUIREMENT_, __VA_ARGS__)}
 
@@ -320,21 +320,21 @@ namespace __cccl_unqualified_cuda_std = ::cuda::std; // NOLINT(misc-unused-alias
       _CCCL_API inline static auto __cccl_well_formed(__VA_ARGS__) _CCCL_REQUIRES_EXPR_REQUIREMENTS_
 
 // Expands "T1, T2, variadic T3" to ", class T1, class T2, class... T3"
-#  define _CCCL_REQUIRES_EXPR_TPARAM_DEFNS(...)             _CCCL_PP_FOR_EACH(_CCCL_REQUIRES_EXPR_TPARAM_DEFN, __VA_ARGS__)
+#  define _CCCL_REQUIRES_EXPR_TPARAM_DEFNS(...) _CCCL_PP_FOR_EACH(_CCCL_REQUIRES_EXPR_TPARAM_DEFN, __VA_ARGS__)
 
 // Expands "TY" to ", class TY" and "variadic TY" to ", class... TY"
-#  define _CCCL_REQUIRES_EXPR_TPARAM_DEFN(_TY)              , _CCCL_PP_SWITCH2(_CCCL_REQUIRES_EXPR_TPARAM_DEFN, _TY)
+#  define _CCCL_REQUIRES_EXPR_TPARAM_DEFN(_TY)  , _CCCL_PP_SWITCH2(_CCCL_REQUIRES_EXPR_TPARAM_DEFN, _TY)
 #  define _CCCL_REQUIRES_EXPR_TPARAM_DEFN_SWITCH_variadic   _CCCL_PP_CASE(VARIADIC)
 #  define _CCCL_REQUIRES_EXPR_TPARAM_DEFN_CASE_DEFAULT(_TY) class _TY
 #  define _CCCL_REQUIRES_EXPR_TPARAM_DEFN_CASE_VARIADIC(_TY) \
     class... _CCCL_PP_CAT(_CCCL_REQUIRES_EXPR_EAT_VARIADIC_, _TY)
 
 // Expands "T1, T2, variadic T3" to ", T1, T2, T3..."
-#  define _CCCL_REQUIRES_EXPR_TPARAM_REFS(...)              _CCCL_PP_FOR_EACH(_CCCL_REQUIRES_EXPR_TPARAM_REF, __VA_ARGS__)
+#  define _CCCL_REQUIRES_EXPR_TPARAM_REFS(...)           _CCCL_PP_FOR_EACH(_CCCL_REQUIRES_EXPR_TPARAM_REF, __VA_ARGS__)
 
 // Expands "TY" to ", TY" and "variadic TY" to ", TY..."
-#  define _CCCL_REQUIRES_EXPR_TPARAM_REF(_TY)               , _CCCL_PP_SWITCH2(_CCCL_REQUIRES_EXPR_TPARAM_REF, _TY)
-#  define _CCCL_REQUIRES_EXPR_TPARAM_REF_SWITCH_variadic    _CCCL_PP_CASE(VARIADIC)
+#  define _CCCL_REQUIRES_EXPR_TPARAM_REF(_TY)            , _CCCL_PP_SWITCH2(_CCCL_REQUIRES_EXPR_TPARAM_REF, _TY)
+#  define _CCCL_REQUIRES_EXPR_TPARAM_REF_SWITCH_variadic _CCCL_PP_CASE(VARIADIC)
 #  define _CCCL_REQUIRES_EXPR_TPARAM_REF_CASE_DEFAULT(_TY)  _TY
 #  define _CCCL_REQUIRES_EXPR_TPARAM_REF_CASE_VARIADIC(_TY) _CCCL_PP_CAT(_CCCL_REQUIRES_EXPR_EAT_VARIADIC_, _TY)...
 

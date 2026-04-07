@@ -162,12 +162,12 @@ public:
                         precision __precision,
                         const _Hash& __hash         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : __sketch_buffer{__stream,
-                        ::cuda::std::forward<_MemoryResource_>(__memory_resource),
-                        ref_type<>::sketch_bytes(
-                          __precision_in_bounds(__precision, "HyperLogLog precision must be in [4, 18]"))
-                          / sizeof(register_type),
-                        ::cuda::no_init}
+      : __sketch_buffer{
+          __stream,
+          ::cuda::std::forward<_MemoryResource_>(__memory_resource),
+          ref_type<>::sketch_bytes(__precision_in_bounds(__precision, "HyperLogLog precision must be in [4, 18]"))
+            / sizeof(register_type),
+          ::cuda::no_init}
       , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}), __hash}
   {
     clear_async(__stream);
@@ -200,12 +200,12 @@ public:
   constexpr hyperloglog(precision __precision,
                         const _Hash& __hash         = {},
                         ::cuda::stream_ref __stream = ::cuda::stream_ref{cudaStream_t{nullptr}})
-      : __sketch_buffer{__stream,
-                        ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
-                        ref_type<>::sketch_bytes(
-                          __precision_in_bounds(__precision, "HyperLogLog precision must be in [4, 18]"))
-                          / sizeof(register_type),
-                        ::cuda::no_init}
+      : __sketch_buffer{
+          __stream,
+          ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
+          ref_type<>::sketch_bytes(__precision_in_bounds(__precision, "HyperLogLog precision must be in [4, 18]"))
+            / sizeof(register_type),
+          ::cuda::no_init}
       , __ref{::cuda::std::as_writable_bytes(::cuda::std::span{__sketch_buffer.data(), __sketch_buffer.size()}), __hash}
   {
     clear_async(__stream);

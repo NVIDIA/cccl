@@ -143,15 +143,15 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_seg
   static constexpr segmented_sort_policy active_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
   static constexpr auto large_policy                   = active_policy.large_segment;
   using LargeSegmentPolicyT                            = AgentRadixSortDownsweepPolicy<
-                               0,
-                               0,
-                               void,
-                               large_policy.load_algorithm,
-                               large_policy.load_modifier,
-                               large_policy.rank_algorithm,
-                               large_policy.scan_algorithm,
-                               large_policy.radix_bits,
-                               NoScaling<large_policy.block_threads, large_policy.items_per_thread>>;
+    0,
+    0,
+    void,
+    large_policy.load_algorithm,
+    large_policy.load_modifier,
+    large_policy.rank_algorithm,
+    large_policy.scan_algorithm,
+    large_policy.radix_bits,
+    NoScaling<large_policy.block_threads, large_policy.items_per_thread>>;
   static constexpr auto medium_policy = active_policy.medium_segment;
   using MediumPolicyT =
     AgentSubWarpMergeSortPolicy<medium_policy.block_threads,

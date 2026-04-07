@@ -82,7 +82,7 @@ C2H_TEST("when_all completes when children complete", "[when_all]")
                called = true;
                return a + b + c;
              });
-  auto op = ex::connect(std::move(snd), checked_value_receiver{41});
+  auto op  = ex::connect(std::move(snd), checked_value_receiver{41});
   ex::start(op);
   // The when_all scheduler will complete only after 3 impulses
   CUDAX_CHECK_FALSE(called);
