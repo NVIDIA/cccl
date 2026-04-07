@@ -30,7 +30,6 @@
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__fwd/string.h>
 #include <cuda/std/__host_stdlib/stdexcept>
-#include <cuda/std/initializer_list>
 #include <cuda/std/__iterator/access.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/data.h>
@@ -59,6 +58,7 @@
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
+#include <cuda/std/initializer_list>
 #include <cuda/std/version>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -587,6 +587,9 @@ _CCCL_HOST_DEVICE span(_It, _EndOrSize)
 _CCCL_TEMPLATE(class _Range)
 _CCCL_REQUIRES(::cuda::std::ranges::contiguous_range<_Range>)
 _CCCL_HOST_DEVICE span(_Range&&) -> span<remove_reference_t<::cuda::std::ranges::range_reference_t<_Range>>>;
+
+template <class _Tp>
+_CCCL_HOST_DEVICE span(initializer_list<_Tp>) -> span<const _Tp>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
