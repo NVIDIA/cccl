@@ -183,6 +183,7 @@ class TypeWrapper:
             w("    }\n")
         w(f"    char data[{size}];\n")
         w("};\n")
+        w(f"using storage_t = {storage_name};\n")
 
         self.code = buf.getvalue()
 
