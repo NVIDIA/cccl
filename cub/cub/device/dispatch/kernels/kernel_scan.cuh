@@ -110,8 +110,9 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceCompactInitKernel(
     *d_num_selected_out = 0;
   }
 }
-template <typename PolicySelector, typename InputIteratorT, typename OutputIteratorT, typename AccumT>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
+
+template <typename PolicySelector>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
 {
   constexpr scan_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
@@ -122,6 +123,11 @@ template <typename PolicySelector, typename InputIteratorT, typename OutputItera
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
   return policy.lookback.block_threads;
 }
+
+// need a variable template for clang in CUDA mode to avoid:
+// error: 'launch_bounds' attribute requires parameter 0 to be an integer constant
+template <typename PolicySelector>
+inline constexpr int device_scan_launch_bounds = get_device_scan_launch_bounds<PolicySelector>();
 
 /**
  * @brief Scan kernel entry point (multi-block)
@@ -178,20 +184,19 @@ template <typename PolicySelector,
           typename AccumT,
           bool ForceInclusive,
           typename RealInitValueT = typename InitValueT::value_type>
-__launch_bounds__(get_device_scan_launch_bounds<PolicySelector, InputIteratorT, OutputIteratorT, AccumT>(), 1)
-  _CCCL_KERNEL_ATTRIBUTES void DeviceScanKernel(
-    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
-    _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
-    tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state,
-    _CCCL_GRID_CONSTANT const int start_tile,
-    ScanOpT scan_op,
+__launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATTRIBUTES void DeviceScanKernel(
+  _CCCL_GRID_CONSTANT const InputIteratorT d_in,
+  _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
+  tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state,
+  _CCCL_GRID_CONSTANT const int start_tile,
+  ScanOpT scan_op,
 // nvcc 12.0 gets stuck compiling some TUs like `cub.bench.scan.exclusive.sum.base`, so only enable for newer versions
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-    _CCCL_GRID_CONSTANT
+  _CCCL_GRID_CONSTANT
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
-    const InitValueT init_value,
-    _CCCL_GRID_CONSTANT const OffsetT num_items,
-    _CCCL_GRID_CONSTANT const int num_stages)
+  const InitValueT init_value,
+  _CCCL_GRID_CONSTANT const OffsetT num_items,
+  _CCCL_GRID_CONSTANT const int num_stages)
 {
   static constexpr scan_policy active_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
   if constexpr (active_policy.algorithm == scan_algorithm::warpspeed)
