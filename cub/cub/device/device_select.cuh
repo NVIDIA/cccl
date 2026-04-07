@@ -910,15 +910,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::If");
 
-    using OffsetT      = ::cuda::std::int64_t; // Signed integer type for global offsets
-    using FlagIterator = NullType*; // FlagT iterator type (not used)
-    using EqualityOp   = NullType; // Equality operator (not used)
+    using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
+    using EqualityOp = NullType; // Equality operator (not used)
 
     return detail::select::dispatch<SelectImpl::Select, InputIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
-      nullptr,
+      static_cast<NullType*>(nullptr),
       d_out,
       d_num_selected_out,
       select_op,
@@ -1033,15 +1032,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::If");
 
-    using OffsetT      = ::cuda::std::int64_t; // Signed integer type for global offsets
-    using FlagIterator = NullType*; // FlagT iterator type (not used)
-    using EqualityOp   = NullType; // Equality operator (not used)
+    using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
+    using EqualityOp = NullType; // Equality operator (not used)
 
     return detail::select::dispatch<SelectImpl::SelectPotentiallyInPlace>(
       d_temp_storage,
       temp_storage_bytes,
       d_data,
-      nullptr,
+      static_cast<NullType*>(nullptr),
       d_data,
       d_num_selected_out,
       select_op,
@@ -1816,15 +1814,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
 
-    using OffsetT      = ::cuda::std::int64_t;
-    using FlagIterator = NullType*; // FlagT iterator type (not used)
-    using SelectOpT    = NullType; // Selection op (not used)
+    using OffsetT   = ::cuda::std::int64_t;
+    using SelectOpT = NullType; // Selection op (not used)
 
     return detail::select::dispatch<SelectImpl::Select>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
-      nullptr,
+      static_cast<NullType*>(nullptr),
       d_out,
       d_num_selected_out,
       SelectOpT{},
@@ -1929,16 +1926,15 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
 
-    using OffsetT      = ::cuda::std::int64_t;
-    using FlagIterator = NullType*; // FlagT iterator type (not used)
-    using SelectOp     = NullType; // Selection op (not used)
-    using EqualityOp   = ::cuda::std::equal_to<>; // Default == operator
+    using OffsetT    = ::cuda::std::int64_t;
+    using SelectOp   = NullType; // Selection op (not used)
+    using EqualityOp = ::cuda::std::equal_to<>; // Default == operator
 
     return detail::select::dispatch<SelectImpl::Select>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
-      nullptr,
+      static_cast<NullType*>(nullptr),
       d_out,
       d_num_selected_out,
       SelectOp{},
