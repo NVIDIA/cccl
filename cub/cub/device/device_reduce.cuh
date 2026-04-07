@@ -1083,8 +1083,12 @@ public:
     return __arg_min(d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out, num_items, compare_op, stream);
   }
 
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //! @overload
   //! @note Uses ``cuda::std::less`` as comparison operator
+  //! @endrst
   template <typename InputIteratorT, typename ExtremumOutIteratorT, typename IndexOutIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
     void* d_temp_storage,
@@ -1750,8 +1754,12 @@ public:
       stream);
   }
 
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
   //! @overload
-  //! @note Uses the greater-than (``>``) operator as comparison operator
+  //! @note Uses ``cuda::std::less`` as comparison operator
+  //! @endrst
   template <typename InputIteratorT, typename ExtremumOutIteratorT, typename IndexOutIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
     void* d_temp_storage,
