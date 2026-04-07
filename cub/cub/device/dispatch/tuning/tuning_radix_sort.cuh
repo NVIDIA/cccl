@@ -37,6 +37,7 @@ using detail::scan::make_mem_scaled_lookback_scan_policy;
 using detail::scan::scan_algorithm;
 using detail::scan::scan_lookback_policy;
 using detail::scan::scan_policy;
+using detail::scan::scan_warpspeed_policy;
 
 struct radix_sort_histogram_policy
 {
