@@ -89,7 +89,7 @@ __host__ __device__ constexpr bool testBool()
 {
   cuda::std::initializer_list<bool> il = {true, false, true};
   cuda::std::span<const bool> s{il};
-  return s.size() == il.size() && s[0] && ! s[1] && s[2];
+  return s.size() == il.size() && s[0] && !s[1] && s[2];
 }
 
 // Test const volatile element type (only check size, volatile reads are not constexpr)
