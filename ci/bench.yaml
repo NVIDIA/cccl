@@ -42,13 +42,13 @@ benchmarks:
 
   # Select GPUs. These are limited and shared, be intentional and conservative.
   gpus:
-    # - "t4"         # sm_75, 16 GB
+     - "t4"         # sm_75, 16 GB
     # - "rtx2080"    # sm_75,  8 GB
-    # - "rtxa6000"   # sm_86, 48 GB
+     - "rtxa6000"   # sm_86, 48 GB
     # - "l4"         # sm_89, 24 GB
     # - "rtx4090"    # sm_89, 24 GB
-    # - "h100"       # sm_90, 80 GB
-    # - "rtxpro6000" # sm_120
+     - "h100"       # sm_90, 80 GB
+     - "rtxpro6000" # sm_120
 
   # Extra .devcontainer/launch.sh -d args
   # launch_args: "--cuda 13.1 --host gcc14"
