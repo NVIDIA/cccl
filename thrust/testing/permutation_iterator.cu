@@ -178,7 +178,7 @@ void TestPermutationIteratorHostDeviceGather()
 {
   using T              = int;
   using HostVector     = thrust::host_vector<T>;
-  using DeviceVector   = thrust::host_vector<T>;
+  using DeviceVector   = thrust::device_vector<T>;
   using HostIterator   = HostVector::iterator;
   using DeviceIterator = DeviceVector::iterator;
 
@@ -215,7 +215,7 @@ void TestPermutationIteratorHostDeviceScatter()
 {
   using T              = int;
   using HostVector     = thrust::host_vector<T>;
-  using DeviceVector   = thrust::host_vector<T>;
+  using DeviceVector   = thrust::device_vector<T>;
   using HostIterator   = HostVector::iterator;
   using DeviceIterator = DeviceVector::iterator;
 
