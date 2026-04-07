@@ -397,7 +397,7 @@ struct policy_selector_from_hub
   // this is only called in device code
   [[nodiscard]] _CCCL_DEVICE constexpr auto operator()(::cuda::arch_id /*arch*/) const -> select_if_policy
   {
-    using active_policy = typename PolicyHub::MaxPolicy::ActivePolicy;
+    using active_policy = typename PolicyHub::MaxPolicy::ActivePolicy::SelectIfPolicyT;
     return select_if_policy{
       active_policy::BLOCK_THREADS,
       active_policy::ITEMS_PER_THREAD,

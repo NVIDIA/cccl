@@ -2369,9 +2369,9 @@ private:
 public:
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> select_if_policy
   {
-    constexpr bool has_flags    = flag_size_bytes != 0;
-    constexpr bool keep_rejects = selection_impl == SelectImpl::Partition;
-    constexpr bool may_alias    = selection_impl == SelectImpl::SelectPotentiallyInPlace;
+    const bool has_flags    = flag_size_bytes != 0;
+    const bool keep_rejects = selection_impl == SelectImpl::Partition;
+    const bool may_alias    = selection_impl == SelectImpl::SelectPotentiallyInPlace;
 
     if (arch >= ::cuda::arch_id::sm_100)
     {
