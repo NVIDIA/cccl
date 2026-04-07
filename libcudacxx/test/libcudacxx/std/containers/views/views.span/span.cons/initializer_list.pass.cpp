@@ -13,14 +13,10 @@
 // template <class _InitListValueType>
 //   requires same_as<_InitListValueType, value_type> && is_const_v<element_type>
 // constexpr span(initializer_list<_InitListValueType> __il);
-//
-// template <class _Tp>
-// span(initializer_list<_Tp>) -> span<const _Tp>;
 
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
 #include <cuda/std/span>
-#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
@@ -98,14 +94,6 @@ __host__ __device__ constexpr bool testConstVolatile()
   return s.size() == 3;
 }
 
-// Test CTAD: span(initializer_list<int>) should deduce span<const int>
-__host__ __device__ constexpr bool testCTAD()
-{
-  cuda::std::initializer_list<int> il = {1, 2, 3};
-  cuda::std::span s(il);
-  static_assert(cuda::std::is_same_v<decltype(s), cuda::std::span<const int>>, "");
-  return s.size() == 3;
-}
 
 __host__ __device__ constexpr bool testAll()
 {
@@ -137,9 +125,6 @@ __host__ __device__ constexpr bool testAll()
 
   // const volatile
   assert(testConstVolatile());
-
-  // CTAD
-  assert(testCTAD());
 
   return true;
 }

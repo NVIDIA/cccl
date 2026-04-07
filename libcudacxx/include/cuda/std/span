@@ -588,9 +588,6 @@ _CCCL_TEMPLATE(class _Range)
 _CCCL_REQUIRES(::cuda::std::ranges::contiguous_range<_Range>)
 _CCCL_HOST_DEVICE span(_Range&&) -> span<remove_reference_t<::cuda::std::ranges::range_reference_t<_Range>>>;
 
-template <class _Tp>
-_CCCL_HOST_DEVICE span(initializer_list<_Tp>) -> span<const _Tp>;
-
 _CCCL_END_NAMESPACE_CUDA_STD
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
