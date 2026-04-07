@@ -33,6 +33,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/cstdint>
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -69,7 +70,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm al
     case RADIX_SORT_STORE_ALIGNED:
       return os << "RADIX_SORT_STORE_ALIGNED";
     default:
-      return os << "<unknown RadixSortStoreAlgorithm: " << static_cast<int>(algo) << ">";
+      return os << "<unknown RadixSortStoreAlgorithm: " << ::cuda::std::to_underlying(algo) << ">";
   }
 }
 #endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
