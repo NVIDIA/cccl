@@ -638,14 +638,6 @@ struct DispatchSelectIf
 
     do
     {
-      // Get device ordinal
-      int device_ordinal;
-      error = CubDebug(cudaGetDevice(&device_ordinal));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
       // Specify temporary storage allocation requirements
       ::cuda::std::size_t streaming_selection_storage_bytes =
         (num_partitions > 1) ? 2 * sizeof(num_total_items_t) : ::cuda::std::size_t{0};
@@ -915,7 +907,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_arch(
         < static_cast<::cuda::std::uint64_t>(::cuda::std::numeric_limits<OffsetT>::max()));
   using streaming_context_t = detail::select::streaming_context_t<num_total_items_t, use_streaming_context>;
   using ScanTileStateT      = ScanTileState<per_partition_offset_t>;
-  static constexpr int INIT_KERNEL_THREADS = 128;
+  static constexpr int init_kernel_threads = 128;
 
   using vsmem_helper_t = typename make_vsmem_helper<
     PolicyGetter,
@@ -935,27 +927,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_arch(
   static constexpr auto max_supported_partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
   static constexpr auto full_tile_partition_size =
     max_supported_partition_size - (max_supported_partition_size % (block_threads * items_per_thread));
-
   static constexpr per_partition_offset_t capped_partition_size =
     is_partitioning_invocation ? max_supported_partition_size : full_tile_partition_size;
 
-  auto const max_partition_size =
+  const auto max_partition_size =
     (use_streaming_context && num_items > static_cast<OffsetT>(capped_partition_size))
       ? static_cast<OffsetT>(capped_partition_size)
       : num_items;
-
-  auto const num_partitions =
+  const auto num_partitions =
     (max_partition_size == 0) ? static_cast<OffsetT>(1) : ::cuda::ceil_div(num_items, max_partition_size);
-
-  auto const max_num_tiles_per_invocation = static_cast<OffsetT>(::cuda::ceil_div(max_partition_size, tile_size));
-
-  const auto vsmem_size = max_num_tiles_per_invocation * vsmem_helper_t::vsmem_per_block;
-
-  int device_ordinal;
-  if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
-  {
-    return error;
-  }
+  const auto max_num_tiles_per_invocation = static_cast<OffsetT>(::cuda::ceil_div(max_partition_size, tile_size));
+  const auto vsmem_size                   = max_num_tiles_per_invocation * vsmem_helper_t::vsmem_per_block;
 
   ::cuda::std::size_t streaming_selection_storage_bytes =
     (num_partitions > 1) ? 2 * sizeof(num_total_items_t) : ::cuda::std::size_t{0};
@@ -968,7 +950,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_arch(
   }
 
   void* allocations[3] = {};
-
   if (const auto error =
         CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
@@ -997,15 +978,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_arch(
       return error;
     }
 
-    int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
+    const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(current_num_tiles, init_kernel_threads));
 
 #ifdef CUB_DEBUG_LOG
     _CubLog(
-      "Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
+      "Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
 #endif
 
     if (const auto error = CubDebug(
-          launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+          launcher_factory(init_grid_size, init_kernel_threads, 0, stream)
             .doit(detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
                   tile_status,
                   current_num_tiles,
