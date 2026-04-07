@@ -205,8 +205,6 @@ struct bind_selection_opt
                   SelectionOpt>;
 };
 
-//! @brief Select-if-specific virtual shared memory handling: optional fallback tile size when the default policy's
-//! agent exceeds static shared memory limits, then virtual shared memory if needed (see merge_sort_vsmem_helper_t).
 template <typename DefaultPolicyGetter,
           SelectImpl SelectionOpt,
           typename InputIteratorT,
