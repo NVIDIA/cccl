@@ -29,8 +29,11 @@ struct A
 template <typename T>
 __host__ __device__ constexpr bool testDynamicExtent()
 {
-  cuda::std::span<const T> s{T{}, T{}, T{}};
-  return s.size() == 3;
+  cuda::std::span<const T> s1{T{}};
+  cuda::std::span<const T> s2{T{}, T{}};
+  cuda::std::span<const T> s3{T{}, T{}, T{}};
+  cuda::std::span<const T> s4{T{}, T{}, T{}, T{}};
+  return s1.size() == 1 && s2.size() == 2 && s3.size() == 3 && s4.size() == 4;
 }
 
 // Test static extent construction from braced init list.
