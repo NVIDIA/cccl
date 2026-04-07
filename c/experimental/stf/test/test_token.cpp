@@ -8,8 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <vector>
-
 #include <cuda_runtime.h>
 
 #include <c2h/catch2_test_helper.h>
@@ -17,14 +15,8 @@
 
 C2H_TEST("stf token", "[token]")
 {
-  size_t N = 1000000;
-
   stf_ctx_handle ctx = stf_ctx_create();
   REQUIRE(ctx != nullptr);
-
-  [[maybe_unused]] std::vector<float> X(N);
-  [[maybe_unused]] std::vector<float> Y(N);
-  [[maybe_unused]] std::vector<float> Z(N);
 
   stf_logical_data_handle lX = stf_token(ctx);
   stf_logical_data_handle lY = stf_token(ctx);
