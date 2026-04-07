@@ -73,33 +73,33 @@ __host__ __device__ constexpr bool testEmptyStatic()
   return s.size() == 0;
 }
 
-// Test value integrity: verify size of a larger list
+// Test value integrity: verify size and element values
 __host__ __device__ constexpr bool testValueIntegrity()
 {
   cuda::std::span<const int> s{1, 2, 3, 4, 5};
-  return s.size() == 5;
+  return s.size() == 5 && s[0] == 1 && s[1] == 2 && s[2] == 3 && s[3] == 4 && s[4] == 5;
 }
 
 // Test with bool literals
 __host__ __device__ constexpr bool testBool()
 {
   cuda::std::span<const bool> s{true, false, true};
-  return s.size() == 3;
+  return s.size() == 3 && s[0] == true && s[1] == false && s[2] == true;
 }
 
 // Test const volatile element type
 __host__ __device__ constexpr bool testConstVolatile()
 {
   cuda::std::span<const volatile int> s{cuda::std::initializer_list<int>{1, 2, 3}};
-  return s.size() == 3;
+  return s.size() == 3 && s[0] == 1 && s[1] == 2 && s[2] == 3;
 }
 
-// Test CTAD: span{1, 2, 3} should deduce span<const int>
+// Test CTAD: span{1, 2, 3} should deduce span<const int, dynamic_extent>
 __host__ __device__ constexpr bool testCTAD()
 {
   cuda::std::span s{1, 2, 3};
-  static_assert(cuda::std::is_same_v<decltype(s)::element_type, const int>, "");
-  return s.size() == 3;
+  static_assert(cuda::std::is_same_v<decltype(s), cuda::std::span<const int>>, "");
+  return s.size() == 3 && s[0] == 1 && s[1] == 2 && s[2] == 3;
 }
 
 __host__ __device__ constexpr bool testAll()
