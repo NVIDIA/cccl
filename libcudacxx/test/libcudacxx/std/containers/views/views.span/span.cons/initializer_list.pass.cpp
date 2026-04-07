@@ -23,7 +23,9 @@
 struct A
 {};
 
-// Test dynamic extent construction from braced init list for various types
+// Test dynamic extent construction from braced init list for various types.
+// Only check size — the initializer_list temporary is destroyed after construction,
+// so accessing elements through the span would be dangling.
 template <typename T>
 __host__ __device__ constexpr bool testDynamicExtent()
 {
@@ -31,7 +33,8 @@ __host__ __device__ constexpr bool testDynamicExtent()
   return s.size() == 3;
 }
 
-// Test static extent construction from braced init list
+// Test static extent construction from braced init list.
+// Only check size — same dangling concern as testDynamicExtent.
 template <typename T>
 __host__ __device__ constexpr bool testStaticExtent()
 {
@@ -93,7 +96,6 @@ __host__ __device__ constexpr bool testConstVolatile()
   cuda::std::span<const volatile int> s{il};
   return s.size() == 3;
 }
-
 
 __host__ __device__ constexpr bool testAll()
 {
