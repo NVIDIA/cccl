@@ -42,9 +42,9 @@ benchmarks:
 
   # Select GPUs. These are limited and shared, be intentional and conservative.
   gpus:
-     - "t4"         # sm_75, 16 GB
+    # - "t4"         # sm_75, 16 GB
     # - "rtx2080"    # sm_75,  8 GB
-     - "rtxa6000"   # sm_86, 48 GB
+    # - "rtxa6000"   # sm_86, 48 GB
     # - "l4"         # sm_89, 24 GB
     # - "rtx4090"    # sm_89, 24 GB
      - "h100"       # sm_90, 80 GB
@@ -64,4 +64,8 @@ benchmarks:
     --stopping-criterion entropy
     --throttle-threshold 90
     --throttle-recovery-delay 0.15
+    --axis "OffsetT{ct}=I32"
+    --axis "SelectedElements[pow2]=[3:23:5]"
+    --axis "Entropy=[1.000,0.201,0.000]"
+    --axis "OutOffsetT{ct}=I32"
   nvbench_compare_args: ""
