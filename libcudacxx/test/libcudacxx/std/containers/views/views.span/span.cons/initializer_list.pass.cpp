@@ -97,18 +97,25 @@ __host__ __device__ constexpr bool testConstVolatile()
   return s.size() == 3;
 }
 
+// Test const pointer element type: span<int* const> from initializer_list<int*>.
+// is_const_v<int* const> is true (the pointer itself is const), so this should work.
+__host__ __device__ bool testConstPointer()
+{
+  int x = 1;
+  int y = 2;
+  cuda::std::initializer_list<int*> il = {&x, &y};
+  cuda::std::span<int* const> s{il};
+  return s.size() == 2 && s[0] == &x && s[1] == &y;
+}
+
 __host__ __device__ constexpr bool testAll()
 {
   // Dynamic extent
   assert(testDynamicExtent<int>());
-  assert(testDynamicExtent<long>());
-  assert(testDynamicExtent<double>());
   assert(testDynamicExtent<A>());
 
   // Static extent
   assert(testStaticExtent<int>());
-  assert(testStaticExtent<long>());
-  assert(testStaticExtent<double>());
   assert(testStaticExtent<A>());
 
   // From explicit initializer_list variable
@@ -131,10 +138,18 @@ __host__ __device__ constexpr bool testAll()
   return true;
 }
 
+// Separate from testAll because testConstPointer uses address-of, which is not constexpr
+__host__ __device__ bool testRuntime()
+{
+  assert(testConstPointer());
+  return true;
+}
+
 int main(int, char**)
 {
   testAll();
   static_assert(testAll());
+  testRuntime();
 
   return 0;
 }

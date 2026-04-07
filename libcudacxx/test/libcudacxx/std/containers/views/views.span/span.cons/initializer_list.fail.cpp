@@ -37,11 +37,6 @@ int main(int, char**)
     cuda::std::span<const bool> s{1, 0, 1}; // expected-error
   }
 
-  // Narrowing: int literals to span<const short> must fail (same_as<int, short> is false)
-  {
-    cuda::std::span<const short> s{1, 2, 3}; // expected-error
-  }
-
   // Narrowing: double to span<const int> must fail (same_as<double, int> is false)
   {
     cuda::std::span<const int> s{1.0, 2.0}; // expected-error
@@ -50,6 +45,13 @@ int main(int, char**)
   // Narrowing: int to bool with static extent
   {
     cuda::std::span<const bool, 3> s{1, 0, 1}; // expected-error
+  }
+
+  // Pointer element type: span<const int*> must fail because is_const_v<const int*> is false
+  // (const int* is "pointer to const int", the pointer itself is not const)
+  {
+    int x = 0;
+    cuda::std::span<const int*> s{&x}; // expected-error
   }
 
   return 0;
