@@ -4,9 +4,9 @@
 
 #include <cub/device/device_reduce.cuh>
 
+#include <cuda/__cmath/uabs.h>
 #include <cuda/std/__algorithm/max_element.h>
 #include <cuda/std/__algorithm/min_element.h>
-#include <cuda/std/__cmath/abs.h>
 
 #include <cstdint>
 
@@ -85,7 +85,8 @@ struct abs_less_t
   template <typename T>
   _CCCL_API auto operator()(const T& a, const T& b) const -> bool
   {
-    return cuda::std::abs(a) < cuda::std::abs(b);
+    // need to use `uabs` to avoid integer overflow in case of abs(INT_MIN)
+    return cuda::uabs(a) < cuda::uabs(b);
   }
 };
 
@@ -124,6 +125,8 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     thrust::fill(c2h::device_policy, in_items.begin(), in_items.end(), default_constant);
   }
   auto d_in_it = thrust::raw_pointer_cast(in_items.data());
+
+  CAPTURE(c2h::type_name<item_t>(), c2h::type_name<output_t>(), num_items, in_items);
 
 #if TEST_TYPES != 4
   SECTION("reduce")
