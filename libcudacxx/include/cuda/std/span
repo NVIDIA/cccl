@@ -174,8 +174,9 @@ public:
 
   // Deviation from P4144R1 Hana Dusikova's proposed fix: uses initializer_list<_InitListValueType>
   // instead of initializer_list<const _InitListValueType>. The const is redundant because
-  // initializer_list<T>::begin() already returns const T*. Omitting it avoids complications
-  // with template argument deduction in the CCCL SFINAE fallback path (non-concepts compilers).
+  // initializer_list<T>::begin() already returns const T*, so initializer_list<const T>::begin()
+  // returns const const T* which collapses to const T* — identical behavior. Omitting the const
+  // also avoids complications with template argument deduction in the CCCL SFINAE fallback path.
   _CCCL_TEMPLATE(class _InitListValueType)
   _CCCL_REQUIRES(same_as<_InitListValueType, value_type> _CCCL_AND is_const_v<element_type>)
   _CCCL_API constexpr span(initializer_list<_InitListValueType> __il)
@@ -405,8 +406,9 @@ public:
 
   // Deviation from P4144R1 Hana Dusikova's proposed fix: uses initializer_list<_InitListValueType>
   // instead of initializer_list<const _InitListValueType>. The const is redundant because
-  // initializer_list<T>::begin() already returns const T*. Omitting it avoids complications
-  // with template argument deduction in the CCCL SFINAE fallback path (non-concepts compilers).
+  // initializer_list<T>::begin() already returns const T*, so initializer_list<const T>::begin()
+  // returns const const T* which collapses to const T* — identical behavior. Omitting the const
+  // also avoids complications with template argument deduction in the CCCL SFINAE fallback path.
   _CCCL_TEMPLATE(class _InitListValueType)
   _CCCL_REQUIRES(same_as<_InitListValueType, value_type> _CCCL_AND is_const_v<element_type>)
   _CCCL_API constexpr span(initializer_list<_InitListValueType> __il)
