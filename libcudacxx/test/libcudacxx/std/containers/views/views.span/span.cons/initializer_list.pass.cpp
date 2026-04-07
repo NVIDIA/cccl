@@ -78,7 +78,7 @@ __host__ __device__ constexpr bool testValueIntegrity()
 {
   cuda::std::initializer_list<int> il = {1, 2, 3, 4, 5};
   cuda::std::span<const int> s{il};
-  return s.size() == 5 && s[0] == 1 && s[1] == 2 && s[2] == 3 && s[3] == 4 && s[4] == 5;
+  return s.size() == il.size() && s[0] == 1 && s[1] == 2 && s[2] == 3 && s[3] == 4 && s[4] == 5;
 }
 
 // Test with bool literals
@@ -86,7 +86,7 @@ __host__ __device__ constexpr bool testBool()
 {
   cuda::std::initializer_list<bool> il = {true, false, true};
   cuda::std::span<const bool> s{il};
-  return s.size() == 3 && s[0] == true && s[1] == false && s[2] == true;
+  return s.size() == il.size() && s[0] == true && s[1] == false && s[2] == true;
 }
 
 // Test const volatile element type (only check size, volatile reads are not constexpr)
@@ -94,7 +94,7 @@ __host__ __device__ constexpr bool testConstVolatile()
 {
   cuda::std::initializer_list<int> il = {1, 2, 3};
   cuda::std::span<const volatile int> s{il};
-  return s.size() == 3;
+  return s.size() == il.size();
 }
 
 // Test const pointer element type: span<int* const> from initializer_list<int*>.
@@ -105,7 +105,7 @@ __host__ __device__ bool testConstPointer()
   int y = 2;
   cuda::std::initializer_list<int*> il = {&x, &y};
   cuda::std::span<int* const> s{il};
-  return s.size() == 2 && s[0] == &x && s[1] == &y;
+  return s.size() == il.size() && s[0] == &x && s[1] == &y;
 }
 
 __host__ __device__ constexpr bool testAll()
