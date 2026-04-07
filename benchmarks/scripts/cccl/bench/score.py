@@ -4,11 +4,11 @@ import numpy as np
 
 
 def importance_function(x):
-    return 1 - math.exp(-x)
+    return -math.expm1(-x)
 
 
 def x_by_importance(y):
-    return -math.log(1 - y)
+    return -math.log1p(-y)
 
 
 def compute_weights(num_values):
@@ -98,7 +98,9 @@ def get_workload_coordinates(rt_workload, rt_axes_values, rt_axes_ids):
     coordinates = [0] * len(rt_axes_ids)
     for point in rt_workload:
         rt_axis, rt_value = point.split("=")
-        coordinates[rt_axes_ids[rt_axis]] = rt_axes_values[rt_axis].index(rt_value)
+        axes_id = rt_axes_ids[rt_axis]
+        index = rt_axes_values[rt_axis].index(rt_value)
+        coordinates[axes_id] = index
     return coordinates
 
 
