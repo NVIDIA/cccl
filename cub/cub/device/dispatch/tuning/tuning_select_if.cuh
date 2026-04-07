@@ -1632,7 +1632,7 @@ struct policy_selector
 {
   type_t input_type;
   int input_size_bytes;
-  bool input_is_primitive;
+  bool input_is_primitive; // TODO(bgruber): we should include is_trivially_copyable before publishing
   int flag_size_bytes; // equals 0 when we don't have flags
   int offset_size_bytes;
   bool distinct_partitions;
