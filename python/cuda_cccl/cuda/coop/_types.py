@@ -753,7 +753,6 @@ class Algorithm:
                 # Inject the void *addr and size parameters for structs.
                 injected = [
                     Pointer(
-                        # numba.types.voidptr,
                         numba.types.int8,
                         name="addr",
                         restrict=True,
@@ -792,16 +791,6 @@ class Algorithm:
                     # method's parameters.
                     for method in self.parameters:
                         method[:0] = injected
-
-            if False:
-                # Collect any LTO-IRs that may already be present.
-                for method in self.parameters:
-                    for param in method:
-                        try:
-                            ltoir = param.ltoir
-                        except AttributeError:
-                            continue
-                        self._lto_irs.append(ltoir)
 
     def __repr__(self) -> str:
         if self.template_parameters:
@@ -899,7 +888,6 @@ class Algorithm:
         return Algorithm(
             specialized_name,
             self.method_name,
-            # self.c_name + mangle,
             self.c_name,
             self.includes,
             [],
