@@ -78,7 +78,7 @@ public:
 
     ::cuda::__ensure_current_context __guard(__device_);
     ::CUdeviceptr __ptr = ::cuda::__driver::__mallocManaged(__bytes, __flags_);
-    return reinterpret_cast<void*>(__ptr);
+    return reinterpret_cast<void*>(__ptr); // NOLINT(performance-no-int-to-ptr)
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr.

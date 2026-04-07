@@ -331,4 +331,36 @@ C2H_CCCLRT_TEST("Launch with default config", "")
   }
 }
 
+// Regression test: cuda::launch must work when the calling function has
+// a __restrict__-qualified pointer parameter. On some nvcc + host compiler
+// combos, __restrict__ survives through the type transformation pipeline
+// and causes a function pointer conversion failure in __get_kernel_launcher.
+struct restrict_assign_functor
+{
+  template <typename Config>
+  __device__ void operator()(Config config, int* __restrict__ dst)
+  {
+    *dst = 42;
+  }
+};
+
+// The __restrict__ on the function parameter is the trigger: on affected compilers,
+// it leaks into the template args of __get_kernel_launcher via cuda::launch.
+void launch_with_restrict_param(cuda::stream_ref stream, int* __restrict__ dst)
+{
+  auto config = cuda::make_config(cuda::grid_dims(1), cuda::block_dims<1>());
+  cuda::launch(stream, config, restrict_assign_functor{}, dst);
+}
+
+C2H_CCCLRT_TEST("Launch functor with __restrict__ pointer arg", "[launch]")
+{
+  cuda::stream stream{cuda::device_ref{0}};
+  test::pinned<int> val{0};
+
+  launch_with_restrict_param(stream, val.get());
+  stream.sync();
+
+  CCCLRT_CHECK(*val == 42);
+}
+
 #endif // !_CCCL_CUDA_COMPILER(CLANG)

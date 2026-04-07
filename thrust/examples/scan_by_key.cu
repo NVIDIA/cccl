@@ -22,7 +22,7 @@ void print(const Vector& v)
   {
     std::cout << e << " ";
   }
-  std::cout << std::endl;
+  std::cout << '\n';
 }
 
 int main()

@@ -323,7 +323,8 @@ class DeviceSegmentedReduceBuildResult:
         end_offsets: Iterator,
         binary_op: Op,
         h_init: Value,
-        stream,
+        max_segment_size: int | None = None,
+        stream=None,
     ) -> int: ...
 
 # ---------------

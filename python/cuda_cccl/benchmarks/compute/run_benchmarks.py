@@ -74,13 +74,27 @@ SUPPORTED_BENCHMARKS = [
     "merge_sort/keys",
     "merge_sort/pairs",
     "segmented_sort/keys",
+    "segmented_reduce/variable_sum",
     "partition/three_way",
 ]
 
 # Axes that use power-of-two values (need [pow2] suffix for nvbench)
 # These are the base names (without {ct}/{io} suffixes)
-POW2_AXES_CPP = {"Elements", "MaxSegSize", "MaxSegmentSize", "SegmentSize", "Segments"}
-POW2_AXES_PY = {"Elements", "MaxSegSize", "MaxSegmentSize", "Segments"}
+POW2_AXES_CPP = {
+    "Elements",
+    "GuaranteedMaxSegSize",
+    "MaxSegSize",
+    "MaxSegmentSize",
+    "SegmentSize",
+    "Segments",
+}
+POW2_AXES_PY = {
+    "Elements",
+    "GuaranteedMaxSegSize",
+    "MaxSegSize",
+    "MaxSegmentSize",
+    "Segments",
+}
 
 # Axis name mappings from C++ to Python.
 # Keep type axes in their C++ form (`{ct}`) to match benchmark axis names.

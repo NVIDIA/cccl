@@ -31,7 +31,7 @@ int main()
   int sum = thrust::reduce(d_vec.begin(), d_vec.end(), init, binary_op);
 
   // print the sum
-  std::cout << "sum is " << sum << std::endl;
+  std::cout << "sum is " << sum << '\n';
 
   return 0;
 }

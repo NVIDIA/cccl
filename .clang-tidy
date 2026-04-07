@@ -20,7 +20,12 @@ Checks:
   - 'concurrency-*'
   # TODO: BEGIN REMOVE ME
   - '-*'
-  - 'performance-implicit-conversion-in-loop'
+  - 'performance-*'
+  - '-performance-noexcept-move-constructor'
+  - '-performance-noexcept-swap'
+  - '-performance-enum-size'
+  - '-performance-unnecessary-copy-initialization'
+  - '-performance-unnecessary-value-param'
   # END REMOVE ME
   # HICPP is 99% aliased to other checks (mostly modernize-* and bugprone-*). We don't
   # want to also enable it because then we need to duplicate the NOLINT. The only 2 checks
@@ -199,6 +204,7 @@ ImplementationFileExtensions:
   - cxx
   - cu
 SystemHeaders: false
+HeaderFilterRegex: '.*/(thrust|cub|cuda|nv|cccl|c2h|cudastf|test)/.*'
 ExtraArgsBefore:
   # To match _CCCL_DOXYGEN_INVOKED
   - '-D_CCCL_CLANG_TIDY_INVOKED=1'
@@ -275,4 +281,6 @@ CheckOptions:
   bugprone-argument-comment.CommentNullPtrs: true
   cppcoreguidelines-macro-usage.AllowedRegexp: '^DEBUG_.*|THRUST_PP_.*|_CCCL.*_PP_.*'
   bugprone-reserved-identifier.AllowedIdentifiers: '^_CCCL.*'
+  performance-enum-size.EnumIgnoreList: '::cuda::std::.*'
+  performance-unnecessary-value-param.AllowedTypes: '.*(_ref(erence)?|_ptr|pointer|(_)?[Ii]t(erator)?|IteratorT|__half(2)?|(__nv_bfloat.*)|_view)$'
 ...

@@ -189,7 +189,7 @@ private:
   {
     if (status != CUDA_SUCCESS)
     {
-      std::cerr << "Clean-up call returned status " << status << std::endl;
+      std::cerr << "Clean-up call returned status " << status << '\n';
     }
   }
 };

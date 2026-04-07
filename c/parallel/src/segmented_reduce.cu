@@ -295,6 +295,7 @@ CUresult cccl_device_segmented_reduce(
   cccl_iterator_t end_offset,
   cccl_op_t op,
   cccl_value_t init,
+  size_t max_segment_size,
   CUstream stream)
 {
   bool pushed    = false;
@@ -316,7 +317,7 @@ CUresult cccl_device_segmented_reduce(
       indirect_iterator_t{end_offset},
       indirect_arg_t{op},
       indirect_arg_t{init},
-      /* max_segment_size */ size_t{0},
+      max_segment_size,
       stream,
       *static_cast<cub::detail::segmented_reduce::policy_selector*>(build.runtime_policy),
       segmented_reduce::segmented_reduce_kernel_source{build},
@@ -327,7 +328,7 @@ CUresult cccl_device_segmented_reduce(
   catch (const std::exception& exc)
   {
     fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_reduce(): %s\n", exc.what());
+    printf("\nEXCEPTION in cccl_device_segmented_reduce(): %s\n", exc.what());
     fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
