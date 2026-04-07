@@ -178,7 +178,7 @@ public:
   // returns const const T* which collapses to const T* — identical behavior. Omitting the const
   // also avoids complications with template argument deduction in the CCCL SFINAE fallback path.
   _CCCL_TEMPLATE(class _InitListValueType)
-  _CCCL_REQUIRES(same_as<_InitListValueType, value_type> _CCCL_AND is_const_v<element_type>)
+  _CCCL_REQUIRES(is_same_v<_InitListValueType, value_type> _CCCL_AND is_const_v<element_type>)
   _CCCL_API constexpr span(initializer_list<_InitListValueType> __il)
       : __data_{__il.begin()}
   {
