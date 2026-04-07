@@ -21,19 +21,12 @@ class strided_range
 public:
   using difference_type = typename cuda::std::iterator_traits<Iterator>::difference_type;
 
-  struct stride_functor
-  {
-    difference_type stride;
-
-    stride_functor(difference_type stride)
-        : stride(stride)
-    {}
-
-    __host__ __device__ difference_type operator()(const difference_type& i) const
-    {
+  // lambda that implements the stride operation
+  using stride_functor = decltype([](difference_type stride) {
+    return [=] __device__(const difference_type& i) {
       return stride * i;
-    }
-  };
+    };
+  }(difference_type{}));
 
   using CountingIterator    = typename thrust::counting_iterator<difference_type>;
   using TransformIterator   = typename thrust::transform_iterator<stride_functor, CountingIterator>;
@@ -51,7 +44,10 @@ public:
 
   iterator begin() const
   {
-    return PermutationIterator(first, TransformIterator(CountingIterator(0), stride_functor(stride)));
+    auto stride_fn = [stride = this->stride] __device__(const difference_type& i) {
+      return stride * i;
+    };
+    return PermutationIterator(first, TransformIterator(CountingIterator(0), stride_fn));
   }
 
   iterator end() const
