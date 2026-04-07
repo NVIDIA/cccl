@@ -231,11 +231,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
 
   // Initial value for empty problems, according to documented contract
   const auto empty_problem_extremum = static_cast<output_extremum_t>([] {
-    if constexpr (::cuda::std::is_same_v<ReductionOpT, arg_min>)
+    if constexpr (::cuda::std::is_same_v<ReductionOpT, arg_min>
+                  && ::cuda::std::numeric_limits<input_value_t>::is_specialized)
     {
       return ::cuda::std::numeric_limits<input_value_t>::max();
     }
-    else if constexpr (::cuda::std::is_same_v<ReductionOpT, arg_max>)
+    else if constexpr (::cuda::std::is_same_v<ReductionOpT, arg_max>
+                       && ::cuda::std::numeric_limits<input_value_t>::is_specialized)
     {
       return ::cuda::std::numeric_limits<input_value_t>::lowest();
     }

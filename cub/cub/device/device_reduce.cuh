@@ -970,7 +970,8 @@ public:
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
   //!   ``cuda::std::int64_t``.
   //! - For zero-length inputs, the index ``1`` is written to ``d_index_out`` and, if ``compare_op`` is
-  //!   ``cuda::std::less``, ``cuda::std::numeric_limits<T>::max()`` is written to ``d_min_out``, otherwise ``T{}``.
+  //!   ``cuda::std::less`` and ``cuda::std::numeric_limits<T>::is_specialized is ``true``,
+  //!   ``cuda::std::numeric_limits<T>::max()`` is written to ``d_min_out``, otherwise ``T{}``.
   //! - Does not support comparison operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -1193,8 +1194,9 @@ public:
   //! - The minimum is written to ``d_min_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
   //!   ``cuda::std::int64_t``.
-  //! - For zero-length inputs, ``cuda::std::numeric_limits<T>::max()}`` is written to ``d_min_out``  and the index
-  //!   ``1`` is written to ``d_index_out``.
+  //! - For zero-length inputs, the index ``1`` is written to ``d_index_out`` and, if ``compare_op`` is
+  //!   ``cuda::std::less`` and ``cuda::std::numeric_limits<T>::is_specialized is ``true``,
+  //!   ``cuda::std::numeric_limits<T>::max()`` is written to ``d_min_out``, otherwise ``T{}``.
   //! - Does not support ``<`` operators that are non-commutative.
   //! - Provides determinism based on the environment's determinism requirements.
   //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
@@ -1634,7 +1636,8 @@ public:
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
   //!   ``cuda::std::int64_t``.
   //! - For zero-length inputs, the index ``1`` is written to ``d_index_out`` and, if ``compare_op`` is
-  //!   ``cuda::std::less``, ``cuda::std::numeric_limits<T>::max()`` is written to ``d_max_out``, otherwise ``T{}``.
+  //!   ``cuda::std::less`` and ``cuda::std::numeric_limits<T>::is_specialized is ``true``,
+  //!   ``cuda::std::numeric_limits<T>::lowest()`` is written to ``d_min_out``, otherwise ``T{}``.
   //! - Does not support ``>`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -1917,8 +1920,9 @@ public:
   //! - The maximum is written to ``d_max_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
   //!   ``cuda::std::int64_t``.
-  //! - For zero-length inputs, ``cuda::std::numeric_limits<T>::lowest()}`` is written to ``d_max_out``  and the index
-  //!   ``1`` is written to ``d_index_out``.
+  //! - For zero-length inputs, the index ``1`` is written to ``d_index_out`` and, if ``compare_op`` is
+  //!   ``cuda::std::less`` and ``cuda::std::numeric_limits<T>::is_specialized is ``true``,
+  //!   ``cuda::std::numeric_limits<T>::lowest()`` is written to ``d_min_out``, otherwise ``T{}``.
   //! - Does not support ``>`` operators that are non-commutative.
   //! - Provides determinism based on the environment's determinism requirements.
   //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
