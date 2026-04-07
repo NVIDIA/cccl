@@ -366,8 +366,11 @@ __device__ void test_this_group(const Config& config)
   // Test construction from kernel_config.
   {
     GroupTempl group{config};
+    // nvcc 12.0 doesn't evaluate these static asserts correctly
+#if !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
     static_assert(cuda::std::is_same_v<GroupTempl<typename Config::hierarchy_type>, decltype(group)>);
     static_assert(cuda::std::is_nothrow_constructible_v<decltype(group), const typename Config::hierarchy_type&>);
+#endif // !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
 
     test_common_properties<Level>(config.hierarchy(), group);
     if constexpr (!cuda::std::is_same_v<Level, cuda::grid_level>)
