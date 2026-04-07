@@ -130,6 +130,15 @@ def method_to_signature(numba_type, method):
         raise ValueError("Unexpected method {}".format(method))
 
 
+def _sanitize_cpp_identifier(text: str, *, default: str) -> str:
+    sanitized = re.sub(r"\W+", "_", text).strip("_")
+    if not sanitized:
+        sanitized = default
+    if sanitized[0].isdigit():
+        sanitized = f"_{sanitized}"
+    return sanitized
+
+
 class TypeWrapper:
     def __init__(self, numba_type, methods):
         self.lto_irs = []
@@ -142,6 +151,10 @@ class TypeWrapper:
         value_type = context.get_value_type(numba_type)
         size = value_type.get_abi_size(context.target_data)
         alignment = value_type.get_abi_alignment(context.target_data)
+        storage_name = _sanitize_cpp_identifier(
+            f"storage_{numba_type!s}",
+            default="storage_t",
+        )
 
         buf = StringIO()
         w = buf.write
@@ -155,14 +168,16 @@ class TypeWrapper:
                 "(void *dst, const void *src);\n"
             )
 
-        w(f"struct __align__({alignment}) storage_t\n")
+        w(f"struct __align__({alignment}) {storage_name}\n")
         w("{\n")
         if "construct" in methods:
-            w("    __device__ storage_t() {\n")
+            w(f"    __device__ {storage_name}() {{\n")
             w(f"        {construct_name}(data);\n")
             w("    }\n")
         if "assign" in methods:
-            w("    __device__ storage_t& operator=(const storage_t &rhs) {\n")
+            w(
+                f"    __device__ {storage_name}& operator=(const {storage_name} &rhs) {{\n"
+            )
             w(f"        {assign_name}(data, rhs.data);\n")
             w("        return *this;\n")
             w("    }\n")
@@ -433,7 +448,7 @@ class StatefulOperator:
         state_name = f"{name}_state"
         w(f"auto {name} = [{state_name}]({param_decls_csv}) {{\n")
         if self.ret_cpp_type == "storage_t":
-            w(f"    {self.ret_cpp_type} result;\n")
+            w("    auto result = storage_t{};\n")
             w(f"    {self.mangled_name()}(\n")
             w(f"        {state_name}, &result, {param_refs_csv});\n")
             w("    return result;\n")
@@ -489,7 +504,7 @@ class StatelessOperator:
 
         w(f"auto {name} = []({param_decls_csv}) {{\n")
         if self.ret_cpp_type == "storage_t":
-            w("    storage_t result;\n")
+            w("    auto result = storage_t{};\n")
             w(f"    {mangled_name}(&result, {param_refs_csv});\n")
             w("    return result;\n")
         else:
@@ -904,6 +919,9 @@ class Algorithm:
         algorithm_name = self.struct_name
         includes = self.includes or []
         type_definitions = self.type_definitions or []
+        unique_suffix = _sanitize_cpp_identifier(self.unique_name, default="algo")
+        algorithm_type_name = f"{unique_suffix}_algorithm_t"
+        temp_storage_type_name = f"{unique_suffix}_temp_storage_t"
 
         buf = StringIO()
         w = buf.write
@@ -914,15 +932,17 @@ class Algorithm:
         for type_definition in type_definitions:
             w(f"{type_definition.code}\n")
 
-        w(f"using algorithm_t = cub::{algorithm_name};\n")
+        w(f"using {algorithm_type_name} = cub::{algorithm_name};\n")
         prefix = "__device__ constexpr unsigned algorithm_struct_"
-        w(f"{prefix}size = sizeof(algorithm_t);\n")
-        w(f"{prefix}alignment = alignof(algorithm_t);\n")
+        w(f"{prefix}size = sizeof({algorithm_type_name});\n")
+        w(f"{prefix}alignment = alignof({algorithm_type_name});\n")
 
-        w("using temp_storage_t = typename algorithm_t::TempStorage;\n")
+        w(
+            f"using {temp_storage_type_name} = typename {algorithm_type_name}::TempStorage;\n"
+        )
         prefix = "__device__ constexpr unsigned temp_storage_"
-        w(f"{prefix}bytes = sizeof(temp_storage_t);\n")
-        w(f"{prefix}alignment = alignof(temp_storage_t);\n")
+        w(f"{prefix}bytes = sizeof({temp_storage_type_name});\n")
+        w(f"{prefix}alignment = alignof({temp_storage_type_name});\n")
 
         src = buf.getvalue()
 

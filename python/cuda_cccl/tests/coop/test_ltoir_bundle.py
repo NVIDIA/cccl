@@ -172,3 +172,113 @@ def test_env_var_gates_ltoir_bundle(monkeypatch):
     rewriter2.ensure_ltoir_bundle()
 
     assert called["count"] == 1
+
+
+def test_prepare_ltoir_bundle_uses_unique_probe_aliases(_bundle_stubs, monkeypatch):
+    algo_a = _DummyAlgo("algo_a", _types.LTOIR(name="extra_a", data=b"a"))
+    algo_b = _DummyAlgo("algo_b", _types.LTOIR(name="extra_b", data=b"b"))
+
+    captured = {}
+
+    algo_a = _DummyAlgo("algo_a", _types.LTOIR(name="extra_a", data=b"a"))
+    algo_b = _DummyAlgo("algo_b", _types.LTOIR(name="extra_b", data=b"b"))
+    algo_a.struct_name = "BlockReduce<int, 128>"
+    algo_b.struct_name = "BlockReduce<int, 128>"
+    algo_a.unique_name = algo_a.names.target_name
+    algo_b.unique_name = algo_b.names.target_name
+    algo_a.type_definitions = []
+    algo_b.type_definitions = []
+    algo_a.source_code = _types.Algorithm.size_and_alignment_source_code.fget(algo_a)
+    algo_b.source_code = _types.Algorithm.size_and_alignment_source_code.fget(algo_b)
+
+    def fake_compile(**kwargs):
+        captured["src"] = kwargs["cpp"]
+        return 0, b"fake_lto"
+
+    ptx = (
+        ".global .align 4 .u32 algo_a_temp_storage_bytes = 1;\n"
+        ".global .align 4 .u32 algo_a_temp_storage_alignment = 1;\n"
+        ".global .align 4 .u32 algo_a_struct_size = 1;\n"
+        ".global .align 4 .u32 algo_a_struct_alignment = 1;\n"
+        ".global .align 4 .u32 algo_b_temp_storage_bytes = 1;\n"
+        ".global .align 4 .u32 algo_b_temp_storage_alignment = 1;\n"
+        ".global .align 4 .u32 algo_b_struct_size = 1;\n"
+        ".global .align 4 .u32 algo_b_struct_alignment = 1;\n"
+    )
+
+    monkeypatch.setattr(_types.nvrtc, "compile", fake_compile)
+    monkeypatch.setattr(_DummyLinker, "_ptx", ptx, raising=False)
+
+    _types.prepare_ltoir_bundle([algo_a, algo_b], bundle_name="bundle_collision")
+
+    src = captured["src"]
+    assert "using algorithm_t =" not in src
+    assert "using temp_storage_t =" not in src
+    assert "using algo_a_algorithm_t =" in src
+    assert "using algo_b_algorithm_t =" in src
+
+
+def test_type_wrapper_uses_unique_storage_names():
+    original_cpp = _types.NUMBA_TYPES_TO_CPP.copy()
+    original_descriptor = _types.cuda.descriptor
+    try:
+
+        class _DummyType:
+            def __init__(self, name):
+                self.name = name
+
+            def __str__(self):
+                return self.name
+
+            def __hash__(self):
+                return hash(self.name)
+
+        dummy_a = _DummyType("FooType")
+        dummy_b = _DummyType("BarType")
+
+        class _DummyValueType:
+            def get_abi_size(self, _):
+                return 4
+
+            def get_abi_alignment(self, _):
+                return 4
+
+        class _DummyContext:
+            target_data = object()
+
+            def get_value_type(self, _):
+                return _DummyValueType()
+
+        class _DummyCudaTarget:
+            target_context = _DummyContext()
+
+        class _DummyDescriptor:
+            cuda_target = _DummyCudaTarget()
+
+        _types.cuda.descriptor = _DummyDescriptor()
+        wrapper_a = _types.TypeWrapper(dummy_a, methods={})
+        wrapper_b = _types.TypeWrapper(dummy_b, methods={})
+    finally:
+        _types.cuda.descriptor = original_descriptor
+        _types.NUMBA_TYPES_TO_CPP.clear()
+        _types.NUMBA_TYPES_TO_CPP.update(original_cpp)
+
+    assert "struct __align__" in wrapper_a.code
+    assert "struct __align__" in wrapper_b.code
+    assert "struct __align__(4) storage_t" not in wrapper_a.code
+    assert "struct __align__(4) storage_t" not in wrapper_b.code
+    assert wrapper_a.code != wrapper_b.code
+
+
+def test_operator_wrappers_use_concrete_storage_type_name():
+    op = _types.StatelessOperator(
+        name="dummy_op",
+        ret_cpp_type="storage_t",
+        arg_cpp_types=["storage_t"],
+        ltoir=_types.LTOIR(name="dummy", data=b"x"),
+        op_name=None,
+    )
+
+    wrapped = op.wrap_decl("wrapped_op")
+    assert "storage_t result;" not in wrapped
+    assert "auto result = storage_t{};" in wrapped
