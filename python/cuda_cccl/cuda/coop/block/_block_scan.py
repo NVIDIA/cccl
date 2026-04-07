@@ -1314,7 +1314,7 @@ def _normalize_scan_prefix(kwargs, prefix_op, target_name):
     if prefix_op is None:
         prefix_op = kw.pop("prefix_op", None)
     if prefix_op is None:
-        prefix_op = kw.pop("prefix_op", None)
+        prefix_op = kw.pop("block_prefix_callback_op", None)
     if prefix_op is not None:
         kw[target_name] = prefix_op
     return kw

@@ -34,13 +34,15 @@ from .. import (
 def _normalize_bound_scan_prefix(bound):
     arguments = bound.arguments
     prefix_op = arguments.pop("prefix_op", None)
-    prefix_op = arguments.get("prefix_op")
-    if prefix_op is not None and prefix_op is not None:
+    legacy_prefix_op = arguments.pop("block_prefix_callback_op", None)
+    if prefix_op is not None and legacy_prefix_op is not None:
         raise errors.TypingError(
-            "coop.block.scan accepts only one of 'prefix_op' or 'prefix_op'"
+            "coop.block.scan accepts only one of 'prefix_op' or "
+            "'block_prefix_callback_op'"
         )
     if prefix_op is None:
-        arguments["prefix_op"] = prefix_op
+        prefix_op = legacy_prefix_op
+    arguments["prefix_op"] = prefix_op
     return bound
 
 
