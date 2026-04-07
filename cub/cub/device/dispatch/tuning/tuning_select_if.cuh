@@ -1438,28 +1438,28 @@ struct sm100_tuning<Input,
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class InputT>
-_CCCL_HOST_DEVICE constexpr primitive is_primitive()
+constexpr primitive is_primitive()
 {
   return detail::is_primitive_v<InputT> ? primitive::yes : primitive::no;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class FlagT>
-_CCCL_HOST_DEVICE constexpr flagged is_flagged()
+constexpr flagged is_flagged()
 {
   return ::cuda::std::is_same_v<FlagT, NullType> ? flagged::no : flagged::yes;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <bool KeepRejects>
-_CCCL_HOST_DEVICE constexpr keep_rejects are_rejects_kept()
+constexpr keep_rejects are_rejects_kept()
 {
   return KeepRejects ? keep_rejects::yes : keep_rejects::no;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class InputT>
-_CCCL_HOST_DEVICE constexpr input_size classify_input_size()
+constexpr input_size classify_input_size()
 {
   return sizeof(InputT) == 1 ? input_size::_1
        : sizeof(InputT) == 2 ? input_size::_2
@@ -1472,21 +1472,21 @@ _CCCL_HOST_DEVICE constexpr input_size classify_input_size()
 
 // TODO(bgruber): drop in CCCL 4.0
 template <class OffsetT>
-_CCCL_HOST_DEVICE constexpr offset_size classify_offset_size()
+constexpr offset_size classify_offset_size()
 {
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <bool Alias>
-_CCCL_HOST_DEVICE constexpr may_alias should_alias()
+constexpr may_alias should_alias()
 {
   return Alias ? may_alias::yes : may_alias::no;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
 template <bool DistinctPartitions>
-_CCCL_HOST_DEVICE constexpr distinct_partitions is_distinct_partitions()
+constexpr distinct_partitions is_distinct_partitions()
 {
   return DistinctPartitions ? distinct_partitions::yes : distinct_partitions::no;
 }
