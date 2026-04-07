@@ -2432,6 +2432,39 @@ class TempStorage:
         self.auto_sync = auto_sync
         self.sharing = sharing
 
+    @property
+    def has_explicit_size(self) -> bool:
+        return self.size_in_bytes is not None
+
+    @property
+    def has_explicit_alignment(self) -> bool:
+        return self.alignment is not None
+
+    @property
+    def has_explicit_auto_sync(self) -> bool:
+        return self.auto_sync is not None
+
+    def normalized_sharing(self) -> str:
+        if not isinstance(self.sharing, str):
+            return self.sharing
+        return self.sharing.strip().lower()
+
+    def to_request(self):
+        """
+        Return a normalized immutable request record.
+
+        The primary intent of this helper is to centralize normalization in one
+        place and to make pure unit testing easier, without having to exercise
+        Numba typing or rewrite integration just to validate front-end object
+        behavior.
+        """
+        return TempStorageRequest(
+            size_in_bytes=self.size_in_bytes,
+            alignment=self.alignment,
+            auto_sync=self.auto_sync,
+            sharing=self.normalized_sharing(),
+        )
+
 
 class ThreadData:
     """
@@ -2489,3 +2522,47 @@ class ThreadData:
             raise ValueError("items_per_thread must be a positive integer")
         self.items_per_thread = items_per_thread
         self.dtype = dtype
+
+    @property
+    def has_explicit_dtype(self) -> bool:
+        return self.dtype is not None
+
+    def to_request(self):
+        """
+        Return a normalized immutable request record.
+
+        The primary intent of this helper is to centralize normalization in one
+        place and to make pure unit testing easier, without having to exercise
+        Numba typing or rewrite integration just to validate front-end object
+        behavior.
+        """
+        return ThreadDataRequest(
+            items_per_thread=self.items_per_thread,
+            dtype=self.dtype,
+        )
+
+
+@dataclass(frozen=True)
+class TempStorageRequest:
+    """Normalized front-end TempStorage request.
+
+    This intentionally exists as a tiny pure record so request normalization can
+    be tested independently from typing, rewriting, and lowering.
+    """
+
+    size_in_bytes: int | None
+    alignment: int | None
+    auto_sync: bool | None
+    sharing: str
+
+
+@dataclass(frozen=True)
+class ThreadDataRequest:
+    """Normalized front-end ThreadData request.
+
+    This intentionally exists as a tiny pure record so request normalization can
+    be tested independently from typing, rewriting, and lowering.
+    """
+
+    items_per_thread: int
+    dtype: Any | None
