@@ -101,8 +101,8 @@ __host__ __device__ constexpr bool testConstVolatile()
 // is_const_v<int* const> is true (the pointer itself is const), so this should work.
 __host__ __device__ bool testConstPointer()
 {
-  int x = 1;
-  int y = 2;
+  int x                                = 1;
+  int y                                = 2;
   cuda::std::initializer_list<int*> il = {&x, &y};
   cuda::std::span<int* const> s{il};
   return s.size() == il.size() && s[0] == &x && s[1] == &y;
