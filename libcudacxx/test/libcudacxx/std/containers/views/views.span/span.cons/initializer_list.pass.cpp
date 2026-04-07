@@ -47,7 +47,7 @@ __host__ __device__ constexpr bool testFromInitializerListVariable()
 {
   cuda::std::initializer_list<int> il = {1, 2, 3, 4};
   cuda::std::span<const int> s{il};
-  return s.data() == il.begin() && s.size() == 4;
+  return s.data() == il.begin() && s.size() == il.size();
 }
 
 // Test construction with static extent from an explicit initializer_list variable
@@ -55,7 +55,7 @@ __host__ __device__ constexpr bool testFromInitializerListVariableStaticExtent()
 {
   cuda::std::initializer_list<int> il = {10, 20, 30};
   cuda::std::span<const int, 3> s{il};
-  return s.data() == il.begin() && s.size() == 3;
+  return s.data() == il.begin() && s.size() == il.size();
 }
 
 // Test empty initializer_list with dynamic extent
