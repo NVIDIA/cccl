@@ -143,8 +143,22 @@ arg_less(ValueLessThen) -> arg_less<ValueLessThen>;
 /// @brief Arg min functor (keeps the value and offset of the first occurrence of the smallest item)
 using arg_min = arg_less<::cuda::std::less<>>;
 
+//! @brief Binary functor swapping the arguments to ``operator()`` before forwarding to an inner functor
+template <typename Predicate>
+struct swap_args : Predicate
+{
+  template <typename T, typename U>
+  _CCCL_API _CCCL_FORCEINLINE decltype(auto) operator()(T&& t, U&& u) const
+  {
+    return Predicate::operator()(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t));
+  }
+};
+
+template <typename Predicate>
+swap_args(Predicate) -> swap_args<Predicate>;
+
 /// @brief Arg max functor (keeps the value and offset of the first occurrence of the larger item)
-using arg_max = arg_less<::cuda::std::greater<>>;
+using arg_max = arg_less<swap_args<::cuda::std::less<>>>;
 
 template <typename ScanOpT>
 struct ScanBySegmentOp

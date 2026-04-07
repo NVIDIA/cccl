@@ -47,6 +47,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
@@ -1620,17 +1621,16 @@ public:
   }
 
   //! @rst
-  //! Finds the first device-wide maximum using the greater-than (``>``) operator and also returns the index of that
-  //! item.
+  //! Finds the first device-wide maximum based on a given comparison operator and also returns the index of that item.
   //!
-  //! .. versionadded:: 2.2.0
-  //!    First appears in CUDA Toolkit 12.3.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - The maximum is written to ``d_max_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
   //!   ``cuda::std::int64_t``.
-  //! - For zero-length inputs, ``cuda::std::numeric_limits<T>::max()}`` is written to ``d_max_out``  and the index
-  //!   ``1`` is written to ``d_index_out``.
+  //! - For zero-length inputs, the index ``1`` is written to ``d_index_out`` and, if ``compare_op`` is
+  //!   ``cuda::std::less``, ``cuda::std::numeric_limits<T>::max()`` is written to ``d_max_out``, otherwise ``T{}``.
   //! - Does not support ``>`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -1654,25 +1654,33 @@ public:
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
   //!    int                num_items;    // e.g., 7
-  //!    int                *d_in;        // e.g., [8, 6, 7, 5, 3, 0, 9]
+  //!    int                *d_in;        // e.g., [8, 6, -7, 5, 3, 1, -9]
   //!    int                *d_max_out;   // memory for the maximum value
   //!    cuda::std::int64_t *d_index_out; // memory for the index of the returned value
   //!    ...
+  //!
+  //!    // Define the comparison operator
+  //!    struct abs_less_t {
+  //!      template <typename T>
+  //!      __host__ __device__ bool operator()(const T& a, const T& b) const {
+  //!        return cuda::std::abs(a) < cuda::std::abs(b);
+  //!      }
+  //!    };
   //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::ArgMax(
-  //!      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items);
+  //!      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items, abs_less_t{});
   //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
   //!
   //!    // Run argmax-reduction
   //!    cub::DeviceReduce::ArgMax(
-  //!      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items);
+  //!      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items, abs_less_t{});
   //!
-  //!    // d_max_out   <-- 9
+  //!    // d_max_out   <-- -9
   //!    // d_index_out <-- 6
   //!
   //! @endrst
@@ -1702,6 +1710,9 @@ public:
   //! @param[out] d_index_out
   //!   Iterator to which the index of the returned value is written
   //!
+  //! @param[in] compare_op
+  //!   Comparison operator returning ``true`` if the first argument is less than the second
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of ``d_in``)
   //!
@@ -1709,6 +1720,38 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
+  template <
+    typename InputIteratorT,
+    typename ExtremumOutIteratorT,
+    typename IndexOutIteratorT,
+    typename CompareOpT,
+    // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+    // ExtremumOutIteratorT, which is wrong IMO
+    ::cuda::std::enable_if_t<::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>, int> = 0>
+  CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    ExtremumOutIteratorT d_max_out,
+    IndexOutIteratorT d_index_out,
+    ::cuda::std::int64_t num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream = 0)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
+    return __arg_min(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_max_out,
+      d_index_out,
+      num_items,
+      detail::arg_less{detail::swap_args{compare_op}},
+      stream);
+  }
+
+  //! @overload
+  //! @note Uses the greater-than (``>``) operator as comparison operator
   template <typename InputIteratorT, typename ExtremumOutIteratorT, typename IndexOutIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
     void* d_temp_storage,
@@ -1719,9 +1762,8 @@ public:
     ::cuda::std::int64_t num_items,
     cudaStream_t stream = 0)
   {
-    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
-    return __arg_min(
-      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items, detail::arg_max{}, stream);
+    return ArgMax(
+      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items, ::cuda::std::less{}, stream);
   }
 
   //! @rst
@@ -1861,8 +1903,8 @@ public:
   //! Finds the first device-wide maximum using the greater-than (``>``) operator and also returns the index of that
   //! item.
   //!
-  //! .. versionadded:: 2.2.0
-  //!    First appears in CUDA Toolkit 12.3.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - The maximum is written to ``d_max_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
@@ -1910,6 +1952,9 @@ public:
   //! @param[out] d_index_out
   //!   Iterator to which the index of the returned value is written
   //!
+  //! @param[in] compare_op
+  //!   Comparison operator returning ``true`` if the first argument is less than the second
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of ``d_in``)
   //!
@@ -1917,6 +1962,30 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
+  template <
+    typename InputIteratorT,
+    typename ExtremumOutIteratorT,
+    typename IndexOutIteratorT,
+    typename CompareOpT,
+    typename EnvT = ::cuda::std::execution::env<>,
+    // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+    // ExtremumOutIteratorT, which is wrong IMO
+    ::cuda::std::enable_if_t<::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
+    InputIteratorT d_in,
+    ExtremumOutIteratorT d_max_out,
+    IndexOutIteratorT d_index_out,
+    ::cuda::std::int64_t num_items,
+    CompareOpT compare_op,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMax");
+    return __arg_min_env(
+      d_in, d_index_out, num_items, detail::arg_less{detail::swap_args{compare_op}}, ::cuda::std::execution::env{});
+  }
+
+  //! @overload
+  //! @note Uses ``cuda::std::less`` as comparison operator
   template <typename InputIteratorT,
             typename ExtremumOutIteratorT,
             typename IndexOutIteratorT,

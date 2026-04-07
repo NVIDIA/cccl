@@ -4,6 +4,8 @@
 
 #include <cub/device/device_reduce.cuh>
 
+#include <cuda/std/__algorithm/max_element.h>
+#include <cuda/std/__algorithm/min_element.h>
 #include <cuda/std/__cmath/abs.h>
 
 #include <cstdint>
@@ -241,31 +243,6 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
   }
 
-#  if TEST_TYPES < 2
-  SECTION("argmin-abs_less_t")
-  {
-    abs_less_t compare_op;
-
-    // Prepare verification data
-    c2h::host_vector<item_t> host_items(in_items);
-    auto expected_result = std::min_element(host_items.cbegin(), host_items.cend(), compare_op);
-
-    // Run test
-    using result_t = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
-    c2h::device_vector<result_t> out_result(num_segments);
-    auto d_result_ptr   = thrust::raw_pointer_cast(out_result.data());
-    auto d_index_out    = &d_result_ptr->first;
-    auto d_extremum_out = &d_result_ptr->second;
-    device_arg_min(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items, compare_op);
-
-    // Verify result
-    result_t gpu_result   = out_result[0];
-    output_t gpu_extremum = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
-    REQUIRE(expected_result[0] == gpu_extremum);
-    REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
-  }
-#  endif
-
   SECTION("argmax deprecated interface")
   {
     // Prepare verification data
@@ -301,5 +278,53 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     REQUIRE(expected_result[0] == gpu_value);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.key);
   }
+
+#  if TEST_TYPES < 2
+  SECTION("argmin-abs_less_t")
+  {
+    abs_less_t compare_op;
+
+    // Prepare verification data
+    c2h::host_vector<item_t> host_items(in_items);
+    auto expected_result = cuda::std::min_element(host_items.cbegin(), host_items.cend(), compare_op);
+
+    // Run test
+    using result_t = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
+    c2h::device_vector<result_t> out_result(num_segments);
+    auto d_result_ptr   = thrust::raw_pointer_cast(out_result.data());
+    auto d_index_out    = &d_result_ptr->first;
+    auto d_extremum_out = &d_result_ptr->second;
+    device_arg_min(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items, compare_op);
+
+    // Verify result
+    result_t gpu_result   = out_result[0];
+    output_t gpu_extremum = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
+    REQUIRE(expected_result[0] == gpu_extremum);
+    REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
+  }
+
+  SECTION("argmax-abs_less_t")
+  {
+    abs_less_t compare_op;
+
+    // Prepare verification data
+    c2h::host_vector<item_t> host_items(in_items);
+    auto expected_result = cuda::std::max_element(host_items.cbegin(), host_items.cend(), compare_op);
+
+    // Run test
+    using result_t = cuda::std::pair<cuda::std::int32_t, unwrap_value_t<output_t>>;
+    c2h::device_vector<result_t> out_result(num_segments);
+    auto d_result_ptr   = thrust::raw_pointer_cast(out_result.data());
+    auto d_index_out    = &d_result_ptr->first;
+    auto d_extremum_out = &d_result_ptr->second;
+    device_arg_max(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items, compare_op);
+
+    // Verify result
+    result_t gpu_result   = out_result[0];
+    output_t gpu_extremum = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
+    REQUIRE(expected_result[0] == gpu_extremum);
+    REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
+  }
+#  endif
 #endif
 }
