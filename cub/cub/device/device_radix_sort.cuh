@@ -559,14 +559,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -682,14 +682,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       return detail::dispatch_with_env(
         env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -825,14 +825,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -936,14 +936,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       return detail::dispatch_with_env(
         env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -1315,14 +1315,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
@@ -1413,14 +1413,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       return detail::dispatch_with_env(
         env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -1567,14 +1567,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
@@ -1676,14 +1676,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       return detail::dispatch_with_env(
         env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -2076,14 +2076,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -2222,14 +2222,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -2601,14 +2601,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
@@ -2752,14 +2752,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
@@ -3113,14 +3113,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -3207,11 +3207,11 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
-    static_assert(decomposer_check_t::value,
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       return detail::dispatch_with_env(
         env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -3336,14 +3336,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -3419,11 +3419,11 @@ public:
   SortKeys(const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, DecomposerT decomposer, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
-    static_assert(decomposer_check_t::value,
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       return detail::dispatch_with_env(
         env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -3762,14 +3762,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       DoubleBuffer<NullType> d_values;
@@ -3839,11 +3839,11 @@ public:
   SortKeys(DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
-    static_assert(decomposer_check_t::value,
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       return detail::dispatch_with_env(
         env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -3978,14 +3978,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       DoubleBuffer<NullType> d_values;
@@ -4060,11 +4060,11 @@ public:
     DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, int begin_bit, int end_bit, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
-    static_assert(decomposer_check_t::value,
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       return detail::dispatch_with_env(
         env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -4416,14 +4416,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -4548,14 +4548,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -4894,14 +4894,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       DoubleBuffer<NullType> d_values;
@@ -5034,14 +5034,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       DoubleBuffer<NullType> d_values;
