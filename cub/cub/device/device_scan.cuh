@@ -345,7 +345,7 @@ struct DeviceScan
   //!
   //! @tparam EnvT
   //!   **[inferred]** Execution environment type providing stream, memory resource,
-  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
+  //!   or determinism requirements. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -651,7 +651,7 @@ struct DeviceScan
   //!
   //! @tparam EnvT
   //!   **[inferred]** Execution environment type providing stream, memory resource,
-  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
+  //!   or determinism requirements. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -1120,7 +1120,7 @@ struct DeviceScan
   //!
   //! @tparam EnvT
   //!   **[inferred]** Execution environment type providing stream, memory resource,
-  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
+  //!   or determinism requirements. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -1140,7 +1140,7 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
@@ -1390,7 +1390,7 @@ struct DeviceScan
   //!
   //! @tparam EnvT
   //!   **[inferred]** Execution environment type providing stream, memory resource,
-  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
+  //!   or determinism requirements. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -1403,7 +1403,7 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
@@ -1779,7 +1779,7 @@ struct DeviceScan
   //!
   //! @tparam EnvT
   //!   **[inferred]** Execution environment type providing stream, memory resource,
-  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
+  //!   or determinism requirements. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -1864,7 +1864,7 @@ struct DeviceScan
   //!
   //! @tparam EnvT
   //!   **[inferred]** Execution environment type providing stream, memory resource,
-  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
+  //!   or determinism requirements. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -2600,7 +2600,7 @@ struct DeviceScan
   //!
   //! @tparam EnvT
   //!   **[inferred]** Execution environment type providing stream, memory resource,
-  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
+  //!   or determinism requirements. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_keys_in
   //!   Random-access input iterator to the input sequence of key items
@@ -2729,7 +2729,7 @@ struct DeviceScan
   //!
   //! @tparam EnvT
   //!   **[inferred]** Execution environment type providing stream, memory resource,
-  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
+  //!   or determinism requirements. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_keys_in
   //!   Random-access input iterator to the input sequence of key items
@@ -2857,7 +2857,7 @@ struct DeviceScan
   //!
   //! @tparam EnvT
   //!   **[inferred]** Execution environment type providing stream, memory resource,
-  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
+  //!   or determinism requirements. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_keys_in
   //!   Random-access input iterator to the input sequence of key items
@@ -2978,7 +2978,7 @@ struct DeviceScan
   //!
   //! @tparam EnvT
   //!   **[inferred]** Execution environment type providing stream, memory resource,
-  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
+  //!   or determinism requirements. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_keys_in
   //!   Random-access input iterator to the input sequence of key items
