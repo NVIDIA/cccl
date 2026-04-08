@@ -140,10 +140,7 @@ C2H_TEST("Device scan exclusive-scan can be tuned", "[scan][device]", block_size
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveScan(d_in, d_out.begin(), block_size_check, init, num_items, env));
 
-  for (int i = 0; i < num_items; i++)
-  {
-    REQUIRE(d_out[i] == i + init);
-  }
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init)));
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -160,10 +157,7 @@ C2H_TEST("Device scan exclusive-sum can be tuned", "[scan][device]", block_sizes
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(d_in, d_out.begin(), num_items, env));
 
-  for (int i = 0; i < num_items; i++)
-  {
-    REQUIRE(d_out[i] == i);
-  }
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(0)));
 
   // we do not actually check against target_block_size to check if tuning was applied
   // todo: record BlockDim.x through stream_registry_factory_t
@@ -210,10 +204,7 @@ C2H_TEST("Device scan inclusive-scan can be tuned", "[scan][device]", block_size
 
   REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScan(d_in, d_out.begin(), block_size_check, num_items, env));
 
-  for (int i = 0; i < num_items; i++)
-  {
-    REQUIRE(d_out[i] == (i + 1));
-  }
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(1)));
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -230,10 +221,7 @@ TEST_CASE("Device scan inclusive-scan-init works with default environment", "[sc
 
   REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScanInit(d_in, d_out.begin(), cuda::std::plus{}, init, num_items));
 
-  for (int i = 0; i < num_items; i++)
-  {
-    REQUIRE(d_out[i] == (i + 1 + init));
-  }
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init + 1)));
 }
 
 C2H_TEST("Device scan inclusive-scan-init can be tuned", "[scan][device]", block_sizes)
@@ -254,10 +242,7 @@ C2H_TEST("Device scan inclusive-scan-init can be tuned", "[scan][device]", block
   REQUIRE(
     cudaSuccess == cub::DeviceScan::InclusiveScanInit(d_in, d_out.begin(), block_size_check, init, num_items, env));
 
-  for (int i = 0; i < num_items; i++)
-  {
-    REQUIRE(d_out[i] == (i + 1 + init));
-  }
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init + 1)));
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -286,10 +271,7 @@ C2H_TEST("Device scan exclusive-scan uses environment", "[scan][device]")
 
   device_scan_exclusive(d_in, d_out.begin(), scan_op_t{}, init, num_items, env);
 
-  for (int i = 0; i < num_items; i++)
-  {
-    REQUIRE(d_out[i] == i + init);
-  }
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init)));
 }
 
 C2H_TEST("Device scan exclusive-sum uses environment", "[scan][device]")
@@ -310,10 +292,7 @@ C2H_TEST("Device scan exclusive-sum uses environment", "[scan][device]")
 
   device_scan_exclusive_sum(d_in, d_out.begin(), num_items, env);
 
-  for (int i = 0; i < num_items; i++)
-  {
-    REQUIRE(d_out[i] == i);
-  }
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(0)));
 }
 
 C2H_TEST("Device scan inclusive-scan uses environment", "[scan][device]")
@@ -334,10 +313,7 @@ C2H_TEST("Device scan inclusive-scan uses environment", "[scan][device]")
 
   device_scan_inclusive(d_in, d_out.begin(), scan_op_t{}, num_items, env);
 
-  for (int i = 0; i < num_items; i++)
-  {
-    REQUIRE(d_out[i] == (i + 1));
-  }
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(1)));
 }
 
 C2H_TEST("Device scan inclusive-scan-init uses environment", "[scan][device]")
@@ -362,8 +338,5 @@ C2H_TEST("Device scan inclusive-scan-init uses environment", "[scan][device]")
 
   device_scan_inclusive_init(d_in, d_out.begin(), scan_op_t{}, init, num_items, env);
 
-  for (int i = 0; i < num_items; i++)
-  {
-    REQUIRE(d_out[i] == (i + 1 + init));
-  }
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init + 1)));
 }
