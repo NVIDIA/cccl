@@ -2046,17 +2046,16 @@ public:
       cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-
-    // We cast away const-ness, but will *not* write to these arrays.
-    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-    // is not set.
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
     return radix_sort_with_decomposer<SortOrder::Descending>(
-      d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
+      num_items,
+      decomposer,
+      stream);
   }
 
   //! @rst
@@ -2406,10 +2405,8 @@ public:
       cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-
-    constexpr bool is_overwrite_okay = true;
     return radix_sort_with_decomposer<SortOrder::Descending>(
-      d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream);
   }
 
   //! @rst
@@ -3336,17 +3333,16 @@ public:
              cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-
-    // We cast away const-ness, but will *not* write to these arrays.
-    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-    // is not set.
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<NullType> d_values;
-
     return radix_sort_with_decomposer<SortOrder::Ascending>(
-      d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      static_cast<NullType*>(nullptr),
+      static_cast<NullType*>(nullptr),
+      num_items,
+      decomposer,
+      stream);
   }
 
   //! @rst
@@ -3730,12 +3726,9 @@ public:
              cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-
-    constexpr bool is_overwrite_okay = true;
     DoubleBuffer<NullType> d_values;
-
     return radix_sort_with_decomposer<SortOrder::Ascending>(
-      d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream);
   }
 
   //! @rst
