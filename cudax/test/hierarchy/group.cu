@@ -406,9 +406,7 @@ C2H_TEST("Hierarchy groups", "[hierarchy]")
   const auto config = cuda::make_config(cuda::grid_dims<2>(), cuda::block_dims<128>(), cuda::cooperative_launch{});
   cuda::launch(stream, config, TestKernel{});
 
-  // todo: investigate what causes cluster launches to hang, disable them temporarily
-  bool false_value = false;
-  if (false_value && cuda::device_attributes::compute_capability(device) >= cuda::compute_capability{90})
+  if (cuda::device_attributes::compute_capability(device) >= cuda::compute_capability{90})
   {
     const auto config_cluster = cuda::make_config(
       cuda::grid_dims<2>(), cuda::cluster_dims<3>(), cuda::block_dims<128>(), cuda::cooperative_launch{});

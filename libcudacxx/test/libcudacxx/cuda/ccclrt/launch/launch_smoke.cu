@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 #include <cuda/atomic>
+#include <cuda/devices>
 #include <cuda/launch>
 #include <cuda/memory>
 #include <cuda/stream>
@@ -361,6 +362,142 @@ C2H_CCCLRT_TEST("Launch functor with __restrict__ pointer arg", "[launch]")
   stream.sync();
 
   CCCLRT_CHECK(*val == 42);
+}
+
+__managed__ cuda::std::size_t launched_nthreads;
+__managed__ cuda::std::size_t launched_nblocks;
+__managed__ cuda::std::size_t launched_nclusters;
+
+struct LaunchDimsFunctor
+{
+  template <class Config>
+  __device__ void operator()(const Config& config)
+  {
+    cuda::atomic_ref(launched_nthreads)++;
+
+    if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0)
+    {
+      cuda::atomic_ref(launched_nblocks)++;
+
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                        ({
+                          if (__clusterRelativeBlockRank() == 0)
+                          {
+                            cuda::atomic_ref(launched_nclusters)++;
+                          }
+                        }),
+                        ({ cuda::atomic_ref(launched_nclusters)++; }));
+    }
+  }
+};
+
+template <class GridDesc, class BlockDesc>
+void test_launch_dims(cuda::stream_ref stream, GridDesc grid_desc, BlockDesc block_desc)
+{
+  launched_nthreads  = 0;
+  launched_nblocks   = 0;
+  launched_nclusters = 0;
+
+  const auto& grid_exts  = grid_desc.extents();
+  const auto& block_exts = block_desc.extents();
+
+  const auto config = cuda::make_config(grid_desc, block_desc);
+  cuda::launch(stream, config, LaunchDimsFunctor{});
+  stream.sync();
+
+  const auto exp_nclusters = cuda::std::size_t{grid_exts.extent(0)} * grid_exts.extent(1) * grid_exts.extent(2);
+  CCCLRT_CHECK(launched_nclusters == exp_nclusters);
+
+  const auto exp_nblocks = exp_nclusters;
+  CCCLRT_CHECK(launched_nblocks == exp_nblocks);
+
+  const auto exp_nthreads = exp_nblocks * block_exts.extent(0) * block_exts.extent(1) * block_exts.extent(2);
+  CCCLRT_CHECK(launched_nthreads == exp_nthreads);
+}
+
+template <class GridDesc, class ClusterDesc, class BlockDesc>
+void test_launch_dims(cuda::stream_ref stream, GridDesc grid_desc, ClusterDesc cluster_desc, BlockDesc block_desc)
+{
+  launched_nthreads  = 0;
+  launched_nblocks   = 0;
+  launched_nclusters = 0;
+
+  const auto& grid_exts    = grid_desc.extents();
+  const auto& cluster_exts = cluster_desc.extents();
+  const auto& block_exts   = block_desc.extents();
+
+  const auto config = cuda::make_config(grid_desc, cluster_desc, block_desc);
+  cuda::launch(stream, config, LaunchDimsFunctor{});
+  stream.sync();
+
+  const auto exp_nclusters = cuda::std::size_t{grid_exts.extent(0)} * grid_exts.extent(1) * grid_exts.extent(2);
+  CCCLRT_CHECK(launched_nclusters == exp_nclusters);
+
+  const auto exp_nblocks = exp_nclusters * cluster_exts.extent(0) * cluster_exts.extent(1) * cluster_exts.extent(2);
+  CCCLRT_CHECK(launched_nblocks == exp_nblocks);
+
+  const auto exp_nthreads = exp_nblocks * block_exts.extent(0) * block_exts.extent(1) * block_exts.extent(2);
+  CCCLRT_CHECK(launched_nthreads == exp_nthreads);
+}
+
+C2H_TEST("Launch dims", "[launch]")
+{
+  cuda::stream stream{cuda::device_ref{0}};
+
+  test_launch_dims(stream, cuda::grid_dims(dim3{2}), cuda::block_dims(dim3{10}));
+  test_launch_dims(stream, cuda::grid_dims(dim3{2, 9}), cuda::block_dims(dim3{3, 7}));
+  test_launch_dims(stream, cuda::grid_dims(dim3{3, 4, 5}), cuda::block_dims(dim3{2, 7, 9}));
+
+  test_launch_dims(stream, cuda::grid_dims(dim3{2}), cuda::block_dims<10>());
+  test_launch_dims(stream, cuda::grid_dims(dim3{2, 9}), cuda::block_dims<3, 7>());
+  test_launch_dims(stream, cuda::grid_dims(dim3{3, 4, 5}), cuda::block_dims<2, 7, 9>());
+
+  test_launch_dims(stream, cuda::grid_dims<2>(), cuda::block_dims(dim3{10}));
+  test_launch_dims(stream, cuda::grid_dims<2, 9>(), cuda::block_dims(dim3{3, 7}));
+  test_launch_dims(stream, cuda::grid_dims<3, 4, 5>(), cuda::block_dims(dim3{2, 7, 9}));
+
+  test_launch_dims(stream, cuda::grid_dims<2>(), cuda::block_dims<10>());
+  test_launch_dims(stream, cuda::grid_dims<2, 9>(), cuda::block_dims<3, 7>());
+  test_launch_dims(stream, cuda::grid_dims<3, 4, 5>(), cuda::block_dims<2, 7, 9>());
+
+  if (cuda::device_attributes::compute_capability_major(stream.device()) >= 9)
+  {
+    test_launch_dims(stream, cuda::grid_dims(dim3{2}), cuda::cluster_dims(dim3{3}), cuda::block_dims(dim3{10}));
+    test_launch_dims(stream, cuda::grid_dims(dim3{2, 9}), cuda::cluster_dims(dim3{1, 5}), cuda::block_dims(dim3{3, 7}));
+    test_launch_dims(
+      stream, cuda::grid_dims(dim3{3, 4, 5}), cuda::cluster_dims(dim3{3, 1, 2}), cuda::block_dims(dim3{2, 7, 9}));
+
+    test_launch_dims(stream, cuda::grid_dims(dim3{2}), cuda::cluster_dims(dim3{3}), cuda::block_dims<10>());
+    test_launch_dims(stream, cuda::grid_dims(dim3{2, 9}), cuda::cluster_dims(dim3{1, 5}), cuda::block_dims<3, 7>());
+    test_launch_dims(
+      stream, cuda::grid_dims(dim3{3, 4, 5}), cuda::cluster_dims(dim3{3, 1, 2}), cuda::block_dims<2, 7, 9>());
+
+    test_launch_dims(stream, cuda::grid_dims(dim3{2}), cuda::cluster_dims<3>(), cuda::block_dims(dim3{10}));
+    test_launch_dims(stream, cuda::grid_dims(dim3{2, 9}), cuda::cluster_dims<1, 5>(), cuda::block_dims(dim3{3, 7}));
+    test_launch_dims(
+      stream, cuda::grid_dims(dim3{3, 4, 5}), cuda::cluster_dims<3, 1, 2>(), cuda::block_dims(dim3{2, 7, 9}));
+
+    test_launch_dims(stream, cuda::grid_dims(dim3{2}), cuda::cluster_dims<3>(), cuda::block_dims<10>());
+    test_launch_dims(stream, cuda::grid_dims(dim3{2, 9}), cuda::cluster_dims<1, 5>(), cuda::block_dims<3, 7>());
+    test_launch_dims(stream, cuda::grid_dims(dim3{3, 4, 5}), cuda::cluster_dims<3, 1, 2>(), cuda::block_dims<2, 7, 9>());
+
+    test_launch_dims(stream, cuda::grid_dims<2>(), cuda::cluster_dims(dim3{3}), cuda::block_dims(dim3{10}));
+    test_launch_dims(stream, cuda::grid_dims<2, 9>(), cuda::cluster_dims(dim3{1, 5}), cuda::block_dims(dim3{3, 7}));
+    test_launch_dims(
+      stream, cuda::grid_dims<3, 4, 5>(), cuda::cluster_dims(dim3{3, 1, 2}), cuda::block_dims(dim3{2, 7, 9}));
+
+    test_launch_dims(stream, cuda::grid_dims<2>(), cuda::cluster_dims(dim3{3}), cuda::block_dims<10>());
+    test_launch_dims(stream, cuda::grid_dims<2, 9>(), cuda::cluster_dims(dim3{1, 5}), cuda::block_dims<3, 7>());
+    test_launch_dims(stream, cuda::grid_dims<3, 4, 5>(), cuda::cluster_dims(dim3{3, 1, 2}), cuda::block_dims<2, 7, 9>());
+
+    test_launch_dims(stream, cuda::grid_dims<2>(), cuda::cluster_dims<3>(), cuda::block_dims(dim3{10}));
+    test_launch_dims(stream, cuda::grid_dims<2, 9>(), cuda::cluster_dims<1, 5>(), cuda::block_dims(dim3{3, 7}));
+    test_launch_dims(stream, cuda::grid_dims<3, 4, 5>(), cuda::cluster_dims<3, 1, 2>(), cuda::block_dims(dim3{2, 7, 9}));
+
+    test_launch_dims(stream, cuda::grid_dims<2>(), cuda::cluster_dims<3>(), cuda::block_dims<10>());
+    test_launch_dims(stream, cuda::grid_dims<2, 9>(), cuda::cluster_dims<1, 5>(), cuda::block_dims<3, 7>());
+    test_launch_dims(stream, cuda::grid_dims<3, 4, 5>(), cuda::cluster_dims<3, 1, 2>(), cuda::block_dims<2, 7, 9>());
+  }
 }
 
 #endif // !_CCCL_CUDA_COMPILER(CLANG)
