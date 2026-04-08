@@ -344,7 +344,8 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   **[inferred]** Execution environment type providing stream, memory resource,
+  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -649,7 +650,8 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   **[inferred]** Execution environment type providing stream, memory resource,
+  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -1080,14 +1082,9 @@ struct DeviceScan
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
-  //!
-  //! Preconditions
-  //! +++++++++++++
-  //!
   //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
   //!   The range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
   //!   shall not overlap in any other way.
-  //! - ``d_in`` and ``d_out`` must not be null pointers
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -1122,7 +1119,8 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type providing stream, memory resource,
+  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -1364,14 +1362,9 @@ struct DeviceScan
   //!   addition of floating-point types). Results for pseudo-associative
   //!   operators may vary from run to run. Additional details can be found in
   //!   the @lookback description.
-  //!
-  //! Preconditions
-  //! +++++++++++++
-  //!
   //! - When ``d_in`` and ``d_out`` are equal, the scan is performed in-place.
   //!   The range ``[d_in, d_in + num_items)`` and ``[d_out, d_out + num_items)``
   //!   shall not overlap in any other way.
-  //! - ``d_in`` and ``d_out`` must not be null pointers
   //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -1396,7 +1389,8 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type providing stream, memory resource,
+  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -1784,7 +1778,8 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   **[inferred]** Execution environment type providing stream, memory resource,
+  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -1868,7 +1863,8 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   **[inferred]** Execution environment type providing stream, memory resource,
+  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -2603,7 +2599,8 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   **[inferred]** Execution environment type providing stream, memory resource,
+  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
   //!
   //! @param[in] d_keys_in
   //!   Random-access input iterator to the input sequence of key items
@@ -2731,7 +2728,8 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   **[inferred]** Execution environment type providing stream, memory resource,
+  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
   //!
   //! @param[in] d_keys_in
   //!   Random-access input iterator to the input sequence of key items
@@ -2858,7 +2856,8 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   **[inferred]** Execution environment type providing stream, memory resource,
+  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
   //!
   //! @param[in] d_keys_in
   //!   Random-access input iterator to the input sequence of key items
@@ -2978,7 +2977,8 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   **[inferred]** Execution environment type providing stream, memory resource,
+  //!   or determinism requirements. Default is `::cuda::std::execution::env<>`.
   //!
   //! @param[in] d_keys_in
   //!   Random-access input iterator to the input sequence of key items
