@@ -625,18 +625,20 @@ public:
 
     // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
     // integral constant or larger integral types
+    using offset_t = int;
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::reduce::DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, int, ReductionOpT, T>::
-          Dispatch(d_temp_storage,
-                   temp_storage_bytes,
-                   d_in,
-                   d_out,
-                   num_segments,
-                   segment_size,
-                   reduction_op,
-                   initial_value,
-                   stream);
+        return detail::reduce::
+          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ReductionOpT, T>::Dispatch(
+            d_temp_storage,
+            temp_storage_bytes,
+            d_in,
+            d_out,
+            num_segments,
+            segment_size,
+            reduction_op,
+            initial_value,
+            stream);
       });
   }
 
@@ -1008,19 +1010,20 @@ public:
 
     // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
     // integral constant or larger integral types
+    using offset_t = int;
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::reduce::
-          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, int, ::cuda::std::plus<>, output_t>::Dispatch(
-            d_temp_storage,
-            temp_storage_bytes,
-            d_in,
-            d_out,
-            num_segments,
-            segment_size,
-            ::cuda::std::plus<>{},
-            output_t{},
-            stream);
+          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::std::plus<>, output_t>::
+            Dispatch(d_temp_storage,
+                     temp_storage_bytes,
+                     d_in,
+                     d_out,
+                     num_segments,
+                     segment_size,
+                     ::cuda::std::plus<>{},
+                     output_t{},
+                     stream);
       });
   }
 
@@ -1414,19 +1417,20 @@ public:
 
     // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
     // integral constant or larger integral types
+    using offset_t = int;
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::reduce::
-          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, int, ::cuda::minimum<>, input_t>::Dispatch(
-            d_temp_storage,
-            temp_storage_bytes,
-            d_in,
-            d_out,
-            num_segments,
-            segment_size,
-            ::cuda::minimum<>{},
-            ::cuda::std::numeric_limits<input_t>::max(),
-            stream);
+          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::minimum<>, input_t>::
+            Dispatch(d_temp_storage,
+                     temp_storage_bytes,
+                     d_in,
+                     d_out,
+                     num_segments,
+                     segment_size,
+                     ::cuda::minimum<>{},
+                     ::cuda::std::numeric_limits<input_t>::max(),
+                     stream);
       });
   }
 
@@ -2238,19 +2242,20 @@ public:
 
     // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
     // integral constant or larger integral types
+    using offset_t = int;
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::reduce::
-          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, int, ::cuda::maximum<>, input_t>::Dispatch(
-            d_temp_storage,
-            temp_storage_bytes,
-            d_in,
-            d_out,
-            num_segments,
-            segment_size,
-            ::cuda::maximum<>{},
-            ::cuda::std::numeric_limits<input_t>::lowest(),
-            stream);
+          DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::maximum<>, input_t>::
+            Dispatch(d_temp_storage,
+                     temp_storage_bytes,
+                     d_in,
+                     d_out,
+                     num_segments,
+                     segment_size,
+                     ::cuda::maximum<>{},
+                     ::cuda::std::numeric_limits<input_t>::lowest(),
+                     stream);
       });
   }
 
