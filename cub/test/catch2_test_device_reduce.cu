@@ -126,7 +126,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
   }
   auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 
-  CAPTURE(c2h::type_name<item_t>(), c2h::type_name<output_t>(), num_items, in_items);
+  CAPTURE(c2h::type_name<item_t>(), c2h::type_name<output_t>(), num_items);
 
 #if TEST_TYPES != 4
   SECTION("reduce")
