@@ -113,27 +113,22 @@ private:
   }
 
   // Internal version without NVTX range
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  template <SortOrder Order, typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysNoNVTX(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
-    const KeyT* d_keys_in,
-    KeyT* d_keys_out,
+    DoubleBuffer<KeyT>& d_keys,
     ::cuda::std::int64_t num_items,
     ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream = 0)
+    cudaStream_t stream,
+    bool is_overwrite_okay = true)
   {
-    constexpr bool is_overwrite_okay = false;
-
     using OffsetT =
       detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
-
-    return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
+    return detail::segmented_sort::dispatch<Order, OffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys,
@@ -144,6 +139,24 @@ private:
       d_end_offsets,
       is_overwrite_okay,
       stream);
+  }
+
+  // Internal version without NVTX range
+  template <SortOrder Order, typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortKeysNoNVTX(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream)
+  {
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    return SortKeysNoNVTX<Order>(
+      d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream, false);
   }
 
 public:
@@ -275,7 +288,7 @@ public:
     cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysNoNVTX(
+    return SortKeysNoNVTX<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -382,66 +395,21 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<NullType> d_values;
-
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
+        return SortKeysNoNVTX<SortOrder::Ascending>(
           d_temp_storage,
           temp_storage_bytes,
-          d_keys,
-          d_values,
+          d_keys_in,
+          d_keys_out,
           num_items,
           num_segments,
           d_begin_offsets,
           d_end_offsets,
-          is_overwrite_okay,
           stream);
       });
   }
 
-private:
-  // Internal version without NVTX range
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescendingNoNVTX(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    const KeyT* d_keys_in,
-    KeyT* d_keys_out,
-    ::cuda::std::int64_t num_items,
-    ::cuda::std::int64_t num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream = 0)
-  {
-    constexpr bool is_overwrite_okay = false;
-
-    using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<NullType> d_values;
-
-    return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      is_overwrite_okay,
-      stream);
-  }
-
-public:
   //! @rst
   //! Sorts segments of keys into descending order. Approximately
   //! ``num_items + 2 * num_segments`` auxiliary storage required.
@@ -565,7 +533,7 @@ public:
     cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysDescendingNoNVTX(
+    return SortKeysNoNVTX<SortOrder::Descending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -672,63 +640,21 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<NullType> d_values;
-
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
+        return SortKeysNoNVTX<SortOrder::Descending>(
           d_temp_storage,
           temp_storage_bytes,
-          d_keys,
-          d_values,
+          d_keys_in,
+          d_keys_out,
           num_items,
           num_segments,
           d_begin_offsets,
           d_end_offsets,
-          is_overwrite_okay,
           stream);
       });
   }
 
-private:
-  // Internal version without NVTX range
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t SortKeysNoNVTX(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    ::cuda::std::int64_t num_items,
-    ::cuda::std::int64_t num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream = 0)
-  {
-    constexpr bool is_overwrite_okay = true;
-    using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-    DoubleBuffer<NullType> d_values;
-
-    return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      is_overwrite_okay,
-      stream);
-  }
-
-public:
   //! @rst
   //! Sorts segments of keys into ascending order. Approximately ``2 * num_segments`` auxiliary storage required.
   //!
@@ -863,7 +789,7 @@ public:
     cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysNoNVTX(
+    return SortKeysNoNVTX<SortOrder::Ascending>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
@@ -968,62 +894,13 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-    constexpr bool is_overwrite_okay = true;
-    DoubleBuffer<NullType> d_values;
-
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_keys,
-          d_values,
-          num_items,
-          num_segments,
-          d_begin_offsets,
-          d_end_offsets,
-          is_overwrite_okay,
-          stream);
+        return SortKeysNoNVTX<SortOrder::Ascending>(
+          d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
       });
   }
 
-private:
-  // Internal version without NVTX range
-  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescendingNoNVTX(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    ::cuda::std::int64_t num_items,
-    ::cuda::std::int64_t num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream = 0)
-  {
-    constexpr bool is_overwrite_okay = true;
-    using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-    DoubleBuffer<NullType> d_values;
-
-    return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      is_overwrite_okay,
-      stream);
-  }
-
-public:
   //! @rst
   //! Sorts segments of keys into descending order. Approximately
   //! ``2 * num_segments`` auxiliary storage required.
@@ -1159,7 +1036,7 @@ public:
     cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysDescendingNoNVTX(
+    return SortKeysNoNVTX<SortOrder::Descending>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
@@ -1264,26 +1141,10 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-    constexpr bool is_overwrite_okay = true;
-    DoubleBuffer<NullType> d_values;
-
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_keys,
-          d_values,
-          num_items,
-          num_segments,
-          d_begin_offsets,
-          d_end_offsets,
-          is_overwrite_okay,
-          stream);
+        return SortKeysNoNVTX<SortOrder::Descending>(
+          d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
       });
   }
 
@@ -1414,7 +1275,7 @@ public:
     cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
+    return SortKeysNoNVTX<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -1522,26 +1383,17 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<NullType> d_values;
-
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
+        return SortKeysNoNVTX<SortOrder::Ascending>(
           d_temp_storage,
           temp_storage_bytes,
-          d_keys,
-          d_values,
+          d_keys_in,
+          d_keys_out,
           num_items,
           num_segments,
           d_begin_offsets,
           d_end_offsets,
-          is_overwrite_okay,
           stream);
       });
   }
@@ -1673,7 +1525,7 @@ public:
     cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysDescendingNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
+    return SortKeysNoNVTX<SortOrder::Descending>(
       d_temp_storage,
       temp_storage_bytes,
       d_keys_in,
@@ -1782,26 +1634,17 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<NullType> d_values;
-
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
+        return SortKeysNoNVTX<SortOrder::Descending>(
           d_temp_storage,
           temp_storage_bytes,
-          d_keys,
-          d_values,
+          d_keys_in,
+          d_keys_out,
           num_items,
           num_segments,
           d_begin_offsets,
           d_end_offsets,
-          is_overwrite_okay,
           stream);
       });
   }
@@ -1943,7 +1786,7 @@ public:
     cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
+    return SortKeysNoNVTX<SortOrder::Ascending>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
@@ -2050,26 +1893,10 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-    constexpr bool is_overwrite_okay = true;
-    DoubleBuffer<NullType> d_values;
-
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::segmented_sort::dispatch<SortOrder::Ascending, OffsetT>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_keys,
-          d_values,
-          num_items,
-          num_segments,
-          d_begin_offsets,
-          d_end_offsets,
-          is_overwrite_okay,
-          stream);
+        return SortKeysNoNVTX<SortOrder::Ascending>(
+          d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
       });
   }
 
@@ -2209,7 +2036,7 @@ public:
     cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return SortKeysDescendingNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
+    return SortKeysNoNVTX<SortOrder::Descending>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
@@ -2316,26 +2143,10 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
-
-    constexpr bool is_overwrite_okay = true;
-    DoubleBuffer<NullType> d_values;
-
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return detail::segmented_sort::dispatch<SortOrder::Descending, OffsetT>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_keys,
-          d_values,
-          num_items,
-          num_segments,
-          d_begin_offsets,
-          d_end_offsets,
-          is_overwrite_okay,
-          stream);
+        return SortKeysNoNVTX<SortOrder::Descending>(
+          d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
       });
   }
 
