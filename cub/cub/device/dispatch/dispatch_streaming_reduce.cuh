@@ -112,6 +112,20 @@ struct local_to_global_op
   }
 };
 
+template <typename ExtremumOutIteratorT, typename IndexOutIteratorT>
+struct unzip_and_write_arg_extremum_op
+{
+  ExtremumOutIteratorT result_out_it;
+  IndexOutIteratorT index_out_it;
+
+  template <typename IndexT, typename KeyValuePairT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(IndexT, KeyValuePairT reduced_result)
+  {
+    *result_out_it = reduced_result.value;
+    *index_out_it  = reduced_result.key;
+  }
+};
+
 /******************************************************************************
  * Single-problem streaming reduction dispatch
  *****************************************************************************/
@@ -143,15 +157,16 @@ struct local_to_global_op
 //
 // @tparam PolicySelector
 //   Selects the tuning policy
-template <
-  typename PerPartitionOffsetT,
-  typename InputIteratorT,
-  typename OutputIteratorT,
-  typename GlobalOffsetT,
-  typename ReductionOpT,
-  typename InitT,
-  typename PolicySelector =
-    reduce::policy_selector_from_types<KeyValuePair<PerPartitionOffsetT, InitT>, PerPartitionOffsetT, ReductionOpT>>
+template <typename PerPartitionOffsetT,
+          typename InputIteratorT,
+          typename ExtremumOutIteratorT,
+          typename IndexOutIteratorT,
+          typename GlobalOffsetT,
+          typename ReductionOpT,
+          typename PolicySelector = policy_selector_from_types<
+            KeyValuePair<PerPartitionOffsetT, non_void_value_t<ExtremumOutIteratorT, it_value_t<InputIteratorT>>>,
+            PerPartitionOffsetT,
+            ReductionOpT>>
 #  if _CCCL_HAS_CONCEPTS()
   requires reduce_policy_selector<PolicySelector>
 #  endif // _CCCL_HAS_CONCEPTS()
@@ -159,30 +174,31 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   InputIteratorT d_in,
-  OutputIteratorT d_result_out,
+  ExtremumOutIteratorT d_min_out,
+  IndexOutIteratorT d_index_out,
   GlobalOffsetT num_items,
   ReductionOpT reduce_op,
-  InitT init,
   cudaStream_t stream,
   PolicySelector policy_selector = {})
 {
+  using input_value_t     = it_value_t<InputIteratorT>;
+  using output_extremum_t = non_void_value_t<ExtremumOutIteratorT, input_value_t>;
+
+  // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
+  auto d_result_out = ::cuda::make_tabulate_output_iterator(
+    detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
+
   // Wrapped input iterator to produce index-value tuples, i.e., <PerPartitionOffsetT, InputT>-tuples
   // We make sure to offset the user-provided input iterator by the current partition's offset
-  using arg_index_input_iterator_t = ArgIndexInputIterator<InputIteratorT, PerPartitionOffsetT, InitT>;
-
-  // The type used for the aggregate that the user wants to find the extremum for
-  using output_aggregate_t = InitT;
+  using arg_index_input_iterator_t = ArgIndexInputIterator<InputIteratorT, PerPartitionOffsetT, output_extremum_t>;
 
   // The output tuple type (i.e., extremum plus index tuples)
-  using per_partition_accum_t = KeyValuePair<PerPartitionOffsetT, output_aggregate_t>;
-  using global_accum_t        = KeyValuePair<GlobalOffsetT, output_aggregate_t>;
+  using per_partition_accum_t = KeyValuePair<PerPartitionOffsetT, output_extremum_t>;
+  using global_accum_t        = KeyValuePair<GlobalOffsetT, output_extremum_t>;
 
   // Unary promotion operator type that is used to transform a per-partition result to a global result
   // operator()(per_partition_accum_t) -> global_accum_t
   using local_to_global_op_t = local_to_global_op<GlobalOffsetT>;
-
-  // Empty problem initialization type
-  using empty_problem_init_t = empty_problem_init_t<per_partition_accum_t>;
 
   // The current partition's input iterator is an ArgIndex iterator that generates indices relative to the beginning
   // of the current partition, i.e., [0, partition_size) along with an OffsetIterator that offsets the user-provided
@@ -209,18 +225,33 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
 
   // Reduction operator type that enables accumulating per-partition results to a global reduction result
   using accumulating_transform_output_op_t =
-    accumulating_transform_output_op<global_accum_t, local_to_global_op_t, ReductionOpT, OutputIteratorT>;
-
+    accumulating_transform_output_op<global_accum_t, local_to_global_op_t, ReductionOpT, decltype(d_result_out)>;
   auto accumulating_out_op = accumulating_transform_output_op_t{
     true, is_single_partition, nullptr, nullptr, d_result_out, local_to_global_op, reduce_op};
 
-  empty_problem_init_t initial_value{{PerPartitionOffsetT{1}, init}};
+  // Initial value for empty problems, according to documented contract
+  const auto empty_problem_extremum = static_cast<output_extremum_t>([] {
+    if constexpr (::cuda::std::is_same_v<ReductionOpT, arg_min>
+                  && ::cuda::std::numeric_limits<input_value_t>::is_specialized)
+    {
+      return ::cuda::std::numeric_limits<input_value_t>::max();
+    }
+    else if constexpr (::cuda::std::is_same_v<ReductionOpT, arg_max>
+                       && ::cuda::std::numeric_limits<input_value_t>::is_specialized)
+    {
+      return ::cuda::std::numeric_limits<input_value_t>::lowest();
+    }
+    else
+    {
+      return input_value_t{};
+    }
+  }());
+  auto initial_value = empty_problem_init_t<per_partition_accum_t>{{PerPartitionOffsetT{1}, empty_problem_extremum}};
 
   void* allocations[2]       = {nullptr, nullptr};
   size_t allocation_sizes[2] = {0, 2 * sizeof(global_accum_t)};
 
   // Query temporary storage requirements for per-partition reduction
-
   reduce::dispatch<per_partition_accum_t>(
     nullptr,
     allocation_sizes[0],
@@ -233,8 +264,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
     ::cuda::std::identity{},
     policy_selector);
 
-  // Alias the temporary allocations from the single storage blob (or compute the necessary size
-  // of the blob)
+  // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
   if (const auto error = CubDebug(alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
   {
     return error;

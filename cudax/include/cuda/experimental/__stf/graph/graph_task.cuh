@@ -220,14 +220,22 @@ public:
         const cudaGraphNode_t* deps = ready_dependencies.data();
 
         assert(ctx_graph);
-        /* This will duplicate the childGraph so we can destroy it after */
+#if _CCCL_CTK_AT_LEAST(13, 0)
+        // Move ownership so child graphs with memory alloc/free nodes
+        // (e.g. from cudaMallocAsync during stream capture) are accepted.
+        cudaGraphNodeParams nodeParams = {};
+        nodeParams.type                = cudaGraphNodeTypeGraph;
+        nodeParams.graph.graph         = childGraph;
+        nodeParams.graph.ownership     = cudaGraphChildGraphOwnershipMove;
+        cuda_safe_call(cudaGraphAddNode(&n, ctx_graph, deps, nullptr, ready_dependencies.size(), &nodeParams));
+#else // _CCCL_CTK_AT_LEAST(13, 0)
         cuda_safe_call(cudaGraphAddChildGraphNode(&n, ctx_graph, deps, ready_dependencies.size(), childGraph));
-
         // Destroy the child graph unless we should not
         if (must_destroy_child_graph)
         {
           cuda_safe_call(cudaGraphDestroy(childGraph));
         }
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
 
         auto gnp = reserved::graph_event(n, stage, ctx_graph);
         gnp->set_symbol(ctx, "done " + get_symbol());
@@ -527,7 +535,11 @@ private:
  * are typed appropriately.
  */
 template <typename... Deps>
-class graph_task : public graph_task<>
+class graph_task
+// Hide recursive base from Doxygen — it cannot handle self-referential inheritance.
+#ifndef _CCCL_DOXYGEN_INVOKED
+    : public graph_task<>
+#endif
 {
 public:
   graph_task(backend_ctx_untyped ctx,

@@ -34,7 +34,7 @@
 
 #include <cstdio>
 
-using namespace cuda::experimental::stf;
+using namespace cuda::experimental::places;
 
 // Minimal adapter: data_place is STF's abstraction; Thrust expects a
 // memory_resource. This class bridges the two. The resource must outlive

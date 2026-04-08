@@ -1,7 +1,7 @@
 .. _cccl-runtime-stream:
 
 Streams
-=======
+========
 
 Stream is conceptually a queue of operations for a specific device. It is passed as an argument to all asynchronous operations like kernel launch, memory copy and allocations.
 

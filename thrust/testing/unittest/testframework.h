@@ -92,7 +92,7 @@ public:
   _CCCL_HOST_DEVICE operator void*() const
   {
     // static cast first to avoid MSVC warning C4312
-    return reinterpret_cast<void*>(static_cast<std::size_t>(value[0]));
+    return reinterpret_cast<void*>(static_cast<std::size_t>(value[0])); // NOLINT(performance-no-int-to-ptr)
   }
 
 #define DEFINE_OPERATOR(op)                                         \
@@ -259,7 +259,7 @@ inline std::string base_class_name(const std::string& name)
   // if the name begins with "class ", chop it off
   chop_prefix(result, "class ");
 
-  const std::size_t first_lt = result.find_first_of("<");
+  const std::size_t first_lt = result.find_first_of('<');
 
   if (first_lt < result.size())
   {

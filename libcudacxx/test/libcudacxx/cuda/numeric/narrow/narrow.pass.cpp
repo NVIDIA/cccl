@@ -12,6 +12,7 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include "cuda_fp_types.h"
 #include "test_macros.h"
 
 #define CHECK_NARROWING_ERROR(expr, throw_cond)                                                                    \

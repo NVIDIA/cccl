@@ -191,7 +191,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST host_vector(host_vector&& v)
+  _CCCL_HOST host_vector(host_vector&& v) noexcept
       : Parent(::cuda::std::move(v))
   {}
 
@@ -227,7 +227,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST host_vector& operator=(host_vector&& v)
+  _CCCL_HOST host_vector& operator=(host_vector&& v) noexcept
   {
     Parent::operator=(::cuda::std::move(v));
     return *this;

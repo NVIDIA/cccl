@@ -422,11 +422,11 @@ public:
             instance_id_t dst_node = dst_place.memory_node;
 
             // Force initialization
-            auto& machine = reserved::machine::instance();
+            auto& mach = ::cuda::experimental::places::reserved::machine::instance();
 
             // We iterate over nodes, in an order that is could improve locality
             for (int n = 0; n < nnodes(); n++) {
-                int n_aux = machine.get_ith_closest_node(dst_node, n);
+                int n_aux = mach.get_ith_closest_node(dst_node, n);
                 if (get_data_instance(n_aux).get_msir() != reserved::msir_state_id::invalid) {
                     return data_place(n_aux);
                 }
@@ -937,8 +937,12 @@ class logical_data_untyped
 public:
   ///@{
   /** @name Constructors */
+
+  /// @brief Default constructor.
   logical_data_untyped() = default;
 
+  /// @brief Constructs a logical_data_untyped from an existing implementation.
+  /// @param p Shared implementation pointer.
   logical_data_untyped(::std::shared_ptr<reserved::logical_data_untyped_impl> p)
       : pimpl(mv(p))
   {}
@@ -1072,7 +1076,6 @@ public:
   /**
    * @brief Allocate memory for this logical data
    *
-   * @param ctx
    * @param memory_node
    * @param instance_id
    * @param s
@@ -1091,7 +1094,6 @@ public:
   /**
    * @brief Deallocate memory previously allocated with `allocate`
    *
-   * @param ctx
    * @param memory_node
    * @param instance_id
    * @param extra_args
@@ -1105,12 +1107,10 @@ public:
   /**
    * @brief Copy data
    *
-   * @param ctx
    * @param dst_node
    * @param dst_instance_id
    * @param src_node
    * @param src_instance_id
-   * @param arg
    * @param prereqs
    */
   void data_copy(const data_place& dst_node,
@@ -1125,7 +1125,6 @@ public:
   /**
    * @brief Writes back data
    *
-   * @param ctx
    * @param src_node
    * @param instance_id
    * @param prereqs
@@ -2311,7 +2310,6 @@ public:
    * @param ctx Backend context
    * @param instance Reference instance used for initializing this logical data
    * @param dp Data place
-   * @param data_prereq
    */
   template <typename U>
   logical_data(backend_ctx_untyped ctx, ::std::shared_ptr<U> instance, data_place dp)

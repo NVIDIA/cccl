@@ -6,6 +6,7 @@ CCCL configuration macros
 The CUDA Core Compute Libraries provide a set of macros to enable or disable specific features. These macros must be defined before any CCCL source file is included. The recommended way is to define them as the predefined compiler macros, for example:
 
 .. code-block:: bash
+
     nvcc -DCCCL_DISABLE_SOME_FEATURE src.cu
 
 .. important::

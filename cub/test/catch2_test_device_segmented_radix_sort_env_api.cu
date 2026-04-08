@@ -157,3 +157,65 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeysDescending env with stream", "[
   REQUIRE(error == cudaSuccess);
   REQUIRE(keys_out == expected_keys);
 }
+
+C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys DoubleBuffer env with stream", "[segmented_radix_sort][env]")
+{
+  // example-begin segmented-radix-sort-keys-db-env
+  auto keys_buf = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_alt = thrust::device_vector<int>(7);
+  auto offsets  = thrust::device_vector<int>{0, 3, 3, 7};
+
+  cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf.data()), thrust::raw_pointer_cast(keys_alt.data()));
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceSegmentedRadixSort::SortKeys(
+    d_keys, static_cast<int>(keys_buf.size()), 3, offsets.begin(), offsets.begin() + 1, 0, sizeof(int) * 8, stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedRadixSort::SortKeys (DoubleBuffer) failed with status: " << error << std::endl;
+  }
+
+  thrust::device_vector<int> expected_keys{6, 7, 8, 0, 3, 5, 9};
+  // example-end segmented-radix-sort-keys-db-env
+
+  stream.sync();
+  REQUIRE(error == cudaSuccess);
+
+  thrust::device_vector<int> result_keys(
+    thrust::device_pointer_cast(d_keys.Current()), thrust::device_pointer_cast(d_keys.Current()) + 7);
+  REQUIRE(result_keys == expected_keys);
+}
+
+C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer env with stream",
+         "[segmented_radix_sort][env]")
+{
+  // example-begin segmented-radix-sort-keys-descending-db-env
+  auto keys_buf = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_alt = thrust::device_vector<int>(7);
+  auto offsets  = thrust::device_vector<int>{0, 3, 3, 7};
+
+  cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf.data()), thrust::raw_pointer_cast(keys_alt.data()));
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceSegmentedRadixSort::SortKeysDescending(
+    d_keys, static_cast<int>(keys_buf.size()), 3, offsets.begin(), offsets.begin() + 1, 0, sizeof(int) * 8, stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr
+      << "cub::DeviceSegmentedRadixSort::SortKeysDescending (DoubleBuffer) failed with status: " << error << std::endl;
+  }
+
+  thrust::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};
+  // example-end segmented-radix-sort-keys-descending-db-env
+
+  stream.sync();
+  REQUIRE(error == cudaSuccess);
+
+  thrust::device_vector<int> result_keys(
+    thrust::device_pointer_cast(d_keys.Current()), thrust::device_pointer_cast(d_keys.Current()) + 7);
+  REQUIRE(result_keys == expected_keys);
+}

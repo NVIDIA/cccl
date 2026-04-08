@@ -278,7 +278,6 @@ struct DeviceRunLengthEncode
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  //!   @endrst
   template <typename InputIteratorT,
             typename UniqueOutputIteratorT,
             typename LengthsOutputIteratorT,
@@ -525,7 +524,6 @@ struct DeviceRunLengthEncode
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  //!   @endrst
   template <typename InputIteratorT,
             typename OffsetsOutputIteratorT,
             typename LengthsOutputIteratorT,

@@ -1,7 +1,7 @@
 .. _libcudacxx-module:
 
 libcu++
-=======
+========
 
 .. toctree::
    :hidden:

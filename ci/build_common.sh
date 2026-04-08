@@ -337,6 +337,8 @@ function build_preset() {
     local green="1;32"
     local red="1;31"
     local GROUP_NAME="🏗️  Build ${BUILD_NAME}"
+    shift 2
+    local BUILD_COMMANDS=("$@")
 
     symlink_latest_preset "$PRESET"
 
@@ -362,7 +364,7 @@ function build_preset() {
 
     pushd .. > /dev/null
     status=0
-    run_ci_timed_command "$GROUP_NAME" cmake --build --preset="$PRESET" -v || status=$?
+    run_ci_timed_command "$GROUP_NAME" cmake --build --preset="$PRESET" -v "${BUILD_COMMANDS[@]}" || status=$?
     popd > /dev/null
 
     if [[ -n "${GITHUB_ACTIONS:-}" || -n "${MEMMON:-}" ]]; then

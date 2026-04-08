@@ -167,3 +167,66 @@ void compute_inclusive_scan_by_key_reference(
   compute_inclusive_scan_by_key_reference(
     host_values.cbegin(), host_keys.cbegin(), result_out_it, scan_op, equality_op, num_items);
 }
+
+struct block_size_recording_constant_iterator
+{
+  using value_type        = int;
+  using reference         = int;
+  using pointer           = int*;
+  using difference_type   = ptrdiff_t;
+  using iterator_category = ::cuda::std::random_access_iterator_tag;
+
+  int value;
+  int* block_size_ptr;
+  difference_type offset;
+
+  __host__ __device__ block_size_recording_constant_iterator(int val, int* bs_ptr, difference_type off = 0)
+      : value(val)
+      , block_size_ptr(bs_ptr)
+      , offset(off)
+  {}
+
+  __device__ reference operator[](difference_type) const
+  {
+    if (threadIdx.x == 0)
+    {
+      *block_size_ptr = blockDim.x;
+    }
+    return value;
+  }
+
+  __device__ reference operator*() const
+  {
+    if (threadIdx.x == 0)
+    {
+      *block_size_ptr = blockDim.x;
+    }
+    return value;
+  }
+
+  __host__ __device__ block_size_recording_constant_iterator operator+(difference_type n) const
+  {
+    return {value, block_size_ptr, offset + n};
+  }
+
+  __host__ __device__ block_size_recording_constant_iterator& operator+=(difference_type n)
+  {
+    offset += n;
+    return *this;
+  }
+
+  __host__ __device__ difference_type operator-(const block_size_recording_constant_iterator& other) const
+  {
+    return offset - other.offset;
+  }
+
+  __host__ __device__ bool operator==(const block_size_recording_constant_iterator& other) const
+  {
+    return offset == other.offset;
+  }
+
+  __host__ __device__ bool operator!=(const block_size_recording_constant_iterator& other) const
+  {
+    return offset != other.offset;
+  }
+};

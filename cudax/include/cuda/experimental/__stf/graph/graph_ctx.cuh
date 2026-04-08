@@ -35,6 +35,7 @@
 #include <cuda/experimental/__stf/internal/host_launch_scope.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 
 #include <mutex>
 
@@ -54,16 +55,16 @@ public:
   uncached_graph_allocator() = default;
 
   void*
-  allocate(backend_ctx_untyped& bctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
+  allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
     // This is not implemented yet
     EXPECT(!memory_node.is_composite(), "Composite data places are not implemented yet.");
 
     void* result = nullptr;
 
-    const size_t graph_stage                   = bctx.stage();
-    const cudaGraph_t graph                    = bctx.graph();
-    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(bctx, prereqs, graph_stage);
+    const size_t graph_stage                   = ctx.stage();
+    const cudaGraph_t graph                    = ctx.graph();
+    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(ctx, prereqs, graph_stage);
     cudaGraphNode_t out                        = nullptr;
 
     if (memory_node.is_host())
@@ -89,17 +90,17 @@ public:
       assert(s > 0);
     }
 
-    reserved::fork_from_graph_node(bctx, out, graph, graph_stage, prereqs, "alloc");
+    reserved::fork_from_graph_node(ctx, out, graph, graph_stage, prereqs, "alloc");
     return result;
   }
 
   void deallocate(
-    backend_ctx_untyped& bctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t /*sz*/) override
+    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t /*sz*/) override
   {
-    const cudaGraph_t graph                    = bctx.graph();
-    const size_t graph_stage                   = bctx.stage();
+    const cudaGraph_t graph                    = ctx.graph();
+    const size_t graph_stage                   = ctx.stage();
     cudaGraphNode_t out                        = nullptr;
-    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(bctx, prereqs, graph_stage);
+    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(ctx, prereqs, graph_stage);
     if (memory_node.is_host())
     {
       // fprintf(stderr, "TODO deallocate host memory (graph_ctx)\n");
@@ -109,7 +110,7 @@ public:
     {
       cuda_safe_call(cudaGraphAddMemFreeNode(&out, graph, nodes.data(), nodes.size(), ptr));
     }
-    reserved::fork_from_graph_node(bctx, out, graph, graph_stage, prereqs, "dealloc");
+    reserved::fork_from_graph_node(ctx, out, graph, graph_stage, prereqs, "dealloc");
   }
 
   ::std::string to_string() const override

@@ -190,7 +190,7 @@ public:
   }
 
   // allow move assignment for a sane implementation of allocator propagation
-  _CCCL_HOST_DEVICE contiguous_storage& operator=(contiguous_storage&& other);
+  _CCCL_HOST_DEVICE contiguous_storage& operator=(contiguous_storage&& other) noexcept;
 
   _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(contiguous_storage, const_iterator)
 

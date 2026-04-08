@@ -129,7 +129,7 @@ public:
   /*! Move constructor moves from another vector_base.
    *  \param v The vector_base to move.
    */
-  vector_base(vector_base&& v);
+  vector_base(vector_base&& v) noexcept;
 
   // FIXME: the internal Thrust machinery in range_init doesn't work with move
   // iterators, which is necessary for the following constructor to be implemented
@@ -144,7 +144,7 @@ public:
   /*! Move assign operator moves from another vector_base.
    *  \param v The vector_base to move.
    */
-  vector_base& operator=(vector_base&& v);
+  vector_base& operator=(vector_base&& v) noexcept;
 
   /*! This constructor builds a \p vector_base from an intializer_list.
    *  \param il The intializer_list.

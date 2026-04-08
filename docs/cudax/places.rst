@@ -17,9 +17,11 @@ Places come in two flavors:
 - **Execution places** (``exec_place``) determine where code is executed.
 - **Data places** (``data_place``) specify where data is located in memory.
 
-The places API is part of the ``cuda::experimental::stf`` C++ namespace
+The places API is part of the ``cuda::experimental::places`` C++ namespace
 and can be used standalone via the ``cuda/experimental/places.cuh`` header,
-without pulling in the full CUDASTF task-graph framework.
+without pulling in the full CUDASTF task-graph framework. For backward
+compatibility, all places types are also available in the
+``cuda::experimental::stf`` namespace.
 
 .. _places-execution-places:
 
@@ -79,7 +81,8 @@ hash support:
 
 - **``std::unordered_map``** and **``std::unordered_set``** require a
   hash function and equality. The library specializes ``cuda::experimental::stf::hash``
-  for both place types, and both implement ``operator==``.
+  for both place types (accessible from both the ``stf`` and ``places`` namespaces),
+  and both implement ``operator==``.
 
 This allows, for example, maintaining per-place handles (e.g. CUBLAS or
 CUSOLVER handles keyed by ``exec_place``) or per-place caches keyed by
@@ -92,7 +95,7 @@ place using an ``std::unordered_map`` keyed by ``exec_place``:
    #include <cuda/experimental/places.cuh>
    #include <cublas_v2.h>
 
-   using namespace cuda::experimental::stf;
+   using namespace cuda::experimental::places;
 
    cublasHandle_t& get_cublas_handle(const exec_place& ep = exec_place::current_device())
    {
@@ -206,7 +209,7 @@ correctness. Not all execution places enforce it.
 .. code:: cpp
 
     #include <cuda/experimental/places.cuh>
-    using namespace cuda::experimental::stf;
+    using namespace cuda::experimental::places;
 
     // Get a stream from the current device
     exec_place place = exec_place::current_device();
@@ -240,7 +243,7 @@ is ignored:
 .. code:: cpp
 
     #include <cuda/experimental/places.cuh>
-    using namespace cuda::experimental::stf;
+    using namespace cuda::experimental::places;
 
     // Allocate on host (pinned memory) - stream defaults to nullptr
     void* host_ptr = data_place::host().allocate(1024);
@@ -309,7 +312,7 @@ returns a ``CUmemGenericAllocationHandle`` that must be subsequently mapped with
 .. code:: cpp
 
     #include <cuda/experimental/places.cuh>
-    using namespace cuda::experimental::stf;
+    using namespace cuda::experimental::places;
 
     // Create a physical memory handle for device 0
     CUmemGenericAllocationHandle handle;

@@ -30,7 +30,7 @@
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::places
 {
 /**
  * @brief Defines a partitioning granularity
@@ -74,7 +74,7 @@ inline ::std::string place_partition_scope_to_string(place_partition_scope scope
  * given granularity (see `place_partition_scope`). For example, a grid place
  * can be partitioned into devices, or into green contexts, or into CUDA streams.
  *
- * Use the constructors that take `async_resources_handle&` when partitioning at
+ * Use the constructors that take `::cuda::experimental::stf::async_resources_handle&` when partitioning at
  * `cuda_stream` or `green_context` scope (stream and green-context resources
  * are obtained from the handle). The constructors without a handle support only
  * `cuda_device` scope. Green context scope requires CUDA 12.4 or later.
@@ -90,7 +90,8 @@ public:
    * @param handle Handle used to obtain stream or green-context resources when scope is cuda_stream or green_context
    * @param scope Partitioning granularity (cuda_device, green_context, or cuda_stream)
    */
-  place_partition(exec_place place, async_resources_handle& handle, place_partition_scope scope)
+  place_partition(
+    exec_place place, ::cuda::experimental::stf::async_resources_handle& handle, place_partition_scope scope)
   {
 #if _CCCL_CTK_BELOW(12, 4)
     _CCCL_ASSERT(scope != place_partition_scope::green_context, "Green contexts unsupported.");
@@ -116,7 +117,7 @@ public:
    * @param places Input execution places to partition
    * @param scope Partitioning granularity
    */
-  place_partition(async_resources_handle& handle,
+  place_partition(::cuda::experimental::stf::async_resources_handle& handle,
                   const ::std::vector<::std::shared_ptr<exec_place>>& places,
                   place_partition_scope scope)
   {
@@ -131,7 +132,8 @@ public:
    * @param grid Input execution place grid to partition
    * @param scope Partitioning granularity
    */
-  place_partition(async_resources_handle& handle, const exec_place& grid, place_partition_scope scope)
+  place_partition(
+    ::cuda::experimental::stf::async_resources_handle& handle, const exec_place& grid, place_partition_scope scope)
   {
     ::std::vector<::std::shared_ptr<exec_place>> places;
     places.reserve(grid.size());
@@ -219,7 +221,8 @@ public:
 
 private:
   /** @brief Compute the subplaces of a place at the specified granularity (scope) into the sub_places vector */
-  void compute_subplaces(async_resources_handle& handle, exec_place place, place_partition_scope scope)
+  void compute_subplaces(
+    ::cuda::experimental::stf::async_resources_handle& handle, exec_place place, place_partition_scope scope)
   {
     // Handle multi-element grids by recursively partitioning
     if (place.size() > 1 && scope == place_partition_scope::cuda_stream)
@@ -323,4 +326,4 @@ auto exec_place::partition_by_scope(Args&&... args)
 {
   return place_partition(*this, ::std::forward<Args>(args)...).to_exec_place();
 }
-} // end namespace cuda::experimental::stf
+} // end namespace cuda::experimental::places

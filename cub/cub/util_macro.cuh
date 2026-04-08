@@ -23,6 +23,10 @@
 
 CUB_NAMESPACE_BEGIN
 
+#ifdef _CCCL_DOXYGEN_INVOKED
+#  define CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
+#endif
+
 /**
  * @def CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
  * If defined, the default suppression of kernel visibility attribute warning is disabled.

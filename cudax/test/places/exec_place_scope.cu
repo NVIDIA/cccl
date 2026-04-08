@@ -14,12 +14,11 @@
  */
 
 #include <cuda/experimental/__places/places.cuh>
-#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 #include <thread>
 #include <vector>
 
-using namespace cuda::experimental::stf;
+using namespace cuda::experimental::places;
 
 // Test 1: Basic scope functionality - single device switch
 void test_basic_scope(int ndevs)
@@ -31,10 +30,10 @@ void test_basic_scope(int ndevs)
   }
 
   // Start on device 0
-  cuda_safe_call(cudaSetDevice(0));
+  cuda_try(cudaSetDevice(0));
 
   int dev_before = -1;
-  cuda_safe_call(cudaGetDevice(&dev_before));
+  cuda_try(cudaGetDevice(&dev_before));
   EXPECT(dev_before == 0);
 
   // Use scope to switch to device 1
@@ -42,13 +41,13 @@ void test_basic_scope(int ndevs)
     exec_place_scope scope(exec_place::device(1));
 
     int dev_inside = -1;
-    cuda_safe_call(cudaGetDevice(&dev_inside));
+    cuda_try(cudaGetDevice(&dev_inside));
     EXPECT(dev_inside == 1);
   }
 
   // After scope destruction, should be back to device 0
   int dev_after = -1;
-  cuda_safe_call(cudaGetDevice(&dev_after));
+  cuda_try(cudaGetDevice(&dev_after));
   EXPECT(dev_after == 0);
 }
 
@@ -61,30 +60,30 @@ void test_nested_scopes(int ndevs)
     return;
   }
 
-  cuda_safe_call(cudaSetDevice(0));
+  cuda_try(cudaSetDevice(0));
 
   {
     exec_place_scope scope1(exec_place::device(1));
 
     int dev = -1;
-    cuda_safe_call(cudaGetDevice(&dev));
+    cuda_try(cudaGetDevice(&dev));
     EXPECT(dev == 1);
 
     {
       exec_place_scope scope2(exec_place::device(2));
 
-      cuda_safe_call(cudaGetDevice(&dev));
+      cuda_try(cudaGetDevice(&dev));
       EXPECT(dev == 2);
     }
 
     // After inner scope destruction, should be back to device 1
-    cuda_safe_call(cudaGetDevice(&dev));
+    cuda_try(cudaGetDevice(&dev));
     EXPECT(dev == 1);
   }
 
   // After outer scope destruction, should be back to device 0
   int dev = -1;
-  cuda_safe_call(cudaGetDevice(&dev));
+  cuda_try(cudaGetDevice(&dev));
   EXPECT(dev == 0);
 }
 
@@ -97,22 +96,22 @@ void test_host_place_scope(int ndevs)
     return;
   }
 
-  cuda_safe_call(cudaSetDevice(0));
+  cuda_try(cudaSetDevice(0));
 
   int dev_before = -1;
-  cuda_safe_call(cudaGetDevice(&dev_before));
+  cuda_try(cudaGetDevice(&dev_before));
 
   {
     exec_place_scope scope(exec_place::host());
 
     // Device should remain unchanged when using host place
     int dev_inside = -1;
-    cuda_safe_call(cudaGetDevice(&dev_inside));
+    cuda_try(cudaGetDevice(&dev_inside));
     EXPECT(dev_inside == dev_before);
   }
 
   int dev_after = -1;
-  cuda_safe_call(cudaGetDevice(&dev_after));
+  cuda_try(cudaGetDevice(&dev_after));
   EXPECT(dev_after == dev_before);
 }
 
@@ -125,18 +124,18 @@ void test_same_device_scope(int ndevs)
     return;
   }
 
-  cuda_safe_call(cudaSetDevice(0));
+  cuda_try(cudaSetDevice(0));
 
   {
     exec_place_scope scope(exec_place::device(0));
 
     int dev = -1;
-    cuda_safe_call(cudaGetDevice(&dev));
+    cuda_try(cudaGetDevice(&dev));
     EXPECT(dev == 0);
   }
 
   int dev = -1;
-  cuda_safe_call(cudaGetDevice(&dev));
+  cuda_try(cudaGetDevice(&dev));
   EXPECT(dev == 0);
 }
 
@@ -149,26 +148,26 @@ void test_stream_creation_in_scope(int ndevs)
     return;
   }
 
-  cuda_safe_call(cudaSetDevice(0));
+  cuda_try(cudaSetDevice(0));
 
   cudaStream_t stream;
 
   {
     exec_place_scope scope(exec_place::device(1));
-    cuda_safe_call(cudaStreamCreate(&stream));
+    cuda_try(cudaStreamCreate(&stream));
   }
 
 #if _CCCL_CTK_AT_LEAST(12, 8)
   // Verify stream was created on device 1 (cudaStreamGetDevice requires CUDA 12.8+)
   int stream_dev = -1;
-  cuda_safe_call(cudaStreamGetDevice(stream, &stream_dev));
+  cuda_try(cudaStreamGetDevice(stream, &stream_dev));
   EXPECT(stream_dev == 1);
 #endif // _CCCL_CTK_AT_LEAST(12, 8)
 
   // Clean up (need to be on correct device for some operations)
   {
     exec_place_scope scope(exec_place::device(1));
-    cuda_safe_call(cudaStreamDestroy(stream));
+    cuda_try(cudaStreamDestroy(stream));
   }
 }
 
@@ -189,7 +188,7 @@ void test_multithreaded_scopes(int ndevs)
   {
     threads.emplace_back([&results, i, ndevs]() {
       // Each thread starts on device 0
-      cuda_safe_call(cudaSetDevice(0));
+      cuda_try(cudaSetDevice(0));
 
       int target_dev = i % ndevs;
 
@@ -197,7 +196,7 @@ void test_multithreaded_scopes(int ndevs)
         exec_place_scope scope(exec_place::device(target_dev));
 
         int dev = -1;
-        cuda_safe_call(cudaGetDevice(&dev));
+        cuda_try(cudaGetDevice(&dev));
         if (dev != target_dev)
         {
           return;
@@ -205,14 +204,14 @@ void test_multithreaded_scopes(int ndevs)
 
         // Do some work
         cudaStream_t stream;
-        cuda_safe_call(cudaStreamCreate(&stream));
-        cuda_safe_call(cudaStreamSynchronize(stream));
-        cuda_safe_call(cudaStreamDestroy(stream));
+        cuda_try(cudaStreamCreate(&stream));
+        cuda_try(cudaStreamSynchronize(stream));
+        cuda_try(cudaStreamDestroy(stream));
       }
 
       // Verify restoration
       int dev_after = -1;
-      cuda_safe_call(cudaGetDevice(&dev_after));
+      cuda_try(cudaGetDevice(&dev_after));
       if (dev_after != 0)
       {
         return;
@@ -242,7 +241,7 @@ void test_stress_iterations(int ndevs)
     return;
   }
 
-  cuda_safe_call(cudaSetDevice(0));
+  cuda_try(cudaSetDevice(0));
 
   const int iterations = 100;
   for (int iter = 0; iter < iterations; ++iter)
@@ -253,12 +252,12 @@ void test_stress_iterations(int ndevs)
       exec_place_scope scope(exec_place::device(target_dev));
 
       int dev = -1;
-      cuda_safe_call(cudaGetDevice(&dev));
+      cuda_try(cudaGetDevice(&dev));
       EXPECT(dev == target_dev);
     }
 
     int dev_after = -1;
-    cuda_safe_call(cudaGetDevice(&dev_after));
+    cuda_try(cudaGetDevice(&dev_after));
     EXPECT(dev_after == 0);
   }
 }
@@ -266,10 +265,10 @@ void test_stress_iterations(int ndevs)
 int main()
 {
   // Initialize CUDA
-  cuda_safe_call(cudaFree(0));
+  cuda_try(cudaFree(0));
 
   int ndevs;
-  cuda_safe_call(cudaGetDeviceCount(&ndevs));
+  cuda_try(cudaGetDeviceCount(&ndevs));
 
   test_basic_scope(ndevs);
   test_nested_scopes(ndevs);

@@ -79,7 +79,7 @@ int main()
   auto handle_X = ctx.logical_data(make_slice(&X[0], n));
   auto handle_Y = ctx.logical_data(make_slice(&Y[0], n));
 
-  std::vector<exec_place> places;
+  std::vector<exec_place> exec_places;
 
   // The green_context_helper class automates the creation of green context views
   std::vector<green_context_helper> gc(ndevs);
@@ -91,11 +91,11 @@ int main()
     auto cnt    = g_ctx.get_count();
     for (size_t i = 0; i < cnt; i++)
     {
-      places.push_back(exec_place::green_ctx(g_ctx.get_view(i)));
+      exec_places.push_back(exec_place::green_ctx(g_ctx.get_view(i)));
     }
   }
 
-  auto where = make_grid(places);
+  auto where = make_grid(exec_places);
 
   for (int iter = 0; iter < NITER; iter++)
   {

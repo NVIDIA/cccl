@@ -15,7 +15,8 @@ cd $SCRIPT_PATH
 
 pages=$(
         cd $path_to_docs;
-        find ./ -iname "*.html" -printf '/%P,'
+        # Embed a token to artificially limit search results
+        find ./ -iname "*.html" -printf '/%P(end),'
     )
 
 echo "$pages" > $path_to_docs/pagelist.txt

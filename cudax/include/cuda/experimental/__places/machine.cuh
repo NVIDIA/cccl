@@ -34,8 +34,10 @@
 
 #include <cuda_runtime_api.h>
 
-namespace cuda::experimental::stf::reserved
+namespace cuda::experimental::places::reserved
 {
+using ::cuda::experimental::stf::cuda_try;
+
 /**
  * @brief Singleton object abstracting a machine able to set up CUDA peer accesses.
  *
@@ -44,8 +46,8 @@ class machine : public ::cuda::experimental::meyers_singleton<machine>
 {
 protected:
   machine()
+      : ndevices(cuda_try<cudaGetDeviceCount>())
   {
-    cuda_safe_call(cudaGetDeviceCount(&ndevices));
     // TODO: remove this call? Currently anyone getting a machine gets peer access
     // and subsequent explicit calls to enable_peer_accesses() are no-ops.
     enable_peer_accesses();
@@ -66,15 +68,13 @@ public:
       return;
     }
 
-    int current_dev;
-    cuda_safe_call(cudaGetDevice(&current_dev));
+    int current_dev = cuda_try<cudaGetDevice>();
 
     for (int d = 0; d < ndevices; d++)
     {
-      cuda_safe_call(cudaSetDevice(d));
+      cuda_try(cudaSetDevice(d));
 
-      cudaMemPool_t mempool;
-      cuda_safe_call(cudaDeviceGetDefaultMemPool(&mempool, d));
+      cudaMemPool_t mempool = cuda_try<cudaDeviceGetDefaultMemPool>(d);
 
       for (int peer_d = 0; peer_d < ndevices; peer_d++)
       {
@@ -82,11 +82,10 @@ public:
         {
           continue;
         }
-        int can_access_peer;
-        cuda_safe_call(cudaDeviceCanAccessPeer(&can_access_peer, d, peer_d));
+        int can_access_peer = cuda_try<cudaDeviceCanAccessPeer>(d, peer_d);
 
         uint64_t threshold = UINT64_MAX;
-        cuda_safe_call(cudaMemPoolSetAttribute(mempool, cudaMemPoolAttrReleaseThreshold, &threshold));
+        cuda_try(cudaMemPoolSetAttribute(mempool, cudaMemPoolAttrReleaseThreshold, &threshold));
 
         if (can_access_peer)
         {
@@ -100,7 +99,7 @@ public:
           // Enable access to remote memory pool
           cudaMemAccessDesc desc = {.location = {.type = cudaMemLocationTypeDevice, .id = peer_d},
                                     .flags    = cudaMemAccessFlagsProtReadWrite};
-          cuda_safe_call(cudaMemPoolSetAccess(mempool, &desc, 1 /* numDescs */));
+          cuda_try(cudaMemPoolSetAccess(mempool, &desc, 1 /* numDescs */));
           // ::std::cout << "[DEV " << d << "] cudaMemPoolSetAccess to peer "<< peer_d << ::std::endl;
         }
         else
@@ -110,7 +109,7 @@ public:
       }
     }
 
-    cuda_safe_call(cudaSetDevice(current_dev));
+    cuda_try(cudaSetDevice(current_dev));
 
     initialized_peer_accesses = true;
   }
@@ -127,4 +126,4 @@ private:
   bool initialized_peer_accesses = false;
   int ndevices;
 };
-} // namespace cuda::experimental::stf::reserved
+} // namespace cuda::experimental::places::reserved

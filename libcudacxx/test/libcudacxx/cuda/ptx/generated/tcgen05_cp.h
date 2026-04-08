@@ -14,7 +14,7 @@
 // Because `fn_ptr` is possibly visible outside this translation unit, the
 // compiler must compile all the functions which are stored.
 
-__global__ void test_tcgen05_cp(void** fn_ptr)
+__global__ void test_tcgen05_cp_cta_group_1(void** fn_ptr)
 {
 #if __cccl_ptx_isa >= 860
   NV_IF_TARGET(
@@ -59,6 +59,777 @@ __global__ void test_tcgen05_cp(void** fn_ptr)
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
             cuda::ptx::tcgen05_cp_128x256b));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.cp.cta_group::1.4x256b [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_4x256b));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.cp.cta_group::1.4x256b [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_4x256b));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.cp.cta_group::1.4x256b [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_4x256b));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.cp.cta_group::1.4x256b [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_4x256b));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.cp.cta_group::1.4x256b [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_4x256b));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.cp.cta_group::1.4x256b [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_4x256b));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.cp.cta_group::1.128x128b [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x128b));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.cp.cta_group::1.128x128b [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x128b));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.cp.cta_group::1.128x128b [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x128b));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.cp.cta_group::1.128x128b [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x128b));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.cp.cta_group::1.128x128b [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x128b));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.cp.cta_group::1.128x128b [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x128b));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.cp.cta_group::1.32x128b.warpx4 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_32x128b_warpx4));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.cp.cta_group::1.32x128b.warpx4 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_32x128b_warpx4));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.cp.cta_group::1.32x128b.warpx4 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_32x128b_warpx4));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.cp.cta_group::1.32x128b.warpx4 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_32x128b_warpx4));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.cp.cta_group::1.32x128b.warpx4 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_32x128b_warpx4));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.cp.cta_group::1.32x128b.warpx4 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_32x128b_warpx4));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.cp.cta_group::1.128x256b.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x256b_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.cp.cta_group::1.128x256b.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x256b_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.cp.cta_group::1.128x256b.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x256b_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.cp.cta_group::1.128x256b.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x256b_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.cp.cta_group::1.128x256b.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x256b_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.cp.cta_group::1.128x256b.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x256b_b8x16_b6x16_p32));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.cp.cta_group::1.4x256b.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_4x256b_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.cp.cta_group::1.4x256b.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_4x256b_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.cp.cta_group::1.4x256b.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_4x256b_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.cp.cta_group::1.4x256b.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_4x256b_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.cp.cta_group::1.4x256b.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_4x256b_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.cp.cta_group::1.4x256b.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_4x256b_b8x16_b6x16_p32));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.cp.cta_group::1.128x128b.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x128b_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.cp.cta_group::1.128x128b.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x128b_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.cp.cta_group::1.128x128b.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x128b_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.cp.cta_group::1.128x128b.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x128b_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.cp.cta_group::1.128x128b.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x128b_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.cp.cta_group::1.128x128b.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x128b_b8x16_b6x16_p32));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b6x16_p32 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.cp.cta_group::1.128x256b.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x256b_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.cp.cta_group::1.128x256b.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x256b_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.cp.cta_group::1.128x256b.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x256b_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.cp.cta_group::1.128x256b.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x256b_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.cp.cta_group::1.128x256b.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x256b_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.cp.cta_group::1.128x256b.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x256b_b8x16_b4x16_p64));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.cp.cta_group::1.4x256b.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_4x256b_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.cp.cta_group::1.4x256b.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_4x256b_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.cp.cta_group::1.4x256b.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_4x256b_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.cp.cta_group::1.4x256b.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_4x256b_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.cp.cta_group::1.4x256b.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_4x256b_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.cp.cta_group::1.4x256b.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_4x256b_b8x16_b4x16_p64));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.cp.cta_group::1.128x128b.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x128b_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.cp.cta_group::1.128x128b.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x128b_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.cp.cta_group::1.128x128b.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x128b_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.cp.cta_group::1.128x128b.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x128b_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.cp.cta_group::1.128x128b.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x128b_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.cp.cta_group::1.128x128b.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_128x128b_b8x16_b4x16_p64));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64));));
+#endif // __cccl_ptx_isa >= 860
+
+#if __cccl_ptx_isa >= 860
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100a,
+    (
+        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103a,
+    (
+        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110a,
+    (
+        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (
+        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_103f,
+    (
+        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64));));
+  NV_IF_TARGET(
+    NV_HAS_FEATURE_SM_110f,
+    (
+        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b4x16_p64 [taddr], s_desc;
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
+            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64));));
+#endif // __cccl_ptx_isa >= 860
+}
+
+__global__ void test_tcgen05_cp_cta_group_2(void** fn_ptr)
+{
+#if __cccl_ptx_isa >= 860
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
@@ -107,48 +878,6 @@ __global__ void test_tcgen05_cp(void** fn_ptr)
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
-        // tcgen05.cp.cta_group::1.4x256b [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_4x256b));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // tcgen05.cp.cta_group::1.4x256b [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_4x256b));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // tcgen05.cp.cta_group::1.4x256b [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_4x256b));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // tcgen05.cp.cta_group::1.4x256b [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_4x256b));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // tcgen05.cp.cta_group::1.4x256b [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_4x256b));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // tcgen05.cp.cta_group::1.4x256b [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_4x256b));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
         // tcgen05.cp.cta_group::2.4x256b [taddr], s_desc;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
@@ -191,48 +920,6 @@ __global__ void test_tcgen05_cp(void** fn_ptr)
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // tcgen05.cp.cta_group::1.128x128b [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x128b));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // tcgen05.cp.cta_group::1.128x128b [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x128b));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // tcgen05.cp.cta_group::1.128x128b [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x128b));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // tcgen05.cp.cta_group::1.128x128b [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x128b));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // tcgen05.cp.cta_group::1.128x128b [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x128b));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // tcgen05.cp.cta_group::1.128x128b [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x128b));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
@@ -281,48 +968,6 @@ __global__ void test_tcgen05_cp(void** fn_ptr)
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
         // tcgen05.cp.cta_group::2.64x128b.warpx2::02_13 [taddr], s_desc;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
@@ -365,48 +1010,6 @@ __global__ void test_tcgen05_cp(void** fn_ptr)
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
@@ -455,48 +1058,6 @@ __global__ void test_tcgen05_cp(void** fn_ptr)
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
-        // tcgen05.cp.cta_group::1.32x128b.warpx4 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_32x128b_warpx4));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // tcgen05.cp.cta_group::1.32x128b.warpx4 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_32x128b_warpx4));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // tcgen05.cp.cta_group::1.32x128b.warpx4 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_32x128b_warpx4));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // tcgen05.cp.cta_group::1.32x128b.warpx4 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_32x128b_warpx4));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // tcgen05.cp.cta_group::1.32x128b.warpx4 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_32x128b_warpx4));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // tcgen05.cp.cta_group::1.32x128b.warpx4 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_32x128b_warpx4));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
         // tcgen05.cp.cta_group::2.32x128b.warpx4 [taddr], s_desc;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
@@ -539,48 +1100,6 @@ __global__ void test_tcgen05_cp(void** fn_ptr)
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // tcgen05.cp.cta_group::1.128x256b.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x256b_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // tcgen05.cp.cta_group::1.128x256b.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x256b_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // tcgen05.cp.cta_group::1.128x256b.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x256b_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // tcgen05.cp.cta_group::1.128x256b.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x256b_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // tcgen05.cp.cta_group::1.128x256b.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x256b_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // tcgen05.cp.cta_group::1.128x256b.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x256b_b8x16_b6x16_p32));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
@@ -629,48 +1148,6 @@ __global__ void test_tcgen05_cp(void** fn_ptr)
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
-        // tcgen05.cp.cta_group::1.4x256b.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_4x256b_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // tcgen05.cp.cta_group::1.4x256b.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_4x256b_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // tcgen05.cp.cta_group::1.4x256b.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_4x256b_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // tcgen05.cp.cta_group::1.4x256b.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_4x256b_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // tcgen05.cp.cta_group::1.4x256b.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_4x256b_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // tcgen05.cp.cta_group::1.4x256b.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_4x256b_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
         // tcgen05.cp.cta_group::2.4x256b.b8x16.b6x16_p32 [taddr], s_desc;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
@@ -713,48 +1190,6 @@ __global__ void test_tcgen05_cp(void** fn_ptr)
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // tcgen05.cp.cta_group::1.128x128b.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x128b_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // tcgen05.cp.cta_group::1.128x128b.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x128b_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // tcgen05.cp.cta_group::1.128x128b.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x128b_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // tcgen05.cp.cta_group::1.128x128b.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x128b_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // tcgen05.cp.cta_group::1.128x128b.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x128b_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // tcgen05.cp.cta_group::1.128x128b.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x128b_b8x16_b6x16_p32));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
@@ -803,48 +1238,6 @@ __global__ void test_tcgen05_cp(void** fn_ptr)
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
         // tcgen05.cp.cta_group::2.64x128b.warpx2::02_13.b8x16.b6x16_p32 [taddr], s_desc;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
@@ -887,48 +1280,6 @@ __global__ void test_tcgen05_cp(void** fn_ptr)
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
@@ -977,48 +1328,6 @@ __global__ void test_tcgen05_cp(void** fn_ptr)
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
-        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b6x16_p32 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
         // tcgen05.cp.cta_group::2.32x128b.warpx4.b8x16.b6x16_p32 [taddr], s_desc;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
@@ -1061,48 +1370,6 @@ __global__ void test_tcgen05_cp(void** fn_ptr)
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // tcgen05.cp.cta_group::1.128x256b.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x256b_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // tcgen05.cp.cta_group::1.128x256b.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x256b_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // tcgen05.cp.cta_group::1.128x256b.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x256b_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // tcgen05.cp.cta_group::1.128x256b.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x256b_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // tcgen05.cp.cta_group::1.128x256b.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x256b_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // tcgen05.cp.cta_group::1.128x256b.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x256b_b8x16_b4x16_p64));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
@@ -1151,48 +1418,6 @@ __global__ void test_tcgen05_cp(void** fn_ptr)
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
-        // tcgen05.cp.cta_group::1.4x256b.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_4x256b_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // tcgen05.cp.cta_group::1.4x256b.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_4x256b_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // tcgen05.cp.cta_group::1.4x256b.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_4x256b_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // tcgen05.cp.cta_group::1.4x256b.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_4x256b_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // tcgen05.cp.cta_group::1.4x256b.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_4x256b_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // tcgen05.cp.cta_group::1.4x256b.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_4x256b_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
         // tcgen05.cp.cta_group::2.4x256b.b8x16.b4x16_p64 [taddr], s_desc;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
@@ -1235,48 +1460,6 @@ __global__ void test_tcgen05_cp(void** fn_ptr)
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // tcgen05.cp.cta_group::1.128x128b.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x128b_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // tcgen05.cp.cta_group::1.128x128b.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x128b_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // tcgen05.cp.cta_group::1.128x128b.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x128b_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // tcgen05.cp.cta_group::1.128x128b.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x128b_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // tcgen05.cp.cta_group::1.128x128b.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x128b_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // tcgen05.cp.cta_group::1.128x128b.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_128x128b_b8x16_b4x16_p64));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
@@ -1325,48 +1508,6 @@ __global__ void test_tcgen05_cp(void** fn_ptr)
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::02_13.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
         // tcgen05.cp.cta_group::2.64x128b.warpx2::02_13.b8x16.b4x16_p64 [taddr], s_desc;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
@@ -1412,48 +1553,6 @@ __global__ void test_tcgen05_cp(void** fn_ptr)
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // tcgen05.cp.cta_group::1.64x128b.warpx2::01_23.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
         // tcgen05.cp.cta_group::2.64x128b.warpx2::01_23.b8x16.b4x16_p64 [taddr], s_desc;
         * fn_ptr++ = reinterpret_cast<void*>(
           static_cast<void (*)(cuda::ptx::cta_group_2_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
@@ -1496,48 +1595,6 @@ __global__ void test_tcgen05_cp(void** fn_ptr)
 #endif // __cccl_ptx_isa >= 860
 
 #if __cccl_ptx_isa >= 860
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100a,
-    (
-        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103a,
-    (
-        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110a,
-    (
-        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_100f,
-    (
-        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_103f,
-    (
-        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64));));
-  NV_IF_TARGET(
-    NV_HAS_FEATURE_SM_110f,
-    (
-        // tcgen05.cp.cta_group::1.32x128b.warpx4.b8x16.b4x16_p64 [taddr], s_desc;
-        * fn_ptr++ = reinterpret_cast<void*>(
-          static_cast<void (*)(cuda::ptx::cta_group_1_t, cuda::std::uint32_t, cuda::std::uint64_t)>(
-            cuda::ptx::tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64));));
   NV_IF_TARGET(
     NV_HAS_FEATURE_SM_100a,
     (

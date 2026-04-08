@@ -414,3 +414,57 @@ def test_segmented_reduce_with_lambda(monkeypatch):
 
     expected = np.array([6, 9, 30])  # sum of each segment
     np.testing.assert_equal(d_output.get(), expected)
+
+
+@pytest.mark.parametrize(
+    "max_seg_size",
+    [
+        4,  # small: warp-level reduction path
+        64,  # medium: warp-level reduction path
+        512,  # large: block-level reduction path
+    ],
+)
+def test_segmented_reduce_max_segment_size(max_seg_size, monkeypatch):
+    """Test that max_segment_size hint produces correct results with non-uniform segments.
+
+    max_segment_size is a performance hint that selects an optimized kernel
+    dispatch path. Segments vary in size from 1 to max_seg_size elements.
+    """
+    monkeypatch.setattr(
+        cuda.compute._cccl_interop,
+        "_check_sass",
+        False,
+    )
+    dtype = np.int32
+    rng = cp.random
+    num_segments = 1024
+    h_init = np.zeros(1, dtype=dtype)
+
+    # Non-uniform segment sizes in [1, max_seg_size]
+    sizes = rng.randint(1, max_seg_size + 1, size=num_segments, dtype=np.int64)
+    offsets = cp.zeros(num_segments + 1, dtype=np.int64)
+    offsets[1:] = cp.cumsum(sizes)
+
+    total = int(offsets[-1].item())
+    d_input = rng.randint(0, 100, size=total, dtype=dtype)
+    d_output = cp.empty(num_segments, dtype=dtype)
+
+    d_starts = offsets[:-1]
+    d_ends = offsets[1:]
+
+    cuda.compute.segmented_reduce(
+        d_input,
+        d_output,
+        d_starts,
+        d_ends,
+        OpKind.PLUS,
+        h_init,
+        num_segments,
+        max_segment_size=max_seg_size,
+    )
+
+    expected = cp.empty(num_segments, dtype=dtype)
+    for i in range(num_segments):
+        expected[i] = cp.sum(d_input[int(d_starts[i].item()) : int(d_ends[i].item())])
+
+    np.testing.assert_array_equal(d_output.get(), expected.get())

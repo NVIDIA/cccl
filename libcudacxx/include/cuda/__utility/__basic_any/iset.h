@@ -163,6 +163,7 @@ struct __tagged_ptr<__iset_vptr<_Interfaces...>>
 
   [[nodiscard]] _CCCL_NODEBUG_API auto __get() const noexcept -> __iset_vptr<_Interfaces...>
   {
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     return __iset_vptr<_Interfaces...>{reinterpret_cast<__rtti_base const*>(__ptr_ & ~uintptr_t(1))};
   }
 

@@ -353,7 +353,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -366,12 +366,18 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+            void
+#else
+            ::cuda::std::execution::env<>
+#endif
+            >
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
   {
@@ -644,7 +650,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -663,14 +669,20 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+            void
+#else
+            ::cuda::std::execution::env<>
+#endif
+            >
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -1603,7 +1615,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -1619,13 +1631,19 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename ScanOpT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+            void
+#else
+            ::cuda::std::execution::env<>
+#endif
+            >
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveScan(InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, NumItemsT num_items, EnvT env = {})
   {
@@ -1678,7 +1696,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_in
   //!   Random-access iterator to the input sequence of data items
@@ -1698,14 +1716,20 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+            void
+#else
+            ::cuda::std::execution::env<>
+#endif
+            >
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -2407,7 +2431,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_keys_in
   //!   Random-access input iterator to the input sequence of key items
@@ -2427,14 +2451,19 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
             typename NumItemsT   = uint32_t,
-            typename EnvT        = ::cuda::std::execution::env<>,
+            typename EnvT        = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+            void,
+#else
+            ::cuda::std::execution::env<>,
+#endif
             ::cuda::std::enable_if_t<
               !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
                 && !::cuda::std::is_same_v<ValuesInputIteratorT, size_t>,
@@ -2530,7 +2559,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_keys_in
   //!   Random-access input iterator to the input sequence of key items
@@ -2557,7 +2586,7 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
@@ -2566,7 +2595,12 @@ struct DeviceScan
             typename InitValueT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
             typename NumItemsT   = uint32_t,
-            typename EnvT        = ::cuda::std::execution::env<>,
+            typename EnvT        = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+            void,
+#else
+            ::cuda::std::execution::env<>,
+#endif
             ::cuda::std::enable_if_t<
               !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
                 && !::cuda::std::is_same_v<ValuesInputIteratorT, size_t>,
@@ -2652,7 +2686,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_keys_in
   //!   Random-access input iterator to the input sequence of key items
@@ -2672,14 +2706,19 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
             typename NumItemsT   = uint32_t,
-            typename EnvT        = ::cuda::std::execution::env<>,
+            typename EnvT        = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+            void,
+#else
+            ::cuda::std::execution::env<>,
+#endif
             ::cuda::std::enable_if_t<
               !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
                 && !::cuda::std::is_same_v<ValuesInputIteratorT, size_t>,
@@ -2767,7 +2806,7 @@ struct DeviceScan
   //!   **[inferred]** An integral type representing the number of input elements
   //!
   //! @tparam EnvT
-  //!   **[inferred]** Execution environment type. Default is `::cuda::std::execution::env<>`.
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
   //! @param[in] d_keys_in
   //!   Random-access input iterator to the input sequence of key items
@@ -2790,7 +2829,7 @@ struct DeviceScan
   //!
   //! @param[in] env
   //!   @rst
-  //!   **[optional]** Execution environment. Default is `::cuda::std::execution::env{}`.
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
@@ -2798,7 +2837,12 @@ struct DeviceScan
             typename ScanOpT,
             typename EqualityOpT = ::cuda::std::equal_to<>,
             typename NumItemsT   = uint32_t,
-            typename EnvT        = ::cuda::std::execution::env<>,
+            typename EnvT        = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+            void,
+#else
+            ::cuda::std::execution::env<>,
+#endif
             ::cuda::std::enable_if_t<
               !::cuda::std::is_same_v<KeysInputIteratorT, void*> && !::cuda::std::is_null_pointer_v<KeysInputIteratorT>
                 && !::cuda::std::is_same_v<ValuesInputIteratorT, size_t>,

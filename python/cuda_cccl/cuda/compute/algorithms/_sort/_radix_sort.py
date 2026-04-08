@@ -192,7 +192,7 @@ def radix_sort(
             :start-after: # example-begin
 
 
-        In the following example, ``radix_sort`` is used to sort a sequence of keys with a ``DoubleBuffer` for reduced temporary storage.
+        In the following example, ``radix_sort`` is used to sort a sequence of keys with a ``DoubleBuffer`` for reduced temporary storage.
 
         .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/sort/radix_sort_buffer.py
             :language: python

@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-numeric-saturating_sub_overflow:
 
 ``cuda::saturating_sub_overflow``
-======================
+=================================
 
 Defined in ``<cuda/numeric>`` header.
 

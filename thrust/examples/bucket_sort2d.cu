@@ -86,12 +86,12 @@ int main()
 
   // write out bucket (150, 50)'s list of points
   unsigned int bucket_idx = 50 * w + 150;
-  std::cout << "bucket (150, 50)'s list of points:" << std::endl;
+  std::cout << "bucket (150, 50)'s list of points:" << '\n';
   std::cout << std::fixed << std::setprecision(6);
   for (unsigned int point_idx = bucket_begin[bucket_idx]; point_idx != bucket_end[bucket_idx]; ++point_idx)
   {
     vec2 p = points[point_idx];
-    std::cout << "(" << cuda::std::get<0>(p) << "," << cuda::std::get<1>(p) << ")" << std::endl;
+    std::cout << "(" << cuda::std::get<0>(p) << "," << cuda::std::get<1>(p) << ")" << '\n';
   }
 
   return 0;

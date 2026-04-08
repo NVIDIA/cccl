@@ -7,7 +7,7 @@
 # If ADD_CTEST is specified, a CTest test is added with the same name as the target,
 # which runs the executable with no arguments.
 function(cccl_add_executable target_name)
-  set(options ADD_CTEST NO_METATARGETS)
+  set(options ADD_CTEST NO_METATARGETS NO_CLANG_TIDY)
   set(oneValueArgs METATARGET_PATH DIALECT)
   set(multiValueArgs SOURCES)
   cmake_parse_arguments(
@@ -45,5 +45,9 @@ function(cccl_add_executable target_name)
       set(metatarget_path ${_cccl_METATARGET_PATH})
     endif()
     cccl_ensure_metatargets(${target_name} METATARGET_PATH ${metatarget_path})
+  endif()
+
+  if (NOT _cccl_NO_CLANG_TIDY)
+    cccl_tidy_add_target(SOURCES ${_cccl_SOURCES})
   endif()
 endfunction()
