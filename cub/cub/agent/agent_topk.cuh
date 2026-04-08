@@ -48,7 +48,8 @@ template <int BlockThreads,
           int ItemsPerThread,
           int BitsPerPass,
           BlockLoadAlgorithm LoadAlgorithm,
-          BlockScanAlgorithm ScanAlgorithm>
+          BlockScanAlgorithm ScanAlgorithm,
+          bool UseSmemWriteCoordination = true>
 struct AgentTopKPolicy
 {
   static constexpr int block_threads                 = BlockThreads;
@@ -56,6 +57,7 @@ struct AgentTopKPolicy
   static constexpr int bits_per_pass                 = BitsPerPass;
   static constexpr BlockLoadAlgorithm load_algorithm = LoadAlgorithm;
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
+  static constexpr bool use_smem_write_coordination  = UseSmemWriteCoordination;
 };
 
 template <typename KeyT, bool IsFundamental = detail::radix::is_fundamental_type_v<KeyT>>
@@ -252,6 +254,8 @@ struct AgentTopK
   static constexpr bool keys_only      = ::cuda::std::is_same_v<ValueInputIteratorT, NullType*>;
   static constexpr int bins_per_thread = ::cuda::ceil_div(num_buckets, block_threads);
 
+  static constexpr bool use_smem_write_coordination = AgentTopKPolicyT::use_smem_write_coordination;
+
   // Parameterized BlockLoad type for input data
   using block_load_input_t = BlockLoad<key_in_t, block_threads, items_per_thread, AgentTopKPolicyT::load_algorithm>;
   using block_load_trans_t = BlockLoad<OffsetT, block_threads, bins_per_thread, BLOCK_LOAD_TRANSPOSE>;
@@ -259,6 +263,11 @@ struct AgentTopK
   using block_scan_t = BlockScan<OffsetT, block_threads, AgentTopKPolicyT::SCAN_ALGORITHM>;
   // Parameterized BlockStore type
   using block_store_trans_t = BlockStore<OffsetT, block_threads, bins_per_thread, BLOCK_STORE_TRANSPOSE>;
+
+  struct noop_tile_epilogue
+  {
+    _CCCL_DEVICE void operator()() const {}
+  };
 
   // Shared memory
   struct _TempStorage
@@ -272,8 +281,22 @@ struct AgentTopK
       typename block_scan_t::TempStorage scan;
       // Smem needed for storing
       typename block_store_trans_t::TempStorage store_trans;
+
+      // Staging buffer for coalesced writes (active when use_smem_write_coordination == true)
+      struct
+      {
+        key_in_t keys[use_smem_write_coordination ? tile_items : 1];
+        OffsetT indices[(use_smem_write_coordination && !keys_only) ? tile_items : 1];
+      } staging;
     };
     OffsetT histogram[num_buckets];
+
+    // Write coordination counters (used when use_smem_write_coordination == true)
+    OffsetT smem_filter_cnt;
+    OutOffsetT smem_out_cnt;
+    OffsetT block_filter_base;
+    OutOffsetT block_out_base;
+    OutOffsetT block_out_back_base;
   };
   /// Alias wrapper allowing storage to be unioned
   struct TempStorage : Uninitialized<_TempStorage>
@@ -357,6 +380,15 @@ struct AgentTopK
   template <typename InputItT, typename FuncT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void process_range(InputItT in, const OffsetT num_items, FuncT f)
   {
+    process_range(in, num_items, f, noop_tile_epilogue{});
+  }
+
+  // Process a range of input data in tiles, calling f(key, index) for each element
+  // and tile_epilogue() after each tile completes
+  template <typename InputItT, typename FuncT, typename TileEpilogueT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  process_range(InputItT in, const OffsetT num_items, FuncT f, TileEpilogueT tile_epilogue)
+  {
     key_in_t thread_data[items_per_thread];
 
     const OffsetT items_per_pass   = tile_items * gridDim.x;
@@ -378,6 +410,9 @@ struct AgentTopK
       {
         f(thread_data[j], offset + j);
       }
+
+      tile_epilogue();
+
       tile_base += items_per_pass;
       offset += items_per_pass;
     }
@@ -404,6 +439,8 @@ struct AgentTopK
           f(thread_data[j], offset + j);
         }
       }
+
+      tile_epilogue();
     }
   }
 
@@ -461,106 +498,246 @@ struct AgentTopK
     // Initialize shared memory histogram
     init_histograms(temp_storage.histogram);
 
-    // Make sure the histogram was initialized
+    if constexpr (use_smem_write_coordination)
+    {
+      if (threadIdx.x == 0)
+      {
+        temp_storage.smem_filter_cnt = 0;
+        temp_storage.smem_out_cnt    = 0;
+      }
+    }
+
+    // Make sure the histogram and counters were initialized
     __syncthreads();
 
     OffsetT* p_filter_cnt = &counter->filter_cnt;
     OutOffsetT* p_out_cnt = &counter->out_cnt;
 
-    // Lambda for early_stop = true (i.e., we have identified the exact "splitter" key):
-    // Select all items that fall into the bin of the k-th item (i.e., the 'candidates') and the ones that fall into
-    // bins preceding the k-th item bin (i.e., 'selected' items), write them to output.
-    // We can skip histogram computation because we don't need to further passes to refine the candidates.
-    auto f_early_stop = [load_from_original_input, in_idx_buf, p_out_cnt, this](key_in_t key, OffsetT i) {
-      const candidate_class pre_res = identify_candidates_op(key);
-      if (pre_res == candidate_class::candidate || pre_res == candidate_class::selected)
-      {
-        const OutOffsetT pos = atomicAdd(p_out_cnt, OutOffsetT{1});
-        d_keys_out[pos]      = key;
-        if constexpr (!keys_only)
-        {
-          const OffsetT index = load_from_original_input ? i : in_idx_buf[i];
-          d_values_out[pos]   = d_values_in[index];
-        }
-      }
-    };
-
-    // Lambda for early_stop = false, out_buf != nullptr (i.e., we need to further refine the candidates in the next
-    // pass): Write out selected items to output, write candidates to out_buf, and build histogram for candidates.
-    auto f_with_out_buf = [load_from_original_input, in_idx_buf, out_buf, out_idx_buf, p_filter_cnt, p_out_cnt, this](
-                            key_in_t key, OffsetT i) {
-      const candidate_class pre_res = identify_candidates_op(key);
-      if (pre_res == candidate_class::candidate)
-      {
-        const OffsetT pos = atomicAdd(p_filter_cnt, OffsetT{1});
-        out_buf[pos]      = key;
-        if constexpr (!keys_only)
-        {
-          const OffsetT index = load_from_original_input ? i : in_idx_buf[i];
-          out_idx_buf[pos]    = index;
-        }
-
-        const int bucket = extract_bin_op(key);
-        atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
-      }
-      else if (pre_res == candidate_class::selected)
-      {
-        const OutOffsetT pos = atomicAdd(p_out_cnt, OutOffsetT{1});
-        d_keys_out[pos]      = key;
-        if constexpr (!keys_only)
-        {
-          const OffsetT index = in_idx_buf ? in_idx_buf[i] : i;
-          d_values_out[pos]   = d_values_in[index];
-        }
-      }
-    };
-
-    // Lambda for early_stop = false, out_buf = nullptr (i.e., we need to further refine the candidates in the next
-    // pass, but we skip writing candidates to out_buf):
-    // Just build histogram for candidates.
-    // Note: We will only begin writing to d_keys_out starting from the pass in which the number of output-candidates
-    // is small enough to fit into the output buffer (otherwise, we would be writing the same items to d_keys_out
-    // multiple times).
-    auto f_no_out_buf = [this](key_in_t key, OffsetT i) {
-      const candidate_class pre_res = identify_candidates_op(key);
-      if (pre_res == candidate_class::candidate)
-      {
-        const int bucket = extract_bin_op(key);
-        atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
-      }
-    };
-
-    // Choose and invoke the appropriate lambda with the correct input source
-    // If the input size exceeds the allocated buffer size, we know for sure we haven't started writing candidates to
-    // the output buffer yet
-    if (load_from_original_input)
+    if constexpr (use_smem_write_coordination)
     {
-      if (early_stop)
+      // === SMEM WRITE COORDINATION PATH ===
+
+      auto f_early_stop = [load_from_original_input, in_idx_buf, this](key_in_t key, OffsetT i) {
+        const candidate_class pre_res = identify_candidates_op(key);
+        if (pre_res == candidate_class::candidate || pre_res == candidate_class::selected)
+        {
+          const auto local_pos                 = atomicAdd(&temp_storage.smem_out_cnt, OutOffsetT{1});
+          temp_storage.staging.keys[local_pos] = key;
+          if constexpr (!keys_only)
+          {
+            temp_storage.staging.indices[local_pos] = load_from_original_input ? i : in_idx_buf[i];
+          }
+        }
+      };
+
+      auto early_stop_epilogue = [p_out_cnt, this]() {
+        __syncthreads();
+        const OutOffsetT n_out = temp_storage.smem_out_cnt;
+        if (threadIdx.x == 0)
+        {
+          temp_storage.block_out_base = atomicAdd(p_out_cnt, n_out);
+        }
+        __syncthreads();
+        const OutOffsetT out_base = temp_storage.block_out_base;
+        for (OutOffsetT i = threadIdx.x; i < n_out; i += block_threads)
+        {
+          d_keys_out[out_base + i] = temp_storage.staging.keys[i];
+          if constexpr (!keys_only)
+          {
+            d_values_out[out_base + i] = d_values_in[temp_storage.staging.indices[i]];
+          }
+        }
+        if (threadIdx.x == 0)
+        {
+          temp_storage.smem_out_cnt = 0;
+        }
+      };
+
+      auto f_with_out_buf = [load_from_original_input, in_idx_buf, this](key_in_t key, OffsetT i) {
+        const candidate_class pre_res = identify_candidates_op(key);
+        if (pre_res == candidate_class::candidate)
+        {
+          const auto local_pos                                  = atomicAdd(&temp_storage.smem_filter_cnt, OffsetT{1});
+          temp_storage.staging.keys[tile_items - 1 - local_pos] = key;
+          if constexpr (!keys_only)
+          {
+            temp_storage.staging.indices[tile_items - 1 - local_pos] = load_from_original_input ? i : in_idx_buf[i];
+          }
+
+          const int bucket = extract_bin_op(key);
+          atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
+        }
+        else if (pre_res == candidate_class::selected)
+        {
+          const auto local_pos                 = atomicAdd(&temp_storage.smem_out_cnt, OutOffsetT{1});
+          temp_storage.staging.keys[local_pos] = key;
+          if constexpr (!keys_only)
+          {
+            temp_storage.staging.indices[local_pos] = in_idx_buf ? in_idx_buf[i] : i;
+          }
+        }
+      };
+
+      auto with_out_buf_epilogue = [p_filter_cnt, p_out_cnt, out_buf, out_idx_buf, this]() {
+        __syncthreads();
+        const OffsetT n_candidates  = temp_storage.smem_filter_cnt;
+        const OutOffsetT n_selected = temp_storage.smem_out_cnt;
+        if (threadIdx.x == 0)
+        {
+          temp_storage.block_filter_base = atomicAdd(p_filter_cnt, n_candidates);
+          temp_storage.block_out_base    = atomicAdd(p_out_cnt, n_selected);
+        }
+        __syncthreads();
+        const OffsetT filter_base = temp_storage.block_filter_base;
+        const OutOffsetT out_base = temp_storage.block_out_base;
+        for (OutOffsetT i = threadIdx.x; i < n_selected; i += block_threads)
+        {
+          d_keys_out[out_base + i] = temp_storage.staging.keys[i];
+          if constexpr (!keys_only)
+          {
+            d_values_out[out_base + i] = d_values_in[temp_storage.staging.indices[i]];
+          }
+        }
+        const OffsetT cand_start = static_cast<OffsetT>(tile_items) - n_candidates;
+        for (OffsetT i = threadIdx.x; i < n_candidates; i += block_threads)
+        {
+          out_buf[filter_base + i] = temp_storage.staging.keys[cand_start + i];
+          if constexpr (!keys_only)
+          {
+            out_idx_buf[filter_base + i] = temp_storage.staging.indices[cand_start + i];
+          }
+        }
+        if (threadIdx.x == 0)
+        {
+          temp_storage.smem_filter_cnt = 0;
+          temp_storage.smem_out_cnt    = 0;
+        }
+      };
+
+      auto f_no_out_buf = [this](key_in_t key, OffsetT i) {
+        const candidate_class pre_res = identify_candidates_op(key);
+        if (pre_res == candidate_class::candidate)
+        {
+          const int bucket = extract_bin_op(key);
+          atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
+        }
+      };
+
+      if (load_from_original_input)
       {
-        process_range(d_keys_in, previous_len, f_early_stop);
-      }
-      else if (out_buf)
-      {
-        process_range(d_keys_in, previous_len, f_with_out_buf);
+        if (early_stop)
+        {
+          process_range(d_keys_in, previous_len, f_early_stop, early_stop_epilogue);
+        }
+        else if (out_buf)
+        {
+          process_range(d_keys_in, previous_len, f_with_out_buf, with_out_buf_epilogue);
+        }
+        else
+        {
+          process_range(d_keys_in, previous_len, f_no_out_buf);
+        }
       }
       else
       {
-        process_range(d_keys_in, previous_len, f_no_out_buf);
+        if (early_stop)
+        {
+          process_range(in_buf, previous_len, f_early_stop, early_stop_epilogue);
+        }
+        else if (out_buf)
+        {
+          process_range(in_buf, previous_len, f_with_out_buf, with_out_buf_epilogue);
+        }
+        else
+        {
+          process_range(in_buf, previous_len, f_no_out_buf);
+        }
       }
     }
     else
     {
-      if (early_stop)
+      // === ORIGINAL PATH (no smem write coordination) ===
+
+      auto f_early_stop = [load_from_original_input, in_idx_buf, p_out_cnt, this](key_in_t key, OffsetT i) {
+        const candidate_class pre_res = identify_candidates_op(key);
+        if (pre_res == candidate_class::candidate || pre_res == candidate_class::selected)
+        {
+          const OutOffsetT pos = atomicAdd(p_out_cnt, OutOffsetT{1});
+          d_keys_out[pos]      = key;
+          if constexpr (!keys_only)
+          {
+            const OffsetT index = load_from_original_input ? i : in_idx_buf[i];
+            d_values_out[pos]   = d_values_in[index];
+          }
+        }
+      };
+
+      auto f_with_out_buf = [load_from_original_input, in_idx_buf, out_buf, out_idx_buf, p_filter_cnt, p_out_cnt, this](
+                              key_in_t key, OffsetT i) {
+        const candidate_class pre_res = identify_candidates_op(key);
+        if (pre_res == candidate_class::candidate)
+        {
+          const OffsetT pos = atomicAdd(p_filter_cnt, OffsetT{1});
+          out_buf[pos]      = key;
+          if constexpr (!keys_only)
+          {
+            const OffsetT index = load_from_original_input ? i : in_idx_buf[i];
+            out_idx_buf[pos]    = index;
+          }
+
+          const int bucket = extract_bin_op(key);
+          atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
+        }
+        else if (pre_res == candidate_class::selected)
+        {
+          const OutOffsetT pos = atomicAdd(p_out_cnt, OutOffsetT{1});
+          d_keys_out[pos]      = key;
+          if constexpr (!keys_only)
+          {
+            const OffsetT index = in_idx_buf ? in_idx_buf[i] : i;
+            d_values_out[pos]   = d_values_in[index];
+          }
+        }
+      };
+
+      auto f_no_out_buf = [this](key_in_t key, OffsetT i) {
+        const candidate_class pre_res = identify_candidates_op(key);
+        if (pre_res == candidate_class::candidate)
+        {
+          const int bucket = extract_bin_op(key);
+          atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
+        }
+      };
+
+      if (load_from_original_input)
       {
-        process_range(in_buf, previous_len, f_early_stop);
-      }
-      else if (out_buf)
-      {
-        process_range(in_buf, previous_len, f_with_out_buf);
+        if (early_stop)
+        {
+          process_range(d_keys_in, previous_len, f_early_stop);
+        }
+        else if (out_buf)
+        {
+          process_range(d_keys_in, previous_len, f_with_out_buf);
+        }
+        else
+        {
+          process_range(d_keys_in, previous_len, f_no_out_buf);
+        }
       }
       else
       {
-        process_range(in_buf, previous_len, f_no_out_buf);
+        if (early_stop)
+        {
+          process_range(in_buf, previous_len, f_early_stop);
+        }
+        else if (out_buf)
+        {
+          process_range(in_buf, previous_len, f_with_out_buf);
+        }
+        else
+        {
+          process_range(in_buf, previous_len, f_no_out_buf);
+        }
       }
     }
 
@@ -648,44 +825,130 @@ struct AgentTopK
     OutOffsetT* p_out_cnt      = &counter->out_cnt;
     OutOffsetT* p_out_back_cnt = &counter->out_back_cnt;
 
-    auto f = [this, p_out_cnt, in_idx_buf, p_out_back_cnt, num_of_kth_needed, k, load_from_original_input](
-               key_in_t key, OffsetT i) {
-      const candidate_class res = identify_candidates_op(key);
-      if (res == candidate_class::selected)
+    if constexpr (use_smem_write_coordination)
+    {
+      if (threadIdx.x == 0)
       {
-        const OutOffsetT pos = atomicAdd(p_out_cnt, OffsetT{1});
-        d_keys_out[pos]      = key;
-        if constexpr (!keys_only)
-        {
-          // If writing has been skipped up to this point, `in_idx_buf` is nullptr
-          const OffsetT index = load_from_original_input ? i : in_idx_buf[i];
-          d_values_out[pos]   = d_values_in[index];
-        }
+        temp_storage.smem_filter_cnt = 0;
+        temp_storage.smem_out_cnt    = 0;
       }
-      else if (res == candidate_class::candidate)
-      {
-        const OutOffsetT back_pos = atomicAdd(p_out_back_cnt, OffsetT{1});
+      __syncthreads();
 
-        if (back_pos < num_of_kth_needed)
+      auto f = [this, in_idx_buf, load_from_original_input](key_in_t key, OffsetT i) {
+        const candidate_class res = identify_candidates_op(key);
+        if (res == candidate_class::selected)
         {
-          const OutOffsetT pos = k - 1 - back_pos;
-          d_keys_out[pos]      = key;
+          const auto local_pos                 = atomicAdd(&temp_storage.smem_out_cnt, OutOffsetT{1});
+          temp_storage.staging.keys[local_pos] = key;
           if constexpr (!keys_only)
           {
-            const OffsetT new_idx = load_from_original_input ? i : in_idx_buf[i];
-            d_values_out[pos]     = d_values_in[new_idx];
+            temp_storage.staging.indices[local_pos] = load_from_original_input ? i : in_idx_buf[i];
           }
         }
-      }
-    };
+        else if (res == candidate_class::candidate)
+        {
+          const auto local_pos                                  = atomicAdd(&temp_storage.smem_filter_cnt, OffsetT{1});
+          temp_storage.staging.keys[tile_items - 1 - local_pos] = key;
+          if constexpr (!keys_only)
+          {
+            temp_storage.staging.indices[tile_items - 1 - local_pos] = load_from_original_input ? i : in_idx_buf[i];
+          }
+        }
+      };
 
-    if (load_from_original_input)
-    {
-      process_range(d_keys_in, current_len, f);
+      auto epilogue = [this, p_out_cnt, p_out_back_cnt, num_of_kth_needed, k]() {
+        __syncthreads();
+        const OutOffsetT n_selected = temp_storage.smem_out_cnt;
+        const OffsetT n_candidates  = temp_storage.smem_filter_cnt;
+        if (threadIdx.x == 0)
+        {
+          temp_storage.block_out_base      = atomicAdd(p_out_cnt, n_selected);
+          temp_storage.block_out_back_base = atomicAdd(p_out_back_cnt, static_cast<OutOffsetT>(n_candidates));
+        }
+        __syncthreads();
+        const OutOffsetT out_base  = temp_storage.block_out_base;
+        const OutOffsetT back_base = temp_storage.block_out_back_base;
+
+        for (OutOffsetT i = threadIdx.x; i < n_selected; i += block_threads)
+        {
+          d_keys_out[out_base + i] = temp_storage.staging.keys[i];
+          if constexpr (!keys_only)
+          {
+            d_values_out[out_base + i] = d_values_in[temp_storage.staging.indices[i]];
+          }
+        }
+
+        const OffsetT cand_start = static_cast<OffsetT>(tile_items) - n_candidates;
+        for (OffsetT i = threadIdx.x; i < n_candidates; i += block_threads)
+        {
+          const OutOffsetT back_pos = back_base + static_cast<OutOffsetT>(i);
+          if (back_pos < num_of_kth_needed)
+          {
+            const OutOffsetT pos = k - 1 - back_pos;
+            d_keys_out[pos]      = temp_storage.staging.keys[cand_start + i];
+            if constexpr (!keys_only)
+            {
+              d_values_out[pos] = d_values_in[temp_storage.staging.indices[cand_start + i]];
+            }
+          }
+        }
+
+        if (threadIdx.x == 0)
+        {
+          temp_storage.smem_filter_cnt = 0;
+          temp_storage.smem_out_cnt    = 0;
+        }
+      };
+
+      if (load_from_original_input)
+      {
+        process_range(d_keys_in, current_len, f, epilogue);
+      }
+      else
+      {
+        process_range(in_buf, current_len, f, epilogue);
+      }
     }
     else
     {
-      process_range(in_buf, current_len, f);
+      auto f = [this, p_out_cnt, in_idx_buf, p_out_back_cnt, num_of_kth_needed, k, load_from_original_input](
+                 key_in_t key, OffsetT i) {
+        const candidate_class res = identify_candidates_op(key);
+        if (res == candidate_class::selected)
+        {
+          const OutOffsetT pos = atomicAdd(p_out_cnt, OffsetT{1});
+          d_keys_out[pos]      = key;
+          if constexpr (!keys_only)
+          {
+            const OffsetT index = load_from_original_input ? i : in_idx_buf[i];
+            d_values_out[pos]   = d_values_in[index];
+          }
+        }
+        else if (res == candidate_class::candidate)
+        {
+          const OutOffsetT back_pos = atomicAdd(p_out_back_cnt, OffsetT{1});
+
+          if (back_pos < num_of_kth_needed)
+          {
+            const OutOffsetT pos = k - 1 - back_pos;
+            d_keys_out[pos]      = key;
+            if constexpr (!keys_only)
+            {
+              const OffsetT new_idx = load_from_original_input ? i : in_idx_buf[i];
+              d_values_out[pos]     = d_values_in[new_idx];
+            }
+          }
+        }
+      };
+
+      if (load_from_original_input)
+      {
+        process_range(d_keys_in, current_len, f);
+      }
+      else
+      {
+        process_range(in_buf, current_len, f);
+      }
     }
   }
 

@@ -272,7 +272,8 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
                     policy.items_per_thread,
                     policy.bits_per_pass,
                     policy.load_algorithm,
-                    policy.scan_algorithm>;
+                    policy.scan_algorithm,
+                    policy.use_smem_write_coordination>;
   using agent_topk_t =
     AgentTopK<agent_topk_policy_t,
               KeyInputIteratorT,
@@ -331,7 +332,8 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
                     policy.items_per_thread,
                     policy.bits_per_pass,
                     policy.load_algorithm,
-                    policy.scan_algorithm>;
+                    policy.scan_algorithm,
+                    policy.use_smem_write_coordination>;
   using identify_candidates_op_t = NullType;
   using agent_topk_t =
     AgentTopK<agent_topk_policy_t,
@@ -392,7 +394,8 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
                     policy.items_per_thread,
                     policy.bits_per_pass,
                     policy.load_algorithm,
-                    policy.scan_algorithm>;
+                    policy.scan_algorithm,
+                    policy.use_smem_write_coordination>;
   using extract_bin_op_t = NullType;
   using agent_topk_t =
     AgentTopK<agent_topk_policy_t,
