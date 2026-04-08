@@ -13,7 +13,7 @@ from numba.extending import models, register_model, typeof_impl
 
 import cuda.coop as coop
 
-from ...warp._warp_exchange import _make_exchange_rewrite
+from ...warp._warp_exchange import WarpExchangeType, _make_exchange_rewrite
 from .. import (
     CoopAbstractTemplate,
     CoopDeclMixin,
@@ -39,7 +39,7 @@ class CoopWarpExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
     primitive_name = "coop.warp.exchange"
     is_constructor = False
     minimum_num_args = 1
-    default_exchange_type = coop.warp.WarpExchangeType.StripedToBlocked
+    default_exchange_type = WarpExchangeType.StripedToBlocked
 
     @staticmethod
     def signature(
@@ -47,7 +47,7 @@ class CoopWarpExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
         output_items: types.Array = None,
         items_per_thread: int = None,
         ranks: types.Array = None,
-        warp_exchange_type: coop.warp.WarpExchangeType = None,
+        warp_exchange_type: WarpExchangeType = None,
         threads_in_warp: int = 32,
         offset_dtype: Optional[types.Type] = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
@@ -70,7 +70,7 @@ class CoopWarpExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
         ranks: types.Array = None,
         *,
         items_per_thread: int = None,
-        warp_exchange_type: coop.warp.WarpExchangeType = None,
+        warp_exchange_type: WarpExchangeType = None,
         threads_in_warp: int = None,
         offset_dtype: Optional[types.Type] = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
@@ -112,12 +112,12 @@ class CoopWarpExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
                 warp_exchange_type = None
         if warp_exchange_type is not None:
             if isinstance(warp_exchange_type, enum.IntEnum):
-                if warp_exchange_type not in coop.warp.WarpExchangeType:
+                if warp_exchange_type not in WarpExchangeType:
                     raise errors.TypingError(
                         f"{self.primitive_name} requires a WarpExchangeType value"
                     )
             elif isinstance(warp_exchange_type, types.EnumMember):
-                if warp_exchange_type.instance_class is not coop.warp.WarpExchangeType:
+                if warp_exchange_type.instance_class is not WarpExchangeType:
                     raise errors.TypingError(
                         f"{self.primitive_name} requires a WarpExchangeType value"
                     )
@@ -134,9 +134,7 @@ class CoopWarpExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
                 threads_in_warp = maybe_literal
             arglist.append(threads_in_warp)
 
-        is_scatter_to_striped = (
-            warp_exchange_type == coop.warp.WarpExchangeType.ScatterToStriped
-        )
+        is_scatter_to_striped = warp_exchange_type == WarpExchangeType.ScatterToStriped
         has_ranks = ranks is not None
 
         if is_scatter_to_striped and not has_ranks:

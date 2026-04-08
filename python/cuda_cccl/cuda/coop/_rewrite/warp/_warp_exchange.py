@@ -7,6 +7,7 @@ from functools import cached_property
 
 from numba.core import types
 
+from ...warp._warp_exchange import WarpExchangeType
 from .._core import (
     ArrayCallDefinition,
     CoopNode,
@@ -121,12 +122,8 @@ class CoopWarpExchangeNode(CoopNode, CoopNodeMixin):
 
         warp_exchange_type = self.get_arg_value_safe("warp_exchange_type")
         if warp_exchange_type is None:
-            from cuda.coop.warp._warp_exchange import WarpExchangeType
-
             warp_exchange_type = WarpExchangeType.StripedToBlocked
         else:
-            from cuda.coop.warp._warp_exchange import WarpExchangeType
-
             if isinstance(warp_exchange_type, types.EnumMember):
                 literal_value = getattr(warp_exchange_type, "literal_value", None)
                 if literal_value is None:

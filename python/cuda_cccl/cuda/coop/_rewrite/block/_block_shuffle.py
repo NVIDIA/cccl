@@ -7,6 +7,7 @@ from functools import cached_property
 
 from numba.core import types
 
+from ...block._block_shuffle import BlockShuffleType
 from .._core import (
     ArrayCallDefinition,
     CoopNode,
@@ -121,12 +122,8 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
 
             block_shuffle_type = self.get_arg_value_safe("block_shuffle_type")
             if block_shuffle_type is None:
-                from cuda.coop.block._block_shuffle import BlockShuffleType
-
                 block_shuffle_type = BlockShuffleType.Up
             else:
-                from cuda.coop.block._block_shuffle import BlockShuffleType
-
                 if isinstance(block_shuffle_type, types.EnumMember):
                     literal_value = getattr(block_shuffle_type, "literal_value", None)
                     if literal_value is None:
@@ -291,12 +288,8 @@ class CoopBlockShuffleNode(CoopNode, CoopNodeMixin):
 
         block_shuffle_type = self.get_arg_value_safe("block_shuffle_type")
         if block_shuffle_type is None:
-            from cuda.coop.block._block_shuffle import BlockShuffleType
-
             block_shuffle_type = BlockShuffleType.Offset
         else:
-            from cuda.coop.block._block_shuffle import BlockShuffleType
-
             if isinstance(block_shuffle_type, types.EnumMember):
                 literal_value = getattr(block_shuffle_type, "literal_value", None)
                 if literal_value is None:

@@ -6,6 +6,7 @@ from functools import cached_property
 
 from numba.core import types
 
+from ...block._block_exchange import BlockExchangeType
 from .._core import (
     ArrayCallDefinition,
     CoopNode,
@@ -144,12 +145,8 @@ class CoopBlockExchangeNode(CoopNode, CoopNodeMixin):
 
         block_exchange_type = self.get_arg_value_safe("block_exchange_type")
         if block_exchange_type is None:
-            from cuda.coop.block._block_exchange import BlockExchangeType
-
             block_exchange_type = BlockExchangeType.StripedToBlocked
         else:
-            from cuda.coop.block._block_exchange import BlockExchangeType
-
             if isinstance(block_exchange_type, types.EnumMember):
                 literal_value = getattr(block_exchange_type, "literal_value", None)
                 if literal_value is None:

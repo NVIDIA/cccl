@@ -7,6 +7,7 @@ from functools import cached_property
 
 from numba.core import types
 
+from ...block._block_discontinuity import BlockDiscontinuityType
 from .._core import (
     ArrayCallDefinition,
     CoopNode,
@@ -144,12 +145,8 @@ class CoopBlockDiscontinuityNode(CoopNode, CoopNodeMixin):
 
         block_discontinuity_type = self.get_arg_value_safe("block_discontinuity_type")
         if block_discontinuity_type is None:
-            from cuda.coop.block._block_discontinuity import BlockDiscontinuityType
-
             block_discontinuity_type = BlockDiscontinuityType.HEADS
         else:
-            from cuda.coop.block._block_discontinuity import BlockDiscontinuityType
-
             if isinstance(block_discontinuity_type, types.EnumMember):
                 literal_value = getattr(block_discontinuity_type, "literal_value", None)
                 if literal_value is None:
