@@ -125,57 +125,64 @@ CUB_NAMESPACE_BEGIN
 struct DeviceRadixSort
 {
 private:
-  template <SortOrder Order, typename KeyT, typename ValueT, typename OffsetT, typename DecomposerT>
+  template <SortOrder Order, typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     bool is_overwrite_okay,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
+    NumItemsT num_items,
     DecomposerT decomposer,
     int begin_bit,
     int end_bit,
     cudaStream_t stream)
   {
-    return detail::radix_sort::dispatch<Order>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      static_cast<OffsetT>(num_items),
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream,
-      decomposer);
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+
+    static_assert(decomposer_check,
+                  "DecomposerT must be a callable object returning a tuple of references to "
+                  "arithmetic types");
+
+    if constexpr (decomposer_check)
+    {
+      return detail::radix_sort::dispatch<Order>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_keys,
+        d_values,
+        static_cast<offset_t>(num_items),
+        begin_bit,
+        end_bit,
+        is_overwrite_okay,
+        stream,
+        decomposer);
+    }
   }
 
-  template <SortOrder Order, typename KeyT, typename ValueT, typename OffsetT, typename DecomposerT>
+  template <SortOrder Order, typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
   CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     bool is_overwrite_okay,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
+    NumItemsT num_items,
     DecomposerT decomposer,
     cudaStream_t stream)
   {
-    constexpr int begin_bit = 0;
-    const int end_bit       = detail::radix::traits_t<KeyT>::default_end_bit(decomposer);
-
-    return detail::radix_sort::dispatch<Order>(
+    return custom_radix_sort<Order>(
       d_temp_storage,
       temp_storage_bytes,
+      is_overwrite_okay,
       d_keys,
       d_values,
       num_items,
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream,
-      decomposer);
+      decomposer,
+      0,
+      detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+      stream);
   }
 
   // Name reported for NVTX ranges
@@ -558,37 +565,25 @@ public:
               cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    // unsigned integer type for global offsets
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    // We cast away const-ness, but will *not* write to these arrays.
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
+    // is not set.
+    constexpr bool is_overwrite_okay = false;
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      // We cast away const-ness, but will *not* write to these arrays.
-      // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-      // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-      // is not set.
-      constexpr bool is_overwrite_okay = false;
-      DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-      DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
-      return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-        d_temp_storage,
-        temp_storage_bytes,
-        is_overwrite_okay,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        decomposer,
-        begin_bit,
-        end_bit,
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      num_items,
+      decomposer,
+      begin_bit,
+      end_bit,
+      stream);
   }
 
   //! @rst
@@ -824,35 +819,16 @@ public:
               cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    // unsigned integer type for global offsets
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    // We cast away const-ness, but will *not* write to these arrays.
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
+    // is not set.
+    constexpr bool is_overwrite_okay = false;
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      // We cast away const-ness, but will *not* write to these arrays.
-      // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-      // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-      // is not set.
-      constexpr bool is_overwrite_okay = false;
-      DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-      DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
-      return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-        d_temp_storage,
-        temp_storage_bytes,
-        is_overwrite_okay,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        decomposer,
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+      d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
   }
 
   //! @rst
@@ -1314,28 +1290,9 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // unsigned integer type for global offsets
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
-
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      constexpr bool is_overwrite_okay = true;
-      return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-        d_temp_storage,
-        temp_storage_bytes,
-        is_overwrite_okay,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        decomposer,
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    constexpr bool is_overwrite_okay = true;
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+      d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
   }
 
   //! @rst
@@ -1566,30 +1523,18 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // unsigned integer type for global offsets
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
-
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      constexpr bool is_overwrite_okay = true;
-      return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-        d_temp_storage,
-        temp_storage_bytes,
-        is_overwrite_okay,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        decomposer,
-        begin_bit,
-        end_bit,
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    constexpr bool is_overwrite_okay = true;
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      num_items,
+      decomposer,
+      begin_bit,
+      end_bit,
+      stream);
   }
 
   //! @rst
@@ -1676,7 +1621,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
     static_assert(decomposer_check,
@@ -2075,37 +2020,25 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // unsigned integer type for global offsets
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    // We cast away const-ness, but will *not* write to these arrays.
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
+    // is not set.
+    constexpr bool is_overwrite_okay = false;
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      // We cast away const-ness, but will *not* write to these arrays.
-      // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-      // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-      // is not set.
-      constexpr bool is_overwrite_okay = false;
-      DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-      DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
-      return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
-        d_temp_storage,
-        temp_storage_bytes,
-        is_overwrite_okay,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        decomposer,
-        begin_bit,
-        end_bit,
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      num_items,
+      decomposer,
+      begin_bit,
+      end_bit,
+      stream);
   }
 
   //! @rst
@@ -2221,35 +2154,16 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // unsigned integer type for global offsets
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    // We cast away const-ness, but will *not* write to these arrays.
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
+    // is not set.
+    constexpr bool is_overwrite_okay = false;
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      // We cast away const-ness, but will *not* write to these arrays.
-      // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-      // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-      // is not set.
-      constexpr bool is_overwrite_okay = false;
-      DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-      DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
-      return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
-        d_temp_storage,
-        temp_storage_bytes,
-        is_overwrite_okay,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        decomposer,
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+      d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
   }
 
   //! @rst
@@ -2600,28 +2514,9 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // unsigned integer type for global offsets
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
-
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      constexpr bool is_overwrite_okay = true;
-      return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
-        d_temp_storage,
-        temp_storage_bytes,
-        is_overwrite_okay,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        decomposer,
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    constexpr bool is_overwrite_okay = true;
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+      d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
   }
 
   //! @rst
@@ -2751,30 +2646,18 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // unsigned integer type for global offsets
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
-
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      constexpr bool is_overwrite_okay = true;
-      return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
-        d_temp_storage,
-        temp_storage_bytes,
-        is_overwrite_okay,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        decomposer,
-        begin_bit,
-        end_bit,
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    constexpr bool is_overwrite_okay = true;
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      num_items,
+      decomposer,
+      begin_bit,
+      end_bit,
+      stream);
   }
 
   //! @rst
@@ -3444,37 +3327,25 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // unsigned integer type for global offsets
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    // We cast away const-ness, but will *not* write to these arrays.
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
+    // is not set.
+    constexpr bool is_overwrite_okay = false;
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<NullType> d_values;
 
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      // We cast away const-ness, but will *not* write to these arrays.
-      // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-      // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-      // is not set.
-      constexpr bool is_overwrite_okay = false;
-      DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-      DoubleBuffer<NullType> d_values;
-
-      return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-        d_temp_storage,
-        temp_storage_bytes,
-        is_overwrite_okay,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        decomposer,
-        begin_bit,
-        end_bit,
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      num_items,
+      decomposer,
+      begin_bit,
+      end_bit,
+      stream);
   }
 
   //! @rst
@@ -3539,7 +3410,7 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
     static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
@@ -3667,35 +3538,16 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // unsigned integer type for global offsets
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    // We cast away const-ness, but will *not* write to these arrays.
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
+    // is not set.
+    constexpr bool is_overwrite_okay = false;
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<NullType> d_values;
 
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      // We cast away const-ness, but will *not* write to these arrays.
-      // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-      // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-      // is not set.
-      constexpr bool is_overwrite_okay = false;
-      DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-      DoubleBuffer<NullType> d_values;
-
-      return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-        d_temp_storage,
-        temp_storage_bytes,
-        is_overwrite_okay,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        decomposer,
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+      d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
   }
 
   //! @rst
@@ -3751,7 +3603,7 @@ public:
   SortKeys(const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, DecomposerT decomposer, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
     static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
@@ -4093,30 +3945,11 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // unsigned integer type for global offsets
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    constexpr bool is_overwrite_okay = true;
+    DoubleBuffer<NullType> d_values;
 
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      constexpr bool is_overwrite_okay = true;
-      DoubleBuffer<NullType> d_values;
-
-      return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-        d_temp_storage,
-        temp_storage_bytes,
-        is_overwrite_okay,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        decomposer,
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+      d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
   }
 
   //! @rst
@@ -4171,7 +4004,7 @@ public:
   SortKeys(DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
     static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
@@ -4309,32 +4142,20 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // unsigned integer type for global offsets
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    constexpr bool is_overwrite_okay = true;
+    DoubleBuffer<NullType> d_values;
 
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      constexpr bool is_overwrite_okay = true;
-      DoubleBuffer<NullType> d_values;
-
-      return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-        d_temp_storage,
-        temp_storage_bytes,
-        is_overwrite_okay,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        decomposer,
-        begin_bit,
-        end_bit,
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      num_items,
+      decomposer,
+      begin_bit,
+      end_bit,
+      stream);
   }
 
   //! @rst
@@ -4392,7 +4213,7 @@ public:
     DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, int begin_bit, int end_bit, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
     static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
@@ -4747,37 +4568,25 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // unsigned integer type for global offsets
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    // We cast away const-ness, but will *not* write to these arrays.
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
+    // is not set.
+    constexpr bool is_overwrite_okay = false;
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<NullType> d_values;
 
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      // We cast away const-ness, but will *not* write to these arrays.
-      // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-      // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-      // is not set.
-      constexpr bool is_overwrite_okay = false;
-      DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-      DoubleBuffer<NullType> d_values;
-
-      return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
-        d_temp_storage,
-        temp_storage_bytes,
-        is_overwrite_okay,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        decomposer,
-        begin_bit,
-        end_bit,
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      num_items,
+      decomposer,
+      begin_bit,
+      end_bit,
+      stream);
   }
 
   //! @rst
@@ -4879,35 +4688,16 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // unsigned integer type for global offsets
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    // We cast away const-ness, but will *not* write to these arrays.
+    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
+    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
+    // is not set.
+    constexpr bool is_overwrite_okay = false;
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<NullType> d_values;
 
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      // We cast away const-ness, but will *not* write to these arrays.
-      // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-      // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-      // is not set.
-      constexpr bool is_overwrite_okay = false;
-      DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-      DoubleBuffer<NullType> d_values;
-
-      return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
-        d_temp_storage,
-        temp_storage_bytes,
-        is_overwrite_okay,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        decomposer,
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+      d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
   }
 
   //! @rst
@@ -5225,30 +5015,11 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // unsigned integer type for global offsets
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    constexpr bool is_overwrite_okay = true;
+    DoubleBuffer<NullType> d_values;
 
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      constexpr bool is_overwrite_okay = true;
-      DoubleBuffer<NullType> d_values;
-
-      return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
-        d_temp_storage,
-        temp_storage_bytes,
-        is_overwrite_okay,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        decomposer,
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+      d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
   }
 
   //! @rst
@@ -5365,32 +5136,20 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
-    // unsigned integer type for global offsets
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    constexpr bool is_overwrite_okay = true;
+    DoubleBuffer<NullType> d_values;
 
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      constexpr bool is_overwrite_okay = true;
-      DoubleBuffer<NullType> d_values;
-
-      return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
-        d_temp_storage,
-        temp_storage_bytes,
-        is_overwrite_okay,
-        d_keys,
-        d_values,
-        static_cast<offset_t>(num_items),
-        decomposer,
-        begin_bit,
-        end_bit,
-        stream);
-    }
-    _CCCL_UNREACHABLE();
+    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      num_items,
+      decomposer,
+      begin_bit,
+      end_bit,
+      stream);
   }
 
   //! @rst
