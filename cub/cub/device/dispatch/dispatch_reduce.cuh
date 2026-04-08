@@ -40,7 +40,6 @@
 #endif
 
 // TODO(bgruber): included to not break users when moving DeviceSegmentedReduce to its own file. Remove in CCCL 4.0.
-#include <cub/device/dispatch/dispatch_fixed_size_segmented_reduce.cuh>
 #include <cub/device/dispatch/dispatch_segmented_reduce.cuh>
 
 CUB_NAMESPACE_BEGIN

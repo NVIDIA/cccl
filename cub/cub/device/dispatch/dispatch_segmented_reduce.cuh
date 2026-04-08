@@ -21,6 +21,7 @@
 #include <cub/device/dispatch/tuning/tuning_segmented_reduce.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::it_value_t
 
 #include <cuda/__cmath/ceil_div.h>
@@ -604,6 +605,286 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     }
 
     // Sync the stream if specified to flush runtime errors
+    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
+  }
+
+  return cudaSuccess;
+}
+
+// @brief Functor to generate a key-value pair from an index and value
+template <typename Iterator, typename OutputValueT>
+struct generate_idx_value
+{
+private:
+  Iterator it;
+  int segment_size;
+
+public:
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE generate_idx_value(Iterator it, int segment_size)
+      : it(it)
+      , segment_size(segment_size)
+  {}
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(::cuda::std::int64_t idx) const
+  {
+    return ::cuda::std::pair<int, OutputValueT>(static_cast<int>(idx % segment_size), it[idx]);
+  }
+};
+
+template <typename PolicySelector,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ReductionOpT,
+          typename InitT,
+          typename AccumT>
+struct DeviceFixedSizeSegmentedReduceKernelSource
+{
+  // PolicySelector must be stateless, so we can pass the type to the kernel
+  static_assert(::cuda::std::is_empty_v<PolicySelector>);
+
+  CUB_DEFINE_KERNEL_GETTER(
+    FixedSizeSegmentedReduceKernel,
+    DeviceFixedSizeSegmentedReduceKernel<PolicySelector, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT>)
+
+  CUB_DEFINE_KERNEL_GETTER(
+    FixedSizeSegmentedReduceKernelFinal,
+    DeviceFixedSizeSegmentedReduceKernel<PolicySelector, AccumT*, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT>)
+
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t AccumSize()
+  {
+    return sizeof(AccumT);
+  }
+};
+
+template <typename OverrideAccumT = use_default,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ReductionOpT,
+          typename InitT          = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
+          typename AccumT         = decltype(select_segmented_accum_t<InputIteratorT, InitT, ReductionOpT>(
+            static_cast<OverrideAccumT*>(nullptr))),
+          typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
+          typename KernelSource   = DeviceFixedSizeSegmentedReduceKernelSource<
+              PolicySelector,
+              InputIteratorT,
+              OutputIteratorT,
+              OffsetT,
+              ReductionOpT,
+              InitT,
+              AccumT>,
+          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
+          ::cuda::std::enable_if_t<::cuda::std::is_arithmetic_v<OffsetT>, int> = 0>
+#if _CCCL_HAS_CONCEPTS()
+  requires segmented_reduce_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  ::cuda::std::int64_t num_segments,
+  OffsetT segment_size,
+  ReductionOpT reduction_op,
+  InitT init,
+  cudaStream_t stream,
+  PolicySelector policy_selector         = {},
+  KernelSource kernel_source             = {},
+  KernelLauncherFactory launcher_factory = {})
+{
+  if (num_segments <= 0)
+  {
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+    }
+    return cudaSuccess;
+  }
+
+  // Get arch ID
+  ::cuda::arch_id arch_id{};
+  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  {
+    return error;
+  }
+
+  const segmented_reduce_policy active_policy = policy_selector(arch_id);
+#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(
+    NV_IS_HOST,
+    (::std::stringstream ss; ss << active_policy; _CubLog(
+       "Dispatching DeviceFixedSizeSegmentedReduce to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
+#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+
+  const auto tile_size = active_policy.large_reduce.block_threads * active_policy.large_reduce.items_per_thread;
+
+  // Single-phase: segment fits in one tile
+  if (segment_size < tile_size)
+  {
+    int segments_per_block = 1;
+
+    if (segment_size <= active_policy.small_reduce.items_per_tile())
+    {
+      segments_per_block = active_policy.small_reduce.segments_per_block();
+    }
+    else if (segment_size <= active_policy.medium_reduce.items_per_tile())
+    {
+      segments_per_block = active_policy.medium_reduce.segments_per_block();
+    }
+
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+
+    const auto num_segments_per_invocation =
+      static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
+    const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
+
+    for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
+    {
+      const auto current_seg_offset = invocation_index * num_segments_per_invocation;
+      const auto num_current_segments =
+        ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
+      const auto num_current_blocks = ::cuda::ceil_div(num_current_segments, segments_per_block);
+
+      launcher_factory(
+        static_cast<::cuda::std::int32_t>(num_current_blocks), active_policy.large_reduce.block_threads, 0, stream)
+        .doit(kernel_source.FixedSizeSegmentedReduceKernel(),
+              d_in,
+              d_out,
+              segment_size,
+              static_cast<::cuda::std::int32_t>(num_current_segments),
+              reduction_op,
+              init,
+              static_cast<AccumT*>(nullptr),
+              0,
+              0);
+
+      d_in += num_segments_per_invocation * segment_size;
+      d_out += num_segments_per_invocation;
+
+      if (const auto error = CubDebug(cudaPeekAtLastError()))
+      {
+        return error;
+      }
+
+      if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+      {
+        return error;
+      }
+    }
+
+    return cudaSuccess;
+  }
+
+  // Two-phase: segment spans multiple tiles
+  const auto tiles_per_segment = static_cast<int>(::cuda::ceil_div(segment_size, tile_size));
+
+  const auto max_tiles_per_invocation =
+    static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
+  const auto max_segments_per_invocation = max_tiles_per_invocation / tiles_per_segment;
+  const auto num_invocations             = ::cuda::ceil_div(num_segments, max_segments_per_invocation);
+  const auto num_segments_per_invocation = ::cuda::std::min(max_segments_per_invocation, num_segments);
+  const auto tiles_per_invocation        = num_segments_per_invocation * tiles_per_segment;
+
+  // Temporary storage allocation requirements
+  void* allocations[1]       = {};
+  size_t allocation_sizes[1] = {static_cast<size_t>(tiles_per_invocation) * kernel_source.AccumSize()};
+
+  if (const auto error =
+        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  {
+    return error;
+  }
+
+  if (d_temp_storage == nullptr)
+  {
+    return cudaSuccess;
+  }
+
+  AccumT* d_block_reductions = static_cast<AccumT*>(allocations[0]);
+
+  for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
+  {
+    const auto current_seg_offset   = invocation_index * num_segments_per_invocation;
+    const auto num_current_segments = ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
+    const auto num_current_blocks   = static_cast<::cuda::std::int32_t>(num_current_segments * tiles_per_segment);
+
+    // Phase 1: partial reductions
+    if (const auto error = CubDebug(
+          launcher_factory(num_current_blocks, active_policy.large_reduce.block_threads, 0, stream)
+            .doit(kernel_source.FixedSizeSegmentedReduceKernel(),
+                  d_in,
+                  d_out,
+                  segment_size,
+                  num_current_blocks,
+                  reduction_op,
+                  init,
+                  d_block_reductions,
+                  tile_size,
+                  tiles_per_segment)))
+    {
+      return error;
+    }
+
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
+
+    if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
+    {
+      return error;
+    }
+
+    // Phase 2: final reduction of partial results
+    const int final_segment_size = tiles_per_segment;
+    int final_segments_per_block = 1;
+
+    if (final_segment_size <= active_policy.small_reduce.items_per_tile())
+    {
+      final_segments_per_block = active_policy.small_reduce.segments_per_block();
+    }
+    else if (final_segment_size <= active_policy.medium_reduce.items_per_tile())
+    {
+      final_segments_per_block = active_policy.medium_reduce.segments_per_block();
+    }
+
+    const auto final_num_current_blocks = ::cuda::ceil_div(num_current_segments, final_segments_per_block);
+
+    if (const auto error = CubDebug(
+          launcher_factory(static_cast<::cuda::std::int32_t>(final_num_current_blocks),
+                           active_policy.large_reduce.block_threads,
+                           0,
+                           stream)
+            .doit(kernel_source.FixedSizeSegmentedReduceKernelFinal(),
+                  d_block_reductions,
+                  d_out,
+                  final_segment_size,
+                  static_cast<::cuda::std::int32_t>(num_current_segments),
+                  reduction_op,
+                  init,
+                  static_cast<AccumT*>(nullptr),
+                  0,
+                  0)))
+    {
+      return error;
+    }
+
+    d_in += num_segments_per_invocation * segment_size;
+    d_out += num_segments_per_invocation;
+
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
+
     if (const auto error = CubDebug(detail::DebugSyncStream(stream)))
     {
       return error;

@@ -22,7 +22,6 @@
 #include <cub/detail/device_memory_resource.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/detail/temporary_storage.cuh>
-#include <cub/device/dispatch/dispatch_fixed_size_segmented_reduce.cuh>
 #include <cub/device/dispatch/dispatch_segmented_reduce.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/util_type.cuh>
@@ -528,9 +527,8 @@ public:
     // integral constant or larger integral types
     using offset_t = int;
 
-    return detail::reduce::
-      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ReductionOpT, T>::Dispatch(
-        d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, reduction_op, initial_value, stream);
+    return detail::segmented_reduce::dispatch(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, reduction_op, initial_value, stream);
   }
 
   //! @rst
@@ -932,17 +930,16 @@ public:
     using offset_t = int;
     using output_t = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
 
-    return detail::reduce::
-      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::std::plus<>, output_t>::Dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        segment_size,
-        ::cuda::std::plus{},
-        output_t{},
-        stream);
+    return detail::segmented_reduce::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      segment_size,
+      ::cuda::std::plus{},
+      output_t{},
+      stream);
   }
 
   //! @rst
@@ -1336,17 +1333,16 @@ public:
     static_assert(::cuda::std::numeric_limits<input_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
 
-    return detail::reduce::
-      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::minimum<>, input_t>::Dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        segment_size,
-        ::cuda::minimum<>{},
-        ::cuda::std::numeric_limits<input_t>::max(),
-        stream);
+    return detail::segmented_reduce::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      segment_size,
+      ::cuda::minimum<>{},
+      ::cuda::std::numeric_limits<input_t>::max(),
+      stream);
   }
 
   //! @rst
@@ -2162,17 +2158,16 @@ public:
     static_assert(::cuda::std::numeric_limits<input_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
 
-    return detail::reduce::
-      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::maximum<>, input_t>::Dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        segment_size,
-        ::cuda::maximum<>{},
-        ::cuda::std::numeric_limits<input_t>::lowest(),
-        stream);
+    return detail::segmented_reduce::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      segment_size,
+      ::cuda::maximum<>{},
+      ::cuda::std::numeric_limits<input_t>::lowest(),
+      stream);
   }
 
   //! @rst
