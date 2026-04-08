@@ -881,7 +881,7 @@ template <SelectImpl SelectionOpt,
           typename OffsetT,
           typename PolicySelector,
           typename KernelLauncherFactory>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_arch(
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
   [[maybe_unused]] PolicyGetter policy_getter,
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -1119,7 +1119,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
   return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
-    return dispatch_arch<SelectionOpt, decltype(policy_getter)>(
+    return dispatch_policy<SelectionOpt, decltype(policy_getter)>(
       policy_getter,
       d_temp_storage,
       temp_storage_bytes,
