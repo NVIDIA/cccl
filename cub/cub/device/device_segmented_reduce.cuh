@@ -74,8 +74,8 @@ CUB_NAMESPACE_BEGIN
 struct DeviceSegmentedReduce
 {
 private:
-  template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_arg_min_dispatch(
+  template <typename ReductionOpT, typename InputIteratorT, typename OutputIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_arg_dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
@@ -104,13 +104,16 @@ private:
       detail::reduce::generate_idx_value<InputIteratorT, output_value_t>(d_in, segment_size));
     using arg_index_input_iterator_t = decltype(d_indexed_in);
 
-    init_t initial_value{accum_t(1, ::cuda::std::numeric_limits<input_value_t>::max())};
+    constexpr bool is_min = ::cuda::std::is_same_v<ReductionOpT, cub::detail::arg_min>;
+    auto sentinel =
+      is_min ? ::cuda::std::numeric_limits<input_value_t>::max() : ::cuda::std::numeric_limits<input_value_t>::lowest();
+    init_t initial_value{accum_t(1, sentinel)};
 
     return detail::reduce::DispatchFixedSizeSegmentedReduce<
       arg_index_input_iterator_t,
       OutputIteratorT,
       offset_t,
-      cub::detail::arg_min,
+      ReductionOpT,
       init_t,
       accum_t>::Dispatch(d_temp_storage,
                          temp_storage_bytes,
@@ -118,56 +121,7 @@ private:
                          d_out,
                          num_segments,
                          segment_size,
-                         cub::detail::arg_min(),
-                         initial_value,
-                         stream);
-  }
-
-  template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_arg_max_dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    ::cuda::std::int64_t num_segments,
-    int segment_size,
-    cudaStream_t stream)
-  {
-    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
-    // integral constant or larger integral types
-    using offset_t = int;
-
-    using input_value_t  = detail::it_value_t<InputIteratorT>;
-    using output_tuple_t = detail::non_void_value_t<OutputIteratorT, ::cuda::std::pair<offset_t, input_value_t>>;
-    using accum_t        = output_tuple_t;
-    using init_t         = detail::reduce::empty_problem_init_t<accum_t>;
-    using output_key_t   = typename output_tuple_t::first_type;
-    using output_value_t = typename output_tuple_t::second_type;
-
-    static_assert(::cuda::std::is_same_v<int, output_key_t>, "Output key type must be int.");
-    static_assert(::cuda::std::numeric_limits<input_value_t>::is_specialized,
-                  "numeric_limits must be specialized for the input value type");
-
-    auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
-      THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>{0},
-      detail::reduce::generate_idx_value<InputIteratorT, output_value_t>(d_in, segment_size));
-    using arg_index_input_iterator_t = decltype(d_indexed_in);
-
-    init_t initial_value{accum_t(1, ::cuda::std::numeric_limits<input_value_t>::lowest())};
-
-    return detail::reduce::DispatchFixedSizeSegmentedReduce<
-      arg_index_input_iterator_t,
-      OutputIteratorT,
-      offset_t,
-      detail::arg_max,
-      init_t,
-      accum_t>::Dispatch(d_temp_storage,
-                         temp_storage_bytes,
-                         d_indexed_in,
-                         d_out,
-                         num_segments,
-                         segment_size,
-                         detail::arg_max(),
+                         ReductionOpT(),
                          initial_value,
                          stream);
   }
@@ -1819,7 +1773,7 @@ public:
     cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::ArgMin");
-    return fixed_size_arg_min_dispatch(
+    return fixed_size_arg_dispatch<cub::detail::arg_min>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, stream);
   }
 
@@ -1895,7 +1849,7 @@ public:
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return fixed_size_arg_min_dispatch(
+        return fixed_size_arg_dispatch<cub::detail::arg_min>(
           d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, stream);
       });
   }
@@ -2649,7 +2603,7 @@ public:
     cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::ArgMax");
-    return fixed_size_arg_max_dispatch(
+    return fixed_size_arg_dispatch<detail::arg_max>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, stream);
   }
 
@@ -2725,7 +2679,7 @@ public:
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return fixed_size_arg_max_dispatch(
+        return fixed_size_arg_dispatch<detail::arg_max>(
           d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, stream);
       });
   }
