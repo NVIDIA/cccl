@@ -168,7 +168,7 @@ void compute_inclusive_scan_by_key_reference(
     host_values.cbegin(), host_keys.cbegin(), result_out_it, scan_op, equality_op, num_items);
 }
 
-struct block_size_recording_iterator_t
+struct block_size_recording_constant_iterator
 {
   using value_type        = int;
   using reference         = int;
@@ -180,7 +180,7 @@ struct block_size_recording_iterator_t
   int* block_size_ptr;
   difference_type offset;
 
-  __host__ __device__ block_size_recording_iterator_t(int val, int* bs_ptr, difference_type off = 0)
+  __host__ __device__ block_size_recording_constant_iterator(int val, int* bs_ptr, difference_type off = 0)
       : value(val)
       , block_size_ptr(bs_ptr)
       , offset(off)
@@ -204,28 +204,28 @@ struct block_size_recording_iterator_t
     return value;
   }
 
-  __host__ __device__ block_size_recording_iterator_t operator+(difference_type n) const
+  __host__ __device__ block_size_recording_constant_iterator operator+(difference_type n) const
   {
     return {value, block_size_ptr, offset + n};
   }
 
-  __host__ __device__ block_size_recording_iterator_t& operator+=(difference_type n)
+  __host__ __device__ block_size_recording_constant_iterator& operator+=(difference_type n)
   {
     offset += n;
     return *this;
   }
 
-  __host__ __device__ difference_type operator-(const block_size_recording_iterator_t& other) const
+  __host__ __device__ difference_type operator-(const block_size_recording_constant_iterator& other) const
   {
     return offset - other.offset;
   }
 
-  __host__ __device__ bool operator==(const block_size_recording_iterator_t& other) const
+  __host__ __device__ bool operator==(const block_size_recording_constant_iterator& other) const
   {
     return offset == other.offset;
   }
 
-  __host__ __device__ bool operator!=(const block_size_recording_iterator_t& other) const
+  __host__ __device__ bool operator!=(const block_size_recording_constant_iterator& other) const
   {
     return offset != other.offset;
   }

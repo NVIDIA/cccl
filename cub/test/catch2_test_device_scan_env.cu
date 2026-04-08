@@ -153,7 +153,7 @@ C2H_TEST("Device scan exclusive-sum can be tuned", "[scan][device]", block_sizes
   c2h::device_vector<int> d_block_size(1, 0);
   // use block_size_recording_iterator to embed blockDim info in the input type and query after
   // since ExclusiveSum can not take a custom scan_op
-  auto d_in  = block_size_recording_iterator_t(1, thrust::raw_pointer_cast(d_block_size.data()));
+  auto d_in  = block_size_recording_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
   auto d_out = thrust::device_vector<int>(num_items);
 
   // We are expecting that `unrelated_tuning` is ignored
@@ -273,7 +273,7 @@ C2H_TEST("Device scan exclusive-scan uses environment", "[scan][device]")
 
   device_scan_exclusive(d_in, d_out.begin(), scan_op_t{}, init, num_items, env);
 
-  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init)));
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(static_cast<int>(init))));
 }
 
 C2H_TEST("Device scan exclusive-sum uses environment", "[scan][device]")
@@ -340,5 +340,5 @@ C2H_TEST("Device scan inclusive-scan-init uses environment", "[scan][device]")
 
   device_scan_inclusive_init(d_in, d_out.begin(), scan_op_t{}, init, num_items, env);
 
-  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init + 1)));
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(static_cast<int>(init + 1))));
 }
