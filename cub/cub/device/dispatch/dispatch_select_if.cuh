@@ -223,9 +223,9 @@ struct make_vsmem_helper
                         active_policy.load_algorithm,
                         active_policy.load_modifier,
                         active_policy.scan_algorithm,
-                        ::cub::detail::delay_constructor_t<active_policy.delay_constructor.kind,
-                                                           active_policy.delay_constructor.delay,
-                                                           active_policy.delay_constructor.l2_write_latency>>;
+                        delay_constructor_t<active_policy.delay_constructor.kind,
+                                            active_policy.delay_constructor.delay,
+                                            active_policy.delay_constructor.l2_write_latency>>;
   using type = vsmem_helper_default_fallback_policy_t<
     agent_policy_t,
     bind_selection_opt<SelectionOpt>::template agent_t,
@@ -338,7 +338,7 @@ template <typename PolicySelectorT,
   requires select_if_policy_selector<PolicySelectorT>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(
-  make_vsmem_helper<::cub::detail::policy_getter<PolicySelectorT, ::cuda::arch_id{CUB_PTX_ARCH / 10}>,
+  make_vsmem_helper<policy_getter<PolicySelectorT, ::cuda::arch_id{CUB_PTX_ARCH / 10}>,
                     SelectionOpt,
                     InputIteratorT,
                     FlagsInputIteratorT,
@@ -361,7 +361,7 @@ __launch_bounds__(int(
     vsmem_t vsmem)
 {
   using VsmemHelperT = typename make_vsmem_helper<
-    ::cub::detail::policy_getter<PolicySelectorT, ::cuda::arch_id{CUB_PTX_ARCH / 10}>,
+    policy_getter<PolicySelectorT, ::cuda::arch_id{CUB_PTX_ARCH / 10}>,
     SelectionOpt,
     InputIteratorT,
     FlagsInputIteratorT,
@@ -402,7 +402,7 @@ struct policy_selector_from_hub
       active_policy::LOAD_ALGORITHM,
       active_policy::LOAD_MODIFIER,
       active_policy::SCAN_ALGORITHM,
-      ::cub::detail::delay_constructor_policy_from_type<typename active_policy::detail::delay_constructor_t>};
+      delay_constructor_policy_from_type<typename active_policy::detail::delay_constructor_t>};
   }
 };
 } // namespace detail::select
@@ -1118,7 +1118,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
      _CubLog("Dispatching DeviceSelectIf to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());))
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
-  return ::cub::detail::dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
+  return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
     return dispatch_arch<SelectionOpt, decltype(policy_getter)>(
       policy_getter,
       d_temp_storage,
