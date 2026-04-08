@@ -17,6 +17,7 @@ struct stream_registry_factory_t;
 #include <cuda/__device/arch_id.h>
 #include <cuda/iterator>
 
+#include "catch2_test_device_scan.cuh"
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_scan_exclusive);
@@ -149,8 +150,11 @@ C2H_TEST("Device scan exclusive-sum can be tuned", "[scan][device]", block_sizes
   constexpr int target_block_size = c2h::get<0, TestType>::value;
 
   auto num_items = target_block_size;
-  auto d_in      = cuda::constant_iterator(1);
-  auto d_out     = thrust::device_vector<int>(num_items);
+  c2h::device_vector<int> d_block_size(1, 0);
+  // use block_size_recording_iterator to embed blockDim info in the input type and query after
+  // since ExclusiveSum can not take a custom scan_op
+  auto d_in  = block_size_recording_iterator_t(1, thrust::raw_pointer_cast(d_block_size.data()));
+  auto d_out = thrust::device_vector<int>(num_items);
 
   // We are expecting that `unrelated_tuning` is ignored
   auto env = cuda::execution::__tune(scan_tuning<target_block_size>{}, unrelated_tuning{});
@@ -158,9 +162,7 @@ C2H_TEST("Device scan exclusive-sum can be tuned", "[scan][device]", block_sizes
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(d_in, d_out.begin(), num_items, env));
 
   REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(0)));
-
-  // we do not actually check against target_block_size to check if tuning was applied
-  // todo: record BlockDim.x through stream_registry_factory_t
+  REQUIRE(d_block_size[0] == target_block_size);
 }
 
 TEST_CASE("Device scan inclusive-scan works with default environment", "[scan][device]")
