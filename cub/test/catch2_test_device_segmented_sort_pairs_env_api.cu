@@ -17,11 +17,12 @@
 C2H_TEST("cub::DeviceSegmentedSort::StableSortPairs env-based API", "[segmented_sort][pairs][env]")
 {
   // example-begin stable-sort-pairs-env
-  auto keys_in    = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto keys_out   = thrust::device_vector<int>(7);
-  auto values_in  = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
-  auto values_out = thrust::device_vector<int>(7);
-  auto offsets    = thrust::device_vector<int>{0, 3, 7};
+  auto keys_in       = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out      = thrust::device_vector<int>(7);
+  auto values_in     = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+  auto values_out    = thrust::device_vector<int>(7);
+  auto offsets_begin = thrust::device_vector<int>{0, 3};
+  auto offsets_end   = thrust::device_vector<int>{3, 7};
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
@@ -34,8 +35,8 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairs env-based API", "[segmented_
     thrust::raw_pointer_cast(values_out.data()),
     static_cast<int>(keys_in.size()),
     2,
-    thrust::raw_pointer_cast(offsets.data()),
-    thrust::raw_pointer_cast(offsets.data()) + 1,
+    thrust::raw_pointer_cast(offsets_begin.data()),
+    thrust::raw_pointer_cast(offsets_end.data()),
     env);
   if (error != cudaSuccess)
   {
@@ -54,11 +55,12 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairs env-based API", "[segmented_
 C2H_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending env-based API", "[segmented_sort][pairs][env]")
 {
   // example-begin stable-sort-pairs-descending-env
-  auto keys_in    = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto keys_out   = thrust::device_vector<int>(7);
-  auto values_in  = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
-  auto values_out = thrust::device_vector<int>(7);
-  auto offsets    = thrust::device_vector<int>{0, 3, 7};
+  auto keys_in       = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out      = thrust::device_vector<int>(7);
+  auto values_in     = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+  auto values_out    = thrust::device_vector<int>(7);
+  auto offsets_begin = thrust::device_vector<int>{0, 3};
+  auto offsets_end   = thrust::device_vector<int>{3, 7};
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
@@ -71,8 +73,8 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending env-based API", "[
     thrust::raw_pointer_cast(values_out.data()),
     static_cast<int>(keys_in.size()),
     2,
-    thrust::raw_pointer_cast(offsets.data()),
-    thrust::raw_pointer_cast(offsets.data()) + 1,
+    thrust::raw_pointer_cast(offsets_begin.data()),
+    thrust::raw_pointer_cast(offsets_end.data()),
     env);
   if (error != cudaSuccess)
   {
@@ -91,11 +93,12 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending env-based API", "[
 C2H_TEST("cub::DeviceSegmentedSort::StableSortPairs DoubleBuffer env-based API", "[segmented_sort][pairs][env]")
 {
   // example-begin stable-sort-pairs-db-env
-  auto keys_buf0   = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto keys_buf1   = thrust::device_vector<int>(7);
-  auto values_buf0 = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
-  auto values_buf1 = thrust::device_vector<int>(7);
-  auto offsets     = thrust::device_vector<int>{0, 3, 7};
+  auto keys_buf0     = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_buf1     = thrust::device_vector<int>(7);
+  auto values_buf0   = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+  auto values_buf1   = thrust::device_vector<int>(7);
+  auto offsets_begin = thrust::device_vector<int>{0, 3};
+  auto offsets_end   = thrust::device_vector<int>{3, 7};
 
   cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
   cub::DoubleBuffer<int> d_values(
@@ -110,8 +113,8 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairs DoubleBuffer env-based API",
     d_values,
     static_cast<int>(keys_buf0.size()),
     2,
-    thrust::raw_pointer_cast(offsets.data()),
-    thrust::raw_pointer_cast(offsets.data()) + 1,
+    thrust::raw_pointer_cast(offsets_begin.data()),
+    thrust::raw_pointer_cast(offsets_end.data()),
     env);
   if (error != cudaSuccess)
   {
@@ -133,11 +136,12 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending DoubleBuffer env-b
          "[segmented_sort][pairs][env]")
 {
   // example-begin stable-sort-pairs-descending-db-env
-  auto keys_buf0   = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
-  auto keys_buf1   = thrust::device_vector<int>(7);
-  auto values_buf0 = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
-  auto values_buf1 = thrust::device_vector<int>(7);
-  auto offsets     = thrust::device_vector<int>{0, 3, 7};
+  auto keys_buf0     = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_buf1     = thrust::device_vector<int>(7);
+  auto values_buf0   = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+  auto values_buf1   = thrust::device_vector<int>(7);
+  auto offsets_begin = thrust::device_vector<int>{0, 3};
+  auto offsets_end   = thrust::device_vector<int>{3, 7};
 
   cub::DoubleBuffer<int> d_keys(thrust::raw_pointer_cast(keys_buf0.data()), thrust::raw_pointer_cast(keys_buf1.data()));
   cub::DoubleBuffer<int> d_values(
@@ -152,8 +156,8 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending DoubleBuffer env-b
     d_values,
     static_cast<int>(keys_buf0.size()),
     2,
-    thrust::raw_pointer_cast(offsets.data()),
-    thrust::raw_pointer_cast(offsets.data()) + 1,
+    thrust::raw_pointer_cast(offsets_begin.data()),
+    thrust::raw_pointer_cast(offsets_end.data()),
     env);
   if (error != cudaSuccess)
   {
