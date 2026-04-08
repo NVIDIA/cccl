@@ -87,7 +87,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairsDescending env with stream", "
   thrust::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};
   thrust::device_vector<int> expected_values{0, 2, 1, 6, 3, 4, 5};
   // example-end segmented-radix-sort-pairs-descending-env
-  stream.sync()
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(keys_out == expected_keys);
@@ -156,7 +156,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeysDescending env with stream", "[
 
   thrust::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};
   // example-end segmented-radix-sort-keys-descending-env
-  stream.sync()
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(keys_out == expected_keys);
