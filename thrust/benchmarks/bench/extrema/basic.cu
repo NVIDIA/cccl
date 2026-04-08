@@ -52,3 +52,16 @@ NVBENCH_BENCH_TYPES(max_element, NVBENCH_TYPE_AXES(fundamental_types))
   .set_name("max_element")
   .set_type_axes_names({"T{ct}"})
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
+
+template <typename T>
+static void minmax_element(nvbench::state& state, nvbench::type_list<T> list)
+{
+  bench_extremum(state, list, [](auto&&... args) {
+    return thrust::minmax_element(args...);
+  });
+}
+
+NVBENCH_BENCH_TYPES(minmax_element, NVBENCH_TYPE_AXES(fundamental_types))
+  .set_name("minmax_element")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
