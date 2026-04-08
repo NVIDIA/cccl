@@ -26,6 +26,7 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/initializer_list>
@@ -418,6 +419,13 @@ public:
    *  \param x The element to append.
    */
   void push_back(const value_type& x);
+
+  /*! This method constructs a new element at the end of this vector_base.
+   *  \param args The arguments to forward to the constructor of the element.
+   *  \return A reference to the newly appended element.
+   */
+  template <typename... Args>
+  reference emplace_back(Args&&... args);
 
   /*! This method erases the last element of this vector_base, invalidating
    *  all iterators and references to it.
