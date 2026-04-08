@@ -182,7 +182,7 @@ C2H_TEST("Device scan exclusive-sum can be tuned", "[scan][device]", block_sizes
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(d_in, d_out.begin(), num_items, env));
 
-  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(0)));
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::counting_iterator<int>(0)));
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -310,7 +310,7 @@ C2H_TEST("Device scan exclusive-scan uses environment", "[scan][device]")
 
   device_scan_exclusive(d_in, d_out.begin(), scan_op_t{}, init, num_items, env);
 
-  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(static_cast<int>(init))));
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::counting_iterator<int>(static_cast<int>(init))));
 }
 
 C2H_TEST("Device scan exclusive-scan with FutureValue uses environment", "[scan][device]")
@@ -356,24 +356,14 @@ C2H_TEST("Device scan exclusive-sum uses environment", "[scan][device]")
 
   device_scan_exclusive_sum(d_in, d_out.begin(), num_items, env);
 
-<<<<<<< HEAD
-  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(0)));
-=======
-  thrust::host_vector<float> h_expected(num_items);
-  for (int i = 0; i < num_items; i++)
-  {
-    h_expected[i] = static_cast<float>(i);
-  }
-  thrust::device_vector<float> expected = h_expected;
-  REQUIRE(d_out == expected);
->>>>>>> 5aafee7df6 ( Improve DeviceScan env test coverage and clean up duplicate doc comments)
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::counting_iterator<int>(0)));
 }
 
 C2H_TEST("Device scan inclusive-sum uses environment", "[scan][device]")
 {
   using num_items_t = int;
 
-  num_items_t num_items = 10;
+  num_items_t num_items = GENERATE(0, 1, 10);
   auto d_in             = thrust::device_vector<int>(num_items, 3);
   auto d_out            = thrust::device_vector<int>(num_items);
 
@@ -413,17 +403,7 @@ C2H_TEST("Device scan inclusive-scan uses environment", "[scan][device]")
 
   device_scan_inclusive(d_in, d_out.begin(), scan_op_t{}, num_items, env);
 
-<<<<<<< HEAD
-  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(1)));
-=======
-  thrust::host_vector<float> h_expected(num_items);
-  for (int i = 0; i < num_items; i++)
-  {
-    h_expected[i] = static_cast<float>(i + 1);
-  }
-  thrust::device_vector<float> expected = h_expected;
-  REQUIRE(d_out == expected);
->>>>>>> 5aafee7df6 ( Improve DeviceScan env test coverage and clean up duplicate doc comments)
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::counting_iterator<int>(1)));
 }
 
 C2H_TEST("Device scan inclusive-scan-init uses environment", "[scan][device]")
@@ -444,10 +424,6 @@ C2H_TEST("Device scan inclusive-scan-init uses environment", "[scan][device]")
 
   device_scan_inclusive_init(d_in.begin(), d_out.begin(), cuda::std::plus{}, init, num_items, env);
 
-<<<<<<< HEAD
-  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(static_cast<int>(init + 1))));
-=======
   auto expected = thrust::device_vector<float>{11.0f, 13.0f, 16.0f, 20.0f};
   REQUIRE(d_out == expected);
->>>>>>> 5aafee7df6 ( Improve DeviceScan env test coverage and clean up duplicate doc comments)
 }
