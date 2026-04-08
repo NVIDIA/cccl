@@ -126,17 +126,17 @@ struct DeviceRadixSort
 {
 private:
   template <SortOrder Order, typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(
+  CUB_RUNTIME_FUNCTION static cudaError_t radix_sort_with_decomposer(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
-    bool is_overwrite_okay,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     NumItemsT num_items,
     DecomposerT decomposer,
-    int begin_bit,
-    int end_bit,
-    cudaStream_t stream)
+    cudaStream_t stream,
+    int begin_bit          = 0,
+    int end_bit            = detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+    bool is_overwrite_okay = true)
   {
     using offset_t                         = detail::choose_offset_t<NumItemsT>;
     static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
@@ -162,27 +162,34 @@ private:
   }
 
   template <SortOrder Order, typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(
+  CUB_RUNTIME_FUNCTION static cudaError_t radix_sort_with_decomposer(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
-    bool is_overwrite_okay,
-    DoubleBuffer<KeyT>& d_keys,
-    DoubleBuffer<ValueT>& d_values,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
     NumItemsT num_items,
     DecomposerT decomposer,
-    cudaStream_t stream)
+    cudaStream_t stream,
+    int begin_bit = 0,
+    int end_bit   = detail::radix::traits_t<KeyT>::default_end_bit(decomposer))
   {
-    return custom_radix_sort<Order>(
+    // We cast away const-ness, but will *not* write to these arrays. ``DispatchRadixSort::Dispatch`` will allocate
+    // temporary storage and create a new double-buffer internally when the ``is_overwrite_ok`` flag is not set.
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
+    return radix_sort_with_decomposer<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
-      is_overwrite_okay,
       d_keys,
       d_values,
       num_items,
       decomposer,
-      0,
-      detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
-      stream);
+      stream,
+      begin_bit,
+      end_bit,
+      /* is_overwrite_okay */ false);
   }
 
   // Name reported for NVTX ranges
@@ -565,25 +572,18 @@ public:
               cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    // We cast away const-ness, but will *not* write to these arrays.
-    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-    // is not set.
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+    return radix_sort_with_decomposer<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
       num_items,
       decomposer,
+      stream,
       begin_bit,
-      end_bit,
-      stream);
+      end_bit);
   }
 
   //! @rst
@@ -676,36 +676,20 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
-
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-          constexpr bool is_overwrite_okay = false;
-          DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-          DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
-          return detail::radix_sort::dispatch<SortOrder::Ascending>(
-            storage,
-            bytes,
-            d_keys,
-            d_values,
-            static_cast<offset_t>(num_items),
-            begin_bit,
-            end_bit,
-            is_overwrite_okay,
-            stream,
-            decomposer);
-        });
-    }
-    _CCCL_UNREACHABLE();
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Ascending>(
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        d_values_in,
+        d_values_out,
+        num_items,
+        decomposer,
+        stream,
+        begin_bit,
+        end_bit);
+    });
   }
 
   //! @rst
@@ -819,16 +803,16 @@ public:
               cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    // We cast away const-ness, but will *not* write to these arrays.
-    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-    // is not set.
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-      d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
+    return radix_sort_with_decomposer<SortOrder::Ascending>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
+      num_items,
+      decomposer,
+      stream);
   }
 
   //! @rst
@@ -911,36 +895,10 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
-
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-          constexpr bool is_overwrite_okay = false;
-          DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-          DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
-          return detail::radix_sort::dispatch<SortOrder::Ascending>(
-            storage,
-            bytes,
-            d_keys,
-            d_values,
-            static_cast<offset_t>(num_items),
-            0,
-            detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
-            is_overwrite_okay,
-            stream,
-            decomposer);
-        });
-    }
-    _CCCL_UNREACHABLE();
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Ascending>(
+        storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, decomposer, stream);
+    });
   }
 
   //! @rst
@@ -1289,10 +1247,8 @@ public:
               cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-
-    constexpr bool is_overwrite_okay = true;
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-      d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
+    return radix_sort_with_decomposer<SortOrder::Ascending>(
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream);
   }
 
   //! @rst
@@ -1369,32 +1325,10 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    using offset_t                         = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
-
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-          return detail::radix_sort::dispatch<SortOrder::Ascending>(
-            storage,
-            bytes,
-            d_keys,
-            d_values,
-            static_cast<offset_t>(num_items),
-            0,
-            detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
-            true,
-            stream,
-            decomposer);
-        });
-    }
-    _CCCL_UNREACHABLE();
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Ascending>(
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream);
+    });
   }
 
   //! @rst
@@ -1522,19 +1456,8 @@ public:
               cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-
-    constexpr bool is_overwrite_okay = true;
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      num_items,
-      decomposer,
-      begin_bit,
-      end_bit,
-      stream);
+    return radix_sort_with_decomposer<SortOrder::Ascending>(
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream, begin_bit, end_bit);
   }
 
   //! @rst
@@ -1620,32 +1543,10 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
-
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to "
-                  "arithmetic types");
-
-    if constexpr (decomposer_check)
-    {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-          return detail::radix_sort::dispatch<SortOrder::Ascending>(
-            storage,
-            bytes,
-            d_keys,
-            d_values,
-            static_cast<offset_t>(num_items),
-            begin_bit,
-            end_bit,
-            true,
-            stream,
-            decomposer);
-        });
-    }
-    _CCCL_UNREACHABLE();
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Ascending>(
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream, begin_bit, end_bit);
+    });
   }
 
   //! @rst
@@ -2019,26 +1920,18 @@ public:
       cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-
-    // We cast away const-ness, but will *not* write to these arrays.
-    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-    // is not set.
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+    return radix_sort_with_decomposer<SortOrder::Descending>(
       d_temp_storage,
       temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
       num_items,
       decomposer,
+      stream,
       begin_bit,
-      end_bit,
-      stream);
+      end_bit);
   }
 
   //! @rst
@@ -2162,7 +2055,7 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+    return radix_sort_with_decomposer<SortOrder::Descending>(
       d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
   }
 
@@ -2515,7 +2408,7 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     constexpr bool is_overwrite_okay = true;
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+    return radix_sort_with_decomposer<SortOrder::Descending>(
       d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
   }
 
@@ -2645,19 +2538,8 @@ public:
       cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-
-    constexpr bool is_overwrite_okay = true;
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      num_items,
-      decomposer,
-      begin_bit,
-      end_bit,
-      stream);
+    return radix_sort_with_decomposer<SortOrder::Descending>(
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream, begin_bit, end_bit);
   }
 
   //! @rst
@@ -2723,30 +2605,20 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
-    static_assert(decomposer_check_t::value,
-                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check_t::value)
-    {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-          constexpr bool is_overwrite_okay = false;
-          DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-          DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-          return detail::radix_sort::dispatch<SortOrder::Descending>(
-            storage,
-            bytes,
-            d_keys,
-            d_values,
-            static_cast<offset_t>(num_items),
-            begin_bit,
-            end_bit,
-            is_overwrite_okay,
-            stream,
-            decomposer);
-        });
-    }
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Descending>(
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        d_values_in,
+        d_values_out,
+        num_items,
+        decomposer,
+        stream,
+        begin_bit,
+        end_bit);
+    });
   }
 
   //! @rst
@@ -2807,30 +2679,10 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
-    static_assert(decomposer_check_t::value,
-                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check_t::value)
-    {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-          constexpr bool is_overwrite_okay = false;
-          DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-          DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-          return detail::radix_sort::dispatch<SortOrder::Descending>(
-            storage,
-            bytes,
-            d_keys,
-            d_values,
-            static_cast<offset_t>(num_items),
-            0,
-            detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
-            is_overwrite_okay,
-            stream,
-            decomposer);
-        });
-    }
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Descending>(
+        storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, decomposer, stream);
+    });
   }
 
   //! @rst
@@ -2887,27 +2739,10 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
-    static_assert(decomposer_check_t::value,
-                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check_t::value)
-    {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-          return detail::radix_sort::dispatch<SortOrder::Descending>(
-            storage,
-            bytes,
-            d_keys,
-            d_values,
-            static_cast<offset_t>(num_items),
-            0,
-            detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
-            true,
-            stream,
-            decomposer);
-        });
-    }
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Descending>(
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream);
+    });
   }
 
   //! @rst
@@ -2969,27 +2804,10 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
-    static_assert(decomposer_check_t::value,
-                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check_t::value)
-    {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-          return detail::radix_sort::dispatch<SortOrder::Descending>(
-            storage,
-            bytes,
-            d_keys,
-            d_values,
-            static_cast<offset_t>(num_items),
-            begin_bit,
-            end_bit,
-            true,
-            stream,
-            decomposer);
-        });
-    }
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Descending>(
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream, begin_bit, end_bit);
+    });
   }
 
   //! @}
@@ -3326,26 +3144,18 @@ public:
              cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-
-    // We cast away const-ness, but will *not* write to these arrays.
-    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-    // is not set.
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<NullType> d_values;
-
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+    return radix_sort_with_decomposer<SortOrder::Ascending>(
       d_temp_storage,
       temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
+      d_keys_in,
+      d_keys_out,
+      static_cast<NullType*>(nullptr),
+      static_cast<NullType*>(nullptr),
       num_items,
       decomposer,
+      stream,
       begin_bit,
-      end_bit,
-      stream);
+      end_bit);
   }
 
   //! @rst
@@ -3410,31 +3220,20 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check)
-    {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-          constexpr bool is_overwrite_okay = false;
-          DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-          DoubleBuffer<NullType> d_values;
-          return detail::radix_sort::dispatch<SortOrder::Ascending>(
-            storage,
-            bytes,
-            d_keys,
-            d_values,
-            static_cast<offset_t>(num_items),
-            begin_bit,
-            end_bit,
-            is_overwrite_okay,
-            stream,
-            decomposer);
-        });
-    }
-    _CCCL_UNREACHABLE();
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Ascending>(
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        static_cast<NullType*>(nullptr),
+        static_cast<NullType*>(nullptr),
+        num_items,
+        decomposer,
+        stream,
+        begin_bit,
+        end_bit);
+    });
   }
 
   //! @rst
@@ -3546,7 +3345,7 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+    return radix_sort_with_decomposer<SortOrder::Ascending>(
       d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
   }
 
@@ -3603,31 +3402,18 @@ public:
   SortKeys(const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, DecomposerT decomposer, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check)
-    {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-          constexpr bool is_overwrite_okay = false;
-          DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-          DoubleBuffer<NullType> d_values;
-          return detail::radix_sort::dispatch<SortOrder::Ascending>(
-            storage,
-            bytes,
-            d_keys,
-            d_values,
-            static_cast<offset_t>(num_items),
-            0,
-            detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
-            is_overwrite_okay,
-            stream,
-            decomposer);
-        });
-    }
-    _CCCL_UNREACHABLE();
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Ascending>(
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        static_cast<NullType*>(nullptr),
+        static_cast<NullType*>(nullptr),
+        num_items,
+        decomposer,
+        stream);
+    });
   }
 
   //! @rst
@@ -3948,7 +3734,7 @@ public:
     constexpr bool is_overwrite_okay = true;
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
+    return radix_sort_with_decomposer<SortOrder::Ascending>(
       d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
   }
 
@@ -4004,29 +3790,11 @@ public:
   SortKeys(DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check)
-    {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-          DoubleBuffer<NullType> d_values;
-          return detail::radix_sort::dispatch<SortOrder::Ascending>(
-            storage,
-            bytes,
-            d_keys,
-            d_values,
-            static_cast<offset_t>(num_items),
-            0,
-            detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
-            true,
-            stream,
-            decomposer);
-        });
-    }
-    _CCCL_UNREACHABLE();
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      DoubleBuffer<NullType> d_values;
+      return radix_sort_with_decomposer<SortOrder::Ascending>(
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream);
+    });
   }
 
   //! @rst
@@ -4141,21 +3909,9 @@ public:
              cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-
-    constexpr bool is_overwrite_okay = true;
     DoubleBuffer<NullType> d_values;
-
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      num_items,
-      decomposer,
-      begin_bit,
-      end_bit,
-      stream);
+    return radix_sort_with_decomposer<SortOrder::Ascending>(
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream, begin_bit, end_bit);
   }
 
   //! @rst
@@ -4213,29 +3969,12 @@ public:
     DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, int begin_bit, int end_bit, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
-    static_assert(decomposer_check,
-                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check)
-    {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-          DoubleBuffer<NullType> d_values;
-          return detail::radix_sort::dispatch<SortOrder::Ascending>(
-            storage,
-            bytes,
-            d_keys,
-            d_values,
-            static_cast<offset_t>(num_items),
-            begin_bit,
-            end_bit,
-            true,
-            stream,
-            decomposer);
-        });
-    }
-    _CCCL_UNREACHABLE();
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      DoubleBuffer<NullType> d_values;
+      return radix_sort_with_decomposer<SortOrder::Ascending>(
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream, begin_bit, end_bit);
+    });
   }
 
   //! @rst Sorts keys into descending order using :math:`\approx 2N` auxiliary storage.
@@ -4567,26 +4306,18 @@ public:
       cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-
-    // We cast away const-ness, but will *not* write to these arrays.
-    // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
-    // create a new double-buffer internally when the ``is_overwrite_ok`` flag
-    // is not set.
-    constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-    DoubleBuffer<NullType> d_values;
-
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+    return radix_sort_with_decomposer<SortOrder::Descending>(
       d_temp_storage,
       temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
+      d_keys_in,
+      d_keys_out,
+      static_cast<NullType*>(nullptr),
+      static_cast<NullType*>(nullptr),
       num_items,
       decomposer,
+      stream,
       begin_bit,
-      end_bit,
-      stream);
+      end_bit);
   }
 
   //! @rst
@@ -4696,7 +4427,7 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+    return radix_sort_with_decomposer<SortOrder::Descending>(
       d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
   }
 
@@ -5018,7 +4749,7 @@ public:
     constexpr bool is_overwrite_okay = true;
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
+    return radix_sort_with_decomposer<SortOrder::Descending>(
       d_temp_storage, temp_storage_bytes, is_overwrite_okay, d_keys, d_values, num_items, decomposer, stream);
   }
 
@@ -5135,21 +4866,9 @@ public:
       cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-
-    constexpr bool is_overwrite_okay = true;
     DoubleBuffer<NullType> d_values;
-
-    return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      is_overwrite_okay,
-      d_keys,
-      d_values,
-      num_items,
-      decomposer,
-      begin_bit,
-      end_bit,
-      stream);
+    return radix_sort_with_decomposer<SortOrder::Descending>(
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream, begin_bit, end_bit);
   }
 
   //! @rst
@@ -5208,30 +4927,21 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
-    static_assert(decomposer_check_t::value,
-                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check_t::value)
-    {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-          constexpr bool is_overwrite_okay = false;
-          DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-          DoubleBuffer<NullType> d_values;
-          return detail::radix_sort::dispatch<SortOrder::Descending>(
-            storage,
-            bytes,
-            d_keys,
-            d_values,
-            static_cast<offset_t>(num_items),
-            begin_bit,
-            end_bit,
-            is_overwrite_okay,
-            stream,
-            decomposer);
-        });
-    }
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Descending>(
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        static_cast<NullType*>(nullptr),
+        static_cast<NullType*>(nullptr),
+        num_items,
+        decomposer,
+        stream,
+        begin_bit,
+        end_bit);
+    });
   }
 
   //! @rst
@@ -5281,30 +4991,18 @@ public:
     const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, DecomposerT decomposer, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
-    static_assert(decomposer_check_t::value,
-                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check_t::value)
-    {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-          constexpr bool is_overwrite_okay = false;
-          DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-          DoubleBuffer<NullType> d_values;
-          return detail::radix_sort::dispatch<SortOrder::Descending>(
-            storage,
-            bytes,
-            d_keys,
-            d_values,
-            static_cast<offset_t>(num_items),
-            0,
-            detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
-            is_overwrite_okay,
-            stream,
-            decomposer);
-        });
-    }
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return radix_sort_with_decomposer<SortOrder::Descending>(
+        storage,
+        bytes,
+        d_keys_in,
+        d_keys_out,
+        static_cast<NullType*>(nullptr),
+        static_cast<NullType*>(nullptr),
+        num_items,
+        decomposer,
+        stream);
+    });
   }
 
   //! @rst
@@ -5353,28 +5051,11 @@ public:
   SortKeysDescending(DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
-    static_assert(decomposer_check_t::value,
-                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check_t::value)
-    {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-          DoubleBuffer<NullType> d_values;
-          return detail::radix_sort::dispatch<SortOrder::Descending>(
-            storage,
-            bytes,
-            d_keys,
-            d_values,
-            static_cast<offset_t>(num_items),
-            0,
-            detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
-            true,
-            stream,
-            decomposer);
-        });
-    }
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      DoubleBuffer<NullType> d_values;
+      return radix_sort_with_decomposer<SortOrder::Descending>(
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream);
+    });
   }
 
   //! @rst
@@ -5426,28 +5107,12 @@ public:
     DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, int begin_bit, int end_bit, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
-    static_assert(decomposer_check_t::value,
-                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check_t::value)
-    {
-      return detail::dispatch_with_env(
-        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-          DoubleBuffer<NullType> d_values;
-          return detail::radix_sort::dispatch<SortOrder::Descending>(
-            storage,
-            bytes,
-            d_keys,
-            d_values,
-            static_cast<offset_t>(num_items),
-            begin_bit,
-            end_bit,
-            true,
-            stream,
-            decomposer);
-        });
-    }
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      DoubleBuffer<NullType> d_values;
+      return radix_sort_with_decomposer<SortOrder::Descending>(
+        storage, bytes, d_keys, d_values, num_items, decomposer, stream, begin_bit, end_bit);
+    });
   }
 
   //! @}
