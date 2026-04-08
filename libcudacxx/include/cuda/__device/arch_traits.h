@@ -456,7 +456,7 @@ template <>
 
 //! @brief Gets the architecture traits for the given architecture id \c __id.
 //!
-//! @throws \c cuda::cuda_error if the \c __id is not a known architecture.
+//! @throws cuda::cuda_error if the \c __id is not a known architecture.
 [[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits_for(arch_id __id)
 {
   switch (__id)
@@ -482,7 +482,7 @@ template <>
 
 //! @brief Gets the architecture traits for the given compute capability \c __cc.
 //!
-//! @throws \c cuda::cuda_error if the \c __cc doesn't have a corresponding architecture id.
+//! @throws cuda::cuda_error if the \c __cc doesn't have a corresponding architecture id.
 [[nodiscard]] _CCCL_API constexpr arch_traits_t arch_traits_for(compute_capability __cc)
 {
   return ::cuda::arch_traits_for(::cuda::to_arch_id(__cc));

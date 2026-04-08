@@ -315,7 +315,7 @@ __launch_bounds__(int(
     EqualityOpT,
     OffsetT,
     StreamingContextT>::agent_policy_t::BLOCK_THREADS))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSelectSweepKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceSelectSweepKernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const FlagsInputIteratorT d_flags,
     _CCCL_GRID_CONSTANT const SelectedOutputIteratorT d_selected_out,

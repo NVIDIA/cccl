@@ -58,7 +58,7 @@ template <typename PolicySelectorT,
           typename OutputIteratorT,
           typename ScanTileState,
           typename AccumT>
-CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
+_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state, _CCCL_GRID_CONSTANT const int num_tiles)
 {
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
@@ -99,7 +99,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
  *   (i.e., length of `d_selected_out`)
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceCompactInitKernel(
+_CCCL_KERNEL_ATTRIBUTES void DeviceCompactInitKernel(
   ScanTileStateT tile_state, _CCCL_GRID_CONSTANT const int num_tiles, NumSelectedIteratorT d_num_selected_out)
 {
   // Initialize tile status
@@ -181,7 +181,7 @@ template <typename PolicySelector,
           bool ForceInclusive,
           typename RealInitValueT = typename InitValueT::value_type>
 __launch_bounds__(get_device_scan_launch_bounds<PolicySelector, InputIteratorT, OutputIteratorT, AccumT>(), 1)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceScanKernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
     tile_state_kernel_arg_t<ScanTileState, AccumT> tile_state,

@@ -29,7 +29,7 @@
 #include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::places
 {
 template <::std::ptrdiff_t which_dim = -1>
 class blocked_partition_custom
@@ -162,4 +162,4 @@ UNITTEST("blocked partition with very large data arrays")
 };
 
 #endif // UNITTESTED_FILE
-} // namespace cuda::experimental::stf
+} // namespace cuda::experimental::places

@@ -17,7 +17,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-CUB_DETAIL_KERNEL_ATTRIBUTES void write_ptx_version_kernel(int* d_kernel_cuda_arch)
+_CCCL_KERNEL_ATTRIBUTES void write_ptx_version_kernel(int* d_kernel_cuda_arch)
 {
   *d_kernel_cuda_arch = CUB_PTX_ARCH;
 }

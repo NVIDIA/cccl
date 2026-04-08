@@ -55,7 +55,7 @@ template <typename PolicySelector, typename IteratorT, typename OffsetT, typenam
   requires find_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void find_kernel(
+  _CCCL_KERNEL_ATTRIBUTES void find_kernel(
     IteratorT d_in, OffsetT num_items, OffsetT* found_pos_ptr, PredicateT predicate)
 {
   constexpr find_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});

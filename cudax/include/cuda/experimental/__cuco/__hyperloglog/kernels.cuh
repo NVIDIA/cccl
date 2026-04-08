@@ -52,7 +52,7 @@ namespace cuda::experimental::cuco::__hyperloglog_ns
 }
 
 template <class _RefType>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __clear(_RefType __ref)
+_CCCL_KERNEL_ATTRIBUTES void __clear(_RefType __ref)
 {
   const auto __block = ::cooperative_groups::this_thread_block();
   if (__block.group_index().x == 0)
@@ -62,7 +62,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __clear(_RefType __ref)
 }
 
 template <int _VectorSize, class _RefType>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void
+_CCCL_KERNEL_ATTRIBUTES void
 __add_shmem_vectorized(const typename _RefType::__value_type* __first, ::cuda::std::int64_t __n, _RefType __ref)
 {
   using __value_type = typename _RefType::__value_type;
@@ -122,7 +122,7 @@ __add_shmem_vectorized(const typename _RefType::__value_type* __first, ::cuda::s
 }
 
 template <class _InputIt, class _RefType>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_shmem(_InputIt __first, ::cuda::std::int64_t __n, _RefType __ref)
+_CCCL_KERNEL_ATTRIBUTES void __add_shmem(_InputIt __first, ::cuda::std::int64_t __n, _RefType __ref)
 {
   using __local_ref_type = typename _RefType::template __with_scope<::cuda::std::thread_scope_block>;
 
@@ -148,7 +148,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_shmem(_InputIt __first, ::cuda::std::in
 }
 
 template <class _InputIt, class _RefType>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_gmem(_InputIt __first, ::cuda::std::int64_t __n, _RefType __ref)
+_CCCL_KERNEL_ATTRIBUTES void __add_gmem(_InputIt __first, ::cuda::std::int64_t __n, _RefType __ref)
 {
   const auto __loop_stride = __grid_stride();
   auto __idx               = __global_thread_id();
@@ -161,7 +161,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __add_gmem(_InputIt __first, ::cuda::std::int
 }
 
 template <class _OtherRefType, class _RefType>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __merge(_OtherRefType __other_ref, _RefType __ref)
+_CCCL_KERNEL_ATTRIBUTES void __merge(_OtherRefType __other_ref, _RefType __ref)
 {
   const auto __block = ::cooperative_groups::this_thread_block();
   if (__block.group_index().x == 0)

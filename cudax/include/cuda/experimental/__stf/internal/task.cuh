@@ -48,7 +48,6 @@ using mapping_id_t = reserved::unique_id<reserved::mapping_id_tag>;
 
 class backend_ctx_untyped;
 class logical_data_untyped;
-class exec_place;
 
 void reclaim_memory(
   backend_ctx_untyped& ctx, const data_place& place, size_t requested_s, size_t& reclaimed_s, event_list& prereqs);

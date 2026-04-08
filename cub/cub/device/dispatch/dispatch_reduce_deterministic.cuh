@@ -3,7 +3,7 @@
 
 //! @file
 //! This file device-wide, parallel operations for computing a reduction across a sequence of data items residing within
-//! device-accessible memory. Current reduction operator supported is ::cuda::std::plus
+//! device-accessible memory. Current reduction operator supported is ``cuda::std::plus``
 
 #pragma once
 

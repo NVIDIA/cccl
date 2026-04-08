@@ -83,7 +83,7 @@
     "source=${localWorkspaceFolder}/ci/rapids/.log/devcontainer-utils,target=/var/log/devcontainer-utils,type=bind"
   ],
   "features": {
-    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:26.2": {}
+    "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:26.4": {}
   },
   "overrideFeatureInstallOrder": [
     "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils"

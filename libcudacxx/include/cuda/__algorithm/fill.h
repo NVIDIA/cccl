@@ -81,20 +81,8 @@ _CCCL_HOST_API void fill_bytes(stream_ref __stream, _DstTy&& __dst, ::cuda::std:
     __stream, ::cuda::std::span(launch_transform(__stream, ::cuda::std::forward<_DstTy>(__dst))), __value);
 }
 
-//! @brief Launches an operation to bytewise fill the memory into the provided stream.
-//!
-//! Destination needs to be or launch_transform to an instance of `cuda::std::mdspan`.
-//! It can also convert to `cuda::std::mdspan`, but the type needs to
-//! contain `mdspan` template arguments as member aliases named `value_type`,
-//! `extents_type`, `layout_type` and `accessor_type`. The resulting mdspan is required to
-//! be exhaustive. The element type of the destination is required to be trivially
-//! copyable.
-//!
-//! The destination cannot reside in pagable host memory.
-//!
-//! @param __stream Stream that the copy should be inserted into
-//! @param __dst Destination memory to fill
-//! @param __value Value to fill into every byte in the destination
+//! @overload
+//! @note This overload accepts mdspan-compatible types.
 _CCCL_TEMPLATE(typename _DstTy)
 _CCCL_REQUIRES(__mdspannable<transformed_device_argument_t<_DstTy>>)
 _CCCL_HOST_API void fill_bytes(stream_ref __stream, _DstTy&& __dst, ::cuda::std::uint8_t __value)

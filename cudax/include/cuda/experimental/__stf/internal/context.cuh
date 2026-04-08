@@ -197,6 +197,14 @@ private:
   };
 
 public:
+  /// Builder types returned by `cuda_kernel()` / `host_launch()` with no dependencies; exposed so the STF C API
+  /// and other code can name them without `decltype` on `context` (which would otherwise pull in private
+  /// `unified_scope`).
+  using cuda_kernel_builder =
+    unified_scope<reserved::cuda_kernel_scope<stream_ctx, false>, reserved::cuda_kernel_scope<graph_ctx, false>>;
+  using host_launch_builder =
+    unified_scope<reserved::host_launch_scope<stream_ctx, false>, reserved::host_launch_scope<graph_ctx, false>>;
+
   /*
    * A task that can be either a stream task or a graph task.
    */
@@ -287,7 +295,7 @@ public:
      * index in a task.
      *
      * @tparam T
-     * @param submitted index
+     * @param submitted_index
      * @return slice<T>
      */
     template <typename T>

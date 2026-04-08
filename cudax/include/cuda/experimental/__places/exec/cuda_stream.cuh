@@ -27,7 +27,7 @@
 
 #include <cuda/experimental/__places/places.cuh>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::places
 {
 /**
  * @brief Implementation for CUDA stream execution places
@@ -105,4 +105,4 @@ inline exec_place exec_place::cuda_stream(const decorated_stream& dstream)
 {
   return exec_place{::std::make_shared<exec_place_cuda_stream_impl>(dstream)};
 }
-} // end namespace cuda::experimental::stf
+} // end namespace cuda::experimental::places

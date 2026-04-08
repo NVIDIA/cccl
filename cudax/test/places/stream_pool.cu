@@ -18,9 +18,8 @@
  */
 
 #include <cuda/experimental/__places/places.cuh>
-#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
-using namespace cuda::experimental::stf;
+using namespace cuda::experimental::places;
 
 __global__ void increment_kernel(int* data, int n)
 {
@@ -41,7 +40,7 @@ void test_basic_pick_stream()
   _CCCL_ASSERT(stream != nullptr, "pick_stream must return a valid stream");
 
   int current_device;
-  cuda_safe_call(cudaGetDevice(&current_device));
+  cuda_try(cudaGetDevice(&current_device));
   _CCCL_ASSERT(get_device_from_stream(stream) == current_device, "stream must belong to the current device");
 
   fprintf(stderr, "test_basic_pick_stream: PASSED\n");
@@ -86,22 +85,22 @@ void test_launch_kernel_on_picked_stream()
 
   constexpr int N = 256;
   int* d_data;
-  cuda_safe_call(cudaMallocAsync(&d_data, N * sizeof(int), stream));
-  cuda_safe_call(cudaMemsetAsync(d_data, 0, N * sizeof(int), stream));
+  cuda_try(cudaMallocAsync(&d_data, N * sizeof(int), stream));
+  cuda_try(cudaMemsetAsync(d_data, 0, N * sizeof(int), stream));
 
   increment_kernel<<<1, N, 0, stream>>>(d_data, N);
 
   int h_data[N];
-  cuda_safe_call(cudaMemcpyAsync(h_data, d_data, N * sizeof(int), cudaMemcpyDeviceToHost, stream));
-  cuda_safe_call(cudaStreamSynchronize(stream));
+  cuda_try(cudaMemcpyAsync(h_data, d_data, N * sizeof(int), cudaMemcpyDeviceToHost, stream));
+  cuda_try(cudaStreamSynchronize(stream));
 
   for (int i = 0; i < N; i++)
   {
     _CCCL_ASSERT(h_data[i] == 1, "kernel result mismatch");
   }
 
-  cuda_safe_call(cudaFreeAsync(d_data, stream));
-  cuda_safe_call(cudaStreamSynchronize(stream));
+  cuda_try(cudaFreeAsync(d_data, stream));
+  cuda_try(cudaStreamSynchronize(stream));
 
   fprintf(stderr, "test_launch_kernel_on_picked_stream: PASSED\n");
 }
@@ -122,7 +121,7 @@ void test_round_robin_streams()
 int main()
 {
   int ndevs;
-  cuda_safe_call(cudaGetDeviceCount(&ndevs));
+  cuda_try(cudaGetDeviceCount(&ndevs));
 
   test_basic_pick_stream();
   test_pick_stream_computation_hint();

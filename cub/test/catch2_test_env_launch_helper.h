@@ -512,7 +512,21 @@ void launch(ActionT action, Args... args)
 template <class ActionT, class... Args>
 __global__ void device_side_api_launch_kernel(cudaError_t* d_error, ActionT action, Args... args)
 {
+  // The clang-tidy job uses clang-20 but clang does not support CUDA dynamic parallelism until
+  // clang-22. Since we are inside clang-tidy we don't actually care whether the kernel is
+  // invoked so do what we must to silence any compiler errors (though if we ever do use
+  // clang-22+ then invoke the kernel anyways to have clang-tidy check it).
+#  ifdef _CCCL_CLANG_TIDY_INVOKED
+#    if _CCCL_HAS_CDP()
   *d_error = action(args...);
+#    else // ^^^  _CCCL_HAS_CDP() ^^^ / vvv ! _CCCL_HAS_CDP() vvv
+  static_cast<void>(action);
+  (static_cast<void>(args), ...);
+  *d_error = cudaSuccess;
+#    endif // ! _CCCL_HAS_CDP()
+#  else // ^^^ _CCCL_CLANG_TIDY_INVOKED ^^^ / vvv !_CCCL_CLANG_TIDY_INVOKED vvv
+  *d_error = action(args...);
+#  endif // !_CCCL_CLANG_TIDY_INVOKED
 }
 
 template <class ActionT, class... Args>

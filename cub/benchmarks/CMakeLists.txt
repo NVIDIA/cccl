@@ -5,7 +5,19 @@ cccl_get_nvbench_helper()
 set(benches_root "${CMAKE_CURRENT_LIST_DIR}")
 
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-  message(FATAL_ERROR "CUB benchmarks must be built in release mode.")
+  set(message_type FATAL_ERROR)
+  if (CCCL_ENABLE_CLANG_TIDY)
+    # We are here because CI has force-enabled clang-tidy. We must use a debug build for
+    # this because certain clang-tidy checks (such as out of bounds or clang static
+    # analyzer) work better when they see assert()'s. In this case we don't actually
+    # intend to run any of the benchmarks, we just need them to be compilable, so a simple
+    # warning is enough.
+    #
+    # We don't ignore this outright (by making it say, DEBUG or VERBOSE), because it's
+    # possible that a user may accidentally stumble into enabling the option.
+    set(message_type WARNING)
+  endif()
+  message(${message_type} "CUB benchmarks must be built in release mode.")
 endif()
 
 if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)

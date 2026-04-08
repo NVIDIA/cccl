@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__numeric/sub_sat_overflow.h>
+#include <cuda/__numeric/saturating_sub_overflow.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__numeric/saturating_cast.h>
 #include <cuda/std/__type_traits/is_integer.h>
@@ -50,7 +50,7 @@ template <class _Tp>
 #    if _CCCL_COMPILER(CLANG, <, 21)
   if constexpr (sizeof(_Tp) < sizeof(int32_t))
   {
-    return ::cuda::sub_sat_overflow(__x, __y).value;
+    return ::cuda::saturating_sub_overflow(__x, __y).value;
   }
   else
 #    endif // _CCCL_COMPILER(CLANG, <, 21)
@@ -80,7 +80,7 @@ template <class _Tp>
     else
 #    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
     {
-      return ::cuda::sub_sat_overflow(__x, __y).value;
+      return ::cuda::saturating_sub_overflow(__x, __y).value;
     }
   }
   else
@@ -105,7 +105,7 @@ template <class _Tp>
     else
 #    endif // _CCCL_COMPILER(MSVC, >=, 19, 41) && _CCCL_ARCH(X86_64)
     {
-      return ::cuda::sub_sat_overflow(__x, __y).value;
+      return ::cuda::saturating_sub_overflow(__x, __y).value;
     }
   }
 #  endif // ^^^ !_CCCL_BUILTIN_ELEMENTWISE_SUB_SAT ^^^
@@ -118,8 +118,23 @@ template <class _Tp>
 {
   if constexpr (is_signed_v<_Tp>)
   {
-    if constexpr (sizeof(_Tp) < sizeof(int32_t))
+    if constexpr (sizeof(_Tp) == sizeof(int8_t))
     {
+#  if __cccl_ptx_isa >= 920
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, ({
+                     // Use uint32_t because we want to avoid sign extension.
+                     uint32_t __result;
+                     asm("sub.sat.s8x4 %0, %1, %2;"
+                         : "=r"(__result)
+                         : "r"(static_cast<uint32_t>(__x)), "r"(static_cast<uint32_t>(__y)));
+                     return static_cast<_Tp>(__result);
+                   }))
+#  endif // __cccl_ptx_isa >= 920
+      return ::cuda::std::saturating_cast<_Tp>(int32_t{__x} - int32_t{__y});
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(int16_t))
+    {
+      // sub.sat.s16x2 doesn't exist for now
       return ::cuda::std::saturating_cast<_Tp>(int32_t{__x} - int32_t{__y});
     }
     // Disabled due to nvbug 5033045
@@ -131,12 +146,27 @@ template <class _Tp>
     // }
     else
     {
-      return ::cuda::sub_sat_overflow(__x, __y).value;
+      return ::cuda::saturating_sub_overflow(__x, __y).value;
     }
   }
   else
   {
-    return ::cuda::sub_sat_overflow(__x, __y).value;
+#  if __cccl_ptx_isa >= 920
+    if constexpr (sizeof(_Tp) == sizeof(uint8_t))
+    {
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, ({
+                     uint32_t __result;
+                     asm("sub.sat.u8x4 %0, %1, %2;" : "=r"(__result) : "r"(uint32_t{__x}), "r"(uint32_t{__y}));
+                     return static_cast<_Tp>(__result);
+                   }))
+      return ::cuda::saturating_sub_overflow(__x, __y).value;
+    }
+    else
+#  endif // __cccl_ptx_isa >= 920
+    {
+      // sub.sat.u16x2 doesn't exist for now
+      return ::cuda::saturating_sub_overflow(__x, __y).value;
+    }
   }
 }
 #endif // _CCCL_CUDA_COMPILATION()
@@ -151,7 +181,7 @@ _CCCL_REQUIRES(__cccl_is_integer_v<_Tp>)
                       (return ::cuda::std::__saturating_sub_impl_host(__x, __y);),
                       (return ::cuda::std::__saturating_sub_impl_device(__x, __y);))
   }
-  return ::cuda::sub_sat_overflow(__x, __y).value;
+  return ::cuda::saturating_sub_overflow(__x, __y).value;
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

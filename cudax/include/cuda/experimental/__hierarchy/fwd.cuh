@@ -49,15 +49,15 @@ class __this_group_base;
 
 // groups
 
-template <class _Hierarchy = __implicit_hierarchy_t>
+template <class _Hierarchy>
 class this_thread;
-template <class _Hierarchy = __implicit_hierarchy_t>
+template <class _Hierarchy>
 class this_warp;
-template <class _Hierarchy = __implicit_hierarchy_t>
+template <class _Hierarchy>
 class this_block;
-template <class _Hierarchy = __implicit_hierarchy_t>
+template <class _Hierarchy>
 class this_cluster;
-template <class _Hierarchy = __implicit_hierarchy_t>
+template <class _Hierarchy>
 class this_grid;
 
 // traits

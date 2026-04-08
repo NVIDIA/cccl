@@ -110,7 +110,12 @@ function(cudax_add_places_fail_test target_name_var source)
 
   set(test_target cudax.test.places.error.${filename})
 
-  cccl_add_executable(${test_target} SOURCES ${source} NO_METATARGETS)
+  cccl_add_executable(
+    ${test_target}
+    SOURCES ${source}
+    NO_METATARGETS
+    NO_CLANG_TIDY
+  )
   cudax_places_configure_target(${test_target})
   target_link_libraries(${test_target} PRIVATE cudax.compiler_interface)
   cccl_add_xfail_compile_target_test(

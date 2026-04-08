@@ -55,5 +55,5 @@ void PRINT(const Container& c)
 template <size_t N>
 void PRINT(const char (&c)[N])
 {
-  std::cout << std::string(c, c + N) << std::endl;
+  std::cout << std::string(c, c + N) << '\n';
 }

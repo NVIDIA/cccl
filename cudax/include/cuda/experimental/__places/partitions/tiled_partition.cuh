@@ -27,7 +27,7 @@
 
 #include <cuda/experimental/__places/places.cuh>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::places
 {
 namespace reserved
 {
@@ -80,7 +80,7 @@ public:
     // element for this part
     if (last_elem > n)
     {
-      size_t extra_elems = min(tile_size, last_elem - n);
+      size_t extra_elems = ::std::min(tile_size, last_elem - n);
       cnt -= extra_elems;
     }
 
@@ -184,4 +184,4 @@ UNITTEST("tiled partition with large 1D data")
 };
 
 #endif // UNITTESTED_FILE
-} // namespace cuda::experimental::stf
+} // namespace cuda::experimental::places

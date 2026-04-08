@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___NUMERIC_SATURATE_CAST_H
-#define _CUDA___NUMERIC_SATURATE_CAST_H
+#ifndef _CUDA___NUMERIC_SATURATING_OVERFLOW_CAST_H
+#define _CUDA___NUMERIC_SATURATING_OVERFLOW_CAST_H
 
 #include <cuda/std/detail/__config>
 
@@ -33,7 +33,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 _CCCL_TEMPLATE(class _Up, class _Tp)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Up> _CCCL_AND ::cuda::std::__cccl_is_integer_v<_Tp>)
-[[nodiscard]] _CCCL_API constexpr overflow_result<_Up> saturate_overflow_cast(_Tp __x) noexcept
+[[nodiscard]] _CCCL_API constexpr overflow_result<_Up> saturating_overflow_cast(_Tp __x) noexcept
 {
   if (::cuda::std::cmp_less(__x, ::cuda::std::numeric_limits<_Up>::min()))
   {
@@ -50,4 +50,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___NUMERIC_SATURATE_CAST_H
+#endif // _CUDA___NUMERIC_SATURATING_OVERFLOW_CAST_H

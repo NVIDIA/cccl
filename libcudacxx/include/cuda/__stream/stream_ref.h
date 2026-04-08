@@ -338,11 +338,14 @@ _CCCL_HOST_API inline timed_event::timed_event(stream_ref __stream, event_flags 
   record(__stream);
 }
 
+// Hide from Doxygen — __ensure_current_context is an internal symbol excluded by EXCLUDE_SYMBOLS.
+#  ifndef _CCCL_DOXYGEN_INVOKED
 _CCCL_HOST_API inline __ensure_current_context::__ensure_current_context(stream_ref __stream)
 {
   auto __ctx = __driver::__streamGetCtx(__stream.get());
   ::cuda::__driver::__ctxPush(__ctx);
 }
+#  endif // !_CCCL_DOXYGEN_INVOKED
 
 _CCCL_END_NAMESPACE_CUDA
 

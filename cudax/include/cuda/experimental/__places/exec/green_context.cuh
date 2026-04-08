@@ -37,7 +37,7 @@
 
 #if _CCCL_CTK_AT_LEAST(12, 4)
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::places
 {
 /**
  * @brief data_place_interface implementation for green contexts
@@ -91,14 +91,14 @@ public:
   void* allocate(::std::ptrdiff_t size, cudaStream_t stream) const override
   {
     void* result = nullptr;
-    cuda_safe_call(cudaSetDevice(view_.devid));
-    cuda_safe_call(cudaMallocAsync(&result, size, stream));
+    cuda_try(cudaSetDevice(view_.devid));
+    cuda_try(cudaMallocAsync(&result, static_cast<size_t>(size), stream));
     return result;
   }
 
   void deallocate(void* ptr, size_t /*size*/, cudaStream_t stream) const override
   {
-    cuda_safe_call(cudaFreeAsync(ptr, stream));
+    cuda_try(cudaFreeAsync(ptr, stream));
   }
 
   bool allocation_is_stream_ordered() const override
@@ -127,7 +127,7 @@ inline data_place make_green_ctx_data_place(const green_ctx_view& gc_view)
 inline unsigned long long get_cuda_context_id(CUcontext ctx)
 {
   unsigned long long ctx_id;
-  cuda_safe_call(cuCtxGetId(ctx, &ctx_id));
+  cuda_try(cuCtxGetId(ctx, &ctx_id));
   return ctx_id;
 }
 
@@ -153,33 +153,30 @@ public:
     // Change device only if necessary.
     if (devid != old_device)
     {
-      cuda_safe_call(cudaSetDevice(devid));
+      cuda_try(cudaSetDevice(devid));
     }
 
     /* Make sure we aren't requesting more SMs than the GPU has available */
-    int max_SMs;
-    cuda_safe_call(cudaDeviceGetAttribute(&max_SMs, cudaDevAttrMultiProcessorCount, devid));
+    int max_SMs = cuda_try<cudaDeviceGetAttribute>(cudaDevAttrMultiProcessorCount, devid);
     assert(max_SMs >= int(numsm));
 
     /* Determine the device's resources */
-    CUdevice device;
-    cuda_safe_call(cuDeviceGet(&device, devid));
+    CUdevice device = cuda_try<cuDeviceGet>(devid);
 
     /* Retain the primary ctx in order to get a set of SM resources for that device */
-    CUcontext primaryCtx;
     CUdevResource input;
-    cuda_safe_call(cuDevicePrimaryCtxRetain(&primaryCtx, device));
+    CUcontext primaryCtx = cuda_try<cuDevicePrimaryCtxRetain>(device);
     cuCtxGetDevResource(primaryCtx, &input, CU_DEV_RESOURCE_TYPE_SM);
     cuDevicePrimaryCtxRelease(device);
 
     // First we query how many groups should be created
     unsigned int nbGroups;
-    cuda_safe_call(cuDevSmResourceSplitByCount(NULL, &nbGroups, &input, NULL, 0, sm_count));
+    cuda_try(cuDevSmResourceSplitByCount(NULL, &nbGroups, &input, NULL, 0, sm_count));
 
     // Split the resources as requested
     assert(nbGroups >= 1);
     resources.resize(nbGroups);
-    cuda_safe_call(cuDevSmResourceSplitByCount(resources.data(), &nbGroups, &input, &remainder, 0, sm_count));
+    cuda_try(cuDevSmResourceSplitByCount(resources.data(), &nbGroups, &input, &remainder, 0, sm_count));
 
     /* Create a green context for each group */
     ctxs.resize(nbGroups);
@@ -192,13 +189,12 @@ public:
       if (resources[i].type != CU_DEV_RESOURCE_TYPE_INVALID)
       {
         // Create a descriptor and a green context with that descriptor:
-        CUdevResourceDesc localdesc;
         /* The generated resource descriptor is necessary for the creation of green contexts via the
          * cuGreenCtxCreate API. The API expects nbResources == 1, as there is only one type of resource and
          * merging the same types of resource is currently not supported. */
-        cuda_safe_call(cuDevResourceGenerateDesc(&localdesc, &resources[i], 1));
+        CUdevResourceDesc localdesc = cuda_try<cuDevResourceGenerateDesc>(&resources[i], 1);
         // Create a green context
-        cuda_safe_call(cuGreenCtxCreate(&ctxs[i], localdesc, device, CU_GREEN_CTX_DEFAULT_STREAM));
+        ctxs[i] = cuda_try<cuGreenCtxCreate>(localdesc, device, CU_GREEN_CTX_DEFAULT_STREAM);
 
         pools.emplace_back(exec_place::impl::pool_size);
       }
@@ -288,13 +284,12 @@ public:
     _CCCL_ASSERT(idx == 0, "Index out of bounds for green_ctx exec_place");
 
     // Save the current context and transform it into a fake green context place
-    CUcontext current_ctx;
-    cuda_safe_call(cuCtxGetCurrent(&current_ctx));
-    exec_place result = exec_place(::std::make_shared<exec_place_green_ctx_impl>(current_ctx));
+    CUcontext current_ctx = cuda_try<cuCtxGetCurrent>();
+    exec_place result     = exec_place(::std::make_shared<exec_place_green_ctx_impl>(current_ctx));
 
     // Convert the green context to a primary context
-    cuda_safe_call(cuCtxFromGreenCtx(&driver_context_, g_ctx_));
-    cuda_safe_call(cuCtxSetCurrent(driver_context_));
+    driver_context_ = cuda_try<cuCtxFromGreenCtx>(g_ctx_);
+    cuda_try(cuCtxSetCurrent(driver_context_));
 
     return result;
   }
@@ -307,12 +302,11 @@ public:
     CUcontext saved_ctx = prev_impl->driver_context_;
 
 #  ifdef DEBUG
-    CUcontext current_ctx;
-    cuda_safe_call(cuCtxGetCurrent(&current_ctx));
+    CUcontext current_ctx = cuda_try<cuCtxGetCurrent>();
     assert(get_cuda_context_id(current_ctx) == get_cuda_context_id(driver_context_));
 #  endif
 
-    cuda_safe_call(cuCtxSetCurrent(saved_ctx));
+    cuda_try(cuCtxSetCurrent(saved_ctx));
   }
 
   bool is_device() const override
@@ -689,6 +683,6 @@ UNITTEST("green context exec_place as std::map key")
   EXPECT(map[ep0] == 100); // Still 100
 };
 #  endif // UNITTESTED_FILE
-} // end namespace cuda::experimental::stf
+} // end namespace cuda::experimental::places
 
 #endif // _CCCL_CTK_AT_LEAST(12, 4)

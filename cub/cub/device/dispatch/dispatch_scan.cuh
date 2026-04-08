@@ -3,9 +3,10 @@
 // SPDX-License-Identifier: BSD-3
 
 /**
- * @file cub::DeviceScan provides device-wide, parallel operations for
- *       computing a prefix scan across a sequence of data items residing
- *       within device-accessible memory.
+ * @file
+ * @brief cub::DeviceScan provides device-wide, parallel operations for
+ *        computing a prefix scan across a sequence of data items residing
+ *        within device-accessible memory.
  */
 
 #pragma once
@@ -343,9 +344,6 @@ struct DispatchScan
    *
    * @param[in] launcher_factory
    *   Object to execute implementation kernels on the given stream
-   *
-   * @param[in] max_policy
-   *   Struct encoding chain of algorithm tuning policies
    */
   // TODO(griwes): deprecate when we make the tuning API public and remove in CCCL 4.0
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchScan(

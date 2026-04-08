@@ -95,23 +95,23 @@ int main()
   // 2d array stored in row-major order [(0,0), (0,1), (0,2) ... ]
   thrust::device_vector<int> data(m * n, 1);
 
-  std::cout << "[step 0] initial array" << std::endl;
+  std::cout << "[step 0] initial array" << '\n';
   print(m, n, data);
 
-  std::cout << "[step 1] scan horizontally" << std::endl;
+  std::cout << "[step 1] scan horizontally" << '\n';
   scan_horizontally(n, data);
   print(m, n, data);
 
-  std::cout << "[step 2] transpose array" << std::endl;
+  std::cout << "[step 2] transpose array" << '\n';
   thrust::device_vector<int> temp(m * n);
   transpose(m, n, data, temp);
   print(n, m, temp);
 
-  std::cout << "[step 3] scan transpose horizontally" << std::endl;
+  std::cout << "[step 3] scan transpose horizontally" << '\n';
   scan_horizontally(m, temp);
   print(n, m, temp);
 
-  std::cout << "[step 4] transpose the transpose" << std::endl;
+  std::cout << "[step 4] transpose the transpose" << '\n';
   transpose(n, m, temp, data);
   print(m, n, data);
 

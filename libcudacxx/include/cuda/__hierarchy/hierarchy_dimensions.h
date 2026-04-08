@@ -362,7 +362,7 @@ public:
   //! holds all levels from this hierarchy and non-overlapping levels from the
   //! other hierarchy.
   //!
-  //! @param other The other hierarchy to be combined with this hierarchy
+  //! @param __other The other hierarchy to be combined with this hierarchy
   //!
   //! @return Hierarchy holding the combined levels from both hierarchies
   template <class _OtherUnit, class... _OtherLevels>

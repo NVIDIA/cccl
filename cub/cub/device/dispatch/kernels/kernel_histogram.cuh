@@ -337,7 +337,7 @@ template <typename PolicySelector, int NumActiveChannels, typename CounterT, typ
 #if _CCCL_HAS_CONCEPTS()
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
+_CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
   ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
   ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms_wrapper,
   GridQueue<int> tile_queue)
@@ -453,7 +453,7 @@ template <typename PolicySelector,
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     _CCCL_GRID_CONSTANT const ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,
@@ -613,7 +613,7 @@ template <typename PolicySelector,
   requires histogram_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDeviceInitKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramSweepDeviceInitKernel(
     _CCCL_GRID_CONSTANT const SampleIteratorT d_samples,
     ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper,
     ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper,

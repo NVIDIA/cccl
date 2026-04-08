@@ -10,7 +10,7 @@
 // <cuda/numeric>
 
 // template<class R, class T>
-// constexpr overflow_result<R> saturate_overflow_cast(T x) noexcept;                     // freestanding
+// constexpr overflow_result<R> saturating_overflow_cast(T x) noexcept;                     // freestanding
 
 #include <cuda/numeric>
 #include <cuda/std/cassert>
@@ -31,7 +31,7 @@ using UMAX = unsigned long long;
 template <class Ret, class T>
 __host__ __device__ constexpr void test(T x, Ret res, bool of, int zero_value)
 {
-  const auto [result, overflow] = cuda::saturate_overflow_cast<Ret>(static_cast<T>(zero_value + x));
+  const auto [result, overflow] = cuda::saturating_overflow_cast<Ret>(static_cast<T>(zero_value + x));
   assert(result == res);
   assert(overflow == of);
 }
@@ -63,65 +63,69 @@ __host__ __device__ constexpr bool test_type(int zero_value)
 
   // test signed
 
-  static_assert(cuda::std::is_same_v<cuda::overflow_result<S>, decltype(cuda::saturate_overflow_cast<S>(small_smax))>);
-  static_assert(noexcept(cuda::saturate_overflow_cast<S>(small_smax)));
+  static_assert(
+    cuda::std::is_same_v<cuda::overflow_result<S>, decltype(cuda::saturating_overflow_cast<S>(small_smax))>);
+  static_assert(noexcept(cuda::saturating_overflow_cast<S>(small_smax)));
   test<S>(small_smin, static_cast<S>(small_smin), false, zero_value);
   test<S>(small_szero, szero, false, zero_value);
   test<S>(small_smax, static_cast<S>(small_smax), false, zero_value);
 
-  static_assert(cuda::std::is_same_v<cuda::overflow_result<S>, decltype(cuda::saturate_overflow_cast<S>(small_umax))>);
-  static_assert(noexcept(cuda::saturate_overflow_cast<S>(small_umax)));
+  static_assert(
+    cuda::std::is_same_v<cuda::overflow_result<S>, decltype(cuda::saturating_overflow_cast<S>(small_umax))>);
+  static_assert(noexcept(cuda::saturating_overflow_cast<S>(small_umax)));
   test<S>(small_uzero, szero, false, zero_value);
   test<S>(small_umax, (sizeof(S) == sizeof(IMIN)) ? small_smax : static_cast<S>(small_umax), false, zero_value);
 
-  static_assert(cuda::std::is_same_v<cuda::overflow_result<S>, decltype(cuda::saturate_overflow_cast<S>(smax))>);
-  static_assert(noexcept(cuda::saturate_overflow_cast<S>(smax)));
+  static_assert(cuda::std::is_same_v<cuda::overflow_result<S>, decltype(cuda::saturating_overflow_cast<S>(smax))>);
+  static_assert(noexcept(cuda::saturating_overflow_cast<S>(smax)));
   test<S>(smin, smin, false, zero_value);
   test<S>(szero, szero, false, zero_value);
   test<S>(smax, smax, false, zero_value);
 
-  static_assert(cuda::std::is_same_v<cuda::overflow_result<S>, decltype(cuda::saturate_overflow_cast<S>(umax))>);
-  static_assert(noexcept(cuda::saturate_overflow_cast<S>(umax)));
+  static_assert(cuda::std::is_same_v<cuda::overflow_result<S>, decltype(cuda::saturating_overflow_cast<S>(umax))>);
+  static_assert(noexcept(cuda::saturating_overflow_cast<S>(umax)));
   test<S>(uzero, szero, false, zero_value);
   test<S>(umax, smax, true, zero_value); // saturated
 
-  static_assert(cuda::std::is_same_v<cuda::overflow_result<S>, decltype(cuda::saturate_overflow_cast<S>(big_smax))>);
-  static_assert(noexcept(cuda::saturate_overflow_cast<S>(big_smax)));
+  static_assert(cuda::std::is_same_v<cuda::overflow_result<S>, decltype(cuda::saturating_overflow_cast<S>(big_smax))>);
+  static_assert(noexcept(cuda::saturating_overflow_cast<S>(big_smax)));
   test<S>(big_smin, smin, sizeof(S) < sizeof(IMAX), zero_value); // saturated
   test<S>(big_szero, szero, false, zero_value);
   test<S>(big_smax, smax, sizeof(S) < sizeof(IMAX), zero_value); // saturated
 
-  static_assert(cuda::std::is_same_v<cuda::overflow_result<S>, decltype(cuda::saturate_overflow_cast<S>(big_umax))>);
-  static_assert(noexcept(cuda::saturate_overflow_cast<S>(big_umax)));
+  static_assert(cuda::std::is_same_v<cuda::overflow_result<S>, decltype(cuda::saturating_overflow_cast<S>(big_umax))>);
+  static_assert(noexcept(cuda::saturating_overflow_cast<S>(big_umax)));
   test<S>(big_uzero, szero, false, zero_value);
   test<S>(big_umax, smax, true, zero_value); // saturated
 
   // test unsigned
 
-  static_assert(cuda::std::is_same_v<cuda::overflow_result<U>, decltype(cuda::saturate_overflow_cast<U>(small_smax))>);
-  static_assert(noexcept(cuda::saturate_overflow_cast<U>(small_smax)));
+  static_assert(
+    cuda::std::is_same_v<cuda::overflow_result<U>, decltype(cuda::saturating_overflow_cast<U>(small_smax))>);
+  static_assert(noexcept(cuda::saturating_overflow_cast<U>(small_smax)));
   test<U>(small_smin, uzero, true, zero_value);
   test<U>(small_szero, uzero, false, zero_value);
   test<U>(small_smax, static_cast<U>(small_smax), false, zero_value);
 
-  static_assert(cuda::std::is_same_v<cuda::overflow_result<U>, decltype(cuda::saturate_overflow_cast<U>(small_umax))>);
-  static_assert(noexcept(cuda::saturate_overflow_cast<U>(small_umax)));
+  static_assert(
+    cuda::std::is_same_v<cuda::overflow_result<U>, decltype(cuda::saturating_overflow_cast<U>(small_umax))>);
+  static_assert(noexcept(cuda::saturating_overflow_cast<U>(small_umax)));
   test<U>(small_uzero, uzero, false, zero_value);
   test<U>(small_umax, static_cast<U>(small_umax), false, zero_value);
 
-  static_assert(cuda::std::is_same_v<cuda::overflow_result<U>, decltype(cuda::saturate_overflow_cast<U>(smax))>);
-  static_assert(noexcept(cuda::saturate_overflow_cast<U>(smax)));
+  static_assert(cuda::std::is_same_v<cuda::overflow_result<U>, decltype(cuda::saturating_overflow_cast<U>(smax))>);
+  static_assert(noexcept(cuda::saturating_overflow_cast<U>(smax)));
   test<U>(smin, uzero, true, zero_value);
   test<U>(szero, uzero, false, zero_value);
   test<U>(smax, static_cast<U>(smax), false, zero_value);
 
-  static_assert(cuda::std::is_same_v<cuda::overflow_result<U>, decltype(cuda::saturate_overflow_cast<U>(umax))>);
-  static_assert(noexcept(cuda::saturate_overflow_cast<U>(umax)));
+  static_assert(cuda::std::is_same_v<cuda::overflow_result<U>, decltype(cuda::saturating_overflow_cast<U>(umax))>);
+  static_assert(noexcept(cuda::saturating_overflow_cast<U>(umax)));
   test<U>(uzero, uzero, false, zero_value);
   test<U>(umax, umax, false, zero_value);
 
-  static_assert(cuda::std::is_same_v<cuda::overflow_result<U>, decltype(cuda::saturate_overflow_cast<U>(big_smax))>);
-  static_assert(noexcept(cuda::saturate_overflow_cast<U>(big_smax)));
+  static_assert(cuda::std::is_same_v<cuda::overflow_result<U>, decltype(cuda::saturating_overflow_cast<U>(big_smax))>);
+  static_assert(noexcept(cuda::saturating_overflow_cast<U>(big_smax)));
   test<U>(big_smin, uzero, true, zero_value); // saturated
   test<U>(big_szero, uzero, false, zero_value);
   test<U>(big_smax,
@@ -129,8 +133,8 @@ __host__ __device__ constexpr bool test_type(int zero_value)
           sizeof(U) < sizeof(UMAX),
           zero_value); // saturated
 
-  static_assert(cuda::std::is_same_v<cuda::overflow_result<U>, decltype(cuda::saturate_overflow_cast<U>(big_umax))>);
-  static_assert(noexcept(cuda::saturate_overflow_cast<U>(big_umax)));
+  static_assert(cuda::std::is_same_v<cuda::overflow_result<U>, decltype(cuda::saturating_overflow_cast<U>(big_umax))>);
+  static_assert(noexcept(cuda::saturating_overflow_cast<U>(big_umax)));
   test<U>(big_uzero, uzero, false, zero_value);
   test<U>(big_umax, umax, sizeof(U) < sizeof(UMAX), zero_value); // saturated
 

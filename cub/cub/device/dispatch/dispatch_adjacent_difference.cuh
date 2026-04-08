@@ -39,7 +39,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail::adjacent_difference
 {
 template <typename AgentDifferenceInitT, typename InputIteratorT, typename InputT, typename OffsetT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceInitKernel(
+_CCCL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceInitKernel(
   _CCCL_GRID_CONSTANT const InputIteratorT first,
   _CCCL_GRID_CONSTANT InputT* const result,
   _CCCL_GRID_CONSTANT const OffsetT num_tiles,
@@ -57,7 +57,7 @@ template <typename PolicySelector,
           typename InputT,
           bool MayAlias,
           bool ReadLeft>
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
+_CCCL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
   _CCCL_GRID_CONSTANT const InputIteratorT input,
   _CCCL_GRID_CONSTANT InputT* const first_tile_previous,
   _CCCL_GRID_CONSTANT const OutputIteratorT result,
