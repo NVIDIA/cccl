@@ -36,11 +36,11 @@ using input_2d_mdspan_t = cuda::std::mdspan<T, cuda::std::dextents<int, 2>>;
  * Batched Reduction Kernel
  **********************************************************************************************************************/
 
-template <int Batches, int LogicalWarpThreads, typename T, typename ReductionOp>
+template <int Batches, int LogicalWarpThreads, typename T, bool SyncPhysicalWarp, typename ReductionOp>
 __global__ void
 warp_reduce_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::span<T> output, ReductionOp reduction_op)
 {
-  using warp_reduce_batched_t = cub::WarpReduceBatched<T, Batches, LogicalWarpThreads>;
+  using warp_reduce_batched_t = cub::WarpReduceBatched<T, Batches, LogicalWarpThreads, SyncPhysicalWarp>;
   __shared__ typename warp_reduce_batched_t::TempStorage temp_storage;
   const int tid             = threadIdx.x;
   const int logical_warp_id = tid / LogicalWarpThreads;
@@ -66,10 +66,10 @@ warp_reduce_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::span<T> out
   }
 }
 
-template <typename T, int Batches, int LogicalWarpThreads>
+template <typename T, int Batches, int LogicalWarpThreads, bool SyncPhysicalWarp>
 __global__ void sum_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::span<T> output)
 {
-  using warp_reduce_batched_t = cub::WarpReduceBatched<T, Batches, LogicalWarpThreads>;
+  using warp_reduce_batched_t = cub::WarpReduceBatched<T, Batches, LogicalWarpThreads, SyncPhysicalWarp>;
   __shared__ typename warp_reduce_batched_t::TempStorage temp_storage;
   const int tid             = threadIdx.x;
   const int logical_warp_id = tid / LogicalWarpThreads;
@@ -96,59 +96,17 @@ __global__ void sum_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::spa
 }
 
 template <int Batches, int LogicalWarpThreads, typename T, typename ReductionOp>
-__global__ void
-warp_reduce_batched_lane_mask_kernel(input_2d_mdspan_t<T> input_md, cuda::std::span<T> output, ReductionOp reduction_op)
-{
-  using warp_reduce_batched_t = cub::WarpReduceBatched<T, Batches, LogicalWarpThreads>;
-  __shared__ typename warp_reduce_batched_t::TempStorage temp_storage;
-  const int tid             = threadIdx.x;
-  const int logical_warp_id = tid / LogicalWarpThreads;
-  const int lane_id         = tid % LogicalWarpThreads;
-
-  // Each logical warp uses a mask containing only its own lanes
-  const cuda::std::uint32_t lane_mask = cuda::bitmask(logical_warp_id * LogicalWarpThreads, LogicalWarpThreads);
-
-  T inputs[Batches];
-  for (int batch_idx = 0; batch_idx < Batches; ++batch_idx)
-  {
-    inputs[batch_idx] = input_md(logical_warp_id * Batches + batch_idx, lane_id);
-  }
-
-  constexpr int out_per_thread = cuda::ceil_div(Batches, LogicalWarpThreads);
-  T outputs[out_per_thread];
-  warp_reduce_batched_t{temp_storage}.Reduce(inputs, outputs, reduction_op, lane_mask);
-
-  for (int idx = 0; idx < out_per_thread; ++idx)
-  {
-    const auto batch_idx = idx * LogicalWarpThreads + lane_id;
-    if (batch_idx < Batches)
-    {
-      output[logical_warp_id * Batches + batch_idx] = outputs[idx];
-    }
-  }
-}
-
-template <int Batches, int LogicalWarpThreads, typename T, typename ReductionOp>
 __global__ void warp_reduce_batched_half_warps_kernel(
   input_2d_mdspan_t<T> input_md, cuda::std::span<T> output, ReductionOp reduction_op)
 {
   static_assert(LogicalWarpThreads < warp_size, "Need at least 2 logical warps for this test");
   using warp_reduce_batched_t = cub::WarpReduceBatched<T, Batches, LogicalWarpThreads>;
   __shared__ typename warp_reduce_batched_t::TempStorage temp_storage;
-  constexpr int num_logical_warps = warp_size / LogicalWarpThreads;
 
   const int tid               = threadIdx.x;
   const int logical_warp_id   = tid / LogicalWarpThreads;
   const int lane_id           = tid % LogicalWarpThreads;
   const bool is_participating = (logical_warp_id % 2 == 0);
-
-  // Build a single mask shared by all participating threads: union of all even-indexed logical warp lanes
-  cuda::std::uint32_t lane_mask = 0;
-#pragma unroll
-  for (int w = 0; w < num_logical_warps; w += 2)
-  {
-    lane_mask |= cuda::bitmask(w * LogicalWarpThreads, LogicalWarpThreads);
-  }
 
   if (is_participating)
   {
@@ -162,7 +120,7 @@ __global__ void warp_reduce_batched_half_warps_kernel(
 
     constexpr int out_per_thread = cuda::ceil_div(Batches, LogicalWarpThreads);
     T outputs[out_per_thread];
-    warp_reduce_batched_t{temp_storage}.Reduce(inputs, outputs, reduction_op, lane_mask);
+    warp_reduce_batched_t{temp_storage}.Reduce(inputs, outputs, reduction_op);
 
     for (int idx = 0; idx < out_per_thread; ++idx)
     {
@@ -173,6 +131,7 @@ __global__ void warp_reduce_batched_half_warps_kernel(
       }
     }
   }
+  // Keep non-participating threads from exiting early
   __syncwarp();
 }
 
@@ -221,7 +180,7 @@ void gen_bounded_input(c2h::seed_t seed, c2h::device_vector<T>& d_input)
   }
 }
 
-template <int Batches, int LogicalWarpThreads, typename T, typename ReductionOp>
+template <int Batches, int LogicalWarpThreads, bool SyncPhysicalWarp, typename T, typename ReductionOp>
 void test_warp_reduce_batched(ReductionOp reduction_op)
 {
   CAPTURE(c2h::type_name<T>(), Batches, LogicalWarpThreads);
@@ -238,45 +197,7 @@ void test_warp_reduce_batched(ReductionOp reduction_op)
   input_2d_mdspan_t<T> d_input_md(thrust::raw_pointer_cast(d_input.data()), total_batches, LogicalWarpThreads);
   cuda::std::span<T> d_output_span(thrust::raw_pointer_cast(d_output.data()), total_batches);
 
-  warp_reduce_batched_kernel<Batches, LogicalWarpThreads, T><<<1, warp_size>>>(d_input_md, d_output_span, reduction_op);
-
-  cudaError_t err = cudaPeekAtLastError();
-  REQUIRE(err == cudaSuccess);
-
-  err = cudaDeviceSynchronize();
-  REQUIRE(err == cudaSuccess);
-
-  // Host-side: construct mdspans once; pass to reference and verify
-  c2h::host_vector<T> h_input  = d_input;
-  c2h::host_vector<T> h_output = d_output;
-
-  c2h::host_vector<T> h_reference(total_batches);
-  input_2d_mdspan_t<const T> h_input_md(h_input.data(), total_batches, LogicalWarpThreads);
-  cuda::std::span<T> h_reference_span(h_reference.data(), total_batches);
-
-  compute_host_reference(h_input_md, h_reference_span, reduction_op);
-
-  verify_results(h_reference, h_output);
-}
-
-template <int Batches, int LogicalWarpThreads, typename T, typename ReductionOp>
-void test_warp_reduce_batched_lane_mask(ReductionOp reduction_op)
-{
-  CAPTURE(c2h::type_name<T>(), Batches, LogicalWarpThreads);
-
-  constexpr int num_logical_warps = warp_size / LogicalWarpThreads;
-  constexpr int total_batches     = num_logical_warps * Batches;
-  constexpr int total_elements    = total_batches * LogicalWarpThreads;
-
-  c2h::device_vector<T> d_input(total_elements);
-  gen_bounded_input<T, LogicalWarpThreads>(C2H_SEED(10), d_input);
-
-  c2h::device_vector<T> d_output(total_batches);
-
-  input_2d_mdspan_t<T> d_input_md(thrust::raw_pointer_cast(d_input.data()), total_batches, LogicalWarpThreads);
-  cuda::std::span<T> d_output_span(thrust::raw_pointer_cast(d_output.data()), total_batches);
-
-  warp_reduce_batched_lane_mask_kernel<Batches, LogicalWarpThreads, T>
+  warp_reduce_batched_kernel<Batches, LogicalWarpThreads, T, SyncPhysicalWarp>
     <<<1, warp_size>>>(d_input_md, d_output_span, reduction_op);
 
   cudaError_t err = cudaPeekAtLastError();
@@ -285,6 +206,7 @@ void test_warp_reduce_batched_lane_mask(ReductionOp reduction_op)
   err = cudaDeviceSynchronize();
   REQUIRE(err == cudaSuccess);
 
+  // Host-side: construct mdspans once; pass to reference and verify
   c2h::host_vector<T> h_input  = d_input;
   c2h::host_vector<T> h_output = d_output;
 
@@ -411,7 +333,7 @@ C2H_TEST("WarpReduceBatched::Reduce N=M sum", "[warp][reduce][batched]", builtin
   using T         = c2h::get<0, TestType>;
   constexpr int N = c2h::get<1, TestType>::x;
   constexpr int M = c2h::get<1, TestType>::y;
-  test_warp_reduce_batched<N, M, T>(cuda::std::plus<>{});
+  test_warp_reduce_batched<N, M, false, T>(cuda::std::plus<>{});
 }
 
 C2H_TEST("WarpReduceBatched::Reduce N!=M sum", "[warp][reduce][batched]", builtin_type_list, unequal_nm_configs)
@@ -419,23 +341,25 @@ C2H_TEST("WarpReduceBatched::Reduce N!=M sum", "[warp][reduce][batched]", builti
   using T         = c2h::get<0, TestType>;
   constexpr int N = c2h::get<1, TestType>::x;
   constexpr int M = c2h::get<1, TestType>::y;
-  test_warp_reduce_batched<N, M, T>(cuda::std::plus<>{});
+  test_warp_reduce_batched<N, M, false, T>(cuda::std::plus<>{});
 }
 
-C2H_TEST("WarpReduceBatched::Reduce max", "[warp][reduce][batched]", builtin_type_list, equal_nm_configs)
+C2H_TEST(
+  "WarpReduceBatched::Reduce max with over-syncing", "[warp][reduce][batched]", builtin_type_list, equal_nm_configs)
 {
   using T         = c2h::get<0, TestType>;
   constexpr int N = c2h::get<1, TestType>::x;
   constexpr int M = c2h::get<1, TestType>::y;
-  test_warp_reduce_batched<N, M, T>(cuda::maximum<>{});
+  test_warp_reduce_batched<N, M, true, T>(cuda::maximum<>{});
 }
 
-C2H_TEST("WarpReduceBatched::Reduce min", "[warp][reduce][batched]", builtin_type_list, equal_nm_configs)
+C2H_TEST(
+  "WarpReduceBatched::Reduce min with over-syncing", "[warp][reduce][batched]", builtin_type_list, unequal_nm_configs)
 {
   using T         = c2h::get<0, TestType>;
   constexpr int N = c2h::get<1, TestType>::x;
   constexpr int M = c2h::get<1, TestType>::y;
-  test_warp_reduce_batched<N, M, T>(cuda::minimum<>{});
+  test_warp_reduce_batched<N, M, true, T>(cuda::minimum<>{});
 }
 
 C2H_TEST("WarpReduceBatched::Sum", "[warp][reduce][batched][convenience]", builtin_type_list, equal_nm_configs)
@@ -453,7 +377,7 @@ C2H_TEST("WarpReduceBatched::Sum", "[warp][reduce][batched][convenience]", built
 
   input_2d_mdspan_t<T> d_input_md(thrust::raw_pointer_cast(d_input.data()), total_batches, M);
   cuda::std::span<T> d_output_span(thrust::raw_pointer_cast(d_output.data()), total_batches);
-  sum_batched_kernel<T, N, M><<<1, warp_size>>>(d_input_md, d_output_span);
+  sum_batched_kernel<T, N, M, false><<<1, warp_size>>>(d_input_md, d_output_span);
 
   c2h::host_vector<T> h_input  = d_input;
   c2h::host_vector<T> h_output = d_output;
@@ -463,28 +387,6 @@ C2H_TEST("WarpReduceBatched::Sum", "[warp][reduce][batched][convenience]", built
   compute_host_reference(h_input_md, h_reference_span, cuda::std::plus<>{});
 
   verify_results(h_reference, h_output);
-}
-
-C2H_TEST("WarpReduceBatched::Reduce lane_mask N=M sum",
-         "[warp][reduce][batched][lane_mask]",
-         builtin_type_list,
-         sub_warp_equal_configs)
-{
-  using T         = c2h::get<0, TestType>;
-  constexpr int N = c2h::get<1, TestType>::x;
-  constexpr int M = c2h::get<1, TestType>::y;
-  test_warp_reduce_batched_lane_mask<N, M, T>(cuda::std::plus<>{});
-}
-
-C2H_TEST("WarpReduceBatched::Reduce lane_mask N!=M sum",
-         "[warp][reduce][batched][lane_mask]",
-         builtin_type_list,
-         sub_warp_unequal_configs)
-{
-  using T         = c2h::get<0, TestType>;
-  constexpr int N = c2h::get<1, TestType>::x;
-  constexpr int M = c2h::get<1, TestType>::y;
-  test_warp_reduce_batched_lane_mask<N, M, T>(cuda::std::plus<>{});
 }
 
 C2H_TEST("WarpReduceBatched::Reduce half_warps N=M sum",

@@ -23,10 +23,10 @@
 #include <cub/util_type.cuh>
 #include <cub/warp/specializations/warp_reduce_batched_wspro.cuh>
 
-#include <cuda/cmath>
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/warp>
 
 CUB_NAMESPACE_BEGIN
 
@@ -108,21 +108,20 @@ CUB_NAMESPACE_BEGIN
 //!   The number of threads per logical warp / elements per array. Must be a power-of-two in range [2, 32].
 //!   Default is the warp size of the targeted CUDA compute-capability (e.g., 32).
 //!
-template <typename T, int Batches, int LogicalWarpThreads = detail::warp_threads>
+template <typename T, int Batches, int LogicalWarpThreads = detail::warp_threads, bool SyncPhysicalWarp = false>
 class WarpReduceBatched
 {
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
   // TODO: Should we allow LogicalWarpThreads = 1? (in which case everything is just no-op/copy)
   static_assert(LogicalWarpThreads > 1 && LogicalWarpThreads <= detail::warp_threads,
                 "LogicalWarpThreads must be in the range [2, 32]");
-  // TODO: Should we restrict to Batches > 1?
   static_assert(Batches >= 1, "Batches must be >= 1");
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 public:
   /// Internal specialization.
-  using InternalWarpReduceBatched = detail::WarpReduceBatchedWspro<T, Batches, LogicalWarpThreads>;
+  using InternalWarpReduceBatched = detail::WarpReduceBatchedWspro<T, Batches, LogicalWarpThreads, SyncPhysicalWarp>;
 
 #endif // _CCCL_DOXYGEN_INVOKED
 
@@ -223,11 +222,7 @@ public:
   //!   Lane mask to restrict the reduction to a subset of the logical warps present in the physical warp.
   //!   Default is all logical warps.
   template <typename InputT, typename OutputT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Reduce(const InputT& inputs,
-         OutputT& outputs,
-         ReductionOp reduction_op,
-         ::cuda::std::uint32_t lane_mask = ::cuda::device::lane_mask::all().value())
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Reduce(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
   {
     static_assert(::cub::detail::is_fixed_size_random_access_range_v<InputT>,
                   "InputT must support the subscript operator[] and have a compile-time size");
@@ -240,20 +235,7 @@ public:
     static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputT>, T>, "Input element type must match T");
     static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<OutputT>, T>, "Output element type must match T");
 
-    InternalWarpReduceBatched{temp_storage}.Reduce(inputs, outputs, reduction_op, lane_mask);
-  }
-
-  // TODO: Public for benchmarking purposes only.
-  template <typename InputT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ReduceInplace(
-    InputT& inputs, ReductionOp reduction_op, ::cuda::std::uint32_t lane_mask = ::cuda::device::lane_mask::all().value())
-  {
-    static_assert(detail::is_fixed_size_random_access_range_v<InputT>,
-                  "InputT must support the subscript operator[] and have a compile-time size");
-    static_assert(detail::static_size_v<InputT> == Batches, "Input size must match Batches");
-    static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputT>, T>, "Input element type must match T");
-
-    InternalWarpReduceBatched{temp_storage}.ReduceInplace(inputs, reduction_op, lane_mask);
+    InternalWarpReduceBatched{temp_storage}.Reduce(inputs, outputs, reduction_op);
   }
 
   //! @rst
@@ -282,10 +264,9 @@ public:
   //!   Lane mask to restrict the reduction to a subset of the logical warps present in the physical warp.
   //!   Default is all logical warps.
   template <typename InputT, typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sum(
-    const InputT& inputs, OutputT& outputs, ::cuda::std::uint32_t lane_mask = ::cuda::device::lane_mask::all().value())
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sum(const InputT& inputs, OutputT& outputs)
   {
-    Reduce(inputs, outputs, ::cuda::std::plus<>{}, lane_mask);
+    Reduce(inputs, outputs, ::cuda::std::plus<>{});
   }
 
   //! @}

@@ -17,6 +17,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/__ptx/instructions/get_sreg.h>
@@ -42,7 +43,7 @@ namespace detail
 //!
 //! @tparam LogicalWarpThreads
 //!   Number of threads per logical warp (must be a power-of-two)
-template <typename T, int Batches, int LogicalWarpThreads>
+template <typename T, int Batches, int LogicalWarpThreads, bool SyncPhysicalWarp>
 struct WarpReduceBatchedWspro
 {
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
@@ -68,6 +69,10 @@ struct WarpReduceBatchedWspro
 
   int physical_lane_id;
   int logical_lane_id;
+  int logical_warp_id;
+
+  /// 32-thread physical warp member mask of logical warp
+  ::cuda::std::uint32_t member_mask;
 
   //---------------------------------------------------------------------
   // Construction
@@ -77,6 +82,8 @@ struct WarpReduceBatchedWspro
   _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceBatchedWspro(TempStorage& /*temp_storage*/)
       : physical_lane_id(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
       , logical_lane_id(is_arch_warp ? physical_lane_id : physical_lane_id % LogicalWarpThreads)
+      , logical_warp_id(is_arch_warp ? 0 : (physical_lane_id / LogicalWarpThreads))
+      , member_mask(SyncPhysicalWarp ? 0xFFFFFFFFu : cub::WarpMask<LogicalWarpThreads>(logical_warp_id))
   {}
 
   //---------------------------------------------------------------------
@@ -84,11 +91,7 @@ struct WarpReduceBatchedWspro
   //---------------------------------------------------------------------
 
   template <typename InputT, typename OutputT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Reduce(const InputT& inputs,
-         OutputT& outputs,
-         ReductionOp reduction_op,
-         ::cuda::std::uint32_t lane_mask = ::cuda::device::lane_mask::all().value())
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Reduce(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
   {
     // Need writeable array as scratch space
     auto values = ::cuda::std::array<T, Batches>{};
@@ -98,7 +101,7 @@ struct WarpReduceBatchedWspro
       values[i] = inputs[i];
     }
 
-    ReduceInplace(values, reduction_op, lane_mask);
+    ReduceInplace(values, reduction_op);
 
 #pragma unroll
     for (int i = 0; i < max_out_per_thread; ++i)
@@ -112,8 +115,7 @@ struct WarpReduceBatchedWspro
   }
 
   template <int LeftIdx, int StrideInterReduce = LogicalWarpThreads, typename InputT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  RecurseReductionTree(InputT& inputs, ReductionOp reduction_op, ::cuda::std::uint32_t lane_mask)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void RecurseReductionTree(InputT& inputs, ReductionOp reduction_op)
   {
     constexpr auto stride_intra_reduce = StrideInterReduce / 2;
     constexpr auto right_idx           = LeftIdx + stride_intra_reduce;
@@ -121,11 +123,11 @@ struct WarpReduceBatchedWspro
     if constexpr (!base_case)
     {
       // calculate left value
-      RecurseReductionTree<LeftIdx, stride_intra_reduce, InputT, ReductionOp>(inputs, reduction_op, lane_mask);
+      RecurseReductionTree<LeftIdx, stride_intra_reduce, InputT, ReductionOp>(inputs, reduction_op);
       if constexpr (right_idx < Batches)
       {
         // calculate right value if it exists
-        RecurseReductionTree<right_idx, stride_intra_reduce>(inputs, reduction_op, lane_mask);
+        RecurseReductionTree<right_idx, stride_intra_reduce>(inputs, reduction_op);
       }
     }
     auto left_value = inputs[LeftIdx];
@@ -139,26 +141,18 @@ struct WarpReduceBatchedWspro
     {
       ::cuda::std::swap(left_value, right_value);
     }
-    left_value = ::cuda::device::warp_shuffle_xor(left_value, stride_intra_reduce, lane_mask);
+    left_value = ::cuda::device::warp_shuffle_xor(left_value, stride_intra_reduce, member_mask);
     // While the current implementation is possibly faster, another conditional swap here would allow for
     // non-commutative reductions which might be useful for (segmented) scan operations.
     inputs[LeftIdx] = reduction_op(left_value, right_value);
   }
 
   template <typename InputT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ReduceInplace(
-    InputT& inputs, ReductionOp reduction_op, ::cuda::std::uint32_t lane_mask = ::cuda::device::lane_mask::all().value())
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ReduceInplace(InputT& inputs, ReductionOp reduction_op)
   {
-#if defined(_CCCL_ASSERT_DEVICE)
-    const auto logical_warp_leader = ::cuda::round_down(physical_lane_id, LogicalWarpThreads);
-    const auto logical_warp_mask   = ::cuda::bitmask(logical_warp_leader, LogicalWarpThreads);
-#endif // _CCCL_ASSERT_DEVICE
-    _CCCL_ASSERT((lane_mask & logical_warp_mask) == logical_warp_mask,
-                 "lane_mask must be consistent for each logical warp");
-
     ::cuda::static_for<0, max_out_per_thread>([&](auto out_idx) {
       constexpr auto offset = out_idx() * LogicalWarpThreads;
-      RecurseReductionTree<offset>(inputs, reduction_op, lane_mask);
+      RecurseReductionTree<offset>(inputs, reduction_op);
     });
     // Make sure results are in the beginning of the array instead of strided
 #pragma unroll
@@ -169,13 +163,6 @@ struct WarpReduceBatchedWspro
         inputs[i] = inputs[i * LogicalWarpThreads];
       }
     }
-  }
-
-  template <typename InputT, typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sum(
-    const InputT& inputs, OutputT& outputs, ::cuda::std::uint32_t lane_mask = ::cuda::device::lane_mask::all().value())
-  {
-    Reduce(inputs, outputs, ::cuda::std::plus<>{}, lane_mask);
   }
 };
 } // namespace detail
