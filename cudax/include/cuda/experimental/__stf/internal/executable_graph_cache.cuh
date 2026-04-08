@@ -206,6 +206,8 @@ private:
     auto cmp = [&device_cache](const key_type& key_a, const key_type& key_b) {
       auto iter_a = device_cache.find(key_a);
       auto iter_b = device_cache.find(key_b);
+      _CCCL_ASSERT(iter_a != device_cache.end(), "LRU queue key not found in cache");
+      _CCCL_ASSERT(iter_b != device_cache.end(), "LRU queue key not found in cache");
 
       // Directly compare last_use timestamps
       return iter_a->second.last_use > iter_b->second.last_use;

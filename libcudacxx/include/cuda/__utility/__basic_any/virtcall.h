@@ -111,7 +111,9 @@ _CCCL_API auto __virtcall(_Self* __self, _Args&&... __args) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {
   auto* __vptr = __basic_any_access::__get_vptr(*__self)->__query_interface(_Interface());
-  auto* __obj  = __basic_any_access::__get_optr(*__self);
+  _CCCL_ASSERT(__vptr != nullptr, "__query_interface returned a null pointer");
+  _CCCL_ASSUME(__vptr != nullptr);
+  auto* __obj = __basic_any_access::__get_optr(*__self);
   // map the member function pointer to the correct one if necessary
   using __virtual_fn_t = __virtual_fn_for<_Mbr, _Interface, _Super>;
   return __vptr->__virtual_fn_t::__fn_(__obj, static_cast<_Args&&>(__args)...);

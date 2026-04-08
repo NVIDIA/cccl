@@ -245,8 +245,8 @@ _CCCL_API inline complex<float>::complex(const complex<__nv_bfloat16>& __c)
 template <> // complex<double>
 template <> // complex<__half>
 _CCCL_API inline complex<double>::complex(const complex<__nv_bfloat16>& __c)
-    : __re_(::__bfloat162float(__c.real()))
-    , __im_(::__bfloat162float(__c.imag()))
+    : __re_(static_cast<double>(::__bfloat162float(__c.real())))
+    , __im_(static_cast<double>(::__bfloat162float(__c.imag())))
 {}
 
 template <> // complex<float>
@@ -262,8 +262,8 @@ template <> // complex<double>
 template <> // complex<__nv_bfloat16>
 _CCCL_API inline complex<double>& complex<double>::operator=(const complex<__nv_bfloat16>& __c)
 {
-  __re_ = ::__bfloat162float(__c.real());
-  __im_ = ::__bfloat162float(__c.imag());
+  __re_ = static_cast<double>(::__bfloat162float(__c.real()));
+  __im_ = static_cast<double>(::__bfloat162float(__c.imag()));
   return *this;
 }
 

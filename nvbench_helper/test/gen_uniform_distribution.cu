@@ -19,7 +19,7 @@
 template <typename T>
 bool is_uniform(thrust::host_vector<T> data, T min, T max)
 {
-  const double value_range = static_cast<double>(max) - min;
+  const double value_range = static_cast<double>(max) - static_cast<double>(min);
   const bool exact_binning = value_range < (1 << 20);
   const int number_of_bins = exact_binning ? static_cast<int>(max - min + 1) : static_cast<int>(std::sqrt(data.size()));
   thrust::host_vector<int> bins(number_of_bins, 0);
@@ -29,7 +29,7 @@ bool is_uniform(thrust::host_vector<T> data, T min, T max)
 
   for (T val : data)
   {
-    int bin_index = exact_binning ? val - min : (val - static_cast<double>(min)) / interval;
+    int bin_index = exact_binning ? static_cast<int>(val - min) : static_cast<int>((static_cast<double>(val) - static_cast<double>(min)) / interval);
 
     if (bin_index >= 0 && bin_index < number_of_bins)
     {

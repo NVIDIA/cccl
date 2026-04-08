@@ -483,10 +483,10 @@ void launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal));
 
   cuda::std::apply(
-    [stream, action](auto... args) {
+    [stream, action](auto... inner_args) {
       // Make sure specified stream is used
       stream_scope scope(stream);
-      cudaError_t error = action(args...);
+      cudaError_t error = action(inner_args...);
       REQUIRE(cudaSuccess == error);
     },
     fixed_args);
@@ -572,8 +572,8 @@ void launch(ActionT action, Args... args)
   auto fixed_args = replace_back(cuda::std::make_index_sequence<env_idx>{}, tuple, fixed_env);
 
   cuda::std::apply(
-    [&](auto... args) {
-      device_side_api_launch_kernel<<<1, 1>>>(thrust::raw_pointer_cast(d_error.data()), action, args...);
+    [&](auto... inner_args) {
+      device_side_api_launch_kernel<<<1, 1>>>(thrust::raw_pointer_cast(d_error.data()), action, inner_args...);
       REQUIRE(cudaSuccess == d_error[0]);
     },
     fixed_args);
@@ -625,8 +625,8 @@ void launch(ActionT action, Args... args)
     auto fixed_args = replace_back(cuda::std::make_index_sequence<env_idx>{}, tuple, fixed_env);
 
     cuda::std::apply(
-      [action](auto... args) {
-        REQUIRE(cudaErrorMemoryAllocation == action(args...));
+      [action](auto... inner_args) {
+        REQUIRE(cudaErrorMemoryAllocation == action(inner_args...));
       },
       fixed_args);
   }
@@ -640,11 +640,11 @@ void launch(ActionT action, Args... args)
   auto kernels    = cuda::std::execution::__query_or(env, get_allowed_kernels_t{}, cuda::std::span<void*>{});
 
   cuda::std::apply(
-    [stream, kernels, action](auto... args) {
+    [stream, kernels, action](auto... inner_args) {
       // Make sure specified stream and kernels are used
       stream_scope allowed_stream(stream);
       kernel_scope allowed_kernels(kernels);
-      cudaError_t error = action(args...);
+      cudaError_t error = action(inner_args...);
       REQUIRE(cudaSuccess == error);
     },
     fixed_args);
