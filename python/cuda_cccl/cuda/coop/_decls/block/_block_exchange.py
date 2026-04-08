@@ -14,6 +14,9 @@ from numba.extending import models, register_model, typeof_impl
 import cuda.coop as coop
 
 from ...block._block_exchange import (
+    BlockExchangeType,
+)
+from ...block._block_exchange import (
     _make_exchange_rewrite as _make_block_exchange_rewrite,
 )
 from .. import (
@@ -39,7 +42,7 @@ class CoopBlockExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
     primitive_name = "coop.block.exchange"
     is_constructor = False
     minimum_num_args = 1
-    default_exchange_type = coop.block.BlockExchangeType.StripedToBlocked
+    default_exchange_type = BlockExchangeType.StripedToBlocked
 
     @staticmethod
     def signature(
@@ -48,7 +51,7 @@ class CoopBlockExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
         items_per_thread: int = None,
         ranks: types.Array = None,
         valid_flags: types.Array = None,
-        block_exchange_type: coop.block.BlockExchangeType = None,
+        block_exchange_type: BlockExchangeType = None,
         warp_time_slicing: bool = False,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
@@ -71,7 +74,7 @@ class CoopBlockExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
         valid_flags: types.Array = None,
         *,
         items_per_thread: int = None,
-        block_exchange_type: coop.block.BlockExchangeType = None,
+        block_exchange_type: BlockExchangeType = None,
         warp_time_slicing: bool = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
@@ -118,7 +121,7 @@ class CoopBlockExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
         if block_exchange_type is None:
             exchange_type_value = None
         elif isinstance(block_exchange_type, enum.IntEnum):
-            if block_exchange_type not in coop.block.BlockExchangeType:
+            if block_exchange_type not in BlockExchangeType:
                 raise errors.TypingError(
                     f"{self.primitive_name} requires 'block_exchange_type' to be "
                     "a BlockExchangeType enum value"
@@ -130,7 +133,7 @@ class CoopBlockExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
                     f"{self.primitive_name} requires 'block_exchange_type' to be "
                     "a BlockExchangeType enum value"
                 )
-            if block_exchange_type.instance_class is not coop.block.BlockExchangeType:
+            if block_exchange_type.instance_class is not BlockExchangeType:
                 raise errors.TypingError(
                     f"{self.primitive_name} requires 'block_exchange_type' to be "
                     "a BlockExchangeType enum value"
@@ -160,14 +163,13 @@ class CoopBlockExchangeDecl(CoopAbstractTemplate, CoopDeclMixin):
                     )
         else:
             uses_ranks = exchange_type_value in (
-                coop.block.BlockExchangeType.ScatterToBlocked,
-                coop.block.BlockExchangeType.ScatterToStriped,
-                coop.block.BlockExchangeType.ScatterToStripedGuarded,
-                coop.block.BlockExchangeType.ScatterToStripedFlagged,
+                BlockExchangeType.ScatterToBlocked,
+                BlockExchangeType.ScatterToStriped,
+                BlockExchangeType.ScatterToStripedGuarded,
+                BlockExchangeType.ScatterToStripedFlagged,
             )
             uses_valid_flags = (
-                exchange_type_value
-                == coop.block.BlockExchangeType.ScatterToStripedFlagged
+                exchange_type_value == BlockExchangeType.ScatterToStripedFlagged
             )
 
             if uses_ranks:

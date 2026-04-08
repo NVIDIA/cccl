@@ -7,6 +7,7 @@ from functools import cached_property
 
 from numba.core import types
 
+from ...block._block_adjacent_difference import BlockAdjacentDifferenceType
 from .._core import (
     ArrayCallDefinition,
     CoopNode,
@@ -129,16 +130,8 @@ class CoopBlockAdjacentDifferenceNode(CoopNode, CoopNodeMixin):
             "block_adjacent_difference_type"
         )
         if block_adjacent_difference_type is None:
-            from cuda.coop.block._block_adjacent_difference import (
-                BlockAdjacentDifferenceType,
-            )
-
             block_adjacent_difference_type = BlockAdjacentDifferenceType.SubtractLeft
         else:
-            from cuda.coop.block._block_adjacent_difference import (
-                BlockAdjacentDifferenceType,
-            )
-
             if isinstance(block_adjacent_difference_type, types.EnumMember):
                 literal_value = getattr(
                     block_adjacent_difference_type, "literal_value", None

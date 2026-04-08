@@ -14,6 +14,9 @@ from numba.extending import models, register_model, typeof_impl
 import cuda.coop as coop
 
 from ...block._block_adjacent_difference import (
+    BlockAdjacentDifferenceType,
+)
+from ...block._block_adjacent_difference import (
     _make_adjacent_difference_rewrite as _make_block_adjacent_difference_rewrite,
 )
 from .. import (
@@ -40,7 +43,7 @@ class CoopBlockAdjacentDifferenceDecl(CoopAbstractTemplate, CoopDeclMixin):
     primitive_name = "coop.block.adjacent_difference"
     is_constructor = False
     minimum_num_args = 2
-    default_difference_type = coop.block.BlockAdjacentDifferenceType.SubtractLeft
+    default_difference_type = BlockAdjacentDifferenceType.SubtractLeft
 
     @staticmethod
     def signature(
@@ -48,7 +51,7 @@ class CoopBlockAdjacentDifferenceDecl(CoopAbstractTemplate, CoopDeclMixin):
         output_items: types.Array,
         items_per_thread: int = None,
         difference_op: Optional[Callable] = None,
-        block_adjacent_difference_type: coop.block.BlockAdjacentDifferenceType = None,
+        block_adjacent_difference_type: BlockAdjacentDifferenceType = None,
         valid_items: Optional[int] = None,
         tile_predecessor_item: Optional[Any] = None,
         tile_successor_item: Optional[Any] = None,
@@ -103,10 +106,7 @@ class CoopBlockAdjacentDifferenceDecl(CoopAbstractTemplate, CoopDeclMixin):
         if block_adjacent_difference_type is None:
             block_adjacent_difference_type = self.default_difference_type
         if isinstance(block_adjacent_difference_type, enum.IntEnum):
-            if (
-                block_adjacent_difference_type
-                not in coop.block.BlockAdjacentDifferenceType
-            ):
+            if block_adjacent_difference_type not in BlockAdjacentDifferenceType:
                 raise errors.TypingError(
                     f"{self.primitive_name} requires 'block_adjacent_difference_type' "
                     "to be a BlockAdjacentDifferenceType enum value"
@@ -119,7 +119,7 @@ class CoopBlockAdjacentDifferenceDecl(CoopAbstractTemplate, CoopDeclMixin):
                 )
             if (
                 block_adjacent_difference_type.instance_class
-                is not coop.block.BlockAdjacentDifferenceType
+                is not BlockAdjacentDifferenceType
             ):
                 raise errors.TypingError(
                     f"{self.primitive_name} requires 'block_adjacent_difference_type' "
@@ -145,12 +145,10 @@ class CoopBlockAdjacentDifferenceDecl(CoopAbstractTemplate, CoopDeclMixin):
         has_predecessor_item = tile_predecessor_item is not None
         has_successor_item = tile_successor_item is not None
         is_subtract_left = (
-            block_adjacent_difference_type
-            == coop.block.BlockAdjacentDifferenceType.SubtractLeft
+            block_adjacent_difference_type == BlockAdjacentDifferenceType.SubtractLeft
         )
         is_subtract_right = (
-            block_adjacent_difference_type
-            == coop.block.BlockAdjacentDifferenceType.SubtractRight
+            block_adjacent_difference_type == BlockAdjacentDifferenceType.SubtractRight
         )
 
         if has_predecessor_item and has_successor_item:

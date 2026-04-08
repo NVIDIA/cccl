@@ -29,10 +29,10 @@ print("__NVRTC_COUNT__=" + str(_nvrtc.get_compile_counter()))
 
     def run(bundle, dump_dir=None):
         env = os.environ.copy()
-        env["NUMBA_CCCL_COOP_NVRTC_COMPILE_COUNT"] = "1"
-        env["NUMBA_CCCL_COOP_BUNDLE_LTOIR"] = bundle
+        env["CUDA_COOP_NVRTC_COMPILE_COUNT"] = "1"
+        env["CUDA_COOP_BUNDLE_LTOIR"] = bundle
         if dump_dir is not None:
-            env["NUMBA_CCCL_COOP_NVRTC_DUMP_DIR"] = dump_dir
+            env["CUDA_COOP_NVRTC_DUMP_DIR"] = dump_dir
         result = subprocess.run(
             [sys.executable, "-c", script],
             env=env,
@@ -85,9 +85,9 @@ print("__NVRTC_COUNT__=" + str(_nvrtc.get_compile_counter()))
 
     def run(bundle, dump_dir):
         env = os.environ.copy()
-        env["NUMBA_CCCL_COOP_NVRTC_COMPILE_COUNT"] = "1"
-        env["NUMBA_CCCL_COOP_BUNDLE_LTOIR"] = bundle
-        env["NUMBA_CCCL_COOP_NVRTC_DUMP_DIR"] = dump_dir
+        env["CUDA_COOP_NVRTC_COMPILE_COUNT"] = "1"
+        env["CUDA_COOP_BUNDLE_LTOIR"] = bundle
+        env["CUDA_COOP_NVRTC_DUMP_DIR"] = dump_dir
         result = subprocess.run(
             [sys.executable, "-c", script],
             env=env,

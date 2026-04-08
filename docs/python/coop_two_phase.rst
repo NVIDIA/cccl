@@ -8,7 +8,11 @@ instance inside a kernel. This is useful when you want to:
 
 * Query temp-storage size/alignment up front.
 * Reuse a primitive across kernels or kernel launches.
-* Share shared memory across multiple primitives.
+* Build trait-style helper bundles on the host.
+
+It is no longer the default recommendation for shared-memory coordination by
+itself. Single-phase code can now cover many of those workflows with
+``coop.TempStorage()`` and ``coop.ThreadData()``.
 
 Example
 -------
@@ -51,5 +55,5 @@ Notes
 
 * Two-phase primitives are still invoked using the same single-phase call style
   inside kernels. You simply reuse the pre-created instance.
-* If you do not need explicit temp storage or shared-memory coordination, prefer
+* If you do not specifically need host-side primitive objects, prefer
   single-phase usage.

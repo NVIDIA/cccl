@@ -12,5 +12,10 @@ The following items are intentionally deferred or not yet supported:
 
 Additional notes:
 
-* ``TempStorage`` sizes must be compile-time constants for a given kernel
+* ``TempStorage`` sizes must still be compile-time constants for a given kernel
   specialization. Changing sizes triggers a new specialization.
+
+The following are no longer general limitations:
+
+* sharing temp storage always requiring two-phase construction,
+* basic ThreadData dtype inference for supported single-phase block/warp flows.

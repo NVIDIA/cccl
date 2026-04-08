@@ -14,6 +14,9 @@ from numba.extending import models, register_model, typeof_impl
 import cuda.coop as coop
 
 from ...block._block_discontinuity import (
+    BlockDiscontinuityType,
+)
+from ...block._block_discontinuity import (
     _make_discontinuity_rewrite as _make_block_discontinuity_rewrite,
 )
 from .. import (
@@ -40,7 +43,7 @@ class CoopBlockDiscontinuityDecl(CoopAbstractTemplate, CoopDeclMixin):
     primitive_name = "coop.block.discontinuity"
     is_constructor = False
     minimum_num_args = 2
-    default_discontinuity_type = coop.block.BlockDiscontinuityType.HEADS
+    default_discontinuity_type = BlockDiscontinuityType.HEADS
 
     @staticmethod
     def signature(
@@ -49,7 +52,7 @@ class CoopBlockDiscontinuityDecl(CoopAbstractTemplate, CoopDeclMixin):
         tail_flags: types.Array = None,
         items_per_thread: int = None,
         flag_op: Optional[Callable] = None,
-        block_discontinuity_type: coop.block.BlockDiscontinuityType = None,
+        block_discontinuity_type: BlockDiscontinuityType = None,
         tile_predecessor_item: Optional[Any] = None,
         tile_successor_item: Optional[Any] = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
@@ -105,7 +108,7 @@ class CoopBlockDiscontinuityDecl(CoopAbstractTemplate, CoopDeclMixin):
             block_discontinuity_type = self.default_discontinuity_type
         discontinuity_value = None
         if isinstance(block_discontinuity_type, enum.IntEnum):
-            if block_discontinuity_type not in coop.block.BlockDiscontinuityType:
+            if block_discontinuity_type not in BlockDiscontinuityType:
                 raise errors.TypingError(
                     f"{self.primitive_name} requires 'block_discontinuity_type' "
                     "to be a BlockDiscontinuityType enum value"
@@ -117,17 +120,14 @@ class CoopBlockDiscontinuityDecl(CoopAbstractTemplate, CoopDeclMixin):
                     f"{self.primitive_name} requires 'block_discontinuity_type' "
                     "to be a BlockDiscontinuityType enum value"
                 )
-            if (
-                block_discontinuity_type.instance_class
-                is not coop.block.BlockDiscontinuityType
-            ):
+            if block_discontinuity_type.instance_class is not BlockDiscontinuityType:
                 raise errors.TypingError(
                     f"{self.primitive_name} requires 'block_discontinuity_type' "
                     "to be a BlockDiscontinuityType enum value"
                 )
 
         is_heads_and_tails = (
-            discontinuity_value == coop.block.BlockDiscontinuityType.HEADS_AND_TAILS
+            discontinuity_value == BlockDiscontinuityType.HEADS_AND_TAILS
         )
         if is_heads_and_tails and tail_flags is None:
             raise errors.TypingError(
@@ -144,8 +144,8 @@ class CoopBlockDiscontinuityDecl(CoopAbstractTemplate, CoopDeclMixin):
         tile_successor_item = bound.arguments.get("tile_successor_item")
         has_predecessor_item = tile_predecessor_item is not None
         has_successor_item = tile_successor_item is not None
-        is_heads = discontinuity_value == coop.block.BlockDiscontinuityType.HEADS
-        is_tails = discontinuity_value == coop.block.BlockDiscontinuityType.TAILS
+        is_heads = discontinuity_value == BlockDiscontinuityType.HEADS
+        is_tails = discontinuity_value == BlockDiscontinuityType.TAILS
 
         if has_predecessor_item and isinstance(
             tile_predecessor_item, (types.Array, ThreadDataType)

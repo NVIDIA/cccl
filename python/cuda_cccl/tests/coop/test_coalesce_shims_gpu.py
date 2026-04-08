@@ -34,8 +34,8 @@ cuda.synchronize()
     dump_dir = tmp_path / "nvrtc_dump"
     dump_dir.mkdir()
     env = os.environ.copy()
-    env["NUMBA_CCCL_COOP_NVRTC_DUMP_DIR"] = str(dump_dir)
-    env["NUMBA_CCCL_COOP_BUNDLE_LTOIR"] = "1"
+    env["CUDA_COOP_NVRTC_DUMP_DIR"] = str(dump_dir)
+    env["CUDA_COOP_BUNDLE_LTOIR"] = "1"
     result = subprocess.run(
         [sys.executable, "-c", script],
         env=env,

@@ -164,7 +164,7 @@ def test_bundle_uses_single_nvrtc_compile(monkeypatch):
 
 def test_nvrtc_dump_sources(tmp_path, monkeypatch):
     _install_nvrtc_stub(monkeypatch)
-    monkeypatch.setenv("NUMBA_CCCL_COOP_NVRTC_DUMP_DIR", str(tmp_path))
+    monkeypatch.setenv("CUDA_COOP_NVRTC_DUMP_DIR", str(tmp_path))
 
     _nvrtc.compile(cpp="x", cc=80, rdc=True, code="lto")
 

@@ -159,14 +159,14 @@ def test_env_var_gates_ltoir_bundle(monkeypatch):
         "cuda.coop._rewrite.algo_coalesce_key", lambda algo, **_: id(algo)
     )
 
-    monkeypatch.delenv("NUMBA_CCCL_COOP_BUNDLE_LTOIR", raising=False)
+    monkeypatch.delenv("CUDA_COOP_BUNDLE_LTOIR", raising=False)
     rewriter = CoopNodeRewriter(types.SimpleNamespace(typingctx=object()))
     rewriter.nodes = _make_dummy_nodes()
     rewriter.ensure_ltoir_bundle()
 
     assert called["count"] == 1
 
-    monkeypatch.setenv("NUMBA_CCCL_COOP_BUNDLE_LTOIR", "0")
+    monkeypatch.setenv("CUDA_COOP_BUNDLE_LTOIR", "0")
     rewriter2 = CoopNodeRewriter(types.SimpleNamespace(typingctx=object()))
     rewriter2.nodes = _make_dummy_nodes()
     rewriter2.ensure_ltoir_bundle()

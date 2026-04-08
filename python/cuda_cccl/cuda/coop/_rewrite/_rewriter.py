@@ -114,7 +114,7 @@ class CoopNodeRewriter(Rewrite):
         self.calltypes = None
 
         self._bundle_ltoir_enabled = _get_env_bool(
-            "NUMBA_CCCL_COOP_BUNDLE_LTOIR", default=True
+            "CUDA_COOP_BUNDLE_LTOIR", default=True
         )
         self._bundle_ltoir_done = False
         self._bundle_ltoir_failed = False

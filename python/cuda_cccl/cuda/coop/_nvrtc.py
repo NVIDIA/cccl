@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
@@ -27,7 +27,7 @@ _NVRTC_DUMP_COUNTER = 0
 def _is_compile_counter_enabled():
     global _NVRTC_COMPILE_COUNTER_ENABLED
     if _NVRTC_COMPILE_COUNTER_ENABLED is None:
-        val = os.environ.get("NUMBA_CCCL_COOP_NVRTC_COMPILE_COUNT")
+        val = os.environ.get("CUDA_COOP_NVRTC_COMPILE_COUNT")
         _NVRTC_COMPILE_COUNTER_ENABLED = val is not None and val.lower() in (
             "1",
             "true",
@@ -38,10 +38,10 @@ def _is_compile_counter_enabled():
 
 
 def _get_dump_dir():
-    dump_dir = os.environ.get("NUMBA_CCCL_COOP_NVRTC_DUMP_DIR")
+    dump_dir = os.environ.get("CUDA_COOP_NVRTC_DUMP_DIR")
     if dump_dir:
         return dump_dir
-    dump_enabled = os.environ.get("NUMBA_CCCL_COOP_NVRTC_DUMP")
+    dump_enabled = os.environ.get("CUDA_COOP_NVRTC_DUMP")
     if dump_enabled and dump_enabled.lower() in ("1", "true", "yes", "on"):
         return "/tmp/cccl_nvrtc"
     return None
@@ -92,7 +92,6 @@ def compile_impl(cpp, cc, rdc, code, nvrtc_path, nvrtc_version):
 
     opts = [b"--std=c++17"]
 
-    # TODO: move this to a module-level import (after docs env modernization).
     from cuda.cccl import get_include_paths
 
     include_paths = get_include_paths()

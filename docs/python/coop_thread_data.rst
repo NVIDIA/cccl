@@ -24,7 +24,8 @@ Why use it
 
 * Reduces argument repetition for load/store/exchange/scan/reduce pipelines.
 * Helps rewrite infer a consistent tile shape across primitive calls.
-* Works with explicit :class:`coop.TempStorage` (including getitem sugar).
+* Works with explicit :class:`coop.TempStorage`, including
+  ``primitive[temp_storage](...)`` sugar.
 * Mirrors familiar CUB dataflow while keeping Python kernel code concise.
 
 Basic usage
@@ -67,6 +68,16 @@ ThreadData with TempStorage
    :dedent:
    :start-after: example-begin load-store-thread-data-temp-storage
    :end-before: example-end load-store-thread-data-temp-storage
+
+The same pattern works with getitem sugar because the sugar is only shorthand
+for the ``temp_storage=`` keyword argument:
+
+.. code-block:: python
+
+   temp_storage = coop.TempStorage()
+   thread_data = coop.ThreadData(items_per_thread)
+   coop.block.load[temp_storage](d_in, thread_data)
+   coop.block.store[temp_storage](d_out, thread_data)
 
 Automatic dtype inference
 -------------------------

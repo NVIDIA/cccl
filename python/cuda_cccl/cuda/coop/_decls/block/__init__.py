@@ -21,5 +21,11 @@ _SIDE_EFFECT_MODULES: tuple[str, ...] = (
 
 
 def import_side_effect_modules() -> None:
+    """Import all block declaration modules for registration side effects.
+
+    Each declaration module registers Numba typing templates at import time.
+    Keeping the module list here makes the initialization order explicit and
+    avoids sprinkling otherwise-unused imports across the package namespace.
+    """
     for module_name in _SIDE_EFFECT_MODULES:
         import_module(f"{__name__}.{module_name}")

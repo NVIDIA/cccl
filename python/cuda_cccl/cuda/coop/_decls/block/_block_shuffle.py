@@ -13,7 +13,12 @@ from numba.extending import models, register_model, typeof_impl
 
 import cuda.coop as coop
 
-from ...block._block_shuffle import _make_shuffle_rewrite as _make_block_shuffle_rewrite
+from ...block._block_shuffle import (
+    BlockShuffleType,
+)
+from ...block._block_shuffle import (
+    _make_shuffle_rewrite as _make_block_shuffle_rewrite,
+)
 from .. import (
     CoopAbstractTemplate,
     CoopDeclMixin,
@@ -38,14 +43,14 @@ class CoopBlockShuffleDecl(CoopAbstractTemplate, CoopDeclMixin):
     primitive_name = "coop.block.shuffle"
     is_constructor = False
     minimum_num_args = 1
-    default_shuffle_type = coop.block.BlockShuffleType.Up
+    default_shuffle_type = BlockShuffleType.Up
 
     @staticmethod
     def signature(
         items: Union[types.Array, types.Number],
         output_items: Union[types.Array, types.Number] = None,
         items_per_thread: int = None,
-        block_shuffle_type: coop.block.BlockShuffleType = None,
+        block_shuffle_type: BlockShuffleType = None,
         distance: Optional[int] = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
         block_prefix: types.Array = None,
@@ -104,13 +109,13 @@ class CoopBlockShuffleDecl(CoopAbstractTemplate, CoopDeclMixin):
         block_shuffle_type = bound.arguments.get("block_shuffle_type")
         if block_shuffle_type is None:
             if items_is_scalar:
-                block_shuffle_type = coop.block.BlockShuffleType.Offset
+                block_shuffle_type = BlockShuffleType.Offset
             else:
                 block_shuffle_type = self.default_shuffle_type
 
         block_shuffle_type_value = None
         if isinstance(block_shuffle_type, enum.IntEnum):
-            if block_shuffle_type not in coop.block.BlockShuffleType:
+            if block_shuffle_type not in BlockShuffleType:
                 raise errors.TypingError(
                     f"{self.primitive_name} requires 'block_shuffle_type' to be a "
                     "BlockShuffleType enum value"
@@ -122,7 +127,7 @@ class CoopBlockShuffleDecl(CoopAbstractTemplate, CoopDeclMixin):
                     f"{self.primitive_name} requires 'block_shuffle_type' to be a "
                     "BlockShuffleType enum value"
                 )
-            if block_shuffle_type.instance_class is not coop.block.BlockShuffleType:
+            if block_shuffle_type.instance_class is not BlockShuffleType:
                 raise errors.TypingError(
                     f"{self.primitive_name} requires 'block_shuffle_type' to be a "
                     "BlockShuffleType enum value"
@@ -132,14 +137,14 @@ class CoopBlockShuffleDecl(CoopAbstractTemplate, CoopDeclMixin):
         scalar_shuffle = items_is_scalar
         if block_shuffle_type_value is not None:
             array_shuffle = block_shuffle_type_value in (
-                coop.block.BlockShuffleType.Up,
-                coop.block.BlockShuffleType.Down,
+                BlockShuffleType.Up,
+                BlockShuffleType.Down,
             )
             scalar_shuffle = block_shuffle_type_value in (
-                coop.block.BlockShuffleType.Offset,
-                coop.block.BlockShuffleType.Rotate,
-                coop.block.BlockShuffleType.Up,
-                coop.block.BlockShuffleType.Down,
+                BlockShuffleType.Offset,
+                BlockShuffleType.Rotate,
+                BlockShuffleType.Up,
+                BlockShuffleType.Down,
             )
 
             if items_is_scalar and not scalar_shuffle:
@@ -180,10 +185,8 @@ class CoopBlockShuffleDecl(CoopAbstractTemplate, CoopDeclMixin):
         if block_prefix is not None or block_suffix is not None:
             has_block_prefix = block_prefix is not None
             has_block_suffix = block_suffix is not None
-            is_up_shuffle = block_shuffle_type_value == coop.block.BlockShuffleType.Up
-            is_down_shuffle = (
-                block_shuffle_type_value == coop.block.BlockShuffleType.Down
-            )
+            is_up_shuffle = block_shuffle_type_value == BlockShuffleType.Up
+            is_down_shuffle = block_shuffle_type_value == BlockShuffleType.Down
 
             if not items_is_array:
                 raise errors.TypingError(
