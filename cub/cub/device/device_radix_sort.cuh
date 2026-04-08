@@ -135,7 +135,7 @@ private:
     DecomposerT decomposer,
     cudaStream_t stream,
     int begin_bit          = 0,
-    int end_bit            = detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+    int end_bit            = detail::radix::traits_t<KeyT>::default_end_bit(DecomposerT{}),
     bool is_overwrite_okay = true)
   {
     using offset_t                         = detail::choose_offset_t<NumItemsT>;
@@ -173,7 +173,7 @@ private:
     DecomposerT decomposer,
     cudaStream_t stream,
     int begin_bit = 0,
-    int end_bit   = detail::radix::traits_t<KeyT>::default_end_bit(decomposer))
+    int end_bit   = detail::radix::traits_t<KeyT>::default_end_bit(DecomposerT{}))
   {
     // We cast away const-ness, but will *not* write to these arrays. ``DispatchRadixSort::Dispatch`` will allocate
     // temporary storage and create a new double-buffer internally when the ``is_overwrite_ok`` flag is not set.
