@@ -1113,7 +1113,7 @@ struct DeviceScan
   //!  **[inferred]** Type of the `init_value`
   //!
   //! @tparam InitValueIterT
-  //!  **[inferred]** Iterator type of the `init_value`
+  //!  **[inferred]** Random-access iterator type used to access the initial value on device
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
