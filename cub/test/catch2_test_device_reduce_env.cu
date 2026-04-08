@@ -39,7 +39,10 @@ struct block_size_check_t
 
   __device__ int operator()(int a, int b)
   {
-    *ptr = blockDim.x;
+    if (threadIdx.x == 0)
+    {
+      *ptr = blockDim.x;
+    }
     return a + b;
   }
 };
