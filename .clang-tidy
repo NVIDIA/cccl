@@ -23,7 +23,41 @@ Checks:
   - 'performance-*'
   - '-performance-enum-size'
   - '-performance-unnecessary-value-param'
+  - 'modernize-*'
+  - '-modernize-use-std-numbers'
+  - '-modernize-deprecated-headers'
+  - '-modernize-min-max-use-initializer-list'
+  - '-modernize-use-emplace'
+  - '-modernize-make-unique'
+  - '-modernize-use-using'
+  - '-modernize-use-integer-sign-comparison'
+  - '-modernize-concat-nested-namespaces'
+  - '-modernize-use-nodiscard'
+  - '-modernize-use-default-member-init'
+  - '-modernize-use-equals-default'
+  - '-modernize-use-bool-literals'
+  - '-modernize-type-traits'
+  - '-modernize-use-nullptr'
+  - '-modernize-return-braced-init-list'
+  - '-modernize-use-auto'
+  - '-modernize-redundant-void-arg'
+  - '-modernize-use-equals-delete'
+  - '-modernize-pass-by-value'
+  - '-modernize-loop-convert'
+  - '-modernize-unary-static-assert'
+  - '-modernize-use-override'
   # END REMOVE ME
+  # TODO(jfaibussowit):
+  #
+  # Enable these once we move to C++20. Normally, clang-tidy does not suggest checks for
+  # cpp N+1 if you are compiling with -std=c++N. However some subprojects like c.parallel
+  # actually require cpp N+1 so clang-tidy emits diagnostics for any headers included by
+  # it.
+  - '-modernize-use-designated-initializers'
+  - '-modernize-use-constraints'
+  - '-modernize-use-ranges'
+  # Irrelevant for GPU code
+  - '-modernize-pass-by-value'
   # HICPP is 99% aliased to other checks (mostly modernize-* and bugprone-*). We don't
   # want to also enable it because then we need to duplicate the NOLINT. The only 2 checks
   # that aren't aliases are:
