@@ -960,8 +960,8 @@ struct policy_selector
     {
       return false;
     }
-#endif
     return true;
+#endif
   }
 
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_policy
