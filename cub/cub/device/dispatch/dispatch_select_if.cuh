@@ -668,7 +668,7 @@ struct DispatchSelectIf
 
       // Initialize the streaming context with the temporary storage for double-buffering the previously selected items
       // and the total number (across all partitions) of items
-      num_total_items_t* tmp_num_selected_out = reinterpret_cast<num_total_items_t*>(allocations[2]);
+      auto* tmp_num_selected_out = reinterpret_cast<num_total_items_t*>(allocations[2]);
       streaming_context_t streaming_context{
         tmp_num_selected_out, (tmp_num_selected_out + 1), num_items, (num_partitions <= 1)};
 
@@ -959,7 +959,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
     return cudaSuccess;
   }
 
-  OffsetT* tmp_num_selected_out = reinterpret_cast<OffsetT*>(allocations[2]);
+  auto* tmp_num_selected_out = reinterpret_cast<OffsetT*>(allocations[2]);
   streaming_context_t streaming_context{
     tmp_num_selected_out, (tmp_num_selected_out + 1), num_items, (num_partitions <= 1)};
 

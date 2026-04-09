@@ -200,8 +200,8 @@ _CCCL_HOST_DEVICE auto select_device_system(thrust::cuda::execution_policy<Sys1>
   _CCCL_HOST_DEVICE cross_system<Sys1, Sys2> select_system(
     execution_policy<Sys1> const& sys1, thrust::cpp::execution_policy<Sys2> const& sys2)
 {
-  thrust::execution_policy<Sys1>& non_const_sys1      = const_cast<execution_policy<Sys1>&>(sys1);
-  thrust::cpp::execution_policy<Sys2>& non_const_sys2 = const_cast<thrust::cpp::execution_policy<Sys2>&>(sys2);
+  thrust::execution_policy<Sys1>& non_const_sys1 = const_cast<execution_policy<Sys1>&>(sys1);
+  auto& non_const_sys2                           = const_cast<thrust::cpp::execution_policy<Sys2>&>(sys2);
   return cross_system<Sys1, Sys2>(non_const_sys1, non_const_sys2);
 }
 
@@ -210,8 +210,8 @@ template <class Sys1, class Sys2>
 _CCCL_HOST_DEVICE cross_system<Sys1, Sys2>
 select_system(thrust::cpp::execution_policy<Sys1> const& sys1, execution_policy<Sys2> const& sys2)
 {
-  thrust::cpp::execution_policy<Sys1>& non_const_sys1 = const_cast<thrust::cpp::execution_policy<Sys1>&>(sys1);
-  thrust::execution_policy<Sys2>& non_const_sys2      = const_cast<execution_policy<Sys2>&>(sys2);
+  auto& non_const_sys1                           = const_cast<thrust::cpp::execution_policy<Sys1>&>(sys1);
+  thrust::execution_policy<Sys2>& non_const_sys2 = const_cast<execution_policy<Sys2>&>(sys2);
   return cross_system<Sys1, Sys2>(non_const_sys1, non_const_sys2);
 }
 } // namespace cuda_cub

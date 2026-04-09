@@ -92,8 +92,8 @@ C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
   // Generate input segments
   c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
     C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
-  const offset_t num_segments = static_cast<offset_t>(segment_offsets.size() - 1);
-  auto d_offsets_it           = thrust::raw_pointer_cast(segment_offsets.data());
+  const auto num_segments = static_cast<offset_t>(segment_offsets.size() - 1);
+  auto d_offsets_it       = thrust::raw_pointer_cast(segment_offsets.data());
 
   // Generate input data
   c2h::device_vector<input_t> in_items(num_items);
@@ -266,7 +266,7 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
 
     using init_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
-    init_t init  = static_cast<init_t>(*unwrap_it(&default_constant));
+    auto init    = static_cast<init_t>(*unwrap_it(&default_constant));
     device_segmented_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_segments, segment_size, reduction_op, init);
     // Verify result
     REQUIRE(expected_result == out_result);

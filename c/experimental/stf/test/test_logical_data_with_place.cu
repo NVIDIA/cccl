@@ -75,7 +75,7 @@ C2H_TEST("stf_logical_data_with_place - host place (pinned memory)", "[logical_d
   cudaError_t err = cudaMallocHost(&A_raw, N * sizeof(float));
   REQUIRE(err == cudaSuccess);
   std::unique_ptr<void, decltype(&cudaFreeHost)> A_owner(A_raw, cudaFreeHost);
-  float* A = static_cast<float*>(A_owner.get());
+  auto* A = static_cast<float*>(A_owner.get());
   for (size_t i = 0; i < N; ++i)
   {
     A[i] = static_cast<float>(i);
@@ -114,7 +114,7 @@ C2H_TEST("stf_logical_data_with_place - device place (data on current device)", 
   cudaError_t err = cudaMalloc(&d_raw, N * sizeof(float));
   REQUIRE(err == cudaSuccess);
   std::unique_ptr<void, decltype(&cudaFree)> d_data_owner(d_raw, cudaFree);
-  float* d_data = static_cast<float*>(d_data_owner.get());
+  auto* d_data = static_cast<float*>(d_data_owner.get());
 
   std::vector<float> h_init(N);
   for (size_t i = 0; i < N; ++i)
@@ -135,7 +135,7 @@ C2H_TEST("stf_logical_data_with_place - device place (data on current device)", 
   stf_cuda_kernel_set_symbol(k, "scale_inplace");
   stf_cuda_kernel_add_dep(k, lD, STF_RW);
   stf_cuda_kernel_start(k);
-  float* arg_ptr = static_cast<float*>(stf_cuda_kernel_get_arg(k, 0));
+  auto* arg_ptr = static_cast<float*>(stf_cuda_kernel_get_arg(k, 0));
   REQUIRE(arg_ptr == d_data);
   int n               = static_cast<int>(N);
   const void* args[3] = {&n, &arg_ptr, &factor};

@@ -99,7 +99,7 @@ int Solve(Key* h_keys, Value* h_values, int num_items, int* h_offsets_reference,
 {
   // Sort
 
-  Pair<Key, Value>* h_pairs = new Pair<Key, Value>[num_items];
+  auto* h_pairs = new Pair<Key, Value>[num_items];
   for (int i = 0; i < num_items; ++i)
   {
     h_pairs[i].key   = h_keys[i];
@@ -197,7 +197,7 @@ int main(int argc, char** argv)
   // Allocate host arrays (problem and reference solution)
 
   Key* h_keys              = new Key[num_items];
-  Value* h_values          = new Value[num_items];
+  auto* h_values           = new Value[num_items];
   int* h_offsets_reference = new int[num_items];
   int* h_lengths_reference = new int[num_items];
 

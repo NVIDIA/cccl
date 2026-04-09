@@ -186,7 +186,7 @@ c2h::host_vector<KeyT> get_striped_keys(const c2h::host_vector<KeyT>& h_keys, in
 
   for (std::size_t i = 0; i < h_keys.size(); i++)
   {
-    bit_ordered_t key = ::cuda::std::bit_cast<bit_ordered_t>(h_keys[i]);
+    auto key = ::cuda::std::bit_cast<bit_ordered_t>(h_keys[i]);
 
     if constexpr (::cuda::is_floating_point_v<KeyT>)
     {
@@ -445,9 +445,9 @@ struct radix_offset_scan_op_t
 template <class OffsetT>
 void generate_segment_offsets(c2h::seed_t seed, c2h::device_vector<OffsetT>& offsets, std::size_t num_items)
 {
-  const std::size_t num_segments        = offsets.size() - 1;
-  const OffsetT expected_segment_length = static_cast<OffsetT>(::cuda::ceil_div(num_items, num_segments));
-  const OffsetT max_segment_length      = (expected_segment_length * 2) + 1;
+  const std::size_t num_segments     = offsets.size() - 1;
+  const auto expected_segment_length = static_cast<OffsetT>(::cuda::ceil_div(num_items, num_segments));
+  const OffsetT max_segment_length   = (expected_segment_length * 2) + 1;
   c2h::gen(seed, offsets, OffsetT{0}, max_segment_length);
   thrust::exclusive_scan(
     c2h::device_policy,

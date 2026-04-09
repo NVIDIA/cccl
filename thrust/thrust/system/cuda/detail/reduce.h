@@ -277,7 +277,7 @@ struct ReduceAgent
 
       T items[ITEMS_PER_THREAD];
 
-      Vector* vec_items = reinterpret_cast<Vector*>(items);
+      auto* vec_items = reinterpret_cast<Vector*>(items);
 
       // Vector Input iterator wrapper type (for applying cache modifier)
       T* d_in_unqualified = const_cast<T*>(input_it) + block_offset + (threadIdx.x * VECTOR_LOAD_LENGTH);
@@ -700,7 +700,7 @@ _CCCL_HOST_DEVICE T reduce(execution_policy<Derived>& policy, InputIt first, Inp
 {
   using size_type = thrust::detail::it_difference_t<InputIt>;
   // FIXME: Check for RA iterator.
-  size_type num_items = static_cast<size_type>(::cuda::std::distance(first, last));
+  auto num_items = static_cast<size_type>(::cuda::std::distance(first, last));
   return cuda_cub::reduce_n(policy, first, num_items, init, binary_op);
 }
 
@@ -724,7 +724,7 @@ reduce_into(execution_policy<Derived>& policy, InputIt first, InputIt last, Outp
 {
   using size_type = thrust::detail::it_difference_t<InputIt>;
   // FIXME: Check for RA iterator.
-  size_type num_items = static_cast<size_type>(::cuda::std::distance(first, last));
+  auto num_items = static_cast<size_type>(::cuda::std::distance(first, last));
   cuda_cub::reduce_n_into(policy, first, num_items, output, init, binary_op);
 }
 

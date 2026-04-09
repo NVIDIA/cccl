@@ -329,9 +329,9 @@ C2H_TEST("DeviceBatchedTopK::{Min,Max}Pairs work with small variable-size segmen
   constexpr auto max_segment_size           = static_max_segment_size;
   c2h::device_vector<segment_size_t> segment_offsets =
     c2h::gen_uniform_offsets<segment_size_t>(C2H_SEED(3), num_items, min_segment_size, max_segment_size);
-  const segment_index_t num_segments = static_cast<segment_index_t>(segment_offsets.size() - 1);
-  auto segment_offsets_it            = thrust::raw_pointer_cast(segment_offsets.data());
-  auto segment_size_it               = cuda::make_transform_iterator(
+  const auto num_segments = static_cast<segment_index_t>(segment_offsets.size() - 1);
+  auto segment_offsets_it = thrust::raw_pointer_cast(segment_offsets.data());
+  auto segment_size_it    = cuda::make_transform_iterator(
     cuda::make_counting_iterator(segment_index_t{0}), segment_size_op<segment_size_t*>{segment_offsets_it});
 
   // Set the k value

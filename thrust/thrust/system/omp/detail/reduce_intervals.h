@@ -57,7 +57,7 @@ void reduce_intervals(
 
   using index_type = std::intptr_t;
 
-  index_type n = static_cast<index_type>(decomp.size());
+  auto n = static_cast<index_type>(decomp.size());
 
   THRUST_PRAGMA_OMP(parallel for)
   for (index_type i = 0; i < n; i++)

@@ -68,8 +68,8 @@ C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
   stf_cuda_kernel_add_dep(k, lX, STF_READ);
   stf_cuda_kernel_add_dep(k, lY, STF_RW);
   stf_cuda_kernel_start(k);
-  double* dX          = (double*) stf_cuda_kernel_get_arg(k, 0);
-  double* dY          = (double*) stf_cuda_kernel_get_arg(k, 1);
+  auto* dX            = (double*) stf_cuda_kernel_get_arg(k, 0);
+  auto* dY            = (double*) stf_cuda_kernel_get_arg(k, 1);
   const void* args[4] = {&N, &alpha, &dX, &dY};
   cudaError_t err     = stf_cuda_kernel_add_desc(k, (void*) axpy, 2, 4, 0, 4, args);
   REQUIRE(err == cudaSuccess);

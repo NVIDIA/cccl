@@ -100,7 +100,7 @@ struct DispatchPartitionIf
     }
 
     // Memory allocation for the number of selected output items
-    OffsetT* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<OffsetT*>(allocations[1]);
+    auto* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<OffsetT*>(allocations[1]);
 
     // Run algorithm
     status = cub::DispatchSelectIf<
@@ -200,7 +200,7 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<SelectedOutIt, RejectedOutIt> stable_p
   }
 
   using output_it_wrapper_t = cub::detail::select::partition_distinct_output_t<SelectedOutIt, RejectedOutIt>;
-  std::size_t num_items     = static_cast<std::size_t>(::cuda::std::distance(first, last));
+  auto num_items            = static_cast<std::size_t>(::cuda::std::distance(first, last));
   std::size_t num_selected =
     partition(policy, first, last, stencil, output_it_wrapper_t{selected_result, rejected_result}, predicate);
   return ::cuda::std::make_pair(selected_result + num_selected, rejected_result + num_items - num_selected);
@@ -216,8 +216,8 @@ THRUST_RUNTIME_FUNCTION InputIt inplace_partition(
   }
 
   // Element type of the input iterator
-  using value_t         = thrust::detail::it_value_t<InputIt>;
-  std::size_t num_items = static_cast<std::size_t>(::cuda::std::distance(first, last));
+  using value_t  = thrust::detail::it_value_t<InputIt>;
+  auto num_items = static_cast<std::size_t>(::cuda::std::distance(first, last));
 
   // Allocate temporary storage, which will serve as the input to the partition
   thrust::detail::temporary_array<value_t, Derived> tmp(policy, num_items);

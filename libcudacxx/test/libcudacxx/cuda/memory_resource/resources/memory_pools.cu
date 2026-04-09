@@ -138,7 +138,7 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool construction", "[memory_resource]", TES
   using memory_pool = TestType;
   SECTION("Construct from device id")
   {
-    memory_pool from_device = construct_pool<memory_pool>(current_device);
+    auto from_device = construct_pool<memory_pool>(current_device);
 
     ::cudaMemPool_t get = from_device.get();
     CHECK(get != current_default_pool);
@@ -156,7 +156,7 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool construction", "[memory_resource]", TES
   SECTION("Construct with empty properties")
   {
     cuda::memory_pool_properties props{};
-    memory_pool from_defaulted_properties = construct_pool<memory_pool>(current_device, props);
+    auto from_defaulted_properties = construct_pool<memory_pool>(current_device, props);
 
     ::cudaMemPool_t get = from_defaulted_properties.get();
     CHECK(get != current_default_pool);
@@ -174,7 +174,7 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool construction", "[memory_resource]", TES
   SECTION("Construct with initial pool size")
   {
     cuda::memory_pool_properties props = {20, 42};
-    memory_pool with_threshold         = construct_pool<memory_pool>(current_device, props);
+    auto with_threshold                = construct_pool<memory_pool>(current_device, props);
 
     ::cudaMemPool_t get = with_threshold.get();
     CHECK(get != current_default_pool);
@@ -261,7 +261,7 @@ C2H_CCCLRT_TEST_LIST("base_memory_pool construction", "[memory_resource]", TEST_
     else
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
     {
-      memory_pool with_max_pool_size = construct_pool<memory_pool>(current_device, props);
+      auto with_max_pool_size = construct_pool<memory_pool>(current_device, props);
 
       ::cudaMemPool_t get = with_max_pool_size.get();
       CHECK(get != current_default_pool);
@@ -333,9 +333,9 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool comparison", "[memory_resource]", TEST_
   }
 
   using memory_pool = TestType;
-  memory_pool first = construct_pool<memory_pool>(current_device);
+  auto first        = construct_pool<memory_pool>(current_device);
   { // comparison against a plain device_memory_pool
-    memory_pool second = construct_pool<memory_pool>(current_device);
+    auto second = construct_pool<memory_pool>(current_device);
     CHECK(first == first);
     CHECK(first != second);
   }
@@ -357,7 +357,7 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
   using memory_resource = typename memory_pool::reference_type;
   SECTION("device_memory_pool::set_attribute")
   {
-    memory_pool pool = construct_pool<memory_pool>(current_device);
+    auto pool = construct_pool<memory_pool>(current_device);
 
     { // cudaMemPoolReuseFollowEventDependencies
       // Get the attribute value
@@ -511,7 +511,7 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
 
   SECTION("device_memory_pool::trim_to")
   {
-    memory_pool pool = construct_pool<memory_pool>(current_device);
+    auto pool = construct_pool<memory_pool>(current_device);
 
     // prime the pool to a given size
     memory_resource resource{pool};
@@ -566,8 +566,8 @@ C2H_CCCLRT_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_T
 
   SECTION("memory_pool::as_ref")
   {
-    memory_pool pool = construct_pool<memory_pool>(current_device);
-    auto ref         = pool.as_ref();
+    auto pool = construct_pool<memory_pool>(current_device);
+    auto ref  = pool.as_ref();
     static_assert(!cuda::std::copyable<memory_pool>);
     static_assert(cuda::std::copyable<decltype(ref)>);
     CHECK(ref == pool);

@@ -218,8 +218,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_th
   constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
   T output;
-  ShuffleWord* output_alias = reinterpret_cast<ShuffleWord*>(&output);
-  ShuffleWord* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
+  auto* output_alias = reinterpret_cast<ShuffleWord*>(&output);
+  auto* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
 
   unsigned int shuffle_word;
   shuffle_word    = SHFL_UP_SYNC((unsigned int) input_alias[0], src_offset, first_thread | SHFL_C, member_mask);
@@ -296,8 +296,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_t
   constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
   T output;
-  ShuffleWord* output_alias = reinterpret_cast<ShuffleWord*>(&output);
-  ShuffleWord* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
+  auto* output_alias = reinterpret_cast<ShuffleWord*>(&output);
+  auto* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
 
   unsigned int shuffle_word;
   shuffle_word    = SHFL_DOWN_SYNC((unsigned int) input_alias[0], src_offset, last_thread | SHFL_C, member_mask);
@@ -370,8 +370,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned in
   constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
   T output;
-  ShuffleWord* output_alias = reinterpret_cast<ShuffleWord*>(&output);
-  ShuffleWord* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
+  auto* output_alias = reinterpret_cast<ShuffleWord*>(&output);
+  auto* input_alias  = reinterpret_cast<ShuffleWord*>(&input);
 
   unsigned int shuffle_word;
   shuffle_word    = __shfl_sync(member_mask, (unsigned int) input_alias[0], src_lane, LOGICAL_WARP_THREADS);

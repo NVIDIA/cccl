@@ -221,7 +221,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   }
 
   // Alias the allocation for the privatized per-block reductions
-  DeterministicAccumT* d_block_reductions = static_cast<DeterministicAccumT*>(allocations[0]);
+  auto* d_block_reductions = static_cast<DeterministicAccumT*>(allocations[0]);
 
   auto d_chunk_block_reductions = d_block_reductions;
   for (int chunk_index = 0; chunk_index < num_chunks; chunk_index++)

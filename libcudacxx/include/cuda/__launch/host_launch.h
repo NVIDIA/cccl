@@ -100,9 +100,8 @@ _CCCL_HOST_API void host_launch(stream_ref __stream, _Callable __callable, _Args
   }
   else
   {
-    using _CallbackData = __stream_callback_data<_Callable, _Args...>;
-    _CallbackData* __callback_data_ptr =
-      new _CallbackData{::cuda::std::move(__callable), {::cuda::std::move(__args)...}};
+    using _CallbackData       = __stream_callback_data<_Callable, _Args...>;
+    auto* __callback_data_ptr = new _CallbackData{::cuda::std::move(__callable), {::cuda::std::move(__args)...}};
 
     // We use the callback here to have it execute even on stream error, because it needs to free the above allocation
     ::cuda::__driver::__streamAddCallback(

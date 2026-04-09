@@ -28,7 +28,7 @@ static stf_pos4 blocked_mapper_1d(stf_pos4 data_coords, stf_dim4 data_dims, stf_
   {
     part_size = 1;
   }
-  int64_t c       = static_cast<int64_t>(data_coords.x);
+  auto c          = static_cast<int64_t>(data_coords.x);
   int64_t place_x = c / static_cast<int64_t>(part_size);
   if (place_x >= static_cast<int64_t>(nplaces))
   {

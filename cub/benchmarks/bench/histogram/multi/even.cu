@@ -60,7 +60,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   }
 
   const SampleT lower_level_r = 0;
-  const SampleT upper_level_r = get_upper_level<SampleT>(num_bins, elements);
+  const auto upper_level_r    = get_upper_level<SampleT>(num_bins, elements);
   const SampleT lower_level_g = lower_level_r;
   const SampleT upper_level_g = upper_level_r;
   const SampleT lower_level_b = lower_level_g;
@@ -80,7 +80,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   std::size_t temp_storage_bytes{};
 
   cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
-  OffsetT num_row_pixels     = static_cast<OffsetT>(elements);
+  auto num_row_pixels        = static_cast<OffsetT>(elements);
   OffsetT num_rows           = 1;
   OffsetT row_stride_samples = num_row_pixels;
 

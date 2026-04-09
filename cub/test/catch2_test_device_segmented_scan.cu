@@ -145,8 +145,8 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
   // Generate input segments
   c2h::device_vector<offset_t> d_segment_offsets = c2h::gen_uniform_offsets<offset_t>(
     C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
-  const offset_t num_segments = static_cast<offset_t>(d_segment_offsets.size() - 1);
-  auto d_offsets_it           = thrust::raw_pointer_cast(d_segment_offsets.data());
+  const auto num_segments = static_cast<offset_t>(d_segment_offsets.size() - 1);
+  auto d_offsets_it       = thrust::raw_pointer_cast(d_segment_offsets.data());
 
   INFO("Num segments: " << num_segments);
   INFO("Types: " << typeid(input_t).name() << " " << typeid(output_t).name() << " " << typeid(offset_t).name());

@@ -103,9 +103,9 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large
   using InputBufferT  = it_value_t<InputBufferIt>;
   using OutputBufferT = it_value_t<OutputBufferIt>;
 
-  constexpr uint32_t BLOCK_THREADS    = static_cast<uint32_t>(policy.block_threads);
-  constexpr uint32_t ITEMS_PER_THREAD = static_cast<uint32_t>(policy.bytes_per_thread);
-  constexpr BufferSizeT TILE_SIZE     = static_cast<BufferSizeT>(BLOCK_THREADS * ITEMS_PER_THREAD);
+  constexpr auto BLOCK_THREADS    = static_cast<uint32_t>(policy.block_threads);
+  constexpr auto ITEMS_PER_THREAD = static_cast<uint32_t>(policy.bytes_per_thread);
+  constexpr auto TILE_SIZE        = static_cast<BufferSizeT>(BLOCK_THREADS * ITEMS_PER_THREAD);
 
   BufferOffsetT num_blev_buffers = buffer_offset_tile.LoadValid(last_tile_offset);
 

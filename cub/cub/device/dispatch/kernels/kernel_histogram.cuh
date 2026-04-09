@@ -267,7 +267,7 @@ struct Transforms
     template <CacheLoadModifier LOAD_MODIFIER>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT sample, int& bin, bool valid) const
     {
-      const CommonT common_sample = static_cast<CommonT>(sample);
+      const auto common_sample = static_cast<CommonT>(sample);
 
       if (valid && this->SampleIsValid(common_sample, m_max, m_min))
       {

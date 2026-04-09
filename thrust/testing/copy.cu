@@ -30,8 +30,8 @@ void TestCopyFromConstIterator()
 
   std::vector<T> v{0, 1, 2, 3, 4};
 
-  std::vector<int>::const_iterator begin = v.begin();
-  std::vector<int>::const_iterator end   = v.end();
+  auto begin = v.begin();
+  auto end   = v.end();
 
   // copy to host_vector
   thrust::host_vector<T> h(5, (T) 10);
@@ -196,7 +196,7 @@ void TestCopyListTo()
 
   ASSERT_EQUAL(l.size(), 5lu);
 
-  typename std::list<T>::const_iterator iter = l.begin();
+  auto iter = l.begin();
   ASSERT_EQUAL(*iter, T(0));
   iter++;
   ASSERT_EQUAL(*iter, T(1));
@@ -466,7 +466,7 @@ void TestCopyIfNonTrivial()
     std::fill(buffer.begin(), buffer.end(), static_cast<unsigned char>(0));
 
     object_with_non_trivial_ctor initialized;
-    object_with_non_trivial_ctor* uninitialized = reinterpret_cast<object_with_non_trivial_ctor*>(buffer.data());
+    auto* uninitialized = reinterpret_cast<object_with_non_trivial_ctor*>(buffer.data());
 
     object_with_non_trivial_ctor source(42);
     initialized    = source;

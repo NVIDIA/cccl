@@ -51,8 +51,8 @@ C2H_TEST("Device segmented reduce works with fancy input iterators", "[reduce][d
   // Generate input segments
   c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
     C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
-  const offset_t num_segments = static_cast<offset_t>(segment_offsets.size() - 1);
-  auto d_offsets_it           = thrust::raw_pointer_cast(segment_offsets.data());
+  const auto num_segments = static_cast<offset_t>(segment_offsets.size() - 1);
+  auto d_offsets_it       = thrust::raw_pointer_cast(segment_offsets.data());
 
   // Prepare input data
   item_t default_constant{};

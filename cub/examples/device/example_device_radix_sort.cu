@@ -127,8 +127,8 @@ int main(int argc, char** argv)
   fflush(stdout);
 
   // Allocate host arrays
-  float* h_keys           = new float[num_items];
-  float* h_reference_keys = new float[num_items];
+  auto* h_keys            = new float[num_items];
+  auto* h_reference_keys  = new float[num_items];
   int* h_values           = new int[num_items];
   int* h_reference_values = new int[num_items];
 

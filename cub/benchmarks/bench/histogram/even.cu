@@ -58,7 +58,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   }
 
   const SampleT lower_level = 0;
-  const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
+  const auto upper_level    = get_upper_level<SampleT>(num_bins, elements);
 
   thrust::device_vector<SampleT> input = generate(elements, entropy, lower_level, upper_level);
   thrust::device_vector<CounterT> hist(num_bins);
@@ -70,7 +70,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   std::size_t temp_storage_bytes{};
 
   cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
-  OffsetT num_row_pixels     = static_cast<OffsetT>(elements);
+  auto num_row_pixels        = static_cast<OffsetT>(elements);
   OffsetT num_rows           = 1;
   OffsetT row_stride_samples = num_row_pixels;
 

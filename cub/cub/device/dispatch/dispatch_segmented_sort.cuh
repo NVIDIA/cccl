@@ -749,7 +749,7 @@ private:
     cub::detail::temporary_storage::alias<local_segment_index_t>& group_sizes,
     WrappedPolicyT wrapped_policy)
   {
-    constexpr global_segment_offset_t num_segments_per_invocation_limit =
+    constexpr auto num_segments_per_invocation_limit =
       static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
 
     // We repeatedly invoke the partitioning and sorting kernels until all segments are processed.

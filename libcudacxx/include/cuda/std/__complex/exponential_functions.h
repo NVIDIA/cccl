@@ -201,7 +201,7 @@ _CCCL_API inline complex<float> exp(const complex<float>& __x)
     __exp_r_ldexp_factor = -151.0f;
   }
 
-  const int32_t __ans_ldexp_factor = static_cast<int32_t>(__exp_r_ldexp_factor);
+  const auto __ans_ldexp_factor = static_cast<int32_t>(__exp_r_ldexp_factor);
 
   // Split this j up into four parts to fit it into four float exponents's.
   // (Splitting j in 4 better than in 3).
@@ -212,8 +212,8 @@ _CCCL_API inline complex<float> exp(const complex<float>& __x)
   __ans_ldexp_factor_quarter   = (__ans_ldexp_factor_quarter + 127) << 23;
   __ans_ldexp_factor_remainder = (__ans_ldexp_factor_remainder + 127) << 23;
 
-  const float __ldexp_factor_1 = ::cuda::std::bit_cast<float>(__ans_ldexp_factor_quarter);
-  const float __ldexp_factor_2 = ::cuda::std::bit_cast<float>(__ans_ldexp_factor_remainder);
+  const auto __ldexp_factor_1 = ::cuda::std::bit_cast<float>(__ans_ldexp_factor_quarter);
+  const auto __ldexp_factor_2 = ::cuda::std::bit_cast<float>(__ans_ldexp_factor_remainder);
 
   // Need to order our multiplications to avoid intermediate under/overflow, including when __sin_r is denormal.
   // Experiment suggests this is (one of) the better ways to do it, there's not that many combinations that work for all
@@ -287,7 +287,7 @@ _CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
     __exp_r_ldexp_factor = -1076.0;
   }
 
-  const int64_t __ans_ldexp_factor = static_cast<int64_t>(__exp_r_ldexp_factor);
+  const auto __ans_ldexp_factor = static_cast<int64_t>(__exp_r_ldexp_factor);
 
   // Split this j up into four parts to fit it into four float exponents's.
   // (Splitting j in 4 better than in 3).
@@ -298,8 +298,8 @@ _CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
   __ans_ldexp_factor_quarter   = (__ans_ldexp_factor_quarter + 1023) << 52;
   __ans_ldexp_factor_remainder = (__ans_ldexp_factor_remainder + 1023) << 52;
 
-  const double __ldexp_factor_1 = ::cuda::std::bit_cast<double>(__ans_ldexp_factor_quarter);
-  const double __ldexp_factor_2 = ::cuda::std::bit_cast<double>(__ans_ldexp_factor_remainder);
+  const auto __ldexp_factor_1 = ::cuda::std::bit_cast<double>(__ans_ldexp_factor_quarter);
+  const auto __ldexp_factor_2 = ::cuda::std::bit_cast<double>(__ans_ldexp_factor_remainder);
 
   // Need to order our multiplications to avoid intermediate under/overflow, including when __sin_r is denormal.
   // Experiment suggests this is (one of) the better ways to do it, there's not that many combinations that work for all

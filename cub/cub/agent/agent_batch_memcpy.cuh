@@ -98,7 +98,7 @@ template <typename VectorT>
 _CCCL_FORCEINLINE _CCCL_DEVICE void LoadVector(const char* ptr, VectorT& data_out)
 {
   const uint32_t offset            = reinterpret_cast<uintptr_t>(ptr) % 4U;
-  const uint32_t* aligned_ptr      = reinterpret_cast<uint32_t const*>(ptr - offset);
+  auto* aligned_ptr                = reinterpret_cast<uint32_t const*>(ptr - offset);
   constexpr uint32_t bits_per_byte = 8U;
   const uint32_t bit_shift         = offset * bits_per_byte;
 
@@ -175,7 +175,7 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
   uint32_t out_start_aligned = ::cuda::round_up(in_offset_req + alignment_offset, out_datatype_size);
 
   // Compute the beginning of the aligned ranges (output and input pointers)
-  VectorT* out_aligned_begin   = reinterpret_cast<VectorT*>(out_chars_aligned + out_start_aligned);
+  auto* out_aligned_begin      = reinterpret_cast<VectorT*>(out_chars_aligned + out_start_aligned);
   const char* in_aligned_begin = in_ptr + (reinterpret_cast<char*>(out_aligned_begin) - out_ptr);
 
   // If the aligned range is not aligned for the input pointer, we load up to (in_datatype_size-1)
@@ -197,7 +197,7 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
     out_end_aligned = (num_bytes - in_end_padding_req + alignment_offset) / out_datatype_size * out_datatype_size;
   }
 
-  VectorT* out_aligned_end   = reinterpret_cast<VectorT*>(out_chars_aligned + out_end_aligned);
+  auto* out_aligned_end      = reinterpret_cast<VectorT*>(out_chars_aligned + out_end_aligned);
   const char* in_aligned_end = in_ptr + (reinterpret_cast<char*>(out_aligned_end) - out_ptr);
 
   return {out_aligned_begin, out_aligned_end, in_aligned_begin, in_aligned_end};

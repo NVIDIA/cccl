@@ -347,7 +347,7 @@ element(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, BinaryPr
   using InputType = thrust::detail::it_value_t<ItemsIt>;
   using IndexType = thrust::detail::it_difference_t<ItemsIt>;
 
-  IndexType num_items = static_cast<IndexType>(::cuda::std::distance(first, last));
+  auto num_items = static_cast<IndexType>(::cuda::std::distance(first, last));
 
   using iterator_tuple = ::cuda::std::tuple<ItemsIt, counting_iterator<IndexType>>;
   using zip_iterator   = thrust::zip_iterator<iterator_tuple>;

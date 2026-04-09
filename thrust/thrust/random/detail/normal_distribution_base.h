@@ -42,10 +42,10 @@ protected:
     constexpr uint_type urng_range = UniformRandomNumberGenerator::max - UniformRandomNumberGenerator::min;
 
     // Constants for conversion
-    constexpr RealType S1 = static_cast<RealType>(1. / static_cast<double>(urng_range));
+    constexpr auto S1     = static_cast<RealType>(1. / static_cast<double>(urng_range));
     constexpr RealType S2 = S1 / 2;
 
-    RealType S3 = static_cast<RealType>(-1.4142135623730950488016887242097); // -sqrt(2)
+    auto S3 = static_cast<RealType>(-1.4142135623730950488016887242097); // -sqrt(2)
 
     // Get the integer value
     uint_type u = urng() - UniformRandomNumberGenerator::min;
@@ -118,7 +118,7 @@ protected:
       m_valid = false;
     }
 
-    const RealType pi = RealType(3.14159265358979323846);
+    const auto pi = RealType(3.14159265358979323846);
 
     RealType result = m_cached_rho * (m_valid ? cos(RealType(2) * pi * m_r1) : sin(RealType(2) * pi * m_r1));
 

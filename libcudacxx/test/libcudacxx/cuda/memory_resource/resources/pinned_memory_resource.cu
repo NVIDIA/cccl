@@ -83,7 +83,7 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", T
     return;
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 9)
-  pinned_resource res = get_resource<pinned_resource>();
+  auto res = get_resource<pinned_resource>();
   cuda::stream stream{cuda::device_ref{0}};
 
   { // allocate_sync / deallocate_sync
@@ -202,15 +202,15 @@ static_assert(cuda::mr::synchronous_resource<derived_pinned_resource>);
 C2H_CCCLRT_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", TEST_TYPES)
 {
   using pinned_resource = TestType;
-  pinned_resource first = get_resource<pinned_resource>();
+  auto first            = get_resource<pinned_resource>();
   { // comparison against a plain pinned_memory_resource
-    pinned_resource second = get_resource<pinned_resource>();
+    auto second = get_resource<pinned_resource>();
     CHECK((first == second));
     CHECK(!(first != second));
   }
 
   { // comparison against a pinned_memory_resource wrapped inside a synchronous_resource_ref<device_accessible>
-    pinned_resource second = get_resource<pinned_resource>();
+    auto second = get_resource<pinned_resource>();
     cuda::mr::synchronous_resource_ref<::cuda::mr::device_accessible> const second_ref{second};
 
     CHECK((first == second_ref));
@@ -221,7 +221,7 @@ C2H_CCCLRT_TEST_LIST("pinned_memory_resource comparison", "[memory_resource]", T
 
   if constexpr (cuda::mr::resource<pinned_resource>)
   { // comparison against a pinned_memory_resource wrapped inside a resource_ref
-    pinned_resource second = get_resource<pinned_resource>();
+    auto second = get_resource<pinned_resource>();
     cuda::mr::resource_ref<::cuda::mr::device_accessible> second_ref{second};
 
     CHECK((first == second_ref));

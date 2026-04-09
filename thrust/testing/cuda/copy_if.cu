@@ -306,7 +306,7 @@ void TestCopyIfWithMagnitude(int magnitude)
   auto selected_out_end = thrust::copy_if(begin, end, copied_out.begin(), mod_n<offset_t>{match_every_nth});
 
   // Ensure number of selected items are correct
-  offset_t num_selected_out = static_cast<offset_t>(::cuda::std::distance(copied_out.begin(), selected_out_end));
+  auto num_selected_out = static_cast<offset_t>(::cuda::std::distance(copied_out.begin(), selected_out_end));
   ASSERT_EQUAL(num_selected_out, expected_num_copied);
   copied_out.resize(expected_num_copied);
 
@@ -343,7 +343,7 @@ void TestCopyIfStencilWithMagnitude(int magnitude)
   auto selected_out_end = thrust::copy_if(begin, end, stencil, copied_out.begin(), mod_n<offset_t>{match_every_nth});
 
   // Ensure number of selected items are correct
-  offset_t num_selected_out = static_cast<offset_t>(::cuda::std::distance(copied_out.begin(), selected_out_end));
+  auto num_selected_out = static_cast<offset_t>(::cuda::std::distance(copied_out.begin(), selected_out_end));
   ASSERT_EQUAL(num_selected_out, expected_num_copied);
   copied_out.resize(expected_num_copied);
 

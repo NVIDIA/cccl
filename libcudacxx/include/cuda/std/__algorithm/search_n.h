@@ -95,7 +95,7 @@ template <class _BinaryPredicate, class _RandomAccessIterator, class _Size, clas
   {
     return __first;
   }
-  _Size __len = static_cast<_Size>(__last - __first);
+  auto __len = static_cast<_Size>(__last - __first);
   if (__len < __count)
   {
     return __last;

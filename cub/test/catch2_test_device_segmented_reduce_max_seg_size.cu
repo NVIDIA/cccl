@@ -69,8 +69,8 @@ C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
   // Generate input segments
   c2h::device_vector<offset_t> segment_offsets =
     c2h::gen_uniform_offsets<offset_t>(C2H_SEED(1), num_items, seg_size_min, seg_size_max);
-  const offset_t num_segments = static_cast<offset_t>(segment_offsets.size() - 1);
-  auto d_offsets_it           = thrust::raw_pointer_cast(segment_offsets.data());
+  const auto num_segments = static_cast<offset_t>(segment_offsets.size() - 1);
+  auto d_offsets_it       = thrust::raw_pointer_cast(segment_offsets.data());
 
   // Generate input data
   c2h::device_vector<input_t> in_items(num_items);

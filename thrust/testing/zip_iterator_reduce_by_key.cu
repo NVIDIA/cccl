@@ -71,7 +71,7 @@ struct TestZipIteratorReduceByKey
     // The tests below get miscompiled on Tesla hw for 8b types
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-    if (const CUDATestDriver* driver = dynamic_cast<const CUDATestDriver*>(&UnitTestDriver::s_driver()))
+    if (const auto* driver = dynamic_cast<const CUDATestDriver*>(&UnitTestDriver::s_driver()))
     {
       if (typeid(T) == typeid(unittest::uint8_t) && driver->current_device_architecture() < 200)
       {

@@ -613,8 +613,8 @@ struct AgentTopK
         counter->k = k - prev;
 
         // The number of candidates in the next pass
-        counter->len              = cur - prev;
-        const unsigned int bucket = static_cast<unsigned int>(bin_idx);
+        counter->len      = cur - prev;
+        const auto bucket = static_cast<unsigned int>(bin_idx);
         // Update the "splitter" key by adding the radix digit of the k-th item bin of this pass
         set_kth_key_bits<key_in_t, bits_per_pass>(counter->kth_key_bits, pass, bucket);
       }

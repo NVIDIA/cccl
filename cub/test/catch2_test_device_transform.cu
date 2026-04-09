@@ -86,7 +86,7 @@ C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number
 {
   using offset_t = c2h::get<0, TestType>;
   CAPTURE(c2h::type_name<offset_t>());
-  const offset_t num_items = detail::make_large_offset<offset_t>();
+  const auto num_items = detail::make_large_offset<offset_t>();
 
   auto a_it               = cuda::counting_iterator(offset_t{0});
   auto b_it               = cuda::constant_iterator(offset_t{42});
@@ -119,7 +119,7 @@ try
   using offset_t = c2h::get<0, TestType>;
 
   // make size a few thread blocks below/beyond 4GiB. need to make sure I32 num_items stays below 2^31
-  constexpr offset_t num_items = static_cast<offset_t>((1ll << 31) + (sizeof(offset_t) == 4 ? -123456 : 123456));
+  constexpr auto num_items = static_cast<offset_t>((1ll << 31) + (sizeof(offset_t) == 4 ? -123456 : 123456));
   REQUIRE(num_items > 0);
 
   c2h::device_vector<type> input(static_cast<size_t>(num_items), thrust::no_init);

@@ -597,8 +597,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 #endif // CUB_DEBUG_LOG
 
     // Initialize address variables
-    counter_t* counter = static_cast<counter_t*>(allocations[0]);
-    OffsetT* histogram = static_cast<decltype(histogram)>(allocations[1]);
+    auto* counter   = static_cast<counter_t*>(allocations[0]);
+    auto* histogram = static_cast<OffsetT*>(allocations[1]);
 
     // Pass 0: dedicated histogram-only kernel over the full input
     {

@@ -109,7 +109,7 @@ _CCCL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
                        ValueIt3,
                        Offset,
                        CompareOp>::type::items_per_tile;
-  const Offset diagonal_idx = static_cast<Offset>(blockDim.x * blockIdx.x + threadIdx.x);
+  const auto diagonal_idx = static_cast<Offset>(blockDim.x * blockIdx.x + threadIdx.x);
   if (diagonal_idx < num_diagonals)
   {
     const Offset diagonal_num      = (::cuda::std::min) (diagonal_idx * items_per_tile, keys1_count + keys2_count);

@@ -77,7 +77,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   constexpr int bin_length = AccumT::max_index + AccumT::max_fold;
   const int tid            = block_threads * blockIdx.x + threadIdx.x;
 
-  ftype* shared_bins = detail::rfa::get_shared_bin_array<ftype, bin_length>();
+  auto* shared_bins = detail::rfa::get_shared_bin_array<ftype, bin_length>();
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int index = threadIdx.x; index < bin_length; index += block_threads)
@@ -217,7 +217,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   using float_type         = typename AccumT::ftype;
   constexpr int bin_length = AccumT::max_index + AccumT::max_fold;
 
-  float_type* shared_bins = detail::rfa::get_shared_bin_array<float_type, bin_length>();
+  auto* shared_bins = detail::rfa::get_shared_bin_array<float_type, bin_length>();
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int index = threadIdx.x; index < bin_length; index += block_threads)

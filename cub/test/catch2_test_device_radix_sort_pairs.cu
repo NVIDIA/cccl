@@ -146,7 +146,7 @@ void do_large_offset_test(std::size_t num_items)
 
     double_buffer_sort_t action(is_descending);
     action.initialize();
-    const num_items_t typed_num_items = static_cast<num_items_t>(num_items);
+    const auto typed_num_items = static_cast<num_items_t>(num_items);
     launch(action, arrays.keys_buffer, arrays.values_buffer, typed_num_items, begin_bit<key_t>(), end_bit<key_t>());
 
     TIME(timer.print_elapsed_seconds_and_reset("Device sort"));

@@ -556,8 +556,8 @@ private:
     // for testing purposes, one portion is <= 2**28 elements
     const PortionOffsetT PORTION_SIZE = ((1 << 28) - 1) / ONESWEEP_TILE_ITEMS * ONESWEEP_TILE_ITEMS;
     int num_passes                    = ::cuda::ceil_div(end_bit - begin_bit, RADIX_BITS);
-    OffsetT num_portions              = static_cast<OffsetT>(::cuda::ceil_div(num_items, PORTION_SIZE));
-    PortionOffsetT max_num_blocks     = ::cuda::ceil_div(
+    auto num_portions                 = static_cast<OffsetT>(::cuda::ceil_div(num_items, PORTION_SIZE));
+    auto max_num_blocks               = ::cuda::ceil_div(
       static_cast<int>(::cuda::std::min(num_items, static_cast<OffsetT>(PORTION_SIZE))), ONESWEEP_TILE_ITEMS);
 
     size_t value_size         = KEYS_ONLY ? 0 : kernel_source.ValueSize();
@@ -587,11 +587,11 @@ private:
       return cudaSuccess;
     }
 
-    OffsetT* d_bins           = (OffsetT*) allocations[0];
-    AtomicOffsetT* d_lookback = (AtomicOffsetT*) allocations[1];
-    KeyT* d_keys_tmp2         = (KeyT*) allocations[2];
-    ValueT* d_values_tmp2     = (ValueT*) allocations[3];
-    AtomicOffsetT* d_ctrs     = (AtomicOffsetT*) allocations[4];
+    auto* d_bins        = (OffsetT*) allocations[0];
+    auto* d_lookback    = (AtomicOffsetT*) allocations[1];
+    auto* d_keys_tmp2   = (KeyT*) allocations[2];
+    auto* d_values_tmp2 = (ValueT*) allocations[3];
+    auto* d_ctrs        = (AtomicOffsetT*) allocations[4];
 
     // initialization
     if (const auto error =
@@ -688,7 +688,7 @@ private:
       int num_bits = ::cuda::std::min(end_bit - current_bit, RADIX_BITS);
       for (OffsetT portion = 0; portion < num_portions; ++portion)
       {
-        PortionOffsetT portion_num_items = static_cast<PortionOffsetT>(
+        auto portion_num_items = static_cast<PortionOffsetT>(
           ::cuda::std::min(num_items - portion * PORTION_SIZE, static_cast<OffsetT>(PORTION_SIZE)));
 
         PortionOffsetT num_blocks = ::cuda::ceil_div(portion_num_items, ONESWEEP_TILE_ITEMS);
@@ -902,7 +902,7 @@ private:
     int alt_end_bit        = ::cuda::std::min(end_bit, begin_bit + (max_alt_passes * alt_pass_config.radix_bits));
 
     // Alias the temporary storage allocations
-    OffsetT* d_spine = static_cast<OffsetT*>(allocations[0]);
+    auto* d_spine = static_cast<OffsetT*>(allocations[0]);
 
     DoubleBuffer<KeyT> d_keys_remaining_passes(
       (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : static_cast<KeyT*>(allocations[1]),

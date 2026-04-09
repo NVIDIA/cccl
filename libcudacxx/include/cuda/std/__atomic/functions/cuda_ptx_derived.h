@@ -55,7 +55,7 @@ _CCCL_DEVICE static void
 __cuda_atomic_load(const _Type* __ptr, _Type& __dst, _Order, _Operand, _Sco, __atomic_cuda_mmio_disable)
 {
   constexpr uint64_t __alignmask = (sizeof(uint16_t) - 1);
-  uint16_t* __aligned            = (uint16_t*) ((intptr_t) __ptr & (~__alignmask));
+  auto* __aligned                = (uint16_t*) ((intptr_t) __ptr & (~__alignmask));
   const uint8_t __offset         = uint16_t((intptr_t) __ptr & __alignmask) * 8;
 
   uint16_t __value = 0;
@@ -70,7 +70,7 @@ __cuda_atomic_compare_exchange(_Type* __ptr, _Type& __dst, _Type __cmp, _Type __
 {
   constexpr uint64_t __alignmask = (sizeof(uint32_t) - 1);
   constexpr uint32_t __sizemask  = (1 << (sizeof(_Type) * 8)) - 1;
-  uint32_t* __aligned            = (uint32_t*) ((intptr_t) __ptr & (~__alignmask));
+  auto* __aligned                = (uint32_t*) ((intptr_t) __ptr & (~__alignmask));
   const uint8_t __offset         = uint32_t((intptr_t) __ptr & __alignmask) * 8;
   const uint32_t __valueMask     = __sizemask << __offset;
   const uint32_t __windowMask    = ~__valueMask;
@@ -115,7 +115,7 @@ _CCCL_DEVICE_API _Type __cuda_atomic_fetch_update(_Type* __ptr, const _Fn& __op,
 {
   constexpr uint64_t __alignmask = (sizeof(uint32_t) - 1);
   constexpr uint32_t __sizemask  = (1 << (sizeof(_Type) * 8)) - 1;
-  uint32_t* __aligned            = (uint32_t*) ((intptr_t) __ptr & (~__alignmask));
+  auto* __aligned                = (uint32_t*) ((intptr_t) __ptr & (~__alignmask));
   const uint8_t __offset         = uint8_t((intptr_t) __ptr & __alignmask) * 8;
   const uint32_t __valueMask     = __sizemask << __offset;
   const uint32_t __windowMask    = ~__valueMask;
