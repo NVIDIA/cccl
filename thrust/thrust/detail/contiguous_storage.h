@@ -58,10 +58,10 @@ public:
   using const_iterator = thrust::detail::normal_iterator<const_pointer>;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE explicit contiguous_storage(const allocator_type& alloc = allocator_type());
+  _CCCL_HOST_DEVICE explicit contiguous_storage(allocator_type alloc = allocator_type());
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE explicit contiguous_storage(size_type n, const allocator_type& alloc = allocator_type());
+  _CCCL_HOST_DEVICE explicit contiguous_storage(size_type n, allocator_type alloc = allocator_type());
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE explicit contiguous_storage(copy_allocator_t, const contiguous_storage& other);
