@@ -24,10 +24,8 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-inline constexpr int size = 1000;
-
 template <class Policy>
-void test_rotate(const Policy& policy, thrust::device_vector<int>& input)
+void test_rotate(const Policy& policy, thrust::device_vector<int>& input, const int size)
 {
   { // Empty does not access anything
     auto res =
@@ -35,7 +33,7 @@ void test_rotate(const Policy& policy, thrust::device_vector<int>& input)
     CHECK(res == nullptr);
   }
 
-  const auto count1 = 42;
+  const auto count1 = size < 42 ? 4 : 42;
   const auto count2 = size - count1;
 
   const auto expected_first = cuda::counting_iterator{count1};
@@ -61,15 +59,22 @@ void test_rotate(const Policy& policy, thrust::device_vector<int>& input)
   }
 }
 
-C2H_TEST("cuda::std::rotate", "[parallel algorithm]")
+using sizes = c2h::type_list<cuda::std::integral_constant<int, 10>,
+                             cuda::std::integral_constant<int, 1000>,
+                             cuda::std::integral_constant<int, 100000>>;
+
+C2H_TEST("cuda::std::rotate", "[parallel algorithm]", sizes)
 {
+  using Size     = typename c2h::get<0, TestType>;
+  const int size = Size::value;
+
   thrust::device_vector<int> input(size, thrust::no_init);
 
   SECTION("with default stream")
   {
     const auto policy = cuda::execution::gpu;
 
-    test_rotate(policy, input);
+    test_rotate(policy, input, size);
   }
 
   SECTION("with provided stream")
@@ -77,7 +82,7 @@ C2H_TEST("cuda::std::rotate", "[parallel algorithm]")
     cuda::stream stream{cuda::device_ref{0}};
     const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
 
-    test_rotate(policy, input);
+    test_rotate(policy, input, size);
   }
 
   SECTION("with provided memory_resource")
@@ -85,7 +90,7 @@ C2H_TEST("cuda::std::rotate", "[parallel algorithm]")
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
     const auto policy = cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource);
 
-    test_rotate(policy, input);
+    test_rotate(policy, input, size);
   }
 
   SECTION("with provided stream and memory_resource")
@@ -95,6 +100,6 @@ C2H_TEST("cuda::std::rotate", "[parallel algorithm]")
     const auto policy =
       cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource).with(cuda::get_stream, stream);
 
-    test_rotate(policy, input);
+    test_rotate(policy, input, size);
   }
 }

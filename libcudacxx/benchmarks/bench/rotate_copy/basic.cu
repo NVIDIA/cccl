@@ -23,7 +23,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   const auto midpoint_float = state.get_float64("MidpointAt");
   const auto midpoint       = static_cast<std::size_t>(elements * midpoint_float);
 
-  thrust::device_vector<T> in = generate(elements, bit_entropy::_1_000, T{0}, T{42});
+  thrust::device_vector<T> in = generate(elements, bit_entropy::_1_000);
   thrust::device_vector<T> out(elements, thrust::no_init);
 
   state.add_element_count(elements);
