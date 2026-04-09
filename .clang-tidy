@@ -38,7 +38,6 @@ Checks:
   - '-modernize-return-braced-init-list'
   - '-modernize-use-auto'
   - '-modernize-use-equals-delete'
-  - '-modernize-loop-convert'
   - '-modernize-unary-static-assert'
   - '-modernize-use-override'
   # END REMOVE ME
