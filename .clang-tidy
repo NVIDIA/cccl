@@ -40,7 +40,6 @@ Checks:
   - '-modernize-use-nullptr'
   - '-modernize-return-braced-init-list'
   - '-modernize-use-auto'
-  - '-modernize-redundant-void-arg'
   - '-modernize-use-equals-delete'
   - '-modernize-pass-by-value'
   - '-modernize-loop-convert'
