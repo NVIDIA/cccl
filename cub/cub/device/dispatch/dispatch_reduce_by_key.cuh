@@ -530,7 +530,7 @@ struct DispatchReduceByKey
           break;
         }
       }
-    } while (0);
+    } while (false);
 
     return error;
   }
@@ -638,7 +638,7 @@ struct DispatchReduceByKey
       {
         break;
       }
-    } while (0);
+    } while (false);
 
     return error;
   }

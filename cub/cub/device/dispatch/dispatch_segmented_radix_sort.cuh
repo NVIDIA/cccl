@@ -495,7 +495,7 @@ struct DispatchSegmentedRadixSort
 
       d_keys.selector   = (d_keys.selector + num_passes) & 1;
       d_values.selector = (d_values.selector + num_passes) & 1;
-    } while (0);
+    } while (false);
 
     return error;
   }
@@ -631,7 +631,7 @@ struct DispatchSegmentedRadixSort
       {
         break;
       }
-    } while (0);
+    } while (false);
 
     return error;
   }

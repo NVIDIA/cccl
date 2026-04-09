@@ -929,7 +929,7 @@ struct ScanTileState<T, false>
       d_tile_status    = reinterpret_cast<StatusWord*>(allocations[0]);
       d_tile_partial   = reinterpret_cast<T*>(allocations[1]);
       d_tile_inclusive = reinterpret_cast<T*>(allocations[2]);
-    } while (0);
+    } while (false);
 
     return error;
   }

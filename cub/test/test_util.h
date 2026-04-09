@@ -324,7 +324,7 @@ struct CommandLineArgs
         fflush(stdout);
       }
 
-    } while (0);
+    } while (false);
 
     return error;
   }

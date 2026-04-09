@@ -774,7 +774,7 @@ struct DispatchSelectIf
         // Prepare streaming context for next partition (swap double buffers, advance number of processed items, etc.)
         streaming_context.advance(current_num_items, (partition_idx + OffsetT{2} == num_partitions));
       }
-    } while (0);
+    } while (false);
 
     return error;
   }
