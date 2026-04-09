@@ -81,8 +81,8 @@ def create_benches_tables(conn, subbench, bench_axes):
             algorithm TEXT NOT NULL,
             bench TEXT NOT NULL,
             UNIQUE(algorithm, bench)
-                         );
-                     """)
+        );
+        """)
 
         for algorithm_name in bench_axes:
             axes = bench_axes[algorithm_name]
@@ -91,10 +91,10 @@ def create_benches_tables(conn, subbench, bench_axes):
 
             conn.execute(
                 """
-                INSERT INTO subbenches (algorithm, bench)
+            INSERT INTO subbenches (algorithm, bench)
             VALUES (?, ?)
             ON CONFLICT DO NOTHING;
-                """,
+            """,
                 (algorithm_name, subbench),
             )
 
@@ -306,8 +306,8 @@ def create_runs_table(conn):
             bench TEXT NOT NULL,
             code TEXT NOT NULL,
             elapsed REAL
-                     );
-                     """)
+        );
+        """)
 
 
 class RunsCache:
