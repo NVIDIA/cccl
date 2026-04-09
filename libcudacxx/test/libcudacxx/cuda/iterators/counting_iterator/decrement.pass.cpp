@@ -36,6 +36,20 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<cuda::std::remove_reference_t<decltype(--iter2)>, decltype(iter2--)>);
   }
 
+  {
+    cuda::counting_iterator<float> iter1{0};
+    cuda::counting_iterator<float> iter2{0};
+    assert(iter1 == iter2);
+    assert(--iter1 != iter2--);
+    assert(iter1 == iter2);
+
+    static_assert(noexcept(--iter2));
+    static_assert(noexcept(iter2--));
+    static_assert(!cuda::std::is_reference_v<decltype(iter2--)>);
+    static_assert(cuda::std::is_reference_v<decltype(--iter2)>);
+    static_assert(cuda::std::same_as<cuda::std::remove_reference_t<decltype(--iter2)>, decltype(iter2--)>);
+  }
+
   { // With a decrementable type
     cuda::counting_iterator<SomeInt> iter1{SomeInt{0}};
     cuda::counting_iterator<SomeInt> iter2{SomeInt{0}};

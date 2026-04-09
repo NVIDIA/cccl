@@ -25,8 +25,21 @@ __host__ __device__ constexpr bool test()
   }
 
   { // CTAD
+    const float val = 42;
+    cuda::counting_iterator iter{val};
+    static_assert(cuda::std::is_same_v<decltype(iter), cuda::counting_iterator<float>>);
+    assert(*iter == 42);
+  }
+
+  { // CTAD
     cuda::counting_iterator iter{42};
     assert(*iter == 42);
+  }
+
+  { // CTAD
+    cuda::counting_iterator iter{42.f};
+    static_assert(cuda::std::is_same_v<decltype(iter), cuda::counting_iterator<float>>);
+    assert(*iter == 42.f);
   }
 
   {
@@ -49,6 +62,11 @@ __host__ __device__ constexpr bool test()
   {
     cuda::counting_iterator<Int42<ValueCtor>> iter{Int42<ValueCtor>{42}};
     assert(*iter == Int42<ValueCtor>{42});
+  }
+
+  {
+    cuda::counting_iterator<float> iter{float{42}};
+    assert(*iter == float{42});
   }
 
   return true;

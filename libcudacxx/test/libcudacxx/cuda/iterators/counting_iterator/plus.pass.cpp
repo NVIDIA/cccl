@@ -71,6 +71,19 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::is_same_v<decltype(iter2 + (-5)), decltype(iter2)>);
   }
 
+  { // When "_Start" is non-integral like.
+    static_assert(cuda::std::totally_ordered<float>);
+    cuda::counting_iterator<float> iter1{0};
+    cuda::counting_iterator<float> iter2{0};
+    assert(iter1 == iter2);
+    assert(iter1 + 0 == iter1);
+    assert(iter1 + 5 != iter2);
+    assert(iter1 + 5 == cuda::std::ranges::next(iter2, 5));
+
+    static_assert(noexcept(iter2 + 5));
+    static_assert(cuda::std::is_same_v<decltype(iter2 + (-5)), decltype(iter2)>);
+  }
+
   return true;
 }
 

@@ -217,6 +217,18 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::difference_type, signed char>);
     static_assert(cuda::std::is_trivially_copyable_v<Iter>);
   }
+  {
+    using Iter = cuda::counting_iterator<float>;
+    static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
+    static_assert(cuda::std::same_as<Iter::value_type, float>);
+    // Same as below, if there is no type larger than long, we can just use that.
+    static_assert(sizeof(Iter::difference_type) >= sizeof(long));
+    static_assert(cuda::std::is_signed_v<Iter::difference_type>);
+    static_assert(cuda::std::same_as<Iter::difference_type, long>);
+    static_assert(cuda::std::random_access_iterator<Iter>);
+    static_assert(cuda::std::is_trivially_copyable_v<Iter>);
+  }
 }
 
 int main(int, char**)
