@@ -69,8 +69,8 @@ find_if_n_impl(execution_policy<Derived>& policy, InputIt first, Size num_items,
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, sizeof(adjusted_size_type) + tmp_size);
 
     // Run find_if.
-    adjusted_size_type* result_ptr = thrust::detail::aligned_reinterpret_cast<adjusted_size_type*>(tmp.data().get());
-    void* tmp_ptr                  = static_cast<void*>((tmp.data() + sizeof(adjusted_size_type)).get());
+    auto* result_ptr = thrust::detail::aligned_reinterpret_cast<adjusted_size_type*>(tmp.data().get());
+    void* tmp_ptr    = static_cast<void*>((tmp.data() + sizeof(adjusted_size_type)).get());
 
     status = cub::DeviceFind::FindIf(tmp_ptr, tmp_size, first, result_ptr, predicate, num_items_fixed, stream);
     cuda_cub::throw_on_error(status, "find_if: failed to run algorithm");

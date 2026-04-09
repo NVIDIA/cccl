@@ -174,7 +174,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
   if (reinterpret_cast<uintptr_t>(block_ptr) % (alignof(Vector)) == 0)
   {
     // Alias global pointer
-    Vector* block_ptr_vectors = reinterpret_cast<Vector*>(const_cast<T*>(block_ptr));
+    auto* block_ptr_vectors = reinterpret_cast<Vector*>(const_cast<T*>(block_ptr));
 
     // Alias pointers (use "raw" array here which should get optimized away to prevent conservative PTXAS lmem spilling)
     Vector raw_vector[VECTORS_PER_THREAD];

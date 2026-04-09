@@ -78,7 +78,7 @@ C2H_TEST("Block histogram can be computed with uniform input",
   using params   = params_t<TestType>;
   using sample_t = typename params::sample_t;
 
-  const sample_t uniform_value = static_cast<sample_t>(GENERATE_COPY(take(10, random(0, params::bins - 1))));
+  const auto uniform_value = static_cast<sample_t>(GENERATE_COPY(take(10, random(0, params::bins - 1))));
 
   c2h::host_vector<sample_t> h_samples(params::num_samples, uniform_value);
   c2h::host_vector<int> h_reference(params::bins);
@@ -149,7 +149,7 @@ C2H_TEST("Block histogram can be computed with random input",
   c2h::device_vector<int> d_histogram(params::bins);
   c2h::device_vector<sample_t> d_samples(params::num_samples);
 
-  const sample_t min_bin = static_cast<sample_t>(0);
+  const auto min_bin     = static_cast<sample_t>(0);
   const sample_t max_bin = static_cast<sample_t>(
     std::min(static_cast<std::int32_t>(cuda::std::numeric_limits<sample_t>::max()),
              static_cast<std::int32_t>(params::bins - 1)));

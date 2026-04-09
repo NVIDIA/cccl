@@ -42,7 +42,7 @@ void compute_exclusive_scan_reference(InputIt first, InputIt last, OutputIt resu
   using value_t  = cub::detail::it_value_t<InputIt>;
   using accum_t  = ::cuda::std::__accumulator_t<BinaryOp, value_t, InitT>;
   using output_t = cub::detail::it_value_t<OutputIt>;
-  accum_t acc    = static_cast<accum_t>(init);
+  auto acc       = static_cast<accum_t>(init);
   for (; first != last; ++first)
   {
     auto v    = *first;
@@ -57,7 +57,7 @@ void compute_inclusive_scan_reference(InputIt first, InputIt last, OutputIt resu
   using value_t  = cub::detail::it_value_t<InputIt>;
   using accum_t  = ::cuda::std::__accumulator_t<BinaryOp, value_t, InitT>;
   using output_t = cub::detail::it_value_t<OutputIt>;
-  accum_t acc    = static_cast<accum_t>(init);
+  auto acc       = static_cast<accum_t>(init);
   for (; first != last; ++first)
   {
     acc       = op(acc, *first);
@@ -88,9 +88,9 @@ void compute_exclusive_scan_by_key_reference(
   {
     for (std::size_t i = 0; i < num_items;)
     {
-      accum_t val       = static_cast<accum_t>(h_values_it[i]);
-      result_out_it[i]  = init;
-      accum_t inclusive = static_cast<accum_t>(scan_op(init, val));
+      auto val         = static_cast<accum_t>(h_values_it[i]);
+      result_out_it[i] = init;
+      auto inclusive   = static_cast<accum_t>(scan_op(init, val));
 
       ++i;
 

@@ -137,9 +137,8 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     auto reduction_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
 
     // Prepare verification data
-    using accum_t = cuda::std::__accumulator_t<op_t, item_t, output_t>;
-    output_t expected_result =
-      static_cast<output_t>(compute_single_problem_reference(in_items, reduction_op, accum_t{}));
+    using accum_t        = cuda::std::__accumulator_t<op_t, item_t, output_t>;
+    auto expected_result = static_cast<output_t>(compute_single_problem_reference(in_items, reduction_op, accum_t{}));
 
     // Run test
     c2h::device_vector<output_t> out_result(num_segments);
@@ -161,7 +160,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     using accum_t = cuda::std::__accumulator_t<op_t, item_t, output_t>;
 
     // Prepare verification data
-    output_t expected_result = static_cast<output_t>(compute_single_problem_reference(in_items, op_t{}, accum_t{}));
+    auto expected_result = static_cast<output_t>(compute_single_problem_reference(in_items, op_t{}, accum_t{}));
 
     // Run test
     c2h::device_vector<output_t> out_result(num_segments);
@@ -219,8 +218,8 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     device_arg_max(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items);
 
     // Verify result
-    result_t gpu_result   = out_result[0];
-    output_t gpu_extremum = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
+    result_t gpu_result = out_result[0];
+    auto gpu_extremum   = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
     REQUIRE(expected_result[0] == gpu_extremum);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
   }
@@ -240,8 +239,8 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     device_arg_min(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items);
 
     // Verify result
-    result_t gpu_result   = out_result[0];
-    output_t gpu_extremum = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
+    result_t gpu_result = out_result[0];
+    auto gpu_extremum   = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
     REQUIRE(expected_result[0] == gpu_extremum);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
   }
@@ -259,7 +258,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 
     // Verify result for the deprecated interface
     result_t gpu_result = out_result[0];
-    output_t gpu_value  = static_cast<output_t>(gpu_result.value); // Explicitly rewrap the gpu value
+    auto gpu_value      = static_cast<output_t>(gpu_result.value); // Explicitly rewrap the gpu value
     REQUIRE(expected_result[0] == gpu_value);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.key);
   }
@@ -277,7 +276,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 
     // Verify result for the deprecated interface
     result_t gpu_result = out_result[0];
-    output_t gpu_value  = static_cast<output_t>(gpu_result.value); // Explicitly rewrap the gpu value
+    auto gpu_value      = static_cast<output_t>(gpu_result.value); // Explicitly rewrap the gpu value
     REQUIRE(expected_result[0] == gpu_value);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.key);
   }
@@ -300,8 +299,8 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     device_arg_min(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items, compare_op);
 
     // Verify result
-    result_t gpu_result   = out_result[0];
-    output_t gpu_extremum = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
+    result_t gpu_result = out_result[0];
+    auto gpu_extremum   = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
     REQUIRE(expected_result[0] == gpu_extremum);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
   }
@@ -323,8 +322,8 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     device_arg_max(unwrap_it(d_in_it), d_extremum_out, d_index_out, num_items, compare_op);
 
     // Verify result
-    result_t gpu_result   = out_result[0];
-    output_t gpu_extremum = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
+    result_t gpu_result = out_result[0];
+    auto gpu_extremum   = static_cast<output_t>(gpu_result.second); // Explicitly rewrap the gpu value
     REQUIRE(expected_result[0] == gpu_extremum);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.first);
   }

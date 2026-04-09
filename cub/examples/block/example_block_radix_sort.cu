@@ -140,9 +140,9 @@ void Test()
   constexpr int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   // Allocate host arrays
-  Key* h_in          = new Key[TILE_SIZE * g_grid_size];
-  Key* h_reference   = new Key[TILE_SIZE * g_grid_size];
-  clock_t* h_elapsed = new clock_t[g_grid_size];
+  Key* h_in        = new Key[TILE_SIZE * g_grid_size];
+  Key* h_reference = new Key[TILE_SIZE * g_grid_size];
+  auto* h_elapsed  = new clock_t[g_grid_size];
 
   // Initialize problem and reference output on host
   Initialize(h_in, h_reference, TILE_SIZE * g_grid_size, TILE_SIZE);

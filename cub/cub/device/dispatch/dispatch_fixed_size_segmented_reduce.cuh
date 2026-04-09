@@ -304,7 +304,7 @@ struct DispatchFixedSizeSegmentedReduce
     }
 
     // Alias the allocation for the privatized per-block reductions
-    AccumT* d_block_reductions = static_cast<AccumT*>(allocations[0]);
+    auto* d_block_reductions = static_cast<AccumT*>(allocations[0]);
 
     for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
     {

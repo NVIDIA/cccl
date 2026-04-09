@@ -266,7 +266,7 @@ using unwrap_value_t = typename unwrap_value_t_impl<T>::type;
 template <typename T>
 __host__ __device__ __forceinline__ double compute_conversion_factor(int segment_size, T)
 {
-  const double max_value = static_cast<double>(::cuda::std::numeric_limits<T>::max());
+  const auto max_value = static_cast<double>(::cuda::std::numeric_limits<T>::max());
   return (max_value + 1) / segment_size;
 }
 
@@ -433,8 +433,8 @@ private:
         // Compute the original input value corresponding to the current duplicate key.
         // NOTE: Keys and values are generated using opposing ascending/descending parameters, so the generated input
         // values are descending when generating ascending input keys for a descending sort.
-        const int conv_idx         = sort_descending ? (segment_size - 1 - in_seg_idx) : in_seg_idx;
-        const ValueT current_value = static_cast<ValueT>(conv_idx * value_conversion);
+        const int conv_idx       = sort_descending ? (segment_size - 1 - in_seg_idx) : in_seg_idx;
+        const auto current_value = static_cast<ValueT>(conv_idx * value_conversion);
         if constexpr (STABLE)
         {
           // For stable sorts, the output value must appear at an exact offset:

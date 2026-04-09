@@ -81,7 +81,7 @@ try
   using offset_t = typename c2h::get<0, TestType>;
 
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  const offset_t num_items_max = detail::make_large_offset<offset_t>();
+  const auto num_items_max     = detail::make_large_offset<offset_t>();
   const offset_t num_items_min = num_items_max > 10000 ? num_items_max - 10000ULL : offset_t{0};
   const offset_t num_items     = GENERATE_COPY(
     values(
@@ -124,7 +124,7 @@ try
   using offset_t = typename c2h::get<0, TestType>;
 
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  const offset_t num_items_max = detail::make_large_offset<offset_t>();
+  const auto num_items_max     = detail::make_large_offset<offset_t>();
   const offset_t num_items_min = num_items_max > 10000 ? num_items_max - 10000ULL : offset_t{0};
   const offset_t num_items     = GENERATE_COPY(
     values(

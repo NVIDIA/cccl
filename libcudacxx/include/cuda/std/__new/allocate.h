@@ -79,7 +79,7 @@ _CCCL_API inline void* __cccl_allocate(size_t __size, [[maybe_unused]] size_t __
 #if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
   if (::cuda::std::__is_overaligned_for_new(__align))
   {
-    const align_val_t __align_val = static_cast<align_val_t>(__align);
+    const auto __align_val = static_cast<align_val_t>(__align);
     return ::cuda::std::__cccl_operator_new(__size, __align_val);
   }
 #endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
@@ -101,7 +101,7 @@ _CCCL_API inline void __cccl_deallocate(void* __ptr, size_t __size, [[maybe_unus
 #if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
   if (::cuda::std::__is_overaligned_for_new(__align))
   {
-    const align_val_t __align_val = static_cast<align_val_t>(__align);
+    const auto __align_val = static_cast<align_val_t>(__align);
     return ::cuda::std::__do_deallocate_handle_size(__ptr, __size, __align_val);
   }
 #endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
@@ -113,7 +113,7 @@ _CCCL_API inline void __cccl_deallocate_unsized(void* __ptr, [[maybe_unused]] si
 #if _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()
   if (::cuda::std::__is_overaligned_for_new(__align))
   {
-    const align_val_t __align_val = static_cast<align_val_t>(__align);
+    const auto __align_val = static_cast<align_val_t>(__align);
     return ::cuda::std::__cccl_operator_delete(__ptr, __align_val);
   }
 #endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION()

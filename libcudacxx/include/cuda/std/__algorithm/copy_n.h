@@ -39,7 +39,7 @@ _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _OutputIterator
 copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
 {
   using _IntegralSize = decltype(__convert_to_integral(__orig_n));
-  _IntegralSize __n   = static_cast<_IntegralSize>(__orig_n);
+  auto __n            = static_cast<_IntegralSize>(__orig_n);
   if (__n > 0)
   {
     *__result = *__first;
@@ -62,7 +62,7 @@ template <class _InputIterator,
 _CCCL_API constexpr _OutputIterator copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
 {
   using _IntegralSize = decltype(__convert_to_integral(__orig_n));
-  _IntegralSize __n   = static_cast<_IntegralSize>(__orig_n);
+  auto __n            = static_cast<_IntegralSize>(__orig_n);
   return ::cuda::std::copy(__first, __first + __n, __result);
 }
 

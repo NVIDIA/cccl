@@ -50,7 +50,7 @@ template <class Derived, class Input, class UnaryOp>
 Input _CCCL_API _CCCL_FORCEINLINE for_each(execution_policy<Derived>& policy, Input first, Input last, UnaryOp op)
 {
   using size_type = thrust::detail::it_difference_t<Input>;
-  size_type count = static_cast<size_type>(::cuda::std::distance(first, last));
+  auto count      = static_cast<size_type>(::cuda::std::distance(first, last));
 
   return THRUST_NS_QUALIFIER::cuda_cub::for_each_n(policy, first, count, op);
 }

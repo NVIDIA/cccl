@@ -106,9 +106,9 @@ struct bfloat16_t
   /// Cast to float
   __host__ __device__ __forceinline__ operator float() const
   {
-    float f     = 0;
-    uint32_t* p = reinterpret_cast<uint32_t*>(&f);
-    *p          = uint32_t(__x) << 16;
+    float f = 0;
+    auto* p = reinterpret_cast<uint32_t*>(&f);
+    *p      = uint32_t(__x) << 16;
     return f;
   }
 

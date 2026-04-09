@@ -741,8 +741,8 @@ struct ScanTileState<T, true>
   {
     int tile_idx = (blockIdx.x * blockDim.x) + threadIdx.x;
 
-    TxnWord val                = TxnWord();
-    TileDescriptor* descriptor = reinterpret_cast<TileDescriptor*>(&val);
+    TxnWord val      = TxnWord();
+    auto* descriptor = reinterpret_cast<TileDescriptor*>(&val);
 
     if (tile_idx < num_tiles)
     {
@@ -1150,9 +1150,9 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeStatus(int num_tiles)
   {
-    int tile_idx               = (blockIdx.x * blockDim.x) + threadIdx.x;
-    TxnWord val                = TxnWord();
-    TileDescriptor* descriptor = reinterpret_cast<TileDescriptor*>(&val);
+    int tile_idx     = (blockIdx.x * blockDim.x) + threadIdx.x;
+    TxnWord val      = TxnWord();
+    auto* descriptor = reinterpret_cast<TileDescriptor*>(&val);
 
     if (tile_idx < num_tiles)
     {

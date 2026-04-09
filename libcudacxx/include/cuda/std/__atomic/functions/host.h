@@ -63,8 +63,7 @@ struct _CCCL_ALIGNAS(sizeof(_Tp)) __atomic_alignment_wrapper
 template <typename _Tp>
 __atomic_alignment_wrapper<_Tp>* __atomic_force_align_host(_Tp* __a)
 {
-  __atomic_alignment_wrapper<_Tp>* __w =
-    reinterpret_cast<__atomic_alignment_wrapper<_Tp>*>(const_cast<remove_cv_t<_Tp>*>(__a));
+  auto* __w = reinterpret_cast<__atomic_alignment_wrapper<_Tp>*>(const_cast<remove_cv_t<_Tp>*>(__a));
   return __w;
 }
 

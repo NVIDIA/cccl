@@ -116,7 +116,7 @@ struct DispatchUniqueByKey
     }
 
     // Memory allocation for the number of selected output items
-    OffsetT* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<OffsetT*>(allocations[1]);
+    auto* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<OffsetT*>(allocations[1]);
 
     // Run algorithm
     status = cub::DeviceSelect::UniqueByKey(
@@ -159,7 +159,7 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeyOutputIt, ValOutputIt> unique_by_ke
 {
   using size_type = thrust::detail::it_difference_t<KeyInputIt>;
 
-  size_type num_items = static_cast<size_type>(::cuda::std::distance(keys_first, keys_last));
+  auto num_items = static_cast<size_type>(::cuda::std::distance(keys_first, keys_last));
   ::cuda::std::pair<KeyOutputIt, ValOutputIt> result_end{};
   cudaError_t status        = cudaSuccess;
   size_t temp_storage_bytes = 0;

@@ -277,7 +277,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   }
 
   // Pointer to the double-buffer of global accumulators, which aggregate cross-partition results
-  global_accum_t* const d_global_aggregates = static_cast<global_accum_t*>(allocations[1]);
+  auto* const d_global_aggregates = static_cast<global_accum_t*>(allocations[1]);
 
   accumulating_out_op = accumulating_transform_output_op_t{
     true,

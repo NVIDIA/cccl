@@ -1059,8 +1059,8 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   status = tile_state.Init(static_cast<int>(num_tiles), allocations[0], allocation_sizes[0]);
   _CUDA_CUB_RET_IF_FAIL(status);
 
-  ::cuda::std::pair<Size, Size>* partitions = (::cuda::std::pair<Size, Size>*) allocations[1];
-  char* vshmem_ptr                          = vshmem_storage > 0 ? (char*) allocations[2] : nullptr;
+  auto* partitions = (::cuda::std::pair<Size, Size>*) allocations[1];
+  char* vshmem_ptr = vshmem_storage > 0 ? (char*) allocations[2] : nullptr;
 
   init_agent ia(init_plan, num_tiles, stream, "set_op::init_agent");
   ia.launch(tile_state, num_tiles);
@@ -1115,8 +1115,8 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> set_oper
 {
   using size_type = thrust::detail::it_difference_t<KeysIt1>;
 
-  size_type num_keys1 = static_cast<size_type>(::cuda::std::distance(keys1_first, keys1_last));
-  size_type num_keys2 = static_cast<size_type>(::cuda::std::distance(keys2_first, keys2_last));
+  auto num_keys1 = static_cast<size_type>(::cuda::std::distance(keys1_first, keys1_last));
+  auto num_keys2 = static_cast<size_type>(::cuda::std::distance(keys2_first, keys2_last));
 
   if (num_keys1 + num_keys2 == 0)
   {
@@ -1163,7 +1163,7 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> set_oper
   status = core::detail::alias_storage(ptr, storage_size, allocations, allocation_sizes);
   cuda_cub::throw_on_error(status, "set_operations failed on 2nd alias_storage");
 
-  std::size_t* d_output_count = thrust::detail::aligned_reinterpret_cast<std::size_t*>(allocations[0]);
+  auto* d_output_count = thrust::detail::aligned_reinterpret_cast<std::size_t*>(allocations[0]);
 
   THRUST_DOUBLE_INDEX_TYPE_DISPATCH(
     status,

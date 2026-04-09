@@ -376,7 +376,7 @@ struct DispatchReduce
     }
 
     // Alias the allocation for the privatized per-block reductions
-    AccumT* d_block_reductions = static_cast<AccumT*>(allocations[0]);
+    auto* d_block_reductions = static_cast<AccumT*>(allocations[0]);
 
     // Get grid size for device_reduce_sweep_kernel
     int reduce_grid_size = even_share.grid_size;
@@ -663,7 +663,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_passes(
   }
 
   // Alias the allocation for the privatized per-block reductions
-  AccumT* d_block_reductions = static_cast<AccumT*>(allocations[0]);
+  auto* d_block_reductions = static_cast<AccumT*>(allocations[0]);
 
   // Get grid size for device_reduce_sweep_kernel
   const int reduce_grid_size = even_share.grid_size;

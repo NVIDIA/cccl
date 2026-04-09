@@ -167,10 +167,10 @@ bool validate_results(
   const c2h::host_vector<Index>& h_out_lengths  = out_lengths;
   const c2h::host_vector<Index>& h_out_num_runs = out_num_runs;
 
-  const cuda::std::size_t num_runs = static_cast<cuda::std::size_t>(h_out_num_runs.front());
+  const auto num_runs = static_cast<cuda::std::size_t>(h_out_num_runs.front());
   for (cuda::std::size_t run = 0; run < num_runs; ++run)
   {
-    const cuda::std::size_t first_index = static_cast<cuda::std::size_t>(h_out_offsets[run]);
+    const auto first_index              = static_cast<cuda::std::size_t>(h_out_offsets[run]);
     const cuda::std::size_t final_index = first_index + static_cast<cuda::std::size_t>(h_out_lengths[run]);
 
     // Ensure we started a new run

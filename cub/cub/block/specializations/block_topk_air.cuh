@@ -242,10 +242,10 @@ private:
     for (int pass = 0; pass < num_passes; ++pass)
     {
       // Bit-range & mask of the current pass
-      const int pass_end_bit           = end_bit - pass * RadixBits;
-      const int pass_begin_bit         = (::cuda::std::max) (pass_end_bit - RadixBits, begin_bit);
-      const int pass_bits              = pass_end_bit - pass_begin_bit;
-      const bit_ordered_type pass_mask = ::cuda::bitmask<bit_ordered_type>(pass_begin_bit, pass_bits);
+      const int pass_end_bit   = end_bit - pass * RadixBits;
+      const int pass_begin_bit = (::cuda::std::max) (pass_end_bit - RadixBits, begin_bit);
+      const int pass_bits      = pass_end_bit - pass_begin_bit;
+      const auto pass_mask     = ::cuda::bitmask<bit_ordered_type>(pass_begin_bit, pass_bits);
 
       // Zero-initialize histograms for the current pass
       init_histograms();
@@ -329,8 +329,8 @@ private:
 
     // Get bit-twiddled sortkeys. For float keys, track which were -0.0 (normalized to +0.0 for ranking) so we can
     // restore -0.0 in the output via a bitvector; no extra key buffer.
-    bit_ordered_type(&unsigned_keys)[ItemsPerThread] = reinterpret_cast<bit_ordered_type(&)[ItemsPerThread]>(keys);
-    constexpr int flip_back_num_words                = ::cuda::ceil_div(items_per_thread, 32);
+    auto& unsigned_keys               = reinterpret_cast<bit_ordered_type(&)[ItemsPerThread]>(keys);
+    constexpr int flip_back_num_words = ::cuda::ceil_div(items_per_thread, 32);
     [[maybe_unused]] ::cuda::std::uint32_t flip_back_bits[flip_back_num_words] = {};
     if constexpr (::cuda::is_floating_point_v<KeyT>)
     {

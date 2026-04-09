@@ -104,7 +104,7 @@ private:
   /// Return a binned floating-point bin
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static ftype binned_bins(int index)
   {
-    ftype* bins = get_shared_bin_array<ftype, max_index + max_fold>();
+    auto* bins = get_shared_bin_array<ftype, max_index + max_fold>();
     return bins[index];
   }
 

@@ -55,7 +55,7 @@ template <typename RangeOffsetT, typename ByteOffsetT, typename RangeSizeT>
 c2h::host_vector<ByteOffsetT>
 GetShuffledRangeOffsets(const c2h::host_vector<RangeSizeT>& range_sizes, const std::uint_fast32_t seed = 320981U)
 {
-  RangeOffsetT num_ranges = static_cast<RangeOffsetT>(range_sizes.size());
+  auto num_ranges = static_cast<RangeOffsetT>(range_sizes.size());
 
   // We're remapping the i-th range to pmt_idxs[i]
   std::mt19937 rng(seed);
@@ -380,12 +380,12 @@ int main(int argc, char** argv)
   for (const auto& size_range : size_ranges)
   {
     // The most granular type being copied.
-    using AtomicCopyT         = int64_t;
-    RangeSizeT min_range_size = static_cast<RangeSizeT>(cuda::round_up(size_range.first, sizeof(AtomicCopyT)));
-    RangeSizeT max_range_size =
+    using AtomicCopyT   = int64_t;
+    auto min_range_size = static_cast<RangeSizeT>(cuda::round_up(size_range.first, sizeof(AtomicCopyT)));
+    auto max_range_size =
       static_cast<RangeSizeT>(cuda::round_up(size_range.second, static_cast<RangeSizeT>(sizeof(AtomicCopyT))));
-    double average_range_size      = (min_range_size + max_range_size) / 2.0;
-    RangeOffsetT target_num_ranges = static_cast<RangeOffsetT>(target_copy_size / average_range_size);
+    double average_range_size = (min_range_size + max_range_size) / 2.0;
+    auto target_num_ranges    = static_cast<RangeOffsetT>(target_copy_size / average_range_size);
 
     // Run tests with output ranges being consecutive
     RunTest<AtomicCopyT, RangeOffsetT, RangeSizeT, ByteOffsetT>(
@@ -399,12 +399,12 @@ int main(int argc, char** argv)
   for (const auto& size_range : size_ranges)
   {
     // The most granular type being copied.
-    using AtomicCopyT         = cuda::std::tuple<int64_t, int32_t, int16_t, char, char>;
-    RangeSizeT min_range_size = static_cast<RangeSizeT>(cuda::round_up(size_range.first, sizeof(AtomicCopyT)));
-    RangeSizeT max_range_size =
+    using AtomicCopyT   = cuda::std::tuple<int64_t, int32_t, int16_t, char, char>;
+    auto min_range_size = static_cast<RangeSizeT>(cuda::round_up(size_range.first, sizeof(AtomicCopyT)));
+    auto max_range_size =
       static_cast<RangeSizeT>(cuda::round_up(size_range.second, static_cast<RangeSizeT>(sizeof(AtomicCopyT))));
-    double average_range_size      = (min_range_size + max_range_size) / 2.0;
-    RangeOffsetT target_num_ranges = static_cast<RangeOffsetT>(target_copy_size / average_range_size);
+    double average_range_size = (min_range_size + max_range_size) / 2.0;
+    auto target_num_ranges    = static_cast<RangeOffsetT>(target_copy_size / average_range_size);
 
     // Run tests with output ranges being consecutive
     RunTest<AtomicCopyT, RangeOffsetT, RangeSizeT, ByteOffsetT>(

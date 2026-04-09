@@ -158,7 +158,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
   _CCCL_GRID_CONSTANT const OffsetT target_merged_tiles_number,
   _CCCL_GRID_CONSTANT const int items_per_tile)
 {
-  const OffsetT partition_idx = static_cast<OffsetT>(blockDim.x * blockIdx.x + threadIdx.x);
+  const auto partition_idx = static_cast<OffsetT>(blockDim.x * blockIdx.x + threadIdx.x);
   if (partition_idx < num_partitions)
   {
     AgentPartition<KeyIteratorT, OffsetT, CompareOpT, KeyT>{

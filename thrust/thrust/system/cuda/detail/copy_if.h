@@ -123,7 +123,7 @@ struct DispatchCopyIf
     }
 
     // Memory allocation for the number of selected output items
-    OffsetT* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<OffsetT*>(allocations[1]);
+    auto* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<OffsetT*>(allocations[1]);
 
     // Run algorithm
     status = cub::
@@ -166,7 +166,7 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if(
 {
   using size_type = thrust::detail::it_difference_t<InputIt>;
 
-  size_type num_items       = static_cast<size_type>(::cuda::std::distance(first, last));
+  auto num_items            = static_cast<size_type>(::cuda::std::distance(first, last));
   cudaError_t status        = cudaSuccess;
   size_t temp_storage_bytes = 0;
 

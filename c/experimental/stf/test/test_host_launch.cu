@@ -84,7 +84,7 @@ C2H_TEST("host_launch with stream context", "[host_launch]")
   stf_task_set_symbol(t, "fill");
   stf_task_add_dep(t, lData, STF_WRITE);
   stf_task_start(t);
-  double* dData = (double*) stf_task_get(t, 0);
+  auto* dData = (double*) stf_task_get(t, 0);
   fill_kernel<<<2, 128, 0, (cudaStream_t) stf_task_get_custream(t)>>>((int) N, dData, 42.0);
   stf_task_end(t);
   stf_task_destroy(t);
@@ -134,8 +134,8 @@ C2H_TEST("host_launch with graph context", "[host_launch]")
   stf_task_add_dep(t, lData, STF_WRITE);
   stf_task_enable_capture(t);
   stf_task_start(t);
-  double* dData       = (double*) stf_task_get(t, 0);
-  cudaStream_t stream = (cudaStream_t) stf_task_get_custream(t);
+  auto* dData = (double*) stf_task_get(t, 0);
+  auto stream = (cudaStream_t) stf_task_get_custream(t);
   fill_kernel<<<2, 128, 0, stream>>>((int) N, dData, 42.0);
   stf_task_end(t);
   stf_task_destroy(t);

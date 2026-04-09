@@ -96,7 +96,7 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource allocation", "[memory_resource]", 
     return;
   }
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
-  managed_resource res = get_resource<managed_resource>();
+  auto res = get_resource<managed_resource>();
   cuda::stream stream{cuda::device_ref{0}};
 
   { // allocate_sync / deallocate_sync
@@ -188,9 +188,9 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", 
     return;
   }
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
-  managed_resource first = get_resource<managed_resource>();
+  auto first = get_resource<managed_resource>();
   { // comparison against a plain managed_memory_resource
-    managed_resource second = get_resource<managed_resource>();
+    auto second = get_resource<managed_resource>();
     CHECK((first == second));
     CHECK(!(first != second));
   }
@@ -212,7 +212,7 @@ C2H_CCCLRT_TEST_LIST("managed_memory_resource comparison", "[memory_resource]", 
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
   { // comparison against a managed_memory_resource wrapped inside a synchronous_resource_ref<device_accessible>
-    managed_resource second = get_resource<managed_resource>();
+    auto second = get_resource<managed_resource>();
     cuda::mr::synchronous_resource_ref<::cuda::mr::device_accessible> second_ref{second};
     CHECK((first == second_ref));
     CHECK(!(first != second_ref));

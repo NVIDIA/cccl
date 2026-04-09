@@ -228,7 +228,7 @@ C2H_TEST("DeviceTopK::MaxPairs: Test for large num_items", "[pairs][topk][device
 
   // Set input size
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  const num_items_t num_items_max = detail::make_large_offset<num_items_t>();
+  const auto num_items_max        = detail::make_large_offset<num_items_t>();
   const num_items_t num_items_min = num_items_max > 10000 ? num_items_max - 10000ULL : num_items_t{0};
   const num_items_t num_items =
     GENERATE_COPY(values({num_items_max, static_cast<num_items_t>(num_items_max - 1), num_items_t{1}, num_items_t{3}}),

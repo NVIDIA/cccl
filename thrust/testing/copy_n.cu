@@ -18,7 +18,7 @@ void TestCopyNFromConstIterator()
 
   std::vector<T> v{0, 1, 2, 3, 4};
 
-  std::vector<int>::const_iterator begin = v.begin();
+  auto begin = v.begin();
 
   // copy to host_vector
   thrust::host_vector<T> h(5, (T) 10);
@@ -150,7 +150,7 @@ void TestCopyNListTo()
 
   ASSERT_EQUAL(l.size(), 5lu);
 
-  typename std::list<T>::const_iterator iter = l.begin();
+  auto iter = l.begin();
   ASSERT_EQUAL(*iter, T(0));
   iter++;
   ASSERT_EQUAL(*iter, T(1));

@@ -277,8 +277,8 @@ private:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i <= Log2<MAX_NUM_ITEMS>::VALUE; i++)
     {
-      OffsetT mid = cub::MidPoint<OffsetT>(lower_bound, upper_bound);
-      mid         = (::cuda::std::min) (mid, num_items - 1);
+      auto mid = cub::MidPoint<OffsetT>(lower_bound, upper_bound);
+      mid      = (::cuda::std::min) (mid, num_items - 1);
 
       if (val < input[mid])
       {

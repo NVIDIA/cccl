@@ -389,8 +389,8 @@ void TestUniqueWithMagnitude(int magnitude)
   using offset_t      = std::int64_t;
   using equality_op_t = div_n_equality_op<offset_t>;
 
-  offset_t run_length_of_equal_items = offset_t{10};
-  equality_op_t equality_op          = equality_op_t{run_length_of_equal_items};
+  auto run_length_of_equal_items = offset_t{10};
+  auto equality_op               = equality_op_t{run_length_of_equal_items};
 
   // Prepare input
   offset_t num_items = offset_t{1ull} << magnitude;
@@ -403,7 +403,7 @@ void TestUniqueWithMagnitude(int magnitude)
   auto unique_out_end = thrust::unique_copy(begin, end, unique_out.begin(), equality_op);
 
   // Ensure number of selected items are correct
-  offset_t num_selected_out = static_cast<offset_t>(cuda::std::distance(unique_out.begin(), unique_out_end));
+  auto num_selected_out = static_cast<offset_t>(cuda::std::distance(unique_out.begin(), unique_out_end));
   ASSERT_EQUAL(num_selected_out, expected_num_unique);
   unique_out.resize(expected_num_unique);
 

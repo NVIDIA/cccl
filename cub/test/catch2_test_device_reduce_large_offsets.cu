@@ -67,7 +67,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
 
   CAPTURE(c2h::type_name<offset_t>());
 
-  const offset_t num_items_max = detail::make_large_offset<offset_t>();
+  const auto num_items_max     = detail::make_large_offset<offset_t>();
   const offset_t num_items_min = num_items_max > 10000 ? num_items_max - 10000ULL : offset_t{0};
 
   // Generate the input sizes to test for

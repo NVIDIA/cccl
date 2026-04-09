@@ -36,7 +36,6 @@ Checks:
   - '-modernize-type-traits'
   - '-modernize-use-nullptr'
   - '-modernize-return-braced-init-list'
-  - '-modernize-use-auto'
   - '-modernize-use-equals-delete'
   - '-modernize-pass-by-value'
   - '-modernize-loop-convert'

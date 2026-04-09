@@ -52,7 +52,7 @@ C2H_TEST("Device reduce-by-key works with iterators", "[by_key][reduce][device]"
     C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
 
   // Get array of keys from segment offsets
-  const offset_t num_segments = static_cast<offset_t>(segment_offsets.size() - 1);
+  const auto num_segments = static_cast<offset_t>(segment_offsets.size() - 1);
   c2h::device_vector<key_t> segment_keys(num_items);
   c2h::init_key_segments(segment_offsets, segment_keys);
   auto d_keys_it = segment_keys.cbegin();

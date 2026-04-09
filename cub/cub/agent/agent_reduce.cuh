@@ -311,7 +311,7 @@ struct AgentReduceImpl
 
       // Load items as vector items
       InputT input_items[ITEMS_PER_THREAD];
-      VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
+      auto* vec_items = reinterpret_cast<VectorT*>(input_items);
 
       // Alias items as an array of VectorT and load it in striped fashion
       static constexpr int words = ITEMS_PER_THREAD / VECTOR_LOAD_LENGTH;

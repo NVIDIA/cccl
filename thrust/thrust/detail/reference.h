@@ -439,7 +439,7 @@ private:
   template <typename System>
   _CCCL_HOST_DEVICE value_type strip_const_get_value(System const& system) const
   {
-    System& non_const_system = const_cast<System&>(system);
+    auto& non_const_system = const_cast<System&>(system);
 
     using thrust::system::detail::generic::get_value;
     return get_value(thrust::detail::derived_cast(non_const_system), ptr);
@@ -464,7 +464,7 @@ private:
   template <typename System, typename OtherPointer>
   _CCCL_HOST_DEVICE void strip_const_assign_value(System const& system, OtherPointer src) const
   {
-    System& non_const_system = const_cast<System&>(system);
+    auto& non_const_system = const_cast<System&>(system);
 
     using thrust::system::detail::generic::assign_value;
     assign_value(thrust::detail::derived_cast(non_const_system), ptr, src);

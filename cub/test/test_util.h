@@ -421,7 +421,7 @@ template <typename T>
 T RandomValue(T max)
 {
   unsigned int bits;
-  unsigned int max_int = (unsigned int) -1;
+  auto max_int = (unsigned int) -1;
   do
   {
     RandomBits(bits);

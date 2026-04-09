@@ -292,7 +292,7 @@ ThreadLoadVolatilePointer(const T* ptr, ::cuda::std::false_type /*is_primitive*/
   constexpr int VOLATILE_MULTIPLE = sizeof(T) / sizeof(VolatileWord);
 
   T retval;
-  VolatileWord* words = reinterpret_cast<VolatileWord*>(&retval);
+  auto* words = reinterpret_cast<VolatileWord*>(&retval);
   UnrolledCopy<VOLATILE_MULTIPLE>(reinterpret_cast<const volatile VolatileWord*>(ptr), words);
   return retval;
 }

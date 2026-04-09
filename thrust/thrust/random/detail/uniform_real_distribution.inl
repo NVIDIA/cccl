@@ -49,7 +49,7 @@ _CCCL_HOST_DEVICE typename uniform_real_distribution<RealType>::result_type
 uniform_real_distribution<RealType>::operator()(UniformRandomNumberGenerator& urng, const param_type& parm)
 {
   // call the urng & map its result to [0,1)
-  result_type result = static_cast<result_type>(urng() - UniformRandomNumberGenerator::min);
+  auto result = static_cast<result_type>(urng() - UniformRandomNumberGenerator::min);
 
   // adding one to the denominator ensures that the interval is half-open at 1.0
   // XXX adding 1.0 to a potentially large floating point number seems like a bad idea

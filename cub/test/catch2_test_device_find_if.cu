@@ -165,7 +165,7 @@ C2H_TEST("Device find_if works with non primitive iterator", "[device][find_if]"
   constexpr offset_t min_items = 1;
   constexpr offset_t max_items = 10000000; // 10M items for reasonable test time
 
-  input_t val_to_find = static_cast<input_t>(GENERATE_COPY(take(1, random(min_items, max_items))));
+  auto val_to_find = static_cast<input_t>(GENERATE_COPY(take(1, random(min_items, max_items))));
   // Generate the input sizes to test for
   const offset_t num_items = GENERATE_COPY(
     take(1, random(min_items, max_items)),

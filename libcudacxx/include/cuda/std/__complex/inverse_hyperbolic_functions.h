@@ -195,7 +195,7 @@ template <class _Tp>
     // but not small enough that the asinh(x) ~ log(2x) estimate does
     // not break down. We are not able to reduce this with a single simple reduction,
     // so we do a fast/inlined frexp/ldexp:
-    const int32_t __exp_biased = static_cast<int32_t>(::cuda::std::__fp_get_storage(__max) >> __mant_nbits);
+    const auto __exp_biased = static_cast<int32_t>(::cuda::std::__fp_get_storage(__max) >> __mant_nbits);
 
     // Get a factor such that (__max * __exp_mul_factor) <= __max_allowed_exponent
     const __uint_t __exp_reduce_factor =
@@ -491,7 +491,7 @@ template <class _Tp>
     // but not small enough that the acosh(x) ~ log(2x) estimate does
     // not break down. We are not able to reduce this with a single simple reduction,
     // so we do a fast/inlined frexp/ldexp:
-    const int32_t __exp_biased = static_cast<int32_t>(::cuda::std::__fp_get_storage(__max) >> __mant_nbits);
+    const auto __exp_biased = static_cast<int32_t>(::cuda::std::__fp_get_storage(__max) >> __mant_nbits);
 
     // Get a factor such that (__max * __exp_mul_factor) <= __max_allowed_exponent
     const __uint_t __exp_reduce_factor =

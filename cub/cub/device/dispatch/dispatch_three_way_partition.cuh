@@ -243,7 +243,7 @@ struct DispatchThreeWayPartitionIf
 
     // Initialize the streaming context with the temporary storage for double-buffering the previously selected items
     // and the total number (across all partitions) of items
-    OffsetT* tmp_num_selected_out = static_cast<OffsetT*>(allocations[1]);
+    auto* tmp_num_selected_out = static_cast<OffsetT*>(allocations[1]);
     streaming_context_t streaming_context{
       tmp_num_selected_out, (tmp_num_selected_out + num_counters_per_pass), (num_partitions <= 1)};
 

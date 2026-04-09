@@ -89,7 +89,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t dispatch_select_unique(
   void* allocations[2]            = {nullptr, nullptr};
 
   // The flag iterator is not used for unique, so we set it to nullptr.
-  flag_iterator_t flag_it = static_cast<flag_iterator_t>(nullptr);
+  auto flag_it = static_cast<flag_iterator_t>(nullptr);
 
   // Query algorithm memory requirements
   status = cub::DispatchSelectIf<
@@ -128,7 +128,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t dispatch_select_unique(
   }
 
   // Memory allocation for the number of selected output items
-  OffsetT* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<OffsetT*>(allocations[1]);
+  auto* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<OffsetT*>(allocations[1]);
 
   // Run algorithm
   status = cub::DispatchSelectIf<

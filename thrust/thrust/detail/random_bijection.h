@@ -58,14 +58,14 @@ public:
     // We cannot use the above because thrust PRNG generators incorrectly implement URBG requirements.
     // Mitchell, Rory, et al. "Bandwidth-optimal random shuffling for GPUs." ACM Transactions on Parallel Computing 9.1
     // (2022): 1-20.
-    uint32_t L = static_cast<uint32_t>(val >> R_bits);
-    uint32_t R = static_cast<uint32_t>(val & R_mask);
-    for (uint32_t i = 0; i < num_rounds; i++)
+    auto L = static_cast<uint32_t>(val >> R_bits);
+    auto R = static_cast<uint32_t>(val & R_mask);
+    for (const auto k : key)
     {
       constexpr uint64_t m0  = 0xD2B74407B1CE6E93;
       const uint64_t product = m0 * L;
-      uint32_t F_k           = (product >> 32) ^ key[i];
-      uint32_t B_k           = static_cast<uint32_t>(product);
+      uint32_t F_k           = (product >> 32) ^ k;
+      auto B_k               = static_cast<uint32_t>(product);
       uint32_t L_prime       = F_k ^ R;
 
       uint32_t R_prime = (B_k << (R_bits - L_bits)) | R >> L_bits;

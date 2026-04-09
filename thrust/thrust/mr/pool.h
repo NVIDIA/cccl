@@ -223,7 +223,7 @@ public:
       chunk_descriptor_ptr alloc = m_allocated;
       m_allocated                = thrust::raw_reference_cast(*m_allocated).next;
 
-      void_ptr p = static_cast<void_ptr>(
+      auto p = static_cast<void_ptr>(
         static_cast<char_ptr>(static_cast<void_ptr>(alloc)) - thrust::raw_reference_cast(*alloc).size);
       m_upstream->do_deallocate(
         p, thrust::raw_reference_cast(*alloc).size + sizeof(chunk_descriptor), m_options.alignment);
@@ -237,7 +237,7 @@ public:
 
       oversized_block_descriptor desc = thrust::raw_reference_cast(*alloc);
 
-      void_ptr p = static_cast<void_ptr>(static_cast<char_ptr>(static_cast<void_ptr>(alloc)) - desc.current_size);
+      auto p = static_cast<void_ptr>(static_cast<char_ptr>(static_cast<void_ptr>(alloc)) - desc.current_size);
       m_upstream->do_deallocate(p, desc.size + sizeof(oversized_block_descriptor), desc.alignment);
     }
 
@@ -334,7 +334,7 @@ public:
 
       // no fitting cached block found; allocate a new one that's just up to the specs
       void_ptr allocated = m_upstream->do_allocate(bytes + sizeof(oversized_block_descriptor), alignment);
-      oversized_block_descriptor_ptr block =
+      auto block =
         static_cast<oversized_block_descriptor_ptr>(static_cast<void_ptr>(static_cast<char_ptr>(allocated) + bytes));
 
       oversized_block_descriptor desc;
@@ -397,7 +397,7 @@ public:
       std::size_t chunk_size = block_size * n;
 
       void_ptr allocated = m_upstream->do_allocate(chunk_size + sizeof(chunk_descriptor), m_options.alignment);
-      chunk_descriptor_ptr chunk =
+      auto chunk =
         static_cast<chunk_descriptor_ptr>(static_cast<void_ptr>(static_cast<char_ptr>(allocated) + chunk_size));
 
       chunk_descriptor chunk_desc;
@@ -408,7 +408,7 @@ public:
 
       for (std::size_t i = 0; i < n; ++i)
       {
-        block_descriptor_ptr block = static_cast<block_descriptor_ptr>(
+        auto block = static_cast<block_descriptor_ptr>(
           static_cast<void_ptr>(static_cast<char_ptr>(allocated) + block_size * i + bytes));
 
         block_descriptor block_desc;
@@ -435,8 +435,7 @@ public:
     // the deallocated block is oversized and/or overaligned
     if (n > m_options.largest_block_size || alignment > m_options.alignment)
     {
-      oversized_block_descriptor_ptr block =
-        static_cast<oversized_block_descriptor_ptr>(static_cast<void_ptr>(static_cast<char_ptr>(p) + n));
+      auto block = static_cast<oversized_block_descriptor_ptr>(static_cast<void_ptr>(static_cast<char_ptr>(p) + n));
 
       oversized_block_descriptor desc = *block;
       assert(desc.current_size == n);
@@ -498,7 +497,7 @@ public:
 
     n = static_cast<std::size_t>(1) << n_log2;
 
-    block_descriptor_ptr block = static_cast<block_descriptor_ptr>(static_cast<void_ptr>(static_cast<char_ptr>(p) + n));
+    auto block = static_cast<block_descriptor_ptr>(static_cast<void_ptr>(static_cast<char_ptr>(p) + n));
 
     block_descriptor desc;
     desc.next        = bucket.free_list;

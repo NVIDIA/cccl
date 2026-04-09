@@ -195,7 +195,7 @@ struct BlockReduceRaking
 
         // sync before re-using shmem (warp_storage/raking_grid are aliased)
         static_assert(RAKING_THREADS <= warp_threads, "RAKING_THREADS must be <= warp size.");
-        unsigned int mask = static_cast<unsigned int>((1ull << RAKING_THREADS) - 1);
+        auto mask = static_cast<unsigned int>((1ull << RAKING_THREADS) - 1);
         __syncwarp(mask);
 
         partial = WarpReduce(temp_storage.warp_storage)

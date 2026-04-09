@@ -387,7 +387,7 @@ private:
     ::cuda::std::bool_constant<KEYS_ONLY> is_keys_only,
     DecomposerT decomposer = {})
   {
-    bit_ordered_type(&unsigned_keys)[ItemsPerThread] = reinterpret_cast<bit_ordered_type(&)[ItemsPerThread]>(keys);
+    auto(&unsigned_keys)[ItemsPerThread] = reinterpret_cast<bit_ordered_type(&)[ItemsPerThread]>(keys);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int KEY = 0; KEY < ItemsPerThread; KEY++)
@@ -466,7 +466,7 @@ public:
     ::cuda::std::bool_constant<KEYS_ONLY> is_keys_only,
     DecomposerT decomposer = {})
   {
-    bit_ordered_type(&unsigned_keys)[ItemsPerThread] = reinterpret_cast<bit_ordered_type(&)[ItemsPerThread]>(keys);
+    auto(&unsigned_keys)[ItemsPerThread] = reinterpret_cast<bit_ordered_type(&)[ItemsPerThread]>(keys);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int KEY = 0; KEY < ItemsPerThread; KEY++)
