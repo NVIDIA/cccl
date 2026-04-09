@@ -152,7 +152,7 @@ _CCCL_HOST_API void __copy_bytes_impl(
 //! @param __dst Destination to copy into
 //! @param __config Configuration for the copy
 _CCCL_TEMPLATE(typename _SrcTy, typename _DstTy)
-_CCCL_REQUIRES(
+_CCCL_REQUIRES( // NOLINT(modernize-type-traits)
   __spannable<transformed_device_argument_t<_SrcTy>> _CCCL_AND __spannable<transformed_device_argument_t<_DstTy>>)
 _CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst, copy_configuration __config = {})
 {
@@ -166,7 +166,7 @@ _CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __d
 //! @overload
 //! @note This overload accepts mdspan-compatible types.
 _CCCL_TEMPLATE(typename _SrcTy, typename _DstTy)
-_CCCL_REQUIRES(
+_CCCL_REQUIRES( // NOLINT(modernize-type-traits)
   __mdspannable<transformed_device_argument_t<_SrcTy>> _CCCL_AND __mdspannable<transformed_device_argument_t<_DstTy>>)
 _CCCL_HOST_API void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst, copy_configuration __config = {})
 {

@@ -127,7 +127,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    if constexpr (std::is_same<value_t, output_t>::value)
+    if constexpr (std::is_same_v<value_t, output_t>)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
@@ -158,7 +158,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    if constexpr (std::is_same<value_t, output_t>::value)
+    if constexpr (std::is_same_v<value_t, output_t>)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
@@ -190,7 +190,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    if constexpr (std::is_same<value_t, output_t>::value)
+    if constexpr (std::is_same_v<value_t, output_t>)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
@@ -227,7 +227,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    if constexpr (std::is_same<value_t, output_t>::value)
+    if constexpr (std::is_same_v<value_t, output_t>)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
