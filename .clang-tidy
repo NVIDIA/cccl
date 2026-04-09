@@ -35,7 +35,6 @@ Checks:
   - '-modernize-use-nodiscard'
   - '-modernize-use-default-member-init'
   - '-modernize-use-equals-default'
-  - '-modernize-use-bool-literals'
   - '-modernize-type-traits'
   - '-modernize-use-nullptr'
   - '-modernize-return-braced-init-list'

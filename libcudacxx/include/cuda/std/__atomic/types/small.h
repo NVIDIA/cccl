@@ -152,7 +152,7 @@ _CCCL_API bool __atomic_compare_exchange_strong_dispatch(
 {
   using _Tp        = __atomic_underlying_t<_Sto>;
   auto const __old = *__expected;
-  while (1)
+  while (true)
   {
     if (__atomic_compare_exchange_weak_dispatch(__a, __expected, __value, __success, __failure, _Sco{}))
     {
