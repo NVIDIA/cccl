@@ -282,13 +282,13 @@ struct __type_info
     return !(__a == __b);
   }
 
+  __type_info& operator=(__type_info const&) = delete;
+
 private:
   friend struct __type_info_ptr_;
   friend struct __type_info_ref_;
 
-  __type_info(__type_info const&)            = default; // needed by __type_info_ptr_::operator*() before C++17
-  __type_info& operator=(__type_info const&) = delete;
-
+  __type_info(__type_info const&) = default; // needed by __type_info_ptr_::operator*() before C++17
   __type_info_impl (*__pfn_)() noexcept;
 };
 
@@ -373,8 +373,8 @@ struct __type_info
   }
 
 #  if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_HOST_API friend constexpr bool
-  operator!=(const __type_info& __lhs, const __type_info& __rhs) noexcept
+  [[nodiscard]]
+  _CCCL_HOST_API friend constexpr bool operator!=(const __type_info& __lhs, const __type_info& __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
