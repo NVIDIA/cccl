@@ -2100,7 +2100,7 @@ private:
   {
     if (not input_is_primitive)
     {
-      return {};
+      return {}; // fall back to SM90 tunings
     }
 
     // select::if
