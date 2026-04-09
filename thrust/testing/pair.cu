@@ -7,7 +7,7 @@
 template <typename T>
 struct TestPairManipulation
 {
-  void operator()(void)
+  void operator()()
   {
     using P = thrust::pair<T, T>;
 
@@ -76,7 +76,7 @@ SimpleUnitTest<TestPairManipulation, NumericTypes> TestPairManipulationInstance;
 template <typename T>
 struct TestPairComparison
 {
-  void operator()(void)
+  void operator()()
   {
     using P = thrust::pair<T, T>;
 
@@ -226,7 +226,7 @@ SimpleUnitTest<TestPairComparison, NumericTypes> TestPairComparisonInstance;
 template <typename T>
 struct TestPairGet
 {
-  void operator()(void)
+  void operator()()
   {
     thrust::host_vector<T> data = unittest::random_integers<T>(2);
 
@@ -323,7 +323,7 @@ void TestPairStructuredBindings()
 }
 DECLARE_UNITTEST(TestPairStructuredBindings);
 
-void TestPairCTAD(void)
+void TestPairCTAD()
 {
   const int a = 42;
   const int b = 1337;
