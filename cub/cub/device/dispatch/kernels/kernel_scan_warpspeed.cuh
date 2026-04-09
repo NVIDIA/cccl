@@ -110,8 +110,9 @@ allocResources(warpspeed::SyncHandler& syncHandler, warpspeed::SmemAllocator& sm
     warpspeed::SmemResource<SumThreadAndWarpT>(syncHandler, smemAllocator, warpspeed::Stages{numStages}),
   };
 
+  constexpr auto policy = get_warpspeed_policy<PolicySelector>();
   setup_scan_resources(
-    get_warpspeed_policy<PolicySelector>(),
+    policy,
     syncHandler,
     smemAllocator,
     res.smemInOut,
