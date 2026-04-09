@@ -95,11 +95,11 @@ public:
       , m_end(last)
   {}
 
-  iterator begin() const
+  [[nodiscard]] iterator begin() const
   {
     return m_begin;
   }
-  iterator end() const
+  [[nodiscard]] iterator end() const
   {
     return m_end;
   }

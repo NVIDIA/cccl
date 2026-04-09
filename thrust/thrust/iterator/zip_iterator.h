@@ -214,7 +214,7 @@ public:
   //! \p tuple of iterators.
   //!
   //! \return A \c const reference to this \p zip_iterator's \p tuple  of iterators.
-  inline _CCCL_HOST_DEVICE const IteratorTuple& get_iterator_tuple() const
+  [[nodiscard]] inline _CCCL_HOST_DEVICE const IteratorTuple& get_iterator_tuple() const
   {
     return m_iterator_tuple;
   }
@@ -230,13 +230,13 @@ private:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <size_t... Is>
-  _CCCL_HOST_DEVICE typename super_t::reference dereference_impl(index_sequence<Is...>) const
+  [[nodiscard]] _CCCL_HOST_DEVICE typename super_t::reference dereference_impl(index_sequence<Is...>) const
   {
     return {*::cuda::std::get<Is>(m_iterator_tuple)...};
   }
 
   // Dereferencing returns a tuple built from the dereferenced iterators in the iterator tuple.
-  _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+  [[nodiscard]] _CCCL_HOST_DEVICE typename super_t::reference dereference() const
   {
     return dereference_impl(index_seq{});
   }
@@ -245,7 +245,7 @@ private:
   // implementation, which considers the entire tuple.
   _CCCL_EXEC_CHECK_DISABLE
   template <typename OtherIteratorTuple>
-  inline _CCCL_HOST_DEVICE bool equal(const zip_iterator<OtherIteratorTuple>& other) const
+  [[nodiscard]] inline _CCCL_HOST_DEVICE bool equal(const zip_iterator<OtherIteratorTuple>& other) const
   {
     return ::cuda::std::get<0>(get_iterator_tuple()) == ::cuda::std::get<0>(other.get_iterator_tuple());
   }
@@ -291,7 +291,7 @@ private:
 
   // Distance is calculated using the first iterator in the tuple.
   template <typename OtherIteratorTuple>
-  inline _CCCL_HOST_DEVICE typename super_t::difference_type
+  [[nodiscard]] inline _CCCL_HOST_DEVICE typename super_t::difference_type
   distance_to(const zip_iterator<OtherIteratorTuple>& other) const
   {
     return ::cuda::std::distance(

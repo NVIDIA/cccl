@@ -71,17 +71,17 @@ public:
 
   ~tagged_allocator() = default;
 
-  _CCCL_HOST_DEVICE pointer address(reference x) const
+  [[nodiscard]] _CCCL_HOST_DEVICE pointer address(reference x) const
   {
     return &x;
   }
 
-  _CCCL_HOST_DEVICE const_pointer address(const_reference x) const
+  [[nodiscard]] _CCCL_HOST_DEVICE const_pointer address(const_reference x) const
   {
     return &x;
   }
 
-  size_type max_size() const
+  [[nodiscard]] size_type max_size() const
   {
     return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T);
   }

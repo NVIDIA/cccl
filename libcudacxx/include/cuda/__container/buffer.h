@@ -137,7 +137,7 @@ private:
 
   //! @brief Helper to return an resource_ref to the currently used resource.
   //! Used to grow the buffer
-  __resource_ref_t __borrow_resource() const noexcept
+  [[nodiscard]] __resource_ref_t __borrow_resource() const noexcept
   {
     return const_cast<__resource_t&>(__buf_.memory_resource());
   }

@@ -47,7 +47,7 @@ public:
     }
   }
 
-  _CCCL_HOST_DEVICE std::uint64_t size() const
+  [[nodiscard]] _CCCL_HOST_DEVICE std::uint64_t size() const
   {
     return 1ull << (L_bits + R_bits);
   }
@@ -130,7 +130,7 @@ public:
     return static_cast<IndexType>(upcast_i);
   }
 
-  _CCCL_HOST_DEVICE IndexType size() const
+  [[nodiscard]] _CCCL_HOST_DEVICE IndexType size() const
   {
     return n;
   }

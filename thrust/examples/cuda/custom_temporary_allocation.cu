@@ -36,7 +36,7 @@ struct not_my_pointer_exception : std::exception
     message = s.str();
   }
 
-  const char* what() const noexcept override
+  [[nodiscard]] const char* what() const noexcept override
   {
     return message.c_str();
   }

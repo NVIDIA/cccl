@@ -146,7 +146,7 @@ private:
   friend class iterator_core_access;
 
   template <typename SuperRef = typename super_t::reference>
-  _CCCL_HOST_DEVICE SuperRef dereference() const
+  [[nodiscard]] _CCCL_HOST_DEVICE SuperRef dereference() const
   {
     const auto& derived_ptr = static_cast<const derived_type&>(*this);
     if constexpr (::cuda::std::is_reference_v<SuperRef>)
@@ -245,7 +245,7 @@ public:
   /*! \p get returns this \p pointer's encapsulated raw pointer.
    *  \return This \p pointer's raw pointer.
    */
-  _CCCL_HOST_DEVICE Element* get() const
+  [[nodiscard]] _CCCL_HOST_DEVICE Element* get() const
   {
     return super_t::base();
   }

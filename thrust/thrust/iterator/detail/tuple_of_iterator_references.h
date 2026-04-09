@@ -183,7 +183,8 @@ public:
     class... Us,
     size_t... Id,
     ::cuda::std::enable_if_t<is_compatible_tuple_v<::cuda::std::tuple<Us...>, ::cuda::std::tuple<Ts...>>, int> = 0>
-  _CCCL_HOST_DEVICE constexpr ::cuda::std::tuple<Us...> __to_tuple(::cuda::std::__tuple_indices<Id...>) const
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr ::cuda::std::tuple<Us...>
+    __to_tuple(::cuda::std::__tuple_indices<Id...>) const
   {
     return {maybe_unwrap_nested<Us, Ts>{}(::cuda::std::get<Id>(*this))...};
   }

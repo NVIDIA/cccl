@@ -161,23 +161,23 @@ public:
 
   /*! \return A string naming the error category.
    */
-  inline virtual const char* name() const = 0;
+  [[nodiscard]] inline virtual const char* name() const = 0;
 
   /*! \return \p error_condition(ev, *this).
    */
-  inline virtual error_condition default_error_condition(int ev) const;
+  [[nodiscard]] inline virtual error_condition default_error_condition(int ev) const;
 
   /*! \return <tt>default_error_condition(code) == condition</tt>
    */
-  inline virtual bool equivalent(int code, const error_condition& condition) const;
+  [[nodiscard]] inline virtual bool equivalent(int code, const error_condition& condition) const;
 
   /*! \return <tt>*this == code.category() && code.value() == condition</tt>
    */
-  inline virtual bool equivalent(const error_code& code, int condition) const;
+  [[nodiscard]] inline virtual bool equivalent(const error_code& code, int condition) const;
 
   /*! \return A string that describes the error condition denoted by \p ev.
    */
-  virtual std::string message(int ev) const = 0;
+  [[nodiscard]] virtual std::string message(int ev) const = 0;
 
   /*! \return <tt>*this == &rhs</tt>
    */
@@ -273,19 +273,19 @@ public:
 
   /*! \return An integral value of this \p error_code object.
    */
-  inline int value() const;
+  [[nodiscard]] inline int value() const;
 
   /*! \return An \p error_category describing the category of this \p error_code object.
    */
-  inline const error_category& category() const;
+  [[nodiscard]] inline const error_category& category() const;
 
   /*! \return <tt>category().default_error_condition()</tt>.
    */
-  inline error_condition default_error_condition() const;
+  [[nodiscard]] inline error_condition default_error_condition() const;
 
   /*! \return <tt>category().message(value())</tt>.
    */
-  inline std::string message() const;
+  [[nodiscard]] inline std::string message() const;
 
   // XXX replace the below upon c++0x
   // inline explicit operator bool (void) const;
@@ -396,15 +396,15 @@ public:
 
   /*! \return The value encoded by this \p error_condition.
    */
-  inline int value() const;
+  [[nodiscard]] inline int value() const;
 
   /*! \return A <tt>const</tt> reference to the \p error_category encoded by this \p error_condition.
    */
-  inline const error_category& category() const;
+  [[nodiscard]] inline const error_category& category() const;
 
   /*! \return <tt>category().message(value())</tt>.
    */
-  inline std::string message() const;
+  [[nodiscard]] inline std::string message() const;
 
   // XXX replace below with this upon c++0x
   // explicit operator bool (void) const;

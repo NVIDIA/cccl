@@ -465,7 +465,7 @@ public:
     return __subspan_t<_Offset, _Count>{data() + _Offset, _Count == dynamic_extent ? size() - _Offset : _Count};
   }
 
-  constexpr span<element_type, dynamic_extent> _CCCL_API inline subspan(
+  [[nodiscard]] constexpr span<element_type, dynamic_extent> _CCCL_API inline subspan(
     size_type __offset, size_type __count = dynamic_extent) const noexcept
   {
     _CCCL_ASSERT(__offset <= size(), "span<T>::subspan(offset, count): offset out of range");

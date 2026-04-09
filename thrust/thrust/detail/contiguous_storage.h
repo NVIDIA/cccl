@@ -74,27 +74,27 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE ~contiguous_storage();
 
-  _CCCL_HOST_DEVICE size_type size() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE size_type size() const;
 
-  _CCCL_HOST_DEVICE size_type max_size() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE size_type max_size() const;
 
   _CCCL_HOST_DEVICE pointer data();
 
-  _CCCL_HOST_DEVICE const_pointer data() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE const_pointer data() const;
 
   _CCCL_HOST_DEVICE iterator begin();
 
-  _CCCL_HOST_DEVICE const_iterator begin() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE const_iterator begin() const;
 
   _CCCL_HOST_DEVICE iterator end();
 
-  _CCCL_HOST_DEVICE const_iterator end() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE const_iterator end() const;
 
   _CCCL_HOST_DEVICE reference operator[](size_type n);
 
   _CCCL_HOST_DEVICE const_reference operator[](size_type n) const;
 
-  _CCCL_HOST_DEVICE allocator_type get_allocator() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE allocator_type get_allocator() const;
 
   // note that allocate does *not* automatically call deallocate
   _CCCL_HOST_DEVICE void allocate(size_type n);

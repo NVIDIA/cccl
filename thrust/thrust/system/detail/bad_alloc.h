@@ -34,7 +34,7 @@ public:
 
   inline ~bad_alloc() noexcept override = default;
 
-  inline const char* what() const noexcept override
+  [[nodiscard]] inline const char* what() const noexcept override
   {
     return m_what.c_str();
   } // end what()

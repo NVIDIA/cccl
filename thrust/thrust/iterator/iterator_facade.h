@@ -318,7 +318,7 @@ private:
     return *static_cast<Derived*>(this);
   }
 
-  _CCCL_HOST_DEVICE Derived const& derived() const
+  [[nodiscard]] _CCCL_HOST_DEVICE Derived const& derived() const
   {
     return *static_cast<Derived const*>(this);
   }

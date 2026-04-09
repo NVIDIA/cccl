@@ -158,7 +158,7 @@ public:
 
   //! This method returns the value of this \p constant_iterator's constant value. \return A \c const reference to this
   //! \p constant_iterator's constant value.
-  _CCCL_HOST_DEVICE Value const& value() const
+  [[nodiscard]] _CCCL_HOST_DEVICE Value const& value() const
   {
     return m_value;
   }
@@ -166,7 +166,7 @@ public:
   //! \cond
 
 private: // Core iterator interface
-  _CCCL_HOST_DEVICE reference dereference() const
+  [[nodiscard]] _CCCL_HOST_DEVICE reference dereference() const
   {
     return m_value;
   }

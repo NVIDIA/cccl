@@ -107,7 +107,7 @@ private:
       __v_.sync_device_to_host(__str_, _Kind);
     }
 
-    ::cuda::std::span<_Ty> transformed_argument() const
+    [[nodiscard]] ::cuda::std::span<_Ty> transformed_argument() const
     {
       return {__v_.__d_.data().get(), __v_.__d_.size()};
     }

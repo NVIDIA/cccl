@@ -179,7 +179,7 @@ public:
   //! \cond
 
 private:
-  _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+  [[nodiscard]] _CCCL_HOST_DEVICE typename super_t::reference dereference() const
   {
     return detail::transform_input_output_iterator_proxy<InputFunction, OutputFunction, Iterator>(
       this->base_reference(), input_function, output_function);

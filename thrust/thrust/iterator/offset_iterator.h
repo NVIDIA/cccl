@@ -97,7 +97,7 @@ public:
       , m_offset(offset)
   {}
 
-  _CCCL_HOST_DEVICE const Offset& offset() const
+  [[nodiscard]] _CCCL_HOST_DEVICE const Offset& offset() const
   {
     return m_offset;
   }
@@ -113,7 +113,7 @@ private:
   static constexpr bool indirect_offset = ::cuda::std::indirectly_readable<Offset>;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE auto offset_value() const
+  [[nodiscard]] _CCCL_HOST_DEVICE auto offset_value() const
   {
     if constexpr (indirect_offset)
     {
@@ -126,13 +126,13 @@ private:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE reference dereference() const
+  [[nodiscard]] _CCCL_HOST_DEVICE reference dereference() const
   {
     return *(this->base() + offset_value());
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE bool equal(const offset_iterator& other) const
+  [[nodiscard]] _CCCL_HOST_DEVICE bool equal(const offset_iterator& other) const
   {
     return this->base() + offset_value() == other.base() + other.offset_value();
   }
@@ -174,7 +174,7 @@ private:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE difference_type distance_to(const offset_iterator& other) const
+  [[nodiscard]] _CCCL_HOST_DEVICE difference_type distance_to(const offset_iterator& other) const
   {
     return (other.base() + other.offset_value()) - (this->base() + offset_value());
   }

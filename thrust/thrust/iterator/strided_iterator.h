@@ -87,13 +87,13 @@ public:
   static constexpr bool has_static_stride = detail::is_compile_time_value<StrideHolder>;
 
   //! @brief Returns either the @ref runtime_value or the @ref compile_time_value holding the stride's value
-  _CCCL_HOST_DEVICE const auto& stride_holder() const
+  [[nodiscard]] _CCCL_HOST_DEVICE const auto& stride_holder() const
   {
     return static_cast<const StrideHolder&>(*this);
   }
 
   //! @brief Returns the stride's value
-  _CCCL_HOST_DEVICE auto stride() const -> difference_type
+  [[nodiscard]] _CCCL_HOST_DEVICE auto stride() const -> difference_type
   {
     return static_cast<detail::it_difference_t<RandomAccessIterator>>(stride_holder().value);
   }
@@ -119,12 +119,13 @@ private:
   }
 
   template <typename OtherStrideHolder>
-  _CCCL_HOST_DEVICE bool equal(strided_iterator<RandomAccessIterator, OtherStrideHolder> const& other) const
+  [[nodiscard]] _CCCL_HOST_DEVICE bool
+  equal(strided_iterator<RandomAccessIterator, OtherStrideHolder> const& other) const
   {
     return this->base() == other.base();
   }
 
-  _CCCL_HOST_DEVICE difference_type distance_to(strided_iterator const& other) const
+  [[nodiscard]] _CCCL_HOST_DEVICE difference_type distance_to(strided_iterator const& other) const
   {
     const difference_type dist = other.base() - this->base();
     _CCCL_ASSERT(dist % stride() == 0, "Underlying iterator difference must be divisible by the stride");

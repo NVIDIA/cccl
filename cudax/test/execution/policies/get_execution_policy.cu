@@ -20,7 +20,7 @@ struct with_get_execution_policy_const_lvalue
 {
   execution::any_execution_policy pol_ = execution::seq;
 
-  const execution::any_execution_policy& get_execution_policy() const noexcept
+  [[nodiscard]] const execution::any_execution_policy& get_execution_policy() const noexcept
   {
     return pol_;
   }
@@ -38,7 +38,7 @@ struct with_get_execution_policy_rvalue
 {
   execution::any_execution_policy pol_{};
 
-  execution::any_execution_policy get_execution_policy() const noexcept
+  [[nodiscard]] execution::any_execution_policy get_execution_policy() const noexcept
   {
     return pol_;
   }
@@ -72,7 +72,8 @@ struct env_with_query_const_ref
 {
   execution::any_execution_policy pol_{};
 
-  execution::any_execution_policy query(cuda::experimental::execution::get_execution_policy_t) const noexcept
+  [[nodiscard]] execution::any_execution_policy
+  query(cuda::experimental::execution::get_execution_policy_t) const noexcept
   {
     return pol_;
   }
@@ -90,7 +91,8 @@ struct env_with_query_rvalue
 {
   execution::any_execution_policy pol_{};
 
-  execution::any_execution_policy query(cuda::experimental::execution::get_execution_policy_t) const noexcept
+  [[nodiscard]] execution::any_execution_policy
+  query(cuda::experimental::execution::get_execution_policy_t) const noexcept
   {
     return pol_;
   }
@@ -123,12 +125,13 @@ struct env_with_query_and_method
 {
   execution::any_execution_policy pol_{};
 
-  execution::any_execution_policy get_execution_policy() const noexcept
+  [[nodiscard]] execution::any_execution_policy get_execution_policy() const noexcept
   {
     return pol_;
   }
 
-  execution::any_execution_policy query(cuda::experimental::execution::get_execution_policy_t) const noexcept
+  [[nodiscard]] execution::any_execution_policy
+  query(cuda::experimental::execution::get_execution_policy_t) const noexcept
   {
     return pol_;
   }

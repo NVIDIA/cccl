@@ -83,7 +83,7 @@ public:
    *  \param other the other resource to compare this resource to
    *  \return whether the two resources are equivalent.
    */
-  _CCCL_HOST_DEVICE bool is_equal(const memory_resource& other) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE bool is_equal(const memory_resource& other) const noexcept
   {
     return do_is_equal(other);
   }
@@ -113,7 +113,7 @@ public:
    *  \param other the other resource to compare this resource to
    *  \return whether the two resources are equivalent.
    */
-  _CCCL_HOST_DEVICE virtual bool do_is_equal(const memory_resource& other) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE virtual bool do_is_equal(const memory_resource& other) const noexcept
   {
     return this == &other;
   }
@@ -140,14 +140,14 @@ public:
     do_deallocate(p, bytes, alignment);
   }
 
-  _CCCL_HOST_DEVICE bool is_equal(const memory_resource& other) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE bool is_equal(const memory_resource& other) const noexcept
   {
     return do_is_equal(other);
   }
 
   virtual pointer do_allocate(std::size_t bytes, std::size_t alignment)           = 0;
   virtual void do_deallocate(pointer p, std::size_t bytes, std::size_t alignment) = 0;
-  _CCCL_HOST_DEVICE virtual bool do_is_equal(const memory_resource& other) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE virtual bool do_is_equal(const memory_resource& other) const noexcept
   {
     return this == &other;
   }

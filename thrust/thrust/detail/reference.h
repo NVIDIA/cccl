@@ -424,7 +424,7 @@ private:
     return static_cast<derived_type&>(*this);
   }
 
-  _CCCL_HOST_DEVICE const derived_type& derived() const
+  [[nodiscard]] _CCCL_HOST_DEVICE const derived_type& derived() const
   {
     return static_cast<const derived_type&>(*this);
   }
@@ -437,7 +437,7 @@ private:
   }
 
   template <typename System>
-  _CCCL_HOST_DEVICE value_type strip_const_get_value(System const& system) const
+  [[nodiscard]] _CCCL_HOST_DEVICE value_type strip_const_get_value(System const& system) const
   {
     auto& non_const_system = const_cast<System&>(system);
 

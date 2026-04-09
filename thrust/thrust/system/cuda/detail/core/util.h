@@ -371,12 +371,12 @@ public:
       , value_(v)
   {}
 
-  bool _CCCL_HOST_DEVICE isValid() const
+  [[nodiscard]] bool _CCCL_HOST_DEVICE isValid() const
   {
     return cudaSuccess == status_;
   }
 
-  cudaError_t _CCCL_HOST_DEVICE status() const
+  [[nodiscard]] cudaError_t _CCCL_HOST_DEVICE status() const
   {
     return status_;
   }

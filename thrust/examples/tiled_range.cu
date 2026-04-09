@@ -49,12 +49,12 @@ public:
       , tiles(tiles)
   {}
 
-  iterator begin() const
+  [[nodiscard]] iterator begin() const
   {
     return PermutationIterator(first, TransformIterator(CountingIterator(0), tile_functor(last - first)));
   }
 
-  iterator end() const
+  [[nodiscard]] iterator end() const
   {
     return begin() + tiles * (last - first);
   }

@@ -179,7 +179,7 @@ public:
   /*! Returns the largest value \c n for which <tt>allocate(n)</tt> might succeed.
    *  \return The largest value \c n for which <tt>allocate(n)</tt> might succeed.
    */
-  inline size_type max_size() const
+  [[nodiscard]] inline size_type max_size() const
   {
     return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T);
   } // end max_size()

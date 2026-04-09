@@ -19,12 +19,12 @@ public:
       , scale_{scale}
   {}
 
-  __host__ __device__ int value() const
+  [[nodiscard]] __host__ __device__ int value() const
   {
     return value_;
   }
 
-  __host__ __device__ ScaledInteger rescale(int scale) const
+  [[nodiscard]] __host__ __device__ ScaledInteger rescale(int scale) const
   {
     int shift  = scale - scale_;
     int result = shift < 0 ? value_ << (-shift) : value_ >> shift;

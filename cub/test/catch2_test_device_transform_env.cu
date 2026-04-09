@@ -45,7 +45,7 @@ struct with_stream_method
 {
   cudaStream_t str;
 
-  auto stream() const noexcept
+  [[nodiscard]] auto stream() const noexcept
   {
     return str;
   }
@@ -55,7 +55,7 @@ struct with_get_stream_method
 {
   cudaStream_t stream;
 
-  auto get_stream() const noexcept
+  [[nodiscard]] auto get_stream() const noexcept
   {
     return stream;
   }

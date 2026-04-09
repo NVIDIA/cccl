@@ -55,27 +55,27 @@ public:
     return singleton;
   }
 
-  int get_cc_major() const
+  [[nodiscard]] int get_cc_major() const
   {
     return cc_major;
   }
-  int get_cc_minor() const
+  [[nodiscard]] int get_cc_minor() const
   {
     return cc_minor;
   }
-  const char* get_cub_path() const
+  [[nodiscard]] const char* get_cub_path() const
   {
     return cub_path;
   }
-  const char* get_thrust_path() const
+  [[nodiscard]] const char* get_thrust_path() const
   {
     return thrust_path;
   }
-  const char* get_libcudacxx_path() const
+  [[nodiscard]] const char* get_libcudacxx_path() const
   {
     return libcudacxx_path;
   }
-  const char* get_ctk_path() const
+  [[nodiscard]] const char* get_ctk_path() const
   {
     return ctk_path;
   }

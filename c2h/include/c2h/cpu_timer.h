@@ -39,14 +39,14 @@ public:
     m_start = std::chrono::high_resolution_clock::now();
   }
 
-  int elapsed_ms() const
+  [[nodiscard]] int elapsed_ms() const
   {
     auto duration = std::chrono::high_resolution_clock::now() - m_start;
     auto ms       = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
     return static_cast<int>(ms.count());
   }
 
-  std::uint64_t elapsed_us() const
+  [[nodiscard]] std::uint64_t elapsed_us() const
   {
     auto duration = std::chrono::high_resolution_clock::now() - m_start;
     auto us       = std::chrono::duration_cast<std::chrono::microseconds>(duration);

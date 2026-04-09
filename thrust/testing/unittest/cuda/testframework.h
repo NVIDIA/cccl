@@ -10,7 +10,7 @@
 class CUDATestDriver : public UnitTestDriver
 {
 public:
-  int current_device_architecture() const;
+  [[nodiscard]] int current_device_architecture() const;
 
 private:
   std::vector<int> target_devices(const ArgumentMap& kwargs);
