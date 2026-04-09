@@ -7,6 +7,7 @@ from functools import cached_property
 
 from numba.core import types
 
+from ..._enums import WarpLoadAlgorithm, WarpStoreAlgorithm
 from .._core import (
     ArrayCallDefinition,
     CoopNode,
@@ -161,14 +162,9 @@ class CoopWarpLoadStoreNode(CoopNode):
                         literal_value = algorithm_ty.value
                     algorithm_id = algorithm_ty.instance_class(literal_value)
         if algorithm_id is None:
-            try:
-                from cuda.coop._enums import WarpLoadAlgorithm, WarpStoreAlgorithm
-            except Exception:
-                WarpLoadAlgorithm = None
-                WarpStoreAlgorithm = None
-            if self.is_load and WarpLoadAlgorithm is not None:
+            if self.is_load:
                 algorithm_id = WarpLoadAlgorithm.DIRECT
-            elif not self.is_load and WarpStoreAlgorithm is not None:
+            else:
                 algorithm_id = WarpStoreAlgorithm.DIRECT
 
         num_valid_items = self.get_arg_value_safe("num_valid_items")

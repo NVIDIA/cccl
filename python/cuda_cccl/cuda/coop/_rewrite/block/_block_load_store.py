@@ -14,6 +14,8 @@ from numba.core.typing.templates import (
 from numba.cuda.cudadecl import register_global
 from numba.cuda.cudaimpl import lower
 
+from ...block._block_load_store import load as block_load
+from ...block._block_load_store import store as block_store
 from .._core import (
     ArrayCallDefinition,
     CoopNode,
@@ -167,9 +169,6 @@ class CoopLoadStoreNode(CoopNode):
                                 type(instance), "default_algorithm", None
                             )
                 if default_algorithm is None:
-                    from ...block._block_load_store import load as block_load
-                    from ...block._block_load_store import store as block_store
-
                     default_algorithm = (
                         block_load.default_algorithm
                         if self.is_load
