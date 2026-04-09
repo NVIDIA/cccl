@@ -77,7 +77,7 @@ __host__ __device__ constexpr bool test()
   { // When "_Start" is non-integral like.
     cuda::counting_iterator<float> iter1{10};
     cuda::counting_iterator<float> iter2{10};
-    static_assert(iter1 == iter2);
+    assert(iter1 == iter2);
     iter1 -= 0;
     assert(iter1 == iter2);
     iter1 -= 5;
