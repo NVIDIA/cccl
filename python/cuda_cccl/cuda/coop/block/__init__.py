@@ -23,12 +23,8 @@ from ._block_exchange import (
 from ._block_exchange import (
     _make_exchange_two_phase as make_exchange,
 )
-from ._block_histogram import (
-    _make_histogram_two_phase as make_histogram,
-)
-from ._block_histogram import (
-    histogram,
-)
+from ._block_histogram import _make_histogram_two_phase as make_histogram
+from ._block_histogram import histogram
 from ._block_load_store import (
     _make_load_two_phase as make_load,
 )
@@ -118,6 +114,11 @@ from ._block_shuffle import (
 from ._block_shuffle import (
     _make_shuffle_two_phase as make_shuffle,
 )
+
+# Re-export the public one-shot callables alongside the host-side two-phase
+# factory aliases.  Keeping the aliases here preserves the historical
+# `coop.block.make_*` surface while letting each implementation live in its
+# primitive module.
 
 __all__ = [
     "BlockExchangeType",
