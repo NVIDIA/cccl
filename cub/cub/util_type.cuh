@@ -701,11 +701,11 @@ struct KeyValuePair
   using Key   = _Key; ///< Key data type
   using Value = _Value; ///< Value data type
 
-  Key key; ///< Item key
-  Value value; ///< Item value
+  Key key{}; ///< Item key
+  Value value{}; ///< Item value
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair() {}
+  _CCCL_FORCEINLINE KeyValuePair() = default;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair(Key const& key, Value const& value)

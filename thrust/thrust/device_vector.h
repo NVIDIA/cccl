@@ -76,9 +76,8 @@ public:
 
   /*! The destructor erases the elements.
    */
-  //  Define an empty destructor to explicitly specify
-  //  its execution space qualifier, as a workaround for nvcc warning
-  ~device_vector() {}
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST ~device_vector();
 
   /*! This constructor creates a \p device_vector with the given
    *  size.
@@ -644,6 +643,9 @@ public:
   allocator_type get_allocator() const;
 #endif // end doxygen-only members
 };
+
+template <typename T, typename Alloc>
+device_vector<T, Alloc>::~device_vector() = default;
 
 /*! \} // containres
  */

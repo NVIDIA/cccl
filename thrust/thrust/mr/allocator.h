@@ -206,7 +206,7 @@ public:
   stateless_resource_allocator& operator=(const stateless_resource_allocator&) = default;
 
   /*! Destructor. */
-  _CCCL_HOST_DEVICE ~stateless_resource_allocator() {}
+  ~stateless_resource_allocator() = default;
 };
 
 /*! \} // allocators

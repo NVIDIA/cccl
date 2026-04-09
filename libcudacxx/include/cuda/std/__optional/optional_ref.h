@@ -89,7 +89,9 @@ private:
 public:
   using value_type = __raw_type&;
 
-  _CCCL_API constexpr optional() noexcept {}
+  // Use of {} vs = default is deliberate. = default may value-initialize, while {} is
+  // guaranteed to do absolutely nothing.
+  _CCCL_API constexpr optional() noexcept {} // NOLINT(modernize-use-equals-default)
   _CCCL_HIDE_FROM_ABI constexpr optional(const optional&) noexcept = default;
   _CCCL_HIDE_FROM_ABI constexpr optional(optional&&) noexcept      = default;
   _CCCL_API constexpr optional(nullopt_t) noexcept {}

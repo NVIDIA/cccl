@@ -103,13 +103,13 @@ public:
   }; // end rebind
 
   /*! No-argument constructor has no effect. */
-  _CCCL_HOST_DEVICE inline device_malloc_allocator() {}
+  inline device_malloc_allocator() = default;
 
   /*! No-argument destructor has no effect. */
-  _CCCL_HOST_DEVICE inline ~device_malloc_allocator() {}
+  inline ~device_malloc_allocator() = default;
 
   /*! Copy constructor has no effect. */
-  _CCCL_HOST_DEVICE inline device_malloc_allocator(device_malloc_allocator const&) {}
+  inline device_malloc_allocator(device_malloc_allocator const&) = default;
 
   /*! Constructor from other \p device_malloc_allocator has no effect. */
   template <typename U>

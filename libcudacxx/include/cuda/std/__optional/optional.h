@@ -120,7 +120,9 @@ private:
   static_assert(!is_array_v<value_type>, "instantiation of optional with an array type is ill-formed");
 
 public:
-  _CCCL_API constexpr optional() noexcept {}
+  // Use of {} vs = default is deliberate. = default may value-initialize, while {} is
+  // guaranteed to do absolutely nothing.
+  _CCCL_API constexpr optional() noexcept {} // NOLINT(modernize-use-equals-default)
   _CCCL_HIDE_FROM_ABI constexpr optional(const optional&) = default;
   _CCCL_HIDE_FROM_ABI constexpr optional(optional&&)      = default;
   _CCCL_API constexpr optional(nullopt_t) noexcept {}

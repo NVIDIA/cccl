@@ -120,7 +120,7 @@ public:
   };
 
   /*! Default constructor has no effect. */
-  _CCCL_HOST_DEVICE device_allocator() {}
+  device_allocator() = default;
 
   /*! Copy constructor has no effect. */
   _CCCL_HOST_DEVICE device_allocator(const device_allocator& other)
@@ -136,7 +136,7 @@ public:
   device_allocator& operator=(const device_allocator&) = default;
 
   /*! Destructor has no effect. */
-  _CCCL_HOST_DEVICE ~device_allocator() {}
+  ~device_allocator() = default;
 };
 
 /*! \} // allocators
