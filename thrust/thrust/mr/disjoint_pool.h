@@ -225,7 +225,6 @@ private:
   {
     _CCCL_HOST pool(pointer_vector free)
         : free_blocks(::cuda::std::move(free))
-        , previous_allocated_count(0)
     {}
 
     _CCCL_HOST pool(const pool& other)
@@ -238,8 +237,8 @@ private:
 
     _CCCL_HOST ~pool() {}
 
-    pointer_vector free_blocks;
-    std::size_t previous_allocated_count;
+    pointer_vector free_blocks{};
+    std::size_t previous_allocated_count{};
   };
 
   using pool_vector = thrust::host_vector<pool, allocator<pool, Bookkeeper>>;

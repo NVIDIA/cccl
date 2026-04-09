@@ -1101,14 +1101,13 @@ private:
   bool m_is_descending;
   bool m_double_buffer;
   bool m_stable_sort;
-  int* m_selectors;
+  int* m_selectors{nullptr};
 
 public:
   explicit segmented_sort_launcher_t(bool is_descending, bool double_buffer, bool stable_sort)
       : m_is_descending(is_descending)
       , m_double_buffer(double_buffer)
       , m_stable_sort(stable_sort)
-      , m_selectors(nullptr)
   {}
 
   void initialize()
