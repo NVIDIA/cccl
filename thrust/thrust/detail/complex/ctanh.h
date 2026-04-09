@@ -126,11 +126,10 @@ _CCCL_HOST_DEVICE inline complex<double> ctanh(const complex<double>& z)
   {
     if ((ix & 0xfffff) | lx) /* x is NaN */
     {
-      return (complex<double>(x, (y == 0 ? y : x * y)));
+      return {x, (y == 0 ? y : x * y)};
     }
     set_high_word(x, hx - 0x40000000); /* x = copysign(1, x) */
-    return (complex<double>(
-      x, ::cuda::std::copysign(0.0, ::cuda::std::isinf(y) ? y : ::cuda::std::sin(y) * ::cuda::std::cos(y))));
+    return {x, ::cuda::std::copysign(0.0, ::cuda::std::isinf(y) ? y : ::cuda::std::sin(y) * ::cuda::std::cos(y))};
   }
 
   /*
@@ -139,7 +138,7 @@ _CCCL_HOST_DEVICE inline complex<double> ctanh(const complex<double>& z)
    */
   if (!::cuda::std::isfinite(y))
   {
-    return (complex<double>(y - y, y - y));
+    return {y - y, y - y};
   }
 
   /*
@@ -150,8 +149,7 @@ _CCCL_HOST_DEVICE inline complex<double> ctanh(const complex<double>& z)
   if (ix >= 0x40360000)
   { /* x >= 22 */
     double exp_mx = ::cuda::std::exp(-fabs(x));
-    return (complex<double>(::cuda::std::copysign(1.0, x),
-                            4.0 * ::cuda::std::sin(y) * ::cuda::std::cos(y) * exp_mx * exp_mx));
+    return {::cuda::std::copysign(1.0, x), 4.0 * ::cuda::std::sin(y) * ::cuda::std::cos(y) * exp_mx * exp_mx};
   }
 
   /* Kahan's algorithm */
@@ -160,14 +158,14 @@ _CCCL_HOST_DEVICE inline complex<double> ctanh(const complex<double>& z)
   s     = ::cuda::std::sinh(x);
   rho   = ::cuda::std::sqrt(1.0 + s * s); /* = cosh(x) */
   denom = 1.0 + beta * s * s;
-  return (complex<double>((beta * rho * s) / denom, t / denom));
+  return {(beta * rho * s) / denom, t / denom};
 }
 
 _CCCL_HOST_DEVICE inline complex<double> ctan(complex<double> z)
 {
   /* ctan(z) = -I * ctanh(I * z) */
   z = ctanh(complex<double>(-z.imag(), z.real()));
-  return (complex<double>(z.imag(), -z.real()));
+  return {z.imag(), -z.real()};
 }
 } // namespace detail::complex
 

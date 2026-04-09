@@ -106,7 +106,7 @@ struct stream_registry_factory_t
     NV_IF_TARGET(NV_IS_HOST, (if (get_stream_registry_factory_state()->m_stream) {
                    REQUIRE(stream == get_stream_registry_factory_state()->m_stream);
                  }));
-    return kernel_launcher_t(grid, block, shared_mem, stream, dependent_launch);
+    return {grid, block, shared_mem, stream, dependent_launch};
   }
 
   CUB_RUNTIME_FUNCTION cudaError_t PtxVersion(int& version)

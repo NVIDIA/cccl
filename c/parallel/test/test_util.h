@@ -109,7 +109,7 @@ inline std::string compile(const std::string& source)
   REQUIRE(NVRTC_SUCCESS == nvrtcGetLTOIR(prog, ltoir.data()));
   REQUIRE(NVRTC_SUCCESS == nvrtcDestroyProgram(&prog));
 
-  return std::string(ltoir.data(), ltoir_size);
+  return {ltoir.data(), ltoir_size};
 }
 
 template <class T>

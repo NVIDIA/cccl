@@ -83,7 +83,7 @@ struct __tuple_cat_return<>
 
 _CCCL_API constexpr tuple<> tuple_cat()
 {
-  return tuple<>();
+  return {};
 }
 
 template <class _Rp, class _Indices, class _Tuple0, class... _Tuples>

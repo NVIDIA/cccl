@@ -137,7 +137,7 @@ struct device_memory_pool : device_memory_pool_ref
 
   _CCCL_HOST_API static device_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept
   {
-    return device_memory_pool(__pool);
+    return {__pool};
   }
 
   //! @brief Returns a \c device_memory_pool_ref for this \c device_memory_pool.

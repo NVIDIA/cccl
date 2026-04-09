@@ -223,7 +223,7 @@ _CCCL_API inline complex<float> exp(const complex<float>& __x)
   const float __ans_i =
     (((__sin_i * __ldexp_factor_1) * __ldexp_factor_1) * __ldexp_factor_1) * (__exp_r_reduced * __ldexp_factor_2);
 
-  return complex<float>(__ans_r, __ans_i);
+  return {__ans_r, __ans_i};
 }
 
 // exp fp64 specialization
@@ -309,7 +309,7 @@ _CCCL_API inline complex<double> exp<double>(const complex<double>& __x)
   const double __ans_i =
     (((__sin_i * __ldexp_factor_1) * __ldexp_factor_1) * __ldexp_factor_1) * (__exp_r_reduced * __ldexp_factor_2);
 
-  return complex<double>(__ans_r, __ans_i);
+  return {__ans_r, __ans_i};
 }
 
 #if _LIBCUDACXX_HAS_NVBF16()

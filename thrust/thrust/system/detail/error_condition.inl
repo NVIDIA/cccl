@@ -93,7 +93,7 @@ error_condition ::operator bool() const
 
 error_condition make_error_condition(errc::errc_t e)
 {
-  return error_condition(static_cast<int>(e), generic_category());
+  return {static_cast<int>(e), generic_category()};
 } // end make_error_condition()
 
 bool operator<(const error_condition& lhs, const error_condition& rhs)

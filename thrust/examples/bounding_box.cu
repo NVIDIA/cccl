@@ -63,7 +63,7 @@ struct bbox_union
     // upper right corner
     point2d ur(thrust::max(a.upper_right.x, b.upper_right.x), thrust::max(a.upper_right.y, b.upper_right.y));
 
-    return bbox(ll, ur);
+    return {ll, ur};
   }
 };
 

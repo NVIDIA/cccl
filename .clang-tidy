@@ -38,7 +38,6 @@ Checks:
   - '-modernize-use-bool-literals'
   - '-modernize-type-traits'
   - '-modernize-use-nullptr'
-  - '-modernize-return-braced-init-list'
   - '-modernize-use-auto'
   - '-modernize-redundant-void-arg'
   - '-modernize-use-equals-delete'

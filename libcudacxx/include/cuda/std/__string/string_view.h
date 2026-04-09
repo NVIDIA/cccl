@@ -73,7 +73,7 @@ struct __string_view
 
   [[nodiscard]] _CCCL_API constexpr __string_view substr(ptrdiff_t __start, ptrdiff_t __stop) const
   {
-    return __string_view(__str_ + __check_offset(__start, __len_), __check_offset(__stop - __start, __len_));
+    return {__str_ + __check_offset(__start, __len_), __check_offset(__stop - __start, __len_)};
   }
 
 private:

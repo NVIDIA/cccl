@@ -143,7 +143,7 @@ struct par_t
   //! Sets the stream on which to execute algorithm with this policy.
   _CCCL_HOST_DEVICE stream_attachment_type on(::cudaStream_t s) const
   {
-    return execute_on_stream(s);
+    return {s};
   }
 };
 
@@ -158,7 +158,7 @@ struct par_nosync_t
 
   _CCCL_HOST_DEVICE stream_attachment_type on(::cudaStream_t s) const
   {
-    return execute_on_stream_nosync(s);
+    return {s};
   }
 
 private:

@@ -74,23 +74,21 @@ _CCCL_HOST_DEVICE inline complex<float> ctanhf(const complex<float>& z)
   {
     if (ix & 0x7fffff)
     {
-      return (complex<float>(x, (y == 0.0f ? y : x * y)));
+      return {x, (y == 0.0f ? y : x * y)};
     }
     set_float_word(x, hx - 0x40000000);
-    return (complex<float>(
-      x, ::cuda::std::copysignf(0, ::cuda::std::isinf(y) ? y : ::cuda::std::sinf(y) * ::cuda::std::cosf(y))));
+    return {x, ::cuda::std::copysignf(0, ::cuda::std::isinf(y) ? y : ::cuda::std::sinf(y) * ::cuda::std::cosf(y))};
   }
 
   if (!::cuda::std::isfinite(y))
   {
-    return (complex<float>(y - y, y - y));
+    return {y - y, y - y};
   }
 
   if (ix >= 0x41300000)
   { /* x >= 11 */
     float exp_mx = ::cuda::std::expf(-::cuda::std::fabsf(x));
-    return (complex<float>(::cuda::std::copysignf(1.0f, x),
-                           4.0f * ::cuda::std::sinf(y) * ::cuda::std::cosf(y) * exp_mx * exp_mx));
+    return {::cuda::std::copysignf(1.0f, x), 4.0f * ::cuda::std::sinf(y) * ::cuda::std::cosf(y) * exp_mx * exp_mx};
   }
 
   t     = ::cuda::std::tanf(y);
@@ -98,13 +96,13 @@ _CCCL_HOST_DEVICE inline complex<float> ctanhf(const complex<float>& z)
   s     = ::cuda::std::sinhf(x);
   rho   = ::cuda::std::sqrtf(1.0f + s * s);
   denom = 1.0f + beta * s * s;
-  return (complex<float>((beta * rho * s) / denom, t / denom));
+  return {(beta * rho * s) / denom, t / denom};
 }
 
 _CCCL_HOST_DEVICE inline complex<float> ctanf(complex<float> z)
 {
   z = ctanhf(complex<float>(-z.imag(), z.real()));
-  return (complex<float>(z.imag(), -z.real()));
+  return {z.imag(), -z.real()};
 }
 } // namespace detail::complex
 

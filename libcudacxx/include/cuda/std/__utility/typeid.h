@@ -309,7 +309,7 @@ struct __type_info_ref_ : __type_info
 
 [[nodiscard]] _CCCL_API constexpr __type_info_ref_ __type_info_ptr_::operator*() const noexcept
 {
-  return __type_info_ref_(__pfn_);
+  return {__pfn_};
 }
 
 #  if defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)

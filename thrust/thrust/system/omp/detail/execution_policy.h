@@ -48,7 +48,7 @@ struct execution_policy : cpp::execution_policy<Derived>
   // allow conversion to tag when it is not a successor
   operator tag() const
   {
-    return tag();
+    return {};
   }
 };
 

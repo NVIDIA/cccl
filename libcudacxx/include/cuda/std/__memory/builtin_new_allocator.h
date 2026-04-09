@@ -59,7 +59,7 @@ struct __builtin_new_allocator
 
   _CCCL_API inline static __holder_t __allocate_bytes(size_t __s, size_t __align)
   {
-    return __holder_t(::cuda::std::__cccl_allocate(__s, __align), __builtin_new_deleter(__s, __align));
+    return {::cuda::std::__cccl_allocate(__s, __align), __builtin_new_deleter(__s, __align)};
   }
 
   _CCCL_API inline static void __deallocate_bytes(void* __p, size_t __s, size_t __align) noexcept

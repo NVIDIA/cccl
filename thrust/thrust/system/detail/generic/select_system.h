@@ -86,7 +86,7 @@ _CCCL_HOST_DEVICE auto select_system(
 // Map a single any_system_tag to device_system_tag.
 inline _CCCL_HOST_DEVICE thrust::device_system_tag select_system(thrust::any_system_tag)
 {
-  return thrust::device_system_tag();
+  return {};
 }
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END

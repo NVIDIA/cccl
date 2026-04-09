@@ -174,29 +174,29 @@ constexpr base_int_t bitrounddown(sm_selector a)
 
 constexpr target_description is_exactly(sm_selector a)
 {
-  return target_description(bitexact(a));
+  return {bitexact(a)};
 }
 
 constexpr target_description provides(sm_selector a)
 {
-  return target_description(~(bitrounddown(a) - 1) & all_devices);
+  return {~(bitrounddown(a) - 1) & all_devices};
 }
 
 // Boolean operations on target sets
 
 constexpr target_description operator&&(target_description a, target_description b)
 {
-  return target_description(a.targets & b.targets);
+  return {a.targets & b.targets};
 }
 
 constexpr target_description operator||(target_description a, target_description b)
 {
-  return target_description(a.targets | b.targets);
+  return {a.targets | b.targets};
 }
 
 constexpr target_description operator!(target_description a)
 {
-  return target_description(~a.targets & (all_devices | all_hosts));
+  return {~a.targets & (all_devices | all_hosts)};
 }
 } // namespace detail
 

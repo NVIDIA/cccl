@@ -1464,15 +1464,15 @@ public:
   constexpr Iterator() = default;
   __host__ __device__ static constexpr Iterator TrackMoves(int* p, int& iter_moves)
   {
-    return Iterator(p, &iter_moves, /*iter_swaps=*/nullptr);
+    return {p, &iter_moves, /*iter_swaps=*/nullptr};
   }
   __host__ __device__ static constexpr Iterator TrackSwaps(int& iter_swaps)
   {
-    return Iterator(/*p=*/nullptr, /*iter_moves=*/nullptr, &iter_swaps);
+    return {/*p=*/nullptr, /*iter_moves=*/nullptr, &iter_swaps};
   }
   __host__ __device__ static constexpr Iterator TrackSwaps(int* p, int& iter_swaps)
   {
-    return Iterator(p, /*iter_moves=*/nullptr, &iter_swaps);
+    return {p, /*iter_moves=*/nullptr, &iter_swaps};
   }
 
   __host__ __device__ constexpr int iter_moves() const
@@ -1497,7 +1497,7 @@ public:
 
   __host__ __device__ friend constexpr Iterator operator+(Iterator i, difference_type n)
   {
-    return Iterator(i.ptr_ + n, i.iter_moves_, i.iter_swaps_);
+    return {i.ptr_ + n, i.iter_moves_, i.iter_swaps_};
   }
   __host__ __device__ friend constexpr Iterator operator+(difference_type n, Iterator i)
   {
@@ -1505,7 +1505,7 @@ public:
   }
   __host__ __device__ constexpr Iterator operator-(difference_type n) const
   {
-    return Iterator(ptr_ - n, iter_moves_, iter_swaps_);
+    return {ptr_ - n, iter_moves_, iter_swaps_};
   }
   __host__ __device__ constexpr difference_type operator-(Iterator rhs) const
   {

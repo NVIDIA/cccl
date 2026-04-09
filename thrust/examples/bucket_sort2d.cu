@@ -19,7 +19,7 @@ vec2 make_random_vec2()
   static thrust::uniform_real_distribution<float> u01(0.0f, 1.0f);
   float x = u01(rng);
   float y = u01(rng);
-  return vec2(x, y);
+  return {x, y};
 }
 
 // hash a point in the unit square to the index of

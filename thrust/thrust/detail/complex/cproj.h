@@ -24,7 +24,7 @@ _CCCL_HOST_DEVICE inline complex<float> cprojf(const complex<float>& z)
   }
   else
   {
-    return complex<float>(::cuda::std::numeric_limits<float>::infinity(), ::cuda::std::copysignf(0.0, z.imag()));
+    return {::cuda::std::numeric_limits<float>::infinity(), ::cuda::std::copysignf(0.0, z.imag())};
   }
 }
 
@@ -36,7 +36,7 @@ _CCCL_HOST_DEVICE inline complex<double> cproj(const complex<double>& z)
   }
   else
   {
-    return complex<double>(::cuda::std::numeric_limits<double>::infinity(), ::cuda::std::copysign(0.0, z.imag()));
+    return {::cuda::std::numeric_limits<double>::infinity(), ::cuda::std::copysign(0.0, z.imag())};
   }
 }
 } // namespace detail::complex
