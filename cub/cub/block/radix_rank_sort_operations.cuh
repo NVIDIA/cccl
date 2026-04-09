@@ -151,7 +151,7 @@ for_each_member_impl(F f, const ::cuda::std::tuple<Ts&...>& tpl, ::cuda::std::in
   // opposite order.
 
   // we use a fold over the assignment operator to get right-to-left evaluation order
-  int dummy;
+  [[maybe_unused]] int dummy;
   ((f(::cuda::std::get<Is>(tpl)), dummy) = ... = 0);
 }
 
