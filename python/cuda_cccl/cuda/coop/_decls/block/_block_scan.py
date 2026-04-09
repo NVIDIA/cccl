@@ -14,7 +14,12 @@ import cuda.coop as coop
 
 from ..._scan_op import ScanOp
 from ..._typing import ScanOpType
-from ...block._block_scan import _make_scan_rewrite as _make_block_scan_rewrite
+from ...block._block_scan import (
+    BlockScanAlgorithm,
+)
+from ...block._block_scan import (
+    _make_scan_rewrite as _make_block_scan_rewrite,
+)
 from .. import (
     CoopAbstractTemplate,
     CoopDeclMixin,
@@ -53,8 +58,8 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.scan
     impl_key = _make_block_scan_rewrite
     primitive_name = "coop.block.scan"
-    algorithm_enum = coop.BlockScanAlgorithm
-    default_algorithm = coop.BlockScanAlgorithm.RAKING
+    algorithm_enum = BlockScanAlgorithm
+    default_algorithm = BlockScanAlgorithm.RAKING
     is_constructor = False
     minimum_num_args = 1
 
@@ -68,7 +73,7 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         scan_op: ScanOpType = "+",
         prefix_op: Optional[Callable] = None,
         block_aggregate: types.Array = None,
-        algorithm: coop.BlockScanAlgorithm = None,
+        algorithm: BlockScanAlgorithm = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         """
@@ -99,7 +104,7 @@ class CoopBlockScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         scan_op: ScanOpType = None,
         prefix_op: Optional[Callable] = None,
         block_aggregate: types.Array = None,
-        algorithm: coop.BlockScanAlgorithm = None,
+        algorithm: BlockScanAlgorithm = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(CoopBlockScanDecl.signature_instance).bind(
@@ -434,8 +439,8 @@ class CoopBlockExclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.exclusive_sum
     impl_key = _make_block_scan_rewrite
     primitive_name = "coop.block.scan"
-    algorithm_enum = coop.BlockScanAlgorithm
-    default_algorithm = coop.BlockScanAlgorithm.RAKING
+    algorithm_enum = BlockScanAlgorithm
+    default_algorithm = BlockScanAlgorithm.RAKING
     forced_mode = "exclusive"
     forced_scan_op = "+"
     is_constructor = False
@@ -448,7 +453,7 @@ class CoopBlockExclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
         items_per_thread: int = None,
         prefix_op: Optional[Callable] = None,
         block_aggregate: types.Array = None,
-        algorithm: coop.BlockScanAlgorithm = None,
+        algorithm: BlockScanAlgorithm = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return CoopBlockScanDecl.signature(
@@ -475,8 +480,8 @@ class CoopBlockInclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.inclusive_sum
     impl_key = _make_block_scan_rewrite
     primitive_name = "coop.block.scan"
-    algorithm_enum = coop.BlockScanAlgorithm
-    default_algorithm = coop.BlockScanAlgorithm.RAKING
+    algorithm_enum = BlockScanAlgorithm
+    default_algorithm = BlockScanAlgorithm.RAKING
     forced_mode = "inclusive"
     forced_scan_op = "+"
     is_constructor = False
@@ -489,7 +494,7 @@ class CoopBlockInclusiveSumDecl(CoopAbstractTemplate, CoopDeclMixin):
         items_per_thread: int = None,
         prefix_op: Optional[Callable] = None,
         block_aggregate: types.Array = None,
-        algorithm: coop.BlockScanAlgorithm = None,
+        algorithm: BlockScanAlgorithm = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return CoopBlockScanDecl.signature(
@@ -516,8 +521,8 @@ class CoopBlockExclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.exclusive_scan
     impl_key = _make_block_scan_rewrite
     primitive_name = "coop.block.scan"
-    algorithm_enum = coop.BlockScanAlgorithm
-    default_algorithm = coop.BlockScanAlgorithm.RAKING
+    algorithm_enum = BlockScanAlgorithm
+    default_algorithm = BlockScanAlgorithm.RAKING
     forced_mode = "exclusive"
     is_constructor = False
     minimum_num_args = 2
@@ -531,7 +536,7 @@ class CoopBlockExclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         initial_value: Optional[Any] = None,
         prefix_op: Optional[Callable] = None,
         block_aggregate: types.Array = None,
-        algorithm: coop.BlockScanAlgorithm = None,
+        algorithm: BlockScanAlgorithm = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return CoopBlockScanDecl.signature(
@@ -558,8 +563,8 @@ class CoopBlockInclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.inclusive_scan
     impl_key = _make_block_scan_rewrite
     primitive_name = "coop.block.scan"
-    algorithm_enum = coop.BlockScanAlgorithm
-    default_algorithm = coop.BlockScanAlgorithm.RAKING
+    algorithm_enum = BlockScanAlgorithm
+    default_algorithm = BlockScanAlgorithm.RAKING
     forced_mode = "inclusive"
     is_constructor = False
     minimum_num_args = 2
@@ -573,7 +578,7 @@ class CoopBlockInclusiveScanDecl(CoopAbstractTemplate, CoopDeclMixin):
         initial_value: Optional[Any] = None,
         prefix_op: Optional[Callable] = None,
         block_aggregate: types.Array = None,
-        algorithm: coop.BlockScanAlgorithm = None,
+        algorithm: BlockScanAlgorithm = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return CoopBlockScanDecl.signature(

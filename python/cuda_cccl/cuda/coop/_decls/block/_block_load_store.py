@@ -23,6 +23,10 @@ from numba.extending import (
 import cuda.coop as coop
 
 from ...block._block_load_store import (
+    BlockLoadAlgorithm,
+    BlockStoreAlgorithm,
+)
+from ...block._block_load_store import (
     _make_load_rewrite as _make_block_load_rewrite,
 )
 from ...block._block_load_store import (
@@ -159,7 +163,7 @@ class LoadMixin:
         src: types.Array,
         dst: types.Array,
         items_per_thread: int = None,
-        algorithm: coop.BlockLoadAlgorithm = None,
+        algorithm: BlockLoadAlgorithm = None,
         num_valid_items: int = None,
         oob_default: Any = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
@@ -182,7 +186,7 @@ class LoadMixin:
         oob_default: Any = None,
         *,
         items_per_thread: int = None,
-        algorithm: coop.BlockLoadAlgorithm = None,
+        algorithm: BlockLoadAlgorithm = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(LoadMixin.signature_instance).bind(
@@ -204,7 +208,7 @@ class StoreMixin:
         dst: types.Array,
         src: types.Array,
         items_per_thread: int = None,
-        algorithm: coop.BlockStoreAlgorithm = None,
+        algorithm: BlockStoreAlgorithm = None,
         num_valid_items: int = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
@@ -224,7 +228,7 @@ class StoreMixin:
         num_valid_items: int = None,
         *,
         items_per_thread: int = None,
-        algorithm: coop.BlockStoreAlgorithm = None,
+        algorithm: BlockStoreAlgorithm = None,
         temp_storage: Union[types.Array, TempStorageType] = None,
     ):
         return inspect.signature(StoreMixin.signature_instance).bind(
@@ -243,8 +247,8 @@ class CoopBlockLoadDecl(CoopLoadStoreBaseTemplate, LoadMixin, CoopDeclMixin):
     key = coop.block.load
     impl_key = _make_block_load_rewrite
     primitive_name = "coop.block.load"
-    algorithm_enum = coop.BlockLoadAlgorithm
-    default_algorithm = coop.BlockLoadAlgorithm.DIRECT
+    algorithm_enum = BlockLoadAlgorithm
+    default_algorithm = BlockLoadAlgorithm.DIRECT
 
 
 # register(CoopBlockLoadDecl)
@@ -262,8 +266,8 @@ class CoopBlockStoreDecl(CoopLoadStoreBaseTemplate, StoreMixin, CoopDeclMixin):
     key = coop.block.store
     impl_key = _make_block_store_rewrite
     primitive_name = "coop.block.store"
-    algorithm_enum = coop.BlockStoreAlgorithm
-    default_algorithm = coop.BlockStoreAlgorithm.DIRECT
+    algorithm_enum = BlockStoreAlgorithm
+    default_algorithm = BlockStoreAlgorithm.DIRECT
 
 
 # register(CoopBlockStoreDecl)

@@ -8,6 +8,8 @@ from numba.extending import models, register_model, typeof_impl
 import cuda.coop as coop
 
 from ...warp._warp_load_store import (
+    WarpLoadAlgorithm,
+    WarpStoreAlgorithm,
     _make_load_rewrite,
     _make_store_rewrite,
 )
@@ -31,8 +33,8 @@ class CoopWarpLoadDecl(CoopWarpLoadStoreBaseTemplate, WarpLoadMixin, CoopDeclMix
     key = coop.warp.load
     impl_key = _make_load_rewrite
     primitive_name = "coop.warp.load"
-    algorithm_enum = coop.WarpLoadAlgorithm
-    default_algorithm = coop.WarpLoadAlgorithm.DIRECT
+    algorithm_enum = WarpLoadAlgorithm
+    default_algorithm = WarpLoadAlgorithm.DIRECT
 
 
 @register_global(coop.warp.store)
@@ -40,8 +42,8 @@ class CoopWarpStoreDecl(CoopWarpLoadStoreBaseTemplate, WarpStoreMixin, CoopDeclM
     key = coop.warp.store
     impl_key = _make_store_rewrite
     primitive_name = "coop.warp.store"
-    algorithm_enum = coop.WarpStoreAlgorithm
-    default_algorithm = coop.WarpStoreAlgorithm.DIRECT
+    algorithm_enum = WarpStoreAlgorithm
+    default_algorithm = WarpStoreAlgorithm.DIRECT
 
 
 # =============================================================================

@@ -12,6 +12,7 @@ from numba.extending import lower_builtin, models, register_model, typeof_impl
 
 import cuda.coop as coop
 
+from ...block._block_histogram import BlockHistogramAlgorithm
 from .. import (
     CoopAbstractTemplate,
     CoopDeclMixin,
@@ -93,8 +94,8 @@ class CoopBlockHistogramCompositeDecl(CoopAbstractTemplate, CoopDeclMixin):
 class CoopBlockHistogramDecl(CoopAbstractTemplate, CoopDeclMixin):
     key = coop.block.histogram
     primitive_name = "coop.block.histogram"
-    algorithm_enum = coop.BlockHistogramAlgorithm
-    default_algorithm = coop.BlockHistogramAlgorithm.ATOMIC
+    algorithm_enum = BlockHistogramAlgorithm
+    default_algorithm = BlockHistogramAlgorithm.ATOMIC
     minimum_num_args = 1
 
     @staticmethod
@@ -106,7 +107,7 @@ class CoopBlockHistogramDecl(CoopAbstractTemplate, CoopDeclMixin):
         cls: type,
         items: types.Array,
         histogram: types.Array,
-        algorithm: Optional[coop.BlockHistogramAlgorithm] = None,
+        algorithm: Optional[BlockHistogramAlgorithm] = None,
         temp_storage: Optional[Union[types.Array, TempStorageType]] = None,
     ):
         return inspect.signature(cls.signature).bind(
@@ -122,7 +123,7 @@ class CoopBlockHistogramDecl(CoopAbstractTemplate, CoopDeclMixin):
         counter_dtype: types.Type,
         items_per_thread: Union[types.Integer, types.IntegerLiteral],
         bins: Union[types.Integer, types.IntegerLiteral],
-        algorithm: Optional[coop.BlockHistogramAlgorithm] = None,
+        algorithm: Optional[BlockHistogramAlgorithm] = None,
         temp_storage: Optional[Union[types.Array, TempStorageType]] = None,
     ):
         return inspect.signature(
@@ -170,7 +171,7 @@ class CoopBlockHistogramDecl(CoopAbstractTemplate, CoopDeclMixin):
                 pass
             else:
                 algorithm = process_algorithm(self, bound, arglist)
-                if algorithm == coop.BlockHistogramAlgorithm.ATOMIC:
+                if algorithm == BlockHistogramAlgorithm.ATOMIC:
                     valid_atomic_dtypes = (
                         types.int32,
                         types.int64,
