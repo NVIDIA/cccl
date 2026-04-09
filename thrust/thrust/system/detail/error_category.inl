@@ -30,7 +30,7 @@ error_category ::~error_category()
 
 error_condition error_category ::default_error_condition(int ev) const
 {
-  return error_condition(ev, *this);
+  return {ev, *this};
 } // end error_category::default_error_condition()
 
 bool error_category ::equivalent(int code, const error_condition& condition) const
@@ -263,7 +263,7 @@ public:
       case eprototype:
         return make_error_condition(wrong_protocol_type);
       default:
-        return error_condition(ev, system_category());
+        return {ev, system_category()};
     }
   }
 }; // end system_category_result

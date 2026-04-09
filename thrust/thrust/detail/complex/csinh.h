@@ -72,11 +72,11 @@ _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
   {
     if ((iy | ly) == 0)
     {
-      return (complex<double>(::cuda::std::sinh(x), y));
+      return {::cuda::std::sinh(x), y};
     }
     if (ix < 0x40360000) /* small x: normal case */
     {
-      return (complex<double>(::cuda::std::sinh(x) * ::cuda::std::cos(y), ::cuda::std::cosh(x) * ::cuda::std::sin(y)));
+      return {::cuda::std::sinh(x) * ::cuda::std::cos(y), ::cuda::std::cosh(x) * ::cuda::std::sin(y)};
     }
 
     /* |x| >= 22, so cosh(x) ~= exp(|x|) */
@@ -84,19 +84,19 @@ _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
     {
       /* x < 710: exp(|x|) won't overflow */
       h = ::cuda::std::exp(::cuda::std::fabs(x)) * 0.5;
-      return (complex<double>(::cuda::std::copysign(h, x) * ::cuda::std::cos(y), h * ::cuda::std::sin(y)));
+      return {::cuda::std::copysign(h, x) * ::cuda::std::cos(y), h * ::cuda::std::sin(y)};
     }
     else if (ix < 0x4096bbaa)
     {
       /* x < 1455: scale to avoid overflow */
       complex<double> z_ = ldexp_cexp(complex<double>(::cuda::std::fabs(x), y), -1);
-      return (complex<double>(z_.real() * ::cuda::std::copysign(1.0, x), z_.imag()));
+      return {z_.real() * ::cuda::std::copysign(1.0, x), z_.imag()};
     }
     else
     {
       /* x >= 1455: the result always overflows */
       h = huge * x;
-      return (complex<double>(h * ::cuda::std::cos(y), h * h * ::cuda::std::sin(y)));
+      return {h * ::cuda::std::cos(y), h * h * ::cuda::std::sin(y)};
     }
   }
 
@@ -111,7 +111,7 @@ _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
    */
   if ((ix | lx) == 0 && iy >= 0x7ff00000)
   {
-    return (complex<double>(::cuda::std::copysign(0.0, x * (y - y)), y - y));
+    return {::cuda::std::copysign(0.0, x * (y - y)), y - y};
   }
 
   /*
@@ -123,9 +123,9 @@ _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
   {
     if (((hx & 0xfffff) | lx) == 0)
     {
-      return (complex<double>(x, y));
+      return {x, y};
     }
-    return (complex<double>(x, ::cuda::std::copysign(0.0, y)));
+    return {x, ::cuda::std::copysign(0.0, y)};
   }
 
   /*
@@ -138,7 +138,7 @@ _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
    */
   if (ix < 0x7ff00000 && iy >= 0x7ff00000)
   {
-    return (complex<double>(y - y, x * (y - y)));
+    return {y - y, x * (y - y)};
   }
 
   /*
@@ -156,10 +156,9 @@ _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
   {
     if (iy >= 0x7ff00000)
     {
-      return (complex<double>(x * x, x * (y - y)));
+      return {x * x, x * (y - y)};
     }
-    return (
-      complex<double>(x * ::cuda::std::cos(y), ::cuda::std::numeric_limits<double>::infinity() * ::cuda::std::sin(y)));
+    return {x * ::cuda::std::cos(y), ::cuda::std::numeric_limits<double>::infinity() * ::cuda::std::sin(y)};
   }
 
   /*
@@ -173,14 +172,14 @@ _CCCL_HOST_DEVICE inline complex<double> csinh(const complex<double>& z)
    * Optionally raises the invalid floating-point exception for finite
    * nonzero y.  Choice = don't raise (except for signaling NaNs).
    */
-  return (complex<double>((x * x) * (y - y), (x + x) * (y - y)));
+  return {(x * x) * (y - y), (x + x) * (y - y)};
 }
 
 _CCCL_HOST_DEVICE inline complex<double> csin(complex<double> z)
 {
   /* csin(z) = -I * csinh(I * z) */
   z = csinh(complex<double>(-z.imag(), z.real()));
-  return (complex<double>(z.imag(), -z.real()));
+  return {z.imag(), -z.real()};
 }
 } // namespace detail::complex
 

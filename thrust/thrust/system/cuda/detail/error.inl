@@ -21,12 +21,12 @@ namespace system
 {
 error_code make_error_code(cuda::errc::errc_t e)
 {
-  return error_code(static_cast<int>(e), cuda_category());
+  return {static_cast<int>(e), cuda_category()};
 } // end make_error_code()
 
 error_condition make_error_condition(cuda::errc::errc_t e)
 {
-  return error_condition(static_cast<int>(e), cuda_category());
+  return {static_cast<int>(e), cuda_category()};
 } // end make_error_condition()
 
 namespace cuda_cub::detail

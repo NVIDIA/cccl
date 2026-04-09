@@ -317,24 +317,24 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
     /* casinh(+-Inf + I*NaN) = +-Inf + I*NaN */
     if (::cuda::std::isinf(x))
     {
-      return (complex<double>(x, y + y));
+      return {x, y + y};
     }
     /* casinh(NaN + I*+-Inf) = opt(+-)Inf + I*NaN */
     if (::cuda::std::isinf(y))
     {
-      return (complex<double>(y, x + x));
+      return {y, x + x};
     }
     /* casinh(NaN + I*0) = NaN + I*0 */
     if (y == 0)
     {
-      return (complex<double>(x + x, y));
+      return {x + x, y};
     }
     /*
      * All other cases involving NaN return NaN + I*NaN.
      * C99 leaves it optional whether to raise invalid if one of
      * the arguments is not NaN, so we opt not to raise it.
      */
-    return (complex<double>(x + 0.0 + (y + 0.0), x + 0.0 + (y + 0.0)));
+    return {x + 0.0 + (y + 0.0), x + 0.0 + (y + 0.0)};
   }
 
   if (ax > RECIP_EPSILON || ay > RECIP_EPSILON)
@@ -348,7 +348,7 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
     {
       w = clog_for_large_values(-z) + m_ln2;
     }
-    return (complex<double>(::cuda::std::copysign(w.real(), x), ::cuda::std::copysign(w.imag(), y)));
+    return {::cuda::std::copysign(w.real(), x), ::cuda::std::copysign(w.imag(), y)};
   }
 
   /* Avoid spuriously raising inexact for z = 0. */
@@ -375,7 +375,7 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
   {
     ry = ::cuda::std::atan2(new_y, sqrt_A2my2);
   }
-  return (complex<double>(::cuda::std::copysign(rx, x), ::cuda::std::copysign(ry, y)));
+  return {::cuda::std::copysign(rx, x), ::cuda::std::copysign(ry, y)};
 }
 
 /*
@@ -386,7 +386,7 @@ _CCCL_HOST_DEVICE inline complex<double> casin(complex<double> z)
 {
   complex<double> w = casinh(complex<double>(z.imag(), z.real()));
 
-  return (complex<double>(w.imag(), w.real()));
+  return {w.imag(), w.real()};
 }
 
 /*
@@ -423,24 +423,24 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
     /* cacos(+-Inf + I*NaN) = NaN + I*opt(-)Inf */
     if (::cuda::std::isinf(x))
     {
-      return (complex<double>(y + y, -::cuda::std::numeric_limits<double>::infinity()));
+      return {y + y, -::cuda::std::numeric_limits<double>::infinity()};
     }
     /* cacos(NaN + I*+-Inf) = NaN + I*-+Inf */
     if (::cuda::std::isinf(y))
     {
-      return (complex<double>(x + x, -y));
+      return {x + x, -y};
     }
     /* cacos(0 + I*NaN) = PI/2 + I*NaN with inexact */
     if (x == 0)
     {
-      return (complex<double>(pio2_hi + pio2_lo, y + y));
+      return {pio2_hi + pio2_lo, y + y};
     }
     /*
      * All other cases involving NaN return NaN + I*NaN.
      * C99 leaves it optional whether to raise invalid if one of
      * the arguments is not NaN, so we opt not to raise it.
      */
-    return (complex<double>(x + 0.0 + (y + 0), x + 0.0 + (y + 0)));
+    return {x + 0.0 + (y + 0), x + 0.0 + (y + 0)};
   }
 
   const double RECIP_EPSILON = 1.0 / DBL_EPSILON;
@@ -454,13 +454,13 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
     {
       ry = -ry;
     }
-    return (complex<double>(rx, ry));
+    return {rx, ry};
   }
 
   /* Avoid spuriously raising inexact for z = 1. */
   if (x == 1.0 && y == 0.0)
   {
-    return (complex<double>(0, -y));
+    return {0, -y};
   }
 
   /* All remaining cases are inexact. */
@@ -469,7 +469,7 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
   const double SQRT_6_EPSILON = 3.6500241499888571e-8; /*  0x13988e1409212e.0p-77 */
   if (ax < SQRT_6_EPSILON / 4 && ay < SQRT_6_EPSILON / 4)
   {
-    return (complex<double>(pio2_hi - (x - pio2_lo), -y));
+    return {pio2_hi - (x - pio2_lo), -y};
   }
 
   do_hard_work(ay, ax, &ry, &B_is_usable, &B, &sqrt_A2mx2, &new_x);
@@ -499,7 +499,7 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
   {
     ry = -ry;
   }
-  return (complex<double>(rx, ry));
+  return {rx, ry};
 }
 
 /*
@@ -517,20 +517,20 @@ _CCCL_HOST_DEVICE inline complex<double> cacosh(complex<double> z)
   /* cacosh(NaN + I*NaN) = NaN + I*NaN */
   if (::cuda::std::isnan(rx) && ::cuda::std::isnan(ry))
   {
-    return (complex<double>(ry, rx));
+    return {ry, rx};
   }
   /* cacosh(NaN + I*+-Inf) = +Inf + I*NaN */
   /* cacosh(+-Inf + I*NaN) = +Inf + I*NaN */
   if (isnan(rx))
   {
-    return (complex<double>(fabs(ry), rx));
+    return {fabs(ry), rx};
   }
   /* cacosh(0 + I*NaN) = NaN + I*NaN */
   if (::cuda::std::isnan(ry))
   {
-    return (complex<double>(ry, ry));
+    return {ry, ry};
   }
-  return (complex<double>(::cuda::std::fabs(ry), ::cuda::std::copysign(rx, z.imag())));
+  return {::cuda::std::fabs(ry), ::cuda::std::copysign(rx, z.imag())};
 }
 
 /*
@@ -562,7 +562,7 @@ _CCCL_HOST_DEVICE inline complex<double> clog_for_large_values(complex<double> z
    */
   if (ax > DBL_MAX / 2)
   {
-    return (complex<double>(::cuda::std::log(::cuda::std::hypot(x / m_e, y / m_e)) + 1, ::cuda::std::atan2(y, x)));
+    return {::cuda::std::log(::cuda::std::hypot(x / m_e, y / m_e)) + 1, ::cuda::std::atan2(y, x)};
   }
 
   /*
@@ -573,10 +573,10 @@ _CCCL_HOST_DEVICE inline complex<double> clog_for_large_values(complex<double> z
   const double SQRT_MIN         = 1.491668146240041348658193e-154; /* = 0x1p-511; >= sqrt(DBL_MIN) */
   if (ax > QUARTER_SQRT_MAX || ay < SQRT_MIN)
   {
-    return (complex<double>(::cuda::std::log(::cuda::std::hypot(x, y)), ::cuda::std::atan2(y, x)));
+    return {::cuda::std::log(::cuda::std::hypot(x, y)), ::cuda::std::atan2(y, x)};
   }
 
-  return (complex<double>(::cuda::std::log(ax * ax + ay * ay) / 2, ::cuda::std::atan2(y, x)));
+  return {::cuda::std::log(ax * ax + ay * ay) / 2, ::cuda::std::atan2(y, x)};
 }
 
 /*
@@ -677,13 +677,13 @@ _CCCL_HOST_DEVICE inline complex<double> catanh(complex<double> z)
   /* This helps handle many cases. */
   if (y == 0 && ax <= 1)
   {
-    return (complex<double>(::cuda::std::atanh(x), y));
+    return {::cuda::std::atanh(x), y};
   }
 
   /* To ensure the same accuracy as atan(), and to filter out z = 0. */
   if (x == 0)
   {
-    return (complex<double>(x, ::cuda::std::atan(y)));
+    return {x, ::cuda::std::atan(y)};
   }
 
   if (::cuda::std::isnan(x) || ::cuda::std::isnan(y))
@@ -691,25 +691,25 @@ _CCCL_HOST_DEVICE inline complex<double> catanh(complex<double> z)
     /* catanh(+-Inf + I*NaN) = +-0 + I*NaN */
     if (::cuda::std::isinf(x))
     {
-      return (complex<double>(::cuda::std::copysign(0.0, x), y + y));
+      return {::cuda::std::copysign(0.0, x), y + y};
     }
     /* catanh(NaN + I*+-Inf) = sign(NaN)0 + I*+-PI/2 */
     if (::cuda::std::isinf(y))
     {
-      return (complex<double>(::cuda::std::copysign(0.0, x), ::cuda::std::copysign(pio2_hi + pio2_lo, y)));
+      return {::cuda::std::copysign(0.0, x), ::cuda::std::copysign(pio2_hi + pio2_lo, y)};
     }
     /*
      * All other cases involving NaN return NaN + I*NaN.
      * C99 leaves it optional whether to raise invalid if one of
      * the arguments is not NaN, so we opt not to raise it.
      */
-    return (complex<double>(x + 0.0 + (y + 0), x + 0.0 + (y + 0)));
+    return {x + 0.0 + (y + 0), x + 0.0 + (y + 0)};
   }
 
   const double RECIP_EPSILON = 1.0 / DBL_EPSILON;
   if (ax > RECIP_EPSILON || ay > RECIP_EPSILON)
   {
-    return (complex<double>(real_part_reciprocal(x, y), ::cuda::std::copysign(pio2_hi + pio2_lo, y)));
+    return {real_part_reciprocal(x, y), ::cuda::std::copysign(pio2_hi + pio2_lo, y)};
   }
 
   const double SQRT_3_EPSILON = 2.5809568279517849e-8; /*  0x1bb67ae8584caa.0p-78 */
@@ -747,7 +747,7 @@ _CCCL_HOST_DEVICE inline complex<double> catanh(complex<double> z)
     ry = ::cuda::std::atan2(2 * ay, (1 - ax) * (1 + ax) - ay * ay) / 2;
   }
 
-  return (complex<double>(::cuda::std::copysign(rx, x), ::cuda::std::copysign(ry, y)));
+  return {::cuda::std::copysign(rx, x), ::cuda::std::copysign(ry, y)};
 }
 
 /*
@@ -757,7 +757,7 @@ _CCCL_HOST_DEVICE inline complex<double> catanh(complex<double> z)
 _CCCL_HOST_DEVICE inline complex<double> catan(complex<double> z)
 {
   complex<double> w = catanh(complex<double>(z.imag(), z.real()));
-  return (complex<double>(w.imag(), w.real()));
+  return {w.imag(), w.real()};
 }
 } // namespace detail::complex
 

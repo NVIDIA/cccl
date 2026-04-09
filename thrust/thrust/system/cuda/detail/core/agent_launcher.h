@@ -156,7 +156,7 @@ struct AgentLauncher : Agent
   {
     int occ;
     cudaError_t status = cub::MaxSmOccupancy(occ, k, block_threads);
-    return cuda_optional<int>(status == cudaSuccess ? occ : -1, status);
+    return {status == cudaSuccess ? occ : -1, status};
   }
 
   template <class K>

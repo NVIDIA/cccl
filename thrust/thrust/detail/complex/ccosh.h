@@ -79,12 +79,11 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<dou
   {
     if ((iy | ly) == 0)
     {
-      return (thrust::complex<double>(::cuda::std::cosh(x), x * y));
+      return {::cuda::std::cosh(x), x * y};
     }
     if (ix < 0x40360000) /* small x: normal case */
     {
-      return (thrust::complex<double>(
-        ::cuda::std::cosh(x) * ::cuda::std::cos(y), ::cuda::std::sinh(x) * ::cuda::std::sin(y)));
+      return {::cuda::std::cosh(x) * ::cuda::std::cos(y), ::cuda::std::sinh(x) * ::cuda::std::sin(y)};
     }
 
     /* |x| >= 22, so cosh(x) ~= exp(|x|) */
@@ -92,7 +91,7 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<dou
     {
       /* x < 710: exp(|x|) won't overflow */
       h = ::cuda::std::exp(::cuda::std::fabs(x)) * 0.5;
-      return (thrust::complex<double>(h * ::cuda::std::cos(y), ::cuda::std::copysign(h, x) * ::cuda::std::sin(y)));
+      return {h * ::cuda::std::cos(y), ::cuda::std::copysign(h, x) * ::cuda::std::sin(y)};
     }
     else if (ix < 0x4096bbaa)
     {
@@ -105,7 +104,7 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<dou
     {
       /* x >= 1455: the result always overflows */
       h = huge * x;
-      return (thrust::complex<double>(h * h * ::cuda::std::cos(y), h * ::cuda::std::sin(y)));
+      return {h * h * ::cuda::std::cos(y), h * ::cuda::std::sin(y)};
     }
   }
 
@@ -120,7 +119,7 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<dou
    */
   if ((ix | lx) == 0 && iy >= 0x7ff00000)
   {
-    return (thrust::complex<double>(y - y, ::cuda::std::copysign(0.0, x * (y - y))));
+    return {y - y, ::cuda::std::copysign(0.0, x * (y - y))};
   }
 
   /*
@@ -133,9 +132,9 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<dou
   {
     if (((hx & 0xfffff) | lx) == 0)
     {
-      return (thrust::complex<double>(x * x, ::cuda::std::copysign(0.0, x) * y));
+      return {x * x, ::cuda::std::copysign(0.0, x) * y};
     }
-    return (thrust::complex<double>(x * x, ::cuda::std::copysign(0.0, (x + x) * y)));
+    return {x * x, ::cuda::std::copysign(0.0, (x + x) * y)};
   }
 
   /*
@@ -148,7 +147,7 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<dou
    */
   if (ix < 0x7ff00000 && iy >= 0x7ff00000)
   {
-    return (thrust::complex<double>(y - y, x * (y - y)));
+    return {y - y, x * (y - y)};
   }
 
   /*
@@ -164,9 +163,9 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<dou
   {
     if (iy >= 0x7ff00000)
     {
-      return (thrust::complex<double>(x * x, x * (y - y)));
+      return {x * x, x * (y - y)};
     }
-    return (thrust::complex<double>((x * x) * ::cuda::std::cos(y), x * ::cuda::std::sin(y)));
+    return {(x * x) * ::cuda::std::cos(y), x * ::cuda::std::sin(y)};
   }
 
   /*
@@ -180,7 +179,7 @@ _CCCL_HOST_DEVICE inline thrust::complex<double> ccosh(const thrust::complex<dou
    * Optionally raises the invalid floating-point exception for finite
    * nonzero y.  Choice = don't raise (except for signaling NaNs).
    */
-  return (thrust::complex<double>((x * x) * (y - y), (x + x) * (y - y)));
+  return {(x * x) * (y - y), (x + x) * (y - y)};
 }
 
 _CCCL_HOST_DEVICE inline thrust::complex<double> ccos(const thrust::complex<double>& z)

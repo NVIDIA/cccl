@@ -192,17 +192,17 @@ _CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
   {
     if (::cuda::std::isinf(x))
     {
-      return (complex<float>(x, y + y));
+      return {x, y + y};
     }
     if (::cuda::std::isinf(y))
     {
-      return (complex<float>(y, x + x));
+      return {y, x + x};
     }
     if (y == 0)
     {
-      return (complex<float>(x + x, y));
+      return {x + x, y};
     }
-    return (complex<float>(x + 0.0f + (y + 0), x + 0.0f + (y + 0)));
+    return {x + 0.0f + (y + 0), x + 0.0f + (y + 0)};
   }
 
   if (ax > RECIP_EPSILON || ay > RECIP_EPSILON)
@@ -215,7 +215,7 @@ _CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
     {
       w = clog_for_large_values(-z) + m_ln2;
     }
-    return (complex<float>(::cuda::std::copysignf(w.real(), x), ::cuda::std::copysignf(w.imag(), y)));
+    return {::cuda::std::copysignf(w.real(), x), ::cuda::std::copysignf(w.imag(), y)};
   }
 
   if (x == 0 && y == 0)
@@ -240,14 +240,14 @@ _CCCL_HOST_DEVICE inline complex<float> casinhf(complex<float> z)
   {
     ry = ::cuda::std::atan2f(new_y, sqrt_A2my2);
   }
-  return (complex<float>(::cuda::std::copysignf(rx, x), ::cuda::std::copysignf(ry, y)));
+  return {::cuda::std::copysignf(rx, x), ::cuda::std::copysignf(ry, y)};
 }
 
 _CCCL_HOST_DEVICE inline complex<float> casinf(complex<float> z)
 {
   complex<float> w = casinhf(complex<float>(z.imag(), z.real()));
 
-  return (complex<float>(w.imag(), w.real()));
+  return {w.imag(), w.real()};
 }
 
 _CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
@@ -271,17 +271,17 @@ _CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
   {
     if (::cuda::std::isinf(x))
     {
-      return (complex<float>(y + y, -::cuda::std::numeric_limits<float>::infinity()));
+      return {y + y, -::cuda::std::numeric_limits<float>::infinity()};
     }
     if (::cuda::std::isinf(y))
     {
-      return (complex<float>(x + x, -y));
+      return {x + x, -y};
     }
     if (x == 0)
     {
-      return (complex<float>(pio2_hi + pio2_lo, y + y));
+      return {pio2_hi + pio2_lo, y + y};
     }
-    return (complex<float>(x + 0.0f + (y + 0), x + 0.0f + (y + 0)));
+    return {x + 0.0f + (y + 0), x + 0.0f + (y + 0)};
   }
 
   const float RECIP_EPSILON = 1.0f / FLT_EPSILON;
@@ -294,12 +294,12 @@ _CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
     {
       ry = -ry;
     }
-    return (complex<float>(rx, ry));
+    return {rx, ry};
   }
 
   if (x == 1 && y == 0)
   {
-    return (complex<float>(0, -y));
+    return {0, -y};
   }
 
   raise_inexact();
@@ -307,7 +307,7 @@ _CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
   const float SQRT_6_EPSILON = 8.4572793338e-4f; /*  0xddb3d7.0p-34 */
   if (ax < SQRT_6_EPSILON / 4 && ay < SQRT_6_EPSILON / 4)
   {
-    return (complex<float>(pio2_hi - (x - pio2_lo), -y));
+    return {pio2_hi - (x - pio2_lo), -y};
   }
 
   do_hard_work(ay, ax, &ry, &B_is_usable, &B, &sqrt_A2mx2, &new_x);
@@ -337,7 +337,7 @@ _CCCL_HOST_DEVICE inline complex<float> cacosf(complex<float> z)
   {
     ry = -ry;
   }
-  return (complex<float>(rx, ry));
+  return {rx, ry};
 }
 
 _CCCL_HOST_DEVICE inline complex<float> cacoshf(complex<float> z)
@@ -351,20 +351,20 @@ _CCCL_HOST_DEVICE inline complex<float> cacoshf(complex<float> z)
   /* cacosh(NaN + I*NaN) = NaN + I*NaN */
   if (::cuda::std::isnan(rx) && ::cuda::std::isnan(ry))
   {
-    return (complex<float>(ry, rx));
+    return {ry, rx};
   }
   /* cacosh(NaN + I*+-Inf) = +Inf + I*NaN */
   /* cacosh(+-Inf + I*NaN) = +Inf + I*NaN */
   if (::cuda::std::isnan(rx))
   {
-    return (complex<float>(::cuda::std::fabsf(ry), rx));
+    return {::cuda::std::fabsf(ry), rx};
   }
   /* cacosh(0 + I*NaN) = NaN + I*NaN */
   if (::cuda::std::isnan(ry))
   {
-    return (complex<float>(ry, ry));
+    return {ry, ry};
   }
-  return (complex<float>(::cuda::std::fabsf(ry), ::cuda::std::copysignf(rx, z.imag())));
+  return {::cuda::std::fabsf(ry), ::cuda::std::copysignf(rx, z.imag())};
 }
 
 /*
@@ -389,17 +389,17 @@ _CCCL_HOST_DEVICE inline complex<float> clog_for_large_values(complex<float> z)
 
   if (ax > FLT_MAX / 2)
   {
-    return (complex<float>(::cuda::std::logf(::cuda::std::hypotf(x / m_e, y / m_e)) + 1, ::cuda::std::atan2f(y, x)));
+    return {::cuda::std::logf(::cuda::std::hypotf(x / m_e, y / m_e)) + 1, ::cuda::std::atan2f(y, x)};
   }
 
   const float QUARTER_SQRT_MAX = 2.3058430092136939520000000e+18f; /* = 0x1p61; <= sqrt(FLT_MAX) / 4 */
   const float SQRT_MIN         = 1.084202172485504434007453e-19f; /* 0x1p-63; >= sqrt(FLT_MIN) */
   if (ax > QUARTER_SQRT_MAX || ay < SQRT_MIN)
   {
-    return (complex<float>(::cuda::std::logf(::cuda::std::hypotf(x, y)), ::cuda::std::atan2f(y, x)));
+    return {::cuda::std::logf(::cuda::std::hypotf(x, y)), ::cuda::std::atan2f(y, x)};
   }
 
-  return (complex<float>(::cuda::std::logf(ax * ax + ay * ay) / 2, ::cuda::std::atan2f(y, x)));
+  return {::cuda::std::logf(ax * ax + ay * ay) / 2, ::cuda::std::atan2f(y, x)};
 }
 
 /*
@@ -472,31 +472,31 @@ _CCCL_HOST_DEVICE inline complex<float> catanhf(complex<float> z)
 
   if (y == 0 && ax <= 1)
   {
-    return (complex<float>(::cuda::std::atanhf(x), y));
+    return {::cuda::std::atanhf(x), y};
   }
 
   if (x == 0)
   {
-    return (complex<float>(x, ::cuda::std::atanf(y)));
+    return {x, ::cuda::std::atanf(y)};
   }
 
   if (::cuda::std::isnan(x) || ::cuda::std::isnan(y))
   {
     if (::cuda::std::isinf(x))
     {
-      return (complex<float>(::cuda::std::copysignf(0, x), y + y));
+      return {::cuda::std::copysignf(0, x), y + y};
     }
     if (::cuda::std::isinf(y))
     {
-      return (complex<float>(::cuda::std::copysignf(0, x), ::cuda::std::copysignf(pio2_hi + pio2_lo, y)));
+      return {::cuda::std::copysignf(0, x), ::cuda::std::copysignf(pio2_hi + pio2_lo, y)};
     }
-    return (complex<float>(x + 0.0f + (y + 0.0f), x + 0.0f + (y + 0.0f)));
+    return {x + 0.0f + (y + 0.0f), x + 0.0f + (y + 0.0f)};
   }
 
   const float RECIP_EPSILON = 1.0f / FLT_EPSILON;
   if (ax > RECIP_EPSILON || ay > RECIP_EPSILON)
   {
-    return (complex<float>(real_part_reciprocal(x, y), ::cuda::std::copysignf(pio2_hi + pio2_lo, y)));
+    return {real_part_reciprocal(x, y), ::cuda::std::copysignf(pio2_hi + pio2_lo, y)};
   }
 
   const float SQRT_3_EPSILON = 5.9801995673e-4f; /*  0x9cc471.0p-34 */
@@ -529,13 +529,13 @@ _CCCL_HOST_DEVICE inline complex<float> catanhf(complex<float> z)
     ry = ::cuda::std::atan2f(2 * ay, (1 - ax) * (1 + ax) - ay * ay) / 2;
   }
 
-  return (complex<float>(::cuda::std::copysignf(rx, x), ::cuda::std::copysignf(ry, y)));
+  return {::cuda::std::copysignf(rx, x), ::cuda::std::copysignf(ry, y)};
 }
 
 _CCCL_HOST_DEVICE inline complex<float> catanf(complex<float> z)
 {
   complex<float> w = catanhf(complex<float>(z.imag(), z.real()));
-  return (complex<float>(w.imag(), w.real()));
+  return {w.imag(), w.real()};
 }
 } // namespace detail::complex
 

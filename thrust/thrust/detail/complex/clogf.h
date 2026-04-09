@@ -74,7 +74,7 @@ _CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
   /* Handle NaNs using the general formula to mix them right. */
   if (x != x || y != y)
   {
-    return (complex<float>(::cuda::std::log(norm(z)), ::cuda::std::atan2(y, x)));
+    return {::cuda::std::log(norm(z)), ::cuda::std::atan2(y, x)};
   }
 
   ax = ::cuda::std::abs(x);
@@ -97,15 +97,15 @@ _CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
   // We expect that for values at or below ay = 1e34f this should not happen
   if (ay > 1e34f)
   {
-    return (complex<float>(::cuda::std::log(::cuda::std::hypotf(x / e, y / e)) + 1.0f, ::cuda::std::atan2(y, x)));
+    return {::cuda::std::log(::cuda::std::hypotf(x / e, y / e)) + 1.0f, ::cuda::std::atan2(y, x)};
   }
   if (ax == 1.f)
   {
     if (ay < 1e-19f)
     {
-      return (complex<float>((ay * 0.5f) * ay, ::cuda::std::atan2(y, x)));
+      return {(ay * 0.5f) * ay, ::cuda::std::atan2(y, x)};
     }
-    return (complex<float>(log1pf(ay * ay) * 0.5f, ::cuda::std::atan2(y, x)));
+    return {log1pf(ay * ay) * 0.5f, ::cuda::std::atan2(y, x)};
   }
 
   /*
@@ -114,7 +114,7 @@ _CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
    */
   if (ax < 1e-6f || ay < 1e-6f || ax > 1e6f || ay > 1e6f)
   {
-    return (complex<float>(::cuda::std::log(::cuda::std::hypotf(x, y)), ::cuda::std::atan2(y, x)));
+    return {::cuda::std::log(::cuda::std::hypotf(x, y)), ::cuda::std::atan2(y, x)};
   }
 
   /*
@@ -126,12 +126,12 @@ _CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
 
   if (ax >= 1.0f)
   {
-    return (complex<float>(::cuda::std::log1pf((ax - 1.f) * (ax + 1.f) + ay * ay) * 0.5f, ::cuda::std::atan2(y, x)));
+    return {::cuda::std::log1pf((ax - 1.f) * (ax + 1.f) + ay * ay) * 0.5f, ::cuda::std::atan2(y, x)};
   }
 
   if (ax * ax + ay * ay <= 0.7f)
   {
-    return (complex<float>(::cuda::std::log(ax * ax + ay * ay) * 0.5f, ::cuda::std::atan2(y, x)));
+    return {::cuda::std::log(ax * ax + ay * ay) * 0.5f, ::cuda::std::atan2(y, x)};
   }
 
   /*
@@ -183,7 +183,7 @@ _CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
   {
     hm1 += val[i];
   }
-  return (complex<float>(0.5f * ::cuda::std::log1pf(hm1), ::cuda::std::atan2(y, x)));
+  return {0.5f * ::cuda::std::log1pf(hm1), ::cuda::std::atan2(y, x)};
 }
 } // namespace detail::complex
 

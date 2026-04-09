@@ -532,16 +532,16 @@ inline cuda_optional<size_t> get_max_shared_memory_per_block()
   status             = cudaGetDevice(&dev_id);
   if (status != cudaSuccess)
   {
-    return cuda_optional<size_t>(0, status);
+    return {0, status};
   }
 
   int max_shmem = 0;
   status        = cudaDeviceGetAttribute(&max_shmem, cudaDevAttrMaxSharedMemoryPerBlock, dev_id);
   if (status != cudaSuccess)
   {
-    return cuda_optional<size_t>(0, status);
+    return {0, status};
   }
-  return cuda_optional<size_t>(max_shmem, status);
+  return {static_cast<size_t>(max_shmem), status};
 }
 } // namespace host
 

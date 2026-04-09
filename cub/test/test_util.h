@@ -963,7 +963,7 @@ struct TestBar
   // Summation operator
   __host__ __device__ __forceinline__ TestBar operator+(const TestBar& b) const
   {
-    return TestBar(x + b.x, y + b.y);
+    return {x + b.x, y + b.y};
   }
 
   // Inequality operator
@@ -1033,12 +1033,12 @@ public:
 
   __host__ __device__ static TestBar max()
   {
-    return TestBar(numeric_limits<long long>::max(), numeric_limits<int>::max());
+    return {numeric_limits<long long>::max(), numeric_limits<int>::max()};
   }
 
   __host__ __device__ static TestBar lowest()
   {
-    return TestBar(numeric_limits<long long>::lowest(), numeric_limits<int>::lowest());
+    return {numeric_limits<long long>::lowest(), numeric_limits<int>::lowest()};
   }
 };
 

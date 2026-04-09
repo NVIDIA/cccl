@@ -33,7 +33,7 @@ struct stream_wrapper_ref
   }
   operator cuda::stream_ref() const
   {
-    return cuda::stream_ref(stream);
+    return {stream};
   }
 
   cudaStream_t stream;

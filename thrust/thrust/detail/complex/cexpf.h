@@ -78,7 +78,7 @@ _CCCL_HOST_DEVICE inline complex<float> ldexp_cexpf(complex<float> z, int expt)
   half_expt = expt - half_expt;
   set_float_word(scale2, (0x7f + half_expt) << 23);
 
-  return (complex<float>(::cuda::std::cos(y) * exp_x * scale1 * scale2, ::cuda::std::sin(y) * exp_x * scale1 * scale2));
+  return {::cuda::std::cos(y) * exp_x * scale1 * scale2, ::cuda::std::sin(y) * exp_x * scale1 * scale2};
 }
 
 _CCCL_HOST_DEVICE inline complex<float> cexpf(const complex<float>& z)
@@ -98,30 +98,30 @@ _CCCL_HOST_DEVICE inline complex<float> cexpf(const complex<float>& z)
   /* cexp(x + I 0) = exp(x) + I 0 */
   if (hy == 0)
   {
-    return (complex<float>(::cuda::std::exp(x), y));
+    return {::cuda::std::exp(x), y};
   }
   get_float_word(hx, x);
   /* cexp(0 + I y) = cos(y) + I sin(y) */
   if ((hx & 0x7fffffff) == 0)
   {
-    return (complex<float>(::cuda::std::cos(y), ::cuda::std::sin(y)));
+    return {::cuda::std::cos(y), ::cuda::std::sin(y)};
   }
   if (hy >= 0x7f800000)
   {
     if ((hx & 0x7fffffff) != 0x7f800000)
     {
       /* cexp(finite|NaN +- I Inf|NaN) = NaN + I NaN */
-      return (complex<float>(y - y, y - y));
+      return {y - y, y - y};
     }
     else if (hx & 0x80000000)
     {
       /* cexp(-Inf +- I Inf|NaN) = 0 + I 0 */
-      return (complex<float>(0.0, 0.0));
+      return {0.0, 0.0};
     }
     else
     {
       /* cexp(+Inf +- I Inf|NaN) = Inf + I NaN */
-      return (complex<float>(x, y - y));
+      return {x, y - y};
     }
   }
 
@@ -143,7 +143,7 @@ _CCCL_HOST_DEVICE inline complex<float> cexpf(const complex<float>& z)
      *  -  x = NaN (spurious inexact exception from y)
      */
     exp_x = ::cuda::std::exp(x);
-    return (complex<float>(exp_x * ::cuda::std::cos(y), exp_x * ::cuda::std::sin(y)));
+    return {exp_x * ::cuda::std::cos(y), exp_x * ::cuda::std::sin(y)};
   }
 }
 } // namespace detail::complex

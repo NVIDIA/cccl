@@ -202,7 +202,7 @@ thrust::pointer<void, my_memory_system> malloc(my_memory_system& system, std::si
 {
   system.validate_dispatch();
 
-  return thrust::pointer<void, my_memory_system>();
+  return {};
 }
 
 void TestMallocDispatchExplicit()

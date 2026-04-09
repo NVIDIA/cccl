@@ -153,7 +153,7 @@ struct pinned_memory_pool : pinned_memory_pool_ref
 
   _CCCL_HOST_API static pinned_memory_pool from_native_handle(::cudaMemPool_t __pool) noexcept
   {
-    return pinned_memory_pool(__pool);
+    return {__pool};
   }
 
   //! @brief Returns a \c pinned_memory_pool_ref for this \c pinned_memory_pool.

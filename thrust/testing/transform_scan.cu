@@ -419,11 +419,11 @@ struct TransformInt
 
   _CCCL_HOST_DEVICE friend TransformInt operator+(TransformInt a, TransformInt b)
   {
-    return TransformInt(a.value + b.value);
+    return {a.value + b.value};
   }
   _CCCL_HOST_DEVICE friend TransformInt operator*(TransformInt a, TransformInt b)
   {
-    return TransformInt(a.value * b.value);
+    return {a.value * b.value};
   }
   _CCCL_HOST_DEVICE friend bool operator==(TransformInt a, TransformInt b)
   {

@@ -67,16 +67,16 @@ _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
   /* Handle special cases. */
   if (z == 0.0f)
   {
-    return (complex<float>(0, b));
+    return {0, b};
   }
   if (::cuda::std::isinf(b))
   {
-    return (complex<float>(::cuda::std::numeric_limits<float>::infinity(), b));
+    return {::cuda::std::numeric_limits<float>::infinity(), b};
   }
   if (::cuda::std::isnan(a))
   {
     t = (b - b) / (b - b); /* raise invalid if b is not a NaN */
-    return (complex<float>(a, t)); /* return NaN + NaN i */
+    return {a, t}; /* return NaN + NaN i */
   }
   if (::cuda::std::isinf(a))
   {
@@ -88,11 +88,11 @@ _CCCL_HOST_DEVICE inline complex<float> csqrtf(const complex<float>& z)
      */
     if (::cuda::std::signbit(a))
     {
-      return (complex<float>(::cuda::std::fabsf(b - b), ::cuda::std::copysignf(a, b)));
+      return {::cuda::std::fabsf(b - b), ::cuda::std::copysignf(a, b)};
     }
     else
     {
-      return (complex<float>(a, ::cuda::std::copysignf(b - b, b)));
+      return {a, ::cuda::std::copysignf(b - b, b)};
     }
   }
   /*
