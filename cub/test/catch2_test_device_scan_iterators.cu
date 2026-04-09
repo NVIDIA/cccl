@@ -188,7 +188,6 @@ public:
 
   __host__ __device__ custom_accumulator_t(const custom_input_t& in)
       : m_val(in.get())
-      , m_magic_value(42)
   {}
 
   __host__ __device__ void operator=(const custom_input_t& in)

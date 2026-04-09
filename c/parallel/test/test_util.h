@@ -700,10 +700,7 @@ struct pointer_t
     size = vec.size();
   }
 
-  pointer_t()
-      : ptr(nullptr)
-      , size(0)
-  {}
+  pointer_t() = default;
 
   ~pointer_t()
   {
