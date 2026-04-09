@@ -89,12 +89,12 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
 #endif // !_CCCL_COMPILER(NVRTC)
 
   template <class T>
-  size_t _CCCL_DEVICE align_up(size_t offset) const
+  [[nodiscard]] size_t _CCCL_DEVICE align_up(size_t offset) const
   {
     return ::cuda::ceil_div(offset, alignof(T)) * alignof(T);
   }
 
-  size_t _CCCL_DEVICE argument_pack_size(size_t size) const
+  [[nodiscard]] size_t _CCCL_DEVICE argument_pack_size(size_t size) const
   {
     return size;
   }

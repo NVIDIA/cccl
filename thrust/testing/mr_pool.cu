@@ -60,19 +60,19 @@ struct tracked_pointer
     return ret;
   }
 
-  _CCCL_HOST_DEVICE std::ptrdiff_t distance_to(const tracked_pointer& other) const
+  [[nodiscard]] _CCCL_HOST_DEVICE std::ptrdiff_t distance_to(const tracked_pointer& other) const
   {
     return static_cast<T*>(other.ptr) - static_cast<T*>(ptr);
   }
 
-  _CCCL_HOST_DEVICE T* get() const
+  [[nodiscard]] _CCCL_HOST_DEVICE T* get() const
   {
     return static_cast<T*>(ptr);
   }
 
   // globally qualified, because MSVC somehow prefers the name from the dependent base
   // of this class over the `reference` template that's visible in the global namespace of this file...
-  _CCCL_HOST_DEVICE typename ::reference<T>::type dereference() const
+  [[nodiscard]] _CCCL_HOST_DEVICE typename ::reference<T>::type dereference() const
   {
     return *get();
   }
@@ -93,7 +93,7 @@ struct tracked_pointer
     offset += diff * sizeof(T);
   }
 
-  _CCCL_HOST_DEVICE bool equal(const tracked_pointer& other) const
+  [[nodiscard]] _CCCL_HOST_DEVICE bool equal(const tracked_pointer& other) const
   {
     return id == other.id && size == other.size && alignment == other.alignment && offset == other.offset
         && ptr == other.ptr;

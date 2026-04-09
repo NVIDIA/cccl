@@ -191,17 +191,17 @@ struct some_env_t
   cudax::stream stream_{cuda::device_ref{0}};
   cudax::execution::any_execution_policy policy_ = cuda::std::execution::par_unseq;
 
-  const test_resource& query(cuda::mr::get_memory_resource_t) const noexcept
+  [[nodiscard]] const test_resource& query(cuda::mr::get_memory_resource_t) const noexcept
   {
     return res_;
   }
 
-  cudax::stream_ref query(cuda::get_stream_t) const noexcept
+  [[nodiscard]] cudax::stream_ref query(cuda::get_stream_t) const noexcept
   {
     return stream_;
   }
 
-  cudax::execution::any_execution_policy query(cudax::execution::get_execution_policy_t) const noexcept
+  [[nodiscard]] cudax::execution::any_execution_policy query(cudax::execution::get_execution_policy_t) const noexcept
   {
     return policy_;
   }
@@ -223,19 +223,19 @@ struct bad_env_t
   cudax::execution::any_execution_policy policy_ = cuda::std::execution::par_unseq;
 
   template <bool Enable = WithResource, cuda::std::enable_if_t<Enable, int> = 0>
-  const test_resource& query(cuda::mr::get_memory_resource_t) const noexcept
+  [[nodiscard]] const test_resource& query(cuda::mr::get_memory_resource_t) const noexcept
   {
     return res_;
   }
 
   template <bool Enable = WithStream, cuda::std::enable_if_t<Enable, int> = 0>
-  cudax::stream_ref query(cuda::get_stream_t) const noexcept
+  [[nodiscard]] cudax::stream_ref query(cuda::get_stream_t) const noexcept
   {
     return stream_;
   }
 
   template <bool Enable = WithPolicy, cuda::std::enable_if_t<Enable, int> = 0>
-  cudax::execution::any_execution_policy query(cudax::execution::get_execution_policy_t) const noexcept
+  [[nodiscard]] cudax::execution::any_execution_policy query(cudax::execution::get_execution_policy_t) const noexcept
   {
     return policy_;
   }

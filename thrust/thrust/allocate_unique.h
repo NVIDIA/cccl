@@ -81,7 +81,7 @@ struct allocator_delete final
   {
     return alloc_;
   }
-  allocator_type const& get_allocator() const noexcept
+  [[nodiscard]] allocator_type const& get_allocator() const noexcept
   {
     return alloc_;
   }
@@ -156,7 +156,7 @@ struct array_allocator_delete final
   {
     return alloc_;
   }
-  allocator_type const& get_allocator() const noexcept
+  [[nodiscard]] allocator_type const& get_allocator() const noexcept
   {
     return alloc_;
   }

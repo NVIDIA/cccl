@@ -50,7 +50,7 @@ public:
   }
 
   template <class T>
-  T* get_as() const noexcept
+  [[nodiscard]] T* get_as() const noexcept
   {
     return static_cast<T*>(pv);
   }
@@ -78,7 +78,7 @@ public:
   {
     return _mem.get_as<T>();
   }
-  const T* get() const noexcept
+  [[nodiscard]] const T* get() const noexcept
   {
     return _mem.get_as<T>();
   }

@@ -34,7 +34,7 @@ struct cross_system : execution_policy<cross_system<Sys1, Sys2>>
       , sys2(sys2)
   {}
 
-  inline _CCCL_HOST_DEVICE cross_system<Sys2, Sys1> rotate() const
+  [[nodiscard]] inline _CCCL_HOST_DEVICE cross_system<Sys2, Sys1> rotate() const
   {
     return cross_system<Sys2, Sys1>(sys2, sys1);
   }

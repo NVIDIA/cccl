@@ -56,7 +56,7 @@ public:
   // have a profusion of these vtables in TUs, and the dynamic linker will already have a bunch
   // of work to do. So it is not worth hiding the <void> specialization in the dylib, given that
   // it adds deployment target restrictions.
-  const char* what() const noexcept override
+  [[nodiscard]] const char* what() const noexcept override
   {
     return "bad access to cuda::std::expected";
   }

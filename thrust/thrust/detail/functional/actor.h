@@ -68,7 +68,7 @@ template <unsigned int Pos>
 struct argument
 {
   template <typename... Ts>
-  _CCCL_HOST_DEVICE auto eval(Ts&&... args) const
+  [[nodiscard]] _CCCL_HOST_DEVICE auto eval(Ts&&... args) const
     -> decltype(::cuda::std::get<Pos>(::cuda::std::tuple<Ts&&...>{THRUST_FWD(args)...}))
   {
     return ::cuda::std::get<Pos>(::cuda::std::tuple<Ts&&...>{THRUST_FWD(args)...});
@@ -97,7 +97,7 @@ struct composite<Eval, SubExpr>
   {}
 
   template <typename... Ts>
-  _CCCL_HOST_DEVICE auto eval(Ts&&... args) const
+  [[nodiscard]] _CCCL_HOST_DEVICE auto eval(Ts&&... args) const
     -> decltype(::cuda::std::declval<Eval>().eval(::cuda::std::declval<SubExpr>().eval(THRUST_FWD(args)...)))
   {
     return m_eval.eval(m_subexpr.eval(THRUST_FWD(args)...));
@@ -121,7 +121,7 @@ struct composite<Eval, SubExpr1, SubExpr2>
   {}
 
   template <typename... Ts>
-  _CCCL_HOST_DEVICE auto eval(Ts&&... args) const
+  [[nodiscard]] _CCCL_HOST_DEVICE auto eval(Ts&&... args) const
     -> decltype(::cuda::std::declval<Eval>().eval(::cuda::std::declval<SubExpr1>().eval(THRUST_FWD(args)...),
                                                   ::cuda::std::declval<SubExpr2>().eval(THRUST_FWD(args)...)))
   {
@@ -148,7 +148,7 @@ struct operator_adaptor : F
   {}
 
   template <typename... Ts>
-  _CCCL_HOST_DEVICE auto eval(Ts&&... args) const -> decltype(F{}(THRUST_FWD(args)...))
+  [[nodiscard]] _CCCL_HOST_DEVICE auto eval(Ts&&... args) const -> decltype(F{}(THRUST_FWD(args)...))
   {
     return static_cast<const F&>(*this)(THRUST_FWD(args)...);
   }
@@ -161,7 +161,7 @@ struct value
   T m_val;
 
   template <typename... Ts>
-  _CCCL_HOST_DEVICE T eval(Ts&&...) const
+  [[nodiscard]] _CCCL_HOST_DEVICE T eval(Ts&&...) const
   {
     return m_val;
   }

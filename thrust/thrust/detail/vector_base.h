@@ -252,12 +252,12 @@ public:
 
   /*! Returns the number of elements in this vector_base.
    */
-  _CCCL_HOST_DEVICE size_type size() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE size_type size() const;
 
   /*! Returns the size() of the largest possible vector_base.
    *  \return The largest possible return value of size().
    */
-  _CCCL_HOST_DEVICE size_type max_size() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE size_type max_size() const;
 
   /*! \brief If n is less than or equal to capacity(), this call has no effect.
    *         Otherwise, this method is a request for allocation of additional memory. If
@@ -270,7 +270,7 @@ public:
   /*! Returns the number of elements which have been reserved in this
    *  vector_base.
    */
-  _CCCL_HOST_DEVICE size_type capacity() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE size_type capacity() const;
 
   /*! This method shrinks the capacity of this vector_base to exactly
    *  fit its elements.
@@ -307,13 +307,13 @@ public:
    *  of this vector_base.
    *  \return mStart
    */
-  _CCCL_HOST_DEVICE const_iterator begin() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE const_iterator begin() const;
 
   /*! This method returns a const_iterator pointing to the beginning
    *  of this vector_base.
    *  \return mStart
    */
-  _CCCL_HOST_DEVICE const_iterator cbegin() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE const_iterator cbegin() const;
 
   /*! This method returns a reverse_iterator pointing to the beginning of
    *  this vector_base's reversed sequence.
@@ -327,14 +327,14 @@ public:
    *  \return A const_reverse_iterator pointing to the beginning of this
    *          vector_base's reversed sequence.
    */
-  _CCCL_HOST_DEVICE const_reverse_iterator rbegin() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE const_reverse_iterator rbegin() const;
 
   /*! This method returns a const_reverse_iterator pointing to the beginning of
    *  this vector_base's reversed sequence.
    *  \return A const_reverse_iterator pointing to the beginning of this
    *          vector_base's reversed sequence.
    */
-  _CCCL_HOST_DEVICE const_reverse_iterator crbegin() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE const_reverse_iterator crbegin() const;
 
   /*! This method returns an iterator pointing to one element past the
    *  last of this vector_base.
@@ -346,13 +346,13 @@ public:
    *  last of this vector_base.
    *  \return begin() + size().
    */
-  _CCCL_HOST_DEVICE const_iterator end() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE const_iterator end() const;
 
   /*! This method returns a const_iterator pointing to one element past the
    *  last of this vector_base.
    *  \return begin() + size().
    */
-  _CCCL_HOST_DEVICE const_iterator cend() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE const_iterator cend() const;
 
   /*! This method returns a reverse_iterator pointing to one element past the
    *  last of this vector_base's reversed sequence.
@@ -364,19 +364,19 @@ public:
    *  last of this vector_base's reversed sequence.
    *  \return rbegin() + size().
    */
-  _CCCL_HOST_DEVICE const_reverse_iterator rend() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE const_reverse_iterator rend() const;
 
   /*! This method returns a const_reverse_iterator pointing to one element past the
    *  last of this vector_base's reversed sequence.
    *  \return rbegin() + size().
    */
-  _CCCL_HOST_DEVICE const_reverse_iterator crend() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE const_reverse_iterator crend() const;
 
   /*! This method returns a const_reference referring to the first element of this
    *  vector_base.
    *  \return The first element of this vector_base.
    */
-  _CCCL_HOST_DEVICE const_reference front() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE const_reference front() const;
 
   /*! This method returns a reference pointing to the first element of this
    *  vector_base.
@@ -388,7 +388,7 @@ public:
    *  this vector_base.
    *  \return The last element of this vector_base.
    */
-  _CCCL_HOST_DEVICE const_reference back() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE const_reference back() const;
 
   /*! This method returns a reference referring to the last element of
    *  this vector_dev.
@@ -404,7 +404,7 @@ public:
   /*! This method returns a const_pointer to this vector_base's first element.
    *  \return a const_pointer to the first element of this vector_base.
    */
-  _CCCL_HOST_DEVICE const_pointer data() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE const_pointer data() const;
 
   /*! This method resizes this vector_base to 0.
    */
@@ -413,7 +413,7 @@ public:
   /*! This method returns true iff size() == 0.
    *  \return true if size() == 0; false, otherwise.
    */
-  _CCCL_HOST_DEVICE bool empty() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE bool empty() const;
 
   /*! This method appends the given element to the end of this vector_base.
    *  \param x The element to append.
@@ -500,7 +500,7 @@ public:
   /*! This method returns a copy of this vector's allocator.
    *  \return A copy of the allocator used by this vector.
    */
-  allocator_type get_allocator() const;
+  [[nodiscard]] allocator_type get_allocator() const;
 
   _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(vector_base, const_iterator)
   _CCCL_SYNTHESIZE_SEQUENCE_REVERSE_ACCESS(vector_base, const_reverse_iterator)

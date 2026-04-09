@@ -127,7 +127,7 @@ public:
       : m_val(val)
   {}
 
-  T get() const
+  [[nodiscard]] T get() const
   {
     return m_val;
   }

@@ -62,11 +62,11 @@ public:
       , m_max(maximum)
   {}
 
-  T __host__ __device__ minimum() const
+  [[nodiscard]] T __host__ __device__ minimum() const
   {
     return m_min;
   }
-  T __host__ __device__ maximum() const
+  [[nodiscard]] T __host__ __device__ maximum() const
   {
     return m_max;
   }

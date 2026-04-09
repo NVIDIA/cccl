@@ -323,7 +323,7 @@ struct CustomEqualsRangeMatcher : Catch::Matchers::MatcherBase<Range>
     return std::equal(begin(range), end(range), begin(other), Pred{});
   }
 
-  std::string describe() const override
+  [[nodiscard]] std::string describe() const override
   {
     return "Equals: " + Catch::rangeToString(range);
   }

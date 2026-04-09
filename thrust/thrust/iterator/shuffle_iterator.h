@@ -149,7 +149,7 @@ public:
 
 private:
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  _CCCL_HOST_DEVICE IndexType dereference() const
+  [[nodiscard]] _CCCL_HOST_DEVICE IndexType dereference() const
   {
     assert(this->base() < bijection.size());
     return bijection(this->base());

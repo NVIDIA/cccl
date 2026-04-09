@@ -135,7 +135,7 @@ struct offset_by_alignment_resource
   {
     return resource_;
   }
-  const Resource& upstream_resource() const noexcept
+  [[nodiscard]] const Resource& upstream_resource() const noexcept
   {
     return resource_;
   }

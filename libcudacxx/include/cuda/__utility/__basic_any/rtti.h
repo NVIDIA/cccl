@@ -56,7 +56,7 @@ struct __bad_any_cast : ::std::bad_cast
   ~__bad_any_cast() noexcept override                               = default;
   auto operator=(__bad_any_cast const&) noexcept -> __bad_any_cast& = default;
 
-  auto what() const noexcept -> char const* override
+  [[nodiscard]] auto what() const noexcept -> char const* override
   {
     return "cannot cast value to target type";
   }

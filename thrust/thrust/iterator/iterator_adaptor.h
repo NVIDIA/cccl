@@ -154,7 +154,7 @@ public:
 
   /*! \return A \p const reference to the \p Base iterator this \p iterator_adaptor adapts.
    */
-  _CCCL_HOST_DEVICE Base const& base() const
+  [[nodiscard]] _CCCL_HOST_DEVICE Base const& base() const
   {
     return m_iterator;
   }
@@ -162,7 +162,7 @@ public:
 protected:
   /*! \return A \p const reference to the \p Base iterator this \p iterator_adaptor adapts.
    */
-  _CCCL_HOST_DEVICE Base const& base_reference() const
+  [[nodiscard]] _CCCL_HOST_DEVICE Base const& base_reference() const
   {
     return m_iterator;
   }
@@ -179,14 +179,14 @@ protected:
 
 private: // Core iterator interface for iterator_facade
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE reference dereference() const
+  [[nodiscard]] _CCCL_HOST_DEVICE reference dereference() const
   {
     return *m_iterator;
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename OtherDerived, typename OtherIterator, typename V, typename S, typename T, typename R, typename D>
-  _CCCL_HOST_DEVICE bool equal(iterator_adaptor<OtherDerived, OtherIterator, V, S, T, R, D> const& x) const
+  [[nodiscard]] _CCCL_HOST_DEVICE bool equal(iterator_adaptor<OtherDerived, OtherIterator, V, S, T, R, D> const& x) const
   {
     return m_iterator == x.base();
   }
@@ -216,7 +216,7 @@ private: // Core iterator interface for iterator_facade
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename OtherDerived, typename OtherIterator, typename V, typename S, typename T, typename R, typename D>
-  _CCCL_HOST_DEVICE difference_type
+  [[nodiscard]] _CCCL_HOST_DEVICE difference_type
   distance_to(iterator_adaptor<OtherDerived, OtherIterator, V, S, T, R, D> const& y) const
   {
     return y.base() - m_iterator;

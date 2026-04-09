@@ -116,27 +116,27 @@ struct test_buffer
     return *this;
   }
 
-  T* begin() const
+  [[nodiscard]] T* begin() const
   {
     return data_ptr;
   }
 
-  T* end() const
+  [[nodiscard]] T* end() const
   {
     return data_ptr + buffer_size;
   }
 
-  T* data() const
+  [[nodiscard]] T* data() const
   {
     return data_ptr;
   }
 
-  std::size_t size() const
+  [[nodiscard]] std::size_t size() const
   {
     return buffer_size;
   }
 
-  std::size_t size_bytes() const
+  [[nodiscard]] std::size_t size_bytes() const
   {
     return buffer_size * sizeof(T);
   }

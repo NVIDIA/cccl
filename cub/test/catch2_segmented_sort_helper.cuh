@@ -142,7 +142,8 @@ private:
 
   // Analytically computes the histogram for a segment of a series of keys: [0, 1, 2, ..., mod_n - 1, 0, 1, 2, ...].
   // `segment_end` is one-past-the-end of the segment to compute the histogram for.
-  c2h::host_vector<int> compute_histogram_of_series(std::size_t segment_offset, std::size_t segment_end) const
+  [[nodiscard]] c2h::host_vector<int>
+  compute_histogram_of_series(std::size_t segment_offset, std::size_t segment_end) const
   {
     // The i-th full cycle begins after segment_offset
     const auto start_cycle = cuda::ceil_div(segment_offset, sequence_length);
@@ -1127,7 +1128,7 @@ public:
     m_selectors[0] = sel;
   }
 
-  int key_selector() const
+  [[nodiscard]] int key_selector() const
   {
     return m_selectors[0];
   }
@@ -1137,7 +1138,7 @@ public:
     m_selectors[1] = sel;
   }
 
-  int value_selector() const
+  [[nodiscard]] int value_selector() const
   {
     return m_selectors[1];
   }
@@ -1561,7 +1562,7 @@ struct generate_edge_case_offsets_dispatch
     return cudaSuccess;
   }
 
-  c2h::device_vector<int> generate_offsets() const
+  [[nodiscard]] c2h::device_vector<int> generate_offsets() const
   {
     c2h::host_vector<int> h_offsets;
 

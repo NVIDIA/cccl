@@ -162,14 +162,14 @@ public:
    *
    *  \return A const reference to the first base engine this \p xor_combine_engine adapts.
    */
-  _CCCL_HOST_DEVICE const base1_type& base1() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE const base1_type& base1() const;
 
   /*! This member function returns a const reference to this \p xor_combine_engine's
    *  second adapted base engine.
    *
    *  \return A const reference to the second base engine this \p xor_combine_engine adapts.
    */
-  _CCCL_HOST_DEVICE const base2_type& base2() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE const base2_type& base2() const;
 
   /*! \cond
    */
@@ -180,7 +180,7 @@ private:
 
   friend struct thrust::random::detail::random_core_access;
 
-  _CCCL_HOST_DEVICE bool equal(const xor_combine_engine& rhs) const;
+  [[nodiscard]] _CCCL_HOST_DEVICE bool equal(const xor_combine_engine& rhs) const;
 
   template <typename CharT, typename Traits>
   std::basic_istream<CharT, Traits>& stream_in(std::basic_istream<CharT, Traits>& is);

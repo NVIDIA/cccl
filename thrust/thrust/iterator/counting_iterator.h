@@ -218,7 +218,7 @@ public:
 
 private:
   template <typename S = StrideHolder>
-  _CCCL_HOST_DEVICE auto stride() const
+  [[nodiscard]] _CCCL_HOST_DEVICE auto stride() const
   {
     return static_cast<const S&>(*this).value;
   }
@@ -262,14 +262,14 @@ private:
     }
   }
 
-  _CCCL_HOST_DEVICE reference dereference() const
+  [[nodiscard]] _CCCL_HOST_DEVICE reference dereference() const
   {
     return this->base_reference();
   }
 
   // note that we implement equal specially for floating point counting_iterator
   template <typename OtherSystem, typename OtherTraversal, typename OtherDifference, typename OtherStrideHolder>
-  _CCCL_HOST_DEVICE bool equal(
+  [[nodiscard]] _CCCL_HOST_DEVICE bool equal(
     counting_iterator<Incrementable, OtherSystem, OtherTraversal, OtherDifference, OtherStrideHolder> const& y) const
   {
     if constexpr (::cuda::is_floating_point_v<Incrementable>)
@@ -283,7 +283,7 @@ private:
   }
 
   template <typename OtherSystem, typename OtherTraversal, typename OtherDifference>
-  _CCCL_HOST_DEVICE difference_type distance_to(
+  [[nodiscard]] _CCCL_HOST_DEVICE difference_type distance_to(
     counting_iterator<Incrementable, OtherSystem, OtherTraversal, OtherDifference, StrideHolder> const& y) const
   {
     if constexpr (::cuda::std::is_integral_v<Incrementable>)

@@ -48,7 +48,7 @@ public:
   explicit value_wrapper_t(int val)
       : m_val(static_cast<T>(val))
   {}
-  T get() const
+  [[nodiscard]] T get() const
   {
     return m_val;
   }

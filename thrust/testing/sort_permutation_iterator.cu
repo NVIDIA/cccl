@@ -40,12 +40,12 @@ public:
       , stride(stride)
   {}
 
-  iterator begin() const
+  [[nodiscard]] iterator begin() const
   {
     return PermutationIterator(first, TransformIterator(CountingIterator(0), stride_functor(stride)));
   }
 
-  iterator end() const
+  [[nodiscard]] iterator end() const
   {
     return begin() + ((last - first) + (stride - 1)) / stride;
   }

@@ -66,7 +66,7 @@ public:
     m_selector = nullptr;
   }
 
-  int selector() const
+  [[nodiscard]] int selector() const
   {
     return *m_selector;
   }
@@ -124,7 +124,7 @@ public:
     m_selector = nullptr;
   }
 
-  int selector() const
+  [[nodiscard]] int selector() const
   {
     return *m_selector;
   }

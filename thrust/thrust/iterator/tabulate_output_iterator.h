@@ -125,7 +125,7 @@ public:
 
 private:
   //! \cond
-  _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+  [[nodiscard]] _CCCL_HOST_DEVICE typename super_t::reference dereference() const
   {
     return detail::tabulate_output_iterator_proxy<BinaryFunction, DifferenceT>{fun, *this->base()};
   }

@@ -90,7 +90,7 @@ public:
    *  \return the maximum value of \p std::size_t, divided by the size of \p T.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE size_type max_size() const
+  [[nodiscard]] _CCCL_HOST_DEVICE size_type max_size() const
   {
     return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T);
   }
@@ -133,7 +133,7 @@ public:
    *
    *  \return the memory resource used by this allocator.
    */
-  _CCCL_HOST_DEVICE MR* resource() const
+  [[nodiscard]] _CCCL_HOST_DEVICE MR* resource() const
   {
     return mem_res;
   }

@@ -155,7 +155,7 @@ public:
    *
    *  \return A const reference to the base engine this \p discard_block_engine adapts.
    */
-  _CCCL_HOST_DEVICE const base_type& base() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE const base_type& base() const;
 
   /*! \cond
    */
@@ -166,7 +166,7 @@ private:
 
   friend struct thrust::random::detail::random_core_access;
 
-  _CCCL_HOST_DEVICE bool equal(const discard_block_engine& rhs) const;
+  [[nodiscard]] _CCCL_HOST_DEVICE bool equal(const discard_block_engine& rhs) const;
 
   template <typename CharT, typename Traits>
   std::basic_ostream<CharT, Traits>& stream_out(std::basic_ostream<CharT, Traits>& os) const;

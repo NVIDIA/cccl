@@ -366,7 +366,7 @@ public:
   //!
   //! @return Hierarchy holding the combined levels from both hierarchies
   template <class _OtherUnit, class... _OtherLevels>
-  constexpr auto combine(const hierarchy<_OtherUnit, _OtherLevels...>& __other) const
+  [[nodiscard]] constexpr auto combine(const hierarchy<_OtherUnit, _OtherLevels...>& __other) const
   {
     using _BottomLevel    = __level_type_of<::cuda::std::__type_index_c<sizeof...(_LevelDescs) - 1, _LevelDescs...>>;
     using _OtherHierarchy = hierarchy<_OtherUnit, _OtherLevels...>;
@@ -417,7 +417,7 @@ public:
   }
 
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  constexpr hierarchy combine([[maybe_unused]] __empty_hierarchy __empty) const
+  [[nodiscard]] constexpr hierarchy combine([[maybe_unused]] __empty_hierarchy __empty) const
   {
     return *this;
   }

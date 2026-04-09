@@ -335,7 +335,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE T real() const volatile
+  [[nodiscard]] _CCCL_HOST_DEVICE T real() const volatile
   {
     return data.x;
   }
@@ -346,7 +346,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE T imag() const volatile
+  [[nodiscard]] _CCCL_HOST_DEVICE T imag() const volatile
   {
     return data.y;
   }
@@ -357,7 +357,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE T real() const
+  [[nodiscard]] _CCCL_HOST_DEVICE T real() const
   {
     return data.x;
   }
@@ -368,7 +368,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
-  _CCCL_HOST_DEVICE T imag() const
+  [[nodiscard]] _CCCL_HOST_DEVICE T imag() const
   {
     return data.y;
   }

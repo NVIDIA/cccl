@@ -143,7 +143,7 @@ private:
 
   friend struct thrust::random::detail::random_core_access;
 
-  _CCCL_HOST_DEVICE bool equal(const subtract_with_carry_engine& rhs) const;
+  [[nodiscard]] _CCCL_HOST_DEVICE bool equal(const subtract_with_carry_engine& rhs) const;
 
   template <typename CharT, typename Traits>
   std::basic_ostream<CharT, Traits>& stream_out(std::basic_ostream<CharT, Traits>& os) const;

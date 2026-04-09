@@ -142,21 +142,21 @@ public:
    *
    *  \return The lower bound of this \p uniform_real_distribution's half-open interval.
    */
-  _CCCL_HOST_DEVICE result_type a() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE result_type a() const;
 
   /*! This method returns the value of the parameter with which this \p uniform_real_distribution
    *  was constructed.
    *
    *  \return The upper bound of this \p uniform_real_distribution's half-open interval.
    */
-  _CCCL_HOST_DEVICE result_type b() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE result_type b() const;
 
   /*! This method returns a \p param_type object encapsulating the parameters with which this
    *  \p uniform_real_distribution was constructed.
    *
    *  \return A \p param_type object enapsulating the half-open interval of this \p uniform_real_distribution.
    */
-  _CCCL_HOST_DEVICE param_type param() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE param_type param() const;
 
   /*! This method changes the parameters of this \p uniform_real_distribution using the values encapsulated
    *  in a given \p param_type object.
@@ -169,14 +169,14 @@ public:
    *
    *  \return The lower bound of this \p uniform_real_distribution's half-open interval.
    */
-  _CCCL_HOST_DEVICE result_type min THRUST_PREVENT_MACRO_SUBSTITUTION() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE result_type min THRUST_PREVENT_MACRO_SUBSTITUTION() const;
 
   /*! This method returns the smallest number larger than largest floating point number this \p
    * uniform_real_distribution can potentially produce.
    *
    *  \return The upper bound of this \p uniform_real_distribution's half-open interval.
    */
-  _CCCL_HOST_DEVICE result_type max THRUST_PREVENT_MACRO_SUBSTITUTION() const;
+  [[nodiscard]] _CCCL_HOST_DEVICE result_type max THRUST_PREVENT_MACRO_SUBSTITUTION() const;
 
   /*! \cond
    */
@@ -186,7 +186,7 @@ private:
 
   friend struct thrust::random::detail::random_core_access;
 
-  _CCCL_HOST_DEVICE bool equal(const uniform_real_distribution& rhs) const;
+  [[nodiscard]] _CCCL_HOST_DEVICE bool equal(const uniform_real_distribution& rhs) const;
 
   template <typename CharT, typename Traits>
   std::basic_ostream<CharT, Traits>& stream_out(std::basic_ostream<CharT, Traits>& os) const;

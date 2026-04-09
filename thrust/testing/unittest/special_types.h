@@ -151,7 +151,7 @@ struct my_system : THRUST_NS_QUALIFIER::device_execution_policy<my_system>
     correctly_dispatched = (num_copies == 0);
   }
 
-  bool is_valid() const
+  [[nodiscard]] bool is_valid() const
   {
     return correctly_dispatched;
   }

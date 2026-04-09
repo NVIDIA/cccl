@@ -25,7 +25,7 @@ struct some_object
   {
     m_data = data;
   }
-  T getter() const
+  [[nodiscard]] T getter() const
   {
     return m_data;
   }

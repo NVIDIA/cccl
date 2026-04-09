@@ -49,12 +49,12 @@ public:
       , repeats(repeats)
   {}
 
-  iterator begin() const
+  [[nodiscard]] iterator begin() const
   {
     return PermutationIterator(first, TransformIterator(CountingIterator(0), repeat_functor(repeats)));
   }
 
-  iterator end() const
+  [[nodiscard]] iterator end() const
   {
     return begin() + repeats * (last - first);
   }

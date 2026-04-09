@@ -148,7 +148,7 @@ public:
   //! \cond
 
 private:
-  _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+  [[nodiscard]] _CCCL_HOST_DEVICE typename super_t::reference dereference() const
   {
     return detail::transform_output_iterator_proxy<UnaryFunction, OutputIterator>(this->base_reference(), fun);
   }

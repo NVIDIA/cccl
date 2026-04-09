@@ -161,7 +161,7 @@ private:
 #endif // _CCCL_COMPILER(MSVC)
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+  [[nodiscard]] _CCCL_HOST_DEVICE typename super_t::reference dereference() const
   {
     return *(m_element_iterator + *this->base());
   }

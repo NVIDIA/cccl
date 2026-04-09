@@ -51,11 +51,11 @@ struct TestParameters
 
   constexpr TestParameters() {}
 
-  constexpr bool is_descending() const
+  [[nodiscard]] constexpr bool is_descending() const
   {
     return m_descending;
   }
-  constexpr bool is_overwrite_okay() const
+  [[nodiscard]] constexpr bool is_overwrite_okay() const
   {
     return m_overwrite_okay;
   }
