@@ -11,9 +11,7 @@
 #  if !USES_WARPSPEED()
 #    include <look_back_helper.cuh>
 #  endif // !USES_WARPSPEED()
-#endif // TUNE_BASE
 
-#if !TUNE_BASE
 template <typename AccumT>
 struct policy_selector
 {
