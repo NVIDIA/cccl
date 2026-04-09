@@ -165,22 +165,21 @@ _CCCL_HOST_DEVICE void for_each_member(F f, DecomposerT decomposer, T& aggregate
 
 namespace radix
 {
+// True for types that can be converted to bit ordered values using cub::Traits<T>::UnsignedBits (and TwiddleIn/Out)
 template <class T, class = void>
-inline constexpr bool is_fundamental_type = false;
+inline constexpr bool can_twiddle = false;
 
 template <class T>
-inline constexpr bool is_fundamental_type<T, ::cuda::std::void_t<typename Traits<T>::UnsignedBits>> = true;
+inline constexpr bool can_twiddle<T, ::cuda::std::void_t<typename Traits<T>::UnsignedBits>> = true;
 
 template <class T>
-inline constexpr bool is_tuple_of_references_to_fundamental_types = false;
+inline constexpr bool can_twiddle_tuple_refs = false;
 
 template <class... Ts>
-inline constexpr bool is_tuple_of_references_to_fundamental_types<::cuda::std::tuple<Ts&...>> =
-  (is_fundamental_type<Ts> && ...);
+inline constexpr bool can_twiddle_tuple_refs<::cuda::std::tuple<Ts&...>> = (can_twiddle<Ts> && ...);
 
 template <class KeyT, class DecomposerT>
-inline constexpr bool decomposer_check =
-  is_tuple_of_references_to_fundamental_types<::cuda::std::invoke_result_t<DecomposerT, KeyT&>>;
+inline constexpr bool decomposer_check = can_twiddle_tuple_refs<::cuda::std::invoke_result_t<DecomposerT, KeyT&>>;
 
 // SFINAE-friendly version of decomposer_check_t: true iff DecomposerT is callable
 // with KeyT& and returns a tuple of references to fundamental types.
@@ -190,7 +189,7 @@ inline constexpr bool is_valid_decomposer = false;
 template <class KeyT, class DecomposerT>
 inline constexpr bool
   is_valid_decomposer<KeyT, DecomposerT, ::cuda::std::void_t<::cuda::std::invoke_result_t<DecomposerT, KeyT&>>> =
-    is_tuple_of_references_to_fundamental_types<::cuda::std::invoke_result_t<DecomposerT, KeyT&>>;
+    can_twiddle_tuple_refs<::cuda::std::invoke_result_t<DecomposerT, KeyT&>>;
 
 template <class T>
 struct bit_ordered_conversion_policy_t
@@ -219,7 +218,7 @@ struct bit_ordered_inversion_policy_t
   }
 };
 
-template <class T, bool = is_fundamental_type<T>>
+template <class T, bool = can_twiddle<T>>
 struct traits_t
 {
   using bit_ordered_type              = typename Traits<T>::UnsignedBits;

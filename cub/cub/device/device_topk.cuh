@@ -407,7 +407,7 @@ struct DeviceTopK
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxPairs");
     using key_t = detail::it_value_t<KeyInputIteratorT>;
 
-    static_assert(!detail::radix::is_fundamental_type<key_t>,
+    static_assert(!detail::radix::can_twiddle<key_t>,
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
@@ -659,7 +659,7 @@ struct DeviceTopK
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinPairs");
     using key_t = detail::it_value_t<KeyInputIteratorT>;
 
-    static_assert(!detail::radix::is_fundamental_type<key_t>,
+    static_assert(!detail::radix::can_twiddle<key_t>,
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
@@ -877,7 +877,7 @@ struct DeviceTopK
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MaxKeys");
     using key_t = detail::it_value_t<KeyInputIteratorT>;
 
-    static_assert(!detail::radix::is_fundamental_type<key_t>,
+    static_assert(!detail::radix::can_twiddle<key_t>,
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
@@ -1095,7 +1095,7 @@ struct DeviceTopK
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceTopK::MinKeys");
     using key_t = detail::it_value_t<KeyInputIteratorT>;
 
-    static_assert(!detail::radix::is_fundamental_type<key_t>,
+    static_assert(!detail::radix::can_twiddle<key_t>,
                   "Custom decomposers are not supported for fundamental types; "
                   "use the non-decomposer API overload instead");
 
