@@ -564,7 +564,7 @@ public:
       : UnitTest(name)
   {}
 
-  void run()
+  void run() override
   {
     // get the first type in the list
     using first_type = typename unittest::get_type<TypeList, 0>::type;
@@ -588,7 +588,7 @@ public:
       : UnitTest(name)
   {}
 
-  void run()
+  void run() override
   {
     const std::vector<size_t>& sizes = get_test_sizes();
     for (size_t i = 0; i != sizes.size(); ++i)
@@ -620,7 +620,7 @@ struct VectorUnitTest : public UnitTest
       : UnitTest(name)
   {}
 
-  void run()
+  void run() override
   {
     // zip up the type list with Alloc
     using AllocList = typename unittest::transform1<TypeList, Alloc>::type;
