@@ -2667,3 +2667,15 @@
   - Prioritize core rewrite/decl files before narrower test/docs cleanups.
 - Validation:
   - TODO/log update only at this step.
+
+## 2026-04-08 (vector dtype audit finding)
+- Request: Continue with the best next backlog item; chose the CUDA vector-type support audit from the older review comments.
+- Findings:
+  - Existing coverage already exercised normalization/factory creation for CUDA vector stubs (`numba.cuda.float2`, `uint4`, `float32x4`) via `test_block_load_store_make_supports_cuda_vector_dtypes`.
+  - A new attempted runtime round-trip test for block load/store with CUDA vector dtypes failed during typing because `np.dtype(numba.cuda.<vector>)` produced host arrays that reached compilation as `array(pyobject, 1d, C)`.
+  - This means the earlier review concern was valid: factory/spec support exists, but straightforward runtime array round-tripping for these CUDA vector stub dtypes is not yet proven.
+- Decisions:
+  - Do not land a failing runtime test.
+  - Keep the existing factory/regression coverage and treat full runtime vector-array support as still-open investigation work.
+- Validation:
+  - `pytest -q tests/coop/test_block_load_store_api.py -k vector_dtypes` (failed on the attempted runtime round-trip test; test removed)

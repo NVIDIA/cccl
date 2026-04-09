@@ -1715,14 +1715,10 @@ class CoopNodeRewriter(Rewrite):
         type_instances = self._instances
         interesting_modules = self.interesting_modules
 
-        # N.B. I keep thinking I need these, but then never end up using them.
-        #      Keeping for now so I can easily uncomment if I do actually end
-        #      up needing them.
-        #
-        # py_func = func_ir.func_id.func
-        # code_obj = py_func.__code__
-        # free_vars = code_obj.co_freevars
-        # cells = py_func.__closure__
+        # Historical note: freevar/closure inspection used to happen here
+        # while debugging rewrite/root-definition edge cases.  The current
+        # pipeline no longer needs those values, so we intentionally keep this
+        # path lean rather than re-materializing unused function metadata.
 
         found = False
         block_offset = None
@@ -2228,7 +2224,11 @@ class CoopNodeRewriter(Rewrite):
                     two_phase_instance.node = node
 
             target_name = node.target.name
-            assert target_name not in self.nodes, target_name
+            if target_name in self.nodes:
+                raise RuntimeError(
+                    "Invariant violation: attempted to register duplicate "
+                    f"rewrite node for target {target_name!r}."
+                )
             self.nodes[target_name] = node
             node.refine_match(self)
 
