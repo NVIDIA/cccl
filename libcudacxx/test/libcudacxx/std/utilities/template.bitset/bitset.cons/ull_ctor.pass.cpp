@@ -39,7 +39,7 @@ __host__ __device__ constexpr void test_val_ctor()
   }
   {
     constexpr cuda::std::bitset<N> v(0xAAAAAAAAAAAAAAAAULL);
-    static_assert(v.size() == N, "");
+    static_assert(v.size() == N);
   }
 }
 
@@ -61,7 +61,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

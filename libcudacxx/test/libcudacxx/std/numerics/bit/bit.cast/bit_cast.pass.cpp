@@ -53,7 +53,7 @@ __host__ __device__ void test_roundtrip_through_nested_T(T from)
   {
     T x;
   };
-  static_assert(sizeof(Nested) == sizeof(T), "");
+  static_assert(sizeof(Nested) == sizeof(T));
 
   Nested middle  = cuda::std::bit_cast<Nested>(from);
   T to           = cuda::std::bit_cast<T>(middle);
@@ -72,7 +72,7 @@ __host__ __device__ void test_roundtrip_through_nested_T(T from)
 template <typename Intermediate, bool HasUniqueObjectRepresentations = true, typename T>
 __host__ __device__ void test_roundtrip_through(T from)
 {
-  static_assert(sizeof(Intermediate) == sizeof(T), "");
+  static_assert(sizeof(Intermediate) == sizeof(T));
 
   Intermediate middle  = cuda::std::bit_cast<Intermediate>(from);
   T to                 = cuda::std::bit_cast<T>(middle);
@@ -362,7 +362,7 @@ int main(int, char**)
 {
   tests();
 #if defined(_CCCL_BUILTIN_BIT_CAST)
-  static_assert(basic_constexpr_test(), "");
+  static_assert(basic_constexpr_test());
 #endif // _CCCL_BUILTIN_BIT_CAST
   return 0;
 }

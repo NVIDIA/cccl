@@ -67,11 +67,11 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests<int*>();
-  static_assert(tests<int*>(), "");
+  static_assert(tests<int*>());
 
 #if TEST_STD_VER > 2017
   tests<contiguous_iterator<int*>>();
-  static_assert(tests<contiguous_iterator<int*>>(), "");
+  static_assert(tests<contiguous_iterator<int*>>());
 #endif // TEST_STD_VER > 2017
 
   return 0;

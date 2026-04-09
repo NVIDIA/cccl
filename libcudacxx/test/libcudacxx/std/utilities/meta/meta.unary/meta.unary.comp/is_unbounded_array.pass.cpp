@@ -18,8 +18,8 @@
 template <class T, bool B>
 __host__ __device__ void test_array_imp()
 {
-  static_assert(B == cuda::std::is_unbounded_array<T>::value, "");
-  static_assert(B == cuda::std::is_unbounded_array_v<T>, "");
+  static_assert(B == cuda::std::is_unbounded_array<T>::value);
+  static_assert(B == cuda::std::is_unbounded_array_v<T>);
 }
 
 template <class T, bool B>

@@ -44,8 +44,8 @@ struct predicate
   }
 };
 
-static_assert(!check_subsumption(not_predicate{}), "");
-static_assert(check_subsumption(predicate{}), "");
+static_assert(!check_subsumption(not_predicate{}));
+static_assert(check_subsumption(predicate{}));
 
 #endif // TEST_STD_VER > 2017
 

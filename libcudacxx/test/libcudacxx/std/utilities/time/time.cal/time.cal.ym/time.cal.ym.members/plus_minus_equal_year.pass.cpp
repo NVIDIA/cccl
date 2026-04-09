@@ -67,7 +67,7 @@ int main(int, char**)
   static_assert(
     cuda::std::is_same_v<year_month&, decltype(cuda::std::declval<year_month&>() -= cuda::std::declval<years>())>);
 
-  static_assert(testConstexpr<year_month, years>(year_month{year{1}, month{1}}), "");
+  static_assert(testConstexpr<year_month, years>(year_month{year{1}, month{1}}));
 
   for (int i = 1000; i <= 1010; ++i)
   {

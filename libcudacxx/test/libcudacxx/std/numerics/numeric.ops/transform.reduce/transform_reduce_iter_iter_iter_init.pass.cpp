@@ -24,7 +24,7 @@
 template <class Iter1, class Iter2, class T>
 __host__ __device__ constexpr void test(Iter1 first1, Iter1 last1, Iter2 first2, T init, T x)
 {
-  static_assert(cuda::std::is_same<T, decltype(cuda::std::transform_reduce(first1, last1, first2, init))>::value, "");
+  static_assert(cuda::std::is_same<T, decltype(cuda::std::transform_reduce(first1, last1, first2, init))>::value);
   assert(cuda::std::transform_reduce(first1, last1, first2, init) == x);
 }
 
@@ -51,7 +51,7 @@ __host__ __device__ constexpr void test_return_type()
 {
   T* p = nullptr;
   unused(p);
-  static_assert(cuda::std::is_same<Init, decltype(cuda::std::transform_reduce(p, p, p, Init{}))>::value, "");
+  static_assert(cuda::std::is_same<Init, decltype(cuda::std::transform_reduce(p, p, p, Init{}))>::value);
 }
 
 __host__ __device__ constexpr void test_move_only_types()
@@ -108,6 +108,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

@@ -59,11 +59,11 @@ __host__ __device__ void test_T_ctor_noexcept()
 {
   {
     using V = cuda::std::variant<Dummy, NoThrowT>;
-    static_assert(cuda::std::is_nothrow_constructible<V, int>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<V, int>::value);
   }
   {
     using V = cuda::std::variant<Dummy, ThrowsT>;
-    static_assert(!cuda::std::is_nothrow_constructible<V, int>::value, "");
+    static_assert(!cuda::std::is_nothrow_constructible<V, int>::value);
   }
 }
 
@@ -132,19 +132,19 @@ __host__ __device__ void test_T_ctor_basic()
 {
   {
     constexpr cuda::std::variant<int> v(42);
-    static_assert(v.index() == 0, "");
-    static_assert(cuda::std::get<0>(v) == 42, "");
+    static_assert(v.index() == 0);
+    static_assert(cuda::std::get<0>(v) == 42);
   }
   {
     constexpr cuda::std::variant<int, long> v(42l);
-    static_assert(v.index() == 1, "");
-    static_assert(cuda::std::get<1>(v) == 42, "");
+    static_assert(v.index() == 1);
+    static_assert(cuda::std::get<1>(v) == 42);
   }
 #ifdef TEST_VARIANT_ALLOWS_NARROWING_CONVERSIONS
   {
     constexpr cuda::std::variant<unsigned, long> v(42);
-    static_assert(v.index() == 1, "");
-    static_assert(cuda::std::get<1>(v) == 42, "");
+    static_assert(v.index() == 1);
+    static_assert(cuda::std::get<1>(v) == 42);
   }
 #endif // TEST_VARIANT_ALLOWS_NARROWING_CONVERSIONS
   /* {
@@ -195,7 +195,7 @@ struct BoomOnAnything
   template <class T>
   __host__ __device__ constexpr BoomOnAnything(T)
   {
-    static_assert(!cuda::std::is_same<T, T>::value, "");
+    static_assert(!cuda::std::is_same<T, T>::value);
   }
 };
 
@@ -215,12 +215,12 @@ __host__ __device__ void test_construction_with_repeated_types()
 {
   using V = cuda::std::variant<int, Bar, Baz, int, Baz, int, int>;
 #if !TEST_COMPILER(GCC, <, 7)
-  static_assert(!cuda::std::is_constructible<V, int>::value, "");
-  static_assert(!cuda::std::is_constructible<V, Baz>::value, "");
+  static_assert(!cuda::std::is_constructible<V, int>::value);
+  static_assert(!cuda::std::is_constructible<V, Baz>::value);
 #endif // !TEST_COMPILER(GCC, <, 7)
   // OK, the selected type appears only once and so it shouldn't
   // be affected by the duplicate types.
-  static_assert(cuda::std::is_constructible<V, Bar>::value, "");
+  static_assert(cuda::std::is_constructible<V, Bar>::value);
 }
 
 int main(int, char**)

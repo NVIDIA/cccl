@@ -57,7 +57,7 @@ __host__ __device__ void testSpan()
   static_assert(cuda::std::is_same_v<typename S::reference, ElementType&>);
   static_assert(cuda::std::is_same_v<typename S::const_reference, const ElementType&>);
 
-  static_assert(S::extent == Size, ""); // check that it exists
+  static_assert(S::extent == Size); // check that it exists
 
   testIterator<S, typename S::iterator>();
   testIterator<S, typename S::reverse_iterator>();

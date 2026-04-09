@@ -46,16 +46,16 @@ __host__ __device__ void test_default_ctor_sfinae()
 {
   {
     using V = cuda::std::variant<cuda::std::monostate, int>;
-    static_assert(cuda::std::is_default_constructible<V>::value, "");
+    static_assert(cuda::std::is_default_constructible<V>::value);
   }
   {
     using V = cuda::std::variant<NonDefaultConstructible, int>;
-    static_assert(!cuda::std::is_default_constructible<V>::value, "");
+    static_assert(!cuda::std::is_default_constructible<V>::value);
   }
 #if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
   {
     using V = cuda::std::variant<int&, int>;
-    static_assert(!cuda::std::is_default_constructible<V>::value, "");
+    static_assert(!cuda::std::is_default_constructible<V>::value);
   }
 #endif
 }
@@ -64,11 +64,11 @@ __host__ __device__ void test_default_ctor_noexcept()
 {
   {
     using V = cuda::std::variant<int>;
-    static_assert(cuda::std::is_nothrow_default_constructible<V>::value, "");
+    static_assert(cuda::std::is_nothrow_default_constructible<V>::value);
   }
   {
     using V = cuda::std::variant<NotNoexcept>;
-    static_assert(!cuda::std::is_nothrow_default_constructible<V>::value, "");
+    static_assert(!cuda::std::is_nothrow_default_constructible<V>::value);
   }
 }
 
@@ -112,20 +112,20 @@ __host__ __device__ void test_default_ctor_basic()
   {
     using V = cuda::std::variant<int, long>;
     constexpr V v;
-    static_assert(v.index() == 0, "");
-    static_assert(cuda::std::get<0>(v) == 0, "");
+    static_assert(v.index() == 0);
+    static_assert(cuda::std::get<0>(v) == 0);
   }
   {
     using V = cuda::std::variant<int, long>;
     constexpr V v;
-    static_assert(v.index() == 0, "");
-    static_assert(cuda::std::get<0>(v) == 0, "");
+    static_assert(v.index() == 0);
+    static_assert(cuda::std::get<0>(v) == 0);
   }
   {
     using V = cuda::std::variant<int, NonDefaultConstructible>;
     constexpr V v;
-    static_assert(v.index() == 0, "");
-    static_assert(cuda::std::get<0>(v) == 0, "");
+    static_assert(v.index() == 0);
+    static_assert(cuda::std::get<0>(v) == 0);
   }
 }
 

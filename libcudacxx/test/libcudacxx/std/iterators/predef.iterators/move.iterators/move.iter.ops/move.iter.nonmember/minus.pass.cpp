@@ -44,8 +44,8 @@ int main(int, char**)
     using MI                = cuda::std::move_iterator<const char*>;
     constexpr MI it1        = cuda::std::make_move_iterator(p);
     constexpr MI it2        = cuda::std::make_move_iterator(p + 1);
-    static_assert(it1 - it2 == -1, "");
-    static_assert(it2 - it1 == 1, "");
+    static_assert(it1 - it2 == -1);
+    static_assert(it2 - it1 == 1);
   }
 
   return 0;

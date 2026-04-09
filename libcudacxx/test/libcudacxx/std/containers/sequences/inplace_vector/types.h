@@ -79,10 +79,10 @@ struct NonTrivialDestructor
     return lhs.val_ < rhs.val_;
   }
 };
-static_assert(!cuda::std::is_trivially_copy_constructible<NonTrivialDestructor>::value, "");
-static_assert(!cuda::std::is_trivially_move_constructible<NonTrivialDestructor>::value, "");
-static_assert(cuda::std::is_trivially_copy_assignable<NonTrivialDestructor>::value, "");
-static_assert(cuda::std::is_trivially_move_assignable<NonTrivialDestructor>::value, "");
+static_assert(!cuda::std::is_trivially_copy_constructible<NonTrivialDestructor>::value);
+static_assert(!cuda::std::is_trivially_move_constructible<NonTrivialDestructor>::value);
+static_assert(cuda::std::is_trivially_copy_assignable<NonTrivialDestructor>::value);
+static_assert(cuda::std::is_trivially_move_assignable<NonTrivialDestructor>::value);
 
 struct ThrowingDefaultConstruct
 {
@@ -105,12 +105,12 @@ struct ThrowingDefaultConstruct
     return lhs.val_ < rhs.val_;
   }
 };
-static_assert(cuda::std::is_trivially_copy_constructible<ThrowingDefaultConstruct>::value, "");
-static_assert(cuda::std::is_trivially_move_constructible<ThrowingDefaultConstruct>::value, "");
-static_assert(cuda::std::is_trivially_copy_assignable<ThrowingDefaultConstruct>::value, "");
-static_assert(cuda::std::is_trivially_move_assignable<ThrowingDefaultConstruct>::value, "");
+static_assert(cuda::std::is_trivially_copy_constructible<ThrowingDefaultConstruct>::value);
+static_assert(cuda::std::is_trivially_move_constructible<ThrowingDefaultConstruct>::value);
+static_assert(cuda::std::is_trivially_copy_assignable<ThrowingDefaultConstruct>::value);
+static_assert(cuda::std::is_trivially_move_assignable<ThrowingDefaultConstruct>::value);
 #if !TEST_COMPILER(GCC, <, 10)
-static_assert(!cuda::std::is_nothrow_default_constructible<ThrowingDefaultConstruct>::value, "");
+static_assert(!cuda::std::is_nothrow_default_constructible<ThrowingDefaultConstruct>::value);
 #endif // !TEST_COMPILER(GCC, <, 10)
 
 struct ThrowingCopyConstructor
@@ -142,11 +142,11 @@ struct ThrowingCopyConstructor
     return lhs.val_ < rhs.val_;
   }
 };
-static_assert(!cuda::std::is_trivially_copy_constructible<ThrowingCopyConstructor>::value, "");
-static_assert(cuda::std::is_trivially_move_constructible<ThrowingCopyConstructor>::value, "");
-static_assert(cuda::std::is_trivially_copy_assignable<ThrowingCopyConstructor>::value, "");
-static_assert(cuda::std::is_trivially_move_assignable<ThrowingCopyConstructor>::value, "");
-static_assert(!cuda::std::is_nothrow_copy_constructible<ThrowingCopyConstructor>::value, "");
+static_assert(!cuda::std::is_trivially_copy_constructible<ThrowingCopyConstructor>::value);
+static_assert(cuda::std::is_trivially_move_constructible<ThrowingCopyConstructor>::value);
+static_assert(cuda::std::is_trivially_copy_assignable<ThrowingCopyConstructor>::value);
+static_assert(cuda::std::is_trivially_move_assignable<ThrowingCopyConstructor>::value);
+static_assert(!cuda::std::is_nothrow_copy_constructible<ThrowingCopyConstructor>::value);
 
 struct ThrowingMoveConstructor
 {
@@ -177,11 +177,11 @@ struct ThrowingMoveConstructor
     return lhs.val_ < rhs.val_;
   }
 };
-static_assert(cuda::std::is_trivially_copy_constructible<ThrowingMoveConstructor>::value, "");
-static_assert(!cuda::std::is_trivially_move_constructible<ThrowingMoveConstructor>::value, "");
-static_assert(cuda::std::is_trivially_copy_assignable<ThrowingMoveConstructor>::value, "");
-static_assert(cuda::std::is_trivially_move_assignable<ThrowingMoveConstructor>::value, "");
-static_assert(!cuda::std::is_nothrow_move_constructible<ThrowingMoveConstructor>::value, "");
+static_assert(cuda::std::is_trivially_copy_constructible<ThrowingMoveConstructor>::value);
+static_assert(!cuda::std::is_trivially_move_constructible<ThrowingMoveConstructor>::value);
+static_assert(cuda::std::is_trivially_copy_assignable<ThrowingMoveConstructor>::value);
+static_assert(cuda::std::is_trivially_move_assignable<ThrowingMoveConstructor>::value);
+static_assert(!cuda::std::is_nothrow_move_constructible<ThrowingMoveConstructor>::value);
 
 struct ThrowingCopyAssignment
 {
@@ -214,11 +214,11 @@ struct ThrowingCopyAssignment
     return lhs.val_ < rhs.val_;
   }
 };
-static_assert(cuda::std::is_trivially_copy_constructible<ThrowingCopyAssignment>::value, "");
-static_assert(cuda::std::is_trivially_move_constructible<ThrowingCopyAssignment>::value, "");
-static_assert(!cuda::std::is_trivially_copy_assignable<ThrowingCopyAssignment>::value, "");
-static_assert(cuda::std::is_trivially_move_assignable<ThrowingCopyAssignment>::value, "");
-static_assert(!cuda::std::is_nothrow_copy_assignable<ThrowingCopyAssignment>::value, "");
+static_assert(cuda::std::is_trivially_copy_constructible<ThrowingCopyAssignment>::value);
+static_assert(cuda::std::is_trivially_move_constructible<ThrowingCopyAssignment>::value);
+static_assert(!cuda::std::is_trivially_copy_assignable<ThrowingCopyAssignment>::value);
+static_assert(cuda::std::is_trivially_move_assignable<ThrowingCopyAssignment>::value);
+static_assert(!cuda::std::is_nothrow_copy_assignable<ThrowingCopyAssignment>::value);
 
 struct ThrowingMoveAssignment
 {
@@ -251,11 +251,11 @@ struct ThrowingMoveAssignment
     return lhs.val_ < rhs.val_;
   }
 };
-static_assert(cuda::std::is_trivially_copy_constructible<ThrowingMoveAssignment>::value, "");
-static_assert(cuda::std::is_trivially_move_constructible<ThrowingMoveAssignment>::value, "");
-static_assert(cuda::std::is_trivially_copy_assignable<ThrowingMoveAssignment>::value, "");
-static_assert(!cuda::std::is_trivially_move_assignable<ThrowingMoveAssignment>::value, "");
-static_assert(!cuda::std::is_nothrow_move_assignable<ThrowingMoveAssignment>::value, "");
+static_assert(cuda::std::is_trivially_copy_constructible<ThrowingMoveAssignment>::value);
+static_assert(cuda::std::is_trivially_move_constructible<ThrowingMoveAssignment>::value);
+static_assert(cuda::std::is_trivially_copy_assignable<ThrowingMoveAssignment>::value);
+static_assert(!cuda::std::is_trivially_move_assignable<ThrowingMoveAssignment>::value);
+static_assert(!cuda::std::is_nothrow_move_assignable<ThrowingMoveAssignment>::value);
 
 struct ThrowingSwap
 {
@@ -278,7 +278,7 @@ struct ThrowingSwap
     cuda::std::swap(val_, other.val_);
   }
 };
-static_assert(!cuda::std::is_nothrow_swappable<ThrowingMoveConstructor>::value, "");
+static_assert(!cuda::std::is_nothrow_swappable<ThrowingMoveConstructor>::value);
 
 template <class T, size_t Capacity>
 struct input_range

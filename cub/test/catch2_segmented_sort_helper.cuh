@@ -34,8 +34,8 @@
   {                                                             \
     auto seed_val = seed.get();                                 \
     /* Verify assumptions: */                                   \
-    static_assert(sizeof(seed_val) == 8, "");                   \
-    static_assert(sizeof(xor_mask) == 8, "");                   \
+    static_assert(sizeof(seed_val) == 8);                       \
+    static_assert(sizeof(xor_mask) == 8);                       \
     return c2h::seed_t{seed_val ^ xor_mask};                    \
   }
 

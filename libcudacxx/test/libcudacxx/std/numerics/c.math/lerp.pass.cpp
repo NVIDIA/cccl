@@ -32,7 +32,7 @@ template <typename T>
 __host__ __device__ void test()
 {
   static_assert(cuda::std::is_same_v<T, decltype(cuda::std::lerp(T(), T(), T()))>);
-  static_assert(noexcept(cuda::std::lerp(T(), T(), T())), "");
+  static_assert(noexcept(cuda::std::lerp(T(), T(), T())));
 
   const T maxV = cuda::std::numeric_limits<T>::max();
   const T inf  = cuda::std::numeric_limits<T>::infinity();
@@ -76,8 +76,8 @@ int main(int, char**)
   test<__nv_bfloat16>();
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-  static_assert(constexpr_test<float>(), "");
-  static_assert(constexpr_test<double>(), "");
+  static_assert(constexpr_test<float>());
+  static_assert(constexpr_test<double>());
 
   return 0;
 }

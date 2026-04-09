@@ -162,7 +162,7 @@ public:
   template <class _URNG>
   [[nodiscard]] _CCCL_API result_type operator()(_URNG& __urng, const param_type& __pr)
   {
-    static_assert(__cccl_random_is_valid_urng<_URNG>, "");
+    static_assert(__cccl_random_is_valid_urng<_URNG>);
     double __tx = 0;
     uniform_real_distribution<double> __urd{};
     if (__pr.__mean_ < 10)

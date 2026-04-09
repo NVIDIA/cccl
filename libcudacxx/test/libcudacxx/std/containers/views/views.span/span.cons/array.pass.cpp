@@ -109,9 +109,9 @@ int main(int, char**)
   testSpan<double>();
   testSpan<A>();
 
-  static_assert(testSpan<int>(), "");
-  static_assert(testSpan<double>(), "");
-  static_assert(testSpan<A>(), "");
+  static_assert(testSpan<int>());
+  static_assert(testSpan<double>());
+  static_assert(testSpan<A>());
 
   checkCV();
 

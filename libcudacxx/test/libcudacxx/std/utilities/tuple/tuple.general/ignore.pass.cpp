@@ -35,7 +35,7 @@ __host__ __device__ constexpr bool test()
 
   { // Test that cuda::std::ignore provides converting assignment.
     auto& res = (cuda::std::ignore = 42);
-    static_assert(noexcept(res = (cuda::std::ignore = 42)), "");
+    static_assert(noexcept(res = (cuda::std::ignore = 42)));
     assert(&res == &cuda::std::ignore);
   }
   { // Test bit-field binding.
@@ -70,7 +70,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

@@ -33,13 +33,13 @@ __host__ __device__ constexpr void test_default()
   { // inplace_vecto<T, 0> is default_constructible
     cuda::std::inplace_vector<T, 0> vec{};
     assert(vec.empty());
-    static_assert(cuda::std::is_nothrow_default_constructible<cuda::std::inplace_vector<T, 0>>::value, "");
+    static_assert(cuda::std::is_nothrow_default_constructible<cuda::std::inplace_vector<T, 0>>::value);
   }
 
   { // inplace_vecto<T, N> is default_constructible
     cuda::std::inplace_vector<T, 42> vec{};
     assert(vec.empty());
-    static_assert(cuda::std::is_nothrow_default_constructible<cuda::std::inplace_vector<T, 42>>::value, "");
+    static_assert(cuda::std::is_nothrow_default_constructible<cuda::std::inplace_vector<T, 42>>::value);
   }
 }
 
@@ -47,8 +47,8 @@ template <class T>
 __host__ __device__ constexpr void test_copy_move()
 {
   // Zero capacity inplace_vector is trivial
-  static_assert(cuda::std::is_nothrow_copy_constructible<cuda::std::inplace_vector<T, 0>>::value, "");
-  static_assert(cuda::std::is_nothrow_move_constructible<cuda::std::inplace_vector<T, 0>>::value, "");
+  static_assert(cuda::std::is_nothrow_copy_constructible<cuda::std::inplace_vector<T, 0>>::value);
+  static_assert(cuda::std::is_nothrow_move_constructible<cuda::std::inplace_vector<T, 0>>::value);
   static_assert(cuda::std::is_nothrow_copy_constructible<cuda::std::inplace_vector<T, 42>>::value
                   == cuda::std::is_nothrow_copy_constructible<T>::value,
                 "");
@@ -105,7 +105,7 @@ __host__ __device__ constexpr void test_size()
     cuda::std::inplace_vector<T, 0> vec(0);
     assert(vec.empty());
 #if !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
-    static_assert(!noexcept(cuda::std::inplace_vector<T, 0>(0)), "");
+    static_assert(!noexcept(cuda::std::inplace_vector<T, 0>(0)));
 #endif // !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
   }
 
@@ -114,7 +114,7 @@ __host__ __device__ constexpr void test_size()
     inplace_vector vec(0);
     assert(vec.empty());
 #if !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
-    static_assert(!noexcept(inplace_vector(0)), "");
+    static_assert(!noexcept(inplace_vector(0)));
 #endif // !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
   }
 
@@ -124,7 +124,7 @@ __host__ __device__ constexpr void test_size()
     assert(!vec.empty());
     assert(equal_range(vec, cuda::std::array<T, size>{T(0), T(0), T(0)}));
 #if !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
-    static_assert(!noexcept(inplace_vector(3)), "");
+    static_assert(!noexcept(inplace_vector(3)));
 #endif // !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
   }
 }
@@ -136,7 +136,7 @@ __host__ __device__ constexpr void test_size_value()
     cuda::std::inplace_vector<T, 0> vec(0, T(42));
     assert(vec.empty());
 #if !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
-    static_assert(!noexcept(cuda::std::inplace_vector<T, 0>(0, T(42))), "");
+    static_assert(!noexcept(cuda::std::inplace_vector<T, 0>(0, T(42))));
 #endif // !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
   }
 
@@ -145,7 +145,7 @@ __host__ __device__ constexpr void test_size_value()
     inplace_vector vec(0, T(42));
     assert(vec.empty());
 #if !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
-    static_assert(!noexcept(inplace_vector(0, T(42))), "");
+    static_assert(!noexcept(inplace_vector(0, T(42))));
 #endif // !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
   }
 
@@ -155,7 +155,7 @@ __host__ __device__ constexpr void test_size_value()
     assert(!vec.empty());
     assert(equal_range(vec, cuda::std::array<T, size>{T(42), T(42), T(42)}));
 #if !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
-    static_assert(!noexcept(inplace_vector(3, T(42))), "");
+    static_assert(!noexcept(inplace_vector(3, T(42))));
 #endif // !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
   }
 }
@@ -444,7 +444,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
 #if TEST_HAS_EXCEPTIONS()

@@ -123,9 +123,9 @@ int main(int, char**)
   }
 #endif
 
-  static_assert(test_constexpr(), "");
+  static_assert(test_constexpr());
 
-  static_assert(test_noexcept(), "");
+  static_assert(test_noexcept());
 
   return 0;
 }

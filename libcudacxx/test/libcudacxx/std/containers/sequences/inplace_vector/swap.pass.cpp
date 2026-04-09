@@ -26,9 +26,9 @@ __host__ __device__ constexpr void test()
     using inplace_vector = cuda::std::inplace_vector<T, 0>;
     inplace_vector empty{};
     empty.swap(empty);
-    static_assert(noexcept(empty.swap(empty)), "");
+    static_assert(noexcept(empty.swap(empty)));
     swap(empty, empty);
-    static_assert(noexcept(swap(empty, empty)), "");
+    static_assert(noexcept(swap(empty, empty)));
   }
 
   { // inplace_vector<T, N> can be swapped
@@ -42,12 +42,12 @@ __host__ __device__ constexpr void test()
     left.swap(right);
     constexpr bool nothrow_swap =
       cuda::std::is_nothrow_swappable<T>::value && cuda::std::is_nothrow_move_constructible<T>::value;
-    static_assert(noexcept(left.swap(right)) == nothrow_swap, "");
+    static_assert(noexcept(left.swap(right)) == nothrow_swap);
     assert(equal_range(left, expected_right));
     assert(equal_range(right, expected_left));
 
     swap(left, right);
-    static_assert(noexcept(swap(left, right)) == nothrow_swap, "");
+    static_assert(noexcept(swap(left, right)) == nothrow_swap);
     assert(equal_range(left, expected_left));
     assert(equal_range(right, expected_right));
   }
@@ -74,7 +74,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
   return 0;

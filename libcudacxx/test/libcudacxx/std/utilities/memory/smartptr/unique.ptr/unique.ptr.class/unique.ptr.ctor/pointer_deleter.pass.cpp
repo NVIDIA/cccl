@@ -64,9 +64,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
   {
     using D = CopyOnlyDeleter;
     using U = cuda::std::unique_ptr<VT, D>;
-    static_assert(cuda::std::is_constructible<U, int*, D const&>::value, "");
-    static_assert(cuda::std::is_constructible<U, int*, D&>::value, "");
-    static_assert(cuda::std::is_constructible<U, int*, D&&>::value, "");
+    static_assert(cuda::std::is_constructible<U, int*, D const&>::value);
+    static_assert(cuda::std::is_constructible<U, int*, D&>::value);
+    static_assert(cuda::std::is_constructible<U, int*, D&&>::value);
     // FIXME: __cccl_compressed_pair attempts to perform a move even though
     // it should only copy.
     // D d;
@@ -75,34 +75,34 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
   {
     using D = MoveOnlyDeleter;
     using U = cuda::std::unique_ptr<VT, D>;
-    static_assert(!cuda::std::is_constructible<U, int*, D const&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, int*, D&>::value, "");
-    static_assert(cuda::std::is_constructible<U, int*, D&&>::value, "");
+    static_assert(!cuda::std::is_constructible<U, int*, D const&>::value);
+    static_assert(!cuda::std::is_constructible<U, int*, D&>::value);
+    static_assert(cuda::std::is_constructible<U, int*, D&&>::value);
     D d;
     U u(nullptr, cuda::std::move(d));
   }
   {
     using D = NoCopyMoveDeleter;
     using U = cuda::std::unique_ptr<VT, D>;
-    static_assert(!cuda::std::is_constructible<U, int*, D const&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, int*, D&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, int*, D&&>::value, "");
+    static_assert(!cuda::std::is_constructible<U, int*, D const&>::value);
+    static_assert(!cuda::std::is_constructible<U, int*, D&>::value);
+    static_assert(!cuda::std::is_constructible<U, int*, D&&>::value);
   }
   {
     using D = NoCopyMoveDeleter;
     using U = cuda::std::unique_ptr<VT, D&>;
-    static_assert(!cuda::std::is_constructible<U, int*, D const&>::value, "");
-    static_assert(cuda::std::is_constructible<U, int*, D&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, int*, D&&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, int*, const D&&>::value, "");
+    static_assert(!cuda::std::is_constructible<U, int*, D const&>::value);
+    static_assert(cuda::std::is_constructible<U, int*, D&>::value);
+    static_assert(!cuda::std::is_constructible<U, int*, D&&>::value);
+    static_assert(!cuda::std::is_constructible<U, int*, const D&&>::value);
   }
   {
     using D = NoCopyMoveDeleter;
     using U = cuda::std::unique_ptr<VT, const D&>;
-    static_assert(cuda::std::is_constructible<U, int*, D const&>::value, "");
-    static_assert(cuda::std::is_constructible<U, int*, D&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, int*, D&&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, int*, const D&&>::value, "");
+    static_assert(cuda::std::is_constructible<U, int*, D const&>::value);
+    static_assert(cuda::std::is_constructible<U, int*, D&>::value);
+    static_assert(!cuda::std::is_constructible<U, int*, D&&>::value);
+    static_assert(!cuda::std::is_constructible<U, int*, const D&&>::value);
   }
 }
 
@@ -113,27 +113,27 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_noexcept()
   {
     using D = CopyOnlyDeleter;
     using U = cuda::std::unique_ptr<VT, D>;
-    static_assert(cuda::std::is_nothrow_constructible<U, int*, D const&>::value, "");
-    static_assert(cuda::std::is_nothrow_constructible<U, int*, D&>::value, "");
-    static_assert(cuda::std::is_nothrow_constructible<U, int*, D&&>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<U, int*, D const&>::value);
+    static_assert(cuda::std::is_nothrow_constructible<U, int*, D&>::value);
+    static_assert(cuda::std::is_nothrow_constructible<U, int*, D&&>::value);
   }
   {
     using D = MoveOnlyDeleter;
     using U = cuda::std::unique_ptr<VT, D>;
-    static_assert(cuda::std::is_nothrow_constructible<U, int*, D&&>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<U, int*, D&&>::value);
     D d;
     U u(nullptr, cuda::std::move(d));
   }
   {
     using D = NoCopyMoveDeleter;
     using U = cuda::std::unique_ptr<VT, D&>;
-    static_assert(cuda::std::is_nothrow_constructible<U, int*, D&>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<U, int*, D&>::value);
   }
   {
     using D = NoCopyMoveDeleter;
     using U = cuda::std::unique_ptr<VT, const D&>;
-    static_assert(cuda::std::is_nothrow_constructible<U, int*, D const&>::value, "");
-    static_assert(cuda::std::is_nothrow_constructible<U, int*, D&>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<U, int*, D const&>::value);
+    static_assert(cuda::std::is_nothrow_constructible<U, int*, D&>::value);
   }
 }
 
@@ -142,13 +142,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae_runtime()
   {
     using D = CopyOnlyDeleter;
     using U = cuda::std::unique_ptr<A[], D>;
-    static_assert(cuda::std::is_nothrow_constructible<U, A*, D const&>::value, "");
-    static_assert(cuda::std::is_nothrow_constructible<U, A*, D&>::value, "");
-    static_assert(cuda::std::is_nothrow_constructible<U, A*, D&&>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<U, A*, D const&>::value);
+    static_assert(cuda::std::is_nothrow_constructible<U, A*, D&>::value);
+    static_assert(cuda::std::is_nothrow_constructible<U, A*, D&&>::value);
 
-    static_assert(!cuda::std::is_constructible<U, B*, D const&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, B*, D&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, B*, D&&>::value, "");
+    static_assert(!cuda::std::is_constructible<U, B*, D const&>::value);
+    static_assert(!cuda::std::is_constructible<U, B*, D&>::value);
+    static_assert(!cuda::std::is_constructible<U, B*, D&&>::value);
     // FIXME: __cccl_compressed_pair attempts to perform a move even though
     // it should only copy.
     // D d;
@@ -157,52 +157,52 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae_runtime()
   {
     using D = MoveOnlyDeleter;
     using U = cuda::std::unique_ptr<A[], D>;
-    static_assert(!cuda::std::is_constructible<U, A*, D const&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, A*, D&>::value, "");
-    static_assert(cuda::std::is_nothrow_constructible<U, A*, D&&>::value, "");
+    static_assert(!cuda::std::is_constructible<U, A*, D const&>::value);
+    static_assert(!cuda::std::is_constructible<U, A*, D&>::value);
+    static_assert(cuda::std::is_nothrow_constructible<U, A*, D&&>::value);
 
-    static_assert(!cuda::std::is_constructible<U, B*, D const&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, B*, D&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, B*, D&&>::value, "");
+    static_assert(!cuda::std::is_constructible<U, B*, D const&>::value);
+    static_assert(!cuda::std::is_constructible<U, B*, D&>::value);
+    static_assert(!cuda::std::is_constructible<U, B*, D&&>::value);
     D d;
     U u(nullptr, cuda::std::move(d));
   }
   {
     using D = NoCopyMoveDeleter;
     using U = cuda::std::unique_ptr<A[], D>;
-    static_assert(!cuda::std::is_constructible<U, A*, D const&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, A*, D&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, A*, D&&>::value, "");
+    static_assert(!cuda::std::is_constructible<U, A*, D const&>::value);
+    static_assert(!cuda::std::is_constructible<U, A*, D&>::value);
+    static_assert(!cuda::std::is_constructible<U, A*, D&&>::value);
 
-    static_assert(!cuda::std::is_constructible<U, B*, D const&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, B*, D&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, B*, D&&>::value, "");
+    static_assert(!cuda::std::is_constructible<U, B*, D const&>::value);
+    static_assert(!cuda::std::is_constructible<U, B*, D&>::value);
+    static_assert(!cuda::std::is_constructible<U, B*, D&&>::value);
   }
   {
     using D = NoCopyMoveDeleter;
     using U = cuda::std::unique_ptr<A[], D&>;
-    static_assert(!cuda::std::is_constructible<U, A*, D const&>::value, "");
-    static_assert(cuda::std::is_nothrow_constructible<U, A*, D&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, A*, D&&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, A*, const D&&>::value, "");
+    static_assert(!cuda::std::is_constructible<U, A*, D const&>::value);
+    static_assert(cuda::std::is_nothrow_constructible<U, A*, D&>::value);
+    static_assert(!cuda::std::is_constructible<U, A*, D&&>::value);
+    static_assert(!cuda::std::is_constructible<U, A*, const D&&>::value);
 
-    static_assert(!cuda::std::is_constructible<U, B*, D const&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, B*, D&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, B*, D&&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, B*, const D&&>::value, "");
+    static_assert(!cuda::std::is_constructible<U, B*, D const&>::value);
+    static_assert(!cuda::std::is_constructible<U, B*, D&>::value);
+    static_assert(!cuda::std::is_constructible<U, B*, D&&>::value);
+    static_assert(!cuda::std::is_constructible<U, B*, const D&&>::value);
   }
   {
     using D = NoCopyMoveDeleter;
     using U = cuda::std::unique_ptr<A[], const D&>;
-    static_assert(cuda::std::is_nothrow_constructible<U, A*, D const&>::value, "");
-    static_assert(cuda::std::is_nothrow_constructible<U, A*, D&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, A*, D&&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, A*, const D&&>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<U, A*, D const&>::value);
+    static_assert(cuda::std::is_nothrow_constructible<U, A*, D&>::value);
+    static_assert(!cuda::std::is_constructible<U, A*, D&&>::value);
+    static_assert(!cuda::std::is_constructible<U, A*, const D&&>::value);
 
-    static_assert(!cuda::std::is_constructible<U, B*, D const&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, B*, D&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, B*, D&&>::value, "");
-    static_assert(!cuda::std::is_constructible<U, B*, const D&&>::value, "");
+    static_assert(!cuda::std::is_constructible<U, B*, D const&>::value);
+    static_assert(!cuda::std::is_constructible<U, B*, D&>::value);
+    static_assert(!cuda::std::is_constructible<U, B*, D&&>::value);
+    static_assert(!cuda::std::is_constructible<U, B*, const D&&>::value);
   }
 }
 

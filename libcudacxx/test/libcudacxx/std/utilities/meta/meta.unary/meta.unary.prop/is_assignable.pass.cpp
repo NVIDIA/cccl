@@ -25,15 +25,15 @@ struct B
 template <class T, class U>
 __host__ __device__ void test_is_assignable()
 {
-  static_assert((cuda::std::is_assignable<T, U>::value), "");
-  static_assert(cuda::std::is_assignable_v<T, U>, "");
+  static_assert((cuda::std::is_assignable<T, U>::value));
+  static_assert(cuda::std::is_assignable_v<T, U>);
 }
 
 template <class T, class U>
 __host__ __device__ void test_is_not_assignable()
 {
-  static_assert((!cuda::std::is_assignable<T, U>::value), "");
-  static_assert(!cuda::std::is_assignable_v<T, U>, "");
+  static_assert((!cuda::std::is_assignable<T, U>::value));
+  static_assert(!cuda::std::is_assignable_v<T, U>);
 }
 
 struct D;

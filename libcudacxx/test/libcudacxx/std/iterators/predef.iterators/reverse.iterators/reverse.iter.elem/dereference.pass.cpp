@@ -59,8 +59,8 @@ int main(int, char**)
     using RI                = cuda::std::reverse_iterator<const char*>;
     constexpr RI it1        = cuda::std::make_reverse_iterator(p + 1);
     constexpr RI it2        = cuda::std::make_reverse_iterator(p + 2);
-    static_assert(*it1 == p[0], "");
-    static_assert(*it2 == p[1], "");
+    static_assert(*it1 == p[0]);
+    static_assert(*it2 == p[1]);
   }
 
   return 0;

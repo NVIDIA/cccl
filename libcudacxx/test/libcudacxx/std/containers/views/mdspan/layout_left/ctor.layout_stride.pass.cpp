@@ -108,19 +108,19 @@ __host__ __device__ constexpr void test_rank_mismatch()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
-  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, D>, ls_mapping_t<int>>::value, "");
-  static_assert(!cuda::std::is_constructible<ll_mapping_t<int>, ls_mapping_t<int, D, D>>::value, "");
-  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, D>, ls_mapping_t<int, D, D>>::value, "");
-  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, D, D, D>, ls_mapping_t<int, D, D>>::value, "");
+  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, D>, ls_mapping_t<int>>::value);
+  static_assert(!cuda::std::is_constructible<ll_mapping_t<int>, ls_mapping_t<int, D, D>>::value);
+  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, D>, ls_mapping_t<int, D, D>>::value);
+  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, D, D, D>, ls_mapping_t<int, D, D>>::value);
 }
 
 __host__ __device__ constexpr void test_static_extent_mismatch()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
-  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, D, 5>, ls_mapping_t<int, D, 4>>::value, "");
-  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, 5>, ls_mapping_t<int, 4>>::value, "");
-  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, 5, D>, ls_mapping_t<int, 4, D>>::value, "");
+  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, D, 5>, ls_mapping_t<int, D, 4>>::value);
+  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, 5>, ls_mapping_t<int, 4>>::value);
+  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, 5, D>, ls_mapping_t<int, 4, D>>::value);
 }
 
 __host__ __device__ constexpr bool test()
@@ -137,6 +137,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

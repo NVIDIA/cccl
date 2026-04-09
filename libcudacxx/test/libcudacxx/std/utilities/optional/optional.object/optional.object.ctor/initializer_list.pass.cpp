@@ -100,7 +100,7 @@ public:
 
 void test_exceptions()
 {
-  static_assert(cuda::std::is_constructible<optional<Z>, cuda::std::initializer_list<int>&>::value, "");
+  static_assert(cuda::std::is_constructible<optional<Z>, cuda::std::initializer_list<int>&>::value);
   try
   {
     optional<Z> opt(in_place, {3, 1});
@@ -116,8 +116,8 @@ void test_exceptions()
 int main(int, char**)
 {
   {
-    static_assert(!cuda::std::is_constructible<X, cuda::std::initializer_list<int>&>::value, "");
-    static_assert(!cuda::std::is_constructible<optional<X>, cuda::std::initializer_list<int>&>::value, "");
+    static_assert(!cuda::std::is_constructible<X, cuda::std::initializer_list<int>&>::value);
+    static_assert(!cuda::std::is_constructible<optional<X>, cuda::std::initializer_list<int>&>::value);
   }
   {
     optional<cuda::std::inplace_vector<int, 3>> opt(in_place, {3, 1});
@@ -126,7 +126,7 @@ int main(int, char**)
     assert(opt->size() == 2);
   }
   {
-    static_assert(cuda::std::is_constructible<optional<Y>, cuda::std::initializer_list<int>&>::value, "");
+    static_assert(cuda::std::is_constructible<optional<Y>, cuda::std::initializer_list<int>&>::value);
 
     {
       optional<Y> opt(in_place, {3, 1});
@@ -136,8 +136,8 @@ int main(int, char**)
 
     {
       constexpr optional<Y> opt(in_place, {3, 1});
-      static_assert(static_cast<bool>(opt) == true, "");
-      static_assert(*opt == Y{3, 1}, "");
+      static_assert(static_cast<bool>(opt) == true);
+      static_assert(*opt == Y{3, 1});
     }
 
     struct test_constexpr_ctor : public optional<Y>

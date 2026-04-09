@@ -57,43 +57,43 @@ __host__ __device__ void test_constexpr_evaluation()
     using Tup = cuda::std::tuple<>;
     using Fn  = int (&)();
     constexpr Tup t;
-    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 0, "");
-    static_assert(cuda::std::apply(sum_obj, t) == 0, "");
+    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 0);
+    static_assert(cuda::std::apply(sum_obj, t) == 0);
   }
   {
     using Tup = cuda::std::tuple<int>;
     using Fn  = int (&)(int);
     constexpr Tup t(42);
-    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 42, "");
-    static_assert(cuda::std::apply(sum_obj, t) == 42, "");
+    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 42);
+    static_assert(cuda::std::apply(sum_obj, t) == 42);
   }
   {
     using Tup = cuda::std::tuple<int, long>;
     using Fn  = int (&)(int, int);
     constexpr Tup t(42, 101);
-    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 143, "");
-    static_assert(cuda::std::apply(sum_obj, t) == 143, "");
+    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 143);
+    static_assert(cuda::std::apply(sum_obj, t) == 143);
   }
   {
     using Tup = cuda::std::pair<int, long>;
     using Fn  = int (&)(int, int);
     constexpr Tup t(42, 101);
-    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 143, "");
-    static_assert(cuda::std::apply(sum_obj, t) == 143, "");
+    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 143);
+    static_assert(cuda::std::apply(sum_obj, t) == 143);
   }
   {
     using Tup = cuda::std::tuple<int, long, int>;
     using Fn  = int (&)(int, int, int);
     constexpr Tup t(42, 101, -1);
-    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 142, "");
-    static_assert(cuda::std::apply(sum_obj, t) == 142, "");
+    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 142);
+    static_assert(cuda::std::apply(sum_obj, t) == 142);
   }
   {
     using Tup       = cuda::std::array<int, 3>;
     using Fn        = int (&)(int, int, int);
     constexpr Tup t = {42, 101, -1};
-    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 142, "");
-    static_assert(cuda::std::apply(sum_obj, t) == 142, "");
+    static_assert(cuda::std::apply(static_cast<Fn>(constexpr_sum_fn), t) == 142);
+    static_assert(cuda::std::apply(sum_obj, t) == 142);
   }
 }
 
@@ -320,12 +320,12 @@ template <int Func, class Expect>
 __host__ __device__ void test()
 {
   using RawInvokeResult = decltype(f(index<Func>{}));
-  static_assert(cuda::std::is_same<RawInvokeResult, Expect>::value, "");
+  static_assert(cuda::std::is_same<RawInvokeResult, Expect>::value);
   using FnType = RawInvokeResult (*)(index<Func>);
   FnType fn    = f;
   cuda::std::tuple<index<Func>> t;
   using InvokeResult = decltype(cuda::std::apply(fn, t));
-  static_assert(cuda::std::is_same<InvokeResult, Expect>::value, "");
+  static_assert(cuda::std::is_same<InvokeResult, Expect>::value);
   unused(t);
   unused(fn);
 }

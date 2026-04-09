@@ -18,27 +18,27 @@
 template <class T>
 __host__ __device__ void test_is_reference()
 {
-  static_assert(cuda::std::is_reference<T>::value, "");
-  static_assert(cuda::std::is_reference<const T>::value, "");
-  static_assert(cuda::std::is_reference<volatile T>::value, "");
-  static_assert(cuda::std::is_reference<const volatile T>::value, "");
-  static_assert(cuda::std::is_reference_v<T>, "");
-  static_assert(cuda::std::is_reference_v<const T>, "");
-  static_assert(cuda::std::is_reference_v<volatile T>, "");
-  static_assert(cuda::std::is_reference_v<const volatile T>, "");
+  static_assert(cuda::std::is_reference<T>::value);
+  static_assert(cuda::std::is_reference<const T>::value);
+  static_assert(cuda::std::is_reference<volatile T>::value);
+  static_assert(cuda::std::is_reference<const volatile T>::value);
+  static_assert(cuda::std::is_reference_v<T>);
+  static_assert(cuda::std::is_reference_v<const T>);
+  static_assert(cuda::std::is_reference_v<volatile T>);
+  static_assert(cuda::std::is_reference_v<const volatile T>);
 }
 
 template <class T>
 __host__ __device__ void test_is_not_reference()
 {
-  static_assert(!cuda::std::is_reference<T>::value, "");
-  static_assert(!cuda::std::is_reference<const T>::value, "");
-  static_assert(!cuda::std::is_reference<volatile T>::value, "");
-  static_assert(!cuda::std::is_reference<const volatile T>::value, "");
-  static_assert(!cuda::std::is_reference_v<T>, "");
-  static_assert(!cuda::std::is_reference_v<const T>, "");
-  static_assert(!cuda::std::is_reference_v<volatile T>, "");
-  static_assert(!cuda::std::is_reference_v<const volatile T>, "");
+  static_assert(!cuda::std::is_reference<T>::value);
+  static_assert(!cuda::std::is_reference<const T>::value);
+  static_assert(!cuda::std::is_reference<volatile T>::value);
+  static_assert(!cuda::std::is_reference<const volatile T>::value);
+  static_assert(!cuda::std::is_reference_v<T>);
+  static_assert(!cuda::std::is_reference_v<const T>);
+  static_assert(!cuda::std::is_reference_v<volatile T>);
+  static_assert(!cuda::std::is_reference_v<const volatile T>);
 }
 
 class incomplete_type;

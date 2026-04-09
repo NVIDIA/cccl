@@ -31,7 +31,7 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::declval<weekday&>().c_encoding()));
   static_assert(cuda::std::is_same_v<unsigned, decltype(cuda::std::declval<weekday&>().c_encoding())>);
 
-  static_assert(testConstexpr<weekday>(), "");
+  static_assert(testConstexpr<weekday>());
 
   for (unsigned i = 0; i <= 10; ++i)
   {

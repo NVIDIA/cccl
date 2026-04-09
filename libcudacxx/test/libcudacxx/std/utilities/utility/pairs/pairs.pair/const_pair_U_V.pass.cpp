@@ -31,10 +31,10 @@ __host__ __device__ void test_pair_const()
   using P2  = cuda::std::pair<int, T1>;
   using UP1 = cuda::std::pair<U1, int> const&;
   using UP2 = cuda::std::pair<int, U1> const&;
-  static_assert(cuda::std::is_constructible<P1, UP1>::value == CanCopy, "");
-  static_assert(test_convertible<P1, UP1>() == CanConvert, "");
-  static_assert(cuda::std::is_constructible<P2, UP2>::value == CanCopy, "");
-  static_assert(test_convertible<P2, UP2>() == CanConvert, "");
+  static_assert(cuda::std::is_constructible<P1, UP1>::value == CanCopy);
+  static_assert(test_convertible<P1, UP1>() == CanConvert);
+  static_assert(cuda::std::is_constructible<P2, UP2>::value == CanCopy);
+  static_assert(test_convertible<P2, UP2>() == CanConvert);
 }
 
 template <class T, class U>
@@ -168,24 +168,24 @@ int main(int, char**)
     using P2 = cuda::std::pair<double, long>;
     constexpr P1 p1(3, 4);
     constexpr P2 p2 = p1;
-    static_assert(p2.first == 3, "");
-    static_assert(p2.second == 4, "");
+    static_assert(p2.first == 3);
+    static_assert(p2.second == 4);
   }
   {
     using P1 = cuda::std::pair<int, int>;
     using P2 = cuda::std::pair<ExplicitT, ExplicitT>;
     constexpr P1 p1(42, 101);
     constexpr P2 p2(p1);
-    static_assert(p2.first.value == 42, "");
-    static_assert(p2.second.value == 101, "");
+    static_assert(p2.first.value == 42);
+    static_assert(p2.second.value == 101);
   }
   {
     using P1 = cuda::std::pair<int, int>;
     using P2 = cuda::std::pair<ImplicitT, ImplicitT>;
     constexpr P1 p1(42, 101);
     constexpr P2 p2 = p1;
-    static_assert(p2.first.value == 42, "");
-    static_assert(p2.second.value == 101, "");
+    static_assert(p2.first.value == 42);
+    static_assert(p2.second.value == 101);
   }
 
   return 0;

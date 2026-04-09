@@ -47,12 +47,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
   using VT = typename cuda::std::conditional<IsArray, int[], int>::type;
   using U  = cuda::std::unique_ptr<VT>;
   {
-    static_assert((cuda::std::is_constructible<bool, U>::value), "");
-    static_assert((cuda::std::is_constructible<bool, U const&>::value), "");
+    static_assert((cuda::std::is_constructible<bool, U>::value));
+    static_assert((cuda::std::is_constructible<bool, U const&>::value));
   }
   {
-    static_assert(!cuda::std::is_convertible<U, bool>::value, "");
-    static_assert(!cuda::std::is_convertible<U const&, bool>::value, "");
+    static_assert(!cuda::std::is_convertible<U, bool>::value);
+    static_assert(!cuda::std::is_convertible<U const&, bool>::value);
   }
   {
     U p(newValue<VT>(1));

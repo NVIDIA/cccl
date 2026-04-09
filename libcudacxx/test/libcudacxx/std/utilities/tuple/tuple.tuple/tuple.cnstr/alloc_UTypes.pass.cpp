@@ -49,7 +49,7 @@ __host__ __device__ void test_uses_allocator_sfinae_evaluation()
   {
     using Tuple = cuda::std::tuple<MoveOnly, MoveOnly, BadDefault>;
 
-    static_assert(!cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly>::value, "");
+    static_assert(!cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly>::value);
 
     static_assert(
       cuda::std::is_constructible<Tuple, cuda::std::allocator_arg_t, A1<int>, MoveOnly, MoveOnly, BadDefault>::value,

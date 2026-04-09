@@ -17,41 +17,41 @@
 
 using cuda::std::predicate;
 
-static_assert(predicate<bool()>, "");
-static_assert(predicate<bool (*)()>, "");
-static_assert(predicate<bool (&)()>, "");
+static_assert(predicate<bool()>);
+static_assert(predicate<bool (*)()>);
+static_assert(predicate<bool (&)()>);
 
-static_assert(!predicate<void()>, "");
-static_assert(!predicate<void (*)()>, "");
-static_assert(!predicate<void (&)()>, "");
+static_assert(!predicate<void()>);
+static_assert(!predicate<void (*)()>);
+static_assert(!predicate<void (&)()>);
 
 struct S
 {};
 
-static_assert(!predicate<S(int), int>, "");
-static_assert(!predicate<S(double), double>, "");
-static_assert(predicate<int S::*, S*>, "");
-static_assert(predicate<int (S::*)(), S*>, "");
-static_assert(predicate<int (S::*)(), S&>, "");
-static_assert(!predicate<void (S::*)(), S*>, "");
-static_assert(!predicate<void (S::*)(), S&>, "");
+static_assert(!predicate<S(int), int>);
+static_assert(!predicate<S(double), double>);
+static_assert(predicate<int S::*, S*>);
+static_assert(predicate<int (S::*)(), S*>);
+static_assert(predicate<int (S::*)(), S&>);
+static_assert(!predicate<void (S::*)(), S*>);
+static_assert(!predicate<void (S::*)(), S&>);
 
-static_assert(!predicate<bool(S)>, "");
-static_assert(!predicate<bool(S)>, "");
+static_assert(!predicate<bool(S)>);
+static_assert(!predicate<bool(S)>);
 #if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // unspecified MSVC bug
-static_assert(!predicate<bool(S&), S>, "");
+static_assert(!predicate<bool(S&), S>);
 #endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
-static_assert(!predicate<bool(S&), S const&>, "");
-static_assert(predicate<bool(S&), S&>, "");
+static_assert(!predicate<bool(S&), S const&>);
+static_assert(predicate<bool(S&), S&>);
 
 struct Predicate
 {
   __host__ __device__ bool operator()(int, double, char);
 };
-static_assert(predicate<Predicate, int, double, char>, "");
-static_assert(predicate<Predicate&, int, double, char>, "");
-static_assert(!predicate<const Predicate, int, double, char>, "");
-static_assert(!predicate<const Predicate&, int, double, char>, "");
+static_assert(predicate<Predicate, int, double, char>);
+static_assert(predicate<Predicate&, int, double, char>);
+static_assert(!predicate<const Predicate, int, double, char>);
+static_assert(!predicate<const Predicate&, int, double, char>);
 
 #if !TEST_COMPILER(NVRTC)
 template <class Fun>

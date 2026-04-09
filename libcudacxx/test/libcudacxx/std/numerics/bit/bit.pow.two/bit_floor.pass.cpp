@@ -61,22 +61,22 @@ __host__ __device__ void runtime_test()
 
 int main(int, char**)
 {
-  static_assert(constexpr_test<unsigned char>(), "");
-  static_assert(constexpr_test<unsigned short>(), "");
-  static_assert(constexpr_test<unsigned>(), "");
-  static_assert(constexpr_test<unsigned long>(), "");
-  static_assert(constexpr_test<unsigned long long>(), "");
+  static_assert(constexpr_test<unsigned char>());
+  static_assert(constexpr_test<unsigned short>());
+  static_assert(constexpr_test<unsigned>());
+  static_assert(constexpr_test<unsigned long>());
+  static_assert(constexpr_test<unsigned long long>());
 
-  static_assert(constexpr_test<uint8_t>(), "");
-  static_assert(constexpr_test<uint16_t>(), "");
-  static_assert(constexpr_test<uint32_t>(), "");
-  static_assert(constexpr_test<uint64_t>(), "");
-  static_assert(constexpr_test<size_t>(), "");
-  static_assert(constexpr_test<uintmax_t>(), "");
-  static_assert(constexpr_test<uintptr_t>(), "");
+  static_assert(constexpr_test<uint8_t>());
+  static_assert(constexpr_test<uint16_t>());
+  static_assert(constexpr_test<uint32_t>());
+  static_assert(constexpr_test<uint64_t>());
+  static_assert(constexpr_test<size_t>());
+  static_assert(constexpr_test<uintmax_t>());
+  static_assert(constexpr_test<uintptr_t>());
 
 #if _CCCL_HAS_INT128()
-  static_assert(constexpr_test<__uint128_t>(), "");
+  static_assert(constexpr_test<__uint128_t>());
 #endif // _CCCL_HAS_INT128()
 
   runtime_test<unsigned char>();

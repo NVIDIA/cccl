@@ -41,17 +41,17 @@ struct HasIterSwap
   }
 };
 
-static_assert(cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, HasIterSwap&>, "");
-static_assert(cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, int&>, "");
-static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasIterSwap&>, "");
+static_assert(cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, HasIterSwap&>);
+static_assert(cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, int&>);
+static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasIterSwap&>);
 
-static_assert(cuda::std::is_invocable_v<IterSwapT&, HasIterSwap&, HasIterSwap&>, "");
-static_assert(cuda::std::is_invocable_v<IterSwapT&, HasIterSwap&, int&>, "");
-static_assert(!cuda::std::is_invocable_v<IterSwapT&, int&, HasIterSwap&>, "");
+static_assert(cuda::std::is_invocable_v<IterSwapT&, HasIterSwap&, HasIterSwap&>);
+static_assert(cuda::std::is_invocable_v<IterSwapT&, HasIterSwap&, int&>);
+static_assert(!cuda::std::is_invocable_v<IterSwapT&, int&, HasIterSwap&>);
 
-static_assert(cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, HasIterSwap&>, "");
-static_assert(cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, int&>, "");
-static_assert(!cuda::std::is_invocable_v<IterSwapT&&, int&, HasIterSwap&>, "");
+static_assert(cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, HasIterSwap&>);
+static_assert(cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, int&>);
+static_assert(!cuda::std::is_invocable_v<IterSwapT&&, int&, HasIterSwap&>);
 
 struct NodiscardIterSwap
 {
@@ -102,10 +102,10 @@ struct HasRangesSwapWrapper
   }
 };
 
-static_assert(cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, HasRangesSwapWrapper&>, "");
+static_assert(cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, HasRangesSwapWrapper&>);
 // Does not satisfy swappable_with, even though swap(X, Y) is valid.
-static_assert(!cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, int&>, "");
-static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasRangesSwapWrapper&>, "");
+static_assert(!cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, int&>);
+static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasRangesSwapWrapper&>);
 
 struct B;
 
@@ -246,11 +246,11 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-static_assert(!cuda::std::is_invocable_v<IterSwapT, int*>, ""); // too few arguments
-static_assert(!cuda::std::is_invocable_v<IterSwapT, int*, int*, int*>, ""); // too many arguments
-static_assert(!cuda::std::is_invocable_v<IterSwapT, int, int*>, "");
-static_assert(!cuda::std::is_invocable_v<IterSwapT, int*, int>, "");
-static_assert(!cuda::std::is_invocable_v<IterSwapT, void*, void*>, "");
+static_assert(!cuda::std::is_invocable_v<IterSwapT, int*>); // too few arguments
+static_assert(!cuda::std::is_invocable_v<IterSwapT, int*, int*, int*>); // too many arguments
+static_assert(!cuda::std::is_invocable_v<IterSwapT, int, int*>);
+static_assert(!cuda::std::is_invocable_v<IterSwapT, int*, int>);
+static_assert(!cuda::std::is_invocable_v<IterSwapT, void*, void*>);
 
 #if TEST_STD_VER > 2017
 // Test ADL-proofing.
@@ -260,16 +260,16 @@ struct Holder
 {
   T t;
 };
-static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**, Holder<Incomplete>**>, "");
-static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**, Holder<Incomplete>**&>, "");
-static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**&, Holder<Incomplete>**>, "");
-static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**&, Holder<Incomplete>**&>, "");
+static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**, Holder<Incomplete>**>);
+static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**, Holder<Incomplete>**&>);
+static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**&, Holder<Incomplete>**>);
+static_assert(cuda::std::is_invocable_v<IterSwapT, Holder<Incomplete>**&, Holder<Incomplete>**&>);
 #endif
 
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

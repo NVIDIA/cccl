@@ -37,8 +37,8 @@ __host__ __device__ constexpr bool test_constexpr_context()
   return true;
 }
 
-static_assert(test_constexpr_context<int>(), "");
-static_assert(test_constexpr_context<void>(), "");
+static_assert(test_constexpr_context<int>());
+static_assert(test_constexpr_context<void>());
 
 int main(int, char**)
 {

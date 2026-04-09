@@ -39,36 +39,36 @@ TEST_GLOBAL_VARIABLE int iArr2[] = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 int main(int, char**)
 {
   //  dynamic size
-  static_assert(testConstexprSpan(cuda::std::span<int>(), nullptr), "");
-  static_assert(testConstexprSpan(cuda::std::span<long>(), nullptr), "");
-  static_assert(testConstexprSpan(cuda::std::span<double>(), nullptr), "");
-  static_assert(testConstexprSpan(cuda::std::span<A>(), nullptr), "");
+  static_assert(testConstexprSpan(cuda::std::span<int>(), nullptr));
+  static_assert(testConstexprSpan(cuda::std::span<long>(), nullptr));
+  static_assert(testConstexprSpan(cuda::std::span<double>(), nullptr));
+  static_assert(testConstexprSpan(cuda::std::span<A>(), nullptr));
 
-  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 1), iArr1), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 2), iArr1), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 3), iArr1), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 4), iArr1), "");
+  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 1), iArr1));
+  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 2), iArr1));
+  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 3), iArr1));
+  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 4), iArr1));
 
-  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1 + 1, 1), iArr1 + 1), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1 + 2, 2), iArr1 + 2), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1 + 3, 3), iArr1 + 3), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1 + 4, 4), iArr1 + 4), "");
+  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1 + 1, 1), iArr1 + 1));
+  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1 + 2, 2), iArr1 + 2));
+  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1 + 3, 3), iArr1 + 3));
+  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1 + 4, 4), iArr1 + 4));
 
   //  static size
-  static_assert(testConstexprSpan(cuda::std::span<int, 0>(), nullptr), "");
-  static_assert(testConstexprSpan(cuda::std::span<long, 0>(), nullptr), "");
-  static_assert(testConstexprSpan(cuda::std::span<double, 0>(), nullptr), "");
-  static_assert(testConstexprSpan(cuda::std::span<A, 0>(), nullptr), "");
+  static_assert(testConstexprSpan(cuda::std::span<int, 0>(), nullptr));
+  static_assert(testConstexprSpan(cuda::std::span<long, 0>(), nullptr));
+  static_assert(testConstexprSpan(cuda::std::span<double, 0>(), nullptr));
+  static_assert(testConstexprSpan(cuda::std::span<A, 0>(), nullptr));
 
-  static_assert(testConstexprSpan(cuda::std::span<const int, 1>(iArr1, 1), iArr1), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int, 2>(iArr1, 2), iArr1), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int, 3>(iArr1, 3), iArr1), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int, 4>(iArr1, 4), iArr1), "");
+  static_assert(testConstexprSpan(cuda::std::span<const int, 1>(iArr1, 1), iArr1));
+  static_assert(testConstexprSpan(cuda::std::span<const int, 2>(iArr1, 2), iArr1));
+  static_assert(testConstexprSpan(cuda::std::span<const int, 3>(iArr1, 3), iArr1));
+  static_assert(testConstexprSpan(cuda::std::span<const int, 4>(iArr1, 4), iArr1));
 
-  static_assert(testConstexprSpan(cuda::std::span<const int, 1>(iArr1 + 1, 1), iArr1 + 1), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int, 2>(iArr1 + 2, 2), iArr1 + 2), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int, 3>(iArr1 + 3, 3), iArr1 + 3), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int, 4>(iArr1 + 4, 4), iArr1 + 4), "");
+  static_assert(testConstexprSpan(cuda::std::span<const int, 1>(iArr1 + 1, 1), iArr1 + 1));
+  static_assert(testConstexprSpan(cuda::std::span<const int, 2>(iArr1 + 2, 2), iArr1 + 2));
+  static_assert(testConstexprSpan(cuda::std::span<const int, 3>(iArr1 + 3, 3), iArr1 + 3));
+  static_assert(testConstexprSpan(cuda::std::span<const int, 4>(iArr1 + 4, 4), iArr1 + 4));
 
   //  dynamic size
   testRuntimeSpan(cuda::std::span<int>(), nullptr);

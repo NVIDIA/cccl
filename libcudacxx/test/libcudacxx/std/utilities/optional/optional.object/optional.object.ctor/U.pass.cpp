@@ -225,16 +225,16 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
   {
     using O = optional<ImplicitAny>;
-    static_assert(!test_convertible<O, cuda::std::in_place_t>(), "");
-    static_assert(!test_convertible<O, cuda::std::in_place_t&>(), "");
-    static_assert(!test_convertible<O, const cuda::std::in_place_t&>(), "");
-    static_assert(!test_convertible<O, cuda::std::in_place_t&&>(), "");
-    static_assert(!test_convertible<O, const cuda::std::in_place_t&&>(), "");
+    static_assert(!test_convertible<O, cuda::std::in_place_t>());
+    static_assert(!test_convertible<O, cuda::std::in_place_t&>());
+    static_assert(!test_convertible<O, const cuda::std::in_place_t&>());
+    static_assert(!test_convertible<O, cuda::std::in_place_t&&>());
+    static_assert(!test_convertible<O, const cuda::std::in_place_t&&>());
   }
 
   {

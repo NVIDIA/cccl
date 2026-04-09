@@ -97,8 +97,8 @@ int main(int, char**)
     constexpr const Derived* p = nullptr;
     constexpr DerivedIter it1  = cuda::std::make_move_iterator(p);
     constexpr BaseIter it2     = (BaseIter{nullptr} = it1);
-    static_assert(it2.base() == p, "");
-    static_assert(test_conv_assign(), "");
+    static_assert(it2.base() == p);
+    static_assert(test_conv_assign());
   }
 
   return 0;

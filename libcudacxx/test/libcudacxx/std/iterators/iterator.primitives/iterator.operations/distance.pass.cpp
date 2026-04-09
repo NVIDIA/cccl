@@ -28,7 +28,7 @@ __host__ __device__ constexpr void
 check_distance(It first, It last, typename cuda::std::iterator_traits<It>::difference_type dist)
 {
   using Difference = typename cuda::std::iterator_traits<It>::difference_type;
-  static_assert(cuda::std::is_same<decltype(cuda::std::distance(first, last)), Difference>::value, "");
+  static_assert(cuda::std::is_same<decltype(cuda::std::distance(first, last)), Difference>::value);
   assert(cuda::std::distance(first, last) == dist);
 }
 
@@ -46,6 +46,6 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
   return 0;
 }

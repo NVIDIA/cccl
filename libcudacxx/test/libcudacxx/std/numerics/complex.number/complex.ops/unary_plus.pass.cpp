@@ -44,10 +44,10 @@ int main(int, char**)
 #if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
 #endif // _LIBCUDACXX_HAS_NVBF16()
-  static_assert(test<float>(), "");
-  static_assert(test<double>(), "");
+  static_assert(test<float>());
+  static_assert(test<double>());
 #if _CCCL_HAS_LONG_DOUBLE()
-  static_assert(test<long double>(), "");
+  static_assert(test<long double>());
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
   return 0;

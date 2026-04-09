@@ -21,30 +21,30 @@ template <class T, class U>
 __host__ __device__ constexpr bool CheckCommonWith() noexcept
 {
   constexpr bool result = cuda::std::common_with<T, U>;
-  static_assert(cuda::std::common_with<T, U&> == result, "");
-  static_assert(cuda::std::common_with<T, const U&> == result, "");
-  static_assert(cuda::std::common_with<T, volatile U&> == result, "");
-  static_assert(cuda::std::common_with<T, const volatile U&> == result, "");
-  static_assert(cuda::std::common_with<T, U&&> == result, "");
-  static_assert(cuda::std::common_with<T, const U&&> == result, "");
-  static_assert(cuda::std::common_with<T, volatile U&&> == result, "");
-  static_assert(cuda::std::common_with<T, const volatile U&&> == result, "");
-  static_assert(cuda::std::common_with<T&, U&&> == result, "");
-  static_assert(cuda::std::common_with<T&, const U&&> == result, "");
-  static_assert(cuda::std::common_with<T&, volatile U&&> == result, "");
-  static_assert(cuda::std::common_with<T&, const volatile U&&> == result, "");
-  static_assert(cuda::std::common_with<const T&, U&&> == result, "");
-  static_assert(cuda::std::common_with<const T&, const U&&> == result, "");
-  static_assert(cuda::std::common_with<const T&, volatile U&&> == result, "");
-  static_assert(cuda::std::common_with<const T&, const volatile U&&> == result, "");
-  static_assert(cuda::std::common_with<volatile T&, U&&> == result, "");
-  static_assert(cuda::std::common_with<volatile T&, const U&&> == result, "");
-  static_assert(cuda::std::common_with<volatile T&, volatile U&&> == result, "");
-  static_assert(cuda::std::common_with<volatile T&, const volatile U&&> == result, "");
-  static_assert(cuda::std::common_with<const volatile T&, U&&> == result, "");
-  static_assert(cuda::std::common_with<const volatile T&, const U&&> == result, "");
-  static_assert(cuda::std::common_with<const volatile T&, volatile U&&> == result, "");
-  static_assert(cuda::std::common_with<const volatile T&, const volatile U&&> == result, "");
+  static_assert(cuda::std::common_with<T, U&> == result);
+  static_assert(cuda::std::common_with<T, const U&> == result);
+  static_assert(cuda::std::common_with<T, volatile U&> == result);
+  static_assert(cuda::std::common_with<T, const volatile U&> == result);
+  static_assert(cuda::std::common_with<T, U&&> == result);
+  static_assert(cuda::std::common_with<T, const U&&> == result);
+  static_assert(cuda::std::common_with<T, volatile U&&> == result);
+  static_assert(cuda::std::common_with<T, const volatile U&&> == result);
+  static_assert(cuda::std::common_with<T&, U&&> == result);
+  static_assert(cuda::std::common_with<T&, const U&&> == result);
+  static_assert(cuda::std::common_with<T&, volatile U&&> == result);
+  static_assert(cuda::std::common_with<T&, const volatile U&&> == result);
+  static_assert(cuda::std::common_with<const T&, U&&> == result);
+  static_assert(cuda::std::common_with<const T&, const U&&> == result);
+  static_assert(cuda::std::common_with<const T&, volatile U&&> == result);
+  static_assert(cuda::std::common_with<const T&, const volatile U&&> == result);
+  static_assert(cuda::std::common_with<volatile T&, U&&> == result);
+  static_assert(cuda::std::common_with<volatile T&, const U&&> == result);
+  static_assert(cuda::std::common_with<volatile T&, volatile U&&> == result);
+  static_assert(cuda::std::common_with<volatile T&, const volatile U&&> == result);
+  static_assert(cuda::std::common_with<const volatile T&, U&&> == result);
+  static_assert(cuda::std::common_with<const volatile T&, const U&&> == result);
+  static_assert(cuda::std::common_with<const volatile T&, volatile U&&> == result);
+  static_assert(cuda::std::common_with<const volatile T&, const volatile U&&> == result);
   return result;
 }
 
@@ -62,82 +62,82 @@ __host__ __device__ constexpr bool HasValidCommonType() noexcept
 namespace BuiltinTypes
 {
 // fundamental types
-static_assert(cuda::std::common_with<void, void>, "");
-static_assert(CheckCommonWith<int, int>(), "");
-static_assert(CheckCommonWith<int, long>(), "");
-static_assert(CheckCommonWith<int, unsigned char>(), "");
+static_assert(cuda::std::common_with<void, void>);
+static_assert(CheckCommonWith<int, int>());
+static_assert(CheckCommonWith<int, long>());
+static_assert(CheckCommonWith<int, unsigned char>());
 #if _CCCL_HAS_INT128()
-static_assert(CheckCommonWith<int, __int128_t>(), "");
+static_assert(CheckCommonWith<int, __int128_t>());
 #endif
-static_assert(CheckCommonWith<int, double>(), "");
+static_assert(CheckCommonWith<int, double>());
 
 // arrays
-static_assert(CheckCommonWith<int[5], int[5]>(), "");
+static_assert(CheckCommonWith<int[5], int[5]>());
 
 // pointers
-static_assert(CheckCommonWith<int*, int*>(), "");
-static_assert(CheckCommonWith<int*, const int*>(), "");
-static_assert(CheckCommonWith<int*, volatile int*>(), "");
-static_assert(CheckCommonWith<int*, const volatile int*>(), "");
-static_assert(CheckCommonWith<const int*, const int*>(), "");
-static_assert(CheckCommonWith<const int*, volatile int*>(), "");
-static_assert(CheckCommonWith<const int*, const volatile int*>(), "");
-static_assert(CheckCommonWith<volatile int*, const int*>(), "");
-static_assert(CheckCommonWith<volatile int*, volatile int*>(), "");
-static_assert(CheckCommonWith<volatile int*, const volatile int*>(), "");
-static_assert(CheckCommonWith<const volatile int*, const int*>(), "");
-static_assert(CheckCommonWith<const volatile int*, volatile int*>(), "");
-static_assert(CheckCommonWith<const volatile int*, const volatile int*>(), "");
+static_assert(CheckCommonWith<int*, int*>());
+static_assert(CheckCommonWith<int*, const int*>());
+static_assert(CheckCommonWith<int*, volatile int*>());
+static_assert(CheckCommonWith<int*, const volatile int*>());
+static_assert(CheckCommonWith<const int*, const int*>());
+static_assert(CheckCommonWith<const int*, volatile int*>());
+static_assert(CheckCommonWith<const int*, const volatile int*>());
+static_assert(CheckCommonWith<volatile int*, const int*>());
+static_assert(CheckCommonWith<volatile int*, volatile int*>());
+static_assert(CheckCommonWith<volatile int*, const volatile int*>());
+static_assert(CheckCommonWith<const volatile int*, const int*>());
+static_assert(CheckCommonWith<const volatile int*, volatile int*>());
+static_assert(CheckCommonWith<const volatile int*, const volatile int*>());
 
-static_assert(CheckCommonWith<int (*)(), int (*)()>(), "");
+static_assert(CheckCommonWith<int (*)(), int (*)()>());
 #if !TEST_COMPILER(NVHPC)
-static_assert(CheckCommonWith<int (*)(), int (*)() noexcept>(), "");
+static_assert(CheckCommonWith<int (*)(), int (*)() noexcept>());
 #endif // !TEST_COMPILER(NVHPC)
 #ifdef INVESTIGATE_COMPILER_BUG
-static_assert(CheckCommonWith<int (&)(), int (&)()>(), "");
+static_assert(CheckCommonWith<int (&)(), int (&)()>());
 #endif // INVESTIGATE_COMPILER_BUG
 #if TEST_STD_VER > 2017
-static_assert(CheckCommonWith<int (&)(), int (&)() noexcept>(), "");
+static_assert(CheckCommonWith<int (&)(), int (&)() noexcept>());
 #endif // TEST_STD_VER > 2017
-static_assert(CheckCommonWith<int (&)(), int (*)()>(), "");
+static_assert(CheckCommonWith<int (&)(), int (*)()>());
 #if !TEST_COMPILER(NVHPC)
-static_assert(CheckCommonWith<int (&)(), int (*)() noexcept>(), "");
+static_assert(CheckCommonWith<int (&)(), int (*)() noexcept>());
 #endif // !TEST_COMPILER(NVHPC)
 
 struct S
 {};
-static_assert(CheckCommonWith<int S::*, int S::*>(), "");
-static_assert(CheckCommonWith<int S::*, const int S::*>(), "");
-static_assert(CheckCommonWith<int (S::*)(), int (S::*)()>(), "");
+static_assert(CheckCommonWith<int S::*, int S::*>());
+static_assert(CheckCommonWith<int S::*, const int S::*>());
+static_assert(CheckCommonWith<int (S::*)(), int (S::*)()>());
 #if !TEST_COMPILER(NVHPC)
-static_assert(CheckCommonWith<int (S::*)(), int (S::*)() noexcept>(), "");
+static_assert(CheckCommonWith<int (S::*)(), int (S::*)() noexcept>());
 #endif // !TEST_COMPILER(NVHPC)
-static_assert(CheckCommonWith<int (S::*)() const, int (S::*)() const>(), "");
+static_assert(CheckCommonWith<int (S::*)() const, int (S::*)() const>());
 #if !TEST_COMPILER(NVHPC)
-static_assert(CheckCommonWith<int (S::*)() const, int (S::*)() const noexcept>(), "");
+static_assert(CheckCommonWith<int (S::*)() const, int (S::*)() const noexcept>());
 #endif // !TEST_COMPILER(NVHPC)
-static_assert(CheckCommonWith<int (S::*)() volatile, int (S::*)() volatile>(), "");
+static_assert(CheckCommonWith<int (S::*)() volatile, int (S::*)() volatile>());
 #if !TEST_COMPILER(NVHPC)
-static_assert(CheckCommonWith<int (S::*)() volatile, int (S::*)() volatile noexcept>(), "");
+static_assert(CheckCommonWith<int (S::*)() volatile, int (S::*)() volatile noexcept>());
 #endif // !TEST_COMPILER(NVHPC)
-static_assert(CheckCommonWith<int (S::*)() const volatile, int (S::*)() const volatile>(), "");
+static_assert(CheckCommonWith<int (S::*)() const volatile, int (S::*)() const volatile>());
 #if !TEST_COMPILER(NVHPC)
-static_assert(CheckCommonWith<int (S::*)() const volatile, int (S::*)() const volatile noexcept>(), "");
+static_assert(CheckCommonWith<int (S::*)() const volatile, int (S::*)() const volatile noexcept>());
 #endif // !TEST_COMPILER(NVHPC)
 
 // nonsense
-static_assert(!CheckCommonWith<double, float*>(), "");
-static_assert(!CheckCommonWith<int, int[5]>(), "");
-static_assert(!CheckCommonWith<int*, long*>(), "");
-static_assert(!CheckCommonWith<int*, unsigned int*>(), "");
-static_assert(!CheckCommonWith<int (*)(), int (*)(int)>(), "");
-static_assert(!CheckCommonWith<int S::*, float S::*>(), "");
-static_assert(!CheckCommonWith<int (S::*)(), int (S::*)() const>(), "");
-static_assert(!CheckCommonWith<int (S::*)(), int (S::*)() volatile>(), "");
-static_assert(!CheckCommonWith<int (S::*)(), int (S::*)() const volatile>(), "");
-static_assert(!CheckCommonWith<int (S::*)() const, int (S::*)() volatile>(), "");
-static_assert(!CheckCommonWith<int (S::*)() const, int (S::*)() const volatile>(), "");
-static_assert(!CheckCommonWith<int (S::*)() volatile, int (S::*)() const volatile>(), "");
+static_assert(!CheckCommonWith<double, float*>());
+static_assert(!CheckCommonWith<int, int[5]>());
+static_assert(!CheckCommonWith<int*, long*>());
+static_assert(!CheckCommonWith<int*, unsigned int*>());
+static_assert(!CheckCommonWith<int (*)(), int (*)(int)>());
+static_assert(!CheckCommonWith<int S::*, float S::*>());
+static_assert(!CheckCommonWith<int (S::*)(), int (S::*)() const>());
+static_assert(!CheckCommonWith<int (S::*)(), int (S::*)() volatile>());
+static_assert(!CheckCommonWith<int (S::*)(), int (S::*)() const volatile>());
+static_assert(!CheckCommonWith<int (S::*)() const, int (S::*)() volatile>());
+static_assert(!CheckCommonWith<int (S::*)() const, int (S::*)() const volatile>());
+static_assert(!CheckCommonWith<int (S::*)() volatile, int (S::*)() const volatile>());
 } // namespace BuiltinTypes
 
 namespace NoDefaultCommonType
@@ -145,135 +145,135 @@ namespace NoDefaultCommonType
 class T
 {};
 
-static_assert(!CheckCommonWith<T, int>(), "");
-static_assert(!CheckCommonWith<int, T>(), "");
-static_assert(!CheckCommonWith<T, int[10]>(), "");
-static_assert(!CheckCommonWith<T[10], int>(), "");
-static_assert(!CheckCommonWith<T*, int*>(), "");
-static_assert(!CheckCommonWith<T*, const int*>(), "");
-static_assert(!CheckCommonWith<T*, volatile int*>(), "");
-static_assert(!CheckCommonWith<T*, const volatile int*>(), "");
-static_assert(!CheckCommonWith<const T*, int*>(), "");
-static_assert(!CheckCommonWith<volatile T*, int*>(), "");
-static_assert(!CheckCommonWith<const volatile T*, int*>(), "");
-static_assert(!CheckCommonWith<const T*, const int*>(), "");
-static_assert(!CheckCommonWith<const T*, volatile int*>(), "");
-static_assert(!CheckCommonWith<const T*, const volatile int*>(), "");
-static_assert(!CheckCommonWith<const T*, const int*>(), "");
-static_assert(!CheckCommonWith<volatile T*, const int*>(), "");
-static_assert(!CheckCommonWith<const volatile T*, const int*>(), "");
-static_assert(!CheckCommonWith<volatile T*, const int*>(), "");
-static_assert(!CheckCommonWith<volatile T*, volatile int*>(), "");
-static_assert(!CheckCommonWith<volatile T*, const volatile int*>(), "");
-static_assert(!CheckCommonWith<const T*, volatile int*>(), "");
-static_assert(!CheckCommonWith<volatile T*, volatile int*>(), "");
-static_assert(!CheckCommonWith<const volatile T*, volatile int*>(), "");
-static_assert(!CheckCommonWith<const volatile T*, const int*>(), "");
-static_assert(!CheckCommonWith<const volatile T*, volatile int*>(), "");
-static_assert(!CheckCommonWith<const volatile T*, const volatile int*>(), "");
-static_assert(!CheckCommonWith<const T*, const volatile int*>(), "");
-static_assert(!CheckCommonWith<volatile T*, const volatile int*>(), "");
-static_assert(!CheckCommonWith<const volatile T*, const volatile int*>(), "");
-static_assert(!CheckCommonWith<T&, int&>(), "");
-static_assert(!CheckCommonWith<T&, const int&>(), "");
-static_assert(!CheckCommonWith<T&, volatile int&>(), "");
-static_assert(!CheckCommonWith<T&, const volatile int&>(), "");
-static_assert(!CheckCommonWith<const T&, int&>(), "");
-static_assert(!CheckCommonWith<volatile T&, int&>(), "");
-static_assert(!CheckCommonWith<const volatile T&, int&>(), "");
-static_assert(!CheckCommonWith<const T&, const int&>(), "");
-static_assert(!CheckCommonWith<const T&, volatile int&>(), "");
-static_assert(!CheckCommonWith<const T&, const volatile int&>(), "");
-static_assert(!CheckCommonWith<const T&, const int&>(), "");
-static_assert(!CheckCommonWith<volatile T&, const int&>(), "");
-static_assert(!CheckCommonWith<const volatile T&, const int&>(), "");
-static_assert(!CheckCommonWith<volatile T&, const int&>(), "");
-static_assert(!CheckCommonWith<volatile T&, volatile int&>(), "");
-static_assert(!CheckCommonWith<volatile T&, const volatile int&>(), "");
-static_assert(!CheckCommonWith<const T&, volatile int&>(), "");
-static_assert(!CheckCommonWith<volatile T&, volatile int&>(), "");
-static_assert(!CheckCommonWith<const volatile T&, volatile int&>(), "");
-static_assert(!CheckCommonWith<const volatile T&, const int&>(), "");
-static_assert(!CheckCommonWith<const volatile T&, volatile int&>(), "");
-static_assert(!CheckCommonWith<const volatile T&, const volatile int&>(), "");
-static_assert(!CheckCommonWith<const T&, const volatile int&>(), "");
-static_assert(!CheckCommonWith<volatile T&, const volatile int&>(), "");
-static_assert(!CheckCommonWith<const volatile T&, const volatile int&>(), "");
-static_assert(!CheckCommonWith<T&, int&&>(), "");
-static_assert(!CheckCommonWith<T&, const int&&>(), "");
-static_assert(!CheckCommonWith<T&, volatile int&&>(), "");
-static_assert(!CheckCommonWith<T&, const volatile int&&>(), "");
-static_assert(!CheckCommonWith<const T&, int&&>(), "");
-static_assert(!CheckCommonWith<volatile T&, int&&>(), "");
-static_assert(!CheckCommonWith<const volatile T&, int&&>(), "");
-static_assert(!CheckCommonWith<const T&, const int&&>(), "");
-static_assert(!CheckCommonWith<const T&, volatile int&&>(), "");
-static_assert(!CheckCommonWith<const T&, const volatile int&&>(), "");
-static_assert(!CheckCommonWith<const T&, const int&&>(), "");
-static_assert(!CheckCommonWith<volatile T&, const int&&>(), "");
-static_assert(!CheckCommonWith<const volatile T&, const int&&>(), "");
-static_assert(!CheckCommonWith<volatile T&, const int&&>(), "");
-static_assert(!CheckCommonWith<volatile T&, volatile int&&>(), "");
-static_assert(!CheckCommonWith<volatile T&, const volatile int&&>(), "");
-static_assert(!CheckCommonWith<const T&, volatile int&&>(), "");
-static_assert(!CheckCommonWith<volatile T&, volatile int&&>(), "");
-static_assert(!CheckCommonWith<const volatile T&, volatile int&&>(), "");
-static_assert(!CheckCommonWith<const volatile T&, const int&&>(), "");
-static_assert(!CheckCommonWith<const volatile T&, volatile int&&>(), "");
-static_assert(!CheckCommonWith<const volatile T&, const volatile int&&>(), "");
-static_assert(!CheckCommonWith<const T&, const volatile int&&>(), "");
-static_assert(!CheckCommonWith<volatile T&, const volatile int&&>(), "");
-static_assert(!CheckCommonWith<const volatile T&, const volatile int&&>(), "");
-static_assert(!CheckCommonWith<T&&, int&>(), "");
-static_assert(!CheckCommonWith<T&&, const int&>(), "");
-static_assert(!CheckCommonWith<T&&, volatile int&>(), "");
-static_assert(!CheckCommonWith<T&&, const volatile int&>(), "");
-static_assert(!CheckCommonWith<const T&&, int&>(), "");
-static_assert(!CheckCommonWith<volatile T&&, int&>(), "");
-static_assert(!CheckCommonWith<const volatile T&&, int&>(), "");
-static_assert(!CheckCommonWith<const T&&, const int&>(), "");
-static_assert(!CheckCommonWith<const T&&, volatile int&>(), "");
-static_assert(!CheckCommonWith<const T&&, const volatile int&>(), "");
-static_assert(!CheckCommonWith<const T&&, const int&>(), "");
-static_assert(!CheckCommonWith<volatile T&&, const int&>(), "");
-static_assert(!CheckCommonWith<const volatile T&&, const int&>(), "");
-static_assert(!CheckCommonWith<volatile T&&, const int&>(), "");
-static_assert(!CheckCommonWith<volatile T&&, volatile int&>(), "");
-static_assert(!CheckCommonWith<volatile T&&, const volatile int&>(), "");
-static_assert(!CheckCommonWith<const T&&, volatile int&>(), "");
-static_assert(!CheckCommonWith<volatile T&&, volatile int&>(), "");
-static_assert(!CheckCommonWith<const volatile T&&, volatile int&>(), "");
-static_assert(!CheckCommonWith<const volatile T&&, const int&>(), "");
-static_assert(!CheckCommonWith<const volatile T&&, volatile int&>(), "");
-static_assert(!CheckCommonWith<const volatile T&&, const volatile int&>(), "");
-static_assert(!CheckCommonWith<const T&&, const volatile int&>(), "");
-static_assert(!CheckCommonWith<volatile T&&, const volatile int&>(), "");
-static_assert(!CheckCommonWith<const volatile T&&, const volatile int&>(), "");
-static_assert(!CheckCommonWith<T&&, int&&>(), "");
-static_assert(!CheckCommonWith<T&&, const int&&>(), "");
-static_assert(!CheckCommonWith<T&&, volatile int&&>(), "");
-static_assert(!CheckCommonWith<T&&, const volatile int&&>(), "");
-static_assert(!CheckCommonWith<const T&&, int&&>(), "");
-static_assert(!CheckCommonWith<volatile T&&, int&&>(), "");
-static_assert(!CheckCommonWith<const volatile T&&, int&&>(), "");
-static_assert(!CheckCommonWith<const T&&, const int&&>(), "");
-static_assert(!CheckCommonWith<const T&&, volatile int&&>(), "");
-static_assert(!CheckCommonWith<const T&&, const volatile int&&>(), "");
-static_assert(!CheckCommonWith<const T&&, const int&&>(), "");
-static_assert(!CheckCommonWith<volatile T&&, const int&&>(), "");
-static_assert(!CheckCommonWith<const volatile T&&, const int&&>(), "");
-static_assert(!CheckCommonWith<volatile T&&, const int&&>(), "");
-static_assert(!CheckCommonWith<volatile T&&, volatile int&&>(), "");
-static_assert(!CheckCommonWith<volatile T&&, const volatile int&&>(), "");
-static_assert(!CheckCommonWith<const T&&, volatile int&&>(), "");
-static_assert(!CheckCommonWith<volatile T&&, volatile int&&>(), "");
-static_assert(!CheckCommonWith<const volatile T&&, volatile int&&>(), "");
-static_assert(!CheckCommonWith<const volatile T&&, const int&&>(), "");
-static_assert(!CheckCommonWith<const volatile T&&, volatile int&&>(), "");
-static_assert(!CheckCommonWith<const volatile T&&, const volatile int&&>(), "");
-static_assert(!CheckCommonWith<const T&&, const volatile int&&>(), "");
-static_assert(!CheckCommonWith<volatile T&&, const volatile int&&>(), "");
-static_assert(!CheckCommonWith<const volatile T&&, const volatile int&&>(), "");
+static_assert(!CheckCommonWith<T, int>());
+static_assert(!CheckCommonWith<int, T>());
+static_assert(!CheckCommonWith<T, int[10]>());
+static_assert(!CheckCommonWith<T[10], int>());
+static_assert(!CheckCommonWith<T*, int*>());
+static_assert(!CheckCommonWith<T*, const int*>());
+static_assert(!CheckCommonWith<T*, volatile int*>());
+static_assert(!CheckCommonWith<T*, const volatile int*>());
+static_assert(!CheckCommonWith<const T*, int*>());
+static_assert(!CheckCommonWith<volatile T*, int*>());
+static_assert(!CheckCommonWith<const volatile T*, int*>());
+static_assert(!CheckCommonWith<const T*, const int*>());
+static_assert(!CheckCommonWith<const T*, volatile int*>());
+static_assert(!CheckCommonWith<const T*, const volatile int*>());
+static_assert(!CheckCommonWith<const T*, const int*>());
+static_assert(!CheckCommonWith<volatile T*, const int*>());
+static_assert(!CheckCommonWith<const volatile T*, const int*>());
+static_assert(!CheckCommonWith<volatile T*, const int*>());
+static_assert(!CheckCommonWith<volatile T*, volatile int*>());
+static_assert(!CheckCommonWith<volatile T*, const volatile int*>());
+static_assert(!CheckCommonWith<const T*, volatile int*>());
+static_assert(!CheckCommonWith<volatile T*, volatile int*>());
+static_assert(!CheckCommonWith<const volatile T*, volatile int*>());
+static_assert(!CheckCommonWith<const volatile T*, const int*>());
+static_assert(!CheckCommonWith<const volatile T*, volatile int*>());
+static_assert(!CheckCommonWith<const volatile T*, const volatile int*>());
+static_assert(!CheckCommonWith<const T*, const volatile int*>());
+static_assert(!CheckCommonWith<volatile T*, const volatile int*>());
+static_assert(!CheckCommonWith<const volatile T*, const volatile int*>());
+static_assert(!CheckCommonWith<T&, int&>());
+static_assert(!CheckCommonWith<T&, const int&>());
+static_assert(!CheckCommonWith<T&, volatile int&>());
+static_assert(!CheckCommonWith<T&, const volatile int&>());
+static_assert(!CheckCommonWith<const T&, int&>());
+static_assert(!CheckCommonWith<volatile T&, int&>());
+static_assert(!CheckCommonWith<const volatile T&, int&>());
+static_assert(!CheckCommonWith<const T&, const int&>());
+static_assert(!CheckCommonWith<const T&, volatile int&>());
+static_assert(!CheckCommonWith<const T&, const volatile int&>());
+static_assert(!CheckCommonWith<const T&, const int&>());
+static_assert(!CheckCommonWith<volatile T&, const int&>());
+static_assert(!CheckCommonWith<const volatile T&, const int&>());
+static_assert(!CheckCommonWith<volatile T&, const int&>());
+static_assert(!CheckCommonWith<volatile T&, volatile int&>());
+static_assert(!CheckCommonWith<volatile T&, const volatile int&>());
+static_assert(!CheckCommonWith<const T&, volatile int&>());
+static_assert(!CheckCommonWith<volatile T&, volatile int&>());
+static_assert(!CheckCommonWith<const volatile T&, volatile int&>());
+static_assert(!CheckCommonWith<const volatile T&, const int&>());
+static_assert(!CheckCommonWith<const volatile T&, volatile int&>());
+static_assert(!CheckCommonWith<const volatile T&, const volatile int&>());
+static_assert(!CheckCommonWith<const T&, const volatile int&>());
+static_assert(!CheckCommonWith<volatile T&, const volatile int&>());
+static_assert(!CheckCommonWith<const volatile T&, const volatile int&>());
+static_assert(!CheckCommonWith<T&, int&&>());
+static_assert(!CheckCommonWith<T&, const int&&>());
+static_assert(!CheckCommonWith<T&, volatile int&&>());
+static_assert(!CheckCommonWith<T&, const volatile int&&>());
+static_assert(!CheckCommonWith<const T&, int&&>());
+static_assert(!CheckCommonWith<volatile T&, int&&>());
+static_assert(!CheckCommonWith<const volatile T&, int&&>());
+static_assert(!CheckCommonWith<const T&, const int&&>());
+static_assert(!CheckCommonWith<const T&, volatile int&&>());
+static_assert(!CheckCommonWith<const T&, const volatile int&&>());
+static_assert(!CheckCommonWith<const T&, const int&&>());
+static_assert(!CheckCommonWith<volatile T&, const int&&>());
+static_assert(!CheckCommonWith<const volatile T&, const int&&>());
+static_assert(!CheckCommonWith<volatile T&, const int&&>());
+static_assert(!CheckCommonWith<volatile T&, volatile int&&>());
+static_assert(!CheckCommonWith<volatile T&, const volatile int&&>());
+static_assert(!CheckCommonWith<const T&, volatile int&&>());
+static_assert(!CheckCommonWith<volatile T&, volatile int&&>());
+static_assert(!CheckCommonWith<const volatile T&, volatile int&&>());
+static_assert(!CheckCommonWith<const volatile T&, const int&&>());
+static_assert(!CheckCommonWith<const volatile T&, volatile int&&>());
+static_assert(!CheckCommonWith<const volatile T&, const volatile int&&>());
+static_assert(!CheckCommonWith<const T&, const volatile int&&>());
+static_assert(!CheckCommonWith<volatile T&, const volatile int&&>());
+static_assert(!CheckCommonWith<const volatile T&, const volatile int&&>());
+static_assert(!CheckCommonWith<T&&, int&>());
+static_assert(!CheckCommonWith<T&&, const int&>());
+static_assert(!CheckCommonWith<T&&, volatile int&>());
+static_assert(!CheckCommonWith<T&&, const volatile int&>());
+static_assert(!CheckCommonWith<const T&&, int&>());
+static_assert(!CheckCommonWith<volatile T&&, int&>());
+static_assert(!CheckCommonWith<const volatile T&&, int&>());
+static_assert(!CheckCommonWith<const T&&, const int&>());
+static_assert(!CheckCommonWith<const T&&, volatile int&>());
+static_assert(!CheckCommonWith<const T&&, const volatile int&>());
+static_assert(!CheckCommonWith<const T&&, const int&>());
+static_assert(!CheckCommonWith<volatile T&&, const int&>());
+static_assert(!CheckCommonWith<const volatile T&&, const int&>());
+static_assert(!CheckCommonWith<volatile T&&, const int&>());
+static_assert(!CheckCommonWith<volatile T&&, volatile int&>());
+static_assert(!CheckCommonWith<volatile T&&, const volatile int&>());
+static_assert(!CheckCommonWith<const T&&, volatile int&>());
+static_assert(!CheckCommonWith<volatile T&&, volatile int&>());
+static_assert(!CheckCommonWith<const volatile T&&, volatile int&>());
+static_assert(!CheckCommonWith<const volatile T&&, const int&>());
+static_assert(!CheckCommonWith<const volatile T&&, volatile int&>());
+static_assert(!CheckCommonWith<const volatile T&&, const volatile int&>());
+static_assert(!CheckCommonWith<const T&&, const volatile int&>());
+static_assert(!CheckCommonWith<volatile T&&, const volatile int&>());
+static_assert(!CheckCommonWith<const volatile T&&, const volatile int&>());
+static_assert(!CheckCommonWith<T&&, int&&>());
+static_assert(!CheckCommonWith<T&&, const int&&>());
+static_assert(!CheckCommonWith<T&&, volatile int&&>());
+static_assert(!CheckCommonWith<T&&, const volatile int&&>());
+static_assert(!CheckCommonWith<const T&&, int&&>());
+static_assert(!CheckCommonWith<volatile T&&, int&&>());
+static_assert(!CheckCommonWith<const volatile T&&, int&&>());
+static_assert(!CheckCommonWith<const T&&, const int&&>());
+static_assert(!CheckCommonWith<const T&&, volatile int&&>());
+static_assert(!CheckCommonWith<const T&&, const volatile int&&>());
+static_assert(!CheckCommonWith<const T&&, const int&&>());
+static_assert(!CheckCommonWith<volatile T&&, const int&&>());
+static_assert(!CheckCommonWith<const volatile T&&, const int&&>());
+static_assert(!CheckCommonWith<volatile T&&, const int&&>());
+static_assert(!CheckCommonWith<volatile T&&, volatile int&&>());
+static_assert(!CheckCommonWith<volatile T&&, const volatile int&&>());
+static_assert(!CheckCommonWith<const T&&, volatile int&&>());
+static_assert(!CheckCommonWith<volatile T&&, volatile int&&>());
+static_assert(!CheckCommonWith<const volatile T&&, volatile int&&>());
+static_assert(!CheckCommonWith<const volatile T&&, const int&&>());
+static_assert(!CheckCommonWith<const volatile T&&, volatile int&&>());
+static_assert(!CheckCommonWith<const volatile T&&, const volatile int&&>());
+static_assert(!CheckCommonWith<const T&&, const volatile int&&>());
+static_assert(!CheckCommonWith<volatile T&&, const volatile int&&>());
+static_assert(!CheckCommonWith<const volatile T&&, const volatile int&&>());
 } // namespace NoDefaultCommonType
 
 struct BadBasicCommonType
@@ -302,21 +302,21 @@ struct common_type<int, BadBasicCommonType>
 static_assert(requires { typename cuda::std::common_type_t<BadBasicCommonType, int>; });
 static_assert(requires { typename cuda::std::common_type_t<int, BadBasicCommonType>; });
 #else
-static_assert(cuda::std::_Common_type_exists<BadBasicCommonType, int>, "");
-static_assert(cuda::std::_Common_type_exists<int, BadBasicCommonType>, "");
+static_assert(cuda::std::_Common_type_exists<BadBasicCommonType, int>);
+static_assert(cuda::std::_Common_type_exists<int, BadBasicCommonType>);
 #endif
 static_assert(!cuda::std::same_as<cuda::std::common_type_t<BadBasicCommonType, int>,
                                   cuda::std::common_type_t<int, BadBasicCommonType>>,
               "");
-static_assert(!CheckCommonWith<BadBasicCommonType, int>(), "");
+static_assert(!CheckCommonWith<BadBasicCommonType, int>());
 
 struct DullCommonType
 {};
-static_assert(!cuda::std::convertible_to<DullCommonType, int>, "");
+static_assert(!cuda::std::convertible_to<DullCommonType, int>);
 
 struct T1
 {};
-static_assert(!cuda::std::convertible_to<DullCommonType, T1>, "");
+static_assert(!cuda::std::convertible_to<DullCommonType, T1>);
 
 namespace cuda::std
 {
@@ -337,13 +337,13 @@ struct common_type<int, T1>
 static_assert(requires { typename cuda::std::common_type_t<BadBasicCommonType, int>; });
 static_assert(requires { typename cuda::std::common_type_t<int, BadBasicCommonType>; });
 #else
-static_assert(cuda::std::_Common_type_exists<T1, int>, "");
-static_assert(cuda::std::_Common_type_exists<T1, int>, "");
+static_assert(cuda::std::_Common_type_exists<T1, int>);
+static_assert(cuda::std::_Common_type_exists<T1, int>);
 #endif
-static_assert(cuda::std::same_as<cuda::std::common_type_t<T1, int>, DullCommonType>, "");
-static_assert(cuda::std::same_as<cuda::std::common_type_t<int, T1>, DullCommonType>, "");
-static_assert(HasValidCommonType<T1, int>(), "");
-static_assert(!CheckCommonWith<T1, int>(), "");
+static_assert(cuda::std::same_as<cuda::std::common_type_t<T1, int>, DullCommonType>);
+static_assert(cuda::std::same_as<cuda::std::common_type_t<int, T1>, DullCommonType>);
+static_assert(HasValidCommonType<T1, int>());
+static_assert(!CheckCommonWith<T1, int>());
 
 #if TEST_STD_VER > 2017
 struct CommonTypeImplicitlyConstructibleFromInt
@@ -354,7 +354,7 @@ static_assert(requires { static_cast<CommonTypeImplicitlyConstructibleFromInt>(0
 
 struct T2
 {};
-static_assert(!cuda::std::convertible_to<CommonTypeImplicitlyConstructibleFromInt, T2>, "");
+static_assert(!cuda::std::convertible_to<CommonTypeImplicitlyConstructibleFromInt, T2>);
 
 namespace cuda::std
 {
@@ -370,8 +370,8 @@ struct common_type<int, T2>
   using type = CommonTypeImplicitlyConstructibleFromInt;
 };
 } // namespace cuda::std
-static_assert(HasValidCommonType<T2, int>(), "");
-static_assert(!CheckCommonWith<T2, int>(), "");
+static_assert(HasValidCommonType<T2, int>());
+static_assert(!CheckCommonWith<T2, int>());
 
 struct CommonTypeExplicitlyConstructibleFromInt
 {
@@ -381,7 +381,7 @@ static_assert(requires { static_cast<CommonTypeExplicitlyConstructibleFromInt>(0
 
 struct T3
 {};
-static_assert(!cuda::std::convertible_to<CommonTypeExplicitlyConstructibleFromInt, T2>, "");
+static_assert(!cuda::std::convertible_to<CommonTypeExplicitlyConstructibleFromInt, T2>);
 
 namespace cuda::std
 {
@@ -397,8 +397,8 @@ struct common_type<int, T3>
   using type = CommonTypeExplicitlyConstructibleFromInt;
 };
 } // namespace cuda::std
-static_assert(HasValidCommonType<T3, int>(), "");
-static_assert(!CheckCommonWith<T3, int>(), "");
+static_assert(HasValidCommonType<T3, int>());
+static_assert(!CheckCommonWith<T3, int>());
 
 struct T4
 {};
@@ -422,8 +422,8 @@ struct common_type<int, T4>
   using type = CommonTypeImplicitlyConstructibleFromT4;
 };
 } // namespace cuda::std
-static_assert(HasValidCommonType<T4, int>(), "");
-static_assert(!CheckCommonWith<T4, int>(), "");
+static_assert(HasValidCommonType<T4, int>());
+static_assert(!CheckCommonWith<T4, int>());
 
 struct T5
 {};
@@ -447,8 +447,8 @@ struct common_type<int, T5>
   using type = CommonTypeExplicitlyConstructibleFromT5;
 };
 } // namespace cuda::std
-static_assert(HasValidCommonType<T5, int>(), "");
-static_assert(!CheckCommonWith<T5, int>(), "");
+static_assert(HasValidCommonType<T5, int>());
+static_assert(!CheckCommonWith<T5, int>());
 #endif // TEST_STD_VER > 2017
 
 struct T6
@@ -612,9 +612,9 @@ __host__ __device__ constexpr bool HasCommonReference() noexcept
 #endif
 }
 
-static_assert(HasValidCommonType<T6, int>(), "");
-static_assert(!HasCommonReference<const T6&, const int&>(), "");
-static_assert(!CheckCommonWith<T6, int>(), "");
+static_assert(HasValidCommonType<T6, int>());
+static_assert(!HasCommonReference<const T6&, const int&>());
+static_assert(!CheckCommonWith<T6, int>());
 
 struct T7
 {};
@@ -831,14 +831,14 @@ struct common_type<const volatile int&, const volatile T7&>
 };
 } // namespace cuda::std
 
-static_assert(HasValidCommonType<T7, int>(), "");
-static_assert(HasValidCommonType<const T7&, const int&>(), "");
-static_assert(HasCommonReference<const T7&, const int&>(), "");
+static_assert(HasValidCommonType<T7, int>());
+static_assert(HasValidCommonType<const T7&, const int&>());
+static_assert(HasCommonReference<const T7&, const int&>());
 #if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // Unspecified MSVC bug
 static_assert(
   !HasCommonReference<cuda::std::common_type_t<T7, int>&, cuda::std::common_reference_t<const T7&, const int&>>(), "");
 #endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
-static_assert(!CheckCommonWith<T7, int>(), "");
+static_assert(!CheckCommonWith<T7, int>());
 
 struct CommonWithInt
 {
@@ -986,7 +986,7 @@ struct common_type<const volatile int&, const volatile CommonWithInt&> : common_
 {};
 } // namespace cuda::std
 
-static_assert(CheckCommonWith<CommonWithInt, int>(), "");
+static_assert(CheckCommonWith<CommonWithInt, int>());
 
 struct CommonWithIntButRefLong
 {
@@ -1138,7 +1138,7 @@ struct common_type<const volatile int&, const volatile CommonWithIntButRefLong&>
 {};
 } // namespace cuda::std
 
-static_assert(CheckCommonWith<CommonWithIntButRefLong, int>(), "");
+static_assert(CheckCommonWith<CommonWithIntButRefLong, int>());
 
 int main(int, char**)
 {

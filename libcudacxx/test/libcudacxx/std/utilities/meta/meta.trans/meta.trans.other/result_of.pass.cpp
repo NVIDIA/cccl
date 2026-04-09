@@ -60,8 +60,8 @@ struct test_invoke_result<Fn(Args...), Ret>
 {
   __host__ __device__ static void call()
   {
-    static_assert(cuda::std::is_invocable<Fn, Args...>::value, "");
-    static_assert(cuda::std::is_invocable_r<Ret, Fn, Args...>::value, "");
+    static_assert(cuda::std::is_invocable<Fn, Args...>::value);
+    static_assert(cuda::std::is_invocable_r<Ret, Fn, Args...>::value);
     static_assert(cuda::std::is_same_v<Ret, typename cuda::std::invoke_result<Fn, Args...>::type>);
   }
 };
@@ -81,15 +81,15 @@ struct test_invoke_no_result<Fn(Args...)>
 {
   __host__ __device__ static void call()
   {
-    static_assert(cuda::std::is_invocable<Fn, Args...>::value == false, "");
-    static_assert((!HasType<cuda::std::invoke_result<Fn, Args...>>::value), "");
+    static_assert(cuda::std::is_invocable<Fn, Args...>::value == false);
+    static_assert((!HasType<cuda::std::invoke_result<Fn, Args...>>::value));
   }
 };
 
 template <class T>
 __host__ __device__ void test_no_result()
 {
-  static_assert((!HasType<cuda::std::result_of<T>>::value), "");
+  static_assert((!HasType<cuda::std::result_of<T>>::value));
   test_invoke_no_result<T>::call();
 }
 

@@ -104,26 +104,26 @@ int main(int, char**)
 
 //  SFINAE-able underlying_type
 #if TEST_STD_VER > 2017
-  static_assert(has_type_member<E>::value, "");
+  static_assert(has_type_member<E>::value);
 #  ifdef TEST_UNSIGNED_UNDERLYING_TYPE
-  static_assert(has_type_member<F>::value, "");
+  static_assert(has_type_member<F>::value);
 #  endif // TEST_UNSIGNED_UNDERLYING_TYPE
-  static_assert(has_type_member<G>::value, "");
+  static_assert(has_type_member<G>::value);
 
-  static_assert(!has_type_member<void>::value, "");
-  static_assert(!has_type_member<int>::value, "");
-  static_assert(!has_type_member<double>::value, "");
-  static_assert(!has_type_member<int[]>::value, "");
-  static_assert(!has_type_member<S>::value, "");
-  static_assert(!has_type_member<void (S::*)(int)>::value, "");
-  static_assert(!has_type_member<void (S::*)(int, ...)>::value, "");
-  static_assert(!has_type_member<U>::value, "");
-  static_assert(!has_type_member<void(int)>::value, "");
-  static_assert(!has_type_member<void(int, ...)>::value, "");
-  static_assert(!has_type_member<int&>::value, "");
-  static_assert(!has_type_member<int&&>::value, "");
-  static_assert(!has_type_member<int*>::value, "");
-  static_assert(!has_type_member<cuda::std::nullptr_t>::value, "");
+  static_assert(!has_type_member<void>::value);
+  static_assert(!has_type_member<int>::value);
+  static_assert(!has_type_member<double>::value);
+  static_assert(!has_type_member<int[]>::value);
+  static_assert(!has_type_member<S>::value);
+  static_assert(!has_type_member<void (S::*)(int)>::value);
+  static_assert(!has_type_member<void (S::*)(int, ...)>::value);
+  static_assert(!has_type_member<U>::value);
+  static_assert(!has_type_member<void(int)>::value);
+  static_assert(!has_type_member<void(int, ...)>::value);
+  static_assert(!has_type_member<int&>::value);
+  static_assert(!has_type_member<int&&>::value);
+  static_assert(!has_type_member<int*>::value);
+  static_assert(!has_type_member<cuda::std::nullptr_t>::value);
 #endif
 
   return 0;

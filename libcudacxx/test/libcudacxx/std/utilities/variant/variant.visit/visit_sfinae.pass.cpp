@@ -55,14 +55,14 @@ __host__ __device__ void test_sfinae()
   struct GoodVariant2 : GoodVariant
   {};
 
-  static_assert(!has_visit<int>(0), "");
+  static_assert(!has_visit<int>(0));
 #if !TEST_COMPILER(MSVC) // MSVC cannot deal with that even with std::variant
-  static_assert(!has_visit<BadVariant>(0), "");
+  static_assert(!has_visit<BadVariant>(0));
 #endif // !TEST_COMPILER(MSVC)
-  static_assert(!has_visit<BadVariant2>(0), "");
-  static_assert(has_visit<cuda::std::variant<int>>(0), "");
-  static_assert(has_visit<GoodVariant>(0), "");
-  static_assert(has_visit<GoodVariant2>(0), "");
+  static_assert(!has_visit<BadVariant2>(0));
+  static_assert(has_visit<cuda::std::variant<int>>(0));
+  static_assert(has_visit<GoodVariant>(0));
+  static_assert(has_visit<GoodVariant2>(0));
 }
 
 int main(int, char**)

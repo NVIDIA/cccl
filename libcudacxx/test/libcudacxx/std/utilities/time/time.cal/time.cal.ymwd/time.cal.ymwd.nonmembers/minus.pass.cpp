@@ -62,7 +62,7 @@ int main(int, char**)
       cuda::std::is_same_v<year_month_weekday,
                            decltype(cuda::std::declval<year_month_weekday>() - cuda::std::declval<years>())>);
 
-    static_assert(testConstexprYears(), "");
+    static_assert(testConstexprYears());
 
     year_month_weekday ym{year{1234}, November, weekday_indexed{Tuesday, 1}};
     for (int i = 0; i <= 10; ++i)
@@ -81,7 +81,7 @@ int main(int, char**)
       cuda::std::is_same_v<year_month_weekday,
                            decltype(cuda::std::declval<year_month_weekday>() - cuda::std::declval<months>())>);
 
-    static_assert(testConstexprMonths(), "");
+    static_assert(testConstexprMonths());
 
     year_month_weekday ym{year{1234}, November, weekday_indexed{Tuesday, 2}};
     for (unsigned i = 1; i <= 10; ++i)

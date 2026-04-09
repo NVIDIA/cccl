@@ -25,8 +25,8 @@ struct NoDefaultCtr : forward_iterator<int*>
   NoDefaultCtr() = delete;
 };
 
-static_assert(cuda::std::is_default_constructible_v<cuda::std::move_iterator<forward_iterator<int*>>>, "");
-static_assert(!cuda::std::is_default_constructible_v<cuda::std::move_iterator<NoDefaultCtr>>, "");
+static_assert(cuda::std::is_default_constructible_v<cuda::std::move_iterator<forward_iterator<int*>>>);
+static_assert(!cuda::std::is_default_constructible_v<cuda::std::move_iterator<NoDefaultCtr>>);
 
 template <class It>
 __host__ __device__ void test()

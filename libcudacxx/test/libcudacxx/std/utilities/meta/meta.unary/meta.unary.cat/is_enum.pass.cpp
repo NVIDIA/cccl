@@ -18,27 +18,27 @@
 template <class T>
 __host__ __device__ void test_is_enum()
 {
-  static_assert(cuda::std::is_enum<T>::value, "");
-  static_assert(cuda::std::is_enum<const T>::value, "");
-  static_assert(cuda::std::is_enum<volatile T>::value, "");
-  static_assert(cuda::std::is_enum<const volatile T>::value, "");
-  static_assert(cuda::std::is_enum_v<T>, "");
-  static_assert(cuda::std::is_enum_v<const T>, "");
-  static_assert(cuda::std::is_enum_v<volatile T>, "");
-  static_assert(cuda::std::is_enum_v<const volatile T>, "");
+  static_assert(cuda::std::is_enum<T>::value);
+  static_assert(cuda::std::is_enum<const T>::value);
+  static_assert(cuda::std::is_enum<volatile T>::value);
+  static_assert(cuda::std::is_enum<const volatile T>::value);
+  static_assert(cuda::std::is_enum_v<T>);
+  static_assert(cuda::std::is_enum_v<const T>);
+  static_assert(cuda::std::is_enum_v<volatile T>);
+  static_assert(cuda::std::is_enum_v<const volatile T>);
 }
 
 template <class T>
 __host__ __device__ void test_is_not_enum()
 {
-  static_assert(!cuda::std::is_enum<T>::value, "");
-  static_assert(!cuda::std::is_enum<const T>::value, "");
-  static_assert(!cuda::std::is_enum<volatile T>::value, "");
-  static_assert(!cuda::std::is_enum<const volatile T>::value, "");
-  static_assert(!cuda::std::is_enum_v<T>, "");
-  static_assert(!cuda::std::is_enum_v<const T>, "");
-  static_assert(!cuda::std::is_enum_v<volatile T>, "");
-  static_assert(!cuda::std::is_enum_v<const volatile T>, "");
+  static_assert(!cuda::std::is_enum<T>::value);
+  static_assert(!cuda::std::is_enum<const T>::value);
+  static_assert(!cuda::std::is_enum<volatile T>::value);
+  static_assert(!cuda::std::is_enum<const volatile T>::value);
+  static_assert(!cuda::std::is_enum_v<T>);
+  static_assert(!cuda::std::is_enum_v<const T>);
+  static_assert(!cuda::std::is_enum_v<volatile T>);
+  static_assert(!cuda::std::is_enum_v<const volatile T>);
 }
 
 class Empty

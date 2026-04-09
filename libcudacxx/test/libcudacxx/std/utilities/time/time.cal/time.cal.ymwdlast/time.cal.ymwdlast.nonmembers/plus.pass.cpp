@@ -86,7 +86,7 @@ int main(int, char**)
       cuda::std::is_same_v<year_month_weekday_last,
                            decltype(cuda::std::declval<months>() + cuda::std::declval<year_month_weekday_last>())>);
 
-    static_assert(testConstexprMonths(year_month_weekday_last{year{1}, January, weekday_last{Tuesday}}), "");
+    static_assert(testConstexprMonths(year_month_weekday_last{year{1}, January, weekday_last{Tuesday}}));
 
     year_month_weekday_last ym{year{1234}, January, weekday_last{Tuesday}};
     for (int i = 0; i <= 10; ++i) // TODO test wrap-around
@@ -116,7 +116,7 @@ int main(int, char**)
       cuda::std::is_same_v<year_month_weekday_last,
                            decltype(cuda::std::declval<years>() + cuda::std::declval<year_month_weekday_last>())>);
 
-    static_assert(testConstexprYears(year_month_weekday_last{year{1}, January, weekday_last{Tuesday}}), "");
+    static_assert(testConstexprYears(year_month_weekday_last{year{1}, January, weekday_last{Tuesday}}));
 
     year_month_weekday_last ym{year{1234}, cuda::std::chrono::January, weekday_last{Tuesday}};
     for (int i = 0; i <= 10; ++i)

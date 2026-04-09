@@ -93,34 +93,34 @@ __host__ __device__ void test_sfinae()
   using UACD = cuda::std::unique_ptr<const A[], DAC>;
 
   { // cannot move from an lvalue
-    static_assert(cuda::std::is_assignable<UAC, UA&&>::value, "");
-    static_assert(!cuda::std::is_assignable<UAC, UA&>::value, "");
-    static_assert(!cuda::std::is_assignable<UAC, const UA&>::value, "");
+    static_assert(cuda::std::is_assignable<UAC, UA&&>::value);
+    static_assert(!cuda::std::is_assignable<UAC, UA&>::value);
+    static_assert(!cuda::std::is_assignable<UAC, const UA&>::value);
   }
   { // cannot move if the deleter-types cannot convert
-    static_assert(cuda::std::is_assignable<UACD, UAD&&>::value, "");
-    static_assert(!cuda::std::is_assignable<UACD, UAC&&>::value, "");
-    static_assert(!cuda::std::is_assignable<UAC, UACD&&>::value, "");
+    static_assert(cuda::std::is_assignable<UACD, UAD&&>::value);
+    static_assert(!cuda::std::is_assignable<UACD, UAC&&>::value);
+    static_assert(!cuda::std::is_assignable<UAC, UACD&&>::value);
   }
   { // cannot move-convert with reference deleters of different types
     using UA1 = cuda::std::unique_ptr<A[], DA&>;
     using UA2 = cuda::std::unique_ptr<A[], DAC&>;
-    static_assert(!cuda::std::is_assignable<UA1, UA2&&>::value, "");
+    static_assert(!cuda::std::is_assignable<UA1, UA2&&>::value);
   }
   { // cannot move-convert with reference deleters of different types
     using UA1 = cuda::std::unique_ptr<A[], const DA&>;
     using UA2 = cuda::std::unique_ptr<A[], const DAC&>;
-    static_assert(!cuda::std::is_assignable<UA1, UA2&&>::value, "");
+    static_assert(!cuda::std::is_assignable<UA1, UA2&&>::value);
   }
   { // cannot move-convert from unique_ptr<Single>
     using UA1 = cuda::std::unique_ptr<A[]>;
     using UA2 = cuda::std::unique_ptr<A>;
-    static_assert(!cuda::std::is_assignable<UA1, UA2&&>::value, "");
+    static_assert(!cuda::std::is_assignable<UA1, UA2&&>::value);
   }
   { // cannot move-convert from unique_ptr<Array[]>
     using UA1 = cuda::std::unique_ptr<A[], NCGenericDeleter>;
     using UA2 = cuda::std::unique_ptr<A, NCGenericDeleter>;
-    static_assert(!cuda::std::is_assignable<UA1, UA2&&>::value, "");
+    static_assert(!cuda::std::is_assignable<UA1, UA2&&>::value);
   }
 }
 

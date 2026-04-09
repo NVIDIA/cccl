@@ -60,14 +60,14 @@ static_assert(cuda::std::is_same_v<cuda::std::views::all_t<const BorrowableRange
 // Otherwise, returns owning_view<T>
 static_assert(cuda::std::is_same_v<cuda::std::views::all_t<Range>, cuda::std::ranges::owning_view<Range>>);
 static_assert(cuda::std::is_same_v<cuda::std::views::all_t<Range&&>, cuda::std::ranges::owning_view<Range>>);
-static_assert(!HasAllT<const Range>, "");
-static_assert(!HasAllT<const Range&&>, "");
+static_assert(!HasAllT<const Range>);
+static_assert(!HasAllT<const Range&&>);
 static_assert(
   cuda::std::is_same_v<cuda::std::views::all_t<BorrowableRange>, cuda::std::ranges::owning_view<BorrowableRange>>);
 static_assert(
   cuda::std::is_same_v<cuda::std::views::all_t<BorrowableRange&&>, cuda::std::ranges::owning_view<BorrowableRange>>);
-static_assert(!HasAllT<const BorrowableRange>, "");
-static_assert(!HasAllT<const BorrowableRange&&>, "");
+static_assert(!HasAllT<const BorrowableRange>);
+static_assert(!HasAllT<const BorrowableRange&&>);
 
 int main(int, char**)
 {

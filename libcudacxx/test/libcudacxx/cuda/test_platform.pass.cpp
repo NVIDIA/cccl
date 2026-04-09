@@ -93,8 +93,7 @@ __host__ __device__ void test()
   NV_DISPATCH_TARGET(NV_IS_DEVICE, static_assert(arch_val != 0, "cuda arch expected !0");
                      , NV_IS_HOST, static_assert(arch_val == 0, "cuda arch expected 0");)
 
-  NV_DISPATCH_TARGET(NV_NO_TARGET, assert("Should never be hit");
-                     , NV_ANY_TARGET, static_assert(arch_val == arch_val, "");)
+  NV_DISPATCH_TARGET(NV_NO_TARGET, assert("Should never be hit");, NV_ANY_TARGET, static_assert(arch_val == arch_val);)
 
   NV_IF_TARGET(NV_IS_HOST, printf("Host success\r\n");, printf("Device success\r\n");)
 
@@ -260,8 +259,7 @@ void test()
   NV_DISPATCH_TARGET(NV_IS_DEVICE, static_assert(arch_val != 0, "cuda arch expected !0");
                      , NV_IS_HOST, static_assert(arch_val == 0, "cuda arch expected 0");)
 
-  NV_DISPATCH_TARGET(NV_NO_TARGET, assert("Should never be hit");
-                     , NV_ANY_TARGET, static_assert(arch_val == arch_val, "");)
+  NV_DISPATCH_TARGET(NV_NO_TARGET, assert("Should never be hit");, NV_ANY_TARGET, static_assert(arch_val == arch_val);)
 
   NV_IF_TARGET(NV_IS_HOST, printf("Host success\r\n");, printf("Device success\r\n");)
 

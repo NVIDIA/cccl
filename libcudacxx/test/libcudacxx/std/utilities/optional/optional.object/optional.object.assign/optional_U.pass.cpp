@@ -178,9 +178,9 @@ __host__ __device__ void test_ambiguous_assign()
     }
     {
       using Opt = cuda::std::optional<T>;
-      static_assert(!cuda::std::is_assignable<Opt&, const OptInt&&>::value, "");
-      static_assert(!cuda::std::is_assignable<Opt&, const OptInt&>::value, "");
-      static_assert(!cuda::std::is_assignable<Opt&, OptInt&>::value, "");
+      static_assert(!cuda::std::is_assignable<Opt&, const OptInt&&>::value);
+      static_assert(!cuda::std::is_assignable<Opt&, const OptInt&>::value);
+      static_assert(!cuda::std::is_assignable<Opt&, OptInt&>::value);
     }
   }
   {
@@ -207,9 +207,9 @@ __host__ __device__ void test_ambiguous_assign()
     }
     {
       using Opt = cuda::std::optional<T>;
-      static_assert(cuda::std::is_assignable<Opt&, OptInt&&>::value, "");
-      static_assert(!cuda::std::is_assignable<Opt&, const OptInt&>::value, "");
-      static_assert(!cuda::std::is_assignable<Opt&, OptInt&>::value, "");
+      static_assert(cuda::std::is_assignable<Opt&, OptInt&&>::value);
+      static_assert(!cuda::std::is_assignable<Opt&, const OptInt&>::value);
+      static_assert(!cuda::std::is_assignable<Opt&, OptInt&>::value);
     }
   }
 }

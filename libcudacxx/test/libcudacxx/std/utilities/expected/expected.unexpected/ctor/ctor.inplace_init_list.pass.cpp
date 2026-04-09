@@ -75,7 +75,7 @@ template <class T, class... Args>
 _CCCL_CONCEPT ImplicitlyConstructible = _CCCL_REQUIRES_EXPR((T, variadic Args), T t, Args&&... args)(
   (conversion_test<T>({cuda::std::forward<Args>(args)...})));
 
-static_assert(ImplicitlyConstructible<int, int>, "");
+static_assert(ImplicitlyConstructible<int, int>);
 static_assert(
   !ImplicitlyConstructible<cuda::std::unexpected<Error>, cuda::std::in_place_t, cuda::std::initializer_list<int>, Arg>,
   "");
@@ -142,7 +142,7 @@ void test_exceptions()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 #if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // TEST_HAS_EXCEPTIONS()

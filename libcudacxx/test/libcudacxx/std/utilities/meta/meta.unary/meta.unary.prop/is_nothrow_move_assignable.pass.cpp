@@ -17,15 +17,15 @@
 template <class T>
 __host__ __device__ void test_has_nothrow_assign()
 {
-  static_assert(cuda::std::is_nothrow_move_assignable<T>::value, "");
-  static_assert(cuda::std::is_nothrow_move_assignable_v<T>, "");
+  static_assert(cuda::std::is_nothrow_move_assignable<T>::value);
+  static_assert(cuda::std::is_nothrow_move_assignable_v<T>);
 }
 
 template <class T>
 __host__ __device__ void test_has_not_nothrow_assign()
 {
-  static_assert(!cuda::std::is_nothrow_move_assignable<T>::value, "");
-  static_assert(!cuda::std::is_nothrow_move_assignable_v<T>, "");
+  static_assert(!cuda::std::is_nothrow_move_assignable<T>::value);
+  static_assert(!cuda::std::is_nothrow_move_assignable_v<T>);
 }
 
 class Empty

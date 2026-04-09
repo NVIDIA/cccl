@@ -43,9 +43,9 @@ int main(int, char**)
     constexpr MI it1        = cuda::std::make_move_iterator(p);
     constexpr MI it2        = cuda::std::make_move_iterator(p + 5);
     constexpr MI it3        = cuda::std::make_move_iterator(p) += 5;
-    static_assert(it1 != it2, "");
-    static_assert(it1 != it3, "");
-    static_assert(it2 == it3, "");
+    static_assert(it1 != it2);
+    static_assert(it1 != it3);
+    static_assert(it2 == it3);
   }
 
   return 0;

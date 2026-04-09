@@ -80,7 +80,7 @@ __host__ __device__ void test_primary_template()
   }
   { // Testing (3)
     using T = ExplicitTestTypes::TestType;
-    static_assert(!cuda::std::is_convertible<T const&, T>::value, "");
+    static_assert(!cuda::std::is_convertible<T const&, T>::value);
 
     cuda::std::tuple t1(T{});
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<T>>);
@@ -103,7 +103,7 @@ __host__ __device__ void test_primary_template()
   }
   { // Testing (5)
     using T = ExplicitTestTypes::TestType;
-    static_assert(!cuda::std::is_convertible<T const&, T>::value, "");
+    static_assert(!cuda::std::is_convertible<T const&, T>::value);
 
     cuda::std::tuple t1(AT, A, T{});
     static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<T>>);

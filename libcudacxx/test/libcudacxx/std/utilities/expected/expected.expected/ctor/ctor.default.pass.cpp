@@ -29,8 +29,8 @@ struct NoDedefaultCtor
 };
 
 // Test constraints
-static_assert(cuda::std::is_default_constructible_v<cuda::std::expected<int, int>>, "");
-static_assert(!cuda::std::is_default_constructible_v<cuda::std::expected<NoDedefaultCtor, int>>, "");
+static_assert(cuda::std::is_default_constructible_v<cuda::std::expected<int, int>>);
+static_assert(!cuda::std::is_default_constructible_v<cuda::std::expected<NoDedefaultCtor, int>>);
 
 struct MyInt
 {
@@ -97,7 +97,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 #if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

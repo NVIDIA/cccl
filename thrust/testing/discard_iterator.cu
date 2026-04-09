@@ -58,8 +58,8 @@ void TestDiscardIteratorIncrement()
   ASSERT_EQUAL(-2, lhs - rhs);
 }
 DECLARE_UNITTEST(TestDiscardIteratorIncrement);
-static_assert(cuda::std::is_trivially_copy_constructible<thrust::discard_iterator<>>::value, "");
-static_assert(cuda::std::is_trivially_copyable<thrust::discard_iterator<>>::value, "");
+static_assert(cuda::std::is_trivially_copy_constructible<thrust::discard_iterator<>>::value);
+static_assert(cuda::std::is_trivially_copyable<thrust::discard_iterator<>>::value);
 
 void TestDiscardIteratorComparison()
 {

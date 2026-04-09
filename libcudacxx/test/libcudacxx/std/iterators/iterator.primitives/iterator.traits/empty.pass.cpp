@@ -44,7 +44,7 @@ public:
 int main(int, char**)
 {
   using It = cuda::std::iterator_traits<not_an_iterator>;
-  static_assert(!(has_value_type<It>::value), "");
+  static_assert(!(has_value_type<It>::value));
 
   return 0;
 }

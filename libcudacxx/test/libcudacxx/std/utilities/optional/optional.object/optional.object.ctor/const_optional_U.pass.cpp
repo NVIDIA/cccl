@@ -212,7 +212,7 @@ int main(int, char**)
     assert(!lhs.has_value());
     assert(!rhs.has_value());
   }
-  static_assert(!(cuda::std::is_constructible<optional<X>, const optional<Y>&>::value), "");
+  static_assert(!(cuda::std::is_constructible<optional<X>, const optional<Y>&>::value));
 
 #if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

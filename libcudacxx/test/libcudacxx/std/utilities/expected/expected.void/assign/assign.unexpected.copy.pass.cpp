@@ -57,7 +57,7 @@ struct MoveMayThrow
 };
 
 // Test constraints
-static_assert(cuda::std::is_assignable_v<cuda::std::expected<void, int>&, const cuda::std::unexpected<int>&>, "");
+static_assert(cuda::std::is_assignable_v<cuda::std::expected<void, int>&, const cuda::std::unexpected<int>&>);
 
 // !is_constructible_v<E, GF>
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<void, NotCopyConstructible>&,
@@ -79,7 +79,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     cuda::std::expected<void, Traced> e;
     cuda::std::unexpected<Traced> un(cuda::std::in_place, state, 5);
     decltype(auto) x = (e = un);
-    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<void, Traced>&>, "");
+    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<void, Traced>&>);
     assert(&x == &e);
     assert(!e.has_value());
     assert(e.error().data_ == 5);
@@ -94,7 +94,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     cuda::std::expected<void, Traced> e(cuda::std::unexpect, state1, 5);
     cuda::std::unexpected<Traced> un(cuda::std::in_place, state2, 10);
     decltype(auto) x = (e = un);
-    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<void, Traced>&>, "");
+    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<void, Traced>&>);
     assert(&x == &e);
     assert(!e.has_value());
     assert(e.error().data_ == 10);

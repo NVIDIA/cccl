@@ -51,12 +51,12 @@ private:
 template <bool Expected, class T, class A>
 __host__ __device__ void test()
 {
-  static_assert((cuda::std::uses_allocator<T, A>::value == Expected), "");
+  static_assert((cuda::std::uses_allocator<T, A>::value == Expected));
   static_assert(
     cuda::std::is_base_of<cuda::std::integral_constant<bool, Expected>, cuda::std::uses_allocator<T, A>>::value, "");
 
   static_assert(cuda::std::is_same_v<decltype(cuda::std::uses_allocator_v<T, A>), const bool>);
-  static_assert((cuda::std::uses_allocator_v<T, A> == Expected), "");
+  static_assert((cuda::std::uses_allocator_v<T, A> == Expected));
 }
 
 int main(int, char**)
@@ -76,19 +76,19 @@ int main(int, char**)
   test<false, E, int>();
 #endif // !TEST_COMPILER(GCC)
 
-  static_assert((!cuda::std::uses_allocator<int, cuda::std::allocator<int>>::value), "");
+  static_assert((!cuda::std::uses_allocator<int, cuda::std::allocator<int>>::value));
 #if defined(_LIBCUDACXX_HAS_VECTOR)
-  static_assert((cuda::std::uses_allocator<cuda::std::vector<int>, cuda::std::allocator<int>>::value), "");
+  static_assert((cuda::std::uses_allocator<cuda::std::vector<int>, cuda::std::allocator<int>>::value));
 #endif // _LIBCUDACXX_HAS_VECTOR
-  static_assert((!cuda::std::uses_allocator<A, cuda::std::allocator<int>>::value), "");
-  static_assert((!cuda::std::uses_allocator<B, cuda::std::allocator<int>>::value), "");
-  static_assert((cuda::std::uses_allocator<B, double>::value), "");
+  static_assert((!cuda::std::uses_allocator<A, cuda::std::allocator<int>>::value));
+  static_assert((!cuda::std::uses_allocator<B, cuda::std::allocator<int>>::value));
+  static_assert((cuda::std::uses_allocator<B, double>::value));
 #if !TEST_COMPILER(NVRTC)
-  static_assert((!cuda::std::uses_allocator<C, decltype(C::allocator_type)>::value), "");
-  static_assert((!cuda::std::uses_allocator<D, decltype(D::allocator_type)>::value), "");
+  static_assert((!cuda::std::uses_allocator<C, decltype(C::allocator_type)>::value));
+  static_assert((!cuda::std::uses_allocator<D, decltype(D::allocator_type)>::value));
 #endif // !TEST_COMPILER(NVRTC)
 #if !TEST_COMPILER(GCC) // E::allocator_type is private
-  static_assert((!cuda::std::uses_allocator<E, int>::value), "");
+  static_assert((!cuda::std::uses_allocator<E, int>::value));
 #endif // !TEST_COMPILER(GCC)
 
   return 0;

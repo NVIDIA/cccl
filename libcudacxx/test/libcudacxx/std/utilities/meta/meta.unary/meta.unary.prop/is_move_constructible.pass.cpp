@@ -17,15 +17,15 @@
 template <class T>
 __host__ __device__ void test_is_move_constructible()
 {
-  static_assert(cuda::std::is_move_constructible<T>::value, "");
-  static_assert(cuda::std::is_move_constructible_v<T>, "");
+  static_assert(cuda::std::is_move_constructible<T>::value);
+  static_assert(cuda::std::is_move_constructible_v<T>);
 }
 
 template <class T>
 __host__ __device__ void test_is_not_move_constructible()
 {
-  static_assert(!cuda::std::is_move_constructible<T>::value, "");
-  static_assert(!cuda::std::is_move_constructible_v<T>, "");
+  static_assert(!cuda::std::is_move_constructible<T>::value);
+  static_assert(!cuda::std::is_move_constructible_v<T>);
 }
 
 class Empty

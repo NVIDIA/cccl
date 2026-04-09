@@ -25,7 +25,7 @@ template <typename T>
 __host__ __device__ void test_remainder(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::remainder(T{}, T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::remainder(T{}, T{})), ret>);
 
   const T x = T(13.23456789);
 
@@ -229,7 +229,7 @@ template <typename T>
 __host__ __device__ void test_remquo(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::remquo(T{}, T{}, static_cast<int*>(nullptr))), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::remquo(T{}, T{}, static_cast<int*>(nullptr))), ret>);
 
   const T x = T(13.23456789);
 

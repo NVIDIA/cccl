@@ -77,33 +77,33 @@ int main(int, char**)
   using namespace MyNS;
   {
     // Test that is_swappable applies an lvalue reference to the type.
-    static_assert(cuda::std::is_swappable<A>::value, "");
-    static_assert(cuda::std::is_swappable<A&>::value, "");
-    static_assert(!cuda::std::is_swappable<M>::value, "");
-    static_assert(!cuda::std::is_swappable<M&&>::value, "");
+    static_assert(cuda::std::is_swappable<A>::value);
+    static_assert(cuda::std::is_swappable<A&>::value);
+    static_assert(!cuda::std::is_swappable<M>::value);
+    static_assert(!cuda::std::is_swappable<M&&>::value);
   }
-  static_assert(!cuda::std::is_swappable<B>::value, "");
-  static_assert(cuda::std::is_swappable<C>::value, "");
+  static_assert(!cuda::std::is_swappable<B>::value);
+  static_assert(cuda::std::is_swappable<C>::value);
   {
     // test non-referenceable types
-    static_assert(!cuda::std::is_swappable<void>::value, "");
-    static_assert(!cuda::std::is_swappable<int() const>::value, "");
-    static_assert(!cuda::std::is_swappable<int() &>::value, "");
+    static_assert(!cuda::std::is_swappable<void>::value);
+    static_assert(!cuda::std::is_swappable<int() const>::value);
+    static_assert(!cuda::std::is_swappable<int() &>::value);
   }
   {
     // test that a deleted swap is correctly handled.
-    static_assert(!cuda::std::is_swappable<DeletedSwap>::value, "");
+    static_assert(!cuda::std::is_swappable<DeletedSwap>::value);
   }
 #if 0 // We cannot test this because we need to avoid defining ambiguous overloads
   {
     // test that a swap with ambiguous overloads is handled correctly.
-    static_assert(!cuda::std::is_swappable<MyNS2::AmbiguousSwap>::value, "");
+    static_assert(!cuda::std::is_swappable<MyNS2::AmbiguousSwap>::value);
   }
 #endif // Not implementable
   {
     // test for presence of is_swappable_v
-    static_assert(cuda::std::is_swappable_v<int>, "");
-    static_assert(!cuda::std::is_swappable_v<M>, "");
+    static_assert(cuda::std::is_swappable_v<int>);
+    static_assert(!cuda::std::is_swappable_v<M>);
   }
 
   return 0;

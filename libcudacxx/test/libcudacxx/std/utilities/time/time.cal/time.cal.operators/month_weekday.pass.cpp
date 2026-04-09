@@ -58,8 +58,8 @@ int main(int, char**)
     //  Run the example
     {
       constexpr month_weekday wdi = February / Tuesday[3];
-      static_assert(wdi.month() == February, "");
-      static_assert(wdi.weekday_indexed() == Tuesday[3], "");
+      static_assert(wdi.month() == February);
+      static_assert(wdi.weekday_indexed() == Tuesday[3]);
     }
 
     for (int i = 1; i <= 12; ++i)
@@ -91,8 +91,8 @@ int main(int, char**)
     //  Run the example
     {
       constexpr month_weekday wdi = 2 / Tuesday[3];
-      static_assert(wdi.month() == February, "");
-      static_assert(wdi.weekday_indexed() == Tuesday[3], "");
+      static_assert(wdi.month() == February);
+      static_assert(wdi.weekday_indexed() == Tuesday[3]);
     }
 
     for (int i = 1; i <= 12; ++i)

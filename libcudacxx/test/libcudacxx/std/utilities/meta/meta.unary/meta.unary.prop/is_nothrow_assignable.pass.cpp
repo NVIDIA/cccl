@@ -17,15 +17,15 @@
 template <class T, class U>
 __host__ __device__ void test_is_nothrow_assignable()
 {
-  static_assert((cuda::std::is_nothrow_assignable<T, U>::value), "");
-  static_assert((cuda::std::is_nothrow_assignable_v<T, U>), "");
+  static_assert((cuda::std::is_nothrow_assignable<T, U>::value));
+  static_assert((cuda::std::is_nothrow_assignable_v<T, U>) );
 }
 
 template <class T, class U>
 __host__ __device__ void test_is_not_nothrow_assignable()
 {
-  static_assert((!cuda::std::is_nothrow_assignable<T, U>::value), "");
-  static_assert((!cuda::std::is_nothrow_assignable_v<T, U>), "");
+  static_assert((!cuda::std::is_nothrow_assignable<T, U>::value));
+  static_assert((!cuda::std::is_nothrow_assignable_v<T, U>) );
 }
 
 struct A

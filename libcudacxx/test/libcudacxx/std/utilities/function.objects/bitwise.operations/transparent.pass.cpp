@@ -29,25 +29,25 @@ public:
 
 int main(int, char**)
 {
-  static_assert(!is_transparent<cuda::std::bit_and<int>>::value, "");
+  static_assert(!is_transparent<cuda::std::bit_and<int>>::value);
   // static_assert ( !is_transparent<cuda::std::bit_and<cuda::std::string>>::value, "" );
-  static_assert(is_transparent<cuda::std::bit_and<void>>::value, "");
-  static_assert(is_transparent<cuda::std::bit_and<>>::value, "");
+  static_assert(is_transparent<cuda::std::bit_and<void>>::value);
+  static_assert(is_transparent<cuda::std::bit_and<>>::value);
 
-  static_assert(!is_transparent<cuda::std::bit_or<int>>::value, "");
+  static_assert(!is_transparent<cuda::std::bit_or<int>>::value);
   // static_assert ( !is_transparent<cuda::std::bit_or<cuda::std::string>>::value, "" );
-  static_assert(is_transparent<cuda::std::bit_or<void>>::value, "");
-  static_assert(is_transparent<cuda::std::bit_or<>>::value, "");
+  static_assert(is_transparent<cuda::std::bit_or<void>>::value);
+  static_assert(is_transparent<cuda::std::bit_or<>>::value);
 
-  static_assert(!is_transparent<cuda::std::bit_xor<int>>::value, "");
+  static_assert(!is_transparent<cuda::std::bit_xor<int>>::value);
   // static_assert ( !is_transparent<cuda::std::bit_xor<cuda::std::string>>::value, "" );
-  static_assert(is_transparent<cuda::std::bit_xor<void>>::value, "");
-  static_assert(is_transparent<cuda::std::bit_xor<>>::value, "");
+  static_assert(is_transparent<cuda::std::bit_xor<void>>::value);
+  static_assert(is_transparent<cuda::std::bit_xor<>>::value);
 
-  static_assert(!is_transparent<cuda::std::bit_not<int>>::value, "");
+  static_assert(!is_transparent<cuda::std::bit_not<int>>::value);
   // static_assert ( !is_transparent<cuda::std::bit_not<cuda::std::string>>::value, "" );
-  static_assert(is_transparent<cuda::std::bit_not<void>>::value, "");
-  static_assert(is_transparent<cuda::std::bit_not<>>::value, "");
+  static_assert(is_transparent<cuda::std::bit_not<void>>::value);
+  static_assert(is_transparent<cuda::std::bit_not<>>::value);
 
   return 0;
 }

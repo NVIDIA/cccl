@@ -30,10 +30,10 @@ __host__ __device__ void test_sfinae()
   using P1 = cuda::std::pair<T1, int>;
   using P2 = cuda::std::pair<int, T1>;
   using T2 = int const&;
-  static_assert(cuda::std::is_constructible<P1, T1Arg, T2>::value == CanCopy, "");
-  static_assert(test_convertible<P1, T1Arg, T2>() == CanConvert, "");
-  static_assert(cuda::std::is_constructible<P2, T2, T1Arg>::value == CanCopy, "");
-  static_assert(test_convertible<P2, T2, T1Arg>() == CanConvert, "");
+  static_assert(cuda::std::is_constructible<P1, T1Arg, T2>::value == CanCopy);
+  static_assert(test_convertible<P1, T1Arg, T2>() == CanConvert);
+  static_assert(cuda::std::is_constructible<P2, T2, T1Arg>::value == CanCopy);
+  static_assert(test_convertible<P2, T2, T1Arg>() == CanConvert);
 }
 
 struct ExplicitT
@@ -95,13 +95,13 @@ int main(int, char**)
   }
   { // explicit constexpr test
     constexpr cuda::std::pair<ExplicitT, ExplicitT> p(42, 43);
-    static_assert(p.first.value == 42, "");
-    static_assert(p.second.value == 43, "");
+    static_assert(p.first.value == 42);
+    static_assert(p.second.value == 43);
   }
   { // implicit constexpr test
     constexpr cuda::std::pair<ImplicitT, ImplicitT> p = {42, 43};
-    static_assert(p.first.value == 42, "");
-    static_assert(p.second.value == 43, "");
+    static_assert(p.first.value == 42);
+    static_assert(p.second.value == 43);
   }
 
   return 0;

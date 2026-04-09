@@ -202,41 +202,41 @@ int main(int, char**)
   test_const_array(global_array);
   constexpr const int* b = cuda::std::cbegin(global_array);
   constexpr const int* e = cuda::std::cend(global_array);
-  static_assert(e - b == 3, "");
+  static_assert(e - b == 3);
 
   {
     using C = cuda::std::array<int, 5>;
     constexpr const C local_const_array{0, 1, 2, 3, 4};
 
-    static_assert(local_const_array.begin() == cuda::std::begin(local_const_array), "");
-    static_assert(local_const_array.cbegin() == cuda::std::cbegin(local_const_array), "");
-    static_assert(local_const_array.end() == cuda::std::end(local_const_array), "");
-    static_assert(local_const_array.cend() == cuda::std::cend(local_const_array), "");
+    static_assert(local_const_array.begin() == cuda::std::begin(local_const_array));
+    static_assert(local_const_array.cbegin() == cuda::std::cbegin(local_const_array));
+    static_assert(local_const_array.end() == cuda::std::end(local_const_array));
+    static_assert(local_const_array.cend() == cuda::std::cend(local_const_array));
 
-    static_assert(local_const_array.rbegin() == cuda::std::rbegin(local_const_array), "");
-    static_assert(local_const_array.crbegin() == cuda::std::crbegin(local_const_array), "");
-    static_assert(local_const_array.rend() == cuda::std::rend(local_const_array), "");
-    static_assert(local_const_array.crend() == cuda::std::crend(local_const_array), "");
+    static_assert(local_const_array.rbegin() == cuda::std::rbegin(local_const_array));
+    static_assert(local_const_array.crbegin() == cuda::std::crbegin(local_const_array));
+    static_assert(local_const_array.rend() == cuda::std::rend(local_const_array));
+    static_assert(local_const_array.crend() == cuda::std::crend(local_const_array));
 
-    static_assert(cuda::std::begin(local_const_array) != cuda::std::end(local_const_array), "");
-    static_assert(cuda::std::rbegin(local_const_array) != cuda::std::rend(local_const_array), "");
-    static_assert(cuda::std::cbegin(local_const_array) != cuda::std::cend(local_const_array), "");
-    static_assert(cuda::std::crbegin(local_const_array) != cuda::std::crend(local_const_array), "");
+    static_assert(cuda::std::begin(local_const_array) != cuda::std::end(local_const_array));
+    static_assert(cuda::std::rbegin(local_const_array) != cuda::std::rend(local_const_array));
+    static_assert(cuda::std::cbegin(local_const_array) != cuda::std::cend(local_const_array));
+    static_assert(cuda::std::crbegin(local_const_array) != cuda::std::crend(local_const_array));
 
-    static_assert(*local_const_array.begin() == 0, "");
-    static_assert(*local_const_array.rbegin() == 4, "");
+    static_assert(*local_const_array.begin() == 0);
+    static_assert(*local_const_array.rbegin() == 4);
 
-    static_assert(*cuda::std::begin(local_const_array) == 0, "");
-    static_assert(*cuda::std::cbegin(local_const_array) == 0, "");
-    static_assert(*cuda::std::rbegin(local_const_array) == 4, "");
-    static_assert(*cuda::std::crbegin(local_const_array) == 4, "");
+    static_assert(*cuda::std::begin(local_const_array) == 0);
+    static_assert(*cuda::std::cbegin(local_const_array) == 0);
+    static_assert(*cuda::std::rbegin(local_const_array) == 4);
+    static_assert(*cuda::std::crbegin(local_const_array) == 4);
   }
 
   {
-    static_assert(*cuda::std::begin(global_const_array) == 0, "");
-    static_assert(*cuda::std::cbegin(global_const_array) == 0, "");
-    static_assert(*cuda::std::rbegin(global_const_array) == 4, "");
-    static_assert(*cuda::std::crbegin(global_const_array) == 4, "");
+    static_assert(*cuda::std::begin(global_const_array) == 0);
+    static_assert(*cuda::std::cbegin(global_const_array) == 0);
+    static_assert(*cuda::std::rbegin(global_const_array) == 4);
+    static_assert(*cuda::std::crbegin(global_const_array) == 4);
   }
 
   test_ambiguous_std();

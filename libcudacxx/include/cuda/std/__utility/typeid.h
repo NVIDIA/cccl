@@ -189,8 +189,8 @@ template <class _Tp>
 
 #if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && !defined(_CCCL_BROKEN_MSVC_FUNCSIG)
 // A quick smoke test to ensure that the pretty name extraction is working.
-static_assert(::cuda::std::__pretty_nameof<int>() == __string_view("int"), "");
-static_assert(::cuda::std::__pretty_nameof<float>() < ::cuda::std::__pretty_nameof<int>(), "");
+static_assert(::cuda::std::__pretty_nameof<int>() == __string_view("int"));
+static_assert(::cuda::std::__pretty_nameof<float>() < ::cuda::std::__pretty_nameof<int>());
 #endif
 
 // There are many complications with defining a unique constexpr global object

@@ -24,7 +24,7 @@ __host__ __device__ void test()
   using T2 = cuda::std::chrono::time_point<C, D2>;
   using Te = cuda::std::chrono::time_point<C, De>;
   using Tc = typename cuda::std::common_type<T1, T2>::type;
-  static_assert((cuda::std::is_same<Tc, Te>::value), "");
+  static_assert((cuda::std::is_same<Tc, Te>::value));
 }
 
 int main(int, char**)

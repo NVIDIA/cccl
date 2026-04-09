@@ -15,8 +15,8 @@
 template <class Rat1, class Rat2, bool result>
 __host__ __device__ void test()
 {
-  static_assert((result == cuda::std::ratio_less_equal<Rat1, Rat2>::value), "");
-  static_assert((result == cuda::std::ratio_less_equal_v<Rat1, Rat2>), "");
+  static_assert((result == cuda::std::ratio_less_equal<Rat1, Rat2>::value));
+  static_assert((result == cuda::std::ratio_less_equal_v<Rat1, Rat2>) );
 }
 
 int main(int, char**)

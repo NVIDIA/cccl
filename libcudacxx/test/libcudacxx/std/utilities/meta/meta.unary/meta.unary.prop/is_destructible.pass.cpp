@@ -20,27 +20,27 @@ TEST_DIAG_SUPPRESS_CLANG("-Wdelete-non-virtual-dtor")
 template <class T>
 __host__ __device__ void test_is_destructible()
 {
-  static_assert(cuda::std::is_destructible<T>::value, "");
-  static_assert(cuda::std::is_destructible<const T>::value, "");
-  static_assert(cuda::std::is_destructible<volatile T>::value, "");
-  static_assert(cuda::std::is_destructible<const volatile T>::value, "");
-  static_assert(cuda::std::is_destructible_v<T>, "");
-  static_assert(cuda::std::is_destructible_v<const T>, "");
-  static_assert(cuda::std::is_destructible_v<volatile T>, "");
-  static_assert(cuda::std::is_destructible_v<const volatile T>, "");
+  static_assert(cuda::std::is_destructible<T>::value);
+  static_assert(cuda::std::is_destructible<const T>::value);
+  static_assert(cuda::std::is_destructible<volatile T>::value);
+  static_assert(cuda::std::is_destructible<const volatile T>::value);
+  static_assert(cuda::std::is_destructible_v<T>);
+  static_assert(cuda::std::is_destructible_v<const T>);
+  static_assert(cuda::std::is_destructible_v<volatile T>);
+  static_assert(cuda::std::is_destructible_v<const volatile T>);
 }
 
 template <class T>
 __host__ __device__ void test_is_not_destructible()
 {
-  static_assert(!cuda::std::is_destructible<T>::value, "");
-  static_assert(!cuda::std::is_destructible<const T>::value, "");
-  static_assert(!cuda::std::is_destructible<volatile T>::value, "");
-  static_assert(!cuda::std::is_destructible<const volatile T>::value, "");
-  static_assert(!cuda::std::is_destructible_v<T>, "");
-  static_assert(!cuda::std::is_destructible_v<const T>, "");
-  static_assert(!cuda::std::is_destructible_v<volatile T>, "");
-  static_assert(!cuda::std::is_destructible_v<const volatile T>, "");
+  static_assert(!cuda::std::is_destructible<T>::value);
+  static_assert(!cuda::std::is_destructible<const T>::value);
+  static_assert(!cuda::std::is_destructible<volatile T>::value);
+  static_assert(!cuda::std::is_destructible<const volatile T>::value);
+  static_assert(!cuda::std::is_destructible_v<T>);
+  static_assert(!cuda::std::is_destructible_v<const T>);
+  static_assert(!cuda::std::is_destructible_v<volatile T>);
+  static_assert(!cuda::std::is_destructible_v<const volatile T>);
 }
 
 class Empty

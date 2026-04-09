@@ -104,7 +104,7 @@ struct MakeEmptyT
     --alive;
   }
 };
-static_assert(cuda::std::is_swappable_v<MakeEmptyT>, ""); // required for test
+static_assert(cuda::std::is_swappable_v<MakeEmptyT>); // required for test
 
 int MakeEmptyT::alive = 0;
 

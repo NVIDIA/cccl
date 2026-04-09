@@ -94,26 +94,26 @@ __host__ __device__ void test_constexpr_construction()
 {
   {
     constexpr cuda::std::tuple<> tup;
-    static_assert(do_constexpr_test(tup), "");
+    static_assert(do_constexpr_test(tup));
   }
   {
     constexpr cuda::std::tuple<int> tup(42);
-    static_assert(do_constexpr_test(tup), "");
+    static_assert(do_constexpr_test(tup));
   }
   {
     constexpr cuda::std::tuple<int, long, void*> tup(42, 101, nullptr);
-    static_assert(do_constexpr_test(tup), "");
+    static_assert(do_constexpr_test(tup));
   }
   {
     constexpr cuda::std::pair<int, const char*> p(42, "hello world");
-    static_assert(do_constexpr_test(p), "");
+    static_assert(do_constexpr_test(p));
   }
   {
     using Tuple             = cuda::std::array<int, 3>;
     using ValueTp           = ConstexprConstructibleFromTuple<Tuple>;
     constexpr Tuple arr     = {42, 101, -1};
     constexpr ValueTp value = cuda::std::make_from_tuple<ValueTp>(arr);
-    static_assert(value.args[0] == arr[0] && value.args[1] == arr[1] && value.args[2] == arr[2], "");
+    static_assert(value.args[0] == arr[0] && value.args[1] == arr[1] && value.args[2] == arr[2]);
   }
 }
 

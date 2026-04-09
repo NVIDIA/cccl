@@ -18,27 +18,27 @@
 template <class T>
 __host__ __device__ void test_true()
 {
-  static_assert(cuda::std::is_aggregate<T>::value, "");
-  static_assert(cuda::std::is_aggregate<const T>::value, "");
-  static_assert(cuda::std::is_aggregate<volatile T>::value, "");
-  static_assert(cuda::std::is_aggregate<const volatile T>::value, "");
-  static_assert(cuda::std::is_aggregate_v<T>, "");
-  static_assert(cuda::std::is_aggregate_v<const T>, "");
-  static_assert(cuda::std::is_aggregate_v<volatile T>, "");
-  static_assert(cuda::std::is_aggregate_v<const volatile T>, "");
+  static_assert(cuda::std::is_aggregate<T>::value);
+  static_assert(cuda::std::is_aggregate<const T>::value);
+  static_assert(cuda::std::is_aggregate<volatile T>::value);
+  static_assert(cuda::std::is_aggregate<const volatile T>::value);
+  static_assert(cuda::std::is_aggregate_v<T>);
+  static_assert(cuda::std::is_aggregate_v<const T>);
+  static_assert(cuda::std::is_aggregate_v<volatile T>);
+  static_assert(cuda::std::is_aggregate_v<const volatile T>);
 }
 
 template <class T>
 __host__ __device__ void test_false()
 {
-  static_assert(!cuda::std::is_aggregate<T>::value, "");
-  static_assert(!cuda::std::is_aggregate<const T>::value, "");
-  static_assert(!cuda::std::is_aggregate<volatile T>::value, "");
-  static_assert(!cuda::std::is_aggregate<const volatile T>::value, "");
-  static_assert(!cuda::std::is_aggregate_v<T>, "");
-  static_assert(!cuda::std::is_aggregate_v<const T>, "");
-  static_assert(!cuda::std::is_aggregate_v<volatile T>, "");
-  static_assert(!cuda::std::is_aggregate_v<const volatile T>, "");
+  static_assert(!cuda::std::is_aggregate<T>::value);
+  static_assert(!cuda::std::is_aggregate<const T>::value);
+  static_assert(!cuda::std::is_aggregate<volatile T>::value);
+  static_assert(!cuda::std::is_aggregate<const volatile T>::value);
+  static_assert(!cuda::std::is_aggregate_v<T>);
+  static_assert(!cuda::std::is_aggregate_v<const T>);
+  static_assert(!cuda::std::is_aggregate_v<volatile T>);
+  static_assert(!cuda::std::is_aggregate_v<const volatile T>);
 }
 
 struct Aggregate

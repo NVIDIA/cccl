@@ -19,12 +19,12 @@
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
 #  define ASSERT_REFERENCE_BINDS_TEMPORARY(...) \
-    static_assert(cuda::std::reference_constructs_from_temporary_v<__VA_ARGS__>, "")
+    static_assert(cuda::std::reference_constructs_from_temporary_v<__VA_ARGS__>)
 #  define ASSERT_NOT_REFERENCE_BINDS_TEMPORARY(...) \
-    static_assert(!cuda::std::reference_constructs_from_temporary_v<__VA_ARGS__>, "")
+    static_assert(!cuda::std::reference_constructs_from_temporary_v<__VA_ARGS__>)
 #else
-#  define ASSERT_REFERENCE_BINDS_TEMPORARY(...)     static_assert(true, "")
-#  define ASSERT_NOT_REFERENCE_BINDS_TEMPORARY(...) static_assert(true, "")
+#  define ASSERT_REFERENCE_BINDS_TEMPORARY(...)     static_assert(true)
+#  define ASSERT_NOT_REFERENCE_BINDS_TEMPORARY(...) static_assert(true)
 #endif
 
 template <class Tp>
@@ -45,7 +45,7 @@ struct Base
 struct Derived : Base
 {};
 
-static_assert(cuda::std::is_same<decltype("abc"), decltype(("abc"))>::value, "");
+static_assert(cuda::std::is_same<decltype("abc"), decltype(("abc"))>::value);
 // cuda::std::string not supported
 /*
 ASSERT_REFERENCE_BINDS_TEMPORARY(cuda::std::string const&, decltype("abc"));
@@ -56,8 +56,8 @@ ASSERT_NOT_REFERENCE_BINDS_TEMPORARY(int&, const ConvertsTo<int&>&);
 ASSERT_NOT_REFERENCE_BINDS_TEMPORARY(const int&, ConvertsTo<int&>&);
 ASSERT_NOT_REFERENCE_BINDS_TEMPORARY(Base&, Derived&);
 
-static_assert(cuda::std::is_constructible<int&, cuda::std::reference_wrapper<int>>::value, "");
-static_assert(cuda::std::is_constructible<int const&, cuda::std::reference_wrapper<int>>::value, "");
+static_assert(cuda::std::is_constructible<int&, cuda::std::reference_wrapper<int>>::value);
+static_assert(cuda::std::is_constructible<int const&, cuda::std::reference_wrapper<int>>::value);
 
 template <class T>
 struct CannotDeduce

@@ -120,30 +120,30 @@ class OperatorNewDeleted
 template <class T>
 __host__ __device__ void test_not_const()
 {
-  static_assert(cuda::std::default_initializable<T>, "");
-  static_assert(cuda::std::default_initializable<volatile T>, "");
+  static_assert(cuda::std::default_initializable<T>);
+  static_assert(cuda::std::default_initializable<volatile T>);
 #if !TEST_COMPILER(MSVC) // nvbug3953465
-  static_assert(!cuda::std::default_initializable<const T>, "");
-  static_assert(!cuda::std::default_initializable<const volatile T>, "");
+  static_assert(!cuda::std::default_initializable<const T>);
+  static_assert(!cuda::std::default_initializable<const volatile T>);
 #endif // !TEST_COMPILER(MSVC)
 }
 
 template <class T>
 __host__ __device__ void test_true()
 {
-  static_assert(cuda::std::default_initializable<T>, "");
-  static_assert(cuda::std::default_initializable<const T>, "");
-  static_assert(cuda::std::default_initializable<volatile T>, "");
-  static_assert(cuda::std::default_initializable<const volatile T>, "");
+  static_assert(cuda::std::default_initializable<T>);
+  static_assert(cuda::std::default_initializable<const T>);
+  static_assert(cuda::std::default_initializable<volatile T>);
+  static_assert(cuda::std::default_initializable<const volatile T>);
 }
 
 template <class T>
 __host__ __device__ void test_false()
 {
-  static_assert(!cuda::std::default_initializable<T>, "");
-  static_assert(!cuda::std::default_initializable<const T>, "");
-  static_assert(!cuda::std::default_initializable<volatile T>, "");
-  static_assert(!cuda::std::default_initializable<const volatile T>, "");
+  static_assert(!cuda::std::default_initializable<T>);
+  static_assert(!cuda::std::default_initializable<const T>);
+  static_assert(!cuda::std::default_initializable<volatile T>);
+  static_assert(!cuda::std::default_initializable<const volatile T>);
 }
 
 __host__ __device__ void test()

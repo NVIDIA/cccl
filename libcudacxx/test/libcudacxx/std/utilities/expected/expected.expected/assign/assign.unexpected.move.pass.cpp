@@ -59,7 +59,7 @@ struct MoveMayThrow
 };
 
 // Test constraints
-static_assert(cuda::std::is_assignable_v<cuda::std::expected<int, int>&, cuda::std::unexpected<int>&&>, "");
+static_assert(cuda::std::is_assignable_v<cuda::std::expected<int, int>&, cuda::std::unexpected<int>&&>);
 
 // !is_constructible_v<E, GF>
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<int, NotMoveConstructible>&,
@@ -118,7 +118,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     cuda::std::expected<BothNoexcept, BothNoexcept> e(cuda::std::in_place, oldState, 5);
     cuda::std::unexpected<int> un(10);
     decltype(auto) x = (e = cuda::std::move(un));
-    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<BothNoexcept, BothNoexcept>&>, "");
+    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<BothNoexcept, BothNoexcept>&>);
     assert(&x == &e);
 
     assert(!oldState.moveCtorCalled);
@@ -139,7 +139,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     cuda::std::expected<BothNoexcept, MoveNoexceptConvThrow> e(cuda::std::in_place, oldState, 5);
     cuda::std::unexpected<int> un(10);
     decltype(auto) x = (e = cuda::std::move(un));
-    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<BothNoexcept, MoveNoexceptConvThrow>&>, "");
+    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<BothNoexcept, MoveNoexceptConvThrow>&>);
     assert(&x == &e);
 
     assert(!oldState.moveCtorCalled);
@@ -167,7 +167,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     cuda::std::expected<BothNoexcept, BothMayThrow> e(cuda::std::in_place, oldState, 5);
     cuda::std::unexpected<int> un(10);
     decltype(auto) x = (e = cuda::std::move(un));
-    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<BothNoexcept, BothMayThrow>&>, "");
+    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<BothNoexcept, BothMayThrow>&>);
     assert(&x == &e);
 
     assert(oldState.moveCtorCalled);
@@ -182,7 +182,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     cuda::std::expected<int, Traced> e1(cuda::std::unexpect, oldState, 5);
     cuda::std::unexpected<Traced> e(cuda::std::in_place, newState, 10);
     decltype(auto) x = (e1 = cuda::std::move(e));
-    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<int, Traced>&>, "");
+    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<int, Traced>&>);
     assert(&x == &e1);
 
     assert(!e1.has_value());

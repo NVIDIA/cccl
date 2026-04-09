@@ -56,32 +56,32 @@ int main(int, char**)
   using namespace MyNS;
   {
     // Test that is_swappable applies an lvalue reference to the type.
-    static_assert(cuda::std::is_nothrow_swappable<int>::value, "");
-    static_assert(cuda::std::is_nothrow_swappable<int&>::value, "");
-    static_assert(!cuda::std::is_nothrow_swappable<M>::value, "");
-    static_assert(!cuda::std::is_nothrow_swappable<M&&>::value, "");
+    static_assert(cuda::std::is_nothrow_swappable<int>::value);
+    static_assert(cuda::std::is_nothrow_swappable<int&>::value);
+    static_assert(!cuda::std::is_nothrow_swappable<M>::value);
+    static_assert(!cuda::std::is_nothrow_swappable<M&&>::value);
   }
   {
     // Test that it correctly deduces the noexcept of swap.
-    static_assert(cuda::std::is_nothrow_swappable<A>::value, "");
-    static_assert(!cuda::std::is_nothrow_swappable<B>::value && cuda::std::is_swappable<B>::value, "");
+    static_assert(cuda::std::is_nothrow_swappable<A>::value);
+    static_assert(!cuda::std::is_nothrow_swappable<B>::value && cuda::std::is_swappable<B>::value);
     static_assert(!cuda::std::is_nothrow_swappable<ThrowingMove>::value && cuda::std::is_swappable<ThrowingMove>::value,
                   "");
   }
   {
     // Test that it doesn't drop the qualifiers
-    static_assert(!cuda::std::is_nothrow_swappable<const A>::value, "");
+    static_assert(!cuda::std::is_nothrow_swappable<const A>::value);
   }
   {
     // test non-referenceable types
-    static_assert(!cuda::std::is_nothrow_swappable<void>::value, "");
-    static_assert(!cuda::std::is_nothrow_swappable<int() const>::value, "");
-    static_assert(!cuda::std::is_nothrow_swappable<int(int, ...) const&>::value, "");
+    static_assert(!cuda::std::is_nothrow_swappable<void>::value);
+    static_assert(!cuda::std::is_nothrow_swappable<int() const>::value);
+    static_assert(!cuda::std::is_nothrow_swappable<int(int, ...) const&>::value);
   }
   {
     // test for presence of is_nothrow_swappable_v
-    static_assert(cuda::std::is_nothrow_swappable_v<int>, "");
-    static_assert(!cuda::std::is_nothrow_swappable_v<void>, "");
+    static_assert(cuda::std::is_nothrow_swappable_v<int>);
+    static_assert(!cuda::std::is_nothrow_swappable_v<void>);
   }
 
   return 0;

@@ -338,10 +338,10 @@ __host__ __device__ void constructor_tests()
     using T = MoveOnlyCallable<bool>;
     T value(true);
     using RetT = decltype(cuda::std::not_fn(cuda::std::move(value)));
-    static_assert(cuda::std::is_move_constructible<RetT>::value, "");
-    static_assert(!cuda::std::is_copy_constructible<RetT>::value, "");
-    static_assert(!cuda::std::is_move_assignable<RetT>::value, "");
-    static_assert(!cuda::std::is_copy_assignable<RetT>::value, "");
+    static_assert(cuda::std::is_move_constructible<RetT>::value);
+    static_assert(!cuda::std::is_copy_constructible<RetT>::value);
+    static_assert(!cuda::std::is_move_assignable<RetT>::value);
+    static_assert(!cuda::std::is_copy_assignable<RetT>::value);
     auto ret = cuda::std::not_fn(cuda::std::move(value));
     // test it was moved from
     assert(value.value == false);
@@ -359,10 +359,10 @@ __host__ __device__ void constructor_tests()
     using T = CopyCallable<bool>;
     T value(false);
     using RetT = decltype(cuda::std::not_fn(value));
-    static_assert(cuda::std::is_move_constructible<RetT>::value, "");
-    static_assert(cuda::std::is_copy_constructible<RetT>::value, "");
-    static_assert(!cuda::std::is_move_assignable<RetT>::value, "");
-    static_assert(!cuda::std::is_copy_assignable<RetT>::value, "");
+    static_assert(cuda::std::is_move_constructible<RetT>::value);
+    static_assert(cuda::std::is_copy_constructible<RetT>::value);
+    static_assert(!cuda::std::is_move_assignable<RetT>::value);
+    static_assert(!cuda::std::is_copy_assignable<RetT>::value);
     auto ret = cuda::std::not_fn(value);
     // test that value is unchanged (copied not moved)
     assert(value.value == false);
@@ -380,10 +380,10 @@ __host__ __device__ void constructor_tests()
     T value(true);
     T value2(false);
     using RetT = decltype(cuda::std::not_fn(value));
-    static_assert(cuda::std::is_move_constructible<RetT>::value, "");
-    static_assert(cuda::std::is_copy_constructible<RetT>::value, "");
-    static_assert(cuda::std::is_move_assignable<RetT>::value, "");
-    static_assert(cuda::std::is_copy_assignable<RetT>::value, "");
+    static_assert(cuda::std::is_move_constructible<RetT>::value);
+    static_assert(cuda::std::is_copy_constructible<RetT>::value);
+    static_assert(cuda::std::is_move_assignable<RetT>::value);
+    static_assert(cuda::std::is_copy_assignable<RetT>::value);
     auto ret = cuda::std::not_fn(value);
     assert(ret() == false);
     auto ret2 = cuda::std::not_fn(value2);
@@ -399,10 +399,10 @@ __host__ __device__ void constructor_tests()
     T value(true);
     T value2(false);
     using RetT = decltype(cuda::std::not_fn(cuda::std::move(value)));
-    static_assert(cuda::std::is_move_constructible<RetT>::value, "");
-    static_assert(!cuda::std::is_copy_constructible<RetT>::value, "");
-    static_assert(cuda::std::is_move_assignable<RetT>::value, "");
-    static_assert(!cuda::std::is_copy_assignable<RetT>::value, "");
+    static_assert(cuda::std::is_move_constructible<RetT>::value);
+    static_assert(!cuda::std::is_copy_constructible<RetT>::value);
+    static_assert(cuda::std::is_move_assignable<RetT>::value);
+    static_assert(!cuda::std::is_copy_assignable<RetT>::value);
     auto ret = cuda::std::not_fn(cuda::std::move(value));
     assert(ret() == false);
     auto ret2 = cuda::std::not_fn(cuda::std::move(value2));
@@ -420,21 +420,21 @@ __host__ __device__ void return_type_tests()
   {
     using T  = CopyCallable<bool>;
     auto ret = cuda::std::not_fn(T{false});
-    static_assert(is_same<decltype(ret()), bool>::value, "");
-    static_assert(is_same<decltype(ret("abc")), bool>::value, "");
+    static_assert(is_same<decltype(ret()), bool>::value);
+    static_assert(is_same<decltype(ret("abc")), bool>::value);
     assert(ret() == true);
   }
   {
     using T  = CopyCallable<ExplicitBool>;
     auto ret = cuda::std::not_fn(T{true});
-    static_assert(is_same<decltype(ret()), bool>::value, "");
-    // static_assert(is_same<decltype(ret(cuda::std::string("abc"))), bool>::value, "");
+    static_assert(is_same<decltype(ret()), bool>::value);
+    // static_assert(is_same<decltype(ret(cuda::std::string("abc"))), bool>::value);
     assert(ret() == false);
   }
   {
     using T  = CopyCallable<EvilBool>;
     auto ret = cuda::std::not_fn(T{false});
-    static_assert(is_same<decltype(ret()), EvilBool>::value, "");
+    static_assert(is_same<decltype(ret()), EvilBool>::value);
     EvilBool_bang_called = 0;
     auto value_ret       = ret();
     assert(EvilBool_bang_called == 1);
@@ -523,20 +523,20 @@ __host__ __device__ void call_operator_sfinae_test()
 {
   { // wrong number of arguments
     using T = decltype(cuda::std::not_fn(returns_true));
-    static_assert(cuda::std::is_invocable<T>::value, ""); // callable only with no args
-    static_assert(!cuda::std::is_invocable<T, bool>::value, "");
+    static_assert(cuda::std::is_invocable<T>::value); // callable only with no args
+    static_assert(!cuda::std::is_invocable<T, bool>::value);
   }
   { // violates const correctness (member function pointer)
     using T = decltype(cuda::std::not_fn(&MemFunCallable::return_value_nc));
-    static_assert(cuda::std::is_invocable<T, MemFunCallable&>::value, "");
-    static_assert(!cuda::std::is_invocable<T, const MemFunCallable&>::value, "");
+    static_assert(cuda::std::is_invocable<T, MemFunCallable&>::value);
+    static_assert(!cuda::std::is_invocable<T, const MemFunCallable&>::value);
   }
   { // violates const correctness (call object)
     using Obj = CopyCallable<bool>;
     using NCT = decltype(cuda::std::not_fn(Obj{true}));
     using CT  = const NCT;
-    static_assert(cuda::std::is_invocable<NCT>::value, "");
-    static_assert(!cuda::std::is_invocable<CT>::value, "");
+    static_assert(cuda::std::is_invocable<NCT>::value);
+    static_assert(!cuda::std::is_invocable<CT>::value);
   }
   // NVRTC appears to be unhappy about... the lambda?
   // but doesn't let me fix it with annotations
@@ -546,8 +546,8 @@ __host__ __device__ void call_operator_sfinae_test()
       return x;
     };
     using T = decltype(cuda::std::not_fn(fn));
-    static_assert(cuda::std::is_invocable<T, bool>::value, "");
-    // static_assert(!cuda::std::is_invocable<T, cuda::std::string>::value, "");
+    static_assert(cuda::std::is_invocable<T, bool>::value);
+    // static_assert(!cuda::std::is_invocable<T, cuda::std::string>::value);
     unused(fn);
   }
 #endif // TEST_COMPILER(NVRTC)
@@ -660,8 +660,8 @@ __host__ __device__ void call_operator_noexcept_test()
     using T = NoExceptCallable<bool>;
     T value(true);
     [[maybe_unused]] auto ret = cuda::std::not_fn(value);
-    static_assert(noexcept(!::cuda::std::__invoke(value)), "");
-    static_assert(noexcept(!cuda::std::invoke(value)), "");
+    static_assert(noexcept(!::cuda::std::__invoke(value)));
+    static_assert(noexcept(!cuda::std::invoke(value)));
 // TODO: nvcc gets this wrong, investigate
 #if !_CCCL_CUDA_COMPILATION()
     static_assert(noexcept(ret()), "call should be noexcept");

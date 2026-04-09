@@ -35,15 +35,15 @@ struct A
 };
 
 constexpr int global_integer = 0;
-static_assert(cuda::std::addressof(global_integer) == &global_integer, "");
+static_assert(cuda::std::addressof(global_integer) == &global_integer);
 
 constexpr double global_double = 0.0;
-static_assert(cuda::std::addressof(global_double) == &global_double, "");
+static_assert(cuda::std::addressof(global_double) == &global_double);
 
 #  ifndef __CUDA_ARCH__ // fails in __cudaRegisterVariable
 constexpr A global_struct{};
 constexpr const A* address = cuda::std::addressof(global_struct);
-static_assert(&(address->n) == &(global_struct.n), "");
+static_assert(&(address->n) == &(global_struct.n));
 #  endif
 #endif
 

@@ -255,23 +255,23 @@ void TestPairTupleElement()
 {
   using type0 = thrust::tuple_element<0, thrust::pair<int, float>>::type;
   using type1 = thrust::tuple_element<1, thrust::pair<int, float>>::type;
-  static_assert(std::is_same<int, type0>::value, "");
-  static_assert(std::is_same<float, type1>::value, "");
+  static_assert(std::is_same<int, type0>::value);
+  static_assert(std::is_same<float, type1>::value);
 
   using c_type0 = thrust::tuple_element<0, thrust::pair<int, float> const>::type;
   using c_type1 = thrust::tuple_element<1, thrust::pair<int, float> const>::type;
-  static_assert(std::is_same<int const, c_type0>::value, "");
-  static_assert(std::is_same<float const, c_type1>::value, "");
+  static_assert(std::is_same<int const, c_type0>::value);
+  static_assert(std::is_same<float const, c_type1>::value);
 
   using v_type0 = thrust::tuple_element<0, thrust::pair<int, float> volatile>::type;
   using v_type1 = thrust::tuple_element<1, thrust::pair<int, float> volatile>::type;
-  static_assert(std::is_same<int volatile, v_type0>::value, "");
-  static_assert(std::is_same<float volatile, v_type1>::value, "");
+  static_assert(std::is_same<int volatile, v_type0>::value);
+  static_assert(std::is_same<float volatile, v_type1>::value);
 
   using cv_type0 = thrust::tuple_element<0, thrust::pair<int, float> const volatile>::type;
   using cv_type1 = thrust::tuple_element<1, thrust::pair<int, float> const volatile>::type;
-  static_assert(std::is_same<int const volatile, cv_type0>::value, "");
-  static_assert(std::is_same<float const volatile, cv_type1>::value, "");
+  static_assert(std::is_same<int const volatile, cv_type0>::value);
+  static_assert(std::is_same<float const volatile, cv_type1>::value);
 };
 DECLARE_UNITTEST(TestPairTupleElement);
 

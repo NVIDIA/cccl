@@ -120,13 +120,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
     // as they convert to each other.
     using U1 = cuda::std::unique_ptr<VT, GenericConvertingDeleter<0>>;
     using U2 = cuda::std::unique_ptr<VT, GenericConvertingDeleter<1>>;
-    static_assert(cuda::std::is_constructible<U1, U2&&>::value, "");
+    static_assert(cuda::std::is_constructible<U1, U2&&>::value);
   }
   { // Test that different non-reference deleter types are disallowed when
     // they cannot convert.
     using U1 = cuda::std::unique_ptr<VT, GenericDeleter<0>>;
     using U2 = cuda::std::unique_ptr<VT, GenericDeleter<1>>;
-    static_assert(!cuda::std::is_constructible<U1, U2&&>::value, "");
+    static_assert(!cuda::std::is_constructible<U1, U2&&>::value);
   }
   { // Test that if the destination deleter is a reference type then only
     // exact matches are allowed.
@@ -135,13 +135,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
     using U3 = cuda::std::unique_ptr<VT, GenericConvertingDeleter<0>&>;
     using U4 = cuda::std::unique_ptr<VT, GenericConvertingDeleter<1>>;
     using U5 = cuda::std::unique_ptr<VT, GenericConvertingDeleter<1> const&>;
-    static_assert(!cuda::std::is_constructible<U1, U2&&>::value, "");
-    static_assert(!cuda::std::is_constructible<U1, U3&&>::value, "");
-    static_assert(!cuda::std::is_constructible<U1, U4&&>::value, "");
-    static_assert(!cuda::std::is_constructible<U1, U5&&>::value, "");
+    static_assert(!cuda::std::is_constructible<U1, U2&&>::value);
+    static_assert(!cuda::std::is_constructible<U1, U3&&>::value);
+    static_assert(!cuda::std::is_constructible<U1, U4&&>::value);
+    static_assert(!cuda::std::is_constructible<U1, U5&&>::value);
 
     using U1C = cuda::std::unique_ptr<const VT, GenericConvertingDeleter<0> const&>;
-    static_assert(cuda::std::is_nothrow_constructible<U1C, U1&&>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<U1C, U1&&>::value);
   }
   { // Test that non-reference destination deleters can be constructed
     // from any source deleter type with a suitable conversion. Including
@@ -152,11 +152,11 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
     using U4 = cuda::std::unique_ptr<VT, GenericConvertingDeleter<1>>;
     using U5 = cuda::std::unique_ptr<VT, GenericConvertingDeleter<1>&>;
     using U6 = cuda::std::unique_ptr<VT, GenericConvertingDeleter<1> const&>;
-    static_assert(cuda::std::is_constructible<U1, U2&&>::value, "");
-    static_assert(cuda::std::is_constructible<U1, U3&&>::value, "");
-    static_assert(cuda::std::is_constructible<U1, U4&&>::value, "");
-    static_assert(cuda::std::is_constructible<U1, U5&&>::value, "");
-    static_assert(cuda::std::is_constructible<U1, U6&&>::value, "");
+    static_assert(cuda::std::is_constructible<U1, U2&&>::value);
+    static_assert(cuda::std::is_constructible<U1, U3&&>::value);
+    static_assert(cuda::std::is_constructible<U1, U4&&>::value);
+    static_assert(cuda::std::is_constructible<U1, U5&&>::value);
+    static_assert(cuda::std::is_constructible<U1, U6&&>::value);
   }
 }
 
@@ -167,22 +167,22 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_noexcept()
   {
     using APtr = cuda::std::unique_ptr<const VT>;
     using BPtr = cuda::std::unique_ptr<VT>;
-    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value);
   }
   {
     using APtr = cuda::std::unique_ptr<const VT, CDeleter<const VT>>;
     using BPtr = cuda::std::unique_ptr<VT, CDeleter<VT>>;
-    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value);
   }
   {
     using APtr = cuda::std::unique_ptr<const VT, NCDeleter<const VT>&>;
     using BPtr = cuda::std::unique_ptr<VT, NCDeleter<const VT>&>;
-    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value);
   }
   {
     using APtr = cuda::std::unique_ptr<const VT, const NCConstDeleter<const VT>&>;
     using BPtr = cuda::std::unique_ptr<VT, const NCConstDeleter<const VT>&>;
-    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<APtr, BPtr>::value);
   }
 }
 

@@ -18,15 +18,15 @@ int main(int, char**)
   constexpr cuda::std::byte b2{static_cast<cuda::std::byte>(2)};
   constexpr cuda::std::byte b8{static_cast<cuda::std::byte>(8)};
 
-  static_assert(noexcept(b1 | b2), "");
+  static_assert(noexcept(b1 | b2));
 
-  static_assert(cuda::std::to_integer<int>(b1 | b2) == 3, "");
-  static_assert(cuda::std::to_integer<int>(b1 | b8) == 9, "");
-  static_assert(cuda::std::to_integer<int>(b2 | b8) == 10, "");
+  static_assert(cuda::std::to_integer<int>(b1 | b2) == 3);
+  static_assert(cuda::std::to_integer<int>(b1 | b8) == 9);
+  static_assert(cuda::std::to_integer<int>(b2 | b8) == 10);
 
-  static_assert(cuda::std::to_integer<int>(b2 | b1) == 3, "");
-  static_assert(cuda::std::to_integer<int>(b8 | b1) == 9, "");
-  static_assert(cuda::std::to_integer<int>(b8 | b2) == 10, "");
+  static_assert(cuda::std::to_integer<int>(b2 | b1) == 3);
+  static_assert(cuda::std::to_integer<int>(b8 | b1) == 9);
+  static_assert(cuda::std::to_integer<int>(b8 | b2) == 10);
 
   return 0;
 }

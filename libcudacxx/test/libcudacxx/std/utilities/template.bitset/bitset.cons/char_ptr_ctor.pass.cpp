@@ -51,8 +51,8 @@ void test_exceptions()
 template <cuda::std::size_t N>
 __host__ __device__ constexpr void test_char_pointer_ctor()
 {
-  static_assert(!cuda::std::is_convertible<const char*, cuda::std::bitset<N>>::value, "");
-  static_assert(cuda::std::is_constructible<cuda::std::bitset<N>, const char*>::value, "");
+  static_assert(!cuda::std::is_convertible<const char*, cuda::std::bitset<N>>::value);
+  static_assert(cuda::std::is_constructible<cuda::std::bitset<N>, const char*>::value);
   {
     const char s[] = "1010101010";
     cuda::std::bitset<N> v(s);
@@ -137,7 +137,7 @@ int main(int, char**)
 #endif
 
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

@@ -155,7 +155,7 @@ int main(int, char**)
     using RI         = cuda::std::reverse_iterator<const C*>;
     constexpr RI it1 = cuda::std::make_reverse_iterator(gC + 1);
 
-    static_assert(it1->get() == gC[0].get(), "");
+    static_assert(it1->get() == gC[0].get());
   }
 #endif // !TEST_COMPILER(NVRTC) && _CCCL_BUILTIN_ADDRESSOF
   {

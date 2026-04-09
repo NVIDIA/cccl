@@ -65,11 +65,11 @@ int main(int, char**)
 #  endif
 #endif
 
-  static_assert(test<float, float>(), "");
-  static_assert(test<float, double>(), "");
+  static_assert(test<float, float>());
+  static_assert(test<float, double>());
 
-  static_assert(test<double, float>(), "");
-  static_assert(test<double, double>(), "");
+  static_assert(test<double, float>());
+  static_assert(test<double, double>());
 
   return 0;
 }

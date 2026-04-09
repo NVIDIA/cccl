@@ -17,13 +17,13 @@
 template <class T>
 __host__ __device__ void test_member_object_pointer_imp()
 {
-  static_assert(!cuda::std::is_reference<T>::value, "");
-  static_assert(!cuda::std::is_arithmetic<T>::value, "");
-  static_assert(!cuda::std::is_fundamental<T>::value, "");
-  static_assert(cuda::std::is_object<T>::value, "");
-  static_assert(cuda::std::is_scalar<T>::value, "");
-  static_assert(cuda::std::is_compound<T>::value, "");
-  static_assert(cuda::std::is_member_pointer<T>::value, "");
+  static_assert(!cuda::std::is_reference<T>::value);
+  static_assert(!cuda::std::is_arithmetic<T>::value);
+  static_assert(!cuda::std::is_fundamental<T>::value);
+  static_assert(cuda::std::is_object<T>::value);
+  static_assert(cuda::std::is_scalar<T>::value);
+  static_assert(cuda::std::is_compound<T>::value);
+  static_assert(cuda::std::is_member_pointer<T>::value);
 }
 
 template <class T>

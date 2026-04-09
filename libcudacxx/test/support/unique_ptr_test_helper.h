@@ -106,7 +106,7 @@ struct StoresIncomplete
   __host__ __device__ StoresIncomplete(Args&&... args)
       : m_ptr(cuda::std::forward<Args>(args)...)
   {
-    static_assert(!args_is_this_type<StoresIncomplete, Args...>::value, "");
+    static_assert(!args_is_this_type<StoresIncomplete, Args...>::value);
   }
 
   __host__ __device__ ~StoresIncomplete();

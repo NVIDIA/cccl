@@ -17,8 +17,8 @@
 template <class T>
 __host__ __device__ constexpr bool testDestructor()
 {
-  static_assert(cuda::std::is_nothrow_destructible<T>::value, "");
-  static_assert(cuda::std::is_trivially_destructible<T>::value, "");
+  static_assert(cuda::std::is_nothrow_destructible<T>::value);
+  static_assert(cuda::std::is_trivially_destructible<T>::value);
   return true;
 }
 

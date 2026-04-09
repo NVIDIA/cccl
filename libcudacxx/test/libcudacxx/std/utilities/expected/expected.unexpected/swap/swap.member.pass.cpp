@@ -39,8 +39,8 @@ constexpr bool
   MemberSwapNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<T&>().swap(cuda::std::declval<T&>()))>> =
     noexcept(cuda::std::declval<T&>().swap(cuda::std::declval<T&>()));
 
-static_assert(MemberSwapNoexcept<cuda::std::unexpected<NoexceptSwap>>, "");
-static_assert(!MemberSwapNoexcept<cuda::std::unexpected<MayThrowSwap>>, "");
+static_assert(MemberSwapNoexcept<cuda::std::unexpected<NoexceptSwap>>);
+static_assert(!MemberSwapNoexcept<cuda::std::unexpected<MayThrowSwap>>);
 
 struct ADLSwap
 {
@@ -80,6 +80,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

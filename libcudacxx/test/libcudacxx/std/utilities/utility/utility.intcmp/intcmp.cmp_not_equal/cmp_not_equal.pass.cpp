@@ -110,6 +110,6 @@ int main(int, char**)
 {
   static_assert(noexcept(cuda::std::cmp_not_equal(0, 0)));
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

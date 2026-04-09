@@ -56,9 +56,9 @@ template <class T>
 __host__ __device__ void test()
 {
   using Wrap = cuda::std::reference_wrapper<T>;
-  static_assert(cuda::std::is_copy_constructible<Wrap>::value, "");
-  static_assert(cuda::std::is_copy_assignable<Wrap>::value, "");
-  static_assert(cuda::std::is_trivially_copyable<Wrap>::value, "");
+  static_assert(cuda::std::is_copy_constructible<Wrap>::value);
+  static_assert(cuda::std::is_copy_assignable<Wrap>::value);
+  static_assert(cuda::std::is_trivially_copyable<Wrap>::value);
 }
 
 int main(int, char**)

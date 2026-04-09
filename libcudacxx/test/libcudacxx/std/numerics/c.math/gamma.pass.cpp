@@ -25,7 +25,7 @@ template <typename T>
 __host__ __device__ void test_lgamma(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::lgamma(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::lgamma(T{})), ret>);
 
   // If the argument is 1, +0 is returned.
   assert(eq(cuda::std::lgamma(T(1.0)), val));
@@ -119,7 +119,7 @@ template <typename T>
 __host__ __device__ void test_tgamma(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::tgamma(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::tgamma(T{})), ret>);
 
   // If the argument is a negative integer.
   assert(cuda::std::isnan(cuda::std::tgamma(-2)));

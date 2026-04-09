@@ -18,27 +18,27 @@
 template <class T>
 __host__ __device__ void test_is_union()
 {
-  static_assert(cuda::std::is_union<T>::value, "");
-  static_assert(cuda::std::is_union<const T>::value, "");
-  static_assert(cuda::std::is_union<volatile T>::value, "");
-  static_assert(cuda::std::is_union<const volatile T>::value, "");
-  static_assert(cuda::std::is_union_v<T>, "");
-  static_assert(cuda::std::is_union_v<const T>, "");
-  static_assert(cuda::std::is_union_v<volatile T>, "");
-  static_assert(cuda::std::is_union_v<const volatile T>, "");
+  static_assert(cuda::std::is_union<T>::value);
+  static_assert(cuda::std::is_union<const T>::value);
+  static_assert(cuda::std::is_union<volatile T>::value);
+  static_assert(cuda::std::is_union<const volatile T>::value);
+  static_assert(cuda::std::is_union_v<T>);
+  static_assert(cuda::std::is_union_v<const T>);
+  static_assert(cuda::std::is_union_v<volatile T>);
+  static_assert(cuda::std::is_union_v<const volatile T>);
 }
 
 template <class T>
 __host__ __device__ void test_is_not_union()
 {
-  static_assert(!cuda::std::is_union<T>::value, "");
-  static_assert(!cuda::std::is_union<const T>::value, "");
-  static_assert(!cuda::std::is_union<volatile T>::value, "");
-  static_assert(!cuda::std::is_union<const volatile T>::value, "");
-  static_assert(!cuda::std::is_union_v<T>, "");
-  static_assert(!cuda::std::is_union_v<const T>, "");
-  static_assert(!cuda::std::is_union_v<volatile T>, "");
-  static_assert(!cuda::std::is_union_v<const volatile T>, "");
+  static_assert(!cuda::std::is_union<T>::value);
+  static_assert(!cuda::std::is_union<const T>::value);
+  static_assert(!cuda::std::is_union<volatile T>::value);
+  static_assert(!cuda::std::is_union<const volatile T>::value);
+  static_assert(!cuda::std::is_union_v<T>);
+  static_assert(!cuda::std::is_union_v<const T>);
+  static_assert(!cuda::std::is_union_v<volatile T>);
+  static_assert(!cuda::std::is_union_v<const volatile T>);
 }
 
 class Empty

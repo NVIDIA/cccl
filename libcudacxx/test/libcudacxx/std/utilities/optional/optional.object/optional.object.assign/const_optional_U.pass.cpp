@@ -238,7 +238,7 @@ __host__ __device__ __noinline__ void test_ambiguous_assign()
     }
     {
       using Opt = cuda::std::optional<T>;
-      static_assert(!cuda::std::is_assignable_v<Opt&, OptInt const&>, "");
+      static_assert(!cuda::std::is_assignable_v<Opt&, OptInt const&>);
     }
   }
 }

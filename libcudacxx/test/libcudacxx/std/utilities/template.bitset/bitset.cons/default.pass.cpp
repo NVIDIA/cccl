@@ -30,7 +30,7 @@ __host__ __device__ constexpr void test_default_ctor()
 #if TEST_STD_VER >= 11
   {
     constexpr cuda::std::bitset<N> v1;
-    static_assert(v1.size() == N, "");
+    static_assert(v1.size() == N);
   }
 #endif
 }
@@ -53,7 +53,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

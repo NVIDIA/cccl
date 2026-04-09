@@ -52,9 +52,9 @@ __host__ __device__ void test_sfinae()
       , cuda::std::variant<long, float>
   {};
 
-  static_assert(has_visit<cuda::std::variant<int>>(int()), "");
+  static_assert(has_visit<cuda::std::variant<int>>(int()));
 #if !TEST_COMPILER(MSVC) // MSVC cannot deal with that even with std::variant
-  static_assert(!has_visit<BadVariant>(int()), "");
+  static_assert(!has_visit<BadVariant>(int()));
 #endif // !TEST_COMPILER(MSVC)
 }
 
