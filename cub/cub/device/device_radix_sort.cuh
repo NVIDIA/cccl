@@ -159,6 +159,7 @@ private:
         stream,
         decomposer);
     }
+    _CCCL_UNREACHABLE();
   }
 
   template <SortOrder Order, typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
