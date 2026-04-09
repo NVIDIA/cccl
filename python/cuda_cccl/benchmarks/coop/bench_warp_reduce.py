@@ -5,11 +5,10 @@
 import os
 import sys
 
+import cuda.bench as bench
 import numba
 import numpy as np
 from numba import cuda
-
-import cuda.bench as bench
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 from device_side_benchmark import (  # isort: skip # type: ignore[import-not-found] # noqa: E402

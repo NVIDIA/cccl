@@ -92,13 +92,13 @@ CCCL_IGNORE_MSVC_TRADITIONAL_PREPROCESSOR_WARNING to suppress this warning.
 #define _CCCP_PP_CASE_LABEL_(PREFIX, ...) \
   _CCCL_PP_EVAL(_CCCL_PP_CHECK, _CCCL_PP_CAT(PREFIX##_SWITCH_, _CCCL_PP_FIRST(__VA_ARGS__)), DEFAULT, )
 
-#define _CCCL_PP_FOR_EACH(_Mp, ...)                          _CCCL_PP_FOR_EACH_N(_CCCL_PP_COUNT(__VA_ARGS__), _Mp, __VA_ARGS__)
-#define _CCCL_PP_FOR_EACH_N(_Np, _Mp, ...)                   _CCCL_PP_CAT2(_CCCL_PP_FOR_EACH_, _Np)(_Mp, __VA_ARGS__)
-#define _CCCL_PP_FOR_EACH_1(_Mp, _1)                         _Mp(_1)
-#define _CCCL_PP_FOR_EACH_2(_Mp, _1, _2)                     _Mp(_1) _Mp(_2)
-#define _CCCL_PP_FOR_EACH_3(_Mp, _1, _2, _3)                 _Mp(_1) _Mp(_2) _Mp(_3)
-#define _CCCL_PP_FOR_EACH_4(_Mp, _1, _2, _3, _4)             _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4)
-#define _CCCL_PP_FOR_EACH_5(_Mp, _1, _2, _3, _4, _5)         _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5)
+#define _CCCL_PP_FOR_EACH(_Mp, ...)                  _CCCL_PP_FOR_EACH_N(_CCCL_PP_COUNT(__VA_ARGS__), _Mp, __VA_ARGS__)
+#define _CCCL_PP_FOR_EACH_N(_Np, _Mp, ...)           _CCCL_PP_CAT2(_CCCL_PP_FOR_EACH_, _Np)(_Mp, __VA_ARGS__)
+#define _CCCL_PP_FOR_EACH_1(_Mp, _1)                 _Mp(_1)
+#define _CCCL_PP_FOR_EACH_2(_Mp, _1, _2)             _Mp(_1) _Mp(_2)
+#define _CCCL_PP_FOR_EACH_3(_Mp, _1, _2, _3)         _Mp(_1) _Mp(_2) _Mp(_3)
+#define _CCCL_PP_FOR_EACH_4(_Mp, _1, _2, _3, _4)     _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4)
+#define _CCCL_PP_FOR_EACH_5(_Mp, _1, _2, _3, _4, _5) _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5)
 #define _CCCL_PP_FOR_EACH_6(_Mp, _1, _2, _3, _4, _5, _6)     _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6)
 #define _CCCL_PP_FOR_EACH_7(_Mp, _1, _2, _3, _4, _5, _6, _7) _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7)
 #define _CCCL_PP_FOR_EACH_8(_Mp, _1, _2, _3, _4, _5, _6, _7, _8) \
@@ -967,7 +967,7 @@ CCCL_IGNORE_MSVC_TRADITIONAL_PREPROCESSOR_WARNING to suppress this warning.
 #define _CCCL_PP_REPEAT_REVERSE_AUX3(_N, _M, _S, _F) _CCCL_PP_CAT(_CCCL_PP_REPEAT_REVERSE, _N)(_M, _S, _F)
 
 #define _CCCL_PP_REPEAT_REVERSE_AUX(_C, _N, ...) _CCCL_PP_CAT(_CCCL_PP_REPEAT_REVERSE_AUX, _C)(_N, __VA_ARGS__)
-#define _CCCL_PP_REPEAT_REVERSE(_N, ...)         _CCCL_PP_REPEAT_REVERSE_AUX(_CCCL_PP_COUNT(__VA_ARGS__), _N, __VA_ARGS__)
+#define _CCCL_PP_REPEAT_REVERSE(_N, ...) _CCCL_PP_REPEAT_REVERSE_AUX(_CCCL_PP_COUNT(__VA_ARGS__), _N, __VA_ARGS__)
 
 #define _CCCL_PP_REPEAT_REVERSE0(_M, _S, _F)
 #define _CCCL_PP_REPEAT_REVERSE1(_M, _S, _F)   _M(_S)

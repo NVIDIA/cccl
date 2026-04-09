@@ -52,16 +52,16 @@ C2H_TEST("DispatchReduceByKey::Dispatch: custom policy hub", "[reduce_by_key][de
 
   using policy_hub_t = my_policy_hub<reduction_op_t, accum_t, key_t>;
   using dispatch_t   = cub::DispatchReduceByKey<
-      key_t*,
-      key_t*,
-      value_t*,
-      value_t*,
-      offset_t*,
-      equality_op_t,
-      reduction_op_t,
-      offset_t,
-      accum_t,
-      policy_hub_t>;
+    key_t*,
+    key_t*,
+    value_t*,
+    value_t*,
+    offset_t*,
+    equality_op_t,
+    reduction_op_t,
+    offset_t,
+    accum_t,
+    policy_hub_t>;
 
   size_t temp_size = 0;
   dispatch_t::Dispatch(

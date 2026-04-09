@@ -57,7 +57,7 @@
   ccclrt_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);
 #define CCCLRT_CHECK_DEVICE(condition) \
   ccclrt_require_impl(condition, #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__);
-#define CCCLRT_FAIL_DEVICE(message)          ccclrt_require_impl(false, message, __FILE__, __LINE__, __PRETTY_FUNCTION__);
+#define CCCLRT_FAIL_DEVICE(message) ccclrt_require_impl(false, message, __FILE__, __LINE__, __PRETTY_FUNCTION__);
 #define CCCLRT_CHECK_FALSE_DEVICE(condition) CCCLRT_CHECK_DEVICE(!(condition))
 
 __host__ __device__ constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept

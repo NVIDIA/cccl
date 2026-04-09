@@ -9,12 +9,12 @@ import struct
 import cupy as cp
 import numpy as np
 import pytest
+from cuda.core import Device, Program, ProgramOptions
 
 import cuda.compute
 from cuda.compute import types
 from cuda.compute._cpp_compile import _get_include_paths
 from cuda.compute.op import RawOp
-from cuda.core import Device, Program, ProgramOptions
 
 # Mark all tests in this module as no_numba
 pytestmark = pytest.mark.no_numba

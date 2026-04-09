@@ -61,8 +61,7 @@ function(cudax_add_places_unittest_header target_name_var source)
   get_filename_component(filename ${source} NAME_WE)
 
   string(
-    REPLACE
-    "cuda/experimental/"
+    REPLACE "cuda/experimental/"
     ""
     test_label
     "${relative_path}/${filename}"

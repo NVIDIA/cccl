@@ -155,8 +155,8 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large
       {
         if (thread_offset < buffer_sizes[buffer_id])
         {
-          const auto value = read_item < MemcpyOpt == CopyAlg::Memcpy, AliasT,
-                     InputBufferT > (input_buffer_it[buffer_id], thread_offset);
+          const auto value =
+            read_item<MemcpyOpt == CopyAlg::Memcpy, AliasT, InputBufferT>(input_buffer_it[buffer_id], thread_offset);
           write_item<MemcpyOpt == CopyAlg::Memcpy, AliasT, OutputBufferT>(
             output_buffer_it[buffer_id], thread_offset, value);
         }
@@ -347,7 +347,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   constexpr BlockOffsetT init_kernel_threads = 128U;
   const auto tile_size                       = static_cast<uint32_t>(active_policy.small_buffer.block_threads)
-                       * static_cast<uint32_t>(active_policy.small_buffer.buffers_per_thread);
+                                             * static_cast<uint32_t>(active_policy.small_buffer.buffers_per_thread);
 
   constexpr auto max_num_buffers_per_invocation = ::cuda::std::int64_t{512 * 1024 * 1024};
   static_assert(max_num_buffers_per_invocation <= ::cuda::std::numeric_limits<per_invocation_buffer_offset_t>::max());

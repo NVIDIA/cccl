@@ -19,8 +19,7 @@ find_program(cuobjdump "cuobjdump" REQUIRED)
 
 function(cub_add_cubin_check_test source)
   string(
-    REGEX REPLACE
-    "cubin_check_test_([^.]*).cu"
+    REGEX REPLACE "cubin_check_test_([^.]*).cu"
     "cub.test.cubin_check.\\1"
     target_name
     "${source}"

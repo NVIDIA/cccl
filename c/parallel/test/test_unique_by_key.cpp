@@ -468,7 +468,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with custom types", "[device][select_u
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
 
   operation_t op              = make_operation("op",
-                                  R"(struct key_pair { short a; size_t b; };
+                                               R"(struct key_pair { short a; size_t b; };
 extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
   key_pair* lhs = static_cast<key_pair*>(lhs_ptr);
   key_pair* rhs = static_cast<key_pair*>(rhs_ptr);
@@ -541,7 +541,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with custom types with well-known oper
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
 
   operation_t op_state        = make_operation("op",
-                                        R"(struct key_pair { short a; size_t b; };
+                                               R"(struct key_pair { short a; size_t b; };
 extern "C" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {
   key_pair* lhs = static_cast<key_pair*>(lhs_ptr);
   key_pair* rhs = static_cast<key_pair*>(rhs_ptr);
@@ -704,7 +704,7 @@ C2H_TEST("DeviceSelect::UniqueByKey fails to build for large types due to no vsm
   const int num_items = 1;
 
   operation_t op           = make_operation("op",
-                                  R"(struct large_key_pair { int a; char c[500]; };
+                                            R"(struct large_key_pair { int a; char c[500]; };
 extern "C" __device__ bool op(large_key_pair lhs, large_key_pair rhs) {
   return lhs.a == rhs.a;
 })");

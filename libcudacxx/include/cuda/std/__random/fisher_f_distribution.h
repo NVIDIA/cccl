@@ -140,8 +140,8 @@ public:
     return __x.__p_ == __y.__p_;
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] friend _CCCL_API constexpr bool
-  operator!=(const fisher_f_distribution& __x, const fisher_f_distribution& __y) noexcept
+  [[nodiscard]] friend
+    _CCCL_API constexpr bool operator!=(const fisher_f_distribution& __x, const fisher_f_distribution& __y) noexcept
   {
     return !(__x == __y);
   }

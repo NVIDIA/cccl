@@ -177,7 +177,7 @@ C2H_TEST("let_value can throw, and set_error will be called", "[adaptors][let_va
             | ex::let_value([](int&) -> decltype(ex::just(0)) {
                 throw std::logic_error{"err"};
               });
-  auto op = ex::connect(std::move(sndr), checked_error_receiver{std::logic_error{"err"}});
+  auto op   = ex::connect(std::move(sndr), checked_error_receiver{std::logic_error{"err"}});
   ex::start(op);
 }
 
@@ -187,7 +187,7 @@ C2H_TEST("let_value can be used with just_error", "[adaptors][let_value]")
             | ex::let_value([]() {
                 return ex::just(17);
               });
-  auto op = ex::connect(std::move(sndr), checked_error_receiver{std::string{"err"}});
+  auto op   = ex::connect(std::move(sndr), checked_error_receiver{std::string{"err"}});
   ex::start(op);
 }
 
@@ -210,7 +210,7 @@ C2H_TEST("let_value function is not called on error", "[adaptors][let_value]")
                 called = true;
                 return ex::just(x + 5);
               });
-  auto op = ex::connect(std::move(sndr), checked_error_receiver{-1});
+  auto op   = ex::connect(std::move(sndr), checked_error_receiver{-1});
   ex::start(op);
   CHECK_FALSE(called);
 }
@@ -225,7 +225,7 @@ C2H_TEST("let_value function is not called when cancelled", "[adaptors][let_valu
                 called = true;
                 return ex::just(x + 5);
               });
-  auto op = ex::connect(std::move(sndr), checked_stopped_receiver{});
+  auto op   = ex::connect(std::move(sndr), checked_stopped_receiver{});
   ex::start(op);
   CHECK_FALSE(called);
 }
@@ -426,8 +426,8 @@ C2H_TEST("let_value works when the function returns a dependent sender", "[adapt
 {
   auto sndr     = ex::write_env(ex::just() | ex::let_value([] {
                               return ex::read_env(test_query);
-                            }),
-                            ex::prop{test_query, 42});
+                                }),
+                                ex::prop{test_query, 42});
   auto [result] = ex::sync_wait(std::move(sndr)).value();
   CUDAX_CHECK(result == 42);
 }
@@ -486,11 +486,11 @@ C2H_TEST("let_value predecessor's domain is accessible via the receiver connecte
   auto attrs  = ex::prop{ex::get_completion_domain<ex::set_value_t>, let_value_test_domain2{}};
   using Sndr2 = decltype(ex::read_env(ex::get_domain));
 
-  auto sndr = ex::just() //
-            | ex::write_attrs(attrs) //
-            | ex::let_value([]() noexcept -> Sndr2 {
+  auto sndr     = ex::just() //
+                | ex::write_attrs(attrs) //
+                | ex::let_value([]() noexcept -> Sndr2 {
                 return ex::read_env(ex::get_domain);
-              });
+                  });
   auto [result] = ex::sync_wait(std::move(sndr)).value();
   static_assert(::cuda::std::is_same_v<decltype(result), let_value_test_domain2>);
   (void) result;
@@ -502,7 +502,7 @@ C2H_TEST("let_value has the correct completion domain", "[adaptors][let_value]")
   auto attrs = ex::prop{ex::get_completion_domain<ex::set_value_t>, let_value_test_domain{}};
   auto sndr  = ex::just() | ex::let_value([=] {
                 return ex::write_attrs(ex::just(), attrs);
-              });
+               });
   auto dom   = ex::get_completion_domain<ex::set_value_t>(ex::get_env(sndr));
   static_assert(::cuda::std::is_same_v<decltype(dom), let_value_test_domain>);
 }

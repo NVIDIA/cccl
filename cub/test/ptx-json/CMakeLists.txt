@@ -43,8 +43,7 @@ target_link_libraries(
 
 function(cub_detail_ptx_json_add_test target_name_var source)
   string(
-    REGEX REPLACE
-    "ptx_json_test_([^.]*).cu"
+    REGEX REPLACE "ptx_json_test_([^.]*).cu"
     "cub.test.ptx_json.\\1"
     target_name
     "${source}"

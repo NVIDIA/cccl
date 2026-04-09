@@ -578,13 +578,13 @@ struct policy_hub
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int PARTITIONING_THRESHOLD = 500;
     using LargeSegmentPolicy                    = AgentRadixSortDownsweepPolicy<
-                         BLOCK_THREADS,
-                         23,
-                         DominantT,
-                         BLOCK_LOAD_TRANSPOSE,
-                         LOAD_DEFAULT,
-                         RADIX_RANK_MEMOIZE,
-                         BLOCK_SCAN_WARP_SCANS,
+      BLOCK_THREADS,
+      23,
+      DominantT,
+      BLOCK_LOAD_TRANSPOSE,
+      LOAD_DEFAULT,
+      RADIX_RANK_MEMOIZE,
+      BLOCK_SCAN_WARP_SCANS,
       (sizeof(KeyT) > 1) ? 6 : 4>;
 
     static constexpr int ITEMS_PER_SMALL_THREAD  = Nominal4BItemsToItems<DominantT>(9);
@@ -609,13 +609,13 @@ struct policy_hub
     static constexpr int BLOCK_THREADS          = 256;
     static constexpr int PARTITIONING_THRESHOLD = 500;
     using LargeSegmentPolicy                    = AgentRadixSortDownsweepPolicy<
-                         BLOCK_THREADS,
-                         23,
-                         DominantT,
-                         BLOCK_LOAD_TRANSPOSE,
-                         LOAD_DEFAULT,
-                         RADIX_RANK_MEMOIZE,
-                         BLOCK_SCAN_WARP_SCANS,
+      BLOCK_THREADS,
+      23,
+      DominantT,
+      BLOCK_LOAD_TRANSPOSE,
+      LOAD_DEFAULT,
+      RADIX_RANK_MEMOIZE,
+      BLOCK_SCAN_WARP_SCANS,
       (sizeof(KeyT) > 1) ? 6 : 4>;
 
     static constexpr bool LARGE_ITEMS            = sizeof(DominantT) > 4;

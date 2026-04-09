@@ -80,8 +80,7 @@ foreach (header IN LISTS internal_headers)
   if (fallback)
     list(APPEND internal_headers_fallback "${header}")
     string(
-      REGEX REPLACE
-      "([][+.*^$()|?\\\\])"
+      REGEX REPLACE "([][+.*^$()|?\\\\])"
       "\\\\\\1"
       header_regex
       "${header}"

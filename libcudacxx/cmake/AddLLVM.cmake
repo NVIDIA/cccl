@@ -1829,15 +1829,13 @@ function(configure_lit_site_cfg site_in site_out)
   set(LLVM_SOURCE_DIR ${LLVM_MAIN_SRC_DIR})
   set(LLVM_BINARY_DIR ${LLVM_BINARY_DIR})
   string(
-    REPLACE
-    "${CMAKE_CFG_INTDIR}"
+    REPLACE "${CMAKE_CFG_INTDIR}"
     "${LLVM_BUILD_MODE}"
     LLVM_TOOLS_DIR
     "${LLVM_TOOLS_BINARY_DIR}"
   )
   string(
-    REPLACE
-    ${CMAKE_CFG_INTDIR}
+    REPLACE ${CMAKE_CFG_INTDIR}
     ${LLVM_BUILD_MODE}
     LLVM_LIBS_DIR
     "${LLVM_LIBRARY_DIR}"
@@ -1845,8 +1843,7 @@ function(configure_lit_site_cfg site_in site_out)
 
   # SHLIBDIR points the build tree.
   string(
-    REPLACE
-    "${CMAKE_CFG_INTDIR}"
+    REPLACE "${CMAKE_CFG_INTDIR}"
     "${LLVM_BUILD_MODE}"
     SHLIBDIR
     "${LLVM_SHLIB_OUTPUT_INTDIR}"
@@ -2249,8 +2246,7 @@ function(add_llvm_tool_symlink link_name target)
       string(SUBSTRING "${ARG_OUTPUT_DIR}" 0 ${type_start} path_prefix)
       string(SUBSTRING "${ARG_OUTPUT_DIR}" ${type_start} -1 path_suffix)
       string(
-        REPLACE
-        "/${first_type}/"
+        REPLACE "/${first_type}/"
         "/${CMAKE_CFG_INTDIR}/"
         path_suffix
         ${path_suffix}

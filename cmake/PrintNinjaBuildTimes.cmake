@@ -38,8 +38,7 @@ file(STRINGS "${LOGFILE}" lines)
 foreach (line ${lines})
   # Parse each build time
   string(
-    REGEX MATCH
-    "^([0-9]+)\t([0-9]+)\t[0-9]+\t([^\t]+)+\t[0-9a-fA-F]+$"
+    REGEX MATCH "^([0-9]+)\t([0-9]+)\t[0-9]+\t([^\t]+)+\t[0-9a-fA-F]+$"
     _DUMMY
     "${line}"
   )

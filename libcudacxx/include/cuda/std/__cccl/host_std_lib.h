@@ -35,7 +35,7 @@
 #endif // ^^^ __has_include(<ciso646>) ^^^
 
 #define _CCCL_HOST_STD_LIB_MAKE_VERSION(_MAJOR, _MINOR) ((_MAJOR) * 100 + (_MINOR))
-#define _CCCL_HOST_STD_LIB(...)                         _CCCL_VERSION_COMPARE(_CCCL_HOST_STD_LIB_, _CCCL_HOST_STD_LIB_##__VA_ARGS__)
+#define _CCCL_HOST_STD_LIB(...) _CCCL_VERSION_COMPARE(_CCCL_HOST_STD_LIB_, _CCCL_HOST_STD_LIB_##__VA_ARGS__)
 
 #if defined(_MSVC_STL_VERSION)
 #  undef _CCCL_HOST_STD_LIB_STL

@@ -268,7 +268,7 @@ void bulk_can_be_used_with_a_function()
 
   auto sndr = ex::just(&counter1) //
             | ex::bulk(ex::par, n, function<int, n>);
-  auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{&counter1});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_value_receiver{&counter1});
   ex::start(op);
 
   for (int i : counter1)
@@ -285,7 +285,7 @@ void bulk_chunked_can_be_used_with_a_function()
 
   auto sndr = ex::just(&counter2) //
             | ex::bulk_chunked(ex::par, n, function_range<int, n>);
-  auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{&counter2});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_value_receiver{&counter2});
   ex::start(op);
 
   for (int i = 0; i < n; i++)
@@ -302,7 +302,7 @@ void bulk_unchunked_can_be_used_with_a_function()
 
   auto sndr = ex::just(&counter3) //
             | ex::bulk_unchunked(ex::par, n, function<int, n>);
-  auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{&counter3});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_value_receiver{&counter3});
   ex::start(op);
 
   for (int i = 0; i < n; i++)
@@ -319,7 +319,7 @@ void bulk_can_be_used_with_a_function_object()
 
   auto sndr = ex::just() //
             | ex::bulk(ex::par, n, fn);
-  auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
   ex::start(op);
 
   for (int i : counter)
@@ -336,7 +336,7 @@ void bulk_chunked_can_be_used_with_a_function_object()
 
   auto sndr = ex::just() //
             | ex::bulk_chunked(ex::par, n, fn);
-  auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
   ex::start(op);
 
   for (int i = 0; i < n; i++)
@@ -353,7 +353,7 @@ void bulk_unchunked_can_be_used_with_a_function_object()
 
   auto sndr = ex::just() //
             | ex::bulk_unchunked(ex::par, n, fn);
-  auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
   ex::start(op);
 
   for (int i = 0; i < n; i++)
@@ -372,7 +372,7 @@ void bulk_can_be_used_with_a_lambda()
             | ex::bulk(ex::par, n, [&](int i) {
                 counter[i]++;
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
   ex::start(op);
 
   for (int i : counter)
@@ -393,7 +393,7 @@ void bulk_chunked_can_be_used_with_a_lambda()
                   counter[b++]++;
                 }
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
   ex::start(op);
 
   for (int i = 0; i < n; i++)
@@ -411,7 +411,7 @@ void bulk_unchunked_can_be_used_with_a_lambda()
             | ex::bulk_unchunked(ex::par, n, [&](int i) {
                 counter[i]++;
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
   ex::start(op);
 
   for (int i = 0; i < n; i++)
@@ -476,7 +476,7 @@ void bulk_forwards_values()
                   (*counter)[i]++;
                 }
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{magic_number, &counter});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_value_receiver{magic_number, &counter});
   ex::start(op);
 
   for (int i : counter)
@@ -501,7 +501,7 @@ void bulk_chunked_forwards_values()
                   }
                 }
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{magic_number});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_value_receiver{magic_number});
   ex::start(op);
 
   for (int i = 0; i < n; i++)
@@ -523,7 +523,7 @@ void bulk_unchunked_forwards_values()
                   counter[i]++;
                 }
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{magic_number});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_value_receiver{magic_number});
   ex::start(op);
 
   for (int i = 0; i < n; i++)
@@ -544,7 +544,7 @@ void bulk_forwards_values_that_can_be_taken_by_reference()
             | ex::bulk(ex::par, n, [&](std::size_t i, ::cuda::std::array<int, n>& vals) {
                 vals[i] = static_cast<int>(i);
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{vals_expected});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_value_receiver{vals_expected});
   ex::start(op);
 }
 
@@ -561,7 +561,7 @@ void bulk_chunked_forwards_values_that_can_be_taken_by_reference()
                   vals[b] = static_cast<int>(b);
                 }
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{vals_expected});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_value_receiver{vals_expected});
   ex::start(op);
 }
 
@@ -575,7 +575,7 @@ void bulk_unchunked_forwards_values_that_can_be_taken_by_reference()
             | ex::bulk_unchunked(ex::par, n, [&](std::size_t i, ::cuda::std::array<int, n>& vals) {
                 vals[i] = static_cast<int>(i);
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{vals_expected});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_value_receiver{vals_expected});
   ex::start(op);
 }
 
@@ -630,7 +630,7 @@ void bulk_can_throw_and_set_error_will_be_called()
             | ex::bulk(ex::par, n, [](int) -> int {
                 throw std::logic_error{"err"};
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{std::logic_error{"err"}});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_error_receiver{std::logic_error{"err"}});
   ex::start(op);
 }
 
@@ -642,7 +642,7 @@ void bulk_chunked_can_throw_and_set_error_will_be_called()
             | ex::bulk_chunked(ex::par, n, [](int, int) -> int {
                 throw std::logic_error{"err"};
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{std::logic_error{"err"}});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_error_receiver{std::logic_error{"err"}});
   ex::start(op);
 }
 
@@ -654,7 +654,7 @@ void bulk_unchunked_can_throw_and_set_error_will_be_called()
             | ex::bulk_unchunked(ex::par, n, [](int) -> int {
                 throw std::logic_error{"err"};
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{std::logic_error{"err"}});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_error_receiver{std::logic_error{"err"}});
   ex::start(op);
 }
 #endif // _CCCL_HAS_EXCEPTIONS() && !defined(__CUDA_ARCH__)
@@ -668,7 +668,7 @@ void bulk_function_is_not_called_on_error()
             | ex::bulk(ex::par, n, [&called](int) {
                 called++;
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{string{"err"}});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_error_receiver{string{"err"}});
   ex::start(op);
 }
 
@@ -681,7 +681,7 @@ void bulk_chunked_function_is_not_called_on_error()
             | ex::bulk_chunked(ex::par, n, [&called](int, int) {
                 called++;
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{string{"err"}});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_error_receiver{string{"err"}});
   ex::start(op);
 }
 
@@ -694,7 +694,7 @@ void bulk_unchunked_function_is_not_called_on_error()
             | ex::bulk_unchunked(ex::par, n, [&called](int) {
                 called++;
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_error_receiver{string{"err"}});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_error_receiver{string{"err"}});
   ex::start(op);
 }
 
@@ -707,7 +707,7 @@ void bulk_function_in_not_called_on_stop()
             | ex::bulk(ex::par, n, [&called](int) {
                 called++;
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_stopped_receiver{});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_stopped_receiver{});
   ex::start(op);
 }
 
@@ -720,7 +720,7 @@ void bulk_chunked_function_in_not_called_on_stop()
             | ex::bulk_chunked(ex::par, n, [&called](int, int) {
                 called++;
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_stopped_receiver{});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_stopped_receiver{});
   ex::start(op);
 }
 
@@ -733,7 +733,7 @@ void bulk_unchunked_function_in_not_called_on_stop()
             | ex::bulk_unchunked(ex::par, n, [&called](int) {
                 called++;
               });
-  auto op = ex::connect(cuda::std::move(sndr), checked_stopped_receiver{});
+  auto op   = ex::connect(cuda::std::move(sndr), checked_stopped_receiver{});
   ex::start(op);
 }
 

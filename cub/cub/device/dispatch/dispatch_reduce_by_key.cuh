@@ -206,14 +206,14 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
 {
   static constexpr reduce_by_key_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
   using AgentReduceByKeyPolicyT                = AgentReduceByKeyPolicy<
-                   policy.block_threads,
-                   policy.items_per_thread,
-                   policy.load_algorithm,
-                   policy.load_modifier,
-                   policy.scan_algorithm,
-                   delay_constructor_t<policy.delay_constructor.kind,
-                                       policy.delay_constructor.delay,
-                                       policy.delay_constructor.l2_write_latency>>;
+    policy.block_threads,
+    policy.items_per_thread,
+    policy.load_algorithm,
+    policy.load_modifier,
+    policy.scan_algorithm,
+    delay_constructor_t<policy.delay_constructor.kind,
+                        policy.delay_constructor.delay,
+                        policy.delay_constructor.l2_write_latency>>;
 
   using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<
     AgentReduceByKeyPolicyT,
@@ -653,14 +653,14 @@ _CCCL_API auto determine_threads_items_vsmem(PolicyGetter policy_getter)
   // TODO(bgruber): refactor this in the future
   constexpr reduce_by_key_policy policy = policy_getter();
   using Policy                          = AgentReduceByKeyPolicy<
-                             policy.block_threads,
-                             policy.items_per_thread,
-                             policy.load_algorithm,
-                             policy.load_modifier,
-                             policy.scan_algorithm,
-                             delay_constructor_t<policy.delay_constructor.kind,
-                                                 policy.delay_constructor.delay,
-                                                 policy.delay_constructor.l2_write_latency>>;
+    policy.block_threads,
+    policy.items_per_thread,
+    policy.load_algorithm,
+    policy.load_modifier,
+    policy.scan_algorithm,
+    delay_constructor_t<policy.delay_constructor.kind,
+                        policy.delay_constructor.delay,
+                        policy.delay_constructor.l2_write_latency>>;
   using vsmem_helper_t = vsmem_helper_default_fallback_policy_t<Policy, AgentReduceByKey, Args...>;
   return ::cuda::std::tuple{vsmem_helper_t::agent_policy_t::BLOCK_THREADS,
                             vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD,

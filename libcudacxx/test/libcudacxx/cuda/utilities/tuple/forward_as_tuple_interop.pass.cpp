@@ -31,7 +31,7 @@ constexpr bool test()
   {
     using ret = cuda::std::tuple<cuda::std::integral_constant<int, 42>, std::integral_constant<int, 1337>>;
     auto t    = cuda::std::tuple_cat(cuda::std::make_tuple(cuda::std::integral_constant<int, 42>()),
-                                  cuda::std::make_tuple(std::integral_constant<int, 1337>()));
+                                     cuda::std::make_tuple(std::integral_constant<int, 1337>()));
     static_assert(cuda::std::is_same<decltype(t), ret>::value, "");
     assert(cuda::std::get<0>(t) == 42);
     assert(cuda::std::get<1>(t) == 1337);

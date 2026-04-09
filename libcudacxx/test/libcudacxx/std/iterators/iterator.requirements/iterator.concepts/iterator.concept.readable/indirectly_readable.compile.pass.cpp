@@ -218,7 +218,7 @@ static_assert(!cuda::std::indirectly_readable<int (S::*)() const noexcept>, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() const&>, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() const & noexcept>, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() const&&>, "");
-static_assert(!cuda::std::indirectly_readable < int (S::*)() const&& noexcept >, "");
+static_assert(!cuda::std::indirectly_readable < int (S::*)() const && noexcept >, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() volatile>, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() volatile noexcept>, "");
 static_assert(!cuda::std::indirectly_readable<int (S::*)() volatile&>, "");

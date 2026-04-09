@@ -1254,8 +1254,7 @@ function(cpm_prettify_package_arguments OUT_VAR IS_IN_COMMENT)
       endif()
       if (${oneArgName} STREQUAL "SOURCE_DIR")
         string(
-          REPLACE
-          ${CMAKE_SOURCE_DIR}
+          REPLACE ${CMAKE_SOURCE_DIR}
           "\${CMAKE_SOURCE_DIR}"
           CPM_ARGS_${oneArgName}
           ${CPM_ARGS_${oneArgName}}

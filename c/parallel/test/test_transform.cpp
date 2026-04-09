@@ -281,7 +281,7 @@ C2H_TEST("Transform works with output of different type", "[transform]")
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
   operation_t op               = make_operation("op",
-                                  R"(struct pair { short a; size_t b; };
+                                                R"(struct pair { short a; size_t b; };
 extern "C" __device__ void op(void* x_ptr, void* out_ptr) {
   int* x = static_cast<int*>(x_ptr);
   pair* out = static_cast<pair*>(out_ptr);
@@ -369,7 +369,7 @@ C2H_TEST("Transform works with custom types", "[transform]")
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
   operation_t op              = make_operation("op",
-                                  R"(struct pair { short a; size_t b; };
+                                               R"(struct pair { short a; size_t b; };
 extern "C" __device__ void op(void* x_ptr, void* out_ptr) {
   pair* x = static_cast<pair*>(x_ptr);
   pair* out = static_cast<pair*>(out_ptr);

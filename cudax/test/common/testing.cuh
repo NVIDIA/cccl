@@ -39,12 +39,12 @@ namespace cudax_async = cuda::experimental::execution; // NOLINT: misc-unused-al
 #if _CCCL_CUDA_COMPILER(CLANG)
 __host__
 #endif
-  __device__ inline void
-  cudax_require_impl(bool condition,
-                     [[maybe_unused]] const char* condition_text,
-                     [[maybe_unused]] const char* filename,
-                     [[maybe_unused]] unsigned int linenum,
-                     [[maybe_unused]] const char* funcname)
+  __device__ inline void cudax_require_impl(
+    bool condition,
+    [[maybe_unused]] const char* condition_text,
+    [[maybe_unused]] const char* filename,
+    [[maybe_unused]] unsigned int linenum,
+    [[maybe_unused]] const char* funcname)
 {
   if (!condition)
   {
