@@ -251,6 +251,10 @@ struct traits_t
   }
 };
 
+template <class T, bool CanTwiddle>
+struct traits_t<T&, CanTwiddle> : traits_t<T, CanTwiddle>
+{};
+
 template <class DecomposerT>
 struct min_raw_binary_key_f
 {
@@ -259,7 +263,7 @@ struct min_raw_binary_key_f
   template <class T>
   _CCCL_HOST_DEVICE void operator()(T& field)
   {
-    using traits           = traits_t<::cuda::std::remove_cv_t<T>>;
+    using traits           = traits_t<T>;
     using bit_ordered_type = typename traits::bit_ordered_type;
     // TODO(bgruber): was it intended to pass decomposer here instead of identity_decomposer_t?
     reinterpret_cast<bit_ordered_type&>(field) = traits::min_raw_binary_key(detail::identity_decomposer_t{});
@@ -280,7 +284,7 @@ struct max_raw_binary_key_f
   template <class T>
   _CCCL_HOST_DEVICE void operator()(T& field)
   {
-    using traits           = traits_t<::cuda::std::remove_cv_t<T>>;
+    using traits           = traits_t<T>;
     using bit_ordered_type = typename traits::bit_ordered_type;
     // TODO(bgruber): was it intended to pass decomposer here instead of identity_decomposer_t?
     reinterpret_cast<bit_ordered_type&>(field) = traits::max_raw_binary_key(detail::identity_decomposer_t{});
@@ -301,7 +305,7 @@ struct to_bit_ordered_f
   template <class T>
   _CCCL_HOST_DEVICE void operator()(T& field)
   {
-    using traits                 = traits_t<::cuda::std::remove_cv_t<T>>;
+    using traits                 = traits_t<T>;
     using bit_ordered_type       = typename traits::bit_ordered_type;
     using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
@@ -325,7 +329,7 @@ struct from_bit_ordered_f
   template <class T>
   _CCCL_HOST_DEVICE void operator()(T& field)
   {
-    using traits                 = traits_t<::cuda::std::remove_cv_t<T>>;
+    using traits                 = traits_t<T>;
     using bit_ordered_type       = typename traits::bit_ordered_type;
     using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
@@ -346,7 +350,7 @@ struct inverse_f
   template <class T>
   _CCCL_HOST_DEVICE void operator()(T& field)
   {
-    using traits           = traits_t<::cuda::std::remove_cv_t<T>>;
+    using traits           = traits_t<T>;
     using bit_ordered_type = typename traits::bit_ordered_type;
 
     auto& ordered_field = reinterpret_cast<bit_ordered_type&>(field);
@@ -397,7 +401,7 @@ struct digit_f
     }
     else
     {
-      using traits           = traits_t<::cuda::std::remove_cv_t<T>>;
+      using traits           = traits_t<T>;
       using bit_ordered_type = typename traits::bit_ordered_type;
 
       const ::cuda::std::uint32_t bits_to_copy = (::cuda::std::min) (src_size - src_bit_start, num_bits);
