@@ -29,7 +29,7 @@ __host__ __device__ constexpr bool test()
   }
 
   {
-    static_assert(cuda::std::is_default_constructible_v<cuda::counting_iterator<Int42<ValueCtor>>>);
+    static_assert(!cuda::std::is_default_constructible_v<cuda::counting_iterator<Int42<ValueCtor>>>);
   }
 
   {
