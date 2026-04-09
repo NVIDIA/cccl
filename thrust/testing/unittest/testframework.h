@@ -193,9 +193,9 @@ private:
 
   _CCCL_HOST_DEVICE constexpr void fill(int val)
   {
-    for (int i = 0; i < 5; ++i)
+    for (auto& v : value)
     {
-      value[i] = val;
+      v = val;
     }
   }
 };
@@ -591,7 +591,7 @@ public:
   void run() override
   {
     const std::vector<size_t>& sizes = get_test_sizes();
-    for (size_t i = 0; i != sizes.size(); ++i)
+    for (const auto& size : sizes)
     {
       // get the first type in the list
       using first_type = typename unittest::get_type<TypeList, 0>::type;
@@ -599,7 +599,7 @@ public:
       unittest::for_each_type<TypeList, TestName, first_type, 0> loop;
 
       // loop over the types
-      loop(sizes[i]);
+      loop(size);
     }
   }
 }; // end VariableUnitTest
