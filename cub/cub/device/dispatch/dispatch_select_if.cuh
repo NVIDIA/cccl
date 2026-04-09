@@ -898,15 +898,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
 {
   static_assert(::cuda::std::is_empty_v<PolicyGetter>);
 
-  using per_partition_offset_t                     = detail::select::per_partition_offset_t;
-  using num_total_items_t                          = OffsetT;
   static constexpr bool is_partitioning_invocation = (SelectionOpt == SelectImpl::Partition);
   static constexpr bool use_streaming_context =
     (!is_partitioning_invocation)
     || (static_cast<::cuda::std::uint64_t>(::cuda::std::numeric_limits<per_partition_offset_t>::max())
         < static_cast<::cuda::std::uint64_t>(::cuda::std::numeric_limits<OffsetT>::max()));
-  using streaming_context_t = detail::select::streaming_context_t<num_total_items_t, use_streaming_context>;
-  using ScanTileStateT      = ScanTileState<per_partition_offset_t>;
+  using streaming_context_t                = streaming_context_t<OffsetT, use_streaming_context>;
+  using ScanTileStateT                     = ScanTileState<per_partition_offset_t>;
   static constexpr int init_kernel_threads = 128;
 
   using vsmem_helper_t = typename make_vsmem_helper<
@@ -940,7 +938,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
   const auto vsmem_size                   = max_num_tiles_per_invocation * vsmem_helper_t::vsmem_per_block;
 
   ::cuda::std::size_t streaming_selection_storage_bytes =
-    (num_partitions > 1) ? 2 * sizeof(num_total_items_t) : ::cuda::std::size_t{0};
+    (num_partitions > 1) ? 2 * sizeof(OffsetT) : ::cuda::std::size_t{0};
   ::cuda::std::size_t allocation_sizes[3] = {0ULL, vsmem_size, streaming_selection_storage_bytes};
 
   if (const auto error =
@@ -961,7 +959,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_policy(
     return cudaSuccess;
   }
 
-  num_total_items_t* tmp_num_selected_out = reinterpret_cast<num_total_items_t*>(allocations[2]);
+  OffsetT* tmp_num_selected_out = reinterpret_cast<OffsetT*>(allocations[2]);
   streaming_context_t streaming_context{
     tmp_num_selected_out, (tmp_num_selected_out + 1), num_items, (num_partitions <= 1)};
 
