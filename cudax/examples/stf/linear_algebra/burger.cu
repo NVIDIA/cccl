@@ -365,7 +365,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   cuda_safe_call(cudaStreamSynchronize(ctx.fence()));
   auto end      = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-  std::cout << "Duration: " << duration << " milliseconds" << std::endl;
+  std::cout << "Duration: " << duration << " milliseconds" << '\n';
 
   ctx.finalize();
 #endif

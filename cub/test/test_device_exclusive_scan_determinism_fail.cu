@@ -33,6 +33,6 @@ int main()
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::ExclusiveScan failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceScan::ExclusiveScan failed with status: " << error << '\n';
   }
 }

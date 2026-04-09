@@ -268,7 +268,7 @@ UNITTEST("cyclic_shape<3>")
     // for (const auto& p: pos) {
     //    ::std::cout << p << ", ";
     //}
-    // ::std::cout << ")" << ::std::endl;
+    // ::std::cout << ")" << ::'\n';
     EXPECT(cnt < expected_cnt);
     cnt++;
   }
@@ -318,7 +318,7 @@ UNITTEST("apply cyclic ")
         // for (const auto& p: pos) {
         //    ::std::cout << p << ", ";
         //}
-        // ::std::cout << ")" << ::std::endl;
+        // ::std::cout << ")" << ::'\n';
 
         // avoid infinite loops
         EXPECT(cnt < expected_cnt);

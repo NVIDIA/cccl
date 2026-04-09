@@ -263,7 +263,7 @@ bool checks_device_runtime_any_resource(cuda::mr::any_resource<cuda::mr::host_ac
 {
   if (try_get_property(res, cuda::mr::device_accessible{}))
   {
-    std::cout << "Dynamically determined that we are device accessible" << std::endl;
+    std::cout << "Dynamically determined that we are device accessible" << '\n';
     return true;
   }
   return false;
@@ -273,7 +273,7 @@ bool checks_device_runtime_resource_ref(cuda::mr::resource_ref<cuda::mr::host_ac
 {
   if (try_get_property(ref, cuda::mr::device_accessible{}))
   {
-    std::cout << "Dynamically determined that we are device accessible" << std::endl;
+    std::cout << "Dynamically determined that we are device accessible" << '\n';
     return true;
   }
   return false;

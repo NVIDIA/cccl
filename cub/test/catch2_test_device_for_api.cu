@@ -67,7 +67,7 @@ C2H_TEST("Device bulk works with temporary storage", "[bulk][device]")
   auto result = cub::DeviceFor::Bulk(d_temp_storage, temp_storage_bytes, vec.size(), op);
   if (result != cudaSuccess)
   {
-    std::cerr << "Bulk operation failed with error code: " << result << std::endl;
+    std::cerr << "Bulk operation failed with error code: " << result << '\n';
   }
 
   c2h::device_vector<int> expected = {1, 4, 9, 16};
@@ -85,7 +85,7 @@ C2H_TEST("Device bulk works without temporary storage", "[bulk][device]")
   auto result = cub::DeviceFor::Bulk(vec.size(), op);
   if (result != cudaSuccess)
   {
-    std::cerr << "Bulk operation failed with error code: " << result << std::endl;
+    std::cerr << "Bulk operation failed with error code: " << result << '\n';
   }
 
   c2h::device_vector<int> expected = {1, 4, 9, 16};
@@ -106,7 +106,7 @@ C2H_TEST("Device for each n works with temporary storage", "[for_each][device]")
   auto result = cub::DeviceFor::ForEachN(d_temp_storage, temp_storage_bytes, vec.begin(), vec.size(), op);
   if (result != cudaSuccess)
   {
-    std::cerr << "ForEachN operation failed with error code: " << result << std::endl;
+    std::cerr << "ForEachN operation failed with error code: " << result << '\n';
   }
 
   // 2) Allocate temp storage
@@ -117,7 +117,7 @@ C2H_TEST("Device for each n works with temporary storage", "[for_each][device]")
   result = cub::DeviceFor::ForEachN(d_temp_storage, temp_storage_bytes, vec.begin(), vec.size(), op);
   if (result != cudaSuccess)
   {
-    std::cerr << "ForEachN operation failed with error code: " << result << std::endl;
+    std::cerr << "ForEachN operation failed with error code: " << result << '\n';
   }
 
   c2h::device_vector<int> expected = {1, 4, 9, 16};
@@ -135,7 +135,7 @@ C2H_TEST("Device for each n works without temporary storage", "[for_each][device
   auto result = cub::DeviceFor::ForEachN(vec.begin(), vec.size(), op);
   if (result != cudaSuccess)
   {
-    std::cerr << "ForEachN operation failed with error code: " << result << std::endl;
+    std::cerr << "ForEachN operation failed with error code: " << result << '\n';
   }
 
   c2h::device_vector<int> expected = {1, 4, 9, 16};
@@ -156,7 +156,7 @@ C2H_TEST("Device for each works with temporary storage", "[for_each][device]")
   auto result = cub::DeviceFor::ForEach(d_temp_storage, temp_storage_bytes, vec.begin(), vec.end(), op);
   if (result != cudaSuccess)
   {
-    std::cerr << "ForEach operation failed with error code: " << result << std::endl;
+    std::cerr << "ForEach operation failed with error code: " << result << '\n';
   }
 
   // 2) Allocate temp storage
@@ -167,7 +167,7 @@ C2H_TEST("Device for each works with temporary storage", "[for_each][device]")
   result = cub::DeviceFor::ForEach(d_temp_storage, temp_storage_bytes, vec.begin(), vec.end(), op);
   if (result != cudaSuccess)
   {
-    std::cerr << "ForEach operation failed with error code: " << result << std::endl;
+    std::cerr << "ForEach operation failed with error code: " << result << '\n';
   }
 
   c2h::device_vector<int> expected = {1, 4, 9, 16};
@@ -185,7 +185,7 @@ C2H_TEST("Device for each works without temporary storage", "[for_each][device]"
   auto result = cub::DeviceFor::ForEach(vec.begin(), vec.end(), op);
   if (result != cudaSuccess)
   {
-    std::cerr << "ForEach operation failed with error code: " << result << std::endl;
+    std::cerr << "ForEach operation failed with error code: " << result << '\n';
   }
 
   c2h::device_vector<int> expected = {1, 4, 9, 16};
@@ -207,7 +207,7 @@ C2H_TEST("Device for each n copy works with temporary storage", "[for_each][devi
   auto result = cub::DeviceFor::ForEachCopyN(d_temp_storage, temp_storage_bytes, vec.begin(), vec.size(), op);
   if (result != cudaSuccess)
   {
-    std::cerr << "ForEachCopyN operation failed with error code: " << result << std::endl;
+    std::cerr << "ForEachCopyN operation failed with error code: " << result << '\n';
   }
 
   // 2) Allocate temp storage
@@ -218,7 +218,7 @@ C2H_TEST("Device for each n copy works with temporary storage", "[for_each][devi
   result = cub::DeviceFor::ForEachCopyN(d_temp_storage, temp_storage_bytes, vec.begin(), vec.size(), op);
   if (result != cudaSuccess)
   {
-    std::cerr << "ForEachCopyN operation failed with error code: " << result << std::endl;
+    std::cerr << "ForEachCopyN operation failed with error code: " << result << '\n';
   }
 
   c2h::device_vector<int> expected = {2};
@@ -237,7 +237,7 @@ C2H_TEST("Device for each n copy works without temporary storage", "[for_each][d
   auto result = cub::DeviceFor::ForEachCopyN(vec.begin(), vec.size(), op);
   if (result != cudaSuccess)
   {
-    std::cerr << "ForEachCopyN operation failed with error code: " << result << std::endl;
+    std::cerr << "ForEachCopyN operation failed with error code: " << result << '\n';
   }
 
   c2h::device_vector<int> expected = {2};
@@ -259,7 +259,7 @@ C2H_TEST("Device for each copy works with temporary storage", "[for_each][device
   auto result = cub::DeviceFor::ForEachCopy(d_temp_storage, temp_storage_bytes, vec.begin(), vec.end(), op);
   if (result != cudaSuccess)
   {
-    std::cerr << "ForEachCopy operation failed with error code: " << result << std::endl;
+    std::cerr << "ForEachCopy operation failed with error code: " << result << '\n';
   }
 
   // 2) Allocate temp storage
@@ -270,7 +270,7 @@ C2H_TEST("Device for each copy works with temporary storage", "[for_each][device
   result = cub::DeviceFor::ForEachCopy(d_temp_storage, temp_storage_bytes, vec.begin(), vec.end(), op);
   if (result != cudaSuccess)
   {
-    std::cerr << "ForEachCopy operation failed with error code: " << result << std::endl;
+    std::cerr << "ForEachCopy operation failed with error code: " << result << '\n';
   }
 
   c2h::device_vector<int> expected = {2};
@@ -289,7 +289,7 @@ C2H_TEST("Device for each copy works without temporary storage", "[for_each][dev
   auto result = cub::DeviceFor::ForEachCopy(vec.begin(), vec.end(), op);
   if (result != cudaSuccess)
   {
-    std::cerr << "ForEachCopy operation failed with error code: " << result << std::endl;
+    std::cerr << "ForEachCopy operation failed with error code: " << result << '\n';
   }
 
   c2h::device_vector<int> expected = {2};

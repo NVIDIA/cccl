@@ -77,7 +77,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 //!      rng3.set_counter({0, 0, 0, 100});
 //!      const int n = 4;
 //!      rng1.discard(100*n); // rng1 is now at the same position as rng3
-//!      std::cout << (rng1() == rng3()) << std::endl; // 1
+//!      std::cout << (rng1() == rng3()) << '\n'; // 1
 //!
 //!      return 0;
 //!    }

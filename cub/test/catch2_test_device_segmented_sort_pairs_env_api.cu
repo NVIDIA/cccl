@@ -40,7 +40,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairs env-based API", "[segmented_
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedSort::StableSortPairs failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedSort::StableSortPairs failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{6, 7, 8, 0, 3, 5, 9};
@@ -79,7 +79,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending env-based API", "[
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedSort::StableSortPairsDescending failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedSort::StableSortPairsDescending failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};
@@ -120,7 +120,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairs DoubleBuffer env-based API",
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedSort::StableSortPairs (DoubleBuffer) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedSort::StableSortPairs (DoubleBuffer) failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{6, 7, 8, 0, 3, 5, 9};
@@ -164,8 +164,8 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending DoubleBuffer env-b
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedSort::StableSortPairsDescending (DoubleBuffer) failed with status: " << error
-              << std::endl;
+    std::cerr
+      << "cub::DeviceSegmentedSort::StableSortPairsDescending (DoubleBuffer) failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};

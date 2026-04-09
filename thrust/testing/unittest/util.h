@@ -42,7 +42,7 @@ void PRINT(Iterator first, Iterator last)
   size_t n = 0;
   for (Iterator i = first; i != last; i++, n++)
   {
-    std::cout << ">>> [" << n << "] = " << *i << std::endl;
+    std::cout << ">>> [" << n << "] = " << *i << '\n';
   }
 }
 

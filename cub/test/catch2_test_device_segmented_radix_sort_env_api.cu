@@ -41,7 +41,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairs env with stream", "[segmented
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedRadixSort::SortPairs failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedRadixSort::SortPairs failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{6, 7, 8, 0, 3, 5, 9};
@@ -81,7 +81,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairsDescending env with stream", "
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedRadixSort::SortPairsDescending failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedRadixSort::SortPairsDescending failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};
@@ -117,7 +117,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys env with stream", "[segmented_
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedRadixSort::SortKeys failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedRadixSort::SortKeys failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{6, 7, 8, 0, 3, 5, 9};
@@ -151,7 +151,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeysDescending env with stream", "[
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedRadixSort::SortKeysDescending failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedRadixSort::SortKeysDescending failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};
@@ -178,7 +178,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeys DoubleBuffer env with stream",
     d_keys, static_cast<int>(keys_buf.size()), 3, offsets.begin(), offsets.begin() + 1, 0, sizeof(int) * 8, stream_ref);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedRadixSort::SortKeys (DoubleBuffer) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedRadixSort::SortKeys (DoubleBuffer) failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{6, 7, 8, 0, 3, 5, 9};
@@ -210,7 +210,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortKeysDescending DoubleBuffer env wit
   if (error != cudaSuccess)
   {
     std::cerr
-      << "cub::DeviceSegmentedRadixSort::SortKeysDescending (DoubleBuffer) failed with status: " << error << std::endl;
+      << "cub::DeviceSegmentedRadixSort::SortKeysDescending (DoubleBuffer) failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};
@@ -252,7 +252,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairs DoubleBuffer env with stream"
     stream_ref);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedRadixSort::SortPairs (DoubleBuffer) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedRadixSort::SortPairs (DoubleBuffer) failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{6, 7, 8, 0, 3, 5, 9};
@@ -300,7 +300,7 @@ C2H_TEST("cub::DeviceSegmentedRadixSort::SortPairsDescending DoubleBuffer env wi
   if (error != cudaSuccess)
   {
     std::cerr
-      << "cub::DeviceSegmentedRadixSort::SortPairsDescending (DoubleBuffer) failed with status: " << error << std::endl;
+      << "cub::DeviceSegmentedRadixSort::SortPairsDescending (DoubleBuffer) failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};

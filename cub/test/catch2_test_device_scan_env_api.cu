@@ -29,7 +29,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan accepts run_to_run determinism requirem
   auto error = cub::DeviceScan::ExclusiveScan(input.begin(), output.begin(), op, init, input.size(), env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::ExclusiveScan failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceScan::ExclusiveScan failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected{0, 0, 1, 3};
@@ -55,7 +55,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan accepts stream and not_guaranteed deter
   auto error = cub::DeviceScan::ExclusiveScan(input.begin(), output.begin(), op, init, input.size(), env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::ExclusiveScan failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceScan::ExclusiveScan failed with status: " << error << '\n';
   }
 
   thrust::device_vector<float> expected{1.0f, 1.0f, 2.0f, 4.0f};
@@ -77,7 +77,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveSum accepts run_to_run determinism requireme
   auto error = cub::DeviceScan::ExclusiveSum(input.begin(), output.begin(), input.size(), env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::ExclusiveSum failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceScan::ExclusiveSum failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected{0, 0, 1, 3};
@@ -101,7 +101,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveSum accepts stream and not_guaranteed determ
   auto error = cub::DeviceScan::ExclusiveSum(input.begin(), output.begin(), input.size(), env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::ExclusiveSum failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceScan::ExclusiveSum failed with status: " << error << '\n';
   }
 
   thrust::device_vector<float> expected{0.0f, 0.0f, 1.0f, 3.0f};
@@ -123,7 +123,7 @@ C2H_TEST("cub::DeviceScan::InclusiveSum accepts run_to_run determinism requireme
   auto error = cub::DeviceScan::InclusiveSum(input.begin(), output.begin(), input.size(), env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::InclusiveSum failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceScan::InclusiveSum failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected{1, 3, 6, 10};
@@ -147,7 +147,7 @@ C2H_TEST("cub::DeviceScan::InclusiveSum accepts stream and not_guaranteed determ
   auto error = cub::DeviceScan::InclusiveSum(input.begin(), output.begin(), input.size(), env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::InclusiveSum failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceScan::InclusiveSum failed with status: " << error << '\n';
   }
 
   thrust::device_vector<float> expected{1.0f, 3.0f, 6.0f, 10.0f};
@@ -173,7 +173,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan with FutureValue accepts environment", 
     cub::DeviceScan::ExclusiveScan(input.begin(), output.begin(), cuda::std::plus{}, future_init, input.size(), env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::ExclusiveScan (FutureValue) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceScan::ExclusiveScan (FutureValue) failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected{5, 13, 19, 26, 31, 34, 34};
@@ -200,7 +200,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScan with FutureValue accepts stream environ
     cub::DeviceScan::ExclusiveScan(input.begin(), output.begin(), cuda::std::plus{}, future_init, input.size(), env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::ExclusiveScan (FutureValue) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceScan::ExclusiveScan (FutureValue) failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected{10, 11, 13, 16};
@@ -221,7 +221,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScan accepts environment", "[scan][env]")
   auto error = cub::DeviceScan::InclusiveScan(input.begin(), output.begin(), op, input.size());
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::InclusiveScan failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceScan::InclusiveScan failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected{1, 3, 6, 10};
@@ -245,7 +245,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScan accepts stream environment", "[scan][en
   auto error = cub::DeviceScan::InclusiveScan(input.begin(), output.begin(), op, input.size(), env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::InclusiveScan failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceScan::InclusiveScan failed with status: " << error << '\n';
   }
 
   thrust::device_vector<float> expected{1.0f, 3.0f, 6.0f, 10.0f};
@@ -267,7 +267,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit accepts environment", "[scan][env]"
   auto error = cub::DeviceScan::InclusiveScanInit(input.begin(), output.begin(), op, init, input.size());
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::InclusiveScanInit failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceScan::InclusiveScanInit failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected{11, 13, 16, 20};
@@ -292,7 +292,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit accepts stream environment", "[scan
   auto error = cub::DeviceScan::InclusiveScanInit(input.begin(), output.begin(), op, init, input.size(), env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::InclusiveScanInit failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceScan::InclusiveScanInit failed with status: " << error << '\n';
   }
 
   thrust::device_vector<float> expected{11.0f, 13.0f, 16.0f, 20.0f};
