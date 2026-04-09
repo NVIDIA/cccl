@@ -206,7 +206,7 @@ public:
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
     NumItemsT num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::Flagged");
     using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
@@ -454,7 +454,7 @@ public:
      NumSelectedIteratorT d_num_selected_out,
      NumItemsT num_items,
      SelectOp select_op,
-     cudaStream_t stream = 0)
+     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::If");
     using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
@@ -617,7 +617,7 @@ private:
     NumItemsT num_items,
     SelectFirstPartOp select_first_part_op,
     SelectSecondPartOp select_second_part_op,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
     using OffsetT       = typename ChooseOffsetT::type;
@@ -848,7 +848,7 @@ public:
      NumItemsT num_items,
      SelectFirstPartOp select_first_part_op,
      SelectSecondPartOp select_second_part_op,
-     cudaStream_t stream = 0)
+     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::If");
     return IfNoNVTX(

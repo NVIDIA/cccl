@@ -1409,12 +1409,12 @@ struct GpuTimer
 
   void Start()
   {
-    cudaEventRecord(start, 0);
+    cudaEventRecord(start, nullptr);
   }
 
   void Stop()
   {
-    cudaEventRecord(stop, 0);
+    cudaEventRecord(stop, nullptr);
   }
 
   float ElapsedMillis()

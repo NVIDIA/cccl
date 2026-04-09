@@ -27,7 +27,6 @@ Checks:
   - '-modernize-use-integer-sign-comparison'
   - '-modernize-use-nodiscard'
   - '-modernize-use-equals-default'
-  - '-modernize-use-nullptr'
   - '-modernize-return-braced-init-list'
   - '-modernize-use-auto'
   - '-modernize-unary-static-assert'

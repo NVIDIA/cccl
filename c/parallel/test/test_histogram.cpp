@@ -103,7 +103,7 @@ void histogram_even(
       num_row_pixels,
       num_rows,
       row_stride_samples,
-      0));
+      nullptr));
 
   pointer_t<uint8_t> temp_storage(temp_storage_bytes);
 
@@ -121,7 +121,7 @@ void histogram_even(
       num_row_pixels,
       num_rows,
       row_stride_samples,
-      0));
+      nullptr));
 
   REQUIRE(CUDA_SUCCESS == cccl_device_histogram_cleanup(&build));
 }

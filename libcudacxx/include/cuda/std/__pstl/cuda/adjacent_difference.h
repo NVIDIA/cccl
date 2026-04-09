@@ -79,7 +79,7 @@ struct __pstl_dispatch<__pstl_algorithm::__adjacent_difference, __execution_back
       __result,
       __count,
       __binary_op,
-      0);
+      nullptr);
 
     // Allocate memory for result
     auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);

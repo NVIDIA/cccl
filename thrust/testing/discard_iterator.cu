@@ -120,7 +120,7 @@ void TestZippedDiscardIterator()
   using IteratorTuple2 = cuda::std::tuple<int*, thrust::discard_iterator<>>;
   using ZipIterator2   = thrust::zip_iterator<IteratorTuple2>;
 
-  ZipIterator2 z_iter_first = thrust::make_zip_iterator((int*) 0, thrust::make_discard_iterator());
+  ZipIterator2 z_iter_first = thrust::make_zip_iterator((int*) nullptr, thrust::make_discard_iterator());
   ZipIterator2 z_iter_last  = z_iter_first + 10;
 
   for (; z_iter_first != z_iter_last; ++z_iter_first)

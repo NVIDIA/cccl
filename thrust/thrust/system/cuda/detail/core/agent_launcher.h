@@ -136,7 +136,7 @@ struct AgentLauncher : Agent
     assert(plan.grid_size > 0);
   }
 
-  THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type static get_plan(cudaStream_t, void* /* d_ptr */ = 0)
+  THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type static get_plan(cudaStream_t, void* /* d_ptr */ = nullptr)
   {
     return get_agent_plan<Agent>(get_ptx_version());
   }

@@ -168,7 +168,7 @@ struct DeviceHistogram
     LevelT lower_level,
     LevelT upper_level,
     OffsetT num_samples,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
@@ -324,7 +324,7 @@ struct DeviceHistogram
     OffsetT num_row_samples,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return MultiHistogramEven<1, 1>(
       d_temp_storage,
@@ -493,7 +493,7 @@ struct DeviceHistogram
     ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level,
     ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level,
     OffsetT num_pixels,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
@@ -539,7 +539,7 @@ public:
     const LevelT lower_level[NUM_ACTIVE_CHANNELS],
     const LevelT upper_level[NUM_ACTIVE_CHANNELS],
     OffsetT num_pixels,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
@@ -728,7 +728,7 @@ public:
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramEven");
 
@@ -796,7 +796,7 @@ public:
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return MultiHistogramEven<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
@@ -923,7 +923,7 @@ public:
     int num_levels,
     const LevelT* d_levels,
     OffsetT num_samples,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
@@ -1066,7 +1066,7 @@ public:
     OffsetT num_row_samples,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return MultiHistogramRange<1, 1>(
       d_temp_storage,
@@ -1224,7 +1224,7 @@ public:
     ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_levels,
     ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS> d_levels,
     OffsetT num_pixels,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
@@ -1258,7 +1258,7 @@ public:
     const int num_levels[NUM_ACTIVE_CHANNELS],
     const LevelT* const d_levels[NUM_ACTIVE_CHANNELS],
     OffsetT num_pixels,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,
@@ -1435,7 +1435,7 @@ public:
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramRange");
 
@@ -1500,7 +1500,7 @@ public:
     OffsetT num_row_pixels,
     OffsetT num_rows,
     size_t row_stride_bytes,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return MultiHistogramRange<NUM_CHANNELS, NUM_ACTIVE_CHANNELS>(
       d_temp_storage,

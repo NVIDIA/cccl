@@ -73,7 +73,7 @@ static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT
     op_t{},
     init_value_t{},
     static_cast<int>(elements),
-    0 /* stream */
+    nullptr /* stream */
 #if !TUNE_BASE
     ,
     bench_scan_by_key_policy_selector{}
