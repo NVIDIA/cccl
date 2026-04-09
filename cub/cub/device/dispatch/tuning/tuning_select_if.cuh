@@ -27,6 +27,10 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/optional>
 
+#if _CCCL_COMPILER(MSVC)
+#  include <ciso646>
+#endif // _CCCL_COMPILER(MSVC)
+
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
 #endif // !_CCCL_COMPILER(NVRTC)
