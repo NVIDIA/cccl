@@ -236,7 +236,7 @@ private:
     _CCCL_EXEC_CHECK_DISABLE
     pool& operator=(const pool&) = default;
 
-    _CCCL_HOST ~pool() {}
+    _CCCL_HOST ~pool() = default;
 
     pointer_vector free_blocks;
     std::size_t previous_allocated_count;

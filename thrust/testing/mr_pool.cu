@@ -46,7 +46,7 @@ struct tracked_pointer
       , ptr(ptr)
   {}
 
-  _CCCL_HOST_DEVICE ~tracked_pointer() {}
+  _CCCL_HOST_DEVICE ~tracked_pointer() = default;
 
   template <typename U>
   operator tracked_pointer<U>() const

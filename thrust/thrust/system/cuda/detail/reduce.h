@@ -163,7 +163,7 @@ struct ReduceAgent
   {
     cub::GridMappingStrategy grid_mapping;
 
-    THRUST_RUNTIME_FUNCTION Plan() {}
+    THRUST_RUNTIME_FUNCTION Plan() = default;
 
     template <class P>
     THRUST_RUNTIME_FUNCTION Plan(P)

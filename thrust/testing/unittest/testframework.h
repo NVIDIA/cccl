@@ -330,9 +330,9 @@ class UnitTest
 {
 public:
   std::string name;
-  UnitTest() {}
+  UnitTest() = default;
   UnitTest(const char* name);
-  virtual ~UnitTest() {}
+  virtual ~UnitTest() = default;
   virtual void run() {}
 
   bool operator<(const UnitTest& u) const
@@ -359,7 +359,7 @@ protected:
   virtual bool post_test_smoke_check(const UnitTest& test, bool concise);
 
 public:
-  inline virtual ~UnitTestDriver() {}
+  inline virtual ~UnitTestDriver() = default;
 
   void register_test(UnitTest* test);
   virtual bool run_tests(const ArgumentSet& args, const ArgumentMap& kwargs);

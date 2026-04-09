@@ -93,7 +93,7 @@ public:
    */
   //  Define an empty destructor to explicitly specify
   //  its execution space qualifier, as a workaround for nvcc warning
-  _CCCL_HOST ~host_vector() {}
+  _CCCL_HOST ~host_vector() = default;
 
   /*! This constructor creates a \p host_vector with the given
    *  size.

@@ -12,7 +12,7 @@ struct return_value
 {
   T val;
 
-  return_value() {}
+  return_value() = default;
   return_value(T v)
       : val(v)
   {}

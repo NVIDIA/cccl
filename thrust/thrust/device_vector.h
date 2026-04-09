@@ -78,7 +78,7 @@ public:
    */
   //  Define an empty destructor to explicitly specify
   //  its execution space qualifier, as a workaround for nvcc warning
-  ~device_vector() {}
+  ~device_vector() = default;
 
   /*! This constructor creates a \p device_vector with the given
    *  size.

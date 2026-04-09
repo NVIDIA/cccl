@@ -106,9 +106,7 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__default>
 
 public:
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr __tuple_leaf() noexcept(is_nothrow_default_constructible_v<_Hp>)
-      : __value_()
-  {}
+  _CCCL_API constexpr __tuple_leaf() noexcept(is_nothrow_default_constructible_v<_Hp>) = default;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr __tuple_leaf(__tuple_leaf_default_constructor_tag) noexcept(
@@ -227,14 +225,19 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   __tuple_leaf(__tuple_leaf&& __t) = default;
 
+  // Do not use = default here. The value type may be a reference, in which case the defaulted
+  // assignment constructor is implicitly deleted (a quirk in the C++ spec meant).
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr __tuple_leaf& operator=(const __tuple_leaf& __t) noexcept
+  _CCCL_API constexpr __tuple_leaf& operator=(const __tuple_leaf& __t) noexcept // NOLINT(modernize-use-equals-default)
   {
     __value_ = __t.__value_;
     return *this;
   }
+
+  // Do not use = default here. The value type may be a reference, in which case the defaulted
+  // assignment constructor is implicitly deleted (a quirk in the C++ spec meant).
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr __tuple_leaf& operator=(__tuple_leaf&& __t) noexcept
+  _CCCL_API constexpr __tuple_leaf& operator=(__tuple_leaf&& __t) noexcept // NOLINT(modernize-use-equals-default)
   {
     __value_ = ::cuda::std::move(__t.__value_);
     return *this;
@@ -268,9 +271,7 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__empty_non_final> : p
 {
 public:
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr __tuple_leaf() noexcept(is_nothrow_default_constructible_v<_Hp>)
-      : _Hp()
-  {}
+  _CCCL_API constexpr __tuple_leaf() noexcept(is_nothrow_default_constructible_v<_Hp>) = default;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr __tuple_leaf(__tuple_leaf_default_constructor_tag) noexcept(
@@ -370,9 +371,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
 {
   using _Constraints = __tuple_constraints<_Tp...>;
 
-  _CCCL_API constexpr __tuple_impl() noexcept(_Constraints::__nothrow_default_constructible)
-      : __tuple_leaf<_Indx, _Tp>()...
-  {}
+  _CCCL_API constexpr __tuple_impl() noexcept(_Constraints::__nothrow_default_constructible) = default;
 
   // Handle non-allocator, full initialization
   // Old MSVC cannot handle the noexept specifier outside of template arguments

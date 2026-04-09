@@ -993,13 +993,7 @@ struct NonThrowingIterator
       , current_(rhs.current_)
   {}
 
-  __host__ __device__ NonThrowingIterator& operator=(const NonThrowingIterator& rhs) noexcept
-  {
-    begin_   = rhs.begin_;
-    end_     = rhs.end_;
-    current_ = rhs.current_;
-    return *this;
-  }
+  __host__ __device__ NonThrowingIterator& operator=(const NonThrowingIterator& rhs) noexcept = default;
 
   __host__ __device__ reference operator*() const noexcept
   {
@@ -2080,7 +2074,7 @@ public:
   using pointer           = int*;
   using reference         = int&;
 
-  __host__ __device__ constexpr advance_only_iterator() {}
+  __host__ __device__ constexpr advance_only_iterator() = default;
   __host__ __device__ constexpr advance_only_iterator(int* iter)
       : iter_(iter)
   {}

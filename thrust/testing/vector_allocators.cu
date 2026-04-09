@@ -15,7 +15,7 @@ public:
       : state(i)
   {}
 
-  ~stateful_allocator() {}
+  ~stateful_allocator() = default;
 
   stateful_allocator(const stateful_allocator& other)
       : BaseAlloc(other)
