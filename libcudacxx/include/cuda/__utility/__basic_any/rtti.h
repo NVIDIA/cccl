@@ -189,9 +189,10 @@ template <size_t _NbrInterfaces>
 struct __rtti_ex : __rtti
 {
   template <class _Tp, class _Super, class... _Interfaces, class _VPtr>
-  _CCCL_API constexpr __rtti_ex(__tag<_Tp, _Super> __type, __tag<_Interfaces...> __ibases, _VPtr __self) noexcept
+  _CCCL_API constexpr __rtti_ex(__tag<_Tp, _Super> __type, __tag<_Interfaces...> __ibases, _VPtr) noexcept
       : __rtti{__type, __ibases, __base_vptr_array}
-      , __base_vptr_array{{&_CCCL_TYPEID(_Interfaces), static_cast<__vptr_for<_Interfaces>>(__self)}...}
+      , __base_vptr_array{
+          {&_CCCL_TYPEID(_Interfaces), static_cast<__vptr_for<_Interfaces>>(static_cast<_VPtr>(this))}...}
   {}
 
   __base_info __base_vptr_array[_NbrInterfaces];
