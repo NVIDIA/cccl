@@ -61,8 +61,8 @@ TEST_CASE("Device scan exclusive scan works with default environment", "[scan][d
   using offset_t    = cub::detail::choose_offset_t<num_items_t>;
 
   num_items_t num_items = 2;
-  auto d_in  = cuda::constant_iterator(value_t{1});
-  auto d_out = c2h::device_vector<value_t>(num_items);
+  auto d_in             = cuda::constant_iterator(value_t{1});
+  auto d_out            = c2h::device_vector<value_t>(num_items);
 
   using selector_t = cub::detail::scan::
     policy_selector_from_types<decltype(d_in), decltype(d_out.begin()), value_t, offset_t, block_size_check_t>;
@@ -70,7 +70,6 @@ TEST_CASE("Device scan exclusive scan works with default environment", "[scan][d
   cuda::arch_id arch_id;
   REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id));
   const auto target_block_size = selector_t{}(arch_id).lookback.block_threads;
-
 
   c2h::device_vector<int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
@@ -212,8 +211,8 @@ TEST_CASE("Device scan inclusive-scan works with default environment", "[scan][d
   using offset_t    = cub::detail::choose_offset_t<num_items_t>;
 
   num_items_t num_items = 2;
-  auto d_in  = cuda::constant_iterator(value_t{1});
-  auto d_out = c2h::device_vector<value_t>(num_items);
+  auto d_in             = cuda::constant_iterator(value_t{1});
+  auto d_out            = c2h::device_vector<value_t>(num_items);
 
   using selector_t = cub::detail::scan::
     policy_selector_from_types<decltype(d_in), decltype(d_out.begin()), value_t, offset_t, block_size_check_t>;
@@ -221,7 +220,6 @@ TEST_CASE("Device scan inclusive-scan works with default environment", "[scan][d
   cuda::arch_id arch_id;
   REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id));
   const auto target_block_size = selector_t{}(arch_id).lookback.block_threads;
-
 
   c2h::device_vector<int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
