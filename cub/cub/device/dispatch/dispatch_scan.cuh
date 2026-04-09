@@ -554,7 +554,7 @@ struct DispatchScan
       static_cast<int>(kernel_src.AccumSize()),
       static_cast<int>(kernel_src.AccumAlign()));
 #  if defined(CUB_DEFINE_RUNTIME_POLICIES)
-    _CCCL_ASSERT(SMemSizeForSingleStage <= detail::max_smem_per_block,
+    _CCCL_ASSERT(smem_size_1_stage <= int{detail::max_smem_per_block},
                  "Single-stage warpspeed scan exceeds architecture independent SMEM (48KiB)");
 #  else // defined(CUB_DEFINE_RUNTIME_POLICIES)
     __check_smem<smem_size_1_stage>();
