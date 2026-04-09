@@ -215,8 +215,28 @@ def get_thread_data_type():
     return thread_data_type
 
 
+@dataclass
+class CoopClassAndInstanceMaps:
+    """Grouped rewrite lookup tables shared by the CoopNodeRewriter.
+
+    Attributes:
+        decls: Mapping from registered decl classes to primitive metadata.
+        nodes: Mapping from primitive names to rewrite-node classes.
+        instances: Mapping from singleton primitive instances to their names.
+    """
+
+    decls: dict[Any, Any]
+    nodes: dict[str, type]
+    instances: dict[Any, Any]
+
+
 @lru_cache(maxsize=None)
 def get_coop_class_and_instance_maps():
+    """Return validated decl/node/instance lookup tables for rewrite.
+
+    These maps are consumed together by the rewrite pipeline, so we cache the
+    grouped result after checking the primitive-name invariants once.
+    """
     from cuda.coop._decls import (
         get_coop_decl_class_map,
         get_coop_instance_of_instance_types_map,
@@ -257,7 +277,7 @@ def get_coop_class_and_instance_maps():
     instances = {instance: name for (name, instance) in instance_map.items()}
 
     # Invariant checks complete, return the class maps.
-    return SimpleNamespace(
+    return CoopClassAndInstanceMaps(
         decls=decl_classes,
         nodes=node_classes,
         instances=instances,
@@ -468,6 +488,19 @@ class TempStorageInfo:
     sharing: str
     auto_sync: bool
     base_offset: int = 0
+
+
+@dataclass
+class ThreadDataInfo:
+    """Resolved rewrite-time metadata for a ``coop.ThreadData`` binding.
+
+    Attributes:
+        items_per_thread: Compile-time lane-local element count.
+        dtype: Final inferred or explicit element dtype.
+    """
+
+    items_per_thread: int
+    dtype: Any
 
 
 @dataclass

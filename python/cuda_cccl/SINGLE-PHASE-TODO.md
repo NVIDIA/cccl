@@ -198,6 +198,40 @@
       peer-based inference coverage for block/warp load-store/exchange and
       block shuffle/adjacent-difference.
 - [x] Relax block-shuffle typing dtype precheck when ThreadData participates,
+
+## PR #7214 @codex follow-up shortlist (2026-04-08)
+
+- [ ] Audit `cuda/coop/_rewrite/__init__.py` against the older review cluster
+      (`2842341040`, `2842342261`, `2842343739`, `2842346587`,
+      `2842352147`, `2842357335`, `2842361849`, `2842372166`,
+      `2842381160`, `2842384987`) and resolve remaining dataclass/docstring /
+      stale-helper / placement issues.
+- [ ] Audit `cuda/coop/_decls.py` against the older review cluster
+      (`2838316568`, `2838318223`, `2838318832`, `2838319357`) and tighten
+      imports/comments, especially TempStorage and decomposer-placeholder
+      rationale.
+- [ ] Revisit duplicated `make_*` surface in `cuda/coop/block/__init__.py`
+      (`2838290620`) and either simplify further or document why remaining
+      structure is necessary.
+- [ ] Re-evaluate the questioned histogram argument/TempStorage semantics in
+      `cuda/coop/block/_block_histogram.py` (`2836695402`).
+- [ ] Re-audit older `_rewrite.py` comment/TODO review items after the module
+      split (`2836699321`, `2836701444`, `2836701930`, `2836702400`,
+      `2836704506`, `2836705457`, `2836705725`) and map any still-relevant
+      actions onto current files.
+- [ ] Confirm all stale `ThreadDataType` failure/fallback patterns from the
+      older rewrite review are either gone or intentionally justified
+      (`2837086253`).
+- [ ] Revisit the older code-duplication complaint in rewrite and remove or
+      justify any remaining bespoke implementations (`2837087444`).
+- [ ] Add the missing adjacent-difference single-phase test covering
+      `ThreadData` + `TempStorage` getitem sugar if the earlier implementation
+      did not already fully satisfy `2838322105`.
+- [ ] Audit CUDA vector-type support coverage around `_common.py` and related
+      block load/store flows; add/adjust tests if the current coverage is still
+      weaker than intended (`2838315084`).
+- [ ] Close out any still-live `_numba_extension.py` naming/review thread
+      follow-up (`2836698296`) after the newer env-var/module-global cleanup.
       deferring final dtype consistency enforcement to rewrite.
 - [x] Merge `tests/coop/test_histo2.py` into
       `tests/coop/test_block_histogram.py` and delete `test_histo2.py`.

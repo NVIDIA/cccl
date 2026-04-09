@@ -2656,3 +2656,14 @@
 - Validation:
   - `python -m py_compile cuda/coop/_rewrite/__init__.py`
     - Result: passed.
+
+## 2026-04-08 (review backlog shortlist + begin core audit)
+- Request: Capture the remaining likely-unfixed PR #7214 review backlog in the single-phase TODO and begin burning down the highest-priority core files.
+- Changes:
+  - Added a focused `PR #7214 @codex follow-up shortlist (2026-04-08)` section to `SINGLE-PHASE-TODO.md` covering the top likely-open review items.
+  - Began with the highest-priority `_rewrite/__init__.py` / `_decls.py` audit path.
+- Decisions:
+  - Use the shortlist as the working queue instead of trying to process the older review stream strictly chronologically.
+  - Prioritize core rewrite/decl files before narrower test/docs cleanups.
+- Validation:
+  - TODO/log update only at this step.

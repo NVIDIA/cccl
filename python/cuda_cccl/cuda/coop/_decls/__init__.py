@@ -341,8 +341,12 @@ class CoopTempStorageDecl(CoopAbstractTemplate):
 
 
 class CoopTempStorageGetItemDecl(AbstractTemplate):
-    # Allows for coop primitives to be called with a temp_storage argument
-    # via the getitem syntax, e.g. `coop.block.load[temp_storage](...)`.
+    """Typing support for ``primitive[temp_storage](...)`` sugar.
+
+    This treats ``__getitem__`` on a cooperative primitive as shorthand for
+    binding the ``temp_storage=`` keyword argument at the call site.
+    """
+
     target_key = None
 
     def _supports_getitem_temp_storage(self, func_obj):

@@ -27,7 +27,6 @@ from ._core import (
     CudaSharedModuleTemplate,
     RootDefinition,
     Signature,
-    SimpleNamespace,
     TempStorageCallDefinition,
     TempStorageInfo,
     TempStorageRewriteState,
@@ -35,6 +34,7 @@ from ._core import (
     TempStorageUseLayoutEntry,
     TempStorageUseRequirementEntry,
     ThreadDataCallDefinition,
+    ThreadDataInfo,
     _get_env_bool,
     _warn_ltoir_bundle_failure,
     algo_coalesce_key,
@@ -50,6 +50,31 @@ from ._core import (
     register_kernel_extension,
     struct,
 )
+
+
+class TempStorageGlobalPlan:
+    """Kernel-wide TempStorage backing plan for the active rewrite pass."""
+
+    def __init__(
+        self,
+        *,
+        infos,
+        total_size,
+        max_alignment,
+        uses_dynamic_smem,
+        dynamic_shared_bytes,
+        shared_memory_carveout_percent,
+        max_default_smem,
+        max_optin_smem,
+    ):
+        self.infos = infos
+        self.total_size = total_size
+        self.max_alignment = max_alignment
+        self.uses_dynamic_smem = uses_dynamic_smem
+        self.dynamic_shared_bytes = dynamic_shared_bytes
+        self.shared_memory_carveout_percent = shared_memory_carveout_percent
+        self.max_default_smem = max_default_smem
+        self.max_optin_smem = max_optin_smem
 
 
 def _ensure_current_launch_config():
@@ -788,7 +813,7 @@ class CoopNodeRewriter(Rewrite):
                     f"device max opt-in is {max_optin} bytes."
                 )
 
-            plan = SimpleNamespace(
+            plan = TempStorageGlobalPlan(
                 infos=infos,
                 total_size=total_size,
                 max_alignment=max_alignment,
@@ -1105,7 +1130,7 @@ class CoopNodeRewriter(Rewrite):
             )
             raise RuntimeError(msg)
 
-        info = SimpleNamespace(
+        info = ThreadDataInfo(
             items_per_thread=items_per_thread,
             dtype=dtype,
         )
