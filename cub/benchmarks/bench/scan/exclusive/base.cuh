@@ -9,12 +9,6 @@
 
 #include <nvbench_helper.cuh>
 
-#if !TUNE_BASE
-#  if !USES_WARPSPEED()
-#    include <look_back_helper.cuh>
-#  endif // !USES_WARPSPEED()
-#endif // TUNE_BASE
-
 #include "../policy_selector.h"
 
 template <typename T, typename OffsetT>
