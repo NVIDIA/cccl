@@ -157,15 +157,15 @@ struct A
 
 int main(int, char**)
 {
-  static_assert(testConstexprSpan<int>(), "");
-  static_assert(testConstexprSpan<long>(), "");
-  static_assert(testConstexprSpan<double>(), "");
-  static_assert(testConstexprSpan<A>(), "");
+  static_assert(testConstexprSpan<int>());
+  static_assert(testConstexprSpan<long>());
+  static_assert(testConstexprSpan<double>());
+  static_assert(testConstexprSpan<A>());
 
-  static_assert(testConstexprSpanStatic<int>(), "");
-  static_assert(testConstexprSpanStatic<long>(), "");
-  static_assert(testConstexprSpanStatic<double>(), "");
-  static_assert(testConstexprSpanStatic<A>(), "");
+  static_assert(testConstexprSpanStatic<int>());
+  static_assert(testConstexprSpanStatic<long>());
+  static_assert(testConstexprSpanStatic<double>());
+  static_assert(testConstexprSpanStatic<A>());
 
   testRuntimeSpan<int>();
   testRuntimeSpan<long>();

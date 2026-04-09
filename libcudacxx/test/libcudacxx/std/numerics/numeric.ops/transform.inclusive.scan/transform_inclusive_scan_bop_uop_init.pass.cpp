@@ -70,14 +70,14 @@ __host__ __device__ constexpr void test()
   const int pResN2[] = {1, -2, -7, -14, -23}; // with negate
   const int mResN2[] = {-2, 6, -30, 210, -1890};
   const unsigned sa  = sizeof(ia) / sizeof(ia[0]);
-  static_assert(sa == sizeof(pResI0) / sizeof(pResI0[0]), ""); // just to be sure
-  static_assert(sa == sizeof(mResI0) / sizeof(mResI0[0]), ""); // just to be sure
-  static_assert(sa == sizeof(pResN0) / sizeof(pResN0[0]), ""); // just to be sure
-  static_assert(sa == sizeof(mResN0) / sizeof(mResN0[0]), ""); // just to be sure
-  static_assert(sa == sizeof(pResI2) / sizeof(pResI2[0]), ""); // just to be sure
-  static_assert(sa == sizeof(mResI2) / sizeof(mResI2[0]), ""); // just to be sure
-  static_assert(sa == sizeof(pResN2) / sizeof(pResN2[0]), ""); // just to be sure
-  static_assert(sa == sizeof(mResN2) / sizeof(mResN2[0]), ""); // just to be sure
+  static_assert(sa == sizeof(pResI0) / sizeof(pResI0[0])); // just to be sure
+  static_assert(sa == sizeof(mResI0) / sizeof(mResI0[0])); // just to be sure
+  static_assert(sa == sizeof(pResN0) / sizeof(pResN0[0])); // just to be sure
+  static_assert(sa == sizeof(mResN0) / sizeof(mResN0[0])); // just to be sure
+  static_assert(sa == sizeof(pResI2) / sizeof(pResI2[0])); // just to be sure
+  static_assert(sa == sizeof(mResI2) / sizeof(mResI2[0])); // just to be sure
+  static_assert(sa == sizeof(pResN2) / sizeof(pResN2[0])); // just to be sure
+  static_assert(sa == sizeof(mResN2) / sizeof(mResN2[0])); // just to be sure
 
   for (unsigned int i = 0; i < sa; ++i)
   {
@@ -181,6 +181,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

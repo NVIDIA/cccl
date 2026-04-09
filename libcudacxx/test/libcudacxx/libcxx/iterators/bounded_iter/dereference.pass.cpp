@@ -79,12 +79,12 @@ int main(int, char**)
 {
   tests<Foo*>();
   test_death<Foo*>();
-  static_assert(tests<Foo*>(), "");
+  static_assert(tests<Foo*>());
 
 #if TEST_STD_VER > 2017
   tests<contiguous_iterator<Foo*>>();
   test_death<contiguous_iterator<Foo*>>();
-  static_assert(tests<contiguous_iterator<Foo*>>(), "");
+  static_assert(tests<contiguous_iterator<Foo*>>());
 #endif // TEST_STD_VER > 2017
 
   return 0;

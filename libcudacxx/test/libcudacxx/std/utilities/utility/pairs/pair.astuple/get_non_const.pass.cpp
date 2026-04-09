@@ -51,8 +51,8 @@ int main(int, char**)
   }
 
   {
-    static_assert(S().k == 1, "");
-    static_assert(cuda::std::get<1>(getP()) == 4, "");
+    static_assert(S().k == 1);
+    static_assert(cuda::std::get<1>(getP()) == 4);
   }
 
   return 0;

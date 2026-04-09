@@ -235,8 +235,8 @@ int main(int, char**)
   with_all_types<test_nondefault_initialization>();
   with_all_types<test_default_initialization>(); // not constexpr
   test_initializer_list();
-  static_assert(with_all_types<test_nondefault_initialization>(), "");
-  static_assert(test_initializer_list(), "");
+  static_assert(with_all_types<test_nondefault_initialization>());
+  static_assert(test_initializer_list());
 
   return 0;
 }

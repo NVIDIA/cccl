@@ -37,9 +37,9 @@ __host__ __device__ void test()
   static_assert((cuda::std::is_base_of<cuda::std::integral_constant<cuda::std::size_t, N>,
                                        cuda::std::tuple_size<const volatile T>>::value),
                 "");
-  static_assert((cuda::std::is_same<typename cuda::std::tuple_element<idx, T>::type, U>::value), "");
-  static_assert((cuda::std::is_same<typename cuda::std::tuple_element<idx, const T>::type, const U>::value), "");
-  static_assert((cuda::std::is_same<typename cuda::std::tuple_element<idx, volatile T>::type, volatile U>::value), "");
+  static_assert((cuda::std::is_same<typename cuda::std::tuple_element<idx, T>::type, U>::value));
+  static_assert((cuda::std::is_same<typename cuda::std::tuple_element<idx, const T>::type, const U>::value));
+  static_assert((cuda::std::is_same<typename cuda::std::tuple_element<idx, volatile T>::type, volatile U>::value));
   static_assert(
     (cuda::std::is_same<typename cuda::std::tuple_element<idx, const volatile T>::type, const volatile U>::value), "");
 }

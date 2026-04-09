@@ -33,17 +33,17 @@ template <class T, class E>
 _CCCL_CONCEPT HasMemberSwap =
   _CCCL_REQUIRES_EXPR((T, E), cuda::std::expected<T, E> x, cuda::std::expected<T, E> y)((x.swap(y)));
 
-static_assert(HasMemberSwap<int, int>, "");
+static_assert(HasMemberSwap<int, int>);
 
 struct NotSwappable
 {};
 __host__ __device__ void swap(NotSwappable&, NotSwappable&) = delete;
 
 // !is_swappable_v<T>
-static_assert(!HasMemberSwap<NotSwappable, int>, "");
+static_assert(!HasMemberSwap<NotSwappable, int>);
 
 // !is_swappable_v<E>
-static_assert(!HasMemberSwap<int, NotSwappable>, "");
+static_assert(!HasMemberSwap<int, NotSwappable>);
 
 struct NotMoveContructible
 {
@@ -52,10 +52,10 @@ struct NotMoveContructible
 };
 
 // !is_move_constructible_v<T>
-static_assert(!HasMemberSwap<NotMoveContructible, int>, "");
+static_assert(!HasMemberSwap<NotMoveContructible, int>);
 
 // !is_move_constructible_v<E>
-static_assert(!HasMemberSwap<int, NotMoveContructible>, "");
+static_assert(!HasMemberSwap<int, NotMoveContructible>);
 
 struct MoveMayThrow
 {
@@ -64,13 +64,13 @@ struct MoveMayThrow
 };
 
 // !is_nothrow_move_constructible_v<T> && is_nothrow_move_constructible_v<E>
-static_assert(HasMemberSwap<MoveMayThrow, int>, "");
+static_assert(HasMemberSwap<MoveMayThrow, int>);
 
 // is_nothrow_move_constructible_v<T> && !is_nothrow_move_constructible_v<E>
-static_assert(HasMemberSwap<int, MoveMayThrow>, "");
+static_assert(HasMemberSwap<int, MoveMayThrow>);
 
 // !is_nothrow_move_constructible_v<T> && !is_nothrow_move_constructible_v<E>
-static_assert(!HasMemberSwap<MoveMayThrow, MoveMayThrow>, "");
+static_assert(!HasMemberSwap<MoveMayThrow, MoveMayThrow>);
 
 // Test noexcept
 template <class T, class E, bool = HasMemberSwap<T, E>>
@@ -80,13 +80,13 @@ template <class T, class E>
 constexpr bool MemberSwapNoexcept<T, E, true> =
   noexcept(cuda::std::declval<cuda::std::expected<T, E>&>().swap(cuda::std::declval<cuda::std::expected<T, E>&>()));
 
-static_assert(MemberSwapNoexcept<int, int>, "");
+static_assert(MemberSwapNoexcept<int, int>);
 
 // !is_nothrow_move_constructible_v<T>
-static_assert(!MemberSwapNoexcept<MoveMayThrow, int>, "");
+static_assert(!MemberSwapNoexcept<MoveMayThrow, int>);
 
 // !is_nothrow_move_constructible_v<E>
-static_assert(!MemberSwapNoexcept<int, MoveMayThrow>, "");
+static_assert(!MemberSwapNoexcept<int, MoveMayThrow>);
 
 struct SwapMayThrow
 {
@@ -94,10 +94,10 @@ struct SwapMayThrow
 };
 
 // !is_nothrow_swappable_v<T>
-static_assert(!MemberSwapNoexcept<SwapMayThrow, int>, "");
+static_assert(!MemberSwapNoexcept<SwapMayThrow, int>);
 
 // !is_nothrow_swappable_v<E>
-static_assert(!MemberSwapNoexcept<int, SwapMayThrow>, "");
+static_assert(!MemberSwapNoexcept<int, SwapMayThrow>);
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
@@ -249,7 +249,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 #if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

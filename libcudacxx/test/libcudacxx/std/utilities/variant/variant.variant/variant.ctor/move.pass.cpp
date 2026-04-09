@@ -70,8 +70,8 @@ struct NTMove
   int value;
 };
 
-static_assert(!cuda::std::is_trivially_move_constructible<NTMove>::value, "");
-static_assert(cuda::std::is_move_constructible<NTMove>::value, "");
+static_assert(!cuda::std::is_trivially_move_constructible<NTMove>::value);
+static_assert(cuda::std::is_move_constructible<NTMove>::value);
 
 struct TMove
 {
@@ -83,7 +83,7 @@ struct TMove
   int value;
 };
 
-static_assert(cuda::std::is_trivially_move_constructible<TMove>::value, "");
+static_assert(cuda::std::is_trivially_move_constructible<TMove>::value);
 
 struct TMoveNTCopy
 {
@@ -97,7 +97,7 @@ struct TMoveNTCopy
   int value;
 };
 
-static_assert(cuda::std::is_trivially_move_constructible<TMoveNTCopy>::value, "");
+static_assert(cuda::std::is_trivially_move_constructible<TMoveNTCopy>::value);
 
 #if TEST_HAS_EXCEPTIONS()
 struct MakeEmptyT
@@ -153,19 +153,19 @@ __host__ __device__ void test_move_noexcept()
 {
   {
     using V = cuda::std::variant<int, long>;
-    static_assert(cuda::std::is_nothrow_move_constructible<V>::value, "");
+    static_assert(cuda::std::is_nothrow_move_constructible<V>::value);
   }
   {
     using V = cuda::std::variant<int, MoveOnly>;
-    static_assert(cuda::std::is_nothrow_move_constructible<V>::value, "");
+    static_assert(cuda::std::is_nothrow_move_constructible<V>::value);
   }
   {
     using V = cuda::std::variant<int, MoveOnlyNT>;
-    static_assert(!cuda::std::is_nothrow_move_constructible<V>::value, "");
+    static_assert(!cuda::std::is_nothrow_move_constructible<V>::value);
   }
   {
     using V = cuda::std::variant<int, ThrowsMove>;
-    static_assert(!cuda::std::is_nothrow_move_constructible<V>::value, "");
+    static_assert(!cuda::std::is_nothrow_move_constructible<V>::value);
   }
 }
 
@@ -173,38 +173,38 @@ __host__ __device__ void test_move_ctor_sfinae()
 {
   {
     using V = cuda::std::variant<int, long>;
-    static_assert(cuda::std::is_move_constructible<V>::value, "");
+    static_assert(cuda::std::is_move_constructible<V>::value);
   }
   {
     using V = cuda::std::variant<int, MoveOnly>;
-    static_assert(cuda::std::is_move_constructible<V>::value, "");
+    static_assert(cuda::std::is_move_constructible<V>::value);
   }
   {
     using V = cuda::std::variant<int, MoveOnlyNT>;
-    static_assert(cuda::std::is_move_constructible<V>::value, "");
+    static_assert(cuda::std::is_move_constructible<V>::value);
   }
   {
     using V = cuda::std::variant<int, NoCopy>;
-    static_assert(!cuda::std::is_move_constructible<V>::value, "");
+    static_assert(!cuda::std::is_move_constructible<V>::value);
   }
 
   // Make sure we properly propagate triviality (see P0602R4).
   {
     using V = cuda::std::variant<int, long>;
-    static_assert(cuda::std::is_trivially_move_constructible<V>::value, "");
+    static_assert(cuda::std::is_trivially_move_constructible<V>::value);
   }
   {
     using V = cuda::std::variant<int, NTMove>;
-    static_assert(!cuda::std::is_trivially_move_constructible<V>::value, "");
-    static_assert(cuda::std::is_move_constructible<V>::value, "");
+    static_assert(!cuda::std::is_trivially_move_constructible<V>::value);
+    static_assert(cuda::std::is_move_constructible<V>::value);
   }
   {
     using V = cuda::std::variant<int, TMove>;
-    static_assert(cuda::std::is_trivially_move_constructible<V>::value, "");
+    static_assert(cuda::std::is_trivially_move_constructible<V>::value);
   }
   {
     using V = cuda::std::variant<int, TMoveNTCopy>;
-    static_assert(cuda::std::is_trivially_move_constructible<V>::value, "");
+    static_assert(cuda::std::is_trivially_move_constructible<V>::value);
   }
 }
 
@@ -272,8 +272,8 @@ __host__ __device__ void test_move_ctor_basic()
       }
     } test;
     constexpr auto result = test();
-    static_assert(result.index == 0, "");
-    static_assert(result.value == 42, "");
+    static_assert(result.index == 0);
+    static_assert(result.value == 42);
   }
   {
     struct
@@ -286,8 +286,8 @@ __host__ __device__ void test_move_ctor_basic()
       }
     } test;
     constexpr auto result = test();
-    static_assert(result.index == 1, "");
-    static_assert(result.value == 42, "");
+    static_assert(result.index == 1);
+    static_assert(result.value == 42);
   }
   {
     struct
@@ -300,8 +300,8 @@ __host__ __device__ void test_move_ctor_basic()
       }
     } test;
     constexpr auto result = test();
-    static_assert(result.index == 0, "");
-    static_assert(result.value.value == 42, "");
+    static_assert(result.index == 0);
+    static_assert(result.value.value == 42);
   }
   {
     struct
@@ -314,8 +314,8 @@ __host__ __device__ void test_move_ctor_basic()
       }
     } test;
     constexpr auto result = test();
-    static_assert(result.index == 1, "");
-    static_assert(result.value.value == 42, "");
+    static_assert(result.index == 1);
+    static_assert(result.value.value == 42);
   }
   {
     struct
@@ -328,8 +328,8 @@ __host__ __device__ void test_move_ctor_basic()
       }
     } test;
     constexpr auto result = test();
-    static_assert(result.index == 0, "");
-    static_assert(result.value.value == 42, "");
+    static_assert(result.index == 0);
+    static_assert(result.value.value == 42);
   }
   {
     struct
@@ -342,8 +342,8 @@ __host__ __device__ void test_move_ctor_basic()
       }
     } test;
     constexpr auto result = test();
-    static_assert(result.index == 1, "");
-    static_assert(result.value.value == 42, "");
+    static_assert(result.index == 1);
+    static_assert(result.value.value == 42);
   }
 }
 
@@ -371,18 +371,18 @@ __host__ __device__ void test_constexpr_move_ctor()
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   using V = cuda::std::variant<long, void*, const int>;
 #ifdef TEST_WORKAROUND_MSVC_BROKEN_IS_TRIVIALLY_COPYABLE
-  static_assert(cuda::std::is_trivially_destructible<V>::value, "");
-  static_assert(cuda::std::is_trivially_copy_constructible<V>::value, "");
-  static_assert(cuda::std::is_trivially_move_constructible<V>::value, "");
-  static_assert(!cuda::std::is_copy_assignable<V>::value, "");
-  static_assert(!cuda::std::is_move_assignable<V>::value, "");
+  static_assert(cuda::std::is_trivially_destructible<V>::value);
+  static_assert(cuda::std::is_trivially_copy_constructible<V>::value);
+  static_assert(cuda::std::is_trivially_move_constructible<V>::value);
+  static_assert(!cuda::std::is_copy_assignable<V>::value);
+  static_assert(!cuda::std::is_move_assignable<V>::value);
 #else // TEST_WORKAROUND_MSVC_BROKEN_IS_TRIVIALLY_COPYABLE
-  static_assert(cuda::std::is_trivially_copyable<V>::value, "");
+  static_assert(cuda::std::is_trivially_copyable<V>::value);
 #endif // TEST_WORKAROUND_MSVC_BROKEN_IS_TRIVIALLY_COPYABLE
-  static_assert(cuda::std::is_trivially_move_constructible<V>::value, "");
-  static_assert(test_constexpr_ctor_imp<0>(V(42l)), "");
-  static_assert(test_constexpr_ctor_imp<1>(V(nullptr)), "");
-  static_assert(test_constexpr_ctor_imp<2>(V(101)), "");
+  static_assert(cuda::std::is_trivially_move_constructible<V>::value);
+  static_assert(test_constexpr_ctor_imp<0>(V(42l)));
+  static_assert(test_constexpr_ctor_imp<1>(V(nullptr)));
+  static_assert(test_constexpr_ctor_imp<2>(V(101)));
 }
 
 int main(int, char**)

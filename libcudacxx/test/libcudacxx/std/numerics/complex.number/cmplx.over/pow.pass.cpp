@@ -34,7 +34,7 @@ template <class T, class U>
 __host__ __device__ void test(T x, const cuda::std::complex<U>& y)
 {
   using promote_t = typename cuda::std::common_type<T, U>::type;
-  static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)), cuda::std::complex<promote_t>>::value), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)), cuda::std::complex<promote_t>>::value));
   assert(cuda::std::pow(x, y) == pow(cuda::std::complex<promote_t>(x, 0), cuda::std::complex<promote_t>(y)));
 }
 
@@ -42,7 +42,7 @@ template <class T, class U>
 __host__ __device__ void test(const cuda::std::complex<T>& x, U y)
 {
   using promote_t = typename cuda::std::common_type<T, U>::type;
-  static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)), cuda::std::complex<promote_t>>::value), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)), cuda::std::complex<promote_t>>::value));
   assert(cuda::std::pow(x, y) == pow(cuda::std::complex<promote_t>(x), cuda::std::complex<promote_t>(y, 0)));
 }
 

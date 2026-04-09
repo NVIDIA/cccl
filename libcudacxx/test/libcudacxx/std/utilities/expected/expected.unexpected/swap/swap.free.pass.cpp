@@ -39,8 +39,8 @@ template <class T>
 constexpr bool ADLSwapNoexcept<T, cuda::std::void_t<decltype(swap(cuda::std::declval<T&>(), cuda::std::declval<T&>()))>> =
   noexcept(swap(cuda::std::declval<T&>(), cuda::std::declval<T&>()));
 
-static_assert(ADLSwapNoexcept<cuda::std::unexpected<NoexceptSwap>>, "");
-static_assert(!ADLSwapNoexcept<cuda::std::unexpected<MayThrowSwap>>, "");
+static_assert(ADLSwapNoexcept<cuda::std::unexpected<NoexceptSwap>>);
+static_assert(!ADLSwapNoexcept<cuda::std::unexpected<MayThrowSwap>>);
 
 // test constraint
 struct NonSwappable
@@ -48,9 +48,9 @@ struct NonSwappable
   NonSwappable& operator=(const NonSwappable&) = delete;
 };
 
-static_assert(cuda::std::is_swappable_v<cuda::std::unexpected<int>>, "");
-static_assert(cuda::std::is_swappable_v<cuda::std::unexpected<MayThrowSwap>>, "");
-static_assert(!cuda::std::is_swappable_v<cuda::std::unexpected<NonSwappable>>, "");
+static_assert(cuda::std::is_swappable_v<cuda::std::unexpected<int>>);
+static_assert(cuda::std::is_swappable_v<cuda::std::unexpected<MayThrowSwap>>);
+static_assert(!cuda::std::is_swappable_v<cuda::std::unexpected<NonSwappable>>);
 
 struct ADLSwap
 {
@@ -78,6 +78,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

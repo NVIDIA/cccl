@@ -14,43 +14,43 @@
 
 #include "test_iterators.h"
 
-static_assert(cuda::std::input_or_output_iterator<int*>, "");
-static_assert(cuda::std::input_or_output_iterator<int const*>, "");
-static_assert(cuda::std::input_or_output_iterator<int volatile*>, "");
-static_assert(cuda::std::input_or_output_iterator<int const volatile*>, "");
+static_assert(cuda::std::input_or_output_iterator<int*>);
+static_assert(cuda::std::input_or_output_iterator<int const*>);
+static_assert(cuda::std::input_or_output_iterator<int volatile*>);
+static_assert(cuda::std::input_or_output_iterator<int const volatile*>);
 
-static_assert(cuda::std::input_or_output_iterator<cpp17_input_iterator<int*>>, "");
-static_assert(cuda::std::input_or_output_iterator<cpp17_input_iterator<int const*>>, "");
-static_assert(cuda::std::input_or_output_iterator<cpp17_input_iterator<int volatile*>>, "");
-static_assert(cuda::std::input_or_output_iterator<cpp17_input_iterator<int const volatile*>>, "");
+static_assert(cuda::std::input_or_output_iterator<cpp17_input_iterator<int*>>);
+static_assert(cuda::std::input_or_output_iterator<cpp17_input_iterator<int const*>>);
+static_assert(cuda::std::input_or_output_iterator<cpp17_input_iterator<int volatile*>>);
+static_assert(cuda::std::input_or_output_iterator<cpp17_input_iterator<int const volatile*>>);
 
-static_assert(cuda::std::input_or_output_iterator<forward_iterator<int*>>, "");
-static_assert(cuda::std::input_or_output_iterator<forward_iterator<int const*>>, "");
-static_assert(cuda::std::input_or_output_iterator<forward_iterator<int volatile*>>, "");
-static_assert(cuda::std::input_or_output_iterator<forward_iterator<int const volatile*>>, "");
+static_assert(cuda::std::input_or_output_iterator<forward_iterator<int*>>);
+static_assert(cuda::std::input_or_output_iterator<forward_iterator<int const*>>);
+static_assert(cuda::std::input_or_output_iterator<forward_iterator<int volatile*>>);
+static_assert(cuda::std::input_or_output_iterator<forward_iterator<int const volatile*>>);
 
-static_assert(cuda::std::input_or_output_iterator<bidirectional_iterator<int*>>, "");
-static_assert(cuda::std::input_or_output_iterator<bidirectional_iterator<int const*>>, "");
-static_assert(cuda::std::input_or_output_iterator<bidirectional_iterator<int volatile*>>, "");
-static_assert(cuda::std::input_or_output_iterator<bidirectional_iterator<int const volatile*>>, "");
+static_assert(cuda::std::input_or_output_iterator<bidirectional_iterator<int*>>);
+static_assert(cuda::std::input_or_output_iterator<bidirectional_iterator<int const*>>);
+static_assert(cuda::std::input_or_output_iterator<bidirectional_iterator<int volatile*>>);
+static_assert(cuda::std::input_or_output_iterator<bidirectional_iterator<int const volatile*>>);
 
-static_assert(cuda::std::input_or_output_iterator<random_access_iterator<int*>>, "");
-static_assert(cuda::std::input_or_output_iterator<random_access_iterator<int const*>>, "");
-static_assert(cuda::std::input_or_output_iterator<random_access_iterator<int volatile*>>, "");
-static_assert(cuda::std::input_or_output_iterator<random_access_iterator<int const volatile*>>, "");
+static_assert(cuda::std::input_or_output_iterator<random_access_iterator<int*>>);
+static_assert(cuda::std::input_or_output_iterator<random_access_iterator<int const*>>);
+static_assert(cuda::std::input_or_output_iterator<random_access_iterator<int volatile*>>);
+static_assert(cuda::std::input_or_output_iterator<random_access_iterator<int const volatile*>>);
 
-static_assert(!cuda::std::input_or_output_iterator<void*>, "");
-static_assert(!cuda::std::input_or_output_iterator<void const*>, "");
-static_assert(!cuda::std::input_or_output_iterator<void volatile*>, "");
-static_assert(!cuda::std::input_or_output_iterator<void const volatile*>, "");
+static_assert(!cuda::std::input_or_output_iterator<void*>);
+static_assert(!cuda::std::input_or_output_iterator<void const*>);
+static_assert(!cuda::std::input_or_output_iterator<void volatile*>);
+static_assert(!cuda::std::input_or_output_iterator<void const volatile*>);
 
 struct S
 {};
-static_assert(!cuda::std::input_or_output_iterator<S>, "");
-static_assert(!cuda::std::input_or_output_iterator<int S::*>, "");
-static_assert(!cuda::std::input_or_output_iterator<int (S::*)()>, "");
-static_assert(!cuda::std::input_or_output_iterator<int (S::*)() const>, "");
-static_assert(!cuda::std::input_or_output_iterator<int (S::*)() volatile>, "");
+static_assert(!cuda::std::input_or_output_iterator<S>);
+static_assert(!cuda::std::input_or_output_iterator<int S::*>);
+static_assert(!cuda::std::input_or_output_iterator<int (S::*)()>);
+static_assert(!cuda::std::input_or_output_iterator<int (S::*)() const>);
+static_assert(!cuda::std::input_or_output_iterator<int (S::*)() volatile>);
 
 struct missing_dereference
 {
@@ -78,7 +78,7 @@ struct not_weakly_incrementable
 {
   __host__ __device__ int operator*() const;
 };
-static_assert(!cuda::std::input_or_output_iterator<not_weakly_incrementable>, "");
+static_assert(!cuda::std::input_or_output_iterator<not_weakly_incrementable>);
 
 int main(int, char**)
 {

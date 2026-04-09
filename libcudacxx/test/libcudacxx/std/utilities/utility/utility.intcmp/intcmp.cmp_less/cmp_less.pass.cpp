@@ -103,6 +103,6 @@ int main(int, char**)
 {
   static_assert(noexcept(cuda::std::cmp_less(0, 1)));
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

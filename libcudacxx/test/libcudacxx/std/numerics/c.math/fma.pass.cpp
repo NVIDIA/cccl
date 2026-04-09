@@ -25,7 +25,7 @@ template <typename T>
 __host__ __device__ void test_fma(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::fma(T{}, T{}, T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::fma(T{}, T{}, T{})), ret>);
 
   // fma(x, y, z), fma(y, x, z) are equivalent.
   assert(eq(cuda::std::fma(val, T(3.0), T(2.0)), cuda::std::fma(T(3.0), val, T(2.0))));

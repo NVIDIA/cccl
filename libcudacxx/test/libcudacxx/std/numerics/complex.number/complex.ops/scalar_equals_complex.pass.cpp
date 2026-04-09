@@ -24,22 +24,22 @@ __host__ __device__ constexpr void test_constexpr()
   {
     constexpr T lhs(-2.5);
     constexpr cuda::std::complex<T> rhs(1.5, 2.5);
-    static_assert(!(lhs == rhs), "");
+    static_assert(!(lhs == rhs));
   }
   {
     constexpr T lhs(-2.5);
     constexpr cuda::std::complex<T> rhs(1.5, 0);
-    static_assert(!(lhs == rhs), "");
+    static_assert(!(lhs == rhs));
   }
   {
     constexpr T lhs(1.5);
     constexpr cuda::std::complex<T> rhs(1.5, 2.5);
-    static_assert(!(lhs == rhs), "");
+    static_assert(!(lhs == rhs));
   }
   {
     constexpr T lhs(1.5);
     constexpr cuda::std::complex<T> rhs(1.5, 0);
-    static_assert(lhs == rhs, "");
+    static_assert(lhs == rhs);
   }
 }
 
@@ -91,10 +91,10 @@ int main(int, char**)
   test_nonconstexpr<__nv_bfloat16>();
 #endif // _LIBCUDACXX_HAS_NVBF16()
   //     test_constexpr<int>();
-  static_assert(test<float>(), "");
-  static_assert(test<double>(), "");
+  static_assert(test<float>());
+  static_assert(test<double>());
 #if _CCCL_HAS_LONG_DOUBLE()
-  static_assert(test<long double>(), "");
+  static_assert(test<long double>());
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
   return 0;

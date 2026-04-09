@@ -27,31 +27,31 @@ __host__ __device__ constexpr void test()
   const inplace_vector const_range{T(0), T(42), T(1337), T(42), T(5), T(-42)};
 
   const auto begin = range.begin();
-  static_assert(cuda::std::is_same<decltype(begin), const typename inplace_vector::iterator>::value, "");
+  static_assert(cuda::std::is_same<decltype(begin), const typename inplace_vector::iterator>::value);
   assert(*begin == T(1));
 
   const auto cbegin = range.cbegin();
-  static_assert(cuda::std::is_same<decltype(cbegin), const typename inplace_vector::const_iterator>::value, "");
+  static_assert(cuda::std::is_same<decltype(cbegin), const typename inplace_vector::const_iterator>::value);
   assert(*cbegin == T(1));
 
   const auto const_begin = const_range.begin();
-  static_assert(cuda::std::is_same<decltype(const_begin), const typename inplace_vector::const_iterator>::value, "");
+  static_assert(cuda::std::is_same<decltype(const_begin), const typename inplace_vector::const_iterator>::value);
   assert(*const_begin == T(0));
 
   const auto end = range.end();
-  static_assert(cuda::std::is_same<decltype(end), const typename inplace_vector::iterator>::value, "");
+  static_assert(cuda::std::is_same<decltype(end), const typename inplace_vector::iterator>::value);
   assert(*cuda::std::prev(end) == T(-1));
 
   const auto cend = range.cend();
-  static_assert(cuda::std::is_same<decltype(cend), const typename inplace_vector::const_iterator>::value, "");
+  static_assert(cuda::std::is_same<decltype(cend), const typename inplace_vector::const_iterator>::value);
   assert(*cuda::std::prev(cend) == T(-1));
 
   const auto const_end = const_range.end();
-  static_assert(cuda::std::is_same<decltype(const_end), const typename inplace_vector::const_iterator>::value, "");
+  static_assert(cuda::std::is_same<decltype(const_end), const typename inplace_vector::const_iterator>::value);
   assert(*cuda::std::prev(const_end) == T(-42));
 
   const auto rbegin = range.rbegin();
-  static_assert(cuda::std::is_same<decltype(rbegin), const typename inplace_vector::reverse_iterator>::value, "");
+  static_assert(cuda::std::is_same<decltype(rbegin), const typename inplace_vector::reverse_iterator>::value);
   assert(*rbegin == T(-1));
 
   const auto crbegin = range.crbegin();
@@ -65,11 +65,11 @@ __host__ __device__ constexpr void test()
   assert(*const_rbegin == T(-42));
 
   const auto rend = range.rend();
-  static_assert(cuda::std::is_same<decltype(rend), const typename inplace_vector::reverse_iterator>::value, "");
+  static_assert(cuda::std::is_same<decltype(rend), const typename inplace_vector::reverse_iterator>::value);
   assert(*cuda::std::prev(rend) == T(1));
 
   const auto crend = range.crend();
-  static_assert(cuda::std::is_same<decltype(crend), const typename inplace_vector::const_reverse_iterator>::value, "");
+  static_assert(cuda::std::is_same<decltype(crend), const typename inplace_vector::const_reverse_iterator>::value);
   assert(*cuda::std::prev(crend) == T(1));
 
   const auto const_rend = const_range.rend();
@@ -97,7 +97,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
   return 0;

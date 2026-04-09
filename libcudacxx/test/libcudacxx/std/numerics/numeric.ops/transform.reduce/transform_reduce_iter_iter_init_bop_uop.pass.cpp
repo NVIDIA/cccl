@@ -45,7 +45,7 @@ struct twice
 template <class Iter1, class T, class BOp, class UOp>
 __host__ __device__ constexpr void test(Iter1 first1, Iter1 last1, T init, BOp bOp, UOp uOp, T x)
 {
-  static_assert(cuda::std::is_same<T, decltype(cuda::std::transform_reduce(first1, last1, init, bOp, uOp))>::value, "");
+  static_assert(cuda::std::is_same<T, decltype(cuda::std::transform_reduce(first1, last1, init, bOp, uOp))>::value);
   assert(cuda::std::transform_reduce(first1, last1, init, bOp, uOp) == x);
 }
 
@@ -142,6 +142,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

@@ -78,6 +78,6 @@ int main(int, char**)
 {
   static_assert(noexcept(cuda::std::in_range<int>(-1)));
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

@@ -83,15 +83,15 @@ __global__ void const_kernel(::cuda::std::span<const int> data)
 C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, long long, float, double, do_not_construct)
 {
   using uninitialized_buffer = cuda::experimental::uninitialized_buffer<TestType, cuda::mr::device_accessible>;
-  static_assert(!cuda::std::is_default_constructible<uninitialized_buffer>::value, "");
-  static_assert(!cuda::std::is_copy_constructible<uninitialized_buffer>::value, "");
-  static_assert(!cuda::std::is_copy_assignable<uninitialized_buffer>::value, "");
+  static_assert(!cuda::std::is_default_constructible<uninitialized_buffer>::value);
+  static_assert(!cuda::std::is_copy_constructible<uninitialized_buffer>::value);
+  static_assert(!cuda::std::is_copy_assignable<uninitialized_buffer>::value);
 
   cuda::device_memory_pool_ref resource = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   SECTION("construction")
   {
-    static_assert(!cuda::std::is_copy_constructible<uninitialized_buffer>::value, "");
+    static_assert(!cuda::std::is_copy_constructible<uninitialized_buffer>::value);
     {
       uninitialized_buffer from_count{resource, 42};
       CUDAX_CHECK(from_count.data() != nullptr);
@@ -127,7 +127,7 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
 
   SECTION("assignment")
   {
-    static_assert(!cuda::std::is_copy_assignable<uninitialized_buffer>::value, "");
+    static_assert(!cuda::std::is_copy_assignable<uninitialized_buffer>::value);
     {
       cuda::mr::legacy_pinned_memory_resource other_resource{};
       uninitialized_buffer input{other_resource, 42};
@@ -161,9 +161,9 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
   SECTION("access")
   {
     uninitialized_buffer buf{resource, 42};
-    static_assert(cuda::std::is_same<decltype(buf.begin()), TestType*>::value, "");
-    static_assert(cuda::std::is_same<decltype(buf.end()), TestType*>::value, "");
-    static_assert(cuda::std::is_same<decltype(buf.data()), TestType*>::value, "");
+    static_assert(cuda::std::is_same<decltype(buf.begin()), TestType*>::value);
+    static_assert(cuda::std::is_same<decltype(buf.end()), TestType*>::value);
+    static_assert(cuda::std::is_same<decltype(buf.data()), TestType*>::value);
     CUDAX_CHECK(buf.data() != nullptr);
     CUDAX_CHECK(buf.size() == 42);
     CUDAX_CHECK(buf.size_bytes() == 42 * sizeof(TestType));
@@ -171,9 +171,9 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
     CUDAX_CHECK(buf.end() == buf.begin() + buf.size());
     CUDAX_CHECK(buf.memory_resource() == resource);
 
-    static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).begin()), TestType const*>::value, "");
-    static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).end()), TestType const*>::value, "");
-    static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).data()), TestType const*>::value, "");
+    static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).begin()), TestType const*>::value);
+    static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).end()), TestType const*>::value);
+    static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).data()), TestType const*>::value);
     CUDAX_CHECK(cuda::std::as_const(buf).data() != nullptr);
     CUDAX_CHECK(cuda::std::as_const(buf).size() == 42);
     CUDAX_CHECK(cuda::std::as_const(buf).begin() == buf.data());
@@ -184,12 +184,10 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
   SECTION("properties")
   {
     static_assert(cuda::has_property<cuda::experimental::uninitialized_buffer<int, cuda::mr::device_accessible>,
-                                     cuda::mr::device_accessible>,
-                  "");
+                                     cuda::mr::device_accessible>);
     static_assert(
       cuda::has_property<cuda::experimental::uninitialized_buffer<int, cuda::mr::device_accessible, my_property>,
-                         my_property>,
-      "");
+                         my_property>);
   }
 
   SECTION("conversion to span")

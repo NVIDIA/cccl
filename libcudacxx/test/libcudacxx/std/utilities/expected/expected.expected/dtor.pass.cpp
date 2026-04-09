@@ -30,10 +30,10 @@ struct NonTrivial
   __host__ __device__ ~NonTrivial() {}
 };
 
-static_assert(cuda::std::is_trivially_destructible_v<cuda::std::expected<int, int>>, "");
-static_assert(!cuda::std::is_trivially_destructible_v<cuda::std::expected<NonTrivial, int>>, "");
-static_assert(!cuda::std::is_trivially_destructible_v<cuda::std::expected<int, NonTrivial>>, "");
-static_assert(!cuda::std::is_trivially_destructible_v<cuda::std::expected<NonTrivial, NonTrivial>>, "");
+static_assert(cuda::std::is_trivially_destructible_v<cuda::std::expected<int, int>>);
+static_assert(!cuda::std::is_trivially_destructible_v<cuda::std::expected<NonTrivial, int>>);
+static_assert(!cuda::std::is_trivially_destructible_v<cuda::std::expected<int, NonTrivial>>);
+static_assert(!cuda::std::is_trivially_destructible_v<cuda::std::expected<NonTrivial, NonTrivial>>);
 
 struct TrackedDestroy
 {

@@ -28,13 +28,13 @@
 #include "test_macros.h"
 
 // Test Constraints:
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, int>, cuda::std::unexpect_t>, "");
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, int>, cuda::std::unexpect_t, int>, "");
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, int>, cuda::std::unexpect_t>);
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, int>, cuda::std::unexpect_t, int>);
 
 // !is_constructible_v<T, Args...>
 struct foo
 {};
-static_assert(!cuda::std::is_constructible_v<cuda::std::expected<void, foo>, cuda::std::unexpect_t, int>, "");
+static_assert(!cuda::std::is_constructible_v<cuda::std::expected<void, foo>, cuda::std::unexpect_t, int>);
 
 // test explicit
 template <class T>
@@ -43,10 +43,10 @@ __host__ __device__ void conversion_test(T);
 template <class T, class... Args>
 _CCCL_CONCEPT ImplicitlyConstructible = _CCCL_REQUIRES_EXPR((T, variadic Args), T t, Args&&... args)(
   (conversion_test<T>({cuda::std::forward<Args>(args)...})));
-static_assert(ImplicitlyConstructible<int, int>, "");
+static_assert(ImplicitlyConstructible<int, int>);
 
-static_assert(!ImplicitlyConstructible<cuda::std::expected<void, int>, cuda::std::unexpect_t>, "");
-static_assert(!ImplicitlyConstructible<cuda::std::expected<void, int>, cuda::std::unexpect_t, int>, "");
+static_assert(!ImplicitlyConstructible<cuda::std::expected<void, int>, cuda::std::unexpect_t>);
+static_assert(!ImplicitlyConstructible<cuda::std::expected<void, int>, cuda::std::unexpect_t, int>);
 
 struct CopyOnly
 {
@@ -155,7 +155,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 #if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

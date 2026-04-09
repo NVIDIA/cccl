@@ -42,8 +42,8 @@ struct rotl_impl<type_list<Tx...>>
 template <typename... Tx>
 using rotl = typename rotl_impl<Tx...>::type;
 
-// static_assert(std::is_same<rotl<int, char>, type_list<char,int>>(), "");
-// static_assert(std::is_same<rotl<int, char, short>, type_list<char,short,int>>(), "");
+// static_assert(std::is_same<rotl<int, char>, type_list<char,int>>());
+// static_assert(std::is_same<rotl<int, char, short>, type_list<char,short,int>>());
 
 template <size_t Idx, typename T, template <typename> class Fn>
 struct for_n_impl
@@ -64,8 +64,8 @@ struct for_n_impl<0, T, Fn>
 template <size_t Idx, typename T, template <typename> class Fn>
 using for_n = typename for_n_impl<Idx, T, Fn>::type;
 
-// static_assert(std::is_same<for_n<2, type_list<int, char, short>, rotl>, type_list<short, int, char>>(), "");
-// static_assert(std::is_same<for_n<3, type_list<int, char, short>, rotl>, type_list<int, char, short>>(), "");
+// static_assert(std::is_same<for_n<2, type_list<int, char, short>, rotl>, type_list<short, int, char>>());
+// static_assert(std::is_same<for_n<3, type_list<int, char, short>, rotl>, type_list<int, char, short>>());
 
 template <template <typename...> class Fn, typename B>
 struct bind_last_impl
@@ -99,13 +99,13 @@ struct append_impl<type_list<Old...>, type_list<New...>>
 template <typename TypeList, typename... Tx>
 using append = typename append_impl<TypeList, Tx...>::type;
 
-// static_assert(std::is_same<append<type_list<>, int>, type_list<int>>(), "");
-// static_assert(std::is_same<append<type_list<int>, int>, type_list<int,int>>(), "");
+// static_assert(std::is_same<append<type_list<>, int>, type_list<int>>());
+// static_assert(std::is_same<append<type_list<int>, int>, type_list<int,int>>());
 
 template <size_t Idx, typename TypeList, typename T>
 using append_n = for_n<Idx, TypeList, bind_last<append, T>::template type>;
 
-// static_assert(std::is_same<append_n<3, type_list<char>, int>, type_list<char, int, int, int>>(), "");
-// static_assert(std::is_same<append_n<5, type_list<char>, int>, type_list<char, int, int, int, int, int>>(), "");
+// static_assert(std::is_same<append_n<3, type_list<char>, int>, type_list<char, int, int, int>>());
+// static_assert(std::is_same<append_n<5, type_list<char>, int>, type_list<char, int, int, int, int, int>>());
 
 #endif // HETEROGENEOUS_META_H

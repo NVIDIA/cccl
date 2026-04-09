@@ -95,8 +95,8 @@ void TestCountingIteratorCopyConstructor()
   ASSERT_EQUAL(*iter0, *d_iter);
 }
 DECLARE_UNITTEST(TestCountingIteratorCopyConstructor);
-static_assert(cuda::std::is_trivially_copy_constructible<thrust::counting_iterator<int>>::value, "");
-static_assert(cuda::std::is_trivially_copyable<thrust::counting_iterator<int>>::value, "");
+static_assert(cuda::std::is_trivially_copy_constructible<thrust::counting_iterator<int>>::value);
+static_assert(cuda::std::is_trivially_copyable<thrust::counting_iterator<int>>::value);
 
 void TestCountingIteratorIncrement()
 {

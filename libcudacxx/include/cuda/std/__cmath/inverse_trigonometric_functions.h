@@ -356,7 +356,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 [[nodiscard]] _CCCL_API inline __promote_t<_A1, _A2> atan2(_A1 __x, _A2 __y) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;
-  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>), "");
+  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>) );
   return ::cuda::std::atan2((__result_type) __x, (__result_type) __y);
 }
 

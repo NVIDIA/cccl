@@ -87,7 +87,7 @@ int main(int, char**)
 {
   test_index_type_combo<SpanCtorTest>();
 #if TEST_STD_VER >= 2020
-  static_assert(test_index_type_combo<SpanCtorTest>(), "");
+  static_assert(test_index_type_combo<SpanCtorTest>());
 #endif // TEST_STD_VER >= 2020
 
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
@@ -119,16 +119,16 @@ int main(int, char**)
                 "extents constructible from illegal arguments");
 
   // index_type is not nothrow constructible
-  static_assert(cuda::std::is_convertible<IntType, unsigned char>::value, "");
-  static_assert(cuda::std::is_convertible<const IntType&, unsigned char>::value, "");
-  static_assert(!cuda::std::is_nothrow_constructible<unsigned char, const IntType&>::value, "");
+  static_assert(cuda::std::is_convertible<IntType, unsigned char>::value);
+  static_assert(cuda::std::is_convertible<const IntType&, unsigned char>::value);
+  static_assert(!cuda::std::is_nothrow_constructible<unsigned char, const IntType&>::value);
   static_assert(!cuda::std::is_constructible<cuda::std::dextents<unsigned char, 2>, cuda::std::span<IntType, 2>>::value,
                 "");
 
   // convertible from non-const to index_type but not  from const
-  static_assert(cuda::std::is_convertible<IntTypeNC, int>::value, "");
-  static_assert(!cuda::std::is_convertible<const IntTypeNC&, int>::value, "");
-  static_assert(cuda::std::is_nothrow_constructible<int, IntTypeNC>::value, "");
-  static_assert(!cuda::std::is_constructible<cuda::std::dextents<int, 2>, cuda::std::span<IntTypeNC, 2>>::value, "");
+  static_assert(cuda::std::is_convertible<IntTypeNC, int>::value);
+  static_assert(!cuda::std::is_convertible<const IntTypeNC&, int>::value);
+  static_assert(cuda::std::is_nothrow_constructible<int, IntTypeNC>::value);
+  static_assert(!cuda::std::is_constructible<cuda::std::dextents<int, 2>, cuda::std::span<IntTypeNC, 2>>::value);
   return 0;
 }

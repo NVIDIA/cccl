@@ -28,7 +28,7 @@ struct with_reference
     return upstream;
   }
 };
-static_assert(cuda::__has_forwarded_resource<with_reference, Upstream>, "");
+static_assert(cuda::__has_forwarded_resource<with_reference, Upstream>);
 
 struct with_const_reference
 {
@@ -37,7 +37,7 @@ struct with_const_reference
     return upstream;
   }
 };
-static_assert(cuda::__has_forwarded_resource<with_const_reference, Upstream>, "");
+static_assert(cuda::__has_forwarded_resource<with_const_reference, Upstream>);
 
 struct with_value
 {
@@ -46,7 +46,7 @@ struct with_value
     return Upstream{};
   }
 };
-static_assert(cuda::__has_forwarded_resource<with_value, Upstream>, "");
+static_assert(cuda::__has_forwarded_resource<with_value, Upstream>);
 
 struct with_const_value
 {
@@ -55,7 +55,7 @@ struct with_const_value
     return Upstream{};
   }
 };
-static_assert(cuda::__has_forwarded_resource<with_const_value, Upstream>, "");
+static_assert(cuda::__has_forwarded_resource<with_const_value, Upstream>);
 
 struct Convertible
 {
@@ -72,7 +72,7 @@ struct with_conversion
     return Convertible{};
   }
 };
-static_assert(!cuda::__has_forwarded_resource<with_conversion, Upstream>, "");
+static_assert(!cuda::__has_forwarded_resource<with_conversion, Upstream>);
 
 struct with_get_reference
 {
@@ -81,7 +81,7 @@ struct with_get_reference
     return upstream;
   }
 };
-static_assert(cuda::__has_forwarded_resource<with_get_reference, Upstream>, "");
+static_assert(cuda::__has_forwarded_resource<with_get_reference, Upstream>);
 
 struct with_get_conversion
 {
@@ -90,7 +90,7 @@ struct with_get_conversion
     return Convertible{};
   }
 };
-static_assert(!cuda::__has_forwarded_resource<with_get_conversion, Upstream>, "");
+static_assert(!cuda::__has_forwarded_resource<with_get_conversion, Upstream>);
 } // namespace has_forwarded_resource
 
 namespace forward_property
@@ -115,8 +115,8 @@ struct upstream_with_valueless_property
 {
   friend constexpr void get_property(const upstream_with_valueless_property&, prop) {}
 };
-static_assert(cuda::has_property<derived_plain<upstream_with_valueless_property>, prop>, "");
-static_assert(!cuda::has_property<derived_plain<upstream_with_valueless_property>, prop_with_value>, "");
+static_assert(cuda::has_property<derived_plain<upstream_with_valueless_property>, prop>);
+static_assert(!cuda::has_property<derived_plain<upstream_with_valueless_property>, prop_with_value>);
 
 struct upstream_with_stateful_property
 {
@@ -125,8 +125,8 @@ struct upstream_with_stateful_property
     return 42;
   }
 };
-static_assert(!cuda::has_property<derived_plain<upstream_with_stateful_property>, prop>, "");
-static_assert(cuda::has_property<derived_plain<upstream_with_stateful_property>, prop_with_value>, "");
+static_assert(!cuda::has_property<derived_plain<upstream_with_stateful_property>, prop>);
+static_assert(cuda::has_property<derived_plain<upstream_with_stateful_property>, prop_with_value>);
 
 struct upstream_with_both_properties
 {
@@ -136,8 +136,8 @@ struct upstream_with_both_properties
     return 42;
   }
 };
-static_assert(cuda::has_property<derived_plain<upstream_with_both_properties>, prop>, "");
-static_assert(cuda::has_property<derived_plain<upstream_with_both_properties>, prop_with_value>, "");
+static_assert(cuda::has_property<derived_plain<upstream_with_both_properties>, prop>);
+static_assert(cuda::has_property<derived_plain<upstream_with_both_properties>, prop_with_value>);
 
 struct derived_override : public cuda::forward_property<derived_override, upstream_with_both_properties>
 {
@@ -168,7 +168,7 @@ struct derived_with_converstin_upstream_resource
     return convertible_to_upstream{};
   }
 };
-static_assert(!cuda::has_property<derived_with_converstin_upstream_resource, prop_with_value>, "");
+static_assert(!cuda::has_property<derived_with_converstin_upstream_resource, prop_with_value>);
 
 __host__ __device__ constexpr bool test_stateful()
 {
@@ -186,6 +186,6 @@ __host__ __device__ constexpr bool test_stateful()
 int main(int, char**)
 {
   forward_property::test_stateful();
-  static_assert(forward_property::test_stateful(), "");
+  static_assert(forward_property::test_stateful());
   return 0;
 }

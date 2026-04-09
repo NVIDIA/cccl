@@ -69,7 +69,7 @@ template <class ToMDS,
           cuda::std::enable_if_t<!constructible, int> = 0>
 __host__ __device__ constexpr void test_conversion_impl(FromMDS)
 {
-  static_assert(!cuda::std::is_constructible<ToMDS, FromMDS>::value, "");
+  static_assert(!cuda::std::is_constructible<ToMDS, FromMDS>::value);
 }
 template <class ToMDS,
           class FromMDS,
@@ -112,20 +112,20 @@ __host__ __device__ constexpr void test_conversion_impl(FromMDS from_mds)
   test_equality_with_handle(to_mds, from_mds);
   test_equality_with_mapping(to_mds, from_mds);
   test_equality_with_accessor(to_mds, from_mds);
-  static_assert(!cuda::std::is_convertible<FromMDS, ToMDS>::value, "");
+  static_assert(!cuda::std::is_convertible<FromMDS, ToMDS>::value);
 }
 
 template <class ToMDS, class FromMDS>
 __host__ __device__ constexpr void test_conversion(FromMDS from_mds)
 {
   // check some requirements, to see we didn't screw up our test layouts/accessors
-  static_assert(cuda::std::copyable<typename ToMDS::mapping_type>, "");
-  static_assert(cuda::std::equality_comparable<typename ToMDS::mapping_type>, "");
-  static_assert(cuda::std::is_nothrow_move_constructible<typename ToMDS::mapping_type>::value, "");
-  static_assert(cuda::std::is_nothrow_move_assignable<typename ToMDS::mapping_type>::value, "");
-  static_assert(cuda::std::is_nothrow_swappable<typename ToMDS::mapping_type>::value, "");
-  static_assert(mapping_requirements<typename ToMDS::mapping_type>, "");
-  static_assert(mapping_requirements<typename FromMDS::mapping_type>, "");
+  static_assert(cuda::std::copyable<typename ToMDS::mapping_type>);
+  static_assert(cuda::std::equality_comparable<typename ToMDS::mapping_type>);
+  static_assert(cuda::std::is_nothrow_move_constructible<typename ToMDS::mapping_type>::value);
+  static_assert(cuda::std::is_nothrow_move_assignable<typename ToMDS::mapping_type>::value);
+  static_assert(cuda::std::is_nothrow_swappable<typename ToMDS::mapping_type>::value);
+  static_assert(mapping_requirements<typename ToMDS::mapping_type>);
+  static_assert(mapping_requirements<typename FromMDS::mapping_type>);
 
   constexpr bool constructible =
     cuda::std::is_constructible<typename ToMDS::mapping_type, const typename FromMDS::mapping_type&>::value
@@ -252,10 +252,10 @@ template <bool constructible_constref_acc,
           class FromA>
 __host__ __device__ constexpr bool test(FromA from_acc)
 {
-  static_assert(cuda::std::copyable<ToA>, "");
-  static_assert(cuda::std::copyable<FromA>, "");
-  static_assert(cuda::std::is_constructible<ToA, const FromA&>::value == constructible_constref_acc, "");
-  static_assert(cuda::std::is_constructible<ToA, FromA>::value == constructible_nonconst_acc, "");
+  static_assert(cuda::std::copyable<ToA>);
+  static_assert(cuda::std::copyable<FromA>);
+  static_assert(cuda::std::is_constructible<ToA, const FromA&>::value == constructible_constref_acc);
+  static_assert(cuda::std::is_constructible<ToA, FromA>::value == constructible_nonconst_acc);
   static_assert(
     cuda::std::is_constructible<typename ToA::data_handle_type, const typename FromA::data_handle_type&>::value
       == constructible_constref_handle,
@@ -263,8 +263,8 @@ __host__ __device__ constexpr bool test(FromA from_acc)
   static_assert(cuda::std::is_constructible<typename ToA::data_handle_type, typename FromA::data_handle_type>::value
                   == constructible_nonconst_handle,
                 "");
-  static_assert(cuda::std::is_convertible<const FromA&, ToA>::value == convertible_constref_acc, "");
-  static_assert(cuda::std::is_convertible<FromA, ToA>::value == convertible_nonconst_acc, "");
+  static_assert(cuda::std::is_convertible<const FromA&, ToA>::value == convertible_constref_acc);
+  static_assert(cuda::std::is_convertible<FromA, ToA>::value == convertible_nonconst_acc);
   static_assert(
     cuda::std::is_convertible<const typename FromA::data_handle_type&, typename ToA::data_handle_type>::value
       == convertible_constref_handle,

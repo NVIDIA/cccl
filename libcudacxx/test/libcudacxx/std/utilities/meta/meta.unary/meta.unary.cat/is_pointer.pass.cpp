@@ -18,27 +18,27 @@
 template <class T>
 __host__ __device__ void test_is_pointer()
 {
-  static_assert(cuda::std::is_pointer<T>::value, "");
-  static_assert(cuda::std::is_pointer<const T>::value, "");
-  static_assert(cuda::std::is_pointer<volatile T>::value, "");
-  static_assert(cuda::std::is_pointer<const volatile T>::value, "");
-  static_assert(cuda::std::is_pointer_v<T>, "");
-  static_assert(cuda::std::is_pointer_v<const T>, "");
-  static_assert(cuda::std::is_pointer_v<volatile T>, "");
-  static_assert(cuda::std::is_pointer_v<const volatile T>, "");
+  static_assert(cuda::std::is_pointer<T>::value);
+  static_assert(cuda::std::is_pointer<const T>::value);
+  static_assert(cuda::std::is_pointer<volatile T>::value);
+  static_assert(cuda::std::is_pointer<const volatile T>::value);
+  static_assert(cuda::std::is_pointer_v<T>);
+  static_assert(cuda::std::is_pointer_v<const T>);
+  static_assert(cuda::std::is_pointer_v<volatile T>);
+  static_assert(cuda::std::is_pointer_v<const volatile T>);
 }
 
 template <class T>
 __host__ __device__ void test_is_not_pointer()
 {
-  static_assert(!cuda::std::is_pointer<T>::value, "");
-  static_assert(!cuda::std::is_pointer<const T>::value, "");
-  static_assert(!cuda::std::is_pointer<volatile T>::value, "");
-  static_assert(!cuda::std::is_pointer<const volatile T>::value, "");
-  static_assert(!cuda::std::is_pointer_v<T>, "");
-  static_assert(!cuda::std::is_pointer_v<const T>, "");
-  static_assert(!cuda::std::is_pointer_v<volatile T>, "");
-  static_assert(!cuda::std::is_pointer_v<const volatile T>, "");
+  static_assert(!cuda::std::is_pointer<T>::value);
+  static_assert(!cuda::std::is_pointer<const T>::value);
+  static_assert(!cuda::std::is_pointer<volatile T>::value);
+  static_assert(!cuda::std::is_pointer<const volatile T>::value);
+  static_assert(!cuda::std::is_pointer_v<T>);
+  static_assert(!cuda::std::is_pointer_v<const T>);
+  static_assert(!cuda::std::is_pointer_v<volatile T>);
+  static_assert(!cuda::std::is_pointer_v<const volatile T>);
 }
 
 class Empty

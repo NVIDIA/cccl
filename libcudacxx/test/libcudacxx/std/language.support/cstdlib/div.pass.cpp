@@ -22,21 +22,21 @@ using ILL = long long;
 __host__ __device__ constexpr cuda::std::div_t div_overload(I x, I y)
 {
   static_assert(cuda::std::is_same_v<cuda::std::div_t, decltype(cuda::std::div(I{}, I{}))>);
-  static_assert(noexcept(cuda::std::div(I{}, I{})), "");
+  static_assert(noexcept(cuda::std::div(I{}, I{})));
   return cuda::std::div(x, y);
 }
 
 __host__ __device__ constexpr cuda::std::ldiv_t div_overload(IL x, IL y)
 {
   static_assert(cuda::std::is_same_v<cuda::std::ldiv_t, decltype(cuda::std::ldiv(IL{}, IL{}))>);
-  static_assert(noexcept(cuda::std::ldiv(IL{}, IL{})), "");
+  static_assert(noexcept(cuda::std::ldiv(IL{}, IL{})));
   return cuda::std::ldiv(x, y);
 }
 
 __host__ __device__ constexpr cuda::std::lldiv_t div_overload(ILL x, ILL y)
 {
   static_assert(cuda::std::is_same_v<cuda::std::lldiv_t, decltype(cuda::std::lldiv(ILL{}, ILL{}))>);
-  static_assert(noexcept(cuda::std::lldiv(ILL{}, ILL{})), "");
+  static_assert(noexcept(cuda::std::lldiv(ILL{}, ILL{})));
   return cuda::std::lldiv(x, y);
 }
 
@@ -67,7 +67,7 @@ __host__ __device__ constexpr bool test_div(T zero_value)
   test_div(T{-20}, T{3}, T{-6}, T{-2}, zero_value);
   test_div(T{-20}, T{-3}, T{6}, T{-2}, zero_value);
 
-  static_assert(noexcept(cuda::std::div(T{}, T{})), "");
+  static_assert(noexcept(cuda::std::div(T{}, T{})));
   static_assert(cuda::std::is_same_v<Ret, decltype(cuda::std::div(T{}, T{}))>);
   static_assert(cuda::std::is_same_v<Ret, decltype(cuda::std::div(T{}, float{}))>);
   static_assert(cuda::std::is_same_v<Ret, decltype(cuda::std::div(float{}, T{}))>);
@@ -91,7 +91,7 @@ __host__ __device__ constexpr bool test(int zero_value)
 __global__ void test_global_kernel(int* zero_value)
 {
   test(*zero_value);
-  static_assert(test(0), "");
+  static_assert(test(0));
 }
 
 int main(int, char**)
@@ -99,7 +99,7 @@ int main(int, char**)
   volatile int zero_value = 0;
   assert(test(zero_value));
 
-  static_assert(test(0), "");
+  static_assert(test(0));
 
   return 0;
 }

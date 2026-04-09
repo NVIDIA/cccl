@@ -41,7 +41,7 @@ int main(int, char**)
 
   constexpr month January = cuda::std::chrono::January;
 
-  static_assert(test_constexpr(), "");
+  static_assert(test_constexpr());
 
   year_month_day ym{year{1234}, January, day{10}};
   for (int i = 0; i <= 10; ++i)

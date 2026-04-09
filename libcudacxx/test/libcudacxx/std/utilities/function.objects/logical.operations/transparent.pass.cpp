@@ -29,20 +29,20 @@ public:
 
 int main(int, char**)
 {
-  static_assert(!is_transparent<cuda::std::logical_and<int>>::value, "");
+  static_assert(!is_transparent<cuda::std::logical_and<int>>::value);
   // static_assert ( !is_transparent<cuda::std::logical_and<cuda::std::string>>::value, "" );
-  static_assert(is_transparent<cuda::std::logical_and<void>>::value, "");
-  static_assert(is_transparent<cuda::std::logical_and<>>::value, "");
+  static_assert(is_transparent<cuda::std::logical_and<void>>::value);
+  static_assert(is_transparent<cuda::std::logical_and<>>::value);
 
-  static_assert(!is_transparent<cuda::std::logical_or<int>>::value, "");
+  static_assert(!is_transparent<cuda::std::logical_or<int>>::value);
   // static_assert ( !is_transparent<cuda::std::logical_or<cuda::std::string>>::value, "" );
-  static_assert(is_transparent<cuda::std::logical_or<void>>::value, "");
-  static_assert(is_transparent<cuda::std::logical_or<>>::value, "");
+  static_assert(is_transparent<cuda::std::logical_or<void>>::value);
+  static_assert(is_transparent<cuda::std::logical_or<>>::value);
 
-  static_assert(!is_transparent<cuda::std::logical_not<int>>::value, "");
+  static_assert(!is_transparent<cuda::std::logical_not<int>>::value);
   // static_assert ( !is_transparent<cuda::std::logical_not<cuda::std::string>>::value, "" );
-  static_assert(is_transparent<cuda::std::logical_not<void>>::value, "");
-  static_assert(is_transparent<cuda::std::logical_not<>>::value, "");
+  static_assert(is_transparent<cuda::std::logical_not<void>>::value);
+  static_assert(is_transparent<cuda::std::logical_not<>>::value);
 
   return 0;
 }

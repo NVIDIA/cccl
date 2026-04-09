@@ -38,17 +38,17 @@ enum class E2 : unsigned char
 template <typename T>
 __host__ __device__ constexpr bool constexpr_test()
 {
-  static_assert(cuda::std::popcount(T(0)) == 0, "");
-  static_assert(cuda::std::popcount(T(1)) == 1, "");
-  static_assert(cuda::std::popcount(T(2)) == 1, "");
-  static_assert(cuda::std::popcount(T(3)) == 2, "");
-  static_assert(cuda::std::popcount(T(4)) == 1, "");
-  static_assert(cuda::std::popcount(T(5)) == 2, "");
-  static_assert(cuda::std::popcount(T(6)) == 2, "");
-  static_assert(cuda::std::popcount(T(7)) == 3, "");
-  static_assert(cuda::std::popcount(T(8)) == 1, "");
-  static_assert(cuda::std::popcount(T(9)) == 2, "");
-  static_assert(cuda::std::popcount(cuda::std::numeric_limits<T>::max()) == cuda::std::numeric_limits<T>::digits, "");
+  static_assert(cuda::std::popcount(T(0)) == 0);
+  static_assert(cuda::std::popcount(T(1)) == 1);
+  static_assert(cuda::std::popcount(T(2)) == 1);
+  static_assert(cuda::std::popcount(T(3)) == 2);
+  static_assert(cuda::std::popcount(T(4)) == 1);
+  static_assert(cuda::std::popcount(T(5)) == 2);
+  static_assert(cuda::std::popcount(T(6)) == 2);
+  static_assert(cuda::std::popcount(T(7)) == 3);
+  static_assert(cuda::std::popcount(T(8)) == 1);
+  static_assert(cuda::std::popcount(T(9)) == 2);
+  static_assert(cuda::std::popcount(cuda::std::numeric_limits<T>::max()) == cuda::std::numeric_limits<T>::digits);
 
   return true;
 }

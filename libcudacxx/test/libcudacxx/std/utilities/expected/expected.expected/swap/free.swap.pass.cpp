@@ -28,13 +28,13 @@ struct NotSwappable
 };
 __host__ __device__ void swap(NotSwappable&, NotSwappable&) = delete;
 
-static_assert(cuda::std::is_swappable_v<cuda::std::expected<int, int>>, "");
+static_assert(cuda::std::is_swappable_v<cuda::std::expected<int, int>>);
 
 // !is_swappable_v<T>
-static_assert(!cuda::std::is_swappable_v<cuda::std::expected<NotSwappable, int>>, "");
+static_assert(!cuda::std::is_swappable_v<cuda::std::expected<NotSwappable, int>>);
 
 // !is_swappable_v<E>
-static_assert(!cuda::std::is_swappable_v<cuda::std::expected<int, NotSwappable>>, "");
+static_assert(!cuda::std::is_swappable_v<cuda::std::expected<int, NotSwappable>>);
 
 struct NotMoveContructible
 {
@@ -43,10 +43,10 @@ struct NotMoveContructible
 };
 
 // !is_move_constructible_v<T>
-static_assert(!cuda::std::is_swappable_v<cuda::std::expected<NotMoveContructible, int>>, "");
+static_assert(!cuda::std::is_swappable_v<cuda::std::expected<NotMoveContructible, int>>);
 
 // !is_move_constructible_v<E>
-static_assert(!cuda::std::is_swappable_v<cuda::std::expected<int, NotMoveContructible>>, "");
+static_assert(!cuda::std::is_swappable_v<cuda::std::expected<int, NotMoveContructible>>);
 
 struct MoveMayThrow
 {
@@ -55,22 +55,22 @@ struct MoveMayThrow
 };
 
 // !is_nothrow_move_constructible_v<T> && is_nothrow_move_constructible_v<E>
-static_assert(cuda::std::is_swappable_v<cuda::std::expected<MoveMayThrow, int>>, "");
+static_assert(cuda::std::is_swappable_v<cuda::std::expected<MoveMayThrow, int>>);
 
 // is_nothrow_move_constructible_v<T> && !is_nothrow_move_constructible_v<E>
-static_assert(cuda::std::is_swappable_v<cuda::std::expected<int, MoveMayThrow>>, "");
+static_assert(cuda::std::is_swappable_v<cuda::std::expected<int, MoveMayThrow>>);
 
 // !is_nothrow_move_constructible_v<T> && !is_nothrow_move_constructible_v<E>
-static_assert(!cuda::std::is_swappable_v<cuda::std::expected<MoveMayThrow, MoveMayThrow>>, "");
+static_assert(!cuda::std::is_swappable_v<cuda::std::expected<MoveMayThrow, MoveMayThrow>>);
 
 // Test noexcept
-static_assert(cuda::std::is_nothrow_swappable_v<cuda::std::expected<int, int>>, "");
+static_assert(cuda::std::is_nothrow_swappable_v<cuda::std::expected<int, int>>);
 
 // !is_nothrow_move_constructible_v<T>
-static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<MoveMayThrow, int>>, "");
+static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<MoveMayThrow, int>>);
 
 // !is_nothrow_move_constructible_v<E>
-static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<int, MoveMayThrow>>, "");
+static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<int, MoveMayThrow>>);
 
 struct SwapMayThrow
 {
@@ -78,10 +78,10 @@ struct SwapMayThrow
 };
 
 // !is_nothrow_swappable_v<T>
-static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<SwapMayThrow, int>>, "");
+static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<SwapMayThrow, int>>);
 
 // !is_nothrow_swappable_v<E>
-static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<int, SwapMayThrow>>, "");
+static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<int, SwapMayThrow>>);
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {

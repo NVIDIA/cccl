@@ -30,7 +30,6 @@ Checks:
   - '-modernize-use-nullptr'
   - '-modernize-return-braced-init-list'
   - '-modernize-use-auto'
-  - '-modernize-unary-static-assert'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #

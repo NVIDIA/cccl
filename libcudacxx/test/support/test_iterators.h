@@ -75,7 +75,7 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
-static_assert(cuda::std::output_iterator<cpp17_output_iterator<int*>, int>, "");
+static_assert(cuda::std::output_iterator<cpp17_output_iterator<int*>, int>);
 
 // This iterator meets C++20's Cpp17InputIterator requirements, as described
 // in Table 89 ([input.iterators]).
@@ -143,9 +143,9 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
-static_assert(cuda::std::input_or_output_iterator<cpp17_input_iterator<int*>>, "");
-static_assert(cuda::std::indirectly_readable<cpp17_input_iterator<int*>>, "");
-static_assert(cuda::std::input_iterator<cpp17_input_iterator<int*>>, "");
+static_assert(cuda::std::input_or_output_iterator<cpp17_input_iterator<int*>>);
+static_assert(cuda::std::indirectly_readable<cpp17_input_iterator<int*>>);
+static_assert(cuda::std::input_iterator<cpp17_input_iterator<int*>>);
 
 template <class It>
 class forward_iterator
@@ -218,7 +218,7 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
-static_assert(cuda::std::forward_iterator<forward_iterator<int*>>, "");
+static_assert(cuda::std::forward_iterator<forward_iterator<int*>>);
 
 template <class It>
 class bidirectional_iterator
@@ -295,7 +295,7 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
-static_assert(cuda::std::bidirectional_iterator<bidirectional_iterator<int*>>, "");
+static_assert(cuda::std::bidirectional_iterator<bidirectional_iterator<int*>>);
 
 template <class It>
 class random_access_iterator
@@ -422,7 +422,7 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
-static_assert(cuda::std::random_access_iterator<random_access_iterator<int*>>, "");
+static_assert(cuda::std::random_access_iterator<random_access_iterator<int*>>);
 
 template <class It>
 class cpp20_random_access_iterator
@@ -559,7 +559,7 @@ public:
   void operator,(T const&) = delete;
 };
 
-static_assert(cuda::std::random_access_iterator<cpp20_random_access_iterator<int*>>, "");
+static_assert(cuda::std::random_access_iterator<cpp20_random_access_iterator<int*>>);
 
 template <class It>
 class contiguous_iterator
@@ -700,8 +700,8 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
-static_assert(cuda::std::random_access_iterator<contiguous_iterator<int*>>, "");
-static_assert(cuda::std::contiguous_iterator<contiguous_iterator<int*>>, "");
+static_assert(cuda::std::random_access_iterator<contiguous_iterator<int*>>);
+static_assert(cuda::std::contiguous_iterator<contiguous_iterator<int*>>);
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
@@ -1100,7 +1100,7 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
-static_assert(cuda::std::input_iterator<cpp20_input_iterator<int*>>, "");
+static_assert(cuda::std::input_iterator<cpp20_input_iterator<int*>>);
 
 template <class, class = void>
 struct iter_value_or_void;
@@ -1157,7 +1157,7 @@ public:
   void operator,(T const&) = delete;
 };
 
-static_assert(cuda::std::output_iterator<cpp20_output_iterator<int*>, int>, "");
+static_assert(cuda::std::output_iterator<cpp20_output_iterator<int*>, int>);
 
 // Iterator adaptor that counts the number of times the iterator has had a successor/predecessor
 // operation called. Has two recorders:
@@ -1989,9 +1989,9 @@ struct ProxyIterator : ProxyIteratorBase<Base>
   }
 };
 
-static_assert(cuda::std::indirectly_readable<ProxyIterator<int*>>, "");
-static_assert(cuda::std::indirectly_writable<ProxyIterator<int*>, Proxy<int>>, "");
-static_assert(cuda::std::indirectly_writable<ProxyIterator<int*>, Proxy<int&>>, "");
+static_assert(cuda::std::indirectly_readable<ProxyIterator<int*>>);
+static_assert(cuda::std::indirectly_writable<ProxyIterator<int*>, Proxy<int>>);
+static_assert(cuda::std::indirectly_writable<ProxyIterator<int*>, Proxy<int&>>);
 
 template <class BaseSent>
 struct ProxySentinel
@@ -2166,6 +2166,6 @@ public:
     return x.iter_ >= y.iter_;
   }
 };
-static_assert(cuda::std::random_access_iterator<advance_only_iterator>, "");
+static_assert(cuda::std::random_access_iterator<advance_only_iterator>);
 
 #endif // SUPPORT_TEST_ITERATORS_H

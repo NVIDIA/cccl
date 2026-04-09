@@ -25,7 +25,7 @@ template <typename T>
 __host__ __device__ void test_sqrt(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::sqrt(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::sqrt(T{})), ret>);
 
   assert(eq(cuda::std::sqrt(val), T(8.0)));
   assert(eq(cuda::std::sqrt(T(0.0)), T(0.0)));
@@ -48,7 +48,7 @@ template <typename T>
 __host__ __device__ void test_cbrt(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::cbrt(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::cbrt(T{})), ret>);
 
   assert(eq(cuda::std::cbrt(val), T(2)));
   assert(eq(cuda::std::cbrt(T(0.0)), T(0.0)));

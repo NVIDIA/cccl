@@ -92,47 +92,47 @@ __host__ __device__ constexpr void test_no_implicit_conversion()
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   // Sanity check that one static to dynamic conversion works
-  static_assert(cuda::std::is_constructible<mapping_t<int, D>, mapping_t<int, 5>>::value, "");
-  static_assert(cuda::std::is_convertible<mapping_t<int, 5>, mapping_t<int, D>>::value, "");
+  static_assert(cuda::std::is_constructible<mapping_t<int, D>, mapping_t<int, 5>>::value);
+  static_assert(cuda::std::is_convertible<mapping_t<int, 5>, mapping_t<int, D>>::value);
 
   // Check that dynamic to static conversion only works explicitly
-  static_assert(cuda::std::is_constructible<mapping_t<int, 5>, mapping_t<int, D>>::value, "");
-  static_assert(!cuda::std::is_convertible<mapping_t<int, D>, mapping_t<int, 5>>::value, "");
+  static_assert(cuda::std::is_constructible<mapping_t<int, 5>, mapping_t<int, D>>::value);
+  static_assert(!cuda::std::is_convertible<mapping_t<int, D>, mapping_t<int, 5>>::value);
 
   // Sanity check that one static to dynamic conversion works
-  static_assert(cuda::std::is_constructible<mapping_t<int, D, 7>, mapping_t<int, 5, 7>>::value, "");
-  static_assert(cuda::std::is_convertible<mapping_t<int, 5, 7>, mapping_t<int, D, 7>>::value, "");
+  static_assert(cuda::std::is_constructible<mapping_t<int, D, 7>, mapping_t<int, 5, 7>>::value);
+  static_assert(cuda::std::is_convertible<mapping_t<int, 5, 7>, mapping_t<int, D, 7>>::value);
 
   // Check that dynamic to static conversion only works explicitly
-  static_assert(cuda::std::is_constructible<mapping_t<int, 5, 7>, mapping_t<int, D, 7>>::value, "");
-  static_assert(!cuda::std::is_convertible<mapping_t<int, D, 7>, mapping_t<int, 5, 7>>::value, "");
+  static_assert(cuda::std::is_constructible<mapping_t<int, 5, 7>, mapping_t<int, D, 7>>::value);
+  static_assert(!cuda::std::is_convertible<mapping_t<int, D, 7>, mapping_t<int, 5, 7>>::value);
 
   // Sanity check that smaller index_type to larger index_type conversion works
-  static_assert(cuda::std::is_constructible<mapping_t<size_t, 5>, mapping_t<int, 5>>::value, "");
-  static_assert(cuda::std::is_convertible<mapping_t<int, 5>, mapping_t<size_t, 5>>::value, "");
+  static_assert(cuda::std::is_constructible<mapping_t<size_t, 5>, mapping_t<int, 5>>::value);
+  static_assert(cuda::std::is_convertible<mapping_t<int, 5>, mapping_t<size_t, 5>>::value);
 
   // Check that larger index_type to smaller index_type conversion works explicitly only
-  static_assert(cuda::std::is_constructible<mapping_t<int, 5>, mapping_t<size_t, 5>>::value, "");
-  static_assert(!cuda::std::is_convertible<mapping_t<size_t, 5>, mapping_t<int, 5>>::value, "");
+  static_assert(cuda::std::is_constructible<mapping_t<int, 5>, mapping_t<size_t, 5>>::value);
+  static_assert(!cuda::std::is_convertible<mapping_t<size_t, 5>, mapping_t<int, 5>>::value);
 }
 
 __host__ __device__ constexpr void test_rank_mismatch()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
-  static_assert(!cuda::std::is_constructible<mapping_t<int, D>, mapping_t<int>>::value, "");
-  static_assert(!cuda::std::is_constructible<mapping_t<int>, mapping_t<int, D, D>>::value, "");
-  static_assert(!cuda::std::is_constructible<mapping_t<int, D>, mapping_t<int, D, D>>::value, "");
-  static_assert(!cuda::std::is_constructible<mapping_t<int, D, D, D>, mapping_t<int, D, D>>::value, "");
+  static_assert(!cuda::std::is_constructible<mapping_t<int, D>, mapping_t<int>>::value);
+  static_assert(!cuda::std::is_constructible<mapping_t<int>, mapping_t<int, D, D>>::value);
+  static_assert(!cuda::std::is_constructible<mapping_t<int, D>, mapping_t<int, D, D>>::value);
+  static_assert(!cuda::std::is_constructible<mapping_t<int, D, D, D>, mapping_t<int, D, D>>::value);
 }
 
 __host__ __device__ constexpr void test_static_extent_mismatch()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
-  static_assert(!cuda::std::is_constructible<mapping_t<int, D, 5>, mapping_t<int, D, 4>>::value, "");
-  static_assert(!cuda::std::is_constructible<mapping_t<int, 5>, mapping_t<int, 4>>::value, "");
-  static_assert(!cuda::std::is_constructible<mapping_t<int, 5, D>, mapping_t<int, 4, D>>::value, "");
+  static_assert(!cuda::std::is_constructible<mapping_t<int, D, 5>, mapping_t<int, D, 4>>::value);
+  static_assert(!cuda::std::is_constructible<mapping_t<int, 5>, mapping_t<int, 4>>::value);
+  static_assert(!cuda::std::is_constructible<mapping_t<int, 5, D>, mapping_t<int, 4, D>>::value);
 }
 
 __host__ __device__ constexpr bool test()
@@ -150,6 +150,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

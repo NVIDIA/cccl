@@ -146,16 +146,16 @@ template <>
 inline constexpr bool enable_borrowed_range<BorrowedRange> = true;
 } // namespace cuda::std::ranges
 
-static_assert(!cuda::std::ranges::view<BorrowedRange>, "");
-static_assert(cuda::std::ranges::borrowed_range<BorrowedRange>, "");
+static_assert(!cuda::std::ranges::view<BorrowedRange>);
+static_assert(cuda::std::ranges::borrowed_range<BorrowedRange>);
 
 using BorrowedView = cuda::std::ranges::empty_view<int>;
-static_assert(cuda::std::ranges::view<BorrowedView>, "");
-static_assert(cuda::std::ranges::borrowed_range<BorrowedView>, "");
+static_assert(cuda::std::ranges::view<BorrowedView>);
+static_assert(cuda::std::ranges::borrowed_range<BorrowedView>);
 
 using NonBorrowedView = cuda::std::ranges::single_view<int>;
-static_assert(cuda::std::ranges::view<NonBorrowedView>, "");
-static_assert(!cuda::std::ranges::borrowed_range<NonBorrowedView>, "");
+static_assert(cuda::std::ranges::view<NonBorrowedView>);
+static_assert(!cuda::std::ranges::borrowed_range<NonBorrowedView>);
 
 template <class Range>
 inline constexpr bool simple_view =

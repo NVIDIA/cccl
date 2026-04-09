@@ -44,7 +44,7 @@ __host__ __device__ constexpr bool test()
 {
   return false;
 }
-static_assert(test<View>(), "");
+static_assert(test<View>());
 } // namespace subsume_range
 
 #ifndef __NVCOMPILER // nvbug 3885350
@@ -60,7 +60,7 @@ __host__ __device__ constexpr bool test()
 {
   return false;
 }
-static_assert(test<View>(), "");
+static_assert(test<View>());
 } // namespace subsume_movable
 #endif
 

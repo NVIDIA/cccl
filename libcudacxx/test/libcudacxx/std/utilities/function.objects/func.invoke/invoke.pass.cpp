@@ -128,11 +128,11 @@ __host__ __device__ void test_b12(Functor&& f)
 
   // Check that the deduced return type of invoke is what is expected.
   using DeducedReturnType = decltype(cuda::std::invoke(func_ptr, cuda::std::forward<Functor>(f), cuda::std::move(arg)));
-  static_assert((cuda::std::is_same<DeducedReturnType, Expect>::value), "");
+  static_assert((cuda::std::is_same<DeducedReturnType, Expect>::value));
 
   // Check that result_of_t matches Expect.
   using ResultOfReturnType = typename cuda::std::result_of<ClassFunc && (Functor&&, NonCopyable&&)>::type;
-  static_assert((cuda::std::is_same<ResultOfReturnType, Expect>::value), "");
+  static_assert((cuda::std::is_same<ResultOfReturnType, Expect>::value));
 
   // Run invoke and check the return value.
   DeducedReturnType ret = cuda::std::invoke(func_ptr, cuda::std::forward<Functor>(f), cuda::std::move(arg));
@@ -148,11 +148,11 @@ __host__ __device__ void test_b34(Functor&& f)
 
   // Check that the deduced return type of invoke is what is expected.
   using DeducedReturnType = decltype(cuda::std::invoke(func_ptr, cuda::std::forward<Functor>(f)));
-  static_assert((cuda::std::is_same<DeducedReturnType, Expect>::value), "");
+  static_assert((cuda::std::is_same<DeducedReturnType, Expect>::value));
 
   // Check that result_of_t matches Expect.
   using ResultOfReturnType = typename cuda::std::result_of<ClassFunc && (Functor&&)>::type;
-  static_assert((cuda::std::is_same<ResultOfReturnType, Expect>::value), "");
+  static_assert((cuda::std::is_same<ResultOfReturnType, Expect>::value));
 
   // Run invoke and check the return value.
   DeducedReturnType ret = cuda::std::invoke(func_ptr, cuda::std::forward<Functor>(f));
@@ -166,11 +166,11 @@ __host__ __device__ void test_b5(Functor&& f)
 
   // Check that the deduced return type of invoke is what is expected.
   using DeducedReturnType = decltype(cuda::std::invoke(cuda::std::forward<Functor>(f), cuda::std::move(arg)));
-  static_assert((cuda::std::is_same<DeducedReturnType, Expect>::value), "");
+  static_assert((cuda::std::is_same<DeducedReturnType, Expect>::value));
 
   // Check that result_of_t matches Expect.
   using ResultOfReturnType = typename cuda::std::result_of<Functor && (NonCopyable&&)>::type;
-  static_assert((cuda::std::is_same<ResultOfReturnType, Expect>::value), "");
+  static_assert((cuda::std::is_same<ResultOfReturnType, Expect>::value));
 
   // Run invoke and check the return value.
   DeducedReturnType ret = cuda::std::invoke(cuda::std::forward<Functor>(f), cuda::std::move(arg));
@@ -367,23 +367,23 @@ __host__ __device__ void noexcept_test()
     unused(obj); // suppress unused warning
     CopyThrows arg;
     unused(arg); // suppress unused warning
-    static_assert(noexcept(cuda::std::invoke(obj)), "");
+    static_assert(noexcept(cuda::std::invoke(obj)));
 #if !TEST_COMPILER(NVHPC)
-    static_assert(!noexcept(cuda::std::invoke(obj, arg)), "");
+    static_assert(!noexcept(cuda::std::invoke(obj, arg)));
 #endif // TEST_COMPILER(NVHPC)
-    static_assert(noexcept(cuda::std::invoke(obj, cuda::std::move(arg))), "");
+    static_assert(noexcept(cuda::std::invoke(obj, cuda::std::move(arg))));
   }
 #if !TEST_COMPILER(NVHPC)
   {
     ThrowsCallable obj;
     unused(obj); // suppress unused warning
-    static_assert(!noexcept(cuda::std::invoke(obj)), "");
+    static_assert(!noexcept(cuda::std::invoke(obj)));
   }
 #endif // TEST_COMPILER(NVHPC)
   {
     MemberObj obj{42};
     unused(obj); // suppress unused warning.
-    static_assert(noexcept(cuda::std::invoke(&MemberObj::x, obj)), "");
+    static_assert(noexcept(cuda::std::invoke(&MemberObj::x, obj)));
   }
 }
 

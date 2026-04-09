@@ -24,7 +24,7 @@ template <class It>
 __host__ __device__ constexpr void
 check_next_n(It it, typename cuda::std::iterator_traits<It>::difference_type n, It result)
 {
-  static_assert(cuda::std::is_same<decltype(cuda::std::next(it, n)), It>::value, "");
+  static_assert(cuda::std::is_same<decltype(cuda::std::next(it, n)), It>::value);
   assert(cuda::std::next(it, n) == result);
 
   It (*next_ptr)(It, typename cuda::std::iterator_traits<It>::difference_type) = cuda::std::next;
@@ -34,7 +34,7 @@ check_next_n(It it, typename cuda::std::iterator_traits<It>::difference_type n, 
 template <class It>
 __host__ __device__ constexpr void check_next_1(It it, It result)
 {
-  static_assert(cuda::std::is_same<decltype(cuda::std::next(it)), It>::value, "");
+  static_assert(cuda::std::is_same<decltype(cuda::std::next(it)), It>::value);
   assert(cuda::std::next(it) == result);
 }
 
@@ -61,6 +61,6 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
   return 0;
 }

@@ -36,29 +36,29 @@ using nullptr_t = decltype(nullptr);
 template <class T, class U>
 __host__ __device__ void CheckConvertibleTo()
 {
-  static_assert(convertible_to<T, U>, "");
-  static_assert(convertible_to<const T, U>, "");
-  static_assert(convertible_to<T, const U>, "");
-  static_assert(convertible_to<const T, const U>, "");
+  static_assert(convertible_to<T, U>);
+  static_assert(convertible_to<const T, U>);
+  static_assert(convertible_to<T, const U>);
+  static_assert(convertible_to<const T, const U>);
 }
 
 template <class T, class U>
 __host__ __device__ void CheckNotConvertibleTo()
 {
-  static_assert(!convertible_to<T, U>, "");
-  static_assert(!convertible_to<const T, U>, "");
-  static_assert(!convertible_to<T, const U>, "");
-  static_assert(!convertible_to<const T, const U>, "");
+  static_assert(!convertible_to<T, U>);
+  static_assert(!convertible_to<const T, U>);
+  static_assert(!convertible_to<T, const U>);
+  static_assert(!convertible_to<const T, const U>);
 }
 
 template <class T, class U>
 __host__ __device__ void CheckIsConvertibleButNotConvertibleTo()
 {
   // Sanity check T is either implicitly xor explicitly convertible to U.
-  static_assert(cuda::std::is_convertible_v<T, U>, "");
-  static_assert(cuda::std::is_convertible_v<const T, U>, "");
-  static_assert(cuda::std::is_convertible_v<T, const U>, "");
-  static_assert(cuda::std::is_convertible_v<const T, const U>, "");
+  static_assert(cuda::std::is_convertible_v<T, U>);
+  static_assert(cuda::std::is_convertible_v<const T, U>);
+  static_assert(cuda::std::is_convertible_v<T, const U>);
+  static_assert(cuda::std::is_convertible_v<const T, const U>);
   CheckNotConvertibleTo<T, U>();
 }
 
@@ -200,9 +200,9 @@ int main(int, char**)
   CheckConvertibleTo<Function, Function*>();
   CheckConvertibleTo<Function, Function* const>();
 
-  static_assert(convertible_to<Function, Function&&>, "");
+  static_assert(convertible_to<Function, Function&&>);
 #if !TEST_COMPILER(GCC)
-  static_assert(!convertible_to<Function, NoexceptFunction&&>, "");
+  static_assert(!convertible_to<Function, NoexceptFunction&&>);
 #endif // !TEST_COMPILER(GCC)
 
   CheckNotConvertibleTo<Function, Array>();
@@ -236,14 +236,14 @@ int main(int, char**)
   CheckNotConvertibleTo<Function*, char*>();
 
   // Non-referenceable function type
-  static_assert(!convertible_to<ConstFunction, Function>, "");
-  static_assert(!convertible_to<ConstFunction, Function*>, "");
-  static_assert(!convertible_to<ConstFunction, Function&>, "");
-  static_assert(!convertible_to<ConstFunction, Function&&>, "");
-  static_assert(!convertible_to<Function*, ConstFunction>, "");
-  static_assert(!convertible_to<Function&, ConstFunction>, "");
-  static_assert(!convertible_to<ConstFunction, ConstFunction>, "");
-  static_assert(!convertible_to<ConstFunction, void>, "");
+  static_assert(!convertible_to<ConstFunction, Function>);
+  static_assert(!convertible_to<ConstFunction, Function*>);
+  static_assert(!convertible_to<ConstFunction, Function&>);
+  static_assert(!convertible_to<ConstFunction, Function&&>);
+  static_assert(!convertible_to<Function*, ConstFunction>);
+  static_assert(!convertible_to<Function&, ConstFunction>);
+  static_assert(!convertible_to<ConstFunction, ConstFunction>);
+  static_assert(!convertible_to<ConstFunction, void>);
 
   // NoexceptFunction
   CheckNotConvertibleTo<NoexceptFunction, void>();
@@ -256,8 +256,8 @@ int main(int, char**)
   CheckConvertibleTo<NoexceptFunction, Function*>();
   CheckConvertibleTo<NoexceptFunction, Function* const>();
 
-  static_assert(convertible_to<NoexceptFunction, Function&&>, "");
-  static_assert(convertible_to<NoexceptFunction, NoexceptFunction&&>, "");
+  static_assert(convertible_to<NoexceptFunction, Function&&>);
+  static_assert(convertible_to<NoexceptFunction, NoexceptFunction&&>);
 
   CheckNotConvertibleTo<NoexceptFunction, Array>();
   CheckNotConvertibleTo<NoexceptFunction, Array&>();
@@ -305,37 +305,37 @@ int main(int, char**)
   CheckNotConvertibleTo<Array, NoexceptFunction*>();
   CheckNotConvertibleTo<Array, Array>();
 
-  static_assert(!convertible_to<Array, Array&>, "");
-  static_assert(convertible_to<Array, const Array&>, "");
+  static_assert(!convertible_to<Array, Array&>);
+  static_assert(convertible_to<Array, const Array&>);
 
-  static_assert(!convertible_to<const Array, Array&>, "");
-  static_assert(convertible_to<const Array, const Array&>, "");
+  static_assert(!convertible_to<const Array, Array&>);
+  static_assert(convertible_to<const Array, const Array&>);
 #if TEST_STD_VER > 2017 // MSVC has a bug where lets the conversion happen
-  static_assert(!convertible_to<Array, volatile Array&>, "");
-  static_assert(!convertible_to<Array, const volatile Array&>, "");
+  static_assert(!convertible_to<Array, volatile Array&>);
+  static_assert(!convertible_to<Array, const volatile Array&>);
 #endif // TEST_STD_VER > 2017
 
-  static_assert(convertible_to<Array, Array&&>, "");
-  static_assert(convertible_to<Array, const Array&&>, "");
-  static_assert(convertible_to<Array, volatile Array&&>, "");
-  static_assert(convertible_to<Array, const volatile Array&&>, "");
-  static_assert(convertible_to<const Array, const Array&&>, "");
-  static_assert(!convertible_to<Array&, Array&&>, "");
-  static_assert(!convertible_to<Array&&, Array&>, "");
+  static_assert(convertible_to<Array, Array&&>);
+  static_assert(convertible_to<Array, const Array&&>);
+  static_assert(convertible_to<Array, volatile Array&&>);
+  static_assert(convertible_to<Array, const volatile Array&&>);
+  static_assert(convertible_to<const Array, const Array&&>);
+  static_assert(!convertible_to<Array&, Array&&>);
+  static_assert(!convertible_to<Array&&, Array&>);
 
   CheckNotConvertibleTo<Array, char>();
   CheckNotConvertibleTo<Array, char&>();
 
-  static_assert(convertible_to<Array, char*>, "");
-  static_assert(convertible_to<Array, const char*>, "");
-  static_assert(convertible_to<Array, char* const>, "");
-  static_assert(convertible_to<Array, char* const volatile>, "");
+  static_assert(convertible_to<Array, char*>);
+  static_assert(convertible_to<Array, const char*>);
+  static_assert(convertible_to<Array, char* const>);
+  static_assert(convertible_to<Array, char* const volatile>);
 
-  static_assert(!convertible_to<const Array, char*>, "");
-  static_assert(convertible_to<const Array, const char*>, "");
+  static_assert(!convertible_to<const Array, char*>);
+  static_assert(convertible_to<const Array, const char*>);
 
-  static_assert(!convertible_to<char[42][42], char*>, "");
-  static_assert(!convertible_to<char[][1], char*>, "");
+  static_assert(!convertible_to<char[42][42], char*>);
+  static_assert(!convertible_to<char[][1], char*>);
 
   // Array&
   CheckNotConvertibleTo<Array&, void>();
@@ -347,21 +347,21 @@ int main(int, char**)
   CheckNotConvertibleTo<Array&, NoexceptFunction*>();
   CheckNotConvertibleTo<Array&, Array>();
 
-  static_assert(convertible_to<Array&, Array&>, "");
-  static_assert(convertible_to<Array&, const Array&>, "");
-  static_assert(!convertible_to<const Array&, Array&>, "");
-  static_assert(convertible_to<const Array&, const Array&>, "");
+  static_assert(convertible_to<Array&, Array&>);
+  static_assert(convertible_to<Array&, const Array&>);
+  static_assert(!convertible_to<const Array&, Array&>);
+  static_assert(convertible_to<const Array&, const Array&>);
 
   CheckNotConvertibleTo<Array&, char>();
   CheckNotConvertibleTo<Array&, char&>();
 
-  static_assert(convertible_to<Array&, char*>, "");
-  static_assert(convertible_to<Array&, const char*>, "");
-  static_assert(!convertible_to<const Array&, char*>, "");
-  static_assert(convertible_to<const Array&, const char*>, "");
+  static_assert(convertible_to<Array&, char*>);
+  static_assert(convertible_to<Array&, const char*>);
+  static_assert(!convertible_to<const Array&, char*>);
+  static_assert(convertible_to<const Array&, const char*>);
 
-  static_assert(convertible_to<Array, StringType>, "");
-  static_assert(convertible_to<char (&)[], StringType>, "");
+  static_assert(convertible_to<Array, StringType>);
+  static_assert(convertible_to<char (&)[], StringType>);
 
   // char
   CheckNotConvertibleTo<char, void>();
@@ -376,10 +376,10 @@ int main(int, char**)
 
   CheckConvertibleTo<char, char>();
 
-  static_assert(!convertible_to<char, char&>, "");
-  static_assert(convertible_to<char, const char&>, "");
-  static_assert(!convertible_to<const char, char&>, "");
-  static_assert(convertible_to<const char, const char&>, "");
+  static_assert(!convertible_to<char, char&>);
+  static_assert(convertible_to<char, const char&>);
+  static_assert(!convertible_to<const char, char&>);
+  static_assert(convertible_to<const char, const char&>);
 
   CheckNotConvertibleTo<char, char*>();
 
@@ -396,10 +396,10 @@ int main(int, char**)
 
   CheckConvertibleTo<char&, char>();
 
-  static_assert(convertible_to<char&, char&>, "");
-  static_assert(convertible_to<char&, const char&>, "");
-  static_assert(!convertible_to<const char&, char&>, "");
-  static_assert(convertible_to<const char&, const char&>, "");
+  static_assert(convertible_to<char&, char&>);
+  static_assert(convertible_to<char&, const char&>);
+  static_assert(!convertible_to<const char&, char&>);
+  static_assert(convertible_to<const char&, const char&>);
 
   CheckNotConvertibleTo<char&, char*>();
 
@@ -417,21 +417,21 @@ int main(int, char**)
   CheckNotConvertibleTo<char*, char>();
   CheckNotConvertibleTo<char*, char&>();
 
-  static_assert(convertible_to<char*, char*>, "");
-  static_assert(convertible_to<char*, const char*>, "");
-  static_assert(!convertible_to<const char*, char*>, "");
-  static_assert(convertible_to<const char*, const char*>, "");
+  static_assert(convertible_to<char*, char*>);
+  static_assert(convertible_to<char*, const char*>);
+  static_assert(!convertible_to<const char*, char*>);
+  static_assert(convertible_to<const char*, const char*>);
 
   // NonCopyable
-  static_assert(convertible_to<NonCopyable&, NonCopyable&>, "");
-  static_assert(convertible_to<NonCopyable&, const NonCopyable&>, "");
-  static_assert(convertible_to<NonCopyable&, const volatile NonCopyable&>, "");
-  static_assert(convertible_to<NonCopyable&, volatile NonCopyable&>, "");
-  static_assert(convertible_to<const NonCopyable&, const NonCopyable&>, "");
-  static_assert(convertible_to<const NonCopyable&, const volatile NonCopyable&>, "");
-  static_assert(convertible_to<volatile NonCopyable&, const volatile NonCopyable&>, "");
-  static_assert(convertible_to<const volatile NonCopyable&, const volatile NonCopyable&>, "");
-  static_assert(!convertible_to<const NonCopyable&, NonCopyable&>, "");
+  static_assert(convertible_to<NonCopyable&, NonCopyable&>);
+  static_assert(convertible_to<NonCopyable&, const NonCopyable&>);
+  static_assert(convertible_to<NonCopyable&, const volatile NonCopyable&>);
+  static_assert(convertible_to<NonCopyable&, volatile NonCopyable&>);
+  static_assert(convertible_to<const NonCopyable&, const NonCopyable&>);
+  static_assert(convertible_to<const NonCopyable&, const volatile NonCopyable&>);
+  static_assert(convertible_to<volatile NonCopyable&, const volatile NonCopyable&>);
+  static_assert(convertible_to<const volatile NonCopyable&, const volatile NonCopyable&>);
+  static_assert(!convertible_to<const NonCopyable&, NonCopyable&>);
 
   // This test requires Access control SFINAE which we only have in C++11 or when
   // we are using the compiler builtin for convertible_to.
@@ -443,7 +443,7 @@ int main(int, char**)
   //    convertible_to<CannotInstantiate<int>*, CannotInstantiate<int>*>, "");
 
   // Test for PR13592
-  static_assert(!convertible_to<abstract, abstract>, "");
+  static_assert(!convertible_to<abstract, abstract>);
 
   CommonlyNotConvertibleTo<int>();
   CommonlyNotConvertibleTo<bool>();

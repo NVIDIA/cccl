@@ -80,18 +80,18 @@ int main(int, char**)
   */
   {
     // See bug #21157.
-    static_assert(!cuda::std::is_default_constructible<cuda::std::tuple<NoDefault>>(), "");
-    static_assert(!cuda::std::is_default_constructible<cuda::std::tuple<DefaultOnly, NoDefault>>(), "");
-    static_assert(!cuda::std::is_default_constructible<cuda::std::tuple<NoDefault, DefaultOnly, NoDefault>>(), "");
+    static_assert(!cuda::std::is_default_constructible<cuda::std::tuple<NoDefault>>());
+    static_assert(!cuda::std::is_default_constructible<cuda::std::tuple<DefaultOnly, NoDefault>>());
+    static_assert(!cuda::std::is_default_constructible<cuda::std::tuple<NoDefault, DefaultOnly, NoDefault>>());
   }
   {
-    static_assert(noexcept(cuda::std::tuple<NoExceptDefault>()), "");
-    static_assert(noexcept(cuda::std::tuple<NoExceptDefault, NoExceptDefault>()), "");
+    static_assert(noexcept(cuda::std::tuple<NoExceptDefault>()));
+    static_assert(noexcept(cuda::std::tuple<NoExceptDefault, NoExceptDefault>()));
 
 #if !TEST_COMPILER(NVHPC)
-    static_assert(!noexcept(cuda::std::tuple<ThrowingDefault, NoExceptDefault>()), "");
-    static_assert(!noexcept(cuda::std::tuple<NoExceptDefault, ThrowingDefault>()), "");
-    static_assert(!noexcept(cuda::std::tuple<ThrowingDefault, ThrowingDefault>()), "");
+    static_assert(!noexcept(cuda::std::tuple<ThrowingDefault, NoExceptDefault>()));
+    static_assert(!noexcept(cuda::std::tuple<NoExceptDefault, ThrowingDefault>()));
+    static_assert(!noexcept(cuda::std::tuple<ThrowingDefault, ThrowingDefault>()));
 #endif // !TEST_COMPILER(NVHPC)
   }
   {
@@ -123,7 +123,7 @@ int main(int, char**)
     protected:
       Derived() = default;
     };
-    static_assert(!cuda::std::is_default_constructible<cuda::std::tuple<Derived, int>>::value, "");
+    static_assert(!cuda::std::is_default_constructible<cuda::std::tuple<Derived, int>>::value);
   }
 
   return 0;

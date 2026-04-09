@@ -129,15 +129,15 @@ __host__ __device__ void test_T_assignment_noexcept()
   using namespace MetaHelpers;
   {
     using V = cuda::std::variant<Dummy, NoThrowT>;
-    static_assert(cuda::std::is_nothrow_assignable<V, int>::value, "");
+    static_assert(cuda::std::is_nothrow_assignable<V, int>::value);
   }
   {
     using V = cuda::std::variant<Dummy, ThrowsCtorT>;
-    static_assert(!cuda::std::is_nothrow_assignable<V, int>::value, "");
+    static_assert(!cuda::std::is_nothrow_assignable<V, int>::value);
   }
   {
     using V = cuda::std::variant<Dummy, ThrowsAssignT>;
-    static_assert(!cuda::std::is_nothrow_assignable<V, int>::value, "");
+    static_assert(!cuda::std::is_nothrow_assignable<V, int>::value);
   }
 }
 

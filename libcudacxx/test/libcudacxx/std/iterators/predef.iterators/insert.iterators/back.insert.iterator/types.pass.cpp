@@ -50,16 +50,16 @@ __host__ __device__ void test()
   C c;
   find_container<C> q(c);
   q.test();
-  static_assert((cuda::std::is_same<typename R::container_type, C>::value), "");
-  static_assert((cuda::std::is_same<typename R::value_type, void>::value), "");
+  static_assert((cuda::std::is_same<typename R::container_type, C>::value));
+  static_assert((cuda::std::is_same<typename R::value_type, void>::value));
 #if _CCCL_STD_VER < 2020
-  static_assert((cuda::std::is_same<typename R::difference_type, void>::value), "");
+  static_assert((cuda::std::is_same<typename R::difference_type, void>::value));
 #else // ^^^ _CCCL_STD_VER < 2020 ^^^ / vvv _CCCL_STD_VER >= 2020 vvv
-  static_assert((cuda::std::is_same<typename R::difference_type, cuda::std::ptrdiff_t>::value), "");
+  static_assert((cuda::std::is_same<typename R::difference_type, cuda::std::ptrdiff_t>::value));
 #endif // _CCCL_STD_VER < 2020
-  static_assert((cuda::std::is_same<typename R::reference, void>::value), "");
-  static_assert((cuda::std::is_same<typename R::pointer, void>::value), "");
-  static_assert((cuda::std::is_same<typename R::iterator_category, cuda::std::output_iterator_tag>::value), "");
+  static_assert((cuda::std::is_same<typename R::reference, void>::value));
+  static_assert((cuda::std::is_same<typename R::pointer, void>::value));
+  static_assert((cuda::std::is_same<typename R::iterator_category, cuda::std::output_iterator_tag>::value));
 }
 
 int main(int, char**)

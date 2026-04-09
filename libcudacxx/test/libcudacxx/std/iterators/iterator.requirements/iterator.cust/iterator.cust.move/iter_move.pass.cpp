@@ -231,19 +231,19 @@ __host__ __device__ constexpr bool test()
   assert(!noexcept(cuda::std::ranges::iter_move(some_union)));
 
   // Check noexcept-correctness
-  static_assert(noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithADL<true>>())), "");
-  static_assert(noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithoutADL<true>>())), "");
+  static_assert(noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithADL<true>>())));
+  static_assert(noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithoutADL<true>>())));
 // old GCC seems to fall over the chaining of the noexcept clauses here
 #if !TEST_COMPILER(GCC, <, 9)
-  static_assert(!noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithADL<false>>())), "");
-  static_assert(!noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithoutADL<false>>())), "");
+  static_assert(!noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithADL<false>>())));
+  static_assert(!noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithoutADL<false>>())));
 #endif // !TEST_COMPILER(GCC, <, 9)
 
   return true;
 }
 
-static_assert(!cuda::std::is_invocable_v<IterMoveT, int*, int*>, ""); // too many arguments
-static_assert(!cuda::std::is_invocable_v<IterMoveT, int>, "");
+static_assert(!cuda::std::is_invocable_v<IterMoveT, int*, int*>); // too many arguments
+static_assert(!cuda::std::is_invocable_v<IterMoveT, int>);
 
 #if TEST_STD_VER > 2017
 // Test ADL-proofing.
@@ -253,14 +253,14 @@ struct Holder
 {
   T t;
 };
-static_assert(cuda::std::is_invocable_v<IterMoveT, Holder<Incomplete>**>, "");
-static_assert(cuda::std::is_invocable_v<IterMoveT, Holder<Incomplete>**&>, "");
+static_assert(cuda::std::is_invocable_v<IterMoveT, Holder<Incomplete>**>);
+static_assert(cuda::std::is_invocable_v<IterMoveT, Holder<Incomplete>**&>);
 #endif
 
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

@@ -64,10 +64,10 @@ __host__ __device__ constexpr void test()
   const int pResN0[] = {-1, -4, -9, -16, -25}; // with negate
   const int mResN0[] = {-1, 3, -15, 105, -945};
   const unsigned sa  = sizeof(ia) / sizeof(ia[0]);
-  static_assert(sa == sizeof(pResI0) / sizeof(pResI0[0]), ""); // just to be sure
-  static_assert(sa == sizeof(mResI0) / sizeof(mResI0[0]), ""); // just to be sure
-  static_assert(sa == sizeof(pResN0) / sizeof(pResN0[0]), ""); // just to be sure
-  static_assert(sa == sizeof(mResN0) / sizeof(mResN0[0]), ""); // just to be sure
+  static_assert(sa == sizeof(pResI0) / sizeof(pResI0[0])); // just to be sure
+  static_assert(sa == sizeof(mResI0) / sizeof(mResI0[0])); // just to be sure
+  static_assert(sa == sizeof(pResN0) / sizeof(pResN0[0])); // just to be sure
+  static_assert(sa == sizeof(mResN0) / sizeof(mResN0[0])); // just to be sure
 
   for (unsigned int i = 0; i < sa; ++i)
   {
@@ -145,6 +145,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

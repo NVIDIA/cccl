@@ -139,7 +139,7 @@ private:
   int* base_            = nullptr;
   bool* minusWasCalled_ = nullptr;
 };
-static_assert(cuda::std::sized_sentinel_for<SizedSentinelForwardIter, SizedSentinelForwardIter>, "");
+static_assert(cuda::std::sized_sentinel_for<SizedSentinelForwardIter, SizedSentinelForwardIter>);
 
 struct ConvertibleForwardIter
 {
@@ -180,7 +180,7 @@ struct ConvertibleForwardIter
 };
 using ConvertibleForwardSubrange =
   cuda::std::ranges::subrange<ConvertibleForwardIter, int*, cuda::std::ranges::subrange_kind::unsized>;
-static_assert(cuda::std::is_convertible_v<ConvertibleForwardIter, int*>, "");
+static_assert(cuda::std::is_convertible_v<ConvertibleForwardIter, int*>);
 
 template <bool EnableConvertible>
 struct ConditionallyConvertibleBase

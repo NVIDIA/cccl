@@ -69,8 +69,8 @@ int main(int, char**)
     constexpr const char* p = "123456789";
     using MI                = cuda::std::move_iterator<const char*>;
     constexpr MI it1        = cuda::std::make_move_iterator(p);
-    static_assert(it1[0] == '1', "");
-    static_assert(it1[5] == '6', "");
+    static_assert(it1[0] == '1');
+    static_assert(it1[5] == '6');
   }
 
   // Ensure the `iter_move` customization point is being used.

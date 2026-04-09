@@ -138,7 +138,7 @@ public:
 template <class T, class U>
 void test_exception(optional<U>&& rhs)
 {
-  static_assert(!(cuda::std::is_convertible<optional<U>&&, optional<T>>::value), "");
+  static_assert(!(cuda::std::is_convertible<optional<U>&&, optional<T>>::value));
   try
   {
     optional<T> lhs(cuda::std::move(rhs));
@@ -162,7 +162,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
   {

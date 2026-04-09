@@ -61,17 +61,17 @@ __host__ __device__ constexpr void test_comparison_different_rank()
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   // sanity check same rank
-  static_assert(compare_layout_mappings(cuda::std::extents<T1, D>(5), cuda::std::extents<T2, D>(5)), "");
-  static_assert(compare_layout_mappings(cuda::std::extents<T1, 5>(), cuda::std::extents<T2, D>(5)), "");
-  static_assert(compare_layout_mappings(cuda::std::extents<T1, D>(5), cuda::std::extents<T2, 5>()), "");
-  static_assert(compare_layout_mappings(cuda::std::extents<T1, 5>(), cuda::std::extents<T2, 5>()), "");
+  static_assert(compare_layout_mappings(cuda::std::extents<T1, D>(5), cuda::std::extents<T2, D>(5)));
+  static_assert(compare_layout_mappings(cuda::std::extents<T1, 5>(), cuda::std::extents<T2, D>(5)));
+  static_assert(compare_layout_mappings(cuda::std::extents<T1, D>(5), cuda::std::extents<T2, 5>()));
+  static_assert(compare_layout_mappings(cuda::std::extents<T1, 5>(), cuda::std::extents<T2, 5>()));
 
   // not equality comparable when rank is not the same
-  static_assert(compare_layout_mappings(cuda::std::extents<T1>(), cuda::std::extents<T2, D>(1)).does_not_match(), "");
-  static_assert(compare_layout_mappings(cuda::std::extents<T1>(), cuda::std::extents<T2, 1>()).does_not_match(), "");
+  static_assert(compare_layout_mappings(cuda::std::extents<T1>(), cuda::std::extents<T2, D>(1)).does_not_match());
+  static_assert(compare_layout_mappings(cuda::std::extents<T1>(), cuda::std::extents<T2, 1>()).does_not_match());
 
-  static_assert(compare_layout_mappings(cuda::std::extents<T1, D>(1), cuda::std::extents<T2>()).does_not_match(), "");
-  static_assert(compare_layout_mappings(cuda::std::extents<T1, 1>(), cuda::std::extents<T2>()).does_not_match(), "");
+  static_assert(compare_layout_mappings(cuda::std::extents<T1, D>(1), cuda::std::extents<T2>()).does_not_match());
+  static_assert(compare_layout_mappings(cuda::std::extents<T1, 1>(), cuda::std::extents<T2>()).does_not_match());
 
   static_assert(
     compare_layout_mappings(cuda::std::extents<T1, D>(5), cuda::std::extents<T2, D, D>(5, 5)).does_not_match(), "");
@@ -133,6 +133,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

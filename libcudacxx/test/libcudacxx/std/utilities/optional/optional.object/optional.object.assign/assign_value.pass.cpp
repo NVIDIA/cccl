@@ -24,8 +24,8 @@ using cuda::std::optional;
 template <class T, class Arg = T, bool Expect = true>
 __host__ __device__ void assert_assignable()
 {
-  static_assert(cuda::std::is_assignable<optional<T>&, Arg>::value == Expect, "");
-  static_assert(!cuda::std::is_assignable<const optional<T>&, Arg>::value, "");
+  static_assert(cuda::std::is_assignable<optional<T>&, Arg>::value == Expect);
+  static_assert(!cuda::std::is_assignable<const optional<T>&, Arg>::value);
 }
 
 struct MismatchType
@@ -358,7 +358,7 @@ int main(int, char**)
 #endif // TEST_HAS_EXCEPTIONS()
 
 #if !TEST_COMPILER(GCC, <, 7)
-  static_assert(pr38638(3) == 5, "");
+  static_assert(pr38638(3) == 5);
 #endif // !TEST_COMPILER(GCC, <, 7)
 
   return 0;

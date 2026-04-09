@@ -30,7 +30,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <ptrdiff_t __least_max_value = INT_MAX>
 class counting_semaphore : public __atomic_semaphore<thread_scope_system, __least_max_value>
 {
-  static_assert(__least_max_value <= __atomic_semaphore<thread_scope_system, __least_max_value>::max(), "");
+  static_assert(__least_max_value <= __atomic_semaphore<thread_scope_system, __least_max_value>::max());
 
 public:
   _CCCL_API constexpr counting_semaphore(ptrdiff_t __count = 0)

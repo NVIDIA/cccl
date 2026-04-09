@@ -38,7 +38,7 @@ struct CtorAssertsT
   __host__ __device__ constexpr CtorAssertsT(T)
       : defaulted(false)
   {
-    static_assert(!cuda::std::is_same<T, AssertOn>::value, "");
+    static_assert(!cuda::std::is_same<T, AssertOn>::value);
   }
 };
 
@@ -50,7 +50,7 @@ struct AllowAssertT
   template <class U>
   __host__ __device__ constexpr AllowAssertT(U)
   {
-    static_assert(!cuda::std::is_same<U, AssertT>::value, "");
+    static_assert(!cuda::std::is_same<U, AssertT>::value);
   }
 };
 
@@ -93,7 +93,7 @@ struct BlowsUpOnConstCopy
   BlowsUpOnConstCopy() = default;
   __host__ __device__ constexpr BlowsUpOnConstCopy(BlowsUpOnConstCopy const&)
   {
-    static_assert(!cuda::std::is_same<T, T>::value, "");
+    static_assert(!cuda::std::is_same<T, T>::value);
   }
   BlowsUpOnConstCopy(BlowsUpOnConstCopy&)  = default;
   BlowsUpOnConstCopy(BlowsUpOnConstCopy&&) = default;

@@ -54,12 +54,12 @@ constexpr bool trv_mv_asgn = cuda::std::is_trivially_move_assignable<T>::value;
 template <class MDS, bool default_ctor, bool copy_ctor, bool move_ctor, bool destr, bool copy_assign, bool move_assign>
 __host__ __device__ constexpr void check_triviality()
 {
-  static_assert(trv_df_ctor<MDS> == default_ctor, "");
-  static_assert(trv_cp_ctor<MDS> == copy_ctor, "");
-  static_assert(trv_mv_ctor<MDS> == move_ctor, "");
-  static_assert(trv_dstruct<MDS> == destr, "");
-  static_assert(trv_cp_asgn<MDS> == copy_assign, "");
-  static_assert(trv_mv_asgn<MDS> == move_assign, "");
+  static_assert(trv_df_ctor<MDS> == default_ctor);
+  static_assert(trv_cp_ctor<MDS> == copy_ctor);
+  static_assert(trv_mv_ctor<MDS> == move_ctor);
+  static_assert(trv_dstruct<MDS> == destr);
+  static_assert(trv_cp_asgn<MDS> == copy_assign);
+  static_assert(trv_mv_asgn<MDS> == move_assign);
 }
 
 template <class T, class E, class L, class A>
@@ -162,9 +162,9 @@ int main(int, char**)
   test();
   test_evil();
 
-  static_assert(test(), "");
+  static_assert(test());
 #if TEST_STD_VER >= 2020
-  static_assert(test_evil(), "");
+  static_assert(test_evil());
 #endif // TEST_STD_VER >= 2020
 
   return 0;

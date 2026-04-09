@@ -25,7 +25,7 @@ using cuda::std::optional;
 
 struct Y
 {};
-static_assert(cuda::std::is_nothrow_move_assignable<optional<Y>>::value, "");
+static_assert(cuda::std::is_nothrow_move_assignable<optional<Y>>::value);
 
 struct ThrowsMove
 {
@@ -41,7 +41,7 @@ struct ThrowsMove
     return *this;
   }
 };
-static_assert(!cuda::std::is_nothrow_move_assignable<optional<ThrowsMove>>::value, "");
+static_assert(!cuda::std::is_nothrow_move_assignable<optional<ThrowsMove>>::value);
 
 struct ThrowsMoveAssign
 {
@@ -58,7 +58,7 @@ struct ThrowsMoveAssign
   }
 };
 
-static_assert(!cuda::std::is_nothrow_move_assignable<optional<ThrowsMoveAssign>>::value, "");
+static_assert(!cuda::std::is_nothrow_move_assignable<optional<ThrowsMoveAssign>>::value);
 
 struct NoThrowMove
 {
@@ -74,7 +74,7 @@ struct NoThrowMove
     return *this;
   }
 };
-static_assert(cuda::std::is_nothrow_move_assignable<optional<NoThrowMove>>::value, "");
+static_assert(cuda::std::is_nothrow_move_assignable<optional<NoThrowMove>>::value);
 
 #if TEST_HAS_EXCEPTIONS()
 struct X
@@ -114,7 +114,7 @@ struct X
 void test_exceptions()
 {
   {
-    static_assert(!cuda::std::is_nothrow_move_assignable<optional<X>>::value, "");
+    static_assert(!cuda::std::is_nothrow_move_assignable<optional<X>>::value);
     X::alive()     = 0;
     X::throw_now() = false;
     optional<X> opt{};
@@ -136,7 +136,7 @@ void test_exceptions()
   }
   assert(X::alive() == 0);
   {
-    static_assert(!cuda::std::is_nothrow_move_assignable<optional<X>>::value, "");
+    static_assert(!cuda::std::is_nothrow_move_assignable<optional<X>>::value);
     X::throw_now() = false;
     optional<X> opt(X{});
     optional<X> input(X{});
@@ -165,7 +165,7 @@ __host__ __device__ constexpr void test()
   cuda::std::remove_reference_t<T> val{42};
   cuda::std::remove_reference_t<T> other_val{1337};
 
-  static_assert(cuda::std::is_nothrow_move_assignable<optional<T>>::value, "");
+  static_assert(cuda::std::is_nothrow_move_assignable<optional<T>>::value);
   // empty move assigned to empty
   {
     optional<T> opt{};
@@ -225,7 +225,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   {
     using T = TestTypes::TestType;

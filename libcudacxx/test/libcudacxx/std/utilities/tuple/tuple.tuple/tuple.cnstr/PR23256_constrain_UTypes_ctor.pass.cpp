@@ -41,7 +41,7 @@ struct UnconstrainedCtor
   __host__ __device__ constexpr UnconstrainedCtor(T value) noexcept(noexcept(value_ = value))
       : value_(static_cast<int>(value))
   {
-    static_assert(cuda::std::is_same<int, T>::value, "");
+    static_assert(cuda::std::is_same<int, T>::value);
   }
 };
 
@@ -57,7 +57,7 @@ struct ExplicitUnconstrainedCtor
   __host__ __device__ constexpr explicit ExplicitUnconstrainedCtor(T value) noexcept(noexcept(value_ = value))
       : value_(static_cast<int>(value))
   {
-    static_assert(cuda::std::is_same<int, T>::value, "");
+    static_assert(cuda::std::is_same<int, T>::value);
   }
 };
 
@@ -66,10 +66,10 @@ int main(int, char**)
   using A         = UnconstrainedCtor;
   using ExplicitA = ExplicitUnconstrainedCtor;
   {
-    static_assert(cuda::std::is_copy_constructible<cuda::std::tuple<A>>::value, "");
-    static_assert(cuda::std::is_move_constructible<cuda::std::tuple<A>>::value, "");
-    static_assert(cuda::std::is_copy_constructible<cuda::std::tuple<ExplicitA>>::value, "");
-    static_assert(cuda::std::is_move_constructible<cuda::std::tuple<ExplicitA>>::value, "");
+    static_assert(cuda::std::is_copy_constructible<cuda::std::tuple<A>>::value);
+    static_assert(cuda::std::is_move_constructible<cuda::std::tuple<A>>::value);
+    static_assert(cuda::std::is_copy_constructible<cuda::std::tuple<ExplicitA>>::value);
+    static_assert(cuda::std::is_move_constructible<cuda::std::tuple<ExplicitA>>::value);
   }
   // cuda::std::allocator not supported
   /*

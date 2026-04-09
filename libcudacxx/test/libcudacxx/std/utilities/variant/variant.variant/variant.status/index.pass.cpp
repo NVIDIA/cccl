@@ -42,7 +42,7 @@ int main(int, char**)
   {
     using V = cuda::std::variant<int, long>;
     constexpr V v;
-    static_assert(v.index() == 0, "");
+    static_assert(v.index() == 0);
   }
   {
     using V = cuda::std::variant<int, long>;
@@ -52,7 +52,7 @@ int main(int, char**)
   {
     using V = cuda::std::variant<int, long>;
     constexpr V v(cuda::std::in_place_index<1>);
-    static_assert(v.index() == 1, "");
+    static_assert(v.index() == 1);
   }
 #if defined(_LIBCUDACXX_HAS_STRING)
   {

@@ -83,7 +83,7 @@ __host__ __device__ constexpr bool tests()
     C0 l     = {};
     C0 r     = {};
     l.swap(r);
-    static_assert(noexcept(l.swap(r)), "");
+    static_assert(noexcept(l.swap(r)));
   }
 
   return true;
@@ -92,6 +92,6 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
   return 0;
 }

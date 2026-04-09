@@ -21,14 +21,14 @@ template <class T>
 __host__ __device__ constexpr void test_constexpr()
 {
   constexpr cuda::std::complex<T> c1;
-  static_assert(c1.real() == 0, "");
-  static_assert(c1.imag() == 0, "");
+  static_assert(c1.real() == 0);
+  static_assert(c1.imag() == 0);
   constexpr cuda::std::complex<T> c2(3);
-  static_assert(c2.real() == 3, "");
-  static_assert(c2.imag() == 0, "");
+  static_assert(c2.real() == 3);
+  static_assert(c2.imag() == 0);
   constexpr cuda::std::complex<T> c3(3, 4);
-  static_assert(c3.real() == 3, "");
-  static_assert(c3.imag() == 4, "");
+  static_assert(c3.real() == 3);
+  static_assert(c3.imag() == 4);
 }
 
 template <class T>
@@ -88,10 +88,10 @@ int main(int, char**)
   test_nonconstexpr<__nv_bfloat16>();
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
-  static_assert(test<float>(), "");
-  static_assert(test<double>(), "");
+  static_assert(test<float>());
+  static_assert(test<double>());
 #if _CCCL_HAS_LONG_DOUBLE()
-  static_assert(test<long double>(), "");
+  static_assert(test<long double>());
 #endif // _CCCL_HAS_LONG_DOUBLE()
   test_constexpr<int>();
 

@@ -30,7 +30,7 @@ struct NonTDtor
     ++count();
   }
 };
-static_assert(!cuda::std::is_trivially_destructible<NonTDtor>::value, "");
+static_assert(!cuda::std::is_trivially_destructible<NonTDtor>::value);
 
 struct NonTDtor1
 {
@@ -41,25 +41,25 @@ struct NonTDtor1
     ++count();
   }
 };
-static_assert(!cuda::std::is_trivially_destructible<NonTDtor1>::value, "");
+static_assert(!cuda::std::is_trivially_destructible<NonTDtor1>::value);
 
 struct TDtor
 {
   __host__ __device__ TDtor(const TDtor&) {} // non-trivial copy
   ~TDtor() = default;
 };
-static_assert(!cuda::std::is_trivially_copy_constructible<TDtor>::value, "");
-static_assert(cuda::std::is_trivially_destructible<TDtor>::value, "");
+static_assert(!cuda::std::is_trivially_copy_constructible<TDtor>::value);
+static_assert(cuda::std::is_trivially_destructible<TDtor>::value);
 
 int main(int, char**)
 {
   {
     using V = cuda::std::variant<int, long, TDtor>;
-    static_assert(cuda::std::is_trivially_destructible<V>::value, "");
+    static_assert(cuda::std::is_trivially_destructible<V>::value);
   }
   {
     using V = cuda::std::variant<NonTDtor, int, NonTDtor1>;
-    static_assert(!cuda::std::is_trivially_destructible<V>::value, "");
+    static_assert(!cuda::std::is_trivially_destructible<V>::value);
     {
       V v(cuda::std::in_place_index<0>);
       assert(NonTDtor::count() == 0);

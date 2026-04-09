@@ -43,12 +43,12 @@ struct Dummy
 int main(int, char**)
 {
   // Test that the ::value member does not exist
-  static_assert(has_value<cuda::std::tuple<int> const>(), "");
-  static_assert(has_value<cuda::std::pair<int, long> volatile>(), "");
-  static_assert(!has_value<int>(), "");
-  static_assert(!has_value<const int>(), "");
-  static_assert(!has_value<volatile void>(), "");
-  static_assert(!has_value<const volatile cuda::std::tuple<int>&>(), "");
+  static_assert(has_value<cuda::std::tuple<int> const>());
+  static_assert(has_value<cuda::std::pair<int, long> volatile>());
+  static_assert(!has_value<int>());
+  static_assert(!has_value<const int>());
+  static_assert(!has_value<volatile void>());
+  static_assert(!has_value<const volatile cuda::std::tuple<int>&>());
 
   return 0;
 }

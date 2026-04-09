@@ -32,8 +32,8 @@ int main(int, char**)
     unused(t); // Prevent unused warning
 
     // Test that tuple<> handles noexcept properly
-    static_assert(cuda::std::is_nothrow_constructible<T, int, int>(), "");
-    static_assert(cuda::std::is_nothrow_constructible<NothrowConstruct, int>(), "");
+    static_assert(cuda::std::is_nothrow_constructible<T, int, int>());
+    static_assert(cuda::std::is_nothrow_constructible<NothrowConstruct, int>());
   }
 
   return 0;

@@ -58,15 +58,15 @@ int main(int, char**)
   test_op_or_eq<64>();
   test_op_or_eq<65>();
   test_op_or_eq<1000>(); // not in constexpr because of constexpr evaluation step limits
-  static_assert(test_op_or_eq<0>(), "");
-  static_assert(test_op_or_eq<1>(), "");
-  static_assert(test_op_or_eq<31>(), "");
-  static_assert(test_op_or_eq<32>(), "");
-  static_assert(test_op_or_eq<33>(), "");
-  static_assert(test_op_or_eq<63>(), "");
-  static_assert(test_op_or_eq<64>(), "");
-  static_assert(test_op_or_eq<65, 0, 6>(), "");
-  static_assert(test_op_or_eq<65, 6>(), "");
+  static_assert(test_op_or_eq<0>());
+  static_assert(test_op_or_eq<1>());
+  static_assert(test_op_or_eq<31>());
+  static_assert(test_op_or_eq<32>());
+  static_assert(test_op_or_eq<33>());
+  static_assert(test_op_or_eq<63>());
+  static_assert(test_op_or_eq<64>());
+  static_assert(test_op_or_eq<65, 0, 6>());
+  static_assert(test_op_or_eq<65, 6>());
 
   return 0;
 }

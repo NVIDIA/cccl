@@ -115,7 +115,7 @@ struct TernaryOp
 // -- If sizeof...(T) is zero, there shall be no member type.
 __host__ __device__ void test_bullet_one()
 {
-  static_assert(no_common_type<>::value, "");
+  static_assert(no_common_type<>::value);
 }
 
 // (4.2)
@@ -124,13 +124,13 @@ __host__ __device__ void test_bullet_one()
 //    common_type_t<T0, T0>; otherwise there shall be no member type.
 __host__ __device__ void test_bullet_two()
 {
-  static_assert((cuda::std::is_same<cuda::std::common_type<void>::type, void>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<int>::type, int>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<int const>::type, int>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<int volatile[]>::type, int volatile*>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<void (&)()>::type, void (*)()>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::common_type<void>::type, void>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<int>::type, int>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<int const>::type, int>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<int volatile[]>::type, int volatile*>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<void (&)()>::type, void (*)()>::value));
 
-  static_assert((no_common_type<X<double>>::value), "");
+  static_assert((no_common_type<X<double>>::value));
 }
 
 template <class T, class U, class Expect>
@@ -138,9 +138,9 @@ __host__ __device__ void test_bullet_three_one_imp()
 {
   using DT = typename cuda::std::decay<T>::type;
   using DU = typename cuda::std::decay<U>::type;
-  static_assert((!cuda::std::is_same<T, DT>::value || !cuda::std::is_same<U, DU>::value), "");
-  static_assert((cuda::std::is_same<typename cuda::std::common_type<T, U>::type, Expect>::value), "");
-  static_assert((cuda::std::is_same<typename cuda::std::common_type<U, T>::type, Expect>::value), "");
+  static_assert((!cuda::std::is_same<T, DT>::value || !cuda::std::is_same<U, DU>::value));
+  static_assert((cuda::std::is_same<typename cuda::std::common_type<T, U>::type, Expect>::value));
+  static_assert((cuda::std::is_same<typename cuda::std::common_type<U, T>::type, Expect>::value));
   static_assert((cuda::std::is_same<typename cuda::std::common_type<T, U>::type,
                                     typename cuda::std::common_type<DT, DU>::type>::value),
                 "");
@@ -166,22 +166,22 @@ __host__ __device__ void test_bullet_three_one()
   {
     using T1 = const ::S<long>;
     using T2 = long;
-    static_assert((no_common_type<T1, T2>::value), "");
-    static_assert((no_common_type<T2, T1>::value), "");
+    static_assert((no_common_type<T1, T2>::value));
+    static_assert((no_common_type<T2, T1>::value));
   }
   // Test that the ternary operator is not applied when the types are the
   // same.
   {
     using T1     = const void;
     using Expect = void;
-    static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, Expect>::value), "");
+    static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, Expect>::value));
     static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, cuda::std::common_type<T1>::type>::value),
                   "");
   }
   {
     using T1     = int const[];
     using Expect = int const*;
-    static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, Expect>::value), "");
+    static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, Expect>::value));
     static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, cuda::std::common_type<T1>::type>::value),
                   "");
   }
@@ -205,8 +205,8 @@ __host__ __device__ void test_bullet_three_three()
     using T1     = int const*;
     using T2     = int*;
     using Expect = TernaryOp<T1, T2>::type;
-    static_assert((cuda::std::is_same<cuda::std::common_type<T1, T2>::type, Expect>::value), "");
-    static_assert((cuda::std::is_same<cuda::std::common_type<T2, T1>::type, Expect>::value), "");
+    static_assert((cuda::std::is_same<cuda::std::common_type<T1, T2>::type, Expect>::value));
+    static_assert((cuda::std::is_same<cuda::std::common_type<T2, T1>::type, Expect>::value));
   }
   // Test that there is no ::type member when the ternary op is ill-formed
 #if !TEST_COMPILER(MSVC)
@@ -214,22 +214,22 @@ __host__ __device__ void test_bullet_three_three()
   {
     using T1 = int;
     using T2 = void;
-    static_assert((no_common_type<T1, T2>::value), "");
-    static_assert((no_common_type<T2, T1>::value), "");
+    static_assert((no_common_type<T1, T2>::value));
+    static_assert((no_common_type<T2, T1>::value));
   }
 #endif // !TEST_COMPILER(MSVC)
   {
     using T1 = int;
     using T2 = X<int>;
-    static_assert((no_common_type<T1, T2>::value), "");
-    static_assert((no_common_type<T2, T1>::value), "");
+    static_assert((no_common_type<T1, T2>::value));
+    static_assert((no_common_type<T2, T1>::value));
   }
   // Test that the ternary operator is not applied when the types are the
   // same.
   {
     using T1     = void;
     using Expect = void;
-    static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, Expect>::value), "");
+    static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, Expect>::value));
     static_assert((cuda::std::is_same<cuda::std::common_type<T1, T1>::type, cuda::std::common_type<T1>::type>::value),
                   "");
   }
@@ -251,8 +251,8 @@ __host__ __device__ void test_bullet_three_three()
 __host__ __device__ void test_bullet_three_four()
 {
 #if TEST_STD_VER >= 2020
-  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<int, bad_reference_wrapper<int>>, int>, "");
-  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, double>, double>, "");
+  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<int, bad_reference_wrapper<int>>, int>);
+  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, double>, double>);
   static_assert(cuda::std::is_same_v<cuda::std::common_type_t<const bad_reference_wrapper<double>, double>, double>,
                 "");
   static_assert(cuda::std::is_same_v<cuda::std::common_type_t<volatile bad_reference_wrapper<double>, double>, double>,
@@ -267,8 +267,8 @@ __host__ __device__ void test_bullet_three_four()
   static_assert(
     cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, const volatile double>, double>, "");
 
-  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>&, double>, double>, "");
-  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, double&>, double>, "");
+  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>&, double>, double>);
+  static_assert(cuda::std::is_same_v<cuda::std::common_type_t<bad_reference_wrapper<double>, double&>, double>);
 #endif
 }
 
@@ -282,10 +282,10 @@ __host__ __device__ void test_bullet_three_four()
 __host__ __device__ void test_bullet_four()
 {
   { // test that there is no ::type member
-    static_assert((no_common_type<int, E>::value), "");
-    static_assert((no_common_type<int, int, E>::value), "");
-    static_assert((no_common_type<int, int, E, int>::value), "");
-    static_assert((no_common_type<int, int, int, E>::value), "");
+    static_assert((no_common_type<int, E>::value));
+    static_assert((no_common_type<int, int, E>::value));
+    static_assert((no_common_type<int, int, E, int>::value));
+    static_assert((no_common_type<int, int, int, E>::value));
   }
 }
 
@@ -305,49 +305,49 @@ struct cuda::std::common_type<A, cuda::std::tuple<B>>
 
 int main(int, char**)
 {
-  static_assert((cuda::std::is_same<cuda::std::common_type<int>::type, int>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<char>::type, char>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type_t<int>, int>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type_t<char>, char>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::common_type<int>::type, int>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<char>::type, char>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type_t<int>, int>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type_t<char>, char>::value));
 
-  static_assert((cuda::std::is_same<cuda::std::common_type<int>::type, int>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<const int>::type, int>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<volatile int>::type, int>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<const volatile int>::type, int>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::common_type<int>::type, int>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<const int>::type, int>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<volatile int>::type, int>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<const volatile int>::type, int>::value));
 
-  static_assert((cuda::std::is_same<cuda::std::common_type<int, int>::type, int>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<int, const int>::type, int>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::common_type<int, int>::type, int>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<int, const int>::type, int>::value));
 
-  static_assert((cuda::std::is_same<cuda::std::common_type<long, const int>::type, long>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<const long, int>::type, long>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<long, volatile int>::type, long>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<volatile long, int>::type, long>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<const long, const int>::type, long>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::common_type<long, const int>::type, long>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<const long, int>::type, long>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<long, volatile int>::type, long>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<volatile long, int>::type, long>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<const long, const int>::type, long>::value));
 
-  static_assert((cuda::std::is_same<cuda::std::common_type<double, char>::type, double>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<short, char>::type, int>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type_t<double, char>, double>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type_t<short, char>, int>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::common_type<double, char>::type, double>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<short, char>::type, int>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type_t<double, char>, double>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type_t<short, char>, int>::value));
 
-  static_assert((cuda::std::is_same<cuda::std::common_type<double, char, long long>::type, double>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<unsigned, char, long long>::type, long long>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type_t<double, char, long long>, double>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type_t<unsigned, char, long long>, long long>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::common_type<double, char, long long>::type, double>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<unsigned, char, long long>::type, long long>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type_t<double, char, long long>, double>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type_t<unsigned, char, long long>, long long>::value));
 
-  static_assert((cuda::std::is_same<cuda::std::common_type<void>::type, void>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<const void>::type, void>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<volatile void>::type, void>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<const volatile void>::type, void>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::common_type<void>::type, void>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<const void>::type, void>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<volatile void>::type, void>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<const volatile void>::type, void>::value));
 
-  static_assert((cuda::std::is_same<cuda::std::common_type<void, const void>::type, void>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<const void, void>::type, void>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<void, volatile void>::type, void>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<volatile void, void>::type, void>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<const void, const void>::type, void>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::common_type<void, const void>::type, void>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<const void, void>::type, void>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<void, volatile void>::type, void>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<volatile void, void>::type, void>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<const void, const void>::type, void>::value));
 
-  static_assert((cuda::std::is_same<cuda::std::common_type<int, S<int>>::type, S<int>>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<int, S<int>, S<int>>::type, S<int>>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<int, int, S<int>>::type, S<int>>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::common_type<int, S<int>>::type, S<int>>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<int, S<int>, S<int>>::type, S<int>>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<int, int, S<int>>::type, S<int>>::value));
 
   test_bullet_one();
   test_bullet_two();
@@ -357,18 +357,18 @@ int main(int, char**)
   test_bullet_four();
 
   // P0548
-  static_assert((cuda::std::is_same<cuda::std::common_type<S<int>>::type, S<int>>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<S<int>, S<int>>::type, S<int>>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::common_type<S<int>>::type, S<int>>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<S<int>, S<int>>::type, S<int>>::value));
 
-  static_assert((cuda::std::is_same<cuda::std::common_type<int>::type, int>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<const int>::type, int>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<volatile int>::type, int>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<const volatile int>::type, int>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::common_type<int>::type, int>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<const int>::type, int>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<volatile int>::type, int>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<const volatile int>::type, int>::value));
 
-  static_assert((cuda::std::is_same<cuda::std::common_type<int, int>::type, int>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<const int, int>::type, int>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<int, const int>::type, int>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::common_type<const int, const int>::type, int>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::common_type<int, int>::type, int>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<const int, int>::type, int>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<int, const int>::type, int>::value));
+  static_assert((cuda::std::is_same<cuda::std::common_type<const int, const int>::type, int>::value));
 
   // Test that we're really variadic in C++11
   static_assert(cuda::std::is_same<cuda::std::common_type<int, int, int, int, int, int, int, int>::type, int>::value,

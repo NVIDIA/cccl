@@ -92,7 +92,7 @@ int main(int, char**)
   }
   {
     // TODO Enable this assertion when all compilers implement core DR 583.
-    // static_assert(!has_less<cuda::std::nullptr_t>::value, "");
+    // static_assert(!has_less<cuda::std::nullptr_t>::value);
     test_comparisons<cuda::std::nullptr_t>();
     test_comparisons<void*>();
     test_comparisons<A*>();

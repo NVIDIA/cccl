@@ -24,7 +24,7 @@ using cuda::std::optional;
 template <class T>
 __host__ __device__ constexpr void test()
 {
-  static_assert(cuda::std::is_convertible_v<const T&, optional<T>> == cuda::std::is_convertible_v<const T&, T>, "");
+  static_assert(cuda::std::is_convertible_v<const T&, optional<T>> == cuda::std::is_convertible_v<const T&, T>);
   {
     cuda::std::remove_reference_t<T> input{42};
     optional<T> opt{input};
@@ -82,7 +82,7 @@ void test_exceptions()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   {
     using T = TestTypes::TestType;
@@ -96,7 +96,7 @@ int main(int, char**)
   }
   {
     using T = ExplicitTestTypes::TestType;
-    static_assert(!cuda::std::is_convertible<T const&, optional<T>>::value, "");
+    static_assert(!cuda::std::is_convertible<T const&, optional<T>>::value);
     T::reset();
     const T t(3);
     optional<T> opt(t);

@@ -17,27 +17,27 @@
 template <class T>
 __host__ __device__ void test_is_unsigned()
 {
-  static_assert(cuda::std::is_unsigned<T>::value, "");
-  static_assert(cuda::std::is_unsigned<const T>::value, "");
-  static_assert(cuda::std::is_unsigned<volatile T>::value, "");
-  static_assert(cuda::std::is_unsigned<const volatile T>::value, "");
-  static_assert(cuda::std::is_unsigned_v<T>, "");
-  static_assert(cuda::std::is_unsigned_v<const T>, "");
-  static_assert(cuda::std::is_unsigned_v<volatile T>, "");
-  static_assert(cuda::std::is_unsigned_v<const volatile T>, "");
+  static_assert(cuda::std::is_unsigned<T>::value);
+  static_assert(cuda::std::is_unsigned<const T>::value);
+  static_assert(cuda::std::is_unsigned<volatile T>::value);
+  static_assert(cuda::std::is_unsigned<const volatile T>::value);
+  static_assert(cuda::std::is_unsigned_v<T>);
+  static_assert(cuda::std::is_unsigned_v<const T>);
+  static_assert(cuda::std::is_unsigned_v<volatile T>);
+  static_assert(cuda::std::is_unsigned_v<const volatile T>);
 }
 
 template <class T>
 __host__ __device__ void test_is_not_unsigned()
 {
-  static_assert(!cuda::std::is_unsigned<T>::value, "");
-  static_assert(!cuda::std::is_unsigned<const T>::value, "");
-  static_assert(!cuda::std::is_unsigned<volatile T>::value, "");
-  static_assert(!cuda::std::is_unsigned<const volatile T>::value, "");
-  static_assert(!cuda::std::is_unsigned_v<T>, "");
-  static_assert(!cuda::std::is_unsigned_v<const T>, "");
-  static_assert(!cuda::std::is_unsigned_v<volatile T>, "");
-  static_assert(!cuda::std::is_unsigned_v<const volatile T>, "");
+  static_assert(!cuda::std::is_unsigned<T>::value);
+  static_assert(!cuda::std::is_unsigned<const T>::value);
+  static_assert(!cuda::std::is_unsigned<volatile T>::value);
+  static_assert(!cuda::std::is_unsigned<const volatile T>::value);
+  static_assert(!cuda::std::is_unsigned_v<T>);
+  static_assert(!cuda::std::is_unsigned_v<const T>);
+  static_assert(!cuda::std::is_unsigned_v<volatile T>);
+  static_assert(!cuda::std::is_unsigned_v<const volatile T>);
 }
 
 class Class

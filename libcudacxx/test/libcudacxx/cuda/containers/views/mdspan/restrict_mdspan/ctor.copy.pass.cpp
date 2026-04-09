@@ -31,7 +31,7 @@ __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& m
 
   MDS m_org(handle, map, acc);
   MDS m(m_org);
-  static_assert(noexcept(MDS(m_org)) == (noexcept(H(handle)) && noexcept(M(map)) && noexcept(A(acc))), "");
+  static_assert(noexcept(MDS(m_org)) == (noexcept(H(handle)) && noexcept(M(map)) && noexcept(A(acc))));
   static_assert(cuda::std::is_trivially_copyable<MDS>::value
                   == (cuda::std::is_trivially_copyable<H>::value && cuda::std::is_trivially_copyable<M>::value
                       && cuda::std::is_trivially_copyable<A>::value),
@@ -75,8 +75,8 @@ __host__ __device__ constexpr void mixin_accessor()
 {
   cuda::std::array<T, 1024> elements{42};
   // make sure we test trivially constructible accessor and data_handle
-  static_assert(cuda::std::is_trivially_copyable<cuda::std::default_accessor<T>>::value, "");
-  static_assert(cuda::std::is_trivially_copyable<typename cuda::std::default_accessor<T>::data_handle_type>::value, "");
+  static_assert(cuda::std::is_trivially_copyable<cuda::std::default_accessor<T>>::value);
+  static_assert(cuda::std::is_trivially_copyable<typename cuda::std::default_accessor<T>::data_handle_type>::value);
   mixin_layout(elements.data(), cuda::std::default_accessor<T>());
 }
 
@@ -85,8 +85,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 void mixin_accessor()
 {
   ElementPool<T, 1024> elements;
   // make sure we test trivially constructible accessor and data_handle
-  static_assert(cuda::std::is_trivially_copyable<cuda::std::default_accessor<T>>::value, "");
-  static_assert(cuda::std::is_trivially_copyable<typename cuda::std::default_accessor<T>::data_handle_type>::value, "");
+  static_assert(cuda::std::is_trivially_copyable<cuda::std::default_accessor<T>>::value);
+  static_assert(cuda::std::is_trivially_copyable<typename cuda::std::default_accessor<T>::data_handle_type>::value);
   mixin_layout(elements.get_ptr(), cuda::std::default_accessor<T>());
 }
 
@@ -112,8 +112,8 @@ int main(int, char**)
   test_evil();
 
 #if TEST_STD_VER >= 2020
-  static_assert(test(), "");
-  static_assert(test_evil(), "");
+  static_assert(test());
+  static_assert(test_evil());
 #endif // TEST_STD_VER >= 2020
   return 0;
 }

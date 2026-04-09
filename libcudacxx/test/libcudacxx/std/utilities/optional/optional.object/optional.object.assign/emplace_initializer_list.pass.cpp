@@ -82,7 +82,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool check_X()
   optional<X> opt(x);
   assert(dtor_called == false);
   auto& v = opt.emplace({1, 2}, dtor_called);
-  static_assert(cuda::std::is_same_v<X&, decltype(v)>, "");
+  static_assert(cuda::std::is_same_v<X&, decltype(v)>);
   assert(dtor_called);
   assert(*opt == X({1, 2}, dtor_called));
   assert(&v == &*opt);
@@ -93,7 +93,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool check_Y()
 {
   optional<Y> opt{};
   auto& v = opt.emplace({1, 2});
-  static_assert(cuda::std::is_same_v<Y&, decltype(v)>, "");
+  static_assert(cuda::std::is_same_v<Y&, decltype(v)>);
   assert(static_cast<bool>(opt) == true);
   assert(*opt == Y({1, 2}));
   assert(&v == &*opt);
@@ -140,7 +140,7 @@ void test_exceptions()
     assert(static_cast<bool>(opt) == true);
     assert(Z::dtor_called() == false);
     [[maybe_unused]] auto& v = opt.emplace({1, 2});
-    static_assert(cuda::std::is_same_v<Z&, decltype(v)>, "");
+    static_assert(cuda::std::is_same_v<Z&, decltype(v)>);
     assert(false);
   }
   catch (int i)

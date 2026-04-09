@@ -102,11 +102,11 @@ int main(int, char**)
   }
   {
     constexpr cuda::std::tuple<int> t(2);
-    static_assert(cuda::std::get<0>(t) == 2, "");
+    static_assert(cuda::std::get<0>(t) == 2);
   }
   {
     constexpr cuda::std::tuple<int> t;
-    static_assert(cuda::std::get<0>(t) == 0, "");
+    static_assert(cuda::std::get<0>(t) == 0);
   }
   {
     cuda::std::tuple<int, char*> t(2, 0);
@@ -115,8 +115,8 @@ int main(int, char**)
   }
   {
     constexpr cuda::std::tuple<int, char*> t(2, nullptr);
-    static_assert(cuda::std::get<0>(t) == 2, "");
-    static_assert(cuda::std::get<1>(t) == nullptr, "");
+    static_assert(cuda::std::get<0>(t) == 2);
+    static_assert(cuda::std::get<1>(t) == nullptr);
   }
   {
     cuda::std::tuple<int, char*> t(2, nullptr);

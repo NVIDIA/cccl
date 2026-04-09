@@ -39,16 +39,16 @@ __host__ __device__ constexpr bool constexpr_test()
 {
   using nl = cuda::std::numeric_limits<T>;
 
-  static_assert(cuda::std::countl_one(nl::max()) == nl::digits, "");
-  static_assert(cuda::std::countl_one(T(nl::max() - 1)) == nl::digits - 1, "");
-  static_assert(cuda::std::countl_one(T(nl::max() - 2)) == nl::digits - 2, "");
-  static_assert(cuda::std::countl_one(T(nl::max() - 3)) == nl::digits - 2, "");
-  static_assert(cuda::std::countl_one(T(nl::max() - 4)) == nl::digits - 3, "");
-  static_assert(cuda::std::countl_one(T(nl::max() - 5)) == nl::digits - 3, "");
-  static_assert(cuda::std::countl_one(T(nl::max() - 6)) == nl::digits - 3, "");
-  static_assert(cuda::std::countl_one(T(nl::max() - 7)) == nl::digits - 3, "");
-  static_assert(cuda::std::countl_one(T(nl::max() - 8)) == nl::digits - 4, "");
-  static_assert(cuda::std::countl_one(T(nl::max() - 9)) == nl::digits - 4, "");
+  static_assert(cuda::std::countl_one(nl::max()) == nl::digits);
+  static_assert(cuda::std::countl_one(T(nl::max() - 1)) == nl::digits - 1);
+  static_assert(cuda::std::countl_one(T(nl::max() - 2)) == nl::digits - 2);
+  static_assert(cuda::std::countl_one(T(nl::max() - 3)) == nl::digits - 2);
+  static_assert(cuda::std::countl_one(T(nl::max() - 4)) == nl::digits - 3);
+  static_assert(cuda::std::countl_one(T(nl::max() - 5)) == nl::digits - 3);
+  static_assert(cuda::std::countl_one(T(nl::max() - 6)) == nl::digits - 3);
+  static_assert(cuda::std::countl_one(T(nl::max() - 7)) == nl::digits - 3);
+  static_assert(cuda::std::countl_one(T(nl::max() - 8)) == nl::digits - 4);
+  static_assert(cuda::std::countl_one(T(nl::max() - 9)) == nl::digits - 4);
 
   return true;
 }

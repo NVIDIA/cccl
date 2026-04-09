@@ -146,7 +146,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
   {
@@ -161,7 +161,7 @@ int main(int, char**)
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // TEST_HAS_EXCEPTIONS()
 
-  static_assert(!(cuda::std::is_constructible<optional<X>, optional<TerminatesOnConstruction>>::value), "");
+  static_assert(!(cuda::std::is_constructible<optional<X>, optional<TerminatesOnConstruction>>::value));
 
   return 0;
 }

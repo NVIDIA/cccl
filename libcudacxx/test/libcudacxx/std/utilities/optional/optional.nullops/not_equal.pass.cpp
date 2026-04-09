@@ -35,8 +35,8 @@ __host__ __device__ constexpr void test()
     assert(!(o1 != nullopt));
     assert((o2 != nullopt));
 
-    static_assert(noexcept(nullopt != o1), "");
-    static_assert(noexcept(o1 != nullopt), "");
+    static_assert(noexcept(nullopt != o1));
+    static_assert(noexcept(o1 != nullopt));
   }
 }
 

@@ -42,7 +42,7 @@ __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& m
   MDS m = {handle, map, acc};
   test_move_counter<MDS, H>();
 
-  static_assert(!noexcept(MDS(handle, map, acc)), "");
+  static_assert(!noexcept(MDS(handle, map, acc)));
   assert(m.extents() == map.extents());
   test_equality_handle(m, handle);
   test_equality_mapping(m, map);
@@ -163,8 +163,8 @@ __host__ __device__ void test_host()
   test_evil();
 
 #if TEST_STD_VER >= 2020
-  static_assert(test(), "");
-  static_assert(test_evil(), "");
+  static_assert(test());
+  static_assert(test_evil());
 #endif // TEST_STD_VER >= 2020
 }
 

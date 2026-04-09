@@ -26,9 +26,9 @@ int main(int, char**)
   assert(cuda::std::chrono::duration_values<int>::max() == cuda::std::numeric_limits<int>::max());
   assert(cuda::std::chrono::duration_values<double>::max() == cuda::std::numeric_limits<double>::max());
   assert(cuda::std::chrono::duration_values<Rep>::max() == cuda::std::numeric_limits<Rep>::max());
-  static_assert(cuda::std::chrono::duration_values<int>::max() == cuda::std::numeric_limits<int>::max(), "");
-  static_assert(cuda::std::chrono::duration_values<double>::max() == cuda::std::numeric_limits<double>::max(), "");
-  static_assert(cuda::std::chrono::duration_values<Rep>::max() == cuda::std::numeric_limits<Rep>::max(), "");
+  static_assert(cuda::std::chrono::duration_values<int>::max() == cuda::std::numeric_limits<int>::max());
+  static_assert(cuda::std::chrono::duration_values<double>::max() == cuda::std::numeric_limits<double>::max());
+  static_assert(cuda::std::chrono::duration_values<Rep>::max() == cuda::std::numeric_limits<Rep>::max());
 
   static_assert(noexcept(cuda::std::chrono::duration_values<int>::max()));
   static_assert(noexcept(cuda::std::chrono::duration_values<double>::max()));

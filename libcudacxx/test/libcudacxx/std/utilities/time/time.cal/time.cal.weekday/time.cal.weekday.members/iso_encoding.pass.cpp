@@ -33,7 +33,7 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::declval<weekday&>().iso_encoding()));
   static_assert(cuda::std::is_same_v<unsigned, decltype(cuda::std::declval<weekday&>().iso_encoding())>);
 
-  static_assert(testConstexpr<weekday>(), "");
+  static_assert(testConstexpr<weekday>());
 
   //  This is different than all the other tests, because the '7' gets converted to
   //  a zero in the constructor, but then back to '7' by iso_encoding().

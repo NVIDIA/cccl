@@ -50,7 +50,7 @@ __host__ __device__ constexpr bool tests()
     static_assert(noexcept(c.data()));
     const T* p = c.data();
     unused(p);
-    static_assert((cuda::std::is_same<decltype(c.data()), const T*>::value), "");
+    static_assert((cuda::std::is_same<decltype(c.data()), const T*>::value));
   }
   {
     using T = NoDefault;
@@ -72,7 +72,7 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
 
   // Test the alignment of data()
   {

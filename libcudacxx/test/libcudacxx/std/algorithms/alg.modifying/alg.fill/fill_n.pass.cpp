@@ -174,7 +174,7 @@ int main(int, char**)
 {
   test();
   test_int_array_struct_source();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

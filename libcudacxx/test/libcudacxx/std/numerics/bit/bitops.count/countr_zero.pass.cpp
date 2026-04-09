@@ -37,17 +37,17 @@ enum class E2 : unsigned char
 template <typename T>
 __host__ __device__ constexpr bool constexpr_test()
 {
-  static_assert(cuda::std::countr_zero(T(1)) == 0, "");
-  static_assert(cuda::std::countr_zero(T(2)) == 1, "");
-  static_assert(cuda::std::countr_zero(T(3)) == 0, "");
-  static_assert(cuda::std::countr_zero(T(4)) == 2, "");
-  static_assert(cuda::std::countr_zero(T(5)) == 0, "");
-  static_assert(cuda::std::countr_zero(T(6)) == 1, "");
-  static_assert(cuda::std::countr_zero(T(7)) == 0, "");
-  static_assert(cuda::std::countr_zero(T(8)) == 3, "");
-  static_assert(cuda::std::countr_zero(T(9)) == 0, "");
-  static_assert(cuda::std::countr_zero(T(0)) == cuda::std::numeric_limits<T>::digits, "");
-  static_assert(cuda::std::countr_zero(cuda::std::numeric_limits<T>::max()) == 0, "");
+  static_assert(cuda::std::countr_zero(T(1)) == 0);
+  static_assert(cuda::std::countr_zero(T(2)) == 1);
+  static_assert(cuda::std::countr_zero(T(3)) == 0);
+  static_assert(cuda::std::countr_zero(T(4)) == 2);
+  static_assert(cuda::std::countr_zero(T(5)) == 0);
+  static_assert(cuda::std::countr_zero(T(6)) == 1);
+  static_assert(cuda::std::countr_zero(T(7)) == 0);
+  static_assert(cuda::std::countr_zero(T(8)) == 3);
+  static_assert(cuda::std::countr_zero(T(9)) == 0);
+  static_assert(cuda::std::countr_zero(T(0)) == cuda::std::numeric_limits<T>::digits);
+  static_assert(cuda::std::countr_zero(cuda::std::numeric_limits<T>::max()) == 0);
 
   return true;
 }

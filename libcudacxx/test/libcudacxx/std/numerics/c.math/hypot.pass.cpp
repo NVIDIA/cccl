@@ -25,7 +25,7 @@ template <typename T>
 __host__ __device__ void test_hypot(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::hypot(T{}, T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::hypot(T{}, T{})), ret>);
 
   // hypot(x, y), hypot(y, x), and hypot(x, -y) are equivalent.
   assert(eq(cuda::std::hypot(T(1.0), T(0.25)), cuda::std::hypot(T(0.25), T(1.0))));
@@ -134,7 +134,7 @@ template <typename T>
 __host__ __device__ void test_hypot3(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::hypot(T{}, T{}, T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::hypot(T{}, T{}, T{})), ret>);
 
   // hypot(x, y), hypot(y, x), and hypot(x, -y) are equivalent.
   assert(eq(cuda::std::hypot(T(1.0), T(0.25), T(2.0)), cuda::std::hypot(T(0.25), T(1.0), T(2.0))));

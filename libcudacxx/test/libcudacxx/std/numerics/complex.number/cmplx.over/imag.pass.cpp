@@ -23,7 +23,7 @@
 template <class T, int x, class Target>
 __host__ __device__ void test_nonconstexpr()
 {
-  static_assert((cuda::std::is_same<decltype(cuda::std::imag(T(x))), Target>::value), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::imag(T(x))), Target>::value));
   assert(cuda::std::imag(T(x)) == T(0));
 }
 
@@ -32,12 +32,12 @@ __host__ __device__ void test(typename cuda::std::enable_if<cuda::std::is_integr
 {
   test_nonconstexpr<T, x, double>();
 
-  static_assert((cuda::std::is_same<decltype(cuda::std::imag(T(x))), double>::value), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::imag(T(x))), double>::value));
   assert(cuda::std::imag(x) == 0);
   constexpr T val{x};
-  static_assert(cuda::std::imag(val) == T(0), "");
+  static_assert(cuda::std::imag(val) == T(0));
   constexpr cuda::std::complex<T> t{val, val};
-  static_assert(t.imag() == T(x), "");
+  static_assert(t.imag() == T(x));
 }
 
 template <class T, int x>
@@ -45,12 +45,12 @@ __host__ __device__ void test(typename cuda::std::enable_if<!cuda::std::is_integ
 {
   test_nonconstexpr<T, x, T>();
 
-  static_assert((cuda::std::is_same<decltype(cuda::std::imag(T(x))), T>::value), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::imag(T(x))), T>::value));
   assert(cuda::std::imag(x) == 0);
   constexpr T val{x};
-  static_assert(cuda::std::imag(val) == T(0), "");
+  static_assert(cuda::std::imag(val) == T(0));
   constexpr cuda::std::complex<T> t{val, val};
-  static_assert(t.imag() == T(x), "");
+  static_assert(t.imag() == T(x));
 }
 
 template <class T>

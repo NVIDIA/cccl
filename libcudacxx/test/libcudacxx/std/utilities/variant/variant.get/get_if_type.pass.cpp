@@ -28,7 +28,7 @@ __host__ __device__ void test_const_get_if()
   {
     using V              = cuda::std::variant<int>;
     constexpr const V* v = nullptr;
-    static_assert(cuda::std::get_if<int>(v) == nullptr, "");
+    static_assert(cuda::std::get_if<int>(v) == nullptr);
   }
   {
     using V = cuda::std::variant<int, const long>;
@@ -36,18 +36,18 @@ __host__ __device__ void test_const_get_if()
     static_assert(noexcept(cuda::std::get_if<int>(&v)));
     static_assert(cuda::std::is_same_v<decltype(cuda::std::get_if<int>(&v)), const int*>);
 #if defined(_CCCL_BUILTIN_ADDRESSOF)
-    static_assert(*cuda::std::get_if<int>(&v) == 42, "");
+    static_assert(*cuda::std::get_if<int>(&v) == 42);
 #endif // _CCCL_BUILTIN_ADDRESSOF
-    static_assert(cuda::std::get_if<const long>(&v) == nullptr, "");
+    static_assert(cuda::std::get_if<const long>(&v) == nullptr);
   }
   {
     using V = cuda::std::variant<int, const long>;
     constexpr V v(42l);
     static_assert(cuda::std::is_same_v<decltype(cuda::std::get_if<const long>(&v)), const long*>);
 #if defined(_CCCL_BUILTIN_ADDRESSOF)
-    static_assert(*cuda::std::get_if<const long>(&v) == 42, "");
+    static_assert(*cuda::std::get_if<const long>(&v) == 42);
 #endif // _CCCL_BUILTIN_ADDRESSOF
-    static_assert(cuda::std::get_if<int>(&v) == nullptr, "");
+    static_assert(cuda::std::get_if<int>(&v) == nullptr);
   }
 // FIXME: Remove these once reference support is reinstated
 #if !defined(TEST_VARIANT_HAS_NO_REFERENCES)

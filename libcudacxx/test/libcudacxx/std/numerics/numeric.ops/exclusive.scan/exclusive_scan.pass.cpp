@@ -50,7 +50,7 @@ __host__ __device__ constexpr void test()
   int ia[]          = {1, 3, 5, 7, 9};
   const int pRes[]  = {0, 1, 4, 9, 16};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
-  static_assert(sa == sizeof(pRes) / sizeof(pRes[0]), ""); // just to be sure
+  static_assert(sa == sizeof(pRes) / sizeof(pRes[0])); // just to be sure
 
   for (unsigned int i = 0; i < sa; ++i)
   {
@@ -115,6 +115,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

@@ -44,14 +44,14 @@ int main(int, char**)
   test_op_not<64>();
   test_op_not<65>();
   test_op_not<1000>(); // not in constexpr because of constexpr evaluation step limits
-  static_assert(test_op_not<0>(), "");
-  static_assert(test_op_not<1>(), "");
-  static_assert(test_op_not<31>(), "");
-  static_assert(test_op_not<32>(), "");
-  static_assert(test_op_not<33>(), "");
-  static_assert(test_op_not<63>(), "");
-  static_assert(test_op_not<64>(), "");
-  static_assert(test_op_not<65>(), "");
+  static_assert(test_op_not<0>());
+  static_assert(test_op_not<1>());
+  static_assert(test_op_not<31>());
+  static_assert(test_op_not<32>());
+  static_assert(test_op_not<33>());
+  static_assert(test_op_not<63>());
+  static_assert(test_op_not<64>());
+  static_assert(test_op_not<65>());
 
   return 0;
 }

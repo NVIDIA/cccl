@@ -50,7 +50,7 @@ int main(int, char**)
     constexpr const Derived* p                             = nullptr;
     constexpr cuda::std::move_iterator<const Derived*> it1 = cuda::std::make_move_iterator(p);
     constexpr cuda::std::move_iterator<const Base*> it2(it1);
-    static_assert(it2.base() == p, "");
+    static_assert(it2.base() == p);
   }
 
   return 0;

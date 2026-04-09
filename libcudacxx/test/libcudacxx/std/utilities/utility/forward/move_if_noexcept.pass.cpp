@@ -54,15 +54,15 @@ int main(int, char**)
   unused(a);
   unused(ca);
 
-  static_assert((cuda::std::is_same<decltype(cuda::std::move_if_noexcept(i)), int&&>::value), "");
-  static_assert((cuda::std::is_same<decltype(cuda::std::move_if_noexcept(ci)), const int&&>::value), "");
-  static_assert((cuda::std::is_same<decltype(cuda::std::move_if_noexcept(a)), A&&>::value), "");
-  static_assert((cuda::std::is_same<decltype(cuda::std::move_if_noexcept(ca)), const A&&>::value), "");
-  static_assert((cuda::std::is_same<decltype(cuda::std::move_if_noexcept(l)), const legacy&>::value), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::move_if_noexcept(i)), int&&>::value));
+  static_assert((cuda::std::is_same<decltype(cuda::std::move_if_noexcept(ci)), const int&&>::value));
+  static_assert((cuda::std::is_same<decltype(cuda::std::move_if_noexcept(a)), A&&>::value));
+  static_assert((cuda::std::is_same<decltype(cuda::std::move_if_noexcept(ca)), const A&&>::value));
+  static_assert((cuda::std::is_same<decltype(cuda::std::move_if_noexcept(l)), const legacy&>::value));
 
   constexpr int i1 = 23;
   constexpr int i2 = cuda::std::move_if_noexcept(i1);
-  static_assert(i2 == 23, "");
+  static_assert(i2 == 23);
 
   return 0;
 }

@@ -33,25 +33,25 @@ static_assert(noexcept(cuda::std::source_location::current()));
 
 // A default-constructed value.
 constexpr cuda::std::source_location empty{};
-static_assert(empty.line() == 0, "");
-static_assert(empty.column() == 0, "");
-static_assert(empty.file_name()[0] == '\0', "");
-static_assert(empty.function_name()[0] == '\0', "");
+static_assert(empty.line() == 0);
+static_assert(empty.column() == 0);
+static_assert(empty.file_name()[0] == '\0');
+static_assert(empty.function_name()[0] == '\0');
 
 static_assert(noexcept(empty.line()));
 static_assert(noexcept(empty.column()));
 static_assert(noexcept(empty.file_name()));
 static_assert(noexcept(empty.function_name()));
-static_assert(cuda::std::is_same<cuda::std::uint_least32_t, decltype(empty.line())>::value, "");
-static_assert(cuda::std::is_same<cuda::std::uint_least32_t, decltype(empty.column())>::value, "");
-static_assert(cuda::std::is_same<const char*, decltype(empty.file_name())>::value, "");
-static_assert(cuda::std::is_same<const char*, decltype(empty.function_name())>::value, "");
+static_assert(cuda::std::is_same<cuda::std::uint_least32_t, decltype(empty.line())>::value);
+static_assert(cuda::std::is_same<cuda::std::uint_least32_t, decltype(empty.column())>::value);
+static_assert(cuda::std::is_same<const char*, decltype(empty.file_name())>::value);
+static_assert(cuda::std::is_same<const char*, decltype(empty.function_name())>::value);
 
 __device__ constexpr cuda::std::source_location device_empty{};
-static_assert(device_empty.line() == 0, "");
-static_assert(device_empty.column() == 0, "");
-static_assert(device_empty.file_name()[0] == '\0', "");
-static_assert(device_empty.function_name()[0] == '\0', "");
+static_assert(device_empty.line() == 0);
+static_assert(device_empty.column() == 0);
+static_assert(device_empty.file_name()[0] == '\0');
+static_assert(device_empty.function_name()[0] == '\0');
 
 static_assert(noexcept(device_empty.line()));
 static_assert(noexcept(device_empty.column()));
@@ -61,12 +61,12 @@ static_assert(noexcept(device_empty.function_name()));
 // A simple use of current() outside a function.
 #line 1000 "ss"
 constexpr cuda::std::source_location cur = cuda::std::source_location::current();
-static_assert(cur.line() == 1000, "");
+static_assert(cur.line() == 1000);
 
 #if _CCCL_HAS_BUILTIN(__builtin_COLUMN) || TEST_COMPILER(MSVC, >=, 19, 27)
-static_assert(cur.column() > 0, "");
+static_assert(cur.column() > 0);
 #else // ^^^ _CCCL_BULTIN_COLUMN ^^^ / vvv !_CCCL_BULTIN_COLUMN vvv
-static_assert(cur.column() == 0, "");
+static_assert(cur.column() == 0);
 #endif // !_CCCL_BULTIN_COLUMN
 static_assert(cur.file_name()[0] == __FILE__[0] && cur.file_name()[1] == __FILE__[1]
                 && cur.file_name()[sizeof(__FILE__) - 1] == '\0',
@@ -74,7 +74,7 @@ static_assert(cur.file_name()[0] == __FILE__[0] && cur.file_name()[1] == __FILE_
 
 // MSVC below 19.27 is broken with function name
 #if !TEST_COMPILER(MSVC, <, 19, 27)
-static_assert(cur.function_name()[0] == '\0', "");
+static_assert(cur.function_name()[0] == '\0');
 #else // ^^^ __builtin_FUNCTION ^^^ / vvv !__builtin_FUNCTION vvv
 static_assert(compare_strings(cur.function_name(), "__builtin_FUNCTION is unsupported"));
 #endif // !__builtin_FUNCTION

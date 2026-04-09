@@ -108,44 +108,44 @@ template <typename L>
 __host__ __device__ void test_invocable()
 {
 #if defined(CPP17_PERFORM_INVOCABLE_TEST)
-  static_assert(cuda::std::is_invocable_v<L, unsigned char>, "");
-  static_assert(cuda::std::is_invocable_v<L, unsigned int>, "");
-  static_assert(cuda::std::is_invocable_v<L, unsigned long>, "");
-  static_assert(cuda::std::is_invocable_v<L, unsigned long long>, "");
+  static_assert(cuda::std::is_invocable_v<L, unsigned char>);
+  static_assert(cuda::std::is_invocable_v<L, unsigned int>);
+  static_assert(cuda::std::is_invocable_v<L, unsigned long>);
+  static_assert(cuda::std::is_invocable_v<L, unsigned long long>);
 
-  static_assert(cuda::std::is_invocable_v<L, uint8_t>, "");
-  static_assert(cuda::std::is_invocable_v<L, uint16_t>, "");
-  static_assert(cuda::std::is_invocable_v<L, uint32_t>, "");
-  static_assert(cuda::std::is_invocable_v<L, uint64_t>, "");
-  static_assert(cuda::std::is_invocable_v<L, size_t>, "");
+  static_assert(cuda::std::is_invocable_v<L, uint8_t>);
+  static_assert(cuda::std::is_invocable_v<L, uint16_t>);
+  static_assert(cuda::std::is_invocable_v<L, uint32_t>);
+  static_assert(cuda::std::is_invocable_v<L, uint64_t>);
+  static_assert(cuda::std::is_invocable_v<L, size_t>);
 
-  static_assert(cuda::std::is_invocable_v<L, uintmax_t>, "");
-  static_assert(cuda::std::is_invocable_v<L, uintptr_t>, "");
+  static_assert(cuda::std::is_invocable_v<L, uintmax_t>);
+  static_assert(cuda::std::is_invocable_v<L, uintptr_t>);
 
-  static_assert(!cuda::std::is_invocable_v<L, int>, "");
-  static_assert(!cuda::std::is_invocable_v<L, signed int>, "");
-  static_assert(!cuda::std::is_invocable_v<L, long>, "");
-  static_assert(!cuda::std::is_invocable_v<L, long long>, "");
+  static_assert(!cuda::std::is_invocable_v<L, int>);
+  static_assert(!cuda::std::is_invocable_v<L, signed int>);
+  static_assert(!cuda::std::is_invocable_v<L, long>);
+  static_assert(!cuda::std::is_invocable_v<L, long long>);
 
-  static_assert(!cuda::std::is_invocable_v<L, int8_t>, "");
-  static_assert(!cuda::std::is_invocable_v<L, int16_t>, "");
-  static_assert(!cuda::std::is_invocable_v<L, int32_t>, "");
-  static_assert(!cuda::std::is_invocable_v<L, int64_t>, "");
-  static_assert(!cuda::std::is_invocable_v<L, ptrdiff_t>, "");
+  static_assert(!cuda::std::is_invocable_v<L, int8_t>);
+  static_assert(!cuda::std::is_invocable_v<L, int16_t>);
+  static_assert(!cuda::std::is_invocable_v<L, int32_t>);
+  static_assert(!cuda::std::is_invocable_v<L, int64_t>);
+  static_assert(!cuda::std::is_invocable_v<L, ptrdiff_t>);
 
-  static_assert(!cuda::std::is_invocable_v<L, bool>, "");
-  static_assert(!cuda::std::is_invocable_v<L, signed char>, "");
-  static_assert(!cuda::std::is_invocable_v<L, char16_t>, "");
-  static_assert(!cuda::std::is_invocable_v<L, char32_t>, "");
+  static_assert(!cuda::std::is_invocable_v<L, bool>);
+  static_assert(!cuda::std::is_invocable_v<L, signed char>);
+  static_assert(!cuda::std::is_invocable_v<L, char16_t>);
+  static_assert(!cuda::std::is_invocable_v<L, char32_t>);
 
 #  if _CCCL_HAS_INT128()
-  static_assert(cuda::std::is_invocable_v<L, __uint128_t>, "");
-  static_assert(!cuda::std::is_invocable_v<L, __int128_t>, "");
+  static_assert(cuda::std::is_invocable_v<L, __uint128_t>);
+  static_assert(!cuda::std::is_invocable_v<L, __int128_t>);
 #  endif // _CCCL_HAS_INT128()
 
-  static_assert(!cuda::std::is_invocable_v<L, A, unsigned>, "");
-  static_assert(!cuda::std::is_invocable_v<L, E1, unsigned>, "");
-  static_assert(!cuda::std::is_invocable_v<L, E2, unsigned>, "");
+  static_assert(!cuda::std::is_invocable_v<L, A, unsigned>);
+  static_assert(!cuda::std::is_invocable_v<L, E1, unsigned>);
+  static_assert(!cuda::std::is_invocable_v<L, E2, unsigned>);
 #endif // defined(CPP17_PERFORM_INVOCABLE_TEST)
 }
 

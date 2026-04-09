@@ -18,36 +18,36 @@
 template <class T>
 __host__ __device__ void test_is_trivially_constructible()
 {
-  static_assert((cuda::std::is_trivially_constructible<T>::value), "");
-  static_assert((cuda::std::is_trivially_constructible_v<T>), "");
+  static_assert((cuda::std::is_trivially_constructible<T>::value));
+  static_assert((cuda::std::is_trivially_constructible_v<T>) );
 }
 
 template <class T, class A0>
 __host__ __device__ void test_is_trivially_constructible()
 {
-  static_assert((cuda::std::is_trivially_constructible<T, A0>::value), "");
-  static_assert((cuda::std::is_trivially_constructible_v<T, A0>), "");
+  static_assert((cuda::std::is_trivially_constructible<T, A0>::value));
+  static_assert((cuda::std::is_trivially_constructible_v<T, A0>) );
 }
 
 template <class T>
 __host__ __device__ void test_is_not_trivially_constructible()
 {
-  static_assert((!cuda::std::is_trivially_constructible<T>::value), "");
-  static_assert((!cuda::std::is_trivially_constructible_v<T>), "");
+  static_assert((!cuda::std::is_trivially_constructible<T>::value));
+  static_assert((!cuda::std::is_trivially_constructible_v<T>) );
 }
 
 template <class T, class A0>
 __host__ __device__ void test_is_not_trivially_constructible()
 {
-  static_assert((!cuda::std::is_trivially_constructible<T, A0>::value), "");
-  static_assert((!cuda::std::is_trivially_constructible_v<T, A0>), "");
+  static_assert((!cuda::std::is_trivially_constructible<T, A0>::value));
+  static_assert((!cuda::std::is_trivially_constructible_v<T, A0>) );
 }
 
 template <class T, class A0, class A1>
 __host__ __device__ void test_is_not_trivially_constructible()
 {
-  static_assert((!cuda::std::is_trivially_constructible<T, A0, A1>::value), "");
-  static_assert((!cuda::std::is_trivially_constructible_v<T, A0, A1>), "");
+  static_assert((!cuda::std::is_trivially_constructible<T, A0, A1>::value));
+  static_assert((!cuda::std::is_trivially_constructible_v<T, A0, A1>) );
 }
 
 struct A

@@ -62,7 +62,7 @@ int main(int, char**)
            == true);
   }
 
-  static_assert(test_constexpr(), "");
+  static_assert(test_constexpr());
 
   return 0;
 }

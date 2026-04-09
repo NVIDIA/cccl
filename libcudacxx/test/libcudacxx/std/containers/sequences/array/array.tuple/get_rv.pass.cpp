@@ -38,7 +38,7 @@ int main(int, char**)
   {
     using C = cuda::std::array<MoveOnly, 1>;
     C c     = {3.5};
-    static_assert(cuda::std::is_same<MoveOnly&&, decltype(cuda::std::get<0>(cuda::std::move(c)))>::value, "");
+    static_assert(cuda::std::is_same<MoveOnly&&, decltype(cuda::std::get<0>(cuda::std::move(c)))>::value);
     MoveOnly t = cuda::std::get<0>(cuda::std::move(c));
     assert(t.val_ == 3.5);
   }

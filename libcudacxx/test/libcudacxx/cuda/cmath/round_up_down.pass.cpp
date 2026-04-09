@@ -28,8 +28,8 @@ __host__ __device__ constexpr void test()
   constexpr auto maxv = cuda::std::numeric_limits<T>::max();
   using CommonType    = cuda::std::common_type_t<T, U>;
   // ensure that we return the right type
-  static_assert(cuda::std::is_same<decltype(cuda::round_up(T(0), U(1))), CommonType>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::round_down(T(0), U(1))), CommonType>::value, "");
+  static_assert(cuda::std::is_same<decltype(cuda::round_up(T(0), U(1))), CommonType>::value);
+  static_assert(cuda::std::is_same<decltype(cuda::round_down(T(0), U(1))), CommonType>::value);
 
   assert(cuda::round_up(T(0), U(1)) == CommonType(0));
   assert(cuda::round_up(T(1), U(1)) == CommonType(1));
@@ -65,8 +65,8 @@ __host__ __device__ constexpr void test_enum()
   using U          = typename relaxed_underlying_type<U1>::type;
   using CommonType = cuda::std::common_type_t<T, U>;
   // ensure that we return the right type
-  static_assert(cuda::std::is_same<decltype(cuda::round_up(T(0), U(1))), CommonType>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::round_down(T(0), U(1))), CommonType>::value, "");
+  static_assert(cuda::std::is_same<decltype(cuda::round_up(T(0), U(1))), CommonType>::value);
+  static_assert(cuda::std::is_same<decltype(cuda::round_down(T(0), U(1))), CommonType>::value);
 
   assert(cuda::round_up(T(0), U(1)) == CommonType(0));
   assert(cuda::round_up(T(1), U(1)) == CommonType(1));
@@ -189,6 +189,6 @@ __host__ __device__ constexpr bool test()
 int main(int arg, char** argv)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

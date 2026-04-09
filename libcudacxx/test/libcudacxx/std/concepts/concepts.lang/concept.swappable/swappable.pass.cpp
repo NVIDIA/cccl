@@ -147,8 +147,8 @@ enum class scoped
 __host__ __device__ void swap(scoped&, scoped&);
 } // namespace swappable_namespace
 
-static_assert(swappable<swappable_namespace::unscoped>, "");
-static_assert(swappable<swappable_namespace::scoped>, "");
+static_assert(swappable<swappable_namespace::unscoped>);
+static_assert(swappable<swappable_namespace::scoped>);
 
 __host__ __device__ constexpr bool check_swap_arrays()
 {
@@ -181,9 +181,9 @@ __host__ __device__ constexpr bool check_throwable_adl_swappable_arrays()
 
 __device__ auto global_x = 0;
 static_assert(noexcept(cuda::std::ranges::swap(global_x, global_x)));
-static_assert(check_swap_23(0, 0), "");
-static_assert(check_swap_23(0, 1), "");
-static_assert(check_swap_23(1, 0), "");
+static_assert(check_swap_23(0, 0));
+static_assert(check_swap_23(0, 1));
+static_assert(check_swap_23(1, 0));
 
 __host__ __device__ constexpr bool check_swappable_references()
 {
@@ -212,43 +212,43 @@ union adl_swappable
 __host__ __device__ void swap(adl_swappable&, adl_swappable&);
 __host__ __device__ void swap(adl_swappable&&, adl_swappable&&);
 } // namespace union_swap
-static_assert(swappable<union_swap::adl_swappable>, "");
-static_assert(swappable<union_swap::adl_swappable&>, "");
-static_assert(swappable<union_swap::adl_swappable&&>, "");
+static_assert(swappable<union_swap::adl_swappable>);
+static_assert(swappable<union_swap::adl_swappable&>);
+static_assert(swappable<union_swap::adl_swappable&&>);
 
 // All tests for swappable<T> are implicitly confirmed by `check_swap`, so we only need to
 // sanity check for a few positive cases.
-static_assert(swappable<int volatile&>, "");
-static_assert(swappable<int&&>, "");
-static_assert(swappable<int (*)()>, "");
-static_assert(swappable<int rvalue_adl_swappable::*>, "");
-static_assert(swappable<int (rvalue_adl_swappable::*)()>, "");
+static_assert(swappable<int volatile&>);
+static_assert(swappable<int&&>);
+static_assert(swappable<int (*)()>);
+static_assert(swappable<int rvalue_adl_swappable::*>);
+static_assert(swappable<int (rvalue_adl_swappable::*)()>);
 
-static_assert(!swappable<void>, "");
-static_assert(!swappable<int const>, "");
-static_assert(!swappable<int const&>, "");
-static_assert(!swappable<int const&&>, "");
-static_assert(!swappable<int const volatile>, "");
-static_assert(!swappable<int const volatile&>, "");
-static_assert(!swappable<int const volatile&&>, "");
-static_assert(!swappable<int (&)()>, "");
-static_assert(!swappable<DeletedMoveCtor>, "");
-static_assert(!swappable<ImplicitlyDeletedMoveCtor>, "");
-static_assert(!swappable<DeletedMoveAssign>, "");
-static_assert(!swappable<ImplicitlyDeletedMoveAssign>, "");
-static_assert(!swappable<NonMovable>, "");
-static_assert(!swappable<DerivedFromNonMovable>, "");
-static_assert(!swappable<HasANonMovable>, "");
+static_assert(!swappable<void>);
+static_assert(!swappable<int const>);
+static_assert(!swappable<int const&>);
+static_assert(!swappable<int const&&>);
+static_assert(!swappable<int const volatile>);
+static_assert(!swappable<int const volatile&>);
+static_assert(!swappable<int const volatile&&>);
+static_assert(!swappable<int (&)()>);
+static_assert(!swappable<DeletedMoveCtor>);
+static_assert(!swappable<ImplicitlyDeletedMoveCtor>);
+static_assert(!swappable<DeletedMoveAssign>);
+static_assert(!swappable<ImplicitlyDeletedMoveAssign>);
+static_assert(!swappable<NonMovable>);
+static_assert(!swappable<DerivedFromNonMovable>);
+static_assert(!swappable<HasANonMovable>);
 
 using swap_type = cuda::std::remove_const_t<decltype(cuda::std::ranges::swap)>;
-static_assert(cuda::std::default_initializable<swap_type>, "");
-static_assert(cuda::std::move_constructible<swap_type>, "");
-static_assert(cuda::std::copy_constructible<swap_type>, "");
-static_assert(cuda::std::assignable_from<swap_type&, swap_type>, "");
-static_assert(cuda::std::assignable_from<swap_type&, swap_type&>, "");
-static_assert(cuda::std::assignable_from<swap_type&, swap_type const&>, "");
-static_assert(cuda::std::assignable_from<swap_type&, swap_type const>, "");
-static_assert(swappable<swap_type>, "");
+static_assert(cuda::std::default_initializable<swap_type>);
+static_assert(cuda::std::move_constructible<swap_type>);
+static_assert(cuda::std::copy_constructible<swap_type>);
+static_assert(cuda::std::assignable_from<swap_type&, swap_type>);
+static_assert(cuda::std::assignable_from<swap_type&, swap_type&>);
+static_assert(cuda::std::assignable_from<swap_type&, swap_type const&>);
+static_assert(cuda::std::assignable_from<swap_type&, swap_type const>);
+static_assert(swappable<swap_type>);
 
 int main(int, char**)
 {
@@ -268,18 +268,18 @@ int main(int, char**)
   assert(check_swappable_pointers());
 
 #if !TEST_COMPILER(GCC, <, 10)
-  static_assert(check_lvalue_adl_swappable(), "");
-  static_assert(check_rvalue_adl_swappable(), "");
-  static_assert(check_lvalue_rvalue_adl_swappable(), "");
-  static_assert(check_rvalue_lvalue_adl_swappable(), "");
-  static_assert(check_throwable_swappable(), "");
-  static_assert(check_non_move_constructible_adl_swappable(), "");
-  static_assert(check_non_move_assignable_adl_swappable(), "");
-  static_assert(check_swap_arrays(), "");
-  static_assert(check_lvalue_adl_swappable_arrays(), "");
-  static_assert(check_throwable_adl_swappable_arrays(), "");
-  static_assert(check_swappable_references(), "");
-  static_assert(check_swappable_pointers(), "");
+  static_assert(check_lvalue_adl_swappable());
+  static_assert(check_rvalue_adl_swappable());
+  static_assert(check_lvalue_rvalue_adl_swappable());
+  static_assert(check_rvalue_lvalue_adl_swappable());
+  static_assert(check_throwable_swappable());
+  static_assert(check_non_move_constructible_adl_swappable());
+  static_assert(check_non_move_assignable_adl_swappable());
+  static_assert(check_swap_arrays());
+  static_assert(check_lvalue_adl_swappable_arrays());
+  static_assert(check_throwable_adl_swappable_arrays());
+  static_assert(check_swappable_references());
+  static_assert(check_swappable_pointers());
 #endif // !TEST_COMPILER(GCC, <, 10)
 
   return 0;

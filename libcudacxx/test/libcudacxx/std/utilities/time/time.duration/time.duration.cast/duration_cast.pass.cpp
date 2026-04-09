@@ -49,7 +49,7 @@ int main(int, char**)
   {
     constexpr cuda::std::chrono::hours h =
       cuda::std::chrono::duration_cast<cuda::std::chrono::hours>(cuda::std::chrono::milliseconds(7265000));
-    static_assert(h.count() == 2, "");
+    static_assert(h.count() == 2);
   }
 
   return 0;

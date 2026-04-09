@@ -49,7 +49,7 @@ constexpr __host__ __device__ bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

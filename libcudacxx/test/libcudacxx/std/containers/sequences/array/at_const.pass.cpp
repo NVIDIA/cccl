@@ -126,6 +126,6 @@ int main(int, char**)
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // TEST_HAS_EXCEPTIONS()
 
-  static_assert(tests(), "");
+  static_assert(tests());
   return 0;
 }

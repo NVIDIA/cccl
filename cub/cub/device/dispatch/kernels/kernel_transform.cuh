@@ -953,7 +953,7 @@ template <typename It>
 union kernel_arg
 {
   aligned_base_ptr<it_value_t<It>> aligned_ptr; // first member is trivial
-  static_assert(::cuda::std::is_trivial_v<decltype(aligned_ptr)>, "");
+  static_assert(::cuda::std::is_trivial_v<decltype(aligned_ptr)>);
   It iterator; // may not be trivially [default|copy]-constructible
 
   // Sometimes It is not trivially [default|copy]-constructible (e.g.
