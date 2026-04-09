@@ -37,7 +37,6 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 #include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/optional>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
@@ -873,8 +872,7 @@ struct policy_selector
   // TODO(griwes): remove this field before policy_selector is publicly exposed
   bool benchmark_match;
 
-  _CCCL_API constexpr auto get_warpspeed_policy(::cuda::arch_id arch) const
-    -> ::cuda::std::optional<scan_warpspeed_policy>
+  _CCCL_API constexpr scan_warpspeed_policy get_warpspeed_policy(::cuda::arch_id arch) const
   {
     if (arch >= ::cuda::arch_id::sm_100)
     {
@@ -968,10 +966,10 @@ struct policy_selector
   {
     // we first try to get the valid warpspeed implementation. if we can't run it, fall back to the old scan impl.
     {
-      const auto warpspeed_policy_opt = get_warpspeed_policy(arch);
-      if (warpspeed_policy_opt && can_use_warpspeed(*warpspeed_policy_opt))
+      const scan_warpspeed_policy warpspeed_policy = get_warpspeed_policy(arch);
+      if (can_use_warpspeed(warpspeed_policy))
       {
-        return {scan_algorithm::warpspeed, scan_lookback_policy{}, *warpspeed_policy_opt};
+        return {scan_algorithm::warpspeed, scan_lookback_policy{}, warpspeed_policy};
       }
     }
 
