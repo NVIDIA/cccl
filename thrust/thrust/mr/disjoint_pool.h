@@ -223,8 +223,8 @@ private:
 
   struct pool
   {
-    _CCCL_HOST pool(const pointer_vector& free)
-        : free_blocks(free)
+    _CCCL_HOST pool(pointer_vector free)
+        : free_blocks(::cuda::std::move(free))
         , previous_allocated_count(0)
     {}
 

@@ -31,8 +31,8 @@ namespace detail
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE contiguous_storage<T, Alloc>::contiguous_storage(const Alloc& alloc)
-    : m_allocator(alloc)
+_CCCL_HOST_DEVICE contiguous_storage<T, Alloc>::contiguous_storage(Alloc alloc)
+    : m_allocator(::cuda::std::move(alloc))
     , m_begin(pointer(static_cast<T*>(0)))
     , m_size(0)
 {
@@ -41,8 +41,8 @@ _CCCL_HOST_DEVICE contiguous_storage<T, Alloc>::contiguous_storage(const Alloc& 
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE contiguous_storage<T, Alloc>::contiguous_storage(size_type n, const Alloc& alloc)
-    : m_allocator(alloc)
+_CCCL_HOST_DEVICE contiguous_storage<T, Alloc>::contiguous_storage(size_type n, Alloc alloc)
+    : m_allocator(::cuda::std::move(alloc))
     , m_begin(pointer(static_cast<T*>(0)))
     , m_size(0)
 {
