@@ -39,19 +39,21 @@ class JsonCache:
             cls._instance.device_cache = {}
         return cls._instance
 
+    def get_bench_json(self, algname):
+        benchmark_bin = os.path.join(".", "bin", algname + ".base")
+        if not os.path.exists(benchmark_bin):
+            raise Exception(f"Benchmark binary not found: {benchmark_bin}")
+        return subprocess.check_output([benchmark_bin, "--jsonlist-benches"])
+
     def get_bench(self, algname):
         if algname not in self.bench_cache:
-            result = subprocess.check_output(
-                [os.path.join(".", "bin", algname + ".base"), "--jsonlist-benches"]
-            )
+            result = self.get_bench_json(algname)
             self.bench_cache[algname] = json.loads(result)
         return self.bench_cache[algname]
 
     def get_device(self, algname):
         if algname not in self.device_cache:
-            result = subprocess.check_output(
-                [os.path.join(".", "bin", algname + ".base"), "--jsonlist-devices"]
-            )
+            result = self.get_bench_json(algname)
             devices = json.loads(result)["devices"]
 
             if len(devices) != 1:
@@ -75,8 +77,8 @@ def create_benches_tables(conn, subbench, bench_axes):
             algorithm TEXT NOT NULL,
             bench TEXT NOT NULL,
             UNIQUE(algorithm, bench)
-        );
-        """)
+                         );
+                     """)
 
         for algorithm_name in bench_axes:
             axes = bench_axes[algorithm_name]
@@ -85,10 +87,10 @@ def create_benches_tables(conn, subbench, bench_axes):
 
             conn.execute(
                 """
-            INSERT INTO subbenches (algorithm, bench)
+                INSERT INTO subbenches (algorithm, bench)
             VALUES (?, ?)
             ON CONFLICT DO NOTHING;
-            """,
+                """,
                 (algorithm_name, subbench),
             )
 
@@ -300,8 +302,8 @@ def create_runs_table(conn):
             bench TEXT NOT NULL,
             code TEXT NOT NULL,
             elapsed REAL
-        );
-        """)
+                     );
+                     """)
 
 
 class RunsCache:
