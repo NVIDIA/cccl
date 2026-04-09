@@ -255,9 +255,9 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<typename IterTraits::value_type, float>);
     // No integer is larger than long long, so it is OK to use long long as the difference type here:
     // https://eel.is/c++draft/range.iota.view#1.3
-    static_assert(sizeof(typename IterTraits::difference_type) >= sizeof(long long));
+    static_assert(sizeof(typename IterTraits::difference_type) >= sizeof(cuda::std::ptrdiff_t));
     static_assert(cuda::std::is_signed_v<typename IterTraits::difference_type>);
-    static_assert(cuda::std::same_as<typename IterTraits::difference_type, long>);
+    static_assert(cuda::std::same_as<typename IterTraits::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::random_access_iterator<Iter>);
     static_assert(cuda::std::__has_random_access_traversal<Iter>);
   }
