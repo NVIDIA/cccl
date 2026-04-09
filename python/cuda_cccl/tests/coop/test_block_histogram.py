@@ -123,6 +123,23 @@ def test_block_histogram_temp_storage_inside_loop_single_phase():
     np.testing.assert_array_equal(h_output, expected)
 
 
+def test_block_histogram_single_phase_rejects_explicit_temp_storage():
+    @cuda.jit
+    def kernel(items, histogram):
+        temp_storage = coop.TempStorage()
+        coop.block.histogram(
+            items,
+            histogram,
+            temp_storage=temp_storage,
+        )
+
+    d_items = cuda.device_array(128, dtype=np.uint8)
+    d_histogram = cuda.device_array(256, dtype=np.uint32)
+
+    with pytest.raises(Exception, match="Explicit temp_storage is not yet supported"):
+        kernel[1, 128](d_items, d_histogram)
+
+
 def test_block_histogram_histo_atomic_single_phase0():
     item_dtype = np.uint8
     counter_dtype = np.uint32
