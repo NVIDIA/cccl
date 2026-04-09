@@ -192,7 +192,9 @@ class CoopBlockHistogramDecl(CoopAbstractTemplate, CoopDeclMixin):
         if not temp_storage_is_none_type:
             validate_temp_storage(self, temp_storage)
             if temp_storage is not None:
-                arglist.append(temp_storage)
+                raise errors.TypingError(
+                    "Explicit temp_storage is not supported for histogram."
+                )
 
         sig = signature(
             block_histogram_instance_type,
@@ -242,6 +244,10 @@ class CoopBlockHistogramInstanceType(types.Type, CoopInstanceTypeMixin):
         temp_storage_is_none_type = isinstance(temp_storage, types.NoneType)
         if not temp_storage_is_none_type:
             validate_temp_storage(self.decl, temp_storage)
+            if temp_storage is not None:
+                raise errors.TypingError(
+                    "Explicit temp_storage is not supported for histogram."
+                )
 
         arglist = []
         if temp_storage is not None or temp_storage_is_none_type:

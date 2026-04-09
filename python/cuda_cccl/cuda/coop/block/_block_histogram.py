@@ -278,7 +278,7 @@ class histogram(BasePrimitive):
 
         if temp_storage is not None:
             raise NotImplementedError(
-                "Explicit temp_storage is not yet supported for histogram."
+                "Explicit temp_storage is not supported for histogram."
             )
 
         # Validation complete, continue with algorithm creation.

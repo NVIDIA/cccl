@@ -186,7 +186,7 @@ def test_make_histogram_returns_stateful_instance():
 def test_make_histogram_rejects_explicit_temp_storage():
     with pytest.raises(
         NotImplementedError,
-        match="Explicit temp_storage is not yet supported for histogram.",
+        match="Explicit temp_storage is not supported for histogram.",
     ):
         coop.block.make_histogram(
             numba.uint8,

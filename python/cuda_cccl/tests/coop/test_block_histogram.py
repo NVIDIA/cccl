@@ -136,7 +136,7 @@ def test_block_histogram_single_phase_rejects_explicit_temp_storage():
     d_items = cuda.device_array(128, dtype=np.uint8)
     d_histogram = cuda.device_array(256, dtype=np.uint32)
 
-    with pytest.raises(Exception, match="Explicit temp_storage is not yet supported"):
+    with pytest.raises(Exception, match="Explicit temp_storage is not supported"):
         kernel[1, 128](d_items, d_histogram)
 
 
