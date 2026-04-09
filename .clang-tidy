@@ -21,7 +21,6 @@ Checks:
   # TODO: BEGIN REMOVE ME
   - '-*'
   - 'performance-*'
-  - '-performance-noexcept-swap'
   - '-performance-enum-size'
   - '-performance-unnecessary-value-param'
   # END REMOVE ME
