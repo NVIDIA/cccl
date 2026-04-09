@@ -45,7 +45,6 @@ Checks:
   - '-modernize-pass-by-value'
   - '-modernize-loop-convert'
   - '-modernize-unary-static-assert'
-  - '-modernize-use-override'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
@@ -165,7 +164,6 @@ Checks:
   - '-cppcoreguidelines-pro-type-reinterpret-cast'
   # We don't use GSL
   - '-cppcoreguidelines-owning-memory'
-  # Covered by modernize-use-override already
   - '-cppcoreguidelines-explicit-virtual-functions'
   # Covered by readability-magic-numbers
   - '-cppcoreguidelines-avoid-magic-numbers'

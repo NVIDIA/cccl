@@ -149,7 +149,7 @@ public:
 
   /*! Destructor. Releases all held memory to upstream.
    */
-  ~disjoint_unsynchronized_pool_resource()
+  ~disjoint_unsynchronized_pool_resource() override
   {
     release();
   }
@@ -340,8 +340,7 @@ public:
     }
   }
 
-  [[nodiscard]] virtual void_ptr
-  do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  [[nodiscard]] void_ptr do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     try
     {
@@ -467,7 +466,7 @@ public:
     return ret;
   }
 
-  virtual void do_deallocate(void_ptr p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  void do_deallocate(void_ptr p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     n = (std::max) (n, m_options.smallest_block_size);
     assert(::cuda::__is_valid_alignment(alignment));
