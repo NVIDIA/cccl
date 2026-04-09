@@ -236,7 +236,15 @@ C2H_TEST("Device reduce uses environment", "[reduce][device]", requirements)
       REQUIRE(
         cudaSuccess
         == cub::detail::reduce::dispatch_nondeterministic(
-          nullptr, expected_bytes_allocated, d_in, raw_ptr, num_items, op_t{}, init, /* stream */ 0, transform_t{}));
+          nullptr,
+          expected_bytes_allocated,
+          d_in,
+          raw_ptr,
+          num_items,
+          op_t{},
+          init,
+          /* stream */ nullptr,
+          transform_t{}));
 
       return cuda::std::array<void*, 1>{reinterpret_cast<void*>(
         cub::detail::reduce::NondeterministicDeviceReduceAtomicKernel<
@@ -354,7 +362,15 @@ C2H_TEST("Device sum uses environment", "[reduce][device]", requirements)
       REQUIRE(
         cudaSuccess
         == cub::detail::reduce::dispatch_nondeterministic(
-          nullptr, expected_bytes_allocated, d_in, raw_ptr, num_items, op_t{}, init, /* stream */ 0, transform_t{}));
+          nullptr,
+          expected_bytes_allocated,
+          d_in,
+          raw_ptr,
+          num_items,
+          op_t{},
+          init,
+          /* stream */ nullptr,
+          transform_t{}));
 
       return cuda::std::array<void*, 1>{reinterpret_cast<void*>(
         cub::detail::reduce::NondeterministicDeviceReduceAtomicKernel<

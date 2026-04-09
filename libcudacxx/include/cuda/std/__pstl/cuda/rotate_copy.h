@@ -101,7 +101,7 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate_copy, __execution_backend::__c
       __output_wrapper,
       static_cast<_OffsetType*>(nullptr),
       __count,
-      0);
+      nullptr);
 
     auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
 

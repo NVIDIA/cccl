@@ -62,7 +62,7 @@ void TestMakeDevicePointer()
 {
   using T = int;
 
-  T* raw_ptr = 0;
+  T* raw_ptr = nullptr;
 
   thrust::device_ptr<T> p0 = thrust::device_pointer_cast(raw_ptr);
 

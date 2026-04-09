@@ -102,7 +102,7 @@ C2H_TEST("DeviceMerge::MergeKeys large key types", "[merge][device]", c2h::type_
         r,
         value_nullptr,
         co,
-        cudaStream_t{0},
+        cudaStream_t{nullptr},
         fixed_policy_selector{});
 
       c2h::device_vector<char> temp_storage(temp_storage_bytes);
@@ -118,7 +118,7 @@ C2H_TEST("DeviceMerge::MergeKeys large key types", "[merge][device]", c2h::type_
         r,
         value_nullptr,
         co,
-        cudaStream_t{0},
+        cudaStream_t{nullptr},
         fixed_policy_selector{});
     });
 }

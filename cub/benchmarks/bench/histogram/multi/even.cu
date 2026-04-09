@@ -99,7 +99,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
     num_row_pixels,
     num_rows,
     row_stride_samples,
-    0,
+    nullptr,
     is_byte_sample);
 
   thrust::device_vector<nvbench::uint8_t> tmp(temp_storage_bytes);

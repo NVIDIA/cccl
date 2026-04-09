@@ -767,7 +767,7 @@ CUB_RUNTIME_FUNCTION cudaError_t call_cub_segmented_sort_api(
   const int* d_begin_offsets,
   const int* d_end_offsets,
 
-  cudaStream_t stream = 0)
+  cudaStream_t stream = nullptr)
 {
   using KeyT                = unwrap_value_t<WrappedKeyT>;
   constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;

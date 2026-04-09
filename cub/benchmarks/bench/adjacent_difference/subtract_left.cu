@@ -52,7 +52,7 @@ void left(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       d_out,
       static_cast<offset_t>(elements),
       difference_op_t{},
-      0
+      nullptr
 #if !TUNE_BASE
       ,
       policy_selector_t{}

@@ -98,7 +98,7 @@ struct DeviceFind
     OutputIteratorT d_out,
     ScanOpT scan_op,
     NumItemsT num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceFind::FindIf");
 
@@ -192,7 +192,7 @@ struct DeviceFind
     ValuesNumItemsT values_num_items,
     OutputIteratorT d_output,
     CompareOpT comp,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::LowerBound");
 
@@ -294,7 +294,7 @@ struct DeviceFind
     ValuesNumItemsT values_num_items,
     OutputIteratorT d_output,
     CompareOpT comp,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::UpperBound");
 

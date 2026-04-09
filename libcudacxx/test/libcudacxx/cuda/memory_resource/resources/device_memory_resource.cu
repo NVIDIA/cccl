@@ -99,11 +99,14 @@ C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
       &ptr,
       42,
       current_default_pool,
-      ::cudaStream_t{0});
+      ::cudaStream_t{nullptr});
     CHECK(ptr != nullptr);
 
     _CCCL_ASSERT_CUDA_API(
-      ::cudaFreeAsync, "Failed to deallocate with pool passed to cuda::device_memory_pool_ref", ptr, ::cudaStream_t{0});
+      ::cudaFreeAsync,
+      "Failed to deallocate with pool passed to cuda::device_memory_pool_ref",
+      ptr,
+      ::cudaStream_t{nullptr});
   }
 
   SECTION("Construct from mempool handle")
@@ -130,11 +133,14 @@ C2H_CCCLRT_TEST("device_memory_pool construction", "[memory_resource]")
       &ptr,
       42,
       current_default_pool,
-      ::cudaStream_t{0});
+      ::cudaStream_t{nullptr});
     CHECK(ptr != nullptr);
 
     _CCCL_ASSERT_CUDA_API(
-      ::cudaFreeAsync, "Failed to deallocate with pool passed to cuda::device_memory_pool_ref", ptr, ::cudaStream_t{0});
+      ::cudaFreeAsync,
+      "Failed to deallocate with pool passed to cuda::device_memory_pool_ref",
+      ptr,
+      ::cudaStream_t{nullptr});
   }
 
   SECTION("Construct with initial pool size")

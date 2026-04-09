@@ -41,7 +41,7 @@ public:
 
   template <typename OtherPointer>
   _CCCL_HOST_DEVICE
-  normal_iterator(const normal_iterator<OtherPointer>& other, enable_if_convertible_t<OtherPointer, Pointer>* = 0)
+  normal_iterator(const normal_iterator<OtherPointer>& other, enable_if_convertible_t<OtherPointer, Pointer>* = nullptr)
       : super_t(other.base())
   {}
 };

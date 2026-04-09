@@ -152,7 +152,7 @@ struct DeviceMemcpy
     OutputBufferIt output_buffer_it,
     BufferSizeIteratorT buffer_sizes,
     ::cuda::std::int64_t num_buffers,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMemcpy::Batched");
     static_assert(::cuda::std::is_pointer_v<cub::detail::it_value_t<InputBufferIt>>,

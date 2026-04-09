@@ -105,7 +105,7 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
     d_num_runs_out,
     equality_op_t{},
     elements,
-    0);
+    nullptr);
 
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
@@ -120,7 +120,7 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
     d_num_runs_out,
     equality_op_t{},
     elements,
-    0);
+    nullptr);
   cudaDeviceSynchronize();
   const OffsetT num_runs = num_runs_out[0];
 

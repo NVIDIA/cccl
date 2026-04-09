@@ -196,7 +196,7 @@ void copy(nvbench::state& state,
     d_output_buffers,
     d_buffer_sizes,
     buffers,
-    0
+    nullptr
 #if !TUNE_BASE
     ,
     policy_selector_t{}

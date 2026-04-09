@@ -99,7 +99,7 @@ C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
     op_t{},
     init_t{},
     guaranteed_max_seg_size,
-    0,
+    nullptr,
     cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{});
 
   c2h::device_vector<::cuda::std::uint8_t> temp(temp_size, thrust::no_init);
@@ -116,7 +116,7 @@ C2H_TEST("Device segmented reduce works with dynamic max segment sizes",
     op_t{},
     init_t{},
     guaranteed_max_seg_size,
-    0,
+    nullptr,
     cub::detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, op_t>{});
 
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());

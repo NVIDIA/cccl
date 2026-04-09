@@ -277,7 +277,7 @@ C2H_CCCLRT_TEST_LIST("base_memory_pool construction", "[memory_resource]", TEST_
 
       void* ptr{nullptr};
 
-      ::cudaStream_t stream{0};
+      ::cudaStream_t stream{nullptr};
       // make an allocation smaller than the max pool size
       _CCCL_TRY_CUDA_API(
         ::cudaMallocAsync,

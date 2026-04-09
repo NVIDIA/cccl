@@ -84,12 +84,12 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
     );
   };
 
-  dispatch_on_stream(cudaStream_t{0});
+  dispatch_on_stream(cudaStream_t{nullptr});
 
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  dispatch_on_stream(cudaStream_t{0});
+  dispatch_on_stream(cudaStream_t{nullptr});
   cudaDeviceSynchronize();
   const OffsetT num_runs = num_runs_out[0];
 

@@ -235,7 +235,7 @@ struct kernel_scope
 
 struct device_memory_resource : cub::detail::device_memory_resource
 {
-  cudaStream_t target_stream = 0;
+  cudaStream_t target_stream = nullptr;
   size_t* bytes_allocated    = nullptr;
   size_t* bytes_deallocated  = nullptr;
 
@@ -451,7 +451,7 @@ void launch(ActionT action, Args... args)
   env_t env = cuda::std::get<env_idx>(tuple);
 
   // Environment-based API should use default stream if not specified in the environment
-  cudaStream_t stream{0};
+  cudaStream_t stream{nullptr};
 
   if constexpr (cuda::std::execution::__queryable_with<env_t, cuda::get_stream_t>)
   {
@@ -465,7 +465,7 @@ void launch(ActionT action, Args... args)
   }
 
   // cuda graphs do not support default stream
-  REQUIRE(stream != cudaStream_t{0});
+  REQUIRE(stream != cudaStream_t{nullptr});
 
   size_t bytes_allocated{};
   size_t bytes_deallocated{};
@@ -599,7 +599,7 @@ void launch(ActionT action, Args... args)
   env_t env = cuda::std::get<env_idx>(tuple);
 
   // Environment-based API should use default stream if not specified in the environment
-  cudaStream_t stream{0};
+  cudaStream_t stream{nullptr};
 
   if constexpr (cuda::std::execution::__queryable_with<env_t, cuda::get_stream_t>)
   {

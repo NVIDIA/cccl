@@ -409,7 +409,7 @@ public:
     NumItemsT num_items,
     ReductionOpT reduction_op,
     T init,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Reduce");
 
@@ -700,7 +700,7 @@ public:
       InputIteratorT d_in,
       OutputIteratorT d_out,
       NumItemsT num_items,
-      cudaStream_t stream = 0)
+      cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Sum");
 
@@ -809,7 +809,7 @@ public:
       InputIteratorT d_in,
       OutputIteratorT d_out,
       NumItemsT num_items,
-      cudaStream_t stream = 0)
+      cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Min");
 
@@ -1078,7 +1078,7 @@ public:
     IndexOutIteratorT d_index_out,
     ::cuda::std::int64_t num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
     return __arg_min(d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out, num_items, compare_op, stream);
@@ -1098,7 +1098,7 @@ public:
     ExtremumOutIteratorT d_min_out,
     IndexOutIteratorT d_index_out,
     ::cuda::std::int64_t num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return ArgMin(
       d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out, num_items, ::cuda::std::less{}, stream);
@@ -1378,7 +1378,7 @@ public:
          InputIteratorT d_in,
          OutputIteratorT d_out,
          int num_items,
-         cudaStream_t stream = 0)
+         cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
 
@@ -1500,7 +1500,7 @@ public:
       InputIteratorT d_in,
       OutputIteratorT d_out,
       NumItemsT num_items,
-      cudaStream_t stream = 0)
+      cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Max");
 
@@ -1743,7 +1743,7 @@ public:
     IndexOutIteratorT d_index_out,
     ::cuda::std::int64_t num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
     return __arg_min(
@@ -1771,7 +1771,7 @@ public:
     ExtremumOutIteratorT d_max_out,
     IndexOutIteratorT d_index_out,
     ::cuda::std::int64_t num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return ArgMax(
       d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items, ::cuda::std::less{}, stream);
@@ -1871,7 +1871,7 @@ public:
          InputIteratorT d_in,
          OutputIteratorT d_out,
          int num_items,
-         cudaStream_t stream = 0)
+         cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
 
@@ -2138,7 +2138,7 @@ public:
     ReductionOpT reduction_op,
     TransformOpT transform_op,
     T init,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::TransformReduce");
 
@@ -2537,7 +2537,7 @@ public:
     NumRunsOutputIteratorT d_num_runs_out,
     ReductionOpT reduction_op,
     NumItemsT num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ReduceByKey");
 
