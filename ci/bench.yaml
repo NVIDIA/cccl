@@ -47,8 +47,8 @@ benchmarks:
     # - "rtxa6000"   # sm_86, 48 GB
     # - "l4"         # sm_89, 24 GB
     # - "rtx4090"    # sm_89, 24 GB
-     - "h100"       # sm_90, 80 GB
-     - "rtxpro6000" # sm_120
+    # - "h100"       # sm_90, 80 GB
+    # - "rtxpro6000" # sm_120
 
   # Extra .devcontainer/launch.sh -d args
   # launch_args: "--cuda 13.1 --host gcc14"
@@ -64,8 +64,4 @@ benchmarks:
     --stopping-criterion entropy
     --throttle-threshold 90
     --throttle-recovery-delay 0.15
-    --axis "OffsetT{ct}=I32"
-    --axis "SelectedElements[pow2]=[3:23:5]"
-    --axis "Entropy=[1.000,0.201,0.000]"
-    --axis "OutOffsetT{ct}=I32"
   nvbench_compare_args: ""
