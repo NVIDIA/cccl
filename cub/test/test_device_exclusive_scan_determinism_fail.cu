@@ -5,6 +5,8 @@
 
 #include <cub/device/device_scan.cuh>
 
+#include <iostream>
+
 int main()
 {
   namespace stdexec = cuda::std::execution;

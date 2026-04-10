@@ -20,6 +20,8 @@
 #include <cuda/experimental/__stf/utility/nvtx.cuh>
 #include <cuda/experimental/stf.cuh>
 
+#include <iostream>
+
 #define TILED
 
 using namespace cuda::experimental::stf;
