@@ -27,6 +27,7 @@
 #include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/span>
@@ -125,7 +126,7 @@ _CCCL_TEMPLATE(class _Level,
                class _Synchronizer = __barrier_synchronizer<thread_level, _Level, group_by<_Np>>)
 _CCCL_REQUIRES(
   __is_hierarchy_level_v<_Level> _CCCL_AND __is_or_has_hierarchy_member_v<_HierarchyLike>
-    _CCCL_AND ::cuda::std::is_convertible_v<_SyncParam, ::cuda::std::span<typename _Synchronizer::__barrier_type>>)
+    _CCCL_AND ::cuda::std::is_constructible_v<::cuda::std::span<typename _Synchronizer::__barrier_type>, _SyncParam>)
 _CCCL_HOST_DEVICE thread_group(const _Level&, const group_by<_Np>&, const _HierarchyLike&, _SyncParam&&)
   -> thread_group<_Level, group_by<_Np>, __hierarchy_type_of<_HierarchyLike>, _Synchronizer>;
 } // namespace cuda::experimental
