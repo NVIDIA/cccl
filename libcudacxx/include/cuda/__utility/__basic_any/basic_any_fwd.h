@@ -113,7 +113,7 @@ enum class __vtable_kind : uint8_t
   __rtti,
 };
 
-inline constexpr uint8_t __basic_any_version = 0;
+inline constexpr uint8_t __basic_any_version = 1;
 
 template <class _Interface>
 extern _Interface __remove_ireference_v; // specialized in interfaces.cuh
