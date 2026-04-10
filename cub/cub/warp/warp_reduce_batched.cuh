@@ -68,33 +68,13 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @warpcollective{WarpReduceBatched}
 //!
-//! The code snippet below illustrates reduction of 8 batches of 8 elements each:
+//! The code snippet below illustrates reduction of 3 batches across 32 threads in each of 2 (logical) warps:
 //!
-//! .. code-block:: c++
-//!
-//!    #include <cub/cub.cuh>
-//!
-//!    __global__ void ExampleKernel(...)
-//!    {
-//!        // Specialize WarpReduceBatched for 8 batches of 8 int elements
-//!        using WarpReduceBatched = cub::WarpReduceBatched<int, 8, 8>;
-//!
-//!        // Allocate shared memory (none needed for shuffle-based implementation)
-//!        __shared__ typename WarpReduceBatched::TempStorage temp_storage;
-//!
-//!        // Each thread provides 8 input values (one element from each of 8 arrays)
-//!        int thread_data[8];
-//!        for (int i = 0; i < 8; i++)
-//!        {
-//!            thread_data[i] = ...; // Load element i from thread's position
-//!        }
-//!
-//!        // Perform batched reduction (7 stages vs 24 for sequential)
-//!        int results[8];
-//!        WarpReduceBatched(temp_storage).Reduce(thread_data, results, ::cuda::std::plus<>{});
-//!
-//!        // Thread i now has the sum of array i in results[i]
-//!    }
+//! .. literalinclude:: ../../../cub/test/catch2_test_warp_reduce_batched_api.cu
+//!     :language: c++
+//!     :dedent:
+//!     :start-after: example-begin warp-reduce-batched-overview
+//!     :end-before: example-end warp-reduce-batched-overview
 //!
 //! @endrst
 //!
@@ -168,33 +148,17 @@ public:
   //! Thread *i* stores results sequentially in its ``outputs`` array:
   //! ``outputs[0]`` = result of batch *i*, ``outputs[1]`` = result of batch *(i + LogicalWarpThreads)*, etc.
   //!
-  //! **Algorithm Performance:**
-  //!
-  //! - Completes in ``Batches - 1 + log2(LogicalWarpThreads / Batches)`` stages
-  //! - vs ``Batches * log2(LogicalWarpThreads)`` stages for ``Batches`` sequential ``WarpReduce`` calls
-  //! - Example: ``Batches=8``, ``LogicalWarpThreads=8`` -> 7 stages (batched) vs 24 stages (sequential)
-  //!
   //! Snippet
   //! +++++++
   //!
-  //! The code snippet below illustrates batched reduction of 8 batches:
+  //! The code snippet below illustrates reduction of 3 batches across 16 threads in the branched-off first logical warp
+  //! (using ``cuda::std::array`` inputs and outputs):
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>
-  //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        using WarpReduceBatched = cub::WarpReduceBatched<int, 8, 8>;
-  //!
-  //!        cuda::std::array<int, 8> inputs = {...};  // Each thread provides 8 values
-  //!        cuda::std::array<int, 1> output;
-  //!
-  //!        WarpReduceBatched.Reduce(
-  //!            inputs, output, cuda::std::plus<>{});
-  //!
-  //!        // Logical warp lane i now has sum of batch i in output[0]
-  //!    }
+  //! .. literalinclude:: ../../../cub/test/catch2_test_warp_reduce_batched_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin warp-reduce-batched-reduce
+  //!     :end-before: example-end warp-reduce-batched-reduce
   //!
   //! @endrst
   //!
@@ -242,6 +206,18 @@ public:
   //! Performs batched sum reduction of Batches arrays.
   //!
   //! Convenience wrapper for ``Reduce`` with ``::cuda::std::plus<>`` operator.
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates reduction of 3 batches across 2 threads in each of 4 logical warps
+  //! meaning more than one output per thread (using ``cuda::std::span`` inputs and outputs):
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_warp_reduce_batched_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin warp-reduce-batched-sum
+  //!     :end-before: example-end warp-reduce-batched-sum
   //!
   //! @smemwarpreuse
   //!
