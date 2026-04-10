@@ -282,26 +282,26 @@ struct AgentTopK
   // Staging buffer type selection
   //---------------------------------------------------------------------
 
-  struct _StagingDisabled
+  struct staging_disabled_t
   {
     key_in_t keys[1];
     OffsetT indices[1];
   };
 
-  struct _StagingCoalescing
+  struct staging_coalescing_t
   {
     key_in_t keys[tile_items];
     OffsetT indices[tile_items];
   };
 
-  struct _StagingKeysOnly
+  struct staging_keys_only_t
   {
     key_in_t keys[tile_items];
     OffsetT indices[1];
   };
 
   // Two-phase: keys and indices share storage via anonymous union
-  struct _StagingTwoPhase
+  struct staging_two_phase_t
   {
     union
     {
@@ -312,35 +312,40 @@ struct AgentTopK
 
   using staging_t = ::cuda::std::conditional_t<
     effective_write_mode == smem_write_mode::no_smem_coalescing,
-    _StagingDisabled,
+    staging_disabled_t,
     ::cuda::std::conditional_t<effective_write_mode == smem_write_mode::smem_coalescing_two_phase,
-                               _StagingTwoPhase,
-                               ::cuda::std::conditional_t<keys_only, _StagingKeysOnly, _StagingCoalescing>>>;
+                               staging_two_phase_t,
+                               ::cuda::std::conditional_t<keys_only, staging_keys_only_t, staging_coalescing_t>>>;
 
+  //---------------------------------------------------------------------
   // Shared memory
-  struct _TempStorage
+  //---------------------------------------------------------------------
+
+  struct temp_storage_base_t
   {
     union
     {
-      // Smem needed for loading
       typename block_load_input_t::TempStorage load_input;
       typename block_load_trans_t::TempStorage load_trans;
-      // Smem needed for scan
       typename block_scan_t::TempStorage scan;
-      // Smem needed for storing
       typename block_store_trans_t::TempStorage store_trans;
-
       staging_t staging;
     };
     OffsetT histogram[num_buckets];
+  };
 
-    // Write coordination counters
+  struct temp_storage_smem_t : temp_storage_base_t
+  {
     OffsetT smem_filter_cnt;
     OutOffsetT smem_out_cnt;
     OffsetT block_filter_base;
     OutOffsetT block_out_base;
     OutOffsetT block_out_back_base;
   };
+
+  using _TempStorage = ::cuda::std::
+    conditional_t<effective_write_mode != smem_write_mode::no_smem_coalescing, temp_storage_smem_t, temp_storage_base_t>;
+
   /// Alias wrapper allowing storage to be unioned
   struct TempStorage : Uninitialized<_TempStorage>
   {};
