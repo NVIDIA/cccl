@@ -26,6 +26,8 @@
 #include <cuda/barrier>
 #include <cuda/hierarchy>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__type_traits/aligned_storage.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/span>
@@ -116,8 +118,12 @@ public:
     static_assert(_MappingResult::static_group_count() != ::cuda::std::dynamic_extent,
                   "__barrier_synchronizer currently requires static group count");
 
-    __shared__ barrier<thread_scope_block> __barriers[_MappingResult::static_group_count()];
-    __barriers_ = __barriers;
+    constexpr ::cuda::std::size_t __nbarriers = _MappingResult::static_group_count();
+    using _BarrierStorage =
+      ::cuda::std::aligned_storage_t<sizeof(_Barrier[__nbarriers]), alignof(_Barrier[__nbarriers])>;
+
+    __shared__ _BarrierStorage __barrier_storage;
+    __barriers_ = reinterpret_cast<_Barrier*>(::cuda::std::addressof(__barrier_storage));
 
     __init_barriers(__mapping_result);
   }
