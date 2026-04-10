@@ -341,25 +341,25 @@ UNITTEST("buddy allocator meta data")
 
   reserved::buddy_allocator_metadata allocator(1024, prereqs);
 
-  // ::std::cout << "Initial state:" << ::std::endl;
+  // ::std::cout << "Initial state:" << ::'\n';
   // allocator.debug_print();
 
   event_list dummy;
 
   ::std::ptrdiff_t ptr1 = allocator.allocate(200, dummy); // Allocate 200 bytes
-  // ::std::cout << "\nAfter allocating 200 bytes:" << ::std::endl;
+  // ::std::cout << "\nAfter allocating 200 bytes:" << ::'\n';
   // allocator.debug_print();
 
   ::std::ptrdiff_t ptr2 = allocator.allocate(300, dummy); // Allocate 300 bytes
-  // ::std::cout << "\nAfter allocating 300 bytes:" << ::std::endl;
+  // ::std::cout << "\nAfter allocating 300 bytes:" << ::'\n';
   // allocator.debug_print();
 
   allocator.deallocate(ptr1, 200, dummy); // Free the 200 bytes
-  // ::std::cout << "\nAfter freeing 200 bytes:" << ::std::endl;
+  // ::std::cout << "\nAfter freeing 200 bytes:" << ::'\n';
   // allocator.debug_print();
 
   allocator.deallocate(ptr2, 300, dummy); // Free the 300 bytes
-  // ::std::cout << "\nAfter freeing 300 bytes:" << ::std::endl;
+  // ::std::cout << "\nAfter freeing 300 bytes:" << ::'\n';
   // allocator.debug_print();
 };
 

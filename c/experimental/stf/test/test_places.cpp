@@ -10,6 +10,8 @@
 
 #include <cuda/__cmath/ceil_div.h>
 
+#include <vector>
+
 #include <cuda_runtime.h>
 
 #include <c2h/catch2_test_helper.h>
@@ -47,13 +49,13 @@ C2H_TEST("empty stf tasks", "[task]")
   stf_ctx_handle ctx = stf_ctx_create();
   REQUIRE(ctx != nullptr);
 
-  float* X = (float*) malloc(N * sizeof(float));
-  float* Y = (float*) malloc(N * sizeof(float));
-  float* Z = (float*) malloc(N * sizeof(float));
+  std::vector<float> X(N);
+  std::vector<float> Y(N);
+  std::vector<float> Z(N);
 
-  stf_logical_data_handle lX = stf_logical_data(ctx, X, N * sizeof(float));
-  stf_logical_data_handle lY = stf_logical_data(ctx, Y, N * sizeof(float));
-  stf_logical_data_handle lZ = stf_logical_data(ctx, Z, N * sizeof(float));
+  stf_logical_data_handle lX = stf_logical_data(ctx, X.data(), N * sizeof(float));
+  stf_logical_data_handle lY = stf_logical_data(ctx, Y.data(), N * sizeof(float));
+  stf_logical_data_handle lZ = stf_logical_data(ctx, Z.data(), N * sizeof(float));
   REQUIRE(lX != nullptr);
   REQUIRE(lY != nullptr);
   REQUIRE(lZ != nullptr);
@@ -107,10 +109,6 @@ C2H_TEST("empty stf tasks", "[task]")
   stf_logical_data_destroy(lZ);
 
   stf_ctx_finalize(ctx);
-
-  free(X);
-  free(Y);
-  free(Z);
 }
 
 C2H_TEST("composite data place with grid of places (same device repeated)", "[task][places][composite]")
@@ -137,13 +135,13 @@ C2H_TEST("composite data place with grid of places (same device repeated)", "[ta
   stf_ctx_handle ctx = stf_ctx_create();
   REQUIRE(ctx != nullptr);
 
-  float* X = static_cast<float*>(malloc(N * sizeof(float)));
+  std::vector<float> X(N);
   for (size_t i = 0; i < N; ++i)
   {
     X[i] = static_cast<float>(i);
   }
 
-  stf_logical_data_handle lX = stf_logical_data(ctx, X, N * sizeof(float));
+  stf_logical_data_handle lX = stf_logical_data(ctx, X.data(), N * sizeof(float));
   REQUIRE(lX != nullptr);
   stf_logical_data_set_symbol(lX, "X_composite");
 
@@ -167,7 +165,6 @@ C2H_TEST("composite data place with grid of places (same device repeated)", "[ta
   {
     REQUIRE(X[i] == static_cast<float>(i));
   }
-  free(X);
 }
 
 C2H_TEST("composite data place with stf_exec_place_grid_create (vector of places + dim4)", "[task][places][composite]")
@@ -207,13 +204,13 @@ C2H_TEST("composite data place with stf_exec_place_grid_create (vector of places
   stf_ctx_handle ctx = stf_ctx_create();
   REQUIRE(ctx != nullptr);
 
-  float* X = static_cast<float*>(malloc(N * sizeof(float)));
+  std::vector<float> X(N);
   for (size_t i = 0; i < N; ++i)
   {
     X[i] = static_cast<float>(i);
   }
 
-  stf_logical_data_handle lX = stf_logical_data(ctx, X, N * sizeof(float));
+  stf_logical_data_handle lX = stf_logical_data(ctx, X.data(), N * sizeof(float));
   REQUIRE(lX != nullptr);
   stf_task_handle t = stf_task_create(ctx);
   REQUIRE(t != nullptr);
@@ -234,5 +231,4 @@ C2H_TEST("composite data place with stf_exec_place_grid_create (vector of places
   {
     REQUIRE(X[i] == static_cast<float>(i));
   }
-  free(X);
 }

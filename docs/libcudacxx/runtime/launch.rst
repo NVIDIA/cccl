@@ -275,16 +275,16 @@ Example:
    #include <iostream>
 
    cuda::host_launch(stream, [](int arg) {
-     std::cout << "Callback executed" << std::endl;
-     std::cout << "Argument: " << arg << std::endl;
+     std::cout << "Callback executed" << '\n';
+     std::cout << "Argument: " << arg << '\n';
    }, 42);
 
    // Passing by reference requires using cuda::std::ref without arguments to avoid dynamic allocation,
    // but the callable must live long enough for the callable to execute.
    int arg = 42;
    auto lambda = [&arg]() {
-     std::cout << "Callback executed" << std::endl;
-     std::cout << "Argument: " << arg << std::endl;
+     std::cout << "Callback executed" << '\n';
+     std::cout << "Argument: " << arg << '\n';
    };
    cuda::host_launch(stream, cuda::std::ref(lambda));
    stream.sync();

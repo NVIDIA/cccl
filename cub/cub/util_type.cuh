@@ -38,6 +38,10 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
+
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -712,11 +716,24 @@ struct KeyValuePair
       , value(value)
   {}
 
+  /// Equality operator
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const KeyValuePair& b) const
+  {
+    return (value == b.value) && (key == b.key);
+  }
+
   /// Inequality operator
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const KeyValuePair& b)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const KeyValuePair& b) const
   {
     return (value != b.value) || (key != b.key);
   }
+
+#  if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const KeyValuePair& pair)
+  {
+    return os << '(' << pair.key << ',' << pair.value << ')';
+  }
+#  endif // !_CCCL_COMPILER(NVRTC)
 };
 
 /**

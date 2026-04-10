@@ -71,11 +71,11 @@ int main()
   auto err = cudaDeviceSynchronize();
   if (err != cudaSuccess)
   {
-    std::cout << "Error: " << cudaGetErrorString(err) << std::endl;
+    std::cout << "Error: " << cudaGetErrorString(err) << '\n';
     return -1;
   }
 
-  std::cout << "Sum: " << result[0] << std::endl;
+  std::cout << "Sum: " << result[0] << '\n';
 
   assert(result[0] == N);
 

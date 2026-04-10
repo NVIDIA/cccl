@@ -57,6 +57,7 @@
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
+#include <cuda/std/initializer_list>
 #include <cuda/std/version>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -168,6 +169,19 @@ public:
       : __data_{::cuda::std::ranges::data(__r)}
   {
     _CCCL_ASSERT(::cuda::std::ranges::size(__r) == _Extent, "size mismatch in span's constructor (range)");
+  }
+
+  // Deviation from P4144R1 Hana Dusikova's proposed fix: uses initializer_list<_InitListValueType>
+  // instead of initializer_list<const _InitListValueType>. The const is redundant because
+  // initializer_list<T>::begin() already returns const T*, so initializer_list<const T>::begin()
+  // returns const const T* which collapses to const T* — identical behavior. Omitting the const
+  // also avoids complications with template argument deduction in the CCCL SFINAE fallback path.
+  _CCCL_TEMPLATE(class _InitListValueType, class _Ep = element_type)
+  _CCCL_REQUIRES(is_same_v<_InitListValueType, value_type> _CCCL_AND is_const_v<_Ep>)
+  _CCCL_API constexpr span(initializer_list<_InitListValueType> __il)
+      : __data_{__il.begin()}
+  {
+    _CCCL_ASSERT(_Extent == __il.size(), "size mismatch in span's constructor (initializer_list)");
   }
 
   _CCCL_TEMPLATE(class _OtherElementType, size_t _Extent2 = _Extent)
@@ -387,6 +401,18 @@ public:
   _CCCL_API constexpr span(_Range&& __r)
       : __data_(::cuda::std::ranges::data(__r))
       , __size_{::cuda::std::ranges::size(__r)}
+  {}
+
+  // Deviation from P4144R1 Hana Dusikova's proposed fix: uses initializer_list<_InitListValueType>
+  // instead of initializer_list<const _InitListValueType>. The const is redundant because
+  // initializer_list<T>::begin() already returns const T*, so initializer_list<const T>::begin()
+  // returns const const T* which collapses to const T* — identical behavior. Omitting the const
+  // also avoids complications with template argument deduction in the CCCL SFINAE fallback path.
+  _CCCL_TEMPLATE(class _InitListValueType, class _Ep = element_type)
+  _CCCL_REQUIRES(is_same_v<_InitListValueType, value_type> _CCCL_AND is_const_v<_Ep>)
+  _CCCL_API constexpr span(initializer_list<_InitListValueType> __il)
+      : __data_{__il.begin()}
+      , __size_{__il.size()}
   {}
 
   _CCCL_TEMPLATE(class _OtherElementType, size_t _OtherExtent)

@@ -111,8 +111,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   box Hs({0ul, SIZE_X - 1}, {0ul, SIZE_Y - 1}, {0ul, SIZE_Z - 1});
   box source_s({center_x, center_x + 1}, {center_y, center_y + 1}, {center_z, center_z + 1});
 
-  std::cout << "Running FDTD simulation for " << timesteps << " timesteps" << std::endl;
-  std::cout << "Grid size: " << SIZE_X << "x" << SIZE_Y << "x" << SIZE_Z << std::endl;
+  std::cout << "Running FDTD simulation for " << timesteps << " timesteps" << '\n';
+  std::cout << "Grid size: " << SIZE_X << "x" << SIZE_Y << "x" << SIZE_Z << '\n';
 
   {
     auto repeat_guard = ctx.repeat_graph_scope(timesteps);
@@ -173,12 +173,12 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   // Print final result at center
   ctx.host_launch(lEz.read())->*[=](auto Ez) {
-    std::cout << "Final Ez at center: " << Ez(center_x, center_y, center_z) << std::endl;
+    std::cout << "Final Ez at center: " << Ez(center_x, center_y, center_z) << '\n';
   };
 
   ctx.finalize();
 
-  std::cout << "FDTD simulation completed!" << std::endl;
+  std::cout << "FDTD simulation completed!" << '\n';
   return 0;
 #endif
 }

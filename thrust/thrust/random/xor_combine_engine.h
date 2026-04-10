@@ -59,7 +59,7 @@ namespace random
  *    thrust::xor_combine_engine<thrust::minstd_rand,0,thrust::minstd_rand0,0> rng;
  *
  *    // print a random number to standard output
- *    std::cout << rng() << std::endl;
+ *    std::cout << rng() << '\n';
  *
  *    return 0;
  *  }

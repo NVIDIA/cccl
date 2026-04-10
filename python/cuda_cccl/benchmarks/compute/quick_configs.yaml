@@ -117,6 +117,13 @@ segmented_sort/keys:
       "Elements{io}": 22
       "MaxSegmentSize": 10
 
+segmented_reduce/variable_sum:
+  benchmarks:
+    variable_default:
+      "T{ct}": "I32"
+      "Elements{io}": 16
+      "MaxSegmentSize": 4
+
 partition/three_way:
   "T{ct}": "I32"
   "Elements{io}": 16

@@ -72,7 +72,7 @@ int main()
     thrust::sort(structures.begin(), structures.end());
     assert(thrust::is_sorted(structures.begin(), structures.end()));
 
-    std::cout << "AoS sort took " << 1e3 * t.elapsed() << " milliseconds" << std::endl;
+    std::cout << "AoS sort took " << 1e3 * t.elapsed() << " milliseconds" << '\n';
   }
 
   // Sort Key-Value pairs using Structure of Arrays (SoA) storage
@@ -87,7 +87,7 @@ int main()
     thrust::sort_by_key(keys.begin(), keys.end(), values.begin());
     assert(thrust::is_sorted(keys.begin(), keys.end()));
 
-    std::cout << "SoA sort took " << 1e3 * t.elapsed() << " milliseconds" << std::endl;
+    std::cout << "SoA sort took " << 1e3 * t.elapsed() << " milliseconds" << '\n';
   }
 
   return 0;

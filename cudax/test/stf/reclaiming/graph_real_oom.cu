@@ -28,7 +28,7 @@ int main(int argc, char** argv)
   cuda_safe_call(cudaMemGetInfo(&free_mem, &total_mem));
 
   std::cout << "Device memory: " << total_mem_ref / (1024 * 1024.) << " MB"
-            << " FREE/TOTAL=" << free_mem / (1024 * 1024.) << "/" << total_mem / (1024 * 1024.) << std::endl;
+            << " FREE/TOTAL=" << free_mem / (1024 * 1024.) << "/" << total_mem / (1024 * 1024.) << '\n';
 
   // Warning: this should represent 6% of device's available memory
   size_t block_size = free_mem / 32;
@@ -39,7 +39,7 @@ int main(int argc, char** argv)
   size_t wasted_size = block_size * 29;
   cuda_safe_call(cudaMalloc(&wasted_mem, wasted_size));
 
-  std::cout << "Wasted: " << wasted_size / (1024 * 1024.) << " MB" << std::endl;
+  std::cout << "Wasted: " << wasted_size / (1024 * 1024.) << " MB" << '\n';
 
   graph_ctx ctx;
 
@@ -63,14 +63,13 @@ int main(int argc, char** argv)
 
   // Checking the amount of memory actually available now
   cuda_safe_call(cudaMemGetInfo(&free_mem, &total_mem));
-  std::cout
-    << "Device memory: FREE/TOTAL=" << free_mem / (1024 * 1024.) << "/" << total_mem / (1024 * 1024.) << std::endl;
+  std::cout << "Device memory: FREE/TOTAL=" << free_mem / (1024 * 1024.) << "/" << total_mem / (1024 * 1024.) << '\n';
 
   ctx.submit();
 
   if (argc > 1)
   {
-    std::cout << "Generating DOT output in " << argv[1] << std::endl;
+    std::cout << "Generating DOT output in " << argv[1] << '\n';
     ctx.print_to_dot(argv[1]);
   }
 

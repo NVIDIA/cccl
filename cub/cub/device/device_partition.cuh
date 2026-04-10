@@ -30,30 +30,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::partition
-{
-// TODO(bgruber): drop this after rewriting to the new tuning API
-struct get_tuning_query_t
-{};
-
-// TODO(bgruber): drop this after rewriting to the new tuning API
-template <class Derived>
-struct tuning
-{
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_tuning_query_t&) const noexcept -> Derived
-  {
-    return static_cast<const Derived&>(*this);
-  }
-};
-
-// TODO(bgruber): drop this after rewriting to the new tuning API
-struct default_tuning : tuning<default_tuning>
-{
-  template <class InputT, class FlagT, class OffsetT, bool DistinctPartitions, SelectImpl Impl>
-  using fn = detail::select::policy_hub<InputT, FlagT, OffsetT, DistinctPartitions, Impl>;
-};
-} // namespace detail::partition
-
 //! @rst
 //! DevicePartition provides device-wide, parallel operations for
 //! partitioning sequences of data items residing within device-accessible memory.
@@ -97,28 +73,14 @@ private:
     SelectOpT select_op,
     cudaStream_t stream)
   {
-    using partition_tuning_t = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::partition::get_tuning_query_t, detail::partition::default_tuning>;
-
-    using flag_t = detail::it_value_t<FlagIteratorT>;
-
-    using policy_t = typename partition_tuning_t::
-      template fn<detail::it_value_t<InputIteratorT>, flag_t, OffsetT, true, SelectImpl::Partition>;
+    using default_policy_selector = detail::select::
+      policy_selector_from_types<InputIteratorT, FlagIteratorT, OutputIteratorT, OffsetT, SelectImpl::Partition>;
+    using policy_selector =
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::select::select_if_policy, default_policy_selector>;
 
     using EqualityOp = NullType;
 
-    using dispatch_t =
-      DispatchSelectIf<InputIteratorT,
-                       FlagIteratorT,
-                       OutputIteratorT,
-                       NumSelectedIteratorT,
-                       SelectOpT,
-                       EqualityOp,
-                       OffsetT,
-                       SelectImpl::Partition,
-                       policy_t>;
-
-    return dispatch_t::Dispatch(
+    return detail::select::dispatch<SelectImpl::Partition>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -127,8 +89,9 @@ private:
       d_num_selected_out,
       select_op,
       EqualityOp{},
-      num_items,
-      stream);
+      static_cast<OffsetT>(num_items),
+      stream,
+      policy_selector{});
   }
 
 public:
@@ -250,24 +213,14 @@ public:
     using OffsetT       = typename ChooseOffsetT::type; // Signed integer type for global offsets
     using SelectOp      = NullType; // Selection op (not used)
     using EqualityOp    = NullType; // Equality operator (not used)
-    using DispatchSelectIfT =
-      DispatchSelectIf<InputIteratorT,
-                       FlagIterator,
-                       OutputIteratorT,
-                       NumSelectedIteratorT,
-                       SelectOp,
-                       EqualityOp,
-                       OffsetT,
-                       SelectImpl::Partition>;
 
     // Check if the number of items exceeds the range covered by the selected signed offset type
-    cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items);
-    if (error)
+    if (const cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items))
     {
       return error;
     }
 
-    return DispatchSelectIfT::Dispatch(
+    return detail::select::dispatch<SelectImpl::Partition>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -276,7 +229,7 @@ public:
       d_num_selected_out,
       SelectOp{},
       EqualityOp{},
-      num_items,
+      static_cast<OffsetT>(num_items),
       stream);
   }
 
@@ -510,32 +463,21 @@ public:
     using EqualityOp    = NullType; // Equality operator (not used)
 
     // Check if the number of items exceeds the range covered by the selected signed offset type
-    cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items);
-    if (error)
+    if (const cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items))
     {
       return error;
     }
 
-    using DispatchSelectIfT =
-      DispatchSelectIf<InputIteratorT,
-                       FlagIterator,
-                       OutputIteratorT,
-                       NumSelectedIteratorT,
-                       SelectOp,
-                       EqualityOp,
-                       OffsetT,
-                       SelectImpl::Partition>;
-
-    return DispatchSelectIfT::Dispatch(
+    return detail::select::dispatch<SelectImpl::Partition>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
-      nullptr,
+      FlagIterator{nullptr},
       d_out,
       d_num_selected_out,
       select_op,
       EqualityOp{},
-      num_items,
+      static_cast<OffsetT>(num_items),
       stream);
   }
 

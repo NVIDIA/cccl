@@ -26,9 +26,9 @@ int main()
   thrust::device_vector<int> lengths(N);
 
   // print the initial data
-  std::cout << "input data:" << std::endl;
+  std::cout << "input data:" << '\n';
   thrust::copy(input.begin(), input.end(), std::ostream_iterator<char>(std::cout, ""));
-  std::cout << std::endl << std::endl;
+  std::cout << '\n' << '\n';
 
   // compute run lengths
   size_t num_runs =
@@ -43,12 +43,12 @@ int main()
     - output.begin(); // compute the output size
 
   // print the output
-  std::cout << "run-length encoded output:" << std::endl;
+  std::cout << "run-length encoded output:" << '\n';
   for (size_t i = 0; i < num_runs; i++)
   {
     std::cout << "(" << output[i] << "," << lengths[i] << ")";
   }
-  std::cout << std::endl;
+  std::cout << '\n';
 
   return 0;
 }

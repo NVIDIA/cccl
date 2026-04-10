@@ -147,19 +147,6 @@ struct DeviceScanKernelSource
     ::cuda::std::__construct_at(&arg.lookahead, static_cast<warpspeed::tile_state_t<AccumT>*>(ts));
     return arg;
   }
-
-  CUB_RUNTIME_FUNCTION static constexpr bool use_warpspeed(const scan_policy& policy)
-  {
-#if _CCCL_CUDACC_AT_LEAST(12, 8)
-    if (policy.warpspeed)
-    {
-      return detail::scan::use_warpspeed<UnwrappedInputIteratorT, UnwrappedOutputIteratorT, AccumT>(policy.warpspeed);
-    }
-#else
-    (void) policy;
-#endif
-    return false;
-  }
 };
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
@@ -168,16 +155,19 @@ _CCCL_API constexpr auto convert_policy() -> scan_policy
 {
   // this does not convert any warpspeed policy data, which is fine because we merged warpspeed scan during the CCCL 3.4
   // development cycle, so it never had user exposure through the policy_hub, and we can just only support it through
-  // the policy_selector, which CUB and Thrust.
+  // the policy_selector.
   using scan_policy_t = typename LegacyActivePolicy::ScanPolicyT;
   return scan_policy{
-    scan_policy_t::BLOCK_THREADS,
-    scan_policy_t::ITEMS_PER_THREAD,
-    scan_policy_t::LOAD_ALGORITHM,
-    scan_policy_t::LOAD_MODIFIER,
-    scan_policy_t::STORE_ALGORITHM,
-    scan_policy_t::SCAN_ALGORITHM,
-    detail::delay_constructor_policy_from_type<typename scan_policy_t::detail::delay_constructor_t>};
+    scan_algorithm::lookback,
+    scan_lookback_policy{
+      scan_policy_t::BLOCK_THREADS,
+      scan_policy_t::ITEMS_PER_THREAD,
+      scan_policy_t::LOAD_ALGORITHM,
+      scan_policy_t::LOAD_MODIFIER,
+      scan_policy_t::STORE_ALGORITHM,
+      scan_policy_t::SCAN_ALGORITHM,
+      detail::delay_constructor_policy_from_type<typename scan_policy_t::detail::delay_constructor_t>},
+    scan_warpspeed_policy{}};
 }
 
 // TODO(griwes): remove in CCCL 4.0 when we drop the scan dispatcher after publishing the tuning API
@@ -503,7 +493,6 @@ struct DispatchScan
     return cudaSuccess;
   }
 
-#if __cccl_ptx_isa >= 860
   // do check in separate function, so error message contains the required SMEM in the error novel
   template <int SMemSizeForSingleStage>
   CUB_RUNTIME_FUNCTION static void __check_smem()
@@ -515,6 +504,7 @@ struct DispatchScan
   template <typename PolicyGetter>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(PolicyGetter policy_getter)
   {
+#if __cccl_ptx_isa >= 860
     if (num_items == 0)
     {
       temp_storage_bytes = 1; // just fulfill the contract that CUB always requires some temporary storage
@@ -560,12 +550,11 @@ struct DispatchScan
       1,
       static_cast<int>(kernel_src.InputSize()),
       static_cast<int>(kernel_src.InputAlign()),
-      static_cast<int>(kernel_src.OutputSize()),
       static_cast<int>(kernel_src.OutputAlign()),
       static_cast<int>(kernel_src.AccumSize()),
       static_cast<int>(kernel_src.AccumAlign()));
 #  if defined(CUB_DEFINE_RUNTIME_POLICIES)
-    _CCCL_ASSERT(SMemSizeForSingleStage <= detail::max_smem_per_block,
+    _CCCL_ASSERT(smem_size_1_stage <= int{detail::max_smem_per_block},
                  "Single-stage warpspeed scan exceeds architecture independent SMEM (48KiB)");
 #  else // defined(CUB_DEFINE_RUNTIME_POLICIES)
     __check_smem<smem_size_1_stage>();
@@ -589,7 +578,6 @@ struct DispatchScan
                        num_stages + 1,
                        static_cast<int>(kernel_source.InputSize()),
                        static_cast<int>(kernel_source.InputAlign()),
-                       static_cast<int>(kernel_source.OutputSize()),
                        static_cast<int>(kernel_source.OutputAlign()),
                        static_cast<int>(kernel_source.AccumSize()),
                        static_cast<int>(kernel_source.AccumAlign()));
@@ -678,36 +666,20 @@ struct DispatchScan
         return error;
       }
     }
-
+#else // __cccl_ptx_isa >= 860
+    static_assert(sizeof(policy_getter) == 0,
+                  "Implementation bug: Tuning policy selected warpspeed, but supported PTX ISA is too low");
+#endif // __cccl_ptx_isa >= 860
     return cudaSuccess;
   }
-#endif // __cccl_ptx_isa >= 860
-
-  // On Windows, the `if CUB_DETAIL_CONSTEXPR_ISH` results in `warning C4702: unreachable code`.
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4702)
 
   template <typename PolicyGetter>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(PolicyGetter policy_getter)
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookback_algorithm(PolicyGetter policy_getter)
   {
-    CUB_DETAIL_CONSTEXPR_ISH auto active_policy = policy_getter();
+    CUB_DETAIL_CONSTEXPR_ISH const detail::scan::scan_lookback_policy active_policy = policy_getter().lookback;
 
     CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.load_modifier != CacheLoadModifier::LOAD_LDG,
                                  "The memory consistency model does not apply to texture accesses");
-
-#if __cccl_ptx_isa >= 860
-#  if defined(CUB_DEFINE_RUNTIME_POLICIES)
-    if (kernel_source.use_warpspeed(active_policy))
-    {
-      return __invoke_lookahead_algorithm(policy_getter);
-    }
-#  else
-    if CUB_DETAIL_CONSTEXPR_ISH (KernelSource::use_warpspeed(active_policy))
-    {
-      return __invoke_lookahead_algorithm(policy_getter);
-    }
-#  endif
-#endif // __cccl_ptx_isa >= 860
 
     // Number of input tiles
     const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
@@ -834,7 +806,18 @@ struct DispatchScan
     return cudaSuccess;
   }
 
-  _CCCL_DIAG_POP
+  template <typename PolicyGetter>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(PolicyGetter policy_getter)
+  {
+    if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == detail::scan::scan_algorithm::warpspeed)
+    {
+      return __invoke_lookahead_algorithm(policy_getter);
+    }
+    else
+    {
+      return __invoke_lookback_algorithm(policy_getter);
+    }
+  }
 
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT = {})
@@ -945,11 +928,7 @@ template <
                                                          ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
                                                                           cub::detail::it_value_t<InputIteratorT>,
                                                                           typename InitValueT::value_type>>,
-  typename PolicySelector = policy_selector_from_types<detail::it_value_t<InputIteratorT>,
-                                                       detail::it_value_t<OutputIteratorT>,
-                                                       AccumT,
-                                                       OffsetT,
-                                                       ScanOpT>,
+  typename PolicySelector = policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT>,
   typename KernelSource   = DeviceScanKernelSource<
       PolicySelector,
       THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
@@ -1022,28 +1001,25 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   });
 }
 
-template <typename AccumT,
-          ForceInclusive EnforceInclusive = ForceInclusive::No,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename ScanOpT,
-          typename InitValueT,
-          typename OffsetT,
-          typename PolicySelector = policy_selector_from_types<detail::it_value_t<InputIteratorT>,
-                                                               detail::it_value_t<OutputIteratorT>,
-                                                               AccumT,
-                                                               OffsetT,
-                                                               ScanOpT>,
-          typename KernelSource   = DeviceScanKernelSource<
-              PolicySelector,
-              THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
-              THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
-              ScanOpT,
-              InitValueT,
-              OffsetT,
-              AccumT,
-              EnforceInclusive>,
-          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <
+  typename AccumT,
+  ForceInclusive EnforceInclusive = ForceInclusive::No,
+  typename InputIteratorT,
+  typename OutputIteratorT,
+  typename ScanOpT,
+  typename InitValueT,
+  typename OffsetT,
+  typename PolicySelector = policy_selector_from_types<InputIteratorT, OutputIteratorT, AccumT, OffsetT, ScanOpT>,
+  typename KernelSource   = DeviceScanKernelSource<
+      PolicySelector,
+      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
+      ScanOpT,
+      InitValueT,
+      OffsetT,
+      AccumT,
+      EnforceInclusive>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_with_accum(
   void* d_temp_storage,
   size_t& temp_storage_bytes,

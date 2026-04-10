@@ -95,7 +95,8 @@ struct BlowsUpOnConstCopy
   {
     static_assert(!cuda::std::is_same<T, T>::value, "");
   }
-  BlowsUpOnConstCopy(BlowsUpOnConstCopy&) = default;
+  BlowsUpOnConstCopy(BlowsUpOnConstCopy&)  = default;
+  BlowsUpOnConstCopy(BlowsUpOnConstCopy&&) = default;
 };
 
 // Test the following constructors:

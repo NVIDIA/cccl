@@ -26,6 +26,17 @@ function(cccl_tidy_init)
 
   add_custom_target(cccl.tidy COMMENT "clang-tidy CCCL")
 
+  set(
+    CCCL_RUN_CLANG_TIDY_SCRIPT
+    "${CMAKE_CURRENT_BINARY_DIR}/run_clang_tidy.sh"
+  )
+  set(CCCL_RUN_CLANG_TIDY_SCRIPT "${CCCL_RUN_CLANG_TIDY_SCRIPT}" PARENT_SCOPE)
+
+  configure_file(
+    "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/run_clang_tidy.sh.in"
+    "${CCCL_RUN_CLANG_TIDY_SCRIPT}"
+    @ONLY
+  )
   # Do not set to cache; multiple separate instances of CCCL in a build should not
   # conflict.
   set(CCCL_TIDY_INITIALIZED TRUE)
@@ -155,15 +166,8 @@ function(cccl_tidy_add_target)
 
     add_custom_target(
       "${tidy_target}"
-      DEPENDS "${src}"
-      COMMAND
-        ${CCCL_CLANG_TIDY} #
-        --use-color #
-        --quiet #
-        --extra-arg=-Wno-error=unused-command-line-argument #
-        --extra-arg=-D_CCCL_CLANG_TIDY_INVOKED=1 #
-        -p "${CMAKE_BINARY_DIR}" #
-        "${src}"
+      DEPENDS "${src}" "${CCCL_RUN_CLANG_TIDY_SCRIPT}"
+      COMMAND ${CCCL_RUN_CLANG_TIDY_SCRIPT} "${src}"
       COMMENT "clang-tidy ${rel_src}"
     )
 

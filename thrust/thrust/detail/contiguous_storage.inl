@@ -234,7 +234,8 @@ _CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::set_allocator(const Alloc& 
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE contiguous_storage<T, Alloc>& contiguous_storage<T, Alloc>::operator=(contiguous_storage&& other)
+_CCCL_HOST_DEVICE contiguous_storage<T, Alloc>&
+contiguous_storage<T, Alloc>::operator=(contiguous_storage&& other) noexcept
 {
   if (size() > 0)
   {

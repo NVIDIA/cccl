@@ -113,7 +113,7 @@ int main()
     std::cout << " * ";
     std::cout << "(" << cuda::std::get<0>(b) << "," << cuda::std::get<1>(b) << "," << cuda::std::get<2>(b) << ")";
     std::cout << " = ";
-    std::cout << dot << std::endl;
+    std::cout << dot << '\n';
   }
 
   return 0;

@@ -15,14 +15,8 @@
 
 C2H_TEST("stf token", "[token]")
 {
-  size_t N = 1000000;
-
   stf_ctx_handle ctx = stf_ctx_create();
   REQUIRE(ctx != nullptr);
-
-  float* X = (float*) malloc(N * sizeof(float));
-  float* Y = (float*) malloc(N * sizeof(float));
-  float* Z = (float*) malloc(N * sizeof(float));
 
   stf_logical_data_handle lX = stf_token(ctx);
   stf_logical_data_handle lY = stf_token(ctx);
@@ -75,8 +69,4 @@ C2H_TEST("stf token", "[token]")
   stf_logical_data_destroy(lZ);
 
   stf_ctx_finalize(ctx);
-
-  free(X);
-  free(Y);
-  free(Z);
 }

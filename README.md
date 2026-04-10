@@ -88,7 +88,7 @@ int main() {
 
   auto const err = cudaDeviceSynchronize();
   if (err != cudaSuccess) {
-    std::cout << "Error: " << cudaGetErrorString(err) << std::endl;
+    std::cout << "Error: " << cudaGetErrorString(err) << '\n';
     return -1;
   }
 

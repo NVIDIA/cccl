@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <vector>
+
 #include <cuda_runtime.h>
 
 #include <c2h/catch2_test_helper.h>
@@ -41,8 +43,8 @@ C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
   stf_ctx_handle ctx = stf_ctx_create();
   REQUIRE(ctx != nullptr);
 
-  double* X = (double*) malloc(N * sizeof(double));
-  double* Y = (double*) malloc(N * sizeof(double));
+  std::vector<double> X(N);
+  std::vector<double> Y(N);
 
   for (size_t i = 0; i < N; i++)
   {
@@ -52,8 +54,8 @@ C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
 
   const double alpha = 3.14;
 
-  stf_logical_data_handle lX = stf_logical_data(ctx, X, N * sizeof(double));
-  stf_logical_data_handle lY = stf_logical_data(ctx, Y, N * sizeof(double));
+  stf_logical_data_handle lX = stf_logical_data(ctx, X.data(), N * sizeof(double));
+  stf_logical_data_handle lY = stf_logical_data(ctx, Y.data(), N * sizeof(double));
   REQUIRE(lX != nullptr);
   REQUIRE(lY != nullptr);
 
@@ -84,7 +86,4 @@ C2H_TEST("axpy with stf cuda_kernel", "[cuda_kernel]")
     assert(fabs(Y[i] - (Y0(i) + alpha * X0(i))) < 0.0001);
     assert(fabs(X[i] - X0(i)) < 0.0001);
   }
-
-  free(X);
-  free(Y);
 }

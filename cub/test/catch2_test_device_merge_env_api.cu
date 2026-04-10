@@ -35,7 +35,7 @@ C2H_TEST("cub::DeviceMerge::MergeKeys accepts env with stream", "[merge][env]")
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceMerge::MergeKeys failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceMerge::MergeKeys failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
@@ -73,7 +73,7 @@ C2H_TEST("cub::DeviceMerge::MergePairs accepts env with stream", "[merge][env]")
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceMerge::MergePairs failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceMerge::MergePairs failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};

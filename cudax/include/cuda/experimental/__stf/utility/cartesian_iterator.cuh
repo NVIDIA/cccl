@@ -82,7 +82,7 @@ UNITTEST("cartesian product") {
     while (!product.is_end()) {
         auto tuple = *product;
         ::std::cout << "(" << *(::std::get<0>(tuple)) << ", " << *(::std::get<1>(tuple)) << ", " << *(::std::get<2>(tuple))
-                  << ")" << ::std::endl;
+                  << ")" << ::'\n';
 
         ++product;
     }
@@ -471,7 +471,7 @@ UNITTEST("StridedRange")
     cnt++;
   }
 
-  //    ::std::cout << ::std::endl;
+  //    ::std::cout << ::'\n';
 
   EXPECT(cnt == expected_cnt);
 };
@@ -491,7 +491,7 @@ UNITTEST("StridedRange loop")
       EXPECT(cnt < n);
       cnt++;
     }
-    //        ::std::cout << ::std::endl;
+    //        ::std::cout << ::'\n';
   }
 
   EXPECT(cnt == n);
