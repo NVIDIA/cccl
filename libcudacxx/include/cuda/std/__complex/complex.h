@@ -31,6 +31,11 @@
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_nothrow_copy_assignable.h>
+#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
@@ -76,10 +81,17 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_COMPLEX_ALIGNAS complex
 public:
   using value_type = _Tp;
 
-  _CCCL_API constexpr complex(const value_type& __re = value_type(), const value_type& __im = value_type())
+  _CCCL_API constexpr complex(const value_type& __re = value_type(),
+                              const value_type& __im = value_type()) noexcept(is_nothrow_default_constructible_v<_Tp>)
       : __re_(__re)
       , __im_(__im)
   {}
+
+  _CCCL_HIDE_FROM_ABI constexpr complex(const complex&) noexcept(is_nothrow_copy_constructible_v<_Tp>) = default;
+  _CCCL_HIDE_FROM_ABI constexpr complex(complex&&) noexcept(is_nothrow_move_constructible_v<_Tp>)      = default;
+
+  _CCCL_HIDE_FROM_ABI constexpr complex& operator=(const complex&) noexcept(is_nothrow_copy_assignable_v<_Tp>) = default;
+  _CCCL_HIDE_FROM_ABI constexpr complex& operator=(complex&&) noexcept(is_nothrow_move_assignable_v<_Tp>) = default;
 
   template <class _Up, enable_if_t<__cccl_internal::__is_non_narrowing_convertible<_Tp, _Up>::value, int> = 0>
   _CCCL_API constexpr complex(const complex<_Up>& __c)
