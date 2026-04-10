@@ -69,28 +69,13 @@ public:
   {}
 
   _CCCL_TEMPLATE(class _Synchronizer2 = _Synchronizer, class _MappingResult2 = _MappingResult, class _HierarchyLike)
-  _CCCL_REQUIRES(__is_barrier_synchronizer<_Synchronizer2> _CCCL_AND(
-    _MappingResult2::static_group_count()
-    != ::cuda::std::dynamic_extent) _CCCL_AND ::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
-  _CCCL_DEVICE_API explicit thread_group(
-    const _Level&,
-    const _Mapping& __mapping,
-    const _HierarchyLike& __hier_like,
-    ::cuda::std::span<typename _Synchronizer2::__barrier_type, _MappingResult2::static_group_count()> __barriers) noexcept
-      : __hier_{::cuda::__unpack_hierarchy_if_needed(__hier_like)}
-      , __mapping_{__mapping}
-      , __mapping_result_{__mapping_.map(thread_level{}, _Level{}, ::cuda::__unpack_hierarchy_if_needed(__hier_like))}
-      , __synchronizer_{__mapping_result_, __barriers}
-  {}
-
-  _CCCL_TEMPLATE(class _Synchronizer2 = _Synchronizer, class _MappingResult2 = _MappingResult, class _HierarchyLike)
   _CCCL_REQUIRES(__is_barrier_synchronizer<_Synchronizer2>
                    _CCCL_AND ::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
   _CCCL_DEVICE_API explicit thread_group(
     const _Level&,
     const _Mapping& __mapping,
     const _HierarchyLike& __hier_like,
-    ::cuda::std::span<typename _Synchronizer2::__barrier_type> __barriers) noexcept
+    ::cuda::std::span<typename _Synchronizer2::__barrier_type, _MappingResult::static_group_count()> __barriers) noexcept
       : __hier_{::cuda::__unpack_hierarchy_if_needed(__hier_like)}
       , __mapping_{__mapping}
       , __mapping_result_{__mapping_.map(thread_level{}, _Level{}, ::cuda::__unpack_hierarchy_if_needed(__hier_like))}
