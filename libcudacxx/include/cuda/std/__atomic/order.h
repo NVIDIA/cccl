@@ -109,30 +109,43 @@ _CCCL_API inline int __stronger_order_cuda(int __a, int __b)
 
 _CCCL_API constexpr int __atomic_order_to_int(memory_order __order)
 {
-  // Avoid switch statement to make this a constexpr.
-  return __order == memory_order_relaxed
-         ? __ATOMIC_RELAXED
-         : (__order == memory_order_acquire
-              ? __ATOMIC_ACQUIRE
-              : (__order == memory_order_release
-                   ? __ATOMIC_RELEASE
-                   : (__order == memory_order_seq_cst
-                        ? __ATOMIC_SEQ_CST
-                        : (__order == memory_order_acq_rel ? __ATOMIC_ACQ_REL : __ATOMIC_CONSUME))));
+  switch (__order)
+  {
+    default:
+      return __ATOMIC_CONSUME;
+    case memory_order_relaxed:
+      return __ATOMIC_RELAXED;
+    case memory_order_acquire:
+      return __ATOMIC_ACQUIRE;
+    case memory_order_release:
+      return __ATOMIC_RELEASE;
+    case memory_order_seq_cst:
+      return __ATOMIC_SEQ_CST;
+    case memory_order_acq_rel:
+      return __ATOMIC_ACQ_REL;
+  }
 }
 
 _CCCL_API constexpr int __atomic_failure_order_to_int(memory_order __order)
 {
-  // Avoid switch statement to make this a constexpr.
-  return __order == memory_order_relaxed
-         ? __ATOMIC_RELAXED
-         : (__order == memory_order_acquire
-              ? __ATOMIC_ACQUIRE
-              : (__order == memory_order_release
-                   ? __ATOMIC_RELAXED
-                   : (__order == memory_order_seq_cst
-                        ? __ATOMIC_SEQ_CST
-                        : (__order == memory_order_acq_rel ? __ATOMIC_ACQUIRE : __ATOMIC_CONSUME))));
+  // Note:
+  // release -> relaxed
+  // acq_rel -> acquire
+  switch (__order)
+  {
+    default:
+      return __ATOMIC_CONSUME;
+    case memory_order_relaxed:
+      return __ATOMIC_RELAXED;
+    case memory_order_acquire:
+      return __ATOMIC_ACQUIRE;
+    case memory_order_release:
+      return __ATOMIC_RELAXED;
+    case memory_order_seq_cst:
+      return __ATOMIC_SEQ_CST;
+    case memory_order_acq_rel:
+      return __ATOMIC_ACQUIRE;
+  }
 }
 
 static_assert((is_same_v<underlying_type<memory_order>::type, __memory_order_underlying_t>),

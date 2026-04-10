@@ -391,7 +391,7 @@ static inline _CCCL_DEVICE void __atomic_store_cuda(_Type* __ptr, _Type& __val, 
   __cuda_atomic_store_memory_order_dispatch(__bound_store, __memorder, _Sco{});
 }
 template <class _Type, class _Sco>
-static inline _CCCL_DEVICE void __atomic_store_cuda(volatile _Type* __ptr, _Type& __val, int __memorder, _Sco)
+static inline _CCCL_DEVICE void __atomic_store_cuda(_Type volatile* __ptr, _Type& __val, int __memorder, _Sco)
 {
   using __proxy_t        = typename __atomic_cuda_deduce_bitwise<_Type>::__type;
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
