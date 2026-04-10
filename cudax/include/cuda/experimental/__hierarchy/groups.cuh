@@ -40,8 +40,11 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if !defined(_CCCL_DOXYGEN_INVOKED)
+
 namespace cuda::experimental
 {
+// todo(dabayer): Make groups be based on another group, not level.
 template <class _Level, class _Mapping, class _Hierarchy, class _Synchronizer>
 class thread_group
 {
@@ -59,6 +62,7 @@ public:
   using mapping_type   = _Mapping;
   using hierarchy_type = _Hierarchy;
 
+  // todo(dabayer): Do we want default behaviour like this, or do we want some kind of cuda::auto_sync_mechanism{} tag?
   _CCCL_TEMPLATE(class _HierarchyLike)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
   _CCCL_DEVICE_API explicit thread_group(
@@ -88,11 +92,14 @@ public:
     return __hier_;
   }
 
+  // todo(dabayer): Do we want to expose mapping getter?
   [[nodiscard]] _CCCL_DEVICE_API const _Mapping& mapping() const noexcept
   {
     return __mapping_;
   }
 
+  // todo(dabayer): Do we want to expose .arrive() and .wait()? Do we want to implement .sync() using them? Do we want
+  //                aligned/unaligned variants?
   _CCCL_DEVICE_API void sync() noexcept
   {
     __synchronizer_.__sync(__mapping_result_);
@@ -130,6 +137,8 @@ _CCCL_REQUIRES(
 _CCCL_HOST_DEVICE thread_group(const _Level&, const group_by<_Np>&, const _HierarchyLike&, _SyncParam&&)
   -> thread_group<_Level, group_by<_Np>, __hierarchy_type_of<_HierarchyLike>, _Synchronizer>;
 } // namespace cuda::experimental
+
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 #include <cuda/std/__cccl/epilogue.h>
 

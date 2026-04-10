@@ -37,6 +37,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if !defined(_CCCL_DOXYGEN_INVOKED)
+
 namespace cuda::experimental
 {
 // Requirements on synchronizers:
@@ -106,6 +108,8 @@ class __barrier_synchronizer
     {
       init(__barriers_ + __mapping_result.group_rank(), static_cast<::cuda::std::ptrdiff_t>(__mapping_result.count()));
     }
+
+    // todo(dabayer): Do we want aligned or unaligned sync here?
     ::__syncthreads();
   }
 
@@ -178,6 +182,8 @@ struct __synchronizer_select<thread_level,
 template <class _Unit, class _Level, class _Mapping>
 using __synchronizer_select_t = typename __synchronizer_select<_Unit, _Level, _Mapping>::type;
 } // namespace cuda::experimental
+
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 #include <cuda/std/__cccl/epilogue.h>
 

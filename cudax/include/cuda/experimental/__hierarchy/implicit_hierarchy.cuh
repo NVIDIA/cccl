@@ -27,6 +27,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if !defined(_CCCL_DOXYGEN_INVOKED)
+
 namespace cuda::experimental
 {
 [[nodiscard]] _CCCL_DEVICE_API inline __implicit_hierarchy_t __implicit_hierarchy() noexcept
@@ -38,6 +40,8 @@ namespace cuda::experimental
     hierarchy_level_desc<block_level, ::cuda::std::dims<3, unsigned>>{gpu_thread.extents(block)}};
 }
 } // namespace cuda::experimental
+
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 #include <cuda/std/__cccl/epilogue.h>
 

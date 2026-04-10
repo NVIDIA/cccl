@@ -30,6 +30,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if !defined(_CCCL_DOXYGEN_INVOKED)
+
 // todo(dabayer): do we want to always use uint32_t for all counts/ranks?
 
 namespace cuda::experimental
@@ -83,6 +85,8 @@ public:
     {
       return __rank_;
     }
+
+    // todo(dabayer): add method that determines whether the unit is part of the group or not.
   };
 
   _CCCL_HIDE_FROM_ABI explicit group_by() = default;
@@ -181,6 +185,8 @@ template <class _Mapping, class _Unit, class _Level, class _Hierarchy>
 using __group_mapping_result_t =
   decltype(::cuda::std::declval<_Mapping>().map(_Unit{}, _Level{}, ::cuda::std::declval<_Hierarchy>()));
 } // namespace cuda::experimental
+
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 #include <cuda/std/__cccl/epilogue.h>
 

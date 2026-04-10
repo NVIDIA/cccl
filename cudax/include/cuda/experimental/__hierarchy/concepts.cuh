@@ -28,6 +28,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if !defined(_CCCL_DOXYGEN_INVOKED)
+
 namespace cuda::experimental
 {
 template <class _Group>
@@ -59,6 +61,8 @@ _CCCL_CONCEPT __has_sync_aligned = _CCCL_REQUIRES_EXPR(
   (_Synchronizer, _MappingResult), _Synchronizer& __synchronizer, const _MappingResult& __mapping_result)(
   __synchronizer.__sync_aligned(__mapping_result));
 } // namespace cuda::experimental
+
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -34,6 +34,8 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if !defined(_CCCL_DOXYGEN_INVOKED)
+
 namespace cuda::experimental
 {
 using __implicit_hierarchy_t =
@@ -101,6 +103,8 @@ inline constexpr bool __is_barrier_synchronizer = false;
 template <class _Unit, class _Level, class _Mapping>
 inline constexpr bool __is_barrier_synchronizer<__barrier_synchronizer<_Unit, _Level, _Mapping>> = true;
 } // namespace cuda::experimental
+
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 #include <cuda/std/__cccl/epilogue.h>
 
