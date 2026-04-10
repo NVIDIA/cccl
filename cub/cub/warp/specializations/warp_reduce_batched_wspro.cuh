@@ -93,75 +93,45 @@ struct WarpReduceBatchedWspro
   template <typename InputT, typename OutputT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Reduce(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
   {
-    // Need writeable array as scratch space
-    auto values = ::cuda::std::array<T, Batches>{};
-#pragma unroll
-    for (int i = 0; i < Batches; ++i)
-    {
-      values[i] = inputs[i];
-    }
-
-    ReduceInplace(values, reduction_op);
-
-#pragma unroll
-    for (int i = 0; i < max_out_per_thread; ++i)
-    {
-      const auto batch_idx = i * LogicalWarpThreads + logical_lane_id;
-      if (batch_idx < Batches)
-      {
-        outputs[i] = values[i];
-      }
-    }
-  }
-
-  template <int LeftIdx, int StrideInterReduce = LogicalWarpThreads, typename InputT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void RecurseReductionTree(InputT& inputs, ReductionOp reduction_op)
-  {
-    constexpr auto stride_intra_reduce = StrideInterReduce / 2;
-    constexpr auto right_idx           = LeftIdx + stride_intra_reduce;
-    constexpr auto base_case           = stride_intra_reduce == 1;
-    if constexpr (!base_case)
-    {
-      // calculate left value
-      RecurseReductionTree<LeftIdx, stride_intra_reduce, InputT, ReductionOp>(inputs, reduction_op);
-      if constexpr (right_idx < Batches)
-      {
-        // calculate right value if it exists
-        RecurseReductionTree<right_idx, stride_intra_reduce>(inputs, reduction_op);
-      }
-    }
-    auto left_value = inputs[LeftIdx];
-    // Needed for Batches < LogicalWarpThreads case
-    // Chose to redundantly operate on the last batch to avoid relying on default construction of T
-    constexpr auto safe_right_idx = right_idx < Batches ? right_idx : Batches - 1;
-    auto right_value              = inputs[safe_right_idx];
-    // Each left lane exchanges its right value against a right lane's left value
-    const auto is_left_lane = logical_lane_id % StrideInterReduce < stride_intra_reduce;
-    if (is_left_lane)
-    {
-      ::cuda::std::swap(left_value, right_value);
-    }
-    left_value = ::cuda::device::warp_shuffle_xor(left_value, stride_intra_reduce, member_mask);
-    // While the current implementation is possibly faster, another conditional swap here would allow for
-    // non-commutative reductions which might be useful for (segmented) scan operations.
-    inputs[LeftIdx] = reduction_op(left_value, right_value);
-  }
-
-  template <typename InputT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ReduceInplace(InputT& inputs, ReductionOp reduction_op)
-  {
     ::cuda::static_for<0, max_out_per_thread>([&](auto out_idx) {
-      constexpr auto offset = out_idx() * LogicalWarpThreads;
-      RecurseReductionTree<offset>(inputs, reduction_op);
+      constexpr auto first_idx = out_idx() * LogicalWarpThreads;
+      outputs[out_idx()]       = RecurseReductionTree<first_idx>(inputs, reduction_op);
     });
-    // Make sure results are in the beginning of the array instead of strided
-#pragma unroll
-    for (int i = 1; i < max_out_per_thread; ++i)
+  }
+
+  template <int FirstIdx, int StrideInterReduce = LogicalWarpThreads, typename InputT, typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE T RecurseReductionTree(const InputT& inputs, ReductionOp reduction_op)
+  {
+    if constexpr (FirstIdx >= Batches)
     {
-      if (i * LogicalWarpThreads < Batches)
+      // Needed for Batches < LogicalWarpThreads case
+      // Chose to redundantly operate on the last batch to avoid relying on default construction of T
+      return inputs[Batches - 1];
+    }
+    else if constexpr (StrideInterReduce == 1)
+    {
+      // Recursion base case
+      return inputs[FirstIdx];
+    }
+    // Explicit else branch needed to avoid compiler error on % 0
+    else
+    {
+      constexpr auto stride_intra_reduce = StrideInterReduce / 2;
+      constexpr auto second_idx          = FirstIdx + stride_intra_reduce;
+
+      auto first_value  = RecurseReductionTree<FirstIdx, stride_intra_reduce>(inputs, reduction_op);
+      auto second_value = RecurseReductionTree<second_idx, stride_intra_reduce>(inputs, reduction_op);
+
+      // Each left lane exchanges its second value against a right lane's first value
+      const auto is_left_lane = logical_lane_id % StrideInterReduce < stride_intra_reduce;
+      if (is_left_lane)
       {
-        inputs[i] = inputs[i * LogicalWarpThreads];
+        ::cuda::std::swap(first_value, second_value);
       }
+      first_value = ::cuda::device::warp_shuffle_xor(first_value, stride_intra_reduce, member_mask);
+      // While the current implementation is possibly faster, another conditional swap here would allow for
+      // non-commutative reductions which might be useful for (segmented) scan operations.
+      return reduction_op(first_value, second_value);
     }
   }
 };
