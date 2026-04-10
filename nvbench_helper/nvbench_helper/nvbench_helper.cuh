@@ -18,6 +18,10 @@
 #  include <cuda/stream>
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
+#include <cuda/__memory_resource/any_resource.h>
+#include <cuda/__stream/stream_ref.h>
+#include <cuda/std/__execution/env.h>
+
 #include <map>
 #include <stdexcept>
 
@@ -711,4 +715,14 @@ auto policy(caching_allocator_t&, nvbench::launch&)
   return thrust::device;
 }
 #endif
+
+// Returns an environment for benchmarking using alloc as MR, launch's stream, and any additional envs passed in.
+template <typename... MoreEnvs>
+auto cub_bench_env(caching_allocator_t& alloc, nvbench::launch& launch, MoreEnvs... envs)
+{
+  return cuda::std::execution::env{
+    ::cuda::stream_ref{launch.get_stream().get_stream()},
+    ::cuda::std::execution::prop{cuda::mr::get_memory_resource, ::cuda::mr::resource_ref<>{alloc}},
+    envs...};
+}
 } // namespace

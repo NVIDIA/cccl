@@ -47,18 +47,6 @@ struct block_size_check_t
   }
 };
 
-struct block_size_retreiver_t
-{
-  int* ptr;
-
-  template <class ActivePolicyT>
-  cudaError_t Invoke()
-  {
-    *ptr = ActivePolicyT::SingleTilePolicy::BLOCK_THREADS;
-    return cudaSuccess;
-  }
-};
-
 TEST_CASE("Device reduce works with default environment", "[reduce][device]")
 {
   using num_items_t = int;
