@@ -93,9 +93,16 @@ struct WarpReduceBatchedWspro
   template <typename InputT, typename OutputT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Reduce(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
   {
+    // Needed in case of outputs aliasing inputs
+    ::cuda::std::array<T, max_out_per_thread> intermediate_outputs;
+
     ::cuda::static_for<0, max_out_per_thread>([&](auto out_idx) {
-      constexpr auto first_idx = out_idx() * LogicalWarpThreads;
-      outputs[out_idx()]       = RecurseReductionTree<first_idx>(inputs, reduction_op);
+      constexpr auto first_idx      = out_idx * LogicalWarpThreads;
+      intermediate_outputs[out_idx] = RecurseReductionTree<first_idx>(inputs, reduction_op);
+    });
+
+    ::cuda::static_for<0, max_out_per_thread>([&](auto out_idx) {
+      outputs[out_idx()] = intermediate_outputs[out_idx];
     });
   }
 
