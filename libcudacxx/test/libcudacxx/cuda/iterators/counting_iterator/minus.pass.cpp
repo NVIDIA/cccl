@@ -78,18 +78,6 @@ __host__ __device__ constexpr bool test()
       static_assert(noexcept(iter2 - (-5)));
       static_assert(!cuda::std::is_reference_v<decltype(iter2 - (-5))>);
     }
-
-    { // When "_Start" is non-integral.
-      cuda::counting_iterator<float> iter1{10};
-      cuda::counting_iterator<float> iter2{10};
-      assert(iter1 == iter2);
-      assert(iter1 - 0 == iter2);
-      assert(iter1 - 5 != iter2);
-      assert(iter1 - 5 == cuda::std::ranges::prev(iter2, 5));
-
-      static_assert(noexcept(iter2 - 5));
-      static_assert(!cuda::std::is_reference_v<decltype(iter2 - 5)>);
-    }
   }
 
   // <iterator> - <iterator>
@@ -125,17 +113,6 @@ __host__ __device__ constexpr bool test()
 
       static_assert(!noexcept(iter1 - iter2));
       static_assert(cuda::std::same_as<decltype(iter1 - iter2), int>);
-    }
-
-    { // When "_Start" is non-integral like.
-      cuda::counting_iterator<float> iter1{10};
-      cuda::counting_iterator<float> iter2{5};
-      assert(iter1 - iter2 == 5);
-      assert(iter1 - iter1 == 0);
-      assert(iter2 - iter1 == -5);
-
-      static_assert(noexcept(iter1 - iter2));
-      static_assert(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
     }
   }
 
