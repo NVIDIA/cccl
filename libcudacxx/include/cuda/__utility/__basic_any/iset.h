@@ -115,11 +115,11 @@ struct __iset_vptr : __base_vptr
   __iset_vptr() = default;
 
   _CCCL_API constexpr __iset_vptr(__iset_vtable const* __vptr) noexcept
-      : __base_vptr{__vptr}
+      : __base_vptr(__vptr)
   {}
 
   _CCCL_API constexpr __iset_vptr(__base_vptr __vptr) noexcept
-      : __base_vptr{__vptr}
+      : __base_vptr(__vptr)
   {}
 
   // Permit narrowing conversions from a super-set __vptr. Warning: we can't
@@ -127,7 +127,7 @@ struct __iset_vptr : __base_vptr
   // selected instead, giving the wrong result.
   template <class... _Others>
   _CCCL_API __iset_vptr(__iset_vptr<_Others...> __vptr) noexcept
-      : __base_vptr{__vptr->__query_interface(__iunknown())}
+      : __base_vptr(__vptr->__query_interface(__iunknown()))
   {
     static_assert(::cuda::std::__type_set_contains_v<::cuda::std::__make_type_set<_Others...>, _Interfaces...>, "");
     _CCCL_ASSERT(__vptr_->__kind_ == __vtable_kind::__rtti && __vptr_->__cookie_ == 0xDEADBEEF,

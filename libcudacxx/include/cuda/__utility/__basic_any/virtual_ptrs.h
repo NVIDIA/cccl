@@ -32,6 +32,12 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 struct __base_vptr
 {
+  __base_vptr() = default;
+
+  _CCCL_NODEBUG_API constexpr __base_vptr(__rtti_base const* __vptr) noexcept
+      : __vptr_(__vptr)
+  {}
+
   template <class _VTable>
   [[nodiscard]] _CCCL_NODEBUG_API explicit constexpr operator _VTable const*() const noexcept
   {
