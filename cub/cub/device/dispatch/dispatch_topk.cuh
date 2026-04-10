@@ -455,7 +455,7 @@ template <select SelectDirection,
           typename OffsetT,
           typename OutOffsetT,
           typename DecomposerT           = detail::identity_decomposer_t,
-          typename PolicySelector        = policy_selector_from_types<it_value_t<KeyInputIteratorT>>,
+          typename PolicySelector        = policy_selector_from_types<it_value_t<KeyInputIteratorT>, OffsetT>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires topk_policy_selector<PolicySelector>

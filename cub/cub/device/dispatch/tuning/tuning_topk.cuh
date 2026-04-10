@@ -106,35 +106,28 @@ concept topk_policy_selector = policy_selector<T, topk_policy>;
 struct policy_selector
 {
   int key_size;
+  int offset_size;
 
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> topk_policy
   {
     constexpr int nominal_4b_items_per_thread = 4;
     const int bits_per_pass                   = calc_bits_per_pass(key_size);
 
+    // 8-byte offsets make the staging buffer too large for shared memory
+    const smem_write_mode mode =
+      offset_size > 4 ? smem_write_mode::no_smem_coalescing : smem_write_mode::smem_coalescing_two_phase;
+
     if (arch >= ::cuda::arch_id::sm_90)
     {
       // Try to load 16 bytes per thread: int64 -> 2, int32 -> 4, int16 -> 8.
       const int items_per_thread = ::cuda::std::max(1, nominal_4b_items_per_thread * 4 / key_size);
-      return topk_policy{
-        512,
-        items_per_thread,
-        bits_per_pass,
-        BLOCK_LOAD_VECTORIZE,
-        BLOCK_SCAN_WARP_SCANS,
-        smem_write_mode::smem_coalescing_two_phase};
+      return topk_policy{512, items_per_thread, bits_per_pass, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, mode};
     }
 
     // Default tuning used on older architectures.
     const int items_per_thread =
       ::cuda::std::clamp(nominal_4b_items_per_thread * 4 / key_size, 1, nominal_4b_items_per_thread);
-    return topk_policy{
-      512,
-      items_per_thread,
-      bits_per_pass,
-      BLOCK_LOAD_VECTORIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      smem_write_mode::smem_coalescing_two_phase};
+    return topk_policy{512, items_per_thread, bits_per_pass, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, mode};
   }
 };
 
@@ -142,12 +135,12 @@ struct policy_selector
 static_assert(topk_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
-template <typename KeyT>
+template <typename KeyT, typename OffsetT>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> topk_policy
   {
-    constexpr auto policies = policy_selector{int{sizeof(KeyT)}};
+    constexpr auto policies = policy_selector{int{sizeof(KeyT)}, int{sizeof(OffsetT)}};
     return policies(arch);
   }
 };
