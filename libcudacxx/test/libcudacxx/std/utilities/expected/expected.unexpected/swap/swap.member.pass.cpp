@@ -23,12 +23,12 @@
 // test noexcept
 struct NoexceptSwap
 {
-  __host__ __device__ friend void swap(NoexceptSwap&, NoexceptSwap&) noexcept;
+  TEST_FUNC friend void swap(NoexceptSwap&, NoexceptSwap&) noexcept;
 };
 
 struct MayThrowSwap
 {
-  __host__ __device__ friend void swap(MayThrowSwap&, MayThrowSwap&);
+  TEST_FUNC friend void swap(MayThrowSwap&, MayThrowSwap&);
 };
 
 template <class T, class = void>
@@ -44,18 +44,18 @@ static_assert(!MemberSwapNoexcept<cuda::std::unexpected<MayThrowSwap>>);
 
 struct ADLSwap
 {
-  __host__ __device__ constexpr ADLSwap(int ii)
+  TEST_FUNC constexpr ADLSwap(int ii)
       : i(ii)
   {}
   ADLSwap& operator=(const ADLSwap&) = delete;
   int i;
-  __host__ __device__ constexpr friend void swap(ADLSwap& x, ADLSwap& y)
+  TEST_FUNC constexpr friend void swap(ADLSwap& x, ADLSwap& y)
   {
     cuda::std::swap(x.i, y.i);
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // using cuda::std::swap;
   {

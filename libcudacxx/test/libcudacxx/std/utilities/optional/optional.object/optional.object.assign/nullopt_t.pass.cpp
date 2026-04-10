@@ -22,7 +22,7 @@ using cuda::std::nullopt;
 using cuda::std::nullopt_t;
 using cuda::std::optional;
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   enum class State
   {
@@ -34,12 +34,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 
   struct StateTracker
   {
-    __host__ __device__ TEST_CONSTEXPR_CXX20 StateTracker(State& s)
+    TEST_FUNC TEST_CONSTEXPR_CXX20 StateTracker(State& s)
         : state_(&s)
     {
       s = State::constructed;
     }
-    __host__ __device__ TEST_CONSTEXPR_CXX20 ~StateTracker()
+    TEST_FUNC TEST_CONSTEXPR_CXX20 ~StateTracker()
     {
       *state_ = State::destroyed;
     }

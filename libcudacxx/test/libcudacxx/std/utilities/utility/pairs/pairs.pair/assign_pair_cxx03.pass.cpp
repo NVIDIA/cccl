@@ -23,10 +23,10 @@
 
 struct NonAssignable
 {
-  __host__ __device__ NonAssignable() {}
+  TEST_FUNC NonAssignable() {}
 
 private:
-  __host__ __device__ NonAssignable& operator=(NonAssignable const&);
+  TEST_FUNC NonAssignable& operator=(NonAssignable const&);
 };
 
 struct Incomplete;

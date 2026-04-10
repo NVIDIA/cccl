@@ -30,7 +30,7 @@ struct NonCopyable
 {
   NonCopyable(const NonCopyable&)            = delete;
   NonCopyable& operator=(const NonCopyable&) = delete;
-  __host__ __device__ friend void swap(NonCopyable&, NonCopyable&);
+  TEST_FUNC friend void swap(NonCopyable&, NonCopyable&);
 };
 using NotIMS = forward_iterator<NonCopyable*>;
 

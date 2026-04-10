@@ -28,17 +28,17 @@ class X
 
 public:
   STATIC_MEMBER_VAR(dtor_called, unsigned)
-  __host__ __device__ X(int i)
+  TEST_FUNC X(int i)
       : i_(i)
   {}
   X(X&& x)          = default;
   X& operator=(X&&) = default;
-  __host__ __device__ ~X()
+  TEST_FUNC ~X()
   {
     ++dtor_called();
   }
 
-  __host__ __device__ friend bool operator==(const X& x, const X& y)
+  TEST_FUNC friend bool operator==(const X& x, const X& y)
   {
     return x.i_ == y.i_;
   }
@@ -50,20 +50,20 @@ class Y
 
 public:
   STATIC_MEMBER_VAR(dtor_called, unsigned)
-  __host__ __device__ Y(int i)
+  TEST_FUNC Y(int i)
       : i_(i)
   {}
   Y(Y&&) = default;
-  __host__ __device__ ~Y()
+  TEST_FUNC ~Y()
   {
     ++dtor_called();
   }
 
-  __host__ __device__ friend constexpr bool operator==(const Y& x, const Y& y)
+  TEST_FUNC friend constexpr bool operator==(const Y& x, const Y& y)
   {
     return x.i_ == y.i_;
   }
-  __host__ __device__ friend void swap(Y& x, Y& y)
+  TEST_FUNC friend void swap(Y& x, Y& y)
   {
     cuda::std::swap(x.i_, y.i_);
   }
@@ -74,22 +74,22 @@ class W
   int i_;
 
 public:
-  __host__ __device__ constexpr W(int i)
+  TEST_FUNC constexpr W(int i)
       : i_(i)
   {}
 
-  __host__ __device__ friend constexpr bool operator==(const W& x, const W& y)
+  TEST_FUNC friend constexpr bool operator==(const W& x, const W& y)
   {
     return x.i_ == y.i_;
   }
-  __host__ __device__ friend constexpr void swap(W& x, W& y) noexcept
+  TEST_FUNC friend constexpr void swap(W& x, W& y) noexcept
   {
     cuda::std::swap(x.i_, y.i_);
   }
 };
 
 template <class T>
-__host__ __device__ constexpr bool check_swap()
+TEST_FUNC constexpr bool check_swap()
 {
   {
     optional<T> opt1;
@@ -145,13 +145,13 @@ __host__ __device__ constexpr bool check_swap()
 class TerminatesOnMoveAssignmentAndSwap
 {
 public:
-  __host__ __device__ TerminatesOnMoveAssignmentAndSwap(int) {}
-  __host__ __device__ TerminatesOnMoveAssignmentAndSwap(TerminatesOnMoveAssignmentAndSwap&&)
+  TEST_FUNC TerminatesOnMoveAssignmentAndSwap(int) {}
+  TEST_FUNC TerminatesOnMoveAssignmentAndSwap(TerminatesOnMoveAssignmentAndSwap&&)
   {
     cuda::std::terminate();
   }
 
-  __host__ __device__ friend void swap(TerminatesOnMoveAssignmentAndSwap&, TerminatesOnMoveAssignmentAndSwap&)
+  TEST_FUNC friend void swap(TerminatesOnMoveAssignmentAndSwap&, TerminatesOnMoveAssignmentAndSwap&)
   {
     cuda::std::terminate();
   }

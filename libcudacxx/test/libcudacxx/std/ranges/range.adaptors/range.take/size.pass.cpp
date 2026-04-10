@@ -21,7 +21,7 @@
 template <class T>
 _CCCL_CONCEPT SizeEnabled = _CCCL_REQUIRES_EXPR((T), const cuda::std::ranges::take_view<T>& tv)((unused(tv.size())));
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 

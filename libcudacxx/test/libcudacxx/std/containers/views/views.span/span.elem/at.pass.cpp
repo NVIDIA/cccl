@@ -26,7 +26,7 @@
 #endif // TEST_HAS_EXCEPTIONS()
 
 template <typename ReferenceT, typename SpanT>
-__host__ __device__ constexpr void testSpanAt(SpanT&& anySpan, int index, int expectedValue)
+TEST_FUNC constexpr void testSpanAt(SpanT&& anySpan, int index, int expectedValue)
 {
   // non-const
   {
@@ -43,7 +43,7 @@ __host__ __device__ constexpr void testSpanAt(SpanT&& anySpan, int index, int ex
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // With static extent
   {

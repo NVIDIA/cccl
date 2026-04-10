@@ -18,7 +18,7 @@
 using cuda::std::common_reference_with;
 
 template <class T, class U>
-__host__ __device__ __host__ __device__ constexpr bool CheckCommonReferenceWith() noexcept
+TEST_FUNC TEST_FUNC constexpr bool CheckCommonReferenceWith() noexcept
 {
   static_assert(common_reference_with<T, U&>);
   static_assert(common_reference_with<T, const U&>);
@@ -261,13 +261,13 @@ struct s2
 {};
 struct convertible_with_const_s2
 {
-  __host__ __device__ __host__ __device__ operator s2 const&() const;
+  TEST_FUNC TEST_FUNC operator s2 const&() const;
 };
 static_assert(common_reference_with<convertible_with_const_s2 const&, s2 const&>);
 
 struct convertible_with_volatile_s2
 {
-  __host__ __device__ operator s2 volatile&() volatile;
+  TEST_FUNC operator s2 volatile&() volatile;
 };
 static_assert(common_reference_with<convertible_with_volatile_s2 volatile&, s2 volatile&>);
 
@@ -276,8 +276,8 @@ struct BadBasicCommonReference
   // This test is ill-formed, NDR. If it ever blows up in our faces: that's a good thing.
   // In the meantime, the test should be included. If compiler support is added, then an include guard
   // should be placed so the test doesn't get deleted.
-  __host__ __device__ operator int() const;
-  __host__ __device__ operator int&();
+  TEST_FUNC operator int() const;
+  TEST_FUNC operator int&();
 };
 static_assert(cuda::std::convertible_to<BadBasicCommonReference, int>);
 static_assert(cuda::std::convertible_to<BadBasicCommonReference, int&>);
@@ -302,7 +302,7 @@ static_assert(!common_reference_with<BadBasicCommonReference, int>);
 #if TEST_STD_VER > 2017
 struct StructNotConvertibleToCommonReference
 {
-  __host__ __device__ explicit(false) StructNotConvertibleToCommonReference(int);
+  TEST_FUNC explicit(false) StructNotConvertibleToCommonReference(int);
 };
 static_assert(cuda::std::convertible_to<int, StructNotConvertibleToCommonReference>);
 
@@ -325,7 +325,7 @@ static_assert(!common_reference_with<StructNotConvertibleToCommonReference, int>
 
 struct IntNotConvertibleToCommonReference
 {
-  __host__ __device__ operator int&() const;
+  TEST_FUNC operator int&() const;
 };
 
 namespace cuda::std
@@ -348,8 +348,8 @@ static_assert(!common_reference_with<IntNotConvertibleToCommonReference, int>);
 #if TEST_STD_VER > 2017
 struct HasCommonReference
 {
-  __host__ __device__ explicit(false) HasCommonReference(int);
-  __host__ __device__ operator int&() const;
+  TEST_FUNC explicit(false) HasCommonReference(int);
+  TEST_FUNC operator int&() const;
 };
 
 namespace cuda::std

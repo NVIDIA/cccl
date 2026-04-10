@@ -16,6 +16,8 @@
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/pair.h>
 
+#include "test_macros.h"
+
 #if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG)
 // These compilers have trouble making substitution failures during
 // alias template instantiation non-fatal.
@@ -114,13 +116,13 @@ static_assert(
 
 // __type_call_indirect
 template <class... Ts, class = ::cuda::std::__type_call_indirect<Fn2, Ts...>>
-_CCCL_HOST_DEVICE constexpr bool test_call_indirect(int)
+TEST_FUNC constexpr bool test_call_indirect(int)
 {
   return true;
 }
 
 template <class... Ts>
-_CCCL_HOST_DEVICE constexpr bool test_call_indirect(long)
+TEST_FUNC constexpr bool test_call_indirect(long)
 {
   return false;
 }

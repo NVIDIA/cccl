@@ -52,7 +52,7 @@ static_assert(!cuda::std::is_copy_assignable_v<cuda::std::expected<void, NotCopy
 // !is_copy_constructible_v<E>
 static_assert(!cuda::std::is_copy_assignable_v<cuda::std::expected<void, NotCopyConstructible>>);
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   // If this->has_value() && rhs.has_value() is true, no effects.
   {

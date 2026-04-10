@@ -29,14 +29,14 @@ struct S
   cuda::std::tuple<int, Empty> a;
   int k;
   Empty e;
-  __host__ __device__ constexpr S()
+  TEST_FUNC constexpr S()
       : a{1, Empty{}}
       , k(cuda::std::get<0>(a))
       , e(cuda::std::get<1>(a))
   {}
 };
 
-__host__ __device__ constexpr cuda::std::tuple<int, int> getP()
+TEST_FUNC constexpr cuda::std::tuple<int, int> getP()
 {
   return {3, 4};
 }

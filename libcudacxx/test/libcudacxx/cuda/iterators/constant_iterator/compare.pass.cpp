@@ -17,7 +17,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::constant_iterator iter1{42, 2};
   const auto iter2 = iter1 + 1;

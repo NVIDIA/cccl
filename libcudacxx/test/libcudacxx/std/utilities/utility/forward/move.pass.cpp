@@ -17,35 +17,35 @@
 
 class move_only
 {
-  __host__ __device__ move_only(const move_only&);
-  __host__ __device__ move_only& operator=(const move_only&);
+  TEST_FUNC move_only(const move_only&);
+  TEST_FUNC move_only& operator=(const move_only&);
 
 public:
-  __host__ __device__ move_only(move_only&&) {}
-  __host__ __device__ move_only& operator=(move_only&&)
+  TEST_FUNC move_only(move_only&&) {}
+  TEST_FUNC move_only& operator=(move_only&&)
   {
     return *this;
   }
 
-  __host__ __device__ move_only() {}
+  TEST_FUNC move_only() {}
 };
 
-__host__ __device__ move_only source()
+TEST_FUNC move_only source()
 {
   return move_only();
 }
-__host__ __device__ const move_only csource()
+TEST_FUNC const move_only csource()
 {
   return move_only();
 }
 
-__host__ __device__ void test(move_only) {}
+TEST_FUNC void test(move_only) {}
 
-__device__ int global_var              = 42;
-__device__ const int& global_reference = global_var;
+TEST_GLOBAL_VARIABLE int global_var                               = 42;
+[[maybe_unused]] TEST_GLOBAL_VARIABLE const int& global_reference = global_var;
 
 template <class QualInt>
-__host__ __device__ QualInt get() noexcept
+TEST_FUNC QualInt get() noexcept
 {
   return static_cast<QualInt>(global_var);
 }
@@ -55,19 +55,19 @@ TEST_GLOBAL_VARIABLE int move_ctor = 0;
 
 struct A
 {
-  __host__ __device__ A() {}
-  __host__ __device__ A(const A&)
+  TEST_FUNC A() {}
+  TEST_FUNC A(const A&)
   {
     ++copy_ctor;
   }
-  __host__ __device__ A(A&&)
+  TEST_FUNC A(A&&)
   {
     ++move_ctor;
   }
-  __host__ __device__ A& operator=(const A&) = delete;
+  TEST_FUNC A& operator=(const A&) = delete;
 };
 
-__host__ __device__ constexpr bool test_constexpr_move()
+TEST_FUNC constexpr bool test_constexpr_move()
 {
   int y        = 42;
   const int cy = y;

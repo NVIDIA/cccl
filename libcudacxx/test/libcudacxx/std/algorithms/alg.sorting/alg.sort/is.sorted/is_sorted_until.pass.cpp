@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <class Iter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   {
     int a[]     = {0};
@@ -175,7 +175,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<forward_iterator<const int*>>();
   test<bidirectional_iterator<const int*>>();

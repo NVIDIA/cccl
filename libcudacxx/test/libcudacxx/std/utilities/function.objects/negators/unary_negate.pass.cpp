@@ -18,12 +18,14 @@
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
-// ensure that we allow `__device__` functions too
+#include "test_macros.h"
+
+// ensure that we allow `TEST_DEVICE_FUNC` functions too
 struct with_device_op
 {
   using argument_type = int;
   using result_type   = bool;
-  __device__ constexpr bool operator()(const int&) const
+  TEST_DEVICE_FUNC constexpr bool operator()(const int&) const
   {
     return true;
   }

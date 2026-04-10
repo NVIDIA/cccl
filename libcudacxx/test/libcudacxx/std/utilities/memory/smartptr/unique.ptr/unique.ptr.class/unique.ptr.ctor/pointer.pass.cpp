@@ -38,7 +38,7 @@
 // unique_ptr(pointer) ctor should only require default Deleter ctor
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_pointer()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_pointer()
 {
   using ValueT           = typename cuda::std::conditional<!IsArray, A, A[]>::type;
   const int expect_alive = IsArray ? 5 : 1;
@@ -100,7 +100,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_pointer()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_derived()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_derived()
 {
   {
     B* p = new B;
@@ -137,17 +137,17 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_derived()
 
 struct NonDefaultDeleter
 {
-  __host__ __device__ NonDefaultDeleter() = delete;
-  __host__ __device__ void operator()(void*) const {}
+  TEST_FUNC NonDefaultDeleter() = delete;
+  TEST_FUNC void operator()(void*) const {}
 };
 
 struct GenericDeleter
 {
-  __host__ __device__ void operator()(void*) const;
+  TEST_FUNC void operator()(void*) const;
 };
 
 template <class T>
-__host__ __device__ void TEST_CONSTEXPR_CXX23 test_sfinae()
+TEST_FUNC void TEST_CONSTEXPR_CXX23 test_sfinae()
 {
   { // the constructor does not participate in overload resolution when
     // the deleter is a pointer type
@@ -166,7 +166,7 @@ __host__ __device__ void TEST_CONSTEXPR_CXX23 test_sfinae()
   }
 }
 
-__host__ __device__ static TEST_CONSTEXPR_CXX23 void test_sfinae_runtime()
+TEST_FUNC static TEST_CONSTEXPR_CXX23 void test_sfinae_runtime()
 {
   { // the constructor does not participate in overload resolution when
     // a base <-> derived conversion would occur.
@@ -199,7 +199,7 @@ DEFINE_AND_RUN_IS_INCOMPLETE_TEST({
 })
 #endif // !_CCCL_CUDA_COMPILATION()
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     test_pointer</*IsArray*/ false>();

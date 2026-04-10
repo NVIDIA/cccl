@@ -88,23 +88,23 @@ namespace CopyConstructibleTests
 struct CopyCtorUserDefined
 {
   CopyCtorUserDefined(CopyCtorUserDefined&&) noexcept = default;
-  __host__ __device__ CopyCtorUserDefined(const CopyCtorUserDefined&);
+  TEST_FUNC CopyCtorUserDefined(const CopyCtorUserDefined&);
 };
 static_assert(copy_constructible<CopyCtorUserDefined>);
 
 struct CopyAssignUserDefined
 {
   CopyAssignUserDefined& operator=(CopyAssignUserDefined&&) noexcept = default;
-  __host__ __device__ CopyAssignUserDefined& operator=(const CopyAssignUserDefined&);
+  TEST_FUNC CopyAssignUserDefined& operator=(const CopyAssignUserDefined&);
 };
 static_assert(!copy_constructible<CopyAssignUserDefined>);
 
 struct CopyCtorAndAssignUserDefined
 {
   CopyCtorAndAssignUserDefined(CopyCtorAndAssignUserDefined&&) noexcept = default;
-  __host__ __device__ CopyCtorAndAssignUserDefined(const CopyCtorAndAssignUserDefined&);
+  TEST_FUNC CopyCtorAndAssignUserDefined(const CopyCtorAndAssignUserDefined&);
   CopyCtorAndAssignUserDefined& operator=(CopyCtorAndAssignUserDefined&&) noexcept = default;
-  __host__ __device__ CopyCtorAndAssignUserDefined& operator=(const CopyCtorAndAssignUserDefined&);
+  TEST_FUNC CopyCtorAndAssignUserDefined& operator=(const CopyCtorAndAssignUserDefined&);
 };
 static_assert(copy_constructible<CopyCtorAndAssignUserDefined>);
 
@@ -185,7 +185,7 @@ static_assert(!copy_constructible<CopyOnly>);
 struct ExplicitlyCopyable
 {
   ExplicitlyCopyable(ExplicitlyCopyable&&) = default;
-  __host__ __device__ explicit ExplicitlyCopyable(const ExplicitlyCopyable&);
+  TEST_FUNC explicit ExplicitlyCopyable(const ExplicitlyCopyable&);
 };
 static_assert(!copy_constructible<ExplicitlyCopyable>);
 } // namespace CopyConstructibleTests

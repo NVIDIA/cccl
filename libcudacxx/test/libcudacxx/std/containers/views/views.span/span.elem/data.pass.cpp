@@ -18,14 +18,14 @@
 #include "test_macros.h"
 
 template <typename Span>
-__host__ __device__ constexpr bool testConstexprSpan(Span sp, typename Span::pointer ptr)
+TEST_FUNC constexpr bool testConstexprSpan(Span sp, typename Span::pointer ptr)
 {
   static_assert(noexcept(sp.data()));
   return sp.data() == ptr;
 }
 
 template <typename Span>
-__host__ __device__ void testRuntimeSpan(Span sp, typename Span::pointer ptr)
+TEST_FUNC void testRuntimeSpan(Span sp, typename Span::pointer ptr)
 {
   static_assert(noexcept(sp.data()));
   assert(sp.data() == ptr);

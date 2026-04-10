@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_abstract()
+TEST_FUNC void test_is_abstract()
 {
   static_assert(cuda::std::is_abstract<T>::value);
   static_assert(cuda::std::is_abstract<const T>::value);
@@ -28,7 +28,7 @@ __host__ __device__ void test_is_abstract()
 }
 
 template <class T>
-__host__ __device__ void test_is_not_abstract()
+TEST_FUNC void test_is_not_abstract()
 {
   static_assert(!cuda::std::is_abstract<T>::value);
   static_assert(!cuda::std::is_abstract<const T>::value);
@@ -45,7 +45,7 @@ class Empty
 
 class NotEmpty
 {
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -58,13 +58,13 @@ struct bit_zero
 
 class Abstract
 {
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 template <class>
 struct AbstractTemplate
 {
-  __host__ __device__ virtual void test() = 0;
+  TEST_FUNC virtual void test() = 0;
 };
 
 template <>

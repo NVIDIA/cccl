@@ -42,7 +42,7 @@
 struct U;
 
 template <typename T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using Alloc = cuda::std::allocator<T>;
   static_assert((cuda::std::is_same<typename Alloc::size_type, cuda::std::size_t>::value));

@@ -44,73 +44,73 @@ class MoveOnly
   int data_;
 
 public:
-  __host__ __device__ constexpr MoveOnly(int data = 1)
+  TEST_FUNC constexpr MoveOnly(int data = 1)
       : data_(data)
   {}
 
   MoveOnly(const MoveOnly&)            = delete;
   MoveOnly& operator=(const MoveOnly&) = delete;
 
-  __host__ __device__ constexpr MoveOnly(MoveOnly&& x)
+  TEST_FUNC constexpr MoveOnly(MoveOnly&& x)
       : data_(x.data_)
   {
     x.data_ = 0;
   }
-  __host__ __device__ constexpr MoveOnly& operator=(MoveOnly&& x)
+  TEST_FUNC constexpr MoveOnly& operator=(MoveOnly&& x)
   {
     data_   = x.data_;
     x.data_ = 0;
     return *this;
   }
 
-  __host__ __device__ constexpr int get() const
+  TEST_FUNC constexpr int get() const
   {
     return data_;
   }
 
-  __host__ __device__ friend constexpr bool operator==(const MoveOnly& x, const MoveOnly& y)
+  TEST_FUNC friend constexpr bool operator==(const MoveOnly& x, const MoveOnly& y)
   {
     return x.data_ == y.data_;
   }
-  __host__ __device__ friend constexpr bool operator!=(const MoveOnly& x, const MoveOnly& y)
+  TEST_FUNC friend constexpr bool operator!=(const MoveOnly& x, const MoveOnly& y)
   {
     return x.data_ != y.data_;
   }
-  __host__ __device__ friend constexpr bool operator<(const MoveOnly& x, const MoveOnly& y)
+  TEST_FUNC friend constexpr bool operator<(const MoveOnly& x, const MoveOnly& y)
   {
     return x.data_ < y.data_;
   }
-  __host__ __device__ friend constexpr bool operator<=(const MoveOnly& x, const MoveOnly& y)
+  TEST_FUNC friend constexpr bool operator<=(const MoveOnly& x, const MoveOnly& y)
   {
     return x.data_ <= y.data_;
   }
-  __host__ __device__ friend constexpr bool operator>(const MoveOnly& x, const MoveOnly& y)
+  TEST_FUNC friend constexpr bool operator>(const MoveOnly& x, const MoveOnly& y)
   {
     return x.data_ > y.data_;
   }
-  __host__ __device__ friend constexpr bool operator>=(const MoveOnly& x, const MoveOnly& y)
+  TEST_FUNC friend constexpr bool operator>=(const MoveOnly& x, const MoveOnly& y)
   {
     return x.data_ >= y.data_;
   }
 
 #if TEST_STD_VER > 2017 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  __host__ __device__ friend constexpr auto operator<=>(const MoveOnly&, const MoveOnly&) = default;
+  TEST_FUNC friend constexpr auto operator<=>(const MoveOnly&, const MoveOnly&) = default;
 #endif // TEST_STD_VER > 2017 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-  __host__ __device__ constexpr MoveOnly operator+(const MoveOnly& x) const
+  TEST_FUNC constexpr MoveOnly operator+(const MoveOnly& x) const
   {
     return MoveOnly(data_ + x.data_);
   }
-  __host__ __device__ constexpr MoveOnly operator+(const int x) const
+  TEST_FUNC constexpr MoveOnly operator+(const int x) const
   {
     return MoveOnly(data_ + x);
   }
-  __host__ __device__ constexpr MoveOnly operator*(const MoveOnly& x) const
+  TEST_FUNC constexpr MoveOnly operator*(const MoveOnly& x) const
   {
     return MoveOnly(data_ * x.data_);
   }
 
-  __host__ __device__ constexpr operator int() const noexcept
+  TEST_FUNC constexpr operator int() const noexcept
   {
     return data_;
   }
@@ -156,7 +156,7 @@ struct Test
   }
 };
 
-__host__ void test()
+void test()
 {
   cuda::std::iota(data, data + max_size, 0);
   types::for_each(types::forward_iterator_list<int*>{}, types::apply_type_identity{[](auto v) {

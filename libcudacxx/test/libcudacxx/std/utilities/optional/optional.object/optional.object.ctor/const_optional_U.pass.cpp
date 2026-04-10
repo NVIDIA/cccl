@@ -25,17 +25,17 @@ class X
   int i_;
 
 public:
-  __host__ __device__ constexpr X(int i)
+  TEST_FUNC constexpr X(int i)
       : i_(i)
   {}
-  __host__ __device__ constexpr X(const X& x)
+  TEST_FUNC constexpr X(const X& x)
       : i_(x.i_)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ~X()
+  TEST_FUNC TEST_CONSTEXPR_CXX20 ~X()
   {
     i_ = 0;
   }
-  __host__ __device__ friend constexpr bool operator==(const X& x, const X& y)
+  TEST_FUNC friend constexpr bool operator==(const X& x, const X& y)
   {
     return x.i_ == y.i_;
   }
@@ -46,11 +46,11 @@ class Y
   int i_;
 
 public:
-  __host__ __device__ constexpr Y(int i)
+  TEST_FUNC constexpr Y(int i)
       : i_(i)
   {}
 
-  __host__ __device__ friend constexpr bool operator==(const Y& x, const Y& y)
+  TEST_FUNC friend constexpr bool operator==(const Y& x, const Y& y)
   {
     return x.i_ == y.i_;
   }
@@ -60,7 +60,7 @@ struct B
 {
   int val_;
 
-  __host__ __device__ constexpr bool operator==(const int& other) const noexcept
+  TEST_FUNC constexpr bool operator==(const int& other) const noexcept
   {
     return other == val_;
   }
@@ -74,7 +74,7 @@ struct ConvertibleToReference
 {
   T val_;
 
-  __host__ __device__ constexpr operator const T&() const noexcept
+  TEST_FUNC constexpr operator const T&() const noexcept
   {
     return val_;
   }
@@ -85,12 +85,12 @@ struct ConvertibleToValue
 {
   T val_;
 
-  __host__ __device__ constexpr operator T() const noexcept
+  TEST_FUNC constexpr operator T() const noexcept
   {
     return val_;
   }
 
-  __host__ __device__ friend constexpr bool operator==(const int& lhs, const ConvertibleToValue& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator==(const int& lhs, const ConvertibleToValue& rhs) noexcept
   {
     return lhs == rhs.val_;
   }
@@ -98,7 +98,7 @@ struct ConvertibleToValue
 #endif // CCCL_ENABLE_OPTIONAL_REF
 
 template <class T, class U>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   { // constructed from empty
     const optional<U> input{};
@@ -121,7 +121,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int, short>();
   test<X, int>();
@@ -144,12 +144,12 @@ class TerminatesOnConstruction
   int i_;
 
 public:
-  __host__ __device__ TerminatesOnConstruction(int)
+  TEST_FUNC TerminatesOnConstruction(int)
   {
     cuda::std::terminate();
   }
 
-  __host__ __device__ friend bool operator==(const TerminatesOnConstruction& x, const TerminatesOnConstruction& y)
+  TEST_FUNC friend bool operator==(const TerminatesOnConstruction& x, const TerminatesOnConstruction& y)
   {
     return x.i_ == y.i_;
   }

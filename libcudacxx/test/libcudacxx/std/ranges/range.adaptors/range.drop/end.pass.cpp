@@ -18,7 +18,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // range<const V>
   cuda::std::ranges::drop_view dropView1(MoveOnlyView(), 4);

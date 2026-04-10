@@ -51,14 +51,14 @@ struct MoveOnly
 struct MoveOnlyNT
 {
   MoveOnlyNT(const MoveOnlyNT&) = delete;
-  __host__ __device__ MoveOnlyNT(MoveOnlyNT&&) {}
+  TEST_FUNC MoveOnlyNT(MoveOnlyNT&&) {}
   MoveOnlyNT& operator=(const MoveOnlyNT&) = delete;
   MoveOnlyNT& operator=(MoveOnlyNT&&)      = default;
 };
 
 struct MoveOnlyOddNothrow
 {
-  __host__ __device__ MoveOnlyOddNothrow(MoveOnlyOddNothrow&&) noexcept(false) {}
+  TEST_FUNC MoveOnlyOddNothrow(MoveOnlyOddNothrow&&) noexcept(false) {}
   MoveOnlyOddNothrow(const MoveOnlyOddNothrow&)                = delete;
   MoveOnlyOddNothrow& operator=(MoveOnlyOddNothrow&&) noexcept = default;
   MoveOnlyOddNothrow& operator=(const MoveOnlyOddNothrow&)     = delete;
@@ -74,20 +74,20 @@ struct MoveAssign
 {
   STATIC_MEMBER_VAR(move_construct, int)
   STATIC_MEMBER_VAR(move_assign, int)
-  __host__ __device__ static void reset()
+  TEST_FUNC static void reset()
   {
     move_construct() = move_assign() = 0;
   }
-  __host__ __device__ MoveAssign(int v)
+  TEST_FUNC MoveAssign(int v)
       : value(v)
   {}
-  __host__ __device__ MoveAssign(MoveAssign&& o)
+  TEST_FUNC MoveAssign(MoveAssign&& o)
       : value(o.value)
   {
     ++move_construct();
     o.value = -1;
   }
-  __host__ __device__ MoveAssign& operator=(MoveAssign&& o)
+  TEST_FUNC MoveAssign& operator=(MoveAssign&& o)
   {
     value = o.value;
     ++move_assign();
@@ -99,13 +99,13 @@ struct MoveAssign
 
 struct NTMoveAssign
 {
-  __host__ __device__ constexpr NTMoveAssign(int v)
+  TEST_FUNC constexpr NTMoveAssign(int v)
       : value(v)
   {}
   NTMoveAssign(const NTMoveAssign&)                 = default;
   NTMoveAssign(NTMoveAssign&&)                      = default;
   NTMoveAssign& operator=(const NTMoveAssign& that) = default;
-  __host__ __device__ NTMoveAssign& operator=(NTMoveAssign&& that)
+  TEST_FUNC NTMoveAssign& operator=(NTMoveAssign&& that)
   {
     value      = that.value;
     that.value = -1;
@@ -119,7 +119,7 @@ static_assert(cuda::std::is_move_assignable<NTMoveAssign>::value);
 
 struct TMoveAssign
 {
-  __host__ __device__ constexpr TMoveAssign(int v)
+  TEST_FUNC constexpr TMoveAssign(int v)
       : value(v)
   {}
   TMoveAssign(const TMoveAssign&)            = delete;
@@ -133,12 +133,12 @@ static_assert(cuda::std::is_trivially_move_assignable<TMoveAssign>::value);
 
 struct TMoveAssignNTCopyAssign
 {
-  __host__ __device__ constexpr TMoveAssignNTCopyAssign(int v)
+  TEST_FUNC constexpr TMoveAssignNTCopyAssign(int v)
       : value(v)
   {}
   TMoveAssignNTCopyAssign(const TMoveAssignNTCopyAssign&) = default;
   TMoveAssignNTCopyAssign(TMoveAssignNTCopyAssign&&)      = default;
-  __host__ __device__ TMoveAssignNTCopyAssign& operator=(const TMoveAssignNTCopyAssign& that)
+  TEST_FUNC TMoveAssignNTCopyAssign& operator=(const TMoveAssignNTCopyAssign& that)
   {
     value = that.value;
     return *this;
@@ -152,9 +152,9 @@ static_assert(cuda::std::is_trivially_move_assignable_v<TMoveAssignNTCopyAssign>
 struct TrivialCopyNontrivialMove
 {
   TrivialCopyNontrivialMove(TrivialCopyNontrivialMove const&) = default;
-  __host__ __device__ TrivialCopyNontrivialMove(TrivialCopyNontrivialMove&&) noexcept {}
+  TEST_FUNC TrivialCopyNontrivialMove(TrivialCopyNontrivialMove&&) noexcept {}
   TrivialCopyNontrivialMove& operator=(TrivialCopyNontrivialMove const&) = default;
-  __host__ __device__ TrivialCopyNontrivialMove& operator=(TrivialCopyNontrivialMove&&) noexcept
+  TEST_FUNC TrivialCopyNontrivialMove& operator=(TrivialCopyNontrivialMove&&) noexcept
   {
     return *this;
   }
@@ -163,7 +163,7 @@ struct TrivialCopyNontrivialMove
 static_assert(cuda::std::is_trivially_copy_assignable_v<TrivialCopyNontrivialMove>);
 static_assert(!cuda::std::is_trivially_move_assignable_v<TrivialCopyNontrivialMove>);
 
-__host__ __device__ void test_move_assignment_noexcept()
+TEST_FUNC void test_move_assignment_noexcept()
 {
   {
     using V = cuda::std::variant<int>;
@@ -191,7 +191,7 @@ __host__ __device__ void test_move_assignment_noexcept()
   }
 }
 
-__host__ __device__ void test_move_assignment_sfinae()
+TEST_FUNC void test_move_assignment_sfinae()
 {
   {
     using V = cuda::std::variant<int, long>;
@@ -327,7 +327,7 @@ struct Result
   T value;
 };
 
-__host__ __device__ void test_move_assignment_same_index()
+TEST_FUNC void test_move_assignment_same_index()
 {
   {
     using V = cuda::std::variant<int>;
@@ -384,7 +384,7 @@ __host__ __device__ void test_move_assignment_same_index()
   {
     struct
     {
-      __host__ __device__ constexpr Result<int> operator()() const
+      TEST_FUNC constexpr Result<int> operator()() const
       {
         using V = cuda::std::variant<int>;
         V v(43);
@@ -400,7 +400,7 @@ __host__ __device__ void test_move_assignment_same_index()
   {
     struct
     {
-      __host__ __device__ constexpr Result<long> operator()() const
+      TEST_FUNC constexpr Result<long> operator()() const
       {
         using V = cuda::std::variant<int, long, unsigned>;
         V v(43l);
@@ -416,7 +416,7 @@ __host__ __device__ void test_move_assignment_same_index()
   {
     struct
     {
-      __host__ __device__ constexpr Result<int> operator()() const
+      TEST_FUNC constexpr Result<int> operator()() const
       {
         using V = cuda::std::variant<int, TMoveAssign, unsigned>;
         V v(cuda::std::in_place_type<TMoveAssign>, 43);
@@ -431,7 +431,7 @@ __host__ __device__ void test_move_assignment_same_index()
   }
 }
 
-__host__ __device__ void test_move_assignment_different_index()
+TEST_FUNC void test_move_assignment_different_index()
 {
   {
     using V = cuda::std::variant<int, long, unsigned>;
@@ -487,7 +487,7 @@ __host__ __device__ void test_move_assignment_different_index()
   {
     struct
     {
-      __host__ __device__ constexpr Result<long> operator()() const
+      TEST_FUNC constexpr Result<long> operator()() const
       {
         using V = cuda::std::variant<int, long, unsigned>;
         V v(43);
@@ -503,7 +503,7 @@ __host__ __device__ void test_move_assignment_different_index()
   {
     struct
     {
-      __host__ __device__ constexpr Result<long> operator()() const
+      TEST_FUNC constexpr Result<long> operator()() const
       {
         using V = cuda::std::variant<int, TMoveAssign, unsigned>;
         V v(cuda::std::in_place_type<unsigned>, 43u);
@@ -519,8 +519,7 @@ __host__ __device__ void test_move_assignment_different_index()
 }
 
 template <size_t NewIdx, class ValueType>
-__host__ __device__ constexpr bool
-test_constexpr_assign_imp(cuda::std::variant<long, void*, int>&& v, ValueType&& new_value)
+TEST_FUNC constexpr bool test_constexpr_assign_imp(cuda::std::variant<long, void*, int>&& v, ValueType&& new_value)
 {
   cuda::std::variant<long, void*, int> v2(cuda::std::forward<ValueType>(new_value));
   const auto cp = v2;
@@ -528,7 +527,7 @@ test_constexpr_assign_imp(cuda::std::variant<long, void*, int>&& v, ValueType&& 
   return v.index() == NewIdx && cuda::std::get<NewIdx>(v) == cuda::std::get<NewIdx>(cp);
 }
 
-__host__ __device__ void test_constexpr_move_assignment()
+TEST_FUNC void test_constexpr_move_assignment()
 {
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   using V = cuda::std::variant<long, void*, int>;

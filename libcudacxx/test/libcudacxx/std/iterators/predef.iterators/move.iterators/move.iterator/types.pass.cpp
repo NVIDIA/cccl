@@ -39,11 +39,11 @@ struct FooIter
   using difference_type   = void*;
   using pointer           = void*;
   using reference         = char&;
-  __host__ __device__ bool& operator*() const;
-  __host__ __device__ FooIter& operator++();
-  __host__ __device__ FooIter& operator--();
-  __host__ __device__ FooIter operator++(int);
-  __host__ __device__ FooIter operator--(int);
+  TEST_FUNC bool& operator*() const;
+  TEST_FUNC FooIter& operator++();
+  TEST_FUNC FooIter& operator--();
+  TEST_FUNC FooIter operator++(int);
+  TEST_FUNC FooIter operator--(int);
 };
 
 template <>
@@ -72,11 +72,11 @@ struct DummyIt
   using pointer           = ValueType*;
   using reference         = Reference;
 
-  __host__ __device__ Reference operator*() const;
+  TEST_FUNC Reference operator*() const;
 };
 
 template <class It>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using R = cuda::std::move_iterator<It>;
   using T = cuda::std::iterator_traits<It>;

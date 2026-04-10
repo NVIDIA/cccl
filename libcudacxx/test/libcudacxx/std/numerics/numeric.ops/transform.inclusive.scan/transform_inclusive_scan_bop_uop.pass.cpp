@@ -29,14 +29,14 @@
 struct add_one
 {
   template <typename T>
-  __host__ __device__ constexpr T operator()(T x) const
+  TEST_FUNC constexpr T operator()(T x) const
   {
     return x + 1;
   }
 };
 
 template <class Iter1, class BOp, class UOp, class T>
-__host__ __device__ constexpr void test(Iter1 first, Iter1 last, BOp bop, UOp uop, const T* rFirst, const T* rLast)
+TEST_FUNC constexpr void test(Iter1 first, Iter1 last, BOp bop, UOp uop, const T* rFirst, const T* rLast)
 {
   assert((rLast - rFirst) <= 5); // or else increase the size of "out"
   T out[5] = {};
@@ -56,7 +56,7 @@ __host__ __device__ constexpr void test(Iter1 first, Iter1 last, BOp bop, UOp uo
 }
 
 template <class Iter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   int ia[]           = {1, 3, 5, 7, 9};
   const int pResI0[] = {2, 6, 12, 20, 30}; // with add_one
@@ -78,13 +78,13 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr cuda::std::size_t triangle(size_t n)
+TEST_FUNC constexpr cuda::std::size_t triangle(size_t n)
 {
   return n * (n + 1) / 2;
 }
 
 //  Basic sanity
-__host__ __device__ constexpr void basic_tests()
+TEST_FUNC constexpr void basic_tests()
 {
   {
     cuda::std::array<cuda::std::size_t, 10> v{};
@@ -127,7 +127,7 @@ __host__ __device__ constexpr void basic_tests()
 #endif // !TEST_COMPILER(NVHPC)
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   basic_tests();
 

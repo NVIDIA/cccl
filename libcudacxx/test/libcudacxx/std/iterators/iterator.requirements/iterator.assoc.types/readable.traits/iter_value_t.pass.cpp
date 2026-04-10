@@ -13,8 +13,10 @@
 #include <cuda/std/concepts>
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 template <class T, class Expected>
-__host__ __device__ constexpr bool check_iter_value_t()
+TEST_FUNC constexpr bool check_iter_value_t()
 {
   constexpr bool result = cuda::std::same_as<cuda::std::iter_value_t<T>, Expected>;
   static_assert(cuda::std::same_as<cuda::std::iter_value_t<T const>, Expected> == result);

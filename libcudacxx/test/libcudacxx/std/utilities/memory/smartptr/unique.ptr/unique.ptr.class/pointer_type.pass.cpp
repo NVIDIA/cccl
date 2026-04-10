@@ -40,7 +40,7 @@ struct D3
 #endif // !TEST_COMPILER(NVRTC)
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
 {
   using VT = typename cuda::std::conditional<IsArray, int[], int>::type;
   {
@@ -65,7 +65,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
 #endif // !TEST_COMPILER(NVRTC)
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   test_basic</*IsArray*/ false>();
   test_basic<true>();

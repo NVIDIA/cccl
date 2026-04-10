@@ -35,7 +35,7 @@
 //                                          const_void_pointer;
 
 template <typename Alloc>
-__host__ __device__ void test_pointer()
+TEST_FUNC void test_pointer()
 {
   typename cuda::std::allocator_traits<Alloc>::pointer vp;
   typename cuda::std::allocator_traits<Alloc>::const_pointer cvp;
@@ -72,7 +72,7 @@ __host__ __device__ void test_pointer()
 }
 
 template <typename Alloc>
-__host__ __device__ void test_void_pointer()
+TEST_FUNC void test_void_pointer()
 {
   typename cuda::std::allocator_traits<Alloc>::void_pointer vp;
   typename cuda::std::allocator_traits<Alloc>::const_void_pointer cvp;

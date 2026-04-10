@@ -27,7 +27,7 @@
 struct InitList
 {
   cuda::std::size_t size;
-  __host__ __device__ constexpr InitList(cuda::std::initializer_list<int> il)
+  TEST_FUNC constexpr InitList(cuda::std::initializer_list<int> il)
       : size(il.size())
   {}
 };
@@ -36,13 +36,13 @@ struct InitListArg
 {
   cuda::std::size_t size;
   int value;
-  __host__ __device__ constexpr InitListArg(cuda::std::initializer_list<int> il, int v)
+  TEST_FUNC constexpr InitListArg(cuda::std::initializer_list<int> il, int v)
       : size(il.size())
       , value(v)
   {}
 };
 
-__host__ __device__ void test_ctor_sfinae()
+TEST_FUNC void test_ctor_sfinae()
 {
   using IL = cuda::std::initializer_list<int>;
   { // just init list
@@ -77,7 +77,7 @@ __host__ __device__ void test_ctor_sfinae()
   }
 }
 
-__host__ __device__ void test_ctor_basic()
+TEST_FUNC void test_ctor_basic()
 {
   {
     constexpr cuda::std::variant<InitList, InitListArg> v(cuda::std::in_place_type<InitList>, {1, 2, 3});

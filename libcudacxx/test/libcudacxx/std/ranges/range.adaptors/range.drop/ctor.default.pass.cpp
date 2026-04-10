@@ -15,7 +15,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::ranges::drop_view<MoveOnlyView> dropView1;
   assert(cuda::std::ranges::begin(dropView1) == globalBuff);

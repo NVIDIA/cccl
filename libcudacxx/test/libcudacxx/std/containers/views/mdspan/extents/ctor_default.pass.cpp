@@ -31,8 +31,7 @@ struct DefaultCtorTest
             class Extents,
             size_t... Indices,
             cuda::std::enable_if_t<sizeof...(Indices) == E::rank(), int> = 0>
-  __host__ __device__ static constexpr void
-  test_construction(AllExtents all_ext, Extents, cuda::std::index_sequence<Indices...>)
+  TEST_FUNC static constexpr void test_construction(AllExtents all_ext, Extents, cuda::std::index_sequence<Indices...>)
   {
     // This function gets called twice: once with Extents being just the dynamic ones, and once with all the extents
     // specified. We only test during the all extent case, since then Indices is the correct number. This allows us to
@@ -51,8 +50,7 @@ struct DefaultCtorTest
             class Extents,
             size_t... Indices,
             cuda::std::enable_if_t<sizeof...(Indices) != E::rank(), int> = 0>
-  __host__ __device__ static constexpr void
-  test_construction(AllExtents all_ext, Extents, cuda::std::index_sequence<Indices...>)
+  TEST_FUNC static constexpr void test_construction(AllExtents all_ext, Extents, cuda::std::index_sequence<Indices...>)
   {
     // nothing to do here
   }

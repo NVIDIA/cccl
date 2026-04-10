@@ -20,7 +20,7 @@
 #  include <stdexcept>
 #endif // TEST_HAS_EXCEPTIONS()
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   {
     using T                        = double;

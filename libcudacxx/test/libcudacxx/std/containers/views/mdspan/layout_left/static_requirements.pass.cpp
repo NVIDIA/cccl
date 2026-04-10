@@ -87,18 +87,18 @@
 #include "test_macros.h"
 
 template <class M, class E = typename M::extents_type, cuda::std::enable_if_t<(E::rank() > 0), int> = 0>
-__host__ __device__ constexpr void test_mapping_stride_requirements()
+TEST_FUNC constexpr void test_mapping_stride_requirements()
 {
   static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().stride(0)), typename M::index_type>::value);
 }
 
 template <class M, class E = typename M::extents_type, cuda::std::enable_if_t<(E::rank() == 0), int> = 0>
-__host__ __device__ constexpr void test_mapping_stride_requirements()
+TEST_FUNC constexpr void test_mapping_stride_requirements()
 {}
 
 // Common requirements of all layout mappings
 template <class M, size_t... Idxs>
-__host__ __device__ void test_mapping_requirements(cuda::std::index_sequence<Idxs...>)
+TEST_FUNC void test_mapping_requirements(cuda::std::index_sequence<Idxs...>)
 {
   using E = typename M::extents_type;
   static_assert(cuda::std::__is_cuda_std_extents_v<E>);
@@ -125,14 +125,14 @@ __host__ __device__ void test_mapping_requirements(cuda::std::index_sequence<Idx
 }
 
 template <class L, class E>
-__host__ __device__ void test_layout_mapping_requirements()
+TEST_FUNC void test_layout_mapping_requirements()
 {
   using M = typename L::template mapping<E>;
   test_mapping_requirements<M>(cuda::std::make_index_sequence<E::rank()>());
 }
 
 template <class E>
-__host__ __device__ void test_layout_mapping_left()
+TEST_FUNC void test_layout_mapping_left()
 {
   test_layout_mapping_requirements<cuda::std::layout_left, E>();
 }

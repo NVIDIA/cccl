@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <class To, class From>
-__host__ __device__ constexpr void test_comparison(bool equal, To dest_exts, From src_exts)
+TEST_FUNC constexpr void test_comparison(bool equal, To dest_exts, From src_exts)
 {
   cuda::std::layout_left::mapping<To> dest(dest_exts);
   cuda::std::layout_left::mapping<From> src(src_exts);
@@ -37,26 +37,26 @@ _CCCL_CONCEPT can_compare_layouts = _CCCL_REQUIRES_EXPR((E1, E2), E1 e1, E2 e2)(
 
 struct X
 {
-  __host__ __device__ constexpr bool does_not_match()
+  TEST_FUNC constexpr bool does_not_match()
   {
     return true;
   }
 };
 
 template <class E1, class E2, cuda::std::enable_if_t<!can_compare_layouts<E1, E2>, int> = 0>
-__host__ __device__ constexpr X compare_layout_mappings(E1, E2)
+TEST_FUNC constexpr X compare_layout_mappings(E1, E2)
 {
   return {};
 }
 
 template <class E1, class E2, cuda::std::enable_if_t<can_compare_layouts<E1, E2>, int> = 0>
-__host__ __device__ constexpr auto compare_layout_mappings(E1, E2)
+TEST_FUNC constexpr auto compare_layout_mappings(E1, E2)
 {
   return true;
 }
 
 template <class T1, class T2>
-__host__ __device__ constexpr void test_comparison_different_rank()
+TEST_FUNC constexpr void test_comparison_different_rank()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
@@ -89,7 +89,7 @@ __host__ __device__ constexpr void test_comparison_different_rank()
 }
 
 template <class T1, class T2>
-__host__ __device__ constexpr void test_comparison_same_rank()
+TEST_FUNC constexpr void test_comparison_same_rank()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
@@ -115,13 +115,13 @@ __host__ __device__ constexpr void test_comparison_same_rank()
 }
 
 template <class T1, class T2>
-__host__ __device__ constexpr void test_comparison()
+TEST_FUNC constexpr void test_comparison()
 {
   test_comparison_same_rank<T1, T2>();
   test_comparison_different_rank<T1, T2>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_comparison<int, int>();
   test_comparison<int, size_t>();

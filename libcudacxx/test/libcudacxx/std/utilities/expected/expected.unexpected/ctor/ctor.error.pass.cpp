@@ -31,8 +31,8 @@ static_assert(cuda::std::constructible_from<cuda::std::unexpected<int>, int>);
 // is_same_v<remove_cvref_t<Err>, unexpected>
 struct CstrFromUnexpected
 {
-  __host__ __device__ CstrFromUnexpected(CstrFromUnexpected const&) = delete;
-  __host__ __device__ CstrFromUnexpected(cuda::std::unexpected<CstrFromUnexpected> const&);
+  TEST_FUNC CstrFromUnexpected(CstrFromUnexpected const&) = delete;
+  TEST_FUNC CstrFromUnexpected(cuda::std::unexpected<CstrFromUnexpected> const&);
 };
 static_assert(
   !cuda::std::constructible_from<cuda::std::unexpected<CstrFromUnexpected>, cuda::std::unexpected<CstrFromUnexpected>>,
@@ -41,7 +41,7 @@ static_assert(
 // is_same_v<remove_cvref_t<Err>, in_place_t>
 struct CstrFromInplace
 {
-  __host__ __device__ CstrFromInplace(cuda::std::in_place_t);
+  TEST_FUNC CstrFromInplace(cuda::std::in_place_t);
 };
 static_assert(!cuda::std::constructible_from<cuda::std::unexpected<CstrFromInplace>, cuda::std::in_place_t>);
 
@@ -57,24 +57,24 @@ static_assert(!cuda::std::convertible_to<int, cuda::std::unexpected<int>>);
 struct Error
 {
   int i;
-  __host__ __device__ constexpr Error(int ii)
+  TEST_FUNC constexpr Error(int ii)
       : i(ii)
   {}
-  __host__ __device__ constexpr Error(const Error& other)
+  TEST_FUNC constexpr Error(const Error& other)
       : i(other.i)
   {}
-  __host__ __device__ constexpr Error(Error&& other)
+  TEST_FUNC constexpr Error(Error&& other)
       : i(other.i)
   {
     other.i = 0;
   }
-  __host__ __device__ Error(cuda::std::initializer_list<Error>)
+  TEST_FUNC Error(cuda::std::initializer_list<Error>)
   {
     assert(false);
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // lvalue
   {
@@ -106,7 +106,7 @@ __host__ __device__ constexpr bool test()
     {
       int i;
       int j;
-      __host__ __device__ constexpr Bar(int ii, int jj)
+      TEST_FUNC constexpr Bar(int ii, int jj)
           : i(ii)
           , j(jj)
       {}

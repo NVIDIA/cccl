@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_lvalue_ref()
+TEST_FUNC void test_lvalue_ref()
 {
   static_assert(cuda::std::is_reference<T>::value);
   static_assert(!cuda::std::is_arithmetic<T>::value);

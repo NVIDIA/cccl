@@ -67,7 +67,7 @@ static_assert(!cuda::std::mergeable<Input, Output, Output>);
 // Out is not weakly incrementable.
 struct NotWeaklyIncrementable
 {
-  __host__ __device__ int& operator*() const;
+  TEST_FUNC int& operator*() const;
 };
 
 static_assert(!cuda::std::weakly_incrementable<NotWeaklyIncrementable>);
@@ -78,7 +78,7 @@ static_assert(!cuda::std::mergeable<Input, Input, NotWeaklyIncrementable>);
 // I1 or I2 is not indirectly copyable into O.
 struct AssignableOnlyFromInt
 {
-  __host__ __device__ AssignableOnlyFromInt& operator=(int);
+  TEST_FUNC AssignableOnlyFromInt& operator=(int);
   template <class T>
   AssignableOnlyFromInt& operator=(T) = delete;
 };
@@ -113,7 +113,7 @@ static_assert(!cuda::std::mergeable<Input, Input, Output, bool (*)(int, int*), T
 // A projection that only supports non-const references and has a non-const `operator()` still has to work.
 struct ProjectionOnlyMutable
 {
-  __host__ __device__ int operator()(int&);
+  TEST_FUNC int operator()(int&);
   int operator()(int&&) const = delete;
 };
 static_assert(cuda::std::mergeable<Input, Input, Output, CompDefault, ProjectionOnlyMutable, ProjectionOnlyMutable>,
@@ -125,11 +125,11 @@ struct WeaklyIncrementable
   using value_type      = int;
   using difference_type = int;
 
-  __host__ __device__ int& operator*() const;
-  __host__ __device__ WeaklyIncrementable& operator++();
+  TEST_FUNC int& operator*() const;
+  TEST_FUNC WeaklyIncrementable& operator++();
   // `output_iterator` requires `i++` to return an iterator,
   // while `weakly_incrementable` requires only that `i++` be well-formed.
-  __host__ __device__ void operator++(int);
+  TEST_FUNC void operator++(int);
 };
 static_assert(cuda::std::weakly_incrementable<WeaklyIncrementable>);
 static_assert(cuda::std::indirectly_copyable<int*, WeaklyIncrementable>);

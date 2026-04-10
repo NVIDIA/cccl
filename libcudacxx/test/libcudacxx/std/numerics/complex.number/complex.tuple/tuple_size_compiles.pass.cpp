@@ -31,7 +31,7 @@ struct SomeObject
 static_assert(!HasTupleSize<SomeObject>::value);
 
 template <typename T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using C = cuda::std::complex<T>;
 
@@ -40,7 +40,7 @@ __host__ __device__ void test()
   static_assert(cuda::std::tuple_size<C>() == 2);
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test<float>();
   test<double>();

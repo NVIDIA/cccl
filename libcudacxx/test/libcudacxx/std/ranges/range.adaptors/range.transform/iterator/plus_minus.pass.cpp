@@ -15,7 +15,7 @@
 #include "../types.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::ranges::transform_view<MoveOnlyView, PlusOneMutable> transformView1{};
   auto iter1 = cuda::std::move(transformView1).begin();

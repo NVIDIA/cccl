@@ -17,7 +17,7 @@
 #include "fp_compare.h"
 #include "test_macros.h"
 
-__host__ __device__ void test_isgreater(float val)
+TEST_FUNC void test_isgreater(float val)
 {
   static_assert((cuda::std::is_same_v<decltype(cuda::std::isgreater((float) 0, (float) 0)), bool>) );
   static_assert((cuda::std::is_same_v<decltype(cuda::std::isgreater((float) 0, (double) 0)), bool>) );
@@ -46,7 +46,7 @@ __host__ __device__ void test_isgreater(float val)
   assert(cuda::std::isgreater(-1.0, 0.F) == false);
 }
 
-__host__ __device__ void test_isgreaterequal(float val)
+TEST_FUNC void test_isgreaterequal(float val)
 {
   static_assert((cuda::std::is_same_v<decltype(cuda::std::isgreaterequal((float) 0, (float) 0)), bool>) );
   static_assert((cuda::std::is_same_v<decltype(cuda::std::isgreaterequal((float) 0, (double) 0)), bool>) );
@@ -77,7 +77,7 @@ __host__ __device__ void test_isgreaterequal(float val)
   assert(cuda::std::isgreaterequal(-1.0, 0.F) == false);
 }
 
-__host__ __device__ void test_isless(float val)
+TEST_FUNC void test_isless(float val)
 {
   static_assert((cuda::std::is_same_v<decltype(cuda::std::isless((float) 0, (float) 0)), bool>) );
   static_assert((cuda::std::is_same_v<decltype(cuda::std::isless((float) 0, (double) 0)), bool>) );
@@ -106,7 +106,7 @@ __host__ __device__ void test_isless(float val)
   assert(cuda::std::isless(-1.0, 0.F) == true);
 }
 
-__host__ __device__ void test_islessequal(float val)
+TEST_FUNC void test_islessequal(float val)
 {
   static_assert((cuda::std::is_same_v<decltype(cuda::std::islessequal((float) 0, (float) 0)), bool>) );
   static_assert((cuda::std::is_same_v<decltype(cuda::std::islessequal((float) 0, (double) 0)), bool>) );
@@ -136,7 +136,7 @@ __host__ __device__ void test_islessequal(float val)
   assert(cuda::std::islessequal(-1.0, 0.F) == true);
 }
 
-__host__ __device__ void test_islessgreater(float val)
+TEST_FUNC void test_islessgreater(float val)
 {
   static_assert((cuda::std::is_same_v<decltype(cuda::std::islessgreater((float) 0, (float) 0)), bool>) );
   static_assert((cuda::std::is_same_v<decltype(cuda::std::islessgreater((float) 0, (double) 0)), bool>) );
@@ -166,7 +166,7 @@ __host__ __device__ void test_islessgreater(float val)
   assert(cuda::std::islessgreater(-1.0, 0.F) == true);
 }
 
-__host__ __device__ void test_isunordered(float val)
+TEST_FUNC void test_isunordered(float val)
 {
   static_assert((cuda::std::is_same_v<decltype(cuda::std::isunordered((float) 0, (float) 0)), bool>) );
   static_assert((cuda::std::is_same_v<decltype(cuda::std::isunordered((float) 0, (double) 0)), bool>) );
@@ -196,7 +196,7 @@ __host__ __device__ void test_isunordered(float val)
   assert(cuda::std::isunordered(-1.0, 0.F) == false);
 }
 
-__host__ __device__ void test(float val)
+TEST_FUNC void test(float val)
 {
   test_isgreater(val);
   test_isgreaterequal(val);

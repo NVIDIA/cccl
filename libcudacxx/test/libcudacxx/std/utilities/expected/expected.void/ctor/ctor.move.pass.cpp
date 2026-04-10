@@ -34,24 +34,22 @@ struct NonMovable
 struct MovableNonTrivial
 {
   int i;
-  __host__ __device__ constexpr MovableNonTrivial(int ii)
+  TEST_FUNC constexpr MovableNonTrivial(int ii)
       : i(ii)
   {}
-  __host__ __device__ constexpr MovableNonTrivial(MovableNonTrivial&& o)
+  TEST_FUNC constexpr MovableNonTrivial(MovableNonTrivial&& o)
       : i(o.i)
   {
     o.i = 0;
   }
 #if TEST_STD_VER > 2017
-  __host__ __device__ friend constexpr bool operator==(const MovableNonTrivial&, const MovableNonTrivial&) = default;
+  TEST_FUNC friend constexpr bool operator==(const MovableNonTrivial&, const MovableNonTrivial&) = default;
 #else
-  __host__ __device__ friend constexpr bool
-  operator==(const MovableNonTrivial& lhs, const MovableNonTrivial& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator==(const MovableNonTrivial& lhs, const MovableNonTrivial& rhs) noexcept
   {
     return lhs.i == rhs.i;
   }
-  __host__ __device__ friend constexpr bool
-  operator!=(const MovableNonTrivial& lhs, const MovableNonTrivial& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator!=(const MovableNonTrivial& lhs, const MovableNonTrivial& rhs) noexcept
   {
     return lhs.i != rhs.i;
   }
@@ -60,7 +58,7 @@ struct MovableNonTrivial
 
 struct MoveMayThrow
 {
-  __host__ __device__ MoveMayThrow(MoveMayThrow&&) {}
+  TEST_FUNC MoveMayThrow(MoveMayThrow&&) {}
 };
 
 // Test Constraints:
@@ -79,7 +77,7 @@ static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<Mo
 static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<int, MoveMayThrow>>);
 static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<MoveMayThrow, MoveMayThrow>>);
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   // move the error non-trivial
   {

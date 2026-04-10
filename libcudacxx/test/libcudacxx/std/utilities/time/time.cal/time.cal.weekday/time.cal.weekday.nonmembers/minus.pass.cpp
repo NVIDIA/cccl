@@ -26,7 +26,7 @@
 #include "test_macros.h"
 
 template <typename WD, typename Ds>
-__host__ __device__ constexpr bool testConstexpr()
+TEST_FUNC constexpr bool testConstexpr()
 {
   {
     WD wd{5};

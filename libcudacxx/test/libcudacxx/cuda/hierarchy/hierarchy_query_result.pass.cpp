@@ -12,8 +12,10 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include "test_macros.h"
+
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   using HQR              = cuda::hierarchy_query_result<T>;
   using Vec              = cuda::vector_type_t<T, 3>;
@@ -79,7 +81,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<signed char>();
   test<signed short>();

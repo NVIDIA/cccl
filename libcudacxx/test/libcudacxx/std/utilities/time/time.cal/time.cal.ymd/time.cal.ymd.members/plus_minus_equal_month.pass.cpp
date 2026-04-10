@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <typename D, typename Ds>
-__host__ __device__ constexpr bool testConstexpr(D d1)
+TEST_FUNC constexpr bool testConstexpr(D d1)
 {
   if (static_cast<unsigned>((d1).month()) != 1)
   {

@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_enum_imp()
+TEST_FUNC void test_enum_imp()
 {
   static_assert(!cuda::std::is_reference<T>::value);
   static_assert(!cuda::std::is_arithmetic<T>::value);
@@ -27,7 +27,7 @@ __host__ __device__ void test_enum_imp()
 }
 
 template <class T>
-__host__ __device__ void test_enum()
+TEST_FUNC void test_enum()
 {
   test_enum_imp<T>();
   test_enum_imp<const T>();

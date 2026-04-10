@@ -23,7 +23,7 @@ TEST_DIAG_SUPPRESS_MSVC(4305) // 'argument': truncation from 'T' to 'float'
 TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
 
 template <typename T>
-__host__ __device__ void test_ceil(T val)
+TEST_FUNC void test_ceil(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::ceil(T{})), ret>);
@@ -60,7 +60,7 @@ __host__ __device__ void test_ceil(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_floor(T val)
+TEST_FUNC void test_floor(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::floor(T{})), ret>);
@@ -97,7 +97,7 @@ __host__ __device__ void test_floor(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_llrint(T val)
+TEST_FUNC void test_llrint(T val)
 {
   static_assert(cuda::std::is_same_v<decltype(cuda::std::llrint(T{})), long long>);
 
@@ -133,7 +133,7 @@ __host__ __device__ void test_llrint(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_llround(T val)
+TEST_FUNC void test_llround(T val)
 {
   static_assert(cuda::std::is_same_v<decltype(cuda::std::llround(T{})), long long>);
 
@@ -169,7 +169,7 @@ __host__ __device__ void test_llround(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_lrint(T val)
+TEST_FUNC void test_lrint(T val)
 {
   static_assert(cuda::std::is_same_v<decltype(cuda::std::lrint(T{})), long>);
 
@@ -205,7 +205,7 @@ __host__ __device__ void test_lrint(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_lround(T val)
+TEST_FUNC void test_lround(T val)
 {
   static_assert(cuda::std::is_same_v<decltype(cuda::std::lround(T{})), long>);
 
@@ -241,7 +241,7 @@ __host__ __device__ void test_lround(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_nearbyint(T val)
+TEST_FUNC void test_nearbyint(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::nearbyint(T{})), ret>);
@@ -279,7 +279,7 @@ __host__ __device__ void test_nearbyint(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_nextafter(T val)
+TEST_FUNC void test_nextafter(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(T{}, T{})), ret>);
@@ -299,7 +299,7 @@ __host__ __device__ void test_nextafter(T val)
 
 #if _CCCL_HAS_LONG_DOUBLE()
 template <typename T>
-__host__ __device__ void test_nexttoward(T val)
+TEST_FUNC void test_nexttoward(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::nexttoward(T{}, long double{})), ret>);
@@ -317,7 +317,7 @@ __host__ __device__ void test_nexttoward(T val)
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 template <typename T>
-__host__ __device__ void test_rint(T val)
+TEST_FUNC void test_rint(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::rint(T{})), ret>);
@@ -355,7 +355,7 @@ __host__ __device__ void test_rint(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_round(T val)
+TEST_FUNC void test_round(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::round(T{})), ret>);
@@ -393,7 +393,7 @@ __host__ __device__ void test_round(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_trunc(T val)
+TEST_FUNC void test_trunc(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::trunc(T{})), ret>);
@@ -425,7 +425,7 @@ __host__ __device__ void test_trunc(T val)
 }
 
 template <typename T>
-__host__ __device__ void test(const T val)
+TEST_FUNC void test(const T val)
 {
   test_ceil<T>(val);
   test_floor<T>(val);
@@ -443,7 +443,7 @@ __host__ __device__ void test(const T val)
   test_trunc<T>(val);
 }
 
-__host__ __device__ void test(const float val)
+TEST_FUNC void test(const float val)
 {
   test<float>(val);
   test<double>(val);

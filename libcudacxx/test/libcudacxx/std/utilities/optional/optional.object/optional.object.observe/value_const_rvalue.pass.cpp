@@ -28,19 +28,19 @@ struct X
 {
   X()         = default;
   X(const X&) = delete;
-  __host__ __device__ constexpr int test() const&
+  TEST_FUNC constexpr int test() const&
   {
     return 3;
   }
-  __host__ __device__ constexpr int test() &
+  TEST_FUNC constexpr int test() &
   {
     return 4;
   }
-  __host__ __device__ constexpr int test() const&&
+  TEST_FUNC constexpr int test() const&&
   {
     return 5;
   }
-  __host__ __device__ constexpr int test() &&
+  TEST_FUNC constexpr int test() &&
   {
     return 6;
   }
@@ -60,7 +60,7 @@ void test_exceptions()
 }
 #endif // TEST_HAS_EXCEPTIONS()
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     const optional<X> opt{};

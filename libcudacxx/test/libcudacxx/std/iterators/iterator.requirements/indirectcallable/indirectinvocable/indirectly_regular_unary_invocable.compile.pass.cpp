@@ -14,6 +14,7 @@
 #include <cuda/std/iterator>
 
 #include "indirectly_readable.h"
+#include "test_macros.h"
 
 using It = IndirectlyReadable<struct Token>;
 using R1 = T1<struct ReturnToken>;
@@ -22,9 +23,9 @@ using R2 = T2<struct ReturnToken>;
 template <class I>
 struct GoodInvocable
 {
-  __host__ __device__ R1 operator()(cuda::std::iter_value_t<I>&) const;
-  __host__ __device__ R2 operator()(cuda::std::iter_reference_t<I>) const;
-  __host__ __device__ R2 operator()(cuda::std::iter_common_reference_t<I>) const;
+  TEST_FUNC R1 operator()(cuda::std::iter_value_t<I>&) const;
+  TEST_FUNC R2 operator()(cuda::std::iter_reference_t<I>) const;
+  TEST_FUNC R2 operator()(cuda::std::iter_common_reference_t<I>) const;
 };
 
 // Should work when all constraints are satisfied
@@ -43,7 +44,7 @@ struct BadInvocable1
 {
   BadInvocable1(BadInvocable1 const&) = delete;
   template <class T>
-  __host__ __device__ R1 operator()(T const&) const;
+  TEST_FUNC R1 operator()(T const&) const;
 };
 static_assert(!cuda::std::indirectly_regular_unary_invocable<BadInvocable1, It>);
 
@@ -51,7 +52,7 @@ static_assert(!cuda::std::indirectly_regular_unary_invocable<BadInvocable1, It>)
 struct BadInvocable2
 {
   template <class T>
-  __host__ __device__ R1 operator()(T const&) const;
+  TEST_FUNC R1 operator()(T const&) const;
   R1 operator()(cuda::std::iter_value_t<It>&) const = delete;
 };
 static_assert(!cuda::std::indirectly_regular_unary_invocable<BadInvocable2, It>);
@@ -60,7 +61,7 @@ static_assert(!cuda::std::indirectly_regular_unary_invocable<BadInvocable2, It>)
 struct BadInvocable3
 {
   template <class T>
-  __host__ __device__ R1 operator()(T const&) const;
+  TEST_FUNC R1 operator()(T const&) const;
   R1 operator()(cuda::std::iter_reference_t<It>) const = delete;
 };
 static_assert(!cuda::std::indirectly_regular_unary_invocable<BadInvocable3, It>);
@@ -69,7 +70,7 @@ static_assert(!cuda::std::indirectly_regular_unary_invocable<BadInvocable3, It>)
 struct BadInvocable4
 {
   template <class T>
-  __host__ __device__ R1 operator()(T const&) const;
+  TEST_FUNC R1 operator()(T const&) const;
   R1 operator()(cuda::std::iter_common_reference_t<It>) const = delete;
 };
 static_assert(!cuda::std::indirectly_regular_unary_invocable<BadInvocable4, It>);
@@ -77,11 +78,11 @@ static_assert(!cuda::std::indirectly_regular_unary_invocable<BadInvocable4, It>)
 // Should fail when the invocable doesn't have a common reference between its return types
 struct BadInvocable5
 {
-  __host__ __device__ R1 operator()(cuda::std::iter_value_t<It>&) const;
+  TEST_FUNC R1 operator()(cuda::std::iter_value_t<It>&) const;
   struct Unrelated
   {};
-  __host__ __device__ Unrelated operator()(cuda::std::iter_reference_t<It>) const;
-  __host__ __device__ R1 operator()(cuda::std::iter_common_reference_t<It>) const;
+  TEST_FUNC Unrelated operator()(cuda::std::iter_reference_t<It>) const;
+  TEST_FUNC R1 operator()(cuda::std::iter_common_reference_t<It>) const;
 };
 static_assert(!cuda::std::indirectly_regular_unary_invocable<BadInvocable5, It>);
 

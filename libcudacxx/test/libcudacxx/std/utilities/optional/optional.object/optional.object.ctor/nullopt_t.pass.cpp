@@ -23,7 +23,7 @@ using cuda::std::nullopt_t;
 using cuda::std::optional;
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   static_assert(cuda::std::is_nothrow_constructible<optional<T>, nullopt_t&>::value);
   static_assert(
@@ -38,7 +38,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<int*>();

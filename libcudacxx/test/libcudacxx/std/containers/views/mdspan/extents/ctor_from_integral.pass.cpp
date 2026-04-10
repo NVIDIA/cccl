@@ -41,7 +41,7 @@
 struct IntegralCtorTest
 {
   template <class E, class AllExtents, class Extents, size_t... Indices>
-  __host__ __device__ static constexpr void
+  TEST_FUNC static constexpr void
   test_construction(AllExtents all_ext, Extents ext, cuda::std::index_sequence<Indices...>)
   {
     // construction from indices

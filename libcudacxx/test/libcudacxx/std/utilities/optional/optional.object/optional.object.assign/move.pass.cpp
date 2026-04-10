@@ -29,14 +29,14 @@ static_assert(cuda::std::is_nothrow_move_assignable<optional<Y>>::value);
 
 struct ThrowsMove
 {
-  __host__ __device__ ThrowsMove() noexcept {}
-  __host__ __device__ ThrowsMove(ThrowsMove const&) noexcept {}
-  __host__ __device__ ThrowsMove(ThrowsMove&&) noexcept(false) {}
-  __host__ __device__ ThrowsMove& operator=(ThrowsMove const&) noexcept
+  TEST_FUNC ThrowsMove() noexcept {}
+  TEST_FUNC ThrowsMove(ThrowsMove const&) noexcept {}
+  TEST_FUNC ThrowsMove(ThrowsMove&&) noexcept(false) {}
+  TEST_FUNC ThrowsMove& operator=(ThrowsMove const&) noexcept
   {
     return *this;
   }
-  __host__ __device__ ThrowsMove& operator=(ThrowsMove&&) noexcept
+  TEST_FUNC ThrowsMove& operator=(ThrowsMove&&) noexcept
   {
     return *this;
   }
@@ -45,14 +45,14 @@ static_assert(!cuda::std::is_nothrow_move_assignable<optional<ThrowsMove>>::valu
 
 struct ThrowsMoveAssign
 {
-  __host__ __device__ ThrowsMoveAssign() noexcept {}
-  __host__ __device__ ThrowsMoveAssign(ThrowsMoveAssign const&) noexcept {}
-  __host__ __device__ ThrowsMoveAssign(ThrowsMoveAssign&&) noexcept {}
-  __host__ __device__ ThrowsMoveAssign& operator=(ThrowsMoveAssign const&) noexcept
+  TEST_FUNC ThrowsMoveAssign() noexcept {}
+  TEST_FUNC ThrowsMoveAssign(ThrowsMoveAssign const&) noexcept {}
+  TEST_FUNC ThrowsMoveAssign(ThrowsMoveAssign&&) noexcept {}
+  TEST_FUNC ThrowsMoveAssign& operator=(ThrowsMoveAssign const&) noexcept
   {
     return *this;
   }
-  __host__ __device__ ThrowsMoveAssign& operator=(ThrowsMoveAssign&&) noexcept(false)
+  TEST_FUNC ThrowsMoveAssign& operator=(ThrowsMoveAssign&&) noexcept(false)
   {
     return *this;
   }
@@ -62,14 +62,14 @@ static_assert(!cuda::std::is_nothrow_move_assignable<optional<ThrowsMoveAssign>>
 
 struct NoThrowMove
 {
-  __host__ __device__ NoThrowMove() noexcept(false) {}
-  __host__ __device__ NoThrowMove(NoThrowMove const&) noexcept(false) {}
-  __host__ __device__ NoThrowMove(NoThrowMove&&) noexcept {}
-  __host__ __device__ NoThrowMove& operator=(NoThrowMove const&) noexcept
+  TEST_FUNC NoThrowMove() noexcept(false) {}
+  TEST_FUNC NoThrowMove(NoThrowMove const&) noexcept(false) {}
+  TEST_FUNC NoThrowMove(NoThrowMove&&) noexcept {}
+  TEST_FUNC NoThrowMove& operator=(NoThrowMove const&) noexcept
   {
     return *this;
   }
-  __host__ __device__ NoThrowMove& operator=(NoThrowMove&&) noexcept
+  TEST_FUNC NoThrowMove& operator=(NoThrowMove&&) noexcept
   {
     return *this;
   }
@@ -160,7 +160,7 @@ void test_exceptions()
 #endif // TEST_HAS_EXCEPTIONS()
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   cuda::std::remove_reference_t<T> val{42};
   cuda::std::remove_reference_t<T> other_val{1337};
@@ -210,7 +210,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
 #ifdef CCCL_ENABLE_OPTIONAL_REF

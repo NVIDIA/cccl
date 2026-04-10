@@ -12,6 +12,8 @@
 #include <cuda/std/concepts>
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 static_assert(cuda::std::same_as<cuda::std::indirect_result_t<int (*)(int), int*>, int>);
 static_assert(
   cuda::std::same_as<cuda::std::indirect_result_t<double (*)(int const&, float), int const*, float*>, double>, "");

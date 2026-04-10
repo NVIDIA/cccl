@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <class ToDuration, class FromDuration>
-__host__ __device__ void test(const FromDuration& f, const ToDuration& d)
+TEST_FUNC void test(const FromDuration& f, const ToDuration& d)
 {
   {
     using R = decltype(cuda::std::chrono::duration_cast<ToDuration>(f));

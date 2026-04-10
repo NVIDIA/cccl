@@ -21,16 +21,16 @@
 
 struct ConstructsWithTupleLeaf
 {
-  __host__ __device__ ConstructsWithTupleLeaf() {}
+  TEST_FUNC ConstructsWithTupleLeaf() {}
 
-  __host__ __device__ ConstructsWithTupleLeaf(ConstructsWithTupleLeaf const&)
+  TEST_FUNC ConstructsWithTupleLeaf(ConstructsWithTupleLeaf const&)
   {
     assert(false);
   }
-  __host__ __device__ ConstructsWithTupleLeaf(ConstructsWithTupleLeaf&&) {}
+  TEST_FUNC ConstructsWithTupleLeaf(ConstructsWithTupleLeaf&&) {}
 
   template <class T>
-  __host__ __device__ ConstructsWithTupleLeaf(T)
+  TEST_FUNC ConstructsWithTupleLeaf(T)
   {
     static_assert(!cuda::std::is_same<T, T>::value, "Constructor instantiated for type other than int");
   }
@@ -46,7 +46,7 @@ struct move_only_ebo
 // a move_only type which does not trigger the empty base optimization
 struct move_only_large final
 {
-  __host__ __device__ move_only_large()
+  TEST_FUNC move_only_large()
       : value(42)
   {}
   move_only_large(move_only_large&&) = default;
@@ -54,7 +54,7 @@ struct move_only_large final
 };
 
 template <class Elem>
-__host__ __device__ void test_sfinae()
+TEST_FUNC void test_sfinae()
 {
   using Tup = cuda::std::tuple<Elem>;
   // cuda::std::allocator not supported

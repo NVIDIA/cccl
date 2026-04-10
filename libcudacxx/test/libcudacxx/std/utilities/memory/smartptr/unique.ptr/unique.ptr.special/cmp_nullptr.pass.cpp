@@ -53,7 +53,7 @@ TEST_NV_DIAG_SUPPRESS(3060) // call to __builtin_is_constant_evaluated appearing
 TEST_DIAG_SUPPRESS_GCC("-Wtautological-compare")
 TEST_DIAG_SUPPRESS_CLANG("-Wtautological-compare")
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {

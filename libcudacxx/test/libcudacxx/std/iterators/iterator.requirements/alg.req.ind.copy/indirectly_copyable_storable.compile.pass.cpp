@@ -28,7 +28,7 @@ template <class T>
 struct PointerTo
 {
   using value_type = T;
-  __host__ __device__ T& operator*() const;
+  TEST_FUNC T& operator*() const;
 };
 
 // Copying the underlying object between pointers (or dereferenceable classes) works. This is a non-exhaustive check
@@ -55,19 +55,19 @@ struct NoLvalueAssignment
 
   struct ReferenceType
   {
-    __host__ __device__ ReferenceType& operator=(ValueType const&);
+    TEST_FUNC ReferenceType& operator=(ValueType const&);
     ReferenceType& operator=(ValueType&) = delete;
-    __host__ __device__ ReferenceType& operator=(ValueType&&);
-    __host__ __device__ ReferenceType& operator=(ValueType const&&);
+    TEST_FUNC ReferenceType& operator=(ValueType&&);
+    TEST_FUNC ReferenceType& operator=(ValueType const&&);
   };
 
   struct ValueType
   {
-    __host__ __device__ operator ReferenceType&() const;
+    TEST_FUNC operator ReferenceType&() const;
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_FUNC ReferenceType& operator*() const;
 };
 
 static_assert(cuda::std::indirectly_writable<NoLvalueAssignment, cuda::std::iter_reference_t<NoLvalueAssignment>>);
@@ -88,18 +88,18 @@ struct NoConstLvalueAssignment
   struct ReferenceType
   {
     ReferenceType& operator=(ValueType const&) = delete;
-    __host__ __device__ ReferenceType& operator=(ValueType&);
-    __host__ __device__ ReferenceType& operator=(ValueType&&);
-    __host__ __device__ ReferenceType& operator=(ValueType const&&);
+    TEST_FUNC ReferenceType& operator=(ValueType&);
+    TEST_FUNC ReferenceType& operator=(ValueType&&);
+    TEST_FUNC ReferenceType& operator=(ValueType const&&);
   };
 
   struct ValueType
   {
-    __host__ __device__ operator ReferenceType&() const;
+    TEST_FUNC operator ReferenceType&() const;
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_FUNC ReferenceType& operator*() const;
 };
 
 static_assert(
@@ -124,19 +124,19 @@ struct NoRvalueAssignment
 
   struct ReferenceType
   {
-    __host__ __device__ ReferenceType& operator=(ValueType const&);
-    __host__ __device__ ReferenceType& operator=(ValueType&);
+    TEST_FUNC ReferenceType& operator=(ValueType const&);
+    TEST_FUNC ReferenceType& operator=(ValueType&);
     ReferenceType& operator=(ValueType&&) = delete;
-    __host__ __device__ ReferenceType& operator=(ValueType const&&);
+    TEST_FUNC ReferenceType& operator=(ValueType const&&);
   };
 
   struct ValueType
   {
-    __host__ __device__ operator ReferenceType&() const;
+    TEST_FUNC operator ReferenceType&() const;
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_FUNC ReferenceType& operator*() const;
 };
 
 static_assert(cuda::std::indirectly_writable<NoRvalueAssignment, cuda::std::iter_reference_t<NoRvalueAssignment>>);
@@ -156,19 +156,19 @@ struct NoConstRvalueAssignment
 
   struct ReferenceType
   {
-    __host__ __device__ ReferenceType& operator=(ValueType const&);
-    __host__ __device__ ReferenceType& operator=(ValueType&);
-    __host__ __device__ ReferenceType& operator=(ValueType&&);
+    TEST_FUNC ReferenceType& operator=(ValueType const&);
+    TEST_FUNC ReferenceType& operator=(ValueType&);
+    TEST_FUNC ReferenceType& operator=(ValueType&&);
     ReferenceType& operator=(ValueType const&&) = delete;
   };
 
   struct ValueType
   {
-    __host__ __device__ operator ReferenceType&() const;
+    TEST_FUNC operator ReferenceType&() const;
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_FUNC ReferenceType& operator*() const;
 };
 
 static_assert(
@@ -263,17 +263,17 @@ struct InconsistentIterator
 
   struct ReferenceType
   {
-    __host__ __device__ ReferenceType& operator=(ValueType const&);
+    TEST_FUNC ReferenceType& operator=(ValueType const&);
   };
 
   struct ValueType
   {
     ValueType() = default;
-    __host__ __device__ ValueType(const ReferenceType&);
+    TEST_FUNC ValueType(const ReferenceType&);
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_FUNC ReferenceType& operator*() const;
 };
 
 // `ValueType` can be constructed with a `ReferenceType` and assigned to a `ReferenceType`, so it does model
@@ -291,16 +291,16 @@ struct NotConstructibleFromRefIn
   struct ValueType
   {
     ValueType(ReferenceType) = delete;
-    __host__ __device__ operator CommonType&() const;
+    TEST_FUNC operator CommonType&() const;
   };
 
   struct ReferenceType
   {
-    __host__ __device__ operator CommonType&() const;
+    TEST_FUNC operator CommonType&() const;
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_FUNC ReferenceType& operator*() const;
 };
 
 namespace cuda::std
@@ -325,7 +325,7 @@ static_assert(
 struct AssignableFromAnything
 {
   template <class T>
-  __host__ __device__ AssignableFromAnything& operator=(T&&);
+  TEST_FUNC AssignableFromAnything& operator=(T&&);
 };
 
 // A type that can't be constructed from its own reference isn't `indirectly_copyable_storable`, even when assigning it
@@ -339,18 +339,18 @@ struct NotAssignableFromRefIn
 
   struct ValueType
   {
-    __host__ __device__ ValueType(ReferenceType);
+    TEST_FUNC ValueType(ReferenceType);
     ValueType& operator=(ReferenceType) = delete;
-    __host__ __device__ operator CommonType&() const;
+    TEST_FUNC operator CommonType&() const;
   };
 
   struct ReferenceType
   {
-    __host__ __device__ operator CommonType&() const;
+    TEST_FUNC operator CommonType&() const;
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_FUNC ReferenceType& operator*() const;
 };
 
 namespace cuda::std

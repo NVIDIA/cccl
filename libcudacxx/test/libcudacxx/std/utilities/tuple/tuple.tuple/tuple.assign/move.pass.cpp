@@ -42,17 +42,17 @@ TEST_GLOBAL_VARIABLE int moved  = 0;
 
 struct CountAssign
 {
-  __host__ __device__ static void reset()
+  TEST_FUNC static void reset()
   {
     copied = moved = 0;
   }
   CountAssign() = default;
-  __host__ __device__ CountAssign& operator=(CountAssign const&)
+  TEST_FUNC CountAssign& operator=(CountAssign const&)
   {
     ++copied;
     return *this;
   }
-  __host__ __device__ CountAssign& operator=(CountAssign&&)
+  TEST_FUNC CountAssign& operator=(CountAssign&&)
   {
     ++moved;
     return *this;

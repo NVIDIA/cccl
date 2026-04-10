@@ -18,7 +18,7 @@
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 TEST_NV_DIAG_SUPPRESS(set_but_not_used)
 
-__device__ void test()
+TEST_DEVICE_FUNC void test()
 {
   __shared__ cuda::barrier<cuda::thread_scope_block>* b;
   shared_memory_selector<cuda::barrier<cuda::thread_scope_block>, constructor_initializer> sel;

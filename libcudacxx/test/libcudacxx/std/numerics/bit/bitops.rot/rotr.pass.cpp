@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ constexpr bool constexpr_test()
+TEST_FUNC constexpr bool constexpr_test()
 {
   using nl = cuda::std::numeric_limits<T>;
 
@@ -36,7 +36,7 @@ __host__ __device__ constexpr bool constexpr_test()
 }
 
 template <typename T>
-__host__ __device__ void runtime_test()
+TEST_FUNC void runtime_test()
 {
   static_assert(cuda::std::is_same_v<T, decltype(cuda::std::rotr(T(0), 0))>);
   static_assert(noexcept(cuda::std::rotr(T(0), 0)));

@@ -22,10 +22,10 @@
 TEST_GLOBAL_VARIABLE int Nasty_count = 0;
 struct Nasty
 {
-  __host__ __device__ Nasty()
+  TEST_FUNC Nasty()
       : i_(Nasty_count++)
   {}
-  __host__ __device__ Nasty* operator&() const
+  TEST_FUNC Nasty* operator&() const
   {
     return nullptr;
   }

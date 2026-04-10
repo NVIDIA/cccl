@@ -20,7 +20,7 @@
 #include "types.h"
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   { // inplace_vector<T, 0> can be swapped
     using inplace_vector = cuda::std::inplace_vector<T, 0>;
@@ -53,7 +53,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<Trivial>();

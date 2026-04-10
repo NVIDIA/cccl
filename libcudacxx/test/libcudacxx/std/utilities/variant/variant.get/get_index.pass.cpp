@@ -33,7 +33,7 @@
 #include "test_workarounds.h"
 #include "variant_test_helpers.h"
 
-__host__ __device__ void test_const_lvalue_get()
+TEST_FUNC void test_const_lvalue_get()
 {
   {
     using V = cuda::std::variant<int, const long>;
@@ -93,7 +93,7 @@ __host__ __device__ void test_const_lvalue_get()
 #endif
 }
 
-__host__ __device__ void test_lvalue_get()
+TEST_FUNC void test_lvalue_get()
 {
   {
     using V = cuda::std::variant<int, const long>;
@@ -141,7 +141,7 @@ __host__ __device__ void test_lvalue_get()
 #endif
 }
 
-__host__ __device__ void test_rvalue_get()
+TEST_FUNC void test_rvalue_get()
 {
   {
     using V = cuda::std::variant<int, const long>;
@@ -191,7 +191,7 @@ __host__ __device__ void test_rvalue_get()
 #endif
 }
 
-__host__ __device__ void test_const_rvalue_get()
+TEST_FUNC void test_const_rvalue_get()
 {
   {
     using V = cuda::std::variant<int, const long>;

@@ -51,7 +51,7 @@ class Empty
 
 class NotEmpty
 {
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -64,7 +64,7 @@ struct bit_zero
 
 class Abstract
 {
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 enum Enum

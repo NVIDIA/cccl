@@ -36,7 +36,7 @@ static_assert(HasMemberSwap<int>);
 
 struct NotSwappable
 {};
-__host__ __device__ void swap(NotSwappable&, NotSwappable&) = delete;
+TEST_FUNC void swap(NotSwappable&, NotSwappable&) = delete;
 
 // !is_swappable_v<E>
 static_assert(!HasMemberSwap<NotSwappable>);
@@ -44,7 +44,7 @@ static_assert(!HasMemberSwap<NotSwappable>);
 struct NotMoveContructible
 {
   NotMoveContructible(NotMoveContructible&&) = delete;
-  __host__ __device__ friend void swap(NotMoveContructible&, NotMoveContructible&) {}
+  TEST_FUNC friend void swap(NotMoveContructible&, NotMoveContructible&) {}
 };
 
 // !is_move_constructible_v<E>
@@ -53,8 +53,8 @@ static_assert(!HasMemberSwap<NotMoveContructible>);
 // Test noexcept
 struct MoveMayThrow
 {
-  __host__ __device__ MoveMayThrow(MoveMayThrow&&) noexcept(false);
-  __host__ __device__ friend void swap(MoveMayThrow&, MoveMayThrow&) noexcept {}
+  TEST_FUNC MoveMayThrow(MoveMayThrow&&) noexcept(false);
+  TEST_FUNC friend void swap(MoveMayThrow&, MoveMayThrow&) noexcept {}
 };
 
 template <class E, bool = HasMemberSwap<E>>
@@ -71,13 +71,13 @@ static_assert(!MemberSwapNoexcept<MoveMayThrow>);
 
 struct SwapMayThrow
 {
-  __host__ __device__ friend void swap(SwapMayThrow&, SwapMayThrow&) noexcept(false) {}
+  TEST_FUNC friend void swap(SwapMayThrow&, SwapMayThrow&) noexcept(false) {}
 };
 
 // !is_nothrow_swappable_v<E>
 static_assert(!MemberSwapNoexcept<SwapMayThrow>);
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   // this->has_value() && rhs.has_value()
   {

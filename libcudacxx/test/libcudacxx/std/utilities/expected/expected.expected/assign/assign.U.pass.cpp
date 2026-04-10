@@ -62,26 +62,26 @@ static_assert(cuda::std::is_assignable_v<cuda::std::expected<int, int>&, cuda::s
 // !is_constructible_v<T, U>
 struct NoCtorFromInt
 {
-  __host__ __device__ NoCtorFromInt(int) = delete;
-  __host__ __device__ NoCtorFromInt& operator=(int);
+  TEST_FUNC NoCtorFromInt(int) = delete;
+  TEST_FUNC NoCtorFromInt& operator=(int);
 };
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<NoCtorFromInt, int>&, int>);
 
 // !is_assignable_v<T&, U>
 struct NoAssignFromInt
 {
-  __host__ __device__ explicit NoAssignFromInt(int);
-  __host__ __device__ NoAssignFromInt& operator=(int) = delete;
+  TEST_FUNC explicit NoAssignFromInt(int);
+  TEST_FUNC NoAssignFromInt& operator=(int) = delete;
 };
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<NoAssignFromInt, int>&, int>);
 
 template <bool moveNoexcept, bool convertNoexcept>
 struct MaybeNoexcept
 {
-  __host__ __device__ explicit MaybeNoexcept(int) noexcept(convertNoexcept);
-  __host__ __device__ MaybeNoexcept(MaybeNoexcept&&) noexcept(moveNoexcept);
+  TEST_FUNC explicit MaybeNoexcept(int) noexcept(convertNoexcept);
+  TEST_FUNC MaybeNoexcept(MaybeNoexcept&&) noexcept(moveNoexcept);
   MaybeNoexcept& operator=(MaybeNoexcept&&) = default;
-  __host__ __device__ MaybeNoexcept& operator=(int);
+  TEST_FUNC MaybeNoexcept& operator=(int);
 };
 
 // !is_nothrow_constructible_v<T, U> && !is_nothrow_move_constructible_v<T> &&
@@ -103,7 +103,7 @@ static_assert(
 static_assert(
   !cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<false, false>, MaybeNoexcept<false, false>>&, int>, "");
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   // If has_value() is true, equivalent to: val = cuda::std::forward<U>(v);
   // Copy
@@ -313,7 +313,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     {
       int i;
       int j;
-      __host__ __device__ constexpr Bar(int ii, int jj)
+      TEST_FUNC constexpr Bar(int ii, int jj)
           : i(ii)
           , j(jj)
       {}

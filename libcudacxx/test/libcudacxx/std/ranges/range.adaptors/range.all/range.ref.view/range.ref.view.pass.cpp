@@ -18,7 +18,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__device__ int globalBuff[8];
+TEST_GLOBAL_VARIABLE int globalBuff[8];
 
 #if TEST_STD_VER >= 2020
 template <class T>
@@ -33,19 +33,19 @@ constexpr bool ValidRefView<T, cuda::std::void_t<cuda::std::ranges::ref_view<T>>
 struct Range
 {
   int start = 0;
-  __host__ __device__ friend constexpr int* begin(Range const& range)
+  TEST_FUNC friend constexpr int* begin(Range const& range)
   {
     return globalBuff + range.start;
   }
-  __host__ __device__ friend constexpr int* end(Range const&)
+  TEST_FUNC friend constexpr int* end(Range const&)
   {
     return globalBuff + 8;
   }
-  __host__ __device__ friend constexpr int* begin(Range& range)
+  TEST_FUNC friend constexpr int* begin(Range& range)
   {
     return globalBuff + range.start;
   }
-  __host__ __device__ friend constexpr int* end(Range&)
+  TEST_FUNC friend constexpr int* end(Range&)
   {
     return globalBuff + 8;
   }
@@ -53,8 +53,8 @@ struct Range
 
 struct BeginOnly
 {
-  __host__ __device__ friend int* begin(BeginOnly const&);
-  __host__ __device__ friend int* begin(BeginOnly&);
+  TEST_FUNC friend int* begin(BeginOnly const&);
+  TEST_FUNC friend int* begin(BeginOnly&);
 };
 
 static_assert(ValidRefView<Range>);
@@ -67,12 +67,12 @@ static_assert(cuda::std::derived_from<cuda::std::ranges::ref_view<Range>,
 
 struct RangeConvertible
 {
-  __host__ __device__ operator Range&();
+  TEST_FUNC operator Range&();
 };
 
 struct RValueRangeConvertible
 {
-  __host__ __device__ operator Range&&();
+  TEST_FUNC operator Range&&();
 };
 
 static_assert(cuda::std::is_constructible_v<cuda::std::ranges::ref_view<Range>, Range&>);
@@ -81,8 +81,8 @@ static_assert(!cuda::std::is_constructible_v<cuda::std::ranges::ref_view<Range>,
 
 struct ConstConvertibleToLValueAndRValue
 {
-  __host__ __device__ operator Range&() const;
-  __host__ __device__ operator Range&&() const;
+  TEST_FUNC operator Range&() const;
+  TEST_FUNC operator Range&&() const;
 };
 static_assert(cuda::std::is_convertible_v<RangeConvertible, cuda::std::ranges::ref_view<Range>>);
 static_assert(!cuda::std::is_convertible_v<RValueRangeConvertible, cuda::std::ranges::ref_view<Range>>);
@@ -90,11 +90,11 @@ static_assert(!cuda::std::is_convertible_v<ConstConvertibleToLValueAndRValue, cu
 
 struct ForwardRange
 {
-  __host__ __device__ constexpr forward_iterator<int*> begin() const
+  TEST_FUNC constexpr forward_iterator<int*> begin() const
   {
     return forward_iterator<int*>(globalBuff);
   }
-  __host__ __device__ constexpr forward_iterator<int*> end() const
+  TEST_FUNC constexpr forward_iterator<int*> end() const
   {
     return forward_iterator<int*>(globalBuff + 8);
   }
@@ -104,39 +104,39 @@ struct Cpp17InputRange
 {
   struct sentinel
   {
-    __host__ __device__ friend constexpr bool operator==(sentinel, cpp17_input_iterator<int*> iter)
+    TEST_FUNC friend constexpr bool operator==(sentinel, cpp17_input_iterator<int*> iter)
     {
       return base(iter) == globalBuff + 8;
     }
 #if TEST_STD_VER <= 2017
-    __host__ __device__ friend constexpr bool operator==(cpp17_input_iterator<int*> iter, sentinel)
+    TEST_FUNC friend constexpr bool operator==(cpp17_input_iterator<int*> iter, sentinel)
     {
       return base(iter) == globalBuff + 8;
     }
-    __host__ __device__ friend constexpr bool operator!=(sentinel, cpp17_input_iterator<int*> iter)
+    TEST_FUNC friend constexpr bool operator!=(sentinel, cpp17_input_iterator<int*> iter)
     {
       return base(iter) != globalBuff + 8;
     }
-    __host__ __device__ friend constexpr bool operator!=(cpp17_input_iterator<int*> iter, sentinel)
+    TEST_FUNC friend constexpr bool operator!=(cpp17_input_iterator<int*> iter, sentinel)
     {
       return base(iter) != globalBuff + 8;
     }
 #endif // TEST_STD_VER <= 2017
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(sentinel, cpp17_input_iterator<int*>)
+    TEST_FUNC friend constexpr cuda::std::ptrdiff_t operator-(sentinel, cpp17_input_iterator<int*>)
     {
       return -8;
     }
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(cpp17_input_iterator<int*>, sentinel)
+    TEST_FUNC friend constexpr cuda::std::ptrdiff_t operator-(cpp17_input_iterator<int*>, sentinel)
     {
       return 8;
     }
   };
 
-  __host__ __device__ constexpr cpp17_input_iterator<int*> begin() const
+  TEST_FUNC constexpr cpp17_input_iterator<int*> begin() const
   {
     return cpp17_input_iterator<int*>(globalBuff);
   }
-  __host__ __device__ constexpr sentinel end() const
+  TEST_FUNC constexpr sentinel end() const
   {
     return {};
   }
@@ -146,35 +146,35 @@ struct Cpp20InputRange
 {
   struct sentinel
   {
-    __host__ __device__ friend constexpr bool operator==(sentinel, const cpp20_input_iterator<int*>& iter)
+    TEST_FUNC friend constexpr bool operator==(sentinel, const cpp20_input_iterator<int*>& iter)
     {
       return base(iter) == globalBuff + 8;
     }
 #if TEST_STD_VER <= 2017
-    __host__ __device__ friend constexpr bool operator==(const cpp20_input_iterator<int*>& iter, sentinel)
+    TEST_FUNC friend constexpr bool operator==(const cpp20_input_iterator<int*>& iter, sentinel)
     {
       return base(iter) == globalBuff + 8;
     }
-    __host__ __device__ friend constexpr bool operator!=(sentinel, const cpp20_input_iterator<int*>& iter)
+    TEST_FUNC friend constexpr bool operator!=(sentinel, const cpp20_input_iterator<int*>& iter)
     {
       return base(iter) != globalBuff + 8;
     }
-    __host__ __device__ friend constexpr bool operator!=(const cpp20_input_iterator<int*>& iter, sentinel)
+    TEST_FUNC friend constexpr bool operator!=(const cpp20_input_iterator<int*>& iter, sentinel)
     {
       return base(iter) != globalBuff + 8;
     }
 #endif // TEST_STD_VER <= 2017
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(sentinel, const cpp20_input_iterator<int*>&)
+    TEST_FUNC friend constexpr cuda::std::ptrdiff_t operator-(sentinel, const cpp20_input_iterator<int*>&)
     {
       return -8;
     }
   };
 
-  __host__ __device__ constexpr cpp20_input_iterator<int*> begin() const
+  TEST_FUNC constexpr cpp20_input_iterator<int*> begin() const
   {
     return cpp20_input_iterator<int*>(globalBuff);
   }
-  __host__ __device__ constexpr sentinel end() const
+  TEST_FUNC constexpr sentinel end() const
   {
     return {};
   }
@@ -195,7 +195,7 @@ _CCCL_CONCEPT DataIsInvocable = _CCCL_REQUIRES_EXPR((R), cuda::std::ranges::ref_
 static_assert(cuda::std::same_as<decltype(cuda::std::ranges::ref_view(cuda::std::declval<Range&>())),
                                  cuda::std::ranges::ref_view<Range>>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     // ref_view::base

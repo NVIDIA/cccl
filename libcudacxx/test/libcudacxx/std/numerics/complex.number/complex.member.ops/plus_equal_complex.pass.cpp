@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::complex<T> c;
   const cuda::std::complex<T> c2(1.5, 2.5);

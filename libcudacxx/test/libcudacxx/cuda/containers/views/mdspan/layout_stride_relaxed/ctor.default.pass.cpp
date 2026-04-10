@@ -25,7 +25,7 @@
 #include "test_macros.h"
 
 template <class E>
-__host__ __device__ constexpr void test_construction()
+TEST_FUNC constexpr void test_construction()
 {
   using M = cuda::layout_stride_relaxed::mapping<E>;
   static_assert(noexcept(M{}));
@@ -59,7 +59,7 @@ __host__ __device__ constexpr void test_construction()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_construction<cuda::std::extents<int>>();

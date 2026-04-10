@@ -55,8 +55,8 @@ struct MoveMayThrow
 {
   MoveMayThrow(MoveMayThrow const&)            = default;
   MoveMayThrow& operator=(const MoveMayThrow&) = default;
-  __host__ __device__ MoveMayThrow(MoveMayThrow&&) noexcept(false) {}
-  __host__ __device__ MoveMayThrow& operator=(MoveMayThrow&&) noexcept(false)
+  TEST_FUNC MoveMayThrow(MoveMayThrow&&) noexcept(false) {}
+  TEST_FUNC MoveMayThrow& operator=(MoveMayThrow&&) noexcept(false)
   {
     return *this;
   }
@@ -88,7 +88,7 @@ static_assert(
   cuda::std::__expected_can_copy_assign<MoveMayThrow, MoveMayThrow> == cuda::std::__smf_availability::__deleted, "");
 static_assert(!cuda::std::is_copy_assignable_v<cuda::std::expected<MoveMayThrow, MoveMayThrow>>);
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   // If this->has_value() && rhs.has_value() is true, equivalent to val = *rhs.
   {

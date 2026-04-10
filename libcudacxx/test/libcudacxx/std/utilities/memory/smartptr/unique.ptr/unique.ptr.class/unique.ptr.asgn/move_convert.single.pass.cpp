@@ -23,7 +23,7 @@
 #include "unique_ptr_test_helper.h"
 
 template <class APtr, class BPtr>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void testAssign(APtr& aptr, BPtr& bptr)
+TEST_FUNC TEST_CONSTEXPR_CXX23 void testAssign(APtr& aptr, BPtr& bptr)
 {
   A* p = bptr.get();
   if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
@@ -41,7 +41,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void testAssign(APtr& aptr, BPtr& bptr)
 }
 
 template <class LHS, class RHS>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void checkDeleter(LHS& lhs, RHS& rhs, int LHSState, int RHSState)
+TEST_FUNC TEST_CONSTEXPR_CXX23 void checkDeleter(LHS& lhs, RHS& rhs, int LHSState, int RHSState)
 {
   assert(lhs.get_deleter().state() == LHSState);
   assert(rhs.get_deleter().state() == RHSState);
@@ -55,10 +55,10 @@ struct NCConvertingDeleter
   TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter&&) = default;
 
   template <class U>
-  __host__ __device__ TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
 };
 
 template <class T>
@@ -69,10 +69,10 @@ struct NCConvertingDeleter<T[]>
   TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter&&) = default;
 
   template <class U>
-  __host__ __device__ TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
 };
 
 struct NCGenericDeleter
@@ -81,10 +81,10 @@ struct NCGenericDeleter
   NCGenericDeleter(NCGenericDeleter const&)                 = delete;
   TEST_CONSTEXPR_CXX23 NCGenericDeleter(NCGenericDeleter&&) = default;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
   using DA  = NCConvertingDeleter<A>; // non-copyable deleters
   using DB  = NCConvertingDeleter<B>;
@@ -128,7 +128,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   test_sfinae();
   {

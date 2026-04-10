@@ -25,22 +25,22 @@ struct S2
 
 struct R
 {
-  __host__ __device__ bool operator()(S1, S1) const;
-  __host__ __device__ bool operator()(S1, S2) const;
-  __host__ __device__ bool operator()(S2, S1) const;
-  __host__ __device__ bool operator()(S2, S2) const;
+  TEST_FUNC bool operator()(S1, S1) const;
+  TEST_FUNC bool operator()(S1, S2) const;
+  TEST_FUNC bool operator()(S2, S1) const;
+  TEST_FUNC bool operator()(S2, S2) const;
 };
 
 // clang-format off
 template<class F, class T, class U>
 requires cuda::std::relation<F, T, U>
-__host__ __device__ constexpr bool check_strict_weak_order_subsumes_relation() {
+TEST_FUNC constexpr bool check_strict_weak_order_subsumes_relation() {
   return false;
 }
 
 template<class F, class T, class U>
 requires cuda::std::strict_weak_order<F, T, U> && true
-__host__ __device__ constexpr bool check_strict_weak_order_subsumes_relation() {
+TEST_FUNC constexpr bool check_strict_weak_order_subsumes_relation() {
   return true;
 }
 // clang-format on
@@ -53,13 +53,13 @@ static_assert(check_strict_weak_order_subsumes_relation<R, S1, S2>());
 // clang-format off
 template<class F, class T, class U>
 requires cuda::std::relation<F, T, U> && true
-__host__ __device__ constexpr bool check_relation_subsumes_strict_weak_order() {
+TEST_FUNC constexpr bool check_relation_subsumes_strict_weak_order() {
   return true;
 }
 
 template<class F, class T, class U>
 requires cuda::std::strict_weak_order<F, T, U>
-__host__ __device__ constexpr bool check_relation_subsumes_strict_weak_order() {
+TEST_FUNC constexpr bool check_relation_subsumes_strict_weak_order() {
   return false;
 }
 // clang-format on
@@ -72,13 +72,13 @@ static_assert(check_relation_subsumes_strict_weak_order<R, S1, S2>());
 // clang-format off
 template<class F, class T, class U>
 requires cuda::std::strict_weak_order<F, T, T> && cuda::std::strict_weak_order<F, U, U>
-__host__ __device__ constexpr bool check_strict_weak_order_subsumes_itself() {
+TEST_FUNC constexpr bool check_strict_weak_order_subsumes_itself() {
   return false;
 }
 
 template<class F, class T, class U>
 requires cuda::std::strict_weak_order<F, T, U>
-__host__ __device__ constexpr bool check_strict_weak_order_subsumes_itself() {
+TEST_FUNC constexpr bool check_strict_weak_order_subsumes_itself() {
   return true;
 }
 // clang-format on

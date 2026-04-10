@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <typename WD>
-__host__ __device__ constexpr bool testConstexpr()
+TEST_FUNC constexpr bool testConstexpr()
 {
   WD wd{1};
   if ((--wd).c_encoding() != 0)

@@ -17,12 +17,12 @@
 #include "test_macros.h"
 
 template <typename... T>
-__host__ __device__ constexpr cuda::std::array<int, sizeof...(T)> tempArray(T... args)
+TEST_FUNC constexpr cuda::std::array<int, sizeof...(T)> tempArray(T... args)
 {
   return {args...};
 }
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   {
     cuda::std::array<double, 1> array = {3.3};

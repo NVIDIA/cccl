@@ -19,7 +19,7 @@
 using cuda::std::floating_point;
 
 template <typename T>
-__host__ __device__ constexpr bool CheckFloatingPointQualifiers()
+TEST_FUNC constexpr bool CheckFloatingPointQualifiers()
 {
   constexpr bool result = floating_point<T>;
   static_assert(floating_point<const T> == result);

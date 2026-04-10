@@ -16,6 +16,8 @@
 #include <cuda/std/ranges>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 static_assert(cuda::std::is_empty_v<cuda::std::ranges::view_base>);
 static_assert(cuda::std::is_trivial_v<cuda::std::ranges::view_base>);
 

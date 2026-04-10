@@ -16,7 +16,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   {
     cuda::std::array<double, 1> const array = {3.3};

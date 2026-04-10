@@ -13,8 +13,10 @@
 
 #include <testing.cuh>
 
+#include "test_macros.h"
+
 template <class T>
-__device__ T foo(const T& x)
+TEST_DEVICE_FUNC T foo(const T& x)
 {
   return x;
 }

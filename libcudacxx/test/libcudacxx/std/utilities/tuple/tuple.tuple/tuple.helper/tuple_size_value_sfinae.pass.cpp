@@ -22,17 +22,17 @@
 #include "test_macros.h"
 
 template <class T, class = decltype(cuda::std::tuple_size<T>::value)>
-__host__ __device__ constexpr bool has_value(int)
+TEST_FUNC constexpr bool has_value(int)
 {
   return true;
 }
 template <class>
-__host__ __device__ constexpr bool has_value(long)
+TEST_FUNC constexpr bool has_value(long)
 {
   return false;
 }
 template <class T>
-__host__ __device__ constexpr bool has_value()
+TEST_FUNC constexpr bool has_value()
 {
   return has_value<T>(0);
 }

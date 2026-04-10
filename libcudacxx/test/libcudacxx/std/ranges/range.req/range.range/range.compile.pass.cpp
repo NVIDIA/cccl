@@ -14,35 +14,36 @@
 
 #include <cuda/std/ranges>
 
+#include "test_macros.h"
 #include "test_range.h"
 
 static_assert(cuda::std::ranges::range<test_range<cpp20_input_iterator>>);
 
 struct incompatible_iterators
 {
-  __host__ __device__ int* begin();
-  __host__ __device__ long* end();
+  TEST_FUNC int* begin();
+  TEST_FUNC long* end();
 };
 static_assert(!cuda::std::ranges::range<incompatible_iterators>);
 
 struct int_begin_int_end
 {
-  __host__ __device__ int begin();
-  __host__ __device__ int end();
+  TEST_FUNC int begin();
+  TEST_FUNC int end();
 };
 static_assert(!cuda::std::ranges::range<int_begin_int_end>);
 
 struct iterator_begin_int_end
 {
-  __host__ __device__ int* begin();
-  __host__ __device__ int end();
+  TEST_FUNC int* begin();
+  TEST_FUNC int end();
 };
 static_assert(!cuda::std::ranges::range<iterator_begin_int_end>);
 
 struct int_begin_iterator_end
 {
-  __host__ __device__ int begin();
-  __host__ __device__ int* end();
+  TEST_FUNC int begin();
+  TEST_FUNC int* end();
 };
 static_assert(!cuda::std::ranges::range<int_begin_iterator_end>);
 

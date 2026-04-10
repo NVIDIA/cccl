@@ -12,8 +12,10 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class Level, class Hierarchy>
-__device__ void test_query_signatures(const Level& level, const Hierarchy& hier)
+TEST_DEVICE_FUNC void test_query_signatures(const Level& level, const Hierarchy& hier)
 {
   // 1. Test cuda::warp_level::dims(x, hier) signature.
   static_assert(
@@ -51,7 +53,7 @@ __device__ void test_query_signatures(const Level& level, const Hierarchy& hier)
 }
 
 template <class T, class Level, class Hierarchy>
-__device__ void test_query_as_signatures(const Level& level, const Hierarchy& hier)
+TEST_DEVICE_FUNC void test_query_as_signatures(const Level& level, const Hierarchy& hier)
 {
   // 1. Test cuda::warp_level::dims(x, hier) signature.
   static_assert(
@@ -80,7 +82,7 @@ __device__ void test_query_as_signatures(const Level& level, const Hierarchy& hi
 }
 
 template <class InLevel, class Hierarchy>
-__device__ void test(const InLevel& in_level, const Hierarchy& hier)
+TEST_DEVICE_FUNC void test(const InLevel& in_level, const Hierarchy& hier)
 {
   test_query_signatures(in_level, hier);
   test_query_as_signatures<short>(in_level, hier);
@@ -92,7 +94,7 @@ __device__ void test(const InLevel& in_level, const Hierarchy& hier)
 }
 
 template <class Hierarchy>
-__device__ void test(const Hierarchy& hier)
+TEST_DEVICE_FUNC void test(const Hierarchy& hier)
 {
   test(cuda::block, hier);
   test(cuda::cluster, hier);

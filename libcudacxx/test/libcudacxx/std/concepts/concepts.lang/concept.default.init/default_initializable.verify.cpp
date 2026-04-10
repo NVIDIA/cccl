@@ -20,7 +20,7 @@
 template <class T>
 _CCCL_CONCEPT brace_initializable = _CCCL_REQUIRES_EXPR((T))((T{}));
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   // LWG3149
   // Changed the concept from constructible_from<T>

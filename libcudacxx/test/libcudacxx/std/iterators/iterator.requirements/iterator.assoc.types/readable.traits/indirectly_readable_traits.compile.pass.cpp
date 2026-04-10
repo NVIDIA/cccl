@@ -13,6 +13,8 @@
 #include <cuda/std/concepts>
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 template <class T>
 _CCCL_CONCEPT has_no_value_type =
   !_CCCL_REQUIRES_EXPR((T))(typename(typename cuda::std::indirectly_readable_traits<T>::value_type));
@@ -23,7 +25,7 @@ _CCCL_CONCEPT value_type_matches = _CCCL_REQUIRES_EXPR(
                  requires(cuda::std::same_as<typename cuda::std::indirectly_readable_traits<T>::value_type, Expected>));
 
 template <class T>
-__host__ __device__ constexpr bool check_pointer()
+TEST_FUNC constexpr bool check_pointer()
 {
   constexpr bool result = value_type_matches<T*, T>;
   static_assert(value_type_matches<T const*, T> == result);
@@ -39,7 +41,7 @@ __host__ __device__ constexpr bool check_pointer()
 }
 
 template <class T>
-__host__ __device__ constexpr bool check_array()
+TEST_FUNC constexpr bool check_array()
 {
   static_assert(value_type_matches<T[], T>);
   static_assert(value_type_matches<T const[], T>);
@@ -53,7 +55,7 @@ __host__ __device__ constexpr bool check_array()
 }
 
 template <class T, class Expected>
-__host__ __device__ constexpr bool check_member()
+TEST_FUNC constexpr bool check_member()
 {
   static_assert(value_type_matches<T, Expected>);
   static_assert(value_type_matches<T const, Expected>);

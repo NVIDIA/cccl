@@ -27,13 +27,13 @@
 #include "test_macros.h"
 
 template <class To, class From>
-__host__ __device__ constexpr void test_implicit_conversion(To dest, From src)
+TEST_FUNC constexpr void test_implicit_conversion(To dest, From src)
 {
   assert(dest.extents() == src.extents());
 }
 
 template <bool implicit, class ToExt, class FromExt, cuda::std::enable_if_t<implicit, int> = 0>
-__host__ __device__ constexpr void test_conversion(FromExt src_exts)
+TEST_FUNC constexpr void test_conversion(FromExt src_exts)
 {
   using To   = cuda::std::layout_left::mapping<ToExt>;
   using From = cuda::std::layout_right::mapping<FromExt>;
@@ -49,7 +49,7 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
 }
 
 template <bool implicit, class ToExt, class FromExt, cuda::std::enable_if_t<!implicit, int> = 0>
-__host__ __device__ constexpr void test_conversion(FromExt src_exts)
+TEST_FUNC constexpr void test_conversion(FromExt src_exts)
 {
   using To   = cuda::std::layout_left::mapping<ToExt>;
   using From = cuda::std::layout_right::mapping<FromExt>;
@@ -62,7 +62,7 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
 }
 
 template <class T1, class T2>
-__host__ __device__ constexpr void test_conversion()
+TEST_FUNC constexpr void test_conversion()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   [[maybe_unused]] constexpr bool idx_convertible =
@@ -82,7 +82,7 @@ using lr_mapping_t = typename cuda::std::layout_right::template mapping<cuda::st
 template <class IdxT, size_t... Extents>
 using ll_mapping_t = typename cuda::std::layout_left::template mapping<cuda::std::extents<IdxT, Extents...>>;
 
-__host__ __device__ constexpr void test_no_implicit_conversion()
+TEST_FUNC constexpr void test_no_implicit_conversion()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
@@ -103,7 +103,7 @@ __host__ __device__ constexpr void test_no_implicit_conversion()
   static_assert(!cuda::std::is_convertible<lr_mapping_t<size_t, 5>, ll_mapping_t<int, 5>>::value);
 }
 
-__host__ __device__ constexpr void test_rank_mismatch()
+TEST_FUNC constexpr void test_rank_mismatch()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
@@ -113,12 +113,12 @@ __host__ __device__ constexpr void test_rank_mismatch()
   static_assert(!cuda::std::is_constructible<lr_mapping_t<int, D, D, D>, lr_mapping_t<int, D, D>>::value);
 }
 
-__host__ __device__ constexpr void test_static_extent_mismatch()
+TEST_FUNC constexpr void test_static_extent_mismatch()
 {
   static_assert(!cuda::std::is_constructible<ll_mapping_t<int, 5>, lr_mapping_t<int, 4>>::value);
 }
 
-__host__ __device__ constexpr void test_rank_greater_one()
+TEST_FUNC constexpr void test_rank_greater_one()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
@@ -127,7 +127,7 @@ __host__ __device__ constexpr void test_rank_greater_one()
   static_assert(!cuda::std::is_constructible<ll_mapping_t<int, D, D, D>, lr_mapping_t<int, D, D, D>>::value);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_conversion<int, int>();
   test_conversion<int, size_t>();

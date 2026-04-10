@@ -36,7 +36,7 @@ struct C
 
 struct D
 {
-  __host__ __device__ static int allocator_type()
+  TEST_FUNC static int allocator_type()
   {
     return 0;
   }
@@ -49,7 +49,7 @@ private:
 };
 
 template <bool Expected, class T, class A>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert((cuda::std::uses_allocator<T, A>::value == Expected));
   static_assert(

@@ -19,7 +19,7 @@
 using cuda::std::unsigned_integral;
 
 template <typename T>
-__host__ __device__ constexpr bool CheckUnsignedIntegralQualifiers()
+TEST_FUNC constexpr bool CheckUnsignedIntegralQualifiers()
 {
   constexpr bool result = unsigned_integral<T>;
   static_assert(unsigned_integral<const T> == result);

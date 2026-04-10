@@ -41,7 +41,7 @@ static_assert(
 // explicit(!is_convertible_v<const G&, E>)
 struct NotConvertible
 {
-  __host__ __device__ explicit NotConvertible(int);
+  TEST_FUNC explicit NotConvertible(int);
 };
 static_assert(cuda::std::is_convertible_v<const cuda::std::unexpected<int>&, cuda::std::expected<int, int>>);
 static_assert(!cuda::std::is_convertible_v<const cuda::std::unexpected<int>&, cuda::std::expected<int, NotConvertible>>,
@@ -50,17 +50,17 @@ static_assert(!cuda::std::is_convertible_v<const cuda::std::unexpected<int>&, cu
 struct MyInt
 {
   int i;
-  __host__ __device__ constexpr MyInt(int ii)
+  TEST_FUNC constexpr MyInt(int ii)
       : i(ii)
   {}
 #if TEST_STD_VER > 2017
-  __host__ __device__ friend constexpr bool operator==(const MyInt&, const MyInt&) = default;
+  TEST_FUNC friend constexpr bool operator==(const MyInt&, const MyInt&) = default;
 #else
-  __host__ __device__ friend constexpr bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept
   {
     return lhs.i == rhs.i;
   };
-  __host__ __device__ friend constexpr bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept
   {
     return lhs.i != rhs.i;
   };
@@ -68,7 +68,7 @@ struct MyInt
 };
 
 template <class T>
-__host__ __device__ constexpr void testUnexpected()
+TEST_FUNC constexpr void testUnexpected()
 {
   const cuda::std::unexpected<int> u(5);
   cuda::std::expected<int, T> e(u);
@@ -76,7 +76,7 @@ __host__ __device__ constexpr void testUnexpected()
   assert(e.error() == 5);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   testUnexpected<int>();
   testUnexpected<MyInt>();

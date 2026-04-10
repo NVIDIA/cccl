@@ -28,7 +28,7 @@ using IntDiffT = long long;
 using IntDiffT = long;
 #endif
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // <iterator> - difference_type
   {

@@ -15,8 +15,11 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class Hierarchy, class GridExts, class ClusterExts, class BlockExts>
-__device__ void test_cluster(const Hierarchy& hier, const GridExts& grid_exts, const ClusterExts&, const BlockExts&)
+TEST_DEVICE_FUNC void
+test_cluster(const Hierarchy& hier, const GridExts& grid_exts, const ClusterExts&, const BlockExts&)
 {
   uint3 dims = gridDim;
   NV_IF_TARGET(NV_PROVIDES_SM_90, (dims = __clusterGridDimInClusters();))
@@ -60,7 +63,7 @@ __device__ void test_cluster(const Hierarchy& hier, const GridExts& grid_exts, c
   }
 }
 
-__device__ void test_device()
+TEST_DEVICE_FUNC void test_device()
 {
   test_cluster(cuda::hierarchy{cuda::gpu_thread, cuda::grid_dims(dim3{gridDim}), cuda::block_dims(dim3{blockDim})},
                cuda::std::dims<3, unsigned>{gridDim.x, gridDim.y, gridDim.z},

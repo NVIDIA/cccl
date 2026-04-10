@@ -27,11 +27,11 @@ _CCCL_CONSTINIT cuda::std::unique_ptr<int[]> global_static_unique_ptr_runtime(nu
 struct NonDefaultDeleter
 {
   NonDefaultDeleter() = delete;
-  __host__ __device__ void operator()(void*) const {}
+  TEST_FUNC void operator()(void*) const {}
 };
 
 template <class VT>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
 {
   {
     using U1 = cuda::std::unique_ptr<VT>;
@@ -56,7 +56,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
 }
 
 template <class VT>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
   { // the constructor does not participate in overload resolution when
     // the deleter is a pointer type
@@ -96,7 +96,7 @@ DEFINE_AND_RUN_IS_INCOMPLETE_TEST({
 })
 #endif // !_CCCL_CUDA_COMPILATION()
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     test_basic<int>();

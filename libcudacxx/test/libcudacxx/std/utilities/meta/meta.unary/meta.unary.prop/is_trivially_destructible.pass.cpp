@@ -18,7 +18,7 @@
 TEST_DIAG_SUPPRESS_CLANG("-Wdelete-non-virtual-dtor")
 
 template <class T>
-__host__ __device__ void test_is_trivially_destructible()
+TEST_FUNC void test_is_trivially_destructible()
 {
   static_assert(cuda::std::is_trivially_destructible<T>::value);
   static_assert(cuda::std::is_trivially_destructible<const T>::value);
@@ -31,7 +31,7 @@ __host__ __device__ void test_is_trivially_destructible()
 }
 
 template <class T>
-__host__ __device__ void test_is_not_trivially_destructible()
+TEST_FUNC void test_is_not_trivially_destructible()
 {
   static_assert(!cuda::std::is_trivially_destructible<T>::value);
   static_assert(!cuda::std::is_trivially_destructible<const T>::value);
@@ -46,49 +46,49 @@ __host__ __device__ void test_is_not_trivially_destructible()
 struct PublicDestructor
 {
 public:
-  __host__ __device__ ~PublicDestructor() {}
+  TEST_FUNC ~PublicDestructor() {}
 };
 struct ProtectedDestructor
 {
 protected:
-  __host__ __device__ ~ProtectedDestructor() {}
+  TEST_FUNC ~ProtectedDestructor() {}
 };
 struct PrivateDestructor
 {
 private:
-  __host__ __device__ ~PrivateDestructor() {}
+  TEST_FUNC ~PrivateDestructor() {}
 };
 
 struct VirtualPublicDestructor
 {
 public:
-  __host__ __device__ virtual ~VirtualPublicDestructor() {}
+  TEST_FUNC virtual ~VirtualPublicDestructor() {}
 };
 struct VirtualProtectedDestructor
 {
 protected:
-  __host__ __device__ virtual ~VirtualProtectedDestructor() {}
+  TEST_FUNC virtual ~VirtualProtectedDestructor() {}
 };
 struct VirtualPrivateDestructor
 {
 private:
-  __host__ __device__ virtual ~VirtualPrivateDestructor() {}
+  TEST_FUNC virtual ~VirtualPrivateDestructor() {}
 };
 
 struct PurePublicDestructor
 {
 public:
-  __host__ __device__ virtual ~PurePublicDestructor() = 0;
+  TEST_FUNC virtual ~PurePublicDestructor() = 0;
 };
 struct PureProtectedDestructor
 {
 protected:
-  __host__ __device__ virtual ~PureProtectedDestructor() = 0;
+  TEST_FUNC virtual ~PureProtectedDestructor() = 0;
 };
 struct PurePrivateDestructor
 {
 private:
-  __host__ __device__ virtual ~PurePrivateDestructor() = 0;
+  TEST_FUNC virtual ~PurePrivateDestructor() = 0;
 };
 
 class Empty
@@ -104,17 +104,17 @@ struct bit_zero
 
 class Abstract
 {
-  __host__ __device__ virtual void foo() = 0;
+  TEST_FUNC virtual void foo() = 0;
 };
 
 class AbstractDestructor
 {
-  __host__ __device__ virtual ~AbstractDestructor() = 0;
+  TEST_FUNC virtual ~AbstractDestructor() = 0;
 };
 
 struct A
 {
-  __host__ __device__ ~A();
+  TEST_FUNC ~A();
 };
 
 int main(int, char**)

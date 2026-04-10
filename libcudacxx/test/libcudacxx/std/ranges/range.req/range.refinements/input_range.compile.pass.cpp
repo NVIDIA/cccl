@@ -15,6 +15,7 @@
 #include <cuda/std/ranges>
 
 #include "test_iterators.h"
+#include "test_macros.h"
 #include "test_range.h"
 
 static_assert(cuda::std::ranges::input_range<test_range<cpp17_input_iterator>>);

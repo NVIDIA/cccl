@@ -30,11 +30,11 @@ TEST_DIAG_SUPPRESS_CLANG("-Wdeprecated-volatile")
 
 struct wat
 {
-  __host__ __device__ wat& operator*()
+  TEST_FUNC wat& operator*()
   {
     return *this;
   }
-  __host__ __device__ void foo();
+  TEST_FUNC void foo();
 };
 
 struct F
@@ -48,7 +48,7 @@ struct test_invoke_result;
 template <typename Fn, typename... Args, typename Ret>
 struct test_invoke_result<Fn(Args...), Ret>
 {
-  __host__ __device__ static void call()
+  TEST_FUNC static void call()
   {
     static_assert(cuda::std::is_invocable<Fn, Args...>::value);
     static_assert(cuda::std::is_invocable_r<Ret, Fn, Args...>::value);
@@ -58,7 +58,7 @@ struct test_invoke_result<Fn(Args...), Ret>
 };
 
 template <class T, class U>
-__host__ __device__ void test_result_of_imp()
+TEST_FUNC void test_result_of_imp()
 {
   static_assert(cuda::std::is_same_v<U, typename cuda::std::result_of<T>::type>);
   static_assert(cuda::std::is_same_v<U, cuda::std::result_of_t<T>>);

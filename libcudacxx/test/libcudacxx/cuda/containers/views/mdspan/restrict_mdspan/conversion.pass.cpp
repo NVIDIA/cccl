@@ -48,7 +48,7 @@
 #include "test_macros.h"
 
 template <class ToMDS, class FromMDS>
-__host__ __device__ constexpr void test_implicit_conversion(ToMDS to_mds, FromMDS from_mds)
+TEST_FUNC constexpr void test_implicit_conversion(ToMDS to_mds, FromMDS from_mds)
 {
   assert(to_mds.extents() == from_mds.extents());
   test_equality_with_handle(to_mds, from_mds);
@@ -67,7 +67,7 @@ template <class ToMDS,
           bool convertible,
           bool passes_mandates,
           cuda::std::enable_if_t<!constructible, int> = 0>
-__host__ __device__ constexpr void test_conversion_impl(FromMDS)
+TEST_FUNC constexpr void test_conversion_impl(FromMDS)
 {
   static_assert(!cuda::std::is_constructible<ToMDS, FromMDS>::value);
 }
@@ -78,7 +78,7 @@ template <class ToMDS,
           bool passes_mandates,
           cuda::std::enable_if_t<constructible, int>    = 0,
           cuda::std::enable_if_t<!passes_mandates, int> = 0>
-__host__ __device__ constexpr void test_conversion_impl(FromMDS)
+TEST_FUNC constexpr void test_conversion_impl(FromMDS)
 {}
 template <class ToMDS,
           class FromMDS,
@@ -88,7 +88,7 @@ template <class ToMDS,
           cuda::std::enable_if_t<constructible, int>   = 0,
           cuda::std::enable_if_t<passes_mandates, int> = 0,
           cuda::std::enable_if_t<convertible, int>     = 0>
-__host__ __device__ constexpr void test_conversion_impl(FromMDS from_mds)
+TEST_FUNC constexpr void test_conversion_impl(FromMDS from_mds)
 {
   ToMDS to_mds(from_mds);
   assert(to_mds.extents() == from_mds.extents());
@@ -105,7 +105,7 @@ template <class ToMDS,
           cuda::std::enable_if_t<constructible, int>   = 0,
           cuda::std::enable_if_t<passes_mandates, int> = 0,
           cuda::std::enable_if_t<!convertible, int>    = 0>
-__host__ __device__ constexpr void test_conversion_impl(FromMDS from_mds)
+TEST_FUNC constexpr void test_conversion_impl(FromMDS from_mds)
 {
   ToMDS to_mds(from_mds);
   assert(to_mds.extents() == from_mds.extents());
@@ -116,7 +116,7 @@ __host__ __device__ constexpr void test_conversion_impl(FromMDS from_mds)
 }
 
 template <class ToMDS, class FromMDS>
-__host__ __device__ constexpr void test_conversion(FromMDS from_mds)
+TEST_FUNC constexpr void test_conversion(FromMDS from_mds)
 {
   // check some requirements, to see we didn't screw up our test layouts/accessors
   static_assert(cuda::std::copyable<typename ToMDS::mapping_type>);
@@ -141,7 +141,7 @@ __host__ __device__ constexpr void test_conversion(FromMDS from_mds)
 }
 
 template <class ToL, class ToExt, class ToA, class FromH, class FromL, class FromExt, class FromA>
-__host__ __device__ constexpr void
+TEST_FUNC constexpr void
 construct_from_mds(const FromH& handle, const FromL& layout, const FromExt& exts, const FromA& acc)
 {
   using ToMDS   = cuda::restrict_mdspan<typename ToA::element_type, ToExt, ToL, ToA>;
@@ -150,7 +150,7 @@ construct_from_mds(const FromH& handle, const FromL& layout, const FromExt& exts
 }
 
 template <class ToL, class ToA, class FromH, class FromL, class FromA>
-__host__ __device__ constexpr void mixin_extents(const FromH& handle, const FromL& layout, const FromA& acc)
+TEST_FUNC constexpr void mixin_extents(const FromH& handle, const FromL& layout, const FromA& acc)
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   // constructible and convertible
@@ -177,7 +177,7 @@ __host__ __device__ constexpr void mixin_extents(const FromH& handle, const From
 }
 
 template <class ToA, class FromH, class FromA>
-__host__ __device__ constexpr void mixin_layout(const FromH& handle, const FromA& acc)
+TEST_FUNC constexpr void mixin_layout(const FromH& handle, const FromA& acc)
 {
   mixin_extents<cuda::std::layout_left, ToA>(handle, cuda::std::layout_left(), acc);
   mixin_extents<cuda::std::layout_right, ToA>(handle, cuda::std::layout_right(), acc);
@@ -223,7 +223,7 @@ template <class ToA,
           cuda::std::enable_if_t<!cuda::std::is_same<typename FromA::element_type, MinimalElementType>::value
                                    && !cuda::std::is_same<typename ToA::element_type, MinimalElementType>::value,
                                  int> = 0>
-__host__ __device__ constexpr void test_impl(FromA from_acc)
+TEST_FUNC constexpr void test_impl(FromA from_acc)
 {
   cuda::std::array<typename FromA::element_type, 1024> elements = {42};
   mixin_layout<ToA>(typename FromA::data_handle_type(elements.data()), from_acc);
@@ -234,7 +234,7 @@ template <class ToA,
           cuda::std::enable_if_t<cuda::std::is_same<typename FromA::element_type, MinimalElementType>::value
                                    || cuda::std::is_same<typename ToA::element_type, MinimalElementType>::value,
                                  int> = 0>
-__host__ __device__ TEST_CONSTEXPR_CXX20 void test_impl(FromA from_acc)
+TEST_FUNC TEST_CONSTEXPR_CXX20 void test_impl(FromA from_acc)
 {
   ElementPool<typename FromA::element_type, 1024> elements;
   mixin_layout<ToA>(typename FromA::data_handle_type(elements.get_ptr()), from_acc);
@@ -250,7 +250,7 @@ template <bool constructible_constref_acc,
           bool convertible_nonconst_handle,
           class ToA,
           class FromA>
-__host__ __device__ constexpr bool test(FromA from_acc)
+TEST_FUNC constexpr bool test(FromA from_acc)
 {
   static_assert(cuda::std::copyable<ToA>);
   static_assert(cuda::std::copyable<FromA>);

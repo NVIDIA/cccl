@@ -19,24 +19,24 @@
 
 struct NonSwappable
 {
-  __host__ __device__ constexpr NonSwappable() {}
+  TEST_FUNC constexpr NonSwappable() {}
 
 private:
-  __host__ __device__ NonSwappable(NonSwappable const&);
-  __host__ __device__ NonSwappable& operator=(NonSwappable const&);
+  TEST_FUNC NonSwappable(NonSwappable const&);
+  TEST_FUNC NonSwappable& operator=(NonSwappable const&);
 };
 
 template <class Tp>
-decltype(swap(cuda::std::declval<Tp>(), cuda::std::declval<Tp>())) __host__ __device__ can_swap_imp(int);
+decltype(swap(cuda::std::declval<Tp>(), cuda::std::declval<Tp>())) TEST_FUNC can_swap_imp(int);
 
 template <class Tp>
-cuda::std::false_type __host__ __device__ can_swap_imp(...);
+cuda::std::false_type TEST_FUNC can_swap_imp(...);
 
 template <class Tp>
 struct can_swap : cuda::std::is_same<decltype(can_swap_imp<Tp>(0)), void>
 {};
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   {
     using T = double;

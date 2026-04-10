@@ -15,8 +15,10 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class Hierarchy, class GridExts, class ClusterExts, class BlockExts>
-__device__ void test_warp(
+TEST_DEVICE_FUNC void test_warp(
   const Hierarchy& hier, const GridExts& grid_exts, const ClusterExts& cluster_exts, const BlockExts& block_exts)
 {
   constexpr cuda::std::size_t dext = cuda::std::dynamic_extent;
@@ -151,7 +153,7 @@ __device__ void test_warp(
   }
 }
 
-__device__ void test_device()
+TEST_DEVICE_FUNC void test_device()
 {
   test_warp(cuda::hierarchy{cuda::gpu_thread, cuda::grid_dims(dim3{gridDim}), cuda::block_dims(dim3{blockDim})},
             cuda::std::dims<3, unsigned>{gridDim.x, gridDim.y, gridDim.z},

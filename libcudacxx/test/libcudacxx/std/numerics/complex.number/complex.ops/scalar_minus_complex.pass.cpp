@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     T lhs(1.5);

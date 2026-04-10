@@ -29,7 +29,7 @@
 #include "variant_test_helpers.h"
 
 template <class V, size_t I, class E>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::is_same_v<typename cuda::std::variant_alternative<I, V>::type, E>);
   static_assert(cuda::std::is_same_v<typename cuda::std::variant_alternative<I, const V>::type, const E>);

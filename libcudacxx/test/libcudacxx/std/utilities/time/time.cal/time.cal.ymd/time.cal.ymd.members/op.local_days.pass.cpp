@@ -37,7 +37,7 @@
 TEST_DIAG_SUPPRESS_MSVC(4307) // potential overflow
 TEST_DIAG_SUPPRESS_MSVC(4308) // unsigned/signed comparisons
 
-__host__ __device__ void RunTheExample()
+TEST_FUNC void RunTheExample()
 {
   using namespace cuda::std::chrono;
 

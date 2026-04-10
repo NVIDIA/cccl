@@ -17,7 +17,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // Both are integer like and both are less than zero.
   {

@@ -15,6 +15,8 @@
 #include <cuda/std/concepts>
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 static_assert(cuda::std::incrementable<int>);
 static_assert(cuda::std::incrementable<int*>);
 static_assert(cuda::std::incrementable<int**>);

@@ -24,19 +24,19 @@ struct TestT
   int x;
   int size;
   int* ptr;
-  __host__ __device__ constexpr TestT(cuda::std::initializer_list<int> il)
+  TEST_FUNC constexpr TestT(cuda::std::initializer_list<int> il)
       : x(*il.begin())
       , size(static_cast<int>(il.size()))
       , ptr(nullptr)
   {}
-  __host__ __device__ constexpr TestT(cuda::std::initializer_list<int> il, int* p)
+  TEST_FUNC constexpr TestT(cuda::std::initializer_list<int> il, int* p)
       : x(*il.begin())
       , size(static_cast<int>(il.size()))
       , ptr(p)
   {}
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     auto opt = cuda::std::make_optional<TestT>({42, 2, 3});

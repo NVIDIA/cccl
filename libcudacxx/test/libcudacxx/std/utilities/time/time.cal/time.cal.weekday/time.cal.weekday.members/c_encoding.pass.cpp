@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <typename WD>
-__host__ __device__ constexpr bool testConstexpr()
+TEST_FUNC constexpr bool testConstexpr()
 {
   WD wd{5};
   return wd.c_encoding() == 5;

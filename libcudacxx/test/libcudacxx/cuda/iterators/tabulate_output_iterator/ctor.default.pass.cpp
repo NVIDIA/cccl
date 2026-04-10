@@ -16,7 +16,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::tabulate_output_iterator<basic_functor> iter;

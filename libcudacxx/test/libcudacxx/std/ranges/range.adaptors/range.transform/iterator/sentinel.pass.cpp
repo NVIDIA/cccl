@@ -18,7 +18,7 @@
 template <class T>
 _CCCL_CONCEPT EndIsIter = _CCCL_REQUIRES_EXPR((T), T t)((++t.end()));
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::ranges::transform_view<SizedSentinelView, PlusOne> transformView1{};
   // Going to const and back.

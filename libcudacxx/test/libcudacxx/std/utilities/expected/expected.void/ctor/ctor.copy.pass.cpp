@@ -34,22 +34,20 @@ struct NonCopyable
 struct CopyableNonTrivial
 {
   int i;
-  __host__ __device__ constexpr CopyableNonTrivial(int ii)
+  TEST_FUNC constexpr CopyableNonTrivial(int ii)
       : i(ii)
   {}
-  __host__ __device__ constexpr CopyableNonTrivial(const CopyableNonTrivial& o)
+  TEST_FUNC constexpr CopyableNonTrivial(const CopyableNonTrivial& o)
       : i(o.i)
   {}
 #if TEST_STD_VER > 2017
-  __host__ __device__ friend constexpr bool operator==(const CopyableNonTrivial&, const CopyableNonTrivial&) = default;
+  TEST_FUNC friend constexpr bool operator==(const CopyableNonTrivial&, const CopyableNonTrivial&) = default;
 #else
-  __host__ __device__ friend constexpr bool
-  operator==(const CopyableNonTrivial& lhs, const CopyableNonTrivial& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator==(const CopyableNonTrivial& lhs, const CopyableNonTrivial& rhs) noexcept
   {
     return lhs.i == rhs.i;
   }
-  __host__ __device__ friend constexpr bool
-  operator!=(const CopyableNonTrivial& lhs, const CopyableNonTrivial& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator!=(const CopyableNonTrivial& lhs, const CopyableNonTrivial& rhs) noexcept
   {
     return lhs.i != rhs.i;
   }
@@ -65,7 +63,7 @@ static_assert(!cuda::std::is_copy_constructible_v<cuda::std::expected<void, NonC
 static_assert(cuda::std::is_trivially_copy_constructible_v<cuda::std::expected<void, int>>);
 static_assert(!cuda::std::is_trivially_copy_constructible_v<cuda::std::expected<void, CopyableNonTrivial>>);
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   // copy the error non-trivial
   {

@@ -39,15 +39,15 @@ struct alignas(Align) AlignedType
 {
   char data;
   static int constructed;
-  __host__ __device__ AlignedType()
+  TEST_FUNC AlignedType()
   {
     ++constructed;
   }
-  __host__ __device__ AlignedType(AlignedType const&)
+  TEST_FUNC AlignedType(AlignedType const&)
   {
     ++constructed;
   }
-  __host__ __device__ ~AlignedType()
+  TEST_FUNC ~AlignedType()
   {
     --constructed;
   }
@@ -56,7 +56,7 @@ template <cuda::std::size_t Align>
 int AlignedType<Align>::constructed = 0;
 
 template <cuda::std::size_t Align>
-__host__ __device__ void test_aligned()
+TEST_FUNC void test_aligned()
 {
   using T        = AlignedType<Align>;
   T::constructed = 0;
@@ -89,7 +89,7 @@ __host__ __device__ void test_aligned()
 }
 
 template <cuda::std::size_t Align>
-__host__ __device__ constexpr bool test_aligned_constexpr()
+TEST_FUNC constexpr bool test_aligned_constexpr()
 {
   using T = AlignedType<Align>;
   cuda::std::allocator<T> a;

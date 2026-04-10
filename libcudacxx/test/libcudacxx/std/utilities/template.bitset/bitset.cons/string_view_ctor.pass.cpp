@@ -93,7 +93,7 @@ void test_exceptions()
 #endif // TEST_HAS_EXCEPTIONS()
 
 template <cuda::std::size_t N>
-__host__ __device__ constexpr void test_string_ctor()
+TEST_FUNC constexpr void test_string_ctor()
 {
   static_assert(!cuda::std::is_convertible_v<cuda::std::string_view, cuda::std::bitset<N>>);
   static_assert(cuda::std::is_constructible_v<cuda::std::bitset<N>, cuda::std::string_view>);
@@ -181,10 +181,10 @@ __host__ __device__ constexpr void test_string_ctor()
 
 struct Nonsense
 {
-  __host__ __device__ virtual ~Nonsense() {}
+  TEST_FUNC virtual ~Nonsense() {}
 };
 
-__host__ __device__ constexpr void test_for_non_eager_instantiation()
+TEST_FUNC constexpr void test_for_non_eager_instantiation()
 {
   // Ensure we don't accidentally instantiate `cuda::std::basic_string_view<Nonsense>`
   // since it may not be well formed and can cause an error in the
@@ -194,7 +194,7 @@ __host__ __device__ constexpr void test_for_non_eager_instantiation()
     !cuda::std::is_constructible<cuda::std::bitset<3>, Nonsense*, cuda::std::size_t, Nonsense&, Nonsense&>::value, "");
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_string_ctor<0>();
   test_string_ctor<1>();

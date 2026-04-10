@@ -34,7 +34,7 @@ static_assert(!ValidTransformView<MoveOnlyView, BadFunction>);
 
 struct toUpperFn
 {
-  __host__ __device__ constexpr char operator()(const char c) const noexcept
+  TEST_FUNC constexpr char operator()(const char c) const noexcept
   {
     if (c >= 'a' && c <= 'z')
     {
@@ -45,13 +45,13 @@ struct toUpperFn
 };
 
 template <class R, cuda::std::enable_if_t<cuda::std::ranges::range<R>, int> = 0>
-__host__ __device__ auto toUpper(R range)
+TEST_FUNC auto toUpper(R range)
 {
   return cuda::std::ranges::transform_view(range, toUpperFn{});
 }
 
 template <class E1, class E2, size_t N, class Join = cuda::std::plus<E1>>
-__host__ __device__ auto joinArrays(E1 (&a)[N], E2 (&b)[N], Join join = Join())
+TEST_FUNC auto joinArrays(E1 (&a)[N], E2 (&b)[N], Join join = Join())
 {
   return cuda::std::ranges::transform_view(a, [&a, &b, join](E1& x) {
     auto idx = (&x) - a;
@@ -61,15 +61,15 @@ __host__ __device__ auto joinArrays(E1 (&a)[N], E2 (&b)[N], Join join = Join())
 
 struct NonConstView : cuda::std::ranges::view_base
 {
-  __host__ __device__ explicit NonConstView(int* b, int* e)
+  TEST_FUNC explicit NonConstView(int* b, int* e)
       : b_(b)
       , e_(e)
   {}
-  __host__ __device__ const int* begin()
+  TEST_FUNC const int* begin()
   {
     return b_;
   } // deliberately non-const
-  __host__ __device__ const int* end()
+  TEST_FUNC const int* end()
   {
     return e_;
   } // deliberately non-const
@@ -78,7 +78,7 @@ struct NonConstView : cuda::std::ranges::view_base
 };
 
 template <class Range, class Expected>
-__host__ __device__ constexpr bool equal(Range&& range, Expected&& expected)
+TEST_FUNC constexpr bool equal(Range&& range, Expected&& expected)
 {
   for (size_t i = 0; i < cuda::std::size(expected); ++i)
   {

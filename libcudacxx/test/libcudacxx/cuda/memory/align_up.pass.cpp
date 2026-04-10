@@ -12,8 +12,10 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
+#include "test_macros.h"
+
 template <typename T>
-__host__ __device__ void test_impl()
+TEST_FUNC void test_impl()
 {
   if constexpr (alignof(T) <= 2)
   {
@@ -30,7 +32,7 @@ __host__ __device__ void test_impl()
 }
 
 template <typename T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test_impl<T*>();
   test_impl<const T*>();
@@ -38,7 +40,7 @@ __host__ __device__ void test()
   test_impl<const volatile T*>();
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   test<char>();
   test<short>();

@@ -14,23 +14,24 @@
 #include <cuda/std/ranges>
 
 #include "test_iterators.h"
+#include "test_macros.h"
 
 struct View : cuda::std::ranges::view_base
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 struct Range
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 struct BorrowableRange
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 template <>
 inline constexpr bool cuda::std::ranges::enable_borrowed_range<BorrowableRange> = true;

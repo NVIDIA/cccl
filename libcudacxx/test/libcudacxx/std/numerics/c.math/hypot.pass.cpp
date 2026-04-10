@@ -22,7 +22,7 @@ TEST_DIAG_SUPPRESS_MSVC(4305) // 'argument': truncation from 'T' to 'float'
 TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
 
 template <typename T>
-__host__ __device__ void test_hypot(T val)
+TEST_FUNC void test_hypot(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::hypot(T{}, T{})), ret>);
@@ -131,7 +131,7 @@ __host__ __device__ void test_hypot(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_hypot3(T val)
+TEST_FUNC void test_hypot3(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::hypot(T{}, T{}, T{})), ret>);
@@ -215,13 +215,13 @@ __host__ __device__ void test_hypot3(T val)
 }
 
 template <typename T>
-__host__ __device__ void test(const T val)
+TEST_FUNC void test(const T val)
 {
   test_hypot<T>(val);
   test_hypot3<T>(val);
 }
 
-__host__ __device__ void test(const float val)
+TEST_FUNC void test(const float val)
 {
   test<float>(val);
   test<double>(val);

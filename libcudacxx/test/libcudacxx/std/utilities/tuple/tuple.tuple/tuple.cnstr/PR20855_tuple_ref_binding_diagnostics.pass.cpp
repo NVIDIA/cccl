@@ -32,7 +32,7 @@ struct ConvertsTo
 {
   using RawTp = typename cuda::std::remove_cv<typename cuda::std::remove_reference<Tp>::type>::type;
 
-  __host__ __device__ operator Tp() const
+  TEST_FUNC operator Tp() const
   {
     return static_cast<Tp>(value);
   }
@@ -66,10 +66,10 @@ struct CannotDeduce
 };
 
 template <class... Args>
-__host__ __device__ void F(typename CannotDeduce<cuda::std::tuple<Args...>>::type const&)
+TEST_FUNC void F(typename CannotDeduce<cuda::std::tuple<Args...>>::type const&)
 {}
 
-__host__ __device__ void compile_tests()
+TEST_FUNC void compile_tests()
 {
   {
     F<int, int const&>(cuda::std::make_tuple(42, 42));
@@ -96,7 +96,7 @@ __host__ __device__ void compile_tests()
   }
 }
 
-__host__ __device__ void allocator_tests()
+TEST_FUNC void allocator_tests()
 {
   // cuda::std::allocator not supported
   // cuda::std::allocator<void> alloc;

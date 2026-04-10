@@ -19,7 +19,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {0, 1, 2, 3, 4, 5, 6, 7};
 

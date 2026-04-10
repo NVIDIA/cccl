@@ -21,7 +21,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test_tie_constexpr()
+TEST_FUNC constexpr bool test_tie_constexpr()
 {
   {
     int i         = 42;

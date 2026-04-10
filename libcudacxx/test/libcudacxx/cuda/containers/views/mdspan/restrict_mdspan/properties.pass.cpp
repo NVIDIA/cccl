@@ -61,7 +61,7 @@
 #include "test_macros.h"
 
 template <class MDS, cuda::std::enable_if_t<(MDS::rank() > 0), int> = 0>
-__host__ __device__ constexpr void test_mdspan_size(const MDS& m)
+TEST_FUNC constexpr void test_mdspan_size(const MDS& m)
 {
   typename MDS::size_type size = 1;
   for (typename MDS::rank_type r = 0; r < MDS::rank(); r++)
@@ -78,13 +78,13 @@ __host__ __device__ constexpr void test_mdspan_size(const MDS& m)
 }
 
 template <class MDS, cuda::std::enable_if_t<(MDS::rank() == 0), int> = 0>
-__host__ __device__ constexpr void test_mdspan_size(const MDS& m)
+TEST_FUNC constexpr void test_mdspan_size(const MDS& m)
 {
   assert(m.size() == 1);
 }
 
 template <class MDS, class M, cuda::std::enable_if_t<(MDS::rank() > 0), int> = 0>
-__host__ __device__ constexpr void test_mdspan_stride(const MDS& m, const M& map)
+TEST_FUNC constexpr void test_mdspan_stride(const MDS& m, const M& map)
 {
   if (m.is_strided())
   {
@@ -98,14 +98,14 @@ __host__ __device__ constexpr void test_mdspan_stride(const MDS& m, const M& map
 }
 
 template <class MDS, class M, cuda::std::enable_if_t<(MDS::rank() == 0), int> = 0>
-__host__ __device__ constexpr void test_mdspan_stride(const MDS&, const M&)
+TEST_FUNC constexpr void test_mdspan_stride(const MDS&, const M&)
 {}
 
 template <class>
 void print() = delete;
 
 template <class H, class M, class A>
-__host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const A& acc)
+TEST_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const A& acc)
 {
   using MDS = cuda::restrict_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
   MDS m(handle, map, acc);
@@ -198,7 +198,7 @@ __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& m
 }
 
 template <class H, class L, class A>
-__host__ __device__ constexpr void mixin_extents(const H& handle, const L& layout, const A& acc)
+TEST_FUNC constexpr void mixin_extents(const H& handle, const L& layout, const A& acc)
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_mdspan_types(handle, construct_mapping(layout, cuda::std::extents<int>()), acc);
@@ -210,7 +210,7 @@ __host__ __device__ constexpr void mixin_extents(const H& handle, const L& layou
 }
 
 template <class H, class A>
-__host__ __device__ constexpr void mixin_layout(const H& handle, const A& acc)
+TEST_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
 {
   mixin_extents(handle, cuda::std::layout_left(), acc);
   mixin_extents(handle, cuda::std::layout_right(), acc);
@@ -218,20 +218,20 @@ __host__ __device__ constexpr void mixin_layout(const H& handle, const A& acc)
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_default_constructible<T>::value, int> = 0>
-__host__ __device__ constexpr void mixin_accessor()
+TEST_FUNC constexpr void mixin_accessor()
 {
   cuda::std::array<T, 1024> elements{42};
   mixin_layout(elements.data(), cuda::std::default_accessor<T>());
 }
 
 template <class T, cuda::std::enable_if_t<!cuda::std::is_default_constructible<T>::value, int> = 0>
-__host__ __device__ TEST_CONSTEXPR_CXX20 void mixin_accessor()
+TEST_FUNC TEST_CONSTEXPR_CXX20 void mixin_accessor()
 {
   ElementPool<T, 1024> elements;
   mixin_layout(elements.get_ptr(), cuda::std::default_accessor<T>());
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   mixin_accessor<int>();
   mixin_accessor<const int>();
@@ -240,7 +240,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_evil()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_evil()
 {
   mixin_accessor<MinimalElementType>();
   mixin_accessor<const MinimalElementType>();

@@ -15,7 +15,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ void compile_test()
+TEST_FUNC void compile_test()
 {
   struct U
   {}; // class type so const-qualification is not stripped from a prvalue
@@ -100,7 +100,7 @@ __host__ __device__ void compile_test()
   static_assert(noexcept(cuda::std::forward_like<T>(cuda::std::declval<NoCtorCopyMove>())));
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     int val       = 1729;

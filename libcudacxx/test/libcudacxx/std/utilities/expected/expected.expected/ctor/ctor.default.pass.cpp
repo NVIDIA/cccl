@@ -36,13 +36,13 @@ struct MyInt
 {
   int i;
 #if TEST_STD_VER > 2017
-  __host__ __device__ friend constexpr bool operator==(const MyInt&, const MyInt&) = default;
+  TEST_FUNC friend constexpr bool operator==(const MyInt&, const MyInt&) = default;
 #else
-  __host__ __device__ friend constexpr bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept
   {
     return lhs.i == rhs.i;
   }
-  __host__ __device__ friend constexpr bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept
   {
     return lhs.i == rhs.i;
   }
@@ -50,7 +50,7 @@ struct MyInt
 };
 
 template <class T, class E>
-__host__ __device__ constexpr void testDefaultCtor()
+TEST_FUNC constexpr void testDefaultCtor()
 {
   cuda::std::expected<T, E> e;
   assert(e.has_value());
@@ -58,13 +58,13 @@ __host__ __device__ constexpr void testDefaultCtor()
 }
 
 template <class T>
-__host__ __device__ constexpr void testTypes()
+TEST_FUNC constexpr void testTypes()
 {
   testDefaultCtor<T, int>();
   testDefaultCtor<T, NoDedefaultCtor>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   testTypes<int>();
   testTypes<MyInt>();

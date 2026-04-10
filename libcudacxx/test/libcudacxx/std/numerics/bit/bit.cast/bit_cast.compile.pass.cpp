@@ -28,6 +28,8 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include "test_macros.h"
+
 template <class To, class From, class = void>
 struct bit_cast_is_valid : cuda::std::false_type
 {};
@@ -59,7 +61,7 @@ namespace ns2
 struct To
 {
   char a;
-  __host__ __device__ To(To const&);
+  TEST_FUNC To(To const&);
 };
 struct From
 {
@@ -78,7 +80,7 @@ struct To
 struct From
 {
   char a;
-  __host__ __device__ From(From const&);
+  TEST_FUNC From(From const&);
 };
 static_assert(!bit_cast_is_valid<To, From>::value);
 } // namespace ns3

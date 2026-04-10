@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class T1, class T2>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   {
     using Exp1 = T1;

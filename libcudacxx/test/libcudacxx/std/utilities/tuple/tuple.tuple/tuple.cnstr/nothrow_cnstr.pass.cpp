@@ -21,7 +21,7 @@
 
 struct NothrowConstruct
 {
-  __host__ __device__ constexpr NothrowConstruct(int) noexcept {};
+  TEST_FUNC constexpr NothrowConstruct(int) noexcept {};
 };
 
 int main(int, char**)

@@ -33,7 +33,7 @@ static_assert(!cuda::std::constructible_from<cuda::std::unexpected<Foo>, cuda::s
 
 // test explicit
 template <class T>
-__host__ __device__ void conversion_test(T);
+TEST_FUNC void conversion_test(T);
 
 template <class T, class... Args>
 _CCCL_CONCEPT ImplicitlyConstructible = _CCCL_REQUIRES_EXPR((T, variadic Args), T t, Args&&... args)(
@@ -45,13 +45,13 @@ static_assert(!ImplicitlyConstructible<cuda::std::unexpected<int>, cuda::std::in
 struct Arg
 {
   int i;
-  __host__ __device__ constexpr Arg(int ii)
+  TEST_FUNC constexpr Arg(int ii)
       : i(ii)
   {}
-  __host__ __device__ constexpr Arg(const Arg& other)
+  TEST_FUNC constexpr Arg(const Arg& other)
       : i(other.i)
   {}
-  __host__ __device__ constexpr Arg(Arg&& other)
+  TEST_FUNC constexpr Arg(Arg&& other)
       : i(other.i)
   {
     other.i = 0;
@@ -61,20 +61,20 @@ struct Arg
 struct Error
 {
   Arg arg;
-  __host__ __device__ constexpr explicit Error(const Arg& a)
+  TEST_FUNC constexpr explicit Error(const Arg& a)
       : arg(a)
   {}
-  __host__ __device__ constexpr explicit Error(Arg&& a)
+  TEST_FUNC constexpr explicit Error(Arg&& a)
       : arg(cuda::std::move(a))
   {}
-  __host__ __device__ Error(cuda::std::initializer_list<Error>)
+  TEST_FUNC Error(cuda::std::initializer_list<Error>)
       : arg(0)
   {
     assert(false);
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // lvalue
   {

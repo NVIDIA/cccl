@@ -15,24 +15,25 @@
 #include <cuda/std/ranges>
 
 #include "test_iterators.h"
+#include "test_macros.h"
 
 template <class It>
 struct Common
 {
-  __host__ __device__ It begin() const;
-  __host__ __device__ It end() const;
+  TEST_FUNC It begin() const;
+  TEST_FUNC It end() const;
 };
 template <class It>
 struct NonCommon
 {
-  __host__ __device__ It begin() const;
-  __host__ __device__ sentinel_wrapper<It> end() const;
+  TEST_FUNC It begin() const;
+  TEST_FUNC sentinel_wrapper<It> end() const;
 };
 template <class It, class Sent>
 struct Range
 {
-  __host__ __device__ It begin() const;
-  __host__ __device__ Sent end() const;
+  TEST_FUNC It begin() const;
+  TEST_FUNC Sent end() const;
 };
 
 static_assert(!cuda::std::ranges::common_range<Common<cpp17_input_iterator<int*>>>); // not a sentinel for itself
@@ -64,9 +65,9 @@ static_assert(!cuda::std::ranges::common_range<NonCommon<forward_iterator<int*>>
 // Test with a range that's a common_range only when const-qualified.
 struct Range1
 {
-  __host__ __device__ int* begin();
-  __host__ __device__ int const* begin() const;
-  __host__ __device__ int const* end() const;
+  TEST_FUNC int* begin();
+  TEST_FUNC int const* begin() const;
+  TEST_FUNC int const* end() const;
 };
 static_assert(!cuda::std::ranges::common_range<Range1>);
 static_assert(cuda::std::ranges::common_range<Range1 const>);
@@ -74,9 +75,9 @@ static_assert(cuda::std::ranges::common_range<Range1 const>);
 // Test with a range that's a common_range only when not const-qualified.
 struct Range2
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end();
-  __host__ __device__ int const* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end();
+  TEST_FUNC int const* end() const;
 };
 static_assert(cuda::std::ranges::common_range<Range2>);
 static_assert(!cuda::std::ranges::common_range<Range2 const>);

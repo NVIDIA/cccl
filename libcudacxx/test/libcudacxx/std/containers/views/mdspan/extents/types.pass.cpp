@@ -30,7 +30,7 @@
 #include "test_macros.h"
 
 template <size_t... Extents>
-__host__ __device__ constexpr size_t count_dynamic_extents()
+TEST_FUNC constexpr size_t count_dynamic_extents()
 {
   constexpr size_t arr[] = {Extents...};
   size_t res             = 0;
@@ -42,7 +42,7 @@ __host__ __device__ constexpr size_t count_dynamic_extents()
 }
 
 template <class E, class IndexType, size_t... Extents>
-__host__ __device__ void testExtents()
+TEST_FUNC void testExtents()
 {
   static_assert(cuda::std::is_same_v<typename E::index_type, IndexType>);
   static_assert(cuda::std::is_same_v<typename E::size_type, cuda::std::make_unsigned_t<IndexType>>);
@@ -58,13 +58,13 @@ __host__ __device__ void testExtents()
 }
 
 template <class IndexType, size_t... Extents>
-__host__ __device__ void testExtents()
+TEST_FUNC void testExtents()
 {
   testExtents<cuda::std::extents<IndexType, Extents...>, IndexType, Extents...>();
 }
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   testExtents<T, D>();

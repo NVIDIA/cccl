@@ -32,7 +32,7 @@ enum class E2 : unsigned char
 };
 
 template <typename T>
-__host__ __device__ constexpr bool toobig()
+TEST_FUNC constexpr bool toobig()
 {
   return 0 == cuda::std::bit_ceil(cuda::std::numeric_limits<T>::max());
 }

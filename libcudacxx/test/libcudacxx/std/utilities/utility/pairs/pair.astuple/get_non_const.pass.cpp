@@ -26,13 +26,13 @@ struct S
 {
   cuda::std::pair<int, int> a;
   int k;
-  __device__ __host__ constexpr S()
+  TEST_FUNC constexpr S()
       : a{1, 2}
       , k(cuda::std::get<0>(a))
   {}
 };
 
-__device__ __host__ constexpr cuda::std::pair<int, int> getP()
+TEST_FUNC constexpr cuda::std::pair<int, int> getP()
 {
   return {3, 4};
 }

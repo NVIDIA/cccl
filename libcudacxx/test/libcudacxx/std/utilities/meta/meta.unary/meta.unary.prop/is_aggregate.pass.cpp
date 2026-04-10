@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_true()
+TEST_FUNC void test_true()
 {
   static_assert(cuda::std::is_aggregate<T>::value);
   static_assert(cuda::std::is_aggregate<const T>::value);
@@ -29,7 +29,7 @@ __host__ __device__ void test_true()
 }
 
 template <class T>
-__host__ __device__ void test_false()
+TEST_FUNC void test_false()
 {
   static_assert(!cuda::std::is_aggregate<T>::value);
   static_assert(!cuda::std::is_aggregate<const T>::value);
@@ -45,11 +45,11 @@ struct Aggregate
 {};
 struct HasCons
 {
-  __host__ __device__ HasCons(int);
+  TEST_FUNC HasCons(int);
 };
 struct HasPriv
 {
-  __host__ __device__ void PreventUnusedPrivateMemberWarning();
+  TEST_FUNC void PreventUnusedPrivateMemberWarning();
 
 private:
   int x;

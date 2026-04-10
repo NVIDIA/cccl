@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T, unsigned A>
-__host__ __device__ void test_rank()
+TEST_FUNC void test_rank()
 {
   static_assert(cuda::std::rank<T>::value == A);
   static_assert(cuda::std::rank<const T>::value == A);
@@ -30,7 +30,7 @@ __host__ __device__ void test_rank()
 class Class
 {
 public:
-  __host__ __device__ ~Class();
+  TEST_FUNC ~Class();
 };
 
 int main(int, char**)

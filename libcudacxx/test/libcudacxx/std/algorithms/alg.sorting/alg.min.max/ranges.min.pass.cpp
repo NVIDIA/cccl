@@ -39,7 +39,7 @@ struct NoLessThanOp
 struct NotTotallyOrdered
 {
   int i;
-  __host__ __device__ bool operator<(const NotTotallyOrdered& o) const
+  TEST_FUNC bool operator<(const NotTotallyOrdered& o) const
   {
     return i < o.i;
   }
@@ -88,7 +88,7 @@ static_assert(!HasMin2<int, long>);
 
 static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::min(1, 2)), const int&>);
 
-__host__ __device__ constexpr void test_2_arguments()
+TEST_FUNC constexpr void test_2_arguments()
 {
   assert(cuda::std::ranges::min(1, 2) == 1);
   assert(cuda::std::ranges::min(2, 1) == 1);
@@ -151,7 +151,7 @@ __host__ __device__ constexpr void test_2_arguments()
   }
 }
 
-__host__ __device__ constexpr void test_initializer_list()
+TEST_FUNC constexpr void test_initializer_list()
 {
   {
     // test projection
@@ -207,7 +207,7 @@ __host__ __device__ constexpr void test_initializer_list()
 }
 
 template <class It, class Sent = It>
-__host__ __device__ constexpr void test_range_types()
+TEST_FUNC constexpr void test_range_types()
 {
   int a[]    = {7, 6, 9, 3, 5, 1, 2, 4};
   auto range = cuda::std::ranges::subrange<It, Sent>(It(a), Sent(It(a + 8)));
@@ -215,7 +215,7 @@ __host__ __device__ constexpr void test_range_types()
   assert(ret == 1);
 }
 
-__host__ __device__ constexpr void test_range()
+TEST_FUNC constexpr void test_range()
 {
   { // check that all range types work
     test_range_types<cpp20_input_iterator<int*>, sentinel_wrapper<cpp20_input_iterator<int*>>>();
@@ -296,7 +296,7 @@ __host__ __device__ constexpr void test_range()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_2_arguments();
   test_initializer_list();

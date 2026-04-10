@@ -38,7 +38,7 @@ static_assert(!cuda::std::is_constructible_v<cuda::std::expected<foo, int>, cuda
 
 // test explicit
 template <class T>
-__host__ __device__ void conversion_test(T);
+TEST_FUNC void conversion_test(T);
 
 template <class T, class... Args>
 _CCCL_CONCEPT ImplicitlyConstructible = _CCCL_REQUIRES_EXPR((T, variadic Args), T t, Args&&... args)(
@@ -51,17 +51,17 @@ static_assert(!ImplicitlyConstructible<cuda::std::expected<int, int>, cuda::std:
 struct CopyOnly
 {
   int i;
-  __host__ __device__ constexpr CopyOnly(int ii)
+  TEST_FUNC constexpr CopyOnly(int ii)
       : i(ii)
   {}
-  CopyOnly(const CopyOnly&)                = default;
-  __host__ __device__ CopyOnly(CopyOnly&&) = delete;
-  __host__ __device__ friend constexpr bool operator==(const CopyOnly& mi, int ii)
+  CopyOnly(const CopyOnly&)      = default;
+  TEST_FUNC CopyOnly(CopyOnly&&) = delete;
+  TEST_FUNC friend constexpr bool operator==(const CopyOnly& mi, int ii)
   {
     return mi.i == ii;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator!=(const CopyOnly& mi, int ii)
+  TEST_FUNC friend constexpr bool operator!=(const CopyOnly& mi, int ii)
   {
     return mi.i != ii;
   }
@@ -69,7 +69,7 @@ struct CopyOnly
 };
 
 template <class T>
-__host__ __device__ constexpr void testInt()
+TEST_FUNC constexpr void testInt()
 {
   cuda::std::expected<T, int> e(cuda::std::in_place, 5);
   assert(e.has_value());
@@ -77,7 +77,7 @@ __host__ __device__ constexpr void testInt()
 }
 
 template <class T>
-__host__ __device__ constexpr void testLValue()
+TEST_FUNC constexpr void testLValue()
 {
   T t(5);
   cuda::std::expected<T, int> e(cuda::std::in_place, t);
@@ -86,14 +86,14 @@ __host__ __device__ constexpr void testLValue()
 }
 
 template <class T>
-__host__ __device__ constexpr void testRValue()
+TEST_FUNC constexpr void testRValue()
 {
   cuda::std::expected<T, int> e(cuda::std::in_place, T(5));
   assert(e.has_value());
   assert(e.value() == 5);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   testInt<int>();
   testInt<CopyOnly>();

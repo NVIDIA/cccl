@@ -21,7 +21,7 @@ using cuda::std::optional;
 
 struct X
 {
-  __host__ __device__ constexpr int test() const
+  TEST_FUNC constexpr int test() const
   {
     return 3;
   }
@@ -29,7 +29,7 @@ struct X
 
 struct Y
 {
-  __host__ __device__ constexpr int test() const noexcept
+  TEST_FUNC constexpr int test() const noexcept
   {
     return 2;
   }
@@ -37,14 +37,14 @@ struct Y
 
 struct Z
 {
-  __host__ __device__ constexpr const Z* operator&() const;
-  __host__ __device__ constexpr int test() const
+  TEST_FUNC constexpr const Z* operator&() const;
+  TEST_FUNC constexpr int test() const
   {
     return 1;
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     const cuda::std::optional<X> opt{};

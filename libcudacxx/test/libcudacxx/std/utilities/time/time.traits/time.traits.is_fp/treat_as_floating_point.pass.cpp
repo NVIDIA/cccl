@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(
     (cuda::std::is_base_of<cuda::std::is_floating_point<T>, cuda::std::chrono::treat_as_floating_point<T>>::value), "");

@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <class Duration>
-__host__ __device__ void test(const Duration& f, const Duration& d)
+TEST_FUNC void test(const Duration& f, const Duration& d)
 {
   {
     using R = decltype(cuda::std::chrono::abs(f));

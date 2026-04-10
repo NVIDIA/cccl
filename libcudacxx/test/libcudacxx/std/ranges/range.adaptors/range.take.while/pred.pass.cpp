@@ -18,17 +18,17 @@
 
 struct View : cuda::std::ranges::view_interface<View>
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 struct Pred
 {
   int i;
-  __host__ __device__ bool operator()(int) const;
+  TEST_FUNC bool operator()(int) const;
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // &
   {

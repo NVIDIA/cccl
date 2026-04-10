@@ -37,13 +37,13 @@ struct can_invoke_r_impl<
 template <class R, class F, class... Args>
 using can_invoke_r = typename can_invoke_r_impl<R, F, void, Args...>::type;
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // Make sure basic functionality works (i.e. we actually call the function and return the right result).
   {
     struct F
     {
-      __host__ __device__ constexpr int operator()(int i) const
+      TEST_FUNC constexpr int operator()(int i) const
       {
         return i + 3;
       }
@@ -55,7 +55,7 @@ __host__ __device__ constexpr bool test()
   {
     struct F
     {
-      __host__ __device__ char* operator()(int) const;
+      TEST_FUNC char* operator()(int) const;
     };
 
     static_assert(can_invoke_r<char*, F, int>::value);
@@ -81,17 +81,17 @@ __host__ __device__ constexpr bool test()
   {
     struct F
     {
-      __host__ __device__ char* operator()(int) const noexcept(true);
+      TEST_FUNC char* operator()(int) const noexcept(true);
     };
 
     struct G
     {
-      __host__ __device__ char* operator()(int) const noexcept(false);
+      TEST_FUNC char* operator()(int) const noexcept(false);
     };
 
     struct ConversionNotNoexcept
     {
-      __host__ __device__ ConversionNotNoexcept(char*) noexcept(false);
+      TEST_FUNC ConversionNotNoexcept(char*) noexcept(false);
     };
 
     static_assert(noexcept(cuda::std::invoke_r<char*>(cuda::std::declval<F>(), 0)));
@@ -110,7 +110,7 @@ __host__ __device__ constexpr bool test()
   {
     struct F
     {
-      __host__ __device__ constexpr char* operator()(int) const
+      TEST_FUNC constexpr char* operator()(int) const
       {
         was_called = true;
         return nullptr;
@@ -131,7 +131,7 @@ __host__ __device__ constexpr bool test()
   {
     struct F
     {
-      __host__ __device__ constexpr char* operator()(int) const
+      TEST_FUNC constexpr char* operator()(int) const
       {
         was_called = true;
         return nullptr;
@@ -159,7 +159,7 @@ __host__ __device__ constexpr bool test()
     {
       struct F
       {
-        __host__ __device__ constexpr void operator()(NonCopyable) const
+        TEST_FUNC constexpr void operator()(NonCopyable) const
         {
           was_called = true;
         }
@@ -175,7 +175,7 @@ __host__ __device__ constexpr bool test()
     {
       struct F
       {
-        __host__ __device__ constexpr int operator()(NonCopyable) const
+        TEST_FUNC constexpr int operator()(NonCopyable) const
         {
           was_called = true;
           return 0;
@@ -193,7 +193,7 @@ __host__ __device__ constexpr bool test()
       struct MoveOnlyVoidFunction
       {
         bool& was_called;
-        __host__ __device__ constexpr void operator()() &&
+        TEST_FUNC constexpr void operator()() &&
         {
           was_called = true;
         }
@@ -207,7 +207,7 @@ __host__ __device__ constexpr bool test()
       struct MoveOnlyIntFunction
       {
         bool& was_called;
-        __host__ __device__ constexpr int operator()() &&
+        TEST_FUNC constexpr int operator()() &&
         {
           was_called = true;
           return 0;
@@ -223,7 +223,7 @@ __host__ __device__ constexpr bool test()
   {
     struct Convertible
     {
-      __host__ __device__ constexpr operator int() const
+      TEST_FUNC constexpr operator int() const
       {
         return 42;
       }
@@ -231,7 +231,7 @@ __host__ __device__ constexpr bool test()
 
     struct F
     {
-      __host__ __device__ constexpr Convertible operator()() const
+      TEST_FUNC constexpr Convertible operator()() const
       {
         return Convertible{};
       }

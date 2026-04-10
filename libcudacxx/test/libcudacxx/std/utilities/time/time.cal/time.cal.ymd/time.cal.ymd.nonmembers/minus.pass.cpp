@@ -18,7 +18,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test_constexpr()
+TEST_FUNC constexpr bool test_constexpr()
 {
   cuda::std::chrono::year_month_day ym0{
     cuda::std::chrono::year{1234}, cuda::std::chrono::January, cuda::std::chrono::day{12}};

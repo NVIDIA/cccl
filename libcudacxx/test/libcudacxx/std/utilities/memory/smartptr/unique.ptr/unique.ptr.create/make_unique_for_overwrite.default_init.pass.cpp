@@ -69,7 +69,7 @@ void operator delete[](void* ptr, cuda::std::size_t) noexcept
 }
 #endif // TEST_COMPILER(GCC)
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   {
     decltype(auto) ptr = cuda::std::make_unique_for_overwrite<int>();

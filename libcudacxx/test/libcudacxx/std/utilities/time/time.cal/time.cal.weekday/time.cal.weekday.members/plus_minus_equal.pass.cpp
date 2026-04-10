@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <typename M, typename Ms>
-__host__ __device__ constexpr bool testConstexpr()
+TEST_FUNC constexpr bool testConstexpr()
 {
   M m1{1};
   if ((m1 += Ms{1}).c_encoding() != 2)

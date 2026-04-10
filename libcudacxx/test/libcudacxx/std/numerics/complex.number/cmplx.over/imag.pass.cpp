@@ -21,14 +21,14 @@
 #include "test_macros.h"
 
 template <class T, int x, class Target>
-__host__ __device__ void test_nonconstexpr()
+TEST_FUNC void test_nonconstexpr()
 {
   static_assert((cuda::std::is_same<decltype(cuda::std::imag(T(x))), Target>::value));
   assert(cuda::std::imag(T(x)) == T(0));
 }
 
 template <class T, int x>
-__host__ __device__ void test(typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0)
+TEST_FUNC void test(typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0)
 {
   test_nonconstexpr<T, x, double>();
 
@@ -41,7 +41,7 @@ __host__ __device__ void test(typename cuda::std::enable_if<cuda::std::is_integr
 }
 
 template <class T, int x>
-__host__ __device__ void test(typename cuda::std::enable_if<!cuda::std::is_integral<T>::value>::type* = 0)
+TEST_FUNC void test(typename cuda::std::enable_if<!cuda::std::is_integral<T>::value>::type* = 0)
 {
   test_nonconstexpr<T, x, T>();
 
@@ -54,7 +54,7 @@ __host__ __device__ void test(typename cuda::std::enable_if<!cuda::std::is_integ
 }
 
 template <class T>
-__host__ __device__ void test_nonconstexpr()
+TEST_FUNC void test_nonconstexpr()
 {
   test_nonconstexpr<T, 0, T>();
   test_nonconstexpr<T, 1, T>();
@@ -62,7 +62,7 @@ __host__ __device__ void test_nonconstexpr()
 }
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test<T, 0>();
   test<T, 1>();

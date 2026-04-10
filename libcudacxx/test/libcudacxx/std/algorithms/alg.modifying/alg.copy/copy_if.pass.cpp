@@ -22,7 +22,7 @@
 
 struct PredMod3
 {
-  __host__ __device__ constexpr bool operator()(int i) const noexcept
+  TEST_FUNC constexpr bool operator()(int i) const noexcept
   {
     return i % 3 == 0;
   }
@@ -30,14 +30,14 @@ struct PredMod3
 
 struct PredEqual6
 {
-  __host__ __device__ constexpr bool operator()(int i) const noexcept
+  TEST_FUNC constexpr bool operator()(int i) const noexcept
   {
     return i == 6;
   }
 };
 
 template <class InIter, class OutIter>
-constexpr __host__ __device__ void test()
+constexpr TEST_FUNC void test()
 {
   {
     constexpr unsigned N = 1000;
@@ -75,7 +75,7 @@ constexpr __host__ __device__ void test()
   }
 }
 
-constexpr __host__ __device__ bool test()
+constexpr TEST_FUNC bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
   test<cpp17_input_iterator<const int*>, cpp17_input_iterator<int*>>();

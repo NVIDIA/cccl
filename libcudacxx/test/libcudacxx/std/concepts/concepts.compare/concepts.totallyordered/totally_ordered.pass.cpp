@@ -26,13 +26,13 @@ using cuda::std::totally_ordered;
 #if TEST_STD_VER > 2017
 
 template <cuda::std::equality_comparable T>
-__host__ __device__ constexpr bool models_totally_ordered() noexcept
+TEST_FUNC constexpr bool models_totally_ordered() noexcept
 {
   return false;
 }
 
 template <cuda::std::totally_ordered T>
-__host__ __device__ constexpr bool models_totally_ordered() noexcept
+TEST_FUNC constexpr bool models_totally_ordered() noexcept
 {
   return true;
 }
@@ -41,7 +41,7 @@ __host__ __device__ constexpr bool models_totally_ordered() noexcept
 
 _CCCL_TEMPLATE(class T)
 _CCCL_REQUIRES(cuda::std::totally_ordered<T>)
-__host__ __device__ constexpr bool models_totally_ordered() noexcept
+TEST_FUNC constexpr bool models_totally_ordered() noexcept
 {
   return true;
 }

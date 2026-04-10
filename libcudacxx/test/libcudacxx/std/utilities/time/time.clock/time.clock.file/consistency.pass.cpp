@@ -25,7 +25,7 @@
 #include <cuda/std/chrono>
 
 template <class T>
-__host__ __device__ void test(const T&)
+TEST_FUNC void test(const T&)
 {}
 
 int main(int, char**)

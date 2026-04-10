@@ -22,14 +22,14 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ constexpr bool constexpr_test()
+TEST_FUNC constexpr bool constexpr_test()
 {
   return cuda::std::lerp(T(0.0), T(12), T(0.0)) == T(0.0) && cuda::std::lerp(T(12), T(0.0), T(0.5)) == T(6)
       && cuda::std::lerp(T(0.0), T(12), T(2)) == T(24);
 }
 
 template <typename T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::is_same_v<T, decltype(cuda::std::lerp(T(), T(), T()))>);
   static_assert(noexcept(cuda::std::lerp(T(), T(), T())));

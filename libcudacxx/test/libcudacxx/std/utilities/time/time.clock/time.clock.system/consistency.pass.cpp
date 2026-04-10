@@ -18,8 +18,10 @@
 
 #include <cuda/std/chrono>
 
+#include "test_macros.h"
+
 template <class T>
-__host__ __device__ void test(const T&)
+TEST_FUNC void test(const T&)
 {}
 
 int main(int, char**)

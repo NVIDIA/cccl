@@ -14,6 +14,8 @@
 #include <cuda/std/__format_>
 #include <cuda/std/cassert>
 
+#include "test_macros.h"
+
 struct TestSpecFieldsValues
 {
   bool sign;
@@ -27,7 +29,7 @@ struct TestSpecFieldsValues
   bool consume_all;
 };
 
-__host__ __device__ TestSpecFieldsValues make_test_spec_fields_values() noexcept
+TEST_FUNC TestSpecFieldsValues make_test_spec_fields_values() noexcept
 {
   TestSpecFieldsValues value{};
   value.sign                 = true;
@@ -42,7 +44,7 @@ __host__ __device__ TestSpecFieldsValues make_test_spec_fields_values() noexcept
   return value;
 }
 
-__host__ __device__ void verify_spec_fields(const cuda::std::__fmt_spec_fields& value) noexcept
+TEST_FUNC void verify_spec_fields(const cuda::std::__fmt_spec_fields& value) noexcept
 {
   const auto ref = make_test_spec_fields_values();
   assert(value.__sign_ == ref.sign);
@@ -56,7 +58,7 @@ __host__ __device__ void verify_spec_fields(const cuda::std::__fmt_spec_fields& 
   assert(value.__consume_all_ == ref.consume_all);
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(sizeof(cuda::std::__fmt_spec_fields) == 2);
 

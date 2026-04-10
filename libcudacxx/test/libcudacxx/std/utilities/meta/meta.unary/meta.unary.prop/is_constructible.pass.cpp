@@ -21,12 +21,12 @@ TEST_NV_DIAG_SUPPRESS(declared_but_not_referenced)
 
 struct A
 {
-  __host__ __device__ explicit A(int);
-  __host__ __device__ A(int, double);
-  __host__ __device__ A(int, long, double);
+  TEST_FUNC explicit A(int);
+  TEST_FUNC A(int, double);
+  TEST_FUNC A(int, long, double);
 
 private:
-  __host__ __device__ A(char);
+  TEST_FUNC A(char);
 };
 
 struct Base
@@ -36,42 +36,42 @@ struct Derived : public Base
 
 class Abstract
 {
-  __host__ __device__ virtual void foo() = 0;
+  TEST_FUNC virtual void foo() = 0;
 };
 
 class AbstractDestructor
 {
-  __host__ __device__ virtual ~AbstractDestructor() = 0;
+  TEST_FUNC virtual ~AbstractDestructor() = 0;
 };
 
 struct PrivateDtor
 {
-  __host__ __device__ PrivateDtor(int) {}
+  TEST_FUNC PrivateDtor(int) {}
 
 private:
-  __host__ __device__ ~PrivateDtor() {}
+  TEST_FUNC ~PrivateDtor() {}
 };
 
 struct S
 {
   template <class T>
-  __host__ __device__ explicit operator T() const;
+  TEST_FUNC explicit operator T() const;
 };
 
 template <class To>
 struct ImplicitTo
 {
-  __host__ __device__ operator To();
+  TEST_FUNC operator To();
 };
 
 template <class To>
 struct ExplicitTo
 {
-  __host__ __device__ explicit operator To();
+  TEST_FUNC explicit operator To();
 };
 
 template <class T>
-__host__ __device__ void test_is_constructible()
+TEST_FUNC void test_is_constructible()
 {
   static_assert((cuda::std::is_constructible<T>::value));
 #if !TEST_COMPILER(MSVC)
@@ -83,7 +83,7 @@ __host__ __device__ void test_is_constructible()
 }
 
 template <class T, class A0>
-__host__ __device__ void test_is_constructible()
+TEST_FUNC void test_is_constructible()
 {
   static_assert((cuda::std::is_constructible<T, A0>::value));
 #if !TEST_COMPILER(MSVC)
@@ -95,7 +95,7 @@ __host__ __device__ void test_is_constructible()
 }
 
 template <class T, class A0, class A1>
-__host__ __device__ void test_is_constructible()
+TEST_FUNC void test_is_constructible()
 {
   static_assert((cuda::std::is_constructible<T, A0, A1>::value));
 #if !TEST_COMPILER(MSVC)
@@ -107,7 +107,7 @@ __host__ __device__ void test_is_constructible()
 }
 
 template <class T, class A0, class A1, class A2>
-__host__ __device__ void test_is_constructible()
+TEST_FUNC void test_is_constructible()
 {
   static_assert((cuda::std::is_constructible<T, A0, A1, A2>::value));
 #if !TEST_COMPILER(MSVC)
@@ -119,7 +119,7 @@ __host__ __device__ void test_is_constructible()
 }
 
 template <class T>
-__host__ __device__ void test_is_not_constructible()
+TEST_FUNC void test_is_not_constructible()
 {
   static_assert((!cuda::std::is_constructible<T>::value));
 #if !TEST_COMPILER(MSVC)
@@ -131,7 +131,7 @@ __host__ __device__ void test_is_not_constructible()
 }
 
 template <class T, class A0>
-__host__ __device__ void test_is_not_constructible()
+TEST_FUNC void test_is_not_constructible()
 {
   static_assert((!cuda::std::is_constructible<T, A0>::value));
 #if !TEST_COMPILER(MSVC) && !TEST_COMPILER(CLANG) && !TEST_COMPILER(NVRTC) && !TEST_COMPILER(NVHPC)
@@ -144,12 +144,12 @@ __host__ __device__ void test_is_not_constructible()
 
 #if TEST_COMPILER(CLANG)
 template <class T = int, class = decltype(static_cast<T&&>(cuda::std::declval<double&>()))>
-__host__ __device__ constexpr bool clang_disallows_valid_static_cast_test(int)
+TEST_FUNC constexpr bool clang_disallows_valid_static_cast_test(int)
 {
   return false;
 };
 
-__host__ __device__ constexpr bool clang_disallows_valid_static_cast_test(long)
+TEST_FUNC constexpr bool clang_disallows_valid_static_cast_test(long)
 {
   return true;
 }

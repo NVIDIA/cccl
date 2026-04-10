@@ -11,7 +11,9 @@
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
 
-__host__ __device__ void test()
+#include "test_macros.h"
+
+TEST_FUNC void test()
 {
   static_assert(
     cuda::std::is_same_v<decltype(cuda::execution::determinism::__get_determinism(cuda::execution::__get_requirements(

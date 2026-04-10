@@ -24,7 +24,7 @@
 
 struct Base
 {
-  __host__ __device__ virtual ~Base() {}
+  TEST_FUNC virtual ~Base() {}
 };
 
 struct Derived : public Base

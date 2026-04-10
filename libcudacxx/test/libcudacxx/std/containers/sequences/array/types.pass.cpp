@@ -32,7 +32,7 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__ void test_iterators()
+TEST_FUNC void test_iterators()
 {
   using ItT  = cuda::std::iterator_traits<typename C::iterator>;
   using CItT = cuda::std::iterator_traits<typename C::const_iterator>;

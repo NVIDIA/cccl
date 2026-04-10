@@ -19,7 +19,7 @@
 using cuda::std::signed_integral;
 
 template <typename T>
-__host__ __device__ constexpr bool CheckSignedIntegralQualifiers()
+TEST_FUNC constexpr bool CheckSignedIntegralQualifiers()
 {
   constexpr bool result = signed_integral<T>;
   static_assert(signed_integral<const T> == result);

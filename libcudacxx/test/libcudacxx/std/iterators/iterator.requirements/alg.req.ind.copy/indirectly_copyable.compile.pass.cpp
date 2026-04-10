@@ -70,7 +70,7 @@ template <class T>
 struct PointerTo
 {
   using value_type = T;
-  __host__ __device__ T& operator*() const;
+  TEST_FUNC T& operator*() const;
 };
 
 // Can copy through a dereferenceable class.

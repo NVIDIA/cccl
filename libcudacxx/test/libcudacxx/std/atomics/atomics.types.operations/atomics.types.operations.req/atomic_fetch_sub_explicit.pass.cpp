@@ -40,7 +40,7 @@
 template <class T, template <typename, typename> class Selector, cuda::thread_scope>
 struct TestFn
 {
-  __host__ __device__ void operator()() const
+  TEST_FUNC void operator()() const
   {
     {
       using A = cuda::std::atomic<T>;
@@ -62,7 +62,7 @@ struct TestFn
 };
 
 template <class T, template <typename, typename> class Selector>
-__host__ __device__ void testp()
+TEST_FUNC void testp()
 {
   {
     using A = cuda::std::atomic<T>;

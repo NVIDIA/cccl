@@ -35,7 +35,7 @@ static_assert(ErrorNoexcept<const cuda::std::expected<int, int>&>);
 static_assert(ErrorNoexcept<cuda::std::expected<int, int>&&>);
 static_assert(ErrorNoexcept<const cuda::std::expected<int, int>&&>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // non-const &
   {

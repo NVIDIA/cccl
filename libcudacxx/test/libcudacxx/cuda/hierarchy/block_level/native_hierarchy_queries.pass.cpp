@@ -14,8 +14,9 @@
 #include <cuda/std/type_traits>
 
 #include "hierarchy_queries.h"
+#include "test_macros.h"
 
-__device__ void test_block()
+TEST_DEVICE_FUNC void test_block()
 {
   constexpr cuda::std::size_t dext = cuda::std::dynamic_extent;
 

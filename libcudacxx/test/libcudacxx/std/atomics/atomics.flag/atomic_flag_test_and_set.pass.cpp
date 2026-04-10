@@ -23,7 +23,7 @@
 #include "test_macros.h"
 
 template <template <typename, typename> class Selector>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   {
     Selector<cuda::std::atomic_flag, default_initializer> sel;

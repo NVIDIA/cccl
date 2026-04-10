@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_signed()
+TEST_FUNC void test_is_signed()
 {
   static_assert(cuda::std::is_signed<T>::value);
   static_assert(cuda::std::is_signed<const T>::value);
@@ -28,7 +28,7 @@ __host__ __device__ void test_is_signed()
 }
 
 template <class T>
-__host__ __device__ void test_is_not_signed()
+TEST_FUNC void test_is_not_signed()
 {
   static_assert(!cuda::std::is_signed<T>::value);
   static_assert(!cuda::std::is_signed<const T>::value);
@@ -43,7 +43,7 @@ __host__ __device__ void test_is_not_signed()
 class Class
 {
 public:
-  __host__ __device__ ~Class();
+  TEST_FUNC ~Class();
 };
 
 struct A; // incomplete

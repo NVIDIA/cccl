@@ -48,9 +48,9 @@ static_assert(!cuda::std::output_iterator<T, int>);
 struct WrongPostIncrement
 {
   using difference_type = cuda::std::ptrdiff_t;
-  __host__ __device__ T const* operator++(int);
-  __host__ __device__ WrongPostIncrement& operator++();
-  __host__ __device__ T& operator*();
+  TEST_FUNC T const* operator++(int);
+  TEST_FUNC WrongPostIncrement& operator++();
+  TEST_FUNC T& operator*();
 };
 static_assert(cuda::std::input_or_output_iterator<WrongPostIncrement>);
 static_assert(cuda::std::indirectly_writable<WrongPostIncrement, T>);
@@ -60,9 +60,9 @@ static_assert(!cuda::std::output_iterator<WrongPostIncrement, T>);
 struct NotIndirectlyWritable
 {
   using difference_type = cuda::std::ptrdiff_t;
-  __host__ __device__ T* operator++(int);
-  __host__ __device__ NotIndirectlyWritable& operator++();
-  __host__ __device__ T const& operator*(); // const so we can't write to it
+  TEST_FUNC T* operator++(int);
+  TEST_FUNC NotIndirectlyWritable& operator++();
+  TEST_FUNC T const& operator*(); // const so we can't write to it
 };
 static_assert(cuda::std::input_or_output_iterator<NotIndirectlyWritable>);
 static_assert(!cuda::std::indirectly_writable<NotIndirectlyWritable, T>);

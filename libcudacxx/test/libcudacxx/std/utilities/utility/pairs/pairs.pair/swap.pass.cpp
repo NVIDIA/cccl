@@ -20,23 +20,23 @@
 struct S
 {
   int i;
-  __host__ __device__ S()
+  TEST_FUNC S()
       : i(0)
   {}
-  __host__ __device__ S(int j)
+  TEST_FUNC S(int j)
       : i(j)
   {}
-  __host__ __device__ S* operator&()
+  TEST_FUNC S* operator&()
   {
     assert(false);
     return this;
   }
-  __host__ __device__ S const* operator&() const
+  TEST_FUNC S const* operator&() const
   {
     assert(false);
     return this;
   }
-  __host__ __device__ bool operator==(int x) const
+  TEST_FUNC bool operator==(int x) const
   {
     return i == x;
   }

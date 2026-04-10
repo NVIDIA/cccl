@@ -15,11 +15,11 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test_member(const T&)
+TEST_FUNC constexpr void test_member(const T&)
 {}
 
 template <class T>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   // 1. Test properties of overflow_result
   {
@@ -71,7 +71,7 @@ __host__ __device__ constexpr void test_type()
 #endif // __cpp_structured_bindings >= 201606L
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_type<signed char>();
   test_type<unsigned char>();

@@ -19,7 +19,7 @@
 #if defined(_CCCL_BUILTIN_ADDRESSOF) || defined(__NVCOMPILER)
 struct Pointer
 {
-  __host__ __device__ constexpr Pointer(void* v)
+  TEST_FUNC constexpr Pointer(void* v)
       : value(v)
   {}
   void* value;
@@ -27,10 +27,10 @@ struct Pointer
 
 struct A
 {
-  __host__ __device__ constexpr A()
+  TEST_FUNC constexpr A()
       : n(42)
   {}
-  __host__ __device__ void operator&() const {}
+  TEST_FUNC void operator&() const {}
   int n;
 };
 

@@ -23,8 +23,8 @@ struct S2
 {
   int i;
 
-  __host__ __device__ int& f();
-  __host__ __device__ double g(int x) const;
+  TEST_FUNC int& f();
+  TEST_FUNC double g(int x) const;
 };
 struct S3
 {
@@ -85,7 +85,7 @@ struct identity
 };
 
 template <template <typename> class Modifier = identity>
-__host__ __device__ void CheckSameAs()
+TEST_FUNC void CheckSameAs()
 {
   static_assert(same_as<typename Modifier<int>::type, typename Modifier<int>::type>);
   static_assert(same_as<typename Modifier<S1>::type, typename Modifier<S1>::type>);
@@ -110,7 +110,7 @@ __host__ __device__ void CheckSameAs()
 }
 
 template <template <typename> class Modifier1, template <typename> class Modifier2>
-__host__ __device__ void CheckNotSameAs()
+TEST_FUNC void CheckNotSameAs()
 {
   static_assert(!same_as<typename Modifier1<int>::type, typename Modifier2<int>::type>);
   static_assert(!same_as<typename Modifier1<S1>::type, typename Modifier2<S1>::type>);
@@ -136,12 +136,12 @@ __host__ __device__ void CheckNotSameAs()
 // Checks subsumption works as intended
 _CCCL_TEMPLATE(class T, class U)
 _CCCL_REQUIRES(same_as<T, U>)
-__host__ __device__ void SubsumptionTest();
+TEST_FUNC void SubsumptionTest();
 
 // clang-format off
 _CCCL_TEMPLATE(class T, class U)
   _CCCL_REQUIRES( same_as<T, U> && true)
-__host__ __device__ int SubsumptionTest();
+TEST_FUNC int SubsumptionTest();
 // clang-format on
 
 static_assert(same_as<int, decltype(SubsumptionTest<int, int>())>);

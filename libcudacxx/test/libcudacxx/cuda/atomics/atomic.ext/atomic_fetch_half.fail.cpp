@@ -25,7 +25,7 @@
 template <class T, template <typename, typename> class Selector, cuda::thread_scope ThreadScope>
 struct TestFn
 {
-  __host__ __device__ void operator()() const
+  TEST_FUNC void operator()() const
   {
     // Fetch min
     {

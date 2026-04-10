@@ -17,21 +17,21 @@ using I   = int;
 using IL  = long;
 using ILL = long long;
 
-__host__ __device__ constexpr I abs_overload(I value)
+TEST_FUNC constexpr I abs_overload(I value)
 {
   static_assert(cuda::std::is_same_v<I, decltype(cuda::std::abs(I{}))>);
   static_assert(noexcept(cuda::std::abs(I{})));
   return cuda::std::abs(value);
 }
 
-__host__ __device__ constexpr IL abs_overload(IL value)
+TEST_FUNC constexpr IL abs_overload(IL value)
 {
   static_assert(cuda::std::is_same_v<IL, decltype(cuda::std::labs(IL{}))>);
   static_assert(noexcept(cuda::std::labs(IL{})));
   return cuda::std::labs(value);
 }
 
-__host__ __device__ constexpr ILL abs_overload(ILL value)
+TEST_FUNC constexpr ILL abs_overload(ILL value)
 {
   static_assert(cuda::std::is_same_v<ILL, decltype(cuda::std::llabs(ILL{}))>);
   static_assert(noexcept(cuda::std::llabs(ILL{})));
@@ -39,7 +39,7 @@ __host__ __device__ constexpr ILL abs_overload(ILL value)
 }
 
 template <class T>
-__host__ __device__ constexpr bool test_abs(T in, T ref, T zero_value)
+TEST_FUNC constexpr bool test_abs(T in, T ref, T zero_value)
 {
   assert(abs_overload(zero_value + in) == ref);
   assert(cuda::std::abs(zero_value + in) == ref);
@@ -47,7 +47,7 @@ __host__ __device__ constexpr bool test_abs(T in, T ref, T zero_value)
 }
 
 template <class T>
-__host__ __device__ constexpr bool test_abs(T zero_value)
+TEST_FUNC constexpr bool test_abs(T zero_value)
 {
   test_abs(T{0}, T{0}, zero_value);
   test_abs(T{1}, T{1}, zero_value);
@@ -63,7 +63,7 @@ __host__ __device__ constexpr bool test_abs(T zero_value)
   return true;
 }
 
-__host__ __device__ constexpr bool test(int zero_value)
+TEST_FUNC constexpr bool test(int zero_value)
 {
   test_abs(zero_value);
   test_abs(static_cast<IL>(zero_value));

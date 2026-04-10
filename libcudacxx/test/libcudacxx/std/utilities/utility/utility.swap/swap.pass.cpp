@@ -27,9 +27,9 @@
 
 struct CopyOnly
 {
-  __host__ __device__ CopyOnly() {}
-  __host__ __device__ CopyOnly(CopyOnly const&) noexcept {}
-  __host__ __device__ CopyOnly& operator=(CopyOnly const&)
+  TEST_FUNC CopyOnly() {}
+  TEST_FUNC CopyOnly(CopyOnly const&) noexcept {}
+  TEST_FUNC CopyOnly& operator=(CopyOnly const&)
   {
     return *this;
   }
@@ -37,9 +37,9 @@ struct CopyOnly
 
 struct MoveOnly
 {
-  __host__ __device__ MoveOnly() {}
-  __host__ __device__ MoveOnly(MoveOnly&&) {}
-  __host__ __device__ MoveOnly& operator=(MoveOnly&&) noexcept
+  TEST_FUNC MoveOnly() {}
+  TEST_FUNC MoveOnly(MoveOnly&&) {}
+  TEST_FUNC MoveOnly& operator=(MoveOnly&&) noexcept
   {
     return *this;
   }
@@ -47,9 +47,9 @@ struct MoveOnly
 
 struct NoexceptMoveOnly
 {
-  __host__ __device__ NoexceptMoveOnly() {}
-  __host__ __device__ NoexceptMoveOnly(NoexceptMoveOnly&&) noexcept {}
-  __host__ __device__ NoexceptMoveOnly& operator=(NoexceptMoveOnly&&) noexcept
+  TEST_FUNC NoexceptMoveOnly() {}
+  TEST_FUNC NoexceptMoveOnly(NoexceptMoveOnly&&) noexcept {}
+  TEST_FUNC NoexceptMoveOnly& operator=(NoexceptMoveOnly&&) noexcept
   {
     return *this;
   }
@@ -57,37 +57,36 @@ struct NoexceptMoveOnly
 
 struct NotMoveConstructible
 {
-  __host__ __device__ NotMoveConstructible& operator=(NotMoveConstructible&&)
+  TEST_FUNC NotMoveConstructible& operator=(NotMoveConstructible&&)
   {
     return *this;
   }
 
 private:
-  __host__ __device__ NotMoveConstructible(NotMoveConstructible&&);
+  TEST_FUNC NotMoveConstructible(NotMoveConstructible&&);
 };
 
 struct NotMoveAssignable
 {
-  __host__ __device__ NotMoveAssignable(NotMoveAssignable&&);
+  TEST_FUNC NotMoveAssignable(NotMoveAssignable&&);
 
 private:
-  __host__ __device__ NotMoveAssignable& operator=(NotMoveAssignable&&);
+  TEST_FUNC NotMoveAssignable& operator=(NotMoveAssignable&&);
 };
 
 template <class Tp>
-__host__ __device__ auto can_swap_test(int)
-  -> decltype(cuda::std::swap(cuda::std::declval<Tp>(), cuda::std::declval<Tp>()));
+TEST_FUNC auto can_swap_test(int) -> decltype(cuda::std::swap(cuda::std::declval<Tp>(), cuda::std::declval<Tp>()));
 
 template <class Tp>
-__host__ __device__ auto can_swap_test(...) -> cuda::std::false_type;
+TEST_FUNC auto can_swap_test(...) -> cuda::std::false_type;
 
 template <class Tp>
-__host__ __device__ constexpr bool can_swap()
+TEST_FUNC constexpr bool can_swap()
 {
   return cuda::std::is_same<decltype(can_swap_test<Tp>(0)), void>::value;
 }
 
-__host__ __device__ constexpr bool test_swap_constexpr()
+TEST_FUNC constexpr bool test_swap_constexpr()
 {
   int i = 1;
   int j = 2;
@@ -98,11 +97,11 @@ __host__ __device__ constexpr bool test_swap_constexpr()
 template <class T>
 struct swap_with_friend
 {
-  __host__ __device__ friend void swap(swap_with_friend&, swap_with_friend&) {}
+  TEST_FUNC friend void swap(swap_with_friend&, swap_with_friend&) {}
 };
 
 template <typename T>
-__host__ __device__ void test_ambiguous_std()
+TEST_FUNC void test_ambiguous_std()
 {
   // clang-format off
   NV_IF_TARGET(NV_IS_HOST, (

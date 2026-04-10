@@ -64,12 +64,12 @@ static_assert(!HasMakeUniqueForOverwrite<Foo[2], int, int>);
 struct WithDefaultConstructor
 {
   int i;
-  __host__ __device__ constexpr WithDefaultConstructor()
+  TEST_FUNC constexpr WithDefaultConstructor()
       : i(5)
   {}
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   // single int
   {
@@ -117,21 +117,21 @@ TEST_GLOBAL_VARIABLE bool WithCustomNew_customNewArrCalled = false;
 
 struct WithCustomNew
 {
-  __host__ __device__ static void* operator new(cuda::std::size_t n)
+  TEST_FUNC static void* operator new(cuda::std::size_t n)
   {
     WithCustomNew_customNewCalled = true;
     return ::operator new(n);
     ;
   }
 
-  __host__ __device__ static void* operator new[](cuda::std::size_t n)
+  TEST_FUNC static void* operator new[](cuda::std::size_t n)
   {
     WithCustomNew_customNewArrCalled = true;
     return ::operator new[](n);
   }
 };
 
-__host__ __device__ void testCustomNew()
+TEST_FUNC void testCustomNew()
 {
   // single with custom operator new
   {

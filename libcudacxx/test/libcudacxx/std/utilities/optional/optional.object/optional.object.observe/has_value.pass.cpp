@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   {
     using O = cuda::std::optional<T>;
@@ -34,7 +34,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
 #ifdef CCCL_ENABLE_OPTIONAL_REF

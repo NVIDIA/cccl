@@ -19,14 +19,14 @@
 #include "test_macros.h"
 
 template <typename Span>
-__host__ __device__ constexpr bool testConstexprSpan(Span sp, size_t sz)
+TEST_FUNC constexpr bool testConstexprSpan(Span sp, size_t sz)
 {
   static_assert(noexcept(sp.size_bytes()));
   return (size_t) sp.size_bytes() == sz * sizeof(typename Span::element_type);
 }
 
 template <typename Span>
-__host__ __device__ void testRuntimeSpan(Span sp, size_t sz)
+TEST_FUNC void testRuntimeSpan(Span sp, size_t sz)
 {
   static_assert(noexcept(sp.size_bytes()));
   assert((size_t) sp.size_bytes() == sz * sizeof(typename Span::element_type));

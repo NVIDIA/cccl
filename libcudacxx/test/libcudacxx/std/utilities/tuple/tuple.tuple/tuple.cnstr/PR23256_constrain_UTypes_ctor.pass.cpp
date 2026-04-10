@@ -29,7 +29,7 @@ struct UnconstrainedCtor
 {
   int value_;
 
-  __host__ __device__ UnconstrainedCtor()
+  TEST_FUNC UnconstrainedCtor()
       : value_(0)
   {}
 
@@ -38,7 +38,7 @@ struct UnconstrainedCtor
   // for Clang based compilers. GCC does not instantiate the ctor body
   // but it does instantiate the noexcept specifier and it will blow up there.
   template <typename T>
-  __host__ __device__ constexpr UnconstrainedCtor(T value) noexcept(noexcept(value_ = value))
+  TEST_FUNC constexpr UnconstrainedCtor(T value) noexcept(noexcept(value_ = value))
       : value_(static_cast<int>(value))
   {
     static_assert(cuda::std::is_same<int, T>::value);
@@ -49,12 +49,12 @@ struct ExplicitUnconstrainedCtor
 {
   int value_;
 
-  __host__ __device__ ExplicitUnconstrainedCtor()
+  TEST_FUNC ExplicitUnconstrainedCtor()
       : value_(0)
   {}
 
   template <typename T>
-  __host__ __device__ constexpr explicit ExplicitUnconstrainedCtor(T value) noexcept(noexcept(value_ = value))
+  TEST_FUNC constexpr explicit ExplicitUnconstrainedCtor(T value) noexcept(noexcept(value_ = value))
       : value_(static_cast<int>(value))
   {
     static_assert(cuda::std::is_same<int, T>::value);

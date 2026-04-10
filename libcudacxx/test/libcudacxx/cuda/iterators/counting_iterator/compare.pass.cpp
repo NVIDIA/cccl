@@ -19,7 +19,7 @@
 #include "types.h"
 
 template <typename T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   cuda::counting_iterator<T> iter1{T{42}};
   const auto iter2 = iter1 + 1;
@@ -51,7 +51,7 @@ __host__ __device__ constexpr void test()
 #endif // TEST_HAS_SPACESHIP()
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<SomeInt>();
   test<cuda::std::int8_t>();

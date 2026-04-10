@@ -25,7 +25,7 @@
 #include "test_macros.h"
 
 template <class V, size_t E>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::variant_size<V>::value == E);
   static_assert(cuda::std::variant_size<const V>::value == E);

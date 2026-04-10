@@ -26,20 +26,20 @@
 
 TEST_GLOBAL_VARIABLE int count = 0;
 
-__host__ __device__ int f_int_0()
+TEST_FUNC int f_int_0()
 {
   return 3;
 }
 
 struct A_int_0
 {
-  __host__ __device__ int operator()()
+  TEST_FUNC int operator()()
   {
     return 4;
   }
 };
 
-__host__ __device__ void test_int_0()
+TEST_FUNC void test_int_0()
 {
   // function
   {
@@ -62,14 +62,14 @@ __host__ __device__ void test_int_0()
 
 // 1 arg, return void
 
-__host__ __device__ void f_void_1(int i)
+TEST_FUNC void f_void_1(int i)
 {
   count += i;
 }
 
 struct A_void_1
 {
-  __host__ __device__ void operator()(int i)
+  TEST_FUNC void operator()(int i)
   {
     count += i;
   }

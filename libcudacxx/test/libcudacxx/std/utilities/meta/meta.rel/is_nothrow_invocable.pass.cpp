@@ -21,51 +21,51 @@ struct Tag
 
 struct Implicit
 {
-  __host__ __device__ Implicit(int) noexcept {}
+  TEST_FUNC Implicit(int) noexcept {}
 };
 
 struct ThrowsImplicit
 {
-  __host__ __device__ ThrowsImplicit(int) {}
+  TEST_FUNC ThrowsImplicit(int) {}
 };
 
 struct Explicit
 {
-  __host__ __device__ explicit Explicit(int) noexcept {}
+  TEST_FUNC explicit Explicit(int) noexcept {}
 };
 
 template <bool IsNoexcept, class Ret, class... Args>
 struct CallObject
 {
-  __host__ __device__ Ret operator()(Args&&...) const noexcept(IsNoexcept);
+  TEST_FUNC Ret operator()(Args&&...) const noexcept(IsNoexcept);
 };
 
 struct Sink
 {
   template <class... Args>
-  __host__ __device__ void operator()(Args&&...) const noexcept
+  TEST_FUNC void operator()(Args&&...) const noexcept
   {}
 };
 
 template <class Fn, class... Args>
-__host__ __device__ constexpr bool throws_invocable()
+TEST_FUNC constexpr bool throws_invocable()
 {
   return cuda::std::is_invocable<Fn, Args...>::value && !cuda::std::is_nothrow_invocable<Fn, Args...>::value;
 }
 
 template <class Ret, class Fn, class... Args>
-__host__ __device__ constexpr bool throws_invocable_r()
+TEST_FUNC constexpr bool throws_invocable_r()
 {
   return cuda::std::is_invocable_r<Ret, Fn, Args...>::value
       && !cuda::std::is_nothrow_invocable_r<Ret, Fn, Args...>::value;
 }
 
-__host__ __device__ void test_noexcept_function_pointers()
+TEST_FUNC void test_noexcept_function_pointers()
 {
   struct Dummy
   {
-    __host__ __device__ void foo() noexcept {}
-    __host__ __device__ static void bar() noexcept {}
+    TEST_FUNC void foo() noexcept {}
+    TEST_FUNC static void bar() noexcept {}
   };
   // Check that PMF's and function pointers actually work and that
   // is_nothrow_invocable returns true for noexcept PMF's and function
@@ -187,8 +187,8 @@ int main(int, char**)
     // Check that it's fine if the result type is non-moveable.
     struct CantMove
     {
-      CantMove()                               = default;
-      __host__ __device__ CantMove(CantMove&&) = delete;
+      CantMove()                     = default;
+      TEST_FUNC CantMove(CantMove&&) = delete;
     };
 
     static_assert(!cuda::std::is_move_constructible_v<CantMove>);

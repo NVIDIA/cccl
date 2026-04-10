@@ -35,7 +35,7 @@ inline constexpr int size = 1000;
 
 struct sum_of_int
 {
-  __device__ constexpr int operator()(const int val) const noexcept
+  TEST_DEVICE_FUNC constexpr int operator()(const int val) const noexcept
   { // Eulers sum with initial value
     return val * (val + 1) / 2 + 42;
   }

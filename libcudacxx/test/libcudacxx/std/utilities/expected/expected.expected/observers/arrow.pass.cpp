@@ -31,7 +31,7 @@ static_assert(!ArrowNoexcept<int>);
 static_assert(ArrowNoexcept<cuda::std::expected<int, int>>);
 static_assert(ArrowNoexcept<const cuda::std::expected<int, int>>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // const
   {
