@@ -212,10 +212,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void fillWithIdentity(Tp (&regSumInclusive)[e
   constexpr bool have_identity = ::cuda::has_identity_element_v<ScanOpT, Tp>;
   if constexpr (is_last_tile && have_identity)
   {
-    static_assert(have_identity);
-    static_assert(
-      !::cuda::std::is_same_v<decltype(::cuda::identity_element<ScanOpT, Tp>()), cuda::__no_identity_element>);
-
     for (int i = 0; i < elemPerThread; ++i)
     {
       if (i >= valid_items)
@@ -236,11 +232,13 @@ threadScanPartial(Tp (&regSumInclusive)[elemPerThread], ScanOpT& scan_op, Tp pre
   {
     if constexpr (isInclusive)
     {
-      __cub_detail::ThreadScanInclusivePartial(regSumInclusive, regSumInclusive, scan_op, valid_items, prefix, use_prefix);
+      __cub_detail::ThreadScanInclusivePartial(
+        regSumInclusive, regSumInclusive, scan_op, valid_items, prefix, use_prefix);
     }
     else
     {
-      __cub_detail::ThreadScanExclusivePartial(regSumInclusive, regSumInclusive, scan_op, valid_items, prefix, use_prefix);
+      __cub_detail::ThreadScanExclusivePartial(
+        regSumInclusive, regSumInclusive, scan_op, valid_items, prefix, use_prefix);
     }
   }
   else
