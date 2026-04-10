@@ -328,6 +328,109 @@ def test_block_primitives_single_phase_sort_scan_strided_thread_data3():
     np.testing.assert_array_equal(h_histo, h_histo_reference)
 
 
+def test_block_primitives_single_phase_sort_scan_strided_thread_data4():
+    threads_per_block = 64
+    items_per_thread = 2
+    items_per_block = threads_per_block * items_per_thread
+    num_tiles = 3
+    total_items = items_per_block * num_tiles
+    begin_bit = 0
+    end_bit = 8
+
+    @cuda.jit(device=True)
+    def custom_merge(a, b):
+        return a < b
+
+    @cuda.jit
+    def kernel1(d_in, d_out, total_items, items_per_thread):
+        thread_data = coop.ThreadData(items_per_thread)
+        block_offset = cuda.blockIdx.x * items_per_block
+        grid_stride = cuda.gridDim.x * items_per_block
+        while block_offset < total_items:
+            coop.block.load(d_in[block_offset:], thread_data)
+            coop.block.scan(thread_data, thread_data)
+            coop.block.radix_sort_keys(
+                thread_data, begin_bit=begin_bit, end_bit=end_bit
+            )
+            coop.block.merge_sort_keys(thread_data, compare_op=custom_merge)
+            coop.block.store(d_out[block_offset:], thread_data)
+            block_offset += grid_stride
+
+    @cuda.jit
+    def kernel2(d_in, d_out, total_items, items_per_thread):
+        temp_storage = coop.TempStorage(sharing="shared", auto_sync=True)
+        thread_data = coop.ThreadData(items_per_thread)
+        block_offset = cuda.blockIdx.x * items_per_block
+        grid_stride = cuda.gridDim.x * items_per_block
+        while block_offset < total_items:
+            coop.block.load[temp_storage](d_in[block_offset:], thread_data)
+            coop.block.scan[temp_storage](thread_data, thread_data)
+            coop.block.radix_sort_keys[temp_storage](
+                thread_data, begin_bit=begin_bit, end_bit=end_bit
+            )
+            coop.block.merge_sort_keys[temp_storage](
+                thread_data,
+                compare_op=custom_merge,
+            )
+            coop.block.store[temp_storage](d_out[block_offset:], thread_data)
+            block_offset += grid_stride
+
+    @cuda.jit
+    def kernel3(d_in, d_out, total_items, items_per_thread):
+        temp_storage = coop.TempStorage(sharing="shared", auto_sync=False)
+        thread_data = coop.ThreadData(items_per_thread)
+        block_offset = cuda.blockIdx.x * items_per_block
+        grid_stride = cuda.gridDim.x * items_per_block
+        while block_offset < total_items:
+            coop.block.load[temp_storage](d_in[block_offset:], thread_data)
+            cuda.syncthreads()
+
+            coop.block.scan[temp_storage](thread_data, thread_data)
+            cuda.syncthreads()
+
+            coop.block.radix_sort_keys[temp_storage](
+                thread_data, begin_bit=begin_bit, end_bit=end_bit
+            )
+            cuda.syncthreads()
+
+            coop.block.merge_sort_keys[temp_storage](
+                thread_data,
+                compare_op=custom_merge,
+            )
+            cuda.syncthreads()
+
+            coop.block.store[temp_storage](d_out[block_offset:], thread_data)
+            cuda.syncthreads()
+
+            block_offset += grid_stride
+
+    h_input = np.random.randint(0, 16, total_items, dtype=np.uint32)
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array_like(d_input)
+
+    kernels = [kernel1, kernel2, kernel3]
+
+    for kernel in kernels:
+        kernel[1, threads_per_block](
+            d_input,
+            d_output,
+            total_items,
+            items_per_thread,
+        )
+        cuda.synchronize()
+
+        h_reference = np.empty_like(h_input)
+        for tile_idx in range(num_tiles):
+            start = tile_idx * items_per_block
+            end = start + items_per_block
+            tile = h_input[start:end]
+            scanned = _exclusive_scan_host(tile)
+            h_reference[start:end] = np.sort(scanned)
+
+        h_output = d_output.copy_to_host()
+        np.testing.assert_array_equal(h_output, h_reference)
+
+
 def test_block_primitives_single_phase_sort_scan_strided_multi_block():
     threads_per_block = 64
     items_per_thread = 2
