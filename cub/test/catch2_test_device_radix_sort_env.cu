@@ -30,6 +30,21 @@ namespace stdexec = cuda::std::execution;
 struct custom_key_t
 {
   int key;
+
+  __host__ __device__ friend bool operator==(const custom_key_t& a, const custom_key_t& b)
+  {
+    return a.key == b.key;
+  }
+
+  __host__ __device__ friend bool operator!=(const custom_key_t& a, const custom_key_t& b)
+  {
+    return a.key != b.key;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const custom_key_t& ck)
+  {
+    return os << "{" << ck.key << "}";
+  }
 };
 
 struct custom_pair_key_t
@@ -148,10 +163,7 @@ TEST_CASE("Device radix sort keys decomposer+bits works with default environment
       static_cast<int>(sizeof(int) * 8)));
 
   c2h::device_vector<custom_key_t> expected{{0}, {3}, {5}, {6}, {7}, {8}, {9}};
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys_out[i]).key == static_cast<custom_key_t>(expected[i]).key);
-  }
+  REQUIRE(keys_out == expected);
 }
 
 TEST_CASE("Device radix sort keys decomposer works with default environment", "[radix_sort][device]")
@@ -164,10 +176,7 @@ TEST_CASE("Device radix sort keys decomposer works with default environment", "[
             keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size()), keys_decomposer_t{}));
 
   c2h::device_vector<custom_key_t> expected{{0}, {3}, {5}, {6}, {7}, {8}, {9}};
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys_out[i]).key == static_cast<custom_key_t>(expected[i]).key);
-  }
+  REQUIRE(keys_out == expected);
 }
 
 TEST_CASE("Device radix sort keys DB decomposer works with default environment", "[radix_sort][device]")
@@ -182,10 +191,7 @@ TEST_CASE("Device radix sort keys DB decomposer works with default environment",
 
   c2h::device_vector<custom_key_t> expected{{0}, {3}, {5}, {6}, {7}, {8}, {9}};
   auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys[i]).key == static_cast<custom_key_t>(expected[i]).key);
-  }
+  REQUIRE(keys == expected);
 }
 
 TEST_CASE("Device radix sort keys DB decomposer+bits works with default environment", "[radix_sort][device]")
@@ -201,10 +207,7 @@ TEST_CASE("Device radix sort keys DB decomposer+bits works with default environm
 
   c2h::device_vector<custom_key_t> expected{{0}, {3}, {5}, {6}, {7}, {8}, {9}};
   auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys[i]).key == static_cast<custom_key_t>(expected[i]).key);
-  }
+  REQUIRE(keys == expected);
 }
 
 TEST_CASE("Device radix sort pairs decomposer works with default environment", "[radix_sort][device]")
@@ -279,10 +282,7 @@ TEST_CASE("Device radix sort keys descending decomposer+bits works with default 
       static_cast<int>(sizeof(int) * 8)));
 
   c2h::device_vector<custom_key_t> expected{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys_out[i]).key == static_cast<custom_key_t>(expected[i]).key);
-  }
+  REQUIRE(keys_out == expected);
 }
 
 TEST_CASE("Device radix sort keys descending decomposer works with default environment", "[radix_sort][device]")
@@ -295,10 +295,7 @@ TEST_CASE("Device radix sort keys descending decomposer works with default envir
             keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size()), keys_decomposer_t{}));
 
   c2h::device_vector<custom_key_t> expected{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys_out[i]).key == static_cast<custom_key_t>(expected[i]).key);
-  }
+  REQUIRE(keys_out == expected);
 }
 
 TEST_CASE("Device radix sort keys descending DB decomposer works with default environment", "[radix_sort][device]")
@@ -313,10 +310,7 @@ TEST_CASE("Device radix sort keys descending DB decomposer works with default en
 
   c2h::device_vector<custom_key_t> expected{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
   auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys[i]).key == static_cast<custom_key_t>(expected[i]).key);
-  }
+  REQUIRE(keys == expected);
 }
 
 TEST_CASE("Device radix sort keys descending DB decomposer+bits works with default environment", "[radix_sort][device]")
@@ -332,10 +326,7 @@ TEST_CASE("Device radix sort keys descending DB decomposer+bits works with defau
 
   c2h::device_vector<custom_key_t> expected{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
   auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys[i]).key == static_cast<custom_key_t>(expected[i]).key);
-  }
+  REQUIRE(keys == expected);
 }
 
 TEST_CASE("Device radix sort pairs descending decomposer+bits works with default environment", "[radix_sort][device]")
@@ -359,10 +350,7 @@ TEST_CASE("Device radix sort pairs descending decomposer+bits works with default
 
   c2h::device_vector<custom_key_t> expected_keys{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
   c2h::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys_out[i]).key == static_cast<custom_key_t>(expected_keys[i]).key);
-  }
+  REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
 }
 
@@ -385,10 +373,7 @@ TEST_CASE("Device radix sort pairs descending decomposer works with default envi
 
   c2h::device_vector<custom_key_t> expected_keys{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
   c2h::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys_out[i]).key == static_cast<custom_key_t>(expected_keys[i]).key);
-  }
+  REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
 }
 
@@ -410,10 +395,7 @@ TEST_CASE("Device radix sort pairs descending DB decomposer works with default e
   c2h::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
   auto& keys   = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
   auto& values = d_values.selector == 0 ? values_buf0 : values_buf1;
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys[i]).key == static_cast<custom_key_t>(expected_keys[i]).key);
-  }
+  REQUIRE(keys == expected_keys);
   REQUIRE(values == expected_values);
 }
 
@@ -437,10 +419,7 @@ TEST_CASE("Device radix sort pairs descending DB decomposer+bits works with defa
   c2h::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
   auto& keys   = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
   auto& values = d_values.selector == 0 ? values_buf0 : values_buf1;
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys[i]).key == static_cast<custom_key_t>(expected_keys[i]).key);
-  }
+  REQUIRE(keys == expected_keys);
   REQUIRE(values == expected_values);
 }
 
@@ -867,10 +846,7 @@ TEST_CASE("Device radix sort keys decomposer+bits uses custom stream", "[radix_s
 
   stream.sync();
   c2h::device_vector<custom_key_t> expected{{0}, {3}, {5}, {6}, {7}, {8}, {9}};
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys_out[i]).key == static_cast<custom_key_t>(expected[i]).key);
-  }
+  REQUIRE(keys_out == expected);
 }
 
 TEST_CASE("Device radix sort keys decomposer uses custom stream", "[radix_sort][device]")
@@ -888,10 +864,7 @@ TEST_CASE("Device radix sort keys decomposer uses custom stream", "[radix_sort][
 
   stream.sync();
   c2h::device_vector<custom_key_t> expected{{0}, {3}, {5}, {6}, {7}, {8}, {9}};
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys_out[i]).key == static_cast<custom_key_t>(expected[i]).key);
-  }
+  REQUIRE(keys_out == expected);
 }
 
 TEST_CASE("Device radix sort keys DB decomposer uses custom stream", "[radix_sort][device]")
@@ -911,10 +884,7 @@ TEST_CASE("Device radix sort keys DB decomposer uses custom stream", "[radix_sor
   stream.sync();
   c2h::device_vector<custom_key_t> expected{{0}, {3}, {5}, {6}, {7}, {8}, {9}};
   auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys[i]).key == static_cast<custom_key_t>(expected[i]).key);
-  }
+  REQUIRE(keys == expected);
 }
 
 TEST_CASE("Device radix sort keys DB decomposer+bits uses custom stream", "[radix_sort][device]")
@@ -936,10 +906,7 @@ TEST_CASE("Device radix sort keys DB decomposer+bits uses custom stream", "[radi
   stream.sync();
   c2h::device_vector<custom_key_t> expected{{0}, {3}, {5}, {6}, {7}, {8}, {9}};
   auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys[i]).key == static_cast<custom_key_t>(expected[i]).key);
-  }
+  REQUIRE(keys == expected);
 }
 
 TEST_CASE("Device radix sort keys descending decomposer+bits uses custom stream", "[radix_sort][device]")
@@ -964,10 +931,7 @@ TEST_CASE("Device radix sort keys descending decomposer+bits uses custom stream"
 
   stream.sync();
   c2h::device_vector<custom_key_t> expected{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys_out[i]).key == static_cast<custom_key_t>(expected[i]).key);
-  }
+  REQUIRE(keys_out == expected);
 }
 
 TEST_CASE("Device radix sort keys descending decomposer uses custom stream", "[radix_sort][device]")
@@ -985,10 +949,7 @@ TEST_CASE("Device radix sort keys descending decomposer uses custom stream", "[r
 
   stream.sync();
   c2h::device_vector<custom_key_t> expected{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys_out[i]).key == static_cast<custom_key_t>(expected[i]).key);
-  }
+  REQUIRE(keys_out == expected);
 }
 
 TEST_CASE("Device radix sort keys descending DB decomposer uses custom stream", "[radix_sort][device]")
@@ -1009,10 +970,7 @@ TEST_CASE("Device radix sort keys descending DB decomposer uses custom stream", 
   stream.sync();
   c2h::device_vector<custom_key_t> expected{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
   auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys[i]).key == static_cast<custom_key_t>(expected[i]).key);
-  }
+  REQUIRE(keys == expected);
 }
 
 TEST_CASE("Device radix sort keys descending DB decomposer+bits uses custom stream", "[radix_sort][device]")
@@ -1034,10 +992,7 @@ TEST_CASE("Device radix sort keys descending DB decomposer+bits uses custom stre
   stream.sync();
   c2h::device_vector<custom_key_t> expected{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
   auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys[i]).key == static_cast<custom_key_t>(expected[i]).key);
-  }
+  REQUIRE(keys == expected);
 }
 
 TEST_CASE("Device radix sort pairs descending decomposer+bits uses custom stream", "[radix_sort][device]")
@@ -1067,10 +1022,7 @@ TEST_CASE("Device radix sort pairs descending decomposer+bits uses custom stream
   stream.sync();
   c2h::device_vector<custom_key_t> expected_keys{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
   c2h::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys_out[i]).key == static_cast<custom_key_t>(expected_keys[i]).key);
-  }
+  REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
 }
 
@@ -1099,10 +1051,7 @@ TEST_CASE("Device radix sort pairs descending decomposer uses custom stream", "[
   stream.sync();
   c2h::device_vector<custom_key_t> expected_keys{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
   c2h::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys_out[i]).key == static_cast<custom_key_t>(expected_keys[i]).key);
-  }
+  REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
 }
 
@@ -1129,10 +1078,7 @@ TEST_CASE("Device radix sort pairs descending DB decomposer uses custom stream",
   c2h::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
   auto& keys   = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
   auto& values = d_values.selector == 0 ? values_buf0 : values_buf1;
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys[i]).key == static_cast<custom_key_t>(expected_keys[i]).key);
-  }
+  REQUIRE(keys == expected_keys);
   REQUIRE(values == expected_values);
 }
 
@@ -1166,9 +1112,6 @@ TEST_CASE("Device radix sort pairs descending DB decomposer+bits uses custom str
   c2h::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
   auto& keys   = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
   auto& values = d_values.selector == 0 ? values_buf0 : values_buf1;
-  for (int i = 0; i < 7; ++i)
-  {
-    REQUIRE(static_cast<custom_key_t>(keys[i]).key == static_cast<custom_key_t>(expected_keys[i]).key);
-  }
+  REQUIRE(keys == expected_keys);
   REQUIRE(values == expected_values);
 }
