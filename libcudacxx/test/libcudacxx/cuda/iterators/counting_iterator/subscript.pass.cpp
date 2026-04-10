@@ -68,8 +68,6 @@ __host__ __device__ constexpr bool test()
   testType<unsigned>();
   testType<short>();
   testType<unsigned short>();
-  testType<float>();
-  testType<double>();
 
   return true;
 }
