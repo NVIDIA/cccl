@@ -17,37 +17,27 @@
 #
 # ## Quick start:
 #
-# 1. Add one or more benchmark regexes under cub and/or python filters.
+# 1. Add one or more benchmark regexes under benchmarks.filters.cub and/or
+#    benchmarks.filters.python.
 # 2. Enable at least one GPU by uncommenting or adding entries in benchmarks.gpus.
 # 3. Push and inspect the dispatched benchmark jobs/artifacts.
 # 4. Remove/reset benchmark-request edits before final merge.
 
 benchmarks:
 
-  # CUB C++ benchmark filters (regex matched against ninja target names).
-  cub:
-    filters:
-      # Examples:
-      # - '^cub\.bench\.for_each\.base'
-      # - '^cub\.bench\.reduce\.(sum|min)\.'
+  # Benchmark filters grouped by project.
+  filters:
+    # CUB C++ benchmark filters (regex matched against ninja target names).
+    cub:
+      - '^cub\.bench\.reduce\.sum\.base$'
 
-  # Python benchmark filters (regex matched against paths under benchmarks/).
-  python:
-    filters:
-      # Examples:
-      # - 'compute/reduce/sum\.py'
-      # - 'compute/transform/.*\.py'
-      # - 'coop/bench_warp_reduce\.py'
+    # Python benchmark filters (regex matched against paths under benchmarks/).
+    python:
+      - 'compute/reduce/sum\.py'
 
   # Select GPUs. These are limited and shared, be intentional and conservative.
   gpus:
-    # - "t4"         # sm_75, 16 GB
-    # - "rtx2080"    # sm_75,  8 GB
-    # - "rtxa6000"   # sm_86, 48 GB
-    # - "l4"         # sm_89, 24 GB
-    # - "rtx4090"    # sm_89, 24 GB
-    # - "h100"       # sm_90, 80 GB
-    # - "rtxpro6000" # sm_120
+    - "l4"         # sm_89, 24 GB
 
   # Extra .devcontainer/launch.sh -d args
   # launch_args: "--cuda 13.1 --host gcc14"
