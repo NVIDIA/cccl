@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <typename T>
-constexpr void test_impl()
+constexpr void test()
 {
   cuda::counting_iterator<T> iter1{T{42}};
   cuda::counting_iterator<T> iter2{T{77}};
@@ -55,11 +55,11 @@ constexpr void test_impl()
 
 constexpr bool test()
 {
-  test_impl<cuda::std::int8_t>();
-  test_impl<cuda::std::uint8_t>();
-  test_impl<int>();
-  test_impl<cuda::std::int64_t>();
-  test_impl<cuda::std::uint64_t>();
+  test<cuda::std::int8_t>();
+  test<cuda::std::uint8_t>();
+  test<int>();
+  test<cuda::std::int64_t>();
+  test<cuda::std::uint64_t>();
 
   return true;
 }
