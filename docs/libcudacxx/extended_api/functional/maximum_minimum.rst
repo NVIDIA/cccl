@@ -42,7 +42,9 @@ Function objects for performing maximum and minimum operations. The ``operator()
 Floating-Point Behavior
 -----------------------
 
-For floating-point types (and extended floating-point types), ``cuda::maximum`` uses ``cuda::std::fmax`` and ``cuda::minimum`` uses ``cuda::std::fmin`` instead of the comparison operator. This means that ``NaN`` arguments are treated as missing data: ``cuda::maximum{}(NaN, 1.0)`` returns ``1.0``, and ``cuda::minimum{}(NaN, 1.0)`` returns ``1.0``.
+For floating-point types (and extended floating-point types), ``cuda::maximum`` uses ``cuda::std::fmax`` and ``cuda::minimum`` uses ``cuda::std::fmin`` instead of the comparison operator, following the ``std::fmax``/``std::fmin`` specification for handling special values such as ``NaN``.
+
+This also makes ``cuda::maximum`` and ``cuda::minimum`` commutative for floating-point types, unlike a plain comparison-based approach.
 
 Example
 -------
