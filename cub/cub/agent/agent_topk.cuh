@@ -241,7 +241,8 @@ struct AgentTopK
   // Types and constants
   //---------------------------------------------------------------------
   // The key and value type
-  using key_in_t = it_value_t<KeyInputIteratorT>;
+  using key_in_t   = it_value_t<KeyInputIteratorT>;
+  using value_in_t = it_value_t<ValueInputIteratorT>;
 
   static constexpr int block_threads    = AgentTopKPolicyT::block_threads;
   static constexpr int items_per_thread = AgentTopKPolicyT::items_per_thread;
@@ -249,7 +250,7 @@ struct AgentTopK
   static constexpr int tile_items       = block_threads * items_per_thread;
   static constexpr int num_buckets      = 1 << bits_per_pass;
 
-  static constexpr bool keys_only      = ::cuda::std::is_same_v<ValueInputIteratorT, NullType*>;
+  static constexpr bool keys_only      = ::cuda::std::is_same_v<value_in_t, NullType>;
   static constexpr int bins_per_thread = ::cuda::ceil_div(num_buckets, block_threads);
 
   // Parameterized BlockLoad type for input data
