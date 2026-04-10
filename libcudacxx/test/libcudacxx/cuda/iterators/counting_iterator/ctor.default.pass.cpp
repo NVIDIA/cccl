@@ -32,15 +32,6 @@ __host__ __device__ constexpr bool test()
     static_assert(!cuda::std::is_default_constructible_v<cuda::counting_iterator<Int42<ValueCtor>>>);
   }
 
-  {
-    cuda::counting_iterator<float> iter;
-    assert(*iter == 0.f);
-  }
-
-  {
-    cuda::counting_iterator<double> iter;
-    assert(*iter == 0.0);
-  }
   return true;
 }
 

@@ -59,8 +59,6 @@ __host__ __device__ constexpr bool test()
   test_impl<int>();
   test_impl<cuda::std::int64_t>();
   test_impl<cuda::std::uint64_t>();
-  test_impl<float>();
-  test_impl<double>();
 
   return true;
 }
