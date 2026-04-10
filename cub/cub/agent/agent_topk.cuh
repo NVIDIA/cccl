@@ -19,9 +19,11 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/device/dispatch/tuning/tuning_topk.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__type_traits/conditional.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -49,7 +51,7 @@ template <int BlockThreads,
           int BitsPerPass,
           BlockLoadAlgorithm LoadAlgorithm,
           BlockScanAlgorithm ScanAlgorithm,
-          bool UseSmemWriteCoordination = true>
+          smem_write_mode WriteMode = smem_write_mode::smem_coalescing_two_phase>
 struct AgentTopKPolicy
 {
   static constexpr int block_threads                 = BlockThreads;
@@ -57,7 +59,7 @@ struct AgentTopKPolicy
   static constexpr int bits_per_pass                 = BitsPerPass;
   static constexpr BlockLoadAlgorithm load_algorithm = LoadAlgorithm;
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
-  static constexpr bool use_smem_write_coordination  = UseSmemWriteCoordination;
+  static constexpr smem_write_mode write_mode        = WriteMode;
 };
 
 template <typename KeyT, bool IsFundamental = detail::radix::is_fundamental_type_v<KeyT>>
@@ -255,7 +257,13 @@ struct AgentTopK
   static constexpr bool keys_only      = ::cuda::std::is_same_v<value_in_t, NullType>;
   static constexpr int bins_per_thread = ::cuda::ceil_div(num_buckets, block_threads);
 
-  static constexpr bool use_smem_write_coordination = AgentTopKPolicyT::use_smem_write_coordination;
+  static constexpr smem_write_mode write_mode = AgentTopKPolicyT::write_mode;
+
+  // For keys_only kernels, two_phase is equivalent to smem_coalescing
+  static constexpr smem_write_mode effective_write_mode =
+    (keys_only && write_mode == smem_write_mode::smem_coalescing_two_phase)
+      ? smem_write_mode::smem_coalescing
+      : write_mode;
 
   // Parameterized BlockLoad type for input data
   using block_load_input_t = BlockLoad<key_in_t, block_threads, items_per_thread, AgentTopKPolicyT::load_algorithm>;
@@ -270,6 +278,45 @@ struct AgentTopK
     _CCCL_DEVICE void operator()() const {}
   };
 
+  //---------------------------------------------------------------------
+  // Staging buffer type selection
+  //---------------------------------------------------------------------
+
+  struct _StagingDisabled
+  {
+    key_in_t keys[1];
+    OffsetT indices[1];
+  };
+
+  struct _StagingCoalescing
+  {
+    key_in_t keys[tile_items];
+    OffsetT indices[tile_items];
+  };
+
+  struct _StagingKeysOnly
+  {
+    key_in_t keys[tile_items];
+    OffsetT indices[1];
+  };
+
+  // Two-phase: keys and indices share storage via anonymous union
+  struct _StagingTwoPhase
+  {
+    union
+    {
+      key_in_t keys[tile_items];
+      OffsetT indices[tile_items];
+    };
+  };
+
+  using staging_t = ::cuda::std::conditional_t<
+    effective_write_mode == smem_write_mode::no_smem_coalescing,
+    _StagingDisabled,
+    ::cuda::std::conditional_t<effective_write_mode == smem_write_mode::smem_coalescing_two_phase,
+                               _StagingTwoPhase,
+                               ::cuda::std::conditional_t<keys_only, _StagingKeysOnly, _StagingCoalescing>>>;
+
   // Shared memory
   struct _TempStorage
   {
@@ -283,16 +330,11 @@ struct AgentTopK
       // Smem needed for storing
       typename block_store_trans_t::TempStorage store_trans;
 
-      // Staging buffer for coalesced writes (active when use_smem_write_coordination == true)
-      struct
-      {
-        key_in_t keys[use_smem_write_coordination ? tile_items : 1];
-        OffsetT indices[(use_smem_write_coordination && !keys_only) ? tile_items : 1];
-      } staging;
+      staging_t staging;
     };
     OffsetT histogram[num_buckets];
 
-    // Write coordination counters (used when use_smem_write_coordination == true)
+    // Write coordination counters
     OffsetT smem_filter_cnt;
     OutOffsetT smem_out_cnt;
     OffsetT block_filter_base;
@@ -499,7 +541,7 @@ struct AgentTopK
     // Initialize shared memory histogram
     init_histograms(temp_storage.histogram);
 
-    if constexpr (use_smem_write_coordination)
+    if constexpr (effective_write_mode != smem_write_mode::no_smem_coalescing)
     {
       if (threadIdx.x == 0)
       {
@@ -514,9 +556,202 @@ struct AgentTopK
     OffsetT* p_filter_cnt = &counter->filter_cnt;
     OutOffsetT* p_out_cnt = &counter->out_cnt;
 
-    if constexpr (use_smem_write_coordination)
+    // Histogram-only lambda is shared across all modes
+    auto f_no_out_buf = [this](key_in_t key, OffsetT /*i*/) {
+      const candidate_class pre_res = identify_candidates_op(key);
+      if (pre_res == candidate_class::candidate)
+      {
+        const int bucket = extract_bin_op(key);
+        atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
+      }
+    };
+
+    if constexpr (effective_write_mode == smem_write_mode::smem_coalescing_two_phase)
     {
-      // === SMEM WRITE COORDINATION PATH ===
+      // === TWO-PHASE PATH (always !keys_only due to effective_write_mode mapping) ===
+
+      // Per-thread register arrays that persist across per-element lambda calls within a tile
+      candidate_class thread_flags[items_per_thread];
+      int thread_local_pos[items_per_thread];
+      OffsetT thread_resolved_idx[items_per_thread];
+      int thread_item_idx = 0;
+
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int j = 0; j < items_per_thread; ++j)
+      {
+        thread_flags[j] = candidate_class::rejected;
+      }
+
+      auto f_early_stop = [&](key_in_t key, OffsetT i) {
+        const int j                   = thread_item_idx++;
+        const candidate_class pre_res = identify_candidates_op(key);
+        if (pre_res == candidate_class::candidate || pre_res == candidate_class::selected)
+        {
+          thread_flags[j]                      = pre_res;
+          const auto local_pos                 = atomicAdd(&temp_storage.smem_out_cnt, OutOffsetT{1});
+          thread_local_pos[j]                  = static_cast<int>(local_pos);
+          temp_storage.staging.keys[local_pos] = key;
+          thread_resolved_idx[j]               = load_from_original_input ? i : in_idx_buf[i];
+        }
+      };
+
+      auto early_stop_epilogue = [&]() {
+        __syncthreads();
+        const OutOffsetT n_out = temp_storage.smem_out_cnt;
+        if (threadIdx.x == 0)
+        {
+          temp_storage.block_out_base = atomicAdd(p_out_cnt, n_out);
+        }
+        __syncthreads();
+        const OutOffsetT out_base = temp_storage.block_out_base;
+        // Phase 1: flush keys
+        for (OutOffsetT i = threadIdx.x; i < n_out; i += block_threads)
+        {
+          d_keys_out[out_base + i] = temp_storage.staging.keys[i];
+        }
+        // Phase 2: reuse staging for indices
+        __syncthreads();
+        for (int j = 0; j < items_per_thread; ++j)
+        {
+          if (thread_flags[j] != candidate_class::rejected)
+          {
+            temp_storage.staging.indices[thread_local_pos[j]] = thread_resolved_idx[j];
+          }
+        }
+        __syncthreads();
+        for (OutOffsetT i = threadIdx.x; i < n_out; i += block_threads)
+        {
+          d_values_out[out_base + i] = d_values_in[temp_storage.staging.indices[i]];
+        }
+        // Reset for next tile
+        if (threadIdx.x == 0)
+        {
+          temp_storage.smem_out_cnt = 0;
+        }
+        thread_item_idx = 0;
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int j = 0; j < items_per_thread; ++j)
+        {
+          thread_flags[j] = candidate_class::rejected;
+        }
+      };
+
+      auto f_with_out_buf = [&](key_in_t key, OffsetT i) {
+        const int j                   = thread_item_idx++;
+        const candidate_class pre_res = identify_candidates_op(key);
+        if (pre_res == candidate_class::candidate)
+        {
+          thread_flags[j]                                       = pre_res;
+          const auto local_pos                                  = atomicAdd(&temp_storage.smem_filter_cnt, OffsetT{1});
+          thread_local_pos[j]                                   = static_cast<int>(local_pos);
+          temp_storage.staging.keys[tile_items - 1 - local_pos] = key;
+          thread_resolved_idx[j]                                = load_from_original_input ? i : in_idx_buf[i];
+
+          const int bucket = extract_bin_op(key);
+          atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
+        }
+        else if (pre_res == candidate_class::selected)
+        {
+          thread_flags[j]                      = pre_res;
+          const auto local_pos                 = atomicAdd(&temp_storage.smem_out_cnt, OutOffsetT{1});
+          thread_local_pos[j]                  = static_cast<int>(local_pos);
+          temp_storage.staging.keys[local_pos] = key;
+          thread_resolved_idx[j]               = in_idx_buf ? in_idx_buf[i] : i;
+        }
+      };
+
+      auto with_out_buf_epilogue = [&]() {
+        __syncthreads();
+        const OffsetT n_candidates  = temp_storage.smem_filter_cnt;
+        const OutOffsetT n_selected = temp_storage.smem_out_cnt;
+        if (threadIdx.x == 0)
+        {
+          temp_storage.block_filter_base = atomicAdd(p_filter_cnt, n_candidates);
+          temp_storage.block_out_base    = atomicAdd(p_out_cnt, n_selected);
+        }
+        __syncthreads();
+        const OffsetT filter_base = temp_storage.block_filter_base;
+        const OutOffsetT out_base = temp_storage.block_out_base;
+        // Phase 1: flush keys
+        for (OutOffsetT i = threadIdx.x; i < n_selected; i += block_threads)
+        {
+          d_keys_out[out_base + i] = temp_storage.staging.keys[i];
+        }
+        const OffsetT cand_start = static_cast<OffsetT>(tile_items) - n_candidates;
+        for (OffsetT i = threadIdx.x; i < n_candidates; i += block_threads)
+        {
+          out_buf[filter_base + i] = temp_storage.staging.keys[cand_start + i];
+        }
+        // Phase 2: reuse staging for indices
+        __syncthreads();
+        for (int j = 0; j < items_per_thread; ++j)
+        {
+          if (thread_flags[j] == candidate_class::selected)
+          {
+            temp_storage.staging.indices[thread_local_pos[j]] = thread_resolved_idx[j];
+          }
+          else if (thread_flags[j] == candidate_class::candidate)
+          {
+            temp_storage.staging.indices[tile_items - 1 - thread_local_pos[j]] = thread_resolved_idx[j];
+          }
+        }
+        __syncthreads();
+        for (OutOffsetT i = threadIdx.x; i < n_selected; i += block_threads)
+        {
+          d_values_out[out_base + i] = d_values_in[temp_storage.staging.indices[i]];
+        }
+        for (OffsetT i = threadIdx.x; i < n_candidates; i += block_threads)
+        {
+          out_idx_buf[filter_base + i] = temp_storage.staging.indices[cand_start + i];
+        }
+        // Reset for next tile
+        if (threadIdx.x == 0)
+        {
+          temp_storage.smem_filter_cnt = 0;
+          temp_storage.smem_out_cnt    = 0;
+        }
+        thread_item_idx = 0;
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int j = 0; j < items_per_thread; ++j)
+        {
+          thread_flags[j] = candidate_class::rejected;
+        }
+      };
+
+      if (load_from_original_input)
+      {
+        if (early_stop)
+        {
+          process_range(d_keys_in, previous_len, f_early_stop, early_stop_epilogue);
+        }
+        else if (out_buf)
+        {
+          process_range(d_keys_in, previous_len, f_with_out_buf, with_out_buf_epilogue);
+        }
+        else
+        {
+          process_range(d_keys_in, previous_len, f_no_out_buf);
+        }
+      }
+      else
+      {
+        if (early_stop)
+        {
+          process_range(in_buf, previous_len, f_early_stop, early_stop_epilogue);
+        }
+        else if (out_buf)
+        {
+          process_range(in_buf, previous_len, f_with_out_buf, with_out_buf_epilogue);
+        }
+        else
+        {
+          process_range(in_buf, previous_len, f_no_out_buf);
+        }
+      }
+    }
+    else if constexpr (effective_write_mode == smem_write_mode::smem_coalescing)
+    {
+      // === SINGLE-PHASE SMEM WRITE COORDINATION PATH ===
 
       auto f_early_stop = [load_from_original_input, in_idx_buf, this](key_in_t key, OffsetT i) {
         const candidate_class pre_res = identify_candidates_op(key);
@@ -615,15 +850,6 @@ struct AgentTopK
         }
       };
 
-      auto f_no_out_buf = [this](key_in_t key, OffsetT i) {
-        const candidate_class pre_res = identify_candidates_op(key);
-        if (pre_res == candidate_class::candidate)
-        {
-          const int bucket = extract_bin_op(key);
-          atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
-        }
-      };
-
       if (load_from_original_input)
       {
         if (early_stop)
@@ -657,7 +883,7 @@ struct AgentTopK
     }
     else
     {
-      // === ORIGINAL PATH (no smem write coordination) ===
+      // === NO SMEM COORDINATION PATH ===
 
       auto f_early_stop = [load_from_original_input, in_idx_buf, p_out_cnt, this](key_in_t key, OffsetT i) {
         const candidate_class pre_res = identify_candidates_op(key);
@@ -698,15 +924,6 @@ struct AgentTopK
             const OffsetT index = in_idx_buf ? in_idx_buf[i] : i;
             d_values_out[pos]   = d_values_in[index];
           }
-        }
-      };
-
-      auto f_no_out_buf = [this](key_in_t key, OffsetT i) {
-        const candidate_class pre_res = identify_candidates_op(key);
-        if (pre_res == candidate_class::candidate)
-        {
-          const int bucket = extract_bin_op(key);
-          atomicAdd(temp_storage.histogram + bucket, OffsetT{1});
         }
       };
 
@@ -826,8 +1043,129 @@ struct AgentTopK
     OutOffsetT* p_out_cnt      = &counter->out_cnt;
     OutOffsetT* p_out_back_cnt = &counter->out_back_cnt;
 
-    if constexpr (use_smem_write_coordination)
+    if constexpr (effective_write_mode == smem_write_mode::smem_coalescing_two_phase)
     {
+      // === TWO-PHASE LAST FILTER (always !keys_only) ===
+      if (threadIdx.x == 0)
+      {
+        temp_storage.smem_filter_cnt = 0;
+        temp_storage.smem_out_cnt    = 0;
+      }
+      __syncthreads();
+
+      candidate_class thread_flags[items_per_thread];
+      int thread_local_pos[items_per_thread];
+      OffsetT thread_resolved_idx[items_per_thread];
+      int thread_item_idx = 0;
+
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int j = 0; j < items_per_thread; ++j)
+      {
+        thread_flags[j] = candidate_class::rejected;
+      }
+
+      auto f = [&](key_in_t key, OffsetT i) {
+        const int j               = thread_item_idx++;
+        const candidate_class res = identify_candidates_op(key);
+        if (res == candidate_class::selected)
+        {
+          thread_flags[j]                      = res;
+          const auto local_pos                 = atomicAdd(&temp_storage.smem_out_cnt, OutOffsetT{1});
+          thread_local_pos[j]                  = static_cast<int>(local_pos);
+          temp_storage.staging.keys[local_pos] = key;
+          thread_resolved_idx[j]               = load_from_original_input ? i : in_idx_buf[i];
+        }
+        else if (res == candidate_class::candidate)
+        {
+          thread_flags[j]                                       = res;
+          const auto local_pos                                  = atomicAdd(&temp_storage.smem_filter_cnt, OffsetT{1});
+          thread_local_pos[j]                                   = static_cast<int>(local_pos);
+          temp_storage.staging.keys[tile_items - 1 - local_pos] = key;
+          thread_resolved_idx[j]                                = load_from_original_input ? i : in_idx_buf[i];
+        }
+      };
+
+      auto epilogue = [&]() {
+        __syncthreads();
+        const OutOffsetT n_selected = temp_storage.smem_out_cnt;
+        const OffsetT n_candidates  = temp_storage.smem_filter_cnt;
+        if (threadIdx.x == 0)
+        {
+          temp_storage.block_out_base      = atomicAdd(p_out_cnt, n_selected);
+          temp_storage.block_out_back_base = atomicAdd(p_out_back_cnt, static_cast<OutOffsetT>(n_candidates));
+        }
+        __syncthreads();
+        const OutOffsetT out_base  = temp_storage.block_out_base;
+        const OutOffsetT back_base = temp_storage.block_out_back_base;
+
+        // Phase 1: flush keys
+        for (OutOffsetT i = threadIdx.x; i < n_selected; i += block_threads)
+        {
+          d_keys_out[out_base + i] = temp_storage.staging.keys[i];
+        }
+        const OffsetT cand_start = static_cast<OffsetT>(tile_items) - n_candidates;
+        for (OffsetT i = threadIdx.x; i < n_candidates; i += block_threads)
+        {
+          const OutOffsetT back_pos = back_base + static_cast<OutOffsetT>(i);
+          if (back_pos < num_of_kth_needed)
+          {
+            d_keys_out[k - 1 - back_pos] = temp_storage.staging.keys[cand_start + i];
+          }
+        }
+
+        // Phase 2: reuse staging for indices
+        __syncthreads();
+        for (int j = 0; j < items_per_thread; ++j)
+        {
+          if (thread_flags[j] == candidate_class::selected)
+          {
+            temp_storage.staging.indices[thread_local_pos[j]] = thread_resolved_idx[j];
+          }
+          else if (thread_flags[j] == candidate_class::candidate)
+          {
+            temp_storage.staging.indices[tile_items - 1 - thread_local_pos[j]] = thread_resolved_idx[j];
+          }
+        }
+        __syncthreads();
+        for (OutOffsetT i = threadIdx.x; i < n_selected; i += block_threads)
+        {
+          d_values_out[out_base + i] = d_values_in[temp_storage.staging.indices[i]];
+        }
+        for (OffsetT i = threadIdx.x; i < n_candidates; i += block_threads)
+        {
+          const OutOffsetT back_pos = back_base + static_cast<OutOffsetT>(i);
+          if (back_pos < num_of_kth_needed)
+          {
+            d_values_out[k - 1 - back_pos] = d_values_in[temp_storage.staging.indices[cand_start + i]];
+          }
+        }
+
+        // Reset for next tile
+        if (threadIdx.x == 0)
+        {
+          temp_storage.smem_filter_cnt = 0;
+          temp_storage.smem_out_cnt    = 0;
+        }
+        thread_item_idx = 0;
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int j = 0; j < items_per_thread; ++j)
+        {
+          thread_flags[j] = candidate_class::rejected;
+        }
+      };
+
+      if (load_from_original_input)
+      {
+        process_range(d_keys_in, current_len, f, epilogue);
+      }
+      else
+      {
+        process_range(in_buf, current_len, f, epilogue);
+      }
+    }
+    else if constexpr (effective_write_mode == smem_write_mode::smem_coalescing)
+    {
+      // === SINGLE-PHASE LAST FILTER ===
       if (threadIdx.x == 0)
       {
         temp_storage.smem_filter_cnt = 0;
@@ -912,6 +1250,7 @@ struct AgentTopK
     }
     else
     {
+      // === NO SMEM COORDINATION LAST FILTER ===
       auto f = [this, p_out_cnt, in_idx_buf, p_out_back_cnt, num_of_kth_needed, k, load_from_original_input](
                  key_in_t key, OffsetT i) {
         const candidate_class res = identify_candidates_op(key);

@@ -49,6 +49,23 @@ _CCCL_API constexpr int calc_bits_per_pass()
   return calc_bits_per_pass(int{sizeof(KeyT)});
 }
 
+enum class smem_write_mode
+{
+  // No shared memory staging. Each thread atomicAdds directly to global
+  // counters and writes items immediately.
+  no_smem_coalescing,
+
+  // Single-phase: gather both keys and indices into shared memory staging
+  // buffer, flush everything to global in the tile epilogue.
+  smem_coalescing,
+
+  // Two-phase: phase 1 gathers keys into staging buffer and flushes them,
+  // phase 2 reuses the staging buffer for indices and flushes those.
+  // Halves the staging buffer size for key-value pairs.
+  // For keys_only kernels, this is equivalent to smem_coalescing.
+  smem_coalescing_two_phase
+};
+
 struct topk_policy
 {
   int block_threads;
@@ -56,14 +73,13 @@ struct topk_policy
   int bits_per_pass;
   BlockLoadAlgorithm load_algorithm;
   BlockScanAlgorithm scan_algorithm;
-  bool use_smem_write_coordination;
+  smem_write_mode write_mode;
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator==(const topk_policy& lhs, const topk_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
         && lhs.bits_per_pass == rhs.bits_per_pass && lhs.load_algorithm == rhs.load_algorithm
-        && lhs.scan_algorithm == rhs.scan_algorithm
-        && lhs.use_smem_write_coordination == rhs.use_smem_write_coordination;
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.write_mode == rhs.write_mode;
   }
 
   [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const topk_policy& lhs, const topk_policy& rhs)
@@ -77,8 +93,7 @@ struct topk_policy
     return os
         << "topk_policy { .block_threads = " << p.block_threads << ", .items_per_thread = " << p.items_per_thread
         << ", .bits_per_pass = " << p.bits_per_pass << ", .load_algorithm = " << p.load_algorithm
-        << ", .scan_algorithm = " << p.scan_algorithm
-        << ", .use_smem_write_coordination = " << p.use_smem_write_coordination << " }";
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .write_mode = " << static_cast<int>(p.write_mode) << " }";
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
@@ -101,13 +116,25 @@ struct policy_selector
     {
       // Try to load 16 bytes per thread: int64 -> 2, int32 -> 4, int16 -> 8.
       const int items_per_thread = ::cuda::std::max(1, nominal_4b_items_per_thread * 4 / key_size);
-      return topk_policy{512, items_per_thread, bits_per_pass, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, true};
+      return topk_policy{
+        512,
+        items_per_thread,
+        bits_per_pass,
+        BLOCK_LOAD_VECTORIZE,
+        BLOCK_SCAN_WARP_SCANS,
+        smem_write_mode::smem_coalescing_two_phase};
     }
 
     // Default tuning used on older architectures.
     const int items_per_thread =
       ::cuda::std::clamp(nominal_4b_items_per_thread * 4 / key_size, 1, nominal_4b_items_per_thread);
-    return topk_policy{512, items_per_thread, bits_per_pass, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, true};
+    return topk_policy{
+      512,
+      items_per_thread,
+      bits_per_pass,
+      BLOCK_LOAD_VECTORIZE,
+      BLOCK_SCAN_WARP_SCANS,
+      smem_write_mode::smem_coalescing_two_phase};
   }
 };
 
