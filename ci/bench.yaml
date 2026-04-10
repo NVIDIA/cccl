@@ -29,15 +29,26 @@ benchmarks:
   filters:
     # CUB C++ benchmark filters (regex matched against ninja target names).
     cub:
-      - '^cub\.bench\.reduce\.sum\.base$'
+      # Examples:
+      # - '^cub\.bench\.for_each\.base'
+      # - '^cub\.bench\.reduce\.(sum|min)\.'
 
     # Python benchmark filters (regex matched against paths under benchmarks/).
     python:
-      - 'compute/reduce/sum\.py'
+      # Examples:
+      # - 'compute/reduce/sum\.py'
+      # - 'compute/transform/.*\.py'
+      # - 'coop/bench_warp_reduce\.py'
 
   # Select GPUs. These are limited and shared, be intentional and conservative.
   gpus:
-    - "l4"         # sm_89, 24 GB
+    # - "t4"         # sm_75, 16 GB
+    # - "rtx2080"    # sm_75,  8 GB
+    # - "rtxa6000"   # sm_86, 48 GB
+    # - "l4"         # sm_89, 24 GB
+    # - "rtx4090"    # sm_89, 24 GB
+    # - "h100"       # sm_90, 80 GB
+    # - "rtxpro6000" # sm_120
 
   # Extra .devcontainer/launch.sh -d args
   # launch_args: "--cuda 13.1 --host gcc14"
