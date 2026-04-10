@@ -19,7 +19,7 @@
 #include "types.h"
 
 template <typename T>
-__host__ __device__ constexpr void test_impl()
+__host__ __device__ constexpr void test()
 {
   cuda::counting_iterator<T> iter1{T{42}};
   const auto iter2 = iter1 + 1;
@@ -53,12 +53,12 @@ __host__ __device__ constexpr void test_impl()
 
 __host__ __device__ constexpr bool test()
 {
-  test_impl<SomeInt>();
-  test_impl<cuda::std::int8_t>();
-  test_impl<cuda::std::uint8_t>();
-  test_impl<int>();
-  test_impl<cuda::std::int64_t>();
-  test_impl<cuda::std::uint64_t>();
+  test<SomeInt>();
+  test<cuda::std::int8_t>();
+  test<cuda::std::uint8_t>();
+  test<int>();
+  test<cuda::std::int64_t>();
+  test<cuda::std::uint64_t>();
 
   return true;
 }
