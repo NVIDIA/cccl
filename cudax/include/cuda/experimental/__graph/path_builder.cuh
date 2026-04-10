@@ -16,6 +16,9 @@
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/array>
+#include <cuda/std/span>
+#include <cuda/std/type_traits>
 
 #include <cuda/experimental/__driver/driver_api.cuh>
 #include <cuda/experimental/__graph/concepts.cuh>
@@ -37,6 +40,19 @@
 
 namespace cuda::experimental
 {
+struct path_builder;
+
+template <::cuda::std::size_t _Count>
+[[nodiscard]] _CCCL_HOST_API auto __replicate_builders(const path_builder& __source)
+  -> ::cuda::std::array<path_builder, _Count>;
+
+[[nodiscard]] _CCCL_HOST_API auto __replicate_builders(const path_builder& __source, ::cuda::std::size_t __count)
+  -> ::std::vector<path_builder>;
+
+template <class _Container>
+_CCCL_HOST_API void
+__replicate_builders_into(const path_builder& __source, _Container& __dest, ::cuda::std::size_t __count);
+
 //! \brief A builder for a path in a CUDA graph.
 //!
 //! This class allows for the creation of a path in a CUDA graph, which is a sequence of nodes that are executed in
@@ -138,6 +154,39 @@ struct path_builder
         }
       }(static_cast<Nodes&&>(__nodes)),
       ...);
+  }
+
+  //! \brief Add a range of dependency nodes to this path builder.
+  //! \param __deps The dependency node range to add.
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(::cuda::std::ranges::forward_range<const _Range&>
+                   _CCCL_AND ::cuda::std::is_same_v<::cuda::std::ranges::range_value_t<const _Range&>, cudaGraphNode_t>)
+  _CCCL_HOST_API void depends_on(const _Range& __deps)
+  {
+    __nodes_.insert(__nodes_.end(), __deps.begin(), __deps.end());
+  }
+
+  //! @brief Create a fixed-size group of peer path builders with the same graph/device as this path builder.
+  //! @note This function only creates path builders; it does not add synchronization dependencies.
+  template <::cuda::std::size_t _Count>
+  [[nodiscard]] _CCCL_HOST_API auto replicate() const -> ::cuda::std::array<path_builder, _Count>
+  {
+    return __replicate_builders<_Count>(*this);
+  }
+
+  //! @brief Create a runtime-sized group of peer path builders with the same graph/device as this path builder.
+  //! @note This function only creates path builders; it does not add synchronization dependencies.
+  [[nodiscard]] _CCCL_HOST_API auto replicate(::cuda::std::size_t __count) const -> ::std::vector<path_builder>
+  {
+    return __replicate_builders(*this, __count);
+  }
+
+  //! @brief Append runtime-sized peer path builders with the same graph/device as this path builder to `__dest`.
+  //! @note This function only creates path builders; it does not add synchronization dependencies.
+  template <class _Container>
+  _CCCL_HOST_API void replicate_into(_Container& __dest, ::cuda::std::size_t __count) const
+  {
+    __replicate_builders_into(*this, __dest, __count);
   }
 
   //! \brief Get the graph that the path builder is building.
