@@ -98,7 +98,7 @@ class __barrier_synchronizer
   _Barrier* __barriers_;
 
   template <class _MappingResult>
-  _CCCL_DEVICE_API __init_barriers(const _MappingResult& __mapping_result) noexcept
+  _CCCL_DEVICE_API void __init_barriers(const _MappingResult& __mapping_result) noexcept
   {
     _CCCL_ASSERT(::cuda::is_aligned(__barriers_, alignof(_Barrier)), "invalid alignment for barriers");
 
