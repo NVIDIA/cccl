@@ -30,7 +30,7 @@ C2H_TEST("cub::DevicePartition::If accepts env with stream", "[partition][env]")
   auto error = cub::DevicePartition::If(input.begin(), output.begin(), num_selected.begin(), input.size(), le, env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DevicePartition::If failed with status: " << error << std::endl;
+    std::cerr << "cub::DevicePartition::If failed with status: " << error << '\n';
   }
 
   // Selected items (< 5) at front, unselected items (>= 5) at back in reverse order
@@ -59,7 +59,7 @@ C2H_TEST("cub::DevicePartition::Flagged accepts env with stream", "[partition][e
     input.begin(), flags.begin(), output.begin(), num_selected.begin(), input.size(), env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DevicePartition::Flagged failed with status: " << error << std::endl;
+    std::cerr << "cub::DevicePartition::Flagged failed with status: " << error << '\n';
   }
 
   // Selected items (flagged) at front, unselected items at back in reverse order

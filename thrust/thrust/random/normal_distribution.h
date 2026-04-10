@@ -55,15 +55,15 @@ namespace random
  *    thrust::random::normal_distribution<float> dist(2.0f, 3.5f);
  *
  *    // write a random number to standard output
- *    std::cout << dist(rng) << std::endl;
+ *    std::cout << dist(rng) << '\n';
  *
  *    // write the mean of the distribution, just in case we forgot
- *    std::cout << dist.mean() << std::endl;
+ *    std::cout << dist.mean() << '\n';
  *
  *    // 2.0 is printed
  *
  *    // and the standard deviation
- *    std::cout << dist.stddev() << std::endl;
+ *    std::cout << dist.stddev() << '\n';
  *
  *    // 3.5 is printed
  *

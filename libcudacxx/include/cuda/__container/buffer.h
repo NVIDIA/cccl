@@ -573,7 +573,7 @@ public:
   //! @brief Move assignment operator
   //! @param __other The other buffer. After move assignment, the other buffer
   //! can only be assigned to or destroyed.
-  _CCCL_HOST_API void operator=(buffer&& __other)
+  _CCCL_HOST_API void operator=(buffer&& __other) noexcept
   {
     __buf_ = ::cuda::std::move(__other.__buf_);
   }

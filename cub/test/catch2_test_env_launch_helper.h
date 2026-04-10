@@ -139,6 +139,15 @@ struct stream_registry_factory_t
     return cudaOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, kernel_ptr, block_size, dynamic_smem_bytes);
   }
 
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t
+  MemcpyAsync(void* dst, const void* src, size_t num_bytes, ::cudaMemcpyKind kind, ::cudaStream_t stream) const
+  {
+    NV_IF_TARGET(NV_IS_HOST, (if (get_stream_registry_factory_state()->m_stream) {
+                   REQUIRE(stream == get_stream_registry_factory_state()->m_stream);
+                 }));
+    return ::cudaMemcpyAsync(dst, src, num_bytes, kind, stream);
+  }
+
   CUB_RUNTIME_FUNCTION cudaError_t MaxGridDimX(int& max_grid_dim_x) const
   {
     int device_ordinal;

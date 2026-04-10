@@ -197,7 +197,7 @@ __host__ __device__ bool test_eval(const typename D::param_type param, CDF cdf)
     {
       auto dist_val  = d1(g_1, param);
       auto dist2_val = d2(g_2);
-      assert(dist_val == dist2_val);
+      assert((dist_val == dist2_val) || (cuda::std::isnan(dist_val) && cuda::std::isnan(dist2_val)));
     }
   }
 

@@ -36,7 +36,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts env with stream and determinis
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << '\n';
   }
   // example-end segmented-reduce-sum-env
 
@@ -62,7 +62,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts stream", "[segmented_reduce][e
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << '\n';
   }
   // example-end segmented-reduce-sum-env-stream
 
@@ -87,7 +87,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts run_to_run determinism require
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << '\n';
   }
   // example-end segmented-reduce-sum-env-determinism
 
@@ -112,7 +112,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum accepts not_guaranteed determinism req
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedReduce::Sum failed with status: " << error << '\n';
   }
   // example-end segmented-reduce-sum-env-non-determinism
 
@@ -139,7 +139,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce env-based API", "[segmented_reduce]
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedReduce::Reduce failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedReduce::Reduce failed with status: " << error << '\n';
   }
   // example-end segmented-reduce-reduce-env
 
@@ -166,7 +166,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Min env-based API", "[segmented_reduce][en
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedReduce::Min failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedReduce::Min failed with status: " << error << '\n';
   }
   // example-end segmented-reduce-min-env
 
@@ -193,7 +193,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Max env-based API", "[segmented_reduce][en
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedReduce::Max failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedReduce::Max failed with status: " << error << '\n';
   }
   // example-end segmented-reduce-max-env
 
@@ -219,7 +219,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMin env-based API", "[segmented_reduce]
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedReduce::ArgMin failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedReduce::ArgMin failed with status: " << error << '\n';
   }
   stream.sync();
   // example-end segmented-reduce-argmin-env
@@ -252,7 +252,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMax env-based API", "[segmented_reduce]
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedReduce::ArgMax failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedReduce::ArgMax failed with status: " << error << '\n';
   }
   stream.sync();
   // example-end segmented-reduce-argmax-env
@@ -454,7 +454,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce accepts run_to_run determinism requ
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedReduce::Reduce failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedReduce::Reduce failed with status: " << error << '\n';
   }
   // example-end segmented-reduce-reduce-env-determinism
 
@@ -479,7 +479,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce accepts not_guaranteed determinism 
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedReduce::Reduce failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedReduce::Reduce failed with status: " << error << '\n';
   }
 
   REQUIRE(d_out == expected);

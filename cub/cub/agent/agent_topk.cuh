@@ -62,7 +62,7 @@ struct AgentTopKPolicy
   static constexpr smem_write_mode write_mode        = WriteMode;
 };
 
-template <typename KeyT, bool IsFundamental = detail::radix::is_fundamental_type_v<KeyT>>
+template <typename KeyT, bool CanTwiddle = detail::radix::can_twiddle<KeyT>>
 struct key_prefix_storage_t;
 
 template <typename KeyT>
@@ -137,7 +137,7 @@ template <typename KeyT, int BitsPerPass>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 set_kth_key_bits(key_prefix_storage_t<KeyT>& prefix, const int pass, const int bin_index)
 {
-  if constexpr (detail::radix::is_fundamental_type_v<KeyT>)
+  if constexpr (detail::radix::can_twiddle<KeyT>)
   {
     using bits_t        = typename Traits<KeyT>::UnsignedBits;
     const int start_bit = calc_start_bit<KeyT, BitsPerPass>(pass);
@@ -1388,7 +1388,7 @@ struct AgentTopK
       // TODO: Refactor calc_start_bit, calc_mask, and calc_num_passes to uniformly work with
       // total_bits (passed as a kernel parameter) instead of sizeof(KeyT), then use a single
       // unconditional path for both fundamental and non-fundamental types.
-      if constexpr (detail::radix::is_fundamental_type_v<key_in_t>)
+      if constexpr (detail::radix::can_twiddle<key_in_t>)
       {
         constexpr int num_passes = calc_num_passes<key_in_t>(bits_per_pass);
         if (pass != num_passes - 1)
@@ -1459,7 +1459,7 @@ struct AgentTopK
       // TODO: Refactor calc_start_bit, calc_mask, and calc_num_passes to uniformly work with
       // total_bits (passed as a kernel parameter) instead of sizeof(KeyT), then use a single
       // unconditional path for both fundamental and non-fundamental types.
-      if constexpr (detail::radix::is_fundamental_type_v<key_in_t>)
+      if constexpr (detail::radix::can_twiddle<key_in_t>)
       {
         constexpr int num_passes = calc_num_passes<key_in_t>(bits_per_pass);
         if (pass != num_passes - 1)

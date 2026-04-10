@@ -164,7 +164,7 @@ public:
 //!    thrust::reduce(thrust::make_transform_iterator(v.begin(), square()),
 //!                   thrust::make_transform_iterator(v.end(),   square()));
 //!
-//!   std::cout << "sum of squares: " << sum_of_squares << std::endl;
+//!   std::cout << "sum of squares: " << sum_of_squares << '\n';
 //!   return 0;
 //! }
 //! \endcode

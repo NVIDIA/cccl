@@ -32,7 +32,7 @@ namespace cuda::experimental
 [[nodiscard]] _CCCL_DEVICE_API inline __implicit_hierarchy_t __implicit_hierarchy() noexcept
 {
   return __implicit_hierarchy_t{
-    cuda::gpu_thread,
+    gpu_thread,
     hierarchy_level_desc<grid_level, ::cuda::std::dims<3, unsigned>>{cluster.extents(grid)},
     hierarchy_level_desc<cluster_level, ::cuda::std::dims<3, unsigned>>{block.extents(cluster)},
     hierarchy_level_desc<block_level, ::cuda::std::dims<3, unsigned>>{gpu_thread.extents(block)}};

@@ -827,7 +827,7 @@ public:
     }
     else
     {
-      ::std::cerr << "Unable to open file: " << dot_filename << ::std::endl;
+      ::std::cerr << "Unable to open file: " << dot_filename << '\n';
     }
 
     const char* stats_filename_str = getenv("CUDASTF_DOT_STATS_FILE");
@@ -851,7 +851,7 @@ public:
       }
       else
       {
-        ::std::cerr << "Unable to open file: " << stats_filename << ::std::endl;
+        ::std::cerr << "Unable to open file: " << stats_filename << '\n';
       }
     }
 
@@ -1458,8 +1458,8 @@ private:
       next = path_predecessor[next];
     }
 
-    outFile << "// T1 = " << t1 << ::std::endl;
-    outFile << "// Tinf = " << max_dist << ::std::endl;
+    outFile << "// T1 = " << t1 << '\n';
+    outFile << "// Tinf = " << max_dist << '\n';
 
     critical_path = max_dist;
     total_work    = t1;

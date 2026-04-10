@@ -92,7 +92,7 @@ public:
   _CCCL_HOST_DEVICE operator void*() const
   {
     // static cast first to avoid MSVC warning C4312
-    return reinterpret_cast<void*>(static_cast<std::size_t>(value[0]));
+    return reinterpret_cast<void*>(static_cast<std::size_t>(value[0])); // NOLINT(performance-no-int-to-ptr)
   }
 
 #define DEFINE_OPERATOR(op)                                         \
@@ -259,7 +259,7 @@ inline std::string base_class_name(const std::string& name)
   // if the name begins with "class ", chop it off
   chop_prefix(result, "class ");
 
-  const std::size_t first_lt = result.find_first_of("<");
+  const std::size_t first_lt = result.find_first_of('<');
 
   if (first_lt < result.size())
   {
@@ -474,71 +474,71 @@ public:
   TEST##UnitTest TEST##Instance
 
 // Macro to create instances of a test for several array sizes.
-#define DECLARE_SIZED_UNITTEST(TEST)                \
-  class TEST##UnitTest : public UnitTest            \
-  {                                                 \
-  public:                                           \
-    TEST##UnitTest()                                \
-        : UnitTest(#TEST)                           \
-    {}                                              \
-    void run()                                      \
-    {                                               \
-      std::vector<size_t> sizes = get_test_sizes(); \
-      for (size_t i = 0; i != sizes.size(); ++i)    \
-      {                                             \
-        TEST(sizes[i]);                             \
-      }                                             \
-    }                                               \
-  };                                                \
+#define DECLARE_SIZED_UNITTEST(TEST)                       \
+  class TEST##UnitTest : public UnitTest                   \
+  {                                                        \
+  public:                                                  \
+    TEST##UnitTest()                                       \
+        : UnitTest(#TEST)                                  \
+    {}                                                     \
+    void run()                                             \
+    {                                                      \
+      const std::vector<size_t>& sizes = get_test_sizes(); \
+      for (size_t i = 0; i != sizes.size(); ++i)           \
+      {                                                    \
+        TEST(sizes[i]);                                    \
+      }                                                    \
+    }                                                      \
+  };                                                       \
   TEST##UnitTest TEST##Instance
 
 // Macro to create instances of a test for several data types and array sizes
-#define DECLARE_VARIABLE_UNITTEST(TEST)             \
-  class TEST##UnitTest : public UnitTest            \
-  {                                                 \
-  public:                                           \
-    TEST##UnitTest()                                \
-        : UnitTest(#TEST)                           \
-    {}                                              \
-    void run()                                      \
-    {                                               \
-      std::vector<size_t> sizes = get_test_sizes(); \
-      for (size_t i = 0; i != sizes.size(); ++i)    \
-      {                                             \
-        TEST<signed char>(sizes[i]);                \
-        TEST<unsigned char>(sizes[i]);              \
-        TEST<short>(sizes[i]);                      \
-        TEST<unsigned short>(sizes[i]);             \
-        TEST<int>(sizes[i]);                        \
-        TEST<unsigned int>(sizes[i]);               \
-        TEST<float>(sizes[i]);                      \
-        TEST<double>(sizes[i]);                     \
-      }                                             \
-    }                                               \
-  };                                                \
+#define DECLARE_VARIABLE_UNITTEST(TEST)                    \
+  class TEST##UnitTest : public UnitTest                   \
+  {                                                        \
+  public:                                                  \
+    TEST##UnitTest()                                       \
+        : UnitTest(#TEST)                                  \
+    {}                                                     \
+    void run()                                             \
+    {                                                      \
+      const std::vector<size_t>& sizes = get_test_sizes(); \
+      for (size_t i = 0; i != sizes.size(); ++i)           \
+      {                                                    \
+        TEST<signed char>(sizes[i]);                       \
+        TEST<unsigned char>(sizes[i]);                     \
+        TEST<short>(sizes[i]);                             \
+        TEST<unsigned short>(sizes[i]);                    \
+        TEST<int>(sizes[i]);                               \
+        TEST<unsigned int>(sizes[i]);                      \
+        TEST<float>(sizes[i]);                             \
+        TEST<double>(sizes[i]);                            \
+      }                                                    \
+    }                                                      \
+  };                                                       \
   TEST##UnitTest TEST##Instance
 
-#define DECLARE_INTEGRAL_VARIABLE_UNITTEST(TEST)    \
-  class TEST##UnitTest : public UnitTest            \
-  {                                                 \
-  public:                                           \
-    TEST##UnitTest()                                \
-        : UnitTest(#TEST)                           \
-    {}                                              \
-    void run()                                      \
-    {                                               \
-      std::vector<size_t> sizes = get_test_sizes(); \
-      for (size_t i = 0; i != sizes.size(); ++i)    \
-      {                                             \
-        TEST<signed char>(sizes[i]);                \
-        TEST<unsigned char>(sizes[i]);              \
-        TEST<short>(sizes[i]);                      \
-        TEST<unsigned short>(sizes[i]);             \
-        TEST<int>(sizes[i]);                        \
-        TEST<unsigned int>(sizes[i]);               \
-      }                                             \
-    }                                               \
-  };                                                \
+#define DECLARE_INTEGRAL_VARIABLE_UNITTEST(TEST)           \
+  class TEST##UnitTest : public UnitTest                   \
+  {                                                        \
+  public:                                                  \
+    TEST##UnitTest()                                       \
+        : UnitTest(#TEST)                                  \
+    {}                                                     \
+    void run()                                             \
+    {                                                      \
+      const std::vector<size_t>& sizes = get_test_sizes(); \
+      for (size_t i = 0; i != sizes.size(); ++i)           \
+      {                                                    \
+        TEST<signed char>(sizes[i]);                       \
+        TEST<unsigned char>(sizes[i]);                     \
+        TEST<short>(sizes[i]);                             \
+        TEST<unsigned short>(sizes[i]);                    \
+        TEST<int>(sizes[i]);                               \
+        TEST<unsigned int>(sizes[i]);                      \
+      }                                                    \
+    }                                                      \
+  };                                                       \
   TEST##UnitTest TEST##Instance
 
 #define DECLARE_GENERIC_UNITTEST_WITH_TYPES_AND_NAME(TEST, TYPES, NAME) \
@@ -590,7 +590,7 @@ public:
 
   void run()
   {
-    std::vector<size_t> sizes = get_test_sizes();
+    const std::vector<size_t>& sizes = get_test_sizes();
     for (size_t i = 0; i != sizes.size(); ++i)
     {
       // get the first type in the list

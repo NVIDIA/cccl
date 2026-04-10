@@ -292,13 +292,16 @@ inline constexpr bool __invoke_kernel_functor_with_config_v =
 
 template <class _Config, class _Kernel, class... _Args>
 __global__ static void
-  _CCCL_BLOCK_SIZE((::cuda::__block_size<typename _Config::hierarchy_type, block_level>(0),
-                    ::cuda::__block_size<typename _Config::hierarchy_type, block_level>(1),
-                    ::cuda::__block_size<typename _Config::hierarchy_type, block_level>(2)),
-                   (::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(0),
-                    ::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(1),
-                    ::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(2)))
-  __kernel_launcher_with_block_size(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
+// todo(dabayer): Re-enable this once cuda::launch with kernels that were compiled with .blocksareclusters directive is
+// fixed.
+//
+// _CCCL_BLOCK_SIZE((::cuda::__block_size<typename _Config::hierarchy_type, block_level>(0),
+//                   ::cuda::__block_size<typename _Config::hierarchy_type, block_level>(1),
+//                   ::cuda::__block_size<typename _Config::hierarchy_type, block_level>(2)),
+//                  (::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(0),
+//                   ::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(1),
+//                   ::cuda::__block_size<typename _Config::hierarchy_type, cluster_level>(2)))
+__kernel_launcher_with_block_size(const _CCCL_GRID_CONSTANT _Config __conf, _Kernel __kernel_fn, _Args... __args)
 {
   ::cuda::__assume_known_info<typename _Config::hierarchy_type>();
 
@@ -355,14 +358,17 @@ template <class _Kernel, class _Config, class... _Args>
   {
     if constexpr (_Hierarchy::has_level(cluster))
     {
-      using _ClusterDesc = typename _Hierarchy::template level_desc_type<cluster_level>;
-      using _ClusterExts = typename _ClusterDesc::extents_type;
-
-      if constexpr (_ClusterExts::rank_dynamic() == 0)
-      {
-        return reinterpret_cast<const void*>(::cuda::__kernel_launcher_with_block_size<_Config, _Kernel, _Args...>);
-      }
-      else
+      // todo(dabayer): Re-enable this once cuda::launch with kernels that were compiled with .blocksareclusters
+      // directive is fixed.
+      //
+      // using _ClusterDesc = typename _Hierarchy::template level_desc_type<cluster_level>;
+      // using _ClusterExts = typename _ClusterDesc::extents_type;
+      //
+      // if constexpr (_ClusterExts::rank_dynamic() == 0)
+      // {
+      //   return reinterpret_cast<const void*>(::cuda::__kernel_launcher_with_block_size<_Config, _Kernel, _Args...>);
+      // }
+      // else
       {
         return reinterpret_cast<const void*>(::cuda::__kernel_launcher_with_launch_bounds<_Config, _Kernel, _Args...>);
       }

@@ -1,4 +1,4 @@
-name: CUB Benchmark Compare
+name: Benchmark Compare
 
 defaults:
   run:
@@ -18,7 +18,7 @@ on:
         default: "--cuda 13.1 --host gcc14"
         type: string
       arch:
-        description: "CMAKE_CUDA_ARCHITECTURES value passed as ci/bench/cub.sh --arch"
+        description: "CMAKE_CUDA_ARCHITECTURES value passed as ci/bench/bench.sh --arch"
         required: false
         default: "native"
         type: string
@@ -32,8 +32,13 @@ on:
         required: false
         default: ""
         type: string
-      filters:
-        description: "Filters, space-separated if multiple (ex: '^cub.bench.copy.memcpy.base$' '.*foo.bar.*')"
+      cub_filters:
+        description: "CUB filters, space-separated (ex: '^cub.bench.copy.memcpy.base$')"
+        required: false
+        default: ""
+        type: string
+      python_filters:
+        description: "Python filters, space-separated (ex: 'compute/reduce/sum\\.py')"
         required: false
         default: ""
         type: string
@@ -65,7 +70,7 @@ on:
         default: "--cuda 13.1 --host gcc14"
         type: string
       arch:
-        description: "CMAKE_CUDA_ARCHITECTURES value passed as ci/bench/cub.sh --arch"
+        description: "CMAKE_CUDA_ARCHITECTURES value passed as ci/bench/bench.sh --arch"
         required: false
         default: "native"
         type: string
@@ -79,8 +84,13 @@ on:
         required: false
         default: ""
         type: string
-      filters:
-        description: "Filters, space-separated if multiple (ex: '^cub.bench.copy.memcpy.base$' '.*foo.bar.*')"
+      cub_filters:
+        description: "CUB filters, space-separated (ex: '^cub.bench.copy.memcpy.base$')"
+        required: false
+        default: ""
+        type: string
+      python_filters:
+        description: "Python filters, space-separated (ex: 'compute/reduce/sum\\.py')"
         required: false
         default: ""
         type: string
@@ -146,7 +156,8 @@ jobs:
           INPUT_ARCH: ${{ inputs.arch }}
           INPUT_BASE_REF: ${{ inputs.base_ref }}
           INPUT_TEST_REF: ${{ inputs.test_ref }}
-          INPUT_FILTERS: ${{ inputs.filters }}
+          INPUT_CUB_FILTERS: ${{ inputs.cub_filters }}
+          INPUT_PYTHON_FILTERS: ${{ inputs.python_filters }}
           INPUT_RAW_ARGS: ${{ inputs.raw_args }}
           INPUT_NVBENCH_ARGS: ${{ inputs.nvbench_args }}
           INPUT_NVBENCH_COMPARE_ARGS: ${{ inputs.nvbench_compare_args }}
@@ -178,8 +189,12 @@ jobs:
             mapfile -d '' -t bench_args < "${parsed_raw_args_file}"
             rm -f "${parsed_raw_args_file}"
           else
-            if [[ -z "${INPUT_BASE_REF}" || -z "${INPUT_TEST_REF}" || -z "${INPUT_FILTERS}" ]]; then
-              echo "::error::When Raw Args is empty, Base Ref, Test Ref, and Filters must all be set."
+            if [[ -z "${INPUT_BASE_REF}" || -z "${INPUT_TEST_REF}" ]]; then
+              echo "::error::When Raw Args is empty, Base Ref and Test Ref must be set."
+              exit 2
+            fi
+            if [[ -z "${INPUT_CUB_FILTERS}" && -z "${INPUT_PYTHON_FILTERS}" ]]; then
+              echo "::error::At least one of CUB Filters or Python Filters must be set."
               exit 2
             fi
 
@@ -190,22 +205,39 @@ jobs:
               bench_args+=(--arch "${INPUT_ARCH}")
             fi
 
-            declare -a parsed_filters
-            parsed_filters=()
-            parsed_filters_file="$(mktemp "${RUNNER_TEMP}/bench-filters-XXXXXX")"
-            if ! parse_quoted_args "${INPUT_FILTERS}" > "${parsed_filters_file}"; then
-              rm -f "${parsed_filters_file}"
-              exit 2
-            fi
-            mapfile -d '' -t parsed_filters < "${parsed_filters_file}"
-            rm -f "${parsed_filters_file}"
+            # Add CUB filters as --cub-filter flags.
+            if [[ -n "${INPUT_CUB_FILTERS}" ]]; then
+              declare -a parsed_cub_filters
+              parsed_cub_filters=()
+              parsed_cub_filters_file="$(mktemp "${RUNNER_TEMP}/bench-cub-filters-XXXXXX")"
+              if ! parse_quoted_args "${INPUT_CUB_FILTERS}" > "${parsed_cub_filters_file}"; then
+                rm -f "${parsed_cub_filters_file}"
+                exit 2
+              fi
+              mapfile -d '' -t parsed_cub_filters < "${parsed_cub_filters_file}"
+              rm -f "${parsed_cub_filters_file}"
 
-            if [[ "${#parsed_filters[@]}" -eq 0 ]]; then
-              echo "::error::Filters must parse to at least one argument."
-              exit 2
+              for cub_filter in "${parsed_cub_filters[@]}"; do
+                bench_args+=(--cub-filter "${cub_filter}")
+              done
             fi
 
-            bench_args+=("${parsed_filters[@]}")
+            # Add Python filters as --python-filter flags.
+            if [[ -n "${INPUT_PYTHON_FILTERS}" ]]; then
+              declare -a parsed_py_filters
+              parsed_py_filters=()
+              parsed_py_filters_file="$(mktemp "${RUNNER_TEMP}/bench-py-filters-XXXXXX")"
+              if ! parse_quoted_args "${INPUT_PYTHON_FILTERS}" > "${parsed_py_filters_file}"; then
+                rm -f "${parsed_py_filters_file}"
+                exit 2
+              fi
+              mapfile -d '' -t parsed_py_filters < "${parsed_py_filters_file}"
+              rm -f "${parsed_py_filters_file}"
+
+              for py_filter in "${parsed_py_filters[@]}"; do
+                bench_args+=(--python-filter "${py_filter}")
+              done
+            fi
 
             if [[ -n "${INPUT_NVBENCH_ARGS}" ]]; then
               bench_args+=(--nvbench-args "${INPUT_NVBENCH_ARGS}")
@@ -234,7 +266,7 @@ jobs:
 
       - name: Show resolved benchmark args
         run: |
-          echo "Resolved args passed to ci/bench/cub.sh:"
+          echo "Resolved args passed to ci/bench/bench.sh:"
           while IFS= read -r arg; do
             echo "  ${arg}"
           done <<< "${{ steps.resolve-args.outputs.resolved_args }}"
@@ -263,7 +295,7 @@ jobs:
 
           base_sha_short="${base_sha_full:0:8}"
           test_sha_short="${test_sha_full:0:8}"
-          artifact_name="bench-cub-${GPU_NAME}-${timestamp_utc}-${base_sha_short}-${test_sha_short}"
+          artifact_name="bench-${GPU_NAME}-${timestamp_utc}-${base_sha_short}-${test_sha_short}"
 
           mkdir -p "bench-artifacts"
 
@@ -289,7 +321,7 @@ jobs:
             jsondiff \
             tabulate
 
-          ./ci/bench/cub.sh "${bench_args[@]}"
+          ./ci/bench/bench.sh "${bench_args[@]}"
           EOF
           chmod +x "${ci_script}"
 

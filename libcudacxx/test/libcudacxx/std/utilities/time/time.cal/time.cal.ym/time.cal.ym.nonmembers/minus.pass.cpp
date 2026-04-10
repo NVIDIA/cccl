@@ -87,7 +87,7 @@ int main(int, char**)
       for (int j = 1; j <= 12; ++j)
       {
         months diff = year_month{y, month(i)} - year_month{y, month(j)};
-        std::cout << "i: " << i << " j: " << j << " -> " << diff.count() << std::endl;
+        std::cout << "i: " << i << " j: " << j << " -> " << diff.count() << '\n';
         assert(diff.count() == i - j);
       }
     }
