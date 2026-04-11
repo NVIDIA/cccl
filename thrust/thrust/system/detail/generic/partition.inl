@@ -22,6 +22,7 @@
 #include <thrust/remove.h>
 #include <thrust/sort.h>
 #include <thrust/system/detail/generic/partition.h>
+#include <thrust/tuple.h>
 
 #include <cuda/std/__functional/not_fn.h>
 #include <cuda/std/__iterator/advance.h>
@@ -183,44 +184,22 @@ _CCCL_HOST_DEVICE ForwardIterator partition_point(
   return thrust::find_if_not(exec, first, last, pred);
 } // end partition_point()
 
-namespace detail
-{
-struct partition_status
-{
-  bool all_t; // all true
-  bool all_f; // all false
-  bool is_p; // is partitioned
-};
-
 template <typename Predicate>
-struct is_partitioned_unary_op
+struct is_partitioned_violation_functor
 {
   Predicate pred;
 
-  template <typename T>
-  _CCCL_HOST_DEVICE partition_status operator()(const T& x) const
+  // Template operator for C++14 compatibility
+  template <typename Tuple>
+  _CCCL_HOST_DEVICE
+  bool operator()(const Tuple& t) const
   {
-    bool p = pred(x);
-    return {p, !p, true};
+    const bool lhs_p = pred(thrust::get<0>(t));
+    const bool rhs_p = pred(thrust::get<1>(t));
+
+    return (!lhs_p && rhs_p);
   }
 };
-
-struct partition_binary_op
-{
-  _CCCL_HOST_DEVICE partition_status operator()(const partition_status& a, const partition_status& b) const
-  {
-    partition_status res;
-    res.all_t = a.all_t && b.all_t;
-    res.all_f = a.all_f && b.all_f;
-
-    // A partition is valid if both sides are valid
-    // AND we don't have a 'False' on the left followed by a 'True' on the right.
-    res.is_p = a.is_p && b.is_p && !(a.all_f == false && b.all_t == false);
-
-    return res;
-  }
-};
-} // namespace detail
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE bool
@@ -231,12 +210,15 @@ is_partitioned(thrust::execution_policy<DerivedPolicy>& exec, InputIterator firs
     return true;
   }
 
-  detail::partition_status identity = {true, true, true};
+  auto zip_first = thrust::make_zip_iterator(thrust::make_tuple(first, first + 1));
+  auto zip_last  = thrust::make_zip_iterator(thrust::make_tuple(last, last));
 
-  auto result = thrust::transform_reduce(
-    exec, first, last, detail::is_partitioned_unary_op<Predicate>{pred}, identity, detail::partition_binary_op());
+  auto iter = thrust::find_if(exec,
+                              zip_first,
+                              zip_last,
+                              is_partitioned_violation_functor<Predicate>{pred});
 
-  return result.is_p;
+  return thrust::get<1>(iter.get_iterator_tuple()) == last;
 } // end is_partitioned()
 } // namespace system::detail::generic
 THRUST_NAMESPACE_END
