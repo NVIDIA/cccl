@@ -631,6 +631,55 @@ struct AgentTopK
     }
   }
 
+  // Performs the last-block coordination after histogram accumulation: ensures global visibility,
+  // detects the last finishing block, runs the prefix sum, identifies the k-th bucket, and resets
+  // the histogram for the next pass. The caller-supplied counter_update_fn runs on thread 0 of the
+  // last block to update pass-specific counter state.
+  template <typename CounterUpdateFn>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void finalize_pass(
+    Counter<key_in_t, OffsetT, OutOffsetT>* counter,
+    OffsetT* histogram,
+    OutOffsetT current_k,
+    int pass,
+    bool is_last_pass,
+    CounterUpdateFn counter_update_fn)
+  {
+    // Ensure all writes to the global memory-histogram are visible to all threads before
+    // proceeding to compute the prefix sum over the histogram.
+    __threadfence();
+
+    // Identify the last block in the grid to perform the prefix sum over the histogram
+    bool is_last_block = false;
+    if (threadIdx.x == 0)
+    {
+      unsigned int finished = atomicInc(&counter->finished_block_cnt, gridDim.x - 1);
+      is_last_block         = (finished == (gridDim.x - 1));
+    }
+
+    // syncthreads ensures that the BlockLoad for loading the global histogram can reuse the temporary storage
+    if (__syncthreads_or(is_last_block))
+    {
+      if (threadIdx.x == 0)
+      {
+        counter_update_fn();
+      }
+
+      // Compute prefix sum over the histogram's bin counts
+      compute_bin_offsets(histogram);
+
+      // Make sure the prefix sum has been written to shared memory before choose_bucket()
+      __syncthreads();
+
+      // Identify the bucket that the k-th item falls into
+      choose_bucket(counter, current_k, pass);
+
+      if (!is_last_pass)
+      {
+        init_histograms(histogram);
+      }
+    }
+  }
+
   _CCCL_DEVICE _CCCL_FORCEINLINE void invoke_last_filter(
     key_in_t* in_buf, OffsetT* in_idx_buf, Counter<key_in_t, OffsetT, OutOffsetT>* counter, OutOffsetT k, int pass)
   {
@@ -696,7 +745,8 @@ struct AgentTopK
     OffsetT* out_idx_buf,
     Counter<key_in_t, OffsetT, OutOffsetT>* counter,
     OffsetT* histogram,
-    int pass)
+    int pass,
+    bool is_last_pass)
   {
     const OutOffsetT current_k = counter->k;
     const OffsetT current_len  = counter->len;
@@ -736,74 +786,24 @@ struct AgentTopK
     filter_and_histogram(
       in_buf, in_idx_buf, out_buf, out_idx_buf, previous_len, counter, histogram, early_stop, load_from_original_input);
 
-    // We need this `__threadfence()` to make sure all writes to the global memory-histogram are visible to all
-    // threads before we proceed to compute the prefix sum over the histogram.
-    __threadfence();
-
-    // Identify the last block in the grid to perform the prefix sum over the histogram identify the bin that the
-    // k-th item falls into
-    bool is_last_block = false;
-    if (threadIdx.x == 0)
-    {
-      unsigned int finished = atomicInc(&counter->finished_block_cnt, gridDim.x - 1);
-      is_last_block         = (finished == (gridDim.x - 1));
-    }
-
-    // syncthreads ensures that the BlockLoad for loading the global histogram can reuse the temporary storage
-    if (__syncthreads_or(is_last_block))
-    {
-      if (threadIdx.x == 0)
+    finalize_pass(counter, histogram, current_k, pass, is_last_pass, [counter, current_len, early_stop] {
+      if (early_stop)
       {
-        // If we have found the top-k items already, we can short-circuit subsequent passes
-        if (early_stop)
-        {
-          // Signal subsequent passes to skip processing
-          counter->previous_len = 0;
-          counter->len          = 0;
-        }
-        else
-        {
-          // The number of output-candidates of the current pass become the input size of the next pass
-          counter->previous_len = current_len;
-
-          // Reset the counter used to coordinate writes to the output buffer
-          // TODO (elstehle): This part can be skipped during the last pass.
-          counter->filter_cnt = 0;
-        }
-      }
-
-      // Compute prefix sum over the histogram's bin counts
-      compute_bin_offsets(histogram);
-
-      // Make sure the prefix sum has been written to shared memory before choose_bucket()
-      __syncthreads();
-
-      // Identify the bucket that the bin that the k-th item falls into
-      choose_bucket(counter, current_k, pass);
-
-      // Reset histogram for the next pass
-      // TODO: Refactor calc_start_bit, calc_mask, and calc_num_passes to uniformly work with
-      // total_bits (passed as a kernel parameter) instead of sizeof(KeyT), then use a single
-      // unconditional path for both fundamental and non-fundamental types.
-      if constexpr (detail::radix::can_twiddle<key_in_t>)
-      {
-        constexpr int num_passes = calc_num_passes<key_in_t>(bits_per_pass);
-        if (pass != num_passes - 1)
-        {
-          init_histograms(histogram);
-        }
+        counter->previous_len = 0;
+        counter->len          = 0;
       }
       else
       {
-        init_histograms(histogram);
+        counter->previous_len = current_len;
+        counter->filter_cnt   = 0;
       }
-    }
+    });
   }
 
   // Histogram-only pass: computes the histogram over the full input without filtering.
   // Used for the first radix pass before any candidates have been identified.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  invoke_histogram_only(Counter<key_in_t, OffsetT, OutOffsetT>* counter, OffsetT* histogram, int pass)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void invoke_histogram_only(
+    Counter<key_in_t, OffsetT, OutOffsetT>* counter, OffsetT* histogram, int pass, bool is_last_pass)
   {
     // Initialize shared memory histogram
     init_histograms(temp_storage.histogram);
@@ -822,53 +822,10 @@ struct AgentTopK
     // Merge the locally aggregated histogram into the global histogram
     merge_histograms(histogram);
 
-    // We need this `__threadfence()` to make sure all writes to the global memory-histogram are visible to all
-    // threads before we proceed to compute the prefix sum over the histogram.
-    __threadfence();
-
-    // Identify the last block in the grid to perform the prefix sum over the histogram and identify the bin that
-    // the k-th item falls into
-    bool is_last_block = false;
-    if (threadIdx.x == 0)
-    {
-      unsigned int finished = atomicInc(&counter->finished_block_cnt, gridDim.x - 1);
-      is_last_block         = (finished == (gridDim.x - 1));
-    }
-
-    if (__syncthreads_or(is_last_block))
-    {
-      if (threadIdx.x == 0)
-      {
-        counter->previous_len = num_items;
-        counter->filter_cnt   = 0;
-      }
-
-      // Compute prefix sum over the histogram's bin counts
-      compute_bin_offsets(histogram);
-
-      // Make sure the prefix sum has been written to shared memory before choose_bucket()
-      __syncthreads();
-
-      // Identify the bucket that the bin that the k-th item falls into
-      choose_bucket(counter, k, pass);
-
-      // Reset histogram for the next pass
-      // TODO: Refactor calc_start_bit, calc_mask, and calc_num_passes to uniformly work with
-      // total_bits (passed as a kernel parameter) instead of sizeof(KeyT), then use a single
-      // unconditional path for both fundamental and non-fundamental types.
-      if constexpr (detail::radix::is_fundamental_type_v<key_in_t>)
-      {
-        constexpr int num_passes = calc_num_passes<key_in_t>(bits_per_pass);
-        if (pass != num_passes - 1)
-        {
-          init_histograms(histogram);
-        }
-      }
-      else
-      {
-        init_histograms(histogram);
-      }
-    }
+    finalize_pass(counter, histogram, k, pass, is_last_pass, [counter, this] {
+      counter->previous_len = num_items;
+      counter->filter_cnt   = 0;
+    });
   }
 };
 } // namespace detail::topk

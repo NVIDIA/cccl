@@ -30,6 +30,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/swap.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -264,7 +265,8 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     _CCCL_GRID_CONSTANT const OffsetT buffer_length,
     ExtractBinOpT extract_bin_op,
     IdentifyCandidatesOpT identify_candidates_op,
-    _CCCL_GRID_CONSTANT const int pass)
+    _CCCL_GRID_CONSTANT const int pass,
+    _CCCL_GRID_CONSTANT const bool is_last_pass)
 {
   static constexpr topk_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
   using agent_topk_policy_t =
@@ -296,7 +298,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     buffer_length,
     extract_bin_op,
     identify_candidates_op)
-    .invoke_filter_and_histogram(in_buf, in_idx_buf, out_buf, out_idx_buf, counter, histogram, pass);
+    .invoke_filter_and_histogram(in_buf, in_idx_buf, out_buf, out_idx_buf, counter, histogram, pass, is_last_pass);
 }
 
 template <typename PolicySelector,
@@ -323,7 +325,8 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     _CCCL_GRID_CONSTANT const OutOffsetT k,
     _CCCL_GRID_CONSTANT const OffsetT buffer_length,
     ExtractBinOpT extract_bin_op,
-    _CCCL_GRID_CONSTANT const int pass)
+    _CCCL_GRID_CONSTANT const int pass,
+    _CCCL_GRID_CONSTANT const bool is_last_pass)
 {
   static constexpr topk_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
   using agent_topk_policy_t =
@@ -356,7 +359,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     buffer_length,
     extract_bin_op,
     identify_candidates_op_t{})
-    .invoke_histogram_only(counter, histogram, pass);
+    .invoke_histogram_only(counter, histogram, pass, is_last_pass);
 }
 
 template <typename PolicySelector,
@@ -594,10 +597,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 #endif // CUB_DEBUG_LOG
 
     // Initialize address variables
-    counter_t* counter   = static_cast<counter_t*>(allocations[0]);
-    OffsetT* histogram   = static_cast<decltype(histogram)>(allocations[1]);
-    key_in_t* out_buf    = nullptr;
-    OffsetT* out_idx_buf = nullptr;
+    counter_t* counter = static_cast<counter_t*>(allocations[0]);
+    OffsetT* histogram = static_cast<decltype(histogram)>(allocations[1]);
 
     // Pass 0: dedicated histogram-only kernel over the full input
     {
@@ -635,28 +636,37 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                     k,
                     candidate_buffer_length,
                     extract_op,
-                    0)))
+                    0,
+                    num_passes == 1)))
       {
         return error;
       }
     }
 
     // Passes 1..num_passes-1: fused filter + histogram kernel
-    key_in_t* in_buf    = nullptr;
-    OffsetT* in_idx_buf = nullptr;
-    int pass            = 1;
+    // Initialize buffers "one swap ahead" so that the first swap produces the correct assignment for pass 1
+    key_in_t* in_buf     = static_cast<key_in_t*>(allocations[2]);
+    key_in_t* out_buf    = static_cast<key_in_t*>(allocations[3]);
+    OffsetT* in_idx_buf  = nullptr;
+    OffsetT* out_idx_buf = nullptr;
+    if constexpr (!keys_only)
+    {
+      in_idx_buf  = static_cast<OffsetT*>(allocations[4]);
+      out_idx_buf = static_cast<OffsetT*>(allocations[5]);
+    }
+
+    int pass = 1;
     for (; pass < num_passes; pass++)
     {
-      extract_bin_op extract_op(pass, total_bits, decomposer);
-      identify_candidates_op identify_op(&counter->kth_key_bits, pass, total_bits, decomposer);
-
-      in_buf  = static_cast<key_in_t*>(pass % 2 == 0 ? allocations[2] : allocations[3]);
-      out_buf = static_cast<key_in_t*>(pass % 2 == 0 ? allocations[3] : allocations[2]);
+      using ::cuda::std::swap;
+      swap(in_buf, out_buf);
       if constexpr (!keys_only)
       {
-        in_idx_buf  = pass <= 1 ? nullptr : static_cast<OffsetT*>(pass % 2 == 0 ? allocations[4] : allocations[5]);
-        out_idx_buf = static_cast<OffsetT*>(pass % 2 == 0 ? allocations[5] : allocations[4]);
+        swap(in_idx_buf, out_idx_buf);
       }
+
+      extract_bin_op extract_op(pass, total_bits, decomposer);
+      identify_candidates_op identify_op(&counter->kth_key_bits, pass, total_bits, decomposer);
 
       if (const auto error = CubDebug(
             launcher_factory(topk_grid_size, block_threads, 0, stream)
@@ -676,7 +686,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                     candidate_buffer_length,
                     extract_op,
                     identify_op,
-                    pass)))
+                    pass,
+                    pass == num_passes - 1)))
       {
         return error;
       }
