@@ -36,6 +36,10 @@
 //! that allocates device memory in stream order.
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
+// clang complains about missing braces in CUmemLocation constructor but GCC complains if we add them
+
 //! @rst
 //! .. _libcudacxx-memory-resource-async:
 //!
@@ -155,6 +159,8 @@ private:
 static_assert(::cuda::mr::synchronous_resource_with<device_memory_pool_ref, ::cuda::mr::device_accessible>, "");
 
 static_assert(::cuda::mr::resource_with<device_memory_pool, ::cuda::mr::device_accessible>, "");
+
+_CCCL_DIAG_POP
 
 _CCCL_END_NAMESPACE_CUDA
 

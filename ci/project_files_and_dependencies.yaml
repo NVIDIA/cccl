@@ -180,12 +180,40 @@ projects:
     full_dependencies: []
     include_regexes: ["nvrtcc/"]
 
+  # This is a dummy project, and only really serves to encode dependencies. Any time any
+  # of the C/C++ projects are modified, we want to launch one (and only one) clang-tidy
+  # job for the whole of CCCL.
+  tidy:
+    name: "clang-tidy"
+    matrix_project: "tidy"
+    full_dependencies:
+      - libcudacxx_public
+      - libcudacxx_internal
+      - cub_public
+      - cub_internal
+      - thrust_public
+      - thrust_internal
+      - cudax_public
+      - cudax_internal
+      - cccl_c_parallel_public
+      - cccl_c_parallel_internal
+      - cccl_c_stf
+      - stdpar
+      - c2h
+      - nvrtcc
+    include_regexes: [".clang-tidy"]
+
 # Files matching any of these regexes will be ignored globally.
 ignore_regexes:
   - '.+\.md$'
   - '\.branch_notes/'
   - '\.clang-format'
   - '\.clangd'
+  # Do not add .clang-tidy to this list. If we modify .clang-tidy to either add or remove
+  # a check we still want CI to run the clang-tidy job even if it results in no C/C++ code
+  # changes.
+  #
+  # - '\.clang-tidy'
   - '\.devcontainer/img'
   - '\.git-blame-ignore-revs'
   - '\.github/actions/docs-build'

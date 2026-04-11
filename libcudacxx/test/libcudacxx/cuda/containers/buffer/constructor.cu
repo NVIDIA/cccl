@@ -209,14 +209,14 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
     static_assert(!cuda::std::is_nothrow_copy_constructible<Buffer>::value, "");
     { // can be copy constructed from empty input
       const Buffer input{stream, resource, 0, cuda::no_init};
-      Buffer buf(input);
+      Buffer buf(input); // NOLINT(performance-unnecessary-copy-initialization)
       CCCLRT_CHECK(buf.empty());
       CCCLRT_CHECK(buf.alignment() == input.alignment());
     }
 
     { // can be copy constructed from non-empty input
       const Buffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Buffer buf(input);
+      Buffer buf(input); // NOLINT(performance-unnecessary-copy-initialization)
       CCCLRT_CHECK(buf.alignment() == input.alignment());
       CCCLRT_CHECK(is_pointer_aligned(buf.data(), buf.alignment()));
       CCCLRT_CHECK(check_offseted_pointer(buf.data()));
@@ -228,7 +228,7 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
       const ::cuda::std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment / 2;
       const auto env                      = ::cuda::std::execution::prop{::cuda::allocation_alignment, alignment};
       const Buffer input{stream, resource, 5, cuda::no_init, env};
-      Buffer buf(input);
+      Buffer buf(input); // NOLINT(performance-unnecessary-copy-initialization)
       CCCLRT_CHECK(buf.alignment() == alignment);
       CCCLRT_CHECK(input.alignment() == alignment);
       CCCLRT_CHECK(cuda::allocation_alignment(buf) == alignment);

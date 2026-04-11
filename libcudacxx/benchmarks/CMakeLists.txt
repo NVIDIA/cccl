@@ -5,7 +5,19 @@ cccl_get_nvbench_helper()
 set(benches_root "${CMAKE_CURRENT_LIST_DIR}")
 
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-  message(FATAL_ERROR "libcu++ benchmarks must be built in release mode.")
+  set(message_type FATAL_ERROR)
+  if (CCCL_ENABLE_CLANG_TIDY)
+    # We are here because CI has force-enabled clang-tidy. We must use a debug build for
+    # this because certain clang-tidy checks (such as out of bounds or clang static
+    # analyzer) work better when they see assert()'s. In this case we don't actually
+    # intend to run any of the benchmarks, we just need them to be compilable, so a simple
+    # warning is enough.
+    #
+    # We don't ignore this outright (by making it say, DEBUG or VERBOSE), because it's
+    # possible that a user may accidentally stumble into enabling the option.
+    set(message_type WARNING)
+  endif()
+  message(${message_type} "libcu++ benchmarks must be built in release mode.")
 endif()
 
 if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
@@ -42,8 +54,12 @@ function(add_bench target_name bench_name bench_src)
   set(bench_target ${bench_name})
   set(${target_name} ${bench_target} PARENT_SCOPE)
 
-  add_executable(${bench_target} "${bench_src}")
-  cccl_configure_target(${bench_target} DIALECT 17)
+  cccl_add_executable(
+    ${bench_target}
+    NO_METATARGETS
+    DIALECT 17
+    SOURCES "${bench_src}"
+  )
   target_link_libraries(
     ${bench_target}
     PRIVATE libcudacxx::libcudacxx cccl.nvbench_helper nvbench::main
@@ -65,7 +81,10 @@ function(add_bench_dir bench_dir)
     add_bench(base_bench_target ${base_bench_name} "${bench_src}")
     add_dependencies(${benches_meta_target} ${base_bench_target})
     target_compile_definitions(${base_bench_target} PRIVATE TUNE_BASE=1)
-    target_compile_options(${base_bench_target} PRIVATE "--extended-lambda")
+    target_compile_options(
+      ${base_bench_target}
+      PRIVATE "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>"
+    )
     # benchmarking
     register_cccl_benchmark("${bench_name}" "")
   endforeach()

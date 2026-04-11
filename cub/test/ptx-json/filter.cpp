@@ -27,7 +27,7 @@ int main(int argc, char** argv)
 
   auto json = cub::detail::ptx_json::parse(argv[2], buffer);
 
-  std::cout << json.dump() << std::endl;
+  std::cout << json.dump() << '\n';
 
   return 0;
 }

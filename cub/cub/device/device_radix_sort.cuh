@@ -32,24 +32,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::radix_sort
-{
-struct get_tuning_query_t
-{};
-
-template <class Derived>
-struct tuning
-{
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_tuning_query_t&) const noexcept -> Derived
-  {
-    return static_cast<const Derived&>(*this);
-  }
-};
-
-struct default_tuning : tuning<default_tuning>
-{};
-} // namespace detail::radix_sort
-
 //! @rst
 //! DeviceRadixSort provides device-wide, parallel operations for
 //! computing a radix sort across a sequence of data items residing
@@ -513,7 +495,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -577,14 +559,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -606,6 +588,129 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
+  }
+
+  //! @rst
+  //! Sorts key-value pairs into ascending order using :math:`\approx 2N` auxiliary storage.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The contents of the input data are not altered by the sorting operation.
+  //! - Pointers to contiguous memory must be used; iterators are not currently
+  //!   supported.
+  //! - A bit subrange ``[begin_bit, end_bit)`` is provided to specify which
+  //!   key bits are used for sorting.
+  //!
+  //! Snippet
+  //! --------------------------------------------------
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-pairs-decomposer-bits-env
+  //!     :end-before: example-end radix-sort-pairs-decomposer-bits-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** KeyT type
+  //!
+  //! @tparam ValueT
+  //!   **[inferred]** ValueT type
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam DecomposerT
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
+  //!   ``KeyT`` into a tuple of references to its constituent arithmetic types
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type
+  //!
+  //! @param[in] d_keys_in
+  //!   Pointer to the input data of key data to sort
+  //!
+  //! @param[out] d_keys_out
+  //!   Pointer to the sorted output sequence of key data
+  //!
+  //! @param[in] d_values_in
+  //!   Pointer to the corresponding input sequence of associated value items
+  //!
+  //! @param[out] d_values_out
+  //!   Pointer to the correspondingly-reordered output sequence of associated
+  //!   value items
+  //!
+  //! @param[in] num_items
+  //!   Number of items to sort
+  //!
+  //! @param[in] decomposer
+  //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
+  //!   references to its constituent arithmetic types
+  //!
+  //! @param[in] begin_bit
+  //!   The least-significant bit index (inclusive) needed for key comparison
+  //!
+  //! @param[in] end_bit
+  //!   The most-significant bit index (exclusive) needed for key comparison
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <typename KeyT,
+            typename ValueT,
+            typename NumItemsT,
+            typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairs(
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    NumItemsT num_items,
+    DecomposerT decomposer,
+    int begin_bit,
+    int end_bit,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+
+    static_assert(decomposer_check,
+                  "DecomposerT must be a callable object returning a tuple of references to "
+                  "arithmetic types");
+
+    if constexpr (decomposer_check)
+    {
+      return detail::dispatch_with_env(
+        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+          constexpr bool is_overwrite_okay = false;
+          DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+          DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
+
+          return detail::radix_sort::dispatch<SortOrder::Ascending>(
+            storage,
+            bytes,
+            d_keys,
+            d_values,
+            static_cast<offset_t>(num_items),
+            begin_bit,
+            end_bit,
+            is_overwrite_okay,
+            stream,
+            decomposer);
+        });
+    }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -666,7 +771,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -720,14 +825,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -747,6 +852,119 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
+  }
+
+  //! @rst
+  //! Sorts key-value pairs into ascending order using :math:`\approx 2N` auxiliary storage.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The contents of the input data are not altered by the sorting operation.
+  //! - Pointers to contiguous memory must be used; iterators are not currently
+  //!   supported.
+  //!
+  //! Snippet
+  //! --------------------------------------------------
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-pairs-decomposer-env
+  //!     :end-before: example-end radix-sort-pairs-decomposer-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** KeyT type
+  //!
+  //! @tparam ValueT
+  //!   **[inferred]** ValueT type
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam DecomposerT
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
+  //!   ``KeyT`` into a tuple of references to its constituent arithmetic types
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type
+  //!
+  //! @param[in] d_keys_in
+  //!   Pointer to the input data of key data to sort
+  //!
+  //! @param[out] d_keys_out
+  //!   Pointer to the sorted output sequence of key data
+  //!
+  //! @param[in] d_values_in
+  //!   Pointer to the corresponding input sequence of associated value items
+  //!
+  //! @param[out] d_values_out
+  //!   Pointer to the correspondingly-reordered output sequence of associated
+  //!   value items
+  //!
+  //! @param[in] num_items
+  //!   Number of items to sort
+  //!
+  //! @param[in] decomposer
+  //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
+  //!   references to its constituent arithmetic types
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <typename KeyT,
+            typename ValueT,
+            typename NumItemsT,
+            typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairs(
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    NumItemsT num_items,
+    DecomposerT decomposer,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+
+    static_assert(decomposer_check,
+                  "DecomposerT must be a callable object returning a tuple of references to "
+                  "arithmetic types");
+
+    if constexpr (decomposer_check)
+    {
+      return detail::dispatch_with_env(
+        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+          constexpr bool is_overwrite_okay = false;
+          DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+          DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
+
+          return detail::radix_sort::dispatch<SortOrder::Ascending>(
+            storage,
+            bytes,
+            d_keys,
+            d_values,
+            static_cast<offset_t>(num_items),
+            0,
+            detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+            is_overwrite_okay,
+            stream,
+            decomposer);
+        });
+    }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -1047,7 +1265,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -1097,14 +1315,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
@@ -1117,6 +1335,109 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
+  }
+
+  //! @rst
+  //! Sorts key-value pairs into ascending order using :math:`\approx N` auxiliary storage.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The sorting operation is given a pair of key buffers and a corresponding
+  //!   pair of associated value buffers. Each pair is managed by a DoubleBuffer
+  //!   structure that indicates which of the two buffers is "current" (and thus
+  //!   contains the input data to be sorted).
+  //! - The contents of both buffers within each pair may be altered by the
+  //!   sorting operation.
+  //!
+  //! Snippet
+  //! --------------------------------------------------
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-pairs-db-decomposer-env
+  //!     :end-before: example-end radix-sort-pairs-db-decomposer-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** KeyT type
+  //!
+  //! @tparam ValueT
+  //!   **[inferred]** ValueT type
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam DecomposerT
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
+  //!   ``KeyT`` into a tuple of references to its constituent arithmetic types
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type
+  //!
+  //! @param[in,out] d_keys
+  //!   Reference to the double-buffer of keys
+  //!
+  //! @param[in,out] d_values
+  //!   Double-buffer of values
+  //!
+  //! @param[in] num_items
+  //!   Number of items to sort
+  //!
+  //! @param[in] decomposer
+  //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
+  //!   references to its constituent arithmetic types
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <typename KeyT,
+            typename ValueT,
+            typename NumItemsT,
+            typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairs(
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    NumItemsT num_items,
+    DecomposerT decomposer,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+
+    static_assert(decomposer_check,
+                  "DecomposerT must be a callable object returning a tuple of references to "
+                  "arithmetic types");
+
+    if constexpr (decomposer_check)
+    {
+      return detail::dispatch_with_env(
+        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+          return detail::radix_sort::dispatch<SortOrder::Ascending>(
+            storage,
+            bytes,
+            d_keys,
+            d_values,
+            static_cast<offset_t>(num_items),
+            0,
+            detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+            true,
+            stream,
+            decomposer);
+        });
+    }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -1186,7 +1507,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -1246,14 +1567,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
@@ -1268,6 +1589,118 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
+  }
+
+  //! @rst
+  //! Sorts key-value pairs into ascending order using :math:`\approx N` auxiliary storage.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The sorting operation is given a pair of key buffers and a corresponding
+  //!   pair of associated value buffers. Each pair is managed by a DoubleBuffer
+  //!   structure.
+  //! - The contents of both buffers within each pair may be altered by the
+  //!   sorting operation.
+  //! - A bit subrange ``[begin_bit, end_bit)`` is provided to specify which
+  //!   key bits are used for sorting.
+  //!
+  //! Snippet
+  //! --------------------------------------------------
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-pairs-db-decomposer-bits-env
+  //!     :end-before: example-end radix-sort-pairs-db-decomposer-bits-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** KeyT type
+  //!
+  //! @tparam ValueT
+  //!   **[inferred]** ValueT type
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam DecomposerT
+  //!   **[inferred]** Type of a callable object responsible for decomposing a
+  //!   ``KeyT`` into a tuple of references to its constituent arithmetic types
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type
+  //!
+  //! @param[in,out] d_keys
+  //!   Reference to the double-buffer of keys
+  //!
+  //! @param[in,out] d_values
+  //!   Double-buffer of values
+  //!
+  //! @param[in] num_items
+  //!   Number of items to sort
+  //!
+  //! @param[in] decomposer
+  //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
+  //!   references to its constituent arithmetic types
+  //!
+  //! @param[in] begin_bit
+  //!   The least-significant bit index (inclusive) needed for key comparison
+  //!
+  //! @param[in] end_bit
+  //!   The most-significant bit index (exclusive) needed for key comparison
+  //!
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  template <typename KeyT,
+            typename ValueT,
+            typename NumItemsT,
+            typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortPairs(
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    NumItemsT num_items,
+    DecomposerT decomposer,
+    int begin_bit,
+    int end_bit,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+
+    static_assert(decomposer_check,
+                  "DecomposerT must be a callable object returning a tuple of references to "
+                  "arithmetic types");
+
+    if constexpr (decomposer_check)
+    {
+      return detail::dispatch_with_env(
+        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+          return detail::radix_sort::dispatch<SortOrder::Ascending>(
+            storage,
+            bytes,
+            d_keys,
+            d_values,
+            static_cast<offset_t>(num_items),
+            begin_bit,
+            end_bit,
+            true,
+            stream,
+            decomposer);
+        });
+    }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -1577,7 +2010,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -1643,14 +2076,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -1672,6 +2105,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -1732,7 +2166,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -1788,14 +2222,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -1815,6 +2249,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -2115,7 +2550,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -2166,14 +2601,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
@@ -2186,6 +2621,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -2255,7 +2691,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -2316,14 +2752,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
@@ -2338,6 +2774,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @}
@@ -2620,7 +3057,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -2676,14 +3113,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -2705,6 +3142,96 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
+  }
+
+  //! @rst
+  //! Sorts keys into ascending order using :math:`\approx 2N` auxiliary storage.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The contents of the input data are not altered by the sorting operation.
+  //! - A bit subrange ``[begin_bit, end_bit)`` is provided to specify which key bits are used for sorting.
+  //!
+  //! Snippet
+  //! --------------------------------------------------
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-keys-custom-decomposer
+  //!     :end-before: example-end radix-sort-keys-custom-decomposer
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-keys-decomposer-bits-env
+  //!     :end-before: example-end radix-sort-keys-decomposer-bits-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** KeyT type
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //! @tparam DecomposerT
+  //!   **[inferred]** Decomposer type
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type
+  //!
+  //! @param[in] d_keys_in Pointer to input key data
+  //! @param[out] d_keys_out Pointer to sorted output key data
+  //! @param[in] num_items Number of items to sort
+  //! @param[in] decomposer Decomposer callable
+  //! @param[in] begin_bit Least-significant bit index (inclusive)
+  //! @param[in] end_bit Most-significant bit index (exclusive)
+  //! @param[in] env **[optional]** Execution environment
+  template <typename KeyT,
+            typename NumItemsT,
+            typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeys(
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    NumItemsT num_items,
+    DecomposerT decomposer,
+    int begin_bit,
+    int end_bit,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    static_assert(decomposer_check,
+                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
+    if constexpr (decomposer_check)
+    {
+      return detail::dispatch_with_env(
+        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+          constexpr bool is_overwrite_okay = false;
+          DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+          DoubleBuffer<NullType> d_values;
+          return detail::radix_sort::dispatch<SortOrder::Ascending>(
+            storage,
+            bytes,
+            d_keys,
+            d_values,
+            static_cast<offset_t>(num_items),
+            begin_bit,
+            end_bit,
+            is_overwrite_okay,
+            stream,
+            decomposer);
+        });
+    }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -2763,7 +3290,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -2809,14 +3336,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -2836,6 +3363,87 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
+  }
+
+  //! @rst
+  //! Sorts keys into ascending order using :math:`\approx 2N` auxiliary storage.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The contents of the input data are not altered by the sorting operation.
+  //!
+  //! Snippet
+  //! --------------------------------------------------
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-keys-custom-decomposer
+  //!     :end-before: example-end radix-sort-keys-custom-decomposer
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-keys-decomposer-env
+  //!     :end-before: example-end radix-sort-keys-decomposer-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** KeyT type
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //! @tparam DecomposerT
+  //!   **[inferred]** Decomposer type
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type
+  //!
+  //! @param[in] d_keys_in Pointer to input key data
+  //! @param[out] d_keys_out Pointer to sorted output key data
+  //! @param[in] num_items Number of items to sort
+  //! @param[in] decomposer Decomposer callable
+  //! @param[in] env **[optional]** Execution environment
+  template <typename KeyT,
+            typename NumItemsT,
+            typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  SortKeys(const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, DecomposerT decomposer, EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    static_assert(decomposer_check,
+                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
+    if constexpr (decomposer_check)
+    {
+      return detail::dispatch_with_env(
+        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+          constexpr bool is_overwrite_okay = false;
+          DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+          DoubleBuffer<NullType> d_values;
+          return detail::radix_sort::dispatch<SortOrder::Ascending>(
+            storage,
+            bytes,
+            d_keys,
+            d_values,
+            static_cast<offset_t>(num_items),
+            0,
+            detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+            is_overwrite_okay,
+            stream,
+            decomposer);
+        });
+    }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3110,7 +3718,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -3154,14 +3762,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       DoubleBuffer<NullType> d_values;
@@ -3176,6 +3784,84 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
+  }
+
+  //! @rst
+  //! Sorts keys into ascending order using :math:`\approx N` auxiliary storage.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The sorting operation is given a key buffer managed by a DoubleBuffer structure.
+  //!
+  //! Snippet
+  //! --------------------------------------------------
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-keys-custom-decomposer
+  //!     :end-before: example-end radix-sort-keys-custom-decomposer
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-keys-db-decomposer-env
+  //!     :end-before: example-end radix-sort-keys-db-decomposer-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** KeyT type
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //! @tparam DecomposerT
+  //!   **[inferred]** Decomposer type
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type
+  //!
+  //! @param[in,out] d_keys Reference to the double-buffer of keys
+  //! @param[in] num_items Number of items to sort
+  //! @param[in] decomposer Decomposer callable
+  //! @param[in] env **[optional]** Execution environment
+  template <typename KeyT,
+            typename NumItemsT,
+            typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  SortKeys(DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    static_assert(decomposer_check,
+                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
+    if constexpr (decomposer_check)
+    {
+      return detail::dispatch_with_env(
+        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+          DoubleBuffer<NullType> d_values;
+          return detail::radix_sort::dispatch<SortOrder::Ascending>(
+            storage,
+            bytes,
+            d_keys,
+            d_values,
+            static_cast<offset_t>(num_items),
+            0,
+            detail::radix::traits_t<KeyT>::default_end_bit(decomposer),
+            true,
+            stream,
+            decomposer);
+        });
+    }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3238,7 +3924,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -3292,14 +3978,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       DoubleBuffer<NullType> d_values;
@@ -3316,6 +4002,87 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
+  }
+
+  //! @rst
+  //! Sorts keys into ascending order using :math:`\approx N` auxiliary storage.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - The sorting operation is given a key buffer managed by a DoubleBuffer structure.
+  //! - A bit subrange ``[begin_bit, end_bit)`` is provided to specify which key bits are used for sorting.
+  //!
+  //! Snippet
+  //! --------------------------------------------------
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-keys-custom-decomposer
+  //!     :end-before: example-end radix-sort-keys-custom-decomposer
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin radix-sort-keys-db-decomposer-bits-env
+  //!     :end-before: example-end radix-sort-keys-db-decomposer-bits-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeyT
+  //!   **[inferred]** KeyT type
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //! @tparam DecomposerT
+  //!   **[inferred]** Decomposer type
+  //! @tparam EnvT
+  //!   **[inferred]** Environment type
+  //!
+  //! @param[in,out] d_keys Reference to the double-buffer of keys
+  //! @param[in] num_items Number of items to sort
+  //! @param[in] decomposer Decomposer callable
+  //! @param[in] begin_bit Least-significant bit index (inclusive)
+  //! @param[in] end_bit Most-significant bit index (exclusive)
+  //! @param[in] env **[optional]** Execution environment
+  template <typename KeyT,
+            typename NumItemsT,
+            typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t SortKeys(
+    DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, int begin_bit, int end_bit, EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    static_assert(decomposer_check,
+                  "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
+    if constexpr (decomposer_check)
+    {
+      return detail::dispatch_with_env(
+        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+          DoubleBuffer<NullType> d_values;
+          return detail::radix_sort::dispatch<SortOrder::Ascending>(
+            storage,
+            bytes,
+            d_keys,
+            d_values,
+            static_cast<offset_t>(num_items),
+            begin_bit,
+            end_bit,
+            true,
+            stream,
+            decomposer);
+        });
+    }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst Sorts keys into descending order using :math:`\approx 2N` auxiliary storage.
@@ -3592,7 +4359,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -3649,14 +4416,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -3678,6 +4445,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3733,7 +4501,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -3780,14 +4548,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -3807,6 +4575,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -4080,7 +4849,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -4125,14 +4894,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       DoubleBuffer<NullType> d_values;
@@ -4147,6 +4916,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -4209,7 +4979,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -4264,14 +5034,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       DoubleBuffer<NullType> d_values;
@@ -4288,6 +5058,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @}

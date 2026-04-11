@@ -29,6 +29,8 @@ typedef struct cccl_device_scan_build_result_t
   void* cubin;
   size_t cubin_size;
   CUlibrary library;
+  cccl_type_info input_type;
+  cccl_type_info output_type;
   cccl_type_info accumulator_type;
   CUkernel init_kernel;
   CUkernel scan_kernel;

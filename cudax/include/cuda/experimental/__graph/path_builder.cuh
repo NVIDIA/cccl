@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -17,6 +17,7 @@
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
 
+#include <cuda/experimental/__driver/driver_api.cuh>
 #include <cuda/experimental/__graph/concepts.cuh>
 #include <cuda/experimental/__graph/graph_builder.cuh>
 #include <cuda/experimental/__graph/graph_node_ref.cuh>
@@ -70,57 +71,24 @@ struct path_builder
   template <typename _Fn>
   _CCCL_HOST_API void legacy_stream_capture(stream_ref __stream, _Fn&& __capture_fn)
   {
-    _CCCL_TRY_CUDA_API(
-      ::cudaStreamBeginCaptureToGraph,
-      "Failed to begin stream capture",
-      __stream.get(),
-      __graph_,
-      __nodes_.data(),
-      nullptr,
-      __nodes_.size(),
-      cudaStreamCaptureModeGlobal);
+    ::cuda::experimental::__driver::__streamBeginCaptureToGraph(
+      __stream.get(), __graph_, __nodes_.data(), __nodes_.size(), CU_STREAM_CAPTURE_MODE_GLOBAL);
 
     __capture_fn(__stream.get());
 
-    cudaGraph_t __graph_out = nullptr;
+    auto __info = ::cuda::experimental::__driver::__streamGetCaptureInfo(__stream.get());
 
-    cudaStreamCaptureStatus __capture_status;
-    const cudaGraphNode_t* __last_captured_node = nullptr;
-    size_t __num_nodes                          = 0;
-
-#  if _CCCL_CTK_AT_LEAST(13, 0)
-    _CCCL_TRY_CUDA_API(
-      ::cudaStreamGetCaptureInfo,
-      "Failed to get stream capture info",
-      __stream.get(),
-      &__capture_status,
-      nullptr,
-      nullptr,
-      &__last_captured_node,
-      nullptr,
-      &__num_nodes);
-#  else // _CCCL_CTK_AT_LEAST(13, 0)
-    _CCCL_TRY_CUDA_API(
-      ::cudaStreamGetCaptureInfo,
-      "Failed to get stream capture info",
-      __stream.get(),
-      &__capture_status,
-      nullptr,
-      nullptr,
-      &__last_captured_node,
-      &__num_nodes);
-#  endif // _CCCL_CTK_AT_LEAST(13, 0)
-
-    if (__capture_status != cudaStreamCaptureStatusActive)
+    if (__info.__status != CU_STREAM_CAPTURE_STATUS_ACTIVE)
     {
-      _CCCL_THROW(
-        cuda::cuda_error, cudaErrorInvalidValue, "Stream capture no longer active", "cudaStreamGetCaptureInfo");
+      _CCCL_THROW(cuda::cuda_error, cudaErrorInvalidValue, "Stream capture no longer active", "cuStreamGetCaptureInfo");
     }
-    _CCCL_TRY_CUDA_API(::cudaStreamEndCapture, "Failed to end stream capture", __stream.get(), &__graph_out);
+
+    cudaGraph_t __graph_out = nullptr;
+    ::cuda::experimental::__driver::__streamEndCapture(__stream.get(), &__graph_out);
     assert(__graph_out == __graph_);
-    assert(__num_nodes == 1);
+    assert(__info.__ndeps == 1);
     __nodes_.clear();
-    __nodes_.push_back(__last_captured_node[0]);
+    __nodes_.push_back(__info.__deps[0]);
   }
 #endif // _CCCL_CTK_AT_LEAST(12, 3)
 

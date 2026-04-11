@@ -25,8 +25,8 @@
 template <class T>
 __host__ __device__ constexpr void test_resize()
 {
-  constexpr size_t max_capacity = 42ull;
-  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+  [[maybe_unused]] constexpr size_t max_capacity = 42ull;
+  using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
 
   { // inplace_vector<T, 0>::resize with a size
     cuda::std::inplace_vector<T, 0> vec{};
@@ -68,8 +68,8 @@ __host__ __device__ constexpr void test_resize()
 template <class T>
 __host__ __device__ constexpr void test_clear()
 {
-  constexpr size_t max_capacity = 42ull;
-  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+  [[maybe_unused]] constexpr size_t max_capacity = 42ull;
+  using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
 
   { // inplace_vector<T, 0>::clear
     cuda::std::inplace_vector<T, 0> vec{};
@@ -102,8 +102,8 @@ struct is_one
 template <class T>
 __host__ __device__ constexpr void test_pop_back()
 {
-  constexpr size_t max_capacity = 42ull;
-  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+  [[maybe_unused]] constexpr size_t max_capacity = 42ull;
+  using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
 
   { // inplace_vector<T, N>::pop_back
     inplace_vector vec{T(1), T(1337), T(42), T(12), T(0), T(-1)};
@@ -115,8 +115,8 @@ __host__ __device__ constexpr void test_pop_back()
 template <class T>
 __host__ __device__ constexpr void test_erase()
 {
-  constexpr size_t max_capacity = 42ull;
-  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+  [[maybe_unused]] constexpr size_t max_capacity = 42ull;
+  using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
 
   { // inplace_vector<T, N>::erase(iter)
     inplace_vector vec{T(1), T(1337), T(42), T(12), T(0), T(-1)};
@@ -178,8 +178,8 @@ __host__ __device__ constexpr void test_erase()
 template <class T>
 __host__ __device__ constexpr void test_shrink_to_fit()
 {
-  constexpr size_t max_capacity = 42ull;
-  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+  [[maybe_unused]] constexpr size_t max_capacity = 42ull;
+  using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
 
   { // inplace_vector<T, 0>::shrink_to_fit
     cuda::std::inplace_vector<T, 0> vec{};
@@ -205,8 +205,8 @@ __host__ __device__ constexpr void test_shrink_to_fit()
 template <class T>
 __host__ __device__ constexpr void test_reserve()
 {
-  constexpr size_t max_capacity = 42ull;
-  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+  [[maybe_unused]] constexpr size_t max_capacity = 42ull;
+  using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
 
   { // inplace_vector<T, 0>::reserve
     cuda::std::inplace_vector<T, 0> vec{};

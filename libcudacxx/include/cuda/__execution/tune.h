@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__device/arch_id.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/conjunction.h>
@@ -51,16 +52,18 @@ struct __get_tuning_t
 
 _CCCL_GLOBAL_CONSTANT auto __get_tuning = __get_tuning_t{};
 
-template <class... _Tunings>
-[[nodiscard]] _CCCL_NODEBUG_API auto __tune(_Tunings...)
+template <class... _PolicySelectors>
+[[nodiscard]] _CCCL_NODEBUG_API auto __tune(_PolicySelectors...)
 {
-  static_assert((::cuda::std::is_empty_v<_Tunings> && ...), "Stateful tunings are not implemented");
+  static_assert((::cuda::std::is_empty_v<_PolicySelectors> && ...), "Stateful policy selectors are not implemented");
 
-  // clang < 19 doesn't like this code
   // since all the tunings are stateless, let's ignore incoming parameters
-  ::cuda::std::execution::env<_Tunings...> __env{};
 
-  return ::cuda::std::execution::prop{__get_tuning_t{}, __env};
+  // we use the return type of the policy_selector as tag
+  using tuning_env = ::cuda::std::execution::env<
+    ::cuda::std::execution::prop<decltype(_PolicySelectors{}(::cuda::arch_id{})), _PolicySelectors>...>;
+
+  return ::cuda::std::execution::prop{__get_tuning_t{}, tuning_env{}};
 }
 
 _CCCL_END_NAMESPACE_CUDA_EXECUTION

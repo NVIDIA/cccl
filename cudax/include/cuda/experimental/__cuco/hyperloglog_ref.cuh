@@ -22,6 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/span>
 #include <cuda/stream>
 
@@ -105,8 +107,38 @@ public:
   //!
   //! @param __group CUDA Cooperative group this operation is executed in
   template <class _CG>
-  _CCCL_DEVICE constexpr void clear(_CG __group) noexcept
+  _CCCL_DEVICE constexpr ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<_CG, ::cuda::stream_ref>>
+  clear(_CG __group) noexcept
   {
+    // The enable_if above is to work around an incompatibility between host and device
+    // overload preference for clang and NVCC. See
+    // https://llvm.org/docs/CompileCudaWithLLVM.html#overloading-based-on-host-and-device-attributes
+    // for further reading, but the bottom line is when:
+    //
+    // 1. Compiling in device mode (and clang compiles CUDA in a "hybrid" host-device mode,
+    //    also explained by the link above).
+    // 2. And the current function is __host__ __device__.
+    // 3. And the function whose overload needs to be resolved has both a __host__ __device__,
+    //    and __device__ (and/or __host__) overload.
+    //
+    // Then clang will prefer these overloads (assuming they have equal priority under C++
+    // rules) in the following order:
+    //
+    // 1. __host__ __device__
+    // 2. __device__
+    // 3. __host__
+    //
+    // In this particular case, `clear(_CG)` conflicts with `clear(::cuda::stream_ref)` when called
+    // from `hyperloglog::clear(::cuda::stream_ref)`. `hyperloglog::clear(::cuda::stream_ref)`
+    // is constexpr, and therefore implicitly __host__ __device__. Since
+    // `clear(::cuda::stream_ref)` on this class is only __host__, it will take lower priority
+    // that `clear(_CG)`, and we get:
+    //
+    // cudax/include/cuda/experimental/__cuco/__hyperloglog/hyperloglog_impl.cuh:131:28: error: no member named
+    // 'thread_rank' in 'cuda::stream_ref' [clang-diagnostic-error]
+    //
+    // 131 | for (int __i = __group.thread_rank(); __i < __sketch.size(); __i += __group.size())
+    //     |               ~~~~~~~ ^
     __impl.__clear(__group);
   }
 

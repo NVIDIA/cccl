@@ -40,6 +40,7 @@
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
 #include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 #include <cuda/std/__type_traits/is_trivially_destructible.h>
@@ -667,7 +668,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1> : __compresse
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API friend constexpr void swap(__compressed_movable_box& __x, __compressed_movable_box& __y)
+  _CCCL_API friend constexpr void
+  swap(__compressed_movable_box& __x, __compressed_movable_box& __y) noexcept(is_nothrow_swappable_v<_Elem1>)
   {
     swap(__x.__get<0>(), __y.__get<0>());
   }
@@ -752,7 +754,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2>
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API friend constexpr void swap(__compressed_movable_box& __x, __compressed_movable_box& __y)
+  _CCCL_API friend constexpr void swap(__compressed_movable_box& __x, __compressed_movable_box& __y) noexcept(
+    is_nothrow_swappable_v<_Elem1> && is_nothrow_swappable_v<_Elem2>)
   {
     swap(__x.__get<0>(), __y.__get<0>());
     swap(__x.__get<1>(), __y.__get<1>());
@@ -874,7 +877,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_movable_box<_Elem1, _Elem2, _Elem
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API friend constexpr void swap(__compressed_movable_box& __x, __compressed_movable_box& __y)
+  _CCCL_API friend constexpr void swap(__compressed_movable_box& __x, __compressed_movable_box& __y) noexcept(
+    is_nothrow_swappable_v<_Elem1> && is_nothrow_swappable_v<_Elem2> && is_nothrow_swappable_v<_Elem3>)
   {
     swap(__x.__get<0>(), __y.__get<0>());
     swap(__x.__get<1>(), __y.__get<1>());

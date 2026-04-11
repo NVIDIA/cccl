@@ -1,8 +1,8 @@
-# # CUB PR benchmark request config.
+# # CCCL PR benchmark request config.
 #
 # ## Overview:
 #
-# This file is used to request CUB benchmark comparisons in PR CI.
+# This file is used to request benchmark comparisons in PR CI.
 #
 # This file must match ci/bench.template.yaml to merge.
 # CI branch protections will fail if they differ. Reset before merging.
@@ -17,18 +17,28 @@
 #
 # ## Quick start:
 #
-# 1. Add one or more benchmark regexes under benchmarks.filters.
+# 1. Add one or more benchmark regexes under benchmarks.filters.cub and/or
+#    benchmarks.filters.python.
 # 2. Enable at least one GPU by uncommenting or adding entries in benchmarks.gpus.
 # 3. Push and inspect the dispatched benchmark jobs/artifacts.
 # 4. Remove/reset benchmark-request edits before final merge.
 
 benchmarks:
 
-  # Inclusive regex filters (required).
+  # Benchmark filters grouped by project.
   filters:
-    # Examples:
-    # - '^cub\.bench\.for_each\.base'
-    # - '^cub\.bench\.reduce\.(sum|min)\.'
+    # CUB C++ benchmark filters (regex matched against ninja target names).
+    cub:
+      # Examples:
+      # - '^cub\.bench\.for_each\.base'
+      # - '^cub\.bench\.reduce\.(sum|min)\.'
+
+    # Python benchmark filters (regex matched against paths under benchmarks/).
+    python:
+      # Examples:
+      # - 'compute/reduce/sum\.py'
+      # - 'compute/transform/.*\.py'
+      # - 'coop/bench_warp_reduce\.py'
 
   # Select GPUs. These are limited and shared, be intentional and conservative.
   gpus:

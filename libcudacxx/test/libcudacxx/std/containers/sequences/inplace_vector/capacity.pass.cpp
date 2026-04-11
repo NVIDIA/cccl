@@ -21,8 +21,8 @@
 template <class T>
 __host__ __device__ constexpr void test()
 {
-  constexpr size_t max_capacity = 42ull;
-  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+  [[maybe_unused]] constexpr size_t max_capacity = 42ull;
+  using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
   inplace_vector range{T(1), T(1337), T(42), T(12), T(0), T(-1)};
   const inplace_vector const_range{T(0), T(42), T(1337), T(42), T(5), T(-42)};
 

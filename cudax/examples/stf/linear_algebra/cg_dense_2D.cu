@@ -29,7 +29,8 @@ public:
   {
     h_addr.reset(new double[N * N]);
     cuda_safe_call(cudaHostRegister(h_addr.get(), N * N * sizeof(double), cudaHostRegisterPortable));
-    handle = to_shared(ctx.logical_data(make_slice(h_addr.get(), std::tuple{N, N}, N)));
+    handle = ::std::make_shared<logical_data<slice<double, 2>>>(
+      ctx.logical_data(make_slice(h_addr.get(), std::tuple{N, N}, N)));
   }
 
   void fill(const std::function<double(int, int)>& f)
@@ -68,7 +69,7 @@ public:
       for (size_t b = 0; b < nblocks; b++)
       {
         size_t bs  = std::min(N - block_size * b, block_size);
-        handles[b] = to_shared(ctx.logical_data(shape_of<slice<double>>(bs)));
+        handles[b] = ::std::make_shared<logical_data<slice<double>>>(ctx.logical_data(shape_of<slice<double>>(bs)));
       }
     }
     else
@@ -77,8 +78,9 @@ public:
       cuda_safe_call(cudaHostRegister(h_addr.get(), N * sizeof(double), cudaHostRegisterPortable));
       for (size_t b = 0; b < nblocks; b++)
       {
-        size_t bs  = std::min(N - block_size * b, block_size);
-        handles[b] = to_shared(ctx.logical_data(make_slice(&h_addr[block_size * b], bs)));
+        size_t bs = std::min(N - block_size * b, block_size);
+        handles[b] =
+          ::std::make_shared<logical_data<slice<double>>>(ctx.logical_data(make_slice(&h_addr[block_size * b], bs)));
       }
     }
   }
@@ -94,7 +96,7 @@ public:
     for (size_t b = 0; b < nblocks; b++)
     {
       size_t bs  = std::min(N - block_size * b, block_size);
-      handles[b] = to_shared(ctx.logical_data(shape_of<slice<double>>(bs)));
+      handles[b] = ::std::make_shared<logical_data<slice<double>>>(ctx.logical_data(shape_of<slice<double>>(bs)));
 
       ctx.task(handles[b]->write(), a.handles[b]->read())->*[bs](cudaStream_t stream, auto dthis, auto da) {
         // There are likely much more efficient ways.
@@ -154,13 +156,13 @@ public:
     if (is_tmp)
     {
       // There is no physical backing for this temporary vector
-      handle = to_shared(ctx.logical_data(shape_of<slice<double>>(1)));
+      handle = ::std::make_shared<logical_data<slice<double>>>(ctx.logical_data(shape_of<slice<double>>(1)));
     }
     else
     {
       h_addr.reset(new double);
       cuda_safe_call(cudaHostRegister(h_addr.get(), s, cudaHostRegisterPortable));
-      handle = to_shared(ctx.logical_data(make_slice(h_addr.get(), 1)));
+      handle = ::std::make_shared<logical_data<slice<double>>>(ctx.logical_data(make_slice(h_addr.get(), 1)));
     }
   }
 
@@ -170,7 +172,7 @@ public:
   // Copy constructor
   scalar(const scalar& a)
   {
-    handle = to_shared(ctx.logical_data(shape_of<slice<double>>(1)));
+    handle = ::std::make_shared<logical_data<slice<double>>>(ctx.logical_data(shape_of<slice<double>>(1)));
 
     ctx.task(handle->write(), a.handle->read())->*[](cudaStream_t stream, auto dthis, auto da) {
       // There are likely much more efficient ways.

@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: BSD-3
 
 /**
- * @file cub::AgentScan implements a stateful abstraction of CUDA thread blocks
- *       for participating in device-wide prefix scan .
+ * @file
+ * @brief cub::AgentScan implements a stateful abstraction of CUDA thread blocks
+ *        for participating in device-wide prefix scan.
  */
 
 #pragma once

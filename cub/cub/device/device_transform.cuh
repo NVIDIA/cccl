@@ -47,27 +47,6 @@ struct ::cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::__return_c
 {};
 
 CUB_NAMESPACE_BEGIN
-namespace detail::transform
-{
-// TODO(bgruber): can we get by without the tuning base class? Since we have transform_policy_selector, could we enrich
-// get_tuning_query_t to just check if the environment has a type that fulfills transform_policy_selector?
-struct get_tuning_query_t
-{};
-
-template <class PolicySelector>
-// TODO(bgruber): we cannot check the concept here because PolicySelector is usually an incomplete type still
-// #if _CCCL_HAS_CONCEPTS()
-//   requires transform_policy_selector<PolicySelector>
-// #endif // _CCCL_HAS_CONCEPTS()
-struct tuning
-{
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(const get_tuning_query_t&) const noexcept -> PolicySelector
-  {
-    return static_cast<const PolicySelector&>(*this);
-  }
-};
-} // namespace detail::transform
-
 //! DeviceTransform provides device-wide, parallel operations for transforming elements tuple-wise from multiple input
 //! sequences into an output sequence.
 struct DeviceTransform
@@ -105,8 +84,9 @@ struct DeviceTransform
       ::cuda::std::is_same_v<Predicate, detail::transform::always_true_predicate>,
       ::cuda::std::tuple<RandomAccessIteratorsIn...>,
       RandomAccessIteratorOut>;
+
     using policy_selector = ::cuda::std::execution::
-      __query_result_or_t<tuning_env, detail::transform::get_tuning_query_t, default_policy_selector>;
+      __query_result_or_t<tuning_env, detail::transform::transform_policy, default_policy_selector>;
 
 #if _CCCL_HAS_CONCEPTS()
     static_assert(detail::transform::transform_policy_selector<policy_selector>);

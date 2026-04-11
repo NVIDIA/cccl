@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
-// SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 //! @file
@@ -43,9 +43,11 @@
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/indirectly_comparable.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
@@ -56,41 +58,6 @@ namespace detail
 template <typename DeterminismT>
 inline constexpr bool is_non_deterministic_v =
   ::cuda::std::is_same_v<DeterminismT, ::cuda::execution::determinism::not_guaranteed_t>;
-
-namespace reduce
-{
-struct get_tuning_query_t
-{};
-
-template <class Derived>
-struct tuning
-{
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(const get_tuning_query_t&) const noexcept -> Derived
-  {
-    return static_cast<const Derived&>(*this);
-  }
-};
-
-struct default_rfa_tuning : tuning<default_rfa_tuning>
-{
-  template <class AccumT, class Offset, class OpT>
-  using fn = detail::rfa::policy_selector_from_types<AccumT>;
-};
-
-template <typename ExtremumOutIteratorT, typename IndexOutIteratorT>
-struct unzip_and_write_arg_extremum_op
-{
-  ExtremumOutIteratorT result_out_it;
-  IndexOutIteratorT index_out_it;
-
-  template <typename IndexT, typename KeyValuePairT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(IndexT, KeyValuePairT reduced_result)
-  {
-    *result_out_it = reduced_result.value;
-    *index_out_it  = reduced_result.key;
-  }
-};
-} // namespace reduce
 } // namespace detail
 
 //! @rst
@@ -145,10 +112,9 @@ private:
     using offset_t = detail::choose_offset_t<NumItemsT>;
     using accum_t  = ::cuda::std::
       __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
-    using reduce_tuning_t = ::cuda::std::execution::__query_result_or_t<
-      TuningEnvT,
-      detail::reduce::get_tuning_query_t,
-      detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>>;
+    using default_policy_selector = detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
+    using policy_selector =
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::reduce::reduce_policy, default_policy_selector>;
 
     return detail::reduce::dispatch<accum_t>(
       d_temp_storage,
@@ -160,7 +126,7 @@ private:
       init,
       stream,
       transform_op,
-      reduce_tuning_t{});
+      policy_selector{});
   }
 
   template <typename TuningEnvT,
@@ -183,16 +149,22 @@ private:
     cudaStream_t stream)
   {
     using offset_t = detail::choose_offset_t<NumItemsT>;
-
-    using reduce_tuning_t = ::cuda::std::execution::
-      __query_result_or_t<TuningEnvT, detail::reduce::get_tuning_query_t, detail::reduce::default_rfa_tuning>;
-
-    using accum_t = ::cuda::std::
+    using accum_t  = ::cuda::std::
       __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
-    using policy_t = typename reduce_tuning_t::template fn<accum_t, offset_t, ReductionOpT>;
+    using default_policy_selector = detail::rfa::policy_selector_from_types<accum_t>;
+    using policy_selector =
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::rfa::rfa_policy, default_policy_selector>;
 
-    return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t, policy_t>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<offset_t>(num_items), init, stream, transform_op);
+    return detail::rfa::dispatch<InputIteratorT, OutputIteratorT, offset_t, T, TransformOpT, accum_t>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      static_cast<offset_t>(num_items),
+      init,
+      stream,
+      transform_op,
+      policy_selector{});
   }
 
   template <typename TuningEnvT,
@@ -214,13 +186,11 @@ private:
     ::cuda::execution::determinism::not_guaranteed_t,
     cudaStream_t stream)
   {
-    using offset_t = detail::choose_offset_t<NumItemsT>;
-    using accum_t  = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
-
-    using reduce_tuning_t = ::cuda::std::execution::__query_result_or_t<
-      TuningEnvT,
-      detail::reduce::get_tuning_query_t,
-      detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>>;
+    using offset_t                = detail::choose_offset_t<NumItemsT>;
+    using accum_t                 = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
+    using default_policy_selector = detail::reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
+    using policy_selector =
+      ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::reduce::reduce_policy, default_policy_selector>;
 
     return detail::reduce::dispatch_nondeterministic<accum_t>(
       d_temp_storage,
@@ -232,7 +202,95 @@ private:
       init,
       stream,
       transform_op,
-      reduce_tuning_t{});
+      policy_selector{});
+  }
+
+  //! @brief Internal implementation shared by Reduce and TransformReduce env overloads
+  template <typename AccumT,
+            typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename TransformOpT,
+            typename T,
+            typename NumItemsT,
+            typename EnvT>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __transform_reduce(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    ReductionOpT reduction_op,
+    TransformOpT transform_op,
+    T init,
+    EnvT env)
+  {
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
+                  "Determinism should be used inside requires to have an effect.");
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using default_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
+
+    using accum_t = AccumT;
+
+    constexpr auto gpu_gpu_determinism =
+      ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
+
+    // integral types are always gpu-to-gpu deterministic if reduction operator is a simple cuda binary
+    // operator, so fallback to run-to-run determinism
+    constexpr auto integral_fallback =
+      gpu_gpu_determinism && ::cuda::std::is_integral_v<accum_t> && (detail::is_cuda_binary_operator<ReductionOpT>);
+
+    // use gpu-to-gpu determinism only for float and double types with ::cuda::std::plus operator
+    constexpr auto float_double_plus =
+      gpu_gpu_determinism && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_std_plus_v<ReductionOpT>;
+
+    constexpr auto float_double_min_max_fallback =
+      gpu_gpu_determinism
+      && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_minimum_maximum_v<ReductionOpT>;
+
+    constexpr auto supported =
+      integral_fallback || float_double_plus || float_double_min_max_fallback || !gpu_gpu_determinism;
+
+    // gpu_to_gpu determinism is only supported for integral types with cuda operators, or
+    // float and double types with ::cuda::std::plus operator
+    static_assert(supported, "gpu_to_gpu determinism is unsupported");
+
+    if constexpr (!supported)
+    {
+      return cudaErrorNotSupported;
+    }
+    else
+    {
+      constexpr auto no_determinism = detail::is_non_deterministic_v<default_determinism_t>;
+
+      // Certain conditions must be met to be able to use the non-deterministic
+      // kernel. The output iterator must be a contiguous iterator and the
+      // reduction operator must be plus (for now). Additionally, since atomics for types of
+      // size < 4B are emulated, they perform poorly, so we fall back to the run-to-run
+      // determinism.
+      constexpr auto is_contiguous_fallback =
+        !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
+      constexpr auto is_plus_fallback = !no_determinism || detail::is_cuda_std_plus_v<ReductionOpT>;
+      constexpr auto is_4b_or_greater = !no_determinism || sizeof(accum_t) >= 4;
+
+      // If the conditions for gpu-to-gpu determinism or non-deterministic
+      // reduction are not met, we fall back to run-to-run determinism.
+      using determinism_t = ::cuda::std::conditional_t<
+        (gpu_gpu_determinism && (integral_fallback || float_double_min_max_fallback))
+          || (no_determinism && !(is_contiguous_fallback && is_plus_fallback && is_4b_or_greater)),
+        ::cuda::execution::determinism::run_to_run_t,
+        default_determinism_t>;
+
+      // Dispatch with environment - handles all boilerplate
+      return detail::dispatch_with_env(
+        env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+          using tuning_t = decltype(tuning);
+          return reduce_impl<tuning_t>(
+            storage, bytes, d_in, d_out, num_items, reduction_op, transform_op, init, determinism_t{}, stream);
+        });
+    }
   }
 
 public:
@@ -377,7 +435,7 @@ public:
   //!   To request "gpu-to-gpu" determinism, pass ``cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)``
   //!   as the `env` parameter.
   //!   To request "not-guaranteed" determinism, pass
-  //!    ``cuda::execution::require(cuda::execution::determinism::not_guaranteed)`` as the `env` parameter.
+  //!   ``cuda::execution::require(cuda::execution::determinism::not_guaranteed)`` as the `env` parameter.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
   //!
   //! Snippet
@@ -441,74 +499,8 @@ public:
     InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, ReductionOpT reduction_op, T init, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::Reduce");
-
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using default_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t, //
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
-
     using accum_t = ::cuda::std::__accumulator_t<ReductionOpT, detail::it_value_t<InputIteratorT>, T>;
-
-    constexpr auto gpu_gpu_determinism =
-      ::cuda::std::is_same_v<default_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
-
-    // integral types are always gpu-to-gpu deterministic if reduction operator is a simple cuda binary
-    // operator, so fallback to run-to-run determinism
-    constexpr auto integral_fallback =
-      gpu_gpu_determinism && ::cuda::std::is_integral_v<accum_t> && (detail::is_cuda_binary_operator<ReductionOpT>);
-
-    // use gpu-to-gpu determinism only for float and double types with ::cuda::std::plus operator
-    constexpr auto float_double_plus =
-      gpu_gpu_determinism && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_std_plus_v<ReductionOpT>;
-
-    constexpr auto float_double_min_max_fallback =
-      gpu_gpu_determinism
-      && detail::is_one_of_v<accum_t, float, double> && detail::is_cuda_minimum_maximum_v<ReductionOpT>;
-
-    constexpr auto supported =
-      integral_fallback || float_double_plus || float_double_min_max_fallback || !gpu_gpu_determinism;
-
-    // gpu_to_gpu determinism is only supported for integral types with cuda operators, or
-    // float and double types with ::cuda::std::plus operator
-    static_assert(supported, "gpu_to_gpu determinism is unsupported");
-
-    if constexpr (!supported)
-    {
-      return cudaErrorNotSupported;
-    }
-    else
-    {
-      constexpr auto no_determinism = detail::is_non_deterministic_v<default_determinism_t>;
-
-      // Certain conditions must be met to be able to use the non-deterministic
-      // kernel. The output iterator must be a contiguous iterator and the
-      // reduction operator must be plus (for now). Additionally, since atomics for types of
-      // size < 4B are emulated, they perform poorly, so we fall back to the run-to-run
-      // determinism.
-      constexpr auto is_contiguous_fallback =
-        !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
-      constexpr auto is_plus_fallback = !no_determinism || detail::is_cuda_std_plus_v<ReductionOpT>;
-      constexpr auto is_4b_or_greater = !no_determinism || sizeof(accum_t) >= 4;
-
-      // If the conditions for gpu-to-gpu determinism or non-deterministic
-      // reduction are not met, we fall back to run-to-run determinism.
-      using determinism_t = ::cuda::std::conditional_t<
-        (gpu_gpu_determinism && (integral_fallback || float_double_min_max_fallback))
-          || (no_determinism && !(is_contiguous_fallback && is_plus_fallback && is_4b_or_greater)),
-        ::cuda::execution::determinism::run_to_run_t,
-        default_determinism_t>;
-
-      // Dispatch with environment - handles all boilerplate
-      return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-        using tuning_t = decltype(tuning);
-        return reduce_impl<tuning_t>(
-          storage, bytes, d_in, d_out, num_items, reduction_op, ::cuda::std::identity{}, init, determinism_t{}, stream);
-      });
-    }
+    return __transform_reduce<accum_t>(d_in, d_out, num_items, reduction_op, ::cuda::std::identity{}, init, env);
   }
 
   //! @rst
@@ -527,7 +519,7 @@ public:
   //!   To request "gpu-to-gpu" determinism, pass ``cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)``
   //!   as the `env` parameter.
   //!   To request "not-guaranteed" determinism, pass
-  //!    ``cuda::execution::require(cuda::execution::determinism::not_guaranteed)`` as the `env` parameter.
+  //!   ``cuda::execution::require(cuda::execution::determinism::not_guaranteed)`` as the `env` parameter.
   //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
   //!
   //! Snippet
@@ -941,18 +933,46 @@ public:
     });
   }
 
+private:
+  template <typename InputIteratorT, typename ExtremumOutIteratorT, typename IndexOutIteratorT, typename CompareOpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t __arg_min(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    ExtremumOutIteratorT d_min_out,
+    IndexOutIteratorT d_index_out,
+    ::cuda::std::int64_t num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream)
+  {
+    using PerPartitionOffsetT = int; // used by the kernel to index within one partition
+    using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
+
+    return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_min_out,
+      d_index_out,
+      static_cast<GlobalOffsetT>(num_items),
+      detail::arg_less{compare_op},
+      stream);
+  }
+
+public:
   //! @rst
-  //! Finds the first device-wide minimum using the less-than (``<``) operator and also returns the index of that item.
+  //! Finds the first device-wide minimum based on a given comparison operator and also returns the index of that item.
   //!
-  //! .. versionadded:: 2.2.0
-  //!    First appears in CUDA Toolkit 12.3.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - The minimum is written to ``d_min_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
   //!   ``cuda::std::int64_t``.
-  //! - For zero-length inputs, ``cuda::std::numeric_limits<T>::max()}`` is written to ``d_min_out``  and the index
-  //!   ``1`` is written to ``d_index_out``.
-  //! - Does not support ``<`` operators that are non-commutative.
+  //! - For zero-length inputs, the index ``1`` is written to ``d_index_out`` and, if ``compare_op`` is
+  //!   ``cuda::std::less`` and ``cuda::std::numeric_limits<T>::is_specialized is ``true``,
+  //!   ``cuda::std::numeric_limits<T>::max()`` is written to ``d_min_out``, otherwise ``T{}``.
+  //! - Does not support comparison operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
   //!   However, results for pseudo-associative reduction may be inconsistent
@@ -975,25 +995,33 @@ public:
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
   //!    int                num_items;    // e.g., 7
-  //!    int                *d_in;        // e.g., [8, 6, 7, 5, 3, 0, 9]
+  //!    int                *d_in;        // e.g., [8, 6, -7, 5, 3, 1, -9]
   //!    int                *d_min_out;   // memory for the minimum value
   //!    cuda::std::int64_t *d_index_out; // memory for the index of the returned value
   //!    ...
+  //!
+  //!    // Define the comparison operator
+  //!    struct abs_less_t {
+  //!      template <typename T>
+  //!      __host__ __device__ bool operator()(const T& a, const T& b) const {
+  //!        return cuda::std::abs(a) < cuda::std::abs(b);
+  //!      }
+  //!    };
   //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out,
-  //!    num_items);
+  //!    num_items, abs_less_t{});
   //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
   //!
   //!    // Run argmin-reduction
   //!    cub::DeviceReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out,
-  //!    num_items);
+  //!    num_items, abs_less_t{});
   //!
-  //!    // d_min_out   <-- 0
+  //!    // d_min_out   <-- 1
   //!    // d_index_out <-- 5
   //!
   //! @endrst
@@ -1024,6 +1052,9 @@ public:
   //! @param[out] d_index_out
   //!   Iterator to which the index of the returned value is written
   //!
+  //! @param[in] compare_op
+  //!   Comparison operator returning ``true`` if the first argument is less than the second
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of ``d_in``)
   //!
@@ -1031,6 +1062,34 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
+  template <
+    typename InputIteratorT,
+    typename ExtremumOutIteratorT,
+    typename IndexOutIteratorT,
+    typename CompareOpT,
+    // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+    // ExtremumOutIteratorT, which is wrong IMO
+    ::cuda::std::enable_if_t<::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>, int> = 0>
+  CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    ExtremumOutIteratorT d_min_out,
+    IndexOutIteratorT d_index_out,
+    ::cuda::std::int64_t num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream = 0)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
+    return __arg_min(d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out, num_items, compare_op, stream);
+  }
+
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @overload
+  //! @note Uses ``cuda::std::less`` as comparison operator
+  //! @endrst
   template <typename InputIteratorT, typename ExtremumOutIteratorT, typename IndexOutIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
     void* d_temp_storage,
@@ -1041,39 +1100,89 @@ public:
     ::cuda::std::int64_t num_items,
     cudaStream_t stream = 0)
   {
-    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
+    return ArgMin(
+      d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out, num_items, ::cuda::std::less{}, stream);
+  }
 
-    // The input type
-    using InputValueT = cub::detail::it_value_t<InputIteratorT>;
+  template <typename InputIteratorT,
+            typename ExtremumOutIteratorT,
+            typename IndexOutIteratorT,
+            typename CompareOpT,
+            typename EnvT>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __arg_min_env(
+    InputIteratorT d_in,
+    ExtremumOutIteratorT d_min_out,
+    IndexOutIteratorT d_index_out,
+    ::cuda::std::int64_t num_items,
+    CompareOpT compare_op,
+    EnvT env = {})
+  {
+    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
+                  "Determinism should be used inside requires to have an effect.");
+    using requirements_t = ::cuda::std::execution::
+      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
+    using requested_determinism_t =
+      ::cuda::std::execution::__query_result_or_t<requirements_t, //
+                                                  ::cuda::execution::determinism::__get_determinism_t,
+                                                  ::cuda::execution::determinism::run_to_run_t>;
 
-    // Offset type used within the kernel and to index within one partition
-    using PerPartitionOffsetT = int;
+    // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
+    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
+                  "gpu_to_gpu determinism is not supported");
 
-    // Offset type used to index within the total input in the range [d_in, d_in + num_items)
-    using GlobalOffsetT = ::cuda::std::int64_t;
+    // Query relevant properties from the environment
+    auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
+    auto mr     = ::cuda::__call_or(::cuda::mr::get_memory_resource, detail::device_memory_resource{}, env);
 
-    // The value type used for the extremum
-    using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
+    using PerPartitionOffsetT = int; // used by the kernel to index within one partition
+    using GlobalOffsetT       = ::cuda::std::int64_t; // in the range [d_in, d_in + num_items)
 
-    // Reduction operation
-    using ReduceOpT = cub::ArgMin;
+    void* d_temp_storage      = nullptr;
+    size_t temp_storage_bytes = 0;
 
-    // Initial value
-    OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::max()};
+    // Query the required temporary storage size
+    if (const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in,
+          d_min_out,
+          d_index_out,
+          static_cast<GlobalOffsetT>(num_items),
+          detail::arg_less{compare_op},
+          stream.get()))
+    {
+      return error;
+    }
 
-    // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto out_it = ::cuda::make_tabulate_output_iterator(
-      detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
+    // TODO(gevtushenko): use uninitialized buffer when it's available
+    if (const auto error =
+          CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr)))
+    {
+      return error;
+    }
 
-    return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
+    // Run the algorithm
+    const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
-      out_it,
+      d_min_out,
+      d_index_out,
       static_cast<GlobalOffsetT>(num_items),
-      ReduceOpT{},
-      initial_value,
-      stream);
+      detail::arg_less{compare_op},
+      stream.get());
+
+    // Try to deallocate regardless of the error to avoid memory leaks
+    const auto deallocate_error =
+      CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
+
+    if (error != cudaSuccess)
+    {
+      // Reduction error takes precedence over deallocation error since it happens first
+      return error;
+    }
+
+    return deallocate_error;
   }
 
   //! @rst
@@ -1085,8 +1194,9 @@ public:
   //! - The minimum is written to ``d_min_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
   //!   ``cuda::std::int64_t``.
-  //! - For zero-length inputs, ``cuda::std::numeric_limits<T>::max()}`` is written to ``d_min_out``  and the index
-  //!   ``1`` is written to ``d_index_out``.
+  //! - For zero-length inputs, the index ``1`` is written to ``d_index_out`` and, if ``compare_op`` is
+  //!   ``cuda::std::less`` and ``cuda::std::numeric_limits<T>::is_specialized is ``true``,
+  //!   ``cuda::std::numeric_limits<T>::max()`` is written to ``d_min_out``, otherwise ``T{}``.
   //! - Does not support ``<`` operators that are non-commutative.
   //! - Provides determinism based on the environment's determinism requirements.
   //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
@@ -1128,6 +1238,9 @@ public:
   //! @param[out] d_index_out
   //!   Iterator to which the index of the returned value is written
   //!
+  //! @param[in] compare_op
+  //!   Comparison operator returning ``true`` if the first argument is less than the second
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of ``d_in``)
   //!
@@ -1135,10 +1248,36 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
+  template <
+    typename InputIteratorT,
+    typename ExtremumOutIteratorT,
+    typename IndexOutIteratorT,
+    typename CompareOpT,
+    typename EnvT = ::cuda::std::execution::env<>,
+    // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+    // ExtremumOutIteratorT, which is wrong IMO
+    ::cuda::std::enable_if_t<::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
+    InputIteratorT d_in,
+    ExtremumOutIteratorT d_min_out,
+    IndexOutIteratorT d_index_out,
+    ::cuda::std::int64_t num_items,
+    CompareOpT compare_op,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMin");
+    return __arg_min_env(d_in, d_min_out, d_index_out, num_items, compare_op, env);
+  }
+
+  //! @overload
+  //! @note Uses ``cuda::std::less`` as comparison operator
   template <typename InputIteratorT,
             typename ExtremumOutIteratorT,
             typename IndexOutIteratorT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+            // ExtremumOutIteratorT, which is wrong IMO
+            ::cuda::std::enable_if_t<!::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ArgMin(InputIteratorT d_in,
          ExtremumOutIteratorT d_min_out,
@@ -1146,86 +1285,7 @@ public:
          ::cuda::std::int64_t num_items,
          EnvT env = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMin");
-
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t, //
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
-
-    // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
-                  "gpu_to_gpu determinism is not supported");
-
-    // Query relevant properties from the environment
-    auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
-    auto mr     = ::cuda::__call_or(::cuda::mr::get_memory_resource, detail::device_memory_resource{}, env);
-
-    void* d_temp_storage      = nullptr;
-    size_t temp_storage_bytes = 0;
-
-    // Reduction operation
-    using ReduceOpT           = cub::ArgMin;
-    using InputValueT         = cub::detail::it_value_t<InputIteratorT>;
-    using PerPartitionOffsetT = int;
-    using GlobalOffsetT       = ::cuda::std::int64_t;
-
-    using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
-
-    // Initial value
-    OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::max()};
-
-    // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto out_it = ::cuda::make_tabulate_output_iterator(
-      detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
-
-    // Query the required temporary storage size
-    if (const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_in,
-          out_it,
-          static_cast<GlobalOffsetT>(num_items),
-          ReduceOpT{},
-          initial_value,
-          stream.get()))
-    {
-      return error;
-    }
-
-    // TODO(gevtushenko): use uninitialized buffer when it's available
-    if (const auto error =
-          CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr)))
-    {
-      return error;
-    }
-
-    // Run the algorithm
-    const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      out_it,
-      static_cast<GlobalOffsetT>(num_items),
-      ReduceOpT{},
-      initial_value,
-      stream.get());
-
-    // Try to deallocate regardless of the error to avoid memory leaks
-    const auto deallocate_error =
-      CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
-
-    if (error != cudaSuccess)
-    {
-      // Reduction error takes precedence over deallocation error since it happens first
-      return error;
-    }
-
-    return deallocate_error;
+    return ArgMin(d_in, d_min_out, d_index_out, num_items, ::cuda::std::less{}, env);
   }
 
   //! @rst
@@ -1347,7 +1407,14 @@ public:
     InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
 
     return detail::reduce::dispatch<AccumT>(
-      d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, OffsetT{num_items}, cub::ArgMin(), initial_value, stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_indexed_in,
+      d_out,
+      OffsetT{num_items},
+      detail::arg_min{},
+      initial_value,
+      stream);
   }
 
   //! @rst
@@ -1560,17 +1627,17 @@ public:
   }
 
   //! @rst
-  //! Finds the first device-wide maximum using the greater-than (``>``) operator and also returns the index of that
-  //! item.
+  //! Finds the first device-wide maximum based on a given comparison operator and also returns the index of that item.
   //!
-  //! .. versionadded:: 2.2.0
-  //!    First appears in CUDA Toolkit 12.3.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - The maximum is written to ``d_max_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
   //!   ``cuda::std::int64_t``.
-  //! - For zero-length inputs, ``cuda::std::numeric_limits<T>::max()}`` is written to ``d_max_out``  and the index
-  //!   ``1`` is written to ``d_index_out``.
+  //! - For zero-length inputs, the index ``1`` is written to ``d_index_out`` and, if ``compare_op`` is
+  //!   ``cuda::std::less`` and ``cuda::std::numeric_limits<T>::is_specialized is ``true``,
+  //!   ``cuda::std::numeric_limits<T>::lowest()`` is written to ``d_min_out``, otherwise ``T{}``.
   //! - Does not support ``>`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -1594,25 +1661,33 @@ public:
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
   //!    int                num_items;    // e.g., 7
-  //!    int                *d_in;        // e.g., [8, 6, 7, 5, 3, 0, 9]
+  //!    int                *d_in;        // e.g., [8, 6, -7, 5, 3, 1, -9]
   //!    int                *d_max_out;   // memory for the maximum value
   //!    cuda::std::int64_t *d_index_out; // memory for the index of the returned value
   //!    ...
+  //!
+  //!    // Define the comparison operator
+  //!    struct abs_less_t {
+  //!      template <typename T>
+  //!      __host__ __device__ bool operator()(const T& a, const T& b) const {
+  //!        return cuda::std::abs(a) < cuda::std::abs(b);
+  //!      }
+  //!    };
   //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::ArgMax(
-  //!      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items);
+  //!      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items, abs_less_t{});
   //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
   //!
   //!    // Run argmax-reduction
   //!    cub::DeviceReduce::ArgMax(
-  //!      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items);
+  //!      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items, abs_less_t{});
   //!
-  //!    // d_max_out   <-- 9
+  //!    // d_max_out   <-- -9
   //!    // d_index_out <-- 6
   //!
   //! @endrst
@@ -1642,6 +1717,9 @@ public:
   //! @param[out] d_index_out
   //!   Iterator to which the index of the returned value is written
   //!
+  //! @param[in] compare_op
+  //!   Comparison operator returning ``true`` if the first argument is less than the second
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of ``d_in``)
   //!
@@ -1649,6 +1727,42 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
+  template <
+    typename InputIteratorT,
+    typename ExtremumOutIteratorT,
+    typename IndexOutIteratorT,
+    typename CompareOpT,
+    // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+    // ExtremumOutIteratorT, which is wrong IMO
+    ::cuda::std::enable_if_t<::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>, int> = 0>
+  CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    ExtremumOutIteratorT d_max_out,
+    IndexOutIteratorT d_index_out,
+    ::cuda::std::int64_t num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream = 0)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
+    return __arg_min(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_max_out,
+      d_index_out,
+      num_items,
+      detail::arg_less{detail::swap_args{compare_op}},
+      stream);
+  }
+
+  //! @rst
+  //! .. versionadded:: 2.2.0
+  //!    First appears in CUDA Toolkit 12.3.
+  //! @overload
+  //! @note Uses ``cuda::std::less`` as comparison operator
+  //! @endrst
   template <typename InputIteratorT, typename ExtremumOutIteratorT, typename IndexOutIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
     void* d_temp_storage,
@@ -1659,39 +1773,8 @@ public:
     ::cuda::std::int64_t num_items,
     cudaStream_t stream = 0)
   {
-    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
-
-    // The input type
-    using InputValueT = cub::detail::it_value_t<InputIteratorT>;
-
-    // Offset type used within the kernel and to index within one partition
-    using PerPartitionOffsetT = int;
-
-    // Offset type used to index within the total input in the range [d_in, d_in + num_items)
-    using GlobalOffsetT = ::cuda::std::int64_t;
-
-    // The value type used for the extremum
-    using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
-
-    // Reduction operation
-    using ReduceOpT = cub::ArgMax;
-
-    // Initial value
-    OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::lowest()};
-
-    // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto out_it = ::cuda::make_tabulate_output_iterator(
-      detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_max_out, d_index_out});
-
-    return detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      out_it,
-      static_cast<GlobalOffsetT>(num_items),
-      ReduceOpT{},
-      initial_value,
-      stream);
+    return ArgMax(
+      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items, ::cuda::std::less{}, stream);
   }
 
   //! @rst
@@ -1817,21 +1900,29 @@ public:
     InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
 
     return detail::reduce::dispatch<AccumT>(
-      d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, OffsetT{num_items}, cub::ArgMax(), initial_value, stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_indexed_in,
+      d_out,
+      OffsetT{num_items},
+      detail::arg_max{},
+      initial_value,
+      stream);
   }
 
   //! @rst
   //! Finds the first device-wide maximum using the greater-than (``>``) operator and also returns the index of that
   //! item.
   //!
-  //! .. versionadded:: 2.2.0
-  //!    First appears in CUDA Toolkit 12.3.
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
   //!
   //! - The maximum is written to ``d_max_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
   //!   ``cuda::std::int64_t``.
-  //! - For zero-length inputs, ``cuda::std::numeric_limits<T>::lowest()}`` is written to ``d_max_out``  and the index
-  //!   ``1`` is written to ``d_index_out``.
+  //! - For zero-length inputs, the index ``1`` is written to ``d_index_out`` and, if ``compare_op`` is
+  //!   ``cuda::std::less`` and ``cuda::std::numeric_limits<T>::is_specialized is ``true``,
+  //!   ``cuda::std::numeric_limits<T>::lowest()`` is written to ``d_min_out``, otherwise ``T{}``.
   //! - Does not support ``>`` operators that are non-commutative.
   //! - Provides determinism based on the environment's determinism requirements.
   //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
@@ -1873,6 +1964,9 @@ public:
   //! @param[out] d_index_out
   //!   Iterator to which the index of the returned value is written
   //!
+  //! @param[in] compare_op
+  //!   Comparison operator returning ``true`` if the first argument is less than the second
+  //!
   //! @param[in] num_items
   //!   Total number of input items (i.e., length of ``d_in``)
   //!
@@ -1880,6 +1974,30 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
+  template <
+    typename InputIteratorT,
+    typename ExtremumOutIteratorT,
+    typename IndexOutIteratorT,
+    typename CompareOpT,
+    typename EnvT = ::cuda::std::execution::env<>,
+    // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+    // ExtremumOutIteratorT, which is wrong IMO
+    ::cuda::std::enable_if_t<::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
+    InputIteratorT d_in,
+    ExtremumOutIteratorT d_max_out,
+    IndexOutIteratorT d_index_out,
+    ::cuda::std::int64_t num_items,
+    CompareOpT compare_op,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMax");
+    return __arg_min_env(
+      d_in, d_index_out, num_items, detail::arg_less{detail::swap_args{compare_op}}, ::cuda::std::execution::env{});
+  }
+
+  //! @overload
+  //! @note Uses ``cuda::std::less`` as comparison operator
   template <typename InputIteratorT,
             typename ExtremumOutIteratorT,
             typename IndexOutIteratorT,
@@ -1892,85 +2010,7 @@ public:
          EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMax");
-
-    static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::determinism::__get_determinism_t>,
-                  "Determinism should be used inside requires to have an effect.");
-    using requirements_t = ::cuda::std::execution::
-      __query_result_or_t<EnvT, ::cuda::execution::__get_requirements_t, ::cuda::std::execution::env<>>;
-    using requested_determinism_t =
-      ::cuda::std::execution::__query_result_or_t<requirements_t, //
-                                                  ::cuda::execution::determinism::__get_determinism_t,
-                                                  ::cuda::execution::determinism::run_to_run_t>;
-
-    // Static assert to reject gpu_to_gpu determinism since it's not properly implemented
-    static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
-                  "gpu_to_gpu determinism is not supported");
-
-    // Query relevant properties from the environment
-    auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
-    auto mr     = ::cuda::__call_or(::cuda::mr::get_memory_resource, detail::device_memory_resource{}, env);
-
-    void* d_temp_storage      = nullptr;
-    size_t temp_storage_bytes = 0;
-
-    // Reduction operation
-    using ReduceOpT           = cub::ArgMax;
-    using InputValueT         = cub::detail::it_value_t<InputIteratorT>;
-    using PerPartitionOffsetT = int;
-    using GlobalOffsetT       = ::cuda::std::int64_t;
-
-    using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
-
-    // Initial value
-    OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::lowest()};
-
-    // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto out_it = ::cuda::make_tabulate_output_iterator(
-      detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_max_out, d_index_out});
-
-    // Query the required temporary storage size
-    if (const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_in,
-          out_it,
-          static_cast<GlobalOffsetT>(num_items),
-          ReduceOpT{},
-          initial_value,
-          stream.get()))
-    {
-      return error;
-    }
-
-    // TODO(gevtushenko): use uninitialized buffer when it's available
-    if (const auto error =
-          CubDebug(detail::temporary_storage::allocate(stream, d_temp_storage, temp_storage_bytes, mr)))
-    {
-      return error;
-    }
-
-    // Run the algorithm
-    const auto error = detail::reduce::dispatch_streaming_arg_reduce<PerPartitionOffsetT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      out_it,
-      static_cast<GlobalOffsetT>(num_items),
-      ReduceOpT{},
-      initial_value,
-      stream.get());
-
-    // Try to deallocate regardless of the error to avoid memory leaks
-    const auto deallocate_error =
-      CubDebug(detail::temporary_storage::deallocate(stream, d_temp_storage, temp_storage_bytes, mr));
-
-    if (error != cudaSuccess)
-    {
-      // Reduction error takes precedence over deallocation error since it happens first
-      return error;
-    }
-
-    return deallocate_error;
+    return __arg_min_env(d_in, d_max_out, d_index_out, num_items, detail::arg_max{}, env);
   }
 
   //! @rst
@@ -2112,6 +2152,233 @@ public:
       init,
       stream,
       transform_op);
+  }
+
+  //! @rst
+  //! Computes a device-wide reduction using the specified binary ``reduction_op`` functor,
+  //! a unary ``transform_op`` functor, and initial value ``init``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! - Does not support binary reduction operators that are non-commutative.
+  //! - Provides "run-to-run" determinism for pseudo-associative reduction
+  //!   (e.g., addition of floating point types) on the same GPU device.
+  //!   However, results for pseudo-associative reduction may be inconsistent
+  //!   from one device to a another device of a different compute-capability
+  //!   because CUB can employ different tile-sizing for different architectures.
+  //!   To request "gpu-to-gpu" determinism, pass ``cuda::execution::require(cuda::execution::determinism::gpu_to_gpu)``
+  //!   as the `env` parameter.
+  //!   To request "not-guaranteed" determinism, pass
+  //!    ``cuda::execution::require(cuda::execution::determinism::not_guaranteed)`` as the `env` parameter.
+  //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates a transform-reduction with determinism
+  //! of a device vector of ``int`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin transform-reduce-env-determinism
+  //!     :end-before: example-end transform-reduce-env-determinism
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @tparam ReductionOpT
+  //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam TransformOpT
+  //!   **[inferred]** Unary reduction functor type having member `auto operator()(const T &a)`
+  //!
+  //! @tparam T
+  //!   **[inferred]** Data element type that is convertible to the `value` type of `InputIteratorT`
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of stream via ``cuda::get_stream``.
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of ``d_in``)
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction functor
+  //!
+  //! @param[in] transform_op
+  //!   Unary transform functor
+  //!
+  //! @param[in] init
+  //!   Initial value of the reduction
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename ReductionOpT,
+            typename TransformOpT,
+            typename T,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t TransformReduce(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    ReductionOpT reduction_op,
+    TransformOpT transform_op,
+    T init,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::TransformReduce");
+    using accum_t = ::cuda::std::
+      __accumulator_t<ReductionOpT, ::cuda::std::invoke_result_t<TransformOpT, detail::it_value_t<InputIteratorT>>, T>;
+    return __transform_reduce<accum_t>(d_in, d_out, num_items, reduction_op, transform_op, init, env);
+  }
+
+  //! @rst
+  //! Reduces segments of values, where segments are demarcated by corresponding runs of identical keys.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This operation computes segmented reductions within ``d_values_in`` using the specified binary ``reduction_op``
+  //! functor. The segments are identified by "runs" of corresponding keys in `d_keys_in`, where runs are maximal
+  //! ranges of consecutive, identical keys. For the *i*\ :sup:`th` run encountered, the last key of the run and
+  //! the corresponding value aggregate of that run are written to ``d_unique_out[i]`` and ``d_aggregates_out[i]``,
+  //! respectively. The total number of runs encountered is written to ``d_num_runs_out``.
+  //!
+  //! - The ``==`` equality operator is used to determine whether keys are equivalent
+  //! - Provides "run-to-run" determinism for pseudo-associative reduction
+  //!   (e.g., addition of floating point types) on the same GPU device.
+  //! - Let ``out`` be any of
+  //!   ``[d_unique_out, d_unique_out + *d_num_runs_out)``
+  //!   ``[d_aggregates_out, d_aggregates_out + *d_num_runs_out)``
+  //!   ``d_num_runs_out``. The ranges represented by ``out`` shall not overlap
+  //!   ``[d_keys_in, d_keys_in + num_items)``,
+  //!   ``[d_values_in, d_values_in + num_items)`` nor ``out`` in any way.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates a reduce-by-key operation
+  //! of a device vector of ``int`` keys and values.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_reduce_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin reduce-by-key-env
+  //!     :end-before: example-end reduce-by-key-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam KeysInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input keys @iterator
+  //!
+  //! @tparam UniqueOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing unique output keys @iterator
+  //!
+  //! @tparam ValuesInputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input values @iterator
+  //!
+  //! @tparam AggregatesOutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing output value aggregates @iterator
+  //!
+  //! @tparam NumRunsOutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of runs encountered @iterator
+  //!
+  //! @tparam ReductionOpT
+  //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of stream via ``cuda::get_stream``.
+  //!
+  //! @param[in] d_keys_in
+  //!   Pointer to the input sequence of keys
+  //!
+  //! @param[out] d_unique_out
+  //!   Pointer to the output sequence of unique keys (one key per run)
+  //!
+  //! @param[in] d_values_in
+  //!   Pointer to the input sequence of corresponding values
+  //!
+  //! @param[out] d_aggregates_out
+  //!   Pointer to the output sequence of value aggregates
+  //!   (one aggregate per run)
+  //!
+  //! @param[out] d_num_runs_out
+  //!   Pointer to total number of runs encountered
+  //!   (i.e., the length of ``d_unique_out``)
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction functor
+  //!
+  //! @param[in] num_items
+  //!   Total number of associated key+value pairs
+  //!   (i.e., the length of ``d_in_keys`` and ``d_in_values``)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename KeysInputIteratorT,
+            typename UniqueOutputIteratorT,
+            typename ValuesInputIteratorT,
+            typename AggregatesOutputIteratorT,
+            typename NumRunsOutputIteratorT,
+            typename ReductionOpT,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ReduceByKey(
+    KeysInputIteratorT d_keys_in,
+    UniqueOutputIteratorT d_unique_out,
+    ValuesInputIteratorT d_values_in,
+    AggregatesOutputIteratorT d_aggregates_out,
+    NumRunsOutputIteratorT d_num_runs_out,
+    ReductionOpT reduction_op,
+    NumItemsT num_items,
+    EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ReduceByKey");
+
+    using OffsetT    = detail::choose_offset_t<NumItemsT>;
+    using EqualityOp = ::cuda::std::equal_to<>;
+
+    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
+      return detail::reduce_by_key::dispatch(
+        storage,
+        bytes,
+        d_keys_in,
+        d_unique_out,
+        d_values_in,
+        d_aggregates_out,
+        d_num_runs_out,
+        EqualityOp{},
+        reduction_op,
+        static_cast<OffsetT>(num_items),
+        stream);
+    });
   }
 
   //! @rst

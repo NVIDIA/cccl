@@ -29,8 +29,8 @@ _CCCL_DIAG_SUPPRESS_MSVC(5246)
 template <class T, template <class, size_t> class Range>
 __host__ __device__ constexpr void test_range()
 {
-  constexpr size_t max_capacity = 5ull;
-  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+  [[maybe_unused]] constexpr size_t max_capacity = 5ull;
+  using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
 
   { // inplace_vector<T, 0>::insert_range(iter, range)
     cuda::std::inplace_vector<T, 0> vec{};
@@ -107,8 +107,8 @@ __host__ __device__ constexpr void test_range()
 template <class T>
 __host__ __device__ constexpr void test()
 {
-  constexpr size_t max_capacity = 42ull;
-  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+  [[maybe_unused]] constexpr size_t max_capacity = 42ull;
+  using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
 
   { // inplace_vector<T, N>::insert(iter, const T&)
     const T to_be_inserted = 3;

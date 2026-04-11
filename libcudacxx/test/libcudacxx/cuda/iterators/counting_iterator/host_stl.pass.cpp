@@ -17,29 +17,30 @@
 
 #include "test_macros.h"
 
-constexpr bool test()
+template <typename T>
+constexpr void test()
 {
-  cuda::counting_iterator<int> iter1{42};
-  cuda::counting_iterator<int> iter2{1337};
-  const int dist = 1337 - 42;
+  cuda::counting_iterator<T> iter1{T{42}};
+  cuda::counting_iterator<T> iter2{T{77}};
+  constexpr int dist = 77 - 42;
 
   {
     auto diff = ::std::distance(iter1, iter2);
-    static_assert(cuda::std::is_same_v<decltype(diff), cuda::std::iter_difference_t<cuda::counting_iterator<int>>>);
+    static_assert(cuda::std::is_same_v<decltype(diff), cuda::std::iter_difference_t<cuda::counting_iterator<T>>>);
     static_assert(noexcept(::std::distance(iter1, iter2)));
     assert(diff == dist);
   }
 
   {
     auto iter = ::std::next(iter1, dist);
-    static_assert(cuda::std::is_same_v<decltype(iter), cuda::counting_iterator<int>>);
+    static_assert(cuda::std::is_same_v<decltype(iter), cuda::counting_iterator<T>>);
     static_assert(noexcept(::std::next(iter1, dist)));
     assert(iter == iter2);
   }
 
   {
     auto iter = ::std::prev(iter2, dist);
-    static_assert(cuda::std::is_same_v<decltype(iter), cuda::counting_iterator<int>>);
+    static_assert(cuda::std::is_same_v<decltype(iter), cuda::counting_iterator<T>>);
     static_assert(noexcept(::std::prev(iter2, dist)));
     assert(iter == iter1);
   }
@@ -50,6 +51,15 @@ constexpr bool test()
     static_assert(noexcept(::std::advance(iter1, dist)));
     assert(iter1 == iter2);
   }
+}
+
+constexpr bool test()
+{
+  test<cuda::std::int8_t>();
+  test<cuda::std::uint8_t>();
+  test<int>();
+  test<cuda::std::int64_t>();
+  test<cuda::std::uint64_t>();
 
   return true;
 }

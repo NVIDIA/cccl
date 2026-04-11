@@ -13,7 +13,9 @@ INPUT                  = ../../libcudacxx/include/cuda/__algorithm \
                          ../../libcudacxx/include/cuda/__container \
                          ../../libcudacxx/include/cuda/__device \
                          ../../libcudacxx/include/cuda/__event \
+                         ../../libcudacxx/include/cuda/__hierarchy \
                          ../../libcudacxx/include/cuda/__iterator \
+                         ../../libcudacxx/include/cuda/__launch \
                          ../../libcudacxx/include/cuda/__memory_pool \
                          ../../libcudacxx/include/cuda/__memory_resource \
                          ../../libcudacxx/include/cuda/__stream \
@@ -167,7 +169,9 @@ ALIASES += "inlinerst=\verbatim embed:rst:inline"
 
 # Quiet mode
 QUIET                  = YES
-WARNINGS               = NO
+WARNINGS               = YES
+WARN_AS_ERROR          = FAIL_ON_WARNINGS
 WARN_IF_UNDOCUMENTED   = NO
 WARN_IF_DOC_ERROR      = YES
+WARN_IF_INCOMPLETE_DOC = NO
 WARN_NO_PARAMDOC       = NO

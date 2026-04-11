@@ -57,7 +57,7 @@ void print(const std::string& s, const Vector& v)
 
   std::cout << s;
   thrust::copy(v.begin(), v.end(), std::ostream_iterator<T>(std::cout, " "));
-  std::cout << std::endl;
+  std::cout << '\n';
 }
 
 int main()
@@ -71,7 +71,7 @@ int main()
   // expand values according to counts
   expand(d_counts.begin(), d_counts.end(), d_values.begin(), d_output.begin());
 
-  std::cout << "Expanding values according to counts" << std::endl;
+  std::cout << "Expanding values according to counts" << '\n';
   print(" counts ", d_counts);
   print(" values ", d_values);
   print(" output ", d_output);

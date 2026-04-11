@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -154,35 +154,11 @@ try
   // OffsetT is checked to match have 64-bit size
   const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
-  // TODO(bgruber): share this with reduce.cu
   const auto policy_sel = [&] {
     using namespace cub::detail;
 
-    auto accum_type = type_t::other;
-    if (accum_t.type == CCCL_FLOAT32)
-    {
-      accum_type = type_t::float32;
-    }
-    else if (accum_t.type == CCCL_FLOAT64)
-    {
-      accum_type = type_t::float64;
-    }
-
-    auto operation_t = op_kind_t::other;
-    switch (op.type)
-    {
-      case CCCL_PLUS:
-        operation_t = op_kind_t::plus;
-        break;
-      case CCCL_MINIMUM:
-        operation_t = op_kind_t::min;
-        break;
-      case CCCL_MAXIMUM:
-        operation_t = op_kind_t::max;
-        break;
-      default:
-        break;
-    }
+    const auto accum_type  = cccl_type_enum_to_cub_type(accum_t.type);
+    const auto operation_t = cccl_op_kind_to_cub_op(op.type);
 
     const int offset_size = int{sizeof(OffsetT)};
     return cub::detail::segmented_reduce::policy_selector{
@@ -319,6 +295,7 @@ CUresult cccl_device_segmented_reduce(
   cccl_iterator_t end_offset,
   cccl_op_t op,
   cccl_value_t init,
+  size_t max_segment_size,
   CUstream stream)
 {
   bool pushed    = false;
@@ -340,7 +317,7 @@ CUresult cccl_device_segmented_reduce(
       indirect_iterator_t{end_offset},
       indirect_arg_t{op},
       indirect_arg_t{init},
-      /* max_segment_size */ size_t{0},
+      max_segment_size,
       stream,
       *static_cast<cub::detail::segmented_reduce::policy_selector*>(build.runtime_policy),
       segmented_reduce::segmented_reduce_kernel_source{build},
@@ -351,7 +328,7 @@ CUresult cccl_device_segmented_reduce(
   catch (const std::exception& exc)
   {
     fflush(stderr);
-    printf("\nEXCEPTION in cccl_device_reduce(): %s\n", exc.what());
+    printf("\nEXCEPTION in cccl_device_segmented_reduce(): %s\n", exc.what());
     fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }

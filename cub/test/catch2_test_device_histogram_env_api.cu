@@ -39,7 +39,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream", "[histog
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceHistogram::HistogramEven failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceHistogram::HistogramEven failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected{2, 2, 2, 1, 1};
@@ -80,7 +80,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream (2D)", "[h
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceHistogram::HistogramEven (2D) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceHistogram::HistogramEven (2D) failed with status: " << error << '\n';
   }
 
   // Samples: 0,1,2, 1,2,0 → bin[0]=2, bin[1]=2, bin[2]=2
@@ -113,7 +113,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream", "[histo
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceHistogram::HistogramRange failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceHistogram::HistogramRange failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected{1, 5, 0, 2};
@@ -152,7 +152,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream (2D)", "[
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceHistogram::HistogramRange (2D) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceHistogram::HistogramRange (2D) failed with status: " << error << '\n';
   }
 
   // Samples: 0,1,2, 1,2,0 → bin[0]=2, bin[1]=2, bin[2]=2
@@ -198,7 +198,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (1D)"
     thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, lower_level, upper_level, num_pixels, env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceHistogram::MultiHistogramEven failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceHistogram::MultiHistogramEven failed with status: " << error << '\n';
   }
 
   // R: 0→bin[0], 3→bin[3]
@@ -261,7 +261,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (2D)"
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceHistogram::MultiHistogramEven (2D) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceHistogram::MultiHistogramEven (2D) failed with status: " << error << '\n';
   }
 
   // R: 0, 3, 1, 2 → bin[0]=1, bin[1]=1, bin[2]=1, bin[3]=1
@@ -318,7 +318,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (1D)
     thrust::raw_pointer_cast(d_samples.data()), d_histogram, num_levels, d_levels, num_pixels, env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceHistogram::MultiHistogramRange failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceHistogram::MultiHistogramRange failed with status: " << error << '\n';
   }
 
   // R: 0→[0,2), 3→[2,4)
@@ -387,7 +387,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (2D)
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceHistogram::MultiHistogramRange (2D) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceHistogram::MultiHistogramRange (2D) failed with status: " << error << '\n';
   }
 
   // R: 0, 3, 1, 2 → [0,2)=2, [2,4)=2

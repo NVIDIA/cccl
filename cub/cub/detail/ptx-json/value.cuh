@@ -25,7 +25,14 @@ struct is_value<value<V>> : cuda::std::true_type
 template <typename T>
 concept a_value = is_value<T>::value;
 
+// NVRTC < 12.5 does not support concept-constrained non-type template parameters
+// in partial specializations. Use requires clauses as a workaround.
+#if _CCCL_COMPILER(NVRTC, <, 12, 5)
+template <auto Nested>
+  requires a_value<decltype(Nested)>
+#else
 template <a_value auto Nested>
+#endif
 struct value<Nested>
 {
   __device__ consteval static auto emit()
@@ -45,7 +52,12 @@ __device__ constexpr int len10(int V)
   return count;
 }
 
+#if _CCCL_COMPILER(NVRTC, <, 12, 5)
+template <auto V>
+  requires cuda::std::integral<decltype(V)>
+#else
 template <cuda::std::integral auto V>
+#endif
 struct value<V>
 {
   __device__ consteval static auto emit()

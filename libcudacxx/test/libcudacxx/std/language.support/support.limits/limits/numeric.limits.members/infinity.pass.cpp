@@ -22,6 +22,7 @@
 #endif // _CCCL_COMPILER(MSVC)
 
 #include "common.h"
+#include "cuda_fp_types.h"
 #include "test_macros.h"
 
 TEST_NV_DIAG_SUPPRESS(221);

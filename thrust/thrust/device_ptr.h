@@ -17,7 +17,11 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/memory.h>
+
+#include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__memory/pointer_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -221,3 +225,40 @@ THRUST_NAMESPACE_END
 
 #include <thrust/detail/device_ptr.inl>
 #include <thrust/detail/raw_pointer_cast.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+// Specialize pointer traits for everything that has the raw_pointer alias
+template <class T>
+struct pointer_traits<THRUST_NS_QUALIFIER::device_ptr<T>>
+{
+  using pointer         = THRUST_NS_QUALIFIER::device_ptr<T>;
+  using element_type    = T;
+  using difference_type = ptrdiff_t;
+
+  template <typename U>
+  struct rebind
+  {
+    using other = typename THRUST_NS_QUALIFIER::detail::rebind_pointer<pointer, U>::type;
+  };
+
+  // Backwards compatibility with thrust::detail::pointer_traits
+  using raw_pointer = typename pointer::raw_pointer;
+
+  // Thrust historically provided a non-standard pointer_to for pointer<void>
+  template <class U, enable_if_t<(is_void_v<T> || is_same_v<U, T>), int> = 0>
+  [[nodiscard]] _CCCL_API inline static pointer pointer_to(U& r) noexcept(noexcept(::cuda::std::addressof(r)))
+  {
+    return static_cast<element_type*>(::cuda::std::addressof(r));
+  }
+
+  //! @brief Retrieve the address of the element pointed at by an thrust pointer
+  //! @param iter A thrust::device_ptr
+  //! @return A pointer to the element pointed to by the thrust pointer
+  [[nodiscard]] _CCCL_API static constexpr raw_pointer to_address(const pointer iter) noexcept
+  {
+    return iter.get();
+  }
+};
+
+_CCCL_END_NAMESPACE_CUDA_STD

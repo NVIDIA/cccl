@@ -58,7 +58,8 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-//! @file The \c buffer class provides a container of contiguous memory
+//! @file
+//! @brief The \c buffer class provides a container of contiguous memory
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 template <class _Env>
@@ -211,6 +212,8 @@ public:
   {}
 
   //! @brief Constructs an empty buffer using an environment
+  //! @param __stream The stream used for allocations.
+  //! @param __resource The memory resource used for allocations.
   //! @param __env The environment providing the needed information
   //! @note No memory is allocated.
   _CCCL_TEMPLATE(class _Resource, class _Env = ::cuda::std::execution::env<>)
@@ -229,6 +232,8 @@ public:
 
   //! @brief Constructs a buffer of size \p __size using a memory and leaves all
   //! elements uninitialized
+  //! @param __stream The stream used for allocations.
+  //! @param __resource The memory resource used for allocations.
   //! @param __env The environment used to query the memory resource.
   //! @param __size The size of the buffer.
   //! @warning This constructor does *NOT* initialize any elements. It is the
@@ -258,6 +263,8 @@ public:
   //! @brief Constructs a buffer using a memory resource and copy-constructs all
   //! elements from the forward range
   //! ``[__first, __last)``
+  //! @param __stream The stream used for allocations.
+  //! @param __resource The memory resource used for allocations.
   //! @param __env The environment used to query the memory resource.
   //! @param __first The start of the input sequence.
   //! @param __last The end of the input sequence.
@@ -284,6 +291,8 @@ public:
 
   //! @brief Constructs a buffer using a memory resource and copy-constructs all
   //! elements from \p __ilist
+  //! @param __stream The stream used for allocations.
+  //! @param __resource The memory resource used for allocations.
   //! @param __env The environment used to query the memory resource.
   //! @param __ilist The initializer_list being copied into the buffer.
   //! @note If `__ilist.size() == 0` then no memory is allocated
@@ -306,6 +315,8 @@ public:
   }
 
   //! @brief Constructs a buffer using a memory resource and an input range
+  //! @param __stream The stream used for allocations.
+  //! @param __resource The memory resource used for allocations.
   //! @param __env The environment used to query the memory resource.
   //! @param __range The input range to be moved into the buffer.
   //! @note If `__range.size() == 0` then no memory is allocated.
@@ -498,8 +509,6 @@ public:
   }
 #  endif // _CCCL_DOXYGEN_INVOKED
 
-  //! @}
-
   //! @brief Returns a reference to the \p __n 'th element of the async_vector
   //! @param __n The index of the element we want to access
   //! @note Does not synchronize with the stored stream
@@ -564,7 +573,7 @@ public:
   //! @brief Move assignment operator
   //! @param __other The other buffer. After move assignment, the other buffer
   //! can only be assigned to or destroyed.
-  _CCCL_HOST_API void operator=(buffer&& __other)
+  _CCCL_HOST_API void operator=(buffer&& __other) noexcept
   {
     __buf_ = ::cuda::std::move(__other.__buf_);
   }
@@ -735,6 +744,16 @@ buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
   return __res;
 }
 
+//! @brief Creates a buffer by copying from \p __source, using the default properties of \p __mr
+//! @param __stream The stream used for allocation and copy.
+//! @param __mr The memory resource used for allocation.
+//! @param __source The source buffer to copy from.
+//! @param __env The environment providing additional configuration.
+#  ifdef _CCCL_DOXYGEN_INVOKED
+template <class _Tp, class _Resource, class... _SourceProperties, class _Env = ::cuda::std::execution::env<>>
+auto make_buffer(
+  stream_ref __stream, _Resource&& __mr, const buffer<_Tp, _SourceProperties...>& __source, const _Env& __env = {});
+#  else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 _CCCL_TEMPLATE(class _Tp, class _Resource, class... _SourceProperties, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
                  _CCCL_AND ::cuda::mr::__has_default_queries<::cuda::std::decay_t<_Resource>>)
@@ -748,6 +767,7 @@ auto make_buffer(
 
   return __res;
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 // Empty buffer make function
 _CCCL_TEMPLATE(
@@ -761,6 +781,14 @@ make_buffer(stream_ref __stream, _Resource&& __mr, const _Env& __env = {})
   return buffer<_Tp, _FirstProperty, _RestProperties...>{__stream, ::cuda::std::forward<_Resource>(__mr), __env};
 }
 
+//! @brief Creates an empty buffer using the default properties of \p __mr
+//! @param __stream The stream used for allocation.
+//! @param __mr The memory resource used for allocation.
+//! @param __env The environment providing additional configuration.
+#  ifdef _CCCL_DOXYGEN_INVOKED
+template <class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>>
+auto make_buffer(stream_ref __stream, _Resource&& __mr, const _Env& __env = {});
+#  else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
                  _CCCL_AND ::cuda::mr::__has_default_queries<::cuda::std::decay_t<_Resource>> _CCCL_AND
@@ -770,6 +798,7 @@ auto make_buffer(stream_ref __stream, _Resource&& __mr, const _Env& __env = {})
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __env};
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
@@ -789,6 +818,16 @@ buffer<_Tp, _FirstProperty, _RestProperties...> make_buffer(
   return __res;
 }
 
+//! @brief Creates a buffer of \p __size elements initialized to \p __value, using the default properties of \p __mr
+//! @param __stream The stream used for allocation and initialization.
+//! @param __mr The memory resource used for allocation.
+//! @param __size The number of elements.
+//! @param __value The value to initialize elements with.
+//! @param __env The environment providing additional configuration.
+#  ifdef _CCCL_DOXYGEN_INVOKED
+template <class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>>
+auto make_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, const _Tp& __value, const _Env& __env = {});
+#  else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
                  _CCCL_AND ::cuda::mr::__has_default_queries<::cuda::std::decay_t<_Resource>>)
@@ -802,6 +841,7 @@ auto make_buffer(
     __stream, __res.__unwrapped_begin(), __size, __value);
   return __res;
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 _CCCL_END_NAMESPACE_ARCH_DEPENDENT
 
@@ -818,6 +858,15 @@ make_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::no_ini
     __stream, ::cuda::std::forward<_Resource>(__mr), __size, ::cuda::no_init, __env};
 }
 
+//! @brief Creates a buffer of \p __size uninitialized elements, using the default properties of \p __mr
+//! @param __stream The stream used for allocation.
+//! @param __mr The memory resource used for allocation.
+//! @param __size The number of elements.
+//! @param __env The environment providing additional configuration.
+#  ifdef _CCCL_DOXYGEN_INVOKED
+template <class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>>
+auto make_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::no_init_t, const _Env& __env = {});
+#  else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
                  _CCCL_AND ::cuda::mr::__has_default_queries<_Resource>)
@@ -826,6 +875,7 @@ auto make_buffer(stream_ref __stream, _Resource&& __mr, size_t __size, ::cuda::n
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __size, ::cuda::no_init, __env};
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 // Iterator range make function
 _CCCL_TEMPLATE(class _Tp,
@@ -844,6 +894,16 @@ make_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last, 
     __stream, ::cuda::std::forward<_Resource>(__mr), __first, __last, __env};
 }
 
+//! @brief Creates a buffer from the iterator range `[__first, __last)`, using the default properties of \p __mr
+//! @param __stream The stream used for allocation and copy.
+//! @param __mr The memory resource used for allocation.
+//! @param __first The start of the input sequence.
+//! @param __last The end of the input sequence.
+//! @param __env The environment providing additional configuration.
+#  ifdef _CCCL_DOXYGEN_INVOKED
+template <class _Tp, class _Resource, class _Iter, class _Env = ::cuda::std::execution::env<>>
+auto make_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __last, const _Env& __env = {});
+#  else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Iter, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
@@ -853,6 +913,7 @@ auto make_buffer(stream_ref __stream, _Resource&& __mr, _Iter __first, _Iter __l
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __first, __last, __env};
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 // Initializer list make function
 _CCCL_TEMPLATE(
@@ -867,6 +928,16 @@ make_buffer(stream_ref __stream, _Resource&& __mr, ::cuda::std::initializer_list
     __stream, ::cuda::std::forward<_Resource>(__mr), __ilist, __env};
 }
 
+//! @brief Creates a buffer from \p __ilist, using the default properties of \p __mr
+//! @param __stream The stream used for allocation and copy.
+//! @param __mr The memory resource used for allocation.
+//! @param __ilist The initializer_list being copied into the buffer.
+//! @param __env The environment providing additional configuration.
+#  ifdef _CCCL_DOXYGEN_INVOKED
+template <class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>>
+auto make_buffer(
+  stream_ref __stream, _Resource&& __mr, ::cuda::std::initializer_list<_Tp> __ilist, const _Env& __env = {});
+#  else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>>
                  _CCCL_AND ::cuda::mr::__has_default_queries<::cuda::std::decay_t<_Resource>>)
@@ -876,6 +947,7 @@ auto make_buffer(
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), __ilist, __env};
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 // Range make function for ranges
 _CCCL_TEMPLATE(class _Tp,
@@ -894,6 +966,15 @@ make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const _Env&
     __stream, ::cuda::std::forward<_Resource>(__mr), ::cuda::std::forward<_Range>(__range), __env};
 }
 
+//! @brief Creates a buffer from \p __range, using the default properties of \p __mr
+//! @param __stream The stream used for allocation and copy.
+//! @param __mr The memory resource used for allocation.
+//! @param __range The input range to be copied into the buffer.
+//! @param __env The environment providing additional configuration.
+#  ifdef _CCCL_DOXYGEN_INVOKED
+template <class _Tp, class _Resource, class _Range, class _Env = ::cuda::std::execution::env<>>
+auto make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const _Env& __env = {});
+#  else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 _CCCL_TEMPLATE(class _Tp, class _Resource, class _Range, class _Env = ::cuda::std::execution::env<>)
 _CCCL_REQUIRES(
   ::cuda::mr::synchronous_resource<::cuda::std::decay_t<_Resource>> _CCCL_AND ::cuda::mr::__has_default_queries<
@@ -903,6 +984,7 @@ auto make_buffer(stream_ref __stream, _Resource&& __mr, _Range&& __range, const 
   using __buffer_type = __buffer_type_for_props<_Tp, typename ::cuda::std::decay_t<_Resource>::default_queries>;
   return __buffer_type{__stream, ::cuda::std::forward<_Resource>(__mr), ::cuda::std::forward<_Range>(__range), __env};
 }
+#  endif // _CCCL_DOXYGEN_INVOKED
 _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>

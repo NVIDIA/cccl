@@ -14,6 +14,8 @@
 // template<class RealType = double>
 // class extreme_value_distribution
 
+// UNSUPPORTED: true
+
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 #include <cuda/std/random>

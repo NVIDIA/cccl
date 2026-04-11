@@ -148,7 +148,7 @@ public:
   /*! Move constructor moves from another \p device_vector.
    *  \param v The device_vector to move.
    */
-  device_vector(device_vector&& v)
+  device_vector(device_vector&& v) noexcept
       : Parent(::cuda::std::move(v))
   {}
 
@@ -172,7 +172,7 @@ public:
   /*! Move assign operator moves from another \p device_vector.
    *  \param v The device_vector to move.
    */
-  device_vector& operator=(device_vector&& v)
+  device_vector& operator=(device_vector&& v) noexcept
   {
     Parent::operator=(::cuda::std::move(v));
     return *this;

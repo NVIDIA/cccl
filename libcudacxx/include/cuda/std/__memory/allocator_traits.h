@@ -53,6 +53,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
   template <class _Tp>                                       \
   inline constexpr bool NAME##_v<_Tp, void_t<typename _Tp::PROPERTY>> = true;
 
+// Allocator::pointer is deprecated since C++17
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 // __pointer
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_pointer, pointer)
 template <class _Tp, class _Alloc, class _RawAlloc = remove_reference_t<_Alloc>, bool = __has_pointer_v<_RawAlloc>>
@@ -65,7 +67,10 @@ struct __pointer<_Tp, _Alloc, _RawAlloc, false>
 {
   using type _CCCL_NODEBUG_ALIAS = _Tp*;
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
+// Allocator::const_pointer is deprecated since C++17
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 // __const_pointer
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_const_pointer, const_pointer)
 template <class _Tp, class _Ptr, class _Alloc, bool = __has_const_pointer_v<_Alloc>>
@@ -78,6 +83,7 @@ struct __const_pointer<_Tp, _Ptr, _Alloc, false>
 {
   using type _CCCL_NODEBUG_ALIAS = typename pointer_traits<_Ptr>::template rebind<const _Tp>;
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 // __void_pointer
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_void_pointer, void_pointer)

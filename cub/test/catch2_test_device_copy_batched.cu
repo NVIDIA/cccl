@@ -176,7 +176,7 @@ try
 }
 catch (std::bad_alloc& e)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
 
 C2H_TEST("DeviceCopy::Batched works for a very large range",
@@ -209,7 +209,7 @@ try
 }
 catch (std::bad_alloc& e)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
 
 C2H_TEST("DeviceCopy::Batched works for non-trivial ctors", "[copy]")
@@ -293,5 +293,5 @@ try
 }
 catch (std::bad_alloc& e)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }

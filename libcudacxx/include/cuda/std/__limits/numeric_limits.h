@@ -58,7 +58,7 @@ enum class __numeric_limits_type
 };
 
 template <class _Tp>
-_CCCL_API constexpr __numeric_limits_type __make_numeric_limits_type()
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __numeric_limits_type __make_numeric_limits_type() noexcept
 {
   if constexpr (is_same_v<_Tp, bool>)
   {
@@ -78,7 +78,16 @@ _CCCL_API constexpr __numeric_limits_type __make_numeric_limits_type()
   }
 }
 
-template <class _Tp, __numeric_limits_type = __make_numeric_limits_type<_Tp>()>
+// To avoid including nvfp headers, we add the _Up type defaulted to _Tp which makes the specialization still be a
+// template, which won't be instantiated unless the numeric_limits<_Tp> class is instantiated. The specialization should
+// look as:
+//
+// template <class _Tp>
+// class __numeric_limits_impl<__nvfp_type, __numeric_limits_type::__floating_point, _Tp>
+// { ... };
+//
+// and _Tp should be used everywhere instead of __nvfp_type.
+template <class _Tp, __numeric_limits_type = __make_numeric_limits_type<_Tp>(), class _Up = _Tp>
 class __numeric_limits_impl
 {
 public:

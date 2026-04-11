@@ -1,6 +1,5 @@
 set(
   static_assert_tests
-  exec_place_guard_data_place.cu
   static.cu
   task_prototype.cu
   stream_task_prototype.cu

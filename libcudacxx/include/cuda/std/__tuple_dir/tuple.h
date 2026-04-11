@@ -279,12 +279,12 @@ public:
     return *this;
   }
 
-  _CCCL_API void swap(tuple& __t)
+  _CCCL_API void swap(tuple& __t) noexcept(noexcept(__base_.swap(__t.__base_)))
   {
     __base_.swap(__t.__base_);
   }
 
-  _CCCL_API friend void swap(tuple& __t, tuple& __u)
+  _CCCL_API friend void swap(tuple& __t, tuple& __u) noexcept(noexcept(__t.swap(__u)))
   {
     __t.swap(__u);
   }

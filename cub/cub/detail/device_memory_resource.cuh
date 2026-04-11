@@ -68,6 +68,11 @@ struct device_memory_resource
     return ptr;
   }
 
+  CUB_RUNTIME_FUNCTION void deallocate(::cuda::stream_ref stream, void* ptr, size_t bytes, size_t /* alignment */)
+  {
+    deallocate(stream, ptr, bytes);
+  }
+
   CUB_RUNTIME_FUNCTION void deallocate(::cuda::stream_ref stream, void* ptr, size_t /* bytes */)
   {
     NV_IF_TARGET( //

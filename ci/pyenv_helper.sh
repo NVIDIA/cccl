@@ -1,7 +1,11 @@
-#!/bin/bash
-
 setup_python_env() {
     local py_version=$1
+
+    # Source pretty_printing.sh for begin_group/end_group helpers
+    local script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    source "${script_dir}/pretty_printing.sh"
+
+    begin_group "🐍 Setting up Python ${py_version} (pyenv)"
 
     # check if pyenv is installed
     if ! command -v pyenv &> /dev/null; then
@@ -14,7 +18,6 @@ setup_python_env() {
         source /etc/os-release
         if [ "$ID" = "ubuntu" ]; then
             # Use the retry helper to mitigate issues with apt network errors:
-            script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
             retry() {
               "${script_dir}/util/retry.sh" 5 30 "$@"
             }
@@ -44,4 +47,6 @@ setup_python_env() {
     pyenv local "${py_version}"
 
     pip install --upgrade pip
+
+    end_group "🐍 Setting up Python ${py_version} (pyenv)"
 }

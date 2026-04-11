@@ -27,7 +27,7 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeftCopy accepts stream", "[adj
     input.begin(), output.begin(), input.size(), cuda::std::minus{}, stream_ref);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceAdjacentDifference::SubtractLeftCopy failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceAdjacentDifference::SubtractLeftCopy failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
@@ -48,7 +48,7 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeft accepts stream", "[adjacen
   auto error = cub::DeviceAdjacentDifference::SubtractLeft(data.begin(), data.size(), cuda::std::minus{}, stream_ref);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceAdjacentDifference::SubtractLeft failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceAdjacentDifference::SubtractLeft failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
@@ -72,7 +72,7 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractRightCopy accepts stream", "[ad
     input.begin(), output.begin(), input.size(), cuda::std::minus{}, stream_ref);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceAdjacentDifference::SubtractRightCopy failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceAdjacentDifference::SubtractRightCopy failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
@@ -94,7 +94,7 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractRight accepts stream", "[adjace
   auto error = cub::DeviceAdjacentDifference::SubtractRight(data.begin(), data.size(), cuda::std::minus{}, stream_ref);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceAdjacentDifference::SubtractRight failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceAdjacentDifference::SubtractRight failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
