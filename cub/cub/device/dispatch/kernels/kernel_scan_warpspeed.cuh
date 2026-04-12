@@ -601,7 +601,10 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
               if constexpr (is_last_tile_ic) // this branch would cost up to 4% BW for I8 and I16 if it were at runtime
               {
                 sumExclusiveIntraWarp = __scan_detail::warpScanExclusivePartial(
-                  regSumThread, scan_op, valid_threads_this_warp, specialRegisters.laneIdx < valid_threads_this_warp);
+                  regSumThread,
+                  scan_op,
+                  valid_threads_this_warp,
+                  specialRegisters.laneIdx < static_cast<uint32_t>(valid_threads_this_warp));
               }
               else
               {
@@ -621,7 +624,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
                 bool includeIntraWarpSum = specialRegisters.laneIdx != 0;
                 if constexpr (is_last_tile_ic)
                 {
-                  includeIntraWarpSum &= specialRegisters.laneIdx < valid_threads_this_warp;
+                  includeIntraWarpSum &= specialRegisters.laneIdx < static_cast<uint32_t>(valid_threads_this_warp);
                 }
 
                 if (includeIntraWarpSum)
