@@ -299,13 +299,13 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   ////////////////////////////////////////////////////////////////////////////////
   // Resources
   ////////////////////////////////////////////////////////////////////////////////
-  warpspeed::SyncHandler syncHandler{};
-  warpspeed::SmemAllocator smemAllocator{};
-
-  ScanResources<PolicySelector, InputT, OutputT, AccumT> res =
-    allocResources<PolicySelector, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params.numStages);
-
-  syncHandler.clusterInitSync(specialRegisters);
+  ScanResources<PolicySelector, InputT, OutputT, AccumT> res = [&] {
+    warpspeed::SyncHandler syncHandler{};
+    warpspeed::SmemAllocator smemAllocator{};
+    auto r = allocResources<PolicySelector, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params.numStages);
+    syncHandler.clusterInitSync(specialRegisters);
+    return r;
+  }();
 
   // Inclusive scan if no init_value type is provided
   static constexpr bool hasInit     = !::cuda::std::is_same_v<RealInitValueT, NullType>;
