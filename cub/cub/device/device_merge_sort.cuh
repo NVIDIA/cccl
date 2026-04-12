@@ -806,7 +806,8 @@ public:
    * // Declare, allocate, and initialize device-accessible pointers for
    * // sorting data
    * int  num_items;       // e.g., 7
-   * int  *d_keys;         // e.g., [8, 6, 7, 5, 3, 0, 9]
+   * int  *d_input_keys;   // e.g., [8, 6, 7, 5, 3, 0, 9]
+   * int  *d_output_keys;  // must hold at least num_items elements
    * ...
    *
    * // Initialize comparator
@@ -817,7 +818,7 @@ public:
    * size_t temp_storage_bytes = 0;
    * cub::DeviceMergeSort::SortKeysCopy(
    *   d_temp_storage, temp_storage_bytes,
-   *   d_keys, num_items, custom_op);
+   *   d_input_keys, d_output_keys, num_items, custom_op);
    *
    * // Allocate temporary storage
    * cudaMalloc(&d_temp_storage, temp_storage_bytes);
@@ -825,9 +826,9 @@ public:
    * // Run sorting operation
    * cub::DeviceMergeSort::SortKeysCopy(
    *   d_temp_storage, temp_storage_bytes,
-   *   d_keys, num_items, custom_op);
+   *   d_input_keys, d_output_keys, num_items, custom_op);
    *
-   * // d_keys      <-- [0, 3, 5, 6, 7, 8, 9]
+   * // d_output_keys   <-- [0, 3, 5, 6, 7, 8, 9]
    * @endcode
    *
    * @tparam KeyInputIteratorT
