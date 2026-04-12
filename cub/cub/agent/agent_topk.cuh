@@ -760,7 +760,7 @@ struct AgentTopK
 
     // Early stop means that the bin containing the k-th element has been identified, and all
     // the elements in this bin are exactly the remaining k items we need to find. So we can
-    // stop the process right here.
+    // stop the process after this filtering pass.
     const bool early_stop = (current_len == static_cast<OffsetT>(current_k));
 
     // If previous_len > buffer_length, it means we haven't started writing candidates to out_buf yet,

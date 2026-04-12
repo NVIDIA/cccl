@@ -30,7 +30,6 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__utility/swap.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -644,27 +643,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     }
 
     // Passes 1..num_passes-1: fused filter + histogram kernel
-    // Initialize buffers "one swap ahead" so that the first swap produces the correct assignment for pass 1
-    key_in_t* in_buf     = static_cast<key_in_t*>(allocations[2]);
-    key_in_t* out_buf    = static_cast<key_in_t*>(allocations[3]);
-    OffsetT* in_idx_buf  = nullptr;
-    OffsetT* out_idx_buf = nullptr;
+    // Current() = input buffer (read), Alternate() = output buffer (write)
+    DoubleBuffer<key_in_t> key_bufs(static_cast<key_in_t*>(allocations[3]), static_cast<key_in_t*>(allocations[2]));
+    DoubleBuffer<OffsetT> idx_bufs;
     if constexpr (!keys_only)
     {
-      in_idx_buf  = static_cast<OffsetT*>(allocations[4]);
-      out_idx_buf = static_cast<OffsetT*>(allocations[5]);
+      idx_bufs = DoubleBuffer<OffsetT>(static_cast<OffsetT*>(allocations[5]), static_cast<OffsetT*>(allocations[4]));
     }
 
     int pass = 1;
     for (; pass < num_passes; pass++)
     {
-      using ::cuda::std::swap;
-      swap(in_buf, out_buf);
-      if constexpr (!keys_only)
-      {
-        swap(in_idx_buf, out_idx_buf);
-      }
-
       extract_bin_op extract_op(pass, total_bits, decomposer);
       identify_candidates_op identify_op(&counter->kth_key_bits, pass, total_bits, decomposer);
 
@@ -675,10 +664,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                     d_keys_out,
                     d_values_in,
                     d_values_out,
-                    in_buf,
-                    in_idx_buf,
-                    out_buf,
-                    out_idx_buf,
+                    key_bufs.Current(),
+                    idx_bufs.Current(),
+                    key_bufs.Alternate(),
+                    idx_bufs.Alternate(),
                     counter,
                     histogram,
                     num_items,
@@ -690,6 +679,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                     pass == num_passes - 1)))
       {
         return error;
+      }
+
+      key_bufs.selector ^= 1;
+      if constexpr (!keys_only)
+      {
+        idx_bufs.selector ^= 1;
       }
     }
 
@@ -720,8 +715,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
                   d_keys_out,
                   d_values_in,
                   d_values_out,
-                  out_buf,
-                  out_idx_buf,
+                  key_bufs.Current(),
+                  idx_bufs.Current(),
                   counter,
                   num_items,
                   k,
