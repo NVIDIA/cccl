@@ -348,7 +348,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       }
 
       ////////////////////////////////////////////////////////////////////////////////
-      // Store warp sump to shared memory
+      // Store warp sum to shared memory
       ////////////////////////////////////////////////////////////////////////////////
       warpspeed::SmemRef refSumThreadAndWarpW = phaseSumThreadAndWarpW.acquireRef();
 
@@ -357,6 +357,14 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         refSumThreadAndWarpW.data()[squadReduce.threadCount() + squad.warpRank()] = regWarpSum;
       }
       squad.syncThreads();
+
+      // For partial tiles, overwrite invalid warp sums with warp 0's sum so that
+      // squadScanStore never passes garbage data to scan_op.
+      if (is_last_tile && squad.isLeaderThreadOfWarp() && squad.warpRank() >= valid_warps)
+      {
+        refSumThreadAndWarpW.data()[squadReduce.threadCount() + squad.warpRank()] =
+          refSumThreadAndWarpW.data()[squadReduce.threadCount()];
+      }
 
       ////////////////////////////////////////////////////////////////////////////////
       // Reduce across squad
@@ -410,6 +418,18 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       // Store thread sum
       ////////////////////////////////////////////////////////////////////////////////
       refSumThreadAndWarpW.data()[squad.threadRank()] = regThreadSum;
+
+      // For partial tiles, overwrite invalid thread sums with thread 0's sum so
+      // that squadScanStore's warpScanExclusive never passes garbage to scan_op.
+      if (is_last_tile)
+      {
+        squad.syncThreads();
+        const int valid_threads = ::cuda::ceil_div(valid_items, elemPerThread);
+        if (squad.threadRank() >= valid_threads)
+        {
+          refSumThreadAndWarpW.data()[squad.threadRank()] = refSumThreadAndWarpW.data()[0];
+        }
+      }
     }
 
     if (squad == squadLookback)
@@ -489,9 +509,9 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
         //
         // For lane1, ..., 31, we add the result to sumExclusive.
         //
-        // If the warp contains partial data, we pass invalid elements to
-        // scan_op, and sumExclusiveIntraWarp is invalid when the inputs were
-        // invalid.
+        // Thread and warp sums in shared memory have been sanitized by
+        // squadReduce for partial tiles (invalid entries duplicated from valid
+        // ones), so scan_op always operates on valid data.
         AccumT regSumThread          = refSumThreadAndWarpR.data()[squad.threadRank()];
         AccumT sumExclusiveIntraWarp = __scan_detail::warpScanExclusive(regSumThread, scan_op);
 
@@ -568,12 +588,31 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
       // Acquire refInOut for remainder of scope.
       warpspeed::SmemRef refInOutRW = phaseInOutRW.acquireRef();
 
-      // We are always loading a full tile even for the last one. That will call scan_op on invalid data
-      // loading partial tiles here regresses perf for about 10-15%
+      // We are always loading a full tile even for the last one.
+      // For partial tiles, invalid elements are overwritten below to prevent
+      // scan_op from being called with garbage data (which may cause OOB
+      // accesses in user-defined operators that index into lookup tables).
       warpspeed::squadLoadSmem(
         squad,
         regSumInclusive,
         reinterpret_cast<const InputT*>(&refInOutRW.data().inout[0] + loadInfo.smemStartSkipBytes));
+
+      if (is_last_tile)
+      {
+        const int valid_items_this_thread =
+          cuda::std::clamp(valid_items - squad.threadRank() * elemPerThread, 0, elemPerThread);
+        // Overwrite invalid elements with the first element to ensure scan_op
+        // always operates on valid data. The results for invalid elements are
+        // never stored (the store path handles partial tiles correctly).
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int i = 0; i < elemPerThread; ++i)
+        {
+          if (i >= valid_items_this_thread)
+          {
+            regSumInclusive[i] = regSumInclusive[0];
+          }
+        }
+      }
 
       // Perform inclusive scan of register array in current thread.
       // warp_0/thread_0 in the first tile when there is no initial value, we MUST NOT use sumExclusive
