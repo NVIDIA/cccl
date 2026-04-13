@@ -27,7 +27,6 @@ Checks:
   - '-modernize-use-std-numbers'
   - '-modernize-deprecated-headers'
   - '-modernize-min-max-use-initializer-list'
-  - '-modernize-use-emplace'
   - '-modernize-make-unique'
   - '-modernize-use-using'
   - '-modernize-use-integer-sign-comparison'
