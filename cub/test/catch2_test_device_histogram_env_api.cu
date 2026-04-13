@@ -45,6 +45,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream", "[histog
   thrust::device_vector<int> expected{2, 2, 2, 1, 1};
   // example-end histogram-even-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_histogram == expected);
 }
@@ -87,6 +88,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramEven accepts env with stream (2D)", "[h
   thrust::device_vector<int> expected{2, 2, 2};
   // example-end histogram-even-2d-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_histogram == expected);
 }
@@ -119,6 +121,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream", "[histo
   thrust::device_vector<int> expected{1, 5, 0, 2};
   // example-end histogram-range-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_histogram == expected);
 }
@@ -159,6 +162,7 @@ C2H_TEST("cub::DeviceHistogram::HistogramRange accepts env with stream (2D)", "[
   thrust::device_vector<int> expected{2, 2, 2};
   // example-end histogram-range-2d-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_histogram == expected);
 }
@@ -209,6 +213,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (1D)"
   thrust::device_vector<int> expected_b{0, 1, 1, 0};
   // example-end multi-histogram-even-1d-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_histogram_r == expected_r);
   REQUIRE(d_histogram_g == expected_g);
@@ -272,6 +277,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramEven accepts env with stream (2D)"
   thrust::device_vector<int> expected_b{1, 1, 1, 1};
   // example-end multi-histogram-even-2d-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_histogram_r == expected_r);
   REQUIRE(d_histogram_g == expected_g);
@@ -329,6 +335,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (1D)
   thrust::device_vector<int> expected_b{0, 1, 1};
   // example-end multi-histogram-range-1d-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_histogram_r == expected_r);
   REQUIRE(d_histogram_g == expected_g);
@@ -398,6 +405,7 @@ C2H_TEST("cub::DeviceHistogram::MultiHistogramRange accepts env with stream (2D)
   thrust::device_vector<int> expected_b{1, 1, 1};
   // example-end multi-histogram-range-2d-env
 
+  stream.sync();
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_histogram_r == expected_r);
   REQUIRE(d_histogram_g == expected_g);
