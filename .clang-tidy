@@ -24,7 +24,6 @@ Checks:
   - '-performance-enum-size'
   - '-performance-unnecessary-value-param'
   - 'modernize-*'
-  - '-modernize-use-using'
   - '-modernize-use-integer-sign-comparison'
   - '-modernize-use-nodiscard'
   - '-modernize-use-default-member-init'
