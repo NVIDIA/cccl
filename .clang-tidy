@@ -24,7 +24,6 @@ Checks:
   - '-performance-enum-size'
   - '-performance-unnecessary-value-param'
   - 'modernize-*'
-  - '-modernize-deprecated-headers'
   - '-modernize-use-using'
   - '-modernize-use-integer-sign-comparison'
   - '-modernize-concat-nested-namespaces'
