@@ -32,6 +32,7 @@
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__utility/cmp.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -111,7 +112,7 @@ struct WarpScanSmem
     __syncwarp(member_mask);
 
     // Update partial if addend is in range
-    if (HAS_IDENTITY || (lane_id >= OFFSET))
+    if (HAS_IDENTITY || ::cuda::std::cmp_greater_equal(lane_id, OFFSET))
     {
       T addend = (T) ThreadLoad<LOAD_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id - OFFSET]);
       partial  = scan_op(addend, partial);
@@ -240,7 +241,7 @@ struct WarpScanSmem
     __syncwarp(member_mask);
 
     // Iterate scan steps
-    if (static_cast<int>(lane_id) < valid_items)
+    if (::cuda::std::cmp_less(lane_id, valid_items))
     {
       inclusive_output = input;
     }
@@ -260,7 +261,7 @@ struct WarpScanSmem
       __syncwarp(member_mask);
       T addend = temp_storage[HALF_WARP_THREADS + lane_id - offset];
       // Update partial if addend is in range
-      if ((lane_id >= offset) && (static_cast<int>(lane_id) < valid_items))
+      if (::cuda::std::cmp_greater_equal(lane_id, offset) && ::cuda::std::cmp_less(lane_id, valid_items))
       {
         inclusive_output = scan_op(addend, inclusive_output);
       }
@@ -481,7 +482,7 @@ struct WarpScanSmem
     if constexpr (::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>)
     {
       // initial value presumed 0
-      if (static_cast<int>(lane_id) < valid_items)
+      if (::cuda::std::cmp_less(lane_id, valid_items))
       {
         exclusive = inclusive - input;
       }
@@ -494,7 +495,7 @@ struct WarpScanSmem
       __syncwarp(member_mask);
 
       T temp = temp_storage[HALF_WARP_THREADS + lane_id - 1];
-      if (static_cast<int>(lane_id) < valid_items)
+      if (::cuda::std::cmp_less(lane_id, valid_items))
       {
         exclusive = temp;
       }
@@ -528,7 +529,7 @@ struct WarpScanSmem
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   UpdatePartial(T input, T& inclusive, T& exclusive, ScanOpT scan_op, int valid_items, T initial_value)
   {
-    if (static_cast<int>(lane_id) < valid_items)
+    if (::cuda::std::cmp_less(lane_id, valid_items))
     {
       inclusive = scan_op(initial_value, inclusive);
     }
@@ -590,7 +591,7 @@ struct WarpScanSmem
     {
       // Should not be replaced with UpdatePartial() to avoid redundant store of inclusive and sync.
       T temp = temp_storage[HALF_WARP_THREADS + lane_id - 1];
-      if (static_cast<int>(lane_id) < valid_items)
+      if (::cuda::std::cmp_less(lane_id, valid_items))
       {
         exclusive = temp;
       }

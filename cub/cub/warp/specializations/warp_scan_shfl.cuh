@@ -33,6 +33,7 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__utility/cmp.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -415,7 +416,7 @@ struct WarpScanShfl
   _CCCL_DEVICE _CCCL_FORCEINLINE _Tp
   InclusiveScanStepPartial(_Tp input, ScanOpT scan_op, int valid_items, int first_lane, int offset)
   {
-    _CCCL_ASSERT((first_lane >= 0) && (first_lane <= static_cast<int>(lane_id)),
+    _CCCL_ASSERT((first_lane >= 0) && (::cuda::std::cmp_less_equal(first_lane, lane_id)),
                  "first_lane must be in range [0, lane_id]");
     _CCCL_ASSERT((offset > 0) && (offset < LOGICAL_WARP_THREADS),
                  "offset must be in the range [1, LOGICAL_WARP_THREADS)");
@@ -424,7 +425,7 @@ struct WarpScanShfl
 
     // Perform scan op if from a valid peer
     _Tp output = input;
-    if (static_cast<int>(lane_id) >= first_lane + offset && static_cast<int>(lane_id) < valid_items)
+    if (::cuda::std::cmp_greater_equal(lane_id, first_lane + offset) && ::cuda::std::cmp_less(lane_id, valid_items))
     {
       output = scan_op(temp, input);
     }
@@ -560,7 +561,7 @@ struct WarpScanShfl
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   InclusiveScanPartial(_Tp input, _Tp& inclusive_output, ScanOpT scan_op, int valid_items)
   {
-    if (static_cast<int>(lane_id) < valid_items)
+    if (::cuda::std::cmp_less(lane_id, valid_items))
     {
       inclusive_output = input;
     }
@@ -786,7 +787,7 @@ struct WarpScanShfl
     if constexpr (::cuda::std::is_integral_v<T> && cub::detail::is_cuda_std_plus_v<ScanOpT, T>)
     {
       // initial value presumed 0
-      if (static_cast<int>(lane_id) < valid_items)
+      if (::cuda::std::cmp_less(lane_id, valid_items))
       {
         exclusive = inclusive - input;
       }
@@ -795,7 +796,7 @@ struct WarpScanShfl
     {
       // initial value unknown
       T temp = ::cuda::device::warp_shuffle_up<LOGICAL_WARP_THREADS>(inclusive, 1, member_mask);
-      if (static_cast<int>(lane_id) < valid_items)
+      if (::cuda::std::cmp_less(lane_id, valid_items))
       {
         exclusive = temp;
       }
@@ -830,7 +831,7 @@ struct WarpScanShfl
   UpdatePartial(T input, T& inclusive, T& exclusive, ScanOpT scan_op, int valid_items, T initial_value)
   {
     // Update inclusive
-    if (static_cast<int>(lane_id) < valid_items)
+    if (::cuda::std::cmp_less(lane_id, valid_items))
     {
       inclusive = scan_op(initial_value, inclusive);
     }

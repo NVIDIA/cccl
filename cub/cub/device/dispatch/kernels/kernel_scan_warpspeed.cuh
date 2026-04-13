@@ -34,6 +34,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/cuda_capabilities.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/move.h>
 
 CUB_NAMESPACE_BEGIN
@@ -591,7 +592,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
                   regSumThread,
                   scan_op,
                   valid_threads_this_warp,
-                  specialRegisters.laneIdx < static_cast<uint32_t>(valid_threads_this_warp));
+                  ::cuda::std::cmp_less(specialRegisters.laneIdx, valid_threads_this_warp));
               }
               else
               {
@@ -611,7 +612,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
                 bool includeIntraWarpSum = specialRegisters.laneIdx != 0;
                 if constexpr (is_last_tile_ic)
                 {
-                  includeIntraWarpSum &= specialRegisters.laneIdx < static_cast<uint32_t>(valid_threads_this_warp);
+                  includeIntraWarpSum &= ::cuda::std::cmp_less(specialRegisters.laneIdx, valid_threads_this_warp);
                 }
 
                 if (includeIntraWarpSum)

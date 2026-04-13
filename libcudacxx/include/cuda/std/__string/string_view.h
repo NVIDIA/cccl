@@ -28,6 +28,7 @@
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__string/char_traits.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -230,7 +231,7 @@ private:
 
   [[nodiscard]] _CCCL_API static constexpr size_t __check_offset(ptrdiff_t __diff, size_t __len)
   {
-    if (__diff < 0 || static_cast<size_t>(__diff) > __len)
+    if (__diff < 0 || ::cuda::std::cmp_greater(__diff, __len))
     {
       _CCCL_THROW(::std::out_of_range, "__string_view index out of range");
     }

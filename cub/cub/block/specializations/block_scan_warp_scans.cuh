@@ -25,6 +25,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__utility/cmp.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -122,7 +123,7 @@ struct BlockScanWarpScans
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ApplyWarpAggregates(T& warp_prefix, ScanOp scan_op, T& block_aggregate, constant_t<WARP> /*addend_warp*/)
   {
-    if (warp_id == WARP)
+    if (::cuda::std::cmp_equal(warp_id, WARP))
     {
       warp_prefix = block_aggregate;
     }

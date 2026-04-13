@@ -48,6 +48,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda_runtime_api.h>
@@ -497,7 +498,7 @@ struct DispatchScan
   template <int SMemSizeForSingleStage>
   CUB_RUNTIME_FUNCTION static void __check_smem()
   {
-    static_assert(SMemSizeForSingleStage <= detail::max_smem_per_block,
+    static_assert(::cuda::std::cmp_less_equal(SMemSizeForSingleStage, detail::max_smem_per_block),
                   "Single-stage warpspeed scan exceeds architecture independent SMEM (48KiB)");
   }
 

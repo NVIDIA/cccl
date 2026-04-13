@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/utility>
 
 #include <vector>
 
@@ -30,7 +31,7 @@ static stf_pos4 blocked_mapper_1d(stf_pos4 data_coords, stf_dim4 data_dims, stf_
   }
   auto c          = static_cast<int64_t>(data_coords.x);
   int64_t place_x = c / static_cast<int64_t>(part_size);
-  if (place_x >= static_cast<int64_t>(nplaces))
+  if (::cuda::std::cmp_greater_equal(place_x, nplaces))
   {
     place_x = static_cast<int64_t>(nplaces) - 1;
   }

@@ -33,6 +33,7 @@
 #    include <cuda/std/__type_traits/integral_constant.h>
 #    include <cuda/std/__type_traits/is_default_constructible.h>
 #    include <cuda/std/__type_traits/is_pointer.h>
+#    include <cuda/std/__utility/cmp.h>
 #    include <cuda/std/cstdint>
 
 #    include <cuda/std/__cccl/prologue.h>
@@ -61,7 +62,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   constexpr bool __is_void_ptr = ::cuda::std::is_same_v<_Up, void*> || ::cuda::std::is_same_v<_Up, const void*>;
   static_assert(!::cuda::std::is_pointer_v<_Up> || __is_void_ptr,
                 "non-void pointers are not allowed to prevent bug-prone code");
-  static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && _Width <= __warp_size,
+  static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && ::cuda::std::cmp_less_equal(_Width, __warp_size),
                 "_Width must be a power of 2 and less or equal to the warp size");
 
   if constexpr (_Width == 1)
@@ -106,7 +107,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   constexpr bool __is_void_ptr = ::cuda::std::is_same_v<_Up, void*> || ::cuda::std::is_same_v<_Up, const void*>;
   static_assert(!::cuda::std::is_pointer_v<_Up> || __is_void_ptr,
                 "non-void pointers are not allowed to prevent bug-prone code");
-  static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && _Width <= __warp_size,
+  static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && ::cuda::std::cmp_less_equal(_Width, __warp_size),
                 "_Width must be a power of 2 and less or equal to the warp size");
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                ([[maybe_unused]] int __pred1; _CCCL_ASSERT(::__match_all_sync(::__activemask(), __delta, &__pred1),
@@ -155,7 +156,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   constexpr bool __is_void_ptr = ::cuda::std::is_same_v<_Up, void*> || ::cuda::std::is_same_v<_Up, const void*>;
   static_assert(!::cuda::std::is_pointer_v<_Up> || __is_void_ptr,
                 "non-void pointers are not allowed to prevent bug-prone code");
-  static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && _Width <= __warp_size,
+  static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && ::cuda::std::cmp_less_equal(_Width, __warp_size),
                 "_Width must be a power of 2 and less or equal to the warp size");
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                ([[maybe_unused]] int __pred1; _CCCL_ASSERT(::__match_all_sync(::__activemask(), __delta, &__pred1),
@@ -204,7 +205,7 @@ template <int _Width = 32, typename _Tp, typename _Up = ::cuda::std::remove_cv_t
   constexpr bool __is_void_ptr = ::cuda::std::is_same_v<_Up, void*> || ::cuda::std::is_same_v<_Up, const void*>;
   static_assert(!::cuda::std::is_pointer_v<_Up> || __is_void_ptr,
                 "non-void pointers are not allowed to prevent bug-prone code");
-  static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && _Width <= __warp_size,
+  static_assert(::cuda::is_power_of_two(_Width) && _Width >= 1 && ::cuda::std::cmp_less_equal(_Width, __warp_size),
                 "_Width must be a power of 2 and less or equal to the warp size");
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                ([[maybe_unused]] int __pred1; _CCCL_ASSERT(::__match_all_sync(::__activemask(), __xor_mask, &__pred1),

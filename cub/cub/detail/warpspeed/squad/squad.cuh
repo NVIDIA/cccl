@@ -16,6 +16,7 @@
 #include <cub/detail/warpspeed/squad/squad_desc.cuh>
 
 #include <cuda/__ptx/instructions/elect_sync.h>
+#include <cuda/std/__utility/cmp.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -108,8 +109,8 @@ squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, in
     // Leaf
     SquadDesc squad = squads[0];
 
-    if (static_cast<unsigned>(warpIdxStart) <= sr.warpIdx
-        && sr.warpIdx < static_cast<unsigned>(warpIdxStart + squad.warpCount()))
+    if (::cuda::std::cmp_less_equal(warpIdxStart, sr.warpIdx)
+        && ::cuda::std::cmp_less(sr.warpIdx, warpIdxStart + squad.warpCount()))
     {
       f(Squad(squad, sr));
     }
@@ -123,7 +124,7 @@ squadDispatch(SpecialRegisters sr, const SquadDesc (&squads)[numSquads], F f, in
     {
       warpIdxStartMid += squads[gi].warpCount();
     }
-    if (sr.warpIdx < static_cast<unsigned>(warpIdxStartMid))
+    if (::cuda::std::cmp_less(sr.warpIdx, warpIdxStartMid))
     {
       if constexpr (0 < mid)
       {

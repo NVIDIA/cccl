@@ -27,6 +27,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_scan.cuh>
 
+#include <cuda/std/__utility/cmp.h>
+
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
@@ -272,7 +274,7 @@ struct BlockScanRaking
       __syncthreads();
 
       // Reduce parallelism down to just raking threads
-      if (linear_tid < RAKING_THREADS)
+      if (::cuda::std::cmp_less(linear_tid, RAKING_THREADS))
       {
         // Raking upsweep reduction across shared partials
         T upsweep_partial = Upsweep(scan_op);
@@ -325,7 +327,7 @@ struct BlockScanRaking
       __syncthreads();
 
       // Reduce parallelism down to just raking threads
-      if (linear_tid < RAKING_THREADS)
+      if (::cuda::std::cmp_less(linear_tid, RAKING_THREADS))
       {
         // Raking upsweep reduction across shared partials
         T upsweep_partial = Upsweep(scan_op);
@@ -380,7 +382,7 @@ struct BlockScanRaking
       __syncthreads();
 
       // Reduce parallelism down to just raking threads
-      if (linear_tid < RAKING_THREADS)
+      if (::cuda::std::cmp_less(linear_tid, RAKING_THREADS))
       {
         // Raking upsweep reduction across shared partials
         T upsweep_partial = Upsweep(scan_op);
@@ -394,7 +396,7 @@ struct BlockScanRaking
         ExclusiveDownsweep(scan_op, exclusive_partial, (linear_tid != 0));
 
         // Broadcast aggregate to all threads
-        if (linear_tid == RAKING_THREADS - 1)
+        if (::cuda::std::cmp_equal(linear_tid, RAKING_THREADS - 1))
         {
           temp_storage.block_aggregate = inclusive_partial;
         }
@@ -448,7 +450,7 @@ struct BlockScanRaking
       __syncthreads();
 
       // Reduce parallelism down to just raking threads
-      if (linear_tid < RAKING_THREADS)
+      if (::cuda::std::cmp_less(linear_tid, RAKING_THREADS))
       {
         // Raking upsweep reduction across shared partials
         T upsweep_partial = Upsweep(scan_op);
@@ -529,7 +531,7 @@ struct BlockScanRaking
       __syncthreads();
 
       // Reduce parallelism down to just raking threads
-      if (linear_tid < RAKING_THREADS)
+      if (::cuda::std::cmp_less(linear_tid, RAKING_THREADS))
       {
         WarpScan warp_scan(temp_storage.warp_scan);
 
@@ -596,7 +598,7 @@ struct BlockScanRaking
       __syncthreads();
 
       // Reduce parallelism down to just raking threads
-      if (linear_tid < RAKING_THREADS)
+      if (::cuda::std::cmp_less(linear_tid, RAKING_THREADS))
       {
         // Raking upsweep reduction across shared partials
         T upsweep_partial = Upsweep(scan_op);
@@ -650,7 +652,7 @@ struct BlockScanRaking
       __syncthreads();
 
       // Reduce parallelism down to just raking threads
-      if (linear_tid < RAKING_THREADS)
+      if (::cuda::std::cmp_less(linear_tid, RAKING_THREADS))
       {
         // Raking upsweep reduction across shared partials
         T upsweep_partial = Upsweep(scan_op);
@@ -664,7 +666,7 @@ struct BlockScanRaking
         InclusiveDownsweep(scan_op, exclusive_partial, (linear_tid != 0));
 
         // Broadcast aggregate to all threads
-        if (linear_tid == RAKING_THREADS - 1)
+        if (::cuda::std::cmp_equal(linear_tid, RAKING_THREADS - 1))
         {
           temp_storage.block_aggregate = inclusive_partial;
         }
@@ -728,7 +730,7 @@ struct BlockScanRaking
       __syncthreads();
 
       // Reduce parallelism down to just raking threads
-      if (linear_tid < RAKING_THREADS)
+      if (::cuda::std::cmp_less(linear_tid, RAKING_THREADS))
       {
         WarpScan warp_scan(temp_storage.warp_scan);
 
