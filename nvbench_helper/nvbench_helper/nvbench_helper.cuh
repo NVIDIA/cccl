@@ -18,10 +18,6 @@
 #  include <cuda/stream>
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
-#include <cuda/__memory_resource/any_resource.h>
-#include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__execution/env.h>
-
 #include <map>
 #include <stdexcept>
 
