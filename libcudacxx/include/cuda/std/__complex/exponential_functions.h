@@ -88,7 +88,7 @@ template <class _Tp>
   // exp() range reduction. Constants taken from:
   // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
   float __r_reduced;
-  __r_reduced = ::cuda::std::fmaf(-__j, 0.693147182464599609375f, __r);
+  __r_reduced = ::cuda::std::fmaf(-__j, 0.693147182464599609375f, __r); // NOLINT(modernize-use-std-numbers)
   __r_reduced = ::cuda::std::fmaf(-__j, -1.904652435769094154e-9f, __r_reduced);
 
   // __r_reduced is in [log(sqrt(0.5)), log(sqrt(2))].
@@ -118,7 +118,7 @@ template <class _Tp>
   // exp() range reduction. Constants taken from:
   // https://arxiv.org/PS_cache/arxiv/pdf/0708/0708.3722v1.pdf
   double __r_reduced;
-  __r_reduced = ::cuda::std::fma(-__j, 0.6931471805599453972491, __r);
+  __r_reduced = ::cuda::std::fma(-__j, 0.6931471805599453972491, __r); // NOLINT(modernize-use-std-numbers)
   __r_reduced = ::cuda::std::fma(-__j, -8.78318343240526554e-17, __r_reduced);
 
   // __r_reduced is in [log(sqrt(0.5)), log(sqrt(2))].
