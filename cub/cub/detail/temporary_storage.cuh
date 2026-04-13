@@ -31,6 +31,7 @@
 
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/cstddef>
 
 CUB_NAMESPACE_BEGIN
@@ -319,7 +320,7 @@ public:
       return error;
     }
 
-    for (size_t slot_id = 0; slot_id < SlotsCount; slot_id++)
+    for (size_t slot_id = 0; ::cuda::std::cmp_less(slot_id, SlotsCount); slot_id++)
     {
       m_slots[slot_id].set_storage(m_pointers[slot_id]);
     }
@@ -336,7 +337,7 @@ private:
       return;
     }
 
-    for (size_t slot_id = 0; slot_id < SlotsCount; slot_id++)
+    for (size_t slot_id = 0; ::cuda::std::cmp_less(slot_id, SlotsCount); slot_id++)
     {
       const size_t slot_size = m_slots[slot_id].get_bytes_required();
 

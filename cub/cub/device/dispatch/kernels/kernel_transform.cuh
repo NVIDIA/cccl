@@ -46,6 +46,7 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivial.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
@@ -659,7 +660,7 @@ _CCCL_DEVICE void bulk_copy_maybe_unaligned(
   char* dst_ptr       = static_cast<char*>(dst);
 
   // handle tiny copies to simplify head/tail bytes computations below
-  if (bytes_to_copy < BulkCopyAlignment)
+  if (::cuda::std::cmp_less(bytes_to_copy, BulkCopyAlignment))
   {
     if (threadIdx.x < bytes_to_copy)
     {

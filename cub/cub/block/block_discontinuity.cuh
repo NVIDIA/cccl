@@ -23,6 +23,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__utility/cmp.h>
+
 CUB_NAMESPACE_BEGIN
 
 //! @rst
@@ -584,7 +586,7 @@ public:
 
     // Set flag for last thread-item
     tail_flags[ITEMS_PER_THREAD - 1] =
-      (linear_tid == BLOCK_THREADS - 1) ? 1 : // Last thread
+      (::cuda::std::cmp_equal(linear_tid, BLOCK_THREADS - 1)) ? 1 : // Last thread
         ApplyOp<FlagOp>::FlagT(
           flag_op,
           input[ITEMS_PER_THREAD - 1],
@@ -687,7 +689,7 @@ public:
     __syncthreads();
 
     // Set flag for last thread-item
-    T successor_item = (linear_tid == BLOCK_THREADS - 1) ? tile_successor_item : // Last thread
+    T successor_item = (::cuda::std::cmp_equal(linear_tid, BLOCK_THREADS - 1)) ? tile_successor_item : // Last thread
                          temp_storage.first_items[linear_tid + 1];
 
     tail_flags[ITEMS_PER_THREAD - 1] = ApplyOp<FlagOp>::FlagT(
@@ -809,7 +811,7 @@ public:
 
     // Set flag for last thread-item
     tail_flags[ITEMS_PER_THREAD - 1] =
-      (linear_tid == BLOCK_THREADS - 1) ? 1 : // Last thread
+      (::cuda::std::cmp_equal(linear_tid, BLOCK_THREADS - 1)) ? 1 : // Last thread
         ApplyOp<FlagOp>::FlagT(
           flag_op,
           input[ITEMS_PER_THREAD - 1],
@@ -943,7 +945,7 @@ public:
     }
 
     // Set flag for last thread-item
-    T successor_item = (linear_tid == BLOCK_THREADS - 1) ? tile_successor_item : // Last thread
+    T successor_item = (::cuda::std::cmp_equal(linear_tid, BLOCK_THREADS - 1)) ? tile_successor_item : // Last thread
                          temp_storage.first_items[linear_tid + 1];
 
     tail_flags[ITEMS_PER_THREAD - 1] = ApplyOp<FlagOp>::FlagT(
@@ -1075,7 +1077,7 @@ public:
 
     // Set flag for last thread-item
     tail_flags[ITEMS_PER_THREAD - 1] =
-      (linear_tid == BLOCK_THREADS - 1) ? 1 : // Last thread
+      (::cuda::std::cmp_equal(linear_tid, BLOCK_THREADS - 1)) ? 1 : // Last thread
         ApplyOp<FlagOp>::FlagT(
           flag_op,
           input[ITEMS_PER_THREAD - 1],
@@ -1215,7 +1217,7 @@ public:
     head_flags[0] = ApplyOp<FlagOp>::FlagT(flag_op, preds[0], input[0], linear_tid * ITEMS_PER_THREAD);
 
     // Set flag for last thread-item
-    T successor_item = (linear_tid == BLOCK_THREADS - 1) ? tile_successor_item : // Last thread
+    T successor_item = (::cuda::std::cmp_equal(linear_tid, BLOCK_THREADS - 1)) ? tile_successor_item : // Last thread
                          temp_storage.first_items[linear_tid + 1];
 
     tail_flags[ITEMS_PER_THREAD - 1] = ApplyOp<FlagOp>::FlagT(

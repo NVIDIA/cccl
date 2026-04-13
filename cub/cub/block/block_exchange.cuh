@@ -27,6 +27,7 @@
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__utility/cmp.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -228,7 +229,7 @@ private:
 
       __syncthreads();
 
-      if (warp_id == slice)
+      if (::cuda::std::cmp_equal(warp_id, slice))
       {
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
@@ -359,7 +360,7 @@ private:
     {
       __syncthreads();
 
-      if (warp_id == slice)
+      if (::cuda::std::cmp_equal(warp_id, slice))
       {
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
@@ -476,7 +477,7 @@ private:
 
       __syncthreads();
 
-      if (warp_id == slice)
+      if (::cuda::std::cmp_equal(warp_id, slice))
       {
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
@@ -557,7 +558,7 @@ private:
     {
       __syncthreads();
 
-      if (warp_id == slice)
+      if (::cuda::std::cmp_equal(warp_id, slice))
       {
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)
@@ -670,7 +671,7 @@ private:
 
       __syncthreads();
 
-      if (warp_id == slice)
+      if (::cuda::std::cmp_equal(warp_id, slice))
       {
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; i++)

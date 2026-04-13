@@ -20,6 +20,7 @@
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__device/arch_id.h>
+#include <cuda/std/__utility/cmp.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -93,13 +94,13 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   int n_threads = reduce_grid_size * block_threads;
 
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (unsigned i = tid; i < static_cast<unsigned>(num_items); i += (n_threads * items_per_thread))
+  for (unsigned i = tid; ::cuda::std::cmp_less(i, num_items); i += (n_threads * items_per_thread))
   {
     ftype items[items_per_thread] = {};
     for (int j = 0; j < items_per_thread; j++)
     {
       const unsigned idx = i + j * n_threads;
-      if (idx < static_cast<unsigned>(num_items))
+      if (::cuda::std::cmp_less(idx, num_items))
       {
         items[j] = transform_op(d_in[idx]);
       }

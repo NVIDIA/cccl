@@ -26,6 +26,7 @@
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/pow2.h>
+#include <cuda/std/__utility/cmp.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -183,7 +184,7 @@ struct BlockReduceRaking
       __syncthreads();
 
       // Reduce parallelism to one warp
-      if (linear_tid < RAKING_THREADS)
+      if (::cuda::std::cmp_less(linear_tid, RAKING_THREADS))
       {
         // Raking reduction in grid
         T* raking_segment = BlockRakingLayout::RakingPtr(temp_storage.raking_grid, linear_tid);

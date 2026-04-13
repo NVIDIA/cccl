@@ -28,6 +28,7 @@
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__utility/cmp.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -289,7 +290,7 @@ struct WarpReduceSmem
       SmemFlag peer_flag_status = flag_storage[lane_id + OFFSET];
 
       // Update input if peer was in range
-      if (lane_id < LOGICAL_WARP_THREADS - OFFSET)
+      if (::cuda::std::cmp_less(lane_id, LOGICAL_WARP_THREADS - OFFSET))
       {
         if (HEAD_SEGMENTED)
         {
