@@ -524,7 +524,11 @@ auto Equals(const THRUST_NS_QUALIFIER::detail::vector_base<T, Alloc>& expected)
 #include <cuda/std/utility>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-template <typename T1, typename T2>
+// Constrained to arithmetic types to avoid nvcc SFINAE issues with non-streamable types (e.g. iterators)
+template <typename T1,
+          typename T2,
+          // allow serializing only pairs with arithmetic members otherwise normal_iterator tests complain
+          enable_if_t<::cuda::std::is_arithmetic_v<T1>&& ::cuda::std::is_arithmetic_v<T2>, int> = 0>
 ::std::ostream& operator<<(::std::ostream& os, const pair<T1, T2>& pair)
 {
   return os << "[" << pair.first << ", " << pair.second << "]";
@@ -553,16 +557,6 @@ template <typename... T>
   return os << "]";
 }
 _CCCL_END_NAMESPACE_CUDA_STD
-
-#include <cub/util_type.cuh>
-
-CUB_NAMESPACE_BEGIN
-template <typename T1, typename T2>
-::std::ostream& operator<<(::std::ostream& os, const KeyValuePair<T1, T2>& pair)
-{
-  return os << "[" << pair.key << ", " << pair.value << "]";
-}
-CUB_NAMESPACE_END
 
 template <>
 struct Catch::StringMaker<cudaError>
