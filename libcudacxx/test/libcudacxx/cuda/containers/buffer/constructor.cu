@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -513,3 +513,162 @@ C2H_CCCLRT_TEST("cuda::make_buffer with shared_resource", "[container][buffer]")
   static_assert(decltype(buf)::properties_list::has_property(cuda::mr::device_accessible{}));
   static_assert(!decltype(buf)::properties_list::has_property(cuda::mr::host_accessible{}));
 }
+
+// ── make_device_buffer ──────────────────────────────────────────────────────
+
+C2H_CCCLRT_TEST("cuda::make_device_buffer", "[container][buffer]")
+{
+  cuda::stream stream{cuda::device_ref{0}};
+  cuda::device_ref dev{0};
+
+  SECTION("empty")
+  {
+    auto buf = cuda::make_device_buffer<int>(stream, dev);
+    CCCLRT_CHECK(buf.empty());
+    CCCLRT_CHECK(buf.data() == nullptr);
+    STATIC_CHECK(decltype(buf)::properties_list::has_property(cuda::mr::device_accessible{}));
+    STATIC_CHECK(!decltype(buf)::properties_list::has_property(cuda::mr::host_accessible{}));
+  }
+
+  SECTION("size with value")
+  {
+    auto buf = cuda::make_device_buffer<int>(stream, dev, 5, 42);
+    CCCLRT_CHECK(buf.size() == 5);
+    CCCLRT_CHECK(equal_size_value(buf, 5, 42));
+  }
+
+  SECTION("size with no_init")
+  {
+    auto buf = cuda::make_device_buffer<int>(stream, dev, 10, cuda::no_init);
+    CCCLRT_CHECK(buf.size() == 10);
+    CCCLRT_CHECK(buf.data() != nullptr);
+  }
+
+  SECTION("iterator range")
+  {
+    cuda::std::array<int, 6> input{1, 42, 1337, 0, 12, -1};
+    auto buf = cuda::make_device_buffer<int>(stream, dev, input.begin(), input.end());
+    CCCLRT_CHECK(buf.size() == 6);
+    CCCLRT_CHECK(equal_range(buf));
+  }
+
+  SECTION("range")
+  {
+    cuda::std::array<int, 6> input{1, 42, 1337, 0, 12, -1};
+    auto buf = cuda::make_device_buffer<int>(stream, dev, input);
+    CCCLRT_CHECK(buf.size() == 6);
+    CCCLRT_CHECK(equal_range(buf));
+  }
+
+  stream.sync();
+}
+
+// ── make_pinned_buffer ──────────────────────────────────────────────────────
+
+#if _CCCL_CTK_AT_LEAST(12, 9)
+C2H_CCCLRT_TEST("cuda::make_pinned_buffer", "[container][buffer]")
+{
+  if (!cuda::__is_host_memory_pool_supported())
+  {
+    return;
+  }
+
+  cuda::stream stream{cuda::device_ref{0}};
+
+  SECTION("empty")
+  {
+    auto buf = cuda::make_pinned_buffer<int>(stream);
+    CCCLRT_CHECK(buf.empty());
+    CCCLRT_CHECK(buf.data() == nullptr);
+    STATIC_CHECK(decltype(buf)::properties_list::has_property(cuda::mr::host_accessible{}));
+    STATIC_CHECK(decltype(buf)::properties_list::has_property(cuda::mr::device_accessible{}));
+  }
+
+  SECTION("size with value")
+  {
+    auto buf = cuda::make_pinned_buffer<int>(stream, 5, 42);
+    CCCLRT_CHECK(buf.size() == 5);
+    CCCLRT_CHECK(equal_size_value(buf, 5, 42));
+  }
+
+  SECTION("size with no_init")
+  {
+    auto buf = cuda::make_pinned_buffer<int>(stream, 10, cuda::no_init);
+    CCCLRT_CHECK(buf.size() == 10);
+    CCCLRT_CHECK(buf.data() != nullptr);
+  }
+
+  SECTION("iterator range")
+  {
+    cuda::std::array<int, 6> input{1, 42, 1337, 0, 12, -1};
+    auto buf = cuda::make_pinned_buffer<int>(stream, input.begin(), input.end());
+    CCCLRT_CHECK(buf.size() == 6);
+    CCCLRT_CHECK(equal_range(buf));
+  }
+
+  SECTION("range")
+  {
+    cuda::std::array<int, 6> input{1, 42, 1337, 0, 12, -1};
+    auto buf = cuda::make_pinned_buffer<int>(stream, input);
+    CCCLRT_CHECK(buf.size() == 6);
+    CCCLRT_CHECK(equal_range(buf));
+  }
+
+  stream.sync();
+}
+#endif // _CCCL_CTK_AT_LEAST(12, 9)
+
+// ── make_managed_buffer ─────────────────────────────────────────────────────
+
+#if _CCCL_CTK_AT_LEAST(13, 0)
+C2H_CCCLRT_TEST("cuda::make_managed_buffer", "[container][buffer]")
+{
+  if (!cuda::device_attributes::concurrent_managed_access(cuda::device_ref{0}))
+  {
+    return;
+  }
+
+  cuda::stream stream{cuda::device_ref{0}};
+
+  SECTION("empty")
+  {
+    auto buf = cuda::make_managed_buffer<int>(stream);
+    CCCLRT_CHECK(buf.empty());
+    CCCLRT_CHECK(buf.data() == nullptr);
+    STATIC_CHECK(decltype(buf)::properties_list::has_property(cuda::mr::host_accessible{}));
+    STATIC_CHECK(decltype(buf)::properties_list::has_property(cuda::mr::device_accessible{}));
+  }
+
+  SECTION("size with value")
+  {
+    auto buf = cuda::make_managed_buffer<int>(stream, 5, 42);
+    CCCLRT_CHECK(buf.size() == 5);
+    CCCLRT_CHECK(equal_size_value(buf, 5, 42));
+  }
+
+  SECTION("size with no_init")
+  {
+    auto buf = cuda::make_managed_buffer<int>(stream, 10, cuda::no_init);
+    CCCLRT_CHECK(buf.size() == 10);
+    CCCLRT_CHECK(buf.data() != nullptr);
+  }
+
+  SECTION("iterator range")
+  {
+    cuda::std::array<int, 6> input{1, 42, 1337, 0, 12, -1};
+    auto buf = cuda::make_managed_buffer<int>(stream, input.begin(), input.end());
+    CCCLRT_CHECK(buf.size() == 6);
+    CCCLRT_CHECK(equal_range(buf));
+  }
+
+  SECTION("range")
+  {
+    cuda::std::array<int, 6> input{1, 42, 1337, 0, 12, -1};
+    auto buf = cuda::make_managed_buffer<int>(stream, input);
+    CCCLRT_CHECK(buf.size() == 6);
+    CCCLRT_CHECK(equal_range(buf));
+  }
+
+  stream.sync();
+}
+#endif // _CCCL_CTK_AT_LEAST(13, 0)

@@ -118,13 +118,13 @@ public:
       : __repr_(__re, __im)
   {}
 
-#  if !_CCCL_COMPILER(GCC, <, 8) // Old GCC considers those as deleted
+#  if !_CCCL_COMPILER(GCC, <, 10) // Old GCC considers those as deleted
   _CCCL_HIDE_FROM_ABI complex(const complex&) noexcept = default;
   _CCCL_HIDE_FROM_ABI complex(complex&&) noexcept      = default;
 
   _CCCL_HIDE_FROM_ABI complex& operator=(const complex&) noexcept = default;
   _CCCL_HIDE_FROM_ABI complex& operator=(complex&&) noexcept      = default;
-#  endif // !_CCCL_COMPILER(GCC, <, 8)
+#  endif // !_CCCL_COMPILER(GCC, <, 10)
 
   template <class _Up, enable_if_t<__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0>
   _CCCL_API inline complex(const complex<_Up>& __c)

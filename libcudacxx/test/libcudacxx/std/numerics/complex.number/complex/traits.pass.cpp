@@ -58,14 +58,14 @@ int main(int, char**)
 #if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
-#if !TEST_COMPILER(GCC, <, 8) // Old GCC considers the defaulted constructors as deleted
+#if !TEST_COMPILER(GCC, <, 10) // Old GCC considers the defaulted constructors as deleted
 #  if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
 #  endif // _LIBCUDACXX_HAS_NVFP16()
 #  if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
 #  endif // _LIBCUDACXX_HAS_NVBF16()
-#endif // !TEST_COMPILER(GCC, <, 8)
+#endif // !TEST_COMPILER(GCC, <, 01)
 
   return 0;
 }

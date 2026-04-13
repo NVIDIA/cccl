@@ -22,6 +22,7 @@ All non-public symbols must be C++ reserved identifiers:
 
 - All variables that are not modified must use `const`. This includes variables initialized by casts (`static_cast`, `reinterpret_cast`, `bit_cast`), function return values, and loop-invariant computations.
 - All variables that can be evaluated at compile-time must use `constexpr`.
+- All `constexpr` variables at namespace/global scope must use `inline`, including `template` variables.
 - Consider using plural names for array, span, list, e.g. `int values[4]` instead of `int value[4]`.
 
 ## Function
@@ -53,7 +54,10 @@ Function call:
 - The headers must be the most precise one, e.g. `#include <cuda/std/__type_traits/is_array.h>`.
 - Headers in `cuda/std/__cccl/` must not be included directly (they are provided by `__config` or the prologue/epilogue mechanism).
 
-- All headers must have the correct license. If the file is ported from LLVM libc++ then we *must* use the LLVM license.
+- All headers must have the correct license.
+
+- `libcudacxx/include/cuda/std` files: If the file is ported from LLVM libc++ then we *must* use the LLVM license.
+- `libcudacxx/include/cuda/` files: use the Apache License v2.0 with LLVM Exceptions.
 - All headers must have the include guard, with the correct name: uppercase full path from the root, separated by `_`.
 - The closing `#endif` always carries a comment repeating the guard name.
 - Right after the include guard, the code must include:
