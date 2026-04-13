@@ -59,14 +59,9 @@ void test_rotate(const Policy& policy, thrust::device_vector<int>& input, const 
   }
 }
 
-using sizes = c2h::type_list<cuda::std::integral_constant<int, 10>,
-                             cuda::std::integral_constant<int, 1000>,
-                             cuda::std::integral_constant<int, 100000>>;
-
-C2H_TEST("cuda::std::rotate", "[parallel algorithm]", sizes)
+C2H_TEST("cuda::std::rotate", "[parallel algorithm]")
 {
-  using Size     = typename c2h::get<0, TestType>;
-  const int size = Size::value;
+  const int size = GENERATE(10, 1000, 100000);
 
   thrust::device_vector<int> input(size, thrust::no_init);
 
