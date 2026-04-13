@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -32,6 +32,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4848)
 #include <cuda/std/__ranges/dangling.h>
 #include <cuda/std/__ranges/data.h>
 #include <cuda/std/__ranges/drop_view.h>
+#include <cuda/std/__ranges/drop_while_view.h>
 #include <cuda/std/__ranges/empty.h>
 #include <cuda/std/__ranges/empty_view.h>
 #include <cuda/std/__ranges/enable_borrowed_range.h>
