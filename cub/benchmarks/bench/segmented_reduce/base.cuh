@@ -14,19 +14,26 @@
 #if !TUNE_BASE
 struct policy_selector
 {
-  static constexpr int small_threads_per_warp  = TUNE_S_THREADS_PER_WARP;
-  static constexpr int medium_threads_per_warp = TUNE_M_THREADS_PER_WARP;
-
   _CCCL_API constexpr auto operator()(cuda::arch_id) const -> ::cub::segmented_reduce_policy
   {
-    const auto [items, threads] = cub::detail::scale_mem_bound(TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD);
-    const auto rp               = cub::agent_reduce_policy{
+    const auto [items, threads] =
+      cub::detail::scale_mem_bound(TUNE_L_NOMINAL_4B_THREADS_PER_BLOCK, TUNE_L_NOMINAL_4B_ITEMS_PER_THREAD);
+    const auto rp = cub::agent_reduce_policy{
       threads, items, TUNE_ITEMS_PER_VEC_LOAD, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_LDG};
-    return {rp,
-            cub::agent_warp_reduce_policy{
-              rp.block_threads, small_threads_per_warp, rp.items_per_thread, rp.vector_load_length, rp.load_modifier},
-            cub::agent_warp_reduce_policy{
-              rp.block_threads, medium_threads_per_warp, rp.items_per_thread, rp.vector_load_length, rp.load_modifier}};
+    return {
+      rp,
+      cub::agent_warp_reduce_policy{
+        rp.block_threads,
+        TUNE_S_THREADS_PER_WARP,
+        TUNE_S_NOMINAL_4B_ITEMS_PER_THREAD,
+        rp.vector_load_length,
+        rp.load_modifier},
+      cub::agent_warp_reduce_policy{
+        rp.block_threads,
+        TUNE_M_THREADS_PER_WARP,
+        TUNE_M_NOMINAL_4B_ITEMS_PER_THREAD,
+        rp.vector_load_length,
+        rp.load_modifier}};
   }
 };
 #endif // !TUNE_BASE
@@ -77,7 +84,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
 
   // Allocate temporary storage:
   std::size_t temp_size;
-  cub::detail::segmented_reduce::dispatch<accum_t>(
+  cub::detail::segmented_reduce::dispatch_fixed_size<accum_t>(
     nullptr,
     temp_size,
     select_in(),
@@ -97,7 +104,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    cub::detail::segmented_reduce::dispatch<accum_t>(
+    cub::detail::segmented_reduce::dispatch_fixed_size<accum_t>(
       temp_storage,
       temp_size,
       select_in(),

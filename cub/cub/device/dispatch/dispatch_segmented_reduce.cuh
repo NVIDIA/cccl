@@ -682,7 +682,7 @@ template <typename OverrideAccumT = use_default,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   InputIteratorT d_in,
@@ -753,18 +753,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
       const auto num_current_blocks = ::cuda::ceil_div(num_current_segments, segments_per_block);
 
-      launcher_factory(
-        static_cast<::cuda::std::int32_t>(num_current_blocks), active_policy.large_reduce.block_threads, 0, stream)
-        .doit(kernel_source.FixedSizeSegmentedReduceKernel(),
-              d_in,
-              d_out,
-              segment_size,
-              static_cast<::cuda::std::int32_t>(num_current_segments),
-              reduction_op,
-              init,
-              static_cast<AccumT*>(nullptr),
-              0,
-              0);
+      if (const auto error = CubDebug(
+            launcher_factory(
+              static_cast<::cuda::std::int32_t>(num_current_blocks), active_policy.large_reduce.block_threads, 0, stream)
+              .doit(kernel_source.FixedSizeSegmentedReduceKernel(),
+                    d_in,
+                    d_out,
+                    segment_size,
+                    static_cast<::cuda::std::int32_t>(num_current_segments),
+                    reduction_op,
+                    init,
+                    static_cast<AccumT*>(nullptr),
+                    0,
+                    0)))
+      {
+        return error;
+      }
 
       d_in += num_segments_per_invocation * segment_size;
       d_out += num_segments_per_invocation;

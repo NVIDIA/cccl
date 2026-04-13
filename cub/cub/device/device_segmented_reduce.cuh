@@ -523,11 +523,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Reduce");
 
-    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
-    // integral constant or larger integral types
-    using offset_t = int;
-
-    return detail::segmented_reduce::dispatch(
+    return detail::segmented_reduce::dispatch_fixed_size(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, reduction_op, initial_value, stream);
   }
 
@@ -924,13 +920,9 @@ public:
       cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Sum");
-
-    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
-    // integral constant or larger integral types
-    using offset_t = int;
     using output_t = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
 
-    return detail::segmented_reduce::dispatch(
+    return detail::segmented_reduce::dispatch_fixed_size(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -1324,16 +1316,11 @@ public:
       cudaStream_t stream = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Min");
-
-    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
-    // integral constant or larger integral types
-    using offset_t = int;
-    using input_t  = detail::it_value_t<InputIteratorT>;
-
+    using input_t = detail::it_value_t<InputIteratorT>;
     static_assert(::cuda::std::numeric_limits<input_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
 
-    return detail::segmented_reduce::dispatch(
+    return detail::segmented_reduce::dispatch_fixed_size(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -2150,15 +2137,12 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Max");
 
-    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
-    // integral constant or larger integral types
-    using offset_t = int;
-    using input_t  = detail::it_value_t<InputIteratorT>;
+    using input_t = detail::it_value_t<InputIteratorT>;
 
     static_assert(::cuda::std::numeric_limits<input_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
 
-    return detail::segmented_reduce::dispatch(
+    return detail::segmented_reduce::dispatch_fixed_size(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
