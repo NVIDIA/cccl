@@ -4,7 +4,6 @@ import cupy as cp
 import numpy as np
 import pytest
 
-
 check_ldl_stl_in_sass = False
 
 
