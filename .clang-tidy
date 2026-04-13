@@ -25,7 +25,6 @@ Checks:
   - '-performance-unnecessary-value-param'
   - 'modernize-*'
   - '-modernize-deprecated-headers'
-  - '-modernize-make-unique'
   - '-modernize-use-using'
   - '-modernize-use-integer-sign-comparison'
   - '-modernize-concat-nested-namespaces'
