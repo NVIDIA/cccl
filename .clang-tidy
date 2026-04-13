@@ -24,7 +24,6 @@ Checks:
   - '-performance-enum-size'
   - '-performance-unnecessary-value-param'
   - 'modernize-*'
-  - '-modernize-use-std-numbers'
   - '-modernize-deprecated-headers'
   - '-modernize-min-max-use-initializer-list'
   - '-modernize-use-emplace'
