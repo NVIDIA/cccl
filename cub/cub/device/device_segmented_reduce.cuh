@@ -855,7 +855,7 @@ public:
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
     using OutputT = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
     using init_t  = OutputT;
-    using op_t    = ::cuda::std::plus<detail::it_value_t<InputIteratorT>>;
+    using op_t    = ::cuda::std::plus<>;
     using AccumT  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, init_t>;
 
     return segmented_reduce_impl<AccumT, OffsetT>(
