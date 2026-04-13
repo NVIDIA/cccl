@@ -2,8 +2,9 @@
 #include <thrust/device_malloc.h>
 #include <thrust/device_ptr.h>
 #include <thrust/for_each.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/retag.h>
+
+#include <cuda/iterator>
 
 #include <algorithm>
 
@@ -138,12 +139,12 @@ void TestForEachSimpleAnySystem()
   mark_present_for_each<int> f;
   f.ptr = thrust::raw_pointer_cast(output.data());
 
-  thrust::counting_iterator<int> result =
-    thrust::for_each(thrust::make_counting_iterator(0), thrust::make_counting_iterator(5), f);
+  cuda::counting_iterator<int> result =
+    thrust::for_each(cuda::make_counting_iterator(0), cuda::make_counting_iterator(5), f);
 
   thrust::device_vector<int> ref{1, 1, 1, 1, 1, 0, 0};
   ASSERT_EQUAL(output, ref);
-  ASSERT_EQUAL_QUIET(result, thrust::make_counting_iterator(5));
+  ASSERT_EQUAL_QUIET(result, cuda::make_counting_iterator(5));
 }
 DECLARE_UNITTEST(TestForEachSimpleAnySystem);
 
@@ -154,11 +155,11 @@ void TestForEachNSimpleAnySystem()
   mark_present_for_each<int> f;
   f.ptr = thrust::raw_pointer_cast(output.data());
 
-  thrust::counting_iterator<int> result = thrust::for_each_n(thrust::make_counting_iterator(0), 5, f);
+  cuda::counting_iterator<int> result = thrust::for_each_n(cuda::make_counting_iterator(0), 5, f);
 
   thrust::device_vector<int> ref{1, 1, 1, 1, 1, 0, 0};
   ASSERT_EQUAL(output, ref);
-  ASSERT_EQUAL_QUIET(result, thrust::make_counting_iterator(5));
+  ASSERT_EQUAL_QUIET(result, cuda::make_counting_iterator(5));
 }
 DECLARE_UNITTEST(TestForEachNSimpleAnySystem);
 
@@ -341,8 +342,8 @@ struct only_set_when_expected
 
 void TestForEachWithBigIndexesHelper(int magnitude)
 {
-  thrust::counting_iterator<unsigned long long> begin(0);
-  thrust::counting_iterator<unsigned long long> end = begin + (1ull << magnitude);
+  cuda::counting_iterator<unsigned long long> begin(0);
+  cuda::counting_iterator<unsigned long long> end = begin + (1ull << magnitude);
   ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);

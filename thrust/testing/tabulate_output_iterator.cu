@@ -5,13 +5,13 @@
 #include <thrust/functional.h>
 #include <thrust/gather.h>
 #include <thrust/host_vector.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/tabulate_output_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/reduce.h>
 #include <thrust/sequence.h>
 
+#include <cuda/iterator>
 #include <cuda/std/type_traits>
 
 #include <unittest/unittest.h>
@@ -90,7 +90,13 @@ void TestTabulateOutputIteratorTraits()
                                                                                thrust::any_system_tag,
                                                                                thrust::random_access_traversal_tag>;
 
-  static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
+#if _CCCL_HAS_INT128()
+  using widest_integer = __int128_t;
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+  using widest_integer = long long;
+#endif // !_CCCL_HAS_INT128()
+
+  static_assert(cuda::std::is_same_v<traits::difference_type, widest_integer>);
   static_assert(cuda::std::is_same_v<traits::value_type, void>);
   static_assert(cuda::std::is_same_v<traits::pointer, void>);
   static_assert(cuda::std::is_same_v<traits::reference, thrust::detail::tabulate_output_iterator_proxy<Op, ptrdiff_t>>);
@@ -132,7 +138,7 @@ void TestTabulateOutputIterator()
 
   // Prepare input
   thrust::sequence(input.begin(), input.end(), 1);
-  auto iota_it   = thrust::make_counting_iterator(0);
+  auto iota_it   = cuda::make_counting_iterator(0);
   auto zipped_in = thrust::make_zip_iterator(input.begin(), iota_it);
 
   // Run copy_if using tabulate_output_iterator as the output iterator
@@ -145,7 +151,7 @@ void TestTabulateOutputIterator()
   Vector expected_output(num_items, T{42});
   const std::size_t expected_num_selected = (num_items + select_every_nth - 1) / select_every_nth;
   auto gather_index_it =
-    thrust::make_transform_iterator(thrust::make_counting_iterator(0), index_to_gather_index_op{select_every_nth});
+    thrust::make_transform_iterator(cuda::make_counting_iterator(0), index_to_gather_index_op{select_every_nth});
   thrust::gather(gather_index_it, gather_index_it + expected_num_selected, input.cbegin(), expected_output.begin());
 
   ASSERT_EQUAL(expected_num_selected, num_selected);

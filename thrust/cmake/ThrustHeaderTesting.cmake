@@ -7,6 +7,7 @@
 # Add regexes matching deprecated headers here to disable warnings for them:
 set(
   deprecated_headers_regexes
+  "thrust/iterator/counting_iterator\\.h"
   "thrust/iterator/tabulate_output_iterator\\.h"
   "thrust/iterator/strided_iterator\\.h"
   "thrust/iterator/constant_iterator\\.h"

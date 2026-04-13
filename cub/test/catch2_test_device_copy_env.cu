@@ -10,8 +10,9 @@ struct stream_registry_factory_t;
 #include <cub/device/device_copy.cuh>
 
 #include <thrust/device_vector.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
+
+#include <cuda/iterator>
 
 #include "catch2_test_env_launch_helper.h"
 
@@ -56,7 +57,7 @@ TEST_CASE("DeviceCopy::Batched works with default environment", "[copy][device]"
 
   int num_ranges = 3;
 
-  thrust::counting_iterator<int> iota(0);
+  cuda::counting_iterator<int> iota(0);
   auto input_it = thrust::make_transform_iterator(
     iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto output_it = thrust::make_transform_iterator(
@@ -79,7 +80,7 @@ C2H_TEST("DeviceCopy::Batched uses environment", "[copy][device]")
 
   int num_ranges = 3;
 
-  thrust::counting_iterator<int> iota(0);
+  cuda::counting_iterator<int> iota(0);
   auto input_it = thrust::make_transform_iterator(
     iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto output_it = thrust::make_transform_iterator(
@@ -106,7 +107,7 @@ TEST_CASE("DeviceCopy::Batched uses custom stream", "[copy][device]")
 
   int num_ranges = 3;
 
-  thrust::counting_iterator<int> iota(0);
+  cuda::counting_iterator<int> iota(0);
   auto input_it = thrust::make_transform_iterator(
     iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto output_it = thrust::make_transform_iterator(

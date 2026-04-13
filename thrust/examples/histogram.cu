@@ -82,7 +82,7 @@ void dense_histogram(const Vector1& input, Vector2& histogram)
   histogram.resize(num_bins);
 
   // find the end of each bin of values
-  thrust::counting_iterator<IndexType> search_begin(0);
+  cuda::counting_iterator<IndexType> search_begin(0);
   thrust::upper_bound(data.begin(), data.end(), search_begin, search_begin + num_bins, histogram.begin());
 
   // print the cumulative histogram

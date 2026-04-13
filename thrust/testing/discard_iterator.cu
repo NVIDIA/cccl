@@ -13,8 +13,13 @@ void TestDiscardIteratorTraits()
   using category = thrust::detail::iterator_category_with_system_and_traversal<::cuda::std::random_access_iterator_tag,
                                                                                thrust::any_system_tag,
                                                                                thrust::random_access_traversal_tag>;
+#if _CCCL_HAS_INT128()
+  using widest_integer = __int128_t;
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+  using widest_integer = long long;
+#endif // !_CCCL_HAS_INT128()
 
-  static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
+  static_assert(cuda::std::is_same_v<traits::difference_type, widest_integer>);
   static_assert(cuda::std::is_same_v<traits::value_type, thrust::detail::any_assign>);
   static_assert(cuda::std::is_same_v<traits::pointer, void>);
   static_assert(cuda::std::is_same_v<traits::reference, thrust::detail::any_assign&>);

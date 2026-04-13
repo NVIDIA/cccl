@@ -1,5 +1,4 @@
 #include <thrust/copy.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -169,7 +168,7 @@ void TestCopyNCountingIterator()
 {
   using T = typename Vector::value_type;
 
-  thrust::counting_iterator<T> iter(1);
+  cuda::counting_iterator<T> iter(1);
 
   Vector vec(4);
 

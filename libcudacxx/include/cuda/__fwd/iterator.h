@@ -26,6 +26,7 @@
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -35,13 +36,30 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <class _Tp, class _Index = ::cuda::std::ptrdiff_t>
 class constant_iterator;
 
+template <class _Start>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL bool __arithmetic_or_weakly_incrementable() noexcept
+{
+  if constexpr (::cuda::std::is_arithmetic_v<_Start>)
+  {
+    return true;
+  }
+  else
+  {
+    return ::cuda::std::weakly_incrementable<_Start>;
+  }
+}
+
+// MSVC cannot deal with a function in the template argument list with enable_if_t
+template <class _Start>
+inline constexpr bool __arithmetic_or_weakly_incrementable_v = ::cuda::__arithmetic_or_weakly_incrementable<_Start>();
+
 #if _CCCL_HAS_CONCEPTS()
-template <::cuda::std::weakly_incrementable _Start>
-  requires ::cuda::std::copyable<_Start>
+template <class _Start>
+  requires ::cuda::std::copyable<_Start> && __arithmetic_or_weakly_incrementable_v<_Start>
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Start,
-          ::cuda::std::enable_if_t<::cuda::std::weakly_incrementable<_Start>, int> = 0,
-          ::cuda::std::enable_if_t<::cuda::std::copyable<_Start>, int>             = 0>
+          ::cuda::std::enable_if_t<__arithmetic_or_weakly_incrementable_v<_Start>, int> = 0,
+          ::cuda::std::enable_if_t<::cuda::std::copyable<_Start>, int>                  = 0>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class counting_iterator;
 

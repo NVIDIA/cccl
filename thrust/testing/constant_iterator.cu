@@ -10,6 +10,9 @@
 
 #include <unittest/unittest.h>
 
+template <class>
+void print() = delete;
+
 // ensure that we properly support thrust::constant_iterator from cuda::std
 void TestConstantIteratorTraits()
 {
@@ -19,7 +22,13 @@ void TestConstantIteratorTraits()
                                                                                thrust::any_system_tag,
                                                                                thrust::random_access_traversal_tag>;
 
-  static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
+#if _CCCL_HAS_INT128()
+  using widest_integer = __int128_t;
+#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
+  using widest_integer = long long;
+#endif // !_CCCL_HAS_INT128()
+
+  static_assert(cuda::std::is_same_v<traits::difference_type, widest_integer>);
   static_assert(cuda::std::is_same_v<traits::value_type, int>);
   static_assert(cuda::std::is_same_v<traits::pointer, void>);
   static_assert(cuda::std::is_same_v<traits::reference, signed int>);

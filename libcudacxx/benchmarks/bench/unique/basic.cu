@@ -9,10 +9,10 @@
 //===----------------------------------------------------------------------===//
 
 #include <thrust/device_vector.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/transform.h>
 #include <thrust/unique.h>
 
+#include <cuda/iterator>
 #include <cuda/memory_pool>
 #include <cuda/std/execution>
 #include <cuda/stream_ref>
@@ -25,8 +25,8 @@ static void make_unique_input(thrust::device_vector<T>& in, std::size_t elements
 {
   in.resize(elements);
   thrust::transform(
-    thrust::counting_iterator<std::size_t>(0),
-    thrust::counting_iterator<std::size_t>(elements),
+    cuda::counting_iterator<std::size_t>(0),
+    cuda::counting_iterator<std::size_t>(elements),
     in.begin(),
     [] __device__(std::size_t i) {
       return static_cast<T>(i / 2);

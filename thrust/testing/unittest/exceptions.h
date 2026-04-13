@@ -29,6 +29,23 @@ public:
     message += oss.str();
     return *this;
   }
+
+#if _CCCL_HAS_INT128()
+  UnitTestException& operator<<(const __int128_t& t)
+  {
+    std::ostringstream oss;
+    oss << static_cast<int64_t>(t);
+    message += oss.str();
+    return *this;
+  }
+  UnitTestException& operator<<(const __uint128_t& t)
+  {
+    std::ostringstream oss;
+    oss << static_cast<uint64_t>(t);
+    message += oss.str();
+    return *this;
+  }
+#endif // _CCCL_HAS_INT128()
 };
 
 class UnitTestError : public UnitTestException

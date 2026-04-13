@@ -25,10 +25,11 @@
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 #include <thrust/host_vector.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/mr/allocator.h>
 #include <thrust/mr/memory_resource.h>
 #include <thrust/transform.h>
+
+#include <cuda/iterator>
 
 #include <cuda/experimental/__places/partitions/blocked_partition.cuh>
 
@@ -85,8 +86,8 @@ bool run_with_place(const data_place& place, const char* label)
 
   thrust::transform(
     thrust::device,
-    thrust::counting_iterator<size_t>(0),
-    thrust::counting_iterator<size_t>(n),
+    cuda::counting_iterator<size_t>(0),
+    cuda::counting_iterator<size_t>(n),
     d_vec.begin(),
     [] __device__(size_t i) {
       return 2.0 * static_cast<double>(i);
