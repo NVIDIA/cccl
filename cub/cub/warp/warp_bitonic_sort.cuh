@@ -26,16 +26,11 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-namespace
-{
-template <typename T, typename = void>
-struct has_native_shfl : ::cuda::std::false_type
-{};
+template <class T, typename = void>
+inline constexpr bool has_native_shfl_v = false;
 
-template <typename T>
-struct has_native_shfl<T, ::cuda::std::void_t<decltype(__shfl_sync(0u, T{}, 0))>> : ::cuda::std::true_type
-{};
-} // namespace
+template <class T>
+inline constexpr bool has_native_shfl_v<T, ::cuda::std::void_t<decltype(__shfl_sync(0u, T{}, 0))>> = true;
 
 //! @rst
 //! The WarpBitonicSort class provides methods for sorting items partitioned across a CUDA warp
@@ -139,7 +134,7 @@ public:
   Sort(KeyT (&keys)[ITEMS_PER_THREAD], CompareOp compare_op, int valid_items, KeyT oob_default)
   {
     const int lane = threadIdx.x % WARP_THREADS_;
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       if (i * WARP_THREADS_ + lane >= valid_items)
@@ -216,7 +211,7 @@ public:
        KeyT oob_default)
   {
     const int lane = threadIdx.x % WARP_THREADS_;
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       if (i * WARP_THREADS_ + lane >= valid_items)
@@ -335,7 +330,7 @@ private:
     constexpr int stride          = first_half_len;
     static_assert(first_half_len >= second_half_len);
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < second_half_len; ++i)
     {
       const int other_i = i + stride;
@@ -401,7 +396,7 @@ private:
     static_assert(first_half_len >= second_half_len);
 
     const int lane = threadIdx.x % WARP_THREADS_;
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < second_half_len; ++i)
     {
       const int other_i = i + stride;
@@ -611,7 +606,7 @@ private:
       group_reverse ^= (num_set_bits == 1 || num_set_bits == 3);
     }
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int stride = (1 << STAGE); stride > 0; stride /= 2)
     {
       // Because stride is a power of 2, it has exactly one bit (denoted as "stride bit") set. A thread
@@ -623,7 +618,7 @@ private:
 
       KeyT& key = *keys;
       KeyT other_key;
-      if constexpr (has_native_shfl<KeyT>::value)
+      if constexpr (has_native_shfl_v<KeyT>)
       {
         other_key = __shfl_xor_sync(FULL_WARP_MASK_, key, stride);
       }
@@ -635,7 +630,7 @@ private:
       [[maybe_unused]] ValueT other_value;
       if constexpr (!KEYS_ONLY_)
       {
-        if constexpr (has_native_shfl<ValueT>::value)
+        if constexpr (has_native_shfl_v<ValueT>)
         {
           other_value = __shfl_xor_sync(FULL_WARP_MASK_, *values, stride);
         }
