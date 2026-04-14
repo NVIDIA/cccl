@@ -26,7 +26,6 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairs env-based API", "[segmented_
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedSort::StableSortPairs(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -37,7 +36,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairs env-based API", "[segmented_
     2,
     thrust::raw_pointer_cast(offsets_begin.data()),
     thrust::raw_pointer_cast(offsets_end.data()),
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedSort::StableSortPairs failed with status: " << error << std::endl;
@@ -65,7 +64,6 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending env-based API", "[
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedSort::StableSortPairsDescending(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -76,7 +74,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending env-based API", "[
     2,
     thrust::raw_pointer_cast(offsets_begin.data()),
     thrust::raw_pointer_cast(offsets_end.data()),
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedSort::StableSortPairsDescending failed with status: " << error << std::endl;
@@ -108,7 +106,6 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairs DoubleBuffer env-based API",
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedSort::StableSortPairs(
     d_keys,
@@ -117,7 +114,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairs DoubleBuffer env-based API",
     2,
     thrust::raw_pointer_cast(offsets_begin.data()),
     thrust::raw_pointer_cast(offsets_end.data()),
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedSort::StableSortPairs (DoubleBuffer) failed with status: " << error << std::endl;
@@ -152,7 +149,6 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending DoubleBuffer env-b
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedSort::StableSortPairsDescending(
     d_keys,
@@ -161,7 +157,7 @@ C2H_TEST("cub::DeviceSegmentedSort::StableSortPairsDescending DoubleBuffer env-b
     2,
     thrust::raw_pointer_cast(offsets_begin.data()),
     thrust::raw_pointer_cast(offsets_end.data()),
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedSort::StableSortPairsDescending (DoubleBuffer) failed with status: " << error
@@ -192,7 +188,6 @@ C2H_TEST("cub::DeviceSegmentedSort::SortPairs nonstable env-based API", "[segmen
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedSort::SortPairs(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -203,7 +198,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortPairs nonstable env-based API", "[segmen
     2,
     thrust::raw_pointer_cast(offsets_begin.data()),
     thrust::raw_pointer_cast(offsets_end.data()),
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedSort::SortPairs failed with status: " << error << std::endl;
@@ -231,7 +226,6 @@ C2H_TEST("cub::DeviceSegmentedSort::SortPairsDescending nonstable env-based API"
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedSort::SortPairsDescending(
     thrust::raw_pointer_cast(keys_in.data()),
@@ -242,7 +236,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortPairsDescending nonstable env-based API"
     2,
     thrust::raw_pointer_cast(offsets_begin.data()),
     thrust::raw_pointer_cast(offsets_end.data()),
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedSort::SortPairsDescending failed with status: " << error << std::endl;
@@ -274,7 +268,6 @@ C2H_TEST("cub::DeviceSegmentedSort::SortPairs nonstable DoubleBuffer env-based A
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedSort::SortPairs(
     d_keys,
@@ -283,7 +276,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortPairs nonstable DoubleBuffer env-based A
     2,
     thrust::raw_pointer_cast(offsets_begin.data()),
     thrust::raw_pointer_cast(offsets_end.data()),
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceSegmentedSort::SortPairs (DoubleBuffer) failed with status: " << error << std::endl;
@@ -318,7 +311,6 @@ C2H_TEST("cub::DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer e
 
   cuda::stream stream{cuda::devices[0]};
   cuda::stream_ref stream_ref{stream};
-  auto env = cuda::std::execution::env{stream_ref};
 
   auto error = cub::DeviceSegmentedSort::SortPairsDescending(
     d_keys,
@@ -327,7 +319,7 @@ C2H_TEST("cub::DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer e
     2,
     thrust::raw_pointer_cast(offsets_begin.data()),
     thrust::raw_pointer_cast(offsets_end.data()),
-    env);
+    stream_ref);
   if (error != cudaSuccess)
   {
     std::cerr

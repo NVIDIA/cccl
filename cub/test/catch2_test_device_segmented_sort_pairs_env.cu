@@ -11,6 +11,9 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
+#include <cuda/devices>
+#include <cuda/stream>
+
 #include "catch2_test_env_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortPairs, stable_sort_pairs);
@@ -204,8 +207,7 @@ TEST_CASE("DeviceSegmentedSort::SortPairs nonstable uses custom stream", "[segme
   auto values_out = c2h::device_vector<int>(7);
   auto offsets    = c2h::device_vector<int>{0, 3, 7};
 
-  cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  cuda::stream stream{cuda::devices[0]};
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -222,7 +224,7 @@ TEST_CASE("DeviceSegmentedSort::SortPairs nonstable uses custom stream", "[segme
       thrust::raw_pointer_cast(offsets.data()),
       thrust::raw_pointer_cast(offsets.data()) + 1));
 
-  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
   sort_pairs(
@@ -236,13 +238,12 @@ TEST_CASE("DeviceSegmentedSort::SortPairs nonstable uses custom stream", "[segme
     thrust::raw_pointer_cast(offsets.data()) + 1,
     env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  stream.sync();
 
   c2h::device_vector<int> expected_keys{6, 7, 8, 0, 3, 5, 9};
   c2h::device_vector<int> expected_values{1, 2, 0, 5, 4, 3, 6};
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
 TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable uses custom stream", "[segmented_sort][pairs][device]")
@@ -253,8 +254,7 @@ TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable uses custom stream
   auto values_out = c2h::device_vector<int>(7);
   auto offsets    = c2h::device_vector<int>{0, 3, 7};
 
-  cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  cuda::stream stream{cuda::devices[0]};
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -271,7 +271,7 @@ TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable uses custom stream
       thrust::raw_pointer_cast(offsets.data()),
       thrust::raw_pointer_cast(offsets.data()) + 1));
 
-  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
   sort_pairs_descending(
@@ -285,13 +285,12 @@ TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable uses custom stream
     thrust::raw_pointer_cast(offsets.data()) + 1,
     env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  stream.sync();
 
   c2h::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};
   c2h::device_vector<int> expected_values{0, 2, 1, 6, 3, 4, 5};
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
 TEST_CASE("DeviceSegmentedSort::SortPairs nonstable DoubleBuffer uses custom stream", "[segmented_sort][pairs][device]")
@@ -306,8 +305,7 @@ TEST_CASE("DeviceSegmentedSort::SortPairs nonstable DoubleBuffer uses custom str
   cub::DoubleBuffer<int> d_values(
     thrust::raw_pointer_cast(values_buf0.data()), thrust::raw_pointer_cast(values_buf1.data()));
 
-  cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  cuda::stream stream{cuda::devices[0]};
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -322,7 +320,7 @@ TEST_CASE("DeviceSegmentedSort::SortPairs nonstable DoubleBuffer uses custom str
       thrust::raw_pointer_cast(offsets.data()),
       thrust::raw_pointer_cast(offsets.data()) + 1));
 
-  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
   sort_pairs(d_keys,
@@ -333,7 +331,7 @@ TEST_CASE("DeviceSegmentedSort::SortPairs nonstable DoubleBuffer uses custom str
              thrust::raw_pointer_cast(offsets.data()) + 1,
              env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  stream.sync();
 
   c2h::device_vector<int> expected_keys{6, 7, 8, 0, 3, 5, 9};
   c2h::device_vector<int> expected_values{1, 2, 0, 5, 4, 3, 6};
@@ -341,7 +339,6 @@ TEST_CASE("DeviceSegmentedSort::SortPairs nonstable DoubleBuffer uses custom str
   c2h::device_vector<int> result_values(d_values.Current(), d_values.Current() + 7);
   REQUIRE(result_keys == expected_keys);
   REQUIRE(result_values == expected_values);
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
 TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer uses custom stream",
@@ -357,8 +354,7 @@ TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer uses 
   cub::DoubleBuffer<int> d_values(
     thrust::raw_pointer_cast(values_buf0.data()), thrust::raw_pointer_cast(values_buf1.data()));
 
-  cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  cuda::stream stream{cuda::devices[0]};
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -373,7 +369,7 @@ TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer uses 
       thrust::raw_pointer_cast(offsets.data()),
       thrust::raw_pointer_cast(offsets.data()) + 1));
 
-  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{custom_stream}};
+  auto stream_prop = stdexec::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
   auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
 
   sort_pairs_descending(
@@ -385,7 +381,7 @@ TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer uses 
     thrust::raw_pointer_cast(offsets.data()) + 1,
     env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  stream.sync();
 
   c2h::device_vector<int> expected_keys{8, 7, 6, 9, 5, 3, 0};
   c2h::device_vector<int> expected_values{0, 2, 1, 6, 3, 4, 5};
@@ -393,7 +389,6 @@ TEST_CASE("DeviceSegmentedSort::SortPairsDescending nonstable DoubleBuffer uses 
   c2h::device_vector<int> result_values(d_values.Current(), d_values.Current() + 7);
   REQUIRE(result_keys == expected_keys);
   REQUIRE(result_values == expected_values);
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
 C2H_TEST("DeviceSegmentedSort::StableSortPairs uses environment", "[segmented_sort][pairs][device]")
