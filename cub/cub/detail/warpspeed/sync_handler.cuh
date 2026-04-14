@@ -31,6 +31,7 @@ struct SkipSync
 
 struct SyncHandler
 {
+  // reducing these values to the actually used number of resources and phases does not improve performance
   static constexpr int mMaxNumResources = 10;
   static constexpr int mMaxNumPhases    = 4;
 
