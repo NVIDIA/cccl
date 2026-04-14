@@ -34,7 +34,7 @@ To demonstrate, the following example defines several resources, only some of wh
      // However, if compiled with C++14 / C++17, operator != must also be defined.
      bool operator!=(const valid_resource&) const { return false; }
    };
-   static_assert(cuda::mr::resource<valid_resource>, "");
+   static_assert(cuda::mr::synchronous_resource<valid_resource>, "");
 
    struct invalid_argument {};
    struct invalid_allocate_argument {

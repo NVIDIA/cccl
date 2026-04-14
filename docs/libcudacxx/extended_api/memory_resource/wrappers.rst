@@ -66,19 +66,26 @@ lifetime.
 
 .. code:: cpp
 
-   struct required_alignment{};
+   struct required_alignment {
+       using value_type = std::size_t;
+   };
    void* do_allocate_with_alignment(cuda::mr::resource_ref<required_alignment> resource, cuda::stream_ref stream, std::size_t size) {
-       return resource.allocate(stream, size, cuda::mr::get_property(resource, required_alignment));
+       return resource.allocate(stream, size, get_property(resource, required_alignment{}));
    }
 
 However, the type erasure comes with the cost that arbitrary properties cannot be queried from either wrapper:
 
 .. code:: cpp
 
-   struct required_alignment{};
+   struct required_alignment {
+       using value_type = std::size_t;
+   };
    void* buggy_allocate_with_alignment(cuda::mr::resource_ref<> resource, cuda::stream_ref stream, std::size_t size) {
-       if constexpr (cuda::has_property<required_alignment>) { // BUG: This will always be false
-           return resource.allocate(stream, size, cuda::mr::get_property(resource, required_alignment));
+       // BUG: cuda::has_property requires two template arguments: the resource type and the property.
+       // This will not compile. The correct form is cuda::has_property<decltype(resource), required_alignment>,
+       // but even then it evaluates to false because resource_ref<> was not constrained with required_alignment.
+       if constexpr (cuda::has_property<required_alignment>) {
+           return resource.allocate(stream, size, get_property(resource, required_alignment{}));
        } else {
            return resource.allocate(stream, size, my_default_alignment);
        }
