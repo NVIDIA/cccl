@@ -26,7 +26,8 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__device/arch_id.h>
-#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__type_traits/is_trivially_copyable.h>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
@@ -1100,9 +1101,11 @@ struct policy_selector
         ? primitive_accum::yes
         : primitive_accum::no;
     const bool value_is_primitive_or_trivially_copyable = value_is_primitive || value_is_trivially_copyable;
-    const primitive_op primitive_op_t = operation_t != op_kind_t::other ? primitive_op::yes : primitive_op::no;
-    const int max_input_bytes         = (::cuda::std::max) (key_size, accum_size);
-    const int combined_input_bytes    = key_size + accum_size;
+    const bool primitive_accum                          = primitive_accum_t == primitive_accum::yes;
+    const bool primitive_value                          = primitive_value_t == primitive_accum::yes;
+    const bool primitive_op                             = operation_t != op_kind_t::other;
+    const int max_input_bytes                           = (::cuda::std::max) (key_size, accum_size);
+    const int combined_input_bytes                      = key_size + accum_size;
 
     const auto default_items =
       max_input_bytes <= 8
@@ -1116,7 +1119,7 @@ struct policy_selector
 
     if (arch >= ::cuda::arch_id::sm_100)
     {
-      if (primitive_op_t == primitive_op::yes)
+      if (primitive_op && primitive_value)
       {
         switch (key_size)
         {
@@ -1124,58 +1127,41 @@ struct policy_selector
             switch (value_size)
             {
               case 1:
-                if (primitive_value_t == primitive_accum::yes)
-                {
-                  // ipt_13.tpb_288.ns_420.dcid_0.l2w_745.trp_1.ld_0 1.030222  0.998162  1.027506  1.068348
-                  return {288,
-                          13,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<745>>};
-                }
-                break;
+                // ipt_13.tpb_288.ns_420.dcid_0.l2w_745.trp_1.ld_0 1.030222  0.998162  1.027506  1.068348
+                return {288,
+                        13,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_SCAN_WARP_SCANS,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        delay_constructor_policy_from_type<no_delay_constructor_t<745>>};
               case 2:
-                if (primitive_value_t == primitive_accum::yes)
-                {
-                  // ipt_13.tpb_288.ns_388.dcid_1.l2w_570.trp_1.ld_0 1.228612   1.0  1.216841  1.416167
-                  return {288,
-                          13,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<388, 570>>};
-                }
-                break;
+                // ipt_13.tpb_288.ns_388.dcid_1.l2w_570.trp_1.ld_0 1.228612   1.0  1.216841  1.416167
+                return {288,
+                        13,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_SCAN_WARP_SCANS,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        delay_constructor_policy_from_type<fixed_delay_constructor_t<388, 570>>};
               case 4:
-                if (primitive_value_t == primitive_accum::yes)
-                {
-                  // ipt_19.tpb_224.ns_1028.dcid_5.l2w_910.trp_1.ld_1 1.163440   1.0  1.146400  1.260684
-                  return {
-                    224,
-                    19,
-                    BLOCK_LOAD_WARP_TRANSPOSE,
-                    LOAD_CA,
-                    BLOCK_SCAN_WARP_SCANS,
-                    BLOCK_STORE_WARP_TRANSPOSE,
-                    delay_constructor_policy_from_type<exponential_backon_jitter_window_constructor_t<1028, 910>>};
-                }
-                break;
+                // ipt_19.tpb_224.ns_1028.dcid_5.l2w_910.trp_1.ld_1 1.163440   1.0  1.146400  1.260684
+                return {224,
+                        19,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_CA,
+                        BLOCK_SCAN_WARP_SCANS,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        delay_constructor_policy_from_type<exponential_backon_jitter_window_constructor_t<1028, 910>>};
               case 8:
-                if (primitive_value_t == primitive_accum::yes)
-                {
-                  // ipt_18.tpb_192.ns_432.dcid_1.l2w_1035.trp_1.ld_1 1.177638  0.985417  1.157164  1.296477
-                  return {192,
-                          18,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_CA,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<432, 1035>>};
-                }
-                break;
+                // ipt_18.tpb_192.ns_432.dcid_1.l2w_1035.trp_1.ld_1 1.177638  0.985417  1.157164  1.296477
+                return {192,
+                        18,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_CA,
+                        BLOCK_SCAN_WARP_SCANS,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        delay_constructor_policy_from_type<fixed_delay_constructor_t<432, 1035>>};
               default:
                 break;
             }
@@ -1184,56 +1170,40 @@ struct policy_selector
             switch (value_size)
             {
               case 1:
-                if (primitive_value_t == primitive_accum::yes)
-                {
-                  // ipt_12.tpb_384.ns_1900.dcid_0.l2w_840.trp_1.ld_0 1.010828  0.985782  1.007993  1.048859
-                  return {384,
-                          12,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1900>>};
-                }
-                break;
+                // ipt_12.tpb_384.ns_1900.dcid_0.l2w_840.trp_1.ld_0 1.010828  0.985782  1.007993  1.048859
+                return {384,
+                        12,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_SCAN_WARP_SCANS,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        delay_constructor_policy_from_type<no_delay_constructor_t<1900>>};
               case 2:
-                if (primitive_value_t == primitive_accum::yes)
-                {
-                  // ipt_14.tpb_160.ns_1736.dcid_7.l2w_170.trp_1.ld_0 1.095207  1.065061  1.100302  1.142857
-                  return {160,
-                          14,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<exponential_backon_constructor_t<1736, 170>>};
-                }
-                break;
+                // ipt_14.tpb_160.ns_1736.dcid_7.l2w_170.trp_1.ld_0 1.095207  1.065061  1.100302  1.142857
+                return {160,
+                        14,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_SCAN_WARP_SCANS,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        delay_constructor_policy_from_type<exponential_backon_constructor_t<1736, 170>>};
               case 4:
-                if (primitive_value_t == primitive_accum::yes)
-                {
-                  // ipt_14.tpb_160.ns_336.dcid_1.l2w_805.trp_1.ld_0 1.119313  1.095238  1.122013  1.148681
-                  return {160,
-                          14,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<336, 805>>};
-                }
-                break;
+                // ipt_14.tpb_160.ns_336.dcid_1.l2w_805.trp_1.ld_0 1.119313  1.095238  1.122013  1.148681
+                return {160,
+                        14,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_SCAN_WARP_SCANS,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        delay_constructor_policy_from_type<fixed_delay_constructor_t<336, 805>>};
               case 8:
-                if (primitive_value_t == primitive_accum::yes)
-                {
-                  return {224,
-                          13,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_CA,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<exponential_backoff_constructor_t<348, 735>>};
-                }
-                break;
+                return {224,
+                        13,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_CA,
+                        BLOCK_SCAN_WARP_SCANS,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        delay_constructor_policy_from_type<exponential_backoff_constructor_t<348, 735>>};
               default:
                 break;
             }
@@ -1242,59 +1212,42 @@ struct policy_selector
             switch (value_size)
             {
               case 1:
-                if (primitive_value_t == primitive_accum::yes)
-                {
-                  // todo(gonidlelis): Significant regression. Search more workloads.
-                  // ipt_20.tpb_224.ns_1436.dcid_7.l2w_155.trp_1.ld_1 1.135878  0.866667  1.106600  1.339708
-                  return {224,
-                          20,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_CA,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<exponential_backon_constructor_t<1436, 155>>};
-                }
-                break;
+                // todo(gonidlelis): Significant regression. Search more workloads.
+                // ipt_20.tpb_224.ns_1436.dcid_7.l2w_155.trp_1.ld_1 1.135878  0.866667  1.106600  1.339708
+                return {224,
+                        20,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_CA,
+                        BLOCK_SCAN_WARP_SCANS,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        delay_constructor_policy_from_type<exponential_backon_constructor_t<1436, 155>>};
               case 2:
-                if (primitive_value_t == primitive_accum::yes)
-                {
-                  // ipt_13.tpb_288.ns_620.dcid_7.l2w_925.trp_1.ld_2 1.050929  1.000000  1.047178  1.115809
-                  return {288,
-                          13,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_CA,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<exponential_backon_constructor_t<620, 925>>};
-                }
-                break;
+                // ipt_13.tpb_288.ns_620.dcid_7.l2w_925.trp_1.ld_2 1.050929  1.000000  1.047178  1.115809
+                return {288,
+                        13,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_CA,
+                        BLOCK_SCAN_WARP_SCANS,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        delay_constructor_policy_from_type<exponential_backon_constructor_t<620, 925>>};
               case 4:
-                if (primitive_value_t == primitive_accum::yes)
-                {
-                  // ipt_20.tpb_224.ns_1856.dcid_5.l2w_280.trp_1.ld_1 1.247248  1.000000  1.220196  1.446328
-                  return {
-                    224,
-                    20,
-                    BLOCK_LOAD_WARP_TRANSPOSE,
-                    LOAD_CA,
-                    BLOCK_SCAN_WARP_SCANS,
-                    BLOCK_STORE_WARP_TRANSPOSE,
-                    delay_constructor_policy_from_type<exponential_backon_jitter_window_constructor_t<1856, 280>>};
-                }
-                break;
+                // ipt_20.tpb_224.ns_1856.dcid_5.l2w_280.trp_1.ld_1 1.247248  1.000000  1.220196  1.446328
+                return {224,
+                        20,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_CA,
+                        BLOCK_SCAN_WARP_SCANS,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        delay_constructor_policy_from_type<exponential_backon_jitter_window_constructor_t<1856, 280>>};
               case 8:
-                if (primitive_value_t == primitive_accum::yes)
-                {
-                  // ipt_14.tpb_224.ns_464.dcid_2.l2w_680.trp_1.ld_1 1.070831  1.002088  1.064736  1.105437
-                  return {224,
-                          14,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_CA,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<exponential_backoff_constructor_t<464, 860>>};
-                }
-                break;
+                // ipt_14.tpb_224.ns_464.dcid_2.l2w_680.trp_1.ld_1 1.070831  1.002088  1.064736  1.105437
+                return {224,
+                        14,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_CA,
+                        BLOCK_SCAN_WARP_SCANS,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        delay_constructor_policy_from_type<exponential_backoff_constructor_t<464, 860>>};
               default:
                 break;
             }
@@ -1303,59 +1256,42 @@ struct policy_selector
             switch (value_size)
             {
               case 1:
-                if (primitive_value_t == primitive_accum::yes)
-                {
-                  // ipt_12.tpb_160.ns_532.dcid_0.l2w_850.trp_1.ld_0 1.041966  1.000000  1.037010  1.078399
-                  return {160,
-                          12,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<532>>};
-                }
-                break;
+                // ipt_12.tpb_160.ns_532.dcid_0.l2w_850.trp_1.ld_0 1.041966  1.000000  1.037010  1.078399
+                return {160,
+                        12,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_SCAN_WARP_SCANS,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        delay_constructor_policy_from_type<no_delay_constructor_t<532>>};
               case 2:
-                if (primitive_value_t == primitive_accum::yes)
-                {
-                  // todo(gonidlelis): Significant regression. Search more workloads.
-                  // ipt_15.tpb_288.ns_988.dcid_7.l2w_335.trp_1.ld_0 1.064413  0.866667  1.045946  1.116803
-                  return {288,
-                          15,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<exponential_backon_constructor_t<988, 335>>};
-                }
-                break;
+                // todo(gonidlelis): Significant regression. Search more workloads.
+                // ipt_15.tpb_288.ns_988.dcid_7.l2w_335.trp_1.ld_0 1.064413  0.866667  1.045946  1.116803
+                return {288,
+                        15,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_SCAN_WARP_SCANS,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        delay_constructor_policy_from_type<exponential_backon_constructor_t<988, 335>>};
               case 4:
-                if (primitive_value_t == primitive_accum::yes)
-                {
-                  // ipt_22.tpb_160.ns_1032.dcid_5.l2w_505.trp_1.ld_2 1.184805  1.000000  1.164843  1.338536
-                  return {
-                    160,
-                    22,
-                    BLOCK_LOAD_WARP_TRANSPOSE,
-                    LOAD_CA,
-                    BLOCK_SCAN_WARP_SCANS,
-                    BLOCK_STORE_WARP_TRANSPOSE,
-                    delay_constructor_policy_from_type<exponential_backon_jitter_window_constructor_t<1032, 505>>};
-                }
-                break;
+                // ipt_22.tpb_160.ns_1032.dcid_5.l2w_505.trp_1.ld_2 1.184805  1.000000  1.164843  1.338536
+                return {160,
+                        22,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_CA,
+                        BLOCK_SCAN_WARP_SCANS,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        delay_constructor_policy_from_type<exponential_backon_jitter_window_constructor_t<1032, 505>>};
               case 8:
-                if (primitive_value_t == primitive_accum::yes)
-                {
-                  // ipt_23.tpb_256.ns_1232.dcid_0.l2w_810.trp_1.ld_0 1.067631  1.000000  1.059607  1.135646
-                  return {256,
-                          23,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1232>>};
-                }
-                break;
+                // ipt_23.tpb_256.ns_1232.dcid_0.l2w_810.trp_1.ld_0 1.067631  1.000000  1.059607  1.135646
+                return {256,
+                        23,
+                        BLOCK_LOAD_WARP_TRANSPOSE,
+                        LOAD_DEFAULT,
+                        BLOCK_SCAN_WARP_SCANS,
+                        BLOCK_STORE_WARP_TRANSPOSE,
+                        delay_constructor_policy_from_type<no_delay_constructor_t<1232>>};
               default:
                 break;
             }
@@ -1364,22 +1300,20 @@ struct policy_selector
             break;
         }
       }
-
-      arch = ::cuda::arch_id::sm_80;
     }
 
     if (arch >= ::cuda::arch_id::sm_90)
     {
-      if (primitive_op_t == primitive_op::yes)
+      if (primitive_op)
       {
-        switch (key_size)
+        if (primitive_value)
         {
-          case 1:
-            switch (value_size)
-            {
-              case 1:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+          switch (key_size)
+          {
+            case 1:
+              switch (value_size)
+              {
+                case 1:
                   return {128,
                           12,
                           BLOCK_LOAD_DIRECT,
@@ -1387,11 +1321,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_DIRECT,
                           delay_constructor_policy_from_type<no_delay_constructor_t<650>>};
-                }
-                break;
-              case 2:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 2:
                   return {256,
                           16,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1399,11 +1329,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<124, 995>>};
-                }
-                break;
-              case 4:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 4:
                   return {128,
                           15,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1411,11 +1337,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<488, 545>>};
-                }
-                break;
-              case 8:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 8:
                   return {224,
                           10,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1423,33 +1345,14 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<488, 1070>>};
-                }
-                break;
-#if _CCCL_HAS_INT128()
-              case 16:
-                if (primitive_accum_t == primitive_accum::no
-                    && (accum_type == type_t::int128 || accum_type == type_t::uint128))
-                {
-                  return {128,
-                          23,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<936, 1105>>};
-                }
-#endif
-                break;
-              default:
-                break;
-            }
-            break;
-          case 2:
-            switch (value_size)
-            {
-              case 1:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                default:
+                  break;
+              }
+              break;
+            case 2:
+              switch (value_size)
+              {
+                case 1:
                   return {128,
                           12,
                           BLOCK_LOAD_DIRECT,
@@ -1457,11 +1360,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_DIRECT,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<136, 785>>};
-                }
-                break;
-              case 2:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 2:
                   return {128,
                           20,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1469,11 +1368,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<no_delay_constructor_t<445>>};
-                }
-                break;
-              case 4:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 4:
                   return {128,
                           22,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1481,11 +1376,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<312, 865>>};
-                }
-                break;
-              case 8:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 8:
                   return {224,
                           10,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1493,33 +1384,14 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<352, 1170>>};
-                }
-#if _CCCL_HAS_INT128()
-                break;
-              case 16:
-                if (primitive_accum_t == primitive_accum::no
-                    && (accum_type == type_t::int128 || accum_type == type_t::uint128))
-                {
-                  return {128,
-                          23,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<504, 1190>>};
-                }
-#endif
-                break;
-              default:
-                break;
-            }
-            break;
-          case 4:
-            switch (value_size)
-            {
-              case 1:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                default:
+                  break;
+              }
+              break;
+            case 4:
+              switch (value_size)
+              {
+                case 1:
                   return {128,
                           12,
                           BLOCK_LOAD_DIRECT,
@@ -1527,11 +1399,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_DIRECT,
                           delay_constructor_policy_from_type<no_delay_constructor_t<850>>};
-                }
-                break;
-              case 2:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 2:
                   return {256,
                           14,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1539,11 +1407,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<128, 965>>};
-                }
-                break;
-              case 4:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 4:
                   return {288,
                           14,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1551,11 +1415,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<700, 1005>>};
-                }
-                break;
-              case 8:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 8:
                   return {224,
                           14,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1563,33 +1423,14 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<556, 1195>>};
-                }
-#if _CCCL_HAS_INT128()
-                break;
-              case 16:
-                if (primitive_accum_t == primitive_accum::no
-                    && (accum_type == type_t::int128 || accum_type == type_t::uint128))
-                {
-                  return {128,
-                          23,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<512, 1030>>};
-                }
-#endif
-                break;
-              default:
-                break;
-            }
-            break;
-          case 8:
-            switch (value_size)
-            {
-              case 1:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                default:
+                  break;
+              }
+              break;
+            case 8:
+              switch (value_size)
+              {
+                case 1:
                   return {128,
                           12,
                           BLOCK_LOAD_DIRECT,
@@ -1597,11 +1438,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_DIRECT,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<504, 1010>>};
-                }
-                break;
-              case 2:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 2:
                   return {224,
                           10,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1609,11 +1446,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<420, 970>>};
-                }
-                break;
-              case 4:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 4:
                   return {192,
                           10,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1621,11 +1454,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<500, 1125>>};
-                }
-                break;
-              case 8:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 8:
                   return {224,
                           11,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1633,13 +1462,68 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<600, 930>>};
-                }
+                default:
+                  break;
+              }
+              break;
+            default:
+              break;
+          }
+        }
 #if _CCCL_HAS_INT128()
-                break;
-              case 16:
-                if (primitive_accum_t == primitive_accum::no
-                    && (accum_type == type_t::int128 || accum_type == type_t::uint128))
-                {
+        else if (accum_type == type_t::int128 || accum_type == type_t::uint128)
+        {
+          switch (key_size)
+          {
+            case 1:
+              switch (value_size)
+              {
+                case 16:
+                  return {128,
+                          23,
+                          BLOCK_LOAD_WARP_TRANSPOSE,
+                          LOAD_DEFAULT,
+                          BLOCK_SCAN_WARP_SCANS,
+                          BLOCK_STORE_WARP_TRANSPOSE,
+                          delay_constructor_policy_from_type<fixed_delay_constructor_t<936, 1105>>};
+                default:
+                  break;
+              }
+              break;
+            case 2:
+              switch (value_size)
+              {
+                case 16:
+                  return {128,
+                          23,
+                          BLOCK_LOAD_WARP_TRANSPOSE,
+                          LOAD_DEFAULT,
+                          BLOCK_SCAN_WARP_SCANS,
+                          BLOCK_STORE_WARP_TRANSPOSE,
+                          delay_constructor_policy_from_type<fixed_delay_constructor_t<504, 1190>>};
+                default:
+                  break;
+              }
+              break;
+            case 4:
+              switch (value_size)
+              {
+                case 16:
+                  return {128,
+                          23,
+                          BLOCK_LOAD_WARP_TRANSPOSE,
+                          LOAD_DEFAULT,
+                          BLOCK_SCAN_WARP_SCANS,
+                          BLOCK_STORE_WARP_TRANSPOSE,
+                          delay_constructor_policy_from_type<fixed_delay_constructor_t<512, 1030>>};
+                default:
+                  break;
+              }
+              break;
+            case 8:
+              switch (value_size)
+              {
+                case 16:
                   return {192,
                           15,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1647,92 +1531,87 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<364, 1085>>};
-                }
-#endif
-                break;
-              default:
-                break;
-            }
-            break;
-          case 16:
-            switch (accum_size)
-            {
-              case 1:
-                if (primitive_accum_t == primitive_accum::yes)
-                {
-                  return {192,
-                          7,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<500, 975>>};
-                }
-                break;
-              case 2:
-                if (primitive_accum_t == primitive_accum::yes)
-                {
-                  return {224,
-                          10,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<164, 1075>>};
-                }
-                break;
-              case 4:
-                if (primitive_accum_t == primitive_accum::yes)
-                {
-                  return {256,
-                          9,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<268, 1120>>};
-                }
-                break;
-              case 8:
-                if (primitive_accum_t == primitive_accum::yes)
-                {
-                  return {192,
-                          9,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<320, 1200>>};
-                }
-#if _CCCL_HAS_INT128()
-                break;
-              case 16:
-                if (primitive_accum_t == primitive_accum::no
-                    && (accum_type == type_t::int128 || accum_type == type_t::uint128))
-                {
-                  return {128,
-                          23,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<364, 1050>>};
-                }
-#endif
-                break;
-              default:
-                break;
-            }
-            break;
-          default:
-            break;
+                default:
+                  break;
+              }
+              break;
+            default:
+              break;
+          }
         }
+#endif
+
+        if (key_size == 16 && primitive_accum)
+        {
+          switch (accum_size)
+          {
+            case 1:
+              return {192,
+                      7,
+                      BLOCK_LOAD_WARP_TRANSPOSE,
+                      LOAD_DEFAULT,
+                      BLOCK_SCAN_WARP_SCANS,
+                      BLOCK_STORE_WARP_TRANSPOSE,
+                      delay_constructor_policy_from_type<fixed_delay_constructor_t<500, 975>>};
+            case 2:
+              return {224,
+                      10,
+                      BLOCK_LOAD_WARP_TRANSPOSE,
+                      LOAD_DEFAULT,
+                      BLOCK_SCAN_WARP_SCANS,
+                      BLOCK_STORE_WARP_TRANSPOSE,
+                      delay_constructor_policy_from_type<fixed_delay_constructor_t<164, 1075>>};
+            case 4:
+              return {256,
+                      9,
+                      BLOCK_LOAD_WARP_TRANSPOSE,
+                      LOAD_DEFAULT,
+                      BLOCK_SCAN_WARP_SCANS,
+                      BLOCK_STORE_WARP_TRANSPOSE,
+                      delay_constructor_policy_from_type<fixed_delay_constructor_t<268, 1120>>};
+            case 8:
+              return {192,
+                      9,
+                      BLOCK_LOAD_WARP_TRANSPOSE,
+                      LOAD_DEFAULT,
+                      BLOCK_SCAN_WARP_SCANS,
+                      BLOCK_STORE_WARP_TRANSPOSE,
+                      delay_constructor_policy_from_type<fixed_delay_constructor_t<320, 1200>>};
+            default:
+              break;
+          }
+        }
+#if _CCCL_HAS_INT128()
+        else if (key_size == 16 && (accum_type == type_t::int128 || accum_type == type_t::uint128))
+        {
+          switch (accum_size)
+          {
+            case 16:
+              return {128,
+                      23,
+                      BLOCK_LOAD_WARP_TRANSPOSE,
+                      LOAD_DEFAULT,
+                      BLOCK_SCAN_WARP_SCANS,
+                      BLOCK_STORE_WARP_TRANSPOSE,
+                      delay_constructor_policy_from_type<fixed_delay_constructor_t<364, 1050>>};
+            default:
+              break;
+          }
+        }
+#endif
       }
 
-      arch = ::cuda::arch_id::sm_80;
+      return {256,
+              default_items,
+              BLOCK_LOAD_WARP_TRANSPOSE,
+              LOAD_DEFAULT,
+              BLOCK_SCAN_WARP_SCANS,
+              BLOCK_STORE_WARP_TRANSPOSE,
+              default_reduce_by_key_delay_constructor_policy(
+                sizeof(int), value_size, true, value_is_primitive_or_trivially_copyable)};
     }
 
-    if (arch >= ::cuda::arch_id::sm_86)
+    if (arch >= ::cuda::arch_id::sm_86) // && arch < ::cuda::arch_id::sm_90
     {
       return {256,
               default_items,
@@ -1740,22 +1619,21 @@ struct policy_selector
               LOAD_CA,
               BLOCK_SCAN_WARP_SCANS,
               BLOCK_STORE_WARP_TRANSPOSE,
-              default_reduce_by_key_delay_constructor_policy(
-                sizeof(int), accum_size, true, primitive_accum_t == primitive_accum::yes)};
+              default_reduce_by_key_delay_constructor_policy(sizeof(int), accum_size, true, primitive_accum)};
     }
 
     if (arch >= ::cuda::arch_id::sm_80)
     {
-      if (primitive_op_t == primitive_op::yes)
+      if (primitive_op)
       {
-        switch (key_size)
+        if (primitive_value)
         {
-          case 1:
-            switch (value_size)
-            {
-              case 1:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+          switch (key_size)
+          {
+            case 1:
+              switch (value_size)
+              {
+                case 1:
                   return {128,
                           12,
                           BLOCK_LOAD_DIRECT,
@@ -1763,11 +1641,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_DIRECT,
                           delay_constructor_policy_from_type<no_delay_constructor_t<795>>};
-                }
-                break;
-              case 2:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 2:
                   return {288,
                           12,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1775,11 +1649,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<no_delay_constructor_t<825>>};
-                }
-                break;
-              case 4:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 4:
                   return {256,
                           15,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1787,11 +1657,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<no_delay_constructor_t<640>>};
-                }
-                break;
-              case 8:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 8:
                   return {192,
                           10,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1799,33 +1665,14 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<124, 1040>>};
-                }
-#if _CCCL_HAS_INT128()
-                break;
-              case 16:
-                if (primitive_accum_t == primitive_accum::no
-                    && (accum_type == type_t::int128 || accum_type == type_t::uint128))
-                {
-                  return {128,
-                          19,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1095>>};
-                }
-#endif
-                break;
-              default:
-                break;
-            }
-            break;
-          case 2:
-            switch (value_size)
-            {
-              case 1:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                default:
+                  break;
+              }
+              break;
+            case 2:
+              switch (value_size)
+              {
+                case 1:
                   return {256,
                           8,
                           BLOCK_LOAD_DIRECT,
@@ -1833,11 +1680,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_DIRECT,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1070>>};
-                }
-                break;
-              case 2:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 2:
                   return {320,
                           14,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1845,11 +1688,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<no_delay_constructor_t<625>>};
-                }
-                break;
-              case 4:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 4:
                   return {256,
                           15,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1857,11 +1696,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1055>>};
-                }
-                break;
-              case 8:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 8:
                   return {160,
                           17,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1869,33 +1704,14 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<160, 695>>};
-                }
-#if _CCCL_HAS_INT128()
-                break;
-              case 16:
-                if (primitive_accum_t == primitive_accum::no
-                    && (accum_type == type_t::int128 || accum_type == type_t::uint128))
-                {
-                  return {160,
-                          14,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1105>>};
-                }
-#endif
-                break;
-              default:
-                break;
-            }
-            break;
-          case 4:
-            switch (value_size)
-            {
-              case 1:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                default:
+                  break;
+              }
+              break;
+            case 4:
+              switch (value_size)
+              {
+                case 1:
                   return {128,
                           12,
                           BLOCK_LOAD_DIRECT,
@@ -1903,11 +1719,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_DIRECT,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1130>>};
-                }
-                break;
-              case 2:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 2:
                   return {256,
                           12,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1915,11 +1727,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1130>>};
-                }
-                break;
-              case 4:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 4:
                   return {256,
                           15,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1927,11 +1735,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1140>>};
-                }
-                break;
-              case 8:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 8:
                   return {256,
                           9,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1939,33 +1743,14 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<888, 635>>};
-                }
-#if _CCCL_HAS_INT128()
-                break;
-              case 16:
-                if (primitive_accum_t == primitive_accum::no
-                    && (accum_type == type_t::int128 || accum_type == type_t::uint128))
-                {
-                  return {128,
-                          17,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1100>>};
-                }
-#endif
-                break;
-              default:
-                break;
-            }
-            break;
-          case 8:
-            switch (value_size)
-            {
-              case 1:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                default:
+                  break;
+              }
+              break;
+            case 8:
+              switch (value_size)
+              {
+                case 1:
                   return {128,
                           11,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1973,11 +1758,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1120>>};
-                }
-                break;
-              case 2:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 2:
                   return {256,
                           10,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1985,11 +1766,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1115>>};
-                }
-                break;
-              case 4:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 4:
                   return {224,
                           13,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1997,11 +1774,7 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<24, 1060>>};
-                }
-                break;
-              case 8:
-                if (primitive_value_t == primitive_accum::yes)
-                {
+                case 8:
                   return {224,
                           10,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -2009,13 +1782,68 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1160>>};
-                }
+                default:
+                  break;
+              }
+              break;
+            default:
+              break;
+          }
+        }
 #if _CCCL_HAS_INT128()
-                break;
-              case 16:
-                if (primitive_accum_t == primitive_accum::no
-                    && (accum_type == type_t::int128 || accum_type == type_t::uint128))
-                {
+        else if (accum_type == type_t::int128 || accum_type == type_t::uint128)
+        {
+          switch (key_size)
+          {
+            case 1:
+              switch (value_size)
+              {
+                case 16:
+                  return {128,
+                          19,
+                          BLOCK_LOAD_WARP_TRANSPOSE,
+                          LOAD_DEFAULT,
+                          BLOCK_SCAN_WARP_SCANS,
+                          BLOCK_STORE_WARP_TRANSPOSE,
+                          delay_constructor_policy_from_type<no_delay_constructor_t<1095>>};
+                default:
+                  break;
+              }
+              break;
+            case 2:
+              switch (value_size)
+              {
+                case 16:
+                  return {160,
+                          14,
+                          BLOCK_LOAD_WARP_TRANSPOSE,
+                          LOAD_DEFAULT,
+                          BLOCK_SCAN_WARP_SCANS,
+                          BLOCK_STORE_WARP_TRANSPOSE,
+                          delay_constructor_policy_from_type<no_delay_constructor_t<1105>>};
+                default:
+                  break;
+              }
+              break;
+            case 4:
+              switch (value_size)
+              {
+                case 16:
+                  return {128,
+                          17,
+                          BLOCK_LOAD_WARP_TRANSPOSE,
+                          LOAD_DEFAULT,
+                          BLOCK_SCAN_WARP_SCANS,
+                          BLOCK_STORE_WARP_TRANSPOSE,
+                          delay_constructor_policy_from_type<no_delay_constructor_t<1100>>};
+                default:
+                  break;
+              }
+              break;
+            case 8:
+              switch (value_size)
+              {
+                case 16:
                   return {320,
                           8,
                           BLOCK_LOAD_WARP_TRANSPOSE,
@@ -2023,100 +1851,84 @@ struct policy_selector
                           BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
                           delay_constructor_policy_from_type<no_delay_constructor_t<220>>};
-                }
-#endif
-                break;
-              default:
-                break;
-            }
-            break;
-          case 16:
-            switch (accum_size)
-            {
-              case 1:
-                if (primitive_accum_t == primitive_accum::yes)
-                {
-                  return {192,
-                          7,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<144, 1120>>};
-                }
-                break;
-              case 2:
-                if (primitive_accum_t == primitive_accum::yes)
-                {
-                  return {192,
-                          7,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<fixed_delay_constructor_t<364, 780>>};
-                }
-                break;
-              case 4:
-                if (primitive_accum_t == primitive_accum::yes)
-                {
-                  return {256,
-                          7,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1170>>};
-                }
-                break;
-              case 8:
-                if (primitive_accum_t == primitive_accum::yes)
-                {
-                  return {128,
-                          15,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1030>>};
-                }
-#if _CCCL_HAS_INT128()
-                break;
-              case 16:
-                if (primitive_accum_t == primitive_accum::no
-                    && (accum_type == type_t::int128 || accum_type == type_t::uint128))
-                {
-                  return {128,
-                          15,
-                          BLOCK_LOAD_WARP_TRANSPOSE,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          BLOCK_STORE_WARP_TRANSPOSE,
-                          delay_constructor_policy_from_type<no_delay_constructor_t<1160>>};
-                }
-#endif
-                break;
-              default:
-                break;
-            }
-            break;
-          default:
-            break;
+                default:
+                  break;
+              }
+              break;
+            default:
+              break;
+          }
         }
+#endif
+
+        if (key_size == 16 && primitive_accum)
+        {
+          switch (accum_size)
+          {
+            case 1:
+              return {192,
+                      7,
+                      BLOCK_LOAD_WARP_TRANSPOSE,
+                      LOAD_DEFAULT,
+                      BLOCK_SCAN_WARP_SCANS,
+                      BLOCK_STORE_WARP_TRANSPOSE,
+                      delay_constructor_policy_from_type<fixed_delay_constructor_t<144, 1120>>};
+            case 2:
+              return {192,
+                      7,
+                      BLOCK_LOAD_WARP_TRANSPOSE,
+                      LOAD_DEFAULT,
+                      BLOCK_SCAN_WARP_SCANS,
+                      BLOCK_STORE_WARP_TRANSPOSE,
+                      delay_constructor_policy_from_type<fixed_delay_constructor_t<364, 780>>};
+            case 4:
+              return {256,
+                      7,
+                      BLOCK_LOAD_WARP_TRANSPOSE,
+                      LOAD_DEFAULT,
+                      BLOCK_SCAN_WARP_SCANS,
+                      BLOCK_STORE_WARP_TRANSPOSE,
+                      delay_constructor_policy_from_type<no_delay_constructor_t<1170>>};
+            case 8:
+              return {128,
+                      15,
+                      BLOCK_LOAD_WARP_TRANSPOSE,
+                      LOAD_DEFAULT,
+                      BLOCK_SCAN_WARP_SCANS,
+                      BLOCK_STORE_WARP_TRANSPOSE,
+                      delay_constructor_policy_from_type<no_delay_constructor_t<1030>>};
+            default:
+              break;
+          }
+        }
+#if _CCCL_HAS_INT128()
+        else if (key_size == 16 && (accum_type == type_t::int128 || accum_type == type_t::uint128))
+        {
+          switch (accum_size)
+          {
+            case 16:
+              return {128,
+                      15,
+                      BLOCK_LOAD_WARP_TRANSPOSE,
+                      LOAD_DEFAULT,
+                      BLOCK_SCAN_WARP_SCANS,
+                      BLOCK_STORE_WARP_TRANSPOSE,
+                      delay_constructor_policy_from_type<no_delay_constructor_t<1160>>};
+            default:
+              break;
+          }
+        }
+#endif
       }
 
-      return {
-        256,
-        default_items,
-        BLOCK_LOAD_WARP_TRANSPOSE,
-        LOAD_DEFAULT,
-        BLOCK_SCAN_WARP_SCANS,
-        BLOCK_STORE_WARP_TRANSPOSE,
-        default_reduce_by_key_delay_constructor_policy(
-          sizeof(int),
-          value_size,
-          true,
-          value_is_primitive_or_trivially_copyable && (key_size + value_size < largest_atomic_message_size))};
+      return {256,
+              default_items,
+              BLOCK_LOAD_WARP_TRANSPOSE,
+              LOAD_DEFAULT,
+              BLOCK_SCAN_WARP_SCANS,
+              BLOCK_STORE_WARP_TRANSPOSE,
+              default_reduce_by_key_delay_constructor_policy(
+                sizeof(int), value_size, true, value_is_primitive_or_trivially_copyable)};
     }
 
     if (arch >= ::cuda::arch_id::sm_60)
@@ -2127,8 +1939,7 @@ struct policy_selector
               LOAD_CA,
               BLOCK_SCAN_WARP_SCANS,
               BLOCK_STORE_WARP_TRANSPOSE,
-              default_reduce_by_key_delay_constructor_policy(
-                sizeof(int), accum_size, true, primitive_accum_t == primitive_accum::yes)};
+              default_reduce_by_key_delay_constructor_policy(sizeof(int), accum_size, true, primitive_accum)};
     }
 
     return {128,
@@ -2137,8 +1948,7 @@ struct policy_selector
             LOAD_CA,
             BLOCK_SCAN_WARP_SCANS,
             BLOCK_STORE_WARP_TRANSPOSE,
-            default_reduce_by_key_delay_constructor_policy(
-              sizeof(int), accum_size, true, primitive_accum_t == primitive_accum::yes)};
+            default_reduce_by_key_delay_constructor_policy(sizeof(int), accum_size, true, primitive_accum)};
   }
 };
 

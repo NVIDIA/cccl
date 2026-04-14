@@ -21,7 +21,6 @@
 #endif // no system header
 
 #include <cub/agent/agent_scan_by_key.cuh>
-#include <cub/detail/arch_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -415,11 +414,8 @@ struct DispatchScanByKey
       , launcher_factory(launcher_factory)
   {}
 
-  template <typename PolicyGetter, typename PolicySelectorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(PolicyGetter policy_getter, const PolicySelectorT&)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __invoke(detail::scan_by_key::scan_by_key_policy active_policy)
   {
-    CUB_DETAIL_CONSTEXPR_ISH auto active_policy = policy_getter();
-
     // Get device ordinal
     int device_ordinal;
     if (const auto error = CubDebug(cudaGetDevice(&device_ordinal)))
@@ -550,30 +546,10 @@ struct DispatchScanByKey
     return cudaSuccess;
   }
 
-  template <typename PolicyGetter, typename PolicySelectorT>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
-  invoke(PolicyGetter policy_getter, const PolicySelectorT& policy_selector)
-  {
-    return __invoke(policy_getter, policy_selector);
-  }
-
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT = {})
   {
-    struct policy_getter
-    {
-      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()() const
-      {
-        return detail::scan_by_key::convert_policy<ActivePolicyT>();
-      }
-    };
-
-    using policy_selector_t =
-      detail::scan_by_key::policy_selector_from_types<cub::detail::it_value_t<KeysInputIteratorT>,
-                                                      AccumT,
-                                                      cub::detail::it_value_t<ValuesInputIteratorT>,
-                                                      ScanOpT>;
-    return __invoke(policy_getter{}, policy_selector_t{});
+    return __invoke(detail::scan_by_key::convert_policy<ActivePolicyT>());
   }
 
   /**
@@ -679,34 +655,34 @@ struct DispatchScanByKey
          "Dispatching DeviceScanByKey to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());))
 #endif
 
-    return detail::dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
-      return DispatchScanByKey<KeysInputIteratorT,
-                               ValuesInputIteratorT,
-                               ValuesOutputIteratorT,
-                               EqualityOp,
-                               ScanOpT,
-                               InitValueT,
-                               OffsetT,
-                               AccumT,
-                               PolicyHub,
-                               PolicySelectorT,
-                               KernelSourceT,
-                               KernelLauncherFactory>(
-               d_temp_storage,
-               temp_storage_bytes,
-               d_keys_in,
-               d_values_in,
-               d_values_out,
-               equality_op,
-               scan_op,
-               init_value,
-               num_items,
-               stream,
-               -1,
-               kernel_source,
-               launcher_factory)
-        .invoke(policy_getter, policy_selector);
-    });
+    const detail::scan_by_key::scan_by_key_policy active_policy = policy_selector(arch_id);
+
+    return DispatchScanByKey<KeysInputIteratorT,
+                             ValuesInputIteratorT,
+                             ValuesOutputIteratorT,
+                             EqualityOp,
+                             ScanOpT,
+                             InitValueT,
+                             OffsetT,
+                             AccumT,
+                             PolicyHub,
+                             PolicySelectorT,
+                             KernelSourceT,
+                             KernelLauncherFactory>(
+             d_temp_storage,
+             temp_storage_bytes,
+             d_keys_in,
+             d_values_in,
+             d_values_out,
+             equality_op,
+             scan_op,
+             init_value,
+             num_items,
+             stream,
+             -1,
+             kernel_source,
+             launcher_factory)
+      .__invoke(active_policy);
   }
 };
 
@@ -776,34 +752,34 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     using MaxPolicy = void;
   };
 
-  return detail::dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
-    return DispatchScanByKey<KeysInputIteratorT,
-                             ValuesInputIteratorT,
-                             ValuesOutputIteratorT,
-                             EqualityOp,
-                             ScanOpT,
-                             InitValueT,
-                             OffsetT,
-                             AccumT,
-                             fake_policy,
-                             PolicySelector,
-                             KernelSource,
-                             KernelLauncherFactory>{
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_values_in,
-      d_values_out,
-      equality_op,
-      scan_op,
-      init_value,
-      num_items,
-      stream,
-      -1,
-      kernel_source,
-      launcher_factory}
-      .__invoke(policy_getter, policy_selector);
-  });
+  const detail::scan_by_key::scan_by_key_policy active_policy = policy_selector(arch_id);
+
+  return DispatchScanByKey<KeysInputIteratorT,
+                           ValuesInputIteratorT,
+                           ValuesOutputIteratorT,
+                           EqualityOp,
+                           ScanOpT,
+                           InitValueT,
+                           OffsetT,
+                           AccumT,
+                           fake_policy,
+                           PolicySelector,
+                           KernelSource,
+                           KernelLauncherFactory>{
+    d_temp_storage,
+    temp_storage_bytes,
+    d_keys_in,
+    d_values_in,
+    d_values_out,
+    equality_op,
+    scan_op,
+    init_value,
+    num_items,
+    stream,
+    -1,
+    kernel_source,
+    launcher_factory}
+    .__invoke(active_policy);
 }
 } // namespace detail::scan_by_key
 

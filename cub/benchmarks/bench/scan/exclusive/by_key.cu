@@ -7,8 +7,6 @@
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
 
-#include "../policy_selector.h"
-
 // %RANGE% TUNE_ITEMS ipt 7:24:1
 // %RANGE% TUNE_THREADS tpb 128:1024:32
 // %RANGE% TUNE_MAGIC_NS ns 0:2048:4
@@ -16,6 +14,23 @@
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
 // %RANGE% TUNE_TRANSPOSE trp 0:1:1
 // %RANGE% TUNE_LOAD ld 0:1:1
+
+#if !TUNE_BASE
+struct bench_scan_by_key_policy_selector
+{
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const
+    -> cub::detail::scan_by_key::scan_by_key_policy
+  {
+    return {TUNE_THREADS,
+            TUNE_ITEMS,
+            TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
+            TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
+            cub::BLOCK_SCAN_WARP_SCANS,
+            TUNE_TRANSPOSE == 0 ? cub::BLOCK_STORE_DIRECT : cub::BLOCK_STORE_WARP_TRANSPOSE,
+            delay_constructor_policy};
+  }
+};
+#endif // !TUNE_BASE
 
 template <typename KeyT, typename ValueT, typename OffsetT>
 static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
@@ -61,7 +76,7 @@ static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT
     0 /* stream */
 #if !TUNE_BASE
     ,
-    policy_selector<KeyT, accum_t, ValueT, op_t>{}
+    bench_scan_by_key_policy_selector{}
 #endif
   );
 
@@ -82,7 +97,7 @@ static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT
       launch.get_stream()
 #if !TUNE_BASE
         ,
-      policy_selector<KeyT, accum_t, ValueT, op_t>{}
+      bench_scan_by_key_policy_selector{}
 #endif
     );
   });
