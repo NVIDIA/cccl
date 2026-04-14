@@ -90,7 +90,7 @@ struct WarpReduceBatchedWspro
   // Batched reductions
   //---------------------------------------------------------------------
 
-  template <typename InputT, typename OutputT, typename ReductionOp>
+  template <bool ToBlocked, typename InputT, typename OutputT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Reduce(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
   {
     // Needed in case of outputs aliasing inputs
@@ -98,7 +98,7 @@ struct WarpReduceBatchedWspro
 
     ::cuda::static_for<0, max_out_per_thread>([&](auto out_idx) {
       constexpr auto first_idx      = out_idx * LogicalWarpThreads;
-      intermediate_outputs[out_idx] = RecurseReductionTree<first_idx>(inputs, reduction_op);
+      intermediate_outputs[out_idx] = RecurseReductionTree<ToBlocked, first_idx>(inputs, reduction_op);
     });
 
     ::cuda::static_for<0, max_out_per_thread>([&](auto out_idx) {
@@ -106,39 +106,46 @@ struct WarpReduceBatchedWspro
     });
   }
 
-  template <int FirstIdx, int StrideInterReduce = LogicalWarpThreads, typename InputT, typename ReductionOp>
+  template <bool ToBlocked, int BaseIdxStriped, int PrevStride = LogicalWarpThreads, typename InputT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T RecurseReductionTree(const InputT& inputs, ReductionOp reduction_op)
   {
-    if constexpr (FirstIdx >= Batches)
+    // "Transpose" index
+    constexpr auto base_idx_blocked =
+      BaseIdxStriped / LogicalWarpThreads + (BaseIdxStriped % LogicalWarpThreads) * max_out_per_thread;
+    constexpr auto base_idx = ToBlocked ? base_idx_blocked : BaseIdxStriped;
+    // Important: By catching out-of-range indices at all levels instead of just at the base level we avoid unnecessary
+    // shuffles.
+    if constexpr (base_idx >= Batches)
     {
-      // Needed for Batches < LogicalWarpThreads case
-      // Chose to redundantly operate on the last batch to avoid relying on default construction of T
+      // Dummy value needed when Batches is not an integer multiple of LogicalWarpThreads.
+      // In that case some shuffles have no second batch to exchange against, so we exchange a dummy value.
+      // Chose to use the last batch to avoid relying on default construction of T
       return inputs[Batches - 1];
     }
-    else if constexpr (StrideInterReduce == 1)
+    else if constexpr (PrevStride == 1)
     {
       // Recursion base case
-      return inputs[FirstIdx];
+      return inputs[base_idx];
     }
-    // Explicit else branch needed to avoid compiler error on % 0
+    // Explicit "else" branch needed to avoid compiler error on "% 0".
     else
     {
-      constexpr auto stride_intra_reduce = StrideInterReduce / 2;
-      constexpr auto second_idx          = FirstIdx + stride_intra_reduce;
+      constexpr auto stride             = PrevStride / 2;
+      constexpr auto offset_idx_striped = BaseIdxStriped + stride;
 
-      auto first_value  = RecurseReductionTree<FirstIdx, stride_intra_reduce>(inputs, reduction_op);
-      auto second_value = RecurseReductionTree<second_idx, stride_intra_reduce>(inputs, reduction_op);
+      auto exch_value = RecurseReductionTree<ToBlocked, BaseIdxStriped, stride>(inputs, reduction_op);
+      auto keep_value = RecurseReductionTree<ToBlocked, offset_idx_striped, stride>(inputs, reduction_op);
 
-      // Each left lane exchanges its second value against a right lane's first value
-      const auto is_left_lane = logical_lane_id % StrideInterReduce < stride_intra_reduce;
+      // Each left lane exchanges its offset value against a right lane's base value
+      const auto is_left_lane = logical_lane_id % PrevStride < stride;
       if (is_left_lane)
       {
-        ::cuda::std::swap(first_value, second_value);
+        ::cuda::std::swap(exch_value, keep_value);
       }
-      first_value = ::cuda::device::warp_shuffle_xor(first_value, stride_intra_reduce, member_mask);
+      exch_value = ::cuda::device::warp_shuffle_xor(exch_value, stride, member_mask);
       // While the current implementation is possibly faster, another conditional swap here would allow for
       // non-commutative reductions which might be useful for (segmented) scan operations.
-      return reduction_op(first_value, second_value);
+      return reduction_op(exch_value, keep_value);
     }
   }
 };

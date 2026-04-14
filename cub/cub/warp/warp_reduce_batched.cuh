@@ -145,8 +145,8 @@ public:
   //!
   //! Each thread provides ``Batches`` input values (one element from each batch).
   //! The warp collectively reduces each of the ``Batches`` batches (each containing ``LogicalWarpThreads`` elements).
-  //! Thread *i* stores results sequentially in its ``outputs`` array:
-  //! ``outputs[0]`` = result of batch *i*, ``outputs[1]`` = result of batch *(i + LogicalWarpThreads)*, etc.
+  //! Thread ``i`` returns the result for batch ``i``. For ``Batches > LogicalWarpThreads``, use ``ReduceToStriped()``
+  //! or ``ReduceToBlocked()`` instead.
   //!
   //! Snippet
   //! +++++++
@@ -159,6 +159,60 @@ public:
   //!     :dedent:
   //!     :start-after: example-begin warp-reduce-batched-reduce
   //!     :end-before: example-end warp-reduce-batched-reduce
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputT
+  //!   **[inferred]** Input array-like type (C-array, cuda::std::array, cuda::std::span, etc.)
+  //!
+  //! @tparam ReductionOp
+  //!   **[inferred]** Binary reduction operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] inputs
+  //!   Statically-sized array-like container of Batches input values from calling thread
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction operator
+  //!
+  //! @return
+  //!   The reduction of the input values of the batch corresponding to the logical lane.
+  template <typename InputT, typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputT& inputs, ReductionOp reduction_op)
+  {
+    static_assert(::cub::detail::is_fixed_size_random_access_range_v<InputT>,
+                  "InputT must support the subscript operator[] and have a compile-time size");
+    static_assert(::cub::detail::static_size_v<InputT> == Batches, "Input size must match Batches");
+    // These restrictions could be relaxed to allow type-conversions
+    static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputT>, T>, "Input element type must match T");
+    static_assert(max_out_per_thread == 1,
+                  "For Batches > LogicalWarpThreads, use ReduceToStriped() or ReduceToBlocked()");
+
+    ::cuda::std::array<T, 1> output;
+    // ReduceToBlocked() and ReduceToStriped() do the same for max_out_per_thread == 1.
+    ReduceToStriped(inputs, output, reduction_op);
+    return output[0];
+  }
+
+  //! @rst
+  //! Performs batched reduction of ``Batches`` arrays using the specified binary reduction operator.
+  //!
+  //! Each thread provides ``Batches`` input values (one element from each batch).
+  //! The warp collectively reduces each of the ``Batches`` batches (each containing ``LogicalWarpThreads`` elements).
+  //! Thread ``i`` stores results in its ``outputs`` array in a striped manner:
+  //! ``outputs[0]`` = result of batch ``i``, ``outputs[1]`` = result of batch ``i + LogicalWarpThreads``, etc.
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates reduction of 3 batches across 16 threads in the branched-off first logical warp
+  //! (using ``cuda::std::array`` inputs and outputs):
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_warp_reduce_batched_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin warp-reduce-batched-reduce-to-striped
+  //!     :end-before: example-end warp-reduce-batched-reduce-to-striped
   //!
   //! @endrst
   //!
@@ -181,12 +235,8 @@ public:
   //!
   //! @param[in] reduction_op
   //!   Binary reduction operator
-  //!
-  //! @param[in] lane_mask
-  //!   Lane mask to restrict the reduction to a subset of the logical warps present in the physical warp.
-  //!   Default is all logical warps.
   template <typename InputT, typename OutputT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Reduce(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ReduceToStriped(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
   {
     static_assert(::cub::detail::is_fixed_size_random_access_range_v<InputT>,
                   "InputT must support the subscript operator[] and have a compile-time size");
@@ -199,7 +249,66 @@ public:
     static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputT>, T>, "Input element type must match T");
     static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<OutputT>, T>, "Output element type must match T");
 
-    InternalWarpReduceBatched{temp_storage}.Reduce(inputs, outputs, reduction_op);
+    InternalWarpReduceBatched{temp_storage}.Reduce</* ToBlocked = */ false>(inputs, outputs, reduction_op);
+  }
+
+  //! @rst
+  //! Performs batched reduction of ``Batches`` arrays using the specified binary reduction operator.
+  //!
+  //! Each thread provides ``Batches`` input values (one element from each batch).
+  //! The warp collectively reduces each of the ``Batches`` batches (each containing ``LogicalWarpThreads`` elements).
+  //! Thread *i* stores results in its ``outputs`` array in a blocked manner:
+  //! ``outputs[0]`` = result of batch ``i * ceil_div(Batches, LogicalWarpThreads)``, ``outputs[1]`` = result of batch
+  //! ``i * ceil_div(Batches, LogicalWarpThreads) + 1``, etc.
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates reduction of 3 batches across 16 threads in the branched-off first logical warp
+  //! (using ``cuda::std::array`` inputs and outputs):
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_warp_reduce_batched_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin warp-reduce-batched-reduce-to-blocked
+  //!     :end-before: example-end warp-reduce-batched-reduce-to-blocked
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputT
+  //!   **[inferred]** Input array-like type (C-array, cuda::std::array, cuda::std::span, etc.)
+  //!
+  //! @tparam OutputT
+  //!   **[inferred]** Output array-like type (C-array, cuda::std::array, cuda::std::span, etc.)
+  //!
+  //! @tparam ReductionOp
+  //!   **[inferred]** Binary reduction operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] inputs
+  //!   Statically-sized array-like container of Batches input values from calling thread
+  //!
+  //! @param[out] outputs
+  //!   Statically-sized array-like container where thread i stores reductions sequentially:
+  //!   ``outputs[0]`` = result of batch i, ``outputs[1]`` = result of batch (i + LogicalWarpThreads), etc.
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction operator
+  template <typename InputT, typename OutputT, typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ReduceToBlocked(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
+  {
+    static_assert(::cub::detail::is_fixed_size_random_access_range_v<InputT>,
+                  "InputT must support the subscript operator[] and have a compile-time size");
+    static_assert(::cub::detail::is_fixed_size_random_access_range_v<OutputT>,
+                  "OutputT must support the subscript operator[] and have a compile-time size");
+    static_assert(::cub::detail::static_size_v<InputT> == Batches, "Input size must match Batches");
+    static_assert(::cub::detail::static_size_v<OutputT> == max_out_per_thread,
+                  "Output size must match ceil_div(Batches, LogicalWarpThreads)");
+    // These restrictions could be relaxed to allow type-conversions
+    static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputT>, T>, "Input element type must match T");
+    static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<OutputT>, T>, "Output element type must match T");
+
+    InternalWarpReduceBatched{temp_storage}.Reduce</* ToBlocked = */ true>(inputs, outputs, reduction_op);
   }
 
   //! @rst
@@ -232,17 +341,90 @@ public:
   //! @param[in] inputs
   //!   Statically-sized array-like container of Batches input values from calling thread
   //!
+  //! @return
+  //!   The sum of the input values of the batch corresponding to the logical lane.
+  template <typename InputT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(const InputT& inputs)
+  {
+    return Reduce(inputs, ::cuda::std::plus<>{});
+  }
+
+  //! @rst
+  //! Performs batched sum reduction of Batches arrays.
+  //!
+  //! Convenience wrapper for ``ReduceToStriped`` with ``::cuda::std::plus<>`` operator.
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates reduction of 3 batches across 2 threads in each of 4 logical warps
+  //! meaning more than one output per thread (using ``cuda::std::span`` inputs and outputs):
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_warp_reduce_batched_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin warp-reduce-batched-sum-to-striped
+  //!     :end-before: example-end warp-reduce-batched-sum-to-striped
+  //!
+  //! @smemwarpreuse
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputT
+  //!   **[inferred]** Input array-like type (C-array, cuda::std::array, cuda::std::span, etc.)
+  //!
+  //! @tparam OutputT
+  //!   **[inferred]** Output array-like type (C-array, cuda::std::array, cuda::std::span, etc.)
+  //!
+  //! @param[in] inputs
+  //!   Statically-sized array-like container of Batches input values from calling thread
+  //!
   //! @param[out] outputs
   //!   Statically-sized array-like container where thread i stores sums sequentially:
   //!   ``outputs[0]`` = sum of array i, ``outputs[1]`` = sum of array (i + LogicalWarpThreads), etc.
-  //!
-  //! @param[in] lane_mask
-  //!   Lane mask to restrict the reduction to a subset of the logical warps present in the physical warp.
-  //!   Default is all logical warps.
   template <typename InputT, typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sum(const InputT& inputs, OutputT& outputs)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void SumToStriped(const InputT& inputs, OutputT& outputs)
   {
-    Reduce(inputs, outputs, ::cuda::std::plus<>{});
+    ReduceToStriped(inputs, outputs, ::cuda::std::plus<>{});
+  }
+
+  //! @rst
+  //! Performs batched sum reduction of Batches arrays.
+  //!
+  //! Convenience wrapper for ``ReduceToBlocked`` with ``::cuda::std::plus<>`` operator.
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates reduction of 3 batches across 2 threads in each of 4 logical warps
+  //! meaning more than one output per thread (using ``cuda::std::span`` inputs and outputs):
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_warp_reduce_batched_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin warp-reduce-batched-sum-to-blocked
+  //!     :end-before: example-end warp-reduce-batched-sum-to-blocked
+  //!
+  //! @smemwarpreuse
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputT
+  //!   **[inferred]** Input array-like type (C-array, cuda::std::array, cuda::std::span, etc.)
+  //!
+  //! @tparam OutputT
+  //!   **[inferred]** Output array-like type (C-array, cuda::std::array, cuda::std::span, etc.)
+  //!
+  //! @param[in] inputs
+  //!   Statically-sized array-like container of Batches input values from calling thread
+  //!
+  //! @param[out] outputs
+  //!   Statically-sized array-like container where thread i stores sums sequentially:
+  //!   ``outputs[0]`` = sum of array i, ``outputs[1]`` = sum of array (i + LogicalWarpThreads), etc.
+  template <typename InputT, typename OutputT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void SumToBlocked(const InputT& inputs, OutputT& outputs)
+  {
+    ReduceToBlocked(inputs, outputs, ::cuda::std::plus<>{});
   }
 
   //! @}

@@ -31,7 +31,7 @@ struct benchmark_batched_op_t
     cuda::std::array<T, max_out_per_thread> outputs;
     __shared__ TempStorage temp_storage;
 
-    WarpReduceBatched{temp_storage}.Reduce(thread_data, outputs, op_t{});
+    WarpReduceBatched{temp_storage}.ReduceToStriped(thread_data, outputs, op_t{});
 
 #pragma unroll
     for (int i = 0; i < max_out_per_thread; ++i)
