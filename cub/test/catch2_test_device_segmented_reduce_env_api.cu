@@ -476,7 +476,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce fixed-size env-based API", "[segmen
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedReduce::Reduce (fixed-size) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedReduce::Reduce (fixed-size) failed with status: " << error << '\n';
   }
   // example-end fixed-size-segmented-reduce-reduce-env
   stream.sync();
@@ -502,7 +502,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum fixed-size env-based API", "[segmented
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedReduce::Sum (fixed-size) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedReduce::Sum (fixed-size) failed with status: " << error << '\n';
   }
   // example-end fixed-size-segmented-reduce-sum-env
   stream.sync();
@@ -528,7 +528,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Min fixed-size env-based API", "[segmented
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedReduce::Min (fixed-size) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedReduce::Min (fixed-size) failed with status: " << error << '\n';
   }
   // example-end fixed-size-segmented-reduce-min-env
   stream.sync();
@@ -554,7 +554,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::Max fixed-size env-based API", "[segmented
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedReduce::Max (fixed-size) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedReduce::Max (fixed-size) failed with status: " << error << '\n';
   }
   // example-end fixed-size-segmented-reduce-max-env
   stream.sync();
@@ -579,7 +579,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMin fixed-size env-based API", "[segmen
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedReduce::ArgMin (fixed-size) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedReduce::ArgMin (fixed-size) failed with status: " << error << '\n';
   }
   // example-end fixed-size-segmented-reduce-argmin-env
   stream.sync();
@@ -604,7 +604,7 @@ C2H_TEST("cub::DeviceSegmentedReduce::ArgMax fixed-size env-based API", "[segmen
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceSegmentedReduce::ArgMax (fixed-size) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceSegmentedReduce::ArgMax (fixed-size) failed with status: " << error << '\n';
   }
   // example-end fixed-size-segmented-reduce-argmax-env
   stream.sync();
