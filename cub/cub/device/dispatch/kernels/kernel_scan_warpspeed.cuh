@@ -816,7 +816,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
     warpspeed::SyncHandler syncHandler{};
     warpspeed::SmemAllocator smemAllocator{};
     auto r = allocResources<PolicySelector, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params.numStages);
-    syncHandler.clusterInitSync(specialRegisters);
+    syncHandler.clusterInitSync<num_total_threads(policy)>(specialRegisters);
     return r;
   }();
 
