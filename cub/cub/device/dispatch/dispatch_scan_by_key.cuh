@@ -271,21 +271,17 @@ template <
       _If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::it_value_t<ValuesInputIteratorT>, InitValueT>>,
   typename PolicyHub =
     detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, cub::detail::it_value_t<ValuesInputIteratorT>, ScanOpT>,
-  typename PolicySelector =
-    detail::scan_by_key::policy_selector_from_types<cub::detail::it_value_t<KeysInputIteratorT>,
-                                                    AccumT,
-                                                    cub::detail::it_value_t<ValuesInputIteratorT>,
-                                                    ScanOpT>,
-  typename KernelSource = detail::scan_by_key::DeviceScanByKeyKernelSource<
-    PolicySelector,
-    KeysInputIteratorT,
-    ValuesInputIteratorT,
-    ValuesOutputIteratorT,
-    EqualityOp,
-    ScanOpT,
-    InitValueT,
-    OffsetT,
-    AccumT>,
+  typename PolicySelector = detail::scan_by_key::policy_selector_from_hub<PolicyHub>,
+  typename KernelSource   = detail::scan_by_key::DeviceScanByKeyKernelSource<
+      PolicySelector,
+      KeysInputIteratorT,
+      ValuesInputIteratorT,
+      ValuesOutputIteratorT,
+      EqualityOp,
+      ScanOpT,
+      InitValueT,
+      OffsetT,
+      AccumT>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 struct DispatchScanByKey
 {
