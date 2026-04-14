@@ -54,10 +54,7 @@ __device__ void test_cluster(const Hierarchy& hier, const GridExts& grid_exts, c
   test_count(cuda::std::size_t{dims.z} * dims.y * dims.x, cuda::cluster, cuda::grid, hier);
 
   // 6. test cuda::cluster.index(x, hier)
-  if constexpr (Hierarchy::has_level(cuda::cluster))
-  {
-    test_index(index, cuda::cluster, cuda::grid, hier);
-  }
+  test_index(index, cuda::cluster, cuda::grid, hier);
 
   // 7. Test cuda::cluster.rank(x, hier)
   if constexpr (Hierarchy::has_level(cuda::cluster))

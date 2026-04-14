@@ -40,19 +40,6 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 struct _CCCL_DECLSPEC_EMPTY_BASES warp_level : __native_hierarchy_level_base<warp_level>
 {
   using __next_native_level = block_level;
-
-  using __base_type = __native_hierarchy_level_base<warp_level>;
-
-#  if _CCCL_CUDA_COMPILATION()
-  using __base_type::index_as;
-
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  [[nodiscard]] _CCCL_DEVICE_API static hierarchy_query_result<_Tp> index_as(const block_level&) noexcept
-  {
-    return {static_cast<_Tp>(gpu_thread.rank(block) / 32), 0, 0};
-  }
-#  endif // _CCCL_CUDA_COMPILATION()
 };
 
 _CCCL_GLOBAL_CONSTANT warp_level warp;

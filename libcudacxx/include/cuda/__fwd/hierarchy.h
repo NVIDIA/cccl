@@ -78,6 +78,12 @@ struct __extents_query_native;
 template <class _Unit, class _Level>
 struct __extents_query;
 
+template <class _Unit, class _Level>
+struct __index_query_native;
+
+template <class _Unit, class _Level>
+struct __index_query;
+
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>

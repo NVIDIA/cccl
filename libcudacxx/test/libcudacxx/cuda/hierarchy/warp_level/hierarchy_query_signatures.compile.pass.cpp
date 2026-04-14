@@ -43,12 +43,13 @@ __device__ void test_query_signatures(const Level& level, const Hierarchy& hier)
   static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::warp_level::count(level, hier))>);
   static_assert(noexcept(cuda::warp_level::count(level, hier)));
 
+  // 6. Test cuda::warp_level::index(x, hier) signature.
+  static_assert(
+    cuda::std::is_same_v<cuda::hierarchy_query_result<unsigned>, decltype(cuda::warp_level::index(level, hier))>);
+  static_assert(noexcept(cuda::warp_level::index(level, hier)));
+
   if constexpr (Hierarchy::has_level(cuda::cluster))
   {
-    // 6. Test cuda::warp_level::index(x, hier) signature.
-    // static_assert(cuda::std::is_same_v<cuda::hierarchy_query_result<unsigned>,
-    // decltype(cuda::warp_level::index(level, hier))>); static_assert(noexcept(cuda::warp_level::index(level, hier)));
-
     // 7. Test cuda::warp_level::rank(x, hier) signature.
     // static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::warp_level::rank(level, hier))>);
     // static_assert(noexcept(cuda::warp_level::rank(level, hier)));
@@ -75,8 +76,9 @@ __device__ void test_query_as_signatures(const Level& level, const Hierarchy& hi
   static_assert(noexcept(cuda::warp_level::count_as<T>(level, hier)));
 
   // 4. Test cuda::warp_level::index(x, hier) signature.
-  // static_assert(cuda::std::is_same_v<cuda::hierarchy_query_result<T>, decltype(cuda::warp_level::index_as<T>(level,
-  // hier))>); static_assert(noexcept(cuda::warp_level::index_as<T>(level, hier)));
+  static_assert(
+    cuda::std::is_same_v<cuda::hierarchy_query_result<T>, decltype(cuda::warp_level::index_as<T>(level, hier))>);
+  static_assert(noexcept(cuda::warp_level::index_as<T>(level, hier)));
 
   // 5. Test cuda::warp_level::rank(x, hier) signature.
   // static_assert(cuda::std::is_same_v<T, decltype(cuda::warp_level::rank_as<T>(level, hier))>);

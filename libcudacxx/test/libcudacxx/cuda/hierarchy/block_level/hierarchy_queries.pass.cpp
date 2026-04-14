@@ -84,7 +84,6 @@ __device__ void test_block(
   test_count(cuda::std::size_t{gridDim.z} * gridDim.y * gridDim.x, cuda::block, cuda::grid, hier);
 
   // 6. test cuda::block.index(x, hier)
-  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     uint3 exp{0, 0, 0};
     NV_IF_TARGET(NV_PROVIDES_SM_90, (exp = __clusterRelativeBlockIdx();))

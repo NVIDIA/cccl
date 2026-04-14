@@ -49,26 +49,9 @@ struct _CCCL_DECLSPEC_EMPTY_BASES thread_level : __native_hierarchy_level_base<t
   using __base_type = __native_hierarchy_level_base<thread_level>;
 
 #  if _CCCL_CUDA_COMPILATION()
-  using __base_type::index_as;
   using __base_type::rank_as;
 
-  // interactions with block level
-
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  [[nodiscard]] _CCCL_DEVICE_API static hierarchy_query_result<_Tp> index_as(const block_level&) noexcept
-  {
-    return {static_cast<_Tp>(threadIdx.x), static_cast<_Tp>(threadIdx.y), static_cast<_Tp>(threadIdx.z)};
-  }
-
   // interactions with warp level
-
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  [[nodiscard]] _CCCL_DEVICE_API static hierarchy_query_result<_Tp> index_as(const warp_level&) noexcept
-  {
-    return {static_cast<_Tp>(::cuda::ptx::get_sreg_laneid()), 0, 0};
-  }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)

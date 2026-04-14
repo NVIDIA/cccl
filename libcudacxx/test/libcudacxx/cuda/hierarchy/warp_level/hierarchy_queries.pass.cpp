@@ -30,9 +30,9 @@ __device__ void test_warp(
       : dext;
 
   const unsigned count_in_block = (blockDim.x * blockDim.y * blockDim.z + warpSize - 1) / warpSize;
-  // const unsigned rank_in_block  = ((threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x + threadIdx.x) / warpSize;
+  const unsigned rank_in_block  = ((threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x + threadIdx.x) / warpSize;
   const uint3 dims_in_block{count_in_block, 1, 1};
-  // const uint3 index_in_block{rank_in_block, 0, 0};
+  const uint3 index_in_block{rank_in_block, 0, 0};
 
   // 1. Test cuda::warp.dims(x, hier)
   test_dims(dims_in_block, cuda::warp, cuda::block, hier);
@@ -115,24 +115,24 @@ __device__ void test_warp(
   }
 
   // 6. test cuda::warp.index(x, hier)
-  // test_index(index_in_block, cuda::warp, cuda::block, hier);
-  // {
-  //   uint3 exp = index_in_block;
-  //   NV_IF_TARGET(NV_PROVIDES_SM_90, ({
-  //                  exp.x += count_in_block * __clusterRelativeBlockIdx().x;
-  //                  exp.y += __clusterRelativeBlockIdx().y;
-  //                  exp.z += __clusterRelativeBlockIdx().z;
-  //                }))
-  //   test_index(exp, cuda::warp, cuda::cluster, hier);
-  // }
-  // {
-  //   const uint3 exp{
-  //     rank_in_block + count_in_block * blockIdx.x,
-  //     blockIdx.y,
-  //     blockIdx.z,
-  //   };
-  //   test_index(exp, cuda::warp, cuda::grid, hier);
-  // }
+  test_index(index_in_block, cuda::warp, cuda::block, hier);
+  {
+    uint3 exp = index_in_block;
+    NV_IF_TARGET(NV_PROVIDES_SM_90, ({
+                   exp.x += count_in_block * __clusterRelativeBlockIdx().x;
+                   exp.y += __clusterRelativeBlockIdx().y;
+                   exp.z += __clusterRelativeBlockIdx().z;
+                 }))
+    test_index(exp, cuda::warp, cuda::cluster, hier);
+  }
+  {
+    const uint3 exp{
+      rank_in_block + count_in_block * blockIdx.x,
+      blockIdx.y,
+      blockIdx.z,
+    };
+    test_index(exp, cuda::warp, cuda::grid, hier);
+  }
 
   // 7. Test cuda::warp.rank(x, hier)
   // test_rank(rank_in_block, cuda::warp, cuda::block, hier);

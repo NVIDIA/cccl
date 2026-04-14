@@ -27,6 +27,7 @@
 #  include <cuda/__hierarchy/hierarchy_level_base.h>
 #  include <cuda/__hierarchy/hierarchy_query_result.h>
 #  include <cuda/__hierarchy/queries/extents.h>
+#  include <cuda/__hierarchy/queries/index.h>
 #  include <cuda/__hierarchy/traits.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cstddef/types.h>
@@ -149,20 +150,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_leve
   _CCCL_REQUIRES(__is_native_hierarchy_level_v<_InLevel>)
   [[nodiscard]] _CCCL_DEVICE_API static auto index_as(const _InLevel& __level) noexcept
   {
-    static_assert(__is_natively_reachable_hierarchy_level_v<_Level, _InLevel>,
-                  "_InLevel must be reachable from _Level");
-
-    using _NextLevel       = typename _Level::__next_native_level;
-    const auto __curr_exts = _Level::template extents_as<_Tp>(_NextLevel{});
-    const auto __next_idx  = _NextLevel::template index_as<_Tp>(__level);
-    const auto __curr_idx  = _Level::template index_as<_Tp>(_NextLevel{});
-
-    hierarchy_query_result<_Tp> __ret{};
-    for (::cuda::std::size_t __i = 0; __i < 3; ++__i)
-    {
-      __ret[__i] = __curr_idx[__i] + ((__i < __curr_exts.rank()) ? __curr_exts.extent(__i) : 1) * __next_idx[__i];
-    }
-    return __ret;
+    return __index_query_native<_Level, _InLevel>::template __call<_Tp>();
   }
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)

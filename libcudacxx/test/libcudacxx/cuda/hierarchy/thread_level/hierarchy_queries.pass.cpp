@@ -115,9 +115,8 @@ __device__ void test_thread(
   }
 
   // 6. test cuda::gpu_thread.index(x, hier)
-  // test_index(uint3{cuda::ptx::get_sreg_laneid(), 0, 0}, cuda::gpu_thread, cuda::warp, hier);
+  test_index(uint3{cuda::ptx::get_sreg_laneid(), 0, 0}, cuda::gpu_thread, cuda::warp, hier);
   test_index(threadIdx, cuda::gpu_thread, cuda::block, hier);
-  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     uint3 exp = threadIdx;
     NV_IF_TARGET(NV_PROVIDES_SM_90, ({
