@@ -38,7 +38,8 @@ struct arch_traits_t;
 class compute_capability;
 enum class arch_id : int;
 
-inline constexpr int __arch_specific_id_multiplier = 100000;
+inline constexpr int __family_specific_id_offset = 1000;
+inline constexpr int __arch_specific_id_offset   = 100'000;
 
 _CCCL_END_NAMESPACE_CUDA
 

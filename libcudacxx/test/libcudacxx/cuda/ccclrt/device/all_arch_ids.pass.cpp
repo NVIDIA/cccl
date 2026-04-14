@@ -39,6 +39,11 @@ __host__ __device__ constexpr bool test()
   assert(all_arch_ids[i++] == cuda::arch_id::sm_110);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_120);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_121);
+  assert(all_arch_ids[i++] == cuda::arch_id::sm_100f);
+  assert(all_arch_ids[i++] == cuda::arch_id::sm_103f);
+  assert(all_arch_ids[i++] == cuda::arch_id::sm_110f);
+  assert(all_arch_ids[i++] == cuda::arch_id::sm_120f);
+  assert(all_arch_ids[i++] == cuda::arch_id::sm_121f);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_90a);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_100a);
   assert(all_arch_ids[i++] == cuda::arch_id::sm_103a);

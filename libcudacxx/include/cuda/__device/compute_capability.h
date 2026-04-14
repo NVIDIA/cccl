@@ -62,9 +62,13 @@ public:
   _CCCL_API explicit constexpr compute_capability(arch_id __arch_id) noexcept
   {
     const auto __val = ::cuda::std::to_underlying(__arch_id);
-    if (__val > __arch_specific_id_multiplier)
+    if (__val > __arch_specific_id_offset)
     {
-      __cc_ = __val / __arch_specific_id_multiplier;
+      __cc_ = __val - __arch_specific_id_offset;
+    }
+    else if (__val > __family_specific_id_offset)
+    {
+      __cc_ = __val - __family_specific_id_offset;
     }
     else
     {

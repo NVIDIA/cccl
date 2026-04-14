@@ -103,8 +103,10 @@ __host__ __device__ constexpr bool test()
 
     cuda::compute_capability cc1{cuda::arch_id::sm_100};
     assert(cc1.get() == 100);
-    cuda::compute_capability cc2{cuda::arch_id::sm_100a};
+    cuda::compute_capability cc2{cuda::arch_id::sm_100f};
     assert(cc2.get() == 100);
+    cuda::compute_capability cc3{cuda::arch_id::sm_100a};
+    assert(cc3.get() == 100);
   }
 
   // 5. Test copy constructor.

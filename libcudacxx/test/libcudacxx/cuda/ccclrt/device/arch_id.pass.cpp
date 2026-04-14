@@ -46,6 +46,18 @@ __device__ void test_current()
     (assert(arch == cuda::arch_id::sm_121a); return;))
 
   NV_DISPATCH_TARGET(
+    NV_HAS_FEATURE_SM_100f,
+    (assert(arch == cuda::arch_id::sm_100f); return;),
+    NV_HAS_FEATURE_SM_103f,
+    (assert(arch == cuda::arch_id::sm_103f); return;),
+    NV_HAS_FEATURE_SM_110f,
+    (assert(arch == cuda::arch_id::sm_110f); return;),
+    NV_HAS_FEATURE_SM_120f,
+    (assert(arch == cuda::arch_id::sm_120f); return;),
+    NV_HAS_FEATURE_SM_121f,
+    (assert(arch == cuda::arch_id::sm_121f); return;))
+
+  NV_DISPATCH_TARGET(
     NV_IS_EXACTLY_SM_60,
     (assert(arch == cuda::arch_id::sm_60); return;),
     NV_IS_EXACTLY_SM_61,
@@ -105,12 +117,17 @@ __host__ __device__ constexpr bool test()
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_110) == 110);
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_120) == 120);
   static_assert(cuda::std::to_underlying(cuda::arch_id::sm_121) == 121);
-  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_90a) == 90 * 100000);
-  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_100a) == 100 * 100000);
-  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_103a) == 103 * 100000);
-  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_110a) == 110 * 100000);
-  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_120a) == 120 * 100000);
-  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_121a) == 121 * 100000);
+  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_100f) == 100 + 1000);
+  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_103f) == 103 + 1000);
+  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_110f) == 110 + 1000);
+  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_120f) == 120 + 1000);
+  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_121f) == 121 + 1000);
+  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_90a) == 90 + 100000);
+  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_100a) == 100 + 100000);
+  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_103a) == 103 + 100000);
+  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_110a) == 110 + 100000);
+  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_120a) == 120 + 100000);
+  static_assert(cuda::std::to_underlying(cuda::arch_id::sm_121a) == 121 + 100000);
 
   // 2. Test cuda::to_arch_id(cuda::compute_capability).
   {
@@ -123,7 +140,19 @@ __host__ __device__ constexpr bool test()
     assert(id_highest == cuda::arch_id::sm_120);
   }
 
-  // 3. Test cuda::to_arch_specific_id(cuda::compute_capability).
+  // 3. Test cuda::to_family_specific_id(cuda::compute_capability).
+  {
+    static_assert(
+      cuda::std::is_same_v<cuda::arch_id, decltype(cuda::to_family_specific_id(cuda::compute_capability{}))>);
+    static_assert(noexcept(cuda::to_family_specific_id(cuda::compute_capability{})));
+
+    cuda::arch_id id_lowest = cuda::to_family_specific_id(cuda::compute_capability{100});
+    assert(id_lowest == cuda::arch_id::sm_100f);
+    cuda::arch_id id_highest = cuda::to_family_specific_id(cuda::compute_capability{120});
+    assert(id_highest == cuda::arch_id::sm_120f);
+  }
+
+  // 4. Test cuda::to_arch_specific_id(cuda::compute_capability).
   {
     static_assert(cuda::std::is_same_v<cuda::arch_id, decltype(cuda::to_arch_specific_id(cuda::compute_capability{}))>);
     static_assert(noexcept(cuda::to_arch_specific_id(cuda::compute_capability{})));

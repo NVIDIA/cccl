@@ -66,6 +66,11 @@ template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_110>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_120>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_121>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_100f>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_103f>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_110f>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_120f>();
+template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_121f>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_90a>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_100a>();
 template __global__ void arch_specific_kernel_mock_do_not_launch<cuda::arch_id::sm_103a>();
