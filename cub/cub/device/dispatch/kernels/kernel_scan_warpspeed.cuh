@@ -277,7 +277,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   warpspeed::SpecialRegisters specialRegisters,
   const scanKernelParams<InputT, OutputT, AccumT>& params,
   ScanOpT scan_op,
-  RealInitValueT real_init_value)
+  RealInitValueT real_init_value,
+  ScanResources<PolicySelector, InputT, OutputT, AccumT>& res)
 {
   static constexpr scan_warpspeed_policy policy        = get_warpspeed_policy<PolicySelector>();
   static constexpr warpspeed::SquadDesc squadReduce    = squad_reduce(policy);
@@ -296,17 +297,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   // Inclusive scan if no init_value type is provided
   static constexpr bool hasInit     = !::cuda::std::is_same_v<RealInitValueT, NullType>;
   static constexpr bool isInclusive = ForceInclusive || !hasInit;
-
-  ////////////////////////////////////////////////////////////////////////////////
-  // Resources
-  ////////////////////////////////////////////////////////////////////////////////
-  ScanResources<PolicySelector, InputT, OutputT, AccumT> res = [&] {
-    warpspeed::SyncHandler syncHandler{};
-    warpspeed::SmemAllocator smemAllocator{};
-    auto r = allocResources<PolicySelector, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params.numStages);
-    syncHandler.clusterInitSync(specialRegisters);
-    return r;
-  }();
 
   ////////////////////////////////////////////////////////////////////////////////
   // Pre-loop
@@ -822,10 +812,18 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
     squad_lookback(policy),
   };
 
+  ScanResources<PolicySelector, InputT, OutputT, AccumT> res = [&] {
+    warpspeed::SyncHandler syncHandler{};
+    warpspeed::SmemAllocator smemAllocator{};
+    auto r = allocResources<PolicySelector, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params.numStages);
+    syncHandler.clusterInitSync(specialRegisters);
+    return r;
+  }();
+
   // we need to force inline the lambda, but clang in CUDA mode only likes the GNU syntax
   warpspeed::squadDispatch(specialRegisters, scanSquads, [&](warpspeed::Squad squad) _CCCL_FORCEINLINE_LAMBDA {
     kernelBody<PolicySelector, InputT, OutputT, AccumT, ScanOpT, RealInitValueT, ForceInclusive>(
-      squad, specialRegisters, params, ::cuda::std::move(scan_op), static_cast<RealInitValueT>(init_value));
+      squad, specialRegisters, params, ::cuda::std::move(scan_op), static_cast<RealInitValueT>(init_value), res);
   });
 #endif // __cccl_ptx_isa >= 860
 }
