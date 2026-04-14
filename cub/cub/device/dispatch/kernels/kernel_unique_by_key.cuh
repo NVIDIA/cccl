@@ -14,7 +14,10 @@
 #endif // no system header
 
 #include <cub/agent/agent_unique_by_key.cuh>
+#include <cub/detail/delay_constructor.cuh>
 #include <cub/util_vsmem.cuh>
+
+#include <cuda/__device/arch_id.h>
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
@@ -54,6 +57,22 @@ struct VSMemHelper
   {
     return VSMemHelperDefaultFallbackPolicyT<ActivePolicyT, Ts...>::vsmem_per_block;
   }
+};
+
+template <typename PolicySelector>
+struct kernel_policy
+{
+  static constexpr unique_by_key_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+
+  using unique_by_key_policy_t = AgentUniqueByKeyPolicy<
+    policy.block_threads,
+    policy.items_per_thread,
+    policy.load_algorithm,
+    policy.load_modifier,
+    policy.scan_algorithm,
+    delay_constructor_t<policy.delay_constructor.kind,
+                        policy.delay_constructor.delay,
+                        policy.delay_constructor.l2_write_latency>>;
 };
 
 /**
@@ -115,7 +134,7 @@ struct VSMemHelper
  * @param[in] vsmem
  *   Memory to support virtual shared memory
  */
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           typename KeyInputIteratorT,
           typename ValueInputIteratorT,
           typename KeyOutputIteratorT,
@@ -127,7 +146,7 @@ template <typename ChainedPolicyT,
           typename VSMemHelperT = VSMemHelper>
 __launch_bounds__(int(
   VSMemHelperT::template VSMemHelperDefaultFallbackPolicyT<
-    typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT,
+    typename kernel_policy<PolicySelector>::unique_by_key_policy_t,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,
@@ -146,8 +165,11 @@ __launch_bounds__(int(
     _CCCL_GRID_CONSTANT const int num_tiles,
     vsmem_t vsmem)
 {
+  static constexpr unique_by_key_policy policy = kernel_policy<PolicySelector>::policy;
+  using unique_by_key_policy_t                 = typename kernel_policy<PolicySelector>::unique_by_key_policy_t;
+
   using VsmemHelperT = typename VSMemHelperT::template VSMemHelperDefaultFallbackPolicyT<
-    typename ChainedPolicyT::ActivePolicy::UniqueByKeyPolicyT,
+    unique_by_key_policy_t,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,
