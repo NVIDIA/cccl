@@ -234,7 +234,7 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
 
     const bool doStartCopy  = cpAsyncOobInfo.smemStartSkipBytes > 0;
     const bool doEndCopy    = cpAsyncOobInfo.smemEndBytesAfter16BBoundary > 0;
-    const bool doMiddleCopy = cpAsyncOobInfo.ptrGmemStartAlignUp != cpAsyncOobInfo.ptrGmemEndAlignUp;
+    const bool doMiddleCopy = cpAsyncOobInfo.ptrGmemStartAlignUp < cpAsyncOobInfo.ptrGmemEndAlignDown;
 
     constexpr ::cuda::std::uint16_t byteMask  = 0xFFFF;
     const ::cuda::std::uint16_t byteMaskStart = byteMask << cpAsyncOobInfo.smemStartSkipBytes;
