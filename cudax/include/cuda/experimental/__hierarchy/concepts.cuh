@@ -24,9 +24,11 @@
 #include <cuda/__fwd/hierarchy.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/extents.h>
+#include <cuda/std/__type_traits/is_copy_constructible.h>
 
 #include <cuda/std/__cccl/prologue.h>
+
+#if !defined(_CCCL_DOXYGEN_INVOKED)
 
 namespace cuda::experimental
 {
@@ -43,7 +45,24 @@ _CCCL_CONCEPT group = _CCCL_REQUIRES_EXPR((_Group), _Group&& __g, const _Group&&
   _Same_as(const typename _Group::hierarchy_type&) __cg.hierarchy()
   // todo: add __sub_unit_queryable and __super_unit_queryable
 );
+
+template <class _Tp>
+_CCCL_CONCEPT __group_mapping_result = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __v)(
+  requires(::cuda::std::is_copy_constructible_v<_Tp>),
+  _Same_as(::cuda::std::size_t) __v.static_group_count(),
+  _Same_as(unsigned) __v.group_count(),
+  _Same_as(unsigned) __v.group_rank(),
+  _Same_as(::cuda::std::size_t) __v.static_count(),
+  _Same_as(unsigned) __v.count(),
+  _Same_as(unsigned) __v.rank());
+
+template <class _Synchronizer, class _MappingResult>
+_CCCL_CONCEPT __has_sync_aligned = _CCCL_REQUIRES_EXPR(
+  (_Synchronizer, _MappingResult), _Synchronizer& __synchronizer, const _MappingResult& __mapping_result)(
+  __synchronizer.__sync_aligned(__mapping_result));
 } // namespace cuda::experimental
+
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 #include <cuda/std/__cccl/epilogue.h>
 

@@ -49,7 +49,7 @@ C2H_TEST("cub::DeviceCopy::Batched accepts env with stream", "[copy][env]")
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceCopy::Batched failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceCopy::Batched failed with status: " << error << '\n';
   }
   // example-end copy-batched-env
 
@@ -83,7 +83,7 @@ C2H_TEST("cub::DeviceCopy::Copy mdspan accepts env with stream", "[copy][env]")
   auto error = cub::DeviceCopy::Copy(mdspan_in, mdspan_out, env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceCopy::Copy failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceCopy::Copy failed with status: " << error << '\n';
   }
   // example-end copy-mdspan-env
 

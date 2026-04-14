@@ -190,7 +190,7 @@ try
 }
 catch (std::bad_alloc& e)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
 
 C2H_TEST("DeviceTopK::{Min,Max}Keys works with custom keys and decomposers",
@@ -305,5 +305,5 @@ try
 }
 catch (std::bad_alloc& e)
 {
-  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
+  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }

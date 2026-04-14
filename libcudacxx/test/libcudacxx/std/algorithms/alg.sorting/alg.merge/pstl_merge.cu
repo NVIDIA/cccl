@@ -26,7 +26,7 @@
 
 #include <cuda/iterator>
 #include <cuda/memory_pool>
-#include <cuda/std/__pstl_algorithm>
+#include <cuda/std/algorithm>
 #include <cuda/std/execution>
 #include <cuda/std/functional>
 #include <cuda/std/iterator>
@@ -121,26 +121,26 @@ C2H_TEST("cuda::std::merge", "[parallel algorithm]")
 
   cuda::strided_iterator iter1{cuda::counting_iterator{0}, 2}; // [0,2,4,..., 2 * size1)
   cuda::strided_iterator iter2{cuda::counting_iterator{1}, 2}; // [1,3,5,..., 2 * size2)
-  cuda::std::copy_n(cuda::execution::__cub_par_unseq, iter1, size1, in1.begin());
-  cuda::std::copy_n(cuda::execution::__cub_par_unseq, iter2, size2, in2.begin());
+  cuda::std::copy_n(cuda::execution::gpu, iter1, size1, in1.begin());
+  cuda::std::copy_n(cuda::execution::gpu, iter2, size2, in2.begin());
 
   SECTION("with default stream")
   {
-    const auto policy = cuda::execution::__cub_par_unseq;
+    const auto policy = cuda::execution::gpu;
     test_merge(policy, in1, in2, out);
   }
 
   SECTION("with provided stream")
   {
     cuda::stream stream{cuda::device_ref{0}};
-    const auto policy = cuda::execution::__cub_par_unseq.with(cuda::get_stream, stream);
+    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
     test_merge(policy, in1, in2, out);
   }
 
   SECTION("with provided memory_resource")
   {
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(cuda::device_ref{0});
-    const auto policy = cuda::execution::__cub_par_unseq.with(cuda::mr::get_memory_resource, device_resource);
+    const auto policy = cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource);
     test_merge(policy, in1, in2, out);
   }
 
@@ -148,8 +148,8 @@ C2H_TEST("cuda::std::merge", "[parallel algorithm]")
   {
     cuda::stream stream{cuda::device_ref{0}};
     cuda::device_memory_pool_ref device_resource = cuda::device_default_memory_pool(stream.device());
-    const auto policy = cuda::execution::__cub_par_unseq.with(cuda::mr::get_memory_resource, device_resource)
-                          .with(cuda::get_stream, stream);
+    const auto policy =
+      cuda::execution::gpu.with(cuda::mr::get_memory_resource, device_resource).with(cuda::get_stream, stream);
     test_merge(policy, in1, in2, out);
   }
 }

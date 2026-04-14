@@ -17,6 +17,7 @@
 
 #include <cuda/std/__exception/exception_macros.h>
 
+#include <cuda/experimental/__places/exec/cuda_stream.cuh>
 #include <cuda/experimental/__stf/allocators/adapters.cuh>
 #include <cuda/experimental/__stf/allocators/buddy_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/cached_allocator.cuh>
@@ -28,7 +29,6 @@
 #include <cuda/experimental/__stf/internal/scalar_interface.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
-#include <cuda/experimental/__stf/places/exec/cuda_stream.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
 #include <map>
@@ -141,6 +141,15 @@ private:
       };
     }
 
+    // Attach opaque user data to the scope; an optional destructor is called when the scope is destroyed
+    auto& set_user_data(const void* data, size_t sz, void (*dtor)(void*) = nullptr)
+    {
+      payload->*[&](auto& self) {
+        self.set_user_data(data, sz, dtor);
+      };
+      return *this;
+    }
+
     template <typename... Args>
     auto& add_deps(Args&&... args)
     {
@@ -188,6 +197,14 @@ private:
   };
 
 public:
+  /// Builder types returned by `cuda_kernel()` / `host_launch()` with no dependencies; exposed so the STF C API
+  /// and other code can name them without `decltype` on `context` (which would otherwise pull in private
+  /// `unified_scope`).
+  using cuda_kernel_builder =
+    unified_scope<reserved::cuda_kernel_scope<stream_ctx, false>, reserved::cuda_kernel_scope<graph_ctx, false>>;
+  using host_launch_builder =
+    unified_scope<reserved::host_launch_scope<stream_ctx, false>, reserved::host_launch_scope<graph_ctx, false>>;
+
   /*
    * A task that can be either a stream task or a graph task.
    */
@@ -278,7 +295,7 @@ public:
      * index in a task.
      *
      * @tparam T
-     * @param submitted index
+     * @param submitted_index
      * @return slice<T>
      */
     template <typename T>

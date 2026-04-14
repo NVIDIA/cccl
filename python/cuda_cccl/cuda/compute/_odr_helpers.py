@@ -233,6 +233,16 @@ def _create_void_ptr_wrapper(
 
     # Create unique wrapper name using global counter
     sanitized_name = sanitize_identifier(name)
+    if not sanitized_name.isidentifier():
+        raise ValueError(
+            f"Function name '{name}' cannot be sanitized into a valid identifier"
+        )
+
+    for arg_name in arg_names:
+        if not arg_name.isidentifier():
+            raise ValueError(
+                f"Invalid argument name '{arg_name}' - must be a valid identifier"
+            )
     with _wrapper_name_lock:
         unique_suffix = next(_wrapper_name_counter)
     wrapper_name = f"wrapped_{sanitized_name}_{unique_suffix}"

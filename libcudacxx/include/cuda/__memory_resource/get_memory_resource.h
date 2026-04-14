@@ -23,6 +23,7 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__fwd/get_memory_resource.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__stream/stream_ref.h>
@@ -34,8 +35,6 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
-
-struct __get_memory_resource_t;
 
 template <class _Tp>
 _CCCL_CONCEPT __has_member_get_resource = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __t)(

@@ -467,8 +467,16 @@ C2H_TEST("let_value works when the function returns a dependent sender", "[adapt
 
 #endif // _CCCL_HOST_COMPILATION()
 
-#if !_CCCL_CUDA_COMPILER(NVCC)
-// This example causes nvcc to segfault
+#if !_CCCL_CUDA_COMPILER(NVCC) && !defined(_CCCL_CLANG_TIDY_INVOKED)
+// This example causes nvcc to segfault, and clang-tidy to error out with
+//
+// cudax/test/execution/test_let_value.cu:487:17: error: static assertion failed due to requirement
+// '::cuda::std::is_same_v<cuda::experimental::execution::default_domain, (anonymous
+// namespace)::let_value_test_domain2>' [clang-diagnostic-error]
+//
+// 487 |   static_assert(::cuda::std::is_same_v<decltype(result), let_value_test_domain2>);
+//     |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 struct let_value_test_domain2
 {};
 

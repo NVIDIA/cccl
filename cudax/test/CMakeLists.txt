@@ -75,6 +75,7 @@ cudax_add_catch2_test(test_target stream
 
 cudax_add_catch2_test(test_target misc
     utility/ensure_current_device.cu
+    utility/optionally_static.cu
 )
 
 cudax_add_catch2_test(test_target containers
@@ -144,6 +145,12 @@ if (cudax_ENABLE_CUFILE)
       cufile/open_mode.cu
   )
   target_link_libraries(${test_target} PRIVATE CUDA::cuFile)
+endif()
+
+# FIXME: Enable MSVC
+if (cudax_ENABLE_PLACES AND NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  # Places tests are handled separately:
+  add_subdirectory(places)
 endif()
 
 # FIXME: Enable MSVC

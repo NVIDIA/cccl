@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: BSD-3
 
 /**
- * @file cub::DeviceReduceByKey provides device-wide, parallel operations for
- *       reducing segments of values residing within device-accessible memory.
+ * @file
+ * @brief cub::DeviceReduceByKey provides device-wide, parallel operations for
+ *        reducing segments of values residing within device-accessible memory.
  */
 
 #pragma once
@@ -189,17 +190,17 @@ template <typename PolicySelector,
   requires reduce_by_key_policy_selector<PolicySelector>
 #endif
 __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceReduceByKeyKernel(
-    KeysInputIteratorT d_keys_in,
-    UniqueOutputIteratorT d_unique_out,
-    ValuesInputIteratorT d_values_in,
-    AggregatesOutputIteratorT d_aggregates_out,
-    NumRunsOutputIteratorT d_num_runs_out,
+  _CCCL_KERNEL_ATTRIBUTES void DeviceReduceByKeyKernel(
+    _CCCL_GRID_CONSTANT const KeysInputIteratorT d_keys_in,
+    _CCCL_GRID_CONSTANT const UniqueOutputIteratorT d_unique_out,
+    _CCCL_GRID_CONSTANT const ValuesInputIteratorT d_values_in,
+    _CCCL_GRID_CONSTANT const AggregatesOutputIteratorT d_aggregates_out,
+    _CCCL_GRID_CONSTANT const NumRunsOutputIteratorT d_num_runs_out,
     ScanTileStateT tile_state,
-    int start_tile,
+    _CCCL_GRID_CONSTANT const int start_tile,
     EqualityOpT equality_op,
     ReductionOpT reduction_op,
-    OffsetT num_items,
+    _CCCL_GRID_CONSTANT const OffsetT num_items,
     _CCCL_GRID_CONSTANT const StreamingContextT streaming_context,
     vsmem_t vsmem)
 {

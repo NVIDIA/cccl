@@ -131,7 +131,7 @@ struct type_with_swap
   bool m_swapped;
 };
 
-inline _CCCL_HOST_DEVICE void swap(type_with_swap& a, type_with_swap& b)
+inline _CCCL_HOST_DEVICE void swap(type_with_swap& a, type_with_swap& b) noexcept
 {
   using ::cuda::std::swap;
   swap(a.m_x, b.m_x);

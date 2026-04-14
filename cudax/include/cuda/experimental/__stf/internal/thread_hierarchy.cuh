@@ -28,11 +28,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__places/partitions/blocked_partition.cuh>
+#include <cuda/experimental/__places/partitions/cyclic_shape.cuh>
 #include <cuda/experimental/__stf/internal/cooperative_group_system.cuh>
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
 #include <cuda/experimental/__stf/internal/slice.cuh>
-#include <cuda/experimental/__stf/places/blocked_partition.cuh>
-#include <cuda/experimental/__stf/places/cyclic_shape.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 
 namespace cuda::experimental::stf
 {

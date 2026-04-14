@@ -27,7 +27,7 @@ __host__ __device__ constexpr void test(T value)
     }
 
     static_assert(noexcept(iter[42]));
-    static_assert(cuda::std::is_same_v<decltype(iter[42]), const T&>);
+    static_assert(cuda::std::is_same_v<decltype(iter[42]), T>);
   }
 
   {
@@ -37,7 +37,7 @@ __host__ __device__ constexpr void test(T value)
       assert(iter[i] == value);
     }
     static_assert(noexcept(iter[42]));
-    static_assert(cuda::std::is_same_v<decltype(iter[42]), const T&>);
+    static_assert(cuda::std::is_same_v<decltype(iter[42]), T>);
   }
 }
 

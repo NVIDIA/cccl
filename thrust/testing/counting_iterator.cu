@@ -348,3 +348,14 @@ void TestCountingIteratorPointer()
 DECLARE_UNITTEST(TestCountingIteratorPointer);
 
 _CCCL_DIAG_POP
+
+// Test that counting_iterator<float> distance_to does not trigger
+// MSVC C4244 (implicit float-to-integer conversion) without suppression.
+void TestCountingIteratorFloatDistanceTo()
+{
+  thrust::counting_iterator<float> iter1(0);
+  thrust::counting_iterator<float> iter2(5);
+
+  ASSERT_EQUAL(iter2 - iter1, 5);
+}
+DECLARE_UNITTEST(TestCountingIteratorFloatDistanceTo);

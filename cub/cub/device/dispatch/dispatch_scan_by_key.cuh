@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: BSD-3
 
 /**
- * @file DeviceScan provides device-wide, parallel operations for computing a
- *       prefix scan across a sequence of data items residing within
- *       device-accessible memory.
+ * @file
+ * @brief DeviceScan provides device-wide, parallel operations for computing a
+ *        prefix scan across a sequence of data items residing within
+ *        device-accessible memory.
  */
 
 #pragma once
@@ -125,48 +126,18 @@ template <typename PolicySelector,
           typename OffsetT,
           typename AccumT,
           typename KeyT = cub::detail::it_value_t<KeysInputIteratorT>>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_CONSTEVAL int get_device_scan_by_key_launch_bounds() noexcept
-{
-  constexpr scan_by_key_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
-  return policy.block_threads;
-}
-
-template <typename PolicySelector,
-          typename KeysInputIteratorT,
-          typename ValuesInputIteratorT,
-          typename ValuesOutputIteratorT,
-          typename ScanByKeyTileStateT,
-          typename EqualityOp,
-          typename ScanOpT,
-          typename InitValueT,
-          typename OffsetT,
-          typename AccumT,
-          typename KeyT = cub::detail::it_value_t<KeysInputIteratorT>>
-__launch_bounds__(
-  get_device_scan_by_key_launch_bounds<
-    PolicySelector,
-    KeysInputIteratorT,
-    ValuesInputIteratorT,
-    ValuesOutputIteratorT,
-    ScanByKeyTileStateT,
-    EqualityOp,
-    ScanOpT,
-    InitValueT,
-    OffsetT,
-    AccumT,
-    KeyT>(),
-  1)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(
-    KeysInputIteratorT d_keys_in,
-    KeyT* d_keys_prev_in,
-    ValuesInputIteratorT d_values_in,
-    ValuesOutputIteratorT d_values_out,
+__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
+  _CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(
+    _CCCL_GRID_CONSTANT const KeysInputIteratorT d_keys_in,
+    _CCCL_GRID_CONSTANT KeyT* const d_keys_prev_in,
+    _CCCL_GRID_CONSTANT const ValuesInputIteratorT d_values_in,
+    _CCCL_GRID_CONSTANT const ValuesOutputIteratorT d_values_out,
     ScanByKeyTileStateT tile_state,
-    int start_tile,
+    _CCCL_GRID_CONSTANT const int start_tile,
     EqualityOp equality_op,
-    ScanOpT scan_op,
-    InitValueT init_value,
-    OffsetT num_items)
+    _CCCL_GRID_CONSTANT const ScanOpT scan_op,
+    _CCCL_GRID_CONSTANT const InitValueT init_value,
+    _CCCL_GRID_CONSTANT const OffsetT num_items)
 {
   static constexpr scan_by_key_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
 
@@ -202,12 +173,12 @@ __launch_bounds__(
 }
 
 template <typename ScanTileStateT, typename KeysInputIteratorT, typename OffsetT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
+_CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
   ScanTileStateT tile_state,
-  KeysInputIteratorT d_keys_in,
+  _CCCL_GRID_CONSTANT const KeysInputIteratorT d_keys_in,
   cub::detail::it_value_t<KeysInputIteratorT>* d_keys_prev_in,
-  OffsetT items_per_tile,
-  int num_tiles)
+  _CCCL_GRID_CONSTANT const OffsetT items_per_tile,
+  _CCCL_GRID_CONSTANT const int num_tiles)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);

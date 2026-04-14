@@ -77,6 +77,17 @@ else()
   set(CCCL_ENABLE_CUDAX OFF)
 endif()
 
+option(CCCL_ENABLE_CLANG_TIDY "Enable clang-tidy" OFF)
+mark_as_advanced(CCCL_ENABLE_CLANG_TIDY)
+
+if (CCCL_TOPLEVEL_PROJECT)
+  include(cmake/CCCLAddTidyTarget.cmake)
+
+  if (CCCL_ENABLE_CLANG_TIDY)
+    cccl_tidy_init()
+  endif()
+endif()
+
 include(CTest)
 enable_testing()
 

@@ -10,7 +10,7 @@
 // <cuda/std/numeric>
 
 // template<class T>
-// constexpr T sub_sat(T x, T y) noexcept;                     // freestanding
+// constexpr T saturating_sub(T x, T y) noexcept;                     // freestanding
 
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
@@ -18,9 +18,9 @@
 #include <cuda/std/type_traits>
 
 template <class I>
-__host__ __device__ constexpr void test_sub_sat(I x, I y, I res, int zero_value)
+__host__ __device__ constexpr void test(I x, I y, I res, int zero_value)
 {
-  assert(cuda::std::sub_sat(static_cast<I>(zero_value + x), static_cast<I>(zero_value + y)) == res);
+  assert(cuda::std::saturating_sub(static_cast<I>(zero_value + x), static_cast<I>(zero_value + y)) == res);
 }
 
 template <class I>
@@ -29,53 +29,53 @@ __host__ __device__ constexpr void test_signed(int zero_value)
   constexpr auto minVal = cuda::std::numeric_limits<I>::min();
   constexpr auto maxVal = cuda::std::numeric_limits<I>::max();
 
-  static_assert(cuda::std::is_same_v<I, decltype(cuda::std::sub_sat(I{}, I{}))>);
-  static_assert(noexcept(cuda::std::sub_sat(I{}, I{})));
+  static_assert(cuda::std::is_same_v<I, decltype(cuda::std::saturating_sub(I{}, I{}))>);
+  static_assert(noexcept(cuda::std::saturating_sub(I{}, I{})));
 
   // Limit values (-1, 0, 1, min, max)
 
-  test_sub_sat<I>(I{-1}, I{-1}, I{0}, zero_value);
-  test_sub_sat<I>(I{-1}, I{0}, I{-1}, zero_value);
-  test_sub_sat<I>(I{-1}, I{1}, I{-2}, zero_value);
-  test_sub_sat<I>(I{-1}, minVal, I{-1} - minVal, zero_value);
-  test_sub_sat<I>(I{-1}, maxVal, I{-1} - maxVal, zero_value);
+  test<I>(I{-1}, I{-1}, I{0}, zero_value);
+  test<I>(I{-1}, I{0}, I{-1}, zero_value);
+  test<I>(I{-1}, I{1}, I{-2}, zero_value);
+  test<I>(I{-1}, minVal, I{-1} - minVal, zero_value);
+  test<I>(I{-1}, maxVal, I{-1} - maxVal, zero_value);
 
-  test_sub_sat<I>(I{0}, I{-1}, I{1}, zero_value);
-  test_sub_sat<I>(I{0}, I{0}, I{0}, zero_value);
-  test_sub_sat<I>(I{0}, I{1}, I{-1}, zero_value);
-  test_sub_sat<I>(I{0}, minVal, maxVal, zero_value); // saturated
-  test_sub_sat<I>(I{0}, maxVal, -maxVal, zero_value);
+  test<I>(I{0}, I{-1}, I{1}, zero_value);
+  test<I>(I{0}, I{0}, I{0}, zero_value);
+  test<I>(I{0}, I{1}, I{-1}, zero_value);
+  test<I>(I{0}, minVal, maxVal, zero_value); // saturated
+  test<I>(I{0}, maxVal, -maxVal, zero_value);
 
-  test_sub_sat<I>(minVal, I{-1}, minVal - I{-1}, zero_value);
-  test_sub_sat<I>(minVal, I{0}, minVal, zero_value);
-  test_sub_sat<I>(minVal, I{1}, minVal, zero_value); // saturated
-  test_sub_sat<I>(minVal, minVal, I{0}, zero_value);
-  test_sub_sat<I>(minVal, maxVal, minVal, zero_value); // saturated
+  test<I>(minVal, I{-1}, minVal - I{-1}, zero_value);
+  test<I>(minVal, I{0}, minVal, zero_value);
+  test<I>(minVal, I{1}, minVal, zero_value); // saturated
+  test<I>(minVal, minVal, I{0}, zero_value);
+  test<I>(minVal, maxVal, minVal, zero_value); // saturated
 
-  test_sub_sat<I>(maxVal, I{-1}, maxVal, zero_value); // saturated
-  test_sub_sat<I>(maxVal, I{0}, maxVal, zero_value);
-  test_sub_sat<I>(maxVal, I{1}, maxVal - I{1}, zero_value);
-  test_sub_sat<I>(maxVal, minVal, maxVal, zero_value); // saturated
-  test_sub_sat<I>(maxVal, maxVal, I{0}, zero_value);
+  test<I>(maxVal, I{-1}, maxVal, zero_value); // saturated
+  test<I>(maxVal, I{0}, maxVal, zero_value);
+  test<I>(maxVal, I{1}, maxVal - I{1}, zero_value);
+  test<I>(maxVal, minVal, maxVal, zero_value); // saturated
+  test<I>(maxVal, maxVal, I{0}, zero_value);
 
   // No saturation (no limit values)
 
-  test_sub_sat<I>(I{27}, I{-28}, I{55}, zero_value);
-  test_sub_sat<I>(I{27}, I{28}, I{-1}, zero_value);
-  test_sub_sat<I>(I{-27}, I{28}, I{-55}, zero_value);
-  test_sub_sat<I>(I{-27}, I{-28}, I{1}, zero_value);
+  test<I>(I{27}, I{-28}, I{55}, zero_value);
+  test<I>(I{27}, I{28}, I{-1}, zero_value);
+  test<I>(I{-27}, I{28}, I{-55}, zero_value);
+  test<I>(I{-27}, I{-28}, I{1}, zero_value);
 
   // Saturation (no limit values)
 
   {
     constexpr I lesserVal = minVal / I{2} + I{27};
     constexpr I biggerVal = maxVal / I{2} + I{28};
-    test_sub_sat<I>(lesserVal, biggerVal, minVal, zero_value); // saturated
+    test<I>(lesserVal, biggerVal, minVal, zero_value); // saturated
   }
   {
     constexpr I biggerVal = maxVal / I{2} + I{28};
     constexpr I lesserVal = minVal / I{2} + I{27};
-    test_sub_sat<I>(biggerVal, lesserVal, maxVal, zero_value); // saturated
+    test<I>(biggerVal, lesserVal, maxVal, zero_value); // saturated
   }
 }
 
@@ -85,37 +85,37 @@ __host__ __device__ constexpr void test_unsigned(int zero_value)
   constexpr auto minVal = cuda::std::numeric_limits<I>::min();
   constexpr auto maxVal = cuda::std::numeric_limits<I>::max();
 
-  static_assert(cuda::std::is_same_v<I, decltype(cuda::std::sub_sat(I{}, I{}))>);
-  static_assert(noexcept(cuda::std::sub_sat(I{}, I{})));
+  static_assert(cuda::std::is_same_v<I, decltype(cuda::std::saturating_sub(I{}, I{}))>);
+  static_assert(noexcept(cuda::std::saturating_sub(I{}, I{})));
 
   // Limit values (0, 1, min, max)
 
-  test_sub_sat<I>(I{0}, I{0}, I{0}, zero_value);
-  test_sub_sat<I>(I{0}, I{1}, minVal, zero_value); // saturated
-  test_sub_sat<I>(I{0}, minVal, minVal, zero_value);
-  test_sub_sat<I>(I{0}, maxVal, minVal, zero_value); // saturated
+  test<I>(I{0}, I{0}, I{0}, zero_value);
+  test<I>(I{0}, I{1}, minVal, zero_value); // saturated
+  test<I>(I{0}, minVal, minVal, zero_value);
+  test<I>(I{0}, maxVal, minVal, zero_value); // saturated
 
-  test_sub_sat<I>(I{1}, I{0}, I{1}, zero_value);
-  test_sub_sat<I>(I{1}, I{1}, I{0}, zero_value);
-  test_sub_sat<I>(I{1}, minVal, I{1}, zero_value);
-  test_sub_sat<I>(I{1}, maxVal, minVal, zero_value); // saturated
+  test<I>(I{1}, I{0}, I{1}, zero_value);
+  test<I>(I{1}, I{1}, I{0}, zero_value);
+  test<I>(I{1}, minVal, I{1}, zero_value);
+  test<I>(I{1}, maxVal, minVal, zero_value); // saturated
 
-  test_sub_sat<I>(minVal, I{0}, I{0}, zero_value);
-  test_sub_sat<I>(minVal, I{1}, minVal, zero_value);
-  test_sub_sat<I>(minVal, maxVal, minVal, zero_value);
-  test_sub_sat<I>(minVal, maxVal, minVal, zero_value);
+  test<I>(minVal, I{0}, I{0}, zero_value);
+  test<I>(minVal, I{1}, minVal, zero_value);
+  test<I>(minVal, maxVal, minVal, zero_value);
+  test<I>(minVal, maxVal, minVal, zero_value);
 
-  test_sub_sat<I>(maxVal, I{0}, maxVal, zero_value);
-  test_sub_sat<I>(maxVal, I{1}, maxVal - I{1}, zero_value);
-  test_sub_sat<I>(maxVal, minVal, maxVal, zero_value);
-  test_sub_sat<I>(maxVal, maxVal, I{0}, zero_value);
+  test<I>(maxVal, I{0}, maxVal, zero_value);
+  test<I>(maxVal, I{1}, maxVal - I{1}, zero_value);
+  test<I>(maxVal, minVal, maxVal, zero_value);
+  test<I>(maxVal, maxVal, I{0}, zero_value);
 
   // Saturation (no limit values)
 
   {
     constexpr I lesserVal = minVal / I{2} + I{27};
     constexpr I biggerVal = maxVal / I{2} + I{28};
-    test_sub_sat<I>(lesserVal, biggerVal, minVal, zero_value); // saturated
+    test<I>(lesserVal, biggerVal, minVal, zero_value); // saturated
   }
 }
 

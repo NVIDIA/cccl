@@ -250,6 +250,27 @@ extlinks = {
 # Note: numpydoc settings removed as Napoleon is used instead
 
 # Config copybutton
+# Suppress specific warning categories that arise from breathe (Doxygen-to-Sphinx
+# bridge) limitations.  These cannot be fixed in our source headers or RST files.
+#
+# See also _BREATHE_SKIP_SYMBOLS in _ext/auto_api_generator.py for symbols that
+# are excluded from page generation entirely due to unparsable declarations.
+suppress_warnings = [
+    # Breathe walks each Doxygen XML file independently.  When a symbol appears
+    # in both a namespace XML and a class/group XML (which is normal for Doxygen),
+    # breathe emits the C++ declaration twice, triggering a duplicate-declaration
+    # warning.  There is no way to control this from our side without patching
+    # breathe's XML traversal.
+    "cpp.duplicate_declaration",
+    # When breathe expands doxygenfunction/doxygenvariable directives, it writes
+    # the resolved C++ signature into RST.  Signatures containing default argument
+    # values (e.g. ``= {}``) or complex SFINAE expressions produce RST that the
+    # docutils parser cannot handle (mismatched inline-literal markers, unexpected
+    # braces, etc.).  The source C++ is valid; the issue is that what breathe
+    # emits as RST is not valid RST.
+    "docutils",
+]
+
 copybutton_prompt_text = ">>> |$ |# "
 autosummary_imported_members = False
 autosummary_generate = True

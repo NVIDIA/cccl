@@ -10,7 +10,6 @@ Functional
    functional/proclaim_return_type
    functional/maximum_minimum
    functional/operator_properties
-   memory/get_device_address
 
 .. list-table::
    :widths: 25 45 30 30

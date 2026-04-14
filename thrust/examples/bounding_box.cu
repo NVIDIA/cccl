@@ -93,7 +93,7 @@ int main()
   // print output
   std::cout << "bounding box " << std::fixed;
   std::cout << "(" << result.lower_left.x << "," << result.lower_left.y << ") ";
-  std::cout << "(" << result.upper_right.x << "," << result.upper_right.y << ")" << std::endl;
+  std::cout << "(" << result.upper_right.x << "," << result.upper_right.y << ")" << '\n';
 
   return 0;
 }

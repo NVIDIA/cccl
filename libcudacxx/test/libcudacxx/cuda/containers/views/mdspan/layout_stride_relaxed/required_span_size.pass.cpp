@@ -172,6 +172,22 @@ __host__ __device__ constexpr bool test()
   test_required_span_size(cuda::std::extents<int, D, D, D>(5, 0, 3), cuda::std::array<intptr_t, 3>{-1, 0, 1}, 4, 0);
   test_required_span_size(cuda::std::extents<int, D, D, D>(5, 3, 0), cuda::std::array<intptr_t, 3>{-1, 0, 1}, 4, 0);
 
+  // ============================================================================
+  // Minimum valid offset for negative strides (boundary cases)
+  // ============================================================================
+
+  // 1D: extent=4, stride=-1 requires offset >= (4-1)*1 = 3
+  // mapped values: 3, 2, 1, 0 → required_span_size = 3 + 1 = 4
+  test_required_span_size(cuda::std::extents<int, 4>(), cuda::std::array<intptr_t, 1>{-1}, 3, 4);
+
+  // 2D: extents(3,4), strides(4,-1) requires offset >= (4-1)*1 = 3 (only dim 1 is negative)
+  // max mapped = 3 + (3-1)*4 + 0 = 11 → required_span_size = 12
+  test_required_span_size(cuda::std::extents<int, 3, 4>(), cuda::std::array<intptr_t, 2>{4, -1}, 3, 12);
+
+  // 2D: extents(3,4), strides(-2,-1), both negative, requires offset >= (3-1)*2 + (4-1)*1 = 7
+  // max mapped = 7 + 0 + 0 = 7 → required_span_size = 7 + 1 = 8
+  test_required_span_size(cuda::std::extents<int, 3, 4>(), cuda::std::array<intptr_t, 2>{-2, -1}, 7, 8);
+
   return true;
 }
 

@@ -267,6 +267,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
     {
       return ::cuda::std::__get<__idx>(__self.__envs_);
     }
+    else
+    {
+      return;
+    }
   }
 
   //! @brief Alias for the type of the first environment that satisfies the query type.

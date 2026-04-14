@@ -26,6 +26,7 @@
 #  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__functional/invoke.h>
 #  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
@@ -55,6 +56,15 @@ _CCCL_HOST_API _OutputIterator exclusive_scan(
   _Tp __init,
   _BinaryOp __binary_op)
 {
+  static_assert(is_invocable_v<_BinaryOp, iter_reference_t<_InputIterator>, iter_reference_t<_InputIterator>>,
+                "cuda::std::exclusive_scan requires UnaryOp to be invocable with "
+                "iter_reference_t<InputIterator>, iter_reference_t<InputIterator>");
+
+  static_assert(
+    indirectly_writable<_OutputIterator,
+                        invoke_result_t<_BinaryOp, iter_reference_t<_InputIterator>, iter_reference_t<_InputIterator>>>,
+    "cuda::std::exclusive_scan requires OutputIterator to be indirectly writable with the return value of BinaryOp");
+
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__exclusive_scan, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)

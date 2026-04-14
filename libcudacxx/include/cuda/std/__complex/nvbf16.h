@@ -114,23 +114,31 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__nv_bfloat162)) compl
 public:
   using value_type = __nv_bfloat16;
 
-  _CCCL_API inline complex(const value_type& __re = value_type(), const value_type& __im = value_type())
+  _CCCL_API inline complex(const value_type& __re = value_type(), const value_type& __im = value_type()) noexcept
       : __repr_(__re, __im)
   {}
 
+#  if !_CCCL_COMPILER(GCC, <, 10) // Old GCC considers those as deleted
+  _CCCL_HIDE_FROM_ABI complex(const complex&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI complex(complex&&) noexcept      = default;
+
+  _CCCL_HIDE_FROM_ABI complex& operator=(const complex&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI complex& operator=(complex&&) noexcept      = default;
+#  endif // !_CCCL_COMPILER(GCC, <, 10)
+
   template <class _Up, enable_if_t<__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0>
-  _CCCL_API inline complex(const complex<_Up>& __c)
+  _CCCL_API inline complex(const complex<_Up>& __c) noexcept
       : __repr_(__convert_to_bfloat16(__c.real()), __convert_to_bfloat16(__c.imag()))
   {}
 
   template <class _Up,
             enable_if_t<!__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0,
             enable_if_t<is_constructible_v<value_type, _Up>, int>                                      = 0>
-  _CCCL_API inline explicit complex(const complex<_Up>& __c)
+  _CCCL_API inline explicit complex(const complex<_Up>& __c) noexcept
       : __repr_(__convert_to_bfloat16(__c.real()), __convert_to_bfloat16(__c.imag()))
   {}
 
-  _CCCL_API inline complex& operator=(const value_type& __re)
+  _CCCL_API inline complex& operator=(const value_type& __re) noexcept
   {
     __repr_.x = __re;
     __repr_.y = value_type();
@@ -138,7 +146,7 @@ public:
   }
 
   template <class _Up>
-  _CCCL_API inline complex& operator=(const complex<_Up>& __c)
+  _CCCL_API inline complex& operator=(const complex<_Up>& __c) noexcept
   {
     __repr_.x = __convert_to_bfloat16(__c.real());
     __repr_.y = __convert_to_bfloat16(__c.imag());
@@ -147,19 +155,19 @@ public:
 
 #  if !_CCCL_COMPILER(NVRTC)
   template <class _Up>
-  _CCCL_API inline complex(const ::std::complex<_Up>& __other)
+  _CCCL_API inline complex(const ::std::complex<_Up>& __other) noexcept
       : __repr_(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other), _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other))
   {}
 
   template <class _Up>
-  _CCCL_API inline complex& operator=(const ::std::complex<_Up>& __other)
+  _CCCL_API inline complex& operator=(const ::std::complex<_Up>& __other) noexcept
   {
     __repr_.x = _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other);
     __repr_.y = _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other);
     return *this;
   }
 
-  _CCCL_HOST_API operator ::std::complex<value_type>() const
+  _CCCL_HOST_API operator ::std::complex<value_type>() const noexcept
   {
     return {__repr_.x, __repr_.y};
   }

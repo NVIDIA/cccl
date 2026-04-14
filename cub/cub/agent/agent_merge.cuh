@@ -249,7 +249,7 @@ struct agent_t
     {
       // Both of these are only needed when either keys or items or both use BlockLoadToShared introducing padding (that
       // can differ between the keys and items)
-      [[maybe_unsused]] const auto translate_indices = [&](int items2_offset) -> void {
+      [[maybe_unused]] const auto translate_indices = [&](int items2_offset) -> void {
         const int diff = items2_offset - keys2_offset;
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ItemsPerThread; ++i)

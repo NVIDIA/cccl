@@ -301,7 +301,11 @@ private:
 
     // without the following, the kernel in __host_start will fail to launch with
     // cudaErrorInvalidDeviceFunction.
+#ifndef _CCCL_CLANG_TIDY_INVOKED
+    // clang-tidy<22 errors when compiling this, complaining that we are taking a reference to
+    // __global__ function inside a __device__ function.
     ::__cccl_unused(&__completion_kernel<__block_threads, _Rcvr, __results_t>);
+#endif
     __state.__state_.__complete_inline_ = true;
     execution::start(__state.__opstate_);
   }

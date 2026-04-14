@@ -3,7 +3,8 @@
 CUDA Runtime interactions
 =========================
 
-Some runtime objects have a non-owning ``_ref`` counterpart (for example, ``stream`` and ``stream_ref``). Prefer the
+Some runtime objects have a non-owning ``_ref`` counterpart (for example, :cpp:struct:`cuda::stream` and
+:cpp:class:`cuda::stream_ref`). Prefer the
 owning type for lifetime management, and use the ``_ref`` type for code that would otherwise accept a C++ reference but
 needs to interoperate with existing CUDA Runtime code.
 
@@ -42,8 +43,9 @@ Example: handle interop patterns
 Device selection
 ----------------
 
-The Runtime API emphasizes explicit device selection. Most entry points take a ``cuda::device_ref`` or a device-bound
-resource (such as ``cuda::stream{device}``) rather than relying on implicit global state like ``cudaSetDevice``. This
+The Runtime API emphasizes explicit device selection. Most entry points take a :cpp:class:`cuda::device_ref` or a
+device-bound resource (such as :cpp:struct:`cuda::stream`) rather than relying on implicit global state like
+``cudaSetDevice``. This
 makes device ownership and lifetime clearer, especially in multi-GPU code.
 
 The current device can still be set via the CUDA Runtime, but cccl-runtime APIs ignore that global state and require an
@@ -54,7 +56,8 @@ Default stream interop
 ----------------------
 
 The CUDA default (NULL) stream is not exposed as a first-class runtime object because it is tied to implicit per-device
-state and encourages hidden dependencies. Instead, it can be wrapped into ``cuda::stream_ref`` when needed for interop.
+state and encourages hidden dependencies. Instead, it can be wrapped into :cpp:class:`cuda::stream_ref` when needed for
+interop.
 
 .. note::
 

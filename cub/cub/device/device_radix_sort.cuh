@@ -495,7 +495,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -559,14 +559,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -588,6 +588,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -681,14 +682,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       return detail::dispatch_with_env(
         env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -709,6 +710,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -769,7 +771,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -823,14 +825,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -850,6 +852,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -933,14 +936,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       return detail::dispatch_with_env(
         env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -961,6 +964,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -1261,7 +1265,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -1311,14 +1315,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
@@ -1331,6 +1335,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -1408,14 +1413,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       return detail::dispatch_with_env(
         env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -1432,6 +1437,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -1501,7 +1507,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -1561,14 +1567,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       return DeviceRadixSort::custom_radix_sort<SortOrder::Ascending>(
@@ -1583,6 +1589,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -1669,14 +1676,14 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       return detail::dispatch_with_env(
         env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -1693,6 +1700,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -2002,7 +2010,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -2068,14 +2076,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -2097,6 +2105,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -2157,7 +2166,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -2213,14 +2222,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -2240,6 +2249,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -2540,7 +2550,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -2591,14 +2601,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
@@ -2611,6 +2621,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -2680,7 +2691,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -2741,14 +2752,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       return DeviceRadixSort::custom_radix_sort<SortOrder::Descending>(
@@ -2763,6 +2774,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @}
@@ -3045,7 +3057,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -3101,14 +3113,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -3130,6 +3142,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3194,11 +3207,11 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
-    static_assert(decomposer_check_t::value,
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       return detail::dispatch_with_env(
         env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -3218,6 +3231,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3276,7 +3290,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -3322,14 +3336,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -3349,6 +3363,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3404,11 +3419,11 @@ public:
   SortKeys(const KeyT* d_keys_in, KeyT* d_keys_out, NumItemsT num_items, DecomposerT decomposer, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
-    static_assert(decomposer_check_t::value,
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       return detail::dispatch_with_env(
         env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -3428,6 +3443,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3702,7 +3718,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -3746,14 +3762,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       DoubleBuffer<NullType> d_values;
@@ -3768,6 +3784,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3822,11 +3839,11 @@ public:
   SortKeys(DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
-    static_assert(decomposer_check_t::value,
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       return detail::dispatch_with_env(
         env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -3844,6 +3861,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -3906,7 +3924,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -3960,14 +3978,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       DoubleBuffer<NullType> d_values;
@@ -3984,6 +4002,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -4041,11 +4060,11 @@ public:
     DoubleBuffer<KeyT>& d_keys, NumItemsT num_items, DecomposerT decomposer, int begin_bit, int end_bit, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
-    static_assert(decomposer_check_t::value,
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to arithmetic types");
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       return detail::dispatch_with_env(
         env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
@@ -4063,6 +4082,7 @@ public:
             decomposer);
         });
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst Sorts keys into descending order using :math:`\approx 2N` auxiliary storage.
@@ -4339,7 +4359,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -4396,14 +4416,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -4425,6 +4445,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -4480,7 +4501,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -4527,14 +4548,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       // We cast away const-ness, but will *not* write to these arrays.
       // ``DispatchRadixSort::Dispatch`` will allocate temporary storage and
@@ -4554,6 +4575,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -4827,7 +4849,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -4872,14 +4894,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       DoubleBuffer<NullType> d_values;
@@ -4894,6 +4916,7 @@ public:
         decomposer,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @rst
@@ -4956,7 +4979,7 @@ public:
   //! @tparam DecomposerT
   //!   **[inferred]** Type of a callable object responsible for decomposing a
   //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-  //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+  //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
@@ -5011,14 +5034,14 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t                         = detail::choose_offset_t<NumItemsT>;
+    static constexpr bool decomposer_check = detail::radix::decomposer_check<KeyT, DecomposerT>;
 
-    static_assert(decomposer_check_t::value,
+    static_assert(decomposer_check,
                   "DecomposerT must be a callable object returning a tuple of references to "
                   "arithmetic types");
 
-    if constexpr (decomposer_check_t::value)
+    if constexpr (decomposer_check)
     {
       constexpr bool is_overwrite_okay = true;
       DoubleBuffer<NullType> d_values;
@@ -5035,6 +5058,7 @@ public:
         end_bit,
         stream);
     }
+    _CCCL_UNREACHABLE();
   }
 
   //! @}

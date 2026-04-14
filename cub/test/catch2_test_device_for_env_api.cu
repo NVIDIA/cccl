@@ -65,7 +65,7 @@ C2H_TEST("cub::DeviceFor::Bulk env-based API", "[for][env]")
   auto error = cub::DeviceFor::Bulk(static_cast<int>(vec.size()), op, env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceFor::Bulk failed: " << error << std::endl;
+    std::cerr << "cub::DeviceFor::Bulk failed: " << error << '\n';
   }
 
   thrust::device_vector<int> expected{1, 4, 9, 16};
@@ -88,7 +88,7 @@ C2H_TEST("cub::DeviceFor::ForEachN env-based API", "[for][env]")
   auto error = cub::DeviceFor::ForEachN(vec.begin(), static_cast<int>(vec.size()), op, env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceFor::ForEachN failed: " << error << std::endl;
+    std::cerr << "cub::DeviceFor::ForEachN failed: " << error << '\n';
   }
 
   thrust::device_vector<int> expected{1, 4, 9, 16};
@@ -111,7 +111,7 @@ C2H_TEST("cub::DeviceFor::ForEach env-based API", "[for][env]")
   auto error = cub::DeviceFor::ForEach(vec.begin(), vec.end(), op, env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceFor::ForEach failed: " << error << std::endl;
+    std::cerr << "cub::DeviceFor::ForEach failed: " << error << '\n';
   }
 
   thrust::device_vector<int> expected{1, 4, 9, 16};
@@ -135,7 +135,7 @@ C2H_TEST("cub::DeviceFor::ForEachCopyN env-based API", "[for][env]")
   auto error = cub::DeviceFor::ForEachCopyN(vec.begin(), static_cast<int>(vec.size()), op, env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceFor::ForEachCopyN failed: " << error << std::endl;
+    std::cerr << "cub::DeviceFor::ForEachCopyN failed: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_count{2};
@@ -159,7 +159,7 @@ C2H_TEST("cub::DeviceFor::ForEachCopy env-based API", "[for][env]")
   auto error = cub::DeviceFor::ForEachCopy(vec.begin(), vec.end(), op, env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceFor::ForEachCopy failed: " << error << std::endl;
+    std::cerr << "cub::DeviceFor::ForEachCopy failed: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_count{2};

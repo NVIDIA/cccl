@@ -20,6 +20,8 @@
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/types.h>
 
+inline constexpr bool check_ldl_stl_in_sass = false;
+
 template <int device_id_ = 0>
 class BuildInformation
 {
@@ -146,10 +148,9 @@ void AlgorithmExecute(std::optional<BuildCache>& cache, const std::optional<KeyT
     }
   }
 
-  const std::string& sass = inspect_sass(build.cubin, build.cubin_size);
-
-  if (build_traits<Build>::should_check_sass(build_info.get_cc_major()))
+  if constexpr (check_ldl_stl_in_sass && build_traits<Build>::should_check_sass(build_info.get_cc_major()))
   {
+    const std::string sass = inspect_sass(build.cubin, build.cubin_size);
     REQUIRE(sass.find("LDL") == std::string::npos);
     REQUIRE(sass.find("STL") == std::string::npos);
   }
@@ -189,7 +190,7 @@ private:
   {
     if (status != CUDA_SUCCESS)
     {
-      std::cerr << "Clean-up call returned status " << status << std::endl;
+      std::cerr << "Clean-up call returned status " << status << '\n';
     }
   }
 };

@@ -148,7 +148,7 @@ struct TestUninitializedFillNonPOD
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_host);
 
-    T host_copy_of_exemplar(exemplar);
+    T host_copy_of_exemplar(exemplar); // NOLINT(performance-unnecessary-copy-initialization)
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
     ASSERT_EQUAL(true, exemplar.copy_constructed_on_host);
 
@@ -216,7 +216,7 @@ struct TestUninitializedFillNNonPOD
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_host);
 
-    T host_copy_of_exemplar(exemplar);
+    T host_copy_of_exemplar(exemplar); // NOLINT(performance-unnecessary-copy-initialization)
     ASSERT_EQUAL(false, exemplar.copy_constructed_on_device);
     ASSERT_EQUAL(true, exemplar.copy_constructed_on_host);
 

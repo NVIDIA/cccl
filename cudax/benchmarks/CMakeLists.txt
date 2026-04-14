@@ -27,8 +27,12 @@ function(add_bench target_name bench_name bench_src)
   set(bench_target ${bench_name})
   set(${target_name} ${bench_target} PARENT_SCOPE)
 
-  add_executable(${bench_target} "${bench_src}")
-  cccl_configure_target(${bench_target} DIALECT 17)
+  cccl_add_executable(
+    ${bench_target}
+    NO_METATARGETS
+    DIALECT 17
+    SOURCES "${bench_src}"
+  )
   target_link_libraries(
     ${bench_target}
     PRIVATE #
@@ -52,7 +56,10 @@ function(add_bench_dir bench_dir)
 
     add_bench(base_bench_target ${bench_name} "${bench_src}")
     target_link_libraries(${bench_name} PRIVATE cudax.compiler_interface)
-    target_compile_options(${bench_name} PRIVATE "--extended-lambda")
+    target_compile_options(
+      ${bench_name}
+      PRIVATE "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>"
+    )
   endforeach()
 endfunction()
 

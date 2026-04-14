@@ -80,10 +80,10 @@ int main()
   {
     std::cout << e << " ";
   }
-  std::cout << "]" << std::endl;
+  std::cout << "]" << '\n';
 
-  std::cout << "minimum = " << result.min_val << std::endl;
-  std::cout << "maximum = " << result.max_val << std::endl;
+  std::cout << "minimum = " << result.min_val << '\n';
+  std::cout << "maximum = " << result.max_val << '\n';
 
   return 0;
 }

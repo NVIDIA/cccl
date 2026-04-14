@@ -26,7 +26,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/places/place_partition.cuh>
+#include <cuda/experimental/__places/place_partition.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_partition_into_stf.cuh>
 
 #include <thread>
 
@@ -192,7 +194,7 @@ inline void loop_dispatch(context_t& ctx, size_t start, size_t end, ::std::funct
   }
   else
   {
-    loop_dispatch<context_t, exec_place_grid, use_threads>(ctx, exec_place::all_devices(), scope, start, end, mv(func));
+    loop_dispatch<context_t, exec_place, use_threads>(ctx, exec_place::all_devices(), scope, start, end, mv(func));
   }
 }
 #endif // _CCCL_DOXYGEN_INVOKED

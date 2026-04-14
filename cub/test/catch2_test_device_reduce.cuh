@@ -86,24 +86,6 @@ CUB_NAMESPACE_END
 
 #endif // TEST_HALF_T()
 
-CUB_NAMESPACE_BEGIN
-
-template <typename Key, typename Value>
-static std::ostream& operator<<(std::ostream& os, const KeyValuePair<Key, Value>& val)
-{
-  os << '(' << val.key << ',' << val.value << ')';
-  return os;
-}
-
-template <typename Key, typename Value>
-__host__ __device__ __forceinline__ bool
-operator==(const KeyValuePair<Key, Value>& lhs, const KeyValuePair<Key, Value>& rhs)
-{
-  return lhs.key == rhs.key && lhs.value == rhs.value;
-}
-
-CUB_NAMESPACE_END
-
 // Comparing results computed on CPU and GPU for extended floating point types is impossible.
 // For instance, when used with a constant iterator of two, the accumulator in sequential reference
 // computation (CPU) bumps into the 4096 limits, which will never change (`4096 + 2 = 4096`).

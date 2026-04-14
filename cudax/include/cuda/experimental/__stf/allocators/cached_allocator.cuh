@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 
 #include <mutex>
 
@@ -93,9 +94,10 @@ public:
    * @param ptr Pointer to the memory block to be deallocated.
    * @param sz Size of the memory block.
    */
-  void
-  deallocate(backend_ctx_untyped&, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
+  void deallocate(
+    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
+    (void) ctx;
     ::std::lock_guard<::std::mutex> g(allocator_mutex);
     // We do not call the deallocate method of the root allocator, we discard buffers instead
     free_cache[memory_node].emplace(sz, alloc_cache_entry{ptr, prereqs});
@@ -277,9 +279,10 @@ public:
    * @param ptr Pointer to the memory block to be deallocated.
    * @param sz Size of the memory block.
    */
-  void
-  deallocate(backend_ctx_untyped&, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
+  void deallocate(
+    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
+    (void) ctx;
     ::std::lock_guard<::std::mutex> g(allocator_mutex);
     // We do not call the deallocate method of the root allocator, we discard buffers instead.
     // Note that we do not need to keep track of the "large buffer" from which this originated

@@ -10,7 +10,6 @@ struct stream_registry_factory_t;
 #include <cub/device/device_copy.cuh>
 
 #include <thrust/device_vector.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 

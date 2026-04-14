@@ -219,6 +219,7 @@ _CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedP
  *  \param system The Thrust system with which the storage is associated.
  *  \param p A pointer previously returned by \p thrust::get_temporary_buffer. If \p ptr is null, \p
  * return_temporary_buffer does nothing.
+ *  \param n The number of elements in the buffer.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *

@@ -14,8 +14,10 @@
 #include <disable_nvfp_conversions_and_operators.h>
 // clang-format on
 
-#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/bit>
 #include <cuda/std/limits>
+
+#include "cuda_fp_types.h"
 
 template <class T>
 __host__ __device__ bool float_eq(T x, T y)

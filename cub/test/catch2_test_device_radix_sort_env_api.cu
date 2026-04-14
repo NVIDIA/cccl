@@ -64,7 +64,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs env-based API", "[radix_sort][env]")
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceRadixSort::SortPairs failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceRadixSort::SortPairs failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
@@ -93,7 +93,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending env-based API", "[radix_sort
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceRadixSort::SortPairsDescending failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceRadixSort::SortPairsDescending failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
@@ -116,7 +116,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeys env-based API", "[radix_sort][env]")
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceRadixSort::SortKeys failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceRadixSort::SortKeys failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
@@ -138,7 +138,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeys DoubleBuffer env-based API", "[radix_so
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceRadixSort::SortKeys (DoubleBuffer) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceRadixSort::SortKeys (DoubleBuffer) failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
@@ -160,7 +160,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending env-based API", "[radix_sort]
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceRadixSort::SortKeysDescending failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceRadixSort::SortKeysDescending failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
@@ -182,7 +182,7 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending DoubleBuffer env-based API", 
 
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceRadixSort::SortKeysDescending (DoubleBuffer) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceRadixSort::SortKeysDescending (DoubleBuffer) failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
@@ -216,7 +216,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs decomposer with bits env-based API", "
     stream_ref);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceRadixSort::SortPairs (decomposer+bits) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceRadixSort::SortPairs (decomposer+bits) failed with status: " << error << '\n';
   }
   stream.sync();
   // example-end radix-sort-pairs-decomposer-bits-env
@@ -253,7 +253,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs decomposer env-based API", "[radix_sor
     stream_ref);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceRadixSort::SortPairs (decomposer) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceRadixSort::SortPairs (decomposer) failed with status: " << error << '\n';
   }
   stream.sync();
   // example-end radix-sort-pairs-decomposer-env
@@ -287,7 +287,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs DoubleBuffer decomposer env-based API"
     d_keys, d_values, static_cast<int>(keys_buf0.size()), pairs_decomposer_t{}, stream_ref);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceRadixSort::SortPairs (DB decomposer) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceRadixSort::SortPairs (DB decomposer) failed with status: " << error << '\n';
   }
   stream.sync();
   // example-end radix-sort-pairs-db-decomposer-env
@@ -323,7 +323,7 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs DoubleBuffer decomposer with bits env-
     d_keys, d_values, static_cast<int>(keys_buf0.size()), pairs_decomposer_t{}, 0, sizeof(int) * 8, stream_ref);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceRadixSort::SortPairs (DB decomposer+bits) failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceRadixSort::SortPairs (DB decomposer+bits) failed with status: " << error << '\n';
   }
   stream.sync();
   // example-end radix-sort-pairs-db-decomposer-bits-env

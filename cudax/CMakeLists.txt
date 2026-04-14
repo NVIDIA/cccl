@@ -13,6 +13,7 @@ option(
 )
 option(cudax_ENABLE_TESTING "Build CUDA Experimental's tests." ON)
 option(cudax_ENABLE_EXAMPLES "Build CUDA Experimental's examples." ON)
+option(cudax_ENABLE_PLACES "Enable standalone Places subproject" ON)
 option(cudax_ENABLE_CUDASTF "Enable CUDASTF subproject" ON)
 option(
   cudax_ENABLE_CUDASTF_CODE_GENERATION
@@ -69,6 +70,9 @@ if (
 endif()
 
 include(cmake/cudaxBuildCompilerTargets.cmake)
+if (cudax_ENABLE_PLACES)
+  include(cmake/cudaxPlacesConfigureTarget.cmake)
+endif()
 if (cudax_ENABLE_CUDASTF)
   include(cmake/cudaxSTFConfigureTarget.cmake)
 endif()

@@ -188,7 +188,7 @@ public:
     return ::cuda::std::addressof(__x);
   }
 
-  [[nodiscard]] _CCCL_API inline CCCL_DEPRECATED _Tp* allocate(size_t __n, const void*)
+  [[nodiscard]] CCCL_DEPRECATED _CCCL_API inline _Tp* allocate(size_t __n, const void*)
   {
     return allocate(__n);
   }
@@ -283,7 +283,7 @@ public:
     return ::cuda::std::addressof(__x);
   }
 
-  [[nodiscard]] _CCCL_API inline CCCL_DEPRECATED const _Tp* allocate(size_t __n, const void*)
+  [[nodiscard]] CCCL_DEPRECATED _CCCL_API inline const _Tp* allocate(size_t __n, const void*)
   {
     return allocate(__n);
   }
