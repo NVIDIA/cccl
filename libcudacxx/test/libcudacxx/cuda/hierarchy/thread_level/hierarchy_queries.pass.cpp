@@ -3,7 +3,7 @@
 // Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,8 +23,8 @@ __device__ void test_thread(
   const Hierarchy& hier, const GridExts& grid_exts, const ClusterExts& cluster_exts, const BlockExts& block_exts)
 {
   // 1. Test cuda::gpu_thread.dims(x, hier)
+  test_dims(uint3{static_cast<unsigned>(warpSize), 1u, 1u}, cuda::gpu_thread, cuda::warp, hier);
   test_dims(blockDim, cuda::gpu_thread, cuda::block, hier);
-  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     uint3 exp = blockDim;
     NV_IF_TARGET(NV_PROVIDES_SM_90, ({
@@ -40,11 +40,11 @@ __device__ void test_thread(
   }
 
   // 2. Test cuda::gpu_thread.static_dims(x, hier)
+  test_static_dims(ulonglong3{cuda::std::size_t{32}, 1, 1}, cuda::gpu_thread, cuda::warp, hier);
   test_static_dims(ulonglong3{BlockExts::static_extent(0), BlockExts::static_extent(1), BlockExts::static_extent(2)},
                    cuda::gpu_thread,
                    cuda::block,
                    hier);
-  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     const ulonglong3 exp{
       mul_static_extents(ClusterExts::static_extent(0), BlockExts::static_extent(0)),
@@ -63,8 +63,8 @@ __device__ void test_thread(
   }
 
   // 3. Test cuda::gpu_thread.extents(x)
+  test_extents(cuda::std::extents<unsigned, 32>{}, cuda::gpu_thread, cuda::warp, hier);
   test_extents(block_exts, cuda::gpu_thread, cuda::block, hier);
-  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     uint3 dims = blockDim;
     NV_IF_TARGET(NV_PROVIDES_SM_90, ({
@@ -92,16 +92,14 @@ __device__ void test_thread(
   }
 
   // 4. Test cuda::gpu_thread.static_count(x, hier)
+  test_static_count(cuda::gpu_thread, cuda::warp, hier);
   test_static_count(cuda::gpu_thread, cuda::block, hier);
-  if constexpr (Hierarchy::has_level(cuda::cluster))
-  {
-    test_static_count(cuda::gpu_thread, cuda::cluster, hier);
-  }
+  test_static_count(cuda::gpu_thread, cuda::cluster, hier);
   test_static_count(cuda::gpu_thread, cuda::grid, hier);
 
   // 5. Test cuda::gpu_thread.count(x, hier)
+  test_count(32, cuda::gpu_thread, cuda::warp, hier);
   test_count(cuda::std::size_t{blockDim.z} * blockDim.y * blockDim.x, cuda::gpu_thread, cuda::block, hier);
-  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     uint3 exp = blockDim;
     NV_IF_TARGET(NV_PROVIDES_SM_90, ({
@@ -117,6 +115,7 @@ __device__ void test_thread(
   }
 
   // 6. test cuda::gpu_thread.index(x, hier)
+  // test_index(uint3{cuda::ptx::get_sreg_laneid(), 0, 0}, cuda::gpu_thread, cuda::warp, hier);
   test_index(threadIdx, cuda::gpu_thread, cuda::block, hier);
   if constexpr (Hierarchy::has_level(cuda::cluster))
   {
@@ -138,6 +137,7 @@ __device__ void test_thread(
   }
 
   // 7. Test cuda::gpu_thread.rank(x, hier)
+  // test_rank(cuda::ptx::get_sreg_laneid(), cuda::gpu_thread, cuda::warp, hier);
   test_rank((threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x + threadIdx.x, cuda::gpu_thread, cuda::block, hier);
   if constexpr (Hierarchy::has_level(cuda::cluster))
   {
@@ -271,8 +271,8 @@ void test()
   const bool enable_clusters = cc_major >= 9;
 
   test_launch(cuda::std::extents<unsigned, 1, 1, 1>{}, cuda::std::extents<unsigned, 128, 1, 1>{});
-  test_launch(cuda::std::extents<unsigned, 128, 1, 1>{}, cuda::std::extents<unsigned, 1, 1, 1>{});
-  test_launch(cuda::std::extents<unsigned, 2, 3, 1>{}, cuda::std::extents<unsigned, 4, 2, 1>{});
+  test_launch(cuda::std::extents<unsigned, 128, 1, 1>{}, cuda::std::extents<unsigned, 32, 1, 1>{});
+  test_launch(cuda::std::extents<unsigned, 2, 3, 1>{}, cuda::std::extents<unsigned, 7, 5, 1>{});
   test_launch(cuda::std::extents<unsigned, 2, 3, 4>{}, cuda::std::extents<unsigned, 4, 2, 8>{});
 
   if (enable_clusters)

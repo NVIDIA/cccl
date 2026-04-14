@@ -3,7 +3,7 @@
 // Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -54,9 +54,13 @@ __device__ void test_cluster(const Hierarchy& hier, const GridExts& grid_exts, c
   test_count(cuda::std::size_t{dims.z} * dims.y * dims.x, cuda::cluster, cuda::grid, hier);
 
   // 6. test cuda::cluster.index(x, hier)
-  test_index(index, cuda::cluster, cuda::grid, hier);
+  if constexpr (Hierarchy::has_level(cuda::cluster))
+  {
+    test_index(index, cuda::cluster, cuda::grid, hier);
+  }
 
   // 7. Test cuda::cluster.rank(x, hier)
+  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     const cuda::std::size_t exp = (index.z * dims.y + index.y) * dims.x + index.x;
     test_rank(exp, cuda::cluster, cuda::grid, hier);
