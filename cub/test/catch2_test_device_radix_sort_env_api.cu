@@ -51,6 +51,21 @@ struct custom_pair_key_t
 {
   int key;
   int payload;
+
+  __host__ __device__ friend bool operator==(const custom_pair_key_t& a, const custom_pair_key_t& b)
+  {
+    return a.key == b.key && a.payload == b.payload;
+  }
+
+  __host__ __device__ friend bool operator!=(const custom_pair_key_t& a, const custom_pair_key_t& b)
+  {
+    return !(a == b);
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const custom_pair_key_t& cpk)
+  {
+    return os << "{" << cpk.key << ", " << cpk.payload << "}";
+  }
 };
 
 struct pairs_decomposer_t
@@ -237,14 +252,10 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs decomposer with bits env-based API", "
   stream.sync();
 
   REQUIRE(error == cudaSuccess);
-  thrust::host_vector<custom_pair_key_t> h_keys_out(keys_out);
-  REQUIRE(h_keys_out[0].key == 1);
-  REQUIRE(h_keys_out[1].key == 2);
-  REQUIRE(h_keys_out[2].key == 3);
-  thrust::host_vector<int> h_values_out(values_out);
-  REQUIRE(h_values_out[0] == 1);
-  REQUIRE(h_values_out[1] == 2);
-  REQUIRE(h_values_out[2] == 0);
+  thrust::device_vector<custom_pair_key_t> expected_keys{{1, 200}, {2, 300}, {3, 100}};
+  REQUIRE(keys_out == expected_keys);
+  thrust::device_vector<int> expected_values{1, 2, 0};
+  REQUIRE(values_out == expected_values);
 }
 
 C2H_TEST("cub::DeviceRadixSort::SortPairs decomposer env-based API", "[radix_sort][env]")
@@ -274,14 +285,10 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs decomposer env-based API", "[radix_sor
   stream.sync();
 
   REQUIRE(error == cudaSuccess);
-  thrust::host_vector<custom_pair_key_t> h_keys_out(keys_out);
-  REQUIRE(h_keys_out[0].key == 1);
-  REQUIRE(h_keys_out[1].key == 2);
-  REQUIRE(h_keys_out[2].key == 3);
-  thrust::host_vector<int> h_values_out(values_out);
-  REQUIRE(h_values_out[0] == 1);
-  REQUIRE(h_values_out[1] == 2);
-  REQUIRE(h_values_out[2] == 0);
+  thrust::device_vector<custom_pair_key_t> expected_keys{{1, 200}, {2, 300}, {3, 100}};
+  REQUIRE(keys_out == expected_keys);
+  thrust::device_vector<int> expected_values{1, 2, 0};
+  REQUIRE(values_out == expected_values);
 }
 
 C2H_TEST("cub::DeviceRadixSort::SortPairs DoubleBuffer decomposer env-based API", "[radix_sort][env]")
@@ -309,15 +316,11 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs DoubleBuffer decomposer env-based API"
 
   REQUIRE(error == cudaSuccess);
   auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
-  thrust::host_vector<custom_pair_key_t> h_keys(keys);
-  REQUIRE(h_keys[0].key == 1);
-  REQUIRE(h_keys[1].key == 2);
-  REQUIRE(h_keys[2].key == 3);
+  thrust::device_vector<custom_pair_key_t> expected_keys{{1, 200}, {2, 300}, {3, 100}};
+  REQUIRE(keys == expected_keys);
   auto& values = d_values.selector == 0 ? values_buf0 : values_buf1;
-  thrust::host_vector<int> h_values(values);
-  REQUIRE(h_values[0] == 1);
-  REQUIRE(h_values[1] == 2);
-  REQUIRE(h_values[2] == 0);
+  thrust::device_vector<int> expected_values{1, 2, 0};
+  REQUIRE(values == expected_values);
 }
 
 C2H_TEST("cub::DeviceRadixSort::SortPairs DoubleBuffer decomposer with bits env-based API", "[radix_sort][env]")
@@ -345,15 +348,11 @@ C2H_TEST("cub::DeviceRadixSort::SortPairs DoubleBuffer decomposer with bits env-
 
   REQUIRE(error == cudaSuccess);
   auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
-  thrust::host_vector<custom_pair_key_t> h_keys(keys);
-  REQUIRE(h_keys[0].key == 1);
-  REQUIRE(h_keys[1].key == 2);
-  REQUIRE(h_keys[2].key == 3);
+  thrust::device_vector<custom_pair_key_t> expected_keys{{1, 200}, {2, 300}, {3, 100}};
+  REQUIRE(keys == expected_keys);
   auto& values = d_values.selector == 0 ? values_buf0 : values_buf1;
-  thrust::host_vector<int> h_values(values);
-  REQUIRE(h_values[0] == 1);
-  REQUIRE(h_values[1] == 2);
-  REQUIRE(h_values[2] == 0);
+  thrust::device_vector<int> expected_values{1, 2, 0};
+  REQUIRE(values == expected_values);
 }
 
 C2H_TEST("cub::DeviceRadixSort::SortKeys decomposer+bits env-based API", "[radix_sort][env]")
