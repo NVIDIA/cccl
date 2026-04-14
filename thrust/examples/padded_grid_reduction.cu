@@ -2,7 +2,6 @@
 #include <thrust/extrema.h>
 #include <thrust/functional.h>
 #include <thrust/host_vector.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
@@ -90,7 +89,7 @@ int main()
   }
 
   // print full grid
-  std::cout << "padded grid" << std::endl;
+  std::cout << "padded grid" << '\n';
   std::cout << std::fixed << std::setprecision(4);
   for (int i = 0; i < M; i++)
   {
@@ -117,8 +116,8 @@ int main()
     init,
     binary_op);
 
-  std::cout << "minimum value: " << cuda::std::get<1>(result) << std::endl;
-  std::cout << "maximum value: " << cuda::std::get<2>(result) << std::endl;
+  std::cout << "minimum value: " << cuda::std::get<1>(result) << '\n';
+  std::cout << "maximum value: " << cuda::std::get<2>(result) << '\n';
 
   return 0;
 }

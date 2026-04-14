@@ -604,7 +604,7 @@ public:
           static ::std::atomic<int> debug_graph_cnt{0};
           ::std::string filename = "stackable_graph_" + ::std::to_string(debug_graph_cnt++) + ".dot";
           cuda_safe_call(cudaGraphDebugDotPrint(graph, filename.c_str(), cudaGraphDebugDotFlags(0)));
-          ::std::cout << "Debug: Stackable graph DOT output written to " << filename << ::std::endl;
+          ::std::cout << "Debug: Stackable graph DOT output written to " << filename << '\n';
         }
 
         auto [exec_graph, _] = ctx.async_resources().cached_graphs_query(graph);

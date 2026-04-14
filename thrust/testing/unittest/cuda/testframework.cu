@@ -33,7 +33,7 @@ void list_devices()
   cudaGetDeviceCount(&deviceCount);
   if (deviceCount == 0)
   {
-    std::cout << "There is no device supporting CUDA" << std::endl;
+    std::cout << "There is no device supporting CUDA" << '\n';
   }
 
   int selected_device;
@@ -48,15 +48,15 @@ void list_devices()
     {
       if (deviceProp.major == 9999 && deviceProp.minor == 9999)
       {
-        std::cout << "There is no device supporting CUDA." << std::endl;
+        std::cout << "There is no device supporting CUDA." << '\n';
       }
       else if (deviceCount == 1)
       {
-        std::cout << "There is 1 device supporting CUDA" << std::endl;
+        std::cout << "There is 1 device supporting CUDA" << '\n';
       }
       else
       {
-        std::cout << "There are " << deviceCount << " devices supporting CUDA" << std::endl;
+        std::cout << "There are " << deviceCount << " devices supporting CUDA" << '\n';
       }
     }
 
@@ -65,14 +65,13 @@ void list_devices()
     {
       std::cout << "  [SELECTED]";
     }
-    std::cout << std::endl;
+    std::cout << '\n';
 
-    std::cout << "  Major revision number:                         " << deviceProp.major << std::endl;
-    std::cout << "  Minor revision number:                         " << deviceProp.minor << std::endl;
-    std::cout
-      << "  Total amount of global memory:                 " << deviceProp.totalGlobalMem << " bytes" << std::endl;
+    std::cout << "  Major revision number:                         " << deviceProp.major << '\n';
+    std::cout << "  Minor revision number:                         " << deviceProp.minor << '\n';
+    std::cout << "  Total amount of global memory:                 " << deviceProp.totalGlobalMem << " bytes" << '\n';
   }
-  std::cout << std::endl;
+  std::cout << '\n';
 }
 
 // provide next, which c++03 doesn't have
@@ -115,7 +114,7 @@ bool CUDATestDriver::check_cuda_error(bool concise)
     if (!concise)
     {
       std::cout << "[ERROR] CUDA error detected before running tests: [" << std::string(cudaGetErrorName(error)) << ": "
-                << std::string(cudaGetErrorString(error)) << "]" << std::endl;
+                << std::string(cudaGetErrorString(error)) << "]" << '\n';
     }
   }
 
@@ -131,7 +130,7 @@ bool CUDATestDriver::post_test_smoke_check(const UnitTest& test, bool concise)
     {
       std::cout
         << "\t[ERROR] CUDA error detected after running " << test.name << ": [" << std::string(cudaGetErrorName(error))
-        << ": " << std::string(cudaGetErrorString(error)) << "]" << std::endl;
+        << ": " << std::string(cudaGetErrorString(error)) << "]" << '\n';
     }
   }
 
@@ -145,7 +144,7 @@ bool CUDATestDriver::run_tests(const ArgumentSet& args, const ArgumentMap& kwarg
 
   if (verbose && concise)
   {
-    std::cout << "--verbose and --concise cannot be used together" << std::endl;
+    std::cout << "--verbose and --concise cannot be used together" << '\n';
     exit(EXIT_FAILURE);
   }
 
@@ -181,7 +180,7 @@ bool CUDATestDriver::run_tests(const ArgumentSet& args, const ArgumentMap& kwarg
       cudaDeviceProp deviceProp;
       cudaGetDeviceProperties(&deviceProp, *device);
 
-      std::cout << "Skipping Device " << *device << ": \"" << deviceProp.name << "\"" << std::endl;
+      std::cout << "Skipping Device " << *device << ": \"" << deviceProp.name << "\"" << '\n';
 
       continue;
     }
@@ -192,7 +191,7 @@ bool CUDATestDriver::run_tests(const ArgumentSet& args, const ArgumentMap& kwarg
       cudaDeviceProp deviceProp;
       cudaGetDeviceProperties(&deviceProp, *device);
 
-      std::cout << "Testing Device " << *device << ": \"" << deviceProp.name << "\"" << std::endl;
+      std::cout << "Testing Device " << *device << ": \"" << deviceProp.name << "\"" << '\n';
     }
 
     // check error status before running any tests
@@ -207,7 +206,7 @@ bool CUDATestDriver::run_tests(const ArgumentSet& args, const ArgumentMap& kwarg
     if (!concise && my_next(device) != devices.end())
     {
       // provide some separation between the output of separate tests
-      std::cout << std::endl;
+      std::cout << '\n';
     }
   }
 

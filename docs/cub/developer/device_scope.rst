@@ -99,7 +99,7 @@ A more precise description is given later.
     }
 
     template <typename ChainedPolicy>
-    __launch_bounds__(ChainedPolicy::ActivePolicy::AlgorithmPolicy::BLOCK_THREADS) CUB_DETAIL_KERNEL_ATTRIBUTES
+    __launch_bounds__(ChainedPolicy::ActivePolicy::AlgorithmPolicy::BLOCK_THREADS) _CCCL_KERNEL_ATTRIBUTES
     void kernel(...) { // (4)
       using policy = ChainedPolicy::ActivePolicy; // selects policy of active device compilation pass (5)
       using agent = AgentAlgorithm<policy>; // instantiates (6)

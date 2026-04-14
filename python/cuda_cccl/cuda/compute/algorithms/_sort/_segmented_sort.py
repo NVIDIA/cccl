@@ -200,7 +200,7 @@ def segmented_sort(
             :start-after: # example-begin
 
 
-        In the following example, ``segmented_sort`` is used to perform a segmented sort with a ``DoubleBuffer` for reduced temporary storage.
+        In the following example, ``segmented_sort`` is used to perform a segmented sort with a ``DoubleBuffer`` for reduced temporary storage.
 
         .. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/sort/segmented_sort_buffer.py
             :language: python

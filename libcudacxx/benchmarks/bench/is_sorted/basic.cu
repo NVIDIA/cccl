@@ -13,7 +13,7 @@
 #include <thrust/sort.h>
 
 #include <cuda/functional>
-#include <cuda/std/__pstl_algorithm>
+#include <cuda/std/execution>
 #include <cuda/stream>
 
 #include "nvbench_helper.cuh"

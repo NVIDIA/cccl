@@ -58,7 +58,7 @@ namespace random
  *    thrust::minstd_rand rng1;
  *
  *    // output some random values to cout
- *    std::cout << rng1() << std::endl;
+ *    std::cout << rng1() << '\n';
  *
  *    // a random value is printed
  *
@@ -69,13 +69,13 @@ namespace random
  *    rng2.discard(13);
  *
  *    // stream the object to an iostream
- *    std::cout << rng2 << std::endl;
+ *    std::cout << rng2 << '\n';
  *
  *    // rng2's current state is printed
  *
  *    // print the minimum and maximum values that minstd_rand can produce
- *    std::cout << thrust::minstd_rand::min << std::endl;
- *    std::cout << thrust::minstd_rand::max << std::endl;
+ *    std::cout << thrust::minstd_rand::min << '\n';
+ *    std::cout << thrust::minstd_rand::max << '\n';
  *
  *    // the range of minstd_rand is printed
  *
@@ -83,7 +83,7 @@ namespace random
  *    thrust::minstd_rand rng3 = rng2;
  *
  *    // compare rng2 and rng3
- *    std::cout << (rng2 == rng3) << std::endl;
+ *    std::cout << (rng2 == rng3) << '\n';
  *
  *    // 1 is printed
  *
@@ -91,7 +91,7 @@ namespace random
  *    rng2.seed(7);
  *
  *    // compare rng2 and rng3
- *    std::cout << (rng2 == rng3) << std::endl;
+ *    std::cout << (rng2 == rng3) << '\n';
  *
  *    // 0 is printed
  *

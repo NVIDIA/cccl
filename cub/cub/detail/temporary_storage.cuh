@@ -31,6 +31,7 @@
 
 #include <cuda/__stream/stream_ref.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/cstddef>
 
 CUB_NAMESPACE_BEGIN
 
@@ -352,10 +353,10 @@ allocate(::cuda::stream_ref stream, void*& d_temp_storage, size_t temp_storage_b
   NV_IF_ELSE_TARGET(
     NV_IS_HOST,
     (
-      try { d_temp_storage = mr.allocate(stream, temp_storage_bytes); } catch (...) {
+      try { d_temp_storage = mr.allocate(stream, temp_storage_bytes, alignof(::cuda::std::max_align_t)); } catch (...) {
         return cudaErrorMemoryAllocation;
       }),
-    (d_temp_storage = mr.allocate(stream, temp_storage_bytes);));
+    (d_temp_storage = mr.allocate(stream, temp_storage_bytes, alignof(::cuda::std::max_align_t));));
   return cudaSuccess;
 }
 
@@ -366,10 +367,10 @@ deallocate(::cuda::stream_ref stream, void* d_temp_storage, size_t temp_storage_
   NV_IF_ELSE_TARGET(
     NV_IS_HOST,
     (
-      try { mr.deallocate(stream, d_temp_storage, temp_storage_bytes); } catch (...) {
-        return cudaErrorMemoryAllocation;
-      }),
-    (mr.deallocate(stream, d_temp_storage, temp_storage_bytes);));
+      try {
+        mr.deallocate(stream, d_temp_storage, temp_storage_bytes, alignof(::cuda::std::max_align_t));
+      } catch (...) { return cudaErrorMemoryAllocation; }),
+    (mr.deallocate(stream, d_temp_storage, temp_storage_bytes, alignof(::cuda::std::max_align_t));));
   return cudaSuccess;
 }
 } // namespace detail::temporary_storage

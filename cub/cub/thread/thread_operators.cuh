@@ -106,17 +106,29 @@ struct ArgMin
 
 namespace detail
 {
-/// @brief Arg max functor (keeps the value and offset of the first occurrence
-///        of the larger item)
-struct arg_max
+// Less-than comparator for an index/value pair that compares values first, and indices when the values are equal
+template <typename ValueLessThen = ::cuda::std::less<>>
+struct arg_less : ValueLessThen
 {
-  /// Boolean max operator, preferring the item having the smaller offset in
-  /// case of ties
   template <typename T, typename OffsetT>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<OffsetT, T>
   operator()(const ::cuda::std::pair<OffsetT, T>& a, const ::cuda::std::pair<OffsetT, T>& b) const
   {
-    if ((b.second > a.second) || ((a.second == b.second) && (b.first < a.first)))
+    const auto& less = static_cast<const ValueLessThen&>(*this);
+    if (less(b.second, a.second) || (!less(a.second, b.second) && b.first < a.first))
+    {
+      return b;
+    }
+
+    return a;
+  }
+
+  template <typename T, typename OffsetT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair<OffsetT, T>
+  operator()(const KeyValuePair<OffsetT, T>& a, const KeyValuePair<OffsetT, T>& b) const
+  {
+    const auto& less = static_cast<const ValueLessThen&>(*this);
+    if (less(b.value, a.value) || (!less(a.value, b.value) && b.key < a.key))
     {
       return b;
     }
@@ -125,24 +137,28 @@ struct arg_max
   }
 };
 
-/// @brief Arg min functor (keeps the value and offset of the first occurrence
-///        of the smallest item)
-struct arg_min
-{
-  /// Boolean min operator, preferring the item having the smaller offset in
-  /// case of ties
-  template <typename T, typename OffsetT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<OffsetT, T>
-  operator()(const ::cuda::std::pair<OffsetT, T>& a, const ::cuda::std::pair<OffsetT, T>& b) const
-  {
-    if ((b.second < a.second) || ((a.second == b.second) && (b.first < a.first)))
-    {
-      return b;
-    }
+template <typename ValueLessThen>
+arg_less(ValueLessThen) -> arg_less<ValueLessThen>;
 
-    return a;
+/// @brief Arg min functor (keeps the value and offset of the first occurrence of the smallest item)
+using arg_min = arg_less<::cuda::std::less<>>;
+
+//! @brief Binary functor swapping the arguments to ``operator()`` before forwarding to an inner functor
+template <typename Predicate>
+struct swap_args : Predicate
+{
+  template <typename T, typename U>
+  _CCCL_API _CCCL_FORCEINLINE decltype(auto) operator()(T&& t, U&& u) const
+  {
+    return Predicate::operator()(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t));
   }
 };
+
+template <typename Predicate>
+swap_args(Predicate) -> swap_args<Predicate>;
+
+/// @brief Arg max functor (keeps the value and offset of the first occurrence of the larger item)
+using arg_max = arg_less<swap_args<::cuda::std::less<>>>;
 
 template <typename ScanOpT>
 struct ScanBySegmentOp
@@ -257,10 +273,7 @@ public:
   template <typename T>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T operator()(const T& a, const T& b)
   {
-    T _a(a);
-    T _b(b);
-
-    return scan_op(_b, _a);
+    return scan_op(b, a);
   }
 };
 

@@ -177,7 +177,7 @@ template <typename PolicySelector,
   requires non_trivial_runs::rle_non_trivial_runs_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRleSweepKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceRleSweepKernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const OffsetsOutputIteratorT d_offsets_out,
     _CCCL_GRID_CONSTANT const LengthsOutputIteratorT d_lengths_out,

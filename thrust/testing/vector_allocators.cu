@@ -28,14 +28,14 @@ public:
     return *this;
   }
 
-  stateful_allocator(stateful_allocator&& other)
+  stateful_allocator(stateful_allocator&& other) noexcept
       : BaseAlloc(std::move(other))
       , state(other.state)
   {
     other.state = 0;
   }
 
-  stateful_allocator& operator=(stateful_allocator&& other)
+  stateful_allocator& operator=(stateful_allocator&& other) noexcept
   {
     state       = other.state;
     other.state = 0;

@@ -3,9 +3,10 @@
 # This script builds CCCL documentation using Sphinx directly
 #
 # Usage:
-#   ./gen_docs.bash           - Build documentation
-#   ./gen_docs.bash clean     - Clean build directory
-#   ./gen_docs.bash clean --all - Clean build directory and Doxygen build
+#   ./gen_docs.bash                    - Build documentation
+#   ./gen_docs.bash --allow-dep-install - Build, auto-install missing system deps
+#   ./gen_docs.bash clean              - Clean build directory
+#   ./gen_docs.bash clean --all        - Clean build directory and Doxygen build
 #
 # The script will optionally build Doxygen 1.9.6 from source to ensure
 # consistent documentation generation. The built Doxygen will be stored
@@ -13,14 +14,88 @@
 
 set -e
 
-SCRIPT_PATH=$(cd $(dirname ${0}); pwd -P)
-cd $SCRIPT_PATH
+ALLOW_DEP_INSTALL=false
+CLEAN=false
+CLEAN_ALL=false
 
-# Configuration
-SPHINXOPTS="${SPHINXOPTS:---keep-going}"
+for arg in "$@"; do
+    case "$arg" in
+        --allow-dep-install) ALLOW_DEP_INSTALL=true ;;
+        clean)               CLEAN=true ;;
+        --all)               CLEAN_ALL=true ;;
+        *)                   echo "Unknown argument: $arg"; exit 1 ;;
+    esac
+done
+
+SCRIPT_PATH=$(cd $(dirname ${0}); pwd -P)
+cd "$SCRIPT_PATH"
+
 BUILDDIR="_build"
 DOXYGEN_BUILD_DIR="${SCRIPT_PATH}/_build/doxygen-build"
 DOXYGEN_SRC_DIR="${SCRIPT_PATH}/_build/doxygen-src"
+
+# Handle clean command (before dep checks — clean doesn't need deps)
+if [ "$CLEAN" = true ]; then
+    echo "Cleaning build directory..."
+    rm -rf "${BUILDDIR:?}"/*
+    if [ "$CLEAN_ALL" = true ]; then
+        echo "Also removing Doxygen source and build directories..."
+        rm -rf "${DOXYGEN_SRC_DIR}" "${DOXYGEN_BUILD_DIR}"
+    fi
+    exit 0
+fi
+
+# Check and optionally install system dependencies
+check_system_deps() {
+    local missing=()
+    # Map of command -> package name
+    local -A cmd_to_pkg=(
+        [cmake]=cmake
+        [ninja]=ninja-build
+        [flex]=flex
+        [bison]=bison
+        [git]=git
+    )
+
+    # python3-venv is a package, not a command — check by trying to create a venv
+    if ! python3 -m venv --help &>/dev/null; then
+        missing+=(python3-venv)
+    fi
+
+    for cmd in "${!cmd_to_pkg[@]}"; do
+        if ! command -v "$cmd" &>/dev/null; then
+            missing+=("${cmd_to_pkg[$cmd]}")
+        fi
+    done
+
+    if [ ${#missing[@]} -eq 0 ]; then
+        return 0
+    fi
+
+    echo "Missing system dependencies: ${missing[*]}"
+
+    if [ "$ALLOW_DEP_INSTALL" = true ]; then
+        echo "Installing missing dependencies (--allow-dep-install)..."
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq "${missing[@]}"
+    else
+        read -r -p "Install them now? [y/N] " response
+        if [[ "$response" =~ ^[Yy]$ ]]; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq "${missing[@]}"
+        else
+            echo "Error: Missing dependencies. Install with:"
+            echo "  sudo apt-get install -y ${missing[*]}"
+            exit 1
+        fi
+    fi
+}
+
+check_system_deps
+
+# Configuration
+# Keep going to surface all warnings; -W makes warnings fail the build.
+SPHINXOPTS="${SPHINXOPTS:---keep-going -W}"
 DOXYGEN_BIN="${DOXYGEN_BUILD_DIR}/bin/doxygen"
 
 # Use custom-built doxygen if available, otherwise fall back to system doxygen
@@ -28,17 +103,6 @@ if [ -f "${DOXYGEN_BIN}" ]; then
     DOXYGEN="${DOXYGEN_BIN}"
 else
     DOXYGEN="${DOXYGEN:-doxygen}"
-fi
-
-# Handle clean command
-if [ "$1" = "clean" ]; then
-    echo "Cleaning build directory..."
-    rm -rf ${BUILDDIR}/*
-    if [ "$2" = "--all" ]; then
-        echo "Also removing Doxygen source and build directories..."
-        rm -rf "${DOXYGEN_SRC_DIR}" "${DOXYGEN_BUILD_DIR}"
-    fi
-    exit 0
 fi
 
 ## Clean image directory, without this any artifacts will prevent fetching
@@ -124,20 +188,6 @@ build_doxygen() {
 # Check if custom Doxygen needs to be built
 if [ ! -f "${DOXYGEN_BIN}" ]; then
     echo "Custom Doxygen 1.9.6 not found, building it now..."
-
-    # Check for required build tools
-    if ! command -v cmake &> /dev/null; then
-        echo "Error: cmake is required to build Doxygen"
-        echo "Please install cmake and try again"
-        exit 1
-    fi
-
-    if ! command -v ninja &> /dev/null; then
-        echo "Error: ninja is required to build Doxygen"
-        echo "Please install ninja-build and try again"
-        exit 1
-    fi
-
     build_doxygen
     DOXYGEN="${DOXYGEN_BIN}"
 else
@@ -178,12 +228,26 @@ if which ${DOXYGEN} > /dev/null 2>&1; then
         cp img/*.png ${BUILDDIR}/doxygen/${project}/xml/ 2>/dev/null || true
     done
 
-    # Run all Doxygen builds in parallel
+    # Run all Doxygen builds in parallel, fail if any produce warnings/errors
     (cd cub && ${DOXYGEN} Doxyfile) &
+    pids+=($!)
     (cd thrust && ${DOXYGEN} Doxyfile) &
+    pids+=($!)
     (cd cudax && ${DOXYGEN} Doxyfile) &
+    pids+=($!)
     (cd libcudacxx && ${DOXYGEN} Doxyfile) &
-    wait
+    pids+=($!)
+
+    doxygen_failed=0
+    for pid in "${pids[@]}"; do
+        if ! wait "$pid"; then
+            doxygen_failed=1
+        fi
+    done
+    if [ "$doxygen_failed" -ne 0 ]; then
+        echo "Error: one or more Doxygen builds failed (see warnings above)"
+        exit 1
+    fi
 
     echo "Doxygen complete"
 else
@@ -193,7 +257,7 @@ fi
 # Build Sphinx HTML documentation
 echo "Building documentation with Sphinx..."
 # Use the virtual environment's Python
-python -m sphinx.cmd.build -b html -d ${BUILDDIR}/doctrees -j auto . ${BUILDDIR}/html ${SPHINXOPTS}
+python -m sphinx.cmd.build -b html -d "${BUILDDIR}/doctrees" -j auto "." "${BUILDDIR}/html" ${SPHINXOPTS}
 
 # Reorganize output to include versioned directory and root assets
 VERSION="${SPHINX_CCCL_VER:-unstable}"

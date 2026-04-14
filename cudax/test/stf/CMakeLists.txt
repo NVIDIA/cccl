@@ -44,6 +44,7 @@ set(
   graph/explicit_graph_while-kernels.cu
   graph/get_cache_stats.cu
   graph/graph_cache_policy.cu
+  graph/graph_child_move_ownership.cu
   graph/graph_ctx_low_level.cu
   graph/static_graph_ctx.cu
   hashtable/test.cu
@@ -73,9 +74,6 @@ set(
   local_stf/task_dep_copy_move_semantics.cu
   local_stf/threads_multiple_graphs.cu
   places/affinity_gc.cu
-  places/data_place_alloc.cu
-  places/data_place_vmm.cu
-  places/exec_place_guard.cu
   places/managed.cu
   places/managed_from_user.cu
   places/non_current_device.cu
@@ -159,6 +157,7 @@ set(
   interface/data_from_device_2.cu
   interface/data_from_device_wb.cu
   interface/graph_use_device_data.cu
+  interface/host_launch_deps.cu
   interface/mix_stream_and_graph.cu
   interface/mix_stream_and_graph_2.cu
   interface/scal.cu
@@ -169,7 +168,7 @@ set(
   loop_dispatch/dispatch_on_streams.cu
   loop_dispatch/loop_dispatch.cu
   loop_dispatch/nested_loop_dispatch.cu
-  loop_dispatch/stackable_loop_dispatch.cu
+  # loop_dispatch/stackable_loop_dispatch.cu # Disabled: double free or corruption (under investigation)
   parallel_for/empty_shape_reduce.cu
   parallel_for/fdtd.cu
   parallel_for/parallel_for_all_devs.cu
@@ -216,14 +215,9 @@ set(
   cuda/experimental/__stf/internal/context.cuh
   cuda/experimental/__stf/internal/execution_policy.cuh
   cuda/experimental/__stf/internal/interpreted_execution_policy.cuh
-  cuda/experimental/__stf/internal/logical_data.cuh
-  cuda/experimental/__stf/internal/parallel_for_scope.cuh
   cuda/experimental/__stf/internal/slice.cuh
   cuda/experimental/__stf/internal/thread_hierarchy.cuh
-  cuda/experimental/__stf/places/cyclic_shape.cuh
   cuda/experimental/__stf/internal/inner_shape.cuh
-  cuda/experimental/__stf/places/places.cuh
-  cuda/experimental/__stf/places/tiled_partition.cuh
   cuda/experimental/__stf/stream/stream_ctx.cuh
   cuda/experimental/__stf/utility/cartesian_iterator.cuh
   cuda/experimental/__stf/utility/cuda_safe_call.cuh

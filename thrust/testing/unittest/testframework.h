@@ -58,30 +58,30 @@ using FloatingPointTypes = unittest::type_list<float, double>;
 class custom_numeric
 {
 public:
-  _CCCL_HOST_DEVICE custom_numeric()
+  _CCCL_HOST_DEVICE constexpr custom_numeric()
   {
     fill(0);
   }
 
   // Allow construction from any integral numeric.
   template <typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
-  _CCCL_HOST_DEVICE custom_numeric(const T& i)
+  _CCCL_HOST_DEVICE constexpr custom_numeric(const T& i)
   {
     fill(static_cast<int>(i));
   }
 
-  _CCCL_HOST_DEVICE custom_numeric(const custom_numeric& other)
+  _CCCL_HOST_DEVICE constexpr custom_numeric(const custom_numeric& other)
   {
     fill(other.value[0]);
   }
 
-  _CCCL_HOST_DEVICE custom_numeric& operator=(int val)
+  _CCCL_HOST_DEVICE constexpr custom_numeric& operator=(int val)
   {
     fill(val);
     return *this;
   }
 
-  _CCCL_HOST_DEVICE custom_numeric& operator=(const custom_numeric& other)
+  _CCCL_HOST_DEVICE constexpr custom_numeric& operator=(const custom_numeric& other)
   {
     fill(other.value[0]);
     return *this;
@@ -92,20 +92,20 @@ public:
   _CCCL_HOST_DEVICE operator void*() const
   {
     // static cast first to avoid MSVC warning C4312
-    return reinterpret_cast<void*>(static_cast<std::size_t>(value[0]));
+    return reinterpret_cast<void*>(static_cast<std::size_t>(value[0])); // NOLINT(performance-no-int-to-ptr)
   }
 
-#define DEFINE_OPERATOR(op)                               \
-  _CCCL_HOST_DEVICE custom_numeric& operator op()         \
-  {                                                       \
-    fill(op value[0]);                                    \
-    return *this;                                         \
-  }                                                       \
-  _CCCL_HOST_DEVICE custom_numeric operator op(int) const \
-  {                                                       \
-    custom_numeric ret(*this);                            \
-    op ret;                                               \
-    return ret;                                           \
+#define DEFINE_OPERATOR(op)                                         \
+  _CCCL_HOST_DEVICE constexpr custom_numeric& operator op()         \
+  {                                                                 \
+    fill(op value[0]);                                              \
+    return *this;                                                   \
+  }                                                                 \
+  _CCCL_HOST_DEVICE constexpr custom_numeric operator op(int) const \
+  {                                                                 \
+    custom_numeric ret(*this);                                      \
+    op ret;                                                         \
+    return ret;                                                     \
   }
 
   DEFINE_OPERATOR(++)
@@ -113,10 +113,10 @@ public:
 
 #undef DEFINE_OPERATOR
 
-#define DEFINE_OPERATOR(op)                            \
-  _CCCL_HOST_DEVICE custom_numeric operator op() const \
-  {                                                    \
-    return custom_numeric(op value[0]);                \
+#define DEFINE_OPERATOR(op)                                      \
+  _CCCL_HOST_DEVICE constexpr custom_numeric operator op() const \
+  {                                                              \
+    return custom_numeric(op value[0]);                          \
   }
 
   DEFINE_OPERATOR(+)
@@ -125,10 +125,10 @@ public:
 
 #undef DEFINE_OPERATOR
 
-#define DEFINE_OPERATOR(op)                                                       \
-  _CCCL_HOST_DEVICE custom_numeric operator op(const custom_numeric& other) const \
-  {                                                                               \
-    return custom_numeric(value[0] op other.value[0]);                            \
+#define DEFINE_OPERATOR(op)                                                                 \
+  _CCCL_HOST_DEVICE constexpr custom_numeric operator op(const custom_numeric& other) const \
+  {                                                                                         \
+    return custom_numeric(value[0] op other.value[0]);                                      \
   }
 
   DEFINE_OPERATOR(+)
@@ -146,11 +146,11 @@ public:
 
 #define CONCAT(X, Y) X##Y
 
-#define DEFINE_OPERATOR(op)                                                              \
-  _CCCL_HOST_DEVICE custom_numeric& operator CONCAT(op, =)(const custom_numeric & other) \
-  {                                                                                      \
-    fill(value[0] op other.value[0]);                                                    \
-    return *this;                                                                        \
+#define DEFINE_OPERATOR(op)                                                                        \
+  _CCCL_HOST_DEVICE constexpr custom_numeric& operator CONCAT(op, =)(const custom_numeric & other) \
+  {                                                                                                \
+    fill(value[0] op other.value[0]);                                                              \
+    return *this;                                                                                  \
   }
 
   DEFINE_OPERATOR(+)
@@ -166,10 +166,10 @@ public:
 
 #undef DEFINE_OPERATOR
 
-#define DEFINE_OPERATOR(op)                                                                       \
-  _CCCL_HOST_DEVICE friend bool operator op(const custom_numeric& lhs, const custom_numeric& rhs) \
-  {                                                                                               \
-    return lhs.value[0] op rhs.value[0];                                                          \
+#define DEFINE_OPERATOR(op)                                                                                 \
+  _CCCL_HOST_DEVICE friend constexpr bool operator op(const custom_numeric& lhs, const custom_numeric& rhs) \
+  {                                                                                                         \
+    return lhs.value[0] op rhs.value[0];                                                                    \
   }
 
   DEFINE_OPERATOR(==)
@@ -189,9 +189,9 @@ public:
   }
 
 private:
-  int value[5];
+  int value[5] = {0};
 
-  _CCCL_HOST_DEVICE void fill(int val)
+  _CCCL_HOST_DEVICE constexpr void fill(int val)
   {
     for (int i = 0; i < 5; ++i)
     {
@@ -259,7 +259,7 @@ inline std::string base_class_name(const std::string& name)
   // if the name begins with "class ", chop it off
   chop_prefix(result, "class ");
 
-  const std::size_t first_lt = result.find_first_of("<");
+  const std::size_t first_lt = result.find_first_of('<');
 
   if (first_lt < result.size())
   {
@@ -474,71 +474,71 @@ public:
   TEST##UnitTest TEST##Instance
 
 // Macro to create instances of a test for several array sizes.
-#define DECLARE_SIZED_UNITTEST(TEST)                \
-  class TEST##UnitTest : public UnitTest            \
-  {                                                 \
-  public:                                           \
-    TEST##UnitTest()                                \
-        : UnitTest(#TEST)                           \
-    {}                                              \
-    void run()                                      \
-    {                                               \
-      std::vector<size_t> sizes = get_test_sizes(); \
-      for (size_t i = 0; i != sizes.size(); ++i)    \
-      {                                             \
-        TEST(sizes[i]);                             \
-      }                                             \
-    }                                               \
-  };                                                \
+#define DECLARE_SIZED_UNITTEST(TEST)                       \
+  class TEST##UnitTest : public UnitTest                   \
+  {                                                        \
+  public:                                                  \
+    TEST##UnitTest()                                       \
+        : UnitTest(#TEST)                                  \
+    {}                                                     \
+    void run()                                             \
+    {                                                      \
+      const std::vector<size_t>& sizes = get_test_sizes(); \
+      for (size_t i = 0; i != sizes.size(); ++i)           \
+      {                                                    \
+        TEST(sizes[i]);                                    \
+      }                                                    \
+    }                                                      \
+  };                                                       \
   TEST##UnitTest TEST##Instance
 
 // Macro to create instances of a test for several data types and array sizes
-#define DECLARE_VARIABLE_UNITTEST(TEST)             \
-  class TEST##UnitTest : public UnitTest            \
-  {                                                 \
-  public:                                           \
-    TEST##UnitTest()                                \
-        : UnitTest(#TEST)                           \
-    {}                                              \
-    void run()                                      \
-    {                                               \
-      std::vector<size_t> sizes = get_test_sizes(); \
-      for (size_t i = 0; i != sizes.size(); ++i)    \
-      {                                             \
-        TEST<signed char>(sizes[i]);                \
-        TEST<unsigned char>(sizes[i]);              \
-        TEST<short>(sizes[i]);                      \
-        TEST<unsigned short>(sizes[i]);             \
-        TEST<int>(sizes[i]);                        \
-        TEST<unsigned int>(sizes[i]);               \
-        TEST<float>(sizes[i]);                      \
-        TEST<double>(sizes[i]);                     \
-      }                                             \
-    }                                               \
-  };                                                \
+#define DECLARE_VARIABLE_UNITTEST(TEST)                    \
+  class TEST##UnitTest : public UnitTest                   \
+  {                                                        \
+  public:                                                  \
+    TEST##UnitTest()                                       \
+        : UnitTest(#TEST)                                  \
+    {}                                                     \
+    void run()                                             \
+    {                                                      \
+      const std::vector<size_t>& sizes = get_test_sizes(); \
+      for (size_t i = 0; i != sizes.size(); ++i)           \
+      {                                                    \
+        TEST<signed char>(sizes[i]);                       \
+        TEST<unsigned char>(sizes[i]);                     \
+        TEST<short>(sizes[i]);                             \
+        TEST<unsigned short>(sizes[i]);                    \
+        TEST<int>(sizes[i]);                               \
+        TEST<unsigned int>(sizes[i]);                      \
+        TEST<float>(sizes[i]);                             \
+        TEST<double>(sizes[i]);                            \
+      }                                                    \
+    }                                                      \
+  };                                                       \
   TEST##UnitTest TEST##Instance
 
-#define DECLARE_INTEGRAL_VARIABLE_UNITTEST(TEST)    \
-  class TEST##UnitTest : public UnitTest            \
-  {                                                 \
-  public:                                           \
-    TEST##UnitTest()                                \
-        : UnitTest(#TEST)                           \
-    {}                                              \
-    void run()                                      \
-    {                                               \
-      std::vector<size_t> sizes = get_test_sizes(); \
-      for (size_t i = 0; i != sizes.size(); ++i)    \
-      {                                             \
-        TEST<signed char>(sizes[i]);                \
-        TEST<unsigned char>(sizes[i]);              \
-        TEST<short>(sizes[i]);                      \
-        TEST<unsigned short>(sizes[i]);             \
-        TEST<int>(sizes[i]);                        \
-        TEST<unsigned int>(sizes[i]);               \
-      }                                             \
-    }                                               \
-  };                                                \
+#define DECLARE_INTEGRAL_VARIABLE_UNITTEST(TEST)           \
+  class TEST##UnitTest : public UnitTest                   \
+  {                                                        \
+  public:                                                  \
+    TEST##UnitTest()                                       \
+        : UnitTest(#TEST)                                  \
+    {}                                                     \
+    void run()                                             \
+    {                                                      \
+      const std::vector<size_t>& sizes = get_test_sizes(); \
+      for (size_t i = 0; i != sizes.size(); ++i)           \
+      {                                                    \
+        TEST<signed char>(sizes[i]);                       \
+        TEST<unsigned char>(sizes[i]);                     \
+        TEST<short>(sizes[i]);                             \
+        TEST<unsigned short>(sizes[i]);                    \
+        TEST<int>(sizes[i]);                               \
+        TEST<unsigned int>(sizes[i]);                      \
+      }                                                    \
+    }                                                      \
+  };                                                       \
   TEST##UnitTest TEST##Instance
 
 #define DECLARE_GENERIC_UNITTEST_WITH_TYPES_AND_NAME(TEST, TYPES, NAME) \
@@ -590,7 +590,7 @@ public:
 
   void run()
   {
-    std::vector<size_t> sizes = get_test_sizes();
+    const std::vector<size_t>& sizes = get_test_sizes();
     for (size_t i = 0; i != sizes.size(); ++i)
     {
       // get the first type in the list

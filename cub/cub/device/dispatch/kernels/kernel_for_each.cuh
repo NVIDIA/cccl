@@ -90,7 +90,7 @@ template <class PolicySelector, class OffsetT, class OpT>
 #if _CCCL_HAS_CONCEPTS()
   requires for_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(_CCCL_GRID_CONSTANT const OffsetT num_items, OpT op)
+_CCCL_KERNEL_ATTRIBUTES void dynamic_kernel(_CCCL_GRID_CONSTANT const OffsetT num_items, OpT op)
 {
   static constexpr for_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
   using agent_policy_t               = policy_t<policy.block_threads, policy.items_per_thread>;
@@ -117,7 +117,7 @@ template <class PolicySelector, class OffsetT, class OpT>
 #if _CCCL_HAS_CONCEPTS()
   requires for_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-CUB_DETAIL_KERNEL_ATTRIBUTES //
+_CCCL_KERNEL_ATTRIBUTES //
 __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads)) //
   void static_kernel(_CCCL_GRID_CONSTANT const OffsetT num_items, OpT op)
 {

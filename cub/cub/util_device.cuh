@@ -60,7 +60,7 @@ namespace detail
  * \brief Empty kernel for querying PTX manifest metadata (e.g., version) for the current device
  */
 template <typename T>
-CUB_DETAIL_KERNEL_ATTRIBUTES void EmptyKernel()
+_CCCL_KERNEL_ATTRIBUTES void EmptyKernel()
 {}
 } // namespace detail
 

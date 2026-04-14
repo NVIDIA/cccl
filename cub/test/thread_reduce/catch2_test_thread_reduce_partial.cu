@@ -5,8 +5,6 @@
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_macro.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-
 #include <cuda/functional>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/functional>

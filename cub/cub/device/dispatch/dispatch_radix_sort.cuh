@@ -513,7 +513,7 @@ public:
         return error;
       }
 
-      if (const auto error = CubDebug(scan_config.__init(scan_kernel, scan_policy, launcher_factory)))
+      if (const auto error = CubDebug(scan_config.__init(scan_kernel, scan_policy.lookback, launcher_factory)))
       {
         return error;
       }

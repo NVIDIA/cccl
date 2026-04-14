@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: BSD-3
 
 /**
- * @file DeviceScan provides device-wide, parallel operations for computing a
- *       prefix scan across a sequence of data items residing within
- *       device-accessible memory.
+ * @file
+ * @brief DeviceScan provides device-wide, parallel operations for computing a
+ *        prefix scan across a sequence of data items residing within
+ *        device-accessible memory.
  */
 
 #pragma once
@@ -120,7 +121,7 @@ template <typename ChainedPolicyT,
           typename AccumT,
           typename KeyT = cub::detail::it_value_t<KeysInputIteratorT>>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT::BLOCK_THREADS))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(
     _CCCL_GRID_CONSTANT const KeysInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT KeyT* const d_keys_prev_in,
     _CCCL_GRID_CONSTANT const ValuesInputIteratorT d_values_in,
@@ -155,7 +156,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT::BLOCK_THRE
 }
 
 template <typename ScanTileStateT, typename KeysInputIteratorT, typename OffsetT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
+_CCCL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
   ScanTileStateT tile_state,
   _CCCL_GRID_CONSTANT const KeysInputIteratorT d_keys_in,
   cub::detail::it_value_t<KeysInputIteratorT>* d_keys_prev_in,

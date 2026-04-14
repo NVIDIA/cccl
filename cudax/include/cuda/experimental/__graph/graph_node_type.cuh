@@ -70,9 +70,6 @@ namespace cuda::experimental
 //! \var graph_node_type::free
 //! Represents a node that performs memory deallocation.
 //!
-//! \var graph_node_type::batch_memop
-//! Represents a node that performs a batch memory operation.
-//!
 //! \var graph_node_type::conditional
 //! Represents a conditional execution node.
 enum class graph_node_type : int

@@ -88,7 +88,7 @@ template <typename PolicySelector,
           typename ValueIt3,
           typename Offset,
           typename CompareOp>
-CUB_DETAIL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
+_CCCL_KERNEL_ATTRIBUTES void device_partition_merge_path_kernel(
   _CCCL_GRID_CONSTANT const KeyIt1 keys1,
   _CCCL_GRID_CONSTANT const Offset keys1_count,
   _CCCL_GRID_CONSTANT const KeyIt2 keys2,
@@ -136,7 +136,7 @@ __launch_bounds__(
                      ValueIt3,
                      Offset,
                      CompareOp>::type::block_threads)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void device_merge_kernel(
+  _CCCL_KERNEL_ATTRIBUTES void device_merge_kernel(
     _CCCL_GRID_CONSTANT const KeyIt1 keys1,
     _CCCL_GRID_CONSTANT const ValueIt1 items1,
     _CCCL_GRID_CONSTANT const Offset num_keys1,

@@ -176,17 +176,17 @@ void run(const char* inputfile)
   {
     std::stringstream ss(line);
 
-    //        std::cout << "LINE : " << line << std::endl;
+    //        std::cout << "LINE : " << line << '\n';
     if (!in_body)
     {
       std::string token;
       ss >> token;
-      //            std::cout << "TOKEN : " << token << std::endl;
+      //            std::cout << "TOKEN : " << token << '\n';
 
       if (token == "fn")
       {
         // We are parsing the declaration of the function, this starts the body
-        // std::cout << "GOT DECLARATION " << line << std::endl;
+        // std::cout << "GOT DECLARATION " << line << '\n';
         in_body = true;
 
         // Look for parameters
@@ -195,7 +195,7 @@ void run(const char* inputfile)
         end_params         = line.find(')');
         std::string params = line.substr(begin_params + 1, end_params - begin_params - 1);
 
-        // std::cout << "PARAMS = " << params << std::endl;
+        // std::cout << "PARAMS = " << params << '\n';
 
         // Parse parameters which are separated by a comma, format = "symbol: type"
         while (true)
@@ -204,7 +204,7 @@ void run(const char* inputfile)
           size_t pos;
           pos                = params.find(":");
           std::string symbol = params.substr(0, pos);
-          // std::cout << symbol << std::endl;
+          // std::cout << symbol << '\n';
 
           // We create a dummy allocation so that the data handles refers to actually allocated host memory
           double* dummy     = new double[1];
@@ -227,7 +227,7 @@ void run(const char* inputfile)
     {
       std::string token;
       ss >> token;
-      // std::cout << "TOKEN : " << token << std::endl;
+      // std::cout << "TOKEN : " << token << '\n';
 
       if (token == "}")
       {
@@ -258,10 +258,10 @@ void run(const char* inputfile)
         output_data_symbol = gate_outvar_symbol;
       }
 
-      // std::cout << "GATE OUT SYMBOL " << gate_outvar_symbol << std::endl;
-      // std::cout << "GATE DESCRIPTION : " << gate << std::endl;
-      // std::cout << "GATE SYMBOL " << gate_symbol << std::endl;
-      // std::cout << "GATE ARGS " << gate_args << std::endl;
+      // std::cout << "GATE OUT SYMBOL " << gate_outvar_symbol << '\n';
+      // std::cout << "GATE DESCRIPTION : " << gate << '\n';
+      // std::cout << "GATE SYMBOL " << gate_symbol << '\n';
+      // std::cout << "GATE ARGS " << gate_args << '\n';
 
       // We now dispatch between the different gates
       if (gate_symbol == "literal")
@@ -287,7 +287,7 @@ void run(const char* inputfile)
         std::string symbol_right = gate_args.substr(0, pos);
         gate_args.erase(0, pos + 2);
 
-        // std::cout << "OR GATE on symbols" << symbol_left << " AND " << symbol_right << std::endl;
+        // std::cout << "OR GATE on symbols" << symbol_left << " AND " << symbol_right << '\n';
 
         auto data_left                     = logical_slices[symbol_left];
         auto data_right                    = logical_slices[symbol_right];
@@ -328,7 +328,7 @@ void run(const char* inputfile)
         auto data_in                       = logical_slices[symbol_in];
         logical_slices[gate_outvar_symbol] = BIT_SLICE(ctx, data_in, 42, sz, gate_outvar_symbol);
 
-        // std::cout << "PRODUCED DATA FOR " << gate_outvar_symbol << std::endl;
+        // std::cout << "PRODUCED DATA FOR " << gate_outvar_symbol << '\n';
 
         continue;
       }
@@ -348,7 +348,7 @@ void run(const char* inputfile)
         size_t pos_beg          = symbol_indices.find("[");
         size_t pos_end          = symbol_indices.find("]");
         std::string symbol_in_2 = symbol_indices.substr(pos_beg + 1, pos_end - pos_beg - 1);
-        // std::cout << "ARRAY INDEX ... INDEX = " << symbol_in_2 << std::endl;
+        // std::cout << "ARRAY INDEX ... INDEX = " << symbol_in_2 << '\n';
 
         // hardcoded ...
         size_t sz = 1;
@@ -357,7 +357,7 @@ void run(const char* inputfile)
         auto data_in_2                     = logical_slices[symbol_in_2];
         logical_slices[gate_outvar_symbol] = ARRAY_INDEX(ctx, data_in, data_in_2, sz, gate_outvar_symbol);
 
-        // std::cout << "PRODUCED DATA FOR " << gate_outvar_symbol << std::endl;
+        // std::cout << "PRODUCED DATA FOR " << gate_outvar_symbol << '\n';
         continue;
       }
 
@@ -398,7 +398,7 @@ void run(const char* inputfile)
           inputs.push_back(logical_slices[symbol]);
           gate_args.erase(0, pos + 2);
 
-          // std::cout << "CONCAT ARG = " << symbol << std::endl;
+          // std::cout << "CONCAT ARG = " << symbol << '\n';
         }
 
         size_t sz                          = 1;
@@ -406,7 +406,7 @@ void run(const char* inputfile)
         continue;
       }
 
-      std::cout << "UNRECOGNIZED GATE !" << std::endl;
+      std::cout << "UNRECOGNIZED GATE !" << '\n';
       abort();
     }
   }

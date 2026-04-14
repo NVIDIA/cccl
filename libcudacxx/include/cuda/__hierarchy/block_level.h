@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -44,22 +44,12 @@ struct _CCCL_DECLSPEC_EMPTY_BASES block_level : __native_hierarchy_level_base<bl
 
   using __base_type = __native_hierarchy_level_base<block_level>;
   using __base_type::count_as;
-  using __base_type::extents_as;
 
 #  if _CCCL_CUDA_COMPILATION()
   using __base_type::index_as;
   using __base_type::rank_as;
 
   // interactions with cluster level
-
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  [[nodiscard]] _CCCL_DEVICE_API static ::cuda::std::dims<3, _Tp> extents_as(const cluster_level&) noexcept
-  {
-    ::dim3 __dims{1u, 1u, 1u};
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (__dims = ::__clusterDim();))
-    return ::cuda::std::dims<3, _Tp>{static_cast<_Tp>(__dims.x), static_cast<_Tp>(__dims.y), static_cast<_Tp>(__dims.z)};
-  }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
@@ -89,14 +79,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES block_level : __native_hierarchy_level_base<bl
   }
 
   // interactions with grid level
-
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  [[nodiscard]] _CCCL_DEVICE_API static ::cuda::std::dims<3, _Tp> extents_as(const grid_level&) noexcept
-  {
-    return ::cuda::std::dims<3, _Tp>{
-      static_cast<_Tp>(gridDim.x), static_cast<_Tp>(gridDim.y), static_cast<_Tp>(gridDim.z)};
-  }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)

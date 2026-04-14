@@ -7,16 +7,22 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-#include <cuda/atomic>
-#include <cuda/memory>
 
-#include <cuda/experimental/graph.cuh>
-#include <cuda/experimental/kernel.cuh>
-#include <cuda/experimental/launch.cuh>
-#include <cuda/experimental/stream.cuh>
+// clang does not support __managed__ declarations, so clang-tidy produces spurious
+// errors. https://github.com/llvm/llvm-project/pull/149716 seemingly adds support for
+// __managed__ variables, but that PR seems to have stagnated.
+#ifndef _CCCL_CLANG_TIDY_INVOKED
 
-#include <cooperative_groups.h>
-#include <testing.cuh>
+#  include <cuda/atomic>
+#  include <cuda/memory>
+
+#  include <cuda/experimental/graph.cuh>
+#  include <cuda/experimental/kernel.cuh>
+#  include <cuda/experimental/launch.cuh>
+#  include <cuda/experimental/stream.cuh>
+
+#  include <cooperative_groups.h>
+#  include <testing.cuh>
 
 __managed__ bool kernel_run_proof = false;
 
@@ -185,7 +191,7 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       cudax::launch(dst, config, kernel_int_argument, 1U);
       check_kernel_run(dst);
 
-#if _CCCL_CTK_AT_LEAST(12, 1)
+#  if _CCCL_CTK_AT_LEAST(12, 1)
       cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, dummy);
       check_kernel_run(dst);
       cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, 1);
@@ -194,7 +200,7 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       check_kernel_run(dst);
       cudax::launch(dst, config, cudax::kernel_ref{kernel_int_argument}, 1U);
       check_kernel_run(dst);
-#endif // _CCCL_CTK_AT_LEAST(12, 1)
+#  endif // _CCCL_CTK_AT_LEAST(12, 1)
 
       cudax::launch(dst, config, functor_int_argument(), dummy);
       check_kernel_run(dst);
@@ -210,9 +216,9 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
     {
       auto functor_instance = functor_taking_config<block_size>();
       auto kernel_instance  = kernel_taking_config<decltype(config), block_size>;
-#if _CCCL_CTK_AT_LEAST(12, 1)
+#  if _CCCL_CTK_AT_LEAST(12, 1)
       cudax::kernel_ref kernel_ref_instance = kernel_instance;
-#endif // _CCCL_CTK_AT_LEAST(12, 1)
+#  endif // _CCCL_CTK_AT_LEAST(12, 1)
 
       cudax::launch(dst, config, functor_instance, grid_size);
       check_kernel_run(dst);
@@ -232,7 +238,7 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       cudax::launch(dst, config, kernel_instance, static_cast<unsigned int>(grid_size));
       check_kernel_run(dst);
 
-#if _CCCL_CTK_AT_LEAST(12, 1)
+#  if _CCCL_CTK_AT_LEAST(12, 1)
       cudax::launch(dst, config, kernel_ref_instance, grid_size);
       check_kernel_run(dst);
       cudax::launch(dst, config, kernel_ref_instance, ::cuda::std::move(grid_size));
@@ -241,7 +247,7 @@ void launch_smoke_test(StreamOrPathBuilder& dst)
       check_kernel_run(dst);
       cudax::launch(dst, config, kernel_ref_instance, static_cast<unsigned int>(grid_size));
       check_kernel_run(dst);
-#endif // _CCCL_CTK_AT_LEAST(12, 1)
+#  endif // _CCCL_CTK_AT_LEAST(12, 1)
     }
   }
 
@@ -314,11 +320,11 @@ C2H_TEST("Launch smoke path builder", "[launch]")
   launch_smoke_test(pb);
 
   // In CUDA 12.0 we don't test kernel_ref launches, so the node count is lower
-#if _CCCL_CTK_BELOW(12, 1)
+#  if _CCCL_CTK_BELOW(12, 1)
   CUDAX_REQUIRE(g.node_count() == 48);
-#else // ^^^ _CCCL_CTK_BELOW(12, 1) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 1) vvv
+#  else // ^^^ _CCCL_CTK_BELOW(12, 1) ^^^ / vvv _CCCL_CTK_AT_LEAST(12, 1) vvv
   CUDAX_REQUIRE(g.node_count() == 64);
-#endif // _CCCL_CTK_BELOW(12, 1)
+#  endif // _CCCL_CTK_BELOW(12, 1)
 
   auto exec = g.instantiate();
   cudax::stream s{cuda::device_ref{0}};
@@ -386,3 +392,5 @@ C2H_TEST("Launch with default config", "")
 {
   test_default_config();
 }
+
+#endif // _CCCL_CLANG_TIDY_INVOKED

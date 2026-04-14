@@ -179,16 +179,16 @@ _CCCL_CONCEPT work_submitter =
 //! }
 //! @endcode
 //!
-//! @param stream
+//! @param __submitter
 //! cuda::stream_ref to launch the kernel into
 //!
-//! @param conf
+//! @param __conf
 //! configuration for this launch
 //!
-//! @param kernel
+//! @param __kernel
 //! kernel functor to be launched
 //!
-//! @param args
+//! @param __args
 //! arguments to be passed into the kernel functor
 _CCCL_TEMPLATE(typename... _Args, typename... _Config, typename _Submitter, typename _Dimensions, typename _Kernel)
 _CCCL_REQUIRES(work_submitter<_Submitter> _CCCL_AND(!::cuda::std::is_pointer_v<_Kernel>)
@@ -239,16 +239,16 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 //! }
 //! @endcode
 //!
-//! @param stream
+//! @param __submitter
 //! cuda::stream_ref to launch the kernel into
 //!
-//! @param conf
+//! @param __conf
 //! configuration for this launch
 //!
-//! @param kernel
+//! @param __kernel
 //! kernel function to be launched
 //!
-//! @param args
+//! @param __args
 //! arguments to be passed into the kernel function
 //!
 _CCCL_TEMPLATE(
@@ -263,7 +263,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
   return ::cuda::experimental::__launch_impl<kernel_config<_Dimensions, _Config...>, _ExpArgs...>(
     ::cuda::__forward_or_cast_to_stream_ref<_Submitter>(__submitter), //
     __conf,
-    ::cuda::__get_cufunction_of(__kernel),
+    ::cuda::__get_cufunction_of(reinterpret_cast<const void*>(__kernel)),
     __conf,
     launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);
 }
@@ -295,16 +295,16 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 //! }
 //! @endcode
 //!
-//! @param stream
+//! @param __submitter
 //! cuda::stream_ref to launch the kernel into
 //!
-//! @param conf
+//! @param __conf
 //! configuration for this launch
 //!
-//! @param kernel
+//! @param __kernel
 //! kernel to be launched
 //!
-//! @param args
+//! @param __args
 //! arguments to be passed into the kernel
 //!
 _CCCL_TEMPLATE(
@@ -351,7 +351,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 //! }
 //! @endcode
 //!
-//! @param __stream
+//! @param __submitter
 //! cuda::stream_ref to launch the kernel into
 //!
 //! @param __conf
@@ -374,7 +374,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
   return ::cuda::experimental::__launch_impl<_ExpArgs...>(
     ::cuda::__forward_or_cast_to_stream_ref<_Submitter>(::cuda::std::forward<_Submitter>(__submitter)), //
     __conf,
-    ::cuda::__get_cufunction_of(__kernel),
+    ::cuda::__get_cufunction_of(reinterpret_cast<const void*>(__kernel)),
     launch_transform(::cuda::__stream_or_invalid(__submitter), ::cuda::std::forward<_ActArgs>(__args))...);
 }
 
@@ -405,7 +405,7 @@ _CCCL_HOST_API auto launch(_Submitter&& __submitter,
 //! }
 //! @endcode
 //!
-//! @param __stream
+//! @param __submitter
 //! cuda::stream_ref to launch the kernel into
 //!
 //! @param __conf
@@ -463,11 +463,14 @@ _CCCL_API constexpr auto launch(kernel_config<_Dimensions, _Config...> __config,
   return {{}, {_CCCL_MOVE(__config), _CCCL_MOVE(__fn), _CCCL_MOVE(__args)...}};
 }
 
+// Hide from Doxygen — uses internal __kernel_t::__sndr_t types excluded by EXCLUDE_SYMBOLS.
+#ifndef _CCCL_DOXYGEN_INVOKED
 namespace execution
 {
 template <class _Config, class _Fn, class... _Args>
 inline constexpr int structured_binding_size<__kernel_t::__sndr_t<_Config, _Fn, _Args...>> = 2;
 } // namespace execution
+#endif // !_CCCL_DOXYGEN_INVOKED
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

@@ -134,7 +134,7 @@ __launch_bounds__(int(
     ValueOutputIteratorT,
     EqualityOpT,
     OffsetT>::agent_policy_t::BLOCK_THREADS))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceUniqueByKeySweepKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceUniqueByKeySweepKernel(
     _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
     _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,

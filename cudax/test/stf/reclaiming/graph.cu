@@ -63,7 +63,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   if (argc > 3)
   {
-    std::cout << "Generating DOT output in " << argv[3] << std::endl;
+    std::cout << "Generating DOT output in " << argv[3] << '\n';
     ctx.print_to_dot(argv[1]);
   }
 

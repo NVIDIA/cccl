@@ -129,6 +129,8 @@ of the same features and restrictions as Numba CUDA functions:
   while device arrays are captured by reference.
 
 
+.. _cuda.compute.iterators:
+
 Iterators
 ---------
 

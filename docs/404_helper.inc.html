@@ -36,24 +36,26 @@
                 const pagelist = text.split(",")
 
                 const options = {
-                includeScore: true,
-                distance: 100,
-                threshold: 0.8,
-                ignoreLocation: true
+                  includeScore: true,
+                  threshold: 0.8,
+                  ignoreLocation: false
                 }
 
                 // cccl/device_vector.html => 'cccl 'device 'vector
                 console.log("query:" + searchString)
                 const fuse = new Fuse(pagelist, options)
-                const result = fuse.search(searchString, {limit: 10})
+                // Include the ending token in the search to prioritize short matches
+                const result = fuse.search(searchString + "(end)", {limit: 10})
 
                 const listItem = '<li><a href=\"{2}{0}\">{0}</a> - Score: {1}</li>'.replace(/\{2\}/g, rootUrl)
                 document.getElementById('linkGen').innerHTML = ""
                 result.forEach(element => {
-                  document.getElementById('linkGen').innerHTML += listItem.replace(/\{0\}/g, element.item).replace(/\{1\}/g, element.score.toFixed(2))
+                  const targetUri = element.item.replace("(end)", "")
+                  const targetScore = element.score.toFixed(2)
+                  document.getElementById('linkGen').innerHTML += listItem.replace(/\{0\}/g, targetUri).replace(/\{1\}/g, targetScore)
                   // The match is near perfect, just link directly to it.
-                  if (element.score <= 0.02 ) {
-                    window.location.href = rootUrl + element.item
+                  if (targetScore <= 0.02 ) {
+                    window.location.href = rootUrl + targetUri
                   }
                 });
             })

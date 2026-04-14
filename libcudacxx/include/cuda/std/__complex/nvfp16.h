@@ -114,9 +114,17 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__half2)) complex<__ha
 public:
   using value_type = __half;
 
-  _CCCL_API inline complex(const value_type& __re = value_type(), const value_type& __im = value_type())
+  _CCCL_API inline complex(const value_type& __re = value_type(), const value_type& __im = value_type()) noexcept
       : __repr_(__re, __im)
   {}
+
+#  if !_CCCL_COMPILER(GCC, <, 10) // Old GCC considers those as deleted
+  _CCCL_HIDE_FROM_ABI complex(const complex&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI complex(complex&&) noexcept      = default;
+
+  _CCCL_HIDE_FROM_ABI complex& operator=(const complex&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI complex& operator=(complex&&) noexcept      = default;
+#  endif // !_CCCL_COMPILER(GCC, <, 10)
 
   template <class _Up, enable_if_t<__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0>
   _CCCL_API inline complex(const complex<_Up>& __c)

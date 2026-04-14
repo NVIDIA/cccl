@@ -3,7 +3,7 @@
 // Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,6 +12,7 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 #include <cuda/std/random>
+#include <cuda/std/type_traits>
 
 // test all power of 2 and maximum values
 template <typename value_t, typename divisor_t>
@@ -60,6 +61,35 @@ __host__ __device__ void test_random(value_t value, gen_t& gen)
   }
 }
 
+template <typename value_t, typename divisor_t>
+__host__ __device__ void test_boundary_divisors(value_t value)
+{
+  using div_op               = cuda::fast_mod_div<divisor_t>;
+  using unsigned_divisor_t   = cuda::std::make_unsigned_t<divisor_t>;
+  constexpr int digits       = cuda::std::numeric_limits<divisor_t>::digits;
+  constexpr auto max_divisor = cuda::std::numeric_limits<divisor_t>::max();
+  constexpr auto medium_pow2 = static_cast<unsigned_divisor_t>(unsigned_divisor_t{1} << (digits / 2));
+  constexpr auto high_pow2   = static_cast<unsigned_divisor_t>(unsigned_divisor_t{1} << (digits - 2));
+  const divisor_t divisors[] = {
+    divisor_t{1},
+    divisor_t{2},
+    divisor_t{3},
+    divisor_t{5},
+    static_cast<divisor_t>(medium_pow2 - 1),
+    static_cast<divisor_t>(medium_pow2),
+    static_cast<divisor_t>(medium_pow2 + 1),
+    static_cast<divisor_t>(high_pow2 - 1),
+    static_cast<divisor_t>(high_pow2),
+    static_cast<divisor_t>(high_pow2 + 1),
+    static_cast<divisor_t>(max_divisor - 1),
+    max_divisor,
+  };
+  for (const auto divisor : divisors)
+  {
+    assert(value / div_op{divisor} == value / divisor);
+  }
+}
+
 struct PositiveDistribution
 {
   cuda::std::minstd_rand0 rng;
@@ -83,8 +113,29 @@ __host__ __device__ void test()
   value_t value = positive_distr(distrib);
   test_power_of_2<value_t, divisor_t>(value);
   test_sequence<value_t, divisor_t>(value);
+  test_boundary_divisors<value_t, divisor_t>(value);
   test_random<value_t, divisor_t>(value, positive_distr);
 }
+
+#if _CCCL_HAS_INT128()
+__host__ __device__ void test_int128()
+{
+  constexpr __uint128_t unsigned_value = (__uint128_t{1} << 127) + 123456789;
+  constexpr __int128_t signed_value    = static_cast<__int128_t>((__uint128_t{1} << 126) + 123456789);
+
+  test_power_of_2<__int128_t, __int128_t>(signed_value);
+  test_sequence<__int128_t, __int128_t>(signed_value);
+  test_boundary_divisors<__int128_t, __int128_t>(signed_value);
+
+  test_power_of_2<__uint128_t, __uint128_t>(unsigned_value);
+  test_sequence<__uint128_t, __uint128_t>(unsigned_value);
+  test_boundary_divisors<__uint128_t, __uint128_t>(unsigned_value);
+
+  test_power_of_2<__int128_t, __uint128_t>(signed_value);
+  test_sequence<__int128_t, __uint128_t>(signed_value);
+  test_boundary_divisors<__int128_t, __uint128_t>(signed_value);
+}
+#endif // _CCCL_HAS_INT128()
 
 __host__ __device__ void test_cpp_semantic()
 {
@@ -112,17 +163,20 @@ __host__ __device__ bool test()
   test<uint16_t, uint16_t>();
   test<int, int>();
   test<unsigned, unsigned>();
-#if _CCCL_HAS_INT128()
   test<int64_t, int64_t>();
   test<uint64_t, uint64_t>();
-#endif // _CCCL_HAS_INT128()
   //
   test<int16_t, int>();
   test<int8_t, unsigned>();
   test<uint8_t, unsigned>();
   test<int, unsigned>();
-#if _CCCL_HAS_INT128()
   test<int64_t, uint64_t>();
+
+#if _CCCL_HAS_INT128()
+  test_int128();
+
+  test<int, __int128_t>();
+  test<int64_t, __uint128_t>();
 #endif // _CCCL_HAS_INT128()
 
   test_cpp_semantic();

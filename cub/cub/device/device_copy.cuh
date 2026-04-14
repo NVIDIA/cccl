@@ -55,7 +55,7 @@ struct DeviceCopy
   //!    {
   //!      __host__ __device__ __forceinline__ auto operator()(uint32_t index)
   //!      {
-  //!        return thrust::make_constant_iterator(d_data_in[index]);
+  //!        return ::cuda::make_constant_iterator(d_data_in[index]);
   //!      }
   //!      int32_t *d_data_in;
   //!    };
@@ -162,7 +162,7 @@ struct DeviceCopy
     // IDIV_CEIL(num_ranges, 64)
     using BlockOffsetT = uint32_t;
 
-    return detail::DispatchBatchMemcpy<InputIt, OutputIt, SizeIteratorT, BlockOffsetT, CopyAlg::Copy>::Dispatch(
+    return detail::batch_memcpy::dispatch<CopyAlg::Copy, BlockOffsetT>(
       d_temp_storage, temp_storage_bytes, input_it, output_it, sizes, num_ranges, stream);
   }
 
@@ -226,7 +226,6 @@ struct DeviceCopy
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  //!   @endrst
   template <typename InputIt, typename OutputIt, typename SizeIteratorT, typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Batched(InputIt input_it, OutputIt output_it, SizeIteratorT sizes, ::cuda::std::int64_t num_ranges, EnvT env = {})
@@ -236,7 +235,7 @@ struct DeviceCopy
     using BlockOffsetT = uint32_t;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::DispatchBatchMemcpy<InputIt, OutputIt, SizeIteratorT, BlockOffsetT, CopyAlg::Copy>::Dispatch(
+      return detail::batch_memcpy::dispatch<CopyAlg::Copy, BlockOffsetT>(
         storage, bytes, input_it, output_it, sizes, num_ranges, stream);
     });
   }
@@ -428,7 +427,6 @@ struct DeviceCopy
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  //!   @endrst
   template <typename T_In,
             typename Extents_In,
             typename Layout_In,

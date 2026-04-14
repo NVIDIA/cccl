@@ -298,9 +298,6 @@ struct CachingDeviceAllocator
    * @param skip_cleanup
    *   Whether or not to skip a call to @p FreeAllCached() when the destructor is called (default
    *   is to deallocate)
-   *
-   * @param debug
-   *   Whether or not to print (de)allocation events to stdout (default is no stderr output)
    */
   CachingDeviceAllocator(
     unsigned int bin_growth,

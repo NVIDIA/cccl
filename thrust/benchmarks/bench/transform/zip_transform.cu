@@ -34,6 +34,10 @@ static void nstream_zip_transform(nvbench::state& state, nvbench::type_list<T>)
 
   const T scalar = startScalar;
   auto lambda    = cuda::proclaim_copyable_arguments([scalar] _CCCL_DEVICE(const T& ai, const T& bi, const T& ci) -> T {
+    // Needed to silence clangs -Wunused-lambda-capture. We cannot just remove it because other
+    // implementations (e.g. MSVC) will emit errors if we don't capture it. See discussion in
+    // https://reviews.llvm.org/D28467.
+    static_cast<void>(scalar);
     return ai + bi + scalar * ci;
   });
   cuda::zip_transform_iterator begin{lambda, a.begin(), b.begin(), c.begin()};

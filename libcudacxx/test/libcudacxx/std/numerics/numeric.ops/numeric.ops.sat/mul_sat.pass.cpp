@@ -10,7 +10,7 @@
 // <cuda/std/numeric>
 
 // template<class T>
-// constexpr T mul_sat(T x, T y) noexcept;                     // freestanding
+// constexpr T saturating_mul(T x, T y) noexcept;                     // freestanding
 
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
@@ -19,9 +19,9 @@
 #include <cuda/std/type_traits>
 
 template <class I>
-__host__ __device__ constexpr void test_mul_sat(I x, I y, I res, int zero_value)
+__host__ __device__ constexpr void test(I x, I y, I res, int zero_value)
 {
-  assert(cuda::std::mul_sat(static_cast<I>(zero_value + x), static_cast<I>(zero_value + y)) == res);
+  assert(cuda::std::saturating_mul(static_cast<I>(zero_value + x), static_cast<I>(zero_value + y)) == res);
 }
 
 template <typename I>
@@ -30,66 +30,66 @@ __host__ __device__ constexpr void test_signed(int zero_value)
   constexpr auto minVal = cuda::std::numeric_limits<I>::min();
   constexpr auto maxVal = cuda::std::numeric_limits<I>::max();
 
-  static_assert(cuda::std::is_same_v<I, decltype(cuda::std::mul_sat(I{}, I{}))>);
-  static_assert(noexcept(cuda::std::mul_sat(I{}, I{})));
+  static_assert(cuda::std::is_same_v<I, decltype(cuda::std::saturating_mul(I{}, I{}))>);
+  static_assert(noexcept(cuda::std::saturating_mul(I{}, I{})));
 
   // Limit values (-1, 0, 1, min, max)
 
-  test_mul_sat<I>(I{-1}, I{-1}, I{1}, zero_value);
-  test_mul_sat<I>(I{-1}, I{0}, I{0}, zero_value);
-  test_mul_sat<I>(I{-1}, I{1}, I{-1}, zero_value);
-  test_mul_sat<I>(I{-1}, minVal, maxVal, zero_value); // saturated
-  test_mul_sat<I>(I{-1}, maxVal, -maxVal, zero_value);
+  test<I>(I{-1}, I{-1}, I{1}, zero_value);
+  test<I>(I{-1}, I{0}, I{0}, zero_value);
+  test<I>(I{-1}, I{1}, I{-1}, zero_value);
+  test<I>(I{-1}, minVal, maxVal, zero_value); // saturated
+  test<I>(I{-1}, maxVal, -maxVal, zero_value);
 
-  test_mul_sat<I>(I{0}, I{-1}, I{0}, zero_value);
-  test_mul_sat<I>(I{0}, I{0}, I{0}, zero_value);
-  test_mul_sat<I>(I{0}, I{1}, I{0}, zero_value);
-  test_mul_sat<I>(I{0}, minVal, I{0}, zero_value);
-  test_mul_sat<I>(I{0}, maxVal, I{0}, zero_value);
+  test<I>(I{0}, I{-1}, I{0}, zero_value);
+  test<I>(I{0}, I{0}, I{0}, zero_value);
+  test<I>(I{0}, I{1}, I{0}, zero_value);
+  test<I>(I{0}, minVal, I{0}, zero_value);
+  test<I>(I{0}, maxVal, I{0}, zero_value);
 
-  test_mul_sat<I>(I{1}, I{-1}, I{-1}, zero_value);
-  test_mul_sat<I>(I{1}, I{0}, I{0}, zero_value);
-  test_mul_sat<I>(I{1}, I{1}, I{1}, zero_value);
-  test_mul_sat<I>(I{1}, minVal, minVal, zero_value);
-  test_mul_sat<I>(I{1}, maxVal, maxVal, zero_value);
+  test<I>(I{1}, I{-1}, I{-1}, zero_value);
+  test<I>(I{1}, I{0}, I{0}, zero_value);
+  test<I>(I{1}, I{1}, I{1}, zero_value);
+  test<I>(I{1}, minVal, minVal, zero_value);
+  test<I>(I{1}, maxVal, maxVal, zero_value);
 
-  test_mul_sat<I>(minVal, I{-1}, maxVal, zero_value); // saturated
-  test_mul_sat<I>(minVal, I{0}, I{0}, zero_value);
-  test_mul_sat<I>(minVal, I{1}, minVal, zero_value);
-  test_mul_sat<I>(minVal, minVal, maxVal, zero_value); // saturated
-  test_mul_sat<I>(minVal, maxVal, minVal, zero_value); // saturated
+  test<I>(minVal, I{-1}, maxVal, zero_value); // saturated
+  test<I>(minVal, I{0}, I{0}, zero_value);
+  test<I>(minVal, I{1}, minVal, zero_value);
+  test<I>(minVal, minVal, maxVal, zero_value); // saturated
+  test<I>(minVal, maxVal, minVal, zero_value); // saturated
 
-  test_mul_sat<I>(maxVal, I{-1}, -maxVal, zero_value);
-  test_mul_sat<I>(maxVal, I{0}, I{0}, zero_value);
-  test_mul_sat<I>(maxVal, I{1}, maxVal, zero_value); // saturated
-  test_mul_sat<I>(maxVal, minVal, minVal, zero_value); // saturated
+  test<I>(maxVal, I{-1}, -maxVal, zero_value);
+  test<I>(maxVal, I{0}, I{0}, zero_value);
+  test<I>(maxVal, I{1}, maxVal, zero_value); // saturated
+  test<I>(maxVal, minVal, minVal, zero_value); // saturated
 
   // No saturation (no limit values)
 
-  test_mul_sat<I>(I{27}, I{2}, I{54}, zero_value);
-  test_mul_sat<I>(I{2}, I{28}, I{56}, zero_value);
+  test<I>(I{27}, I{2}, I{54}, zero_value);
+  test<I>(I{2}, I{28}, I{56}, zero_value);
 
   // Saturation (no limit values)
 
   {
     constexpr I x = minVal / I{2} + I{27};
     constexpr I y = minVal / I{2} + I{28};
-    test_mul_sat<I>(x, y, maxVal, zero_value); // saturated
+    test<I>(x, y, maxVal, zero_value); // saturated
   }
   {
     constexpr I x = minVal / I{2} + I{27};
     constexpr I y = maxVal / I{2} + I{28};
-    test_mul_sat<I>(x, y, minVal, zero_value); // saturated
+    test<I>(x, y, minVal, zero_value); // saturated
   }
   {
     constexpr I x = maxVal / I{2} + I{27};
     constexpr I y = minVal / I{2} + I{28};
-    test_mul_sat<I>(x, y, minVal, zero_value); // saturated
+    test<I>(x, y, minVal, zero_value); // saturated
   }
   {
     constexpr I x = maxVal / I{2} + I{27};
     constexpr I y = maxVal / I{2} + I{28};
-    test_mul_sat<I>(x, y, maxVal, zero_value); // saturated
+    test<I>(x, y, maxVal, zero_value); // saturated
   }
 }
 
@@ -99,41 +99,41 @@ __host__ __device__ constexpr void test_unsigned(int zero_value)
   constexpr auto minVal = cuda::std::numeric_limits<I>::min();
   constexpr auto maxVal = cuda::std::numeric_limits<I>::max();
 
-  static_assert(cuda::std::is_same_v<I, decltype(cuda::std::mul_sat(I{}, I{}))>);
-  static_assert(noexcept(cuda::std::mul_sat(I{}, I{})));
+  static_assert(cuda::std::is_same_v<I, decltype(cuda::std::saturating_mul(I{}, I{}))>);
+  static_assert(noexcept(cuda::std::saturating_mul(I{}, I{})));
 
   // No saturation (0, 1)
 
-  test_mul_sat<I>(I{0}, I{0}, I{0}, zero_value);
-  test_mul_sat<I>(I{0}, I{1}, I{0}, zero_value);
-  test_mul_sat<I>(I{0}, minVal, I{0}, zero_value);
-  test_mul_sat<I>(I{0}, maxVal, I{0}, zero_value);
+  test<I>(I{0}, I{0}, I{0}, zero_value);
+  test<I>(I{0}, I{1}, I{0}, zero_value);
+  test<I>(I{0}, minVal, I{0}, zero_value);
+  test<I>(I{0}, maxVal, I{0}, zero_value);
 
-  test_mul_sat<I>(I{1}, I{0}, I{0}, zero_value);
-  test_mul_sat<I>(I{1}, I{1}, I{1}, zero_value);
-  test_mul_sat<I>(I{1}, minVal, minVal, zero_value);
-  test_mul_sat<I>(I{1}, maxVal, maxVal, zero_value);
+  test<I>(I{1}, I{0}, I{0}, zero_value);
+  test<I>(I{1}, I{1}, I{1}, zero_value);
+  test<I>(I{1}, minVal, minVal, zero_value);
+  test<I>(I{1}, maxVal, maxVal, zero_value);
 
-  test_mul_sat<I>(minVal, I{0}, I{0}, zero_value);
-  test_mul_sat<I>(minVal, I{1}, minVal, zero_value);
-  test_mul_sat<I>(minVal, maxVal, minVal, zero_value);
-  test_mul_sat<I>(minVal, maxVal, minVal, zero_value);
+  test<I>(minVal, I{0}, I{0}, zero_value);
+  test<I>(minVal, I{1}, minVal, zero_value);
+  test<I>(minVal, maxVal, minVal, zero_value);
+  test<I>(minVal, maxVal, minVal, zero_value);
 
-  test_mul_sat<I>(maxVal, I{0}, I{0}, zero_value);
-  test_mul_sat<I>(maxVal, I{1}, maxVal, zero_value);
-  test_mul_sat<I>(maxVal, minVal, I{0}, zero_value);
-  test_mul_sat<I>(maxVal, maxVal, maxVal, zero_value); // saturated
+  test<I>(maxVal, I{0}, I{0}, zero_value);
+  test<I>(maxVal, I{1}, maxVal, zero_value);
+  test<I>(maxVal, minVal, I{0}, zero_value);
+  test<I>(maxVal, maxVal, maxVal, zero_value); // saturated
 
   // No saturation (no limit values)
 
-  test_mul_sat<I>(I{28}, I{2}, I{56}, zero_value);
+  test<I>(I{28}, I{2}, I{56}, zero_value);
 
   // Saturation (no limit values
 
   {
     constexpr I x = maxVal / I{2} + I{27};
     constexpr I y = maxVal / I{2} + I{28};
-    test_mul_sat<I>(x, y, maxVal, zero_value); // saturated
+    test<I>(x, y, maxVal, zero_value); // saturated
   }
 }
 

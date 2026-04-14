@@ -3,7 +3,7 @@
 
 #include <cub/device/device_run_length_encode.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
+#include <cuda/iterator>
 
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
@@ -44,9 +44,9 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   // Offset type large enough to represent the total number of runs in the sequence
   using num_runs_t = offset_t;
 
-  using run_length_input_it_t = thrust::constant_iterator<run_length_t, offset_t>;
-  using equality_op_t         = ::cuda::std::equal_to<>;
-  using reduction_op_t        = ::cuda::std::plus<>;
+  using run_length_input_it_t = cuda::constant_iterator<run_length_t, offset_t>;
+  using equality_op_t         = cuda::std::equal_to<>;
+  using reduction_op_t        = cuda::std::plus<>;
   using accum_t               = run_length_t;
 
   const auto elements                    = static_cast<std::size_t>(state.get_int64("Elements{io}"));

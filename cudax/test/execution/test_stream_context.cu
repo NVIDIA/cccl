@@ -14,6 +14,8 @@
 // Then include the test helpers
 #include <thrust/equal.h>
 
+#include <cuda/std/cstddef>
+
 #include <cuda/experimental/container.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
@@ -150,7 +152,7 @@ void bulk_on_stream_scheduler()
     | ex::bulk(ex::par_unseq, 10, [] __host__ __device__(int i, cuda::std::span<int> data) -> void {
         printf("Hello from bulk kernel on device! i = %d\n", i);
         CUDAX_CHECK(_is_on_device());
-        CUDAX_CHECK(i < data.size());
+        CUDAX_CHECK(static_cast<::cuda::std::size_t>(i) < data.size());
         data[i] += 2;
       });
 

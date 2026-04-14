@@ -117,7 +117,7 @@ template <typename PolicySelector,
   requires three_way_partition_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionKernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const FirstOutputIteratorT d_first_part_out,
     _CCCL_GRID_CONSTANT const SecondOutputIteratorT d_second_part_out,
@@ -193,7 +193,7 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_thr
  *   (i.e., length of @p d_selected_out)
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionInitKernel(
+_CCCL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionInitKernel(
   ScanTileStateT tile_state,
   _CCCL_GRID_CONSTANT const int num_tiles,
   _CCCL_GRID_CONSTANT const NumSelectedIteratorT d_num_selected_out)

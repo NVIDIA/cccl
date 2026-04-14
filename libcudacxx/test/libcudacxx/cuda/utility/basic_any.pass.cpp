@@ -3,7 +3,7 @@
 // Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -615,8 +615,120 @@ _CCCL_HOST_DEVICE void test_basic_any()
   test.test_basic_any_test_for_emplacing_immovable_object();
 }
 
+// ── __iset_ cross-cast validation ───────────────────────────────────────────
+//
+// Tests that __dynamic_any_cast between __iset_ types correctly validates
+// that every sub-interface in the destination set exists in the source's vtable.
+
+template <class...>
+struct iprop_a : cuda::__basic_interface<iprop_a>
+{
+  _CCCL_HOST_DEVICE int get_a()
+  {
+    return cuda::__virtcall<&iprop_a::get_a>(this);
+  }
+
+  template <class T>
+  using overrides = cuda::__overrides_for<T, &T::get_a>;
+};
+
+template <class...>
+struct iprop_b : cuda::__basic_interface<iprop_b>
+{
+  _CCCL_HOST_DEVICE int get_b()
+  {
+    return cuda::__virtcall<&iprop_b::get_b>(this);
+  }
+
+  template <class T>
+  using overrides = cuda::__overrides_for<T, &T::get_b>;
+};
+
+using iset_ab = cuda::__iset<iprop_a<>, iprop_b<>, cuda::__imovable<>>;
+using iset_a  = cuda::__iset<iprop_a<>, cuda::__imovable<>>;
+using iset_b  = cuda::__iset<iprop_b<>, cuda::__imovable<>>;
+
+struct HasBoth
+{
+  _CCCL_HOST_DEVICE HasBoth(int v)
+      : val(v)
+  {}
+  _CCCL_HOST_DEVICE HasBoth(HasBoth&& o) noexcept
+      : val(o.val)
+  {
+    o.val = -1;
+  }
+  _CCCL_HOST_DEVICE HasBoth& operator=(HasBoth&& o) noexcept
+  {
+    val   = o.val;
+    o.val = -1;
+    return *this;
+  }
+  _CCCL_HOST_DEVICE int get_a()
+  {
+    return val;
+  }
+  _CCCL_HOST_DEVICE int get_b()
+  {
+    return val * 10;
+  }
+  int val;
+};
+
+#if !_CCCL_COMPILER(NVRTC)
+_CCCL_HOST void test_iset_dynamic_cast()
+{
+  // Start with both interfaces, narrow to one, verify cross-cast to the other fails
+  cuda::__basic_any<iset_ab> ab{::cuda::std::in_place_type<HasBoth>, 7};
+  assert(ab.has_value());
+
+  // Narrow to iset_a — the vtable still has iprop_b entries from the original
+  auto a = cuda::__dynamic_any_cast<iset_a>(::cuda::std::move(ab));
+  assert(a.has_value());
+
+  // Widen back to iset_ab — should succeed because vtable was built with both
+  auto ab2 = cuda::__dynamic_any_cast<iset_ab>(::cuda::std::move(a));
+  assert(ab2.has_value());
+  assert(cuda::__any_cast<HasBoth>(&ab2)->val == 7);
+
+  // Now start with only iset_a — vtable has no iprop_b entries
+  cuda::__basic_any<iset_a> a_only{::cuda::std::in_place_type<HasBoth>, 42};
+  assert(a_only.has_value());
+
+#  if _CCCL_HAS_EXCEPTIONS()
+  // Cross-cast to iset_ab should fail — iprop_b is not in the vtable
+  try
+  {
+    auto bad = cuda::__dynamic_any_cast<iset_ab>(::cuda::std::move(a_only));
+    (void) bad;
+    assert(false && "should have thrown");
+  }
+  catch (cuda::__bad_any_cast const&)
+  {
+    // expected
+  }
+
+  // Cross-cast to iset_b should also fail
+  cuda::__basic_any<iset_a> a_only2{::cuda::std::in_place_type<HasBoth>, 42};
+  try
+  {
+    auto bad = cuda::__dynamic_any_cast<iset_b>(::cuda::std::move(a_only2));
+    (void) bad;
+    assert(false && "should have thrown");
+  }
+  catch (cuda::__bad_any_cast const&)
+  {
+    // expected
+  }
+#  endif // _CCCL_HAS_EXCEPTIONS()
+}
+#endif // !_CCCL_COMPILER(NVRTC)
+
 int main(int, char**)
 {
   NV_IF_TARGET(NV_IS_HOST, (test_basic_any<SmallType>(); test_basic_any<LargeType>();))
+#if !_CCCL_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test_iset_dynamic_cast();))
+#endif // !_CCCL_COMPILER(NVRTC)
   return 0;
 }

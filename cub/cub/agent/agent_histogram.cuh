@@ -27,6 +27,10 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
+
 CUB_NAMESPACE_BEGIN
 
 enum BlockHistogramMemoryPreference
@@ -35,6 +39,23 @@ enum BlockHistogramMemoryPreference
   SMEM,
   BLEND
 };
+
+#if !_CCCL_COMPILER(NVRTC)
+inline ::std::ostream& operator<<(::std::ostream& os, BlockHistogramMemoryPreference mempref)
+{
+  switch (mempref)
+  {
+    case GMEM:
+      return os << "GMEM";
+    case SMEM:
+      return os << "SMEM";
+    case BLEND:
+      return os << "BLEND";
+    default:
+      return os << "<unknown BlockHistogramMemoryPreference: " << static_cast<int>(mempref) << ">";
+  }
+}
+#endif // !_CCCL_COMPILER(NVRTC)
 
 //! Parameterizable tuning policy type for AgentHistogram
 //!

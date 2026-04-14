@@ -87,6 +87,16 @@ cudax_add_catch2_test(test_target copy_bytes
     copy_bytes/mdspan_d2h_h2d_relaxed.cu
 )
 
+cudax_add_catch2_test(test_target copy
+    copy/copy.cu
+    copy/copy_edge_cases.cu
+    copy/copy_vectorize.cu
+    copy/copy_vectorize_5d.cu
+    copy/copy_llm.cu
+    copy/copy_nvmath.cu
+    copy/copy_nvmath_transpose.cu
+)
+
 cudax_add_catch2_test(test_target cuco
     cuco/utility/test_hashers.cu
 )
@@ -145,6 +155,12 @@ if (cudax_ENABLE_CUFILE)
       cufile/open_mode.cu
   )
   target_link_libraries(${test_target} PRIVATE CUDA::cuFile)
+endif()
+
+# FIXME: Enable MSVC
+if (cudax_ENABLE_PLACES AND NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  # Places tests are handled separately:
+  add_subdirectory(places)
 endif()
 
 # FIXME: Enable MSVC

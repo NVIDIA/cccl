@@ -423,7 +423,7 @@ public:
 
     ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __cccl_allocation_stream().get());
     __cccl_allocation_stream().sync();
-    return reinterpret_cast<void*>(__ptr);
+    return reinterpret_cast<void*>(__ptr); // NOLINT(performance-no-int-to-ptr)
   }
 
   //! @brief deallocate_sync memory pointed to by \p __ptr.
@@ -477,7 +477,7 @@ public:
   [[nodiscard]] _CCCL_HOST_API void* allocate(const ::cuda::stream_ref __stream, const size_t __bytes)
   {
     ::CUdeviceptr __ptr = ::cuda::__driver::__mallocFromPoolAsync(__bytes, __pool_, __stream.get());
-    return reinterpret_cast<void*>(__ptr);
+    return reinterpret_cast<void*>(__ptr); // NOLINT(performance-no-int-to-ptr)
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr.

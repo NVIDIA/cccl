@@ -13,7 +13,6 @@
 // template<class ExecutionPolicy, class ForwardIterator, class T>
 // void find(ExecutionPolicy&& exec, ForwardIterator first, ForwardIterator last, T val);
 
-#include <cuda/std/__pstl_algorithm>
 #include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 

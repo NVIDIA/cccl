@@ -99,6 +99,21 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
     set_tests_properties(${test_target} PROPERTIES RUN_SERIAL ON)
   endif()
 
+  # In some cases cudafe++ doesn't implement certain builtins that are used in <immintrin.h> which causes the
+  # compilation to fail. In tbb_nvcc_preinclude.h, we forward declare those functions, so cudafe++ has no problems.
+  get_target_property(lang ${test_target} LANGUAGE)
+  if (
+    "TBB" IN_LIST config_systems
+    AND "${lang}" STREQUAL "CUDA"
+    AND "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA"
+    AND NOT MSVC
+  )
+    target_compile_options(
+      ${test_target}
+      PRIVATE "-include" "${Thrust_SOURCE_DIR}/testing/tbb_nvcc_preinclude.h"
+    )
+  endif()
+
   # Check for per-test script. Script will be included in the current scope
   # to allow custom property modifications.
   get_filename_component(test_cmake_script "${test_src}" NAME_WLE)

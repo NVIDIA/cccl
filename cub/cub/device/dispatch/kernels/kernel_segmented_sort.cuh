@@ -130,7 +130,7 @@ template <SortOrder Order,
   requires segmented_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_segment.block_threads)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortFallbackKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedSortFallbackKernel(
     const KeyT* d_keys_in_orig,
     KeyT* d_keys_out_orig,
     device_double_buffer<KeyT> d_keys_double_buffer,
@@ -327,7 +327,7 @@ template <SortOrder Order,
   requires segmented_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).small_segment.block_threads)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelSmall(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelSmall(
     _CCCL_GRID_CONSTANT const local_segment_index_t small_segments,
     _CCCL_GRID_CONSTANT const local_segment_index_t medium_segments,
     _CCCL_GRID_CONSTANT const local_segment_index_t medium_blocks,
@@ -465,7 +465,7 @@ template <SortOrder Order,
   requires segmented_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_segment.block_threads)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelLarge(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedSortKernelLarge(
     _CCCL_GRID_CONSTANT const local_segment_index_t* const d_segments_indices,
     const KeyT* d_keys_in_orig,
     KeyT* d_keys_out_orig,

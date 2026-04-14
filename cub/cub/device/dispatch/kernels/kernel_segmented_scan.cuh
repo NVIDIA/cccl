@@ -34,7 +34,7 @@ template <typename ChainedPolicyT,
           bool ForceInclusive,
           typename ActualInitValueT = typename InitValueT::value_type>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::segmented_scan_policy_t::BLOCK_THREADS))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void device_segmented_scan_kernel(
+  _CCCL_KERNEL_ATTRIBUTES void device_segmented_scan_kernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
     _CCCL_GRID_CONSTANT const BeginOffsetIteratorInputT begin_offset_d_in,

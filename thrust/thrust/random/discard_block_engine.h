@@ -60,7 +60,7 @@ namespace random
  *    thrust::discard_block_engine<thrust::minstd_rand, 13, 10> rng;
  *
  *    // print a random number to standard output
- *    std::cout << rng() << std::endl;
+ *    std::cout << rng() << '\n';
  *
  *    return 0;
  *  }

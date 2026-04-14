@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__stf/internal/instance_id.cuh>
 #include <cuda/experimental/__stf/internal/reduction_base.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
@@ -238,7 +239,11 @@ public:
 };
 
 template <typename T, typename reduce_op, bool initialize>
-class task_dep : public task_dep<T, void, false>
+class task_dep
+// Hide recursive base from Doxygen — it cannot handle self-referential inheritance.
+#ifndef _CCCL_DOXYGEN_INVOKED
+    : public task_dep<T, void, false>
+#endif
 {
 public:
   using base        = task_dep<T, void, false>;
@@ -318,9 +323,9 @@ public:
   }
 
   /**
-   * @brief Extracts physical data from this object to an `::std::tuple<Data...>` object.
+   * @brief Extracts physical data from this object to a ``std::tuple<Data...>`` object.
    *
-   * @return ::std::tuple<Data...>
+   * @return ``std::tuple<Data...>``
    *
    * The physical data extracted is usable only after the dependencies have been satisfied.
    */

@@ -3,9 +3,10 @@
 // SPDX-License-Identifier: BSD-3
 
 /**
- * @file cub::DeviceReduce provides device-wide, parallel operations for
- *       computing a reduction across a sequence of data items residing within
- *       device-accessible memory.
+ * @file
+ * @brief cub::DeviceReduce provides device-wide, parallel operations for
+ *        computing a reduction across a sequence of data items residing within
+ *        device-accessible memory.
  */
 
 #pragma once

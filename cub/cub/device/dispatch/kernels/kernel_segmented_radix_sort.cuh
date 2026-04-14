@@ -110,7 +110,7 @@ template <typename PolicySelector,
   requires radix_sort_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltDigitBits>())
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
     _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
     _CCCL_GRID_CONSTANT KeyT* const d_keys_out,
     _CCCL_GRID_CONSTANT const ValueT* const d_values_in,

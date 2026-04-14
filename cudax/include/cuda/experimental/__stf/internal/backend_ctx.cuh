@@ -27,12 +27,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__places/machine.cuh>
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #include <cuda/experimental/__stf/internal/ctx_resource.cuh>
 #include <cuda/experimental/__stf/internal/execution_policy.cuh> // backend_ctx<T>::launch() uses execution_policy
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
-#include <cuda/experimental/__stf/internal/machine.cuh> // backend_ctx_untyped::impl usese machine
 #include <cuda/experimental/__stf/internal/reorderer.cuh> // backend_ctx_untyped::impl uses reorderer
 #include <cuda/experimental/__stf/internal/repeat.cuh>
 #include <cuda/experimental/__stf/internal/scheduler.cuh> // backend_ctx_untyped::impl uses scheduler
@@ -126,7 +126,7 @@ protected:
       EXPECT((ret == cudaSuccess || ret == cudaErrorNotPermitted));
 
       // Enable peer memory accesses (if not done already)
-      reserved::machine::instance().enable_peer_accesses();
+      machine::instance().enable_peer_accesses();
 
       // If CUDASTF_DISPLAY_STATS is set to a non 0 value, record stats
       const char* record_stats_env = getenv("CUDASTF_DISPLAY_STATS");

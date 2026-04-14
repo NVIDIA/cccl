@@ -63,7 +63,7 @@
 //! {
 //!   void meow() const
 //!   {
-//!     std::cout << "meow" << std::endl;
+//!     std::cout << "meow" << '\n';
 //!   }
 //! };
 //!

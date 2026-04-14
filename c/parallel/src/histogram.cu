@@ -9,17 +9,14 @@
 //===----------------------------------------------------------------------===//
 
 #include <cub/detail/launcher/cuda_driver.cuh>
-#include <cub/detail/ptx-json-parser.cuh>
 #include <cub/device/device_histogram.cuh>
-
-#include <cuda/std/algorithm>
 
 #include <format>
 #include <limits>
+#include <sstream>
 #include <vector>
 
 #include "cccl/c/types.h"
-#include "cub/util_type.cuh"
 #include "kernels/iterators.h"
 #include "util/context.h"
 #include "util/indirect_arg.h"
@@ -39,35 +36,6 @@ struct samples_iterator_t;
 
 namespace histogram
 {
-struct histogram_runtime_tuning_policy
-{
-  cub::detail::RuntimeHistogramAgentPolicy histogram;
-
-  auto Histogram() const
-  {
-    return histogram;
-  }
-
-  CUB_RUNTIME_FUNCTION int BlockThreads() const
-  {
-    return histogram.BlockThreads();
-  }
-
-  CUB_RUNTIME_FUNCTION int PixelsPerThread() const
-  {
-    return histogram.PixelsPerThread();
-  }
-
-  using HistogramPolicy = cub::detail::RuntimeHistogramAgentPolicy;
-  using MaxPolicy       = histogram_runtime_tuning_policy;
-
-  template <typename F>
-  cudaError_t Invoke(int, F& op)
-  {
-    return op.template Invoke<histogram_runtime_tuning_policy>(*this);
-  }
-};
-
 struct histogram_kernel_source
 {
   cccl_device_histogram_build_result_t& build;
@@ -292,8 +260,25 @@ try
   const std::string samples_iterator_src =
     make_kernel_input_iterator(offset_cpp, samples_iterator_name, sample_cpp, d_samples);
 
-  std::string policy_hub_expr = std::format(
-    "cub::detail::histogram::policy_hub<{}, {}, {}, {}, {}>",
+  const bool sample_is_primitive = d_samples.value_type.type != CCCL_STORAGE; // TODO(bgruber): how to check if sample
+                                                                              // is primitive?
+  const auto policy_sel = cub::detail::histogram::policy_selector{
+    sample_is_primitive,
+    static_cast<int>(d_samples.value_type.size),
+    static_cast<int>(d_output_histograms.value_type.size),
+    static_cast<int>(d_samples.value_type.size),
+    num_channels,
+    num_active_channels,
+    is_evenly_segmented};
+
+  const auto arch_id       = cuda::to_arch_id(cuda::compute_capability{cc_major, cc_minor});
+  const auto active_policy = policy_sel(arch_id);
+
+  std::stringstream policy_sel_str;
+  policy_sel_str << active_policy;
+
+  std::string policy_selector_expr = std::format(
+    "cub::detail::histogram::policy_selector_from_types<{}, {}, {}, {}, {}>",
     sample_cpp,
     counter_cpp,
     num_channels,
@@ -311,18 +296,16 @@ struct __align__({1}) storage_t {{
   char data[{0}];
 }};
 {2}
-using device_histogram_policy = {3}::MaxPolicy;
-
-#include <cub/detail/ptx-json/json.cuh>
-__device__ consteval auto& policy_generator() {{
-  return ptx_json::id<ptx_json::string("device_histogram_policy")>()
-    = cub::detail::histogram::HistogramPolicyWrapper<device_histogram_policy::ActivePolicy>::EncodedPolicy();
-}}
+using device_histogram_policy = {3};
+using namespace cub;
+using namespace cub::detail::histogram;
+static_assert(device_histogram_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {4}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     d_samples.value_type.size, // 0
     d_samples.value_type.alignment, // 1
     samples_iterator_src, // 2
-    policy_hub_expr // 3
+    policy_selector_expr, // 3
+    policy_sel_str.view() // 4
   );
 
 #if false // CCCL_DEBUGGING_SWITCH
@@ -368,7 +351,6 @@ __device__ consteval auto& policy_generator() {{
     "-dlto",
     "-default-device",
     "-DCUB_DISABLE_CDP",
-    "-DCUB_ENABLE_POLICY_PTX_JSON",
     "-std=c++20"};
 
   cccl::detail::extend_args_with_build_config(args, config);
@@ -398,12 +380,6 @@ __device__ consteval auto& policy_generator() {{
   check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, init_kernel_lowered_name.c_str()));
   check(cuLibraryGetKernel(&build_ptr->sweep_kernel, build_ptr->library, sweep_kernel_lowered_name.c_str()));
 
-  nlohmann::json runtime_policy =
-    cub::detail::ptx_json::parse("device_histogram_policy", {result.data.get(), result.size});
-
-  using cub::detail::RuntimeHistogramAgentPolicy;
-  auto histogram_policy = RuntimeHistogramAgentPolicy::from_json(runtime_policy, "HistogramPolicy");
-
   build_ptr->cc                  = cc;
   build_ptr->cubin               = (void*) result.data.release();
   build_ptr->cubin_size          = result.size;
@@ -413,7 +389,7 @@ __device__ consteval auto& policy_generator() {{
   build_ptr->num_active_channels = num_active_channels;
   build_ptr->may_overflow = false; // This is set in cccl_device_histogram_even_impl so that kernel source can access
                                    // it later.
-  build_ptr->runtime_policy = new histogram::histogram_runtime_tuning_policy{histogram_policy};
+  build_ptr->runtime_policy = new cub::detail::histogram::policy_selector{policy_sel};
 
   return CUDA_SUCCESS;
 }
@@ -477,7 +453,7 @@ CUresult cccl_device_histogram_even_impl(
       indirect_arg_t, // CounterT
       indirect_arg_t, // LevelT
       OffsetT, // OffsetT
-      histogram::histogram_runtime_tuning_policy, // PolicyHub
+      cub::detail::histogram::policy_selector, // PolicySelector
       indirect_arg_t, // SampleT
       histogram::histogram_kernel_source, // KernelSource
       cub::detail::CudaDriverLauncherFactory // KernelLauncherFactory
@@ -493,9 +469,9 @@ CUresult cccl_device_histogram_even_impl(
         row_stride_samples,
         stream,
         is_byte_sample{},
+        *reinterpret_cast<cub::detail::histogram::policy_selector*>(build.runtime_policy),
         {build},
-        cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-        *reinterpret_cast<histogram::histogram_runtime_tuning_policy*>(build.runtime_policy));
+        cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
 
     error = static_cast<CUresult>(exec_status);
   }
@@ -595,7 +571,8 @@ try
   }
 
   std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-  std::unique_ptr<char[]> policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
+  std::unique_ptr<cub::detail::histogram::policy_selector> policy(
+    static_cast<cub::detail::histogram::policy_selector*>(build_ptr->runtime_policy));
   check(cuLibraryUnload(build_ptr->library));
 
   return CUDA_SUCCESS;

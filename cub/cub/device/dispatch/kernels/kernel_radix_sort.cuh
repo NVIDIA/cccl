@@ -80,7 +80,7 @@ template <typename PolicySelector,
           typename DecomposerT = detail::identity_decomposer_t>
 __launch_bounds__(int(ALT_DIGIT_BITS ? PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).alt_upsweep.block_threads
                                      : PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).upsweep.block_threads))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortUpsweepKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortUpsweepKernel(
     _CCCL_GRID_CONSTANT const KeyT* const d_keys,
     _CCCL_GRID_CONSTANT OffsetT* const d_spine,
     _CCCL_GRID_CONSTANT const OffsetT /*num_items*/,
@@ -142,23 +142,25 @@ __launch_bounds__(int(ALT_DIGIT_BITS ? PolicySelector{}(::cuda::arch_id{CUB_PTX_
  *   Total number of bin-counts
  */
 template <typename PolicySelector, typename OffsetT>
-__launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).scan.block_threads, 1)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(
+__launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).scan.lookback.block_threads, 1)
+  _CCCL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(
     _CCCL_GRID_CONSTANT OffsetT* const d_spine, _CCCL_GRID_CONSTANT const int num_counts)
 {
-  static constexpr scan_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).scan;
-  using ScanPolicy                    = AgentScanPolicy<
-                       policy.block_threads,
-                       policy.items_per_thread,
-                       void,
-                       policy.load_algorithm,
-                       policy.load_modifier,
-                       policy.store_algorithm,
-                       policy.scan_algorithm,
-                       NoScaling<policy.block_threads, policy.items_per_thread>,
-                       delay_constructor_t<policy.delay_constructor.kind,
-                                           policy.delay_constructor.delay,
-                                           policy.delay_constructor.l2_write_latency>>;
+  static constexpr scan_policy active_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).scan;
+  static_assert(active_policy.algorithm == scan_algorithm::lookback);
+  static constexpr scan_lookback_policy policy = active_policy.lookback;
+  using ScanPolicy                             = AgentScanPolicy<
+                                0,
+                                0,
+                                void,
+                                policy.load_algorithm,
+                                policy.load_modifier,
+                                policy.store_algorithm,
+                                policy.scan_algorithm,
+                                NoScaling<policy.block_threads, policy.items_per_thread>,
+                                delay_constructor_t<policy.delay_constructor.kind,
+                                                    policy.delay_constructor.delay,
+                                                    policy.delay_constructor.l2_write_latency>>;
 
   // Parameterize the AgentScan type for the current configuration
   using AgentScanT = scan::AgentScan<ScanPolicy, OffsetT*, OffsetT*, ::cuda::std::plus<>, OffsetT, OffsetT, OffsetT>;
@@ -241,7 +243,7 @@ template <typename PolicySelector,
           typename DecomposerT = detail::identity_decomposer_t>
 __launch_bounds__(int(ALT_DIGIT_BITS ? PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).alt_downsweep.block_threads
                                      : PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).downsweep.block_threads))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortDownsweepKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortDownsweepKernel(
     _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
     _CCCL_GRID_CONSTANT KeyT* const d_keys_out,
     _CCCL_GRID_CONSTANT const ValueT* const d_values_in,
@@ -335,7 +337,7 @@ template <typename PolicySelector,
           typename OffsetT,
           typename DecomposerT = identity_decomposer_t>
 __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).single_tile.block_threads, 1)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortSingleTileKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortSingleTileKernel(
     _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
     _CCCL_GRID_CONSTANT KeyT* const d_keys_out,
     _CCCL_GRID_CONSTANT const ValueT* const d_values_in,
@@ -450,7 +452,7 @@ template <typename PolicySelector,
           typename KeyT,
           typename OffsetT,
           typename DecomposerT = identity_decomposer_t>
-CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
+_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
   PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10})
     .histogram.block_threads) void DeviceRadixSortHistogramKernel(_CCCL_GRID_CONSTANT OffsetT* const d_bins_out,
                                                                   _CCCL_GRID_CONSTANT const KeyT* const d_keys_in,
@@ -477,7 +479,7 @@ template <typename PolicySelector,
           typename PortionOffsetT,
           typename AtomicOffsetT = PortionOffsetT,
           typename DecomposerT   = identity_decomposer_t>
-CUB_DETAIL_KERNEL_ATTRIBUTES void
+_CCCL_KERNEL_ATTRIBUTES void
 __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).onesweep.block_threads)
   DeviceRadixSortOnesweepKernel(
     _CCCL_GRID_CONSTANT AtomicOffsetT* const d_lookback,
@@ -536,7 +538,7 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).onesweep.
  * Exclusive sum kernel
  */
 template <typename PolicySelector, typename OffsetT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(_CCCL_GRID_CONSTANT OffsetT* const d_bins)
+_CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(_CCCL_GRID_CONSTANT OffsetT* const d_bins)
 {
   static constexpr radix_sort_exclusive_sum_policy policy =
     PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).exclusive_sum;

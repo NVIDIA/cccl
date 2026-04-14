@@ -144,6 +144,7 @@ PREDEFINED             = __device__= \
                         "CCCL_IGNORE_DEPRECATED_CPP_DIALECT" \
                         "CUB_DISABLE_NAMESPACE_MAGIC" \
                         "CUB_IGNORE_NAMESPACE_MAGIC_ERROR" \
+                        "CUB_RDC_ENABLED" \
                         "CUB_NAMESPACE_BEGIN=namespace cub {" \
                         "CUB_NAMESPACE_END=}" \
                         "CUB_RUNTIME_FUNCTION="
@@ -158,6 +159,8 @@ EXAMPLE_PATTERNS       = *.cu
 AUTOLINK_SUPPORT       = YES
 QUIET                  = YES
 WARNINGS               = YES
+WARN_AS_ERROR          = FAIL_ON_WARNINGS
 WARN_IF_UNDOCUMENTED   = NO
 WARN_IF_DOC_ERROR      = YES
+WARN_IF_INCOMPLETE_DOC = NO
 WARN_NO_PARAMDOC       = NO

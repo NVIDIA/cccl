@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: BSD-3
 
 /**
- * @file AgentScanByKey implements a stateful abstraction of CUDA thread blocks
- *       for participating in device-wide prefix scan by key.
+ * @file
+ * @brief AgentScanByKey implements a stateful abstraction of CUDA thread blocks
+ *        for participating in device-wide prefix scan by key.
  */
 
 #pragma once

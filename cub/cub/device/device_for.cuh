@@ -1268,11 +1268,8 @@ public:
   //!   **[inferred]** A function object with arity equal to the number of extents + 1 for the linear index (iteration).
   //!   The first parameter is the linear index, followed by one parameter for each dimension coordinate.
   //!
-  //! @param[in] layout
-  //!   Layout object that determines the iteration order (layout_left for column-major, layout_right for row-major)
-  //!
-  //! @param[in] extents
-  //!   Extents object that represents a multi-dimensional index space
+  //! @param[in] layout_mapping
+  //!   Layout mapping object that determines the iteration order and represents a multi-dimensional index space
   //!
   //! @param[in] op
   //!   Function object to apply to each linear index (iteration) and multi-dimensional coordinates.

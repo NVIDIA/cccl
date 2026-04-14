@@ -181,16 +181,16 @@ public:
   template <typename Fun>
   void operator->*(Fun&& f)
   {
-#  if __NVCOMPILER
+#  if _CCCL_CUDA_COMPILER(NVHPC)
     // With nvc++, all lambdas can run on host and device.
     static constexpr bool is_extended_host_device_lambda_closure_type = true,
                           is_extended_device_lambda_closure_type      = false;
-#  else
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / VVV !_CCCL_CUDA_COMPILER(NVHPC) VVV
     // With nvcpp, dedicated traits tell how a lambda can be executed.
     static constexpr bool is_extended_host_device_lambda_closure_type =
                             __nv_is_extended_host_device_lambda_closure_type(Fun),
                           is_extended_device_lambda_closure_type = __nv_is_extended_device_lambda_closure_type(Fun);
-#  endif
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
 
     static_assert(is_extended_host_device_lambda_closure_type || is_extended_device_lambda_closure_type,
                   "Cannot run launch() on the host");
@@ -306,16 +306,16 @@ public:
   template <typename Fun>
   void operator->*(Fun&& f)
   {
-#  if __NVCOMPILER
+#  if _CCCL_CUDA_COMPILER(NVHPC)
     // With nvc++, all lambdas can run on host and device.
     static constexpr bool is_extended_host_device_lambda_closure_type = true,
                           is_extended_device_lambda_closure_type      = false;
-#  else
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / VVV !_CCCL_CUDA_COMPILER(NVHPC) VVV
     // With nvcpp, dedicated traits tell how a lambda can be executed.
     static constexpr bool is_extended_host_device_lambda_closure_type =
                             __nv_is_extended_host_device_lambda_closure_type(Fun),
                           is_extended_device_lambda_closure_type = __nv_is_extended_device_lambda_closure_type(Fun);
-#  endif
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
 
     static_assert(is_extended_device_lambda_closure_type || is_extended_host_device_lambda_closure_type,
                   "Cannot run launch() on the host");

@@ -1394,6 +1394,7 @@ cdef extern from "cccl/c/segmented_reduce.h":
         cccl_iterator_t,
         cccl_op_t,
         cccl_value_t,
+        size_t,
         CUstream
     ) nogil
 
@@ -1463,7 +1464,8 @@ cdef class DeviceSegmentedReduceBuildResult:
         Iterator end_offsets,
         Op op,
         Value h_init,
-        stream
+        size_t max_segment_size=0,
+        stream=None
     ):
         cdef CUresult status = -1
         cdef void *storage_ptr = (<void *><uintptr_t>temp_storage_ptr) if temp_storage_ptr else NULL
@@ -1482,6 +1484,7 @@ cdef class DeviceSegmentedReduceBuildResult:
                 end_offsets.iter_data,
                 op.op_data,
                 h_init.value_data,
+                max_segment_size,
                 c_stream
             )
         if status != 0:

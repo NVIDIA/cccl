@@ -95,7 +95,7 @@ __launch_bounds__(
                             CompareOpT,
                             KeyT,
                             ValueT>::policy.block_threads)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortBlockSortKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceMergeSortBlockSortKernel(
     _CCCL_GRID_CONSTANT const bool ping,
     _CCCL_GRID_CONSTANT const KeyInputIteratorT keys_in,
     _CCCL_GRID_CONSTANT const ValueInputIteratorT items_in,
@@ -147,7 +147,7 @@ __launch_bounds__(
 }
 
 template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename KeyT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
+_CCCL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
   _CCCL_GRID_CONSTANT const bool ping,
   _CCCL_GRID_CONSTANT const KeyIteratorT keys_ping,
   _CCCL_GRID_CONSTANT KeyT* const keys_pong,
@@ -195,7 +195,7 @@ __launch_bounds__(
                             CompareOpT,
                             KeyT,
                             ValueT>::policy.block_threads)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortMergeKernel(
+  _CCCL_KERNEL_ATTRIBUTES void DeviceMergeSortMergeKernel(
     _CCCL_GRID_CONSTANT const bool ping,
     _CCCL_GRID_CONSTANT const KeyIteratorT keys_ping,
     _CCCL_GRID_CONSTANT const ValueIteratorT items_ping,

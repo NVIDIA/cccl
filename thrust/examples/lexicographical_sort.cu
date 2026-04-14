@@ -58,10 +58,10 @@ int main()
   thrust::device_vector<int> middle = random_vector(N);
   thrust::device_vector<int> lower  = random_vector(N);
 
-  std::cout << "Unsorted Keys" << std::endl;
+  std::cout << "Unsorted Keys" << '\n';
   for (size_t i = 0; i < upper.size(); i++)
   {
-    std::cout << "(" << upper[i] << "," << middle[i] << "," << lower[i] << ")" << std::endl;
+    std::cout << "(" << upper[i] << "," << middle[i] << "," << lower[i] << ")" << '\n';
   }
 
   // initialize permutation to [0, 1, 2, ... ,N-1]
@@ -81,10 +81,10 @@ int main()
   apply_permutation(middle, permutation);
   apply_permutation(upper, permutation);
 
-  std::cout << "Sorted Keys" << std::endl;
+  std::cout << "Sorted Keys" << '\n';
   for (size_t i = 0; i < upper.size(); i++)
   {
-    std::cout << "(" << upper[i] << "," << middle[i] << "," << lower[i] << ")" << std::endl;
+    std::cout << "(" << upper[i] << "," << middle[i] << "," << lower[i] << ")" << '\n';
   }
 
   return 0;

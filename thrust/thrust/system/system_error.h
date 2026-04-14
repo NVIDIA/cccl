@@ -68,7 +68,7 @@ namespace system
  *    }
  *    catch(thrust::system_error e)
  *    {
- *      std::cerr << "Error inside sort: " << e.what() << std::endl;
+ *      std::cerr << "Error inside sort: " << e.what() << '\n';
  *      terminate_gracefully();
  *    }
  *
