@@ -524,11 +524,11 @@ auto Equals(const THRUST_NS_QUALIFIER::detail::vector_base<T, Alloc>& expected)
 #include <cuda/std/utility>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-// Constrained to arithmetic types to avoid nvcc SFINAE issues with non-streamable types (e.g. iterators)
 template <typename T1,
           typename T2,
-          // allow serializing only pairs with arithmetic members otherwise normal_iterator tests complain
-          enable_if_t<::cuda::std::is_arithmetic_v<T1>&& ::cuda::std::is_arithmetic_v<T2>, int> = 0>
+          // provide this operator only when the pair's content is also streamable
+          ::cuda::std::void_t<decltype(::cuda::std::declval<::std::ostream>()
+                                       << ::cuda::std::declval<T1>() << ::cuda::std::declval<T2>())>* = nullptr>
 ::std::ostream& operator<<(::std::ostream& os, const pair<T1, T2>& pair)
 {
   return os << "[" << pair.first << ", " << pair.second << "]";
