@@ -288,7 +288,7 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
         // nvc++ seems to have an optimizer bug, crashing with an unaligned access error below. The addresses are fine
         // when printed, so let's shake the optimizer a bit.
         asm volatile("" : "+l"(cpAsyncOobInfo.ptrGmemEndAlignDown));
-#  endif
+#  endif // _CCCL_CUDA_COMPILER(NVHPC)
 
         // Copy a subset of the last 16 bytes
         if (::cuda::ptx::elect_sync(~0))
