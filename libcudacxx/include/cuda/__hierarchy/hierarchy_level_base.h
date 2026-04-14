@@ -25,15 +25,12 @@
 
 #  include <cuda/__fwd/hierarchy.h>
 #  include <cuda/__hierarchy/hierarchy_query_result.h>
+#  include <cuda/__hierarchy/queries/extents.h>
 #  include <cuda/__hierarchy/traits.h>
-#  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__mdspan/extents.h>
 #  include <cuda/std/__type_traits/is_integer.h>
-#  include <cuda/std/__utility/integer_sequence.h>
-#  include <cuda/std/array>
 
 #  if defined(_CUDAX_HIERARCHY)
 #    include <cuda/experimental/__hierarchy/fwd.cuh>
@@ -42,83 +39,6 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL ::cuda::std::size_t
-__hierarchy_static_extents_mul_helper(::cuda::std::size_t __lhs, ::cuda::std::size_t __rhs) noexcept
-{
-  if (__lhs == ::cuda::std::dynamic_extent || __rhs == ::cuda::std::dynamic_extent)
-  {
-    return ::cuda::std::dynamic_extent;
-  }
-  else
-  {
-    return __lhs * __rhs;
-  }
-}
-
-template <class _ResultIndex, class _LhsExts, class _RhsExts, ::cuda::std::size_t... _Is>
-[[nodiscard]] _CCCL_API constexpr auto __hierarchy_static_extents_mul(::cuda::std::index_sequence<_Is...>) noexcept
-{
-  return ::cuda::std::extents<
-    _ResultIndex,
-    ::cuda::__hierarchy_static_extents_mul_helper((_Is < _LhsExts::rank()) ? _LhsExts::static_extent(_Is) : 1,
-                                                  (_Is < _RhsExts::rank()) ? _RhsExts::static_extent(_Is) : 1)...>{};
-}
-
-//! @brief Multiplies 2 extents in column major order together, returning a new extents type. If the ranks don't match,
-//!        the extent with lower rank is padded with 1s on the right to match the rank of the other.
-//!
-//! @param __lhs The left hand side extents to multiply.
-//! @param __rhs The right hand side extents to multiply.
-//!
-//! @return The result of multiplying the extents together.
-template <class _Index, ::cuda::std::size_t... _LhsExts, ::cuda::std::size_t... _RhsExts>
-[[nodiscard]] _CCCL_API constexpr auto
-__hierarchy_extents_mul(const ::cuda::std::extents<_Index, _LhsExts...>& __lhs,
-                        const ::cuda::std::extents<_Index, _RhsExts...>& __rhs) noexcept
-{
-  using _Lhs = ::cuda::std::extents<_Index, _LhsExts...>;
-  using _Rhs = ::cuda::std::extents<_Index, _RhsExts...>;
-
-  constexpr auto __rank = ::cuda::std::max(_Lhs::rank(), _Rhs::rank());
-  using _Ret =
-    decltype(::cuda::__hierarchy_static_extents_mul<_Index, _Lhs, _Rhs>(::cuda::std::make_index_sequence<__rank>{}));
-
-  ::cuda::std::array<_Index, __rank> __ret{};
-  for (::cuda::std::size_t __i = 0; __i < __rank; ++__i)
-  {
-    if (_Ret::static_extent(__i) == ::cuda::std::dynamic_extent)
-    {
-      __ret[__i] = static_cast<_Index>((__i < _Lhs::rank()) ? __lhs.extent(__i) : 1)
-                 * static_cast<_Index>((__i < _Rhs::rank()) ? __rhs.extent(__i) : 1);
-    }
-    else
-    {
-      __ret[__i] = static_cast<_Index>(_Ret::static_extent(__i));
-    }
-  }
-  return _Ret{__ret};
-}
-
-template <class _Index, class _OrgIndex, ::cuda::std::size_t... _StaticExts>
-[[nodiscard]] _CCCL_API constexpr ::cuda::std::extents<_Index, _StaticExts...>
-__hierarchy_extents_cast(::cuda::std::extents<_OrgIndex, _StaticExts...> __org_exts) noexcept
-{
-  using _OrgExts = ::cuda::std::extents<_OrgIndex, _StaticExts...>;
-  ::cuda::std::array<_Index, _OrgExts::rank()> __ret{};
-  for (::cuda::std::size_t __i = 0; __i < _OrgExts::rank(); ++__i)
-  {
-    if (_OrgExts::static_extent(__i) == ::cuda::std::dynamic_extent)
-    {
-      __ret[__i] = static_cast<_Index>(__org_exts.extent(__i));
-    }
-    else
-    {
-      __ret[__i] = static_cast<_Index>(_OrgExts::static_extent(__i));
-    }
-  }
-  return ::cuda::std::extents<_Index, _StaticExts...>{__ret};
-}
 
 // Used to either pass-through the hierarchy argument or unpack it from launch configuration
 _CCCL_TEMPLATE(class _Type)
@@ -214,33 +134,9 @@ struct hierarchy_level_base
   _CCCL_TEMPLATE(class _Tp, class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel> _CCCL_AND
                    __is_or_has_hierarchy_member_v<_Hierarchy>)
-  [[nodiscard]] _CCCL_API static constexpr auto extents_as(const _InLevel& __in_level, const _Hierarchy& __hier) noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto extents_as(const _InLevel&, const _Hierarchy& __hier) noexcept
   {
-    auto& __hier_unpacked    = ::cuda::__unpack_hierarchy_if_needed(__hier);
-    using _HierarchyUnpacked = ::cuda::std::remove_cvref_t<decltype(__hier_unpacked)>;
-    static_assert(__has_bottom_unit_or_level_v<_Level, _HierarchyUnpacked>, "_Hierarchy doesn't contain _Level");
-    static_assert(_HierarchyUnpacked::template has_level<_InLevel>(), "_Hierarchy doesn't contain _InLevel");
-
-    using _NextLevel = __next_hierarchy_level_t<_Level, _HierarchyUnpacked>;
-    using _CurrExts  = decltype(::cuda::__hierarchy_extents_cast<_Tp>(__hier_unpacked.level(_NextLevel{}).extents()));
-
-    // Remove dependency on runtime storage. This makes the queries work for hierarchy levels with all static extents
-    // in constant evaluated context.
-    _CurrExts __curr_exts{};
-    if constexpr (_CurrExts::rank_dynamic() > 0)
-    {
-      __curr_exts = ::cuda::__hierarchy_extents_cast<_Tp>(__hier_unpacked.level(_NextLevel{}).extents());
-    }
-
-    if constexpr (!::cuda::std::is_same_v<_NextLevel, _InLevel>)
-    {
-      const auto __next_exts = _NextLevel::template extents_as<_Tp>(__in_level, __hier_unpacked);
-      return ::cuda::__hierarchy_extents_mul(__curr_exts, __next_exts);
-    }
-    else
-    {
-      return __curr_exts;
-    }
+    return __extents_query<_Level, _InLevel>::template __call<_Tp>(::cuda::__unpack_hierarchy_if_needed(__hier));
   }
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel, class _Hierarchy)
@@ -340,8 +236,7 @@ struct hierarchy_level_base
     }
     else
     {
-      // todo: Pass __group.hierarchy() to the query.
-      return _Level::template count_as<_Tp>(typename _Group::level_type{} /*, __group.hierarchy()*/);
+      return _Level::template count_as<_Tp>(typename _Group::level_type{}, __group.hierarchy());
     }
   }
 
@@ -355,8 +250,7 @@ struct hierarchy_level_base
     }
     else
     {
-      // todo: Pass __group.hierarchy() to the query.
-      return _Level::count(typename _Group::level_type{} /*, __group.hierarchy()*/);
+      return _Level::count(typename _Group::level_type{}, __group.hierarchy());
     }
   }
 

@@ -19,94 +19,140 @@
 #include <cuda/std/type_traits>
 
 template <class Hierarchy, class GridExts, class ClusterExts, class BlockExts>
-__device__ void test_block(
+__device__ void test_warp(
   const Hierarchy& hier, const GridExts& grid_exts, const ClusterExts& cluster_exts, const BlockExts& block_exts)
 {
-  // 1. Test cuda::block.dims(x, hier)
-  {
-    uint3 exp{1, 1, 1};
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (exp = __clusterDim();))
-    test_dims(exp, cuda::block, cuda::cluster, hier);
-  }
-  test_dims(gridDim, cuda::block, cuda::grid, hier);
+  constexpr cuda::std::size_t dext = cuda::std::dynamic_extent;
 
-  // 2. Test cuda::block.static_dims(x, hier)
+  constexpr auto static_count_in_block =
+    (BlockExts::rank_dynamic() == 0)
+      ? (BlockExts::static_extent(0) * BlockExts::static_extent(1) * BlockExts::static_extent(2) + 32 - 1) / 32
+      : dext;
+
+  const unsigned count_in_block = (blockDim.x * blockDim.y * blockDim.z + warpSize - 1) / warpSize;
+  // const unsigned rank_in_block  = ((threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x + threadIdx.x) / warpSize;
+  const uint3 dims_in_block{count_in_block, 1, 1};
+  // const uint3 index_in_block{rank_in_block, 0, 0};
+
+  // 1. Test cuda::warp.dims(x, hier)
+  test_dims(dims_in_block, cuda::warp, cuda::block, hier);
+  {
+    uint3 exp = dims_in_block;
+    NV_IF_TARGET(NV_PROVIDES_SM_90, ({
+                   exp.x *= __clusterDim().x;
+                   exp.y *= __clusterDim().y;
+                   exp.z *= __clusterDim().z;
+                 }))
+    test_dims(exp, cuda::warp, cuda::cluster, hier);
+  }
+  test_dims({count_in_block * gridDim.x, gridDim.y, gridDim.z}, cuda::warp, cuda::grid, hier);
+
+  // 2. Test cuda::warp.static_dims(x, hier)
+  test_static_dims(ulonglong3{static_count_in_block, 1, 1}, cuda::warp, cuda::block, hier);
   {
     const ulonglong3 exp{
-      ClusterExts::static_extent(0),
+      mul_static_extents(ClusterExts::static_extent(0), static_count_in_block),
       ClusterExts::static_extent(1),
       ClusterExts::static_extent(2),
     };
-    test_static_dims(exp, cuda::block, cuda::cluster, hier);
+    test_static_dims(exp, cuda::warp, cuda::cluster, hier);
   }
   {
     const ulonglong3 exp{
-      mul_static_extents(GridExts::static_extent(0), ClusterExts::static_extent(0)),
+      mul_static_extents(GridExts::static_extent(0), ClusterExts::static_extent(0), static_count_in_block),
       mul_static_extents(GridExts::static_extent(1), ClusterExts::static_extent(1)),
       mul_static_extents(GridExts::static_extent(2), ClusterExts::static_extent(2)),
     };
-    test_static_dims(exp, cuda::block, cuda::grid, hier);
+    test_static_dims(exp, cuda::warp, cuda::grid, hier);
   }
 
-  // 3. Test cuda::block.extents(x)
+  // 3. Test cuda::warp.extents(x, hier)
+  test_extents(cuda::std::extents<unsigned, static_count_in_block>{count_in_block}, cuda::warp, cuda::block, hier);
   {
-    uint3 dims{1, 1, 1};
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (dims = __clusterDim();))
-    const cuda::std::
-      extents<unsigned, ClusterExts::static_extent(0), ClusterExts::static_extent(1), ClusterExts::static_extent(2)>
-        exp{dims.x, dims.y, dims.z};
+    uint3 dims = dims_in_block;
+    NV_IF_TARGET(NV_PROVIDES_SM_90, ({
+                   dims.x *= __clusterDim().x;
+                   dims.y *= __clusterDim().y;
+                   dims.z *= __clusterDim().z;
+                 }))
 
-    test_extents(exp, cuda::block, cuda::cluster, hier);
-  }
-  {
     const cuda::std::extents<unsigned,
-                             mul_static_extents(GridExts::static_extent(0), ClusterExts::static_extent(0)),
-                             mul_static_extents(GridExts::static_extent(1), ClusterExts::static_extent(1)),
-                             mul_static_extents(GridExts::static_extent(2), ClusterExts::static_extent(2))>
-      exp{gridDim.x, gridDim.y, gridDim.z};
-    test_extents(exp, cuda::block, cuda::grid, hier);
+                             mul_static_extents(ClusterExts::static_extent(0), static_count_in_block),
+                             ClusterExts::static_extent(1),
+                             ClusterExts::static_extent(2)>
+      exp{dims.x, dims.y, dims.z};
+    test_extents(exp, cuda::warp, cuda::cluster, hier);
+  }
+  {
+    const cuda::std::extents<
+      unsigned,
+      mul_static_extents(GridExts::static_extent(0), ClusterExts::static_extent(0), static_count_in_block),
+      mul_static_extents(GridExts::static_extent(1), ClusterExts::static_extent(1)),
+      mul_static_extents(GridExts::static_extent(2), ClusterExts::static_extent(2))>
+      exp{count_in_block * gridDim.x, gridDim.y, gridDim.z};
+    test_extents(exp, cuda::warp, cuda::grid, hier);
   }
 
-  // 4. Test cuda::block.static_count(x, hier)
-  test_static_count(cuda::block, cuda::cluster, hier);
-  test_static_count(cuda::block, cuda::grid, hier);
+  // 4. Test cuda::warp.static_count(x, hier)
+  test_static_count(cuda::warp, cuda::block, hier);
+  test_static_count(cuda::warp, cuda::cluster, hier);
+  test_static_count(cuda::warp, cuda::grid, hier);
 
-  // 5. Test cuda::block.count(x, hier)
+  // 5. Test cuda::warp.count(x, hier)
+  test_count(count_in_block, cuda::warp, cuda::block, hier);
   {
-    cuda::std::size_t exp = 1;
+    uint3 exp = dims_in_block;
     NV_IF_TARGET(NV_PROVIDES_SM_90, ({
-                   exp *= __clusterDim().x;
-                   exp *= __clusterDim().y;
-                   exp *= __clusterDim().z;
+                   exp.x *= __clusterDim().x;
+                   exp.y *= __clusterDim().y;
+                   exp.z *= __clusterDim().z;
                  }))
-    test_count(exp, cuda::block, cuda::cluster, hier);
+    test_count(cuda::std::size_t{exp.z} * exp.y * exp.x, cuda::warp, cuda::cluster, hier);
   }
-  test_count(cuda::std::size_t{gridDim.z} * gridDim.y * gridDim.x, cuda::block, cuda::grid, hier);
+  {
+    const uint3 exp{count_in_block * gridDim.x, gridDim.y, gridDim.z};
+    test_count(cuda::std::size_t{exp.z} * exp.y * exp.x, cuda::warp, cuda::grid, hier);
+  }
 
-  // 6. test cuda::block.index(x, hier)
-  if constexpr (Hierarchy::has_level(cuda::cluster))
-  {
-    uint3 exp{0, 0, 0};
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (exp = __clusterRelativeBlockIdx();))
-    test_index(exp, cuda::block, cuda::cluster, hier);
-  }
-  test_index(blockIdx, cuda::block, cuda::grid, hier);
+  // 6. test cuda::warp.index(x, hier)
+  // test_index(index_in_block, cuda::warp, cuda::block, hier);
+  // {
+  //   uint3 exp = index_in_block;
+  //   NV_IF_TARGET(NV_PROVIDES_SM_90, ({
+  //                  exp.x += count_in_block * __clusterRelativeBlockIdx().x;
+  //                  exp.y += __clusterRelativeBlockIdx().y;
+  //                  exp.z += __clusterRelativeBlockIdx().z;
+  //                }))
+  //   test_index(exp, cuda::warp, cuda::cluster, hier);
+  // }
+  // {
+  //   const uint3 exp{
+  //     rank_in_block + count_in_block * blockIdx.x,
+  //     blockIdx.y,
+  //     blockIdx.z,
+  //   };
+  //   test_index(exp, cuda::warp, cuda::grid, hier);
+  // }
 
-  // 7. Test cuda::block.rank(x, hier)
-  if constexpr (Hierarchy::has_level(cuda::cluster))
-  {
-    cuda::std::size_t exp = 0;
-    NV_IF_TARGET(NV_PROVIDES_SM_90, ({
-                   exp = ((__clusterRelativeBlockIdx().z * __clusterDim().y) + __clusterRelativeBlockIdx().y)
-                         * __clusterDim().x
-                       + __clusterRelativeBlockIdx().x;
-                 }))
-    test_rank(exp, cuda::block, cuda::cluster, hier);
-  }
-  {
-    const cuda::std::size_t exp = (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x + blockIdx.x;
-    test_rank(exp, cuda::block, cuda::grid, hier);
-  }
+  // 7. Test cuda::warp.rank(x, hier)
+  // test_rank(rank_in_block, cuda::warp, cuda::block, hier);
+  // {
+  //   cuda::std::size_t exp = 0;
+  //   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+  //                     ({
+  //                       exp = (__clusterRelativeBlockIdx().z * __clusterDim().y + __clusterRelativeBlockIdx().y)
+  //                             * __clusterDim().x * count_in_block
+  //                           + __clusterRelativeBlockIdx().x * count_in_block + rank_in_block;
+  //                     }),
+  //                     ({ exp = rank_in_block; }))
+  //   test_rank(exp, cuda::warp, cuda::cluster, hier);
+  // }
+  // {
+  //   const cuda::std::size_t exp =
+  //     (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x * count_in_block + blockIdx.x * count_in_block +
+  //     rank_in_block;
+  //   test_rank(exp, cuda::warp, cuda::grid, hier);
+  // }
 }
 
 __device__ void test_device()
@@ -119,13 +165,13 @@ __device__ void test_device()
 template <class Hierarchy, class GridExts, class BlockExts>
 __global__ void test_kernel(Hierarchy hier, GridExts grid_exts, BlockExts block_exts)
 {
-  test_block(hier, grid_exts, cuda::std::extents<unsigned, 1, 1, 1>{}, block_exts);
+  test_warp(hier, grid_exts, cuda::std::extents<unsigned, 1, 1, 1>{}, block_exts);
 }
 
 template <class Hierarchy, class GridExts, class ClusterExts, class BlockExts>
 __global__ void test_kernel(Hierarchy hier, GridExts grid_exts, ClusterExts cluster_exts, BlockExts block_exts)
 {
-  test_block(hier, grid_exts, cluster_exts, block_exts);
+  test_warp(hier, grid_exts, cluster_exts, block_exts);
 }
 
 template <class GridExts, class BlockExts>
