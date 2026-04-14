@@ -279,9 +279,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   ScanOpT scan_op,
   RealInitValueT real_init_value)
 {
-  ////////////////////////////////////////////////////////////////////////////////
-  // Tuning dependent variables
-  ////////////////////////////////////////////////////////////////////////////////
   static constexpr scan_warpspeed_policy policy        = get_warpspeed_policy<PolicySelector>();
   static constexpr warpspeed::SquadDesc squadReduce    = squad_reduce(policy);
   static constexpr warpspeed::SquadDesc squadScanStore = squad_scan_store(policy);
@@ -289,12 +286,16 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
   static constexpr warpspeed::SquadDesc squadSched     = squad_sched(policy);
   static constexpr warpspeed::SquadDesc squadLookback  = squad_lookback(policy);
 
-  constexpr int tile_size                   = policy.tile_size();
-  constexpr int look_ahead_items_per_thread = policy.look_ahead_items_per_thread;
+  static constexpr int tile_size                   = policy.tile_size();
+  static constexpr int look_ahead_items_per_thread = policy.look_ahead_items_per_thread;
 
-  // We might try to instantiate the kernel with hughe types which would lead to a small tile size. Ensure its never 0
-  constexpr int elemPerThread = policy.items_per_thread;
+  // We might try to instantiate the kernel with huge types which would lead to a small tile size. Ensure its never 0
+  static constexpr int elemPerThread = policy.items_per_thread;
   static_assert(elemPerThread * squadReduce.threadCount() == tile_size, "Invalid tuning policy");
+
+  // Inclusive scan if no init_value type is provided
+  static constexpr bool hasInit     = !::cuda::std::is_same_v<RealInitValueT, NullType>;
+  static constexpr bool isInclusive = ForceInclusive || !hasInit;
 
   ////////////////////////////////////////////////////////////////////////////////
   // Resources
@@ -306,10 +307,6 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void kernelBody(
     syncHandler.clusterInitSync(specialRegisters);
     return r;
   }();
-
-  // Inclusive scan if no init_value type is provided
-  static constexpr bool hasInit     = !::cuda::std::is_same_v<RealInitValueT, NullType>;
-  static constexpr bool isInclusive = ForceInclusive || !hasInit;
 
   ////////////////////////////////////////////////////////////////////////////////
   // Pre-loop
