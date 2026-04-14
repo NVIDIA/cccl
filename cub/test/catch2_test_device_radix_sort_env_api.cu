@@ -374,11 +374,11 @@ C2H_TEST("cub::DeviceRadixSort::SortKeys decomposer+bits env-based API", "[radix
     sizeof(int) * 8,
     stream_ref);
 
+  thrust::device_vector<custom_key_t> expected{{0}, {3}, {5}, {6}, {7}, {8}, {9}};
   // example-end radix-sort-keys-decomposer-bits-env
   stream.sync();
 
   REQUIRE(error == cudaSuccess);
-  thrust::device_vector<custom_key_t> expected{{0}, {3}, {5}, {6}, {7}, {8}, {9}};
   REQUIRE(keys_out == expected);
 }
 
@@ -394,11 +394,11 @@ C2H_TEST("cub::DeviceRadixSort::SortKeys decomposer env-based API", "[radix_sort
   auto error = cub::DeviceRadixSort::SortKeys(
     keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size()), keys_decomposer_t{}, stream_ref);
 
+  thrust::device_vector<custom_key_t> expected{{0}, {3}, {5}, {6}, {7}, {8}, {9}};
   // example-end radix-sort-keys-decomposer-env
   stream.sync();
 
   REQUIRE(error == cudaSuccess);
-  thrust::device_vector<custom_key_t> expected{{0}, {3}, {5}, {6}, {7}, {8}, {9}};
   REQUIRE(keys_out == expected);
 }
 
@@ -416,11 +416,11 @@ C2H_TEST("cub::DeviceRadixSort::SortKeys DB decomposer env-based API", "[radix_s
   auto error =
     cub::DeviceRadixSort::SortKeys(d_keys, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, stream_ref);
 
+  thrust::device_vector<custom_key_t> expected{{0}, {3}, {5}, {6}, {7}, {8}, {9}};
   // example-end radix-sort-keys-db-decomposer-env
   stream.sync();
 
   REQUIRE(error == cudaSuccess);
-  thrust::device_vector<custom_key_t> expected{{0}, {3}, {5}, {6}, {7}, {8}, {9}};
   auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
   REQUIRE(keys == expected);
 }
@@ -439,11 +439,11 @@ C2H_TEST("cub::DeviceRadixSort::SortKeys DB decomposer+bits env-based API", "[ra
   auto error = cub::DeviceRadixSort::SortKeys(
     d_keys, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, 0, sizeof(int) * 8, stream_ref);
 
+  thrust::device_vector<custom_key_t> expected{{0}, {3}, {5}, {6}, {7}, {8}, {9}};
   // example-end radix-sort-keys-db-decomposer-bits-env
   stream.sync();
 
   REQUIRE(error == cudaSuccess);
-  thrust::device_vector<custom_key_t> expected{{0}, {3}, {5}, {6}, {7}, {8}, {9}};
   auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
   REQUIRE(keys == expected);
 }
@@ -466,11 +466,11 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending decomposer+bits env-based API
     sizeof(int) * 8,
     stream_ref);
 
+  thrust::device_vector<custom_key_t> expected{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
   // example-end radix-sort-keys-descending-decomposer-bits-env
   stream.sync();
 
   REQUIRE(error == cudaSuccess);
-  thrust::device_vector<custom_key_t> expected{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
   REQUIRE(keys_out == expected);
 }
 
@@ -486,11 +486,11 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending decomposer env-based API", "[
   auto error = cub::DeviceRadixSort::SortKeysDescending(
     keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size()), keys_decomposer_t{}, stream_ref);
 
+  thrust::device_vector<custom_key_t> expected{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
   // example-end radix-sort-keys-descending-decomposer-env
   stream.sync();
 
   REQUIRE(error == cudaSuccess);
-  thrust::device_vector<custom_key_t> expected{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
   REQUIRE(keys_out == expected);
 }
 
@@ -508,11 +508,11 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending DB decomposer env-based API",
   auto error = cub::DeviceRadixSort::SortKeysDescending(
     d_keys, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, stream_ref);
 
+  thrust::device_vector<custom_key_t> expected{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
   // example-end radix-sort-keys-descending-db-decomposer-env
   stream.sync();
 
   REQUIRE(error == cudaSuccess);
-  thrust::device_vector<custom_key_t> expected{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
   auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
   REQUIRE(keys == expected);
 }
@@ -531,11 +531,11 @@ C2H_TEST("cub::DeviceRadixSort::SortKeysDescending DB decomposer+bits env-based 
   auto error = cub::DeviceRadixSort::SortKeysDescending(
     d_keys, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, 0, sizeof(int) * 8, stream_ref);
 
+  thrust::device_vector<custom_key_t> expected{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
   // example-end radix-sort-keys-descending-db-decomposer-bits-env
   stream.sync();
 
   REQUIRE(error == cudaSuccess);
-  thrust::device_vector<custom_key_t> expected{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
   auto& keys = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
   REQUIRE(keys == expected);
 }
@@ -562,12 +562,12 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending decomposer+bits env-based AP
     sizeof(int) * 8,
     stream_ref);
 
+  thrust::device_vector<custom_key_t> expected_keys{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
+  thrust::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
   // example-end radix-sort-pairs-descending-decomposer-bits-env
   stream.sync();
 
   REQUIRE(error == cudaSuccess);
-  thrust::device_vector<custom_key_t> expected_keys{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
-  thrust::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
 }
@@ -592,12 +592,12 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending decomposer env-based API", "
     keys_decomposer_t{},
     stream_ref);
 
+  thrust::device_vector<custom_key_t> expected_keys{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
+  thrust::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
   // example-end radix-sort-pairs-descending-decomposer-env
   stream.sync();
 
   REQUIRE(error == cudaSuccess);
-  thrust::device_vector<custom_key_t> expected_keys{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
-  thrust::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
   REQUIRE(keys_out == expected_keys);
   REQUIRE(values_out == expected_values);
 }
@@ -619,12 +619,12 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending DB decomposer env-based API"
   auto error = cub::DeviceRadixSort::SortPairsDescending(
     d_keys, d_values, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, stream_ref);
 
+  thrust::device_vector<custom_key_t> expected_keys{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
+  thrust::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
   // example-end radix-sort-pairs-descending-db-decomposer-env
   stream.sync();
 
   REQUIRE(error == cudaSuccess);
-  thrust::device_vector<custom_key_t> expected_keys{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
-  thrust::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
   auto& keys   = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
   auto& values = d_values.selector == 0 ? values_buf0 : values_buf1;
   REQUIRE(keys == expected_keys);
@@ -648,12 +648,12 @@ C2H_TEST("cub::DeviceRadixSort::SortPairsDescending DB decomposer+bits env-based
   auto error = cub::DeviceRadixSort::SortPairsDescending(
     d_keys, d_values, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, 0, sizeof(int) * 8, stream_ref);
 
+  thrust::device_vector<custom_key_t> expected_keys{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
+  thrust::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
   // example-end radix-sort-pairs-descending-db-decomposer-bits-env
   stream.sync();
 
   REQUIRE(error == cudaSuccess);
-  thrust::device_vector<custom_key_t> expected_keys{{9}, {8}, {7}, {6}, {5}, {3}, {0}};
-  thrust::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
   auto& keys   = d_keys.selector == 0 ? keys_buf0 : keys_buf1;
   auto& values = d_values.selector == 0 ? values_buf0 : values_buf1;
   REQUIRE(keys == expected_keys);
