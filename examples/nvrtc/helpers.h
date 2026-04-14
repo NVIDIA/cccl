@@ -28,6 +28,9 @@ static inline void check_cuda_driver_result(CUresult res, const char* lineinfo, 
   }
 }
 
+#define STR2(x) #x
+#define STR(x)  STR2(x)
+
 #define SAFE_CALL_2(handler, file, line, ...) handler(__VA_ARGS__, file ":" #line, #__VA_ARGS__);
 #define SAFE_CALL_1(handler, file, line, ...) SAFE_CALL_2(handler, file, line, __VA_ARGS__)
 

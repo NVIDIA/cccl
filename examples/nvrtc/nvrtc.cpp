@@ -19,13 +19,13 @@
 This is a simple example demonstrating how to use CCCL with NVRTC.
 */
 
+#include "helpers.h"
+
 #if !defined(EXTERNAL_NVRTC_ARGS) || !defined(EXTERNAL_NVRTC_ARCH)
 #  error \
     "EXTERNAL_NVRTC_ARGS or EXTERNAL_NVRTC_ARCH is not defined. Please define it to add externally defined NVRTC arguments."
 #endif
 
-#define STR2(x)    #x
-#define STR(x)     STR2(x)
 #define NVRTC_ARCH "--gpu-architecture=" STR(EXTERNAL_NVRTC_ARCH)
 
 #include <cassert>
@@ -38,12 +38,8 @@ This is a simple example demonstrating how to use CCCL with NVRTC.
 #include <cuda.h>
 #include <nvrtc.h>
 
-#include "helpers.h"
-
-using gpu_code_ptr = std::unique_ptr<char[]>;
-
 void load_and_execute_gpu_code(const void* imageData);
-gpu_code_ptr compile_gpu_code(std::string_view kernel, std::span<const char*> optList);
+std::unique_ptr<char[]> compile_gpu_code(std::string_view kernel, std::span<const char*> optList);
 
 #define BLOCK_SIZE 256
 
@@ -85,7 +81,7 @@ int main()
   return 0;
 }
 
-gpu_code_ptr compile_gpu_code(std::string_view kernel, std::span<const char*> optList)
+std::unique_ptr<char[]> compile_gpu_code(std::string_view kernel, std::span<const char*> optList)
 {
   nvrtcProgram prog;
   // nvrtcCreateProgram allows headers to be additionally added, skip this and use `-I` instead later.
@@ -103,7 +99,7 @@ gpu_code_ptr compile_gpu_code(std::string_view kernel, std::span<const char*> op
 
   // ALWAYS GATHER LOGS, there could be warnings or non-fatal issues that should be reported.
   {
-    auto log = std::make_unique<char[]>(logSize};
+    auto log = std::make_unique<char[]>(logSize);
     NVRTC_SAFE_CALL(nvrtcGetProgramLog(prog, log.get()));
     printf("%s\r\n", log.get());
   }
@@ -114,7 +110,7 @@ gpu_code_ptr compile_gpu_code(std::string_view kernel, std::span<const char*> op
     exit(1);
   }
 
-  gpu_code_ptr code{};
+  std::unique_ptr<char[]> code{};
 
   // Prioritize SASS, then PTX. If neither is available, fail
   size_t cubinSize = 0;
@@ -139,6 +135,7 @@ gpu_code_ptr compile_gpu_code(std::string_view kernel, std::span<const char*> op
     printf("Error: No CUBIN or PTX code available for the program.\n");
     exit(1);
   }
+
   NVRTC_SAFE_CALL(nvrtcDestroyProgram(&prog));
   return code;
 }
@@ -147,8 +144,9 @@ void load_and_execute_gpu_code(const void* imageData)
 {
   CUdevice cuDevice;
   CUcontext context;
-  CUmodule module;
-  CUfunction kernel;
+  CUlibrary library;
+  CUkernel kernel;
+  CUfunction function;
 
   CUDA_SAFE_CALL(cuInit(0));
   CUDA_SAFE_CALL(cuDeviceGet(&cuDevice, 0));
@@ -167,9 +165,10 @@ void load_and_execute_gpu_code(const void* imageData)
 
   void* kernelParams[] = {(void*) &data, (void*) &result, (void*) &N};
 
-  CUDA_SAFE_CALL(cuModuleLoadDataEx(&module, imageData, 0, 0, 0));
-  CUDA_SAFE_CALL(cuModuleGetFunction(&kernel, module, "sumKernel"));
-  CUDA_SAFE_CALL(cuLaunchKernel(kernel, num_blocks, 1, 1, BLOCK_SIZE, 1, 1, 0, nullptr, kernelParams, nullptr));
+  CUDA_SAFE_CALL(cuLibraryLoadData(&library, imageData, nullptr, nullptr, 0, nullptr, nullptr, 0));
+  CUDA_SAFE_CALL(cuLibraryGetKernel(&kernel, library, "sumKernel"));
+  CUDA_SAFE_CALL(cuKernelGetFunction(&function, kernel));
+  CUDA_SAFE_CALL(cuLaunchKernel(function, num_blocks, 1, 1, BLOCK_SIZE, 1, 1, 0, nullptr, kernelParams, 0));
   CUDA_SAFE_CALL(cuCtxSynchronize());
 
   printf("Sum is %i\n", result[0]);
