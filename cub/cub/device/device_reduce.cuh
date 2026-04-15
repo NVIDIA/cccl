@@ -1992,8 +1992,7 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMax");
-    return __arg_min_env(
-      d_in, d_index_out, num_items, detail::arg_less{detail::swap_args{compare_op}}, ::cuda::std::execution::env{});
+    return __arg_min_env(d_in, d_max_out, d_index_out, num_items, detail::arg_less{detail::swap_args{compare_op}}, env);
   }
 
   //! @overload
@@ -2001,7 +2000,10 @@ public:
   template <typename InputIteratorT,
             typename ExtremumOutIteratorT,
             typename IndexOutIteratorT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+            // ExtremumOutIteratorT, which is wrong IMO
+            ::cuda::std::enable_if_t<!::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ArgMax(InputIteratorT d_in,
          ExtremumOutIteratorT d_max_out,
