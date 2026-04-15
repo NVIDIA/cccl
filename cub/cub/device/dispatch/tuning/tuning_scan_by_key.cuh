@@ -43,15 +43,15 @@ struct scan_by_key_policy
   int items_per_thread;
   BlockLoadAlgorithm load_algorithm;
   CacheLoadModifier load_modifier;
-  BlockScanAlgorithm scan_algorithm;
   BlockStoreAlgorithm store_algorithm;
+  BlockScanAlgorithm scan_algorithm;
   delay_constructor_policy delay_constructor;
 
   _CCCL_API constexpr friend bool operator==(const scan_by_key_policy& lhs, const scan_by_key_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.store_algorithm == rhs.store_algorithm
+        && lhs.store_algorithm == rhs.store_algorithm && lhs.scan_algorithm == rhs.scan_algorithm
         && lhs.delay_constructor == rhs.delay_constructor;
   }
 
@@ -66,7 +66,7 @@ struct scan_by_key_policy
     return os
         << "scan_by_key_policy { .block_threads = " << p.block_threads << ", .items_per_thread = " << p.items_per_thread
         << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
-        << ", .scan_algorithm = " << p.scan_algorithm << ", .store_algorithm = " << p.store_algorithm
+        << ", .store_algorithm = " << p.store_algorithm << ", .scan_algorithm = " << p.scan_algorithm
         << ", .delay_constructor = " << p.delay_constructor << " }";
   }
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -1041,8 +1041,8 @@ _CCCL_API constexpr auto convert_policy() -> scan_by_key_policy
           policy_t::ITEMS_PER_THREAD,
           policy_t::LOAD_ALGORITHM,
           policy_t::LOAD_MODIFIER,
-          policy_t::SCAN_ALGORITHM,
           policy_t::STORE_ALGORITHM,
+          policy_t::SCAN_ALGORITHM,
           delay_constructor_policy_from_type<typename policy_t::detail::delay_constructor_t>};
 }
 
@@ -1125,8 +1125,8 @@ struct policy_selector
                         13,
                         BLOCK_LOAD_WARP_TRANSPOSE,
                         LOAD_DEFAULT,
-                        BLOCK_SCAN_WARP_SCANS,
                         BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
                         delay_constructor_policy_from_type<no_delay_constructor_t<745>>};
               case 2:
                 // ipt_13.tpb_288.ns_388.dcid_1.l2w_570.trp_1.ld_0 1.228612   1.0  1.216841  1.416167
@@ -1134,8 +1134,8 @@ struct policy_selector
                         13,
                         BLOCK_LOAD_WARP_TRANSPOSE,
                         LOAD_DEFAULT,
-                        BLOCK_SCAN_WARP_SCANS,
                         BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
                         delay_constructor_policy_from_type<fixed_delay_constructor_t<388, 570>>};
               case 4:
                 // ipt_19.tpb_224.ns_1028.dcid_5.l2w_910.trp_1.ld_1 1.163440   1.0  1.146400  1.260684
@@ -1143,8 +1143,8 @@ struct policy_selector
                         19,
                         BLOCK_LOAD_WARP_TRANSPOSE,
                         LOAD_CA,
-                        BLOCK_SCAN_WARP_SCANS,
                         BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
                         delay_constructor_policy_from_type<exponential_backon_jitter_window_constructor_t<1028, 910>>};
               case 8:
                 // ipt_18.tpb_192.ns_432.dcid_1.l2w_1035.trp_1.ld_1 1.177638  0.985417  1.157164  1.296477
@@ -1152,8 +1152,8 @@ struct policy_selector
                         18,
                         BLOCK_LOAD_WARP_TRANSPOSE,
                         LOAD_CA,
-                        BLOCK_SCAN_WARP_SCANS,
                         BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
                         delay_constructor_policy_from_type<fixed_delay_constructor_t<432, 1035>>};
               default:
                 break;
@@ -1168,8 +1168,8 @@ struct policy_selector
                         12,
                         BLOCK_LOAD_WARP_TRANSPOSE,
                         LOAD_DEFAULT,
-                        BLOCK_SCAN_WARP_SCANS,
                         BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
                         delay_constructor_policy_from_type<no_delay_constructor_t<1900>>};
               case 2:
                 // ipt_14.tpb_160.ns_1736.dcid_7.l2w_170.trp_1.ld_0 1.095207  1.065061  1.100302  1.142857
@@ -1177,8 +1177,8 @@ struct policy_selector
                         14,
                         BLOCK_LOAD_WARP_TRANSPOSE,
                         LOAD_DEFAULT,
-                        BLOCK_SCAN_WARP_SCANS,
                         BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
                         delay_constructor_policy_from_type<exponential_backon_constructor_t<1736, 170>>};
               case 4:
                 // ipt_14.tpb_160.ns_336.dcid_1.l2w_805.trp_1.ld_0 1.119313  1.095238  1.122013  1.148681
@@ -1186,16 +1186,16 @@ struct policy_selector
                         14,
                         BLOCK_LOAD_WARP_TRANSPOSE,
                         LOAD_DEFAULT,
-                        BLOCK_SCAN_WARP_SCANS,
                         BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
                         delay_constructor_policy_from_type<fixed_delay_constructor_t<336, 805>>};
               case 8:
                 return {224,
                         13,
                         BLOCK_LOAD_WARP_TRANSPOSE,
                         LOAD_CA,
-                        BLOCK_SCAN_WARP_SCANS,
                         BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
                         delay_constructor_policy_from_type<exponential_backoff_constructor_t<348, 735>>};
               default:
                 break;
@@ -1211,8 +1211,8 @@ struct policy_selector
                         20,
                         BLOCK_LOAD_WARP_TRANSPOSE,
                         LOAD_CA,
-                        BLOCK_SCAN_WARP_SCANS,
                         BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
                         delay_constructor_policy_from_type<exponential_backon_constructor_t<1436, 155>>};
               case 2:
                 // ipt_13.tpb_288.ns_620.dcid_7.l2w_925.trp_1.ld_2 1.050929  1.000000  1.047178  1.115809
@@ -1220,8 +1220,8 @@ struct policy_selector
                         13,
                         BLOCK_LOAD_WARP_TRANSPOSE,
                         LOAD_CA,
-                        BLOCK_SCAN_WARP_SCANS,
                         BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
                         delay_constructor_policy_from_type<exponential_backon_constructor_t<620, 925>>};
               case 4:
                 // ipt_20.tpb_224.ns_1856.dcid_5.l2w_280.trp_1.ld_1 1.247248  1.000000  1.220196  1.446328
@@ -1229,8 +1229,8 @@ struct policy_selector
                         20,
                         BLOCK_LOAD_WARP_TRANSPOSE,
                         LOAD_CA,
-                        BLOCK_SCAN_WARP_SCANS,
                         BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
                         delay_constructor_policy_from_type<exponential_backon_jitter_window_constructor_t<1856, 280>>};
               case 8:
                 // ipt_14.tpb_224.ns_464.dcid_2.l2w_680.trp_1.ld_1 1.070831  1.002088  1.064736  1.105437
@@ -1238,8 +1238,8 @@ struct policy_selector
                         14,
                         BLOCK_LOAD_WARP_TRANSPOSE,
                         LOAD_CA,
-                        BLOCK_SCAN_WARP_SCANS,
                         BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
                         delay_constructor_policy_from_type<exponential_backoff_constructor_t<464, 860>>};
               default:
                 break;
@@ -1254,8 +1254,8 @@ struct policy_selector
                         12,
                         BLOCK_LOAD_WARP_TRANSPOSE,
                         LOAD_DEFAULT,
-                        BLOCK_SCAN_WARP_SCANS,
                         BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
                         delay_constructor_policy_from_type<no_delay_constructor_t<532>>};
               case 2:
                 // todo(gonidlelis): Significant regression. Search more workloads.
@@ -1264,8 +1264,8 @@ struct policy_selector
                         15,
                         BLOCK_LOAD_WARP_TRANSPOSE,
                         LOAD_DEFAULT,
-                        BLOCK_SCAN_WARP_SCANS,
                         BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
                         delay_constructor_policy_from_type<exponential_backon_constructor_t<988, 335>>};
               case 4:
                 // ipt_22.tpb_160.ns_1032.dcid_5.l2w_505.trp_1.ld_2 1.184805  1.000000  1.164843  1.338536
@@ -1273,8 +1273,8 @@ struct policy_selector
                         22,
                         BLOCK_LOAD_WARP_TRANSPOSE,
                         LOAD_CA,
-                        BLOCK_SCAN_WARP_SCANS,
                         BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
                         delay_constructor_policy_from_type<exponential_backon_jitter_window_constructor_t<1032, 505>>};
               case 8:
                 // ipt_23.tpb_256.ns_1232.dcid_0.l2w_810.trp_1.ld_0 1.067631  1.000000  1.059607  1.135646
@@ -1282,8 +1282,8 @@ struct policy_selector
                         23,
                         BLOCK_LOAD_WARP_TRANSPOSE,
                         LOAD_DEFAULT,
-                        BLOCK_SCAN_WARP_SCANS,
                         BLOCK_STORE_WARP_TRANSPOSE,
+                        BLOCK_SCAN_WARP_SCANS,
                         delay_constructor_policy_from_type<no_delay_constructor_t<1232>>};
               default:
                 break;
@@ -1311,32 +1311,32 @@ struct policy_selector
                           12,
                           BLOCK_LOAD_DIRECT,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_DIRECT,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<650>>};
                 case 2:
                   return {256,
                           16,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<124, 995>>};
                 case 4:
                   return {128,
                           15,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<488, 545>>};
                 case 8:
                   return {224,
                           10,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<488, 1070>>};
                 default:
                   break;
@@ -1350,32 +1350,32 @@ struct policy_selector
                           12,
                           BLOCK_LOAD_DIRECT,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_DIRECT,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<136, 785>>};
                 case 2:
                   return {128,
                           20,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<445>>};
                 case 4:
                   return {128,
                           22,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<312, 865>>};
                 case 8:
                   return {224,
                           10,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<352, 1170>>};
                 default:
                   break;
@@ -1389,32 +1389,32 @@ struct policy_selector
                           12,
                           BLOCK_LOAD_DIRECT,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_DIRECT,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<850>>};
                 case 2:
                   return {256,
                           14,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<128, 965>>};
                 case 4:
                   return {288,
                           14,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<700, 1005>>};
                 case 8:
                   return {224,
                           14,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<556, 1195>>};
                 default:
                   break;
@@ -1428,32 +1428,32 @@ struct policy_selector
                           12,
                           BLOCK_LOAD_DIRECT,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_DIRECT,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<504, 1010>>};
                 case 2:
                   return {224,
                           10,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<420, 970>>};
                 case 4:
                   return {192,
                           10,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<500, 1125>>};
                 case 8:
                   return {224,
                           11,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<600, 930>>};
                 default:
                   break;
@@ -1476,8 +1476,8 @@ struct policy_selector
                           23,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<936, 1105>>};
                 default:
                   break;
@@ -1491,8 +1491,8 @@ struct policy_selector
                           23,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<504, 1190>>};
                 default:
                   break;
@@ -1506,8 +1506,8 @@ struct policy_selector
                           23,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<512, 1030>>};
                 default:
                   break;
@@ -1521,8 +1521,8 @@ struct policy_selector
                           15,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<364, 1085>>};
                 default:
                   break;
@@ -1543,32 +1543,32 @@ struct policy_selector
                       7,
                       BLOCK_LOAD_WARP_TRANSPOSE,
                       LOAD_DEFAULT,
-                      BLOCK_SCAN_WARP_SCANS,
                       BLOCK_STORE_WARP_TRANSPOSE,
+                      BLOCK_SCAN_WARP_SCANS,
                       delay_constructor_policy_from_type<fixed_delay_constructor_t<500, 975>>};
             case 2:
               return {224,
                       10,
                       BLOCK_LOAD_WARP_TRANSPOSE,
                       LOAD_DEFAULT,
-                      BLOCK_SCAN_WARP_SCANS,
                       BLOCK_STORE_WARP_TRANSPOSE,
+                      BLOCK_SCAN_WARP_SCANS,
                       delay_constructor_policy_from_type<fixed_delay_constructor_t<164, 1075>>};
             case 4:
               return {256,
                       9,
                       BLOCK_LOAD_WARP_TRANSPOSE,
                       LOAD_DEFAULT,
-                      BLOCK_SCAN_WARP_SCANS,
                       BLOCK_STORE_WARP_TRANSPOSE,
+                      BLOCK_SCAN_WARP_SCANS,
                       delay_constructor_policy_from_type<fixed_delay_constructor_t<268, 1120>>};
             case 8:
               return {192,
                       9,
                       BLOCK_LOAD_WARP_TRANSPOSE,
                       LOAD_DEFAULT,
-                      BLOCK_SCAN_WARP_SCANS,
                       BLOCK_STORE_WARP_TRANSPOSE,
+                      BLOCK_SCAN_WARP_SCANS,
                       delay_constructor_policy_from_type<fixed_delay_constructor_t<320, 1200>>};
             default:
               break;
@@ -1584,8 +1584,8 @@ struct policy_selector
                       23,
                       BLOCK_LOAD_WARP_TRANSPOSE,
                       LOAD_DEFAULT,
-                      BLOCK_SCAN_WARP_SCANS,
                       BLOCK_STORE_WARP_TRANSPOSE,
+                      BLOCK_SCAN_WARP_SCANS,
                       delay_constructor_policy_from_type<fixed_delay_constructor_t<364, 1050>>};
             default:
               break;
@@ -1598,8 +1598,8 @@ struct policy_selector
               default_items,
               BLOCK_LOAD_WARP_TRANSPOSE,
               LOAD_DEFAULT,
-              BLOCK_SCAN_WARP_SCANS,
               BLOCK_STORE_WARP_TRANSPOSE,
+              BLOCK_SCAN_WARP_SCANS,
               default_reduce_by_key_delay_constructor_policy(
                 sizeof(int), value_size, true, value_is_primitive_or_trivially_copyable)};
     }
@@ -1610,8 +1610,8 @@ struct policy_selector
               default_items,
               BLOCK_LOAD_WARP_TRANSPOSE,
               LOAD_CA,
-              BLOCK_SCAN_WARP_SCANS,
               BLOCK_STORE_WARP_TRANSPOSE,
+              BLOCK_SCAN_WARP_SCANS,
               default_reduce_by_key_delay_constructor_policy(sizeof(int), accum_size, true, primitive_accum)};
     }
 
@@ -1631,32 +1631,32 @@ struct policy_selector
                           12,
                           BLOCK_LOAD_DIRECT,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_DIRECT,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<795>>};
                 case 2:
                   return {288,
                           12,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<825>>};
                 case 4:
                   return {256,
                           15,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<640>>};
                 case 8:
                   return {192,
                           10,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<124, 1040>>};
                 default:
                   break;
@@ -1670,32 +1670,32 @@ struct policy_selector
                           8,
                           BLOCK_LOAD_DIRECT,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_DIRECT,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1070>>};
                 case 2:
                   return {320,
                           14,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<625>>};
                 case 4:
                   return {256,
                           15,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1055>>};
                 case 8:
                   return {160,
                           17,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<160, 695>>};
                 default:
                   break;
@@ -1709,32 +1709,32 @@ struct policy_selector
                           12,
                           BLOCK_LOAD_DIRECT,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_DIRECT,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1130>>};
                 case 2:
                   return {256,
                           12,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1130>>};
                 case 4:
                   return {256,
                           15,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1140>>};
                 case 8:
                   return {256,
                           9,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<888, 635>>};
                 default:
                   break;
@@ -1748,32 +1748,32 @@ struct policy_selector
                           11,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1120>>};
                 case 2:
                   return {256,
                           10,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1115>>};
                 case 4:
                   return {224,
                           13,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<fixed_delay_constructor_t<24, 1060>>};
                 case 8:
                   return {224,
                           10,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1160>>};
                 default:
                   break;
@@ -1796,8 +1796,8 @@ struct policy_selector
                           19,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1095>>};
                 default:
                   break;
@@ -1811,8 +1811,8 @@ struct policy_selector
                           14,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1105>>};
                 default:
                   break;
@@ -1826,8 +1826,8 @@ struct policy_selector
                           17,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<1100>>};
                 default:
                   break;
@@ -1841,8 +1841,8 @@ struct policy_selector
                           8,
                           BLOCK_LOAD_WARP_TRANSPOSE,
                           LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
                           BLOCK_STORE_WARP_TRANSPOSE,
+                          BLOCK_SCAN_WARP_SCANS,
                           delay_constructor_policy_from_type<no_delay_constructor_t<220>>};
                 default:
                   break;
@@ -1863,32 +1863,32 @@ struct policy_selector
                       7,
                       BLOCK_LOAD_WARP_TRANSPOSE,
                       LOAD_DEFAULT,
-                      BLOCK_SCAN_WARP_SCANS,
                       BLOCK_STORE_WARP_TRANSPOSE,
+                      BLOCK_SCAN_WARP_SCANS,
                       delay_constructor_policy_from_type<fixed_delay_constructor_t<144, 1120>>};
             case 2:
               return {192,
                       7,
                       BLOCK_LOAD_WARP_TRANSPOSE,
                       LOAD_DEFAULT,
-                      BLOCK_SCAN_WARP_SCANS,
                       BLOCK_STORE_WARP_TRANSPOSE,
+                      BLOCK_SCAN_WARP_SCANS,
                       delay_constructor_policy_from_type<fixed_delay_constructor_t<364, 780>>};
             case 4:
               return {256,
                       7,
                       BLOCK_LOAD_WARP_TRANSPOSE,
                       LOAD_DEFAULT,
-                      BLOCK_SCAN_WARP_SCANS,
                       BLOCK_STORE_WARP_TRANSPOSE,
+                      BLOCK_SCAN_WARP_SCANS,
                       delay_constructor_policy_from_type<no_delay_constructor_t<1170>>};
             case 8:
               return {128,
                       15,
                       BLOCK_LOAD_WARP_TRANSPOSE,
                       LOAD_DEFAULT,
-                      BLOCK_SCAN_WARP_SCANS,
                       BLOCK_STORE_WARP_TRANSPOSE,
+                      BLOCK_SCAN_WARP_SCANS,
                       delay_constructor_policy_from_type<no_delay_constructor_t<1030>>};
             default:
               break;
@@ -1904,8 +1904,8 @@ struct policy_selector
                       15,
                       BLOCK_LOAD_WARP_TRANSPOSE,
                       LOAD_DEFAULT,
-                      BLOCK_SCAN_WARP_SCANS,
                       BLOCK_STORE_WARP_TRANSPOSE,
+                      BLOCK_SCAN_WARP_SCANS,
                       delay_constructor_policy_from_type<no_delay_constructor_t<1160>>};
             default:
               break;
@@ -1918,8 +1918,8 @@ struct policy_selector
               default_items,
               BLOCK_LOAD_WARP_TRANSPOSE,
               LOAD_DEFAULT,
-              BLOCK_SCAN_WARP_SCANS,
               BLOCK_STORE_WARP_TRANSPOSE,
+              BLOCK_SCAN_WARP_SCANS,
               default_reduce_by_key_delay_constructor_policy(
                 sizeof(int), value_size, true, value_is_primitive_or_trivially_copyable)};
     }
@@ -1930,8 +1930,8 @@ struct policy_selector
               default_items,
               BLOCK_LOAD_WARP_TRANSPOSE,
               LOAD_CA,
-              BLOCK_SCAN_WARP_SCANS,
               BLOCK_STORE_WARP_TRANSPOSE,
+              BLOCK_SCAN_WARP_SCANS,
               default_reduce_by_key_delay_constructor_policy(sizeof(int), accum_size, true, primitive_accum)};
     }
 
@@ -1939,8 +1939,8 @@ struct policy_selector
             policy500_items,
             BLOCK_LOAD_WARP_TRANSPOSE,
             LOAD_CA,
-            BLOCK_SCAN_WARP_SCANS,
             BLOCK_STORE_WARP_TRANSPOSE,
+            BLOCK_SCAN_WARP_SCANS,
             default_reduce_by_key_delay_constructor_policy(sizeof(int), accum_size, true, primitive_accum)};
   }
 };
