@@ -591,7 +591,7 @@ public:
   void run()
   {
     const std::vector<size_t>& sizes = get_test_sizes();
-    for (const auto& size : sizes)
+    for (const auto size : sizes)
     {
       // get the first type in the list
       using first_type = typename unittest::get_type<TypeList, 0>::type;

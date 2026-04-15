@@ -122,7 +122,7 @@ C2H_TEST("composite data place with grid of places (same device repeated)", "[ta
 
   stf_exec_place_handle grid = stf_exec_place_grid_create(places, nplaces, nullptr);
   REQUIRE(grid != nullptr);
-  for (auto place : places)
+  for (auto& place : places)
   {
     stf_exec_place_destroy(place);
   }
@@ -178,7 +178,7 @@ C2H_TEST("composite data place with stf_exec_place_grid_create (vector of places
 
   stf_exec_place_handle grid_linear = stf_exec_place_grid_create(places, nplaces, nullptr);
   REQUIRE(grid_linear != nullptr);
-  for (auto place : places)
+  for (auto& place : places)
   {
     stf_exec_place_destroy(place);
   }
@@ -191,7 +191,7 @@ C2H_TEST("composite data place with stf_exec_place_grid_create (vector of places
   stf_dim4 grid_dims         = {2, 2, 1, 1};
   stf_exec_place_handle grid = stf_exec_place_grid_create(places, nplaces, &grid_dims);
   REQUIRE(grid != nullptr);
-  for (auto place : places)
+  for (auto& place : places)
   {
     stf_exec_place_destroy(place);
   }
