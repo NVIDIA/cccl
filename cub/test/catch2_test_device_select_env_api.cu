@@ -211,7 +211,7 @@ C2H_TEST("cub::DeviceSelect::Unique accepts env with stream", "[select][env]")
 C2H_TEST("cub::DeviceSelect::Unique with custom equality_op accepts env with stream", "[select][env]")
 {
   // example-begin select-unique-eqop-env
-  // Unique by modulo 3 — consecutive elements are "equal" if they have the same remainder mod 3
+  // Unique modulo 3 — consecutive elements are "equal" if they have the same remainder mod 3
   auto input        = thrust::device_vector<int>{0, 3, 6, 1, 4, 7, 2, 5};
   auto output       = thrust::device_vector<int>(8);
   auto num_selected = thrust::device_vector<int>(1);
