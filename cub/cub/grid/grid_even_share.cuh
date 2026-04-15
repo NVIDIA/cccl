@@ -84,7 +84,7 @@ public:
   /**
    * \brief Constructor.
    */
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GridEvenShare() = default;
+  _CCCL_FORCEINLINE GridEvenShare() = default;
 
   /**
    * @brief Dispatch initializer. To be called prior to kernel launch.

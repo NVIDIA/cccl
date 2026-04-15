@@ -892,7 +892,7 @@ struct ScanTileState<T, false>
   static constexpr size_t payload_bytes_per_tile     = sizeof(Uninitialized<T>);
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanTileState() = default;
+  _CCCL_FORCEINLINE ScanTileState() = default;
 
   /**
    * @brief Initializer
