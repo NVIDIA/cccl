@@ -1062,14 +1062,10 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <
-    typename InputIteratorT,
-    typename ExtremumOutIteratorT,
-    typename IndexOutIteratorT,
-    typename CompareOpT,
-    // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-    // ExtremumOutIteratorT, which is wrong IMO
-    ::cuda::std::enable_if_t<::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>, int> = 0>
+  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+  // ExtremumOutIteratorT, which is wrong IMO
+  _CCCL_TEMPLATE(typename InputIteratorT, typename ExtremumOutIteratorT, typename IndexOutIteratorT, typename CompareOpT)
+  _CCCL_REQUIRES((::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>) )
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1248,15 +1244,14 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <
-    typename InputIteratorT,
-    typename ExtremumOutIteratorT,
-    typename IndexOutIteratorT,
-    typename CompareOpT,
-    typename EnvT = ::cuda::std::execution::env<>,
-    // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-    // ExtremumOutIteratorT, which is wrong IMO
-    ::cuda::std::enable_if_t<::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>, int> = 0>
+  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+  // ExtremumOutIteratorT, which is wrong IMO
+  _CCCL_TEMPLATE(typename InputIteratorT,
+                 typename ExtremumOutIteratorT,
+                 typename IndexOutIteratorT,
+                 typename CompareOpT,
+                 typename EnvT = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES((::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>) )
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
     InputIteratorT d_in,
     ExtremumOutIteratorT d_min_out,
@@ -1271,19 +1266,19 @@ public:
 
   //! @overload
   //! @note Uses ``cuda::std::less`` as comparison operator
-  template <typename InputIteratorT,
-            typename ExtremumOutIteratorT,
-            typename IndexOutIteratorT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-            // ExtremumOutIteratorT, which is wrong IMO
-            ::cuda::std::enable_if_t<!::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, EnvT>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  ArgMin(InputIteratorT d_in,
-         ExtremumOutIteratorT d_min_out,
-         IndexOutIteratorT d_index_out,
-         ::cuda::std::int64_t num_items,
-         EnvT env = {})
+  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+  // ExtremumOutIteratorT, which is wrong IMO
+  _CCCL_TEMPLATE(typename InputIteratorT,
+                 typename ExtremumOutIteratorT,
+                 typename IndexOutIteratorT,
+                 typename EnvT = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES((!::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, EnvT>) )
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
+    InputIteratorT d_in,
+    ExtremumOutIteratorT d_min_out,
+    IndexOutIteratorT d_index_out,
+    ::cuda::std::int64_t num_items,
+    EnvT env = {})
   {
     return ArgMin(d_in, d_min_out, d_index_out, num_items, ::cuda::std::less{}, env);
   }
@@ -1727,14 +1722,10 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <
-    typename InputIteratorT,
-    typename ExtremumOutIteratorT,
-    typename IndexOutIteratorT,
-    typename CompareOpT,
-    // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-    // ExtremumOutIteratorT, which is wrong IMO
-    ::cuda::std::enable_if_t<::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>, int> = 0>
+  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+  // ExtremumOutIteratorT, which is wrong IMO
+  _CCCL_TEMPLATE(typename InputIteratorT, typename ExtremumOutIteratorT, typename IndexOutIteratorT, typename CompareOpT)
+  _CCCL_REQUIRES((::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>) )
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1974,15 +1965,14 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <
-    typename InputIteratorT,
-    typename ExtremumOutIteratorT,
-    typename IndexOutIteratorT,
-    typename CompareOpT,
-    typename EnvT = ::cuda::std::execution::env<>,
-    // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-    // ExtremumOutIteratorT, which is wrong IMO
-    ::cuda::std::enable_if_t<::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>, int> = 0>
+  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+  // ExtremumOutIteratorT, which is wrong IMO
+  _CCCL_TEMPLATE(typename InputIteratorT,
+                 typename ExtremumOutIteratorT,
+                 typename IndexOutIteratorT,
+                 typename CompareOpT,
+                 typename EnvT = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES((::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>) )
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
     InputIteratorT d_in,
     ExtremumOutIteratorT d_max_out,
