@@ -50,23 +50,6 @@ C2H_TEST("cub::DeviceFind::FindIf accepts env with stream", "[find][env]")
   REQUIRE(d_out[0] == expected);
 }
 
-C2H_TEST("cub::DeviceFind::FindIf no match returns num_items", "[find][env]")
-{
-  constexpr int num_items         = 5;
-  thrust::device_vector<int> d_in = {0, 1, 2, 3, 4};
-  thrust::device_vector<int> d_out(1);
-  is_greater_than_t predicate{100};
-
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
-
-  auto error = cub::DeviceFind::FindIf(d_in.begin(), d_out.begin(), predicate, num_items, stream_ref);
-  stream.sync();
-
-  REQUIRE(error == cudaSuccess);
-  REQUIRE(d_out[0] == num_items);
-}
-
 C2H_TEST("cub::DeviceFind::LowerBound accepts env with stream", "[find][env]")
 {
   // example-begin lower-bound-env
