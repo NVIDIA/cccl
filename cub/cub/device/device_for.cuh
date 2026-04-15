@@ -642,7 +642,7 @@ public:
       temp_storage_bytes = 1;
       return cudaSuccess;
     }
-    return ForEachNNoNVTX(first, num_items, op, stream);
+    return __for_each_n_no_nvtx(first, num_items, op, stream);
   }
   //! @endcond
 
