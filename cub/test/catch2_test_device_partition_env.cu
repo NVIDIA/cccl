@@ -30,10 +30,6 @@ struct greater_than_t
 {
   T compare;
 
-  explicit __host__ greater_than_t(T compare)
-      : compare(compare)
-  {}
-
   __host__ __device__ bool operator()(const T& a) const
   {
     return a > compare;
