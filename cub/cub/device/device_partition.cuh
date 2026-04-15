@@ -970,7 +970,8 @@ public:
             typename SelectFirstPartOp,
             typename SelectSecondPartOp,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!::cuda::std::is_arithmetic_v<FirstOutputIteratorT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(InputIteratorT d_in,
      FirstOutputIteratorT d_first_part_out,
