@@ -299,12 +299,23 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
+    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
+    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::merge_sort::dispatch(
-        storage, bytes, d_keys, d_items, d_keys, d_items, static_cast<ChooseOffsetT>(num_items), compare_op, stream);
-    });
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::merge_sort::dispatch(
+          storage,
+          bytes,
+          d_keys,
+          d_items,
+          d_keys,
+          d_items,
+          static_cast<ChooseOffsetT>(num_items),
+          compare_op,
+          stream,
+          policy_selector);
+      });
   }
 
   /**
@@ -542,20 +553,23 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
+    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
+    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::merge_sort::dispatch(
-        storage,
-        bytes,
-        d_input_keys,
-        d_input_items,
-        d_output_keys,
-        d_output_items,
-        static_cast<ChooseOffsetT>(num_items),
-        compare_op,
-        stream);
-    });
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::merge_sort::dispatch(
+          storage,
+          bytes,
+          d_input_keys,
+          d_input_items,
+          d_output_keys,
+          d_output_items,
+          static_cast<ChooseOffsetT>(num_items),
+          compare_op,
+          stream,
+          policy_selector);
+      });
   }
 
 private:
@@ -740,20 +754,23 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
+    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
+    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::merge_sort::dispatch(
-        storage,
-        bytes,
-        d_keys,
-        static_cast<NullType*>(nullptr),
-        d_keys,
-        static_cast<NullType*>(nullptr),
-        static_cast<ChooseOffsetT>(num_items),
-        compare_op,
-        stream);
-    });
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::merge_sort::dispatch(
+          storage,
+          bytes,
+          d_keys,
+          static_cast<NullType*>(nullptr),
+          d_keys,
+          static_cast<NullType*>(nullptr),
+          static_cast<ChooseOffsetT>(num_items),
+          compare_op,
+          stream,
+          policy_selector);
+      });
   }
 
 private:
@@ -967,20 +984,23 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
+    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
+    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::merge_sort::dispatch(
-        storage,
-        bytes,
-        d_input_keys,
-        static_cast<NullType*>(nullptr),
-        d_output_keys,
-        static_cast<NullType*>(nullptr),
-        static_cast<ChooseOffsetT>(num_items),
-        compare_op,
-        stream);
-    });
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::merge_sort::dispatch(
+          storage,
+          bytes,
+          d_input_keys,
+          static_cast<NullType*>(nullptr),
+          d_output_keys,
+          static_cast<NullType*>(nullptr),
+          static_cast<ChooseOffsetT>(num_items),
+          compare_op,
+          stream,
+          policy_selector);
+      });
   }
 
   /**
@@ -1161,12 +1181,23 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
+    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
+    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::merge_sort::dispatch(
-        storage, bytes, d_keys, d_items, d_keys, d_items, static_cast<ChooseOffsetT>(num_items), compare_op, stream);
-    });
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::merge_sort::dispatch(
+          storage,
+          bytes,
+          d_keys,
+          d_items,
+          d_keys,
+          d_items,
+          static_cast<ChooseOffsetT>(num_items),
+          compare_op,
+          stream,
+          policy_selector);
+      });
   }
 
   /**
@@ -1328,20 +1359,23 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
+    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
+    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::merge_sort::dispatch(
-        storage,
-        bytes,
-        d_keys,
-        static_cast<NullType*>(nullptr),
-        d_keys,
-        static_cast<NullType*>(nullptr),
-        static_cast<ChooseOffsetT>(num_items),
-        compare_op,
-        stream);
-    });
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::merge_sort::dispatch(
+          storage,
+          bytes,
+          d_keys,
+          static_cast<NullType*>(nullptr),
+          d_keys,
+          static_cast<NullType*>(nullptr),
+          static_cast<ChooseOffsetT>(num_items),
+          compare_op,
+          stream,
+          policy_selector);
+      });
   }
 
   /**
@@ -1528,20 +1562,23 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE(GetName());
 
-    using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
+    using ChooseOffsetT           = detail::choose_offset_t<OffsetT>;
+    using default_policy_selector = detail::merge_sort::policy_selector_from_types<KeyIteratorT>;
 
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return detail::merge_sort::dispatch(
-        storage,
-        bytes,
-        d_input_keys,
-        static_cast<NullType*>(nullptr),
-        d_output_keys,
-        static_cast<NullType*>(nullptr),
-        static_cast<ChooseOffsetT>(num_items),
-        compare_op,
-        stream);
-    });
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
+        return detail::merge_sort::dispatch(
+          storage,
+          bytes,
+          d_input_keys,
+          static_cast<NullType*>(nullptr),
+          d_output_keys,
+          static_cast<NullType*>(nullptr),
+          static_cast<ChooseOffsetT>(num_items),
+          compare_op,
+          stream,
+          policy_selector);
+      });
   }
 };
 
