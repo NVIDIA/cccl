@@ -134,9 +134,9 @@ int main(int argc, char** argv)
   CubDebugExit(args.DeviceInit());
 
   // Allocate host arrays
-  int* h_in        = new int[num_items];
-  int* h_reference = new int[num_items];
-  auto* h_flags    = new unsigned char[num_items];
+  auto* h_in        = new int[num_items];
+  auto* h_reference = new int[num_items];
+  auto* h_flags     = new unsigned char[num_items];
 
   // Initialize problem and solution
   Initialize(h_in, h_flags, num_items, max_segment);
