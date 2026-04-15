@@ -120,6 +120,14 @@ string(
   " -DLIBCUDACXX_IGNORE_DEPRECATED_ABI"
 )
 
+# enable tile support
+if (CCCL_ENABLE_TILE)
+  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " --enable-tile")
+  set(LIBCUDACXX_ENABLE_TILE True)
+else()
+  set(LIBCUDACXX_ENABLE_TILE False)
+endif()
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS " -latomic")
 endif()

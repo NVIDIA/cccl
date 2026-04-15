@@ -25,8 +25,8 @@
 #define TEST_NV_DIAG_SUPPRESS(...)    _CCCL_BEGIN_NV_DIAG_SUPPRESS(__VA_ARGS__)
 
 // Use the CCCL host device function
-#define TEST_FUNC        _CCCL_HOST_DEVICE
-#define TEST_DEVICE_FUNC _CCCL_DEVICE
+#define TEST_FUNC        _CCCL_HOST_DEVICE _CCCL_TILE
+#define TEST_DEVICE_FUNC _CCCL_DEVICE _CCCL_TILE
 
 // Use the CCCL C++ dialect detection
 #define TEST_STD_VER _CCCL_STD_VER

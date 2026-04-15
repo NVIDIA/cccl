@@ -31,6 +31,10 @@ function(libcudacxx_build_compiler_targets)
     "CCCL_IGNORE_DEPRECATED_STREAM_REF_HEADER"
   )
 
+  if (CCCL_ENABLE_TILE)
+    list(APPEND cuda_compile_options "--enable-tile")
+  endif()
+
   cccl_build_compiler_interface(
     libcudacxx.compiler_flags
     "${cuda_compile_options}"
