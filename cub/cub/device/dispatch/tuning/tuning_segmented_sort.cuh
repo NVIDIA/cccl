@@ -74,8 +74,8 @@ struct sub_warp_merge_sort_policy
   int warp_threads;
   int items_per_thread;
   WarpLoadAlgorithm load_algorithm;
-  WarpStoreAlgorithm store_algorithm;
   CacheLoadModifier load_modifier;
+  WarpStoreAlgorithm store_algorithm;
 
   [[nodiscard]] _CCCL_API constexpr int segments_per_block() const
   {
@@ -92,7 +92,7 @@ struct sub_warp_merge_sort_policy
   {
     return lhs.block_threads == rhs.block_threads && lhs.warp_threads == rhs.warp_threads
         && lhs.items_per_thread == rhs.items_per_thread && lhs.load_algorithm == rhs.load_algorithm
-        && lhs.store_algorithm == rhs.store_algorithm && lhs.load_modifier == rhs.load_modifier;
+        && lhs.load_modifier == rhs.load_modifier && lhs.store_algorithm == rhs.store_algorithm;
   }
 
   [[nodiscard]] _CCCL_API constexpr friend bool
@@ -107,7 +107,7 @@ struct sub_warp_merge_sort_policy
     return os
         << "sub_warp_merge_sort_policy { .block_threads = " << p.block_threads << ", .warp_threads = " << p.warp_threads
         << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
-        << ", .store_algorithm = " << p.store_algorithm << ", .load_modifier = " << p.load_modifier << " }";
+        << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm << " }";
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
@@ -194,8 +194,8 @@ struct policy_selector
         __make_scaled_segmented_radix_sort_policy(
           256, 23, BLOCK_LOAD_TRANSPOSE, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_WARP_SCANS, radix_bits),
         sub_warp_merge_sort_policy{
-          256, large_items ? 8 : 2, small_itp, WARP_LOAD_TRANSPOSE, WARP_STORE_DIRECT, LOAD_LDG},
-        sub_warp_merge_sort_policy{256, 16, medium_itp, WARP_LOAD_TRANSPOSE, WARP_STORE_DIRECT, LOAD_LDG},
+          256, large_items ? 8 : 2, small_itp, WARP_LOAD_TRANSPOSE, LOAD_LDG, WARP_STORE_DIRECT},
+        sub_warp_merge_sort_policy{256, 16, medium_itp, WARP_LOAD_TRANSPOSE, LOAD_LDG, WARP_STORE_DIRECT},
         500};
     }
 
@@ -208,8 +208,8 @@ struct policy_selector
         __make_scaled_segmented_radix_sort_policy(
           256, 23, BLOCK_LOAD_TRANSPOSE, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_WARP_SCANS, radix_bits),
         sub_warp_merge_sort_policy{
-          256, keys_only ? 4 : 2, small_itp, WARP_LOAD_TRANSPOSE, WARP_STORE_DIRECT, LOAD_DEFAULT},
-        sub_warp_merge_sort_policy{256, 32, medium_itp, WARP_LOAD_TRANSPOSE, WARP_STORE_DIRECT, LOAD_DEFAULT},
+          256, keys_only ? 4 : 2, small_itp, WARP_LOAD_TRANSPOSE, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        sub_warp_merge_sort_policy{256, 32, medium_itp, WARP_LOAD_TRANSPOSE, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
@@ -221,8 +221,8 @@ struct policy_selector
       return segmented_sort_policy{
         __make_scaled_segmented_radix_sort_policy(
           256, 19, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_WARP_SCANS, radix_bits),
-        sub_warp_merge_sort_policy{256, keys_only ? 4 : 8, small_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
-        sub_warp_merge_sort_policy{256, 32, medium_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
+        sub_warp_merge_sort_policy{256, keys_only ? 4 : 8, small_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        sub_warp_merge_sort_policy{256, 32, medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
@@ -233,8 +233,8 @@ struct policy_selector
       return segmented_sort_policy{
         __make_scaled_segmented_radix_sort_policy(
           256, 16, BLOCK_LOAD_TRANSPOSE, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_RAKING_MEMOIZE, radix_bits),
-        sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
-        sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
+        sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
@@ -245,8 +245,8 @@ struct policy_selector
       return segmented_sort_policy{
         __make_scaled_segmented_radix_sort_policy(
           256, 19, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_WARP_SCANS, radix_bits),
-        sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
-        sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
+        sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
@@ -257,8 +257,8 @@ struct policy_selector
       return segmented_sort_policy{
         __make_scaled_segmented_radix_sort_policy(
           256, 19, BLOCK_LOAD_TRANSPOSE, LOAD_DEFAULT, RADIX_RANK_MATCH, BLOCK_SCAN_WARP_SCANS, radix_bits),
-        sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
-        sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
+        sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+        sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
         500};
     }
 
@@ -268,8 +268,8 @@ struct policy_selector
     return segmented_sort_policy{
       __make_scaled_segmented_radix_sort_policy(
         256, 16, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, RADIX_RANK_MEMOIZE, BLOCK_SCAN_RAKING_MEMOIZE, radix_bits),
-      sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
-      sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, WARP_STORE_DIRECT, LOAD_DEFAULT},
+      sub_warp_merge_sort_policy{256, 4, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
+      sub_warp_merge_sort_policy{256, 32, small_medium_itp, WARP_LOAD_DIRECT, LOAD_DEFAULT, WARP_STORE_DIRECT},
       300};
   }
 };
