@@ -87,7 +87,6 @@ function(add_bench target_name bench_name bench_src)
   cccl_add_executable(
     ${bench_target}
     NO_METATARGETS
-    DIALECT 17
     SOURCES "${bench_src}"
   )
   target_link_libraries(

@@ -30,7 +30,6 @@ function(add_bench target_name bench_name bench_src)
   cccl_add_executable(
     ${bench_target}
     NO_METATARGETS
-    DIALECT 17
     SOURCES "${bench_src}"
   )
   target_link_libraries(
@@ -76,7 +75,7 @@ function(add_bench_dir bench_dir)
 
       string(APPEND bench_name ".base")
       add_bench(base_bench_target ${bench_name} "${real_bench_src}")
-      cccl_configure_target(${bench_name} DIALECT 17)
+      cccl_configure_target(${bench_name})
       target_link_libraries(${bench_name} PRIVATE ${thrust_target})
 
       if ("CUDA" STREQUAL "${config_device}")
