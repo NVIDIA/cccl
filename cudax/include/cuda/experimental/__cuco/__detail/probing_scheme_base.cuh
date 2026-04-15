@@ -29,9 +29,7 @@ namespace cuda::experimental::cuco::__detail
 {
 //! @brief Base class of public probing schemes.
 //!
-//! Template parameter:
-//! - `_CgSize`: Cooperative group size
-
+//! @tparam _CgSize Cooperative group size
 template <int _CgSize>
 class __probing_scheme_base
 {

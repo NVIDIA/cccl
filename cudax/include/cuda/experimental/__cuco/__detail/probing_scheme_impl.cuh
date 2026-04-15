@@ -22,9 +22,7 @@ namespace cuda::experimental::cuco::__detail
 {
 //! @brief Probing iterator class.
 //!
-//! Template parameter:
-//! - `_Extent`: Extent type
-
+//! @tparam _Extent Extent type
 template <class _Extent>
 class __probing_iterator
 {
@@ -71,8 +69,7 @@ _CCCL_API constexpr auto
 linear_probing<_CgSize, _Hash>::make_iterator(_ProbeKey __probe_key, _Extent __upper_bound) const noexcept
 {
   using __size_type        = typename _Extent::index_type;
-  __size_type const __init = ::cuda::experimental::cuco::__detail::__sanitize_hash<__size_type>(__hash(__probe_key))
-                           % (__upper_bound.extent(0) / _BucketSize) * _BucketSize;
+  __size_type const __init = __hash(__probe_key) % (__upper_bound.extent(0) / _BucketSize) * _BucketSize;
   return ::cuda::experimental::cuco::__detail::__probing_iterator<_Extent>{
     __init, static_cast<__size_type>(_BucketSize), __upper_bound};
 }
@@ -86,10 +83,8 @@ _CCCL_API constexpr auto linear_probing<_CgSize, _Hash>::make_iterator(
 {
   using __size_type              = typename _Extent::index_type;
   constexpr __size_type __stride = cg_size * _BucketSize;
-  __size_type const __init =
-    ::cuda::experimental::cuco::__detail::__sanitize_hash<__size_type>(__hash(__probe_key))
-      % (__upper_bound.extent(0) / __stride) * __stride
-    + static_cast<__size_type>(__group.thread_rank() * _BucketSize);
+  __size_type const __init       = __hash(__probe_key) % (__upper_bound.extent(0) / __stride) * __stride
+                           + static_cast<__size_type>(__group.thread_rank() * _BucketSize);
   return ::cuda::experimental::cuco::__detail::__probing_iterator<_Extent>{__init, __stride, __upper_bound};
 }
 
@@ -100,13 +95,8 @@ double_hashing<_CgSize, _Hash1, _Hash2>::make_iterator(_ProbeKey __probe_key, _E
 {
   using __size_type = typename _Extent::index_type;
   return ::cuda::experimental::cuco::__detail::__probing_iterator<_Extent>{
-    static_cast<__size_type>(::cuda::experimental::cuco::__detail::__sanitize_hash<__size_type>(__hash1(__probe_key))
-                             % (__upper_bound.extent(0) / _BucketSize) * _BucketSize),
-    static_cast<__size_type>(
-      (::cuda::experimental::cuco::__detail::__sanitize_hash<__size_type>(__hash2(__probe_key))
-         % (__upper_bound.extent(0) / _BucketSize - 1)
-       + 1)
-      * _BucketSize),
+    static_cast<__size_type>(__hash1(__probe_key)) % (__upper_bound.extent(0) / _BucketSize) * _BucketSize,
+    static_cast<__size_type>((__hash2(__probe_key) % (__upper_bound.extent(0) / _BucketSize - 1) + 1) * _BucketSize),
     __upper_bound};
 }
 
@@ -121,14 +111,9 @@ _CCCL_API constexpr auto double_hashing<_CgSize, _Hash1, _Hash2>::make_iterator(
   constexpr __size_type __stride = cg_size * _BucketSize;
 
   return ::cuda::experimental::cuco::__detail::__probing_iterator<_Extent>{
-    static_cast<__size_type>(::cuda::experimental::cuco::__detail::__sanitize_hash<__size_type>(__hash1(__probe_key))
-                               % (__upper_bound.extent(0) / __stride) * __stride
-                             + static_cast<__size_type>(__group.thread_rank() * _BucketSize)),
-    static_cast<__size_type>(
-      (::cuda::experimental::cuco::__detail::__sanitize_hash<__size_type>(__hash2(__probe_key))
-         % (__upper_bound.extent(0) / __stride - 1)
-       + 1)
-      * __stride),
+    static_cast<__size_type>(__hash1(__probe_key)) % (__upper_bound.extent(0) / __stride) * __stride
+      + static_cast<__size_type>(__group.thread_rank() * _BucketSize),
+    static_cast<__size_type>((__hash2(__probe_key) % (__upper_bound.extent(0) / __stride - 1) + 1) * __stride),
     __upper_bound};
 }
 } // namespace cuda::experimental::cuco

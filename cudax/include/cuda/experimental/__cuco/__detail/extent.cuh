@@ -49,7 +49,7 @@ template <int _CgSize, int _BucketSize, class _SizeType, ::cuda::std::size_t _Ex
 [[nodiscard]] _CCCL_API constexpr auto __make_valid_extent_double_hash(extent<_SizeType, _Extent> __ext)
 {
   constexpr auto __stride    = _CgSize * _BucketSize;
-  constexpr auto __max_prime = __primes.back();
+  constexpr auto __max_prime = ::cuda::experimental::cuco::__detail::__last_prime;
   constexpr auto __max_value =
     (static_cast<::cuda::std::uint64_t>(::cuda::std::numeric_limits<_SizeType>::max()) < __max_prime)
       ? ::cuda::std::numeric_limits<_SizeType>::max()
@@ -59,11 +59,11 @@ template <int _CgSize, int _BucketSize, class _SizeType, ::cuda::std::size_t _Ex
     ::cuda::ceil_div(::cuda::std::max(static_cast<_SizeType>(__ext.extent(0)), static_cast<_SizeType>(1)), __stride);
   if (__size > __max_value)
   {
-    _CCCL_THROW(std::logic_error, "Invalid input extent");
+    _CCCL_THROW(::std::logic_error, "Invalid input extent");
   }
 
   return __valid_extent<_SizeType>{static_cast<_SizeType>(
-    *__lower_bound(__primes.begin(), __primes.end(), static_cast<::cuda::std::uint64_t>(__size)) * __stride)};
+    *__lower_bound(__primes, __primes + __num_primes, static_cast<::cuda::std::uint64_t>(__size)) * __stride)};
 }
 
 //! @brief Computes a valid storage extent for a given probing scheme.
@@ -100,17 +100,17 @@ template <class _ProbingScheme, int _BucketSize, class _SizeType>
 {
   if (__desired_load_factor <= 0.)
   {
-    _CCCL_THROW(std::logic_error, "Desired occupancy must be larger than zero");
+    _CCCL_THROW(::std::logic_error, "Desired occupancy must be larger than zero");
   }
   if (__desired_load_factor > 1.)
   {
-    _CCCL_THROW(std::logic_error, "Desired occupancy must be no larger than one");
+    _CCCL_THROW(::std::logic_error, "Desired occupancy must be no larger than one");
   }
 
   const auto __temp = ::cuda::std::ceil(static_cast<double>(_SizeType{__ext.extent(0)}) / __desired_load_factor);
   if (__temp > static_cast<double>(::cuda::std::numeric_limits<_SizeType>::max()))
   {
-    _CCCL_THROW(std::logic_error,
+    _CCCL_THROW(::std::logic_error,
                 "Invalid load factor: requested extent divided by load factor exceeds maximum representable value");
   }
   return __make_valid_extent<_ProbingScheme, _BucketSize>(extent<_SizeType>{static_cast<_SizeType>(__temp)});

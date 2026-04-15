@@ -33,9 +33,8 @@ namespace cuda::experimental::cuco
 {
 //! @brief Public linear probing scheme class.
 //!
-//! Template parameters:
-//! - `_CgSize`: Cooperative group size
-//! - `_Hash`: Hash functor type
+//! @tparam _CgSize Cooperative group size
+//! @tparam _Hash Hash functor type
 template <int _CgSize, class _Hash>
 class linear_probing : private ::cuda::experimental::cuco::__detail::__probing_scheme_base<_CgSize>
 {
@@ -74,10 +73,9 @@ private:
 
 //! @brief Public double hashing scheme class.
 //!
-//! Template parameters:
-//! - `_CgSize`: Cooperative group size
-//! - `_Hash1`: First hash functor
-//! - `_Hash2`: Second hash functor
+//! @tparam _CgSize Cooperative group size
+//! @tparam _Hash1 First hash functor
+//! @tparam _Hash2 Second hash functor
 template <int _CgSize, class _Hash1, class _Hash2 = _Hash1>
 class double_hashing : private ::cuda::experimental::cuco::__detail::__probing_scheme_base<_CgSize>
 {

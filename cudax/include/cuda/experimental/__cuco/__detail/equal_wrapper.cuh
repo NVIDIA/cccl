@@ -40,6 +40,7 @@ enum class __equal_result : ::cuda::std::int8_t
   __available = 3
 };
 
+//! @brief Enum indicating whether the operation is an insert.
 enum class __is_insert : ::cuda::std::int8_t
 {
   __yes,
@@ -48,11 +49,9 @@ enum class __is_insert : ::cuda::std::int8_t
 
 //! @brief Key equality wrapper.
 //!
-//! Template parameters:
-//! - `_Tp`: Right-hand side element type
-//! - `_Equal`: Equality callable
-//! - `_AllowsDuplicates`: Duplicate key flag
-
+//! @tparam _Tp Right-hand side element type
+//! @tparam _Equal Equality callable
+//! @tparam _AllowsDuplicates Duplicate key flag
 template <class _Tp, class _Equal, bool _AllowsDuplicates>
 struct __equal_wrapper
 {
@@ -60,18 +59,47 @@ struct __equal_wrapper
   _Tp __erased_sentinel;
   _Equal __equal;
 
+  //! @brief Equality wrapper constructor.
+  //!
+  //! @param __empty Empty sentinel value
+  //! @param __erased Erased sentinel value
+  //! @param __eq Equality binary callable
   _CCCL_API constexpr __equal_wrapper(_Tp __empty, _Tp __erased, _Equal const& __eq) noexcept
       : __empty_sentinel{__empty}
       , __erased_sentinel{__erased}
       , __equal{__eq}
   {}
 
+  //! @brief Equality check with the given equality callable.
+  //!
+  //! @tparam _Lhs Left-hand side element type
+  //! @tparam _Rhs Right-hand side element type
+  //!
+  //! @param __lhs Left-hand side element to check equality
+  //! @param __rhs Right-hand side element to check equality
+  //!
+  //! @return `__equal` if `__lhs` and `__rhs` are equivalent, `__unequal` otherwise
   template <class _Lhs, class _Rhs>
   _CCCL_DEVICE constexpr __equal_result __equal_to(const _Lhs& __lhs, const _Rhs& __rhs) const noexcept
   {
     return __equal(__lhs, __rhs) ? __equal_result::__equal : __equal_result::__unequal;
   }
 
+  //! @brief Order-sensitive equality operator.
+  //!
+  //! @note This function always compares the right-hand side element against sentinel values first
+  //! then performs an equality check with the given `__equal` callable, i.e., `__equal(__lhs, __rhs)`.
+  //! @note Container (like set or map) slots MUST always be on the right-hand side.
+  //!
+  //! @tparam _IsInsert Flag indicating whether it's an insert equality check or not. Insert probing
+  //! stops when it's an empty or erased slot while query probing stops only when it's empty.
+  //! @tparam _Lhs Left-hand side element type
+  //! @tparam _Rhs Right-hand side element type
+  //!
+  //! @param __lhs Left-hand side element to check equality
+  //! @param __rhs Right-hand side element to check equality
+  //!
+  //! @return Three-way equality comparison result
   template <__is_insert _IsInsert, class _Lhs, class _Rhs>
   _CCCL_DEVICE constexpr __equal_result operator()(const _Lhs& __lhs, const _Rhs& __rhs) const noexcept
   {

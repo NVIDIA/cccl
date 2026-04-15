@@ -25,24 +25,22 @@
 
 namespace cuda::experimental::cuco
 {
-//! A strong type wrapper
+//! @brief A strong type wrapper.
 //!
-//! Template parameter:
-//! - `_Tp`: Type of the underlying value
+//! @tparam _Tp Type of the underlying value
 template <class _Tp>
 struct __strong_type
 {
-  //! Constructs a strong type
+  //! @brief Constructs a strong type.
   //!
-  //! Parameter:
-  //! - `v`: Value to be wrapped as a strong type
+  //! @param __v Value to be wrapped as a strong type
   _CCCL_API explicit constexpr __strong_type(_Tp __v)
       : __value{__v}
   {}
 
-  //! Implicit conversion operator to the underlying value.
+  //! @brief Implicit conversion operator to the underlying value.
   //!
-  //! Returns: Underlying value
+  //! @return The underlying value
   _CCCL_API constexpr operator _Tp() const noexcept
   {
     return __value;

@@ -65,7 +65,7 @@ namespace cuda::experimental::cuco
 template <class _Key,
           class _Tp,
           ::cuda::thread_scope _Scope = ::cuda::thread_scope_device,
-          class _KeyEqual             = thrust::equal_to<_Key>,
+          class _KeyEqual             = ::cuda::std::equal_to<_Key>,
           class _ProbingScheme  = ::cuda::experimental::cuco::linear_probing<1, ::cuda::experimental::cuco::hash<_Key>>,
           int _BucketSize       = 1,
           class _MemoryResource = ::cuda::device_memory_pool_ref>

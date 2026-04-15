@@ -33,32 +33,12 @@
 
 namespace cuda::experimental::cuco::__detail
 {
-_CCCL_HOST_DEVICE inline int __cuda_memcmp(const void* __lhs, const void* __rhs, ::cuda::std::size_t __count)
-{
-  auto __lhs_c = reinterpret_cast<const unsigned char*>(__lhs);
-  auto __rhs_c = reinterpret_cast<const unsigned char*>(__rhs);
-  while (__count--)
-  {
-    auto const __lhs_v = *__lhs_c++;
-    auto const __rhs_v = *__rhs_c++;
-    if (__lhs_v < __rhs_v)
-    {
-      return -1;
-    }
-    if (__lhs_v > __rhs_v)
-    {
-      return 1;
-    }
-  }
-  return 0;
-}
-
 template <::cuda::std::size_t _TypeSize>
 struct __bitwise_compare_impl
 {
   _CCCL_HOST_DEVICE static bool compare(const char* __lhs, const char* __rhs)
   {
-    return __cuda_memcmp(__lhs, __rhs, _TypeSize) == 0;
+    return ::cuda::std::memcmp(__lhs, __rhs, _TypeSize) == 0;
   }
 };
 
@@ -82,11 +62,9 @@ struct __bitwise_compare_impl<8>
   }
 };
 
-//! @brief Alignment helper for bitwise compare
+//! @brief Alignment helper for bitwise compare.
 //!
-//! Template parameter:
-//! - `_Tp`: Type to align
-
+//! @tparam _Tp Type to align
 template <class _Tp>
 _CCCL_HOST_DEVICE constexpr ::cuda::std::size_t __alignment() noexcept
 {
@@ -94,11 +72,9 @@ _CCCL_HOST_DEVICE constexpr ::cuda::std::size_t __alignment() noexcept
   return ::cuda::std::min(::cuda::std::size_t{16}, __align);
 }
 
-//! @brief Bitwise equality comparison
+//! @brief Bitwise equality comparison.
 //!
-//! Template parameter:
-//! - `_Tp`: Value type
-
+//! @tparam _Tp Value type
 template <class _Tp>
 _CCCL_HOST_DEVICE constexpr bool __bitwise_compare(_Tp __lhs, _Tp __rhs)
 {

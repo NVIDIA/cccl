@@ -74,7 +74,7 @@ struct __slot_is_filled
     const auto __key = [&]() {
       if constexpr (_HasPayload)
       {
-        if constexpr (::cuda::experimental::cuco::__detail::__is_cuda_std_pair_like<_Slot>::value)
+        if constexpr (::cuda::experimental::cuco::__detail::__is_pair_like<_Slot>::value)
         {
           return ::cuda::std::get<0>(__slot);
         }

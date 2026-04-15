@@ -23,17 +23,19 @@
 
 #include <cuda/__cmath/ceil_div.h>
 
-#include <algorithm>
-#include <array>
-#include <cstdint>
-#include <limits>
-
 #include <cuda/std/__cccl/prologue.h>
+
+#ifndef _CUDAX_CUCO_GLOBAL_CONSTANT_DECL
+#  if _CCCL_OS(WINDOWS)
+#    define _CUDAX_CUCO_GLOBAL_CONSTANT_DECL _CCCL_GLOBAL_CONSTANT
+#  else
+#    define _CUDAX_CUCO_GLOBAL_CONSTANT_DECL _CCCL_DEVICE inline constexpr
+#  endif
+#endif
 
 namespace cuda::experimental::cuco::__detail
 {
-// TODO use CTAD instead of explicitly specifying the array size once we drop support for nvcc <11.5
-inline constexpr ::cuda::std::array<::cuda::std::int64_t, 140741> __primes = {
+_CUDAX_CUCO_GLOBAL_CONSTANT_DECL ::cuda::std::int64_t __primes[] = {
   2,           3,           5,           7,           11,          13,          19,          29,          37,
   43,          53,          59,          67,          73,          79,          89,          97,          103,
   109,         127,         137,         149,         151,         157,         163,         173,         179,
@@ -15671,9 +15673,10 @@ inline constexpr ::cuda::std::array<::cuda::std::int64_t, 140741> __primes = {
   17173301059, 17173432163, 17173563259, 17173694333, 17173825421, 17173956517, 17174087597, 17174218681, 17174349779,
   17174480867, 17174611943, 17174743031, 17174874103, 17175005201, 17175136273, 17175267353, 17175398473, 17175529577,
   17175660743, 17175791821, 17175922903, 17176053997, 17176185083, 17176316167, 17176447243, 17176578343, 17176709449,
-  17176840529, 17176971601, 17177102693, 17177233783, 17177364857, 17177495953, 17177627053, 17177758133
+  17176840529, 17176971601, 17177102693, 17177233783, 17177364857, 17177495953, 17177627053, 17177758133};
 
-};
+_CUDAX_CUCO_GLOBAL_CONSTANT_DECL ::cuda::std::int64_t __last_prime = 17177758133;
+_CUDAX_CUCO_GLOBAL_CONSTANT_DECL size_t __num_primes               = sizeof(__primes) / sizeof(::cuda::std::int64_t);
 } // namespace cuda::experimental::cuco::__detail
 
 #include <cuda/std/__cccl/epilogue.h>
