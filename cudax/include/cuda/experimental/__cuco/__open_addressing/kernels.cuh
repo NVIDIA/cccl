@@ -124,46 +124,6 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __insert_if_n(
   }
 }
 
-//! @brief Erases keys in the range `[first, first + n)` and counts successes.
-template <int _CgSize, int _BlockSize, class _InputIt, class _AtomicT, class _Ref>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void
-__erase(_InputIt __first, ::cuda::experimental::cuco::__detail::__index_type __n, _AtomicT* __num_successes, _Ref __ref)
-{
-  using __block_reduce = cub::BlockReduce<typename _Ref::size_type, _BlockSize>;
-  __shared__ typename __block_reduce::TempStorage __temp_storage;
-  typename _Ref::size_type __thread_num_successes = 0;
-
-  const auto __loop_stride = ::cuda::experimental::cuco::__detail::__grid_stride() / _CgSize;
-  auto __idx               = ::cuda::experimental::cuco::__detail::__global_thread_id() / _CgSize;
-
-  while (__idx < __n)
-  {
-    if constexpr (_CgSize == 1)
-    {
-      if (__ref.erase(*(__first + __idx)))
-      {
-        __thread_num_successes++;
-      }
-    }
-    else
-    {
-      const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(
-        ::cooperative_groups::this_thread_block());
-      if (__ref.erase(__tile, *(__first + __idx)) && __tile.thread_rank() == 0)
-      {
-        __thread_num_successes++;
-      }
-    }
-    __idx += __loop_stride;
-  }
-
-  const auto __block_num_successes = __block_reduce(__temp_storage).Sum(__thread_num_successes);
-  if (threadIdx.x == 0)
-  {
-    __num_successes->fetch_add(__block_num_successes, ::cuda::std::memory_order_relaxed);
-  }
-}
-
 //! @brief Erases keys in the range `[first, first + n)` (fire-and-forget, no counting).
 template <int _CgSize, int _BlockSize, class _InputIt, class _Ref>
 CCCL_DETAIL_KERNEL_ATTRIBUTES void
@@ -174,15 +134,16 @@ __erase(_InputIt __first, ::cuda::experimental::cuco::__detail::__index_type __n
 
   while (__idx < __n)
   {
+    typename ::cuda::std::iterator_traits<_InputIt>::value_type const __erase_element{*(__first + __idx)};
     if constexpr (_CgSize == 1)
     {
-      __ref.erase(*(__first + __idx));
+      __ref.erase(__erase_element);
     }
     else
     {
       const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(
         ::cooperative_groups::this_thread_block());
-      __ref.erase(__tile, *(__first + __idx));
+      __ref.erase(__tile, __erase_element);
     }
     __idx += __loop_stride;
   }
@@ -213,15 +174,16 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __for_each_n(
 
   while (__idx < __n)
   {
+    typename ::cuda::std::iterator_traits<_InputIt>::value_type const __key{*(__first + __idx)};
     if constexpr (_CgSize == 1)
     {
-      __ref.for_each(*(__first + __idx), __callback_op);
+      __ref.for_each(__key, __callback_op);
     }
     else
     {
       const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(
         ::cooperative_groups::this_thread_block());
-      __ref.for_each(__tile, *(__first + __idx), __callback_op);
+      __ref.for_each(__tile, __key, __callback_op);
     }
     __idx += __loop_stride;
   }
@@ -237,29 +199,46 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __contains_if_n(
   _OutputIt __output_begin,
   _Ref __ref)
 {
+  const auto __block       = ::cooperative_groups::this_thread_block();
+  const auto __thread_idx  = __block.thread_rank();
   const auto __loop_stride = ::cuda::experimental::cuco::__detail::__grid_stride() / _CgSize;
   auto __idx               = ::cuda::experimental::cuco::__detail::__global_thread_id() / _CgSize;
 
-  while (__idx < __n)
+  __shared__ bool __output_buffer[_BlockSize / _CgSize];
+
+  while ((__idx - __thread_idx / _CgSize) < __n) // the whole thread block falls into the same iteration
   {
-    if (__pred(*(__stencil + __idx)))
+    if constexpr (_CgSize == 1)
     {
-      bool __found = false;
-      if constexpr (_CgSize == 1)
+      if (__idx < __n)
       {
-        __found = __ref.contains(*(__first + __idx));
+        typename ::cuda::std::iterator_traits<_InputIt>::value_type const __key = *(__first + __idx);
+        /*
+         * The ld.relaxed.gpu instruction causes L1 to flush more frequently, causing increased
+         * sector stores from L2 to global memory. By writing results to shared memory and then
+         * synchronizing before writing back to global, we no longer rely on L1, preventing the
+         * increase in sector stores from L2 to global and improving performance.
+         */
+        __output_buffer[__thread_idx] = __pred(*(__stencil + __idx)) ? __ref.contains(__key) : false;
       }
-      else
+      __block.sync();
+      if (__idx < __n)
       {
-        const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(
-          ::cooperative_groups::this_thread_block());
-        __found = __ref.contains(__tile, *(__first + __idx));
+        *(__output_begin + __idx) = __output_buffer[__thread_idx];
       }
-      *(__output_begin + __idx) = __found;
     }
     else
     {
-      *(__output_begin + __idx) = false;
+      const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(__block);
+      if (__idx < __n)
+      {
+        typename ::cuda::std::iterator_traits<_InputIt>::value_type const __key = *(__first + __idx);
+        const auto __found = __pred(*(__stencil + __idx)) ? __ref.contains(__tile, __key) : false;
+        if (__tile.thread_rank() == 0)
+        {
+          *(__output_begin + __idx) = __found;
+        }
+      }
     }
     __idx += __loop_stride;
   }
@@ -275,27 +254,48 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __find_if_n(
   _OutputIt __output_begin,
   _Ref __ref)
 {
+  const auto __block       = ::cooperative_groups::this_thread_block();
+  const auto __thread_idx  = __block.thread_rank();
   const auto __loop_stride = ::cuda::experimental::cuco::__detail::__grid_stride() / _CgSize;
   auto __idx               = ::cuda::experimental::cuco::__detail::__global_thread_id() / _CgSize;
 
-  while (__idx < __n)
+  using __output_type = typename _Ref::iterator;
+  __shared__ __output_type __output_buffer[_BlockSize / _CgSize];
+
+  while ((__idx - __thread_idx / _CgSize) < __n) // the whole thread block falls into the same iteration
   {
-    if (__pred(*(__stencil + __idx)))
+    if constexpr (_CgSize == 1)
     {
-      if constexpr (_CgSize == 1)
+      if (__idx < __n)
       {
-        *(__output_begin + __idx) = __ref.find(*(__first + __idx));
+        typename ::cuda::std::iterator_traits<_InputIt>::value_type const __key = *(__first + __idx);
+        const auto __found                                                      = __ref.find(__key);
+        /*
+         * The ld.relaxed.gpu instruction causes L1 to flush more frequently, causing increased
+         * sector stores from L2 to global memory. By writing results to shared memory and then
+         * synchronizing before writing back to global, we no longer rely on L1, preventing the
+         * increase in sector stores from L2 to global and improving performance.
+         */
+        __output_buffer[__thread_idx] = __pred(*(__stencil + __idx)) ? __found : __ref.end();
       }
-      else
+      __block.sync();
+      if (__idx < __n)
       {
-        const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(
-          ::cooperative_groups::this_thread_block());
-        *(__output_begin + __idx) = __ref.find(__tile, *(__first + __idx));
+        *(__output_begin + __idx) = __output_buffer[__thread_idx];
       }
     }
     else
     {
-      *(__output_begin + __idx) = __ref.end();
+      const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(__block);
+      if (__idx < __n)
+      {
+        typename ::cuda::std::iterator_traits<_InputIt>::value_type const __key = *(__first + __idx);
+        const auto __found                                                      = __ref.find(__tile, __key);
+        if (__tile.thread_rank() == 0)
+        {
+          *(__output_begin + __idx) = __pred(*(__stencil + __idx)) ? __found : __ref.end();
+        }
+      }
     }
     __idx += __loop_stride;
   }
@@ -310,26 +310,51 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __insert_and_find(
   _InsertedIt __inserted_begin,
   _Ref __ref)
 {
+  const auto __block       = ::cooperative_groups::this_thread_block();
+  const auto __thread_idx  = __block.thread_rank();
   const auto __loop_stride = ::cuda::experimental::cuco::__detail::__grid_stride() / _CgSize;
   auto __idx               = ::cuda::experimental::cuco::__detail::__global_thread_id() / _CgSize;
 
-  while (__idx < __n)
+  using __output_type = typename _Ref::iterator;
+  __shared__ __output_type __output_found_buffer[_BlockSize / _CgSize];
+  __shared__ bool __output_inserted_buffer[_BlockSize / _CgSize];
+
+  while ((__idx - __thread_idx / _CgSize) < __n) // the whole thread block falls into the same iteration
   {
     if constexpr (_CgSize == 1)
     {
-      auto const [__iter, __inserted] = __ref.insert_and_find(*(__first + __idx));
-      *(__found_begin + __idx)        = __iter;
-      *(__inserted_begin + __idx)     = __inserted;
+      if (__idx < __n)
+      {
+        typename ::cuda::std::iterator_traits<_InputIt>::value_type const __insert_element{*(__first + __idx)};
+        const auto [__iter, __inserted] = __ref.insert_and_find(__insert_element);
+        /*
+         * The ld.relaxed.gpu instruction causes L1 to flush more frequently, causing increased
+         * sector stores from L2 to global memory. By writing results to shared memory and then
+         * synchronizing before writing back to global, we no longer rely on L1, preventing the
+         * increase in sector stores from L2 to global and improving performance.
+         */
+        __output_found_buffer[__thread_idx]    = __iter;
+        __output_inserted_buffer[__thread_idx] = __inserted;
+      }
+      __block.sync();
+      if (__idx < __n)
+      {
+        *(__found_begin + __idx)    = __output_found_buffer[__thread_idx];
+        *(__inserted_begin + __idx) = __output_inserted_buffer[__thread_idx];
+      }
     }
     else
     {
-      const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(
-        ::cooperative_groups::this_thread_block());
-      auto const [__iter, __inserted] = __ref.insert_and_find(__tile, *(__first + __idx));
-      if (__tile.thread_rank() == 0)
+      const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(__block);
+      if (__idx < __n)
       {
-        *(__found_begin + __idx)    = __iter;
-        *(__inserted_begin + __idx) = __inserted;
+        typename ::cuda::std::iterator_traits<_InputIt>::value_type const __insert_element{*(__first + __idx)};
+        const auto [__iter, __inserted] = __ref.insert_and_find(__tile, __insert_element);
+        if (__tile.thread_rank() == 0)
+        {
+          *(__found_begin + __idx)    = __iter;
+          *(__inserted_begin + __idx) = __inserted;
+        }
       }
     }
     __idx += __loop_stride;
@@ -396,21 +421,49 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __count_each(
   const auto __loop_stride = ::cuda::experimental::cuco::__detail::__grid_stride() / _CgSize;
   auto __idx               = ::cuda::experimental::cuco::__detail::__global_thread_id() / _CgSize;
 
+  using __size_type                       = typename _Ref::size_type;
+  __size_type constexpr __outer_min_count = 1;
+
   while (__idx < __n)
   {
+    typename ::cuda::std::iterator_traits<_InputIt>::value_type const __key = *(__first + __idx);
     if constexpr (_CgSize == 1)
     {
-      auto __count_val          = __ref.count(*(__first + __idx));
-      *(__output_begin + __idx) = _IsOuter ? ::cuda::std::max(decltype(__count_val){1}, __count_val) : __count_val;
+      if constexpr (_IsOuter)
+      {
+        *(__output_begin + __idx) = ::cuda::std::max(__ref.count(__key), __size_type{__outer_min_count});
+      }
+      else
+      {
+        *(__output_begin + __idx) = __ref.count(__key);
+      }
     }
     else
     {
       const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(
         ::cooperative_groups::this_thread_block());
-      auto __count_val = __ref.count(__tile, *(__first + __idx));
-      if (__tile.thread_rank() == 0)
+      if constexpr (_IsOuter)
       {
-        *(__output_begin + __idx) = _IsOuter ? ::cuda::std::max(decltype(__count_val){1}, __count_val) : __count_val;
+        auto __count_val = __ref.count(__tile, __key);
+        if (__tile.all(__count_val == 0) && __tile.thread_rank() == 0)
+        {
+          ++__count_val;
+        }
+        const auto __total =
+          ::cooperative_groups::reduce(__tile, __count_val, ::cooperative_groups::plus<__size_type>());
+        if (__tile.thread_rank() == 0)
+        {
+          *(__output_begin + __idx) = __total;
+        }
+      }
+      else
+      {
+        const auto __total =
+          ::cooperative_groups::reduce(__tile, __ref.count(__tile, __key), ::cooperative_groups::plus<__size_type>());
+        if (__tile.thread_rank() == 0)
+        {
+          *(__output_begin + __idx) = __total;
+        }
       }
     }
     __idx += __loop_stride;
@@ -472,20 +525,51 @@ template <int _BlockSize, class _StorageRef, class _ContainerRef, class _Predica
 CCCL_DETAIL_KERNEL_ATTRIBUTES void
 __rehash(_StorageRef __storage_ref, _ContainerRef __container_ref, _Predicate __is_filled)
 {
-  const auto __loop_stride = ::cuda::experimental::cuco::__detail::__grid_stride();
-  auto __idx               = ::cuda::experimental::cuco::__detail::__global_thread_id();
+  __shared__ typename _ContainerRef::value_type __buffer[_BlockSize];
+  __shared__ unsigned int __buffer_size;
 
-  while (__idx < __storage_ref.num_buckets())
+  static constexpr auto __cg_size = _ContainerRef::cg_size;
+  const auto __block              = ::cooperative_groups::this_thread_block();
+  const auto __tile = ::cooperative_groups::tiled_partition<__cg_size, ::cooperative_groups::thread_block>(__block);
+
+  const auto __thread_rank                = __block.thread_rank();
+  static constexpr auto __tiles_per_block = _BlockSize / __cg_size;
+  const auto __tile_rank                  = __tile.meta_group_rank();
+  const auto __loop_stride                = ::cuda::experimental::cuco::__detail::__grid_stride();
+  auto __idx                              = ::cuda::experimental::cuco::__detail::__global_thread_id();
+  const auto __n                          = __storage_ref.num_buckets();
+
+  while (__idx - __thread_rank < __n)
   {
-    const auto __bucket = __storage_ref[__idx];
-    for (int __i = 0; __i < _StorageRef::__bucket_size; ++__i)
+    if (__thread_rank == 0)
     {
-      const auto __slot = __bucket[__i];
-      if (__is_filled(__slot))
+      __buffer_size = 0;
+    }
+    __block.sync();
+
+    // Gather filled slots from the old storage into shared memory
+    if (__idx < __n)
+    {
+      const auto __bucket = __storage_ref[__idx];
+      for (auto const& __slot : __bucket)
       {
-        __container_ref.insert(__slot);
+        if (__is_filled(__slot))
+        {
+          __buffer[atomicAdd_block(&__buffer_size, 1u)] = __slot;
+        }
       }
     }
+    __block.sync();
+
+    const auto __local_buffer_size = __buffer_size;
+
+    // Insert from shared memory buffer into the new container using tiles
+    for (auto __tidx = __tile_rank; __tidx < __local_buffer_size; __tidx += __tiles_per_block)
+    {
+      __container_ref.insert(__tile, __buffer[__tidx]);
+    }
+    __block.sync();
+
     __idx += __loop_stride;
   }
 }
