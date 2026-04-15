@@ -21,6 +21,7 @@
 #  include <cub/util_device.cuh>
 #  include <cub/util_math.cuh>
 
+#  include <thrust/detail/raw_reference_cast.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/partition.h>
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
@@ -35,7 +36,6 @@
 #  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/tuple>
-#  include <thrust/detail/raw_reference_cast.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
