@@ -31,7 +31,7 @@ THRUST_NAMESPACE_BEGIN
 template <typename T, typename Allocator, bool Uninitialized = false>
 struct allocator_delete final
 {
-  using allocator_type = std::remove_cv_t<std::remove_reference_t<Allocator>>::template rebind<T>::other;
+  using allocator_type = typename std::remove_cv_t<std::remove_reference_t<Allocator>>::template rebind<T>::other;
   using pointer        = typename ::cuda::std::allocator_traits<allocator_type>::pointer;
 
   template <typename UAllocator>
