@@ -30,7 +30,6 @@
 #include <thrust/iterator/detail/tuple_of_iterator_references.h>
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/type_traits/integer_sequence.h>
 
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/distance.h>
@@ -40,6 +39,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
@@ -226,11 +226,11 @@ private:
 
   friend class iterator_core_access;
 
-  using index_seq = make_index_sequence<::cuda::std::tuple_size_v<IteratorTuple>>;
+  using index_seq = ::cuda::std::make_index_sequence<::cuda::std::tuple_size_v<IteratorTuple>>;
 
   _CCCL_EXEC_CHECK_DISABLE
   template <size_t... Is>
-  _CCCL_HOST_DEVICE typename super_t::reference dereference_impl(index_sequence<Is...>) const
+  _CCCL_HOST_DEVICE typename super_t::reference dereference_impl(::cuda::std::index_sequence<Is...>) const
   {
     return {*::cuda::std::get<Is>(m_iterator_tuple)...};
   }
@@ -252,7 +252,7 @@ private:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <size_t... Is>
-  inline _CCCL_HOST_DEVICE void advance_impl(typename super_t::difference_type n, index_sequence<Is...>)
+  inline _CCCL_HOST_DEVICE void advance_impl(typename super_t::difference_type n, ::cuda::std::index_sequence<Is...>)
   {
     (..., ::cuda::std::advance(::cuda::std::get<Is>(m_iterator_tuple), n));
   }
@@ -265,7 +265,7 @@ private:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <size_t... Is>
-  inline _CCCL_HOST_DEVICE void increment_impl(index_sequence<Is...>)
+  inline _CCCL_HOST_DEVICE void increment_impl(::cuda::std::index_sequence<Is...>)
   {
     (..., ++::cuda::std::get<Is>(m_iterator_tuple));
   }
@@ -278,7 +278,7 @@ private:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <size_t... Is>
-  inline _CCCL_HOST_DEVICE void decrement_impl(index_sequence<Is...>)
+  inline _CCCL_HOST_DEVICE void decrement_impl(::cuda::std::index_sequence<Is...>)
   {
     (..., --::cuda::std::get<Is>(m_iterator_tuple));
   }
