@@ -186,12 +186,12 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   summary.set_int64("value", num_segments);
 
   thrust::device_vector<T> input = generate(elements);
-  thrust::device_vector<T> output(elements);
+  thrust::device_vector<T> output(elements, thrust::no_init);
 
   thrust::device_vector<offset_t> offsets(num_segments + 1, thrust::no_init);
   thrust::tabulate(offsets.begin(), offsets.end(), to_offsets_functor<offset_t>{elements, segment_size, Wobble});
 
-  T* d_input          = thrust::raw_pointer_cast(input.data());
+  const T* d_input    = thrust::raw_pointer_cast(input.data());
   T* d_output         = thrust::raw_pointer_cast(output.data());
   offset_it d_offsets = thrust::raw_pointer_cast(offsets.data());
 
