@@ -302,3 +302,85 @@ C2H_TEST("cub::DeviceScan::InclusiveScanInit accepts stream environment", "[scan
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
 }
+
+C2H_TEST("cub::DeviceScan::ExclusiveSum in-place accepts stream", "[scan][env]")
+{
+  auto data = thrust::device_vector<int>{1, 2, 3, 4};
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceScan::ExclusiveSum(data.begin(), static_cast<int>(data.size()), stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceScan::ExclusiveSum in-place failed with status: " << error << '\n';
+  }
+  stream.sync();
+
+  thrust::device_vector<int> expected{0, 1, 3, 6};
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(data == expected);
+}
+
+C2H_TEST("cub::DeviceScan::ExclusiveScan in-place accepts stream", "[scan][env]")
+{
+  auto data = thrust::device_vector<int>{1, 2, 3, 4};
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+
+  auto error =
+    cub::DeviceScan::ExclusiveScan(data.begin(), cuda::std::plus{}, 42, static_cast<int>(data.size()), stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceScan::ExclusiveScan in-place failed with status: " << error << '\n';
+  }
+  stream.sync();
+
+  thrust::device_vector<int> expected{42, 43, 45, 48};
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(data == expected);
+}
+
+C2H_TEST("cub::DeviceScan::InclusiveSum in-place accepts stream", "[scan][env]")
+{
+  auto data = thrust::device_vector<int>{1, 2, 3, 4};
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceScan::InclusiveSum(data.begin(), static_cast<int>(data.size()), stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceScan::InclusiveSum in-place failed with status: " << error << '\n';
+  }
+  stream.sync();
+
+  thrust::device_vector<int> expected{1, 3, 6, 10};
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(data == expected);
+}
+
+C2H_TEST("cub::DeviceScan::InclusiveScan in-place accepts stream", "[scan][env]")
+{
+  auto data = thrust::device_vector<int>{1, 2, 3, 4};
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+
+  auto error =
+    cub::DeviceScan::InclusiveScan(data.begin(), cuda::std::plus{}, static_cast<int>(data.size()), stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceScan::InclusiveScan in-place failed with status: " << error << '\n';
+  }
+  stream.sync();
+
+  thrust::device_vector<int> expected{1, 3, 6, 10};
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(data == expected);
+}

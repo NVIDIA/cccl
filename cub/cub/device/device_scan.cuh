@@ -515,6 +515,49 @@ struct DeviceScan
   }
 
   //! @rst
+  //! Computes a device-wide exclusive prefix sum in-place.
+  //! The value of ``0`` is applied as the initial value, and is assigned to ``*d_data``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - Supports non-commutative sum operators.
+  //! - Provides determinism based on the environment's determinism requirements.
+  //!
+  //! @endrst
+  //!
+  //! @tparam IteratorT
+  //!   **[inferred]** Random-access iterator type for reading and writing scan data
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in,out] d_data
+  //!   Random-access iterator to the sequence of data items
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., the length of `d_data`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename IteratorT, typename NumItemsT, typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  ExclusiveSum(IteratorT d_data, NumItemsT num_items, EnvT env = {})
+  {
+    return ExclusiveSum(d_data, d_data, num_items, env);
+  }
+
+  //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
   //! binary associative ``scan_op`` functor. The ``init_value`` value is applied as
   //! the initial value, and is assigned to ``*d_out``.
@@ -863,6 +906,66 @@ struct DeviceScan
   }
 
   //! @rst
+  //! Computes a device-wide exclusive prefix scan in-place using the specified
+  //! binary associative ``scan_op`` functor. The ``init_value`` value is applied as
+  //! the initial value, and is assigned to ``*d_data``.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - Provides determinism based on the environment's determinism requirements.
+  //!
+  //! @endrst
+  //!
+  //! @tparam IteratorT
+  //!   **[inferred]** Random-access iterator type for reading and writing scan data
+  //!
+  //! @tparam ScanOpT
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam InitValueT
+  //!   **[inferred]** Type of the ``init_value`` used in the scan
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in,out] d_data
+  //!   Random-access iterator to the sequence of data items
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] init_value
+  //!   Initial value to seed the exclusive scan
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., the length of `d_data`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename IteratorT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename NumItemsT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  ExclusiveScan(IteratorT d_data, ScanOpT scan_op, InitValueT init_value, NumItemsT num_items, EnvT env = {})
+  {
+    return ExclusiveScan(d_data, d_data, scan_op, init_value, num_items, env);
+  }
+
+  //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
   //! binary associative ``scan_op`` functor. The ``init_value`` value is provided as a future value.
   //!
@@ -1121,6 +1224,73 @@ struct DeviceScan
     cudaStream_t stream = 0)
   {
     return ExclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, init_value, num_items, stream);
+  }
+
+  //! @rst
+  //! Computes a device-wide exclusive prefix scan in-place using the specified
+  //! binary associative ``scan_op`` functor. The ``init_value`` value is provided as a future value.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - Provides determinism based on the environment's determinism requirements.
+  //!
+  //! @endrst
+  //!
+  //! @tparam IteratorT
+  //!   **[inferred]** Random-access iterator type for reading and writing scan data
+  //!
+  //! @tparam ScanOpT
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam InitValueT
+  //!   **[inferred]** Type of the ``init_value`` used in the scan
+  //!
+  //! @tparam InitValueIterT
+  //!   **[inferred]** Iterator type for the future value
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in,out] d_data
+  //!   Random-access iterator to the sequence of data items
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] init_value
+  //!   Initial value to seed the exclusive scan, provided as a future value
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., the length of `d_data`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename IteratorT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename InitValueIterT = InitValueT*,
+            typename NumItemsT      = int,
+            typename EnvT           = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
+    IteratorT d_data,
+    ScanOpT scan_op,
+    FutureValue<InitValueT, InitValueIterT> init_value,
+    NumItemsT num_items,
+    EnvT env = {})
+  {
+    return ExclusiveScan(d_data, d_data, scan_op, init_value, num_items, env);
   }
 
   //! @rst
@@ -1403,6 +1573,48 @@ struct DeviceScan
     void* d_temp_storage, size_t& temp_storage_bytes, IteratorT d_data, NumItemsT num_items, cudaStream_t stream = 0)
   {
     return InclusiveSum(d_temp_storage, temp_storage_bytes, d_data, d_data, num_items, stream);
+  }
+
+  //! @rst
+  //! Computes a device-wide inclusive prefix sum in-place.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - Supports non-commutative sum operators.
+  //! - Provides determinism based on the environment's determinism requirements.
+  //!
+  //! @endrst
+  //!
+  //! @tparam IteratorT
+  //!   **[inferred]** Random-access iterator type for reading and writing scan data
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in,out] d_data
+  //!   Random-access iterator to the sequence of data items
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., the length of `d_data`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename IteratorT, typename NumItemsT, typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  InclusiveSum(IteratorT d_data, NumItemsT num_items, EnvT env = {})
+  {
+    return InclusiveSum(d_data, d_data, num_items, env);
   }
 
   //! @rst
@@ -1789,6 +2001,55 @@ struct DeviceScan
     cudaStream_t stream = 0)
   {
     return InclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, num_items, stream);
+  }
+
+  //! @rst
+  //! Computes a device-wide inclusive prefix scan in-place using the specified
+  //! binary associative ``scan_op`` functor.
+  //!
+  //! .. versionadded:: 3.4.0
+  //!    First appears in CUDA Toolkit 13.4.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
+  //!
+  //! - Supports non-commutative scan operators.
+  //! - Provides determinism based on the environment's determinism requirements.
+  //!
+  //! @endrst
+  //!
+  //! @tparam IteratorT
+  //!   **[inferred]** Random-access iterator type for reading and writing scan data
+  //!
+  //! @tparam ScanOpT
+  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** An integral type representing the number of input elements
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!
+  //! @param[in,out] d_data
+  //!   Random-access iterator to the sequence of data items
+  //!
+  //! @param[in] scan_op
+  //!   Binary scan functor
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., the length of `d_data`)
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <typename IteratorT, typename ScanOpT, typename NumItemsT, typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  InclusiveScan(IteratorT d_data, ScanOpT scan_op, NumItemsT num_items, EnvT env = {})
+  {
+    return InclusiveScan(d_data, d_data, scan_op, num_items, env);
   }
 
   //! @rst
