@@ -164,7 +164,7 @@ Checks:
   - '-cppcoreguidelines-pro-type-reinterpret-cast'
   # We don't use GSL
   - '-cppcoreguidelines-owning-memory'
-   # Covered by modernize-use-override already
+  # Covered by modernize-use-override already
   - '-cppcoreguidelines-explicit-virtual-functions'
   # Covered by readability-magic-numbers
   - '-cppcoreguidelines-avoid-magic-numbers'
