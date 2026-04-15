@@ -11,7 +11,7 @@ cccl_get_c2h()
 set(c2h_all_target "libcudacxx.test.c2h_all")
 add_custom_target(${c2h_all_target})
 
-if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
+if (NOT LIBCUDACXX_TEST_WITH_NVRTC AND NOT CCCL_ENABLE_TILE)
   file(
     GLOB_RECURSE test_srcs
     RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
