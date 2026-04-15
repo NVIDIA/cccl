@@ -35,7 +35,7 @@ _CCCL_API inline void __cccl_thread_yield() {}
 _CCCL_API inline void __cccl_thread_sleep_for(::cuda::std::chrono::nanoseconds __ns){NV_IF_TARGET(
   NV_PROVIDES_SM_70, ({
     auto const __step = __ns.count();
-    _CCCL_ASSERT(::cuda::std::in_range<unsigned>(__step)), "invalid nanoseconds count");
+    _CCCL_ASSERT(::cuda::std::in_range<unsigned>(__step), "invalid nanoseconds count");
     ::__nanosleep((unsigned) __step);
   }))}
 
