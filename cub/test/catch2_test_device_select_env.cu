@@ -201,13 +201,10 @@ TEST_CASE("Device select unique with custom equality_op works with default envir
   auto d_out            = c2h::device_vector<value_t>(num_items);
   auto d_num_selected   = c2h::device_vector<int>(1);
 
-  auto eq_mod3 = [] __host__ __device__(value_t a, value_t b) {
-    return (a % 3) == (b % 3);
-  };
+  eq_mod3_t<value_t> eq_mod3{};
 
   REQUIRE(
-    cudaSuccess
-    == cub::DeviceSelect::Unique(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, eq_mod3));
+    cudaSuccess == cub::DeviceSelect::Unique(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, eq_mod3));
 
   c2h::device_vector<value_t> expected_output{0, 1, 2};
   c2h::device_vector<int> expected_num_selected{3};
@@ -497,9 +494,7 @@ C2H_TEST("Device select unique with custom equality_op uses environment", "[sele
   auto d_out            = c2h::device_vector<value_t>(num_items);
   auto d_num_selected   = c2h::device_vector<int>(1);
 
-  auto eq_mod3 = [] __host__ __device__(value_t a, value_t b) {
-    return (a % 3) == (b % 3);
-  };
+  eq_mod3_t<value_t> eq_mod3{};
 
   size_t expected_bytes_allocated{};
   REQUIRE(

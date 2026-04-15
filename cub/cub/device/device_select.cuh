@@ -1661,13 +1661,13 @@ public:
     typename EnvT                 = ::cuda::std::execution::env<>,
     ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>,
                              int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  Unique(InputIteratorT d_in,
-         OutputIteratorT d_out,
-         NumSelectedIteratorT d_num_selected_out,
-         NumItemsT num_items,
-         EqualityOpT equality_op,
-         EnvT env = {})
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumSelectedIteratorT d_num_selected_out,
+    NumItemsT num_items,
+    EqualityOpT equality_op,
+    EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::Unique");
 
