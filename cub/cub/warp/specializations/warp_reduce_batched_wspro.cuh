@@ -119,7 +119,7 @@ struct WarpReduceBatchedWspro
     {
       // Dummy value needed when Batches is not an integer multiple of LogicalWarpThreads.
       // In that case some shuffles have no second batch to exchange against, so we exchange a dummy value.
-      // Chose to use the last batch to avoid relying on default construction of T
+      // Chose to use the last batch to avoid relying on default construction of T.
       return inputs[Batches - 1];
     }
     else if constexpr (PrevStride == 1)
@@ -133,16 +133,14 @@ struct WarpReduceBatchedWspro
       constexpr auto stride             = PrevStride / 2;
       constexpr auto offset_idx_striped = BaseIdxStriped + stride;
 
-      auto exch_value = RecurseReductionTree<ToBlocked, BaseIdxStriped, stride>(inputs, reduction_op);
-      auto keep_value = RecurseReductionTree<ToBlocked, offset_idx_striped, stride>(inputs, reduction_op);
+      const auto base_value   = RecurseReductionTree<ToBlocked, BaseIdxStriped, stride>(inputs, reduction_op);
+      const auto offset_value = RecurseReductionTree<ToBlocked, offset_idx_striped, stride>(inputs, reduction_op);
 
       // Each left lane exchanges its offset value against a right lane's base value
       const auto is_left_lane = logical_lane_id % PrevStride < stride;
-      if (is_left_lane)
-      {
-        ::cuda::std::swap(exch_value, keep_value);
-      }
-      exch_value = ::cuda::device::warp_shuffle_xor(exch_value, stride, member_mask);
+      const auto keep_value   = is_left_lane ? base_value : offset_value;
+      auto exch_value         = is_left_lane ? offset_value : base_value;
+      exch_value              = ::cuda::device::warp_shuffle_xor(exch_value, stride, member_mask);
       // While the current implementation is possibly faster, another conditional swap here would allow for
       // non-commutative reductions which might be useful for (segmented) scan operations.
       return reduction_op(exch_value, keep_value);
