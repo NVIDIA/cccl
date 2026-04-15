@@ -142,12 +142,14 @@ __host__ __device__ void test_primary_template()
     static_assert(cuda::std::is_same_v<decltype(t1), Tup>);
     unused(t1);
   }
+#if !TEST_CUDA_COMPILER(NVCC, >, 13, 2) // nvbug6075893: NVCC fails to properly deduce prvalue input
   { // Testing (8)
     using Tup = cuda::std::tuple<void*, unsigned, char>;
-    cuda::std::tuple t1(Tup(nullptr, 42, 'a'));
-    static_assert(cuda::std::is_same_v<decltype(t1), Tup>);
+    cuda::std::tuple t1(Tup{nullptr, 42, 'a'});
+    static_assert(cuda::std::same_as<decltype(t1), Tup>);
     unused(t1);
   }
+#endif // !TEST_CUDA_COMPILER(NVCC, >, 13, 2)
   // cuda::std::allocator not supported
   /*
   { // Testing (9)
