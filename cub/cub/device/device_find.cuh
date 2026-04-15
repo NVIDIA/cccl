@@ -119,6 +119,18 @@ struct DeviceFind
   //! - The range ``[first, last)`` must be sorted consistently with ``comp``.
   //!
   //! .. versionadded:: 3.3.0
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the lower bound search.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_find_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin device-lower-bound
+  //!     :end-before: example-end device-lower-bound
+  //!
   //! @endrst
   //!
   //! @tparam RangeIteratorT
@@ -221,6 +233,18 @@ struct DeviceFind
   //! - The range ``[d_range, d_range + range_num_items)`` must be sorted consistently with ``comp``.
   //!
   //! .. versionadded:: 3.3.0
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the upper bound search.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_find_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin device-upper-bound
+  //!     :end-before: example-end device-upper-bound
+  //!
   //! @endrst
   //!
   //! @tparam RangeIteratorT
