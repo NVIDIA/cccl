@@ -573,7 +573,6 @@ def test_stateful_transform_same_bytecode_different_sizes():
     np.testing.assert_array_equal(np.asarray([False, False, True]), d_out.get())
 
 
-@pytest.mark.no_verify_sass(reason="LDL/STL instructions emitted for this test.")
 def test_transform_caching_with_global_np_ufunc():
     # regression test for a case where if multiple, identically named,
     # ops referenced dotted globals like `np.<func>` those

@@ -104,14 +104,14 @@ public:
     !::cuda::std::is_same_v<_Level2, grid_level>))
   [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp count_as(const _InLevel& __in_level) const noexcept
   {
-    return _Level{}.template count_as<_Tp>(__in_level);
+    return _Level{}.template count_as<_Tp>(__in_level, __hier_);
   }
 
   _CCCL_TEMPLATE(class _InLevel, class _Level2 = _Level)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND(!::cuda::std::is_same_v<_Level2, grid_level>))
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto count(const _InLevel& __in_level) const noexcept
   {
-    return _Level{}.count(__in_level);
+    return _Level{}.count(__in_level, __hier_);
   }
 
 #  if _CCCL_CUDA_COMPILATION()
@@ -120,14 +120,16 @@ public:
     !::cuda::std::is_same_v<_Level2, grid_level>))
   [[nodiscard]] _CCCL_DEVICE_API _Tp rank_as(const _InLevel& __in_level) const noexcept
   {
-    return _Level{}.template rank_as<_Tp>(__in_level);
+    // todo: pass hierarchy to query
+    return _Level{}.template rank_as<_Tp>(__in_level /*, __hier_*/);
   }
 
   _CCCL_TEMPLATE(class _InLevel, class _Level2 = _Level)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND(!::cuda::std::is_same_v<_Level2, grid_level>))
   [[nodiscard]] _CCCL_DEVICE_API auto rank(const _InLevel& __in_level) const noexcept
   {
-    return _Level{}.rank(__in_level);
+    // todo: pass hierarchy to query
+    return _Level{}.rank(__in_level /*, __hier_*/);
   }
 #  endif // _CCCL_CUDA_COMPILATION()
 };

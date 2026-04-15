@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -47,7 +47,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES thread_level : __native_hierarchy_level_base<t
   using __next_native_level = block_level;
 
   using __base_type = __native_hierarchy_level_base<thread_level>;
-  using __base_type::extents_as;
 
 #  if _CCCL_CUDA_COMPILATION()
   using __base_type::index_as;
@@ -57,28 +56,12 @@ struct _CCCL_DECLSPEC_EMPTY_BASES thread_level : __native_hierarchy_level_base<t
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  [[nodiscard]] _CCCL_DEVICE_API static ::cuda::std::dims<3, _Tp> extents_as(const block_level&) noexcept
-  {
-    return ::cuda::std::dims<3, _Tp>{
-      static_cast<_Tp>(blockDim.x), static_cast<_Tp>(blockDim.y), static_cast<_Tp>(blockDim.z)};
-  }
-
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
   [[nodiscard]] _CCCL_DEVICE_API static hierarchy_query_result<_Tp> index_as(const block_level&) noexcept
   {
     return {static_cast<_Tp>(threadIdx.x), static_cast<_Tp>(threadIdx.y), static_cast<_Tp>(threadIdx.z)};
   }
 
   // interactions with warp level
-
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  [[nodiscard]]
-  _CCCL_DEVICE_API static constexpr ::cuda::std::extents<_Tp, 32> extents_as(const warp_level&) noexcept
-  {
-    return {};
-  }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
