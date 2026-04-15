@@ -25,6 +25,7 @@
 
 #  include <cuda/__fwd/hierarchy.h>
 #  include <cuda/__hierarchy/hierarchy_query_result.h>
+#  include <cuda/__hierarchy/queries/count.h>
 #  include <cuda/__hierarchy/queries/extents.h>
 #  include <cuda/__hierarchy/queries/index.h>
 #  include <cuda/__hierarchy/traits.h>
@@ -143,9 +144,9 @@ struct hierarchy_level_base
   _CCCL_TEMPLATE(class _Tp, class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel> _CCCL_AND
                    __is_or_has_hierarchy_member_v<_Hierarchy>)
-  [[nodiscard]] _CCCL_API static constexpr auto count_as(const _InLevel& __level, const _Hierarchy& __hier) noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto count_as(const _InLevel&, const _Hierarchy& __hier) noexcept
   {
-    return __count_as_impl<_Tp>(__level, ::cuda::__unpack_hierarchy_if_needed(__hier));
+    return __count_query<_Level, _InLevel>::template __call<_Tp>(::cuda::__unpack_hierarchy_if_needed(__hier));
   }
 
 #  if _CCCL_CUDA_COMPILATION()
@@ -322,20 +323,6 @@ private:
     {
       return ::cuda::std::dynamic_extent;
     }
-  }
-
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class _Tp, class... _Args>
-  [[nodiscard]] _CCCL_API static constexpr _Tp __count_as_impl(const _Args&... __args) noexcept
-  {
-    const auto __exts = _Level::template extents_as<_Tp>(__args...);
-
-    _Tp __ret = 1;
-    for (::cuda::std::size_t __i = 0; __i < __exts.rank(); ++__i)
-    {
-      __ret *= __exts.extent(__i);
-    }
-    return __ret;
   }
 };
 

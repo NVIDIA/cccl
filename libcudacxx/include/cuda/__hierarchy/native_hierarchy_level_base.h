@@ -26,6 +26,7 @@
 #  include <cuda/__fwd/hierarchy.h>
 #  include <cuda/__hierarchy/hierarchy_level_base.h>
 #  include <cuda/__hierarchy/hierarchy_query_result.h>
+#  include <cuda/__hierarchy/queries/count.h>
 #  include <cuda/__hierarchy/queries/extents.h>
 #  include <cuda/__hierarchy/queries/index.h>
 #  include <cuda/__hierarchy/traits.h>
@@ -141,9 +142,9 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_leve
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)
   _CCCL_REQUIRES(__is_native_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API static auto count_as(const _InLevel& __level) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static auto count_as(const _InLevel&) noexcept
   {
-    return __base_type::template __count_as_impl<_Tp>(__level);
+    return __count_query_native<_Level, _InLevel>::template __call<_Tp>();
   }
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)

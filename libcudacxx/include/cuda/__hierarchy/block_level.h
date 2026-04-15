@@ -43,21 +43,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES block_level : __native_hierarchy_level_base<bl
   using __next_native_level = cluster_level;
 
   using __base_type = __native_hierarchy_level_base<block_level>;
-  using __base_type::count_as;
 
 #  if _CCCL_CUDA_COMPILATION()
   using __base_type::rank_as;
 
   // interactions with cluster level
-
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  [[nodiscard]] _CCCL_DEVICE_API static _Tp count_as(const cluster_level&) noexcept
-  {
-    unsigned __count = 1;
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (__count = ::__clusterSizeInBlocks();))
-    return static_cast<_Tp>(__count);
-  }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
@@ -69,13 +59,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES block_level : __native_hierarchy_level_base<bl
   }
 
   // interactions with grid level
-
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  [[nodiscard]] _CCCL_DEVICE_API static _Tp count_as(const grid_level&) noexcept
-  {
-    return static_cast<_Tp>(gridDim.x) * static_cast<_Tp>(gridDim.y) * static_cast<_Tp>(gridDim.z);
-  }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)

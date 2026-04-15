@@ -79,6 +79,12 @@ template <class _Unit, class _Level>
 struct __extents_query;
 
 template <class _Unit, class _Level>
+struct __count_query_native;
+
+template <class _Unit, class _Level>
+struct __count_query;
+
+template <class _Unit, class _Level>
 struct __index_query_native;
 
 template <class _Unit, class _Level>
