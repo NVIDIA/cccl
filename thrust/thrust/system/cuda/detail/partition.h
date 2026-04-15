@@ -35,6 +35,7 @@
 #  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/tuple>
+#  include <thrust/detail/raw_reference_cast.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -379,7 +380,9 @@ struct __is_partitioned_fn
   template <class Tuple>
   [[nodiscard]] _CCCL_HOST_DEVICE bool operator()(const Tuple& tuple) const
   {
-    return !pred_(::cuda::std::get<0>(tuple)) && pred_(::cuda::std::get<1>(tuple));
+    const bool lhs = pred_(thrust::raw_reference_cast(::cuda::std::get<0>(tuple)));
+    const bool rhs = pred_(thrust::raw_reference_cast(::cuda::std::get<1>(tuple)));
+    return !lhs && rhs;
   }
 };
 
