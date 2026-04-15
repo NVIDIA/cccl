@@ -31,7 +31,7 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <ostream>
-#endif
+#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -69,7 +69,7 @@ struct scan_by_key_policy
         << ", .scan_algorithm = " << p.scan_algorithm << ", .store_algorithm = " << p.store_algorithm
         << ", .delay_constructor = " << p.delay_constructor << " }";
   }
-#endif
+#endif // !_CCCL_COMPILER(NVRTC)
 };
 enum class primitive_accum
 {
@@ -1092,17 +1092,9 @@ struct policy_selector
 
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_by_key_policy
   {
-    const primitive_accum primitive_accum_t =
-      accum_type != type_t::other && accum_type != type_t::int128 && accum_type != type_t::uint128
-        ? primitive_accum::yes
-        : primitive_accum::no;
-    const primitive_accum primitive_value_t =
-      value_is_primitive && value_type != type_t::int128 && value_type != type_t::uint128
-        ? primitive_accum::yes
-        : primitive_accum::no;
     const bool value_is_primitive_or_trivially_copyable = value_is_primitive || value_is_trivially_copyable;
-    const bool primitive_accum                          = primitive_accum_t == primitive_accum::yes;
-    const bool primitive_value                          = primitive_value_t == primitive_accum::yes;
+    const bool primitive_accum                          = accum_type != type_t::other && accum_type != type_t::int128 && accum_type != type_t::uint128;
+    const bool primitive_value                          = value_is_primitive && value_type != type_t::int128 && value_type != type_t::uint128;
     const bool primitive_op                             = operation_t != op_kind_t::other;
     const int max_input_bytes                           = (::cuda::std::max) (key_size, accum_size);
     const int combined_input_bytes                      = key_size + accum_size;
