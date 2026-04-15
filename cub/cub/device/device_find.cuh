@@ -42,13 +42,13 @@ struct DeviceFind
   //!
   //! The code snippet below illustrates the finding of the first element that satisfies the predicate.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_find_if_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_find_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin find-if-predicate
   //!     :end-before: example-end find-if-predicate
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_find_if_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_find_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin device-find-if
@@ -206,12 +206,12 @@ struct DeviceFind
     CompareOpT comp,
     cudaStream_t stream = 0)
   {
-    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::LowerBound");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceFind::LowerBound");
 
     using RangeOffsetT  = detail::choose_offset_t<RangeNumItemsT>;
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
 
-    return DeviceFor::ForEachN(
+    return DeviceFor::__for_each_n_no_nvtx(
       d_temp_storage,
       temp_storage_bytes,
       ::cuda::make_zip_iterator(d_values, d_output),
@@ -320,12 +320,12 @@ struct DeviceFind
     CompareOpT comp,
     cudaStream_t stream = 0)
   {
-    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::UpperBound");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceFind::UpperBound");
 
     using RangeOffsetT  = detail::choose_offset_t<RangeNumItemsT>;
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
 
-    return DeviceFor::ForEachN(
+    return DeviceFor::__for_each_n_no_nvtx(
       d_temp_storage,
       temp_storage_bytes,
       ::cuda::make_zip_iterator(d_values, d_output),
