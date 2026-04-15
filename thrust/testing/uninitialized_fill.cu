@@ -114,7 +114,7 @@ DECLARE_VECTOR_UNITTEST(TestUninitializedFillPOD);
 
 struct CopyConstructTest
 {
-  _CCCL_HOST_DEVICE CopyConstructTest() = default;
+  CopyConstructTest() = default;
 
   _CCCL_HOST_DEVICE CopyConstructTest(const CopyConstructTest&)
   {

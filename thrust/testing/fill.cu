@@ -287,7 +287,7 @@ struct TypeWithNonTrivialAssigment
 {
   int x{0}, y{0}, z{0};
 
-  _CCCL_HOST_DEVICE TypeWithNonTrivialAssigment() = default;
+  TypeWithNonTrivialAssigment() = default;
 
   TypeWithNonTrivialAssigment(const TypeWithNonTrivialAssigment&) = default;
 

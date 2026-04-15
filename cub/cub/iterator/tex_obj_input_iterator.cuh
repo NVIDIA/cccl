@@ -131,7 +131,7 @@ private:
 
 public:
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TexObjInputIterator() = default;
+  _CCCL_FORCEINLINE TexObjInputIterator() = default;
 
 #if !_CCCL_COMPILER(NVRTC)
   /**
