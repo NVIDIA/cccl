@@ -1093,11 +1093,12 @@ struct policy_selector
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_by_key_policy
   {
     const bool value_is_primitive_or_trivially_copyable = value_is_primitive || value_is_trivially_copyable;
-    const bool primitive_accum                          = accum_type != type_t::other && accum_type != type_t::int128 && accum_type != type_t::uint128;
-    const bool primitive_value                          = value_is_primitive && value_type != type_t::int128 && value_type != type_t::uint128;
-    const bool primitive_op                             = operation_t != op_kind_t::other;
-    const int max_input_bytes                           = (::cuda::std::max) (key_size, accum_size);
-    const int combined_input_bytes                      = key_size + accum_size;
+    const bool primitive_accum =
+      accum_type != type_t::other && accum_type != type_t::int128 && accum_type != type_t::uint128;
+    const bool primitive_value = value_is_primitive && value_type != type_t::int128 && value_type != type_t::uint128;
+    const bool primitive_op    = operation_t != op_kind_t::other;
+    const int max_input_bytes  = (::cuda::std::max) (key_size, accum_size);
+    const int combined_input_bytes = key_size + accum_size;
 
     const auto default_items =
       max_input_bytes <= 8
