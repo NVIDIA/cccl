@@ -9,7 +9,7 @@
 
 struct Foo
 {
-  _CCCL_DEVICE Foo() = default;
+  Foo() = default;
 
   Foo(const Foo&)            = delete;
   Foo& operator=(const Foo&) = delete;
