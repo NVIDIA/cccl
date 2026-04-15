@@ -187,7 +187,7 @@ struct shared_resource
   //! @param __bytes The size in bytes of the allocation.
   //! @param __alignment The requested alignment of the allocation.
   //! @return Pointer to the newly allocated memory
-  [[nodiscard]] void* allocate_sync(size_t __bytes, size_t __alignment = alignof(::cuda::std::max_align_t))
+  [[nodiscard]] void* allocate_sync(size_t __bytes, size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment)
   {
     return __control_block->__resource.allocate_sync(__bytes, __alignment);
   }
@@ -196,7 +196,8 @@ struct shared_resource
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate` or `allocate_sync`
   //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
   //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
-  void deallocate_sync(void* __ptr, size_t __bytes, size_t __alignment = alignof(::cuda::std::max_align_t)) noexcept
+  void
+  deallocate_sync(void* __ptr, size_t __bytes, size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
   {
     __control_block->__resource.deallocate_sync(__ptr, __bytes, __alignment);
   }
@@ -212,7 +213,8 @@ struct shared_resource
   //! operation has completed.
   _CCCL_TEMPLATE(class _ThisResource = _Resource)
   _CCCL_REQUIRES(::cuda::mr::resource<_ThisResource>)
-  [[nodiscard]] void* allocate(::cuda::stream_ref __stream, size_t __bytes, size_t __alignment)
+  [[nodiscard]] void*
+  allocate(::cuda::stream_ref __stream, size_t __bytes, size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment)
   {
     return this->__control_block->__resource.allocate(__stream, __bytes, __alignment);
   }
@@ -228,7 +230,10 @@ struct shared_resource
   //! operation has completed.
   _CCCL_TEMPLATE(class _ThisResource = _Resource)
   _CCCL_REQUIRES(::cuda::mr::resource<_ThisResource>)
-  void deallocate(::cuda::stream_ref __stream, void* __ptr, size_t __bytes, size_t __alignment) noexcept
+  void deallocate(::cuda::stream_ref __stream,
+                  void* __ptr,
+                  size_t __bytes,
+                  size_t __alignment = ::cuda::mr::default_cuda_malloc_alignment) noexcept
   {
     this->__control_block->__resource.deallocate(__stream, __ptr, __bytes, __alignment);
   }

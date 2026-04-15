@@ -136,7 +136,7 @@ struct __ibasic_resource : __basic_interface<__ibasic_resource>
                           "release.") _CCCL_PUBLIC_HOST_API void*
   allocate_sync(size_t __bytes)
   {
-    return allocate_sync(__bytes, alignof(::cuda::std::max_align_t));
+    return allocate_sync(__bytes, ::cuda::mr::default_cuda_malloc_alignment);
   }
 
   _CCCL_PUBLIC_HOST_API void deallocate_sync(void* __pv, size_t __bytes, size_t __alignment) noexcept
@@ -148,7 +148,7 @@ struct __ibasic_resource : __basic_interface<__ibasic_resource>
                           "release.") _CCCL_PUBLIC_HOST_API void
   deallocate_sync(void* __pv, size_t __bytes) noexcept
   {
-    return deallocate_sync(__pv, __bytes, alignof(::cuda::std::max_align_t));
+    return deallocate_sync(__pv, __bytes, ::cuda::mr::default_cuda_malloc_alignment);
   }
 
   template <class _Ty>
@@ -168,7 +168,7 @@ struct __ibasic_async_resource : __basic_interface<__ibasic_async_resource>
   allocate(::cuda::stream_ref __stream, size_t __bytes)
   {
     return ::cuda::__virtcall<&__allocate_async<__ibasic_async_resource>>(
-      this, __stream, __bytes, alignof(::cuda::std::max_align_t));
+      this, __stream, __bytes, ::cuda::mr::default_cuda_malloc_alignment);
   }
 
   _CCCL_PUBLIC_HOST_API void
@@ -182,7 +182,7 @@ struct __ibasic_async_resource : __basic_interface<__ibasic_async_resource>
   deallocate(::cuda::stream_ref __stream, void* __pv, size_t __bytes) noexcept
   {
     return ::cuda::__virtcall<&__deallocate_async<__ibasic_async_resource>>(
-      this, __stream, __pv, __bytes, alignof(::cuda::std::max_align_t));
+      this, __stream, __pv, __bytes, ::cuda::mr::default_cuda_malloc_alignment);
   }
 
   template <class _Ty>
@@ -604,7 +604,7 @@ public:
   [[nodiscard]] void* allocate_sync(size_t __size, size_t __align);
 
   //! @brief Calls `allocate_sync` on the wrapped object with
-  //! `alignof(::cuda::std::max_align_t)` as the alignment.
+  //! `::cuda::mr::default_cuda_malloc_alignment` as the alignment.
   //! @deprecated Specify an explicit alignment argument.
   //! @pre `has_value()` is `true`.
   [[deprecated]] [[nodiscard]] void* allocate_sync(size_t __size);
@@ -619,7 +619,7 @@ public:
   void deallocate_sync(void* __pv, size_t __size, size_t __align);
 
   //! @brief Calls `deallocate_sync` on the wrapped object with
-  //! `alignof(::cuda::std::max_align_t)` as the alignment.
+  //! `::cuda::mr::default_cuda_malloc_alignment` as the alignment.
   //! @deprecated Specify an explicit alignment argument.
   //! @pre `has_value()` is `true`.
   [[deprecated]] void deallocate_sync(void* __pv, size_t __size);
@@ -635,7 +635,7 @@ public:
   [[nodiscard]] void* allocate(cuda::stream_ref __stream, size_t __size, size_t __align);
 
   //! @brief Equivalent to `allocate(__stream, __size,
-  //! alignof(::cuda::std::max_align_t))`.
+  //! `::cuda::mr::default_cuda_malloc_alignment`).
   //! @deprecated Specify an explicit alignment argument.
   [[deprecated]] [[nodiscard]] void* allocate(cuda::stream_ref __stream, size_t __size);
 
@@ -650,7 +650,7 @@ public:
   void deallocate(cuda::stream_ref __stream, void* __pv, size_t __size, size_t __align);
 
   //! @brief Equivalent to `deallocate(__stream, __pv, __size,
-  //! alignof(::cuda::std::max_align_t), __stream)`.
+  //! `::cuda::mr::default_cuda_malloc_alignment`, __stream)`.
   //! @deprecated Specify an explicit alignment argument.
   [[deprecated]] void deallocate(cuda::stream_ref __stream, void* __pv, size_t __size);
 
@@ -783,7 +783,7 @@ public:
   [[nodiscard]] void* allocate_sync(size_t __size, size_t __align);
 
   //! @brief Calls `allocate_sync` on the wrapped reference with
-  //! `alignof(::cuda::std::max_align_t)` as the alignment.
+  //! `::cuda::mr::default_cuda_malloc_alignment` as the alignment.
   //! @deprecated Specify an explicit alignment argument.
   [[deprecated]] [[nodiscard]] void* allocate_sync(size_t __size);
 
@@ -796,7 +796,7 @@ public:
   void deallocate_sync(void* __pv, size_t __size, size_t __align);
 
   //! @brief Calls `deallocate_sync` on the wrapped reference with
-  //! `alignof(::cuda::std::max_align_t)` as the alignment.
+  //! `::cuda::mr::default_cuda_malloc_alignment` as the alignment.
   //! @deprecated Specify an explicit alignment argument.
   [[deprecated]] void deallocate_sync(void* __pv, size_t __size);
 
@@ -810,7 +810,7 @@ public:
   [[nodiscard]] void* allocate(cuda::stream_ref __stream, size_t __size, size_t __align);
 
   //! @brief Equivalent to `allocate(__stream, __size,
-  //! alignof(::cuda::std::max_align_t))`.
+  //! `::cuda::mr::default_cuda_malloc_alignment`).
   //! @deprecated Specify an explicit alignment argument.
   [[deprecated]] [[nodiscard]] void* allocate(cuda::stream_ref __stream, size_t __size);
 
@@ -824,7 +824,7 @@ public:
   void deallocate(cuda::stream_ref __stream, void* __pv, size_t __size, size_t __align);
 
   //! @brief Equivalent to `deallocate(__stream, __pv, __size,
-  //! alignof(::cuda::std::max_align_t), __stream)`.
+  //! `::cuda::mr::default_cuda_malloc_alignment`, __stream)`.
   //! @deprecated Specify an explicit alignment argument.
   [[deprecated]] void deallocate(cuda::stream_ref __stream, void* __pv, size_t __size);
 
