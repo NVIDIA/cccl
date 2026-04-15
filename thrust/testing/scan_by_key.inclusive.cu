@@ -285,7 +285,7 @@ void TestScanByKeyLargeInput()
   thrust::host_vector<unsigned int> h_output(N, 0);
   thrust::device_vector<unsigned int> d_output(N, 0);
 
-  for (const unsigned int val_size : vals_sizes)
+  for (const auto val_size : vals_sizes)
   {
     const unsigned int n = val_size % N;
 

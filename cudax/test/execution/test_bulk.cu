@@ -288,7 +288,7 @@ void bulk_chunked_can_be_used_with_a_function()
   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{&counter2});
   ex::start(op);
 
-  for (int c : counter2)
+  for (const auto c : counter2)
   {
     CHECK(c == 1);
   }
@@ -305,7 +305,7 @@ void bulk_unchunked_can_be_used_with_a_function()
   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{&counter3});
   ex::start(op);
 
-  for (int c : counter3)
+  for (const auto c : counter3)
   {
     CHECK(c == 1);
   }
@@ -339,7 +339,7 @@ void bulk_chunked_can_be_used_with_a_function_object()
   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
   ex::start(op);
 
-  for (int c : counter)
+  for (const auto c : counter)
   {
     CHECK(c == 1);
   }
@@ -356,7 +356,7 @@ void bulk_unchunked_can_be_used_with_a_function_object()
   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{});
   ex::start(op);
 
-  for (int c : counter)
+  for (const auto c : counter)
   {
     CHECK(c == 1);
   }
@@ -504,7 +504,7 @@ void bulk_chunked_forwards_values()
   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{magic_number});
   ex::start(op);
 
-  for (int c : counter)
+  for (const auto c : counter)
   {
     CHECK(c == 1);
   }
@@ -526,7 +526,7 @@ void bulk_unchunked_forwards_values()
   auto op = ex::connect(cuda::std::move(sndr), checked_value_receiver{magic_number});
   ex::start(op);
 
-  for (int c : counter)
+  for (const auto c : counter)
   {
     CHECK(c == 1);
   }
