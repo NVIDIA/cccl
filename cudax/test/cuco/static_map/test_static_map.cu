@@ -8,6 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if defined(__CUDACC__)
+#  pragma nv_diag_suppress 20011
+#endif
+
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
 #include <thrust/iterator/counting_iterator.h>
