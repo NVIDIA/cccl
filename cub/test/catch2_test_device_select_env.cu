@@ -248,11 +248,10 @@ TEST_CASE("Device select unique_by_key default tuning chooses target block size"
   int current_device{};
   REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
 
-  cudaDeviceProp device_props{};
-  REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
+  cuda::arch_id arch_id{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id, current_device));
 
-  const auto target_block_size =
-    selector_t{}(cuda::to_arch_id(cuda::compute_capability{device_props.major, device_props.minor})).block_threads;
+  const auto target_block_size = selector_t{}(arch_id).block_threads;
 
   num_items_t num_items = 1;
   auto d_keys_in        = c2h::device_vector<key_t>{0};

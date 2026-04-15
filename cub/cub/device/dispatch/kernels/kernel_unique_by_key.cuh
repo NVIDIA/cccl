@@ -166,8 +166,7 @@ __launch_bounds__(int(
     _CCCL_GRID_CONSTANT const int num_tiles,
     vsmem_t vsmem)
 {
-  static constexpr unique_by_key_policy policy = kernel_policy<PolicySelector>::policy;
-  using unique_by_key_policy_t                 = typename kernel_policy<PolicySelector>::unique_by_key_policy_t;
+  using unique_by_key_policy_t = typename kernel_policy<PolicySelector>::unique_by_key_policy_t;
 
   using VsmemHelperT = typename VSMemHelperT::template VSMemHelperDefaultFallbackPolicyT<
     unique_by_key_policy_t,
