@@ -15,6 +15,7 @@
 
 #include <cub/agent/agent_unique_by_key.cuh>
 #include <cub/detail/delay_constructor.cuh>
+#include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
 #include <cub/util_vsmem.cuh>
 
 #include <cuda/__device/arch_id.h>
