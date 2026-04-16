@@ -37,30 +37,28 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_scan
 {
-template <typename ComputeT, int MaxSegmentsPerWarp>
-using agent_warp_segmented_scan_compute_t =
-  multi_segment_helpers::agent_segmented_scan_compute_t<ComputeT, MaxSegmentsPerWarp>;
-
-template <
-  int Nominal4ByteBlockThreads,
-  int Nominal4BytesItemsPerThread,
-  typename ComputeT,
-  WarpLoadAlgorithm LoadAlgorithm,
-  CacheLoadModifier LoadModifier,
-  WarpStoreAlgorithm StoreAlgorithm,
-  int MaxSegmentsPerWarp = 1,
-  typename ScalingType   = detail::MemBoundScaling<Nominal4ByteBlockThreads,
-                                                   Nominal4BytesItemsPerThread,
-                                                   agent_warp_segmented_scan_compute_t<ComputeT, MaxSegmentsPerWarp>>>
-struct agent_warp_segmented_scan_policy_t : ScalingType
+template <int BlockThreads,
+          int ItemsPerThread,
+          WarpLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          WarpStoreAlgorithm StoreAlgorithm,
+          int MaxSegmentsPerWarp = 1>
+struct agent_warp_segmented_scan_policy_t
 {
   static_assert(MaxSegmentsPerWarp > 0, "MaxSegmentsPerWarp template value parameter must be positive");
+
+  static constexpr int block_threads    = BlockThreads;
+  static constexpr int items_per_thread = ItemsPerThread;
 
   static constexpr WarpLoadAlgorithm load_algorithm   = LoadAlgorithm;
   static constexpr CacheLoadModifier load_modifier    = LoadModifier;
   static constexpr WarpStoreAlgorithm store_algorithm = StoreAlgorithm;
   static constexpr int max_segments_per_warp          = MaxSegmentsPerWarp;
 };
+
+template <typename ComputeT, int NumSegmentsPerWarp>
+using agent_warp_segmented_scan_compute_t =
+  multi_segment_helpers::agent_segmented_scan_compute_t<ComputeT, NumSegmentsPerWarp>;
 
 template <typename AgentSegmentedScanPolicyT,
           typename InputIteratorT,
@@ -94,8 +92,8 @@ struct agent_warp_segmented_scan
   // or the ForceInclusive tag to be true for inclusive scan
   // to get picked up.
   static constexpr bool is_inclusive         = ForceInclusive || !has_init;
-  static constexpr int block_threads         = AgentSegmentedScanPolicyT::BLOCK_THREADS;
-  static constexpr int items_per_thread      = AgentSegmentedScanPolicyT::ITEMS_PER_THREAD;
+  static constexpr int block_threads         = AgentSegmentedScanPolicyT::block_threads;
+  static constexpr int items_per_thread      = AgentSegmentedScanPolicyT::items_per_thread;
   static constexpr int tile_items            = detail::warp_threads * items_per_thread;
   static constexpr int max_segments_per_warp = AgentSegmentedScanPolicyT::max_segments_per_warp;
 
@@ -113,7 +111,7 @@ private:
   using warp_store_t = WarpStore<AccumT, items_per_thread, store_algorithm>;
   using warp_scan_t  = WarpScan<AccumT>;
 
-  using _single_segment_algorithms_storage_t = union
+  union _single_segment_algorithms_storage_t
   {
     typename warp_load_t::TempStorage load[warps_in_block];
     typename warp_store_t::TempStorage store[warps_in_block];
@@ -134,7 +132,7 @@ private:
   using warp_scan_offsets_t = WarpScan<OffsetT>;
   using warp_reduce_t       = WarpReduce<unsigned int>;
 
-  using _multiple_segment_algorithms_storage_t = union
+  union _multiple_segment_algorithms_storage_t
   {
     // storage for single segment per warp method consume_range
     typename warp_load_t::TempStorage load[warps_in_block];

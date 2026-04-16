@@ -17,6 +17,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_segmented_scan.cuh>
 
 #include <cuda/std/cstdint>
@@ -187,28 +188,28 @@ struct DeviceSegmentedScan
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
     init_value_t init_value{};
 
-    return cub::detail::segmented_scan::dispatch_segmented_scan<
+    return cub::detail::segmented_scan::dispatch<
+      detail::use_default,
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
       EndOffsetIteratorInputT,
       BeginOffsetIteratorInputT,
       scan_op_t,
-      detail::InputValue<init_value_t>>::
-      dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        d_in_begin_offsets,
-        d_in_end_offsets,
-        d_in_begin_offsets,
-        scan_op,
-        detail::InputValue<init_value_t>(init_value),
-        1,
-        detail::segmented_scan::worker::block,
-        stream);
+      detail::InputValue<init_value_t>>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_in_begin_offsets,
+      d_in_end_offsets,
+      d_in_begin_offsets,
+      scan_op,
+      detail::InputValue<init_value_t>(init_value),
+      1,
+      detail::segmented_scan::worker::block,
+      stream);
   }
 
   //! @rst
@@ -326,28 +327,28 @@ struct DeviceSegmentedScan
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
     init_value_t init_value{};
 
-    return cub::detail::segmented_scan::dispatch_segmented_scan<
+    return cub::detail::segmented_scan::dispatch<
+      detail::use_default,
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
       EndOffsetIteratorInputT,
       BeginOffsetIteratorOutputT,
       scan_op_t,
-      detail::InputValue<init_value_t>>::
-      dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        d_in_begin_offsets,
-        d_in_end_offsets,
-        d_out_begin_offsets,
-        scan_op,
-        detail::InputValue<init_value_t>(init_value),
-        1,
-        detail::segmented_scan::worker::block,
-        stream);
+      detail::InputValue<init_value_t>>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_in_begin_offsets,
+      d_in_end_offsets,
+      d_out_begin_offsets,
+      scan_op,
+      detail::InputValue<init_value_t>(init_value),
+      1,
+      detail::segmented_scan::worker::block,
+      stream);
   }
 
   //! @rst
@@ -465,28 +466,28 @@ struct DeviceSegmentedScan
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return cub::detail::segmented_scan::dispatch_segmented_scan<
+    return cub::detail::segmented_scan::dispatch<
+      detail::use_default,
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
       EndOffsetIteratorInputT,
       BeginOffsetIteratorInputT,
       ScanOpT,
-      detail::InputValue<InitValueT>>::
-      dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        d_in_begin_offsets,
-        d_in_end_offsets,
-        d_in_begin_offsets,
-        scan_op,
-        detail::InputValue<InitValueT>(init_value),
-        1,
-        detail::segmented_scan::worker::block,
-        stream);
+      detail::InputValue<InitValueT>>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_in_begin_offsets,
+      d_in_end_offsets,
+      d_in_begin_offsets,
+      scan_op,
+      detail::InputValue<InitValueT>(init_value),
+      1,
+      detail::segmented_scan::worker::block,
+      stream);
   }
 
   //! @rst
@@ -605,28 +606,28 @@ struct DeviceSegmentedScan
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return cub::detail::segmented_scan::dispatch_segmented_scan<
+    return cub::detail::segmented_scan::dispatch<
+      detail::use_default,
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
       EndOffsetIteratorInputT,
       BeginOffsetIteratorOutputT,
       ScanOpT,
-      detail::InputValue<InitValueT>>::
-      dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        d_in_begin_offsets,
-        d_in_end_offsets,
-        d_out_begin_offsets,
-        scan_op,
-        detail::InputValue<InitValueT>(init_value),
-        1,
-        detail::segmented_scan::worker::block,
-        stream);
+      detail::InputValue<InitValueT>>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_in_begin_offsets,
+      d_in_end_offsets,
+      d_out_begin_offsets,
+      scan_op,
+      detail::InputValue<InitValueT>(init_value),
+      1,
+      detail::segmented_scan::worker::block,
+      stream);
   }
 
   //! @rst
@@ -730,26 +731,28 @@ struct DeviceSegmentedScan
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
 
-    return cub::detail::segmented_scan::dispatch_segmented_scan<
+    return cub::detail::segmented_scan::dispatch<
+      detail::use_default,
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
       EndOffsetIteratorInputT,
       BeginOffsetIteratorInputT,
       scan_op_t,
-      NullType>::dispatch(d_temp_storage,
-                          temp_storage_bytes,
-                          d_in,
-                          d_out,
-                          num_segments,
-                          d_in_begin_offsets,
-                          d_in_end_offsets,
-                          d_in_begin_offsets,
-                          scan_op,
-                          NullType(),
-                          1,
-                          detail::segmented_scan::worker::block,
-                          stream);
+      NullType>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_in_begin_offsets,
+      d_in_end_offsets,
+      d_in_begin_offsets,
+      scan_op,
+      NullType(),
+      1,
+      detail::segmented_scan::worker::block,
+      stream);
   }
 
   //! @rst
@@ -867,26 +870,28 @@ struct DeviceSegmentedScan
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
 
-    return cub::detail::segmented_scan::dispatch_segmented_scan<
+    return cub::detail::segmented_scan::dispatch<
+      detail::use_default,
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
       EndOffsetIteratorInputT,
       BeginOffsetIteratorOutputT,
       scan_op_t,
-      NullType>::dispatch(d_temp_storage,
-                          temp_storage_bytes,
-                          d_in,
-                          d_out,
-                          num_segments,
-                          d_in_begin_offsets,
-                          d_in_end_offsets,
-                          d_out_begin_offsets,
-                          scan_op,
-                          NullType(),
-                          1,
-                          detail::segmented_scan::worker::block,
-                          stream);
+      NullType>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_in_begin_offsets,
+      d_in_end_offsets,
+      d_out_begin_offsets,
+      scan_op,
+      NullType(),
+      1,
+      detail::segmented_scan::worker::block,
+      stream);
   }
 
   //! @rst
@@ -981,26 +986,28 @@ struct DeviceSegmentedScan
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return cub::detail::segmented_scan::dispatch_segmented_scan<
+    return cub::detail::segmented_scan::dispatch<
+      detail::use_default,
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
       EndOffsetIteratorInputT,
       BeginOffsetIteratorInputT,
       ScanOpT,
-      NullType>::dispatch(d_temp_storage,
-                          temp_storage_bytes,
-                          d_in,
-                          d_out,
-                          num_segments,
-                          d_in_begin_offsets,
-                          d_in_end_offsets,
-                          d_in_begin_offsets,
-                          scan_op,
-                          NullType(),
-                          1,
-                          detail::segmented_scan::worker::block,
-                          stream);
+      NullType>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_in_begin_offsets,
+      d_in_end_offsets,
+      d_in_begin_offsets,
+      scan_op,
+      NullType(),
+      1,
+      detail::segmented_scan::worker::block,
+      stream);
   }
 
   //! @rst
@@ -1122,26 +1129,28 @@ struct DeviceSegmentedScan
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return cub::detail::segmented_scan::dispatch_segmented_scan<
+    return cub::detail::segmented_scan::dispatch<
+      detail::use_default,
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
       EndOffsetIteratorInputT,
       BeginOffsetIteratorOutputT,
       ScanOpT,
-      NullType>::dispatch(d_temp_storage,
-                          temp_storage_bytes,
-                          d_in,
-                          d_out,
-                          num_segments,
-                          d_in_begin_offsets,
-                          d_in_end_offsets,
-                          d_out_begin_offsets,
-                          scan_op,
-                          NullType(),
-                          1,
-                          detail::segmented_scan::worker::block,
-                          stream);
+      NullType>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_in_begin_offsets,
+      d_in_end_offsets,
+      d_out_begin_offsets,
+      scan_op,
+      NullType(),
+      1,
+      detail::segmented_scan::worker::block,
+      stream);
   }
 
   //! @rst
@@ -1263,7 +1272,8 @@ struct DeviceSegmentedScan
 
     using accum_t = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
 
-    return cub::detail::segmented_scan::dispatch_segmented_scan<
+    return cub::detail::segmented_scan::dispatch<
+      accum_t,
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
@@ -1272,21 +1282,20 @@ struct DeviceSegmentedScan
       ScanOpT,
       detail::InputValue<InitValueT>,
       accum_t,
-      ForceInclusive::Yes>::
-      dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        d_in_begin_offsets,
-        d_in_end_offsets,
-        d_in_begin_offsets,
-        scan_op,
-        detail::InputValue<InitValueT>(init_value),
-        1,
-        detail::segmented_scan::worker::block,
-        stream);
+      ForceInclusive::Yes>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_in_begin_offsets,
+      d_in_end_offsets,
+      d_in_begin_offsets,
+      scan_op,
+      detail::InputValue<InitValueT>(init_value),
+      1,
+      detail::segmented_scan::worker::block,
+      stream);
   }
 
   //! @rst
@@ -1409,7 +1418,8 @@ struct DeviceSegmentedScan
 
     using accum_t = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
 
-    return cub::detail::segmented_scan::dispatch_segmented_scan<
+    return cub::detail::segmented_scan::dispatch<
+      accum_t,
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
@@ -1418,21 +1428,20 @@ struct DeviceSegmentedScan
       ScanOpT,
       detail::InputValue<InitValueT>,
       accum_t,
-      ForceInclusive::Yes>::
-      dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        d_in_begin_offsets,
-        d_in_end_offsets,
-        d_out_begin_offsets,
-        scan_op,
-        detail::InputValue<InitValueT>(init_value),
-        1,
-        detail::segmented_scan::worker::block,
-        stream);
+      ForceInclusive::Yes>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_in_begin_offsets,
+      d_in_end_offsets,
+      d_out_begin_offsets,
+      scan_op,
+      detail::InputValue<InitValueT>(init_value),
+      1,
+      detail::segmented_scan::worker::block,
+      stream);
   }
 };
 

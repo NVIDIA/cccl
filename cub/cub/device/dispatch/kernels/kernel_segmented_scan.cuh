@@ -16,6 +16,7 @@
 #include <cub/agent/agent_segmented_scan.cuh>
 #include <cub/agent/agent_thread_segmented_scan.cuh>
 #include <cub/agent/agent_warp_segmented_scan.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
 #include <cub/util_macro.cuh>
 #include <cub/util_type.cuh>
 
@@ -25,7 +26,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_scan
 {
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename BeginOffsetIteratorInputT,
@@ -37,7 +38,10 @@ template <typename ChainedPolicyT,
           typename AccumT,
           bool ForceInclusive,
           typename ActualInitValueT = typename InitValueT::value_type>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::block_segmented_scan_policy_t::BLOCK_THREADS))
+#if _CCCL_HAS_CONCEPTS()
+  requires segmented_scan_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block.block_threads))
   _CCCL_KERNEL_ATTRIBUTES void device_segmented_scan_kernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
@@ -49,7 +53,19 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::block_segmented_scan_policy_
     _CCCL_GRID_CONSTANT const InitValueT init_value,
     _CCCL_GRID_CONSTANT const int num_segments_per_worker)
 {
-  using policy_t = typename ChainedPolicyT::ActivePolicy::block_segmented_scan_policy_t;
+  static constexpr auto policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block;
+  using policy_t               = agent_segmented_scan_policy_t<
+                  policy.block_threads,
+                  policy.items_per_thread,
+                  policy.load_algorithm,
+                  policy.load_modifier,
+                  policy.store_algorithm,
+                  policy.scan_algorithm,
+                  policy.max_segments_per_block>;
+
+  _CCCL_ASSERT(policy.block_threads == policy_t::block_threads, "Block policy threads mismatch");
+  _CCCL_ASSERT(policy.items_per_thread == policy_t::items_per_thread, "Block policy items-per-thread mismatch");
+  _CCCL_ASSERT(policy.max_segments_per_block == policy_t::max_segments_per_block, "Block policy max segments mismatch");
 
   using agent_t = cub::detail::segmented_scan::agent_segmented_scan<
     policy_t,
@@ -66,14 +82,14 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::block_segmented_scan_policy_
   const ActualInitValueT _init_value = init_value;
 
   _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments to be processed by block must be positive");
-  _CCCL_ASSERT(num_segments_per_worker <= policy_t::max_segments_per_block,
+  _CCCL_ASSERT(num_segments_per_worker <= policy.max_segments_per_block,
                "Requested number of segments to be processed by block exceeds compile-time maximum");
 
   const auto work_id = num_segments_per_worker * blockIdx.x;
 
   agent_t agent(temp_storage, d_in, d_out, scan_op, _init_value);
 
-  if constexpr (policy_t::max_segments_per_block == 1)
+  if constexpr (policy.max_segments_per_block == 1)
   {
     _CCCL_ASSERT(num_segments_per_worker == 1, "Inconsistent parameters in device_warp_segmented_scan_kernel");
     _CCCL_ASSERT(work_id < n_segments, "device_segmented_scan_kernel launch configuration results in access violation");
@@ -113,7 +129,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::block_segmented_scan_policy_
   }
 }
 
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename BeginOffsetIteratorInputT,
@@ -125,7 +141,10 @@ template <typename ChainedPolicyT,
           typename AccumT,
           bool ForceInclusive,
           typename ActualInitValueT = typename InitValueT::value_type>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t::BLOCK_THREADS))
+#if _CCCL_HAS_CONCEPTS()
+  requires segmented_scan_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warp.block_threads))
   _CCCL_KERNEL_ATTRIBUTES void device_warp_segmented_scan_kernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
@@ -137,7 +156,18 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t
     _CCCL_GRID_CONSTANT const InitValueT init_value,
     _CCCL_GRID_CONSTANT const int num_segments_per_worker)
 {
-  using policy_t = typename ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t;
+  static constexpr auto policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warp;
+  using policy_t               = agent_warp_segmented_scan_policy_t<
+                  policy.block_threads,
+                  policy.items_per_thread,
+                  policy.load_algorithm,
+                  policy.load_modifier,
+                  policy.store_algorithm,
+                  policy.max_segments_per_warp>;
+
+  _CCCL_ASSERT(policy.block_threads == policy_t::block_threads, "Warp policy threads mismatch");
+  _CCCL_ASSERT(policy.items_per_thread == policy_t::items_per_thread, "Warp policy items-per-thread mismatch");
+  _CCCL_ASSERT(policy.max_segments_per_warp == policy_t::max_segments_per_warp, "Warp policy max segments mismatch");
 
   using agent_t = cub::detail::segmented_scan::agent_warp_segmented_scan<
     policy_t,
@@ -154,10 +184,10 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t
   const ActualInitValueT _init_value = init_value;
 
   _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments to be processed by warp must be positive");
-  _CCCL_ASSERT(num_segments_per_worker <= policy_t::max_segments_per_warp,
+  _CCCL_ASSERT(num_segments_per_worker <= policy.max_segments_per_warp,
                "Requested number of segments to be processed by warp exceeds compile-time maximum");
 
-  static constexpr unsigned int warps_in_block = int(policy_t::BLOCK_THREADS) >> cub::detail::log2_warp_threads;
+  static constexpr unsigned int warps_in_block = int(policy.block_threads) >> cub::detail::log2_warp_threads;
   const unsigned int warp_id                   = threadIdx.x >> cub::detail::log2_warp_threads;
 
   const auto work_id = num_segments_per_worker * (blockIdx.x * warps_in_block) + warp_id;
@@ -169,7 +199,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t
 
   agent_t agent(temp_storage, d_in, d_out, scan_op, _init_value);
 
-  if constexpr (policy_t::max_segments_per_warp == 1)
+  if constexpr (policy.max_segments_per_warp == 1)
   {
     const OffsetT inp_begin_offset = begin_offset_d_in[work_id];
     const OffsetT inp_end_offset   = end_offset_d_in[work_id];
@@ -216,7 +246,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::warp_segmented_scan_policy_t
   }
 }
 
-template <typename ChainedPolicyT,
+template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename BeginOffsetIteratorInputT,
@@ -228,7 +258,10 @@ template <typename ChainedPolicyT,
           typename AccumT,
           bool ForceInclusive,
           typename ActualInitValueT = typename InitValueT::value_type>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::thread_segmented_scan_policy_t::BLOCK_THREADS))
+#if _CCCL_HAS_CONCEPTS()
+  requires segmented_scan_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).thread.block_threads))
   _CCCL_KERNEL_ATTRIBUTES void device_thread_segmented_scan_kernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
@@ -240,7 +273,12 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::thread_segmented_scan_policy
     _CCCL_GRID_CONSTANT const InitValueT init_value,
     _CCCL_GRID_CONSTANT const int num_segments_per_worker)
 {
-  using policy_t = typename ChainedPolicyT::ActivePolicy::thread_segmented_scan_policy_t;
+  static constexpr auto policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).thread;
+  using policy_t =
+    agent_thread_segmented_scan_policy_t<policy.block_threads, policy.items_per_thread, policy.load_modifier>;
+
+  _CCCL_ASSERT(policy.block_threads == policy_t::block_threads, "Thread policy threads mismatch");
+  _CCCL_ASSERT(policy.items_per_thread == policy_t::items_per_thread, "Thread policy items-per-thread mismatch");
 
   using agent_t = cub::detail::segmented_scan::agent_thread_segmented_scan<
     policy_t,

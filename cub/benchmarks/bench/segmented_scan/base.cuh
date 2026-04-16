@@ -151,31 +151,7 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using offset_it      = const offset_t*;
 
 #if !TUNE_BASE
-  using policy_t   = policy_hub_t<accum_t>;
-  using dispatch_t = cub::detail::segmented_scan::dispatch_segmented_scan<
-    input_it_t,
-    output_it_t,
-    offset_it,
-    offset_it,
-    offset_it,
-    op_t,
-    wrapped_init_t,
-    accum_t,
-    cub::ForceInclusive::Yes,
-    offset_t,
-    policy_t>;
-#else
-  using dispatch_t = cub::detail::segmented_scan::dispatch_segmented_scan<
-    input_it_t,
-    output_it_t,
-    offset_it,
-    offset_it,
-    offset_it,
-    op_t,
-    wrapped_init_t,
-    accum_t,
-    cub::ForceInclusive::No,
-    offset_t>;
+  using policy_t = policy_hub_t<accum_t>;
 #endif
 
   const auto elements     = static_cast<offset_t>(state.get_int64("Elements{io}"));
@@ -228,7 +204,34 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   }(state.get_string("Worker{io}"));
 
   size_t tmp_size;
-  dispatch_t::dispatch(
+#if !TUNE_BASE
+  cub::detail::segmented_scan::dispatch<
+    accum_t,
+    input_it_t,
+    output_it_t,
+    offset_it,
+    offset_it,
+    offset_it,
+    op_t,
+    wrapped_init_t,
+    accum_t,
+    cub::ForceInclusive::Yes,
+    offset_t,
+    cub::detail::segmented_scan::policy_selector_from_hub<policy_t>>(
+#else
+  cub::detail::segmented_scan::dispatch<
+    accum_t,
+    input_it_t,
+    output_it_t,
+    offset_it,
+    offset_it,
+    offset_it,
+    op_t,
+    wrapped_init_t,
+    accum_t,
+    cub::ForceInclusive::No,
+    offset_t>(
+#endif
     nullptr,
     tmp_size,
     d_input,
@@ -247,7 +250,34 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::dispatch(
+#if !TUNE_BASE
+    cub::detail::segmented_scan::dispatch<
+      accum_t,
+      input_it_t,
+      output_it_t,
+      offset_it,
+      offset_it,
+      offset_it,
+      op_t,
+      wrapped_init_t,
+      accum_t,
+      cub::ForceInclusive::Yes,
+      offset_t,
+      cub::detail::segmented_scan::policy_selector_from_hub<policy_t>>(
+#else
+    cub::detail::segmented_scan::dispatch<
+      accum_t,
+      input_it_t,
+      output_it_t,
+      offset_it,
+      offset_it,
+      offset_it,
+      op_t,
+      wrapped_init_t,
+      accum_t,
+      cub::ForceInclusive::No,
+      offset_t>(
+#endif
       thrust::raw_pointer_cast(tmp.data()),
       tmp_size,
       d_input,

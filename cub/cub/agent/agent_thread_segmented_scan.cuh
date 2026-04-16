@@ -38,13 +38,12 @@ namespace detail::segmented_scan
 // define policy
 //   Policy contains: CacheLoadModifier, block size, items per thread
 
-template <int Nominal4ByteBlockThreads,
-          int Nominal4BytesItemsPerThread,
-          typename ComputeT,
-          CacheLoadModifier LoadModifier,
-          typename ScalingType = detail::MemBoundScaling<Nominal4ByteBlockThreads, Nominal4BytesItemsPerThread, ComputeT>>
-struct agent_thread_segmented_scan_policy_t : ScalingType
+template <int BlockThreads, int ItemsPerThread, CacheLoadModifier LoadModifier>
+struct agent_thread_segmented_scan_policy_t
 {
+  static constexpr int block_threads    = BlockThreads;
+  static constexpr int items_per_thread = ItemsPerThread;
+
   static constexpr CacheLoadModifier load_modifier = LoadModifier;
 };
 
@@ -199,8 +198,8 @@ struct agent_thread_segmented_scan
   // or the ForceInclusive tag to be true for inclusive scan
   // to get picked up.
   static constexpr bool is_inclusive    = ForceInclusive || !has_init;
-  static constexpr int block_threads    = AgentSegmentedScanPolicyT::BLOCK_THREADS;
-  static constexpr int items_per_thread = AgentSegmentedScanPolicyT::ITEMS_PER_THREAD;
+  static constexpr int block_threads    = AgentSegmentedScanPolicyT::block_threads;
+  static constexpr int items_per_thread = AgentSegmentedScanPolicyT::items_per_thread;
   static constexpr int tile_items       = items_per_thread;
 
   using augmented_accum_t = AccumT;

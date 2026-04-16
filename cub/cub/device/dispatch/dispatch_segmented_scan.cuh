@@ -15,14 +15,17 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/arch_dispatch.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
+#include <cub/util_temporary_storage.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
@@ -45,7 +48,7 @@ enum class worker
   thread
 };
 
-template <typename MaxPolicyT,
+template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename BeginOffsetIteratorInputT,
@@ -58,10 +61,12 @@ template <typename MaxPolicyT,
           ForceInclusive EnforceInclusive>
 struct device_segmented_scan_kernel_source
 {
+  static_assert(::cuda::std::is_empty_v<PolicySelector>);
+
   CUB_DEFINE_KERNEL_GETTER(
     segmented_scan_kernel,
     device_segmented_scan_kernel<
-      MaxPolicyT,
+      PolicySelector,
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
@@ -76,7 +81,7 @@ struct device_segmented_scan_kernel_source
   CUB_DEFINE_KERNEL_GETTER(
     warp_segmented_scan_kernel,
     device_warp_segmented_scan_kernel<
-      MaxPolicyT,
+      PolicySelector,
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
@@ -91,7 +96,7 @@ struct device_segmented_scan_kernel_source
   CUB_DEFINE_KERNEL_GETTER(
     thread_segmented_scan_kernel,
     device_thread_segmented_scan_kernel<
-      MaxPolicyT,
+      PolicySelector,
       InputIteratorT,
       OutputIteratorT,
       BeginOffsetIteratorInputT,
@@ -109,7 +114,63 @@ struct device_segmented_scan_kernel_source
   }
 };
 
+// TODO(bgruber): remove in CCCL 4.0 when we drop the dispatchers
+template <typename PolicyHub>
+struct policy_selector_from_hub
+{
+  // called in constexpr context via dispatch_arch, so arch is unused
+  _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::arch_id /*arch*/) const -> segmented_scan_policy
+  {
+    using static_policy = typename PolicyHub::MaxPolicy::ActivePolicy;
+    using block_policy  = typename static_policy::block_segmented_scan_policy_t;
+    using warp_policy   = typename static_policy::warp_segmented_scan_policy_t;
+    using thread_policy = typename static_policy::thread_segmented_scan_policy_t;
+
+    constexpr auto block_load  = block_policy::load_algorithm;
+    constexpr auto block_store = block_policy::store_algorithm;
+    constexpr auto block_scan  = block_policy::scan_algorithm;
+
+    constexpr auto warp_load  = warp_policy::load_algorithm;
+    constexpr auto warp_store = warp_policy::store_algorithm;
+
+    return segmented_scan_policy{
+      block_segmented_scan_policy{
+        block_policy::block_threads,
+        block_policy::items_per_thread,
+        block_policy::load_modifier,
+        block_load,
+        block_store,
+        block_scan,
+        block_policy::max_segments_per_block},
+      warp_segmented_scan_policy{
+        warp_policy::block_threads,
+        warp_policy::items_per_thread,
+        warp_policy::load_modifier,
+        warp_load,
+        warp_store,
+        warp_policy::max_segments_per_warp},
+      thread_segmented_scan_policy{
+        thread_policy::block_threads, thread_policy::items_per_thread, thread_policy::load_modifier}};
+  }
+};
+
+// select the accumulator type using an overload set, so __accumulator_t is not instantiated when an overriding
+// accumulator type is present. This matches the reduce dispatch pattern and is needed by CCCL.C.
+template <typename ScanOpT, typename InitValueT, typename InputValueT>
+_CCCL_API auto select_accum_t(detail::use_default*) -> ::cuda::std::__accumulator_t<
+  ScanOpT,
+  InputValueT,
+  ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>, InputValueT, typename InitValueT::value_type>>;
+
+template <typename ScanOpT,
+          typename InitValueT,
+          typename InputValueT,
+          typename OverrideAccumT,
+          ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OverrideAccumT, detail::use_default>, int> = 0>
+_CCCL_API auto select_accum_t(OverrideAccumT*) -> OverrideAccumT;
+
 template <
+  typename OverrideAccumT = detail::use_default,
   typename InputIteratorT,
   typename OutputIteratorT,
   typename BeginOffsetIteratorInputT,
@@ -117,93 +178,65 @@ template <
   typename BeginOffsetIteratorOutputT,
   typename ScanOpT,
   typename InitValueT,
-  typename AccumT                 = ::cuda::std::__accumulator_t<ScanOpT,
-                                                                 cub::detail::it_value_t<InputIteratorT>,
-                                                                 ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
-                                                                                  cub::detail::it_value_t<InputIteratorT>,
-                                                                                  typename InitValueT::value_type>>,
+  typename AccumT = decltype(select_accum_t<ScanOpT, InitValueT, cub::detail::it_value_t<InputIteratorT>>(
+    static_cast<OverrideAccumT*>(nullptr))),
   ForceInclusive EnforceInclusive = ForceInclusive::No,
   typename OffsetT                = typename detail::
     common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>,
-  typename PolicyHub = detail::segmented_scan::
-    policy_hub<detail::it_value_t<InputIteratorT>, detail::it_value_t<OutputIteratorT>, AccumT, OffsetT, ScanOpT>,
-  typename KernelSource = detail::segmented_scan::device_segmented_scan_kernel_source<
-    typename PolicyHub::MaxPolicy,
-    InputIteratorT,
-    OutputIteratorT,
-    BeginOffsetIteratorInputT,
-    EndOffsetIteratorInputT,
-    BeginOffsetIteratorOutputT,
-    OffsetT,
-    ScanOpT,
-    InitValueT,
-    AccumT,
-    EnforceInclusive>,
+  typename PolicySelector = detail::segmented_scan::policy_selector_from_types<AccumT>,
+  typename KernelSource   = detail::segmented_scan::device_segmented_scan_kernel_source<
+      PolicySelector,
+      InputIteratorT,
+      OutputIteratorT,
+      BeginOffsetIteratorInputT,
+      EndOffsetIteratorInputT,
+      BeginOffsetIteratorOutputT,
+      OffsetT,
+      ScanOpT,
+      InitValueT,
+      AccumT,
+      EnforceInclusive>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
-struct dispatch_segmented_scan
+#if _CCCL_HAS_CONCEPTS()
+  requires segmented_scan_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  ::cuda::std::int64_t num_segments,
+  BeginOffsetIteratorInputT input_begin_offsets,
+  EndOffsetIteratorInputT input_end_offsets,
+  BeginOffsetIteratorOutputT output_begin_offsets,
+  ScanOpT scan_op,
+  InitValueT init_value,
+  int num_segments_per_worker,
+  worker worker_choice,
+  cudaStream_t stream,
+  PolicySelector policy_selector         = {},
+  KernelSource kernel_source             = {},
+  KernelLauncherFactory launcher_factory = {})
 {
   static_assert(::cuda::std::is_integral_v<OffsetT> && sizeof(OffsetT) >= 4 && sizeof(OffsetT) <= 8,
                 "dispatch_segmented_scan only supports integral offset types of 4- or 8-bytes");
 
-  /// Device-accessible allocation of temporary storage.  When nullptr, the
-  /// required allocation size is written to \p temp_storage_bytes and no work
-  /// is done.
-  void* d_temp_storage;
-
-  /// Reference to size in bytes of \p d_temp_storage allocation
-  size_t& temp_storage_bytes;
-
-  /// Iterator to the input sequence of data items
-  InputIteratorT d_in;
-
-  /// Iterator to the output sequence of data items
-  OutputIteratorT d_out;
-
-  /// The number of segments that comprise the segmented scan data
-  ::cuda::std::int64_t num_segments;
-
-  /// Offsets to beginning of each segment in the input sequence
-  BeginOffsetIteratorInputT d_input_begin_offsets;
-
-  /// Offsets to end of each segment in the input sequence
-  EndOffsetIteratorInputT d_input_end_offsets;
-
-  /// Offsets to beginning of each segment in the output sequence
-  BeginOffsetIteratorOutputT d_output_begin_offsets;
-
-  /// Binary scan functor
-  ScanOpT scan_op;
-
-  /// Initial value to seed the exclusive scan
-  InitValueT init_value;
-
-  /// Number of segments processed by a worker
-  int num_segments_per_worker;
-
-  worker worker_choice;
-
-  /// CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
-  cudaStream_t stream;
-
-  int ptx_version;
-
-  KernelSource kernel_source;
-
-  KernelLauncherFactory launcher_factory;
-
-  template <typename ActivePolicyT,
-            typename BlockLevelSegmentedScanKernelT,
-            typename WarpLevelSegmentedScanKernelT,
-            typename ThreadLevelSegmentedScanKernelT>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_passes(
-    BlockLevelSegmentedScanKernelT large_segmented_scan_kernel,
-    WarpLevelSegmentedScanKernelT medium_segmented_scan_kernel,
-    ThreadLevelSegmentedScanKernelT small_segmented_scan_kernel,
-    ActivePolicyT policy = {})
+  if (num_segments <= 0)
   {
-    // `LOAD_LDG` makes in-place execution UB and doesn't lead to better
-    // performance.
-    policy.CheckLoadModifier();
+    return cudaSuccess;
+  }
+
+  ::cuda::arch_id arch_id{};
+  if (const auto error = CubDebug(launcher_factory.PtxArchId(arch_id)))
+  {
+    return error;
+  }
+
+  return detail::dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
+    const segmented_scan_policy active_policy = policy_getter();
+
+    // Clamp to produce a positive integer
+    num_segments_per_worker = (::cuda::std::max) (num_segments_per_worker, 1);
 
     if (d_temp_storage == nullptr)
     {
@@ -211,28 +244,31 @@ struct dispatch_segmented_scan
       return cudaSuccess;
     }
 
+    active_policy.CheckLoadModifier();
+
     _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments per worker parameter must be positive");
 
-    const auto [workers_per_block, block_size] = [](auto policy, worker selector) -> ::cuda::std::tuple<int, int> {
+    const auto [workers_per_block, block_size] = [&](worker selector) -> ::cuda::std::tuple<int, int> {
       switch (selector)
       {
         case worker::block: {
-          const auto bw = policy.BlockWorkerSegmentedScan();
-          return {bw.WorkersPerBlock(), bw.Config().BlockThreads()};
+          const auto bw = make_block_segmented_scan_policy_wrapper(active_policy.block);
+          return {bw.WorkersPerBlock(), bw.BlockThreads()};
         }
         case worker::warp: {
-          const auto ww = policy.WarpWorkerSegmentedScan();
-          return {ww.WorkersPerBlock(), ww.Config().BlockThreads()};
+          const auto ww = make_warp_segmented_scan_policy_wrapper(active_policy.warp);
+          return {ww.WorkersPerBlock(), ww.BlockThreads()};
         }
         case worker::thread: {
-          const auto tw = policy.ThreadWorkerSegmentedScan();
-          return {tw.WorkersPerBlock(), tw.Config().BlockThreads()};
+          const auto tw = make_thread_segmented_scan_policy_wrapper(active_policy.thread);
+          return {tw.WorkersPerBlock(), tw.BlockThreads()};
         }
         default:
           _CCCL_UNREACHABLE();
       }
       _CCCL_UNREACHABLE();
-    }(policy, worker_choice);
+    }(worker_choice);
+
     const auto segments_per_block = num_segments_per_worker * workers_per_block;
     _CCCL_ASSERT(segments_per_block > 0, "Number of segments to be processed by block must be positive");
 
@@ -262,12 +298,12 @@ struct dispatch_segmented_scan
       {
         case worker::block:
           launcher.doit(
-            large_segmented_scan_kernel,
+            kernel_source.segmented_scan_kernel(),
             d_in,
             d_out,
-            d_input_begin_offsets,
-            d_input_end_offsets,
-            d_output_begin_offsets,
+            input_begin_offsets,
+            input_end_offsets,
+            output_begin_offsets,
             segment_count,
             scan_op,
             init_value,
@@ -275,12 +311,12 @@ struct dispatch_segmented_scan
           break;
         case worker::warp:
           launcher.doit(
-            medium_segmented_scan_kernel,
+            kernel_source.warp_segmented_scan_kernel(),
             d_in,
             d_out,
-            d_input_begin_offsets,
-            d_input_end_offsets,
-            d_output_begin_offsets,
+            input_begin_offsets,
+            input_end_offsets,
+            output_begin_offsets,
             segment_count,
             scan_op,
             init_value,
@@ -288,12 +324,12 @@ struct dispatch_segmented_scan
           break;
         case worker::thread:
           launcher.doit(
-            small_segmented_scan_kernel,
+            kernel_source.thread_segmented_scan_kernel(),
             d_in,
             d_out,
-            d_input_begin_offsets,
-            d_input_end_offsets,
-            d_output_begin_offsets,
+            input_begin_offsets,
+            input_end_offsets,
+            output_begin_offsets,
             segment_count,
             scan_op,
             init_value,
@@ -311,9 +347,9 @@ struct dispatch_segmented_scan
 
       if (invocation_index + 1 < num_invocations)
       {
-        d_input_begin_offsets += num_segments_per_invocation;
-        d_input_end_offsets += num_segments_per_invocation;
-        d_output_begin_offsets += num_segments_per_invocation;
+        input_begin_offsets += num_segments_per_invocation;
+        input_end_offsets += num_segments_per_invocation;
+        output_begin_offsets += num_segments_per_invocation;
       }
 
       error = CubDebug(detail::DebugSyncStream(stream));
@@ -324,82 +360,8 @@ struct dispatch_segmented_scan
     }
 
     return cudaSuccess;
-  }
-
-  /// Invocation
-  template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT policy = {})
-  {
-    auto wrapped_policy = detail::segmented_scan::make_segmented_scan_policy_wrapper(policy);
-    // Force kernel code-generation in all compiler passes
-    return invoke_passes(
-      kernel_source.segmented_scan_kernel(),
-      kernel_source.warp_segmented_scan_kernel(),
-      kernel_source.thread_segmented_scan_kernel(),
-      wrapped_policy);
-  }
-
-  template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    ::cuda::std::int64_t num_segments,
-    BeginOffsetIteratorInputT input_begin_offsets,
-    EndOffsetIteratorInputT input_end_offsets,
-    BeginOffsetIteratorOutputT output_begin_offsets,
-    ScanOpT scan_op,
-    InitValueT init_value,
-    int num_segments_per_worker,
-    worker worker_choice,
-    cudaStream_t stream,
-    KernelSource kernel_source             = {},
-    KernelLauncherFactory launcher_factory = {},
-    MaxPolicyT max_policy                  = {})
-  {
-    if (num_segments <= 0)
-    {
-      return cudaSuccess;
-    }
-
-    int ptx_version = 0;
-    cudaError error = CubDebug(launcher_factory.PtxVersion(ptx_version));
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
-
-    // Clamp to produce a positive integer
-    num_segments_per_worker = (::cuda::std::max) (num_segments_per_worker, 1);
-
-    dispatch_segmented_scan dispatch{
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      num_segments,
-      input_begin_offsets,
-      input_end_offsets,
-      output_begin_offsets,
-      scan_op,
-      init_value,
-      num_segments_per_worker,
-      worker_choice,
-      stream,
-      ptx_version,
-      kernel_source,
-      launcher_factory};
-
-    error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
-
-    return error;
-  }
-};
+  });
+}
 } // namespace detail::segmented_scan
 
 CUB_NAMESPACE_END

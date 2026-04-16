@@ -41,16 +41,12 @@ namespace detail::segmented_scan
  * Tuning policy types
  ******************************************************************************/
 
-template <typename ComputeT, int NumSegmentsPerBlock>
-using agent_block_segmented_scan_compute_t =
-  multi_segment_helpers::agent_segmented_scan_compute_t<ComputeT, NumSegmentsPerBlock>;
-
 //! @brief Parameterizable tuning policy type for agent_segmented_scan
 //!
-//! @tparam Nominal4ByteBlockThreads
+//! @tparam BlockThreads
 //!   Threads per thread block
 //!
-//! @tparam Nominal4BytesItemsPerThread
+//! @tparam ItemsPerThread
 //!   Items per thread (per tile of input)
 //!
 //! @tparam ComputeT
@@ -71,21 +67,19 @@ using agent_block_segmented_scan_compute_t =
 //! @tparam SegmentsPerBlock
 //!   The number of segments processed per block
 //!
-template <
-  int Nominal4ByteBlockThreads,
-  int Nominal4BytesItemsPerThread,
-  typename ComputeT,
-  BlockLoadAlgorithm LoadAlgorithm,
-  CacheLoadModifier LoadModifier,
-  BlockStoreAlgorithm StoreAlgorithm,
-  BlockScanAlgorithm ScanAlgorithm,
-  int MaxSegmentsPerBlock = 1,
-  typename ScalingType    = detail::MemBoundScaling<Nominal4ByteBlockThreads,
-                                                    Nominal4BytesItemsPerThread,
-                                                    agent_block_segmented_scan_compute_t<ComputeT, MaxSegmentsPerBlock>>>
-struct agent_segmented_scan_policy_t : ScalingType
+template <int BlockThreads,
+          int ItemsPerThread,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          BlockStoreAlgorithm StoreAlgorithm,
+          BlockScanAlgorithm ScanAlgorithm,
+          int MaxSegmentsPerBlock = 1>
+struct agent_segmented_scan_policy_t
 {
   static_assert(MaxSegmentsPerBlock > 0, "MaxSegmentsPerBlock template value parameter must be positive");
+
+  static constexpr int items_per_thread = ItemsPerThread;
+  static constexpr int block_threads    = BlockThreads;
 
   static constexpr BlockLoadAlgorithm load_algorithm   = LoadAlgorithm;
   static constexpr CacheLoadModifier load_modifier     = LoadModifier;
@@ -93,6 +87,10 @@ struct agent_segmented_scan_policy_t : ScalingType
   static constexpr BlockScanAlgorithm scan_algorithm   = ScanAlgorithm;
   static constexpr int max_segments_per_block          = MaxSegmentsPerBlock;
 };
+
+template <typename ComputeT, int NumSegmentsPerBlock>
+using agent_block_segmented_scan_compute_t =
+  multi_segment_helpers::agent_segmented_scan_compute_t<ComputeT, NumSegmentsPerBlock>;
 
 /******************************************************************************
  * Thread block abstractions
@@ -154,8 +152,8 @@ struct agent_segmented_scan
   // or the ForceInclusive tag to be true for inclusive scan
   // to get picked up.
   static constexpr bool is_inclusive          = ForceInclusive || !has_init;
-  static constexpr int block_threads          = AgentSegmentedScanPolicyT::BLOCK_THREADS;
-  static constexpr int items_per_thread       = AgentSegmentedScanPolicyT::ITEMS_PER_THREAD;
+  static constexpr int block_threads          = AgentSegmentedScanPolicyT::block_threads;
+  static constexpr int items_per_thread       = AgentSegmentedScanPolicyT::items_per_thread;
   static constexpr int tile_items             = block_threads * items_per_thread;
   static constexpr int max_segments_per_block = AgentSegmentedScanPolicyT::max_segments_per_block;
 
@@ -170,7 +168,7 @@ private:
   using block_store_t = BlockStore<AccumT, block_threads, items_per_thread, store_algorithm>;
   using block_scan_t  = BlockScan<AccumT, block_threads, scan_algorithm>;
 
-  using _single_segment_algorithms_storage_t = union
+  union _single_segment_algorithms_storage_t
   {
     typename block_load_t::TempStorage load;
     typename block_store_t::TempStorage store;
@@ -190,7 +188,7 @@ private:
   using block_offset_scan_t = BlockScan<OffsetT, block_threads, scan_algorithm>;
   using block_reduce_t      = BlockReduce<unsigned int, block_threads>;
 
-  using _multiple_segment_algorithms_storage_t = union
+  union _multiple_segment_algorithms_storage_t
   {
     typename block_load_t::TempStorage load;
     typename block_store_t::TempStorage store;

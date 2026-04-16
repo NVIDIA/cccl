@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <tuple>
 #include <type_traits> // std::integral_constant
+#include <utility>
 #include <vector>
 
 #include "catch2_test_device_scan.cuh"
@@ -92,7 +93,6 @@ struct policy_hub_t
     using block_segmented_scan_policy_t = cub::detail::segmented_scan::agent_segmented_scan_policy_t<
       BlockThreads,
       ItemsPerThread,
-      AccumT,
       cub::BLOCK_LOAD_WARP_TRANSPOSE,
       cub::LOAD_DEFAULT,
       cub::BLOCK_STORE_WARP_TRANSPOSE,
@@ -102,21 +102,21 @@ struct policy_hub_t
     using warp_segmented_scan_policy_t = cub::detail::segmented_scan::agent_warp_segmented_scan_policy_t<
       BlockThreads,
       ItemsPerThread,
-      AccumT,
       cub::WARP_LOAD_TRANSPOSE,
       cub::LOAD_DEFAULT,
       cub::WARP_STORE_TRANSPOSE,
       MaxSegmentsPerWarp>;
 
-    using thread_segmented_scan_policy_t = cub::detail::segmented_scan::
-      agent_thread_segmented_scan_policy_t<BlockThreads, ItemsPerThread, AccumT, cub::LOAD_DEFAULT>;
+    using thread_segmented_scan_policy_t =
+      cub::detail::segmented_scan::agent_thread_segmented_scan_policy_t<BlockThreads, ItemsPerThread, cub::LOAD_DEFAULT>;
   };
 
   using MaxPolicy = policy_t;
 };
 
-template <typename DispatchT, typename OffsetT, typename InputT, typename OutputT, typename ScanOpT, typename InitValueT>
+template <typename OffsetT, typename InputT, typename OutputT, typename ScanOpT, typename InitValueT, typename DispatchT>
 void run_dispatch_scan(
+  DispatchT dispatch_fn,
   cub::detail::segmented_scan::worker worker_choice,
   const c2h::device_vector<OffsetT>& offsets,
   const c2h::device_vector<OffsetT>& out_offsets,
@@ -124,7 +124,8 @@ void run_dispatch_scan(
   c2h::device_vector<OutputT>& output,
   ScanOpT scan_op,
   InitValueT init_value,
-  int segments_per_worker)
+  int segments_per_worker,
+  cudaStream_t stream = 0)
 {
   const auto n_segments = static_cast<OffsetT>(offsets.size() - 1);
 
@@ -134,7 +135,7 @@ void run_dispatch_scan(
   const auto d_out_offsets = thrust::raw_pointer_cast(out_offsets.data());
 
   size_t temp_storage_bytes = 0;
-  DispatchT::dispatch(
+  dispatch_fn(
     nullptr,
     temp_storage_bytes,
     d_input,
@@ -147,10 +148,10 @@ void run_dispatch_scan(
     init_value,
     segments_per_worker,
     worker_choice,
-    0);
+    stream);
 
   c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes);
-  cudaError_t code = DispatchT::dispatch(
+  cudaError_t code = dispatch_fn(
     temp_storage.data().get(),
     temp_storage_bytes,
     d_input,
@@ -163,23 +164,25 @@ void run_dispatch_scan(
     init_value,
     segments_per_worker,
     worker_choice,
-    0);
+    stream);
 
   REQUIRE(code == cudaSuccess);
 }
 
-template <typename DispatchT, typename OffsetT, typename InputT, typename OutputT, typename ScanOpT, typename InitValueT>
+template <typename OffsetT, typename InputT, typename OutputT, typename ScanOpT, typename InitValueT, typename DispatchT>
 void run_dispatch_scan(
+  DispatchT dispatch_fn,
   cub::detail::segmented_scan::worker worker_choice,
   const c2h::device_vector<OffsetT>& offsets,
   const c2h::device_vector<InputT>& input,
   c2h::device_vector<OutputT>& output,
   ScanOpT scan_op,
   InitValueT init_value,
-  int segments_per_worker)
+  int segments_per_worker,
+  cudaStream_t stream = 0)
 {
-  run_dispatch_scan<DispatchT, OffsetT, InputT, OutputT, ScanOpT, InitValueT>(
-    worker_choice, offsets, offsets, input, output, scan_op, init_value, segments_per_worker);
+  run_dispatch_scan<OffsetT, InputT, OutputT, ScanOpT, InitValueT>(
+    dispatch_fn, worker_choice, offsets, offsets, input, output, scan_op, init_value, segments_per_worker, stream);
 }
 
 template <typename ValueT>
@@ -247,18 +250,21 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   thrust::tabulate(input.begin(), input.end(), impl::populate_bicyclic_monoid_input<unsigned int>{});
   c2h::device_vector<pair_t> output(input.size());
 
-  using inclusive_scan_dispatch_t = cub::detail::segmented_scan::dispatch_segmented_scan<
-    const pair_t*,
-    pair_t*,
-    const offset_t*,
-    const offset_t*,
-    const offset_t*,
-    op_t,
-    cub::NullType,
-    pair_t,
-    cub::ForceInclusive::No,
-    offset_t,
-    policy_t>;
+  auto inclusive_scan_dispatch = [](auto&&... args) {
+    return cub::detail::segmented_scan::dispatch<
+      pair_t,
+      const pair_t*,
+      pair_t*,
+      const offset_t*,
+      const offset_t*,
+      const offset_t*,
+      op_t,
+      cub::NullType,
+      pair_t,
+      cub::ForceInclusive::No,
+      offset_t,
+      cub::detail::segmented_scan::policy_selector_from_hub<policy_t>>(std::forward<decltype(args)>(args)...);
+  };
 
   c2h::host_vector<pair_t> h_input(input);
   c2h::host_vector<pair_t> h_expected(input.size());
@@ -283,8 +289,15 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
 
   SECTION("worker-block, one segment per worker")
   {
-    run_dispatch_scan<inclusive_scan_dispatch_t>(
-      cub::detail::segmented_scan::worker::block, offsets, input, output, op, d_no_init, one_segment_per_worker);
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::block,
+      offsets,
+      input,
+      output,
+      op,
+      d_no_init,
+      one_segment_per_worker);
 
     c2h::host_vector<pair_t> h_output(output);
 
@@ -293,8 +306,15 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
 
   SECTION("worker-warp, one segment per worker")
   {
-    run_dispatch_scan<inclusive_scan_dispatch_t>(
-      cub::detail::segmented_scan::worker::warp, offsets, input, output, op, d_no_init, one_segment_per_worker);
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::warp,
+      offsets,
+      input,
+      output,
+      op,
+      d_no_init,
+      one_segment_per_worker);
 
     c2h::host_vector<pair_t> h_output(output);
 
@@ -303,8 +323,15 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
 
   SECTION("worker-thread, one segment per worker")
   {
-    run_dispatch_scan<inclusive_scan_dispatch_t>(
-      cub::detail::segmented_scan::worker::thread, offsets, input, output, op, d_no_init, one_segment_per_worker);
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::thread,
+      offsets,
+      input,
+      output,
+      op,
+      d_no_init,
+      one_segment_per_worker);
 
     c2h::host_vector<pair_t> h_output(output);
 
@@ -315,8 +342,15 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
 
   SECTION("worker-block, two segments per worker")
   {
-    run_dispatch_scan<inclusive_scan_dispatch_t>(
-      cub::detail::segmented_scan::worker::block, offsets, input, output, op, d_no_init, two_segments_per_worker);
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::block,
+      offsets,
+      input,
+      output,
+      op,
+      d_no_init,
+      two_segments_per_worker);
 
     c2h::host_vector<pair_t> h_output(output);
 
@@ -325,8 +359,15 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
 
   SECTION("worker-warp, two segments per worker")
   {
-    run_dispatch_scan<inclusive_scan_dispatch_t>(
-      cub::detail::segmented_scan::worker::warp, offsets, input, output, op, d_no_init, two_segments_per_worker);
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::warp,
+      offsets,
+      input,
+      output,
+      op,
+      d_no_init,
+      two_segments_per_worker);
 
     c2h::host_vector<pair_t> h_output(output);
 
@@ -335,8 +376,15 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
 
   SECTION("worker-thread, two segments per worker")
   {
-    run_dispatch_scan<inclusive_scan_dispatch_t>(
-      cub::detail::segmented_scan::worker::thread, offsets, input, output, op, d_no_init, two_segments_per_worker);
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::thread,
+      offsets,
+      input,
+      output,
+      op,
+      d_no_init,
+      two_segments_per_worker);
 
     c2h::host_vector<pair_t> h_output(output);
 
@@ -379,19 +427,22 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
 
   using policy_t = policy_hub_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp, value_t>;
 
-  using d_init_t                  = cub::detail::InputValue<value_t>;
-  using exclusive_scan_dispatch_t = cub::detail::segmented_scan::dispatch_segmented_scan<
-    const value_t*,
-    value_t*,
-    const offset_t*,
-    const offset_t*,
-    const offset_t*,
-    op_t,
-    d_init_t,
-    value_t,
-    cub::ForceInclusive::No,
-    offset_t,
-    policy_t>;
+  using d_init_t               = cub::detail::InputValue<value_t>;
+  auto exclusive_scan_dispatch = [](auto&&... args) {
+    return cub::detail::segmented_scan::dispatch<
+      value_t,
+      const value_t*,
+      value_t*,
+      const offset_t*,
+      const offset_t*,
+      const offset_t*,
+      op_t,
+      d_init_t,
+      value_t,
+      cub::ForceInclusive::No,
+      offset_t,
+      cub::detail::segmented_scan::policy_selector_from_hub<policy_t>>(std::forward<decltype(args)>(args)...);
+  };
 
   c2h::host_vector<value_t> h_input(input);
   c2h::host_vector<value_t> h_expected(input.size());
@@ -415,8 +466,15 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
 
   SECTION("worker block")
   {
-    run_dispatch_scan<exclusive_scan_dispatch_t>(
-      cub::detail::segmented_scan::worker::block, offsets, input, output, op, d_init_v, segments_per_worker);
+    run_dispatch_scan(
+      exclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::block,
+      offsets,
+      input,
+      output,
+      op,
+      d_init_v,
+      segments_per_worker);
 
     c2h::host_vector<value_t> h_output(output);
     REQUIRE(h_expected == h_output);
@@ -424,8 +482,15 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
 
   SECTION("worker warp")
   {
-    run_dispatch_scan<exclusive_scan_dispatch_t>(
-      cub::detail::segmented_scan::worker::warp, offsets, input, output, op, d_init_v, segments_per_worker);
+    run_dispatch_scan(
+      exclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::warp,
+      offsets,
+      input,
+      output,
+      op,
+      d_init_v,
+      segments_per_worker);
 
     c2h::host_vector<value_t> h_output(output);
     REQUIRE(h_expected == h_output);
@@ -433,8 +498,15 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
 
   SECTION("worker thread")
   {
-    run_dispatch_scan<exclusive_scan_dispatch_t>(
-      cub::detail::segmented_scan::worker::thread, offsets, input, output, op, d_init_v, segments_per_worker);
+    run_dispatch_scan(
+      exclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::thread,
+      offsets,
+      input,
+      output,
+      op,
+      d_init_v,
+      segments_per_worker);
 
     c2h::host_vector<value_t> h_output(output);
     REQUIRE(h_expected == h_output);
@@ -465,18 +537,21 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
   thrust::tabulate(input.begin(), input.end(), init_op<value_t>{});
   c2h::device_vector<value_t> output(input.size());
 
-  using inclusive_scan_dispatch_t = cub::detail::segmented_scan::dispatch_segmented_scan<
-    const value_t*,
-    value_t*,
-    const offset_t*,
-    const offset_t*,
-    const offset_t*,
-    op_t,
-    cub::NullType,
-    value_t,
-    cub::ForceInclusive::No,
-    offset_t,
-    policy_t>;
+  auto inclusive_scan_dispatch = [](auto&&... args) {
+    return cub::detail::segmented_scan::dispatch<
+      value_t,
+      const value_t*,
+      value_t*,
+      const offset_t*,
+      const offset_t*,
+      const offset_t*,
+      op_t,
+      cub::NullType,
+      value_t,
+      cub::ForceInclusive::No,
+      offset_t,
+      cub::detail::segmented_scan::policy_selector_from_hub<policy_t>>(std::forward<decltype(args)>(args)...);
+  };
 
   c2h::host_vector<value_t> h_input(input);
   c2h::host_vector<value_t> h_expected(input.size());
@@ -501,8 +576,15 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
 
   SECTION("worker-block")
   {
-    run_dispatch_scan<inclusive_scan_dispatch_t>(
-      cub::detail::segmented_scan::worker::block, offsets, input, output, op, d_no_init, segments_per_worker);
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::block,
+      offsets,
+      input,
+      output,
+      op,
+      d_no_init,
+      segments_per_worker);
 
     c2h::host_vector<value_t> h_output(output);
     REQUIRE(h_expected == h_output);
@@ -510,8 +592,15 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
 
   SECTION("worker-warp")
   {
-    run_dispatch_scan<inclusive_scan_dispatch_t>(
-      cub::detail::segmented_scan::worker::warp, offsets, input, output, op, d_no_init, segments_per_worker);
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::warp,
+      offsets,
+      input,
+      output,
+      op,
+      d_no_init,
+      segments_per_worker);
 
     c2h::host_vector<value_t> h_output(output);
     REQUIRE(h_expected == h_output);
@@ -519,8 +608,15 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
 
   SECTION("worker-thread")
   {
-    run_dispatch_scan<inclusive_scan_dispatch_t>(
-      cub::detail::segmented_scan::worker::thread, offsets, input, output, op, d_no_init, segments_per_worker);
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::thread,
+      offsets,
+      input,
+      output,
+      op,
+      d_no_init,
+      segments_per_worker);
 
     c2h::host_vector<value_t> h_output(output);
     REQUIRE(h_expected == h_output);
@@ -562,19 +658,22 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
   [[maybe_unused]] static constexpr int max_segments_per_warp = max_segments_per_block / warps_in_block;
   using policy_t = policy_hub_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp, value_t>;
 
-  using d_init_t                       = cub::detail::InputValue<value_t>;
-  using inclusive_init_scan_dispatch_t = cub::detail::segmented_scan::dispatch_segmented_scan<
-    const value_t*,
-    value_t*,
-    const offset_t*,
-    const offset_t*,
-    const offset_t*,
-    op_t,
-    d_init_t,
-    value_t,
-    cub::ForceInclusive::Yes,
-    offset_t,
-    policy_t>;
+  using d_init_t                    = cub::detail::InputValue<value_t>;
+  auto inclusive_init_scan_dispatch = [](auto&&... args) {
+    return cub::detail::segmented_scan::dispatch<
+      value_t,
+      const value_t*,
+      value_t*,
+      const offset_t*,
+      const offset_t*,
+      const offset_t*,
+      op_t,
+      d_init_t,
+      value_t,
+      cub::ForceInclusive::Yes,
+      offset_t,
+      cub::detail::segmented_scan::policy_selector_from_hub<policy_t>>(std::forward<decltype(args)>(args)...);
+  };
 
   c2h::host_vector<value_t> h_input(input);
   c2h::host_vector<value_t> h_expected(input.size());
@@ -600,8 +699,15 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
 
   SECTION("worker block")
   {
-    run_dispatch_scan<inclusive_init_scan_dispatch_t>(
-      cub::detail::segmented_scan::worker::block, offsets, input, output, op, d_init_v, segments_per_worker);
+    run_dispatch_scan(
+      inclusive_init_scan_dispatch,
+      cub::detail::segmented_scan::worker::block,
+      offsets,
+      input,
+      output,
+      op,
+      d_init_v,
+      segments_per_worker);
 
     c2h::host_vector<value_t> h_output(output);
     REQUIRE(h_expected == h_output);
@@ -609,8 +715,15 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
 
   SECTION("worker warp")
   {
-    run_dispatch_scan<inclusive_init_scan_dispatch_t>(
-      cub::detail::segmented_scan::worker::warp, offsets, input, output, op, d_init_v, segments_per_worker);
+    run_dispatch_scan(
+      inclusive_init_scan_dispatch,
+      cub::detail::segmented_scan::worker::warp,
+      offsets,
+      input,
+      output,
+      op,
+      d_init_v,
+      segments_per_worker);
 
     c2h::host_vector<value_t> h_output(output);
     REQUIRE(h_expected == h_output);
@@ -618,8 +731,15 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
 
   SECTION("worker thread")
   {
-    run_dispatch_scan<inclusive_init_scan_dispatch_t>(
-      cub::detail::segmented_scan::worker::thread, offsets, input, output, op, d_init_v, segments_per_worker);
+    run_dispatch_scan(
+      inclusive_init_scan_dispatch,
+      cub::detail::segmented_scan::worker::thread,
+      offsets,
+      input,
+      output,
+      op,
+      d_init_v,
+      segments_per_worker);
 
     c2h::host_vector<value_t> h_output(output);
     REQUIRE(h_expected == h_output);
@@ -722,23 +842,27 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
       h_init_v);
   }
 
-  using inclusive_scan_dispatch_t = cub::detail::segmented_scan::dispatch_segmented_scan<
-    const value_t*,
-    value_t*,
-    const offset_t*,
-    const offset_t*,
-    const offset_t*,
-    op_t,
-    cub::NullType,
-    value_t,
-    cub::ForceInclusive::No,
-    offset_t,
-    policy_t>;
+  auto inclusive_scan_dispatch = [](auto&&... args) {
+    return cub::detail::segmented_scan::dispatch<
+      value_t,
+      const value_t*,
+      value_t*,
+      const offset_t*,
+      const offset_t*,
+      const offset_t*,
+      op_t,
+      cub::NullType,
+      value_t,
+      cub::ForceInclusive::No,
+      offset_t,
+      cub::detail::segmented_scan::policy_selector_from_hub<policy_t>>(std::forward<decltype(args)>(args)...);
+  };
 
   SECTION("worker block")
   {
     thrust::generate(output.begin(), output.end(), constant_value_op<value_t>{canary});
-    run_dispatch_scan<inclusive_scan_dispatch_t>(
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
       cub::detail::segmented_scan::worker::block,
       offsets,
       out_offsets,
@@ -755,8 +879,16 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
   SECTION("worker warp")
   {
     thrust::generate(output.begin(), output.end(), constant_value_op<value_t>{canary});
-    run_dispatch_scan<inclusive_scan_dispatch_t>(
-      cub::detail::segmented_scan::worker::warp, offsets, out_offsets, input, output, op, d_no_init, segments_per_worker);
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::warp,
+      offsets,
+      out_offsets,
+      input,
+      output,
+      op,
+      d_no_init,
+      segments_per_worker);
 
     const c2h::host_vector<value_t> h_output(output);
     REQUIRE(h_output == h_expected);
@@ -765,7 +897,8 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
   SECTION("worker thread")
   {
     thrust::generate(output.begin(), output.end(), constant_value_op<value_t>{canary});
-    run_dispatch_scan<inclusive_scan_dispatch_t>(
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
       cub::detail::segmented_scan::worker::thread,
       offsets,
       out_offsets,
