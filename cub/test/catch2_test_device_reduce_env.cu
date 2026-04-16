@@ -127,11 +127,12 @@ struct unrelated_tuning
   }
 };
 
-using block_sizes = c2h::type_list<cuda::std::integral_constant<int, 32>, cuda::std::integral_constant<int, 64>>;
+using block_sizes =
+  c2h::type_list<cuda::std::integral_constant<unsigned int, 32>, cuda::std::integral_constant<unsigned int, 64>>;
 
 C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
 {
-  constexpr int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
   c2h::device_vector<unsigned int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
@@ -149,7 +150,7 @@ C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
 
 C2H_TEST("Device sum can be tuned", "[reduce][device]", block_sizes)
 {
-  constexpr int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
   auto num_items = 1;
   auto d_in      = cuda::constant_iterator(1);
