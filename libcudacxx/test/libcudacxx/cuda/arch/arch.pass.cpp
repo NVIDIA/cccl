@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/arch>
+#include <cuda/__arch_>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
@@ -18,9 +18,9 @@ __host__ __device__ constexpr bool test()
 {
   // Default constructor
   {
-    static_assert(cuda::std::is_trivially_default_constructible_v<cuda::arch>);
+    static_assert(cuda::std::is_nothrow_default_constructible_v<cuda::arch>);
 
-    cuda::arch arch{};
+    cuda::arch arch;
     assert(arch.id() == cuda::arch_id{});
   }
 
