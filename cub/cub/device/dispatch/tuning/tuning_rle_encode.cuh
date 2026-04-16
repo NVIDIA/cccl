@@ -23,8 +23,8 @@
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
 #include <cub/util_device.cuh>
 
+#include <cuda/__arch/arch_id.h>
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__device/arch_id.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/ostream>

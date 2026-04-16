@@ -23,10 +23,10 @@
 
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 
+#include <cuda/__arch/arch_id.h>
+#include <cuda/__arch/arch_traits.h>
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/all_devices.h>
-#include <cuda/__device/arch_id.h>
-#include <cuda/__device/arch_traits.h>
 #include <cuda/__launch/configuration.h>
 #include <cuda/__launch/launch.h>
 #include <cuda/__stream/stream_ref.h>

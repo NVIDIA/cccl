@@ -5,7 +5,7 @@
 #include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__arch/arch_id.h>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 

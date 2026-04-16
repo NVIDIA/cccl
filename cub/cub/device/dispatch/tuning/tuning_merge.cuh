@@ -17,7 +17,8 @@
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__arch/arch.h>
+#include <cuda/__arch/arch_id.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/concepts>
@@ -72,17 +73,17 @@ struct policy_selector
   int value_size; // if 0, then this is a keys-only policy
   int offset_size;
 
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> merge_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch arch) const -> merge_policy
   {
     const int tune_type_size = key_size + value_size;
     const int ipt_800_plus   = nominal_4b_items_to_items(15, tune_type_size);
 
-    if (arch >= ::cuda::arch_id::sm_100)
+    if (arch.provides(::cuda::arch_id::sm_100))
     {
       return merge_policy{512, ipt_800_plus, LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE, true};
     }
 
-    if (arch >= ::cuda::arch_id::sm_90)
+    if (arch.provides(::cuda::arch_id::sm_90))
     {
       const bool use_bl2sh_keys = key_size != 8;
       const bool use_bl2sh_pairs =
@@ -93,7 +94,7 @@ struct policy_selector
         512, ipt_800_plus, LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE, value_size == 0 ? use_bl2sh_keys : use_bl2sh_pairs};
     }
 
-    if (arch >= ::cuda::arch_id::sm_80)
+    if (arch.provides(::cuda::arch_id::sm_80))
     {
       const bool use_bl2sh_keys = key_size < 4;
       const bool use_bl2sh_pairs =
@@ -102,7 +103,7 @@ struct policy_selector
         512, ipt_800_plus, LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE, value_size == 0 ? use_bl2sh_keys : use_bl2sh_pairs};
     }
 
-    if (arch >= ::cuda::arch_id::sm_60)
+    if (arch.provides(::cuda::arch_id::sm_60))
     {
       const int ipt_600 = nominal_4b_items_to_items(15, tune_type_size);
       return merge_policy{512, ipt_600, LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE, false};

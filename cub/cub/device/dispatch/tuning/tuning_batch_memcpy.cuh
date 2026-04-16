@@ -17,7 +17,7 @@
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__arch/arch_id.h>
 #include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN

@@ -30,7 +30,7 @@
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__arch/arch_id.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>

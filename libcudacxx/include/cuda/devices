@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__arch/arch_id.h>
+#include <cuda/__arch/arch_traits.h>
 #include <cuda/__device/all_devices.h>
-#include <cuda/__device/arch_id.h>
-#include <cuda/__device/arch_traits.h>
 #include <cuda/__device/attributes.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__device/device_ref.h>

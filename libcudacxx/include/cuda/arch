@@ -4,12 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___FWD_DEVICES_H
-#define _CUDA___FWD_DEVICES_H
+#ifndef _CUDA_ARCH
+#define _CUDA_ARCH
 
 #include <cuda/std/detail/__config>
 
@@ -21,21 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__fwd/span.h>
+#include <cuda/__arch/arch.h>
+#include <cuda/__arch/arch_id.h>
+#include <cuda/__arch/arch_traits.h>
+#include <cuda/version>
 
-#include <cuda/std/__cccl/prologue.h>
-
-_CCCL_BEGIN_NAMESPACE_CUDA
-
-#if _CCCL_HAS_CTK()
-class __physical_device;
-class device_ref;
-template <::cudaDeviceAttr _Attr>
-struct __dev_attr;
-#endif // _CCCL_HAS_CTK()
-
-_CCCL_END_NAMESPACE_CUDA
-
-#include <cuda/std/__cccl/epilogue.h>
-
-#endif // _CUDA___FWD_DEVICES_H
+#endif // _CUDA_ARCH

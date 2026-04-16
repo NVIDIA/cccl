@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___DEVICE_ARCH_ID_H
-#define _CUDA___DEVICE_ARCH_ID_H
+#ifndef _CUDA___ARCH_ARCH_ID_H
+#define _CUDA___ARCH_ARCH_ID_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/__device/compute_capability.h>
-#include <cuda/__fwd/devices.h>
+#include <cuda/__fwd/arch.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__utility/to_underlying.h>
@@ -196,4 +196,4 @@ _CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___DEVICE_ARCH_ID_H
+#endif // _CUDA___ARCH_ARCH_ID_H

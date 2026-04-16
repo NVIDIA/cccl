@@ -22,9 +22,9 @@
 #include <thrust/system/cuda/detail/core/util.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/__arch/arch_id.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_up.h>
-#include <cuda/__device/arch_id.h>
 #include <cuda/__memcpy_async/elect_one.h>
 #include <cuda/__memory/align_down.h>
 #include <cuda/__memory/aligned_size.h>

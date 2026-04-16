@@ -15,7 +15,7 @@ struct stream_registry_factory_t;
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__arch/arch_id.h>
 #include <cuda/iterator>
 
 #include "catch2_test_device_scan.cuh"
