@@ -121,10 +121,10 @@ struct ExtractValue
 void TestTransformIteratorNonCopyable()
 {
   thrust::host_vector<std::unique_ptr<int>> hv(4);
-  hv[0].reset(new int{1});
-  hv[1].reset(new int{2});
-  hv[2].reset(new int{3});
-  hv[3].reset(new int{4});
+  hv[0] = std::make_unique<int>(1);
+  hv[1] = std::make_unique<int>(2);
+  hv[2] = std::make_unique<int>(3);
+  hv[3] = std::make_unique<int>(4);
 
   auto transformed = thrust::make_transform_iterator(hv.begin(), ExtractValue{});
   ASSERT_EQUAL(transformed[0], 1);

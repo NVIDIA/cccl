@@ -184,6 +184,64 @@ struct DeviceScan
         EnforceInclusive>(storage, bytes, d_in, d_out, scan_op, init, num_items, requested_determinism_t{}, stream);
     });
   }
+
+  template <typename TuningEnvT,
+            typename KeysInputIteratorT,
+            typename ValuesInputIteratorT,
+            typename ValuesOutputIteratorT,
+            typename EqualityOpT,
+            typename ScanOpT,
+            typename InitValueT,
+            typename NumItemsT>
+  CUB_RUNTIME_FUNCTION static cudaError_t scan_by_key_impl(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    KeysInputIteratorT d_keys_in,
+    ValuesInputIteratorT d_values_in,
+    ValuesOutputIteratorT d_values_out,
+    EqualityOpT equality_op,
+    ScanOpT scan_op,
+    InitValueT init_value,
+    NumItemsT num_items,
+    cudaStream_t stream)
+  {
+    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using accum_t  = ::cuda::std::__accumulator_t<
+       ScanOpT,
+       cub::detail::it_value_t<ValuesInputIteratorT>,
+       ::cuda::std::
+         _If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::it_value_t<ValuesInputIteratorT>, InitValueT>>;
+
+    using default_policy_selector_t =
+      detail::scan_by_key::policy_selector_from_types<detail::it_value_t<KeysInputIteratorT>,
+                                                      accum_t,
+                                                      cub::detail::it_value_t<ValuesInputIteratorT>,
+                                                      ScanOpT>;
+
+    using policy_selector_t = ::cuda::std::execution::
+      __query_result_or_t<TuningEnvT, detail::scan_by_key::scan_by_key_policy, default_policy_selector_t>;
+
+    return detail::scan_by_key::dispatch<
+      KeysInputIteratorT,
+      ValuesInputIteratorT,
+      ValuesOutputIteratorT,
+      EqualityOpT,
+      ScanOpT,
+      InitValueT,
+      offset_t,
+      accum_t>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_values_in,
+      d_values_out,
+      equality_op,
+      scan_op,
+      init_value,
+      static_cast<offset_t>(num_items),
+      stream,
+      policy_selector_t{});
+  }
   //! @endcond
 
   //! @name Exclusive scans
@@ -2029,31 +2087,19 @@ struct DeviceScan
     cudaStream_t stream     = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSumByKey");
-
-    // Unsigned integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-    using InitT   = cub::detail::it_value_t<ValuesInputIteratorT>;
-
-    // Initial value
-    InitT init_value{};
-
-    return DispatchScanByKey<
-      KeysInputIteratorT,
-      ValuesInputIteratorT,
-      ValuesOutputIteratorT,
-      EqualityOpT,
-      ::cuda::std::plus<>,
-      InitT,
-      OffsetT>::Dispatch(d_temp_storage,
-                         temp_storage_bytes,
-                         d_keys_in,
-                         d_values_in,
-                         d_values_out,
-                         equality_op,
-                         ::cuda::std::plus<>{},
-                         init_value,
-                         num_items,
-                         stream);
+    using init_t = cub::detail::it_value_t<ValuesInputIteratorT>;
+    init_t init_value{};
+    return scan_by_key_impl<::cuda::std::execution::env<>>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_values_in,
+      d_values_out,
+      equality_op,
+      ::cuda::std::plus<>{},
+      init_value,
+      num_items,
+      stream);
   }
 
   //! @rst
@@ -2217,27 +2263,17 @@ struct DeviceScan
     cudaStream_t stream     = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScanByKey");
-
-    // Unsigned integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
-    return DispatchScanByKey<
-      KeysInputIteratorT,
-      ValuesInputIteratorT,
-      ValuesOutputIteratorT,
-      EqualityOpT,
-      ScanOpT,
-      InitValueT,
-      OffsetT>::Dispatch(d_temp_storage,
-                         temp_storage_bytes,
-                         d_keys_in,
-                         d_values_in,
-                         d_values_out,
-                         equality_op,
-                         scan_op,
-                         init_value,
-                         num_items,
-                         stream);
+    return scan_by_key_impl<::cuda::std::execution::env<>>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_values_in,
+      d_values_out,
+      equality_op,
+      scan_op,
+      init_value,
+      num_items,
+      stream);
   }
 
   //! @rst
@@ -2354,27 +2390,17 @@ struct DeviceScan
     cudaStream_t stream     = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSumByKey");
-
-    // Unsigned integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
-    return DispatchScanByKey<
-      KeysInputIteratorT,
-      ValuesInputIteratorT,
-      ValuesOutputIteratorT,
-      EqualityOpT,
-      ::cuda::std::plus<>,
-      NullType,
-      OffsetT>::Dispatch(d_temp_storage,
-                         temp_storage_bytes,
-                         d_keys_in,
-                         d_values_in,
-                         d_values_out,
-                         equality_op,
-                         ::cuda::std::plus<>{},
-                         NullType{},
-                         num_items,
-                         stream);
+    return scan_by_key_impl<::cuda::std::execution::env<>>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_values_in,
+      d_values_out,
+      equality_op,
+      ::cuda::std::plus<>{},
+      NullType{},
+      num_items,
+      stream);
   }
 
   //! @rst
@@ -2523,27 +2549,17 @@ struct DeviceScan
     cudaStream_t stream     = 0)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanByKey");
-
-    // Unsigned integer type for global offsets
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
-
-    return DispatchScanByKey<
-      KeysInputIteratorT,
-      ValuesInputIteratorT,
-      ValuesOutputIteratorT,
-      EqualityOpT,
-      ScanOpT,
-      NullType,
-      OffsetT>::Dispatch(d_temp_storage,
-                         temp_storage_bytes,
-                         d_keys_in,
-                         d_values_in,
-                         d_values_out,
-                         equality_op,
-                         scan_op,
-                         NullType(),
-                         num_items,
-                         stream);
+    return scan_by_key_impl<::cuda::std::execution::env<>>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_values_in,
+      d_values_out,
+      equality_op,
+      scan_op,
+      NullType{},
+      num_items,
+      stream);
   }
 
   //! @rst
@@ -2648,23 +2664,37 @@ struct DeviceScan
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using offset_t = detail::choose_offset_t<NumItemsT>;
-      return DispatchScanByKey<
+      using tuning_t = decltype(tuning);
+      using accum_t =
+        ::cuda::std::__accumulator_t<::cuda::std::plus<>, cub::detail::it_value_t<ValuesInputIteratorT>, init_t>;
+      using default_policy_selector_t =
+        detail::scan_by_key::policy_selector_from_types<detail::it_value_t<KeysInputIteratorT>,
+                                                        accum_t,
+                                                        cub::detail::it_value_t<ValuesInputIteratorT>,
+                                                        ::cuda::std::plus<>>;
+      using policy_selector_t = ::cuda::std::execution::
+        __query_result_or_t<tuning_t, detail::scan_by_key::scan_by_key_policy, default_policy_selector_t>;
+
+      return detail::scan_by_key::dispatch<
         KeysInputIteratorT,
         ValuesInputIteratorT,
         ValuesOutputIteratorT,
         EqualityOpT,
         ::cuda::std::plus<>,
         init_t,
-        offset_t>::Dispatch(storage,
-                            bytes,
-                            d_keys_in,
-                            d_values_in,
-                            d_values_out,
-                            equality_op,
-                            ::cuda::std::plus<>{},
-                            init_value,
-                            static_cast<offset_t>(num_items),
-                            stream);
+        offset_t,
+        accum_t>(
+        storage,
+        bytes,
+        d_keys_in,
+        d_values_in,
+        d_values_out,
+        equality_op,
+        ::cuda::std::plus<>{},
+        init_value,
+        static_cast<offset_t>(num_items),
+        stream,
+        policy_selector_t{});
     });
   }
 
@@ -2784,24 +2814,9 @@ struct DeviceScan
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveScanByKey");
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using offset_t = detail::choose_offset_t<NumItemsT>;
-      return DispatchScanByKey<
-        KeysInputIteratorT,
-        ValuesInputIteratorT,
-        ValuesOutputIteratorT,
-        EqualityOpT,
-        ScanOpT,
-        InitValueT,
-        offset_t>::Dispatch(storage,
-                            bytes,
-                            d_keys_in,
-                            d_values_in,
-                            d_values_out,
-                            equality_op,
-                            scan_op,
-                            init_value,
-                            static_cast<offset_t>(num_items),
-                            stream);
+      using tuning_t = decltype(tuning);
+      return scan_by_key_impl<tuning_t>(
+        storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, init_value, num_items, stream);
     });
   }
 
@@ -2901,24 +2916,18 @@ struct DeviceScan
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveSumByKey");
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using offset_t = detail::choose_offset_t<NumItemsT>;
-      return DispatchScanByKey<
-        KeysInputIteratorT,
-        ValuesInputIteratorT,
-        ValuesOutputIteratorT,
-        EqualityOpT,
-        ::cuda::std::plus<>,
-        NullType,
-        offset_t>::Dispatch(storage,
-                            bytes,
-                            d_keys_in,
-                            d_values_in,
-                            d_values_out,
-                            equality_op,
-                            ::cuda::std::plus<>{},
-                            NullType{},
-                            static_cast<offset_t>(num_items),
-                            stream);
+      using tuning_t = decltype(tuning);
+      return scan_by_key_impl<tuning_t>(
+        storage,
+        bytes,
+        d_keys_in,
+        d_values_in,
+        d_values_out,
+        equality_op,
+        ::cuda::std::plus<>{},
+        NullType{},
+        num_items,
+        stream);
     });
   }
 
@@ -3027,24 +3036,9 @@ struct DeviceScan
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::InclusiveScanByKey");
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using offset_t = detail::choose_offset_t<NumItemsT>;
-      return DispatchScanByKey<
-        KeysInputIteratorT,
-        ValuesInputIteratorT,
-        ValuesOutputIteratorT,
-        EqualityOpT,
-        ScanOpT,
-        NullType,
-        offset_t>::Dispatch(storage,
-                            bytes,
-                            d_keys_in,
-                            d_values_in,
-                            d_values_out,
-                            equality_op,
-                            scan_op,
-                            NullType{},
-                            static_cast<offset_t>(num_items),
-                            stream);
+      using tuning_t = decltype(tuning);
+      return scan_by_key_impl<tuning_t>(
+        storage, bytes, d_keys_in, d_values_in, d_values_out, equality_op, scan_op, NullType{}, num_items, stream);
     });
   }
 

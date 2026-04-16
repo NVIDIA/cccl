@@ -164,17 +164,12 @@ struct __synchronizer_select
   using type = __barrier_synchronizer<_Unit, _Level, _Mapping>;
 };
 
-template <::cuda::std::size_t _Np>
-struct __synchronizer_select<thread_level, warp_level, group_by<_Np>>
-{
-  using type = __syncwarp_synchronizer<thread_level, warp_level, group_by<_Np>>;
-};
-
 template <class _Level, ::cuda::std::size_t _Np>
-struct __synchronizer_select<thread_level,
-                             _Level,
-                             group_by<_Np>,
-                             ::cuda::std::enable_if_t<(::cuda::is_power_of_two(_Np) && _Np <= 32)>>
+struct __synchronizer_select<
+  thread_level,
+  _Level,
+  group_by<_Np>,
+  ::cuda::std::enable_if_t<::cuda::std::is_same_v<_Level, warp_level> || (::cuda::is_power_of_two(_Np) && _Np <= 32)>>
 {
   using type = __syncwarp_synchronizer<thread_level, _Level, group_by<_Np>>;
 };

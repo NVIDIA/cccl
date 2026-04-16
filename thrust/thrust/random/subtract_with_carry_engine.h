@@ -123,7 +123,7 @@ public:
   /*! This member function produces a new random value and updates this \p subtract_with_carry_engine's state.
    *  \return A new random number.
    */
-  _CCCL_HOST_DEVICE result_type operator()(void);
+  _CCCL_HOST_DEVICE result_type operator()();
 
   /*! This member function advances this \p subtract_with_carry_engine's state a given number of times
    *  and discards the results.

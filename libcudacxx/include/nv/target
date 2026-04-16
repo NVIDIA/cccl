@@ -35,9 +35,9 @@
 #  endif
 
 // This must be a nested namespace as <nv/target> works with older dialects.
-namespace nv
+namespace nv // NOLINT(modernize-concat-nested-namespaces)
 {
-namespace target
+namespace target // NOLINT(modernize-concat-nested-namespaces)
 {
 namespace detail
 {

@@ -79,8 +79,8 @@ C2H_TEST("cub::DeviceReduce::Reduce accepts stream", "[reduce][env]")
   }
 
   thrust::device_vector<float> expected{6.0f};
-  stream.sync();
   // example-end reduce-env-stream
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
@@ -145,8 +145,8 @@ C2H_TEST("cub::DeviceReduce::Sum accepts stream", "[reduce][env]")
   }
 
   thrust::device_vector<float> expected{6.0f};
-  stream.sync();
   // example-end sum-env-stream
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
@@ -210,8 +210,8 @@ C2H_TEST("cub::DeviceReduce::Min accepts stream", "[reduce][env]")
   }
 
   thrust::device_vector<float> expected{0.0f};
-  stream.sync();
   // example-end min-env-stream
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
@@ -275,8 +275,8 @@ C2H_TEST("cub::DeviceReduce::Max accepts stream", "[reduce][env]")
   }
 
   thrust::device_vector<float> expected{3.0f};
-  stream.sync();
   // example-end max-env-stream
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
@@ -349,8 +349,8 @@ C2H_TEST("cub::DeviceReduce::ArgMin accepts stream", "[reduce][env]")
 
   thrust::device_vector<float> expected_min{0.0f};
   thrust::device_vector<cuda::std::int64_t> expected_index{3};
-  stream.sync();
   // example-end argmin-env-stream
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(min_output == expected_min);
@@ -501,8 +501,8 @@ C2H_TEST("cub::DeviceReduce::TransformReduce accepts stream", "[reduce][env]")
   }
 
   thrust::device_vector<float> expected{-10.0f};
-  stream.sync();
   // example-end transform-reduce-env-stream
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(output == expected);
@@ -610,8 +610,8 @@ C2H_TEST("cub::DeviceReduce::ReduceByKey accepts stream", "[reduce][env]")
 
   thrust::device_vector<int> expected_keys{0, 2, 9, 5, 8};
   thrust::device_vector<int> expected_aggregates{0, 1, 6, 2, 4};
-  stream.sync();
   // example-end reduce-by-key-env-stream
+  stream.sync();
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(num_runs_out[0] == 5);

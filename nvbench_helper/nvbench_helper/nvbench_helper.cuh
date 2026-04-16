@@ -509,7 +509,7 @@ struct less_t
 struct max_t
 {
   template <typename DataType>
-  __host__ __device__ DataType operator()(const DataType& lhs, const DataType& rhs)
+  __host__ __device__ DataType operator()(const DataType& lhs, const DataType& rhs) const
   {
     less_t less{};
     return less(lhs, rhs) ? rhs : lhs;
