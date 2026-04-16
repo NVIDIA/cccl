@@ -19,6 +19,7 @@
 
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
+#include <cub/warp/specializations/warp_reduce_shfl.cuh>
 
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__utility/static_for.h>
@@ -93,12 +94,49 @@ struct WarpReduceBatchedWspro
   template <bool ToBlocked, typename InputT, typename OutputT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Reduce(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
   {
+    // Dispatch to more efficient intrinsics when applicable
+    constexpr bool can_use_redux =
+      ::cuda::std::is_integral_v<T> && sizeof(T) <= sizeof(unsigned)
+      && (is_cuda_minimum_maximum_v<ReductionOp, T> || is_cuda_std_plus_v<ReductionOp, T>
+          || is_cuda_std_bitwise_v<ReductionOp, T>);
+    // For 6 or more batches, WSPRO gives significantly better throughput, while latency is onlys lightly better for
+    // REDUX. For subwarps both throughput and latency are worse with REDUX independent of the number of batches. This
+    // might be a codegen issue.
+    constexpr bool redux_performs_better = is_arch_warp && Batches < 6;
+    if constexpr (can_use_redux && redux_performs_better)
+    {
+      NV_IF_TARGET(NV_PROVIDES_SM_80, (ReduceRedux<ToBlocked>(inputs, outputs, reduction_op); return;))
+    }
+
     // Needed in case of outputs aliasing inputs
     ::cuda::std::array<T, max_out_per_thread> intermediate_outputs;
 
     ::cuda::static_for<0, max_out_per_thread>([&](auto out_idx) {
       constexpr auto first_idx      = out_idx * LogicalWarpThreads;
       intermediate_outputs[out_idx] = RecurseReductionTree<ToBlocked, first_idx>(inputs, reduction_op);
+    });
+
+    ::cuda::static_for<0, max_out_per_thread>([&](auto out_idx) {
+      outputs[out_idx()] = intermediate_outputs[out_idx];
+    });
+  }
+
+  template <bool ToBlocked, typename InputT, typename OutputT, typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ReduceRedux(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
+  {
+    // Needed in case of outputs aliasing inputs
+    ::cuda::std::array<T, max_out_per_thread> intermediate_outputs;
+
+    // Can't use the full member mask given SyncPhysicalWarp==true because it affects the result of the reduction.
+    const auto reduce_mask = cub::WarpMask<LogicalWarpThreads>(logical_warp_id);
+    ::cuda::static_for<0, Batches>([&](auto idx) {
+      auto result             = reduce_op_sync(inputs[idx], reduce_mask, reduction_op);
+      constexpr auto out_lane = ToBlocked ? idx / max_out_per_thread : idx % LogicalWarpThreads;
+      constexpr auto out_idx  = ToBlocked ? idx % max_out_per_thread : idx / LogicalWarpThreads;
+      if (logical_lane_id == out_lane)
+      {
+        intermediate_outputs[out_idx] = result;
+      }
     });
 
     ::cuda::static_for<0, max_out_per_thread>([&](auto out_idx) {
