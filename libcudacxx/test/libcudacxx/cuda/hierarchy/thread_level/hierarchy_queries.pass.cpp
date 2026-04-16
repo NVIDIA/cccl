@@ -138,7 +138,6 @@ __device__ void test_thread(
   // 7. Test cuda::gpu_thread.rank(x, hier)
   // test_rank(cuda::ptx::get_sreg_laneid(), cuda::gpu_thread, cuda::warp, hier);
   test_rank((threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x + threadIdx.x, cuda::gpu_thread, cuda::block, hier);
-  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     cuda::std::size_t exp = 0;
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,

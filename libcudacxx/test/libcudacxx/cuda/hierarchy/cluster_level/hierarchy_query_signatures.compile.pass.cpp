@@ -47,12 +47,9 @@ __device__ void test_query_signatures(const Level& level, const Hierarchy& hier)
     cuda::std::is_same_v<cuda::hierarchy_query_result<unsigned>, decltype(cuda::cluster_level::index(level, hier))>);
   static_assert(noexcept(cuda::cluster_level::index(level, hier)));
 
-  if constexpr (Hierarchy::has_level(cuda::cluster))
-  {
-    // 7. Test cuda::cluster_level::rank(x, hier) signature.
-    static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::cluster_level::rank(level, hier))>);
-    static_assert(noexcept(cuda::cluster_level::rank(level, hier)));
-  }
+  // 7. Test cuda::cluster_level::rank(x, hier) signature.
+  static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::cluster_level::rank(level, hier))>);
+  static_assert(noexcept(cuda::cluster_level::rank(level, hier)));
 }
 
 template <class T, class Level, class Hierarchy>
@@ -78,12 +75,9 @@ __device__ void test_query_as_signatures(const Level& level, const Hierarchy& hi
     cuda::std::is_same_v<cuda::hierarchy_query_result<T>, decltype(cuda::cluster_level::index_as<T>(level, hier))>);
   static_assert(noexcept(cuda::cluster_level::index_as<T>(level, hier)));
 
-  if constexpr (Hierarchy::has_level(cuda::cluster))
-  {
-    // 5. Test cuda::cluster_level::rank_as(x, hier) signature.
-    static_assert(cuda::std::is_same_v<T, decltype(cuda::cluster_level::rank_as<T>(level, hier))>);
-    static_assert(noexcept(cuda::cluster_level::rank_as<T>(level, hier)));
-  }
+  // 5. Test cuda::cluster_level::rank_as(x, hier) signature.
+  static_assert(cuda::std::is_same_v<T, decltype(cuda::cluster_level::rank_as<T>(level, hier))>);
+  static_assert(noexcept(cuda::cluster_level::rank_as<T>(level, hier)));
 }
 
 template <class InLevel, class Hierarchy>

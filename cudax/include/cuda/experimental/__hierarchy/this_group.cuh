@@ -120,16 +120,14 @@ public:
     !::cuda::std::is_same_v<_Level2, grid_level>))
   [[nodiscard]] _CCCL_DEVICE_API _Tp rank_as(const _InLevel& __in_level) const noexcept
   {
-    // todo: pass hierarchy to query
-    return _Level{}.template rank_as<_Tp>(__in_level /*, __hier_*/);
+    return _Level{}.template rank_as<_Tp>(__in_level, __hier_);
   }
 
   _CCCL_TEMPLATE(class _InLevel, class _Level2 = _Level)
   _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel> _CCCL_AND(!::cuda::std::is_same_v<_Level2, grid_level>))
   [[nodiscard]] _CCCL_DEVICE_API auto rank(const _InLevel& __in_level) const noexcept
   {
-    // todo: pass hierarchy to query
-    return _Level{}.rank(__in_level /*, __hier_*/);
+    return _Level{}.rank(__in_level, __hier_);
   }
 #  endif // _CCCL_CUDA_COMPILATION()
 };

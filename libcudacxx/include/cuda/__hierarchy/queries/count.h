@@ -78,7 +78,7 @@ struct __count_query_native<block_level, grid_level>
   template <class _Tp>
   [[nodiscard]] _CCCL_DEVICE_API static _Tp __call() noexcept
   {
-    return static_cast<_Tp>(gridDim.x * gridDim.y * gridDim.z);
+    return static_cast<_Tp>(static_cast<_Tp>(gridDim.x) * gridDim.y * gridDim.z);
   }
 };
 

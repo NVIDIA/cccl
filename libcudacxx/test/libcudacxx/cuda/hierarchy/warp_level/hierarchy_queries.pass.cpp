@@ -135,24 +135,23 @@ __device__ void test_warp(
   }
 
   // 7. Test cuda::warp.rank(x, hier)
-  // test_rank(rank_in_block, cuda::warp, cuda::block, hier);
-  // {
-  //   cuda::std::size_t exp = 0;
-  //   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
-  //                     ({
-  //                       exp = (__clusterRelativeBlockIdx().z * __clusterDim().y + __clusterRelativeBlockIdx().y)
-  //                             * __clusterDim().x * count_in_block
-  //                           + __clusterRelativeBlockIdx().x * count_in_block + rank_in_block;
-  //                     }),
-  //                     ({ exp = rank_in_block; }))
-  //   test_rank(exp, cuda::warp, cuda::cluster, hier);
-  // }
-  // {
-  //   const cuda::std::size_t exp =
-  //     (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x * count_in_block + blockIdx.x * count_in_block +
-  //     rank_in_block;
-  //   test_rank(exp, cuda::warp, cuda::grid, hier);
-  // }
+  test_rank(rank_in_block, cuda::warp, cuda::block, hier);
+  {
+    cuda::std::size_t exp = 0;
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                      ({
+                        exp = (__clusterRelativeBlockIdx().z * __clusterDim().y + __clusterRelativeBlockIdx().y)
+                              * __clusterDim().x * count_in_block
+                            + __clusterRelativeBlockIdx().x * count_in_block + rank_in_block;
+                      }),
+                      ({ exp = rank_in_block; }))
+    test_rank(exp, cuda::warp, cuda::cluster, hier);
+  }
+  {
+    const cuda::std::size_t exp =
+      (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x * count_in_block + blockIdx.x * count_in_block + rank_in_block;
+    test_rank(exp, cuda::warp, cuda::grid, hier);
+  }
 }
 
 __device__ void test_device()

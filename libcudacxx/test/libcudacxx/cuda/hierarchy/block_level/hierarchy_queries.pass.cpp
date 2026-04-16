@@ -92,7 +92,6 @@ __device__ void test_block(
   test_index(blockIdx, cuda::block, cuda::grid, hier);
 
   // 7. Test cuda::block.rank(x, hier)
-  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     cuda::std::size_t exp = 0;
     NV_IF_TARGET(NV_PROVIDES_SM_90, ({

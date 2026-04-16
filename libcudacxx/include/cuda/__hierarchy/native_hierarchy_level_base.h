@@ -29,6 +29,7 @@
 #  include <cuda/__hierarchy/queries/count.h>
 #  include <cuda/__hierarchy/queries/extents.h>
 #  include <cuda/__hierarchy/queries/index.h>
+#  include <cuda/__hierarchy/queries/rank.h>
 #  include <cuda/__hierarchy/traits.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cstddef/types.h>
@@ -135,7 +136,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_leve
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)
   _CCCL_REQUIRES(__is_native_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API static auto extents_as(const _InLevel& __level) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static auto extents_as(const _InLevel&) noexcept
   {
     return __extents_query_native<_Level, _InLevel>::template __call<_Tp>();
   }
@@ -149,39 +150,16 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_leve
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)
   _CCCL_REQUIRES(__is_native_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API static auto index_as(const _InLevel& __level) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static auto index_as(const _InLevel&) noexcept
   {
     return __index_query_native<_Level, _InLevel>::template __call<_Tp>();
   }
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)
   _CCCL_REQUIRES(__is_native_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API static _Tp rank_as(const _InLevel& __level) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static _Tp rank_as(const _InLevel&) noexcept
   {
-    static_assert(__is_natively_reachable_hierarchy_level_v<_Level, _InLevel>,
-                  "_InLevel must be reachable from _Level");
-
-    using _NextLevel = typename _Level::__next_native_level;
-
-    const auto __curr_exts = _Level::template extents_as<_Tp>(_NextLevel{});
-    const auto __curr_idx  = _Level::template index_as<_Tp>(_NextLevel{});
-
-    _Tp __ret = 0;
-    if constexpr (!::cuda::std::is_same_v<_InLevel, _NextLevel>)
-    {
-      __ret = _NextLevel::template rank_as<_Tp>(__level) * _Level::template count_as<_Tp>(_NextLevel{});
-    }
-
-    for (::cuda::std::size_t __i = __curr_exts.rank(); __i > 0; --__i)
-    {
-      _Tp __inc = __curr_idx[__i - 1];
-      for (::cuda::std::size_t __j = __i - 1; __j > 0; --__j)
-      {
-        __inc *= __curr_exts.extent(__j - 1);
-      }
-      __ret += __inc;
-    }
-    return __ret;
+    return __rank_query_native<_Level, _InLevel>::template __call<_Tp>();
   }
 
 #  endif // _CCCL_CUDA_COMPILATION()

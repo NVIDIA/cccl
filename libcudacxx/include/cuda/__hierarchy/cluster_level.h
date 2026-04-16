@@ -24,11 +24,7 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__fwd/hierarchy.h>
-#  include <cuda/__hierarchy/hierarchy_query_result.h>
 #  include <cuda/__hierarchy/native_hierarchy_level_base.h>
-#  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__mdspan/extents.h>
-#  include <cuda/std/__type_traits/is_integer.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 

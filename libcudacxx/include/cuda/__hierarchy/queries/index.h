@@ -80,7 +80,7 @@ struct __index_query_native<thread_level, warp_level>
   template <class _Tp>
   [[nodiscard]] _CCCL_DEVICE_API static hierarchy_query_result<_Tp> __call() noexcept
   {
-    // todo(dabayer): Is it worth using uda::ptx::get_sreg_laneid() here? Doesn't it prevent some other optimizations
+    // todo(dabayer): Is it worth using cuda::ptx::get_sreg_laneid() here? Doesn't it prevent some other optimizations
     // due to using inline ptx?
     return {static_cast<_Tp>(::cuda::ptx::get_sreg_laneid()), 0, 0};
   }

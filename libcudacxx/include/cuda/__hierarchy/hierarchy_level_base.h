@@ -28,6 +28,7 @@
 #  include <cuda/__hierarchy/queries/count.h>
 #  include <cuda/__hierarchy/queries/extents.h>
 #  include <cuda/__hierarchy/queries/index.h>
+#  include <cuda/__hierarchy/queries/rank.h>
 #  include <cuda/__hierarchy/traits.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cstddef/types.h>
@@ -153,8 +154,7 @@ struct hierarchy_level_base
   _CCCL_TEMPLATE(class _Tp, class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel> _CCCL_AND
                    __is_or_has_hierarchy_member_v<_Hierarchy>)
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto
-  index_as(const _InLevel& __level, const _Hierarchy& __hier) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto index_as(const _InLevel&, const _Hierarchy& __hier) noexcept
   {
     return __index_query<_Level, _InLevel>::template __call<_Tp>(::cuda::__unpack_hierarchy_if_needed(__hier));
   }
@@ -162,36 +162,9 @@ struct hierarchy_level_base
   _CCCL_TEMPLATE(class _Tp, class _InLevel, class _Hierarchy)
   _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel> _CCCL_AND
                    __is_or_has_hierarchy_member_v<_Hierarchy>)
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto
-  rank_as(const _InLevel& __level, const _Hierarchy& __hier) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr auto rank_as(const _InLevel&, const _Hierarchy& __hier) noexcept
   {
-    auto& __hier_unpacked    = ::cuda::__unpack_hierarchy_if_needed(__hier);
-    using _HierarchyUnpacked = ::cuda::std::remove_cvref_t<decltype(__hier_unpacked)>;
-    static_assert(__has_bottom_unit_or_level_v<_Level, _HierarchyUnpacked>, "_Hierarchy doesn't contain _Level");
-    static_assert(_HierarchyUnpacked::template has_level<_InLevel>(), "_Hierarchy doesn't contain _InLevel");
-
-    using _NextLevel = __next_hierarchy_level_t<_Level, _HierarchyUnpacked>;
-
-    const auto __curr_exts = _Level::template extents_as<_Tp>(_NextLevel{}, __hier_unpacked);
-    const auto __curr_idx  = _Level::template index_as<_Tp>(_NextLevel{}, __hier_unpacked);
-
-    _Tp __ret = 0;
-    if constexpr (!::cuda::std::is_same_v<_InLevel, _NextLevel>)
-    {
-      __ret = _NextLevel::template rank_as<_Tp>(__level, __hier_unpacked)
-            * _Level::template count_as<_Tp>(_NextLevel{}, __hier_unpacked);
-    }
-
-    for (::cuda::std::size_t __i = __curr_exts.rank(); __i > 0; --__i)
-    {
-      _Tp __inc = __curr_idx[__i - 1];
-      for (::cuda::std::size_t __j = __i - 1; __j > 0; --__j)
-      {
-        __inc *= __curr_exts.extent(__j - 1);
-      }
-      __ret += __inc;
-    }
-    return __ret;
+    return __rank_query<_Level, _InLevel>::template __call<_Tp>(::cuda::__unpack_hierarchy_if_needed(__hier));
   }
 #  endif // _CCCL_CUDA_COMPILATION()
 

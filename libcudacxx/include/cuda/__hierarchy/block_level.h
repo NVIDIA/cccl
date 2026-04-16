@@ -24,11 +24,7 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__fwd/hierarchy.h>
-#  include <cuda/__hierarchy/hierarchy_query_result.h>
 #  include <cuda/__hierarchy/native_hierarchy_level_base.h>
-#  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__mdspan/extents.h>
-#  include <cuda/std/__type_traits/is_integer.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -41,51 +37,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES block_level : __native_hierarchy_level_base<bl
   using __allowed_below = __allowed_levels<thread_level>;
 
   using __next_native_level = cluster_level;
-
-  using __base_type = __native_hierarchy_level_base<block_level>;
-
-#  if _CCCL_CUDA_COMPILATION()
-  using __base_type::rank_as;
-
-  // interactions with cluster level
-
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  [[nodiscard]] _CCCL_DEVICE_API static _Tp rank_as(const cluster_level&) noexcept
-  {
-    unsigned __rank = 0;
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (__rank = ::__clusterRelativeBlockRank();))
-    return static_cast<_Tp>(__rank);
-  }
-
-  // interactions with grid level
-
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  [[nodiscard]] _CCCL_DEVICE_API static _Tp rank_as(const grid_level& __level) noexcept
-  {
-    const auto __dims = dims_as<_Tp>(__level);
-    const auto __idx  = index_as<_Tp>(__level);
-    return static_cast<_Tp>((__idx.z * __dims.y + __idx.y) * __dims.x + __idx.x);
-  }
-
-  // interactions with grid level in hierarchy
-
-  _CCCL_TEMPLATE(class _Tp, class _Hierarchy)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_or_has_hierarchy_member_v<_Hierarchy>)
-  [[nodiscard]] _CCCL_DEVICE_API static _Tp rank_as(const grid_level& __level, const _Hierarchy& __hier) noexcept
-  {
-    auto& __hier_unpacked    = ::cuda::__unpack_hierarchy_if_needed(__hier);
-    using _HierarchyUnpacked = ::cuda::std::remove_cvref_t<decltype(__hier_unpacked)>;
-    static_assert(__has_bottom_unit_or_level_v<block_level, _HierarchyUnpacked>,
-                  "_Hierarchy doesn't contain block level");
-    static_assert(_HierarchyUnpacked::template has_level<grid_level>(), "_Hierarchy doesn't contain grid level");
-
-    const auto __dims = dims_as<_Tp>(__level, __hier_unpacked);
-    const auto __idx  = index_as<_Tp>(__level, __hier_unpacked);
-    return static_cast<_Tp>((__idx.z * __dims.y + __idx.y) * __dims.x + __idx.x);
-  }
-#  endif // _CCCL_CUDA_COMPILATION()
 };
 
 _CCCL_GLOBAL_CONSTANT block_level block;
