@@ -245,7 +245,7 @@ public:
     static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputT>, T>, "Input element type must match T");
     static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<OutputT>, T>, "Output element type must match T");
 
-    InternalWarpReduceBatched{temp_storage}.Reduce</* ToBlocked = */ false>(inputs, outputs, reduction_op);
+    InternalWarpReduceBatched{temp_storage}.template Reduce</* ToBlocked = */ false>(inputs, outputs, reduction_op);
   }
 
   //! @rst
@@ -304,7 +304,7 @@ public:
     static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputT>, T>, "Input element type must match T");
     static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<OutputT>, T>, "Output element type must match T");
 
-    InternalWarpReduceBatched{temp_storage}.Reduce</* ToBlocked = */ true>(inputs, outputs, reduction_op);
+    InternalWarpReduceBatched{temp_storage}.template Reduce</* ToBlocked = */ true>(inputs, outputs, reduction_op);
   }
 
   //! @rst
