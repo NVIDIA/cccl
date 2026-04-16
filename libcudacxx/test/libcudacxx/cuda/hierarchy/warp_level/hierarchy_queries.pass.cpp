@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo: enable with nvrtc
-// UNSUPPORTED: nvrtc
-
 #include "hierarchy_queries.h"
 
 #include <cuda/hierarchy>
@@ -156,8 +153,10 @@ __device__ void test_warp(
 
 __device__ void test_device()
 {
-  // todo: make hierarchy constructible on device
-  // test_thread(cuda::make_hierarchy(cuda::grid_dims(gridDim), cuda::block_dims(blockDim)));
+  test_warp(cuda::hierarchy{cuda::gpu_thread, cuda::grid_dims(dim3{gridDim}), cuda::block_dims(dim3{blockDim})},
+            cuda::std::dims<3, unsigned>{gridDim.x, gridDim.y, gridDim.z},
+            cuda::std::extents<unsigned, 1, 1, 1>{},
+            cuda::std::dims<3, unsigned>{blockDim.x, blockDim.y, blockDim.z});
 }
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -280,6 +279,11 @@ void test()
 
 int main(int, char**)
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (test();), (test_device();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    ({
+                      cuda_thread_count = 32;
+                      test();
+                    }),
+                    (test_device();))
   return 0;
 }

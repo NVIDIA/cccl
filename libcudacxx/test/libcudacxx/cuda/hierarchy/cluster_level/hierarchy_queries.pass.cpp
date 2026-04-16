@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo: enable with nvrtc
-// UNSUPPORTED: nvrtc
-
 #include "hierarchy_queries.h"
 
 #include <cuda/hierarchy>
@@ -65,8 +62,10 @@ __device__ void test_cluster(const Hierarchy& hier, const GridExts& grid_exts, c
 
 __device__ void test_device()
 {
-  // todo: make hierarchy constructible on device
-  // test_thread(cuda::make_hierarchy(cuda::grid_dims(gridDim), cuda::cluster_dims(clusterDim)));
+  test_cluster(cuda::hierarchy{cuda::gpu_thread, cuda::grid_dims(dim3{gridDim}), cuda::block_dims(dim3{blockDim})},
+               cuda::std::dims<3, unsigned>{gridDim.x, gridDim.y, gridDim.z},
+               cuda::std::dims<3, unsigned>{1, 1, 1},
+               cuda::std::dims<3, unsigned>{blockDim.x, blockDim.y, blockDim.z});
 }
 
 #if !_CCCL_COMPILER(NVRTC)

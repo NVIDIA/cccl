@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo: enable with nvrtc
-// UNSUPPORTED: nvrtc
-
 #include <cuda/__type_traits/vector_type.h>
 #include <cuda/hierarchy>
 #include <cuda/std/type_traits>
