@@ -76,7 +76,7 @@ void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
       d_values_buffer_1,
       d_keys_buffer_2,
       d_values_buffer_2,
-      elements,
+      static_cast<OffsetT>(elements),
       compare_op_t{},
       env);
   });

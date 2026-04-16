@@ -63,7 +63,13 @@ void keys(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(
-      cub::DeviceMergeSort::SortKeysCopy, "SortKeysCopy failed", d_buffer_1, d_buffer_2, elements, compare_op_t{}, env);
+      cub::DeviceMergeSort::SortKeysCopy,
+      "SortKeysCopy failed",
+      d_buffer_1,
+      d_buffer_2,
+      static_cast<OffsetT>(elements),
+      compare_op_t{},
+      env);
   });
 }
 
