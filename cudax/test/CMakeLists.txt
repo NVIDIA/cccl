@@ -129,6 +129,7 @@ cudax_add_catch2_test(test_target algorithm
 cudax_add_catch2_test(test_target hierarchy_groups
     hierarchy/group.cu
 )
+target_compile_definitions(${test_target} PUBLIC _CUDAX_HIERARCHY)
 
 if (cudax_ENABLE_CUFILE)
   cudax_add_catch2_test(test_target cufile.driver_attributes
