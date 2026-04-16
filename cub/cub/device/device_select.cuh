@@ -1553,7 +1553,8 @@ public:
     typename NumSelectedIteratorT,
     typename NumItemsT,
     typename EnvT                 = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>,
+    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
+                               && !::cuda::std::indirect_binary_predicate<EnvT, InputIteratorT, InputIteratorT>,
                              int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Unique(InputIteratorT d_in,
@@ -1659,7 +1660,8 @@ public:
     typename NumItemsT,
     typename EqualityOpT,
     typename EnvT                 = ::cuda::std::execution::env<>,
-    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>,
+    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
+                               && ::cuda::std::indirect_binary_predicate<EqualityOpT, InputIteratorT, InputIteratorT>,
                              int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
     InputIteratorT d_in,
