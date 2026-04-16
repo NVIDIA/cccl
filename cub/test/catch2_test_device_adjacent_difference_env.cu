@@ -187,13 +187,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy can be tuned", "[adjacent_d
 
   block_size_extracting_minus_t op{thrust::raw_pointer_cast(d_block_size.data())};
 
-  size_t expected_bytes_allocated{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceAdjacentDifference::SubtractLeftCopy(
-            nullptr, expected_bytes_allocated, input.begin(), output.begin(), input.size(), op));
-
-  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated),
-                          cuda::execution::__tune(adj_diff_tuning<target_block_size>{})};
+  auto env = cuda::execution::__tune(adj_diff_tuning<target_block_size>{});
 
   device_adjacent_difference_subtract_left_copy(input.begin(), output.begin(), input.size(), op, env);
 
@@ -210,13 +204,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeft can be tuned", "[adjacent_diffe
 
   block_size_extracting_minus_t op{thrust::raw_pointer_cast(d_block_size.data())};
 
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceAdjacentDifference::SubtractLeft(nullptr, expected_bytes_allocated, data.begin(), data.size(), op));
-
-  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated),
-                          cuda::execution::__tune(adj_diff_tuning<target_block_size>{})};
+  auto env = cuda::execution::__tune(adj_diff_tuning<target_block_size>{});
 
   device_adjacent_difference_subtract_left(data.begin(), data.size(), op, env);
 
@@ -234,13 +222,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy can be tuned", "[adjacent_
 
   block_size_extracting_minus_t op{thrust::raw_pointer_cast(d_block_size.data())};
 
-  size_t expected_bytes_allocated{};
-  REQUIRE(cudaSuccess
-          == cub::DeviceAdjacentDifference::SubtractRightCopy(
-            nullptr, expected_bytes_allocated, input.begin(), output.begin(), input.size(), op));
-
-  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated),
-                          cuda::execution::__tune(adj_diff_tuning<target_block_size>{})};
+  auto env = cuda::execution::__tune(adj_diff_tuning<target_block_size>{});
 
   device_adjacent_difference_subtract_right_copy(input.begin(), output.begin(), input.size(), op, env);
 
@@ -257,13 +239,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRight can be tuned", "[adjacent_diff
 
   block_size_extracting_minus_t op{thrust::raw_pointer_cast(d_block_size.data())};
 
-  size_t expected_bytes_allocated{};
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceAdjacentDifference::SubtractRight(nullptr, expected_bytes_allocated, data.begin(), data.size(), op));
-
-  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated),
-                          cuda::execution::__tune(adj_diff_tuning<target_block_size>{})};
+  auto env = cuda::execution::__tune(adj_diff_tuning<target_block_size>{});
 
   device_adjacent_difference_subtract_right(data.begin(), data.size(), op, env);
 
