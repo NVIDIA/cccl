@@ -105,6 +105,26 @@ TEST_CASE("Device scan exclusive sum works with default environment", "[sum][dev
   REQUIRE(d_out[1] == value_t{} + d_in[0]);
 }
 
+TEST_CASE("Device scan inclusive-scan-init works with default environment", "[scan][device]")
+{
+  using num_items_t = int;
+  using value_t     = int;
+
+  num_items_t num_items = 3;
+  auto d_in             = cuda::constant_iterator(value_t{1});
+  auto d_out            = c2h::device_vector<value_t>(num_items);
+
+  value_t init{10};
+
+  REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScanInit(d_in, d_out.begin(), cuda::std::plus{}, init, num_items));
+
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init + 1)));
+}
+
+#endif // TEST_LAUNCH == 0
+
+#if TEST_LAUNCH != 1
+
 template <int ThreadsPerBlock>
 struct scan_tuning
 {
@@ -134,7 +154,8 @@ struct unrelated_tuning
   }
 };
 
-using block_sizes = c2h::type_list<cuda::std::integral_constant<int, 32>, cuda::std::integral_constant<int, 64>>;
+using block_sizes =
+  c2h::type_list<cuda::std::integral_constant<unsigned int, 32>, cuda::std::integral_constant<unsigned int, 64>>;
 
 C2H_TEST("Device scan exclusive-scan can be tuned", "[scan][device]", block_sizes)
 {
@@ -239,22 +260,6 @@ C2H_TEST("Device scan inclusive-scan can be tuned", "[scan][device]", block_size
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
-TEST_CASE("Device scan inclusive-scan-init works with default environment", "[scan][device]")
-{
-  using num_items_t = int;
-  using value_t     = int;
-
-  num_items_t num_items = 3;
-  auto d_in             = cuda::constant_iterator(value_t{1});
-  auto d_out            = c2h::device_vector<value_t>(num_items);
-
-  value_t init{10};
-
-  REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveScanInit(d_in, d_out.begin(), cuda::std::plus{}, init, num_items));
-
-  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init + 1)));
-}
-
 C2H_TEST("Device scan inclusive-scan-init can be tuned", "[scan][device]", block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
@@ -336,7 +341,7 @@ TEST_CASE("Device scan exclusive scan with FutureValue in-place works with defau
   REQUIRE(d_data == expected);
 }
 
-#endif
+#endif // TEST_LAUCH != 1
 
 C2H_TEST("Device scan exclusive-scan uses environment", "[scan][device]")
 {
