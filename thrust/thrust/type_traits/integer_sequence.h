@@ -158,7 +158,9 @@ struct merge_and_renumber_reversed_integer_sequences_impl<::cuda::std::integer_s
  *  \see make_reversed_index_sequence
  */
 template <typename T, ::cuda::std::size_t N>
-using make_reversed_integer_sequence CCCL_DEPRECATED = typename detail::make_reversed_integer_sequence_impl<T, N>::type;
+using make_reversed_integer_sequence
+  CCCL_DEPRECATED_BECAUSE("No replacement. Please consider adopting a meta programming library or fold over the "
+                          "assignment operator") = typename detail::make_reversed_integer_sequence_impl<T, N>::type;
 
 /*! \brief Create a new \c index_sequence with elements
  *  <tt>N - 1, N - 2, N - 3, ..., 0</tt>.
@@ -172,7 +174,9 @@ using make_reversed_integer_sequence CCCL_DEPRECATED = typename detail::make_rev
  */
 template <::cuda::std::size_t N>
 using make_reversed_index_sequence
-  CCCL_DEPRECATED = typename detail::make_reversed_integer_sequence_impl<::cuda::std::size_t, N>::type;
+  CCCL_DEPRECATED_BECAUSE("No replacement. Please consider adopting a meta programming library or fold over the "
+                          "assignment operator") =
+    typename detail::make_reversed_integer_sequence_impl<::cuda::std::size_t, N>::type;
 
 /*! \brief Add a new element to the front of an \c integer_sequence.
  *  \deprecated [Since 3.4]
@@ -184,7 +188,8 @@ using make_reversed_index_sequence
  */
 template <typename T, T Value, typename Sequence>
 using integer_sequence_push_front
-  CCCL_DEPRECATED = typename detail::integer_sequence_push_front_impl<T, Value, Sequence>::type;
+  CCCL_DEPRECATED_BECAUSE("No replacement. Please consider adopting a meta programming library") =
+    typename detail::integer_sequence_push_front_impl<T, Value, Sequence>::type;
 
 /*! \brief Add a new element to the back of an \c integer_sequence.
  *  \deprecated [Since 3.4]
@@ -196,7 +201,8 @@ using integer_sequence_push_front
  */
 template <typename T, T Value, typename Sequence>
 using integer_sequence_push_back
-  CCCL_DEPRECATED = typename detail::integer_sequence_push_back_impl<T, Value, Sequence>::type;
+  CCCL_DEPRECATED_BECAUSE("No replacement. Please consider adopting a meta programming library") =
+    typename detail::integer_sequence_push_back_impl<T, Value, Sequence>::type;
 
 ///////////////////////////////////////////////////////////////////////////////
 
