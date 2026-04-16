@@ -7,6 +7,7 @@
 
 #include <cuda/cmath>
 #include <cuda/functional>
+#include <cuda/iterator>
 #include <cuda/ptx>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
@@ -21,6 +22,7 @@
 #include <c2h/catch2_test_helper.h>
 #include <c2h/check_results.cuh>
 #include <c2h/custom_type.h>
+#include <c2h/operator.cuh>
 
 // %PARAM% TEST_TYPES types 0:1:2
 
@@ -196,17 +198,16 @@ warp_reduce_batched_cond_part_kernel(input_2d_mdspan_t<T> input_md, cuda::std::s
 template <typename T, typename ReductionOp>
 void compute_host_reference(input_2d_mdspan_t<const T> input_md, cuda::std::span<T> output, ReductionOp op)
 {
+  const auto identity  = identity_v<ReductionOp, T>;
   const int batches    = input_md.extent(0);
   const int batch_size = input_md.extent(1);
 
   for (int batch_idx = 0; batch_idx < batches; ++batch_idx)
   {
-    T result = input_md(batch_idx, 0);
-    for (int idx = 1; idx < batch_size; ++idx)
-    {
-      result = op(result, input_md(batch_idx, idx));
-    }
-    output[batch_idx] = result;
+    const auto iter   = cuda::make_transform_iterator(cuda::make_counting_iterator(0), [input_md, batch_idx](int idx) {
+      return input_md(batch_idx, idx);
+    });
+    output[batch_idx] = static_cast<T>(std::accumulate(iter, iter + batch_size, identity, op));
   }
 }
 
