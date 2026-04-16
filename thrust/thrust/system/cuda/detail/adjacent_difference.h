@@ -50,7 +50,7 @@ namespace cuda_cub
 {
 namespace __adjacent_difference
 {
-template <cub::MayAlias AliasOpt, class InputIt, class OutputIt, class BinaryOp>
+template <bool Comparable, class InputIt, class OutputIt, class BinaryOp>
 cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -65,49 +65,40 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     return cudaSuccess;
   }
 
-  cudaError_t status;
-  THRUST_INDEX_TYPE_DISPATCH(
-    status,
-    (cub::detail::adjacent_difference::dispatch<AliasOpt, cub::ReadOption::Left>),
-    num_items,
-    (d_temp_storage, temp_storage_bytes, first, result, num_items_fixed, binary_op, stream));
-  return status;
-}
-
-template <class InputIt, class OutputIt, class BinaryOp>
-cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  InputIt first,
-  OutputIt result,
-  BinaryOp binary_op,
-  std::size_t num_items,
-  cudaStream_t stream,
-  thrust::detail::integral_constant<bool, false> /* comparable */)
-{
-  return doit_step<cub::MayAlias::Yes>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
-}
-
-template <class InputIt, class OutputIt, class BinaryOp>
-cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  InputIt first,
-  OutputIt result,
-  BinaryOp binary_op,
-  std::size_t num_items,
-  cudaStream_t stream,
-  thrust::detail::integral_constant<bool, true> /* comparable */)
-{
-  // The documentation states that pointers might be equal but can't alias in
-  // any other way. That is, the distance should be equal to zero or exceed
-  // `num_items`. In the latter case, we use an optimized version.
-  if (first != result)
+  if constexpr (Comparable)
   {
-    return doit_step<cub::MayAlias::No>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
+    cudaError_t status;
+    // The documentation states that pointers might be equal but can't alias in
+    // any other way. That is, the distance should be equal to zero or exceed
+    // `num_items`. In the latter case, we use an optimized version.
+    if (first == result)
+    {
+      THRUST_INDEX_TYPE_DISPATCH(
+        status,
+        cub::DeviceAdjacentDifference::SubtractLeft,
+        num_items,
+        (d_temp_storage, temp_storage_bytes, first, num_items_fixed, binary_op, stream));
+    }
+    else
+    {
+      THRUST_INDEX_TYPE_DISPATCH(
+        status,
+        cub::DeviceAdjacentDifference::SubtractLeftCopy,
+        num_items,
+        (d_temp_storage, temp_storage_bytes, first, result, num_items_fixed, binary_op, stream));
+    }
+    return status;
   }
-
-  return doit_step<cub::MayAlias::Yes>(d_temp_storage, temp_storage_bytes, first, result, binary_op, num_items, stream);
+  else
+  {
+    cudaError_t status;
+    THRUST_INDEX_TYPE_DISPATCH(
+      status,
+      cub::DeviceAdjacentDifference::SubtractLeftCopy,
+      num_items,
+      (d_temp_storage, temp_storage_bytes, first, result, num_items_fixed, binary_op, stream));
+    return status;
+  }
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename BinaryOp>
@@ -131,24 +122,15 @@ adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt la
   auto first_unwrap  = thrust::try_unwrap_contiguous_iterator(first);
   auto result_unwrap = thrust::try_unwrap_contiguous_iterator(result);
 
-  thrust::detail::integral_constant<bool, can_compare_iterators> comparable;
-
   cudaError_t status =
-    doit_step(nullptr, storage_size, first_unwrap, result_unwrap, binary_op, num_items, stream, comparable);
+    doit_step<can_compare_iterators>(nullptr, storage_size, first_unwrap, result_unwrap, binary_op, num_items, stream);
   cuda_cub::throw_on_error(status, "adjacent_difference failed on 1st step");
 
   // Allocate temporary storage.
   thrust::detail::temporary_array<std::uint8_t, Derived> tmp(policy, storage_size);
 
-  status = doit_step(
-    static_cast<void*>(tmp.data().get()),
-    storage_size,
-    first_unwrap,
-    result_unwrap,
-    binary_op,
-    num_items,
-    stream,
-    comparable);
+  status = doit_step<can_compare_iterators>(
+    static_cast<void*>(tmp.data().get()), storage_size, first_unwrap, result_unwrap, binary_op, num_items, stream);
   cuda_cub::throw_on_error(status, "adjacent_difference failed on 2nd step");
 
   status = cuda_cub::synchronize_optional(policy);
