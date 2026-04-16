@@ -2,6 +2,8 @@
 #include <thrust/device_vector.h>
 
 #include <cuda/std/iterator>
+#include <cuda/std/memory>
+#include <cuda/std/type_traits>
 
 #include <iterator>
 
@@ -253,3 +255,29 @@ void TestToAddress()
   ASSERT_EQUAL(last - first, 3);
 }
 DECLARE_VECTOR_UNITTEST(TestToAddress);
+
+// Verify that pointer_traits<device_ptr<T>>::rebind<U> is an alias template,
+// not a struct, so that allocator_traits::void_pointer is computed correctly.
+// Regression test for https://github.com/NVIDIA/cccl/issues/8485
+struct TestPointerTraitsRebind
+{
+  using pointer    = thrust::device_ptr<char>;
+  using value_type = char;
+  using traits     = cuda::std::pointer_traits<pointer>;
+  // rebind<U> must yield device_ptr<U> directly (alias template form)
+  static_assert(cuda::std::is_same_v<traits::rebind<void>, thrust::device_ptr<void>>);
+  static_assert(cuda::std::is_same_v<traits::rebind<int>, thrust::device_ptr<int>>);
+};
+
+// Verify that allocator_traits::void_pointer resolves correctly
+// when the allocator's pointer is thrust::device_ptr<T>
+struct DeviceCharAllocator
+{
+  using value_type = char;
+  using pointer    = thrust::device_ptr<char>;
+  pointer allocate(::std::size_t n);
+  void deallocate(pointer p, ::std::size_t);
+};
+static_assert(
+  cuda::std::is_same_v<cuda::std::allocator_traits<DeviceCharAllocator>::void_pointer, thrust::device_ptr<void>>,
+  "void_pointer should be device_ptr<void>");

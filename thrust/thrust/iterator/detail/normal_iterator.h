@@ -70,10 +70,7 @@ struct pointer_traits<THRUST_NS_QUALIFIER::detail::normal_iterator<Pointer>>
   using difference_type = ptrdiff_t;
 
   template <typename U>
-  struct rebind
-  {
-    using other = typename THRUST_NS_QUALIFIER::detail::rebind_pointer<pointer, U>::type;
-  };
+  using rebind = typename THRUST_NS_QUALIFIER::detail::rebind_pointer<pointer, U>::type;
 
   [[nodiscard]] _CCCL_API inline static pointer pointer_to(Pointer& r) noexcept(noexcept(::cuda::std::addressof(r)))
   {
