@@ -47,7 +47,8 @@ struct block_size_check_t
   {
     if (threadIdx.x == 0)
     {
-      atomicMin(ptr, blockDim.x);
+      // use an atomic operation to write the block dim in case multiple blocks are launched
+      atomicMax(ptr, blockDim.x);
     }
     return a + b;
   }

@@ -455,7 +455,7 @@ struct block_size_compare_t
     if (threadIdx.x == 0)
     {
       // use an atomic operation to write the block dim in case multiple blocks are launched
-      atomicMin(block_size, blockDim.x);
+      atomicMax(block_size, blockDim.x);
     }
     return lhs < rhs;
   }
