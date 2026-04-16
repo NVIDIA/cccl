@@ -479,6 +479,8 @@ C2H_TEST("DeviceMergeSort::SortPairs can be tuned", "[merge_sort][device]", bloc
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+#if TEST_LAUNCH != 1
+
 C2H_TEST("DeviceMergeSort::SortPairsCopy can be tuned", "[merge_sort][device]", block_sizes)
 {
   constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
@@ -490,16 +492,14 @@ C2H_TEST("DeviceMergeSort::SortPairsCopy can be tuned", "[merge_sort][device]", 
   auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
   auto env        = cuda::execution::__tune(merge_sort_tuning<target_block_size>{});
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceMergeSort::SortPairsCopy(
-      d_keys_in.data().get(),
-      d_values_in.data().get(),
-      d_keys_out.data().get(),
-      d_values_out.data().get(),
-      static_cast<int>(d_keys_in.size()),
-      compare_op,
-      env));
+  device_merge_sort_pairs_copy(
+    d_keys_in.data().get(),
+    d_values_in.data().get(),
+    d_keys_out.data().get(),
+    d_values_out.data().get(),
+    static_cast<int>(d_keys_in.size()),
+    compare_op,
+    env);
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -511,8 +511,7 @@ C2H_TEST("DeviceMergeSort::SortKeys can be tuned", "[merge_sort][device]", block
   auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
   auto env        = cuda::execution::__tune(merge_sort_tuning<target_block_size>{});
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceMergeSort::SortKeys(d_keys.data().get(), static_cast<int>(d_keys.size()), compare_op, env));
+  device_merge_sort_keys(d_keys.data().get(), static_cast<int>(d_keys.size()), compare_op, env);
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -525,9 +524,8 @@ C2H_TEST("DeviceMergeSort::SortKeysCopy can be tuned", "[merge_sort][device]", b
   auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
   auto env        = cuda::execution::__tune(merge_sort_tuning<target_block_size>{});
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceMergeSort::SortKeysCopy(
-            d_keys_in.data().get(), d_keys_out.data().get(), static_cast<int>(d_keys_in.size()), compare_op, env));
+  device_merge_sort_keys_copy(
+    d_keys_in.data().get(), d_keys_out.data().get(), static_cast<int>(d_keys_in.size()), compare_op, env);
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -540,9 +538,8 @@ C2H_TEST("DeviceMergeSort::StableSortPairs can be tuned", "[merge_sort][device]"
   auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
   auto env        = cuda::execution::__tune(merge_sort_tuning<target_block_size>{});
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceMergeSort::StableSortPairs(
-            d_keys.data().get(), d_values.data().get(), static_cast<int>(d_keys.size()), compare_op, env));
+  device_merge_stable_sort_pairs(
+    d_keys.data().get(), d_values.data().get(), static_cast<int>(d_keys.size()), compare_op, env);
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -554,9 +551,7 @@ C2H_TEST("DeviceMergeSort::StableSortKeys can be tuned", "[merge_sort][device]",
   auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
   auto env        = cuda::execution::__tune(merge_sort_tuning<target_block_size>{});
 
-  REQUIRE(
-    cudaSuccess
-    == cub::DeviceMergeSort::StableSortKeys(d_keys.data().get(), static_cast<int>(d_keys.size()), compare_op, env));
+  device_merge_stable_sort_keys(d_keys.data().get(), static_cast<int>(d_keys.size()), compare_op, env);
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
@@ -569,8 +564,9 @@ C2H_TEST("DeviceMergeSort::StableSortKeysCopy can be tuned", "[merge_sort][devic
   auto compare_op = block_size_compare_t{thrust::raw_pointer_cast(d_block_size.data())};
   auto env        = cuda::execution::__tune(merge_sort_tuning<target_block_size>{});
 
-  REQUIRE(cudaSuccess
-          == cub::DeviceMergeSort::StableSortKeysCopy(
-            d_keys_in.data().get(), d_keys_out.data().get(), static_cast<int>(d_keys_in.size()), compare_op, env));
+  device_merge_stable_sort_keys_copy(
+    d_keys_in.data().get(), d_keys_out.data().get(), static_cast<int>(d_keys_in.size()), compare_op, env);
   REQUIRE(d_block_size[0] == target_block_size);
 }
+
+#endif // TEST_LAUNCH != 1
