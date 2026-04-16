@@ -45,7 +45,7 @@ namespace detail
 //! @tparam LogicalWarpThreads
 //!   Number of threads per logical warp (must be a power-of-two)
 template <typename T, int Batches, int LogicalWarpThreads, bool SyncPhysicalWarp>
-struct WarpReduceBatchedWspro
+struct warp_reduce_batched_wspro
 {
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
   static_assert(LogicalWarpThreads > 1 && LogicalWarpThreads <= warp_threads,
@@ -56,40 +56,26 @@ struct WarpReduceBatchedWspro
   // Constants and type definitions
   //---------------------------------------------------------------------
 
-  /// Whether the logical warp size and the PTX warp size coincide
+  //! Whether the logical warp size and the physical warp size coincide
   static constexpr auto is_arch_warp = (LogicalWarpThreads == warp_threads);
 
   static constexpr auto max_out_per_thread = ::cuda::ceil_div(Batches, LogicalWarpThreads);
 
-  /// Shared memory storage layout type
+  //! Shared memory storage layout type
   using TempStorage = NullType;
-
-  //---------------------------------------------------------------------
-  // Thread fields
-  //---------------------------------------------------------------------
 
   int physical_lane_id;
   int logical_lane_id;
   int logical_warp_id;
 
-  /// 32-thread physical warp member mask of logical warp
   ::cuda::std::uint32_t member_mask;
 
-  //---------------------------------------------------------------------
-  // Construction
-  //---------------------------------------------------------------------
-
-  /// Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceBatchedWspro(TempStorage& /*temp_storage*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE warp_reduce_batched_wspro(TempStorage& /*temp_storage*/)
       : physical_lane_id(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
       , logical_lane_id(is_arch_warp ? physical_lane_id : physical_lane_id % LogicalWarpThreads)
       , logical_warp_id(is_arch_warp ? 0 : (physical_lane_id / LogicalWarpThreads))
       , member_mask(SyncPhysicalWarp ? 0xFFFFFFFFu : cub::WarpMask<LogicalWarpThreads>(logical_warp_id))
   {}
-
-  //---------------------------------------------------------------------
-  // Batched reductions
-  //---------------------------------------------------------------------
 
   template <bool ToBlocked, typename InputT, typename OutputT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Reduce(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)

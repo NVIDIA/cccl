@@ -100,26 +100,22 @@ class WarpReduceBatched
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 public:
-  /// Internal specialization.
-  using InternalWarpReduceBatched = detail::WarpReduceBatchedWspro<T, Batches, LogicalWarpThreads, SyncPhysicalWarp>;
+  //! Internal specialization.
+  using InternalWarpReduceBatched = detail::warp_reduce_batched_wspro<T, Batches, LogicalWarpThreads, SyncPhysicalWarp>;
 
 #endif // _CCCL_DOXYGEN_INVOKED
 
 private:
-  //---------------------------------------------------------------------
-  // Constants and type definitions
-  //---------------------------------------------------------------------
-
   static constexpr auto max_out_per_thread = ::cuda::ceil_div(Batches, LogicalWarpThreads);
 
-  /// Shared memory storage layout type for WarpReduceBatched
+  //! Shared memory storage layout type for WarpReduceBatched
   using _TempStorage = typename InternalWarpReduceBatched::TempStorage;
 
-  /// Shared storage reference
+  //! Shared storage reference
   _TempStorage& temp_storage;
 
 public:
-  /// \smemstorage{WarpReduceBatched}
+  //! \smemstorage{WarpReduceBatched}
   struct TempStorage : Uninitialized<_TempStorage>
   {};
 

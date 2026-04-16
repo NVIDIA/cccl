@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
-// SPDX-License-Identifier: BSD-3-Clause
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_reduce.cuh>
@@ -22,9 +22,7 @@
 #include <c2h/check_results.cuh>
 #include <c2h/custom_type.h>
 
-/***********************************************************************************************************************
- * Constants
- **********************************************************************************************************************/
+// %PARAM% TEST_TYPES types 0:1:2
 
 inline constexpr int warp_size  = 32;
 inline constexpr int block_size = 2 * warp_size;
@@ -39,10 +37,6 @@ enum class WarpReduceBatchedMode
   ToStriped,
   ToBlocked
 };
-
-/***********************************************************************************************************************
- * Batched Reduction Kernel
- **********************************************************************************************************************/
 
 template <WarpReduceBatchedMode Mode,
           bool SyncPhysicalWarp,
@@ -199,10 +193,6 @@ warp_reduce_batched_cond_part_kernel(input_2d_mdspan_t<T> input_md, cuda::std::s
   }
 }
 
-/***********************************************************************************************************************
- * Host Reference
- **********************************************************************************************************************/
-
 template <typename T, typename ReductionOp>
 void compute_host_reference(input_2d_mdspan_t<const T> input_md, cuda::std::span<T> output, ReductionOp op)
 {
@@ -219,10 +209,6 @@ void compute_host_reference(input_2d_mdspan_t<const T> input_md, cuda::std::span
     output[batch_idx] = result;
   }
 }
-
-/***********************************************************************************************************************
- * Test Helpers
- **********************************************************************************************************************/
 
 template <typename T, int N>
 void gen_bounded_input(c2h::seed_t seed, c2h::device_vector<T>& d_input)
@@ -305,12 +291,6 @@ void test_warp_reduce_batched(ReductionOp reduction_op = ReductionOp{})
   verify_results(h_reference, h_output);
 }
 
-/***********************************************************************************************************************
- * Type Lists
- **********************************************************************************************************************/
-
-// %PARAM% TEST_TYPES types 0:1:2
-
 #if TEST_TYPES == 0
 using builtin_type_list = c2h::type_list<cuda::std::uint8_t, cuda::std::uint16_t>;
 #elif TEST_TYPES == 1
@@ -374,10 +354,6 @@ using sub_warp_equal_configs = c2h::type_list<int_pair<2, 2>, int_pair<4, 4>, in
 using sub_warp_unequal_configs = c2h::type_list<int_pair<3, 16>, int_pair<4, 8>, int_pair<6, 4>, int_pair<1, 2>>;
 
 using unequal_nm_single_out_configs = c2h::type_list<int_pair<1, 32>, int_pair<3, 16>, int_pair<4, 8>, int_pair<1, 2>>;
-
-/***********************************************************************************************************************
- * Test Cases
- **********************************************************************************************************************/
 
 C2H_TEST("WarpReduceBatched::Reduce N=M sum", "[warp][reduce][batched]", full_type_list, equal_nm_configs)
 {
