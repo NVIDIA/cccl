@@ -27,9 +27,11 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-struct arch_traits_t;
-class compute_capability;
 enum class arch_id : int;
+
+class arch;
+
+struct arch_traits_t;
 
 inline constexpr int __arch_specific_id_multiplier = 100000;
 

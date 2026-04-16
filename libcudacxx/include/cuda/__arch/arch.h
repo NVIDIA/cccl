@@ -32,10 +32,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 
 class arch
 {
-  arch_id __id_;
+  arch_id __id_{};
 
 public:
-  _CCCL_HIDE_FROM_ABI arch() = default;
+  _CCCL_HIDE_FROM_ABI explicit arch() = default;
 
   _CCCL_API constexpr arch(arch_id __id) noexcept
       : __id_{__id}

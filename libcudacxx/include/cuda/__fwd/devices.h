@@ -27,6 +27,8 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+class compute_capability;
+
 #if _CCCL_HAS_CTK()
 class __physical_device;
 class device_ref;
