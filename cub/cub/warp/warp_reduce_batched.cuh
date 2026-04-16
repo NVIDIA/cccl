@@ -180,9 +180,9 @@ public:
   template <typename InputT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputT& inputs, ReductionOp reduction_op)
   {
-    static_assert(::cub::detail::is_fixed_size_random_access_range_v<InputT>,
+    static_assert(detail::is_fixed_size_random_access_range_v<InputT>,
                   "InputT must support the subscript operator[] and have a compile-time size");
-    static_assert(::cub::detail::static_size_v<InputT> == Batches, "Input size must match Batches");
+    static_assert(detail::static_size_v<InputT> == Batches, "Input size must match Batches");
     // These restrictions could be relaxed to allow type-conversions
     static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputT>, T>, "Input element type must match T");
     static_assert(max_out_per_thread == 1,
@@ -238,12 +238,12 @@ public:
   template <typename InputT, typename OutputT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ReduceToStriped(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
   {
-    static_assert(::cub::detail::is_fixed_size_random_access_range_v<InputT>,
+    static_assert(detail::is_fixed_size_random_access_range_v<InputT>,
                   "InputT must support the subscript operator[] and have a compile-time size");
-    static_assert(::cub::detail::is_fixed_size_random_access_range_v<OutputT>,
+    static_assert(detail::is_fixed_size_random_access_range_v<OutputT>,
                   "OutputT must support the subscript operator[] and have a compile-time size");
-    static_assert(::cub::detail::static_size_v<InputT> == Batches, "Input size must match Batches");
-    static_assert(::cub::detail::static_size_v<OutputT> == max_out_per_thread,
+    static_assert(detail::static_size_v<InputT> == Batches, "Input size must match Batches");
+    static_assert(detail::static_size_v<OutputT> == max_out_per_thread,
                   "Output size must match ceil_div(Batches, LogicalWarpThreads)");
     // These restrictions could be relaxed to allow type-conversions
     static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputT>, T>, "Input element type must match T");
@@ -297,12 +297,12 @@ public:
   template <typename InputT, typename OutputT, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ReduceToBlocked(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
   {
-    static_assert(::cub::detail::is_fixed_size_random_access_range_v<InputT>,
+    static_assert(detail::is_fixed_size_random_access_range_v<InputT>,
                   "InputT must support the subscript operator[] and have a compile-time size");
-    static_assert(::cub::detail::is_fixed_size_random_access_range_v<OutputT>,
+    static_assert(detail::is_fixed_size_random_access_range_v<OutputT>,
                   "OutputT must support the subscript operator[] and have a compile-time size");
-    static_assert(::cub::detail::static_size_v<InputT> == Batches, "Input size must match Batches");
-    static_assert(::cub::detail::static_size_v<OutputT> == max_out_per_thread,
+    static_assert(detail::static_size_v<InputT> == Batches, "Input size must match Batches");
+    static_assert(detail::static_size_v<OutputT> == max_out_per_thread,
                   "Output size must match ceil_div(Batches, LogicalWarpThreads)");
     // These restrictions could be relaxed to allow type-conversions
     static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputT>, T>, "Input element type must match T");
