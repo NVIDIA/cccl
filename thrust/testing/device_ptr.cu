@@ -253,3 +253,30 @@ void TestToAddress()
   ASSERT_EQUAL(last - first, 3);
 }
 DECLARE_VECTOR_UNITTEST(TestToAddress);
+
+// Verify that cuda::std::pointer_traits<device_ptr<T>>::rebind produces the
+// correct pointer type, not a nested struct. This is required for
+// cuda::std::allocator_traits to correctly compute void_pointer when an
+// allocator uses device_ptr as its pointer type (e.g. rmm::mr::thrust_allocator).
+// See GitHub issue #8485.
+struct device_char_allocator
+{
+  using value_type = char;
+  using pointer    = thrust::device_ptr<char>;
+  pointer allocate(std::size_t n);
+  void deallocate(pointer p, std::size_t);
+};
+
+// pointer_traits::rebind should produce a pointer type, not a rebind struct.
+static_assert(
+  cuda::std::is_same_v<cuda::std::pointer_traits<thrust::device_ptr<char>>::rebind<void>, thrust::device_ptr<void>>,
+  "pointer_traits<device_ptr<char>>::rebind<void> should be device_ptr<void>");
+static_assert(
+  cuda::std::is_same_v<cuda::std::pointer_traits<thrust::device_ptr<int>>::rebind<float>, thrust::device_ptr<float>>,
+  "pointer_traits<device_ptr<int>>::rebind<float> should be device_ptr<float>");
+
+// allocator_traits::void_pointer must resolve to device_ptr<void> for allocators
+// whose pointer type is device_ptr<T>.
+static_assert(
+  cuda::std::is_same_v<cuda::std::allocator_traits<device_char_allocator>::void_pointer, thrust::device_ptr<void>>,
+  "allocator_traits::void_pointer should be device_ptr<void> for device_ptr-based allocators");
