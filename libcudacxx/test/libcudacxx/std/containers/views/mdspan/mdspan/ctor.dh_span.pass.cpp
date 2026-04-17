@@ -47,34 +47,29 @@ TEST_FUNC constexpr auto array_from_extents(const Extents& exts, cuda::std::inde
 }
 
 template <class MDS>
-TEST_FUNC void check_implicit_construction(MDS);
+TEST_FUNC cuda::std::true_type check_implicit_construction(MDS);
 
 template <class MDS, class Exts>
-TEST_FUNC constexpr bool check_implicit_construction_impl(...)
-{
-  return false;
-}
-template <class MDS, class Exts>
-TEST_FUNC constexpr auto check_implicit_construction_impl(int)
-  -> decltype(check_implicit_construction<MDS>({cuda::std::declval<typename MDS::data_handle_type>(),
-                                                cuda::std::declval<const Exts&>()}),
-              true)
-{
-  return true;
-}
+TEST_FUNC constexpr auto check_implicit_construction_impl(...) -> cuda::std::false_type;
 
 template <class MDS, class Exts>
-_CCCL_CONCEPT check_mdspan_ctor_implicit = check_implicit_construction_impl<MDS, Exts>(0);
+TEST_FUNC constexpr auto check_implicit_construction_impl(int) -> decltype(check_implicit_construction<MDS>(
+  {cuda::std::declval<typename MDS::data_handle_type>(), cuda::std::declval<const Exts&>()}));
+
+template <class MDS, class Exts>
+_CCCL_CONCEPT check_mdspan_ctor_implicit = decltype(check_implicit_construction_impl<MDS, Exts>(0))::value;
 
 template <class H, class M, class A, size_t N>
 TEST_FUNC constexpr void
 test_mdspan_ctor_span(const H& handle, const M& map, const A&, cuda::std::span<const typename M::index_type, N> exts)
 {
   using MDS = cuda::std::mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
   if (!cuda::std::__cccl_default_is_constant_evaluated())
   {
     move_counted_handle<typename MDS::element_type>::move_counter() = 0;
   }
+#endif // !_CCCL_TILE_COMPILATION()
   MDS m(handle, exts);
   test_move_counter<MDS, H>();
 
