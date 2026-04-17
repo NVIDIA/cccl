@@ -249,6 +249,7 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
 
   auto inclusive_scan_dispatch = [](auto&&... args) {
     return cub::detail::segmented_scan::dispatch<
+      cub::ForceInclusive::No,
       pair_t,
       const pair_t*,
       pair_t*,
@@ -258,7 +259,6 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
       op_t,
       cub::NullType,
       pair_t,
-      cub::ForceInclusive::No,
       offset_t,
       policy_t>(std::forward<decltype(args)>(args)...);
   };
@@ -427,6 +427,7 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
   using d_init_t               = cub::detail::InputValue<value_t>;
   auto exclusive_scan_dispatch = [](auto&&... args) {
     return cub::detail::segmented_scan::dispatch<
+      cub::ForceInclusive::No,
       value_t,
       const value_t*,
       value_t*,
@@ -436,7 +437,6 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
       op_t,
       d_init_t,
       value_t,
-      cub::ForceInclusive::No,
       offset_t,
       policy_t>(std::forward<decltype(args)>(args)...);
   };
@@ -536,6 +536,7 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
 
   auto inclusive_scan_dispatch = [](auto&&... args) {
     return cub::detail::segmented_scan::dispatch<
+      cub::ForceInclusive::No,
       value_t,
       const value_t*,
       value_t*,
@@ -545,7 +546,6 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
       op_t,
       cub::NullType,
       value_t,
-      cub::ForceInclusive::No,
       offset_t,
       policy_t>(std::forward<decltype(args)>(args)...);
   };
@@ -658,6 +658,7 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
   using d_init_t                    = cub::detail::InputValue<value_t>;
   auto inclusive_init_scan_dispatch = [](auto&&... args) {
     return cub::detail::segmented_scan::dispatch<
+      cub::ForceInclusive::Yes,
       value_t,
       const value_t*,
       value_t*,
@@ -667,7 +668,6 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
       op_t,
       d_init_t,
       value_t,
-      cub::ForceInclusive::Yes,
       offset_t,
       policy_t>(std::forward<decltype(args)>(args)...);
   };
@@ -841,6 +841,7 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
 
   auto inclusive_scan_dispatch = [](auto&&... args) {
     return cub::detail::segmented_scan::dispatch<
+      cub::ForceInclusive::No,
       value_t,
       const value_t*,
       value_t*,
@@ -850,7 +851,6 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
       op_t,
       cub::NullType,
       value_t,
-      cub::ForceInclusive::No,
       offset_t,
       policy_t>(std::forward<decltype(args)>(args)...);
   };

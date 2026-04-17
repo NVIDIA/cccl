@@ -130,7 +130,8 @@ template <typename ScanOpT,
 _CCCL_API auto select_accum_t(OverrideAccumT*) -> OverrideAccumT;
 
 template <
-  typename OverrideAccumT = detail::use_default,
+  ForceInclusive EnforceInclusive = ForceInclusive::No,
+  typename OverrideAccumT         = detail::use_default,
   typename InputIteratorT,
   typename OutputIteratorT,
   typename BeginOffsetIteratorInputT,
@@ -138,10 +139,9 @@ template <
   typename BeginOffsetIteratorOutputT,
   typename ScanOpT,
   typename InitValueT,
-  typename AccumT = decltype(select_accum_t<ScanOpT, InitValueT, cub::detail::it_value_t<InputIteratorT>>(
+  typename AccumT  = decltype(select_accum_t<ScanOpT, InitValueT, cub::detail::it_value_t<InputIteratorT>>(
     static_cast<OverrideAccumT*>(nullptr))),
-  ForceInclusive EnforceInclusive = ForceInclusive::No,
-  typename OffsetT                = typename detail::
+  typename OffsetT = typename detail::
     common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>,
   typename PolicySelector = detail::segmented_scan::policy_selector_from_types<AccumT>,
   typename KernelSource   = detail::segmented_scan::device_segmented_scan_kernel_source<

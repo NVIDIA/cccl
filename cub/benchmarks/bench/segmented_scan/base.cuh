@@ -33,93 +33,30 @@
 #    define TUNE_LOAD_MODIFIER cub::LOAD_CA
 #  endif // TUNE_LOAD
 
-template <typename ComputeT, int NumSegmentsPerWorkUnit>
-using segmented_scan_compute_t =
-  ::cuda::std::conditional_t<NumSegmentsPerWorkUnit == 1, ComputeT, ::cuda::std::tuple<ComputeT, bool>>;
-
-template <int Nominal4ByteBlockThreads,
-          int Nominal4ByteItemsPerThread,
-          typename ComputeT,
-          cub::BlockLoadAlgorithm LoadAlgorithm,
-          cub::CacheLoadModifier LoadModifier,
-          cub::BlockStoreAlgorithm StoreAlgorithm,
-          cub::BlockScanAlgorithm ScanAlgorithm,
-          int MaxSegmentsPerBlock = 1>
-using block_level_agent_policy_t = cub::detail::segmented_scan::agent_segmented_scan_policy_t<
-  Nominal4ByteBlockThreads,
-  Nominal4ByteItemsPerThread,
-  ComputeT,
-  LoadAlgorithm,
-  LoadModifier,
-  StoreAlgorithm,
-  ScanAlgorithm,
-  MaxSegmentsPerBlock,
-  cub::detail::NoScaling<Nominal4ByteBlockThreads,
-                         Nominal4ByteItemsPerThread,
-                         segmented_scan_compute_t<ComputeT, MaxSegmentsPerBlock>>>;
-
-template <int Nominal4ByteBlockThreads,
-          int Nominal4ByteItemsPerThread,
-          typename ComputeT,
-          cub::WarpLoadAlgorithm LoadAlgorithm,
-          cub::CacheLoadModifier LoadModifier,
-          cub::WarpStoreAlgorithm StoreAlgorithm,
-          int MaxSegmentsPerWarp = 1>
-using warp_level_agent_policy_t = cub::detail::segmented_scan::agent_warp_segmented_scan_policy_t<
-  Nominal4ByteBlockThreads,
-  Nominal4ByteItemsPerThread,
-  ComputeT,
-  LoadAlgorithm,
-  LoadModifier,
-  StoreAlgorithm,
-  MaxSegmentsPerWarp,
-  cub::detail::NoScaling<Nominal4ByteBlockThreads,
-                         Nominal4ByteItemsPerThread,
-                         segmented_scan_compute_t<ComputeT, MaxSegmentsPerWarp>>>;
-
-template <int Nominal4ByteBlockThreads,
-          int Nominal4ByteItemsPerThread,
-          typename ComputeT,
-          cub::CacheLoadModifier LoadModifier>
-using thread_level_agent_policy_t = cub::detail::segmented_scan::agent_thread_segmented_scan_policy_t<
-  Nominal4ByteBlockThreads,
-  Nominal4ByteItemsPerThread,
-  ComputeT,
-  LoadModifier,
-  cub::detail::NoScaling<Nominal4ByteBlockThreads, Nominal4ByteItemsPerThread, ComputeT>>;
-
-template <typename AccumT>
-struct policy_hub_t
+template <int BlockThreads, int ItemsPerThread, int MaxSegmentsPerBlock, int MaxSegmentsPerWarp>
+struct policy_selector_t
 {
-  struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id) const
+    -> cub::detail::segmented_scan::segmented_scan_policy
   {
-    using block_segmented_scan_policy_t = block_level_agent_policy_t<
-      TUNE_THREADS,
-      TUNE_ITEMS,
-      AccumT,
-      TUNE_BLOCK_LOAD_ALGORITHM,
-      TUNE_LOAD_MODIFIER,
-      TUNE_BLOCK_STORE_ALGORITHM,
-      cub::BLOCK_SCAN_WARP_SCANS,
-      TUNE_MAX_SEGMENTS_PER_BLOCK>;
-
-    using warp_segmented_scan_policy_t = warp_level_agent_policy_t<
-      TUNE_THREADS,
-      TUNE_ITEMS,
-      AccumT,
-      TUNE_WARP_LOAD_ALGORITHM,
-      TUNE_LOAD_MODIFIER,
-      TUNE_WARP_STORE_ALGORITHM,
-      // IMPORTANT: Make sure not to hurt occupancy
-      // since shared memory is allocated per warp, scale it down so that total amount of shared memory
-      // per CTA is the same as in block-level segmented scan
-      ::cuda::ceil_div(TUNE_MAX_SEGMENTS_PER_BLOCK* cub::detail::warp_threads, TUNE_THREADS)>;
-
-    using thread_segmented_scan_policy_t =
-      thread_level_agent_policy_t<TUNE_THREADS, TUNE_ITEMS, AccumT, TUNE_LOAD_MODIFIER>;
-  };
-
-  using MaxPolicy = policy_t;
+    return cub::detail::segmented_scan::segmented_scan_policy{
+      cub::detail::segmented_scan::block_segmented_scan_policy{
+        BlockThreads,
+        ItemsPerThread,
+        cub::LOAD_DEFAULT,
+        cub::BLOCK_LOAD_WARP_TRANSPOSE,
+        cub::BLOCK_STORE_WARP_TRANSPOSE,
+        cub::BLOCK_SCAN_WARP_SCANS,
+        MaxSegmentsPerBlock},
+      cub::detail::segmented_scan::warp_segmented_scan_policy{
+        BlockThreads,
+        ItemsPerThread,
+        cub::LOAD_DEFAULT,
+        cub::WARP_LOAD_TRANSPOSE,
+        cub::WARP_STORE_TRANSPOSE,
+        MaxSegmentsPerWarp},
+      cub::detail::segmented_scan::thread_segmented_scan_policy{BlockThreads, ItemsPerThread, cub::LOAD_DEFAULT}};
+  }
 };
 #endif // TUNE_BASE
 
@@ -151,7 +88,12 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using offset_it      = const offset_t*;
 
 #if !TUNE_BASE
-  using policy_t = policy_hub_t<accum_t>;
+  // IMPORTANT: Make sure not to hurt occupancy
+  // since shared memory is allocated per warp, scale it down so that total amount of shared memory
+  // per CTA is the same as in block-level segmented scan
+  constexpr auto max_segments_per_warp =
+    ::cuda::ceil_div(TUNE_MAX_SEGMENTS_PER_BLOCK * cub::detail::warp_threads, TUNE_THREADS);
+  using policy_t = policy_selector_t<TUNE_THREADS, TUNE_ITEMS, TUNE_MAX_SEGMENTS_PER_BLOCK, max_segments_per_warp>;
 #endif
 
   const auto elements     = static_cast<offset_t>(state.get_int64("Elements{io}"));
@@ -206,6 +148,7 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   size_t tmp_size;
 #if !TUNE_BASE
   cub::detail::segmented_scan::dispatch<
+    cub::ForceInclusive::No,
     accum_t,
     input_it_t,
     output_it_t,
@@ -215,11 +158,11 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     op_t,
     wrapped_init_t,
     accum_t,
-    cub::ForceInclusive::Yes,
     offset_t,
-    cub::detail::segmented_scan::policy_selector_from_hub<policy_t>>(
+    policy_t>(
 #else
   cub::detail::segmented_scan::dispatch<
+    cub::ForceInclusive::No,
     accum_t,
     input_it_t,
     output_it_t,
@@ -229,7 +172,6 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     op_t,
     wrapped_init_t,
     accum_t,
-    cub::ForceInclusive::No,
     offset_t>(
 #endif
     nullptr,
@@ -252,6 +194,7 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
 #if !TUNE_BASE
     cub::detail::segmented_scan::dispatch<
+      cub::ForceInclusive::No,
       accum_t,
       input_it_t,
       output_it_t,
@@ -261,11 +204,11 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       op_t,
       wrapped_init_t,
       accum_t,
-      cub::ForceInclusive::Yes,
       offset_t,
-      cub::detail::segmented_scan::policy_selector_from_hub<policy_t>>(
+      policy_t>(
 #else
     cub::detail::segmented_scan::dispatch<
+      cub::ForceInclusive::No,
       accum_t,
       input_it_t,
       output_it_t,
@@ -275,7 +218,6 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       op_t,
       wrapped_init_t,
       accum_t,
-      cub::ForceInclusive::No,
       offset_t>(
 #endif
       thrust::raw_pointer_cast(tmp.data()),
