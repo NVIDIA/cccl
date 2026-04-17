@@ -231,6 +231,13 @@ TEST_FUNC constexpr bool test()
   test<random_access_iterator<const int*>>();
   test<const int*>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   int a[] = {7, 6, 5, 3, 4, 2, 1, 8};
   test_iterators(a, a + 8);
   int a2[] = {7, 6, 5, 3, 4, 2, 1, 8};

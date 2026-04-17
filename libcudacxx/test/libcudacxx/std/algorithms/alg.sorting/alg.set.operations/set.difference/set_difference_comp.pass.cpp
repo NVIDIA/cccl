@@ -84,6 +84,13 @@ TEST_FUNC constexpr void test1()
   test2<T, bidirectional_iterator<const T*>>();
   test2<T, random_access_iterator<const T*>>();
   test2<T, const T*>();
+
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test2<T, host_only_iterator<const T*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test2<T, device_only_iterator<const T*>>();))
+#endif // TEST_CUDA_COMPILATION()
 }
 
 TEST_FUNC constexpr bool test()
