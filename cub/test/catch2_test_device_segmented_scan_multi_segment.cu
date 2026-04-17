@@ -786,7 +786,7 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
   using value_t  = unsigned int;
   using offset_t = unsigned int;
 
-  [[maybe_unused]] static constexpr int items_per_thread       = c2h::get<0, TestType>{};
+  [[maybe_unused]] static constexpr int items_per_thread       = c2h::get<0, TestType>::value;
   [[maybe_unused]] static constexpr int block_size             = 128;
   [[maybe_unused]] static constexpr int warps_in_block         = block_size / 32;
   [[maybe_unused]] static constexpr int max_segments_per_block = 256;
