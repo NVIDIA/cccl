@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <typename Span>
-__host__ __device__ constexpr bool testConstexprSpan(Span s)
+TEST_FUNC constexpr bool testConstexprSpan(Span s)
 {
   bool ret                          = true;
   typename Span::reverse_iterator b = s.rbegin();
@@ -35,7 +35,7 @@ __host__ __device__ constexpr bool testConstexprSpan(Span s)
 }
 
 template <class Span>
-__host__ __device__ void testRuntimeSpan(Span s)
+TEST_FUNC void testRuntimeSpan(Span s)
 {
   typename Span::reverse_iterator b = s.rbegin();
   if (s.empty())
@@ -52,7 +52,7 @@ __host__ __device__ void testRuntimeSpan(Span s)
 
 struct A
 {};
-__host__ __device__ bool operator==(A, A)
+TEST_FUNC bool operator==(A, A)
 {
   return true;
 }

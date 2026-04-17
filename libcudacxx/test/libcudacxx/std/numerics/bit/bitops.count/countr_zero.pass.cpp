@@ -35,7 +35,7 @@ enum class E2 : unsigned char
 };
 
 template <typename T>
-__host__ __device__ constexpr bool constexpr_test()
+TEST_FUNC constexpr bool constexpr_test()
 {
   static_assert(cuda::std::countr_zero(T(1)) == 0);
   static_assert(cuda::std::countr_zero(T(2)) == 1);
@@ -53,14 +53,14 @@ __host__ __device__ constexpr bool constexpr_test()
 }
 
 template <typename T>
-__host__ __device__ inline void assert_countr_zero(T val, int expected)
+TEST_FUNC inline void assert_countr_zero(T val, int expected)
 {
   volatile auto v = val;
   assert(cuda::std::countr_zero(v) == expected);
 }
 
 template <typename T>
-__host__ __device__ void runtime_test()
+TEST_FUNC void runtime_test()
 {
   static_assert(cuda::std::is_same_v<int, decltype(cuda::std::countr_zero(T(0)))>);
   static_assert(noexcept(cuda::std::countr_zero(T(0))));

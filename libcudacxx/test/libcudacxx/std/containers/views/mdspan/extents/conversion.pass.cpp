@@ -37,13 +37,13 @@
 #include "test_macros.h"
 
 template <class To, class From>
-__host__ __device__ constexpr void test_implicit_conversion(To dest, From src)
+TEST_FUNC constexpr void test_implicit_conversion(To dest, From src)
 {
   assert(dest == src);
 }
 
 template <bool implicit, class To, class From, cuda::std::enable_if_t<implicit, int> = 0>
-__host__ __device__ constexpr void test_conversion(From src)
+TEST_FUNC constexpr void test_conversion(From src)
 {
   To dest(src);
   assert(dest == src);
@@ -53,14 +53,14 @@ __host__ __device__ constexpr void test_conversion(From src)
 }
 
 template <bool implicit, class To, class From, cuda::std::enable_if_t<!implicit, int> = 0>
-__host__ __device__ constexpr void test_conversion(From src)
+TEST_FUNC constexpr void test_conversion(From src)
 {
   To dest(src);
   assert(dest == src);
 }
 
 template <class T1, class T2>
-__host__ __device__ constexpr void test_conversion()
+TEST_FUNC constexpr void test_conversion()
 {
   constexpr bool idx_convertible = static_cast<size_t>(cuda::std::numeric_limits<T1>::max())
                                 >= static_cast<size_t>(cuda::std::numeric_limits<T2>::max());
@@ -82,7 +82,7 @@ __host__ __device__ constexpr void test_conversion()
   // clang-format on
 }
 
-__host__ __device__ constexpr void test_no_implicit_conversion()
+TEST_FUNC constexpr void test_no_implicit_conversion()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   // Sanity check that one static to dynamic conversion works
@@ -126,7 +126,7 @@ __host__ __device__ constexpr void test_no_implicit_conversion()
   static_assert(!cuda::std::is_convertible<cuda::std::extents<size_t, 5>, cuda::std::extents<int, 5>>::value);
 }
 
-__host__ __device__ constexpr void test_rank_mismatch()
+TEST_FUNC constexpr void test_rank_mismatch()
 {
   static_assert(
     !cuda::std::is_constructible<cuda::std::extents<int, cuda::std::dynamic_extent>, cuda::std::extents<int>>::value,
@@ -146,7 +146,7 @@ __host__ __device__ constexpr void test_rank_mismatch()
     "");
 }
 
-__host__ __device__ constexpr void test_static_extent_mismatch()
+TEST_FUNC constexpr void test_static_extent_mismatch()
 {
   static_assert(!cuda::std::is_constructible<cuda::std::extents<int, cuda::std::dynamic_extent, 5>,
                                              cuda::std::extents<int, cuda::std::dynamic_extent, 4>>::value,
@@ -157,7 +157,7 @@ __host__ __device__ constexpr void test_static_extent_mismatch()
                 "");
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_conversion<int, int>();
   test_conversion<int, size_t>();

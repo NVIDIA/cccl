@@ -105,18 +105,11 @@ _CCCL_HOST_API graph_node_ref fill_bytes(path_builder& __pb, _DstTy&& __dst, ::c
     __value);
 }
 
-//! \brief Adds a memset node to a CUDA graph path that bytewise-fills the destination.
-//!
+//! @overload
 //! This overload is selected when the destination (after applying `launch_transform`) is
 //! a `cuda::std::mdspan`. The mdspan must be exhaustive. The element type must be trivially
 //! copyable and non-const. The pointer captured in the node must remain valid until the
 //! graph executes.
-//!
-//! \param __pb    Path builder to insert the node into.
-//! \param __dst   Destination memory to fill.
-//! \param __value Byte value to write to every byte of the destination.
-//! \return A `graph_node_ref` for the newly added memset node.
-//! \throws cuda::std::cuda_error if node creation fails.
 _CCCL_TEMPLATE(typename _DstTy)
 _CCCL_REQUIRES(::cuda::__mdspannable<::cuda::transformed_device_argument_t<_DstTy>>)
 _CCCL_HOST_API graph_node_ref fill_bytes(path_builder& __pb, _DstTy&& __dst, ::cuda::std::uint8_t __value)

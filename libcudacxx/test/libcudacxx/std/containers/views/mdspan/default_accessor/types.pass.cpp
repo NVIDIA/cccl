@@ -29,7 +29,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using A = cuda::std::default_accessor<T>;
   static_assert(cuda::std::is_same_v<typename A::offset_policy, A>);

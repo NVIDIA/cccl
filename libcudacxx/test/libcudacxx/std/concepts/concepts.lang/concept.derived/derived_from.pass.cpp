@@ -13,6 +13,8 @@
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 using cuda::std::derived_from;
 
 struct Base1
@@ -35,7 +37,7 @@ struct Derived5 : Derived4
 {};
 
 template <typename From, typename To>
-__host__ __device__ constexpr void CheckNotDerivedFromPointer()
+TEST_FUNC constexpr void CheckNotDerivedFromPointer()
 {
   { // From as pointer
     static_assert(!derived_from<From*, To>);
@@ -204,7 +206,7 @@ __host__ __device__ constexpr void CheckNotDerivedFromPointer()
 }
 
 template <typename From, typename To>
-__host__ __device__ constexpr void CheckNotDerivedFromReference()
+TEST_FUNC constexpr void CheckNotDerivedFromReference()
 {
   if constexpr (!cuda::std::same_as<To, void>)
   {
@@ -340,7 +342,7 @@ __host__ __device__ constexpr void CheckNotDerivedFromReference()
 }
 
 template <typename From, typename To>
-__host__ __device__ constexpr void CheckDerivedFrom()
+TEST_FUNC constexpr void CheckDerivedFrom()
 {
   static_assert(derived_from<From, To>);
 
@@ -365,7 +367,7 @@ __host__ __device__ constexpr void CheckDerivedFrom()
 }
 
 template <typename From, typename To>
-__host__ __device__ constexpr void CheckNotDerivedFrom()
+TEST_FUNC constexpr void CheckNotDerivedFrom()
 {
   static_assert(!derived_from<From, To>);
 

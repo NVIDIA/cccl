@@ -17,6 +17,8 @@
 #include <cuda/std/numeric>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 using IMIN = signed char;
 using UMIN = signed char;
 
@@ -29,13 +31,13 @@ using UMAX = unsigned long long;
 #endif // ^^^ !_CCCL_HAS_INT128() ^^^
 
 template <class Ret, class T>
-__host__ __device__ constexpr void test(T x, Ret res, int zero_value)
+TEST_FUNC constexpr void test(T x, Ret res, int zero_value)
 {
   assert(cuda::std::saturating_cast<Ret>(static_cast<T>(zero_value + x)) == res);
 }
 
 template <class S>
-__host__ __device__ constexpr bool test_type(int zero_value)
+TEST_FUNC constexpr bool test_type(int zero_value)
 {
   static_assert(cuda::std::is_integral_v<S> && cuda::std::is_signed_v<S>);
 
@@ -132,7 +134,7 @@ __host__ __device__ constexpr bool test_type(int zero_value)
   return true;
 }
 
-__host__ __device__ constexpr bool test(int zero_value)
+TEST_FUNC constexpr bool test(int zero_value)
 {
   test_type<signed char>(zero_value);
   test_type<signed short>(zero_value);

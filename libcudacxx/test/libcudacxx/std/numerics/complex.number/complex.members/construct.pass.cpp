@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test_constexpr()
+TEST_FUNC constexpr void test_constexpr()
 {
   {
     constexpr cuda::std::complex<T> c;
@@ -42,7 +42,7 @@ __host__ __device__ constexpr void test_constexpr()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_nonconstexpr()
+TEST_FUNC constexpr void test_nonconstexpr()
 {
   {
     const cuda::std::complex<T> c;
@@ -67,7 +67,7 @@ __host__ __device__ constexpr void test_nonconstexpr()
 }
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test_nonconstexpr<T>();
   test_constexpr<T>();

@@ -24,7 +24,7 @@ static_assert(cuda::std::__integral_constant_like<integral_like<42>>);
 template <size_t Val>
 struct not_integral_like : cuda::std::integral_constant<size_t, Val>
 {
-  __host__ __device__ constexpr not_integral_like(int) noexcept {}
+  TEST_FUNC constexpr not_integral_like(int) noexcept {}
 };
 static_assert(!cuda::std::__integral_constant_like<not_integral_like<42>>);
 
@@ -44,7 +44,7 @@ static_assert(can_strided_slice<int, int, integral_like<42>>);
 // static_assert(!can_strided_slice<int, int, not_integral_like<42>>);
 
 template <class T>
-__host__ __device__ constexpr T construct_from_int([[maybe_unused]] int val) noexcept
+TEST_FUNC constexpr T construct_from_int([[maybe_unused]] int val) noexcept
 {
   if constexpr (cuda::std::__integral_constant_like<T>)
   {
@@ -57,7 +57,7 @@ __host__ __device__ constexpr T construct_from_int([[maybe_unused]] int val) noe
 }
 
 template <class OffsetType, class ExtentType, class StrideType>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   using strided_slice = cuda::std::strided_slice<OffsetType, ExtentType, StrideType>;
   // Ensure we are trivially copy/move constructible
@@ -111,7 +111,7 @@ __host__ __device__ constexpr void test()
 #endif // TEST_STD_VER >= 2020
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int, short, size_t>();
   test<integral_like<42>, int, int>();

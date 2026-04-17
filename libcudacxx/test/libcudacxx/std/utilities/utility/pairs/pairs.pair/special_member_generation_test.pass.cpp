@@ -34,7 +34,7 @@ using namespace ImplicitTypes; // Get implicitly archetypes
 namespace ConstructorTest
 {
 template <class T1, bool CanCopy = true, bool CanMove = CanCopy>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using P1 = cuda::std::pair<T1, int>;
   using P2 = cuda::std::pair<int, T1>;
@@ -45,7 +45,7 @@ __host__ __device__ void test()
 };
 } // namespace ConstructorTest
 
-__host__ __device__ void test_constructors_exist()
+TEST_FUNC void test_constructors_exist()
 {
   using namespace ConstructorTest;
   {
@@ -84,7 +84,7 @@ __host__ __device__ void test_constructors_exist()
 namespace AssignmentOperatorTest
 {
 template <class T1, bool CanCopy = true, bool CanMove = CanCopy>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using P1 = cuda::std::pair<T1, int>;
   using P2 = cuda::std::pair<int, T1>;
@@ -95,7 +95,7 @@ __host__ __device__ void test()
 };
 } // namespace AssignmentOperatorTest
 
-__host__ __device__ void test_assignment_operator_exists()
+TEST_FUNC void test_assignment_operator_exists()
 {
   using namespace AssignmentOperatorTest;
   {

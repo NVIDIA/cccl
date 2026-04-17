@@ -25,13 +25,13 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool testConstexprYears(cuda::std::chrono::year_month_day_last ymdl)
+TEST_FUNC constexpr bool testConstexprYears(cuda::std::chrono::year_month_day_last ymdl)
 {
   cuda::std::chrono::year_month_day_last ym1 = ymdl - cuda::std::chrono::years{10};
   return ym1.year() == cuda::std::chrono::year{static_cast<int>(ymdl.year()) - 10} && ym1.month() == ymdl.month();
 }
 
-__host__ __device__ constexpr bool testConstexprMonths(cuda::std::chrono::year_month_day_last ymdl)
+TEST_FUNC constexpr bool testConstexprMonths(cuda::std::chrono::year_month_day_last ymdl)
 {
   cuda::std::chrono::year_month_day_last ym1 = ymdl - cuda::std::chrono::months{6};
   return ym1.year() == ymdl.year() && ym1.month() == cuda::std::chrono::month{static_cast<unsigned>(ymdl.month()) - 6};

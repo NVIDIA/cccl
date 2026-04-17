@@ -11,7 +11,9 @@
 #include <cuda/std/charconv>
 #include <cuda/std/type_traits>
 
-__host__ __device__ constexpr bool test()
+#include "test_macros.h"
+
+TEST_FUNC constexpr bool test()
 {
   using cf = cuda::std::chars_format;
   using ut = cuda::std::underlying_type<cf>::type;

@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_floating_point_imp()
+TEST_FUNC void test_floating_point_imp()
 {
   static_assert(!cuda::std::is_void<T>::value);
   static_assert(!cuda::std::is_null_pointer<T>::value);
@@ -34,7 +34,7 @@ __host__ __device__ void test_floating_point_imp()
 }
 
 template <class T>
-__host__ __device__ void test_floating_point()
+TEST_FUNC void test_floating_point()
 {
   test_floating_point_imp<T>();
   test_floating_point_imp<const T>();

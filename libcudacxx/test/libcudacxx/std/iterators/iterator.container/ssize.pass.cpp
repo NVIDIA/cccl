@@ -28,14 +28,14 @@ TEST_DIAG_SUPPRESS_GCC("-Wtype-limits")
 
 struct short_container
 {
-  __host__ __device__ uint16_t size() const
+  TEST_FUNC uint16_t size() const
   {
     return 60000;
   } // not noexcept
 };
 
 template <typename C>
-__host__ __device__ void test_container(C& c)
+TEST_FUNC void test_container(C& c)
 {
   //  Can't say noexcept here because the container might not be
   static_assert(cuda::std::is_signed_v<decltype(cuda::std::ssize(c))>);
@@ -43,7 +43,7 @@ __host__ __device__ void test_container(C& c)
 }
 
 template <typename C>
-__host__ __device__ void test_const_container(const C& c)
+TEST_FUNC void test_const_container(const C& c)
 {
   //  Can't say noexcept here because the container might not be
   static_assert(cuda::std::is_signed_v<decltype(cuda::std::ssize(c))>);
@@ -51,7 +51,7 @@ __host__ __device__ void test_const_container(const C& c)
 }
 
 template <typename T>
-__host__ __device__ void test_const_container(const cuda::std::initializer_list<T>& c)
+TEST_FUNC void test_const_container(const cuda::std::initializer_list<T>& c)
 {
   static_assert(noexcept(cuda::std::ssize(c))); // our cuda::std::ssize is conditionally noexcept
   static_assert(cuda::std::is_signed_v<decltype(cuda::std::ssize(c))>);
@@ -59,7 +59,7 @@ __host__ __device__ void test_const_container(const cuda::std::initializer_list<
 }
 
 template <typename T>
-__host__ __device__ void test_container(cuda::std::initializer_list<T>& c)
+TEST_FUNC void test_container(cuda::std::initializer_list<T>& c)
 {
   static_assert(noexcept(cuda::std::ssize(c))); // our cuda::std::ssize is conditionally noexcept
   static_assert(cuda::std::is_signed_v<decltype(cuda::std::ssize(c))>);
@@ -67,7 +67,7 @@ __host__ __device__ void test_container(cuda::std::initializer_list<T>& c)
 }
 
 template <typename T, size_t Sz>
-__host__ __device__ void test_const_array(const T (&array)[Sz])
+TEST_FUNC void test_const_array(const T (&array)[Sz])
 {
   static_assert(noexcept(cuda::std::ssize(array)));
   static_assert(cuda::std::is_signed_v<decltype(cuda::std::ssize(array))>);

@@ -14,7 +14,7 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__ void test_is_convertible()
+TEST_FUNC void test_is_convertible()
 {
   static_assert((cuda::std::is_convertible<T, U>::value));
   static_assert((cuda::std::is_convertible<const T, U>::value));
@@ -27,7 +27,7 @@ __host__ __device__ void test_is_convertible()
 }
 
 template <class T, class U>
-__host__ __device__ void test_is_not_convertible()
+TEST_FUNC void test_is_not_convertible()
 {
   static_assert((!cuda::std::is_convertible<T, U>::value));
   static_assert((!cuda::std::is_convertible<const T, U>::value));
@@ -45,12 +45,12 @@ using Array         = char[1];
 
 struct StringType
 {
-  __host__ __device__ StringType(const char*) {}
+  TEST_FUNC StringType(const char*) {}
 };
 
 class NonCopyable
 {
-  __host__ __device__ NonCopyable(NonCopyable&);
+  TEST_FUNC NonCopyable(NonCopyable&);
 };
 
 template <typename T>

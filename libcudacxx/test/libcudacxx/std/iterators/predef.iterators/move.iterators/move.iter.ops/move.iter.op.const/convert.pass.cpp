@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <class It, class U>
-__host__ __device__ void test(U u)
+TEST_FUNC void test(U u)
 {
   const cuda::std::move_iterator<U> r2(u);
   cuda::std::move_iterator<It> r1 = r2;

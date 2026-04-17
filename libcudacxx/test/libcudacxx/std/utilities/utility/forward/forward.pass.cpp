@@ -18,16 +18,16 @@
 struct A
 {};
 
-__host__ __device__ A source() noexcept
+TEST_FUNC A source() noexcept
 {
   return A();
 }
-__host__ __device__ const A csource() noexcept
+TEST_FUNC const A csource() noexcept
 {
   return A();
 }
 
-__host__ __device__ constexpr bool test_constexpr_forward()
+TEST_FUNC constexpr bool test_constexpr_forward()
 {
   int x        = 42;
   const int cx = 101;

@@ -28,7 +28,7 @@
 // Explicit version
 
 template <class LHS, class RHS>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void checkReferenceDeleter(LHS& lhs, RHS& rhs)
+TEST_FUNC TEST_CONSTEXPR_CXX23 void checkReferenceDeleter(LHS& lhs, RHS& rhs)
 {
   using NewDel = typename LHS::deleter_type;
   static_assert(cuda::std::is_reference<NewDel>::value);
@@ -41,14 +41,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void checkReferenceDeleter(LHS& lhs, RH
 }
 
 template <class LHS, class RHS>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void checkDeleter(LHS& lhs, RHS& rhs, int LHSVal, int RHSVal)
+TEST_FUNC TEST_CONSTEXPR_CXX23 void checkDeleter(LHS& lhs, RHS& rhs, int LHSVal, int RHSVal)
 {
   assert(lhs.get_deleter().state() == LHSVal);
   assert(rhs.get_deleter().state() == RHSVal);
 }
 
 template <class LHS, class RHS>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void checkCtor(LHS& lhs, RHS& rhs, A* RHSVal)
+TEST_FUNC TEST_CONSTEXPR_CXX23 void checkCtor(LHS& lhs, RHS& rhs, A* RHSVal)
 {
   assert(lhs.get() == RHSVal);
   assert(rhs.get() == nullptr);
@@ -59,7 +59,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void checkCtor(LHS& lhs, RHS& rhs, A* R
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 void checkNoneAlive()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void checkNoneAlive()
 {
   if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
@@ -76,10 +76,10 @@ struct NCConvertingDeleter
   TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter&&) = default;
 
   template <class U>
-  __host__ __device__ TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
 };
 
 template <class T>
@@ -90,10 +90,10 @@ struct NCConvertingDeleter<T[]>
   TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter&&) = default;
 
   template <class U>
-  __host__ __device__ TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 NCConvertingDeleter(NCConvertingDeleter<U>&&)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(T*) const {}
 };
 
 struct NCGenericDeleter
@@ -102,10 +102,10 @@ struct NCGenericDeleter
   NCGenericDeleter(NCGenericDeleter const&)                 = delete;
   TEST_CONSTEXPR_CXX23 NCGenericDeleter(NCGenericDeleter&&) = default;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
   using DA  = NCConvertingDeleter<A>; // non-copyable deleters
   using DB  = NCConvertingDeleter<B>;
@@ -149,7 +149,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_noexcept()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_noexcept()
 {
   {
     using APtr = cuda::std::unique_ptr<A>;
@@ -173,7 +173,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_noexcept()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     test_sfinae();

@@ -30,7 +30,7 @@ struct MyArray
 };
 
 template <class T, cuda::std::size_t Size>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using CArrayT  = T[Size == 0 ? 1 : Size];
   using ArrayT   = cuda::std::array<T, Size>;
@@ -41,7 +41,7 @@ __host__ __device__ void test()
 }
 
 template <class T>
-__host__ __device__ void test_type()
+TEST_FUNC void test_type()
 {
   test<T, 1>();
   test<T, 42>();

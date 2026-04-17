@@ -33,7 +33,7 @@ struct custom_char_traits : cuda::std::char_traits<CharT>
 {};
 
 template <class CharT>
-__host__ __device__ void test_str_formatter(
+TEST_FUNC void test_str_formatter(
   cuda::std::basic_string_view<CharT> fmt,
   cuda::std::basic_string_view<CharT> value,
   cuda::std::size_t offset,
@@ -97,7 +97,7 @@ __host__ __device__ void test_str_formatter(
 }
 
 template <class CharT>
-__host__ __device__ void test_termination_condition(
+TEST_FUNC void test_termination_condition(
   cuda::std::basic_string_view<CharT> fmt,
   cuda::std::basic_string_view<CharT> value,
   cuda::std::basic_string_view<CharT> expected)
@@ -114,7 +114,7 @@ __host__ __device__ void test_termination_condition(
 }
 
 template <class CharT>
-__host__ __device__ void test_type()
+TEST_FUNC void test_type()
 {
   test_termination_condition<CharT>(
     TEST_STRLIT(CharT, "}"), TEST_STRLIT(CharT, " azAZ09,./<>?"), TEST_STRLIT(CharT, " azAZ09,./<>?"));
@@ -140,7 +140,7 @@ __host__ __device__ void test_type()
   test_termination_condition<CharT>(TEST_STRLIT(CharT, "}"), with_zero, with_zero);
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   test_type<char>();
 #if _CCCL_HAS_WCHAR_T()

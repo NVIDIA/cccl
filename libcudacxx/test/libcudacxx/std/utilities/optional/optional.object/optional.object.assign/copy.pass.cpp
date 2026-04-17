@@ -56,7 +56,7 @@ void test_exceptions()
 #endif // TEST_HAS_EXCEPTIONS()
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   cuda::std::remove_reference_t<T> val{42};
   cuda::std::remove_reference_t<T> other_val{1337};
@@ -106,7 +106,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
 #ifdef CCCL_ENABLE_OPTIONAL_REF

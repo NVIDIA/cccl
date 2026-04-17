@@ -25,7 +25,7 @@ struct NonTDtor
 {
   STATIC_MEMBER_VAR(count, int)
   NonTDtor() = default;
-  __host__ __device__ ~NonTDtor()
+  TEST_FUNC ~NonTDtor()
   {
     ++count();
   }
@@ -36,7 +36,7 @@ struct NonTDtor1
 {
   STATIC_MEMBER_VAR(count, int)
   NonTDtor1() = default;
-  __host__ __device__ ~NonTDtor1()
+  TEST_FUNC ~NonTDtor1()
   {
     ++count();
   }
@@ -45,7 +45,7 @@ static_assert(!cuda::std::is_trivially_destructible<NonTDtor1>::value);
 
 struct TDtor
 {
-  __host__ __device__ TDtor(const TDtor&) {} // non-trivial copy
+  TEST_FUNC TDtor(const TDtor&) {} // non-trivial copy
   ~TDtor() = default;
 };
 static_assert(!cuda::std::is_trivially_copy_constructible<TDtor>::value);

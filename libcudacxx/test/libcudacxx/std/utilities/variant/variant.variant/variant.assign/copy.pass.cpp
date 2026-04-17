@@ -48,7 +48,7 @@ struct MoveOnly
 struct MoveOnlyNT
 {
   MoveOnlyNT(const MoveOnlyNT&) = delete;
-  __host__ __device__ MoveOnlyNT(MoveOnlyNT&&) {}
+  TEST_FUNC MoveOnlyNT(MoveOnlyNT&&) {}
   MoveOnlyNT& operator=(const MoveOnlyNT&) = default;
 };
 
@@ -59,42 +59,42 @@ struct CopyAssign
   STATIC_MEMBER_VAR(copy_assign, int)
   STATIC_MEMBER_VAR(move_construct, int)
   STATIC_MEMBER_VAR(move_assign, int)
-  __host__ __device__ static void reset()
+  TEST_FUNC static void reset()
   {
     copy_construct() = copy_assign() = move_construct() = move_assign() = alive() = 0;
   }
-  __host__ __device__ CopyAssign(int v)
+  TEST_FUNC CopyAssign(int v)
       : value(v)
   {
     ++alive();
   }
-  __host__ __device__ CopyAssign(const CopyAssign& o)
+  TEST_FUNC CopyAssign(const CopyAssign& o)
       : value(o.value)
   {
     ++alive();
     ++copy_construct();
   }
-  __host__ __device__ CopyAssign(CopyAssign&& o) noexcept
+  TEST_FUNC CopyAssign(CopyAssign&& o) noexcept
       : value(o.value)
   {
     o.value = -1;
     ++alive();
     ++move_construct();
   }
-  __host__ __device__ CopyAssign& operator=(const CopyAssign& o)
+  TEST_FUNC CopyAssign& operator=(const CopyAssign& o)
   {
     value = o.value;
     ++copy_assign();
     return *this;
   }
-  __host__ __device__ CopyAssign& operator=(CopyAssign&& o) noexcept
+  TEST_FUNC CopyAssign& operator=(CopyAssign&& o) noexcept
   {
     value   = o.value;
     o.value = -1;
     ++move_assign();
     return *this;
   }
-  __host__ __device__ ~CopyAssign()
+  TEST_FUNC ~CopyAssign()
   {
     --alive();
   }
@@ -103,23 +103,23 @@ struct CopyAssign
 
 struct CopyMaybeThrows
 {
-  __host__ __device__ CopyMaybeThrows(const CopyMaybeThrows&);
-  __host__ __device__ CopyMaybeThrows& operator=(const CopyMaybeThrows&);
+  TEST_FUNC CopyMaybeThrows(const CopyMaybeThrows&);
+  TEST_FUNC CopyMaybeThrows& operator=(const CopyMaybeThrows&);
 };
 struct CopyDoesThrow
 {
-  __host__ __device__ CopyDoesThrow(const CopyDoesThrow&) noexcept(false);
-  __host__ __device__ CopyDoesThrow& operator=(const CopyDoesThrow&) noexcept(false);
+  TEST_FUNC CopyDoesThrow(const CopyDoesThrow&) noexcept(false);
+  TEST_FUNC CopyDoesThrow& operator=(const CopyDoesThrow&) noexcept(false);
 };
 
 struct NTCopyAssign
 {
-  __host__ __device__ constexpr NTCopyAssign(int v)
+  TEST_FUNC constexpr NTCopyAssign(int v)
       : value(v)
   {}
   NTCopyAssign(const NTCopyAssign&) = default;
   NTCopyAssign(NTCopyAssign&&)      = default;
-  __host__ __device__ NTCopyAssign& operator=(const NTCopyAssign& that)
+  TEST_FUNC NTCopyAssign& operator=(const NTCopyAssign& that)
   {
     value = that.value;
     return *this;
@@ -133,7 +133,7 @@ static_assert(cuda::std::is_copy_assignable<NTCopyAssign>::value);
 
 struct TCopyAssign
 {
-  __host__ __device__ constexpr TCopyAssign(int v)
+  TEST_FUNC constexpr TCopyAssign(int v)
       : value(v)
   {}
   TCopyAssign(const TCopyAssign&)            = default;
@@ -147,13 +147,13 @@ static_assert(cuda::std::is_trivially_copy_assignable<TCopyAssign>::value);
 
 struct TCopyAssignNTMoveAssign
 {
-  __host__ __device__ constexpr TCopyAssignNTMoveAssign(int v)
+  TEST_FUNC constexpr TCopyAssignNTMoveAssign(int v)
       : value(v)
   {}
   TCopyAssignNTMoveAssign(const TCopyAssignNTMoveAssign&)            = default;
   TCopyAssignNTMoveAssign(TCopyAssignNTMoveAssign&&)                 = default;
   TCopyAssignNTMoveAssign& operator=(const TCopyAssignNTMoveAssign&) = default;
-  __host__ __device__ TCopyAssignNTMoveAssign& operator=(TCopyAssignNTMoveAssign&& that)
+  TEST_FUNC TCopyAssignNTMoveAssign& operator=(TCopyAssignNTMoveAssign&& that)
   {
     value      = that.value;
     that.value = -1;
@@ -283,7 +283,7 @@ void makeEmpty(Variant& v)
 }
 #endif // TEST_HAS_EXCEPTIONS()
 
-__host__ __device__ void test_copy_assignment_not_noexcept()
+TEST_FUNC void test_copy_assignment_not_noexcept()
 {
   {
     using V = cuda::std::variant<CopyMaybeThrows>;
@@ -295,7 +295,7 @@ __host__ __device__ void test_copy_assignment_not_noexcept()
   }
 }
 
-__host__ __device__ void test_copy_assignment_sfinae()
+TEST_FUNC void test_copy_assignment_sfinae()
 {
   {
     using V = cuda::std::variant<int, long>;
@@ -421,7 +421,7 @@ struct Result
   T value;
 };
 
-__host__ __device__ void test_copy_assignment_same_index()
+TEST_FUNC void test_copy_assignment_same_index()
 {
   {
     using V = cuda::std::variant<int>;
@@ -486,7 +486,7 @@ __host__ __device__ void test_copy_assignment_same_index()
   {
     struct
     {
-      __host__ __device__ constexpr Result<int> operator()() const
+      TEST_FUNC constexpr Result<int> operator()() const
       {
         using V = cuda::std::variant<int>;
         V v(43);
@@ -502,7 +502,7 @@ __host__ __device__ void test_copy_assignment_same_index()
   {
     struct
     {
-      __host__ __device__ constexpr Result<long> operator()() const
+      TEST_FUNC constexpr Result<long> operator()() const
       {
         using V = cuda::std::variant<int, long, unsigned>;
         V v(43l);
@@ -518,7 +518,7 @@ __host__ __device__ void test_copy_assignment_same_index()
   {
     struct
     {
-      __host__ __device__ constexpr Result<int> operator()() const
+      TEST_FUNC constexpr Result<int> operator()() const
       {
         using V = cuda::std::variant<int, TCopyAssign, unsigned>;
         V v(cuda::std::in_place_type<TCopyAssign>, 43);
@@ -534,7 +534,7 @@ __host__ __device__ void test_copy_assignment_same_index()
   {
     struct
     {
-      __host__ __device__ constexpr Result<int> operator()() const
+      TEST_FUNC constexpr Result<int> operator()() const
       {
         using V = cuda::std::variant<int, TCopyAssignNTMoveAssign, unsigned>;
         V v(cuda::std::in_place_type<TCopyAssignNTMoveAssign>, 43);
@@ -549,7 +549,7 @@ __host__ __device__ void test_copy_assignment_same_index()
   }
 }
 
-__host__ __device__ void test_copy_assignment_different_index()
+TEST_FUNC void test_copy_assignment_different_index()
 {
   {
     using V = cuda::std::variant<int, long, unsigned>;
@@ -654,7 +654,7 @@ __host__ __device__ void test_copy_assignment_different_index()
   {
     struct
     {
-      __host__ __device__ constexpr Result<long> operator()() const
+      TEST_FUNC constexpr Result<long> operator()() const
       {
         using V = cuda::std::variant<int, long, unsigned>;
         V v(43);
@@ -670,7 +670,7 @@ __host__ __device__ void test_copy_assignment_different_index()
   {
     struct
     {
-      __host__ __device__ constexpr Result<int> operator()() const
+      TEST_FUNC constexpr Result<int> operator()() const
       {
         using V = cuda::std::variant<int, TCopyAssign, unsigned>;
         V v(cuda::std::in_place_type<unsigned>, 43u);
@@ -686,15 +686,14 @@ __host__ __device__ void test_copy_assignment_different_index()
 }
 
 template <size_t NewIdx, class ValueType>
-__host__ __device__ constexpr bool
-test_constexpr_assign_imp(cuda::std::variant<long, void*, int>&& v, ValueType&& new_value)
+TEST_FUNC constexpr bool test_constexpr_assign_imp(cuda::std::variant<long, void*, int>&& v, ValueType&& new_value)
 {
   const cuda::std::variant<long, void*, int> cp(cuda::std::forward<ValueType>(new_value));
   v = cp;
   return v.index() == NewIdx && cuda::std::get<NewIdx>(v) == cuda::std::get<NewIdx>(cp);
 }
 
-__host__ __device__ void test_constexpr_copy_assignment()
+TEST_FUNC void test_constexpr_copy_assignment()
 {
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   using V = cuda::std::variant<long, void*, int>;

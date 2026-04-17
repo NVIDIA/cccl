@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test_constexpr()
+TEST_FUNC constexpr void test_constexpr()
 {
   constexpr cuda::std::complex<T> c1;
   static_assert(c1.real() == 0);
@@ -32,7 +32,7 @@ __host__ __device__ constexpr void test_constexpr()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_nonconstexpr()
+TEST_FUNC constexpr void test_nonconstexpr()
 {
   cuda::std::complex<T> c;
   assert(c.real() == T(0));
@@ -52,7 +52,7 @@ __host__ __device__ constexpr void test_nonconstexpr()
 }
 
 template <class T>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_nonconstexpr<T>();
   test_constexpr<T>();
@@ -61,7 +61,7 @@ __host__ __device__ constexpr bool test()
 }
 
 template <class T>
-__host__ __device__ void test_volatile()
+TEST_FUNC void test_volatile()
 {
   volatile cuda::std::complex<T> cv;
   assert(cv.real() == T(0));

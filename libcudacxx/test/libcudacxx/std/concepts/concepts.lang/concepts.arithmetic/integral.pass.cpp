@@ -19,7 +19,7 @@
 using cuda::std::integral;
 
 template <typename T>
-__host__ __device__ constexpr bool CheckIntegralQualifiers()
+TEST_FUNC constexpr bool CheckIntegralQualifiers()
 {
   constexpr bool result = integral<T>;
   static_assert(integral<const T> == result);

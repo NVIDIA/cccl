@@ -32,19 +32,19 @@ struct not_input_iterator
   using difference_type  = cuda::std::ptrdiff_t;
   using iterator_concept = cuda::std::forward_iterator_tag;
 
-  __host__ __device__ int operator*() const;
+  TEST_FUNC int operator*() const;
 
-  __host__ __device__ not_input_iterator& operator++();
-  __host__ __device__ not_input_iterator operator++(int);
+  TEST_FUNC not_input_iterator& operator++();
+  TEST_FUNC not_input_iterator operator++(int);
 
 #if TEST_STD_VER > 2017
   bool operator==(not_input_iterator const&) const = default;
 #else
-  __host__ __device__ bool operator==(const not_input_iterator&) const
+  TEST_FUNC bool operator==(const not_input_iterator&) const
   {
     return true;
   };
-  __host__ __device__ bool operator!=(const not_input_iterator&) const
+  TEST_FUNC bool operator!=(const not_input_iterator&) const
   {
     return false;
   };
@@ -60,19 +60,19 @@ struct bad_iterator_tag
   using difference_type  = cuda::std::ptrdiff_t;
   using iterator_concept = cuda::std::input_iterator_tag;
 
-  __host__ __device__ int operator*() const;
+  TEST_FUNC int operator*() const;
 
-  __host__ __device__ bad_iterator_tag& operator++();
-  __host__ __device__ bad_iterator_tag operator++(int);
+  TEST_FUNC bad_iterator_tag& operator++();
+  TEST_FUNC bad_iterator_tag operator++(int);
 
 #if TEST_STD_VER > 2017
   bool operator==(bad_iterator_tag const&) const = default;
 #else
-  __host__ __device__ bool operator==(const bad_iterator_tag&) const
+  TEST_FUNC bool operator==(const bad_iterator_tag&) const
   {
     return true;
   };
-  __host__ __device__ bool operator!=(const bad_iterator_tag&) const
+  TEST_FUNC bool operator!=(const bad_iterator_tag&) const
   {
     return false;
   };
@@ -86,19 +86,19 @@ struct not_incrementable
   using difference_type  = cuda::std::ptrdiff_t;
   using iterator_concept = cuda::std::forward_iterator_tag;
 
-  __host__ __device__ int operator*() const;
+  TEST_FUNC int operator*() const;
 
-  __host__ __device__ not_incrementable& operator++();
-  __host__ __device__ void operator++(int);
+  TEST_FUNC not_incrementable& operator++();
+  TEST_FUNC void operator++(int);
 
 #if TEST_STD_VER > 2017
   bool operator==(not_incrementable const&) const = default;
 #else
-  __host__ __device__ bool operator==(const not_incrementable&) const
+  TEST_FUNC bool operator==(const not_incrementable&) const
   {
     return true;
   };
-  __host__ __device__ bool operator!=(const not_incrementable&) const
+  TEST_FUNC bool operator!=(const not_incrementable&) const
   {
     return false;
   };
@@ -112,12 +112,12 @@ struct not_equality_comparable
   using difference_type  = cuda::std::ptrdiff_t;
   using iterator_concept = cuda::std::forward_iterator_tag;
 
-  __host__ __device__ int operator*() const;
+  TEST_FUNC int operator*() const;
 
-  __host__ __device__ not_equality_comparable& operator++();
-  __host__ __device__ not_equality_comparable operator++(int);
+  TEST_FUNC not_equality_comparable& operator++();
+  TEST_FUNC not_equality_comparable operator++(int);
 
-  __host__ __device__ bool operator==(not_equality_comparable const&) const = delete;
+  TEST_FUNC bool operator==(not_equality_comparable const&) const = delete;
 };
 static_assert(!cuda::std::forward_iterator<not_equality_comparable>);
 

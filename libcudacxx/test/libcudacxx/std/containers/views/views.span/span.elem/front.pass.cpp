@@ -20,21 +20,21 @@
 #include "test_macros.h"
 
 template <typename Span>
-__host__ __device__ constexpr bool testConstexprSpan(Span sp)
+TEST_FUNC constexpr bool testConstexprSpan(Span sp)
 {
   static_assert(noexcept(sp.front()));
   return &sp.front() == sp.data();
 }
 
 template <typename Span>
-__host__ __device__ void testRuntimeSpan(Span sp)
+TEST_FUNC void testRuntimeSpan(Span sp)
 {
   static_assert(noexcept(sp.front()));
   assert(&sp.front() == sp.data());
 }
 
 template <typename Span>
-__host__ __device__ void testEmptySpan(Span sp)
+TEST_FUNC void testEmptySpan(Span sp)
 {
   if (!sp.empty())
   {

@@ -72,9 +72,9 @@ private:
     char __;
   };
   template <class U>
-  __host__ __device__ static two test(...);
+  TEST_FUNC static two test(...);
   template <class U>
-  __host__ __device__ static char test(typename U::result_type* = 0);
+  TEST_FUNC static char test(typename U::result_type* = 0);
 
 public:
   static const bool value = sizeof(test<T>(0)) == 1;

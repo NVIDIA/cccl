@@ -24,7 +24,7 @@
 using cuda::std::nullopt;
 using cuda::std::nullopt_t;
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   nullopt_t foo{nullopt};
   unused(foo);

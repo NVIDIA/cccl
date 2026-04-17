@@ -19,13 +19,13 @@
 #include "test_macros.h"
 
 template <class It>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   cuda::std::reverse_iterator<It> r;
   unused(r);
 }
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   test<bidirectional_iterator<const char*>>();
   test<random_access_iterator<char*>>();

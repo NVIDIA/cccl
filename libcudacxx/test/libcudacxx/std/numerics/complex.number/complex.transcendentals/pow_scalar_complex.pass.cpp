@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <class T, class U = T>
-__host__ __device__ void test(const U& a, const cuda::std::complex<T>& b, cuda::std::complex<T> x)
+TEST_FUNC void test(const U& a, const cuda::std::complex<T>& b, cuda::std::complex<T> x)
 {
   static_assert(cuda::std::is_same<decltype(pow(a, b)), cuda::std::complex<T>>::value);
   cuda::std::complex<T> c = pow(a, b);
@@ -29,13 +29,13 @@ __host__ __device__ void test(const U& a, const cuda::std::complex<T>& b, cuda::
 }
 
 template <class T, class U = T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test(U(2), cuda::std::complex<T>(2), cuda::std::complex<T>(4));
 }
 
 template <class T>
-__host__ __device__ void test_edges()
+TEST_FUNC void test_edges()
 {
   auto testcases   = get_testcases<T>();
   const unsigned N = sizeof(testcases) / sizeof(testcases[0]);

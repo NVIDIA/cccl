@@ -11,8 +11,10 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class Level>
-__device__ void test_query_signatures(const Level& level)
+TEST_DEVICE_FUNC void test_query_signatures(const Level& level)
 {
   // 1. Test cuda::cluster_level::dims(x) signature.
   static_assert(
@@ -47,7 +49,7 @@ __device__ void test_query_signatures(const Level& level)
 }
 
 template <class T, class Level>
-__device__ void test_query_as_signatures(const Level& level)
+TEST_DEVICE_FUNC void test_query_as_signatures(const Level& level)
 {
   // 1. Test cuda::cluster_level::dims(x) signature.
   static_assert(
@@ -73,7 +75,7 @@ __device__ void test_query_as_signatures(const Level& level)
 }
 
 template <class InLevel>
-__device__ void test(const InLevel& in_level)
+TEST_DEVICE_FUNC void test(const InLevel& in_level)
 {
   test_query_signatures(in_level);
   test_query_as_signatures<short>(in_level);
@@ -84,7 +86,7 @@ __device__ void test(const InLevel& in_level)
   test_query_as_signatures<unsigned long long>(in_level);
 }
 
-__device__ void test()
+TEST_DEVICE_FUNC void test()
 {
   test(cuda::grid);
 }

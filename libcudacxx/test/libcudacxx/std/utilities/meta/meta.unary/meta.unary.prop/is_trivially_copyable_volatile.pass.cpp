@@ -28,7 +28,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_trivially_copyable_volatile()
+TEST_FUNC void test_is_trivially_copyable_volatile()
 {
   static_assert(cuda::std::is_trivially_copyable<volatile T>::value);
   static_assert(cuda::std::is_trivially_copyable<const volatile T>::value);
@@ -37,7 +37,7 @@ __host__ __device__ void test_is_trivially_copyable_volatile()
 }
 
 template <class T>
-__host__ __device__ void test_is_not_trivially_copyable_volatile()
+TEST_FUNC void test_is_not_trivially_copyable_volatile()
 {
   static_assert(!cuda::std::is_trivially_copyable<volatile T>::value);
   static_assert(!cuda::std::is_trivially_copyable<const volatile T>::value);
@@ -53,7 +53,7 @@ struct A
 struct B
 {
   int i_;
-  __host__ __device__ ~B()
+  TEST_FUNC ~B()
   {
     assert(i_ == 0);
   }
@@ -62,7 +62,7 @@ struct B
 class C
 {
 public:
-  __host__ __device__ C();
+  TEST_FUNC C();
 };
 
 int main(int, char**)

@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <class Tuple, int Expect>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::tuple_size_v<Tuple> == Expect);
   static_assert(cuda::std::tuple_size_v<Tuple> == cuda::std::tuple_size<Tuple>::value);

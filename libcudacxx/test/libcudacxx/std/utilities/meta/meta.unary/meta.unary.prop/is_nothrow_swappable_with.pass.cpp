@@ -34,18 +34,18 @@ struct C
 struct D
 {};
 
-__host__ __device__ void swap(A&, A&) {}
+TEST_FUNC void swap(A&, A&) {}
 
-__host__ __device__ void swap(A&, B&) noexcept {}
-__host__ __device__ void swap(B&, A&) noexcept {}
+TEST_FUNC void swap(A&, B&) noexcept {}
+TEST_FUNC void swap(B&, A&) noexcept {}
 
-__host__ __device__ void swap(A&, C&) noexcept {}
-__host__ __device__ void swap(C&, A&) {}
+TEST_FUNC void swap(A&, C&) noexcept {}
+TEST_FUNC void swap(C&, A&) {}
 
 struct M
 {};
 
-__host__ __device__ void swap(M&&, M&&) noexcept {}
+TEST_FUNC void swap(M&&, M&&) noexcept {}
 } // namespace MyNS
 
 int main(int, char**)

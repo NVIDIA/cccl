@@ -15,12 +15,13 @@
 #include <cuda/std/ranges>
 
 #include "test_iterators.h"
+#include "test_macros.h"
 #include "test_range.h"
 
 namespace ranges = cuda::std::ranges;
 
 template <template <class...> class I>
-__host__ __device__ constexpr bool check_range()
+TEST_FUNC constexpr bool check_range()
 {
   constexpr bool result = ranges::random_access_range<test_range<I>>;
   static_assert(ranges::random_access_range<test_range<I> const> == result);

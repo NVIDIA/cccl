@@ -16,28 +16,28 @@
 class BooleanTestable
 {
 public:
-  __host__ __device__ constexpr operator bool() const
+  TEST_FUNC constexpr operator bool() const
   {
     return value_;
   }
 
-  __host__ __device__ friend constexpr BooleanTestable operator==(const BooleanTestable& lhs, const BooleanTestable& rhs)
+  TEST_FUNC friend constexpr BooleanTestable operator==(const BooleanTestable& lhs, const BooleanTestable& rhs)
   {
     return lhs.value_ == rhs.value_;
   }
 
-  __host__ __device__ friend constexpr BooleanTestable operator!=(const BooleanTestable& lhs, const BooleanTestable& rhs)
+  TEST_FUNC friend constexpr BooleanTestable operator!=(const BooleanTestable& lhs, const BooleanTestable& rhs)
   {
     return !(lhs == rhs);
   }
 
-  __host__ __device__ constexpr BooleanTestable operator!()
+  TEST_FUNC constexpr BooleanTestable operator!()
   {
     return BooleanTestable{!value_};
   }
 
   // this class should behave like a bool, so the constructor shouldn't be explicit
-  __host__ __device__ constexpr BooleanTestable(bool value)
+  TEST_FUNC constexpr BooleanTestable(bool value)
       : value_{value}
   {}
   constexpr BooleanTestable(const BooleanTestable&) = delete;
@@ -52,18 +52,16 @@ class StrictComparable
 {
 public:
   // this shouldn't be explicit to make it easier to initlaize inside arrays (which it almost always is)
-  __host__ __device__ constexpr StrictComparable(T value)
+  TEST_FUNC constexpr StrictComparable(T value)
       : value_{value}
   {}
 
-  __host__ __device__ friend constexpr BooleanTestable
-  operator==(const StrictComparable& lhs, const StrictComparable& rhs)
+  TEST_FUNC friend constexpr BooleanTestable operator==(const StrictComparable& lhs, const StrictComparable& rhs)
   {
     return (lhs.value_ == rhs.value_);
   }
 
-  __host__ __device__ friend constexpr BooleanTestable
-  operator!=(const StrictComparable& lhs, const StrictComparable& rhs)
+  TEST_FUNC friend constexpr BooleanTestable operator!=(const StrictComparable& lhs, const StrictComparable& rhs)
   {
     return !(lhs == rhs);
   }

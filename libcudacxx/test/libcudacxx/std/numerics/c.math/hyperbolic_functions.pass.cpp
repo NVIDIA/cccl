@@ -22,7 +22,7 @@ TEST_DIAG_SUPPRESS_MSVC(4305) // 'argument': truncation from 'T' to 'float'
 TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
 
 template <typename T>
-__host__ __device__ void test_cosh(T val)
+TEST_FUNC void test_cosh(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::cosh(T{})), ret>);
@@ -69,7 +69,7 @@ __host__ __device__ void test_cosh(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_sinh(T val)
+TEST_FUNC void test_sinh(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::sinh(T{})), ret>);
@@ -116,7 +116,7 @@ __host__ __device__ void test_sinh(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_tanh(T val)
+TEST_FUNC void test_tanh(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::tanh(T{})), ret>);
@@ -173,14 +173,14 @@ __host__ __device__ void test_tanh(T val)
 }
 
 template <typename T>
-__host__ __device__ void test(const T val)
+TEST_FUNC void test(const T val)
 {
   test_cosh<T>(val);
   test_sinh<T>(val);
   test_tanh<T>(val);
 }
 
-__host__ __device__ void test(const float val)
+TEST_FUNC void test(const float val)
 {
   test<float>(val);
   test<double>(val);

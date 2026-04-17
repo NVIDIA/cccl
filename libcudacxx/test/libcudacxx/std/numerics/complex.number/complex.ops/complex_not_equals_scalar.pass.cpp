@@ -22,7 +22,7 @@ TEST_DIAG_SUPPRESS_CLANG("-Wliteral-conversion")
 TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possible loss of data
 
 template <class T>
-__host__ __device__ constexpr void test_constexpr()
+TEST_FUNC constexpr void test_constexpr()
 {
   {
     constexpr cuda::std::complex<T> lhs(1.5, 2.5);
@@ -47,7 +47,7 @@ __host__ __device__ constexpr void test_constexpr()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_nonconstexpr()
+TEST_FUNC constexpr void test_nonconstexpr()
 {
   {
     cuda::std::complex<T> lhs(1.5, 2.5);
@@ -72,7 +72,7 @@ __host__ __device__ constexpr void test_nonconstexpr()
 }
 
 template <class T>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_nonconstexpr<T>();
   test_constexpr<T>();

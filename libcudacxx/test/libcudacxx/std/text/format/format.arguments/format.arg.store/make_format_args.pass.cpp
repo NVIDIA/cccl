@@ -18,6 +18,8 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include "test_macros.h"
+
 template <class Arg, class = void>
 inline constexpr bool can_make_format_args = false;
 template <class Arg>
@@ -28,7 +30,7 @@ static_assert(can_make_format_args<int&>);
 static_assert(!can_make_format_args<int>);
 static_assert(!can_make_format_args<int&&>);
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   auto i = 1;
   auto c = 'c';

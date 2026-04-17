@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_log(T value)
+TEST_FUNC void test_log(T value)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::log(value)), ret>);
@@ -24,7 +24,7 @@ __host__ __device__ void test_log(T value)
 }
 
 template <class T>
-__host__ __device__ void test_log10(T value)
+TEST_FUNC void test_log10(T value)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::log10(value)), ret>);
@@ -32,14 +32,14 @@ __host__ __device__ void test_log10(T value)
 }
 
 template <class T>
-__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_ilogb(T value)
+TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test_ilogb(T value)
 {
   static_assert(cuda::std::is_same_v<decltype(cuda::std::ilogb(value)), int>);
   assert(cuda::std::ilogb(value) == 0);
 }
 
 template <class T>
-__host__ __device__ void test_log1p(T value)
+TEST_FUNC void test_log1p(T value)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::log1p(value)), ret>);
@@ -47,7 +47,7 @@ __host__ __device__ void test_log1p(T value)
 }
 
 template <class T>
-__host__ __device__ void test_log2(T value)
+TEST_FUNC void test_log2(T value)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::log2(value)), ret>);
@@ -55,7 +55,7 @@ __host__ __device__ void test_log2(T value)
 }
 
 template <class T>
-__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_logb(T value)
+TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test_logb(T value)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::logb(value)), ret>);
@@ -63,7 +63,7 @@ __host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_logb(T value)
 }
 
 template <class T>
-__host__ __device__ void test(T value)
+TEST_FUNC void test(T value)
 {
   test_log<T>(value);
   test_log10<T>(value);
@@ -73,7 +73,7 @@ __host__ __device__ void test(T value)
   test_logb<T>(value);
 }
 
-__host__ __device__ void test(float value)
+TEST_FUNC void test(float value)
 {
   test<float>(value);
   test<double>(value);
@@ -102,7 +102,7 @@ __global__ void test_global_kernel(float* value)
 }
 
 template <class T>
-__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_constexpr()
+TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test_constexpr()
 {
   if constexpr (cuda::std::is_integral_v<T>)
   {
@@ -116,7 +116,7 @@ __host__ __device__ _CCCL_CONSTEXPR_BIT_CAST void test_constexpr()
   }
 }
 
-__host__ __device__ _CCCL_CONSTEXPR_BIT_CAST bool test_constexpr()
+TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST bool test_constexpr()
 {
   test_constexpr<float>();
   test_constexpr<double>();

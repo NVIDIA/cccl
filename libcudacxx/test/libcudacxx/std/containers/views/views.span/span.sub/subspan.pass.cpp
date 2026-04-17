@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <typename Span, size_t Offset, size_t Count>
-__host__ __device__ constexpr bool testConstexprSpan(Span sp)
+TEST_FUNC constexpr bool testConstexprSpan(Span sp)
 {
   static_assert(noexcept(sp.template subspan<Offset, Count>()));
   static_assert(noexcept(sp.subspan(Offset, Count)));
@@ -40,7 +40,7 @@ __host__ __device__ constexpr bool testConstexprSpan(Span sp)
 }
 
 template <typename Span, size_t Offset>
-__host__ __device__ constexpr bool testConstexprSpan(Span sp)
+TEST_FUNC constexpr bool testConstexprSpan(Span sp)
 {
   static_assert(noexcept(sp.template subspan<Offset>()));
   static_assert(noexcept(sp.subspan(Offset)));
@@ -57,7 +57,7 @@ __host__ __device__ constexpr bool testConstexprSpan(Span sp)
 }
 
 template <typename Span, size_t Offset, size_t Count>
-__host__ __device__ void testRuntimeSpan(Span sp)
+TEST_FUNC void testRuntimeSpan(Span sp)
 {
   static_assert(noexcept(sp.template subspan<Offset, Count>()));
   static_assert(noexcept(sp.subspan(Offset, Count)));
@@ -74,7 +74,7 @@ __host__ __device__ void testRuntimeSpan(Span sp)
 }
 
 template <typename Span, size_t Offset>
-__host__ __device__ void testRuntimeSpan(Span sp)
+TEST_FUNC void testRuntimeSpan(Span sp)
 {
   static_assert(noexcept(sp.template subspan<Offset>()));
   static_assert(noexcept(sp.subspan(Offset)));
@@ -92,7 +92,7 @@ __host__ __device__ void testRuntimeSpan(Span sp)
 }
 
 TEST_GLOBAL_VARIABLE constexpr int carr1[] = {1, 2, 3, 4};
-__device__ int arr1[]                      = {5, 6, 7};
+TEST_GLOBAL_VARIABLE int arr1[]            = {5, 6, 7};
 
 int main(int, char**)
 {

@@ -26,16 +26,16 @@ struct B
 {
   int id_;
 
-  __host__ __device__ explicit B(int i)
+  TEST_FUNC explicit B(int i)
       : id_(i)
   {}
 
-  __host__ __device__ virtual ~B() {}
+  TEST_FUNC virtual ~B() {}
 };
 
 struct D : B
 {
-  __host__ __device__ explicit D(int i)
+  TEST_FUNC explicit D(int i)
       : B(i)
   {}
 };
@@ -43,7 +43,7 @@ struct D : B
 struct Explicit
 {
   int value;
-  __host__ __device__ explicit Explicit(int x)
+  TEST_FUNC explicit Explicit(int x)
       : value(x)
   {}
 };
@@ -51,7 +51,7 @@ struct Explicit
 struct Implicit
 {
   int value;
-  __host__ __device__ Implicit(int x)
+  TEST_FUNC Implicit(int x)
       : value(x)
   {}
 };

@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test_log2()
+TEST_FUNC constexpr void test_log2()
 {
   int i = 0;
   for (T value = 1; value <= cuda::std::numeric_limits<T>::max() / 2; value *= 2)
@@ -34,7 +34,7 @@ __host__ __device__ constexpr void test_log2()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_ceil_log2()
+TEST_FUNC constexpr void test_ceil_log2()
 {
   int i = 0;
   for (T value = 1; value <= cuda::std::numeric_limits<T>::max() / 2; value *= 2)
@@ -51,7 +51,7 @@ __host__ __device__ constexpr void test_ceil_log2()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_log10()
+TEST_FUNC constexpr void test_log10()
 {
   int i = 0;
   for (T value = 1; value <= cuda::std::numeric_limits<T>::max() / 10; value *= 10)
@@ -77,14 +77,14 @@ __host__ __device__ constexpr void test_log10()
 }
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   test_log2<T>();
   test_ceil_log2<T>();
   test_log10<T>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // Builtin integer types:
   test<signed char>();

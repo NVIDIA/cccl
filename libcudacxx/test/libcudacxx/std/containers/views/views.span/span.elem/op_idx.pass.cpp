@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <typename Span>
-__host__ __device__ constexpr bool testConstexprSpan(Span sp, size_t idx)
+TEST_FUNC constexpr bool testConstexprSpan(Span sp, size_t idx)
 {
   static_assert(noexcept(sp[idx]));
 
@@ -28,7 +28,7 @@ __host__ __device__ constexpr bool testConstexprSpan(Span sp, size_t idx)
 }
 
 template <typename Span>
-__host__ __device__ void testRuntimeSpan(Span sp, size_t idx)
+TEST_FUNC void testRuntimeSpan(Span sp, size_t idx)
 {
   static_assert(noexcept(sp[idx]));
 

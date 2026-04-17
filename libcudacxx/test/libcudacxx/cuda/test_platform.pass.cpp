@@ -19,7 +19,7 @@
 
 #if TEST_CUDA_COMPILER(NVCC) || TEST_CUDA_COMPILER(CLANG) || TEST_COMPILER(NVRTC)
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   constexpr int arch_val = _CCCL_PTX_ARCH();
 
@@ -107,7 +107,7 @@ __host__ __device__ void test()
 
 #elif TEST_CUDA_COMPILER(NVHPC)
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   int invoke_count = 0;
 

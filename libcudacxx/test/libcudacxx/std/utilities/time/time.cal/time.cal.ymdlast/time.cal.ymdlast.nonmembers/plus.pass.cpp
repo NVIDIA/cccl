@@ -36,7 +36,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool testConstexprYears(cuda::std::chrono::year_month_day_last ymdl)
+TEST_FUNC constexpr bool testConstexprYears(cuda::std::chrono::year_month_day_last ymdl)
 {
   cuda::std::chrono::years offset{23};
   if (static_cast<int>((ymdl).year()) != 1)
@@ -62,7 +62,7 @@ __host__ __device__ constexpr bool testConstexprYears(cuda::std::chrono::year_mo
   return true;
 }
 
-__host__ __device__ constexpr bool testConstexprMonths(cuda::std::chrono::year_month_day_last ymdl)
+TEST_FUNC constexpr bool testConstexprMonths(cuda::std::chrono::year_month_day_last ymdl)
 {
   cuda::std::chrono::months offset{6};
   if (static_cast<unsigned>((ymdl).month()) != 1)

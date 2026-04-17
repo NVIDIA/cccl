@@ -26,7 +26,7 @@
 #include "test_macros.h"
 
 template <class It>
-__host__ __device__ void test(It l, It r, typename cuda::std::iterator_traits<It>::difference_type x)
+TEST_FUNC void test(It l, It r, typename cuda::std::iterator_traits<It>::difference_type x)
 {
   const cuda::std::move_iterator<It> r1(l);
   const cuda::std::move_iterator<It> r2(r);

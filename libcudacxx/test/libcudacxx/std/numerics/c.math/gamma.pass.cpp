@@ -22,7 +22,7 @@ TEST_DIAG_SUPPRESS_MSVC(4305) // 'argument': truncation from 'T' to 'float'
 TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
 
 template <typename T>
-__host__ __device__ void test_lgamma(T val)
+TEST_FUNC void test_lgamma(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::lgamma(T{})), ret>);
@@ -116,7 +116,7 @@ __host__ __device__ void test_lgamma(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_tgamma(T val)
+TEST_FUNC void test_tgamma(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::tgamma(T{})), ret>);
@@ -201,13 +201,13 @@ __host__ __device__ void test_tgamma(T val)
 }
 
 template <typename T>
-__host__ __device__ void test(const T val)
+TEST_FUNC void test(const T val)
 {
   test_lgamma<T>(val);
   test_tgamma<T>(val);
 }
 
-__host__ __device__ void test(const float val)
+TEST_FUNC void test(const float val)
 {
   test<float>(val);
   test<double>(val);

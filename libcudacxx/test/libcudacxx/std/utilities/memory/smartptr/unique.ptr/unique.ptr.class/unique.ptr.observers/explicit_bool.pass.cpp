@@ -20,7 +20,7 @@
 #include "unique_ptr_test_helper.h"
 
 template <class UPtr>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void doTest(UPtr& p, bool ExpectTrue)
+TEST_FUNC TEST_CONSTEXPR_CXX23 void doTest(UPtr& p, bool ExpectTrue)
 {
   if (p)
   {
@@ -42,7 +42,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void doTest(UPtr& p, bool ExpectTrue)
 }
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
 {
   using VT = typename cuda::std::conditional<IsArray, int[], int>::type;
   using U  = cuda::std::unique_ptr<VT>;
@@ -68,7 +68,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   test_basic</*IsArray*/ false>();
   test_basic<true>();

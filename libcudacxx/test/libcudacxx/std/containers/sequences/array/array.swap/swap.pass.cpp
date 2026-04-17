@@ -19,14 +19,14 @@
 
 struct NonSwappable
 {
-  __host__ __device__ constexpr NonSwappable() {}
+  TEST_FUNC constexpr NonSwappable() {}
 
 private:
-  __host__ __device__ NonSwappable(NonSwappable const&);
-  __host__ __device__ NonSwappable& operator=(NonSwappable const&);
+  TEST_FUNC NonSwappable(NonSwappable const&);
+  TEST_FUNC NonSwappable& operator=(NonSwappable const&);
 };
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   {
     using T = double;

@@ -19,7 +19,7 @@
 #include "types.h"
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   [[maybe_unused]] constexpr size_t max_capacity = 42ull;
   using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
@@ -69,7 +69,7 @@ __host__ __device__ constexpr void test()
   assert(static_capacity == max_capacity);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<Trivial>();

@@ -20,7 +20,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int i = cuda::std::min({2, 3, 1}, cuda::std::greater<int>());
   assert(i == 3);

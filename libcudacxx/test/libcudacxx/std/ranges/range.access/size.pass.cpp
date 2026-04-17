@@ -39,7 +39,7 @@ static_assert(cuda::std::ranges::size(static_cast<const Incomplete (&&)[42]>(arr
 
 struct SizeMember
 {
-  __host__ __device__ constexpr size_t size()
+  TEST_FUNC constexpr size_t size()
   {
     return 42;
   }
@@ -47,7 +47,7 @@ struct SizeMember
 
 struct StaticSizeMember
 {
-  __host__ __device__ constexpr static size_t size()
+  TEST_FUNC constexpr static size_t size()
   {
     return 42;
   }
@@ -57,7 +57,7 @@ static_assert(!cuda::std::is_invocable_v<RangeSizeT, const SizeMember>);
 
 struct SizeFunction
 {
-  __host__ __device__ friend constexpr size_t size(SizeFunction)
+  TEST_FUNC friend constexpr size_t size(SizeFunction)
   {
     return 42;
   }
@@ -66,17 +66,17 @@ struct SizeFunction
 // Make sure the size member is preferred.
 struct SizeMemberAndFunction
 {
-  __host__ __device__ constexpr size_t size()
+  TEST_FUNC constexpr size_t size()
   {
     return 42;
   }
-  __host__ __device__ friend constexpr size_t size(SizeMemberAndFunction)
+  TEST_FUNC friend constexpr size_t size(SizeMemberAndFunction)
   {
     return 0;
   }
 };
 
-__host__ __device__ bool constexpr testArrayType()
+TEST_FUNC bool constexpr testArrayType()
 {
   int a[4]          = {};
   int b[1]          = {};
@@ -97,7 +97,7 @@ __host__ __device__ bool constexpr testArrayType()
 
 struct SizeMemberConst
 {
-  __host__ __device__ constexpr size_t size() const
+  TEST_FUNC constexpr size_t size() const
   {
     return 42;
   }
@@ -105,13 +105,13 @@ struct SizeMemberConst
 
 struct SizeMemberSigned
 {
-  __host__ __device__ constexpr long size()
+  TEST_FUNC constexpr long size()
   {
     return 42;
   }
 };
 
-__host__ __device__ bool constexpr testHasSizeMember()
+TEST_FUNC bool constexpr testHasSizeMember()
 {
   assert(cuda::std::ranges::size(SizeMember()) == 42);
   static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::size(SizeMember())), size_t>);
@@ -136,7 +136,7 @@ struct MoveOnlySizeFunction
   MoveOnlySizeFunction(MoveOnlySizeFunction&&)      = default;
   MoveOnlySizeFunction(MoveOnlySizeFunction const&) = delete;
 
-  __host__ __device__ friend constexpr size_t size(MoveOnlySizeFunction)
+  TEST_FUNC friend constexpr size_t size(MoveOnlySizeFunction)
   {
     return 42;
   }
@@ -148,14 +148,14 @@ enum EnumSizeFunction
   b
 };
 
-__host__ __device__ constexpr size_t size(EnumSizeFunction)
+TEST_FUNC constexpr size_t size(EnumSizeFunction)
 {
   return 42;
 }
 
 struct SizeFunctionConst
 {
-  __host__ __device__ friend constexpr size_t size(const SizeFunctionConst)
+  TEST_FUNC friend constexpr size_t size(const SizeFunctionConst)
   {
     return 42;
   }
@@ -163,7 +163,7 @@ struct SizeFunctionConst
 
 struct SizeFunctionRef
 {
-  __host__ __device__ friend constexpr size_t size(SizeFunctionRef&)
+  TEST_FUNC friend constexpr size_t size(SizeFunctionRef&)
   {
     return 42;
   }
@@ -171,7 +171,7 @@ struct SizeFunctionRef
 
 struct SizeFunctionConstRef
 {
-  __host__ __device__ friend constexpr size_t size(SizeFunctionConstRef const&)
+  TEST_FUNC friend constexpr size_t size(SizeFunctionConstRef const&)
   {
     return 42;
   }
@@ -179,13 +179,13 @@ struct SizeFunctionConstRef
 
 struct SizeFunctionSigned
 {
-  __host__ __device__ friend constexpr long size(SizeFunctionSigned)
+  TEST_FUNC friend constexpr long size(SizeFunctionSigned)
   {
     return 42;
   }
 };
 
-__host__ __device__ bool constexpr testHasSizeFunction()
+TEST_FUNC bool constexpr testHasSizeFunction()
 {
   assert(cuda::std::ranges::size(SizeFunction()) == 42);
   static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::size(SizeFunction())), size_t>);
@@ -211,37 +211,37 @@ static_assert(!cuda::std::is_invocable_v<RangeSizeT, Empty>);
 
 struct InvalidReturnTypeMember
 {
-  __host__ __device__ Empty size();
+  TEST_FUNC Empty size();
 };
 
 struct InvalidReturnTypeFunction
 {
-  __host__ __device__ friend Empty size(InvalidReturnTypeFunction);
+  TEST_FUNC friend Empty size(InvalidReturnTypeFunction);
 };
 
 struct Convertible
 {
-  __host__ __device__ operator size_t();
+  TEST_FUNC operator size_t();
 };
 
 struct ConvertibleReturnTypeMember
 {
-  __host__ __device__ Convertible size();
+  TEST_FUNC Convertible size();
 };
 
 struct ConvertibleReturnTypeFunction
 {
-  __host__ __device__ friend Convertible size(ConvertibleReturnTypeFunction);
+  TEST_FUNC friend Convertible size(ConvertibleReturnTypeFunction);
 };
 
 struct BoolReturnTypeMember
 {
-  __host__ __device__ bool size() const;
+  TEST_FUNC bool size() const;
 };
 
 struct BoolReturnTypeFunction
 {
-  __host__ __device__ friend bool size(BoolReturnTypeFunction const&);
+  TEST_FUNC friend bool size(BoolReturnTypeFunction const&);
 };
 
 static_assert(!cuda::std::is_invocable_v<RangeSizeT, InvalidReturnTypeMember>);
@@ -255,7 +255,7 @@ static_assert(!cuda::std::is_invocable_v<RangeSizeT, BoolReturnTypeFunction cons
 
 struct SizeMemberDisabled
 {
-  __host__ __device__ size_t size()
+  TEST_FUNC size_t size()
   {
     return 42;
   }
@@ -269,7 +269,7 @@ inline constexpr bool disable_sized_range<SizeMemberDisabled> = true;
 
 struct ImproperlyDisabledMember
 {
-  __host__ __device__ size_t size() const
+  TEST_FUNC size_t size() const
   {
     return 42;
   }
@@ -286,7 +286,7 @@ inline constexpr bool disable_sized_range<const ImproperlyDisabledMember> = true
 
 struct SizeFunctionDisabled
 {
-  __host__ __device__ friend size_t size(SizeFunctionDisabled)
+  TEST_FUNC friend size_t size(SizeFunctionDisabled)
   {
     return 42;
   }
@@ -300,7 +300,7 @@ inline constexpr bool disable_sized_range<SizeFunctionDisabled> = true;
 
 struct ImproperlyDisabledFunction
 {
-  __host__ __device__ friend size_t size(ImproperlyDisabledFunction const&)
+  TEST_FUNC friend size_t size(ImproperlyDisabledFunction const&)
   {
     return 42;
   }
@@ -320,7 +320,7 @@ static_assert(cuda::std::is_invocable_v<RangeSizeT, const ImproperlyDisabledFunc
 // No begin end.
 struct HasMinusOperator
 {
-  __host__ __device__ friend constexpr size_t operator-(HasMinusOperator, HasMinusOperator)
+  TEST_FUNC friend constexpr size_t operator-(HasMinusOperator, HasMinusOperator)
   {
     return 2;
   }
@@ -331,27 +331,27 @@ struct HasMinusBeginEnd
 {
   struct sentinel
   {
-    __host__ __device__ friend bool operator==(sentinel, forward_iterator<int*>);
+    TEST_FUNC friend bool operator==(sentinel, forward_iterator<int*>);
 #if TEST_STD_VER < 2020
-    __host__ __device__ friend bool operator==(forward_iterator<int*>, sentinel);
-    __host__ __device__ friend bool operator!=(sentinel, forward_iterator<int*>);
-    __host__ __device__ friend bool operator!=(forward_iterator<int*>, sentinel);
+    TEST_FUNC friend bool operator==(forward_iterator<int*>, sentinel);
+    TEST_FUNC friend bool operator!=(sentinel, forward_iterator<int*>);
+    TEST_FUNC friend bool operator!=(forward_iterator<int*>, sentinel);
 #endif
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(const sentinel, const forward_iterator<int*>)
+    TEST_FUNC friend constexpr cuda::std::ptrdiff_t operator-(const sentinel, const forward_iterator<int*>)
     {
       return 2;
     }
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(const forward_iterator<int*>, const sentinel)
+    TEST_FUNC friend constexpr cuda::std::ptrdiff_t operator-(const forward_iterator<int*>, const sentinel)
     {
       return 2;
     }
   };
 
-  __host__ __device__ friend constexpr forward_iterator<int*> begin(HasMinusBeginEnd)
+  TEST_FUNC friend constexpr forward_iterator<int*> begin(HasMinusBeginEnd)
   {
     return {};
   }
-  __host__ __device__ friend constexpr sentinel end(HasMinusBeginEnd)
+  TEST_FUNC friend constexpr sentinel end(HasMinusBeginEnd)
   {
     return {};
   }
@@ -364,27 +364,27 @@ struct InvalidMinusBeginEnd
 {
   struct sentinel
   {
-    __host__ __device__ friend bool operator==(sentinel, other_forward_iterator);
+    TEST_FUNC friend bool operator==(sentinel, other_forward_iterator);
 #if TEST_STD_VER < 2020
-    __host__ __device__ friend bool operator==(other_forward_iterator, sentinel);
-    __host__ __device__ friend bool operator!=(sentinel, other_forward_iterator);
-    __host__ __device__ friend bool operator!=(other_forward_iterator, sentinel);
+    TEST_FUNC friend bool operator==(other_forward_iterator, sentinel);
+    TEST_FUNC friend bool operator!=(sentinel, other_forward_iterator);
+    TEST_FUNC friend bool operator!=(other_forward_iterator, sentinel);
 #endif
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(const sentinel, const other_forward_iterator)
+    TEST_FUNC friend constexpr cuda::std::ptrdiff_t operator-(const sentinel, const other_forward_iterator)
     {
       return 2;
     }
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(const other_forward_iterator, const sentinel)
+    TEST_FUNC friend constexpr cuda::std::ptrdiff_t operator-(const other_forward_iterator, const sentinel)
     {
       return 2;
     }
   };
 
-  __host__ __device__ friend constexpr other_forward_iterator begin(InvalidMinusBeginEnd)
+  TEST_FUNC friend constexpr other_forward_iterator begin(InvalidMinusBeginEnd)
   {
     return {};
   }
-  __host__ __device__ friend constexpr sentinel end(InvalidMinusBeginEnd)
+  TEST_FUNC friend constexpr sentinel end(InvalidMinusBeginEnd)
   {
     return {};
   }
@@ -398,29 +398,27 @@ struct RandomAccessRange
 {
   struct sentinel
   {
-    __host__ __device__ friend bool operator==(sentinel, random_access_iterator<int*>);
+    TEST_FUNC friend bool operator==(sentinel, random_access_iterator<int*>);
 #if TEST_STD_VER < 2020
-    __host__ __device__ friend bool operator==(random_access_iterator<int*>, sentinel);
-    __host__ __device__ friend bool operator!=(sentinel, random_access_iterator<int*>);
-    __host__ __device__ friend bool operator!=(random_access_iterator<int*>, sentinel);
+    TEST_FUNC friend bool operator==(random_access_iterator<int*>, sentinel);
+    TEST_FUNC friend bool operator!=(sentinel, random_access_iterator<int*>);
+    TEST_FUNC friend bool operator!=(random_access_iterator<int*>, sentinel);
 #endif
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t
-    operator-(const sentinel, const random_access_iterator<int*>)
+    TEST_FUNC friend constexpr cuda::std::ptrdiff_t operator-(const sentinel, const random_access_iterator<int*>)
     {
       return 2;
     }
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t
-    operator-(const random_access_iterator<int*>, const sentinel)
+    TEST_FUNC friend constexpr cuda::std::ptrdiff_t operator-(const random_access_iterator<int*>, const sentinel)
     {
       return 2;
     }
   };
 
-  __host__ __device__ constexpr random_access_iterator<int*> begin()
+  TEST_FUNC constexpr random_access_iterator<int*> begin()
   {
     return {};
   }
-  __host__ __device__ constexpr sentinel end()
+  TEST_FUNC constexpr sentinel end()
   {
     return {};
   }
@@ -429,11 +427,11 @@ struct RandomAccessRange
 struct IntPtrBeginAndEnd
 {
   int buff[8];
-  __host__ __device__ constexpr int* begin()
+  TEST_FUNC constexpr int* begin()
   {
     return buff;
   }
-  __host__ __device__ constexpr int* end()
+  TEST_FUNC constexpr int* end()
   {
     return buff + 8;
   }
@@ -442,15 +440,15 @@ struct IntPtrBeginAndEnd
 struct DisabledSizeRangeWithBeginEnd
 {
   int buff[8];
-  __host__ __device__ constexpr int* begin()
+  TEST_FUNC constexpr int* begin()
   {
     return buff;
   }
-  __host__ __device__ constexpr int* end()
+  TEST_FUNC constexpr int* end()
   {
     return buff + 8;
   }
-  __host__ __device__ constexpr size_t size()
+  TEST_FUNC constexpr size_t size()
   {
     return 1;
   }
@@ -465,21 +463,21 @@ inline constexpr bool disable_sized_range<DisabledSizeRangeWithBeginEnd> = true;
 struct SizeBeginAndEndMembers
 {
   int buff[8];
-  __host__ __device__ constexpr int* begin()
+  TEST_FUNC constexpr int* begin()
   {
     return buff;
   }
-  __host__ __device__ constexpr int* end()
+  TEST_FUNC constexpr int* end()
   {
     return buff + 8;
   }
-  __host__ __device__ constexpr size_t size()
+  TEST_FUNC constexpr size_t size()
   {
     return 1;
   }
 };
 
-__host__ __device__ constexpr bool testRanges()
+TEST_FUNC constexpr bool testRanges()
 {
   HasMinusBeginEnd a{};
   assert(cuda::std::ranges::size(a) == 2);

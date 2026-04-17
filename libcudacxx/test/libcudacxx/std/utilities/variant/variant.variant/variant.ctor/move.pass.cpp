@@ -24,7 +24,7 @@
 
 struct ThrowsMove
 {
-  __host__ __device__ ThrowsMove(ThrowsMove&&) noexcept(false) {}
+  TEST_FUNC ThrowsMove(ThrowsMove&&) noexcept(false) {}
 };
 
 struct NoCopy
@@ -35,7 +35,7 @@ struct NoCopy
 struct MoveOnly
 {
   int value;
-  __host__ __device__ MoveOnly(int v)
+  TEST_FUNC MoveOnly(int v)
       : value(v)
   {}
   MoveOnly(const MoveOnly&) = delete;
@@ -45,11 +45,11 @@ struct MoveOnly
 struct MoveOnlyNT
 {
   int value;
-  __host__ __device__ MoveOnlyNT(int v)
+  TEST_FUNC MoveOnlyNT(int v)
       : value(v)
   {}
   MoveOnlyNT(const MoveOnlyNT&) = delete;
-  __host__ __device__ MoveOnlyNT(MoveOnlyNT&& other)
+  TEST_FUNC MoveOnlyNT(MoveOnlyNT&& other)
       : value(other.value)
   {
     other.value = -1;
@@ -58,11 +58,11 @@ struct MoveOnlyNT
 
 struct NTMove
 {
-  __host__ __device__ constexpr NTMove(int v)
+  TEST_FUNC constexpr NTMove(int v)
       : value(v)
   {}
   NTMove(const NTMove&) = delete;
-  __host__ __device__ NTMove(NTMove&& that)
+  TEST_FUNC NTMove(NTMove&& that)
       : value(that.value)
   {
     that.value = -1;
@@ -75,7 +75,7 @@ static_assert(cuda::std::is_move_constructible<NTMove>::value);
 
 struct TMove
 {
-  __host__ __device__ constexpr TMove(int v)
+  TEST_FUNC constexpr TMove(int v)
       : value(v)
   {}
   TMove(const TMove&) = delete;
@@ -87,10 +87,10 @@ static_assert(cuda::std::is_trivially_move_constructible<TMove>::value);
 
 struct TMoveNTCopy
 {
-  __host__ __device__ constexpr TMoveNTCopy(int v)
+  TEST_FUNC constexpr TMoveNTCopy(int v)
       : value(v)
   {}
-  __host__ __device__ TMoveNTCopy(const TMoveNTCopy& that)
+  TEST_FUNC TMoveNTCopy(const TMoveNTCopy& that)
       : value(that.value)
   {}
   TMoveNTCopy(TMoveNTCopy&&) = default;
@@ -149,7 +149,7 @@ void makeEmpty(Variant& v)
 }
 #endif // TEST_HAS_EXCEPTIONS()
 
-__host__ __device__ void test_move_noexcept()
+TEST_FUNC void test_move_noexcept()
 {
   {
     using V = cuda::std::variant<int, long>;
@@ -169,7 +169,7 @@ __host__ __device__ void test_move_noexcept()
   }
 }
 
-__host__ __device__ void test_move_ctor_sfinae()
+TEST_FUNC void test_move_ctor_sfinae()
 {
   {
     using V = cuda::std::variant<int, long>;
@@ -215,7 +215,7 @@ struct Result
   T value;
 };
 
-__host__ __device__ void test_move_ctor_basic()
+TEST_FUNC void test_move_ctor_basic()
 {
   {
     cuda::std::variant<int> v(cuda::std::in_place_index<0>, 42);
@@ -264,7 +264,7 @@ __host__ __device__ void test_move_ctor_basic()
   {
     struct
     {
-      __host__ __device__ constexpr Result<int> operator()() const
+      TEST_FUNC constexpr Result<int> operator()() const
       {
         cuda::std::variant<int> v(cuda::std::in_place_index<0>, 42);
         cuda::std::variant<int> v2 = cuda::std::move(v);
@@ -278,7 +278,7 @@ __host__ __device__ void test_move_ctor_basic()
   {
     struct
     {
-      __host__ __device__ constexpr Result<long> operator()() const
+      TEST_FUNC constexpr Result<long> operator()() const
       {
         cuda::std::variant<int, long> v(cuda::std::in_place_index<1>, 42);
         cuda::std::variant<int, long> v2 = cuda::std::move(v);
@@ -292,7 +292,7 @@ __host__ __device__ void test_move_ctor_basic()
   {
     struct
     {
-      __host__ __device__ constexpr Result<TMove> operator()() const
+      TEST_FUNC constexpr Result<TMove> operator()() const
       {
         cuda::std::variant<TMove> v(cuda::std::in_place_index<0>, 42);
         cuda::std::variant<TMove> v2(cuda::std::move(v));
@@ -306,7 +306,7 @@ __host__ __device__ void test_move_ctor_basic()
   {
     struct
     {
-      __host__ __device__ constexpr Result<TMove> operator()() const
+      TEST_FUNC constexpr Result<TMove> operator()() const
       {
         cuda::std::variant<int, TMove> v(cuda::std::in_place_index<1>, 42);
         cuda::std::variant<int, TMove> v2(cuda::std::move(v));
@@ -320,7 +320,7 @@ __host__ __device__ void test_move_ctor_basic()
   {
     struct
     {
-      __host__ __device__ constexpr Result<TMoveNTCopy> operator()() const
+      TEST_FUNC constexpr Result<TMoveNTCopy> operator()() const
       {
         cuda::std::variant<TMoveNTCopy> v(cuda::std::in_place_index<0>, 42);
         cuda::std::variant<TMoveNTCopy> v2(cuda::std::move(v));
@@ -334,7 +334,7 @@ __host__ __device__ void test_move_ctor_basic()
   {
     struct
     {
-      __host__ __device__ constexpr Result<TMoveNTCopy> operator()() const
+      TEST_FUNC constexpr Result<TMoveNTCopy> operator()() const
       {
         cuda::std::variant<int, TMoveNTCopy> v(cuda::std::in_place_index<1>, 42);
         cuda::std::variant<int, TMoveNTCopy> v2(cuda::std::move(v));
@@ -359,14 +359,14 @@ void test_move_ctor_valueless_by_exception()
 #endif // TEST_HAS_EXCEPTIONS()
 
 template <size_t Idx>
-__host__ __device__ constexpr bool test_constexpr_ctor_imp(cuda::std::variant<long, void*, const int> const& v)
+TEST_FUNC constexpr bool test_constexpr_ctor_imp(cuda::std::variant<long, void*, const int> const& v)
 {
   auto copy = v;
   auto v2   = cuda::std::move(copy);
   return v2.index() == v.index() && v2.index() == Idx && cuda::std::get<Idx>(v2) == cuda::std::get<Idx>(v);
 }
 
-__host__ __device__ void test_constexpr_move_ctor()
+TEST_FUNC void test_constexpr_move_ctor()
 {
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   using V = cuda::std::variant<long, void*, const int>;

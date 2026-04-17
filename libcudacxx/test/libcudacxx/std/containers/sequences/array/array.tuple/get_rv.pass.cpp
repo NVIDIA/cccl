@@ -28,7 +28,7 @@ struct MoveOnly
   MoveOnly(const MoveOnly&)            = delete;
   MoveOnly& operator=(const MoveOnly&) = delete;
 
-  __host__ __device__ constexpr MoveOnly(const double val) noexcept
+  TEST_FUNC constexpr MoveOnly(const double val) noexcept
       : val_(val)
   {}
 };

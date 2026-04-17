@@ -19,7 +19,7 @@ template <class T>
 struct PointerTo
 {
   using value_type = T;
-  __host__ __device__ T& operator*() const;
+  TEST_FUNC T& operator*() const;
 };
 
 // Copying the underlying object between pointers (or dereferenceable classes) works. This is a non-exhaustive check
@@ -50,11 +50,11 @@ struct NoAssignment
   // `operator=(ValueType)` in `ReferenceType`.
   struct ValueType
   {
-    __host__ __device__ operator ReferenceType&() const;
+    TEST_FUNC operator ReferenceType&() const;
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_FUNC ReferenceType& operator*() const;
 };
 
 // The case when `indirectly_writable<iter_rvalue_reference>` but not `indirectly_writable<iter_value>` (you can
@@ -84,17 +84,17 @@ struct InconsistentIterator
 
   struct ReferenceType
   {
-    __host__ __device__ ReferenceType& operator=(ValueType const&);
+    TEST_FUNC ReferenceType& operator=(ValueType const&);
   };
 
   struct ValueType
   {
     ValueType() = default;
-    __host__ __device__ ValueType(const ReferenceType&);
+    TEST_FUNC ValueType(const ReferenceType&);
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_FUNC ReferenceType& operator*() const;
 };
 
 // `ValueType` can be constructed with a `ReferenceType` and assigned to a `ReferenceType`, so it does model
@@ -109,17 +109,17 @@ struct NotConstructibleFromRefIn
 
   struct ReferenceType
   {
-    __host__ __device__ operator CommonType&() const;
+    TEST_FUNC operator CommonType&() const;
   };
 
   struct ValueType
   {
     ValueType(ReferenceType) = delete;
-    __host__ __device__ operator CommonType&() const;
+    TEST_FUNC operator CommonType&() const;
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_FUNC ReferenceType& operator*() const;
 };
 
 namespace cuda::std
@@ -144,7 +144,7 @@ static_assert(
 struct AssignableFromAnything
 {
   template <class T>
-  __host__ __device__ AssignableFromAnything& operator=(T&&);
+  TEST_FUNC AssignableFromAnything& operator=(T&&);
 };
 
 // A type that can't be constructed from its own reference isn't `indirectly_movable_storable`, even when assigning it
@@ -160,18 +160,18 @@ struct NotAssignableFromRefIn
 
   struct ReferenceType
   {
-    __host__ __device__ operator CommonType&() const;
+    TEST_FUNC operator CommonType&() const;
   };
 
   struct ValueType
   {
-    __host__ __device__ ValueType(ReferenceType);
+    TEST_FUNC ValueType(ReferenceType);
     ValueType& operator=(ReferenceType) = delete;
-    __host__ __device__ operator CommonType&() const;
+    TEST_FUNC operator CommonType&() const;
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_FUNC ReferenceType& operator*() const;
 };
 
 namespace cuda::std

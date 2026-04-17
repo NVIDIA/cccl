@@ -33,7 +33,7 @@ static_assert(!HasTupleElement<1, SomeObject>::value);
 static_assert(!HasTupleElement<3, SomeObject>::value);
 
 template <typename T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using C = cuda::std::complex<T>;
 
@@ -44,7 +44,7 @@ __host__ __device__ void test()
   static_assert(cuda::std::is_same_v<T, typename cuda::std::tuple_element<1, C>::type>);
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test<float>();
   test<double>();

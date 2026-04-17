@@ -15,6 +15,8 @@
 #include <cuda/std/functional>
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 using CompInt     = bool (*)(int, int);
 using CompDefault = cuda::std::ranges::less;
 

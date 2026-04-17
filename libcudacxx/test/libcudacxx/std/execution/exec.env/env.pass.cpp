@@ -38,13 +38,13 @@
 
 struct custom_env
 {
-  __host__ __device__ constexpr auto query(query1_t) const noexcept
+  TEST_FUNC constexpr auto query(query1_t) const noexcept
   {
     return -1;
   }
 
   // A query that takes an extra argument:
-  __host__ __device__ constexpr auto query(query3_t, int i) const noexcept
+  TEST_FUNC constexpr auto query(query3_t, int i) const noexcept
   {
     return i;
   }
@@ -54,20 +54,20 @@ struct derived_env : cuda::std::execution::env<>
 {
   using env::query;
 
-  __host__ __device__ auto query(query1_t) const
+  TEST_FUNC auto query(query1_t) const
   {
     return 42;
   }
 };
 
 template <class Ty>
-__host__ __device__ constexpr bool is_trivial_aggregate()
+TEST_FUNC constexpr bool is_trivial_aggregate()
 {
   return cuda::std::is_aggregate_v<Ty> && cuda::std::is_standard_layout_v<Ty> && cuda::std::is_trivially_copyable_v<Ty>
       && cuda::std::is_trivially_constructible_v<Ty> && cuda::std::is_trivially_destructible_v<Ty>;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   [[maybe_unused]] cuda::std::execution::env e1{};
   static_assert(cuda::std::is_same_v<decltype(e1), cuda::std::execution::env<>>);

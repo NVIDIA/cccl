@@ -29,7 +29,7 @@ static_assert(cuda::std::is_default_constructible_v<cuda::std::move_iterator<for
 static_assert(!cuda::std::is_default_constructible_v<cuda::std::move_iterator<NoDefaultCtr>>);
 
 template <class It>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   cuda::std::move_iterator<It> r;
   unused(r);

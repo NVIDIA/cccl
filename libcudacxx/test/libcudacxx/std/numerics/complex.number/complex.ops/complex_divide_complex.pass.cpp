@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::complex<T> lhs(-4.0, 7.5);
   cuda::std::complex<T> rhs(1.5, 2.5);
@@ -31,7 +31,7 @@ __host__ __device__ constexpr bool test()
 }
 
 template <class T>
-__host__ __device__ void test_edges()
+TEST_FUNC void test_edges()
 {
   auto testcases   = get_testcases<T>();
   const unsigned N = sizeof(testcases) / sizeof(testcases[0]);

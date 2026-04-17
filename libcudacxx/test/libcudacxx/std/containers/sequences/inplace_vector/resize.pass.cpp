@@ -23,7 +23,7 @@
 #endif // TEST_HAS_EXCEPTIONS()
 
 template <class T>
-__host__ __device__ constexpr void test_resize()
+TEST_FUNC constexpr void test_resize()
 {
   [[maybe_unused]] constexpr size_t max_capacity = 42ull;
   using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
@@ -66,7 +66,7 @@ __host__ __device__ constexpr void test_resize()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_clear()
+TEST_FUNC constexpr void test_clear()
 {
   [[maybe_unused]] constexpr size_t max_capacity = 42ull;
   using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
@@ -93,14 +93,14 @@ __host__ __device__ constexpr void test_clear()
 struct is_one
 {
   template <class T>
-  __host__ __device__ constexpr bool operator()(const T& val) const noexcept
+  TEST_FUNC constexpr bool operator()(const T& val) const noexcept
   {
     return val == T(1);
   }
 };
 
 template <class T>
-__host__ __device__ constexpr void test_pop_back()
+TEST_FUNC constexpr void test_pop_back()
 {
   [[maybe_unused]] constexpr size_t max_capacity = 42ull;
   using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
@@ -113,7 +113,7 @@ __host__ __device__ constexpr void test_pop_back()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_erase()
+TEST_FUNC constexpr void test_erase()
 {
   [[maybe_unused]] constexpr size_t max_capacity = 42ull;
   using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
@@ -176,7 +176,7 @@ __host__ __device__ constexpr void test_erase()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_shrink_to_fit()
+TEST_FUNC constexpr void test_shrink_to_fit()
 {
   [[maybe_unused]] constexpr size_t max_capacity = 42ull;
   using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
@@ -203,7 +203,7 @@ __host__ __device__ constexpr void test_shrink_to_fit()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_reserve()
+TEST_FUNC constexpr void test_reserve()
 {
   [[maybe_unused]] constexpr size_t max_capacity = 42ull;
   using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
@@ -230,7 +230,7 @@ __host__ __device__ constexpr void test_reserve()
 }
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   test_resize<T>();
   test_clear<T>();
@@ -240,7 +240,7 @@ __host__ __device__ constexpr void test()
   test_reserve<T>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<Trivial>();

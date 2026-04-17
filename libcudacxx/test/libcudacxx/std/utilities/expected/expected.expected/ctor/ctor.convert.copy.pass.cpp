@@ -54,7 +54,7 @@ constexpr bool canCstrFromExpected =
 
 struct CtorFromInt
 {
-  __host__ __device__ CtorFromInt(int);
+  TEST_FUNC CtorFromInt(int);
 };
 
 static_assert(canCstrFromExpected<CtorFromInt, int, int, int>);
@@ -73,11 +73,11 @@ struct CtorFrom
 {
   _CCCL_TEMPLATE(class T2 = T)
   _CCCL_REQUIRES((!cuda::std::same_as<T2, int>) )
-  __host__ __device__ explicit CtorFrom(int);
-  __host__ __device__ explicit CtorFrom(T);
+  TEST_FUNC explicit CtorFrom(int);
+  TEST_FUNC explicit CtorFrom(T);
 
   template <class U>
-  __host__ __device__ explicit CtorFrom(U&&) = delete;
+  TEST_FUNC explicit CtorFrom(U&&) = delete;
 };
 
 // is_constructible_v<T, expected<U, G>&>
@@ -100,11 +100,11 @@ struct ConvertFrom
 {
   _CCCL_TEMPLATE(class T2 = T)
   _CCCL_REQUIRES((!cuda::std::same_as<T2, int>) )
-  __host__ __device__ ConvertFrom(int);
-  __host__ __device__ ConvertFrom(T);
+  TEST_FUNC ConvertFrom(int);
+  TEST_FUNC ConvertFrom(T);
 
   template <class U>
-  __host__ __device__ ConvertFrom(U&&) = delete;
+  TEST_FUNC ConvertFrom(U&&) = delete;
 };
 
 // is_convertible_v<expected<U, G>&, T>
@@ -154,12 +154,12 @@ static_assert(
 struct Data
 {
   int i;
-  __host__ __device__ constexpr Data(int ii)
+  TEST_FUNC constexpr Data(int ii)
       : i(ii)
   {}
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   // convert the value
   {

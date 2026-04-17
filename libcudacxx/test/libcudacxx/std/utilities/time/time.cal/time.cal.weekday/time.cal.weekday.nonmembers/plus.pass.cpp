@@ -30,7 +30,7 @@
 #include "test_macros.h"
 
 template <typename M, typename Ms>
-__host__ __device__ constexpr bool testConstexpr()
+TEST_FUNC constexpr bool testConstexpr()
 {
   M m{1};
   Ms offset{4};

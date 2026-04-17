@@ -18,7 +18,7 @@ template <int Value>
 inline constexpr auto width_v = cuda::std::integral_constant<int, Value>{};
 
 template <int Value>
-__device__ void test_semantic()
+TEST_DEVICE_FUNC void test_semantic()
 {
   using cuda::device::warp_shuffle_down;
   using cuda::device::warp_shuffle_idx;
@@ -51,7 +51,7 @@ __device__ void test_semantic()
 }
 
 template <class T>
-__device__ void test_non_trivial_types(const T& data)
+TEST_DEVICE_FUNC void test_non_trivial_types(const T& data)
 {
   using cuda::device::warp_shuffle_down;
   using cuda::device::warp_shuffle_idx;
@@ -91,7 +91,7 @@ __device__ void test_non_trivial_types(const T& data)
   }
 }
 
-__device__ void test_overloadings()
+TEST_DEVICE_FUNC void test_overloadings()
 {
   using cuda::device::warp_shuffle_down;
   using cuda::device::warp_shuffle_idx;

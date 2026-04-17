@@ -21,16 +21,16 @@ struct A
 {
   cuda::std::unique_ptr<A> ptr_;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 A()
+  TEST_FUNC TEST_CONSTEXPR_CXX23 A()
       : ptr_(this)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void reset()
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void reset()
   {
     ptr_.reset();
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   (new A)->reset();
 

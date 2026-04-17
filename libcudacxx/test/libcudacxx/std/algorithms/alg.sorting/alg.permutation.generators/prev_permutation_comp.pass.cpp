@@ -23,7 +23,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr int factorial(int x)
+TEST_FUNC constexpr int factorial(int x)
 {
   int r = 1;
   for (; x; --x)
@@ -34,7 +34,7 @@ __host__ __device__ constexpr int factorial(int x)
 }
 
 template <class Iter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   using C      = cuda::std::greater<int>;
   int ia[]     = {1, 2, 3, 4, 5, 6};
@@ -65,7 +65,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<bidirectional_iterator<int*>>();
   test<random_access_iterator<int*>>();

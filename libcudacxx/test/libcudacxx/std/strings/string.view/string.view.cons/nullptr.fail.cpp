@@ -16,12 +16,12 @@
 #include <cuda/std/string_view>
 
 template <class SV>
-__host__ __device__ constexpr void test_nullptr_constructor()
+TEST_FUNC constexpr void test_nullptr_constructor()
 {
   [[maybe_unused]] SV sv{nullptr};
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_nullptr_constructor<cuda::std::string_view>();
 #if _CCCL_HAS_CHAR8_T()

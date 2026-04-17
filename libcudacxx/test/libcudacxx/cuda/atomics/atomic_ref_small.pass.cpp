@@ -30,7 +30,7 @@ Launch 1024 threads, fetch_add(1), checking for 0x01FF01FF.
 */
 
 template <class T, int Inc>
-__host__ __device__ void fetch_add_into_window(T* window, uint16_t* atomHistory)
+TEST_FUNC void fetch_add_into_window(T* window, uint16_t* atomHistory)
 {
   using Atom = cuda::atomic_ref<T, cuda::thread_scope_block>;
 
@@ -39,7 +39,7 @@ __host__ __device__ void fetch_add_into_window(T* window, uint16_t* atomHistory)
 }
 
 template <class T>
-__device__ void device_do_test(uint32_t expected)
+TEST_DEVICE_FUNC void device_do_test(uint32_t expected)
 {
   constexpr uint32_t threadCount               = 1024;
   constexpr uint32_t histogramResultCount      = 256 * sizeof(T);

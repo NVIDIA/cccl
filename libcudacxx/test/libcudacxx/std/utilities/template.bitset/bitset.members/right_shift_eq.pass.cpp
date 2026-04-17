@@ -20,7 +20,7 @@
 TEST_NV_DIAG_SUPPRESS(186)
 
 template <cuda::std::size_t N, cuda::std::size_t Start = 0, cuda::std::size_t End = static_cast<cuda::std::size_t>(-1)>
-__host__ __device__ constexpr bool test_right_shift()
+TEST_FUNC constexpr bool test_right_shift()
 {
   auto const& cases = get_test_cases(cuda::std::integral_constant<int, N>());
   if (Start >= 9)
@@ -52,7 +52,7 @@ __host__ __device__ constexpr bool test_right_shift()
   return true;
 }
 
-__host__ __device__ int main(int, char**)
+TEST_FUNC int main(int, char**)
 {
   test_right_shift<0>();
   test_right_shift<1>();

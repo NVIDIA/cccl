@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <typename Duration>
-__host__ __device__ constexpr auto check_subseconds(Duration d)
+TEST_FUNC constexpr auto check_subseconds(Duration d)
 {
   using HMS = cuda::std::chrono::hh_mm_ss<Duration>;
   static_assert(cuda::std::is_same_v<typename HMS::precision, decltype(cuda::std::declval<HMS>().subseconds())>);

@@ -15,7 +15,7 @@
 #include "../types.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buff[8] = {0, 1, 2, 3, 4, 5, 6, 7};
   cuda::std::ranges::transform_view transformView1(MoveOnlyView{buff}, PlusOneMutable{});

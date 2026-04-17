@@ -30,12 +30,14 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_macros.h"
+
 inline constexpr int size = 1000;
 
 template <class T = int>
 struct is_power_of_2
 {
-  __device__ constexpr bool operator()(const T val) const noexcept
+  TEST_DEVICE_FUNC constexpr bool operator()(const T val) const noexcept
   {
     return cuda::is_power_of_two(val);
   }

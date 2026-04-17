@@ -34,13 +34,13 @@ inline constexpr bool
 
 struct Pred
 {
-  __host__ __device__ int operator()(int i) const noexcept
+  TEST_FUNC int operator()(int i) const noexcept
   {
     return i;
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   int buf[] = {1, 2, 3};
 

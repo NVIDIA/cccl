@@ -19,7 +19,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     const int ia[]    = {0};

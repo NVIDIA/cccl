@@ -18,7 +18,7 @@ struct A
 struct B
 {
 public:
-  __host__ __device__ operator A()
+  TEST_FUNC operator A()
   {
     return a;
   }
@@ -30,7 +30,7 @@ class C
 class D
 {
 public:
-  __host__ __device__ operator C() noexcept
+  TEST_FUNC operator C() noexcept
   {
     return c;
   }

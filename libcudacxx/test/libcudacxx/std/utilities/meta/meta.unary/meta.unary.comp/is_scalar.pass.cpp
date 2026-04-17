@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_scalar()
+TEST_FUNC void test_is_scalar()
 {
   static_assert(cuda::std::is_scalar<T>::value);
   static_assert(cuda::std::is_scalar<const T>::value);
@@ -29,7 +29,7 @@ __host__ __device__ void test_is_scalar()
 }
 
 template <class T>
-__host__ __device__ void test_is_not_scalar()
+TEST_FUNC void test_is_not_scalar()
 {
   static_assert(!cuda::std::is_scalar<T>::value);
   static_assert(!cuda::std::is_scalar<const T>::value);
@@ -48,7 +48,7 @@ class Empty
 
 class NotEmpty
 {
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -61,7 +61,7 @@ struct bit_zero
 
 class Abstract
 {
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 enum Enum

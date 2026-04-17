@@ -21,7 +21,7 @@
 template <class T>
 _CCCL_CONCEPT SizeInvocable = _CCCL_REQUIRES_EXPR((T), cuda::std::ranges::drop_view<T> v)((v.size()));
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // sized_range<V>
   cuda::std::ranges::drop_view dropView1(MoveOnlyView(), 4);

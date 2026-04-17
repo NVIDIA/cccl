@@ -34,7 +34,7 @@ enum class E2 : unsigned char
 };
 
 template <typename T>
-__host__ __device__ constexpr bool constexpr_test()
+TEST_FUNC constexpr bool constexpr_test()
 {
   return cuda::std::bit_ceil(T(0)) == T(1) && cuda::std::bit_ceil(T(1)) == T(1) && cuda::std::bit_ceil(T(2)) == T(2)
       && cuda::std::bit_ceil(T(3)) == T(4) && cuda::std::bit_ceil(T(4)) == T(4) && cuda::std::bit_ceil(T(5)) == T(8)
@@ -43,7 +43,7 @@ __host__ __device__ constexpr bool constexpr_test()
 }
 
 template <typename T>
-__host__ __device__ void runtime_test()
+TEST_FUNC void runtime_test()
 {
   static_assert(cuda::std::is_same_v<T, decltype(cuda::std::bit_ceil(T(0)))>);
   static_assert(noexcept(cuda::std::bit_ceil(T(0))));

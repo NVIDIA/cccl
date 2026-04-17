@@ -32,7 +32,7 @@ enum class E2 : unsigned char
 };
 
 template <typename T>
-__host__ __device__ constexpr bool constexpr_test()
+TEST_FUNC constexpr bool constexpr_test()
 {
   using nl = cuda::std::numeric_limits<T>;
   return cuda::std::rotl(T(1), 0) == T(1) && cuda::std::rotl(T(1), 1) == T(2) && cuda::std::rotl(T(1), 2) == T(4)
@@ -45,7 +45,7 @@ __host__ __device__ constexpr bool constexpr_test()
 }
 
 template <typename T>
-__host__ __device__ void runtime_test()
+TEST_FUNC void runtime_test()
 {
   static_assert(cuda::std::is_same_v<T, decltype(cuda::std::rotl(T(0), 0))>);
   static_assert(noexcept(cuda::std::rotl(T(0), 0)));

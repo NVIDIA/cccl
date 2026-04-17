@@ -48,7 +48,7 @@ struct SpanCtorTest
             class Extents,
             size_t... Indices,
             cuda::std::enable_if_t<(N == E::rank_dynamic()), int> = 0>
-  __host__ __device__ static constexpr void
+  TEST_FUNC static constexpr void
   test_construction(cuda::std::array<T, N> all_ext, Extents ext, cuda::std::index_sequence<Indices...>)
   {
     static_assert(noexcept(E(ext)));
@@ -62,7 +62,7 @@ struct SpanCtorTest
             class Extents,
             size_t... Indices,
             cuda::std::enable_if_t<(N != E::rank_dynamic()), int> = 0>
-  __host__ __device__ static constexpr void
+  TEST_FUNC static constexpr void
   test_construction(cuda::std::array<T, N> all_ext, Extents ext, cuda::std::index_sequence<Indices...>)
   {
     static_assert(noexcept(E(ext)));
@@ -74,11 +74,11 @@ template <class E>
 struct implicit_construction
 {
   bool value;
-  __host__ __device__ implicit_construction(E)
+  TEST_FUNC implicit_construction(E)
       : value(true)
   {}
   template <class T>
-  __host__ __device__ implicit_construction(T)
+  TEST_FUNC implicit_construction(T)
       : value(false)
   {}
 };

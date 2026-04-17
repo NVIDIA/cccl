@@ -34,7 +34,7 @@ struct Empty
 using nullptr_t = decltype(nullptr);
 
 template <class T, class U>
-__host__ __device__ void CheckConvertibleTo()
+TEST_FUNC void CheckConvertibleTo()
 {
   static_assert(convertible_to<T, U>);
   static_assert(convertible_to<const T, U>);
@@ -43,7 +43,7 @@ __host__ __device__ void CheckConvertibleTo()
 }
 
 template <class T, class U>
-__host__ __device__ void CheckNotConvertibleTo()
+TEST_FUNC void CheckNotConvertibleTo()
 {
   static_assert(!convertible_to<T, U>);
   static_assert(!convertible_to<const T, U>);
@@ -52,7 +52,7 @@ __host__ __device__ void CheckNotConvertibleTo()
 }
 
 template <class T, class U>
-__host__ __device__ void CheckIsConvertibleButNotConvertibleTo()
+TEST_FUNC void CheckIsConvertibleButNotConvertibleTo()
 {
   // Sanity check T is either implicitly xor explicitly convertible to U.
   static_assert(cuda::std::is_convertible_v<T, U>);
@@ -69,7 +69,7 @@ template <class T>
 _CCCL_TEMPLATE(class T)
 _CCCL_REQUIRES((!(cuda::std::same_as<T, bool> || cuda::std::same_as<T, nullptr_t>) ))
 #endif
-__host__ __device__ constexpr void CommonlyNotConvertibleTo()
+TEST_FUNC constexpr void CommonlyNotConvertibleTo()
 {
   CheckNotConvertibleTo<T, void>();
   CheckNotConvertibleTo<T, nullptr_t>();
@@ -84,7 +84,7 @@ __host__ __device__ constexpr void CommonlyNotConvertibleTo()
 
 _CCCL_TEMPLATE(class T)
 _CCCL_REQUIRES(cuda::std::same_as<T, bool>)
-__host__ __device__ constexpr void CommonlyNotConvertibleTo()
+TEST_FUNC constexpr void CommonlyNotConvertibleTo()
 {
   CheckNotConvertibleTo<bool, void>();
   CheckNotConvertibleTo<bool, nullptr_t>();
@@ -98,7 +98,7 @@ __host__ __device__ constexpr void CommonlyNotConvertibleTo()
 
 _CCCL_TEMPLATE(class T)
 _CCCL_REQUIRES(cuda::std::same_as<T, nullptr_t>)
-__host__ __device__ constexpr void CommonlyNotConvertibleTo()
+TEST_FUNC constexpr void CommonlyNotConvertibleTo()
 {
   CheckNotConvertibleTo<nullptr_t, void>();
   CheckConvertibleTo<nullptr_t, nullptr_t>();
@@ -119,12 +119,12 @@ using Array            = char[1];
 
 struct StringType
 {
-  __host__ __device__ StringType(const char*) {}
+  TEST_FUNC StringType(const char*) {}
 };
 
 class NonCopyable
 {
-  __host__ __device__ NonCopyable(NonCopyable&);
+  TEST_FUNC NonCopyable(NonCopyable&);
 };
 
 template <typename T>
@@ -138,7 +138,7 @@ class CannotInstantiate
 
 struct abstract
 {
-  __host__ __device__ virtual int f() = 0;
+  TEST_FUNC virtual int f() = 0;
 };
 
 struct ExplicitlyConvertible;
@@ -146,14 +146,14 @@ struct ImplicitlyConvertible;
 
 struct ExplicitlyConstructible
 {
-  __host__ __device__ explicit ExplicitlyConstructible(int);
-  __host__ __device__ explicit ExplicitlyConstructible(ExplicitlyConvertible);
+  TEST_FUNC explicit ExplicitlyConstructible(int);
+  TEST_FUNC explicit ExplicitlyConstructible(ExplicitlyConvertible);
   explicit ExplicitlyConstructible(ImplicitlyConvertible) = delete;
 };
 
 struct ExplicitlyConvertible
 {
-  __host__ __device__ explicit operator ExplicitlyConstructible() const
+  TEST_FUNC explicit operator ExplicitlyConstructible() const
   {
     return ExplicitlyConstructible(0);
   }
@@ -163,13 +163,13 @@ struct ImplicitlyConstructible;
 
 struct ImplicitlyConvertible
 {
-  __host__ __device__ operator ExplicitlyConstructible() const;
+  TEST_FUNC operator ExplicitlyConstructible() const;
   operator ImplicitlyConstructible() const = delete;
 };
 
 struct ImplicitlyConstructible
 {
-  __host__ __device__ ImplicitlyConstructible(ImplicitlyConvertible);
+  TEST_FUNC ImplicitlyConstructible(ImplicitlyConvertible);
 };
 
 int main(int, char**)

@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_standard_layout()
+TEST_FUNC void test_is_standard_layout()
 {
   static_assert(cuda::std::is_standard_layout<T>::value);
   static_assert(cuda::std::is_standard_layout<const T>::value);
@@ -28,7 +28,7 @@ __host__ __device__ void test_is_standard_layout()
 }
 
 template <class T>
-__host__ __device__ void test_is_not_standard_layout()
+TEST_FUNC void test_is_not_standard_layout()
 {
   static_assert(!cuda::std::is_standard_layout<T>::value);
   static_assert(!cuda::std::is_standard_layout<const T>::value);

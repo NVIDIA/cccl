@@ -25,7 +25,7 @@
 #include "test_macros.h"
 
 template <typename Duration, unsigned width>
-__host__ __device__ constexpr bool check_width()
+TEST_FUNC constexpr bool check_width()
 {
   using HMS = cuda::std::chrono::hh_mm_ss<Duration>;
   return HMS::fractional_width == width;

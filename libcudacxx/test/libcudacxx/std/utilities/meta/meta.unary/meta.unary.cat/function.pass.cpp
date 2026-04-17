@@ -27,7 +27,7 @@ enum class Enum2 : int
 };
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(!cuda::std::is_void<T>::value);
   static_assert(!cuda::std::is_null_pointer<T>::value);

@@ -17,7 +17,7 @@
 #include "types.h"
 
 template <class T>
-__host__ __device__ constexpr void test_equality()
+TEST_FUNC constexpr void test_equality()
 {
   using inplace_vector = cuda::std::inplace_vector<T, 42ull>;
 
@@ -34,7 +34,7 @@ __host__ __device__ constexpr void test_equality()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_relation()
+TEST_FUNC constexpr void test_relation()
 {
   using inplace_vector = cuda::std::inplace_vector<T, 42ull>;
 
@@ -59,13 +59,13 @@ __host__ __device__ constexpr void test_relation()
 }
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   test_equality<T>();
   test_relation<T>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<Trivial>();

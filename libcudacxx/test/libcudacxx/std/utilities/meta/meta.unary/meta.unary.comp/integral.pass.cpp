@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_integral_imp()
+TEST_FUNC void test_integral_imp()
 {
   static_assert(!cuda::std::is_reference<T>::value);
   static_assert(cuda::std::is_arithmetic<T>::value);
@@ -27,7 +27,7 @@ __host__ __device__ void test_integral_imp()
 }
 
 template <class T>
-__host__ __device__ void test_integral()
+TEST_FUNC void test_integral()
 {
   test_integral_imp<T>();
   test_integral_imp<const T>();

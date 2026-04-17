@@ -17,7 +17,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr void test_sized_subrange()
+TEST_FUNC constexpr void test_sized_subrange()
 {
   int a[4]      = {1, 2, 3, 4};
   auto r        = cuda::std::ranges::subrange<int*>(a, a + 4);
@@ -45,7 +45,7 @@ __host__ __device__ constexpr void test_sized_subrange()
   }
 }
 
-__host__ __device__ constexpr void test_unsized_subrange()
+TEST_FUNC constexpr void test_unsized_subrange()
 {
   int a[4] = {1, 2, 3, 4};
   auto r   = cuda::std::ranges::subrange<int*, cuda::std::unreachable_sentinel_t>(a, cuda::std::unreachable_sentinel);
@@ -74,7 +74,7 @@ __host__ __device__ constexpr void test_unsized_subrange()
   }
 }
 
-__host__ __device__ constexpr void test_copies_not_originals()
+TEST_FUNC constexpr void test_copies_not_originals()
 {
   int a[4] = {1, 2, 3, 4};
   {
@@ -102,7 +102,7 @@ __host__ __device__ constexpr void test_copies_not_originals()
 #endif // !TEST_COMPILER(NVRTC)
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_sized_subrange();
   test_unsized_subrange();

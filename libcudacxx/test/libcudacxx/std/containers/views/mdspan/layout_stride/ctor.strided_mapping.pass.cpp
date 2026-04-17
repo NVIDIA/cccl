@@ -45,7 +45,7 @@
 template <class FromL,
           class FromExt,
           cuda::std::enable_if_t<cuda::std::is_same<FromL, cuda::std::layout_stride>::value, int> = 0>
-__host__ __device__ constexpr auto get_strides(FromExt src_exts)
+TEST_FUNC constexpr auto get_strides(FromExt src_exts)
 {
   using From = typename FromL::template mapping<FromExt>;
 
@@ -62,14 +62,14 @@ __host__ __device__ constexpr auto get_strides(FromExt src_exts)
 template <class FromL,
           class FromExt,
           cuda::std::enable_if_t<!cuda::std::is_same<FromL, cuda::std::layout_stride>::value, int> = 0>
-__host__ __device__ constexpr auto get_strides(FromExt src_exts)
+TEST_FUNC constexpr auto get_strides(FromExt src_exts)
 {
   using From = typename FromL::template mapping<FromExt>;
   return From(src_exts);
 }
 
 template <bool implicit, class FromL, class ToExt, class FromExt, cuda::std::enable_if_t<implicit, int> = 0>
-__host__ __device__ constexpr void test_conversion(FromExt src_exts)
+TEST_FUNC constexpr void test_conversion(FromExt src_exts)
 {
   using To   = cuda::std::layout_stride::mapping<ToExt>;
   using From = typename FromL::template mapping<FromExt>;
@@ -84,7 +84,7 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
 }
 
 template <bool implicit, class FromL, class ToExt, class FromExt, cuda::std::enable_if_t<!implicit, int> = 0>
-__host__ __device__ constexpr void test_conversion(FromExt src_exts)
+TEST_FUNC constexpr void test_conversion(FromExt src_exts)
 {
   using To   = cuda::std::layout_stride::mapping<ToExt>;
   using From = typename FromL::template mapping<FromExt>;
@@ -97,7 +97,7 @@ __host__ __device__ constexpr void test_conversion(FromExt src_exts)
 }
 
 template <class FromL, class T1, class T2>
-__host__ __device__ constexpr void test_conversion()
+TEST_FUNC constexpr void test_conversion()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   [[maybe_unused]] constexpr bool idx_convertible =
@@ -134,7 +134,7 @@ template <class FromL, class IdxT, size_t... Extents>
 using FromM = typename FromL::template mapping<cuda::std::extents<IdxT, Extents...>>;
 
 template <class FromL, cuda::std::enable_if_t<!cuda::std::is_same_v<FromL, always_convertible_layout>, int> = 0>
-__host__ __device__ constexpr void test_no_implicit_conversion()
+TEST_FUNC constexpr void test_no_implicit_conversion()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
@@ -165,11 +165,11 @@ __host__ __device__ constexpr void test_no_implicit_conversion()
 
 // the implicit convertibility test doesn't apply to non cuda::std::layouts
 template <class FromL, cuda::std::enable_if_t<cuda::std::is_same_v<FromL, always_convertible_layout>, int> = 0>
-__host__ __device__ constexpr void test_no_implicit_conversion()
+TEST_FUNC constexpr void test_no_implicit_conversion()
 {}
 
 template <class FromL>
-__host__ __device__ constexpr void test_rank_mismatch()
+TEST_FUNC constexpr void test_rank_mismatch()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
@@ -180,7 +180,7 @@ __host__ __device__ constexpr void test_rank_mismatch()
 }
 
 template <class FromL>
-__host__ __device__ constexpr void test_static_extent_mismatch()
+TEST_FUNC constexpr void test_static_extent_mismatch()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
@@ -190,7 +190,7 @@ __host__ __device__ constexpr void test_static_extent_mismatch()
 }
 
 template <class FromL>
-__host__ __device__ constexpr void test_layout()
+TEST_FUNC constexpr void test_layout()
 {
   test_conversion<FromL, int, int>();
   test_conversion<FromL, int, size_t>();
@@ -201,7 +201,7 @@ __host__ __device__ constexpr void test_layout()
   test_static_extent_mismatch<FromL>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_layout<cuda::std::layout_right>();
   test_layout<cuda::std::layout_left>();

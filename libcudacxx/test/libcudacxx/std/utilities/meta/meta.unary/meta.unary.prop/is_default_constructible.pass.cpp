@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_default_constructible()
+TEST_FUNC void test_is_default_constructible()
 {
   static_assert(cuda::std::is_default_constructible<T>::value);
   static_assert(cuda::std::is_default_constructible<const T>::value);
@@ -28,7 +28,7 @@ __host__ __device__ void test_is_default_constructible()
 }
 
 template <class T>
-__host__ __device__ void test_is_not_default_constructible()
+TEST_FUNC void test_is_not_default_constructible()
 {
   static_assert(!cuda::std::is_default_constructible<T>::value);
   static_assert(!cuda::std::is_default_constructible<const T>::value);
@@ -45,13 +45,13 @@ class Empty
 
 class NoDefaultConstructor
 {
-  __host__ __device__ NoDefaultConstructor(int) {}
+  TEST_FUNC NoDefaultConstructor(int) {}
 };
 
 class NotEmpty
 {
 public:
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -65,17 +65,17 @@ struct bit_zero
 class Abstract
 {
 public:
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 struct A
 {
-  __host__ __device__ A();
+  TEST_FUNC A();
 };
 
 class B
 {
-  __host__ __device__ B();
+  TEST_FUNC B();
 };
 
 int main(int, char**)

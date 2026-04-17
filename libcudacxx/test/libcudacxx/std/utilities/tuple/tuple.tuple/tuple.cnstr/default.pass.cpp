@@ -21,7 +21,7 @@
 struct NoDefault
 {
   NoDefault() = delete;
-  __host__ __device__ explicit NoDefault(int) {}
+  TEST_FUNC explicit NoDefault(int) {}
 };
 
 struct NoExceptDefault
@@ -31,16 +31,16 @@ struct NoExceptDefault
 
 struct ThrowingDefault
 {
-  __host__ __device__ ThrowingDefault() {}
+  TEST_FUNC ThrowingDefault() {}
 };
 
 struct IllFormedDefault
 {
-  __host__ __device__ IllFormedDefault(int x)
+  TEST_FUNC IllFormedDefault(int x)
       : value(x)
   {}
   template <bool Pred = false>
-  __host__ __device__ constexpr IllFormedDefault()
+  TEST_FUNC constexpr IllFormedDefault()
   {
     static_assert(Pred, "The default constructor should not be instantiated");
   }

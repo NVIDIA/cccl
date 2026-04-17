@@ -47,7 +47,7 @@ static_assert(cuda::std::is_same<cuda::std::uint_least32_t, decltype(empty.colum
 static_assert(cuda::std::is_same<const char*, decltype(empty.file_name())>::value);
 static_assert(cuda::std::is_same<const char*, decltype(empty.function_name())>::value);
 
-__device__ constexpr cuda::std::source_location device_empty{};
+TEST_GLOBAL_VARIABLE constexpr cuda::std::source_location device_empty{};
 static_assert(device_empty.line() == 0);
 static_assert(device_empty.column() == 0);
 static_assert(device_empty.file_name()[0] == '\0');
@@ -79,7 +79,7 @@ static_assert(cur.function_name()[0] == '\0');
 static_assert(compare_strings(cur.function_name(), "__builtin_FUNCTION is unsupported"));
 #endif // !__builtin_FUNCTION
 
-__host__ __device__ bool compare_strings(const char* lhs, const char* rhs) noexcept
+TEST_FUNC bool compare_strings(const char* lhs, const char* rhs) noexcept
 {
   for (size_t index = 0;; ++index)
   {
@@ -95,7 +95,7 @@ __host__ __device__ bool compare_strings(const char* lhs, const char* rhs) noexc
   }
 }
 
-__host__ __device__ bool find_substring(const char* source, const char* target) noexcept
+TEST_FUNC bool find_substring(const char* source, const char* target) noexcept
 {
   if (target[0] == '\0')
   {
@@ -127,7 +127,7 @@ __host__ __device__ bool find_substring(const char* source, const char* target) 
   }
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
 #line 2000
   auto local = cuda::std::source_location::current();

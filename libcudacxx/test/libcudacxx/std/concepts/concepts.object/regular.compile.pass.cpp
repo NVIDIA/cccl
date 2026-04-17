@@ -144,11 +144,11 @@ static_assert(!regular<cv_copy_assignment const volatile>);
 
 struct is_equality_comparable
 {
-  __host__ __device__ bool operator==(is_equality_comparable const&) const
+  TEST_FUNC bool operator==(is_equality_comparable const&) const
   {
     return true;
   }
-  __host__ __device__ bool operator!=(is_equality_comparable const&) const
+  TEST_FUNC bool operator!=(is_equality_comparable const&) const
   {
     return false;
   }

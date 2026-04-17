@@ -29,22 +29,22 @@ class A
   int data_;
 
 public:
-  __host__ __device__ A()
+  TEST_FUNC A()
       : data_(1)
   {}
-  __host__ __device__ ~A()
+  TEST_FUNC ~A()
   {
     data_ = -1;
   }
 
-  __host__ __device__ friend bool operator==(const A& x, const A& y)
+  TEST_FUNC friend bool operator==(const A& x, const A& y)
   {
     return x.data_ == y.data_;
   }
 };
 
 template <class It>
-__host__ __device__ void test(It i, typename cuda::std::iterator_traits<It>::value_type x)
+TEST_FUNC void test(It i, typename cuda::std::iterator_traits<It>::value_type x)
 {
   cuda::std::move_iterator<It> r(i);
   assert(*r == x);
@@ -54,7 +54,7 @@ __host__ __device__ void test(It i, typename cuda::std::iterator_traits<It>::val
 
 struct do_nothing
 {
-  __host__ __device__ void operator()(void*) const {}
+  TEST_FUNC void operator()(void*) const {}
 };
 
 int main(int, char**)

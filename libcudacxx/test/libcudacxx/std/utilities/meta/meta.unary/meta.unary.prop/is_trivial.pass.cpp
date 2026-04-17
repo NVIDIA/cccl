@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_trivial()
+TEST_FUNC void test_is_trivial()
 {
   static_assert(cuda::std::is_trivial<T>::value);
   static_assert(cuda::std::is_trivial<const T>::value);
@@ -28,7 +28,7 @@ __host__ __device__ void test_is_trivial()
 }
 
 template <class T>
-__host__ __device__ void test_is_not_trivial()
+TEST_FUNC void test_is_not_trivial()
 {
   static_assert(!cuda::std::is_trivial<T>::value);
   static_assert(!cuda::std::is_trivial<const T>::value);
@@ -46,7 +46,7 @@ struct A
 class B
 {
 public:
-  __host__ __device__ B();
+  TEST_FUNC B();
 };
 
 int main(int, char**)

@@ -25,7 +25,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ void checkCV()
+TEST_FUNC void checkCV()
 {
   cuda::std::array<int, 3> arr = {1, 2, 3};
   //  STL says these are not cromulent
@@ -61,7 +61,7 @@ __host__ __device__ void checkCV()
 }
 
 template <typename T, typename U>
-__host__ __device__ constexpr bool testConstructorArray()
+TEST_FUNC constexpr bool testConstructorArray()
 {
   cuda::std::array<U, 2> val = {U(), U()};
   static_assert(noexcept(cuda::std::span<T>{val}));
@@ -72,7 +72,7 @@ __host__ __device__ constexpr bool testConstructorArray()
 }
 
 template <typename T, typename U>
-__host__ __device__ constexpr bool testConstructorConstArray()
+TEST_FUNC constexpr bool testConstructorConstArray()
 {
   const cuda::std::array<U, 2> val = {U(), U()};
   static_assert(noexcept(cuda::std::span<const T>{val}));
@@ -83,7 +83,7 @@ __host__ __device__ constexpr bool testConstructorConstArray()
 }
 
 template <typename T>
-__host__ __device__ constexpr bool testConstructors()
+TEST_FUNC constexpr bool testConstructors()
 {
   static_assert((testConstructorArray<T, T>()));
   static_assert((testConstructorArray<const T, const T>()));

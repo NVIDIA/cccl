@@ -21,13 +21,13 @@
 
 struct test1
 {
-  __host__ __device__ constexpr bool operator()(const int& i) const
+  TEST_FUNC constexpr bool operator()(const int& i) const
   {
     return i % 2 == 0;
   }
 };
 
-__host__ __device__ constexpr bool test_constexpr()
+TEST_FUNC constexpr bool test_constexpr()
 {
   int ia[] = {2, 4, 6, 8};
   int ib[] = {2, 4, 5, 8};

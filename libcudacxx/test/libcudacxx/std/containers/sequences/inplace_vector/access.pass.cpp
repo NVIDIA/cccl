@@ -23,7 +23,7 @@
 #endif // TEST_HAS_EXCEPTIONS()
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   using vec = cuda::std::inplace_vector<T, 42>;
   vec range{T(1), T(1337), T(42), T(12), T(0), T(-1)};
@@ -69,7 +69,7 @@ __host__ __device__ constexpr void test()
   assert(const_data == cuda::std::addressof(const_front));
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<Trivial>();

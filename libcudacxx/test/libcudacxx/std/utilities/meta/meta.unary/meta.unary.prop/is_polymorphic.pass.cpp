@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_polymorphic()
+TEST_FUNC void test_is_polymorphic()
 {
   static_assert(cuda::std::is_polymorphic<T>::value);
   static_assert(cuda::std::is_polymorphic<const T>::value);
@@ -28,7 +28,7 @@ __host__ __device__ void test_is_polymorphic()
 }
 
 template <class T>
-__host__ __device__ void test_is_not_polymorphic()
+TEST_FUNC void test_is_not_polymorphic()
 {
   static_assert(!cuda::std::is_polymorphic<T>::value);
   static_assert(!cuda::std::is_polymorphic<const T>::value);
@@ -45,7 +45,7 @@ class Empty
 
 class NotEmpty
 {
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -58,7 +58,7 @@ struct bit_zero
 
 class Abstract
 {
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 class Final final

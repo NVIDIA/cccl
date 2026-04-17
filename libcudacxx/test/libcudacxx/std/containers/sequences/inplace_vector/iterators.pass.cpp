@@ -20,7 +20,7 @@
 #include "types.h"
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   using inplace_vector = cuda::std::inplace_vector<T, 42>;
   inplace_vector range{T(1), T(1337), T(42), T(12), T(0), T(-1)};
@@ -78,7 +78,7 @@ __host__ __device__ constexpr void test()
   assert(*cuda::std::prev(const_rend) == T(0));
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<Trivial>();

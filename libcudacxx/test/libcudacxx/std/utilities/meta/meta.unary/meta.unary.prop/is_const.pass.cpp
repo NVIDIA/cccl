@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_const()
+TEST_FUNC void test_is_const()
 {
   static_assert(!cuda::std::is_const<T>::value);
   static_assert(cuda::std::is_const<const T>::value);

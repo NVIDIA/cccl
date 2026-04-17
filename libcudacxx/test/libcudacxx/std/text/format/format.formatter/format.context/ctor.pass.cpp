@@ -25,7 +25,7 @@ template <class Expected>
 struct Visitor
 {
   template <class T>
-  [[nodiscard]] __host__ __device__ bool operator()([[maybe_unused]] T v) const
+  [[nodiscard]] TEST_FUNC bool operator()([[maybe_unused]] T v) const
   {
     if constexpr (cuda::std::is_same_v<T, Expected>)
     {
@@ -40,13 +40,13 @@ struct Visitor
 };
 
 template <class Context, class T>
-__host__ __device__ bool test_basic_format_arg(cuda::std::basic_format_arg<Context> arg, T expected)
+TEST_FUNC bool test_basic_format_arg(cuda::std::basic_format_arg<Context> arg, T expected)
 {
   return cuda::std::visit_format_arg(Visitor<T>{expected}, arg);
 }
 
 template <class CharT>
-__host__ __device__ void test_constructor()
+TEST_FUNC void test_constructor()
 {
   using Container = cuda::std::inplace_vector<CharT, 3>;
   using OutIt     = cuda::std::__back_insert_iterator<Container>;
@@ -83,7 +83,7 @@ __host__ __device__ void test_constructor()
   static_assert(!cuda::std::is_move_assignable_v<Context>);
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test_constructor<char>();
 #if _CCCL_HAS_WCHAR_T()

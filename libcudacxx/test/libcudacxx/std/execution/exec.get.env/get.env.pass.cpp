@@ -24,12 +24,12 @@
 
 struct an_env_t
 {
-  __host__ __device__ constexpr auto query(query1_t) const noexcept -> int
+  TEST_FUNC constexpr auto query(query1_t) const noexcept -> int
   {
     return 42;
   }
 
-  __host__ __device__ constexpr auto query(query2_t) const noexcept -> double
+  TEST_FUNC constexpr auto query(query2_t) const noexcept -> double
   {
     return 3.14;
   }
@@ -37,7 +37,7 @@ struct an_env_t
 
 struct env_provider
 {
-  __host__ __device__ constexpr auto get_env() const noexcept -> decltype(auto)
+  TEST_FUNC constexpr auto get_env() const noexcept -> decltype(auto)
   {
     return an_env_t{};
   }
@@ -46,7 +46,7 @@ struct env_provider
 struct none_such_t
 {};
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   env_provider provider;
   [[maybe_unused]] auto&& env = cuda::std::execution::get_env(provider);

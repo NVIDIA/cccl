@@ -26,7 +26,7 @@
 #include "test_macros.h"
 
 template <typename T>
-constexpr __host__ __device__ void test()
+constexpr TEST_FUNC void test()
 {
   // &
   {
@@ -128,7 +128,7 @@ constexpr __host__ __device__ void test()
   //
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   test<float>();
   test<double>();
@@ -145,7 +145,7 @@ __host__ __device__ bool test()
   return true;
 }
 
-constexpr __host__ __device__ bool test_constexpr()
+constexpr TEST_FUNC bool test_constexpr()
 {
   test<float>();
   test<double>();

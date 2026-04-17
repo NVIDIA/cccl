@@ -22,7 +22,7 @@
 struct Explicit
 {
   int value;
-  __host__ __device__ explicit Explicit(int x)
+  TEST_FUNC explicit Explicit(int x)
       : value(x)
   {}
 };
@@ -30,7 +30,7 @@ struct Explicit
 struct Implicit
 {
   int value;
-  __host__ __device__ Implicit(int x)
+  TEST_FUNC Implicit(int x)
       : value(x)
   {}
 };
@@ -39,16 +39,16 @@ struct B
 {
   int id_;
 
-  __host__ __device__ explicit B(int i)
+  TEST_FUNC explicit B(int i)
       : id_(i)
   {}
 
-  __host__ __device__ virtual ~B() {}
+  TEST_FUNC virtual ~B() {}
 };
 
 struct D : B
 {
-  __host__ __device__ explicit D(int i)
+  TEST_FUNC explicit D(int i)
       : B(i)
   {}
 };
@@ -56,12 +56,12 @@ struct D : B
 struct BonkersBananas
 {
   template <class T>
-  __host__ __device__ operator T() &&;
+  TEST_FUNC operator T() &&;
   template <class T, class = void>
-  __host__ __device__ explicit operator T() && = delete;
+  TEST_FUNC explicit operator T() && = delete;
 };
 
-__host__ __device__ void test_bonkers_bananas_conversion()
+TEST_FUNC void test_bonkers_bananas_conversion()
 {
   using ReturnType = cuda::std::tuple<int, int>;
   static_assert(cuda::std::is_convertible<BonkersBananas, ReturnType>());

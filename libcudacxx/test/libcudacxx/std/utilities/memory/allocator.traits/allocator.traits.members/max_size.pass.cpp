@@ -35,13 +35,13 @@ struct B
 {
   using value_type = T;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 cuda::std::size_t max_size() const
+  TEST_FUNC TEST_CONSTEXPR_CXX20 cuda::std::size_t max_size() const
   {
     return 100;
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     B<int> b;

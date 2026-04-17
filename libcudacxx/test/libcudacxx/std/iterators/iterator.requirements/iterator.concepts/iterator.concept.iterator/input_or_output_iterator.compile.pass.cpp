@@ -56,8 +56,8 @@ struct missing_dereference
 {
   using difference_type = cuda::std::ptrdiff_t;
 
-  __host__ __device__ missing_dereference& operator++();
-  __host__ __device__ missing_dereference& operator++(int);
+  TEST_FUNC missing_dereference& operator++();
+  TEST_FUNC missing_dereference& operator++(int);
 };
 static_assert(cuda::std::weakly_incrementable<missing_dereference>
                 && !cuda::std::input_or_output_iterator<missing_dereference>,
@@ -67,16 +67,16 @@ struct void_dereference
 {
   using difference_type = cuda::std::ptrdiff_t;
 
-  __host__ __device__ void operator*();
-  __host__ __device__ void_dereference& operator++();
-  __host__ __device__ void_dereference& operator++(int);
+  TEST_FUNC void operator*();
+  TEST_FUNC void_dereference& operator++();
+  TEST_FUNC void_dereference& operator++(int);
 };
 static_assert(
   cuda::std::weakly_incrementable<void_dereference> && !cuda::std::input_or_output_iterator<void_dereference>, "");
 
 struct not_weakly_incrementable
 {
-  __host__ __device__ int operator*() const;
+  TEST_FUNC int operator*() const;
 };
 static_assert(!cuda::std::input_or_output_iterator<not_weakly_incrementable>);
 

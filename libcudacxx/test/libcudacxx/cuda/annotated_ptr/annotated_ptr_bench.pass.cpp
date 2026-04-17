@@ -8,9 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "test_macros.h"
 #include "utils.h"
 
-__device__ void annotated_ptr_timing_dev(int* in, int* out)
+TEST_DEVICE_FUNC void annotated_ptr_timing_dev(int* in, int* out)
 {
   cuda::access_property ap(cuda::access_property::persisting{});
   // Retrieve global id
@@ -30,7 +31,7 @@ __global__ void annotated_ptr_timing(int* in, int* out)
   annotated_ptr_timing_dev(in, out);
 }
 
-__device__ void ptr_timing_dev(int* in, int* out)
+TEST_DEVICE_FUNC void ptr_timing_dev(int* in, int* out)
 {
   // Retrieve global id
   int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -43,7 +44,7 @@ __global__ void ptr_timing(int* in, int* out)
   ptr_timing_dev(in, out);
 };
 
-__device__ __host__ __noinline__ void bench()
+TEST_FUNC __noinline__ void bench()
 {
 #ifndef __CUDA_ARCH__
   static const size_t ARR_SZ     = 1 << 22;

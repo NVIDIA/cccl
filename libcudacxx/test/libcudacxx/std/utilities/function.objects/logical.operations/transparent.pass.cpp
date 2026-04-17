@@ -8,6 +8,7 @@
 
 #include <cuda/std/functional>
 // #include <cuda/std/string>
+#include "test_macros.h"
 
 template <class T>
 struct is_transparent
@@ -19,9 +20,9 @@ private:
     char lxx;
   };
   template <class U>
-  __host__ __device__ static two test(...);
+  TEST_FUNC static two test(...);
   template <class U>
-  __host__ __device__ static char test(typename U::is_transparent* = 0);
+  TEST_FUNC static char test(typename U::is_transparent* = 0);
 
 public:
   static const bool value = sizeof(test<T>(0)) == 1;

@@ -31,14 +31,14 @@
 
 TEST_GLOBAL_VARIABLE bool my_free_called = false;
 
-__host__ __device__ void my_free(void*)
+TEST_FUNC void my_free(void*)
 {
   my_free_called = true;
 }
 
 struct DeleterBase
 {
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*) const {}
 };
 struct CopyOnlyDeleter : DeleterBase
 {
@@ -58,7 +58,7 @@ struct NoCopyMoveDeleter : DeleterBase
 };
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
   using VT = typename cuda::std::conditional<!IsArray, int, int[]>::type;
   {
@@ -107,7 +107,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
 }
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_noexcept()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_noexcept()
 {
   using VT = typename cuda::std::conditional<!IsArray, int, int[]>::type;
   {
@@ -137,7 +137,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_noexcept()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae_runtime()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae_runtime()
 {
   {
     using D = CopyOnlyDeleter;
@@ -207,7 +207,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae_runtime()
 }
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
 {
   using VT               = typename cuda::std::conditional<!IsArray, A, A[]>::type;
   const int expect_alive = IsArray ? 5 : 1;
@@ -290,7 +290,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic_single()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic_single()
 {
   if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
   {
@@ -328,7 +328,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic_single()
 }
 
 template <bool IsArray>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_nullptr()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_nullptr()
 {
   using VT = typename cuda::std::conditional<!IsArray, A, A[]>::type;
   {
@@ -347,7 +347,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_nullptr()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     test_basic</*IsArray*/ false>();

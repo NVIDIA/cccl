@@ -18,13 +18,13 @@
 #include "test_macros.h"
 
 template <class Tuple>
-__host__ __device__ void test0(const Tuple&)
+TEST_FUNC void test0(const Tuple&)
 {
   static_assert(cuda::std::tuple_size<Tuple>::value == 0);
 }
 
 template <class Tuple>
-__host__ __device__ void test1a(const Tuple& t)
+TEST_FUNC void test1a(const Tuple& t)
 {
   static_assert(cuda::std::tuple_size<Tuple>::value == 1);
   static_assert(cuda::std::is_same<typename cuda::std::tuple_element<0, Tuple>::type, int&&>::value);
@@ -32,7 +32,7 @@ __host__ __device__ void test1a(const Tuple& t)
 }
 
 template <class Tuple>
-__host__ __device__ void test1b(const Tuple& t)
+TEST_FUNC void test1b(const Tuple& t)
 {
   static_assert(cuda::std::tuple_size<Tuple>::value == 1);
   static_assert(cuda::std::is_same<typename cuda::std::tuple_element<0, Tuple>::type, int&>::value);
@@ -40,7 +40,7 @@ __host__ __device__ void test1b(const Tuple& t)
 }
 
 template <class Tuple>
-__host__ __device__ void test2a(const Tuple& t)
+TEST_FUNC void test2a(const Tuple& t)
 {
   static_assert(cuda::std::tuple_size<Tuple>::value == 2);
   static_assert(cuda::std::is_same<typename cuda::std::tuple_element<0, Tuple>::type, double&>::value);
@@ -50,7 +50,7 @@ __host__ __device__ void test2a(const Tuple& t)
 }
 
 template <class Tuple>
-__host__ __device__ constexpr int test3(const Tuple&)
+TEST_FUNC constexpr int test3(const Tuple&)
 {
   return cuda::std::tuple_size<Tuple>::value;
 }

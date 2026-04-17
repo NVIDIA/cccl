@@ -28,7 +28,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_MSVC(5246)
 
 template <class T>
-__host__ __device__ constexpr void test_default()
+TEST_FUNC constexpr void test_default()
 {
   { // inplace_vecto<T, 0> is default_constructible
     cuda::std::inplace_vector<T, 0> vec{};
@@ -44,7 +44,7 @@ __host__ __device__ constexpr void test_default()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_copy_move()
+TEST_FUNC constexpr void test_copy_move()
 {
   // Zero capacity inplace_vector is trivial
   static_assert(cuda::std::is_nothrow_copy_constructible<cuda::std::inplace_vector<T, 0>>::value);
@@ -99,7 +99,7 @@ __host__ __device__ constexpr void test_copy_move()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_size()
+TEST_FUNC constexpr void test_size()
 {
   { // inplace_vector<T, 0> can be constructed from a size
     cuda::std::inplace_vector<T, 0> vec(0);
@@ -130,7 +130,7 @@ __host__ __device__ constexpr void test_size()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_size_value()
+TEST_FUNC constexpr void test_size_value()
 {
   { // inplace_vector<T, 0> can be constructed from a size and a const T&
     cuda::std::inplace_vector<T, 0> vec(0, T(42));
@@ -161,7 +161,7 @@ __host__ __device__ constexpr void test_size_value()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_iter()
+TEST_FUNC constexpr void test_iter()
 {
   const cuda::std::array<T, 4> input{T(1), T(42), T(1337), T(0)};
   { // inplace_vector<T, 0> can be constructed from two equal input iterators
@@ -205,7 +205,7 @@ __host__ __device__ constexpr void test_iter()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_init_list()
+TEST_FUNC constexpr void test_init_list()
 {
   { // inplace_vector<T, 0> can be constructed from an empty initializer_list
     cuda::std::initializer_list<T> input{};
@@ -230,7 +230,7 @@ __host__ __device__ constexpr void test_init_list()
 
 #if !TEST_COMPILER(MSVC)
 template <class T, template <class, size_t> class Range>
-__host__ __device__ constexpr void test_range()
+TEST_FUNC constexpr void test_range()
 {
   { // inplace_vector<T, 0> can be constructed from an empty range
     cuda::std::inplace_vector<T, 0> vec(cuda::std::from_range, Range<T, 0>{});
@@ -251,7 +251,7 @@ __host__ __device__ constexpr void test_range()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_range()
+TEST_FUNC constexpr void test_range()
 {
 #  if !TEST_COMPILER(GCC, <, 8)
   test_range<T, input_range>();
@@ -263,7 +263,7 @@ __host__ __device__ constexpr void test_range()
 #endif // !TEST_COMPILER(MSVC)
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_trivial<T>::value, int> = 0>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   test_default<T>();
   test_copy_move<T>();
@@ -277,7 +277,7 @@ __host__ __device__ constexpr void test()
 }
 
 template <class T, cuda::std::enable_if_t<!cuda::std::is_trivial<T>::value, int> = 0>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   test_default<T>();
 
@@ -294,7 +294,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<Trivial>();

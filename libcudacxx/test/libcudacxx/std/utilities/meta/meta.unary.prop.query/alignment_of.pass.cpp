@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T, unsigned A>
-__host__ __device__ void test_alignment_of()
+TEST_FUNC void test_alignment_of()
 {
   const unsigned AlignofResult = alignof(T);
   static_assert(AlignofResult == A, "Golden value does not match result of alignof keyword");
@@ -34,7 +34,7 @@ __host__ __device__ void test_alignment_of()
 class Class
 {
 public:
-  __host__ __device__ ~Class();
+  TEST_FUNC ~Class();
 };
 
 int main(int, char**)

@@ -41,7 +41,7 @@ union U
 #endif
 
 template <typename T, typename Expected>
-__host__ __device__ void check()
+TEST_FUNC void check()
 {
   static_assert(cuda::std::is_same_v<Expected, typename cuda::std::underlying_type<T>::type>);
   static_assert(cuda::std::is_same_v<Expected, typename cuda::std::underlying_type_t<T>>);

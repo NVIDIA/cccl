@@ -26,17 +26,17 @@ struct ConvertibleToReference
 {
   T val_;
 
-  __host__ __device__ constexpr operator T&() noexcept
+  TEST_FUNC constexpr operator T&() noexcept
   {
     return val_;
   }
 
-  __host__ __device__ constexpr operator const T&() const noexcept
+  TEST_FUNC constexpr operator const T&() const noexcept
   {
     return val_;
   }
 
-  __host__ __device__ friend constexpr bool operator==(const int& lhs, const ConvertibleToReference& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator==(const int& lhs, const ConvertibleToReference& rhs) noexcept
   {
     return lhs == rhs.val_;
   }
@@ -47,18 +47,17 @@ struct ExplicitlyConvertibleToReference
 {
   T val_;
 
-  __host__ __device__ explicit constexpr operator T&() noexcept
+  TEST_FUNC explicit constexpr operator T&() noexcept
   {
     return val_;
   }
 
-  __host__ __device__ explicit constexpr operator const T&() const noexcept
+  TEST_FUNC explicit constexpr operator const T&() const noexcept
   {
     return val_;
   }
 
-  __host__ __device__ friend constexpr bool
-  operator==(const int& lhs, const ExplicitlyConvertibleToReference& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator==(const int& lhs, const ExplicitlyConvertibleToReference& rhs) noexcept
   {
     return lhs == rhs.val_;
   }
@@ -66,7 +65,7 @@ struct ExplicitlyConvertibleToReference
 #endif // CCCL_ENABLE_OPTIONAL_REF
 
 template <class T, class U = T>
-__host__ __device__ constexpr bool test_one_arg()
+TEST_FUNC constexpr bool test_one_arg()
 {
   using Opt = cuda::std::optional<T>;
 
@@ -111,7 +110,7 @@ __host__ __device__ constexpr bool test_one_arg()
 }
 
 template <class T>
-__host__ __device__ constexpr bool test_multi_arg()
+TEST_FUNC constexpr bool test_multi_arg()
 {
   test_one_arg<T>();
 
@@ -144,7 +143,7 @@ __host__ __device__ constexpr bool test_multi_arg()
 }
 
 template <class T>
-__host__ __device__ void test_on_test_type()
+TEST_FUNC void test_on_test_type()
 {
   T::reset();
   optional<T> opt{};
@@ -272,7 +271,7 @@ void test_exceptions()
 }
 #endif // TEST_HAS_EXCEPTIONS()
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_one_arg<int>();
   test_one_arg<const int>();

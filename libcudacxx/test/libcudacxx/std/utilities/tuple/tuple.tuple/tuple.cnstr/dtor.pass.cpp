@@ -24,7 +24,7 @@
 
 struct not_trivially_destructible
 {
-  __host__ __device__ virtual ~not_trivially_destructible() {}
+  TEST_FUNC virtual ~not_trivially_destructible() {}
 };
 
 int main(int, char**)

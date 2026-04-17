@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_has_unique_object_representations()
+TEST_FUNC void test_has_unique_object_representations()
 {
   static_assert(cuda::std::has_unique_object_representations<T>::value);
   static_assert(cuda::std::has_unique_object_representations<const T>::value);
@@ -31,7 +31,7 @@ __host__ __device__ void test_has_unique_object_representations()
 }
 
 template <class T>
-__host__ __device__ void test_has_not_has_unique_object_representations()
+TEST_FUNC void test_has_not_has_unique_object_representations()
 {
   static_assert(!cuda::std::has_unique_object_representations<T>::value);
   static_assert(!cuda::std::has_unique_object_representations<const T>::value);
@@ -49,7 +49,7 @@ class Empty
 
 class NotEmpty
 {
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union EmptyUnion
@@ -67,12 +67,12 @@ struct bit_zero
 
 class Abstract
 {
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 struct A
 {
-  __host__ __device__ ~A();
+  TEST_FUNC ~A();
   unsigned foo;
 };
 

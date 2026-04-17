@@ -14,6 +14,8 @@
 #include <cuda/std/concepts>
 #include <cuda/std/ranges>
 
+#include "test_macros.h"
+
 struct DefaultInt42
 {
   int value = 42;
@@ -21,13 +23,13 @@ struct DefaultInt42
 
 struct Int
 {
-  __host__ __device__ Int(int) {}
+  TEST_FUNC Int(int) {}
 };
 
 static_assert(cuda::std::default_initializable<cuda::std::ranges::repeat_view<DefaultInt42>>);
 static_assert(!cuda::std::default_initializable<cuda::std::ranges::repeat_view<Int>>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::ranges::repeat_view<DefaultInt42> rv;
   assert((*rv.begin()).value == 42);

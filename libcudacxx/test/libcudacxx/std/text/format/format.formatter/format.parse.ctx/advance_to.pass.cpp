@@ -19,7 +19,7 @@
 #include "literal.h"
 
 template <class CharT>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   CharT fmt[4]{};
   cuda::std::__cccl_strcpy(fmt, TEST_STRLIT(CharT, "abc"));
@@ -51,7 +51,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<char>();
 #if _CCCL_HAS_CHAR8_T()

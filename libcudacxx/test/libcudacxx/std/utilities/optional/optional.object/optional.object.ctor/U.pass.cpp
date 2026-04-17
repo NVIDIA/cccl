@@ -29,7 +29,7 @@ using cuda::std::optional;
 struct ImplicitAny
 {
   template <class U>
-  __host__ __device__ constexpr ImplicitAny(U&&)
+  TEST_FUNC constexpr ImplicitAny(U&&)
   {}
 };
 
@@ -39,12 +39,12 @@ struct ConvertibleToReference
 {
   T val_;
 
-  __host__ __device__ constexpr operator T&() noexcept
+  TEST_FUNC constexpr operator T&() noexcept
   {
     return val_;
   }
 
-  __host__ __device__ constexpr operator const T&() const noexcept
+  TEST_FUNC constexpr operator const T&() const noexcept
   {
     return val_;
   }
@@ -55,12 +55,12 @@ struct ExplicitlyConvertibleToReference
 {
   T val_;
 
-  __host__ __device__ explicit constexpr operator T&() noexcept
+  TEST_FUNC explicit constexpr operator T&() noexcept
   {
     return val_;
   }
 
-  __host__ __device__ explicit constexpr operator const T&() const noexcept
+  TEST_FUNC explicit constexpr operator const T&() const noexcept
   {
     return val_;
   }
@@ -68,7 +68,7 @@ struct ExplicitlyConvertibleToReference
 #endif // CCCL_ENABLE_OPTIONAL_REF
 
 template <class To>
-__host__ __device__ constexpr optional<To> implicit_conversion(optional<To>&& opt)
+TEST_FUNC constexpr optional<To> implicit_conversion(optional<To>&& opt)
 {
   return opt;
 }
@@ -80,7 +80,7 @@ enum class IsExplicit
 };
 
 template <IsExplicit is_explicit, class To, class From>
-__host__ __device__ constexpr void test([[maybe_unused]] From input)
+TEST_FUNC constexpr void test([[maybe_unused]] From input)
 {
   if constexpr (cuda::std::is_convertible_v<const From&, optional<To>>)
   {
@@ -122,7 +122,7 @@ __host__ __device__ constexpr void test([[maybe_unused]] From input)
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // implicit conversions
   test<IsExplicit::No, int>(42);

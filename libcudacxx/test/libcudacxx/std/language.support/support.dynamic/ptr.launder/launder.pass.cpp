@@ -18,7 +18,7 @@
 TEST_GLOBAL_VARIABLE constexpr int gi   = 5;
 TEST_GLOBAL_VARIABLE constexpr float gf = 8.f;
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   assert(cuda::std::launder(&gi) == &gi);
   assert(cuda::std::launder(&gf) == &gf);

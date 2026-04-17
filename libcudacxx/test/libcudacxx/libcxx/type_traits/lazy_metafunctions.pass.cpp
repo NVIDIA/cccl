@@ -48,9 +48,9 @@ template <class Type>
 struct HasTypeImp
 {
   template <class Up, class = typename Up::type>
-  __host__ __device__ static TrueT test(int);
+  TEST_FUNC static TrueT test(int);
   template <class>
-  __host__ __device__ static FalseT test(...);
+  TEST_FUNC static FalseT test(...);
 
   using type = decltype(test<Type>(0));
 };
@@ -61,7 +61,7 @@ template <class Type>
 struct HasType : HasTypeImp<Type>::type
 {};
 
-__host__ __device__ void LazyNotTest()
+TEST_FUNC void LazyNotTest()
 {
   {
     using NotT = cuda::std::_Not<LazyTrueT>;
@@ -81,7 +81,7 @@ __host__ __device__ void LazyNotTest()
   }
 }
 
-__host__ __device__ void LazyAndTest()
+TEST_FUNC void LazyAndTest()
 {
   { // Test that it acts as the identity function for a single value
     static_assert(cuda::std::_And<LazyFalseT>::value == false);
@@ -99,7 +99,7 @@ __host__ __device__ void LazyAndTest()
   }
 }
 
-__host__ __device__ void LazyOrTest()
+TEST_FUNC void LazyOrTest()
 {
   { // Test that it acts as the identity function for a single value
     static_assert(cuda::std::_Or<LazyFalseT>::value == false);

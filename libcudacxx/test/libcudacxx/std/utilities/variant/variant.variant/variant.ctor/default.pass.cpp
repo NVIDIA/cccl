@@ -24,12 +24,12 @@
 
 struct NonDefaultConstructible
 {
-  __host__ __device__ constexpr NonDefaultConstructible(int) {}
+  TEST_FUNC constexpr NonDefaultConstructible(int) {}
 };
 
 struct NotNoexcept
 {
-  __host__ __device__ NotNoexcept() noexcept(false) {}
+  TEST_FUNC NotNoexcept() noexcept(false) {}
 };
 
 #if TEST_HAS_EXCEPTIONS()
@@ -42,7 +42,7 @@ struct DefaultCtorThrows
 };
 #endif // TEST_HAS_EXCEPTIONS()
 
-__host__ __device__ void test_default_ctor_sfinae()
+TEST_FUNC void test_default_ctor_sfinae()
 {
   {
     using V = cuda::std::variant<cuda::std::monostate, int>;
@@ -60,7 +60,7 @@ __host__ __device__ void test_default_ctor_sfinae()
 #endif
 }
 
-__host__ __device__ void test_default_ctor_noexcept()
+TEST_FUNC void test_default_ctor_noexcept()
 {
   {
     using V = cuda::std::variant<int>;
@@ -92,7 +92,7 @@ void test_default_ctor_throws()
 }
 #endif // TEST_HAS_EXCEPTIONS()
 
-__host__ __device__ void test_default_ctor_basic()
+TEST_FUNC void test_default_ctor_basic()
 {
   {
     cuda::std::variant<int> v;

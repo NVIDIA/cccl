@@ -46,7 +46,7 @@ constexpr unsigned long long powers[] = {
   10000000000000000000ULL};
 
 template <typename Duration, unsigned width>
-__host__ __device__ constexpr bool check_precision()
+TEST_FUNC constexpr bool check_precision()
 {
   using HMS = cuda::std::chrono::hh_mm_ss<Duration>;
   using CT  = cuda::std::common_type_t<typename Duration::rep, cuda::std::chrono::seconds::rep>;

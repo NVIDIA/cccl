@@ -27,7 +27,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_MSVC(5246)
 
 template <class T, template <class, size_t> class Range>
-__host__ __device__ constexpr void test_range()
+TEST_FUNC constexpr void test_range()
 {
   [[maybe_unused]] constexpr size_t max_capacity = 5ull;
   using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
@@ -105,7 +105,7 @@ __host__ __device__ constexpr void test_range()
 }
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   [[maybe_unused]] constexpr size_t max_capacity = 42ull;
   using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
@@ -202,7 +202,7 @@ __host__ __device__ constexpr void test()
   test_range<T, cuda::std::array>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<Trivial>();

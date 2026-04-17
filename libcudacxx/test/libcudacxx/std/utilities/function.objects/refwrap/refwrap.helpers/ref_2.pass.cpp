@@ -20,13 +20,13 @@
 #include "counting_predicates.h"
 #include "test_macros.h"
 
-__host__ __device__ bool is5(int i)
+TEST_FUNC bool is5(int i)
 {
   return i == 5;
 }
 
 template <typename T>
-__host__ __device__ bool call_pred(T pred)
+TEST_FUNC bool call_pred(T pred)
 {
   return pred(5);
 }
@@ -35,10 +35,10 @@ namespace adl
 {
 struct A
 {};
-__host__ __device__ void ref(A) {}
+TEST_FUNC void ref(A) {}
 } // namespace adl
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     int i                                = 0;

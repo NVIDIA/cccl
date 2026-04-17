@@ -19,20 +19,20 @@
 
 struct NoDefault
 {
-  __host__ __device__ constexpr NoDefault(int) {}
+  TEST_FUNC constexpr NoDefault(int) {}
 };
 
 struct NonTrivialCopy
 {
-  __host__ __device__ constexpr NonTrivialCopy() {}
-  __host__ __device__ constexpr NonTrivialCopy(NonTrivialCopy const&) {}
-  __host__ __device__ constexpr NonTrivialCopy& operator=(NonTrivialCopy const&)
+  TEST_FUNC constexpr NonTrivialCopy() {}
+  TEST_FUNC constexpr NonTrivialCopy(NonTrivialCopy const&) {}
+  TEST_FUNC constexpr NonTrivialCopy& operator=(NonTrivialCopy const&)
   {
     return *this;
   }
 };
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   {
     using Array = cuda::std::array<double, 3>;

@@ -21,7 +21,7 @@
 using cuda::std::span;
 
 template <typename T>
-__host__ __device__ constexpr bool doAssign(T lhs, T rhs)
+TEST_FUNC constexpr bool doAssign(T lhs, T rhs)
 {
   static_assert(noexcept(cuda::std::declval<T&>() = rhs));
   lhs = rhs;
@@ -34,7 +34,7 @@ struct A
 TEST_GLOBAL_VARIABLE constexpr int carr1[] = {1, 2, 3, 4};
 TEST_GLOBAL_VARIABLE constexpr int carr2[] = {3, 4, 5};
 TEST_GLOBAL_VARIABLE constexpr int carr3[] = {7, 8};
-__device__ int arr[]                       = {5, 6, 7, 9};
+TEST_GLOBAL_VARIABLE int arr[]             = {5, 6, 7, 9};
 
 int main(int, char**)
 {

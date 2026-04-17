@@ -18,7 +18,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   // Ensure that we pack the inplace_vector as tight as possible
   static_assert(cuda::std::is_empty<cuda::std::inplace_vector<int, 0>>::value);

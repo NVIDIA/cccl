@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_member_pointer()
+TEST_FUNC void test_is_member_pointer()
 {
   static_assert(cuda::std::is_member_pointer<T>::value);
   static_assert(cuda::std::is_member_pointer<const T>::value);
@@ -29,7 +29,7 @@ __host__ __device__ void test_is_member_pointer()
 }
 
 template <class T>
-__host__ __device__ void test_is_not_member_pointer()
+TEST_FUNC void test_is_not_member_pointer()
 {
   static_assert(!cuda::std::is_member_pointer<T>::value);
   static_assert(!cuda::std::is_member_pointer<const T>::value);
@@ -46,7 +46,7 @@ class Empty
 
 class NotEmpty
 {
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -59,7 +59,7 @@ struct bit_zero
 
 class Abstract
 {
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 enum Enum

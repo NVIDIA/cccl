@@ -24,19 +24,19 @@
 template <int ID = 0>
 struct GenericDeleter
 {
-  __host__ __device__ void operator()(void*) const {}
+  TEST_FUNC void operator()(void*) const {}
 };
 
 template <int ID = 0>
 struct GenericConvertingDeleter
 {
   template <int OID>
-  __host__ __device__ GenericConvertingDeleter(GenericConvertingDeleter<OID>)
+  TEST_FUNC GenericConvertingDeleter(GenericConvertingDeleter<OID>)
   {}
-  __host__ __device__ void operator()(void*) const {}
+  TEST_FUNC void operator()(void*) const {}
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
   { // Disallow copying
     using U1 = cuda::std::unique_ptr<A[], GenericConvertingDeleter<0>>;
@@ -81,7 +81,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   test_sfinae();
 

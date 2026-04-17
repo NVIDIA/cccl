@@ -25,12 +25,12 @@ struct count_equal
 {
   unsigned& count_;
 
-  __host__ __device__ constexpr count_equal(unsigned& count) noexcept
+  TEST_FUNC constexpr count_equal(unsigned& count) noexcept
       : count_(count)
   {}
 
   template <class T>
-  __host__ __device__ constexpr bool operator()(const T& x, const T& y) const noexcept
+  TEST_FUNC constexpr bool operator()(const T& x, const T& y) const noexcept
   {
     ++count_;
     return x == y;
@@ -38,7 +38,7 @@ struct count_equal
 };
 
 template <class Iter1, class Iter2>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   unsigned count_equal_count = 0;
 

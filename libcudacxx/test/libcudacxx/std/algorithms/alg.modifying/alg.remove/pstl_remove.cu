@@ -29,11 +29,13 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_macros.h"
+
 inline constexpr int size = 10000;
 
 struct is_42
 {
-  __device__ constexpr bool operator()(const int& value) const noexcept
+  TEST_DEVICE_FUNC constexpr bool operator()(const int& value) const noexcept
   {
     return value == 42;
   }

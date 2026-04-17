@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <class It>
-__host__ __device__ void test_single_pass(It i, It x)
+TEST_FUNC void test_single_pass(It i, It x)
 {
   cuda::std::move_iterator<It> r(cuda::std::move(i));
   r++;
@@ -29,7 +29,7 @@ __host__ __device__ void test_single_pass(It i, It x)
 }
 
 template <class It>
-__host__ __device__ void test(It i, It x)
+TEST_FUNC void test(It i, It x)
 {
   cuda::std::move_iterator<It> r(i);
   cuda::std::move_iterator<It> rr = r++;

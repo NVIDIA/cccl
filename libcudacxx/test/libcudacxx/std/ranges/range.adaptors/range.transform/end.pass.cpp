@@ -25,7 +25,7 @@
 template <class T>
 _CCCL_CONCEPT HasConstQualifiedEnd = _CCCL_REQUIRES_EXPR((T), const T& t)((t.end()));
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     using TransformView = cuda::std::ranges::transform_view<ForwardView, PlusOneMutable>;

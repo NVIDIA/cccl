@@ -31,7 +31,7 @@ _CCCL_CONCEPT canPlusEqual = _CCCL_REQUIRES_EXPR((T, U), T& t, U& u)(t += u);
 template <class T, class U>
 _CCCL_CONCEPT canMinusEqual = _CCCL_REQUIRES_EXPR((T, U), T& t, U& u)(t -= u);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int a[]    = {1, 2, 3, 4, 5};
   double b[] = {4.1, 3.2, 4.3, 0.1, 0.2};

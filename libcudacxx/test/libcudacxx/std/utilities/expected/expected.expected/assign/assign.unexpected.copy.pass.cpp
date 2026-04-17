@@ -51,8 +51,8 @@ struct MoveMayThrow
 {
   MoveMayThrow(MoveMayThrow const&)            = default;
   MoveMayThrow& operator=(const MoveMayThrow&) = default;
-  __host__ __device__ MoveMayThrow(MoveMayThrow&&) noexcept(false) {}
-  __host__ __device__ MoveMayThrow& operator=(MoveMayThrow&&) noexcept(false)
+  TEST_FUNC MoveMayThrow(MoveMayThrow&&) noexcept(false) {}
+  TEST_FUNC MoveMayThrow& operator=(MoveMayThrow&&) noexcept(false)
   {
     return *this;
   }
@@ -74,10 +74,10 @@ static_assert(!cuda::std::is_assignable_v<cuda::std::expected<int, NotCopyAssign
 template <bool moveNoexcept, bool convertNoexcept>
 struct MaybeNoexcept
 {
-  __host__ __device__ explicit MaybeNoexcept(int) noexcept(convertNoexcept);
-  __host__ __device__ MaybeNoexcept(MaybeNoexcept&&) noexcept(moveNoexcept);
+  TEST_FUNC explicit MaybeNoexcept(int) noexcept(convertNoexcept);
+  TEST_FUNC MaybeNoexcept(MaybeNoexcept&&) noexcept(moveNoexcept);
   MaybeNoexcept& operator=(MaybeNoexcept&&) = default;
-  __host__ __device__ MaybeNoexcept& operator=(int);
+  TEST_FUNC MaybeNoexcept& operator=(int);
 };
 
 // !is_nothrow_constructible_v<E, GF> && !is_nothrow_move_constructible_v<T> &&
@@ -104,7 +104,7 @@ static_assert(!cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<fals
                                           const cuda::std::unexpected<int>&>,
               "");
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   // - If has_value() is true, equivalent to:
   //   reinit-expected(unex, val, cuda::std::forward<GF>(e.error()));

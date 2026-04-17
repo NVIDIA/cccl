@@ -33,12 +33,12 @@ TEST_GLOBAL_VARIABLE constexpr int device_reservoir_sample2[sample_size] = {5, 2
 
 struct ReservoirSampleExpectations
 {
-  __host__ __device__ static constexpr const int* get_sample1() noexcept
+  TEST_FUNC static constexpr const int* get_sample1() noexcept
   {
     unused(host_reservoir_sample1, device_reservoir_sample1);
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return device_reservoir_sample1;), (return host_reservoir_sample1;))
   }
-  __host__ __device__ static constexpr const int* get_sample2() noexcept
+  TEST_FUNC static constexpr const int* get_sample2() noexcept
   {
     unused(host_reservoir_sample2, device_reservoir_sample2);
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return device_reservoir_sample2;), (return host_reservoir_sample2;))
@@ -52,12 +52,12 @@ TEST_GLOBAL_VARIABLE constexpr int device_selection_sample2[sample_size] = {1, 2
 
 struct SelectionSampleExpectations
 {
-  __host__ __device__ static constexpr const int* get_sample1() noexcept
+  TEST_FUNC static constexpr const int* get_sample1() noexcept
   {
     unused(device_selection_sample1, host_selection_sample1);
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return device_selection_sample1;), (return host_selection_sample1;))
   }
-  __host__ __device__ static constexpr const int* get_sample2() noexcept
+  TEST_FUNC static constexpr const int* get_sample2() noexcept
   {
     unused(device_selection_sample2, host_selection_sample2);
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return device_selection_sample2;), (return host_selection_sample2;))
@@ -76,7 +76,7 @@ template <template <class...> class PopulationIteratorType,
           class PopulationItem,
           template <class...> class SampleIteratorType,
           class SampleItem>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using PopulationIterator = PopulationIteratorType<PopulationItem*>;
   using SampleIterator     = SampleIteratorType<SampleItem*>;
@@ -103,7 +103,7 @@ template <template <class...> class PopulationIteratorType,
           class PopulationItem,
           template <class...> class SampleIteratorType,
           class SampleItem>
-__host__ __device__ void test_empty_population()
+TEST_FUNC void test_empty_population()
 {
   using PopulationIterator = PopulationIteratorType<PopulationItem*>;
   using SampleIterator     = SampleIteratorType<SampleItem*>;
@@ -119,7 +119,7 @@ template <template <class...> class PopulationIteratorType,
           class PopulationItem,
           template <class...> class SampleIteratorType,
           class SampleItem>
-__host__ __device__ void test_empty_sample()
+TEST_FUNC void test_empty_sample()
 {
   using PopulationIterator = PopulationIteratorType<PopulationItem*>;
   using SampleIterator     = SampleIteratorType<SampleItem*>;
@@ -135,7 +135,7 @@ template <template <class...> class PopulationIteratorType,
           class PopulationItem,
           template <class...> class SampleIteratorType,
           class SampleItem>
-__host__ __device__ void test_small_population()
+TEST_FUNC void test_small_population()
 {
   // The population size is less than the sample size.
   using PopulationIterator = PopulationIteratorType<PopulationItem*>;

@@ -25,13 +25,13 @@ TEST_GLOBAL_VARIABLE int count = 0;
 struct Explicit
 {
   Explicit() = default;
-  __host__ __device__ explicit Explicit(int) {}
+  TEST_FUNC explicit Explicit(int) {}
 };
 
 struct Implicit
 {
   Implicit() = default;
-  __host__ __device__ Implicit(int) {}
+  TEST_FUNC Implicit(int) {}
 };
 
 template <class T>
@@ -39,7 +39,7 @@ struct Derived : cuda::std::tuple<T>
 {
   using cuda::std::tuple<T>::tuple;
   template <class U>
-  __host__ __device__ operator cuda::std::tuple<U>() &&
+  TEST_FUNC operator cuda::std::tuple<U>() &&
   {
     ++count;
     return {};
@@ -51,7 +51,7 @@ struct ExplicitDerived : cuda::std::tuple<T>
 {
   using cuda::std::tuple<T>::tuple;
   template <class U>
-  __host__ __device__ explicit operator cuda::std::tuple<U>() &&
+  TEST_FUNC explicit operator cuda::std::tuple<U>() &&
   {
     ++count;
     return {};

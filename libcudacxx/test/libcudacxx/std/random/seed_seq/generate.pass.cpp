@@ -16,7 +16,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   static_assert(noexcept(cuda::std::seed_seq{}));
   cuda::std::seed_seq seq{1, 2, 3, 4, 5};

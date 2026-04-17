@@ -28,7 +28,7 @@
 {
 } none_such{};
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   [[maybe_unused]] cuda::std::execution::prop<a_query_t, int> prop1{a_query, 42};
   [[maybe_unused]] cuda::std::execution::prop prop2{a_query, 42};

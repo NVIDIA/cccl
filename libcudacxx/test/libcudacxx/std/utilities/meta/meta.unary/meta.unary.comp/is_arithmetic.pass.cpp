@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_arithmetic()
+TEST_FUNC void test_is_arithmetic()
 {
   static_assert(cuda::std::is_arithmetic<T>::value);
   static_assert(cuda::std::is_arithmetic<const T>::value);
@@ -29,7 +29,7 @@ __host__ __device__ void test_is_arithmetic()
 }
 
 template <class T>
-__host__ __device__ void test_is_not_arithmetic()
+TEST_FUNC void test_is_not_arithmetic()
 {
   static_assert(!cuda::std::is_arithmetic<T>::value);
   static_assert(!cuda::std::is_arithmetic<const T>::value);
@@ -48,7 +48,7 @@ class Empty
 
 class NotEmpty
 {
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -61,7 +61,7 @@ struct bit_zero
 
 class Abstract
 {
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 enum Enum

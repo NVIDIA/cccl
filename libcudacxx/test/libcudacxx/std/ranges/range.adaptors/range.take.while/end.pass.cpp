@@ -41,7 +41,7 @@ _CCCL_CONCEPT HasOnlyConstEnd = HasConstEnd<T> && !HasConstAndNonConstEnd<T>;
 
 struct Pred
 {
-  __host__ __device__ constexpr bool operator()(int i) const
+  TEST_FUNC constexpr bool operator()(int i) const
   {
     return i < 5;
   }
@@ -55,14 +55,14 @@ static_assert(HasConstAndNonConstEnd<cuda::std::ranges::take_while_view<NonSimpl
 
 struct NotPredForConst
 {
-  __host__ __device__ constexpr bool operator()(int& i) const
+  TEST_FUNC constexpr bool operator()(int& i) const
   {
     return i > 5;
   }
 };
 static_assert(HasOnlyNonConstEnd<cuda::std::ranges::take_while_view<NonSimple, NotPredForConst>>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // simple-view
   {

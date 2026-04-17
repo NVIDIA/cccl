@@ -23,7 +23,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test(T expected)
+TEST_FUNC void test(T expected)
 {
   assert(float_eq(cuda::std::numeric_limits<T>::epsilon(), expected));
   assert(float_eq(cuda::std::numeric_limits<const T>::epsilon(), expected));

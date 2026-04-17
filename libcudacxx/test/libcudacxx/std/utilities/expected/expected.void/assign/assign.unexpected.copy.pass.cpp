@@ -49,8 +49,8 @@ struct MoveMayThrow
 {
   MoveMayThrow(MoveMayThrow const&)            = default;
   MoveMayThrow& operator=(const MoveMayThrow&) = default;
-  __host__ __device__ MoveMayThrow(MoveMayThrow&&) noexcept(false) {}
-  __host__ __device__ MoveMayThrow& operator=(MoveMayThrow&&) noexcept(false)
+  TEST_FUNC MoveMayThrow(MoveMayThrow&&) noexcept(false) {}
+  TEST_FUNC MoveMayThrow& operator=(MoveMayThrow&&) noexcept(false)
   {
     return *this;
   }
@@ -69,7 +69,7 @@ static_assert(!cuda::std::is_assignable_v<cuda::std::expected<void, NotCopyAssig
                                           const cuda::std::unexpected<NotCopyAssignable>&>,
               "");
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   // - If has_value() is true, equivalent to:
   //   construct_at(addressof(unex), cuda::std::forward<GF>(e.error()));

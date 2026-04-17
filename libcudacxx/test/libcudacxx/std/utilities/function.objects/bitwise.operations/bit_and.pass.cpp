@@ -18,14 +18,14 @@
 
 #include "test_macros.h"
 
-// ensure that we allow `__device__` functions too
+// ensure that we allow `TEST_DEVICE_FUNC` functions too
 struct with_device_op
 {
-  __device__ friend constexpr with_device_op operator&(const with_device_op&, const with_device_op&)
+  TEST_DEVICE_FUNC friend constexpr with_device_op operator&(const with_device_op&, const with_device_op&)
   {
     return {};
   }
-  __device__ constexpr operator bool() const
+  TEST_DEVICE_FUNC constexpr operator bool() const
   {
     return true;
   }

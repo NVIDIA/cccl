@@ -26,9 +26,9 @@ static_assert(cuda::std::is_swappable_v<cuda::std::expected<void, int>>);
 
 struct NotSwappable
 {
-  __host__ __device__ NotSwappable& operator=(const NotSwappable&) = delete;
+  TEST_FUNC NotSwappable& operator=(const NotSwappable&) = delete;
 };
-__host__ __device__ void swap(NotSwappable&, NotSwappable&) = delete;
+TEST_FUNC void swap(NotSwappable&, NotSwappable&) = delete;
 
 // !is_swappable_v<E>
 static_assert(!cuda::std::is_swappable_v<cuda::std::expected<void, NotSwappable>>);
@@ -36,7 +36,7 @@ static_assert(!cuda::std::is_swappable_v<cuda::std::expected<void, NotSwappable>
 struct NotMoveContructible
 {
   NotMoveContructible(NotMoveContructible&&) = delete;
-  __host__ __device__ friend void swap(NotMoveContructible&, NotMoveContructible&) {}
+  TEST_FUNC friend void swap(NotMoveContructible&, NotMoveContructible&) {}
 };
 
 // !is_move_constructible_v<E>
@@ -45,8 +45,8 @@ static_assert(!cuda::std::is_swappable_v<cuda::std::expected<void, NotMoveContru
 // Test noexcept
 struct MoveMayThrow
 {
-  __host__ __device__ MoveMayThrow(MoveMayThrow&&) noexcept(false);
-  __host__ __device__ friend void swap(MoveMayThrow&, MoveMayThrow&) noexcept {}
+  TEST_FUNC MoveMayThrow(MoveMayThrow&&) noexcept(false);
+  TEST_FUNC friend void swap(MoveMayThrow&, MoveMayThrow&) noexcept {}
 };
 static_assert(cuda::std::is_nothrow_swappable_v<cuda::std::expected<void, int>>);
 
@@ -55,11 +55,11 @@ static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<void, MoveM
 
 struct SwapMayThrow
 {
-  __host__ __device__ friend void swap(SwapMayThrow&, SwapMayThrow&) noexcept(false) {}
+  TEST_FUNC friend void swap(SwapMayThrow&, SwapMayThrow&) noexcept(false) {}
 };
 static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<void, SwapMayThrow>>);
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   // this->has_value() && rhs.has_value()
   {

@@ -12,10 +12,11 @@
 #include <cuda/std/cmath>
 
 #include "host_device_comparison.h"
+#include "test_macros.h"
 
 struct func
 {
-  __host__ __device__ __nv_bfloat16 operator()(cuda::std::size_t i) const
+  TEST_FUNC __nv_bfloat16 operator()(cuda::std::size_t i) const
   {
     auto raw = __nv_bfloat16_raw();
     raw.x    = (unsigned short) i;

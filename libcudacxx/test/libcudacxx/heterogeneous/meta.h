@@ -17,6 +17,8 @@
 #ifndef HETEROGENEOUS_META_H
 #define HETEROGENEOUS_META_H
 
+#include "test_macros.h"
+
 template <typename... Tx>
 struct type_list
 {};
