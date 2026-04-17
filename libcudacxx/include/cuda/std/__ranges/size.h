@@ -55,13 +55,13 @@ _CCCL_CONCEPT __size_enabled = !disable_sized_range<remove_cvref_t<_Tp>>;
 #if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
 concept __member_size = __size_enabled<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
-  { _LIBCUDACXX_AUTO_CAST(__t.size()) } -> __integer_like;
+  { _CCCL_AUTO_CAST(__t.size()) } -> __integer_like;
 };
 
 template <class _Tp>
 concept __unqualified_size =
   __size_enabled<_Tp> && !__member_size<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
-    { _LIBCUDACXX_AUTO_CAST(size(__t)) } -> __integer_like;
+    { _CCCL_AUTO_CAST(size(__t)) } -> __integer_like;
   };
 
 template <class _Tp>
@@ -77,7 +77,7 @@ template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__member_size_,
                        requires(_Tp&& __t)(requires(__size_enabled<_Tp>),
                                            requires(__workaround_52970<_Tp>),
-                                           requires(__integer_like<decltype(_LIBCUDACXX_AUTO_CAST(__t.size()))>)));
+                                           requires(__integer_like<decltype(_CCCL_AUTO_CAST(__t.size()))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __member_size = _CCCL_FRAGMENT(__member_size_, _Tp);
@@ -88,7 +88,7 @@ _CCCL_CONCEPT_FRAGMENT(
   requires(_Tp&& __t)(requires(__size_enabled<_Tp>),
                       requires(!__member_size<_Tp>),
                       requires(__class_or_enum<remove_cvref_t<_Tp>>),
-                      requires(__integer_like<decltype(_LIBCUDACXX_AUTO_CAST(size(__t)))>)));
+                      requires(__integer_like<decltype(_CCCL_AUTO_CAST(size(__t)))>)));
 
 template <class _Tp>
 _CCCL_CONCEPT __unqualified_size = _CCCL_FRAGMENT(__unqualified_size_, _Tp);
@@ -127,20 +127,18 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_size<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.size())))
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(_CCCL_AUTO_CAST(__t.size())))
   {
-    return _LIBCUDACXX_AUTO_CAST(__t.size());
+    return _CCCL_AUTO_CAST(__t.size());
   }
 
   // `[range.prim.size]`: `auto(size(t))` is a valid expression.
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_size<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const
-    noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(size(__t))))
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(_CCCL_AUTO_CAST(size(__t))))
   {
-    return _LIBCUDACXX_AUTO_CAST(size(__t));
+    return _CCCL_AUTO_CAST(size(__t));
   }
 
   // [range.prim.size]: the `to-unsigned-like` case.
