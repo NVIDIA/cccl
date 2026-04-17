@@ -29,9 +29,9 @@ struct not_trivially_destructible
 
 int main(int, char**)
 {
-  static_assert(cuda::std::is_trivially_destructible<cuda::std::tuple<>>::value, "");
-  static_assert(cuda::std::is_trivially_destructible<cuda::std::tuple<void*>>::value, "");
-  static_assert(cuda::std::is_trivially_destructible<cuda::std::tuple<int, float>>::value, "");
+  static_assert(cuda::std::is_trivially_destructible<cuda::std::tuple<>>::value);
+  static_assert(cuda::std::is_trivially_destructible<cuda::std::tuple<void*>>::value);
+  static_assert(cuda::std::is_trivially_destructible<cuda::std::tuple<int, float>>::value);
   // cuda::std::string is not supported
   /*
   static_assert(!cuda::std::is_trivially_destructible<
@@ -40,7 +40,7 @@ int main(int, char**)
       cuda::std::tuple<int, not_trivially_destructible> >::value, "");
   */
   // non-string check
-  static_assert(!cuda::std::is_trivially_destructible<cuda::std::tuple<not_trivially_destructible>>::value, "");
-  static_assert(!cuda::std::is_trivially_destructible<cuda::std::tuple<int, not_trivially_destructible>>::value, "");
+  static_assert(!cuda::std::is_trivially_destructible<cuda::std::tuple<not_trivially_destructible>>::value);
+  static_assert(!cuda::std::is_trivially_destructible<cuda::std::tuple<int, not_trivially_destructible>>::value);
   return 0;
 }

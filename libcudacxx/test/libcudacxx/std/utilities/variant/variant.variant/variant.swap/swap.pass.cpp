@@ -496,23 +496,23 @@ __host__ __device__ void test_swap_sfinae()
     // but is still swappable via the generic swap algorithm, since the
     // variant is move constructible and move assignable.
     using V = cuda::std::variant<int, NotSwappable>;
-    static_assert(!has_swap_member<V>(), "");
-    static_assert(cuda::std::is_swappable_v<V>, "");
+    static_assert(!has_swap_member<V>());
+    static_assert(cuda::std::is_swappable_v<V>);
   }
   {
     using V = cuda::std::variant<int, NotCopyable>;
-    static_assert(!has_swap_member<V>(), "");
-    static_assert(!cuda::std::is_swappable_v<V>, "");
+    static_assert(!has_swap_member<V>());
+    static_assert(!cuda::std::is_swappable_v<V>);
   }
   {
     using V = cuda::std::variant<int, NotCopyableWithSwap>;
-    static_assert(!has_swap_member<V>(), "");
-    static_assert(!cuda::std::is_swappable_v<V>, "");
+    static_assert(!has_swap_member<V>());
+    static_assert(!cuda::std::is_swappable_v<V>);
   }
   {
     using V = cuda::std::variant<int, NotMoveAssignable>;
-    static_assert(!has_swap_member<V>(), "");
-    static_assert(!cuda::std::is_swappable_v<V>, "");
+    static_assert(!has_swap_member<V>());
+    static_assert(!cuda::std::is_swappable_v<V>);
   }
 }
 
@@ -520,8 +520,8 @@ __host__ __device__ void test_swap_noexcept()
 {
   {
     using V = cuda::std::variant<int, NothrowMoveable>;
-    static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>(), "");
-    static_assert(cuda::std::is_nothrow_swappable_v<V>, "");
+    static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>());
+    static_assert(cuda::std::is_nothrow_swappable_v<V>);
     // instantiate swap
     V v1, v2;
     v1.swap(v2);
@@ -529,8 +529,8 @@ __host__ __device__ void test_swap_noexcept()
   }
   {
     using V = cuda::std::variant<int, NothrowMoveCtor>;
-    static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>(), "");
-    static_assert(!cuda::std::is_nothrow_swappable_v<V>, "");
+    static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>());
+    static_assert(!cuda::std::is_nothrow_swappable_v<V>);
     // instantiate swap
     V v1, v2;
     v1.swap(v2);
@@ -538,8 +538,8 @@ __host__ __device__ void test_swap_noexcept()
   }
   {
     using V = cuda::std::variant<int, ThrowingTypeWithNothrowSwap>;
-    static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>(), "");
-    static_assert(!cuda::std::is_nothrow_swappable_v<V>, "");
+    static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>());
+    static_assert(!cuda::std::is_nothrow_swappable_v<V>);
     // instantiate swap
     V v1, v2;
     v1.swap(v2);
@@ -547,8 +547,8 @@ __host__ __device__ void test_swap_noexcept()
   }
   {
     using V = cuda::std::variant<int, ThrowingMoveAssignNothrowMoveCtor>;
-    static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>(), "");
-    static_assert(!cuda::std::is_nothrow_swappable_v<V>, "");
+    static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>());
+    static_assert(!cuda::std::is_nothrow_swappable_v<V>);
     // instantiate swap
     V v1, v2;
     v1.swap(v2);
@@ -556,8 +556,8 @@ __host__ __device__ void test_swap_noexcept()
   }
   {
     using V = cuda::std::variant<int, ThrowingMoveAssignNothrowMoveCtorWithSwap>;
-    static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>(), "");
-    static_assert(cuda::std::is_nothrow_swappable_v<V>, "");
+    static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>());
+    static_assert(cuda::std::is_nothrow_swappable_v<V>);
     // instantiate swap
     V v1, v2;
     v1.swap(v2);
@@ -565,8 +565,8 @@ __host__ __device__ void test_swap_noexcept()
   }
   {
     using V = cuda::std::variant<int, NotMoveAssignableWithSwap>;
-    static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>(), "");
-    static_assert(cuda::std::is_nothrow_swappable_v<V>, "");
+    static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>());
+    static_assert(cuda::std::is_nothrow_swappable_v<V>);
     // instantiate swap
     V v1, v2;
     v1.swap(v2);
@@ -577,9 +577,9 @@ __host__ __device__ void test_swap_noexcept()
     // but is still swappable via the generic swap algorithm, since the
     // variant is move constructible and move assignable.
     using V = cuda::std::variant<int, NotSwappable>;
-    static_assert(!has_swap_member<V>(), "");
-    static_assert(cuda::std::is_swappable_v<V>, "");
-    static_assert(cuda::std::is_nothrow_swappable_v<V>, "");
+    static_assert(!has_swap_member<V>());
+    static_assert(cuda::std::is_swappable_v<V>);
+    static_assert(cuda::std::is_nothrow_swappable_v<V>);
     V v1, v2;
     swap(v1, v2);
   }

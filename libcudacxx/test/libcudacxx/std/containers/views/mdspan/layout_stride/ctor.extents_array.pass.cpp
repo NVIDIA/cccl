@@ -149,7 +149,7 @@ __host__ __device__ constexpr bool test()
   {
     // not no-throw constructible index_type from stride
     using mapping_t = cuda::std::layout_stride::mapping<cuda::std::dextents<unsigned char, 2>>;
-    static_assert(cuda::std::is_convertible<IntType, unsigned char>::value, "");
+    static_assert(cuda::std::is_convertible<IntType, unsigned char>::value);
     static_assert(
       !cuda::std::is_constructible<mapping_t, cuda::std::dextents<int, 2>, cuda::std::array<IntType, 2>>::value, "");
   }
@@ -160,6 +160,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

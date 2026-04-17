@@ -118,7 +118,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 [[nodiscard]] _CCCL_API inline __promote_t<_A1, _A2> hypot(_A1 __x, _A2 __y) noexcept
 {
   using __result_type = __promote_t<_A1, _A2>;
-  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>), "");
+  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type>) );
   return ::cuda::std::hypot((__result_type) __x, (__result_type) __y);
 }
 
@@ -206,7 +206,7 @@ _CCCL_REQUIRES(is_arithmetic_v<_A1> _CCCL_AND is_arithmetic_v<_A2> _CCCL_AND is_
 [[nodiscard]] _CCCL_API inline __promote_t<_A1, _A2, _A3> hypot(_A1 __x, _A2 __y, _A3 __z) noexcept
 {
   using __result_type = __promote_t<_A1, _A2, _A3>;
-  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type> && is_same_v<_A3, __result_type>), "");
+  static_assert(!(is_same_v<_A1, __result_type> && is_same_v<_A2, __result_type> && is_same_v<_A3, __result_type>) );
   return ::cuda::std::hypot((__result_type) __x, (__result_type) __y, (__result_type) __z);
 }
 

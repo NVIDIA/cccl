@@ -49,7 +49,7 @@ __host__ __device__ void conversion_test(T);
 template <class T, class... Args>
 _CCCL_CONCEPT ImplicitlyConstructible = _CCCL_REQUIRES_EXPR((T, variadic Args), T t, Args&&... args)(
   (conversion_test<T>({cuda::std::forward<Args>(args)...})));
-static_assert(ImplicitlyConstructible<int, int>, "");
+static_assert(ImplicitlyConstructible<int, int>);
 
 static_assert(!ImplicitlyConstructible<cuda::std::expected<void, cuda::std::inplace_vector<int, 3>>,
                                        cuda::std::unexpect_t,
@@ -154,7 +154,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 #if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

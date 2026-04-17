@@ -26,7 +26,7 @@ template <class T>
 __host__ __device__ void
 test_aligned_alloc(bool expect_success, cuda::std::size_t n, cuda::std::size_t align = alignof(T))
 {
-  static_assert(noexcept(cuda::std::aligned_alloc(n * sizeof(T), align)), "");
+  static_assert(noexcept(cuda::std::aligned_alloc(n * sizeof(T), align)));
   T* ptr = static_cast<T*>(cuda::std::aligned_alloc(n * sizeof(T), align));
   if (expect_success)
   {

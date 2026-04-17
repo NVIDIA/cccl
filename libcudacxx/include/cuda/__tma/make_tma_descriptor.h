@@ -323,7 +323,7 @@ __get_tensor_map_rank(const ::DLTensor& __tensor, tma_interleave_layout __interl
   }
   if (__interleave_layout != tma_interleave_layout::none)
   {
-    if (__rank <= 3)
+    if (__rank <= 2)
     {
       _CCCL_THROW(::std::invalid_argument,
                   "tensor.ndim (rank) must be greater than or equal to 3 for interleaved layout");

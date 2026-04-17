@@ -57,10 +57,11 @@ class thread_group
   _Synchronizer __synchronizer_;
 
 public:
-  using unit_type      = thread_level;
-  using level_type     = _Level;
-  using mapping_type   = _Mapping;
-  using hierarchy_type = _Hierarchy;
+  using unit_type             = thread_level;
+  using level_type            = _Level;
+  using mapping_type          = _Mapping;
+  using __mapping_result_type = _MappingResult;
+  using hierarchy_type        = _Hierarchy;
 
   // todo(dabayer): Do we want default behaviour like this, or do we want some kind of cuda::auto_sync_mechanism{} tag?
   _CCCL_TEMPLATE(class _HierarchyLike)
@@ -96,6 +97,12 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API const _Mapping& mapping() const noexcept
   {
     return __mapping_;
+  }
+
+  // todo(dabayer): Do we want to expose mapping result getter?
+  [[nodiscard]] _CCCL_DEVICE_API _MappingResult __mapping_result() const noexcept
+  {
+    return __mapping_result_;
   }
 
   // todo(dabayer): Do we want to expose .arrive() and .wait()? Do we want to implement .sync() using them? Do we want

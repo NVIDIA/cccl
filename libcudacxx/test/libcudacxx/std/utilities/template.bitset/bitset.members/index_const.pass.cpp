@@ -63,7 +63,7 @@ int main(int, char**)
 {
   test();
   test_index_const<1000>(); // not in constexpr because of constexpr evaluation step limits
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

@@ -43,13 +43,13 @@ __host__ __device__ constexpr void test_mdspan_types(const H&, const M&, const A
 {
   using MDS = cuda::device_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
-  static_assert(hc == cuda::std::is_default_constructible<H>::value, "");
-  static_assert(mc == cuda::std::is_default_constructible<M>::value, "");
-  static_assert(ac == cuda::std::is_default_constructible<A>::value, "");
+  static_assert(hc == cuda::std::is_default_constructible<H>::value);
+  static_assert(mc == cuda::std::is_default_constructible<M>::value);
+  static_assert(ac == cuda::std::is_default_constructible<A>::value);
 
   MDS m;
 #if !TEST_COMPILER(GCC)
-  static_assert(noexcept(MDS()) == (noexcept(H()) && noexcept(M()) && noexcept(A())), "");
+  static_assert(noexcept(MDS()) == (noexcept(H()) && noexcept(M()) && noexcept(A())));
 #endif // !TEST_COMPILER(GCC)
   assert(m.extents() == typename MDS::extents_type());
   test_equality_handle(m, H{});
@@ -67,10 +67,10 @@ __host__ __device__ constexpr void test_mdspan_types(const H&, const M&, const A
 {
   using MDS = cuda::device_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
-  static_assert(hc == cuda::std::is_default_constructible<H>::value, "");
-  static_assert(mc == cuda::std::is_default_constructible<M>::value, "");
-  static_assert(ac == cuda::std::is_default_constructible<A>::value, "");
-  static_assert(!cuda::std::is_default_constructible<MDS>::value, "");
+  static_assert(hc == cuda::std::is_default_constructible<H>::value);
+  static_assert(mc == cuda::std::is_default_constructible<M>::value);
+  static_assert(ac == cuda::std::is_default_constructible<A>::value);
+  static_assert(!cuda::std::is_default_constructible<MDS>::value);
 }
 
 template <bool hc, bool mc, bool ac, class H, class L, class A>
@@ -160,8 +160,8 @@ int main(int, char**)
   test_evil();
 
 #if TEST_STD_VER >= 2020
-  static_assert(test(), "");
-  static_assert(test_evil(), "");
+  static_assert(test());
+  static_assert(test_evil());
 #endif // TEST_STD_VER >= 2020
   return 0;
 }

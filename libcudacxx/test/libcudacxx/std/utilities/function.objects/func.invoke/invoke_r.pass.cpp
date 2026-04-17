@@ -58,23 +58,23 @@ __host__ __device__ constexpr bool test()
       __host__ __device__ char* operator()(int) const;
     };
 
-    static_assert(can_invoke_r<char*, F, int>::value, "");
-    static_assert(can_invoke_r<void*, F, int>::value, "");
+    static_assert(can_invoke_r<char*, F, int>::value);
+    static_assert(can_invoke_r<void*, F, int>::value);
 
     // discard return type
-    static_assert(can_invoke_r<void, F, int>::value, "");
+    static_assert(can_invoke_r<void, F, int>::value);
 
     // wrong argument type
-    static_assert(!can_invoke_r<char*, F, void*>::value, "");
+    static_assert(!can_invoke_r<char*, F, void*>::value);
 
     // missing argument
-    static_assert(!can_invoke_r<char*, F>::value, "");
+    static_assert(!can_invoke_r<char*, F>::value);
 
     // incompatible return type
-    static_assert(!can_invoke_r<int*, F, int>::value, "");
+    static_assert(!can_invoke_r<int*, F, int>::value);
 
     // discard return type, invalid argument type
-    static_assert(!can_invoke_r<void, F, void*>::value, "");
+    static_assert(!can_invoke_r<void, F, void*>::value);
   }
 
   // Make sure invoke_r has the right noexcept specification
@@ -94,16 +94,16 @@ __host__ __device__ constexpr bool test()
       __host__ __device__ ConversionNotNoexcept(char*) noexcept(false);
     };
 
-    static_assert(noexcept(cuda::std::invoke_r<char*>(cuda::std::declval<F>(), 0)), "");
+    static_assert(noexcept(cuda::std::invoke_r<char*>(cuda::std::declval<F>(), 0)));
 
     // function call is not noexcept
-    static_assert(!noexcept(cuda::std::invoke_r<char*>(cuda::std::declval<G>(), 0)), "");
+    static_assert(!noexcept(cuda::std::invoke_r<char*>(cuda::std::declval<G>(), 0)));
 
     // function call is noexcept, conversion isn't
-    static_assert(!noexcept(cuda::std::invoke_r<ConversionNotNoexcept>(cuda::std::declval<F>(), 0)), "");
+    static_assert(!noexcept(cuda::std::invoke_r<ConversionNotNoexcept>(cuda::std::declval<F>(), 0)));
 
     // function call and conversion are both not noexcept
-    static_assert(!noexcept(cuda::std::invoke_r<ConversionNotNoexcept>(cuda::std::declval<G>(), 0)), "");
+    static_assert(!noexcept(cuda::std::invoke_r<ConversionNotNoexcept>(cuda::std::declval<G>(), 0)));
   }
 
   // Make sure invoke_r works with void return type
@@ -122,7 +122,7 @@ __host__ __device__ constexpr bool test()
     bool was_called = false;
     cuda::std::invoke_r<void>(F{was_called}, 3);
     assert(was_called);
-    static_assert(cuda::std::is_void<decltype(cuda::std::invoke_r<void>(F{was_called}, 3))>::value, "");
+    static_assert(cuda::std::is_void<decltype(cuda::std::invoke_r<void>(F{was_called}, 3))>::value);
   }
 
 // https://developercommunity.visualstudio.com/t/ICE-when-forwarding-a-function-to-invoke/10806827
@@ -143,7 +143,7 @@ __host__ __device__ constexpr bool test()
     bool was_called = false;
     cuda::std::invoke_r<const void>(F{was_called}, 3);
     assert(was_called);
-    static_assert(cuda::std::is_void<decltype(cuda::std::invoke_r<const void>(F{was_called}, 3))>::value, "");
+    static_assert(cuda::std::is_void<decltype(cuda::std::invoke_r<const void>(F{was_called}, 3))>::value);
   }
 #endif // !TEST_COMPILER(MSVC)
 
@@ -248,6 +248,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

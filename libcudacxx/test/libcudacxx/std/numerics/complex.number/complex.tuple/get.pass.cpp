@@ -34,11 +34,11 @@ constexpr __host__ __device__ void test()
 
     auto& r = cuda::std::get<0>(c);
     static_assert(cuda::std::is_same_v<T&, decltype(cuda::std::get<0>(c))>);
-    static_assert(noexcept(cuda::std::get<0>(c)), "");
+    static_assert(noexcept(cuda::std::get<0>(c)));
     assert(r == T{27});
     auto& i = cuda::std::get<1>(c);
     static_assert(cuda::std::is_same_v<T&, decltype(cuda::std::get<1>(c))>);
-    static_assert(noexcept(cuda::std::get<1>(c)), "");
+    static_assert(noexcept(cuda::std::get<1>(c)));
     assert(i == T{28});
   }
   //  &&
@@ -47,7 +47,7 @@ constexpr __host__ __device__ void test()
 
     auto&& r = cuda::std::get<0>(cuda::std::move(c));
     static_assert(cuda::std::is_same_v<T&&, decltype(cuda::std::get<0>(cuda::std::move(c)))>);
-    static_assert(noexcept(cuda::std::get<0>(cuda::std::move(c))), "");
+    static_assert(noexcept(cuda::std::get<0>(cuda::std::move(c))));
     assert(r == T{27});
   }
   {
@@ -55,7 +55,7 @@ constexpr __host__ __device__ void test()
 
     auto&& i = cuda::std::get<1>(cuda::std::move(c));
     static_assert(cuda::std::is_same_v<T&&, decltype(cuda::std::get<1>(cuda::std::move(c)))>);
-    static_assert(noexcept(cuda::std::get<1>(cuda::std::move(c))), "");
+    static_assert(noexcept(cuda::std::get<1>(cuda::std::move(c))));
     assert(i == T{28});
   }
   // const &
@@ -64,11 +64,11 @@ constexpr __host__ __device__ void test()
 
     const auto& r = cuda::std::get<0>(c);
     static_assert(cuda::std::is_same_v<const T&, decltype(cuda::std::get<0>(c))>);
-    static_assert(noexcept(cuda::std::get<0>(c)), "");
+    static_assert(noexcept(cuda::std::get<0>(c)));
     assert(r == T{27});
     const auto& i = cuda::std::get<1>(c);
     static_assert(cuda::std::is_same_v<const T&, decltype(cuda::std::get<1>(c))>);
-    static_assert(noexcept(cuda::std::get<1>(c)), "");
+    static_assert(noexcept(cuda::std::get<1>(c)));
     assert(i == T{28});
   }
   //  const &&
@@ -77,7 +77,7 @@ constexpr __host__ __device__ void test()
 
     const auto&& r = cuda::std::get<0>(cuda::std::move(c));
     static_assert(cuda::std::is_same_v<const T&&, decltype(cuda::std::get<0>(cuda::std::move(c)))>);
-    static_assert(noexcept(cuda::std::get<0>(cuda::std::move(c))), "");
+    static_assert(noexcept(cuda::std::get<0>(cuda::std::move(c))));
     assert(r == T{27});
   }
   {
@@ -85,7 +85,7 @@ constexpr __host__ __device__ void test()
 
     const auto&& i = cuda::std::get<1>(cuda::std::move(c));
     static_assert(cuda::std::is_same_v<const T&&, decltype(cuda::std::get<1>(cuda::std::move(c)))>);
-    static_assert(noexcept(cuda::std::get<1>(cuda::std::move(c))), "");
+    static_assert(noexcept(cuda::std::get<1>(cuda::std::move(c))));
     assert(i == T{28});
   }
 
@@ -159,7 +159,7 @@ constexpr __host__ __device__ bool test_constexpr()
 int main(int, char**)
 {
   test();
-  static_assert(test_constexpr(), "");
+  static_assert(test_constexpr());
 
   return 0;
 }

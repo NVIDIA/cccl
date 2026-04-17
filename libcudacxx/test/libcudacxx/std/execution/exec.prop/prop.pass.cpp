@@ -34,19 +34,19 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
   [[maybe_unused]] cuda::std::execution::prop prop2{a_query, 42};
 
   static_assert(cuda::std::is_same_v<decltype(prop1), decltype(prop2)>);
-  static_assert(sizeof(prop1) == sizeof(int), "");
+  static_assert(sizeof(prop1) == sizeof(int));
 
   assert(prop1.query(a_query) == 42);
-  static_assert(cuda::std::is_same_v<decltype(prop1.query(a_query)), int const&>, "");
-  static_assert(noexcept(prop1.query(a_query)), "");
+  static_assert(cuda::std::is_same_v<decltype(prop1.query(a_query)), int const&>);
+  static_assert(noexcept(prop1.query(a_query)));
 
-  static_assert(cuda::std::is_aggregate_v<cuda::std::execution::prop<a_query_t, int>>, "");
-  static_assert(cuda::std::is_standard_layout_v<cuda::std::execution::prop<a_query_t, int>>, "");
-  static_assert(cuda::std::is_trivially_copyable_v<cuda::std::execution::prop<a_query_t, int>>, "");
-  static_assert(cuda::std::is_trivially_constructible_v<cuda::std::execution::prop<a_query_t, int>>, "");
-  static_assert(cuda::std::is_trivially_destructible_v<cuda::std::execution::prop<a_query_t, int>>, "");
+  static_assert(cuda::std::is_aggregate_v<cuda::std::execution::prop<a_query_t, int>>);
+  static_assert(cuda::std::is_standard_layout_v<cuda::std::execution::prop<a_query_t, int>>);
+  static_assert(cuda::std::is_trivially_copyable_v<cuda::std::execution::prop<a_query_t, int>>);
+  static_assert(cuda::std::is_trivially_constructible_v<cuda::std::execution::prop<a_query_t, int>>);
+  static_assert(cuda::std::is_trivially_destructible_v<cuda::std::execution::prop<a_query_t, int>>);
 
-  static_assert(!cuda::std::execution::__queryable_with<cuda::std::execution::prop<a_query_t, int>, none_such_t>, "");
+  static_assert(!cuda::std::execution::__queryable_with<cuda::std::execution::prop<a_query_t, int>, none_such_t>);
 
   return true;
 }

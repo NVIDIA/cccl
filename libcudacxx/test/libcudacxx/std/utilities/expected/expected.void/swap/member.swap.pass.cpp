@@ -32,14 +32,14 @@ template <class E>
 _CCCL_CONCEPT HasMemberSwap =
   _CCCL_REQUIRES_EXPR((E), cuda::std::expected<void, E> x, cuda::std::expected<void, E> y)((x.swap(y)));
 
-static_assert(HasMemberSwap<int>, "");
+static_assert(HasMemberSwap<int>);
 
 struct NotSwappable
 {};
 __host__ __device__ void swap(NotSwappable&, NotSwappable&) = delete;
 
 // !is_swappable_v<E>
-static_assert(!HasMemberSwap<NotSwappable>, "");
+static_assert(!HasMemberSwap<NotSwappable>);
 
 struct NotMoveContructible
 {
@@ -48,7 +48,7 @@ struct NotMoveContructible
 };
 
 // !is_move_constructible_v<E>
-static_assert(!HasMemberSwap<NotMoveContructible>, "");
+static_assert(!HasMemberSwap<NotMoveContructible>);
 
 // Test noexcept
 struct MoveMayThrow
@@ -64,10 +64,10 @@ template <class E>
 constexpr bool MemberSwapNoexcept<E, true> = noexcept(
   cuda::std::declval<cuda::std::expected<void, E>&>().swap(cuda::std::declval<cuda::std::expected<void, E>&>()));
 
-static_assert(MemberSwapNoexcept<int>, "");
+static_assert(MemberSwapNoexcept<int>);
 
 // !is_nothrow_move_constructible_v<E>
-static_assert(!MemberSwapNoexcept<MoveMayThrow>, "");
+static_assert(!MemberSwapNoexcept<MoveMayThrow>);
 
 struct SwapMayThrow
 {
@@ -75,7 +75,7 @@ struct SwapMayThrow
 };
 
 // !is_nothrow_swappable_v<E>
-static_assert(!MemberSwapNoexcept<SwapMayThrow>, "");
+static_assert(!MemberSwapNoexcept<SwapMayThrow>);
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {

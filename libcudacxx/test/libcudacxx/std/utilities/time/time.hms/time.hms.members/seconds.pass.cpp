@@ -33,8 +33,8 @@ int main(int, char**)
 {
   using microfortnights = cuda::std::chrono::duration<int, cuda::std::ratio<756, 625>>;
 
-  static_assert(check_seconds(cuda::std::chrono::seconds(1)) == 1, "");
-  static_assert(check_seconds(cuda::std::chrono::seconds(-1)) == 1, "");
+  static_assert(check_seconds(cuda::std::chrono::seconds(1)) == 1);
+  static_assert(check_seconds(cuda::std::chrono::seconds(-1)) == 1);
 
   assert(check_seconds(cuda::std::chrono::seconds(5000)) == 20);
   assert(check_seconds(cuda::std::chrono::seconds(-5000)) == 20);

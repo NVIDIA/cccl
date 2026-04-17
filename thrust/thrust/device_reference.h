@@ -231,9 +231,9 @@ public:
    *  \endverbatim
    */
   template <typename OtherT>
-  _CCCL_HOST_DEVICE
-  device_reference(const device_reference<OtherT>& other,
-                   thrust::detail::enable_if_convertible_t<typename device_reference<OtherT>::pointer, pointer>* = 0)
+  _CCCL_HOST_DEVICE device_reference(
+    const device_reference<OtherT>& other,
+    thrust::detail::enable_if_convertible_t<typename device_reference<OtherT>::pointer, pointer>* = nullptr)
       : super_t(other)
   {}
 

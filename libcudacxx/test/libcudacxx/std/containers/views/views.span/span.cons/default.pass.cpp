@@ -73,9 +73,9 @@ int main(int, char**)
 
   checkCV();
 
-  static_assert(cuda::std::is_default_constructible<cuda::std::span<int, cuda::std::dynamic_extent>>::value, "");
-  static_assert(cuda::std::is_default_constructible<cuda::std::span<int, 0>>::value, "");
-  static_assert(!cuda::std::is_default_constructible<cuda::std::span<int, 2>>::value, "");
+  static_assert(cuda::std::is_default_constructible<cuda::std::span<int, cuda::std::dynamic_extent>>::value);
+  static_assert(cuda::std::is_default_constructible<cuda::std::span<int, 0>>::value);
+  static_assert(!cuda::std::is_default_constructible<cuda::std::span<int, 2>>::value);
 
   return 0;
 }

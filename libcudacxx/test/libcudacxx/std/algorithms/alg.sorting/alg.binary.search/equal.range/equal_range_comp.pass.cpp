@@ -79,8 +79,8 @@ int main(int, char**)
 {
   test();
   test<const int*>();
-  static_assert(test(), "");
-  static_assert(test<const int*>(), ""); // clang otherwise hits the evaluation limit
+  static_assert(test());
+  static_assert(test<const int*>()); // clang otherwise hits the evaluation limit
 
   return 0;
 }

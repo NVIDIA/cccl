@@ -51,7 +51,7 @@ int main(int, char**)
 #if TEST_STD_VER >= 2020
   NV_IF_TARGET(NV_IS_HOST,
                ( // This fails because we cannot allocate on device at compile time
-                 static_assert(test(), "");))
+                 static_assert(test());))
 #endif // TEST_STD_VER >= 2020
 
   return 0;

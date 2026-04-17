@@ -29,20 +29,20 @@
 #include "test_macros.h"
 
 // Test Constraints
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, int>, cuda::std::unexpected<int>>, "");
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, MoveOnly>, cuda::std::unexpected<MoveOnly>>, "");
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, int>, cuda::std::unexpected<int>>);
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, MoveOnly>, cuda::std::unexpected<MoveOnly>>);
 
 // !is_constructible_v<E, GF>
 struct foo
 {};
-static_assert(!cuda::std::is_constructible_v<cuda::std::expected<void, int>, cuda::std::unexpected<foo>>, "");
+static_assert(!cuda::std::is_constructible_v<cuda::std::expected<void, int>, cuda::std::unexpected<foo>>);
 
 // explicit(!is_convertible_v<G, E>)
 struct NotConvertible
 {
   __host__ __device__ explicit NotConvertible(int);
 };
-static_assert(cuda::std::is_convertible_v<cuda::std::unexpected<int>&&, cuda::std::expected<void, int>>, "");
+static_assert(cuda::std::is_convertible_v<cuda::std::unexpected<int>&&, cuda::std::expected<void, int>>);
 static_assert(!cuda::std::is_convertible_v<cuda::std::unexpected<int>&&, cuda::std::expected<void, NotConvertible>>,
               "");
 
@@ -125,7 +125,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 #if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

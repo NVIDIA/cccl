@@ -15,8 +15,8 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-static_assert(cuda::std::input_iterator<cpp17_input_iterator<int*>>, "");
-static_assert(cuda::std::input_iterator<cpp20_input_iterator<int*>>, "");
+static_assert(cuda::std::input_iterator<cpp17_input_iterator<int*>>);
+static_assert(cuda::std::input_iterator<cpp20_input_iterator<int*>>);
 
 struct no_explicit_iter_concept
 {
@@ -37,12 +37,12 @@ struct no_explicit_iter_concept
   __host__ __device__ void operator++(int);
 };
 // ITER-CONCEPT is `random_access_iterator_tag` >:(
-static_assert(cuda::std::input_iterator<no_explicit_iter_concept>, "");
+static_assert(cuda::std::input_iterator<no_explicit_iter_concept>);
 
-static_assert(cuda::std::input_iterator<int*>, "");
-static_assert(cuda::std::input_iterator<int const*>, "");
-static_assert(cuda::std::input_iterator<int volatile*>, "");
-static_assert(cuda::std::input_iterator<int const volatile*>, "");
+static_assert(cuda::std::input_iterator<int*>);
+static_assert(cuda::std::input_iterator<int const*>);
+static_assert(cuda::std::input_iterator<int volatile*>);
+static_assert(cuda::std::input_iterator<int const volatile*>);
 
 struct not_weakly_incrementable
 {
@@ -109,7 +109,7 @@ struct bad_iterator_category
   __host__ __device__ bad_iterator_category& operator++();
   __host__ __device__ void operator++(int);
 };
-static_assert(!cuda::std::input_iterator<bad_iterator_category>, "");
+static_assert(!cuda::std::input_iterator<bad_iterator_category>);
 
 struct bad_iterator_concept
 {
@@ -130,7 +130,7 @@ struct bad_iterator_concept
   __host__ __device__ bad_iterator_concept& operator++();
   __host__ __device__ void operator++(int);
 };
-static_assert(!cuda::std::input_iterator<bad_iterator_concept>, "");
+static_assert(!cuda::std::input_iterator<bad_iterator_concept>);
 
 int main(int, char**)
 {

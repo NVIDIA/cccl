@@ -20,19 +20,19 @@ __host__ __device__ void test()
 {
   {
     using C = cuda::std::array<T, N>;
-    static_assert((cuda::std::tuple_size<C>::value == N), "");
+    static_assert((cuda::std::tuple_size<C>::value == N));
   }
   {
     using C = cuda::std::array<T const, N>;
-    static_assert((cuda::std::tuple_size<C>::value == N), "");
+    static_assert((cuda::std::tuple_size<C>::value == N));
   }
   {
     using C = cuda::std::array<T volatile, N>;
-    static_assert((cuda::std::tuple_size<C>::value == N), "");
+    static_assert((cuda::std::tuple_size<C>::value == N));
   }
   {
     using C = cuda::std::array<T const volatile, N>;
-    static_assert((cuda::std::tuple_size<C>::value == N), "");
+    static_assert((cuda::std::tuple_size<C>::value == N));
   }
 }
 

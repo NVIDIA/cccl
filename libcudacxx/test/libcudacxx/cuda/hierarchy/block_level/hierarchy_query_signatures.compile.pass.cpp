@@ -3,12 +3,9 @@
 // Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-
-// todo: enable with nvrtc
-// UNSUPPORTED: nvrtc
 
 #include <cuda/hierarchy>
 #include <cuda/std/cstddef>
@@ -95,10 +92,7 @@ __device__ void test(const InLevel& in_level, const Hierarchy& hier)
 template <class Hierarchy>
 __device__ void test(const Hierarchy& hier)
 {
-  if constexpr (Hierarchy::has_level(cuda::cluster))
-  {
-    test(cuda::cluster, hier);
-  }
+  test(cuda::cluster, hier);
   test(cuda::grid, hier);
 }
 
@@ -108,22 +102,22 @@ __global__ void test_kernel(Hierarchy hier)
   test(hier);
 }
 
-#define TEST_KERNEL_INSTANTIATE(...)                                                 \
-  template __global__ void test_kernel<decltype(cuda::make_hierarchy(__VA_ARGS__))>( \
-    decltype(cuda::make_hierarchy(__VA_ARGS__)))
+#define TEST_KERNEL_INSTANTIATE(...)                                                              \
+  template __global__ void test_kernel<decltype(cuda::hierarchy{cuda::gpu_thread, __VA_ARGS__})>( \
+    decltype(cuda::hierarchy{cuda::gpu_thread, __VA_ARGS__}))
 
-TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::block_dims<1>());
+TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::block_dims<32>());
 TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::block_dims(dim3{}));
-TEST_KERNEL_INSTANTIATE(cuda::grid_dims(dim3{}), cuda::block_dims<1>());
+TEST_KERNEL_INSTANTIATE(cuda::grid_dims(dim3{}), cuda::block_dims<32>());
 TEST_KERNEL_INSTANTIATE(cuda::grid_dims(dim3{}), cuda::block_dims(dim3{}));
 
-TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::cluster_dims<1>(), cuda::block_dims<1>());
+TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::cluster_dims<1>(), cuda::block_dims<32>());
 TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::cluster_dims<1>(), cuda::block_dims(dim3{}));
-TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::cluster_dims(dim3{}), cuda::block_dims<1>());
+TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::cluster_dims(dim3{}), cuda::block_dims<32>());
 TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::cluster_dims(dim3{}), cuda::block_dims(dim3{}));
-TEST_KERNEL_INSTANTIATE(cuda::grid_dims(dim3{}), cuda::cluster_dims<1>(), cuda::block_dims<1>());
+TEST_KERNEL_INSTANTIATE(cuda::grid_dims(dim3{}), cuda::cluster_dims<1>(), cuda::block_dims<32>());
 TEST_KERNEL_INSTANTIATE(cuda::grid_dims(dim3{}), cuda::cluster_dims<1>(), cuda::block_dims(dim3{}));
-TEST_KERNEL_INSTANTIATE(cuda::grid_dims(dim3{}), cuda::cluster_dims(dim3{}), cuda::block_dims<1>());
+TEST_KERNEL_INSTANTIATE(cuda::grid_dims(dim3{}), cuda::cluster_dims(dim3{}), cuda::block_dims<32>());
 TEST_KERNEL_INSTANTIATE(cuda::grid_dims(dim3{}), cuda::cluster_dims(dim3{}), cuda::block_dims(dim3{}));
 
 int main(int, char**)

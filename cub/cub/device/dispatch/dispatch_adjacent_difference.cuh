@@ -273,7 +273,7 @@ struct DispatchAdjacentDifference
         break;
       }
 
-    } while (0);
+    } while (false);
 
     return error;
   }
@@ -308,7 +308,7 @@ struct DispatchAdjacentDifference
       {
         break;
       }
-    } while (0);
+    } while (false);
 
     return error;
   }

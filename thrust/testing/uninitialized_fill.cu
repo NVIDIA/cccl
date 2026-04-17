@@ -114,10 +114,7 @@ DECLARE_VECTOR_UNITTEST(TestUninitializedFillPOD);
 
 struct CopyConstructTest
 {
-  _CCCL_HOST_DEVICE CopyConstructTest()
-      : copy_constructed_on_host(false)
-      , copy_constructed_on_device(false)
-  {}
+  CopyConstructTest() = default;
 
   _CCCL_HOST_DEVICE CopyConstructTest(const CopyConstructTest&)
   {
@@ -133,8 +130,8 @@ struct CopyConstructTest
     return *this;
   }
 
-  bool copy_constructed_on_host;
-  bool copy_constructed_on_device;
+  bool copy_constructed_on_host{false};
+  bool copy_constructed_on_device{false};
 };
 
 struct TestUninitializedFillNonPOD

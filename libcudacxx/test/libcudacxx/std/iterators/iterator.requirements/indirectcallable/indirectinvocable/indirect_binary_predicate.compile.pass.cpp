@@ -31,15 +31,15 @@ struct GoodPredicate
 };
 
 // Should work when all constraints are satisfied
-static_assert(cuda::std::indirect_binary_predicate<GoodPredicate<It1, It2>, It1, It2>, "");
-static_assert(cuda::std::indirect_binary_predicate<bool (*)(int, float), int*, float*>, "");
+static_assert(cuda::std::indirect_binary_predicate<GoodPredicate<It1, It2>, It1, It2>);
+static_assert(cuda::std::indirect_binary_predicate<bool (*)(int, float), int*, float*>);
 
 TEST_DIAG_SUPPRESS_CLANG("-Wunneeded-internal-declaration")
 #if _CCCL_HOST_COMPILATION()
 auto lambda = [](int i, long j) {
   return i == j;
 };
-static_assert(cuda::std::indirect_binary_predicate<decltype(lambda), int*, int*>, "");
+static_assert(cuda::std::indirect_binary_predicate<decltype(lambda), int*, int*>);
 #endif // _CCCL_HOST_COMPILATION()
 
 // Should fail when either of the iterators is not indirectly_readable
@@ -59,7 +59,7 @@ struct BadPredicate1
   template <class T, class U>
   __host__ __device__ bool operator()(T const&, U const&) const;
 };
-static_assert(!cuda::std::indirect_binary_predicate<BadPredicate1, It1, It2>, "");
+static_assert(!cuda::std::indirect_binary_predicate<BadPredicate1, It1, It2>);
 
 // Should fail when the predicate can't be called with (iter_value_t&, iter_value_t&)
 struct BadPredicate2
@@ -68,7 +68,7 @@ struct BadPredicate2
   __host__ __device__ bool operator()(T const&, U const&) const;
   bool operator()(cuda::std::iter_value_t<It1>&, cuda::std::iter_value_t<It2>&) const = delete;
 };
-static_assert(!cuda::std::indirect_binary_predicate<BadPredicate2, It1, It2>, "");
+static_assert(!cuda::std::indirect_binary_predicate<BadPredicate2, It1, It2>);
 
 // Should fail when the predicate can't be called with (iter_value_t&, iter_reference_t)
 struct BadPredicate3
@@ -77,7 +77,7 @@ struct BadPredicate3
   __host__ __device__ bool operator()(T const&, U const&) const;
   bool operator()(cuda::std::iter_value_t<It1>&, cuda::std::iter_reference_t<It2>) const = delete;
 };
-static_assert(!cuda::std::indirect_binary_predicate<BadPredicate3, It1, It2>, "");
+static_assert(!cuda::std::indirect_binary_predicate<BadPredicate3, It1, It2>);
 
 // Should fail when the predicate can't be called with (iter_reference_t, iter_value_t&)
 struct BadPredicate4
@@ -86,7 +86,7 @@ struct BadPredicate4
   __host__ __device__ bool operator()(T const&, U const&) const;
   bool operator()(cuda::std::iter_reference_t<It1>, cuda::std::iter_value_t<It2>&) const = delete;
 };
-static_assert(!cuda::std::indirect_binary_predicate<BadPredicate4, It1, It2>, "");
+static_assert(!cuda::std::indirect_binary_predicate<BadPredicate4, It1, It2>);
 
 // Should fail when the predicate can't be called with (iter_reference_t, iter_reference_t)
 struct BadPredicate5
@@ -95,7 +95,7 @@ struct BadPredicate5
   __host__ __device__ bool operator()(T const&, U const&) const;
   bool operator()(cuda::std::iter_reference_t<It1>, cuda::std::iter_reference_t<It2>) const = delete;
 };
-static_assert(!cuda::std::indirect_binary_predicate<BadPredicate5, It1, It2>, "");
+static_assert(!cuda::std::indirect_binary_predicate<BadPredicate5, It1, It2>);
 
 // Should fail when the predicate can't be called with (iter_common_reference_t, iter_common_reference_t)
 struct BadPredicate6
@@ -104,7 +104,7 @@ struct BadPredicate6
   __host__ __device__ bool operator()(T const&, U const&) const;
   bool operator()(cuda::std::iter_common_reference_t<It1>, cuda::std::iter_common_reference_t<It2>) const = delete;
 };
-static_assert(!cuda::std::indirect_binary_predicate<BadPredicate6, It1, It2>, "");
+static_assert(!cuda::std::indirect_binary_predicate<BadPredicate6, It1, It2>);
 
 int main(int, char**)
 {

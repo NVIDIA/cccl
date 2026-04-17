@@ -28,10 +28,10 @@ enum class Byte : cuda::std::uint8_t
 {
 };
 
-static_assert(!has_byteswap<void*>::value, "");
-static_assert(!has_byteswap<float>::value, "");
-static_assert(!has_byteswap<char[2]>::value, "");
-static_assert(!has_byteswap<Byte>::value, "");
+static_assert(!has_byteswap<void*>::value);
+static_assert(!has_byteswap<float>::value);
+static_assert(!has_byteswap<char[2]>::value);
+static_assert(!has_byteswap<Byte>::value);
 
 template <class T>
 struct MakeUnsigned
@@ -133,7 +133,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

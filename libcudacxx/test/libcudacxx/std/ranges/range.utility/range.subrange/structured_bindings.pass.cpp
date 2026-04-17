@@ -114,7 +114,7 @@ int main(int, char**)
 {
   test();
 #if !TEST_COMPILER(MSVC) // MSVC gives an ICE here
-  static_assert(test(), "");
+  static_assert(test());
 #endif // !TEST_COMPILER(MSVC)
 
   return 0;

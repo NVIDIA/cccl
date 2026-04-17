@@ -39,8 +39,8 @@ __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& m
 {
   using MDS = cuda::managed_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
-  static_assert(mec == cuda::std::is_constructible<M, const typename M::extents_type&>::value, "");
-  static_assert(ac == cuda::std::is_default_constructible<A>::value, "");
+  static_assert(mec == cuda::std::is_constructible<M, const typename M::extents_type&>::value);
+  static_assert(ac == cuda::std::is_default_constructible<A>::value);
   if (!cuda::std::__cccl_default_is_constant_evaluated())
   {
     move_counted_handle<typename MDS::element_type>::move_counter() = 0;
@@ -49,7 +49,7 @@ __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& m
   MDS m = {handle, map.extents()};
   test_move_counter<MDS, H>();
 
-  static_assert(!noexcept(MDS(handle, map.extents())), "");
+  static_assert(!noexcept(MDS(handle, map.extents())));
   assert(m.extents() == map.extents());
   test_equality_handle(m, handle);
   test_equality_mapping(m, map);
@@ -60,9 +60,9 @@ __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& m
 {
   using MDS = cuda::managed_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
-  static_assert(mec == cuda::std::is_constructible<M, const typename M::extents_type&>::value, "");
-  static_assert(ac == cuda::std::is_default_constructible<A>::value, "");
-  static_assert(!cuda::std::is_constructible<MDS, const H&, const typename M::extents_type&>::value, "");
+  static_assert(mec == cuda::std::is_constructible<M, const typename M::extents_type&>::value);
+  static_assert(ac == cuda::std::is_default_constructible<A>::value);
+  static_assert(!cuda::std::is_constructible<MDS, const H&, const typename M::extents_type&>::value);
 }
 
 template <bool mec, bool ac, class H, class L, class A>
@@ -148,16 +148,16 @@ __host__ __device__ constexpr bool test()
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   using mds_t                         = cuda::managed_mdspan<float, cuda::std::extents<int, 3, D, D>>;
   // sanity check
-  static_assert(cuda::std::is_constructible<mds_t, float*, cuda::std::extents<int, 3, D, D>>::value, "");
+  static_assert(cuda::std::is_constructible<mds_t, float*, cuda::std::extents<int, 3, D, D>>::value);
   // wrong size
-  static_assert(!cuda::std::is_constructible<mds_t, float*, cuda::std::extents<int, D, D>>::value, "");
-  static_assert(!cuda::std::is_constructible<mds_t, float*, cuda::std::extents<int, D, D, D, D>>::value, "");
+  static_assert(!cuda::std::is_constructible<mds_t, float*, cuda::std::extents<int, D, D>>::value);
+  static_assert(!cuda::std::is_constructible<mds_t, float*, cuda::std::extents<int, D, D, D, D>>::value);
   // wrong type in general: note the extents constructor does NOT convert, since it takes by const&
-  static_assert(!cuda::std::is_constructible<mds_t, float*, cuda::std::extents<int, D, D, D>>::value, "");
-  static_assert(!cuda::std::is_constructible<mds_t, float*, cuda::std::extents<unsigned, 3, D, D>>::value, "");
+  static_assert(!cuda::std::is_constructible<mds_t, float*, cuda::std::extents<int, D, D, D>>::value);
+  static_assert(!cuda::std::is_constructible<mds_t, float*, cuda::std::extents<unsigned, 3, D, D>>::value);
 
   // test non-constructibility from wrong handle_type
-  static_assert(!cuda::std::is_constructible<mds_t, const float*, cuda::std::extents<int, 3, D, D>>::value, "");
+  static_assert(!cuda::std::is_constructible<mds_t, const float*, cuda::std::extents<int, 3, D, D>>::value);
 
   return true;
 }
@@ -175,8 +175,8 @@ int main(int, char**)
   test_evil();
 
 #if TEST_STD_VER >= 2020
-  static_assert(test(), "");
-  static_assert(test_evil(), "");
+  static_assert(test());
+  static_assert(test_evil());
 #endif // TEST_STD_VER >= 2020
   return 0;
 }

@@ -31,7 +31,7 @@ __host__ __device__ constexpr void test()
     assert(opt);
 
     static_assert(noexcept(bool(opt)));
-    static_assert(!cuda::std::is_convertible<O, bool>::value, "");
+    static_assert(!cuda::std::is_convertible<O, bool>::value);
   }
 }
 
@@ -48,7 +48,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

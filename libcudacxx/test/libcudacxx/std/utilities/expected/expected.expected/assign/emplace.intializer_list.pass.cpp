@@ -34,7 +34,7 @@ template <class T, class... Args>
 _CCCL_CONCEPT CanEmplace =
   _CCCL_REQUIRES_EXPR((T, variadic Args), T t, Args&&... args)((t.emplace(cuda::std::forward<Args>(args)...)));
 
-static_assert(CanEmplace<cuda::std::expected<int, int>, int>, "");
+static_assert(CanEmplace<cuda::std::expected<int, int>, int>);
 
 template <bool Noexcept>
 struct CtorFromInitalizerList
@@ -85,7 +85,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     auto list2 = {4, 5, 6};
     cuda::std::expected<Data, int> e(cuda::std::in_place, list1, 5);
     decltype(auto) x = e.emplace(list2, 10);
-    static_assert(cuda::std::same_as<decltype(x), Data&>, "");
+    static_assert(cuda::std::same_as<decltype(x), Data&>);
     assert(&x == &(*e));
 
     assert(e.has_value());
@@ -98,7 +98,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     auto list = {4, 5, 6};
     cuda::std::expected<Data, int> e(cuda::std::unexpect, 5);
     decltype(auto) x = e.emplace(list, 10);
-    static_assert(cuda::std::same_as<decltype(x), Data&>, "");
+    static_assert(cuda::std::same_as<decltype(x), Data&>);
     assert(&x == &(*e));
 
     assert(e.has_value());
@@ -113,7 +113,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
   return 0;
 }

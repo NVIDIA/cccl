@@ -56,7 +56,7 @@ class dummy_resource final : public thrust::mr::memory_resource<alloc_id>
 public:
   dummy_resource() = default;
 
-  ~dummy_resource()
+  ~dummy_resource() override
   {
     ASSERT_EQUAL(id_to_allocate, 0u);
     ASSERT_EQUAL(id_to_deallocate, 0u);
@@ -73,7 +73,7 @@ public:
     id_to_deallocate = 0;
   }
 
-  virtual alloc_id do_allocate(std::size_t bytes, std::size_t alignment) override
+  alloc_id do_allocate(std::size_t bytes, std::size_t alignment) override
   {
     if (bytes > free_bytes)
     {
@@ -98,7 +98,7 @@ public:
     return ret;
   }
 
-  virtual void do_deallocate(alloc_id p, std::size_t bytes, std::size_t alignment) override
+  void do_deallocate(alloc_id p, std::size_t bytes, std::size_t alignment) override
   {
     ASSERT_EQUAL(p.size, bytes);
     ASSERT_EQUAL(p.alignment, alignment);

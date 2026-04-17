@@ -125,7 +125,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
     static_cast<int>(segment_size),
     op_t{},
     init_t{},
-    0 /* stream */);
+    nullptr /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());

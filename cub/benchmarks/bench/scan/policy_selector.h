@@ -3,15 +3,15 @@
 
 #include <cub/device/device_scan.cuh>
 
-#if !TUNE_BASE
-#  include "look_back_helper.cuh"
-#endif // !TUNE_BASE
-
 #ifndef USES_WARPSPEED
 #  define USES_WARPSPEED() 0
 #endif
 
 #if !TUNE_BASE
+#  if !USES_WARPSPEED()
+#    include <look_back_helper.cuh>
+#  endif // !USES_WARPSPEED()
+
 template <typename AccumT>
 struct policy_selector
 {

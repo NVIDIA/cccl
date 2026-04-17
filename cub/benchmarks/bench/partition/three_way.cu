@@ -91,7 +91,7 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     );
   };
 
-  dispatch(nullptr, 0);
+  dispatch(nullptr, nullptr);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());

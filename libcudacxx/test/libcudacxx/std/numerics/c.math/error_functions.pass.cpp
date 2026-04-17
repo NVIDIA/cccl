@@ -25,7 +25,7 @@ template <typename T>
 __host__ __device__ void test_erf(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::erf(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::erf(T{})), ret>);
 
   // If the argument is ±0, ±0 is returned.
   assert(eq(cuda::std::erf(val), val));
@@ -75,7 +75,7 @@ template <typename T>
 __host__ __device__ void test_erfc(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::erfc(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::erfc(T{})), ret>);
 
   // If the argument is ±0, ±0 is returned.
   assert(eq(cuda::std::erfc(val), 1));

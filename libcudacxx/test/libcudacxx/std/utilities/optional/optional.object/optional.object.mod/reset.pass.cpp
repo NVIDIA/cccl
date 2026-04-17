@@ -35,7 +35,7 @@ __host__ __device__ constexpr void test()
   cuda::std::remove_reference_t<T> one{1};
   {
     O opt;
-    static_assert(noexcept(opt.reset()) == true, "");
+    static_assert(noexcept(opt.reset()) == true);
     opt.reset();
     assert(static_cast<bool>(opt) == false);
   }
@@ -64,7 +64,7 @@ int main(int, char**)
 #endif // TEST_STD_VER >= 2020
   {
     optional<X> opt{};
-    static_assert(noexcept(opt.reset()) == true, "");
+    static_assert(noexcept(opt.reset()) == true);
     assert(X::dtor_called() == false);
     opt.reset();
     assert(X::dtor_called() == false);

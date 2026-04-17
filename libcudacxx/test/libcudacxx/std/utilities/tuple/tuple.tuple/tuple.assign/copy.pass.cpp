@@ -28,7 +28,7 @@ struct CopyAssignable
   CopyAssignable& operator=(CopyAssignable const&) = default;
   CopyAssignable& operator=(CopyAssignable&&)      = delete;
 };
-static_assert(cuda::std::is_copy_assignable<CopyAssignable>::value, "");
+static_assert(cuda::std::is_copy_assignable<CopyAssignable>::value);
 struct MoveAssignable
 {
   MoveAssignable& operator=(MoveAssignable const&) = delete;
@@ -91,20 +91,20 @@ int main(int, char**)
     // test that the implicitly generated copy assignment operator
     // is properly deleted
     using T = cuda::std::tuple<cuda::std::unique_ptr<int>>;
-    static_assert(!cuda::std::is_copy_assignable<T>::value, "");
+    static_assert(!cuda::std::is_copy_assignable<T>::value);
   }
 
   {
     using T = cuda::std::tuple<int, NonAssignable>;
-    static_assert(!cuda::std::is_copy_assignable<T>::value, "");
+    static_assert(!cuda::std::is_copy_assignable<T>::value);
   }
   {
     using T = cuda::std::tuple<int, CopyAssignable>;
-    static_assert(cuda::std::is_copy_assignable<T>::value, "");
+    static_assert(cuda::std::is_copy_assignable<T>::value);
   }
   {
     using T = cuda::std::tuple<int, MoveAssignable>;
-    static_assert(!cuda::std::is_copy_assignable<T>::value, "");
+    static_assert(!cuda::std::is_copy_assignable<T>::value);
   }
 
   return 0;

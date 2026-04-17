@@ -58,7 +58,7 @@ struct NoexceptDependant
 template <class T>
 __host__ __device__ void test()
 {
-  static_assert(cuda::std::destructible<T> == cuda::std::is_nothrow_destructible_v<T>, "");
+  static_assert(cuda::std::destructible<T> == cuda::std::is_nothrow_destructible_v<T>);
 }
 
 __host__ __device__ void test()

@@ -76,7 +76,7 @@ __host__ __device__ constexpr bool test_one_arg()
   {
     Opt opt;
     auto& v = opt.emplace();
-    static_assert(cuda::std::is_same_v<T&, decltype(v)>, "");
+    static_assert(cuda::std::is_same_v<T&, decltype(v)>);
     assert(static_cast<bool>(opt) == true);
     assert(*opt == T(0));
     assert(&v == &*opt);
@@ -84,7 +84,7 @@ __host__ __device__ constexpr bool test_one_arg()
   {
     Opt opt;
     auto& v = opt.emplace(val);
-    static_assert(cuda::std::is_same_v<T&, decltype(v)>, "");
+    static_assert(cuda::std::is_same_v<T&, decltype(v)>);
     assert(static_cast<bool>(opt) == true);
     assert(*opt == val);
     assert(&v == &*opt);
@@ -94,7 +94,7 @@ __host__ __device__ constexpr bool test_one_arg()
   {
     Opt opt(other_val);
     auto& v = opt.emplace();
-    static_assert(cuda::std::is_same_v<T&, decltype(v)>, "");
+    static_assert(cuda::std::is_same_v<T&, decltype(v)>);
     assert(static_cast<bool>(opt) == true);
     assert(*opt == T(0));
     assert(&v == &*opt);
@@ -102,7 +102,7 @@ __host__ __device__ constexpr bool test_one_arg()
   {
     Opt opt(other_val);
     auto& v = opt.emplace(val);
-    static_assert(cuda::std::is_same_v<T&, decltype(v)>, "");
+    static_assert(cuda::std::is_same_v<T&, decltype(v)>);
     assert(static_cast<bool>(opt) == true);
     assert(*opt == val);
     assert(&v == &*opt);
@@ -119,7 +119,7 @@ __host__ __device__ constexpr bool test_multi_arg()
   {
     Opt opt;
     auto& v = opt.emplace(101, 41);
-    static_assert(cuda::std::is_same_v<T&, decltype(v)>, "");
+    static_assert(cuda::std::is_same_v<T&, decltype(v)>);
     assert(static_cast<bool>(opt) == true);
     assert(v == T(101, 41));
     assert(*opt == T(101, 41));
@@ -127,7 +127,7 @@ __host__ __device__ constexpr bool test_multi_arg()
   {
     Opt opt;
     auto& v = opt.emplace({1, 2, 3, 4});
-    static_assert(cuda::std::is_same_v<T&, decltype(v)>, "");
+    static_assert(cuda::std::is_same_v<T&, decltype(v)>);
     assert(static_cast<bool>(opt) == true);
     assert(v == T(4)); // T sets its value to the size of the init list
     assert(*opt == T(4));
@@ -135,7 +135,7 @@ __host__ __device__ constexpr bool test_multi_arg()
   {
     Opt opt;
     auto& v = opt.emplace({1, 2, 3, 4, 5}, 6);
-    static_assert(cuda::std::is_same_v<T&, decltype(v)>, "");
+    static_assert(cuda::std::is_same_v<T&, decltype(v)>);
     assert(static_cast<bool>(opt) == true);
     assert(v == T(5)); // T sets its value to the size of the init list
     assert(*opt == T(5)); // T sets its value to the size of the init list
@@ -152,7 +152,7 @@ __host__ __device__ void test_on_test_type()
   {
     T::reset_constructors();
     auto& v = opt.emplace();
-    static_assert(cuda::std::is_same_v<T&, decltype(v)>, "");
+    static_assert(cuda::std::is_same_v<T&, decltype(v)>);
     assert(T::alive() == 1);
     assert(T::constructed() == 1);
     assert(T::default_constructed() == 1);
@@ -164,7 +164,7 @@ __host__ __device__ void test_on_test_type()
   {
     T::reset_constructors();
     auto& v = opt.emplace();
-    static_assert(cuda::std::is_same_v<T&, decltype(v)>, "");
+    static_assert(cuda::std::is_same_v<T&, decltype(v)>);
     assert(T::alive() == 1);
     assert(T::constructed() == 1);
     assert(T::default_constructed() == 1);
@@ -176,7 +176,7 @@ __host__ __device__ void test_on_test_type()
   {
     T::reset_constructors();
     auto& v = opt.emplace(101);
-    static_assert(cuda::std::is_same_v<T&, decltype(v)>, "");
+    static_assert(cuda::std::is_same_v<T&, decltype(v)>);
     assert(T::alive() == 1);
     assert(T::constructed() == 1);
     assert(T::value_constructed() == 1);
@@ -188,7 +188,7 @@ __host__ __device__ void test_on_test_type()
   {
     T::reset_constructors();
     auto& v = opt.emplace(-10, 99);
-    static_assert(cuda::std::is_same_v<T&, decltype(v)>, "");
+    static_assert(cuda::std::is_same_v<T&, decltype(v)>);
     assert(T::alive() == 1);
     assert(T::constructed() == 1);
     assert(T::value_constructed() == 1);
@@ -200,7 +200,7 @@ __host__ __device__ void test_on_test_type()
   {
     T::reset_constructors();
     auto& v = opt.emplace(-10, 99);
-    static_assert(cuda::std::is_same_v<T&, decltype(v)>, "");
+    static_assert(cuda::std::is_same_v<T&, decltype(v)>);
     assert(T::alive() == 1);
     assert(T::constructed() == 1);
     assert(T::value_constructed() == 1);
@@ -212,7 +212,7 @@ __host__ __device__ void test_on_test_type()
   {
     T::reset_constructors();
     auto& v = opt.emplace({-10, 99, 42, 1});
-    static_assert(cuda::std::is_same_v<T&, decltype(v)>, "");
+    static_assert(cuda::std::is_same_v<T&, decltype(v)>);
     assert(T::alive() == 1);
     assert(T::constructed() == 1);
     assert(T::value_constructed() == 1);
@@ -224,7 +224,7 @@ __host__ __device__ void test_on_test_type()
   {
     T::reset_constructors();
     auto& v = opt.emplace({-10, 99, 42, 1}, 42);
-    static_assert(cuda::std::is_same_v<T&, decltype(v)>, "");
+    static_assert(cuda::std::is_same_v<T&, decltype(v)>);
     assert(T::alive() == 1);
     assert(T::constructed() == 1);
     assert(T::value_constructed() == 1);
@@ -260,7 +260,7 @@ void test_exceptions()
     assert(static_cast<bool>(opt) == true);
     assert(Y::dtor_called() == false);
     [[maybe_unused]] auto& v = opt.emplace(1);
-    static_assert(cuda::std::is_same_v<Y&, decltype(v)>, "");
+    static_assert(cuda::std::is_same_v<Y&, decltype(v)>);
     assert(false);
   }
   catch (int i)
@@ -300,7 +300,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
   {

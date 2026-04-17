@@ -139,8 +139,8 @@ __host__ __device__
       C::const_iterator cii{};
       assert(ii1 == ii2);
       assert(ii1 == ii4);
-      static_assert(cuda::std::is_same_v<decltype(ii1), int*>, "");
-      static_assert(cuda::std::is_same_v<decltype(cii), const int*>, "");
+      static_assert(cuda::std::is_same_v<decltype(ii1), int*>);
+      static_assert(cuda::std::is_same_v<decltype(cii), const int*>);
       assert(ii1 == cii);
 
       assert(!(ii1 != ii2));
@@ -233,7 +233,7 @@ int main(int, char**)
 {
   tests();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && !TEST_COMPILER(GCC, <, 8)
-  static_assert(tests(), "");
+  static_assert(tests());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED && !TEST_COMPILER(GCC, <, 8)
   return 0;
 }

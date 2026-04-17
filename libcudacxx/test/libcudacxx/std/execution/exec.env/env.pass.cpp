@@ -71,9 +71,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
   [[maybe_unused]] cuda::std::execution::env e1{};
   static_assert(cuda::std::is_same_v<decltype(e1), cuda::std::execution::env<>>);
-  static_assert(is_trivial_aggregate<cuda::std::execution::env<>>(), "");
-  static_assert(!cuda::std::execution::__queryable_with<cuda::std::execution::env<>, query1_t>, "");
-  static_assert(sizeof(e1) == 1, "");
+  static_assert(is_trivial_aggregate<cuda::std::execution::env<>>());
+  static_assert(!cuda::std::execution::__queryable_with<cuda::std::execution::env<>, query1_t>);
+  static_assert(sizeof(e1) == 1);
 
   cuda::std::execution::env e2{cuda::std::execution::prop{query1, 42}};
   assert(e2.query(query1) == 42);
@@ -87,10 +87,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
                 float>);
   using expected_e2_t = cuda::std::execution::env<cuda::std::execution::prop<query1_t, int>>;
   static_assert(cuda::std::is_same_v<decltype(e2), expected_e2_t>);
-  static_assert(is_trivial_aggregate<expected_e2_t>(), "");
+  static_assert(is_trivial_aggregate<expected_e2_t>());
   static_assert(cuda::std::is_same_v<decltype(e2.query(query1)), const int&>);
-  static_assert(!cuda::std::execution::__queryable_with<expected_e2_t, query2_t>, "");
-  static_assert(sizeof(e2) == sizeof(int), "");
+  static_assert(!cuda::std::execution::__queryable_with<expected_e2_t, query2_t>);
+  static_assert(sizeof(e2) == sizeof(int));
 
   cuda::std::execution::env e3{cuda::std::execution::prop{query1, 42}, cuda::std::execution::prop{query2, 3.14}};
   assert(e3.query(query1) == 42);
@@ -98,7 +98,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
   using expected_e3_t =
     cuda::std::execution::env<cuda::std::execution::prop<query1_t, int>, cuda::std::execution::prop<query2_t, double>>;
   static_assert(cuda::std::is_same_v<decltype(e3), expected_e3_t>);
-  static_assert(is_trivial_aggregate<expected_e3_t>(), "");
+  static_assert(is_trivial_aggregate<expected_e3_t>());
   static_assert(cuda::std::is_same_v<decltype(e3.query(query1)), const int&>);
   static_assert(cuda::std::is_same_v<decltype(e3.query(query2)), const double&>);
 
@@ -110,7 +110,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
   using expected_e4_t = cuda::std::execution::
     env<custom_env, cuda::std::execution::prop<query1_t, int>, cuda::std::execution::prop<query2_t, double>>;
   static_assert(cuda::std::is_same_v<decltype(e4), expected_e4_t>);
-  static_assert(is_trivial_aggregate<expected_e4_t>(), "");
+  static_assert(is_trivial_aggregate<expected_e4_t>());
   static_assert(cuda::std::is_same_v<decltype(e4.query(query1)), int>);
   static_assert(cuda::std::is_same_v<decltype(e4.query(query2)), const double&>);
   static_assert(cuda::std::is_same_v<decltype(e4.query(query3, 42)), int>);

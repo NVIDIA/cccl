@@ -86,7 +86,7 @@ int main(int, char**)
 {
   test();
 #ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
   return 0;

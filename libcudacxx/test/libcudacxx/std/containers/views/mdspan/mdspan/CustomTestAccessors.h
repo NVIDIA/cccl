@@ -141,8 +141,8 @@ struct checked_accessor
   }
 };
 
-static_assert(cuda::std::is_constructible<checked_accessor<const int>, const checked_accessor<int>&>::value, "");
-static_assert(!cuda::std::is_convertible<const checked_accessor<int>&, checked_accessor<const int>>::value, "");
+static_assert(cuda::std::is_constructible<checked_accessor<const int>, const checked_accessor<int>&>::value);
+static_assert(!cuda::std::is_convertible<const checked_accessor<int>&, checked_accessor<const int>>::value);
 
 template <>
 struct checked_accessor<double>

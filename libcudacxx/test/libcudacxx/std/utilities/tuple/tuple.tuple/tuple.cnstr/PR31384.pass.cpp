@@ -75,7 +75,7 @@ int main(int, char**)
   }
   count = 0;
   {
-    static_assert(!cuda::std::is_convertible<ExplicitDerived<int>, cuda::std::tuple<Explicit>>::value, "");
+    static_assert(!cuda::std::is_convertible<ExplicitDerived<int>, cuda::std::tuple<Explicit>>::value);
     [[maybe_unused]] cuda::std::tuple<Explicit> bar(ExplicitDerived<int>{42});
     assert(count == 1);
   }

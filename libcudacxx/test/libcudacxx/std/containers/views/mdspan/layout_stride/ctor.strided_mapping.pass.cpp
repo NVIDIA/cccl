@@ -139,28 +139,28 @@ __host__ __device__ constexpr void test_no_implicit_conversion()
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   // Sanity check that one static to dynamic conversion works
-  static_assert(cuda::std::is_constructible<ToM<int, D>, FromM<FromL, int, 5>>::value, "");
-  static_assert(cuda::std::is_convertible<FromM<FromL, int, 5>, ToM<int, D>>::value, "");
+  static_assert(cuda::std::is_constructible<ToM<int, D>, FromM<FromL, int, 5>>::value);
+  static_assert(cuda::std::is_convertible<FromM<FromL, int, 5>, ToM<int, D>>::value);
 
   // Check that dynamic to static conversion only works explicitly
-  static_assert(cuda::std::is_constructible<ToM<int, 5>, FromM<FromL, int, D>>::value, "");
-  static_assert(!cuda::std::is_convertible<FromM<FromL, int, D>, ToM<int, 5>>::value, "");
+  static_assert(cuda::std::is_constructible<ToM<int, 5>, FromM<FromL, int, D>>::value);
+  static_assert(!cuda::std::is_convertible<FromM<FromL, int, D>, ToM<int, 5>>::value);
 
   // Sanity check that one static to dynamic conversion works
-  static_assert(cuda::std::is_constructible<ToM<int, D, 7>, FromM<FromL, int, 5, 7>>::value, "");
-  static_assert(cuda::std::is_convertible<FromM<FromL, int, 5, 7>, ToM<int, D, 7>>::value, "");
+  static_assert(cuda::std::is_constructible<ToM<int, D, 7>, FromM<FromL, int, 5, 7>>::value);
+  static_assert(cuda::std::is_convertible<FromM<FromL, int, 5, 7>, ToM<int, D, 7>>::value);
 
   // Check that dynamic to static conversion only works explicitly
-  static_assert(cuda::std::is_constructible<ToM<int, 5, 7>, FromM<FromL, int, D, 7>>::value, "");
-  static_assert(!cuda::std::is_convertible<FromM<FromL, int, D, 7>, ToM<int, 5, 7>>::value, "");
+  static_assert(cuda::std::is_constructible<ToM<int, 5, 7>, FromM<FromL, int, D, 7>>::value);
+  static_assert(!cuda::std::is_convertible<FromM<FromL, int, D, 7>, ToM<int, 5, 7>>::value);
 
   // Sanity check that smaller index_type to larger index_type conversion works
-  static_assert(cuda::std::is_constructible<ToM<size_t, 5>, FromM<FromL, int, 5>>::value, "");
-  static_assert(cuda::std::is_convertible<FromM<FromL, int, 5>, ToM<size_t, 5>>::value, "");
+  static_assert(cuda::std::is_constructible<ToM<size_t, 5>, FromM<FromL, int, 5>>::value);
+  static_assert(cuda::std::is_convertible<FromM<FromL, int, 5>, ToM<size_t, 5>>::value);
 
   // Check that larger index_type to smaller index_type conversion works explicitly only
-  static_assert(cuda::std::is_constructible<ToM<int, 5>, FromM<FromL, size_t, 5>>::value, "");
-  static_assert(!cuda::std::is_convertible<FromM<FromL, size_t, 5>, ToM<int, 5>>::value, "");
+  static_assert(cuda::std::is_constructible<ToM<int, 5>, FromM<FromL, size_t, 5>>::value);
+  static_assert(!cuda::std::is_convertible<FromM<FromL, size_t, 5>, ToM<int, 5>>::value);
 }
 
 // the implicit convertibility test doesn't apply to non cuda::std::layouts
@@ -173,10 +173,10 @@ __host__ __device__ constexpr void test_rank_mismatch()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
-  static_assert(!cuda::std::is_constructible<ToM<int, D>, FromM<FromL, int>>::value, "");
-  static_assert(!cuda::std::is_constructible<ToM<int>, FromM<FromL, int, D, D>>::value, "");
-  static_assert(!cuda::std::is_constructible<ToM<int, D>, FromM<FromL, int, D, D>>::value, "");
-  static_assert(!cuda::std::is_constructible<ToM<int, D, D, D>, FromM<FromL, int, D, D>>::value, "");
+  static_assert(!cuda::std::is_constructible<ToM<int, D>, FromM<FromL, int>>::value);
+  static_assert(!cuda::std::is_constructible<ToM<int>, FromM<FromL, int, D, D>>::value);
+  static_assert(!cuda::std::is_constructible<ToM<int, D>, FromM<FromL, int, D, D>>::value);
+  static_assert(!cuda::std::is_constructible<ToM<int, D, D, D>, FromM<FromL, int, D, D>>::value);
 }
 
 template <class FromL>
@@ -184,9 +184,9 @@ __host__ __device__ constexpr void test_static_extent_mismatch()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
-  static_assert(!cuda::std::is_constructible<ToM<int, D, 5>, FromM<FromL, int, D, 4>>::value, "");
-  static_assert(!cuda::std::is_constructible<ToM<int, 5>, FromM<FromL, int, 4>>::value, "");
-  static_assert(!cuda::std::is_constructible<ToM<int, 5, D>, FromM<FromL, int, 4, D>>::value, "");
+  static_assert(!cuda::std::is_constructible<ToM<int, D, 5>, FromM<FromL, int, D, 4>>::value);
+  static_assert(!cuda::std::is_constructible<ToM<int, 5>, FromM<FromL, int, 4>>::value);
+  static_assert(!cuda::std::is_constructible<ToM<int, 5, D>, FromM<FromL, int, 4, D>>::value);
 }
 
 template <class FromL>
@@ -213,6 +213,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

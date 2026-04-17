@@ -75,7 +75,7 @@ __host__ __device__ constexpr void mixin_accessor()
 {
   cuda::std::array<T, 1024> elements{42};
   // make sure we test trivially constructible accessor and data_handle
-  static_assert(cuda::std::is_trivially_move_constructible<cuda::std::default_accessor<T>>::value, "");
+  static_assert(cuda::std::is_trivially_move_constructible<cuda::std::default_accessor<T>>::value);
   static_assert(
     cuda::std::is_trivially_move_constructible<typename cuda::std::default_accessor<T>::data_handle_type>::value, "");
   mixin_layout(elements.data(), cuda::std::default_accessor<T>());
@@ -86,7 +86,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 void mixin_accessor()
 {
   ElementPool<T, 1024> elements;
   // make sure we test trivially constructible accessor and data_handle
-  static_assert(cuda::std::is_trivially_move_constructible<cuda::std::default_accessor<T>>::value, "");
+  static_assert(cuda::std::is_trivially_move_constructible<cuda::std::default_accessor<T>>::value);
   static_assert(
     cuda::std::is_trivially_move_constructible<typename cuda::std::default_accessor<T>::data_handle_type>::value, "");
   mixin_layout(elements.get_ptr(), cuda::std::default_accessor<T>());
@@ -114,8 +114,8 @@ int main(int, char**)
   test_evil();
 
 #if TEST_STD_VER >= 2020
-  static_assert(test(), "");
-  static_assert(test_evil(), "");
+  static_assert(test());
+  static_assert(test_evil());
 #endif // TEST_STD_VER >= 2020
   return 0;
 }

@@ -128,17 +128,17 @@ int main(int, char**)
     using CA = CopyOnly[42];
     using MA = NoexceptMoveOnly[42];
     using NA = NotMoveConstructible[42];
-    static_assert(can_swap<CA&>(), "");
-    static_assert(can_swap<MA&>(), "");
-    static_assert(!can_swap<NA&>(), "");
+    static_assert(can_swap<CA&>());
+    static_assert(can_swap<MA&>());
+    static_assert(!can_swap<NA&>());
 
     CA ca;
     MA ma;
-    static_assert(!noexcept(cuda::std::swap(ca, ca)), "");
-    static_assert(noexcept(cuda::std::swap(ma, ma)), "");
+    static_assert(!noexcept(cuda::std::swap(ca, ca)));
+    static_assert(noexcept(cuda::std::swap(ma, ma)));
   }
 
-  static_assert(test_swap_constexpr(), "");
+  static_assert(test_swap_constexpr());
 
   test_ambiguous_std();
 

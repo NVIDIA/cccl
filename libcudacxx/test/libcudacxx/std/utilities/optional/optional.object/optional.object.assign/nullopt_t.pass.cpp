@@ -48,7 +48,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
   };
   {
     optional<int> opt{};
-    static_assert(noexcept(opt = nullopt) == true, "");
+    static_assert(noexcept(opt = nullopt) == true);
     opt = nullopt;
     assert(static_cast<bool>(opt) == false);
   }
@@ -60,7 +60,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 #ifdef CCCL_ENABLE_OPTIONAL_REF
   {
     optional<int&> opt{};
-    static_assert(noexcept(opt = nullopt) == true, "");
+    static_assert(noexcept(opt = nullopt) == true);
     opt = nullopt;
     assert(static_cast<bool>(opt) == false);
   }
@@ -97,7 +97,7 @@ int main(int, char**)
   TT::reset();
   {
     optional<TT> opt{};
-    static_assert(noexcept(opt = nullopt) == true, "");
+    static_assert(noexcept(opt = nullopt) == true);
     assert(TT::destroyed() == 0);
     opt = nullopt;
     assert(TT::constructed() == 0);

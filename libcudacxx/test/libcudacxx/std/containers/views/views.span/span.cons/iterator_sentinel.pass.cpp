@@ -35,16 +35,16 @@ __host__ __device__ constexpr bool test_ctor()
 template <size_t Extent>
 __host__ __device__ constexpr void test_constructibility()
 {
-  static_assert(cuda::std::is_constructible_v<cuda::std::span<int, Extent>, int*, int*>, "");
-  static_assert(!cuda::std::is_constructible_v<cuda::std::span<int, Extent>, const int*, const int*>, "");
-  static_assert(!cuda::std::is_constructible_v<cuda::std::span<int, Extent>, volatile int*, volatile int*>, "");
-  static_assert(cuda::std::is_constructible_v<cuda::std::span<const int, Extent>, int*, int*>, "");
-  static_assert(cuda::std::is_constructible_v<cuda::std::span<const int, Extent>, const int*, const int*>, "");
-  static_assert(!cuda::std::is_constructible_v<cuda::std::span<const int, Extent>, volatile int*, volatile int*>, "");
-  static_assert(cuda::std::is_constructible_v<cuda::std::span<volatile int, Extent>, int*, int*>, "");
-  static_assert(!cuda::std::is_constructible_v<cuda::std::span<volatile int, Extent>, const int*, const int*>, "");
-  static_assert(cuda::std::is_constructible_v<cuda::std::span<volatile int, Extent>, volatile int*, volatile int*>, "");
-  static_assert(!cuda::std::is_constructible_v<cuda::std::span<int, Extent>, int*, float*>, ""); // types wrong
+  static_assert(cuda::std::is_constructible_v<cuda::std::span<int, Extent>, int*, int*>);
+  static_assert(!cuda::std::is_constructible_v<cuda::std::span<int, Extent>, const int*, const int*>);
+  static_assert(!cuda::std::is_constructible_v<cuda::std::span<int, Extent>, volatile int*, volatile int*>);
+  static_assert(cuda::std::is_constructible_v<cuda::std::span<const int, Extent>, int*, int*>);
+  static_assert(cuda::std::is_constructible_v<cuda::std::span<const int, Extent>, const int*, const int*>);
+  static_assert(!cuda::std::is_constructible_v<cuda::std::span<const int, Extent>, volatile int*, volatile int*>);
+  static_assert(cuda::std::is_constructible_v<cuda::std::span<volatile int, Extent>, int*, int*>);
+  static_assert(!cuda::std::is_constructible_v<cuda::std::span<volatile int, Extent>, const int*, const int*>);
+  static_assert(cuda::std::is_constructible_v<cuda::std::span<volatile int, Extent>, volatile int*, volatile int*>);
+  static_assert(!cuda::std::is_constructible_v<cuda::std::span<int, Extent>, int*, float*>); // types wrong
 }
 
 __host__ __device__ constexpr bool test()
@@ -63,7 +63,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

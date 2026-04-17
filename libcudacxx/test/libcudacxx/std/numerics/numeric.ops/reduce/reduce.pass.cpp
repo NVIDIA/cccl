@@ -44,7 +44,7 @@ __host__ __device__ constexpr void test_return_type()
 {
   T* p = nullptr;
   unused(p);
-  static_assert(cuda::std::is_same<T, decltype(cuda::std::reduce(p, p))>::value, "");
+  static_assert(cuda::std::is_same<T, decltype(cuda::std::reduce(p, p))>::value);
 }
 
 __host__ __device__ constexpr bool test()
@@ -67,6 +67,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

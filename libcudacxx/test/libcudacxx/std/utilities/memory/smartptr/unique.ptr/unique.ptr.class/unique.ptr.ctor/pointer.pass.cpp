@@ -47,12 +47,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_pointer()
     using U2 = cuda::std::unique_ptr<ValueT, Deleter<ValueT>>;
 
     // Test for noexcept
-    static_assert(cuda::std::is_nothrow_constructible<U1, A*>::value, "");
-    static_assert(cuda::std::is_nothrow_constructible<U2, A*>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<U1, A*>::value);
+    static_assert(cuda::std::is_nothrow_constructible<U2, A*>::value);
 
     // Test for explicit
-    static_assert(!cuda::std::is_convertible<A*, U1>::value, "");
-    static_assert(!cuda::std::is_convertible<A*, U2>::value, "");
+    static_assert(!cuda::std::is_convertible<A*, U1>::value);
+    static_assert(!cuda::std::is_convertible<A*, U2>::value);
   }
   {
     A* p = newValue<ValueT>(expect_alive);
@@ -152,7 +152,7 @@ __host__ __device__ void TEST_CONSTEXPR_CXX23 test_sfinae()
   { // the constructor does not participate in overload resolution when
     // the deleter is a pointer type
     using U = cuda::std::unique_ptr<T, void (*)(void*)>;
-    static_assert(!cuda::std::is_constructible<U, T*>::value, "");
+    static_assert(!cuda::std::is_constructible<U, T*>::value);
   }
   { // the constructor does not participate in overload resolution when
     // the deleter is not default constructible
@@ -160,9 +160,9 @@ __host__ __device__ void TEST_CONSTEXPR_CXX23 test_sfinae()
     using U1  = cuda::std::unique_ptr<T, NonDefaultDeleter>;
     using U2  = cuda::std::unique_ptr<T, Del&>;
     using U3  = cuda::std::unique_ptr<T, Del const&>;
-    static_assert(!cuda::std::is_constructible<U1, T*>::value, "");
-    static_assert(!cuda::std::is_constructible<U2, T*>::value, "");
-    static_assert(!cuda::std::is_constructible<U3, T*>::value, "");
+    static_assert(!cuda::std::is_constructible<U1, T*>::value);
+    static_assert(!cuda::std::is_constructible<U2, T*>::value);
+    static_assert(!cuda::std::is_constructible<U3, T*>::value);
   }
 }
 
@@ -177,12 +177,12 @@ __host__ __device__ static TEST_CONSTEXPR_CXX23 void test_sfinae_runtime()
     using UBD = cuda::std::unique_ptr<B[], GenericDeleter>;
     using UBC = cuda::std::unique_ptr<const B[]>;
 
-    static_assert(!cuda::std::is_constructible<UA, B*>::value, "");
-    static_assert(!cuda::std::is_constructible<UB, A*>::value, "");
-    static_assert(!cuda::std::is_constructible<UAD, B*>::value, "");
-    static_assert(!cuda::std::is_constructible<UBD, A*>::value, "");
-    static_assert(!cuda::std::is_constructible<UAC, const B*>::value, "");
-    static_assert(!cuda::std::is_constructible<UBC, const A*>::value, "");
+    static_assert(!cuda::std::is_constructible<UA, B*>::value);
+    static_assert(!cuda::std::is_constructible<UB, A*>::value);
+    static_assert(!cuda::std::is_constructible<UAD, B*>::value);
+    static_assert(!cuda::std::is_constructible<UBD, A*>::value);
+    static_assert(!cuda::std::is_constructible<UAC, const B*>::value);
+    static_assert(!cuda::std::is_constructible<UBC, const A*>::value);
   }
 }
 

@@ -25,7 +25,7 @@ template <typename T>
 __host__ __device__ void test_cos(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::cos(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::cos(T{})), ret>);
 
   // 0 is returned unmodified
   assert(eq(cuda::std::cos(val), T(1.0)));
@@ -72,7 +72,7 @@ template <typename T>
 __host__ __device__ void test_sin(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::sin(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::sin(T{})), ret>);
 
   // 0 is returned unmodified
   assert(eq(cuda::std::sin(val), val));
@@ -125,7 +125,7 @@ template <typename T>
 __host__ __device__ void test_tan(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::tan(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::tan(T{})), ret>);
 
   // 0 is returned unmodified
   assert(eq(cuda::std::tan(val), val));

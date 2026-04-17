@@ -69,11 +69,11 @@ __host__ __device__ void test()
   using T = cuda::std::iterator_traits<It>;
   find_current<It> q;
   q.test(); // Just test that we can access `.current` from derived classes
-  static_assert((cuda::std::is_same<typename R::iterator_type, It>::value), "");
-  static_assert((cuda::std::is_same<typename R::value_type, typename T::value_type>::value), "");
-  static_assert((cuda::std::is_same<typename R::difference_type, typename T::difference_type>::value), "");
-  static_assert((cuda::std::is_same<typename R::reference, typename T::reference>::value), "");
-  static_assert((cuda::std::is_same<typename R::pointer, typename cuda::std::iterator_traits<It>::pointer>::value), "");
+  static_assert((cuda::std::is_same<typename R::iterator_type, It>::value));
+  static_assert((cuda::std::is_same<typename R::value_type, typename T::value_type>::value));
+  static_assert((cuda::std::is_same<typename R::difference_type, typename T::difference_type>::value));
+  static_assert((cuda::std::is_same<typename R::reference, typename T::reference>::value));
+  static_assert((cuda::std::is_same<typename R::pointer, typename cuda::std::iterator_traits<It>::pointer>::value));
 
   test_iter_category<It>();
 }
@@ -103,9 +103,9 @@ struct cuda::std::incrementable_traits<FooIter>
 };
 
 // Not using `FooIter::value_type`.
-static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<FooIter>::value_type, int>, "");
+static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<FooIter>::value_type, int>);
 // Not using `FooIter::difference_type`.
-static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<FooIter>::difference_type, char>, "");
+static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<FooIter>::difference_type, char>);
 
 struct BarIter
 {
@@ -125,7 +125,7 @@ struct cuda::std::iterator_traits<BarIter>
   using iterator_category = cuda::std::bidirectional_iterator_tag;
 };
 
-static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<BarIter>::reference, bool&>, "");
+static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<BarIter>::reference, bool&>);
 
 __host__ __device__ void test_all()
 {

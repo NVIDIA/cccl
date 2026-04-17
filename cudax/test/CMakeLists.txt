@@ -67,6 +67,7 @@ target_compile_options(
 
 cudax_add_catch2_test(test_target graph
     graph/graph_smoke.cu
+    graph/graph_node_ops_smoke.cu
 )
 
 cudax_add_catch2_test(test_target stream
@@ -85,6 +86,16 @@ cudax_add_catch2_test(test_target containers
 cudax_add_catch2_test(test_target copy_bytes
     copy_bytes/mdspan_d2h_h2d.cu
     copy_bytes/mdspan_d2h_h2d_relaxed.cu
+)
+
+cudax_add_catch2_test(test_target copy
+    copy/copy.cu
+    copy/copy_edge_cases.cu
+    copy/copy_vectorize.cu
+    copy/copy_vectorize_5d.cu
+    copy/copy_llm.cu
+    copy/copy_nvmath.cu
+    copy/copy_nvmath_transpose.cu
 )
 
 cudax_add_catch2_test(test_target cuco
@@ -119,6 +130,7 @@ cudax_add_catch2_test(test_target algorithm
 cudax_add_catch2_test(test_target hierarchy_groups
     hierarchy/group.cu
 )
+target_compile_definitions(${test_target} PUBLIC _CUDAX_HIERARCHY)
 
 if (cudax_ENABLE_CUFILE)
   cudax_add_catch2_test(test_target cufile.driver_attributes

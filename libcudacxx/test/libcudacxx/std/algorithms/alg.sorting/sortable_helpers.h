@@ -124,10 +124,10 @@ struct NonTrivialSortableWithComp
   }
 };
 
-static_assert(cuda::std::is_trivially_copyable<TrivialSortable>::value, "");
-static_assert(cuda::std::is_trivially_copyable<TrivialSortableWithComp>::value, "");
-static_assert(!cuda::std::is_trivially_copyable<NonTrivialSortable>::value, "");
-static_assert(!cuda::std::is_trivially_copyable<NonTrivialSortableWithComp>::value, "");
+static_assert(cuda::std::is_trivially_copyable<TrivialSortable>::value);
+static_assert(cuda::std::is_trivially_copyable<TrivialSortableWithComp>::value);
+static_assert(!cuda::std::is_trivially_copyable<NonTrivialSortable>::value);
+static_assert(!cuda::std::is_trivially_copyable<NonTrivialSortableWithComp>::value);
 
 #if TEST_STD_VER >= 2020
 struct TracedCopy

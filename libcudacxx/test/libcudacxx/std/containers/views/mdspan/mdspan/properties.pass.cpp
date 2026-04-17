@@ -110,10 +110,10 @@ __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& m
   // =====================================
   // Traits for every mdspan
   // =====================================
-  static_assert(cuda::std::copyable<MDS>, "");
-  static_assert(cuda::std::is_nothrow_move_constructible<MDS>::value, "");
-  static_assert(cuda::std::is_nothrow_move_assignable<MDS>::value, "");
-  static_assert(cuda::std::is_nothrow_swappable<MDS>::value, "");
+  static_assert(cuda::std::copyable<MDS>);
+  static_assert(cuda::std::is_nothrow_move_constructible<MDS>::value);
+  static_assert(cuda::std::is_nothrow_move_assignable<MDS>::value);
+  static_assert(cuda::std::is_nothrow_swappable<MDS>::value);
 
   // =====================================
   // Invariants coming from data handle
@@ -245,11 +245,11 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test_evil()
 int main(int, char**)
 {
   test();
-  // static_assert(test(), "");
+  // static_assert(test());
 
   test_evil();
 #if TEST_STD_VER >= 2020
-  static_assert(test_evil(), "");
+  static_assert(test_evil());
 #endif // TEST_STD_VER >= 2020
 
   return 0;

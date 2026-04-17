@@ -205,7 +205,6 @@ struct __expected_destruct<_Tp, _Err, false, false>
   _CCCL_API constexpr __expected_destruct(in_place_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : __union_(in_place, ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class... _Args>
@@ -225,7 +224,6 @@ struct __expected_destruct<_Tp, _Err, false, false>
                  in_place,
                  ::cuda::std::forward<_Fun>(__fun),
                  ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class _Fun, class... _Args>
@@ -271,7 +269,6 @@ struct __expected_destruct<_Tp, _Err, true, false>
   _CCCL_API constexpr __expected_destruct(in_place_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : __union_(in_place, ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class... _Args>
@@ -291,7 +288,6 @@ struct __expected_destruct<_Tp, _Err, true, false>
                  in_place,
                  ::cuda::std::forward<_Fun>(__fun),
                  ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class _Fun, class... _Args>
@@ -333,7 +329,6 @@ struct __expected_destruct<_Tp, _Err, false, true>
   _CCCL_API constexpr __expected_destruct(in_place_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : __union_(in_place, ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class... _Args>
@@ -353,7 +348,6 @@ struct __expected_destruct<_Tp, _Err, false, true>
                  in_place,
                  ::cuda::std::forward<_Fun>(__fun),
                  ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class _Fun, class... _Args>
@@ -396,7 +390,6 @@ struct __expected_destruct<_Tp, _Err, true, true>
   _CCCL_API constexpr __expected_destruct(in_place_t,
                                           _Args&&... __args) noexcept(is_nothrow_constructible_v<_Tp, _Args...>)
       : __union_(in_place, ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class... _Args>
@@ -416,7 +409,6 @@ struct __expected_destruct<_Tp, _Err, true, true>
                  in_place,
                  ::cuda::std::forward<_Fun>(__fun),
                  ::cuda::std::forward<_Args>(__args)...)
-      , __has_val_(true)
   {}
 
   template <class _Fun, class... _Args>
@@ -880,7 +872,6 @@ struct __expected_destruct<void, _Err, false, true>
   template <class... _Args>
   _CCCL_API constexpr __expected_destruct(in_place_t) noexcept(is_nothrow_constructible_v<_Err, _Args...>)
       : __union_()
-      , __has_val_(true)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE

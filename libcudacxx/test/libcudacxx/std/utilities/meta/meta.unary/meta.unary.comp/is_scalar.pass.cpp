@@ -18,27 +18,27 @@
 template <class T>
 __host__ __device__ void test_is_scalar()
 {
-  static_assert(cuda::std::is_scalar<T>::value, "");
-  static_assert(cuda::std::is_scalar<const T>::value, "");
-  static_assert(cuda::std::is_scalar<volatile T>::value, "");
-  static_assert(cuda::std::is_scalar<const volatile T>::value, "");
-  static_assert(cuda::std::is_scalar_v<T>, "");
-  static_assert(cuda::std::is_scalar_v<const T>, "");
-  static_assert(cuda::std::is_scalar_v<volatile T>, "");
-  static_assert(cuda::std::is_scalar_v<const volatile T>, "");
+  static_assert(cuda::std::is_scalar<T>::value);
+  static_assert(cuda::std::is_scalar<const T>::value);
+  static_assert(cuda::std::is_scalar<volatile T>::value);
+  static_assert(cuda::std::is_scalar<const volatile T>::value);
+  static_assert(cuda::std::is_scalar_v<T>);
+  static_assert(cuda::std::is_scalar_v<const T>);
+  static_assert(cuda::std::is_scalar_v<volatile T>);
+  static_assert(cuda::std::is_scalar_v<const volatile T>);
 }
 
 template <class T>
 __host__ __device__ void test_is_not_scalar()
 {
-  static_assert(!cuda::std::is_scalar<T>::value, "");
-  static_assert(!cuda::std::is_scalar<const T>::value, "");
-  static_assert(!cuda::std::is_scalar<volatile T>::value, "");
-  static_assert(!cuda::std::is_scalar<const volatile T>::value, "");
-  static_assert(!cuda::std::is_scalar_v<T>, "");
-  static_assert(!cuda::std::is_scalar_v<const T>, "");
-  static_assert(!cuda::std::is_scalar_v<volatile T>, "");
-  static_assert(!cuda::std::is_scalar_v<const volatile T>, "");
+  static_assert(!cuda::std::is_scalar<T>::value);
+  static_assert(!cuda::std::is_scalar<const T>::value);
+  static_assert(!cuda::std::is_scalar<volatile T>::value);
+  static_assert(!cuda::std::is_scalar<const volatile T>::value);
+  static_assert(!cuda::std::is_scalar_v<T>);
+  static_assert(!cuda::std::is_scalar_v<const T>);
+  static_assert(!cuda::std::is_scalar_v<volatile T>);
+  static_assert(!cuda::std::is_scalar_v<const volatile T>);
 }
 
 class incomplete_type;

@@ -557,7 +557,7 @@ C2H_TEST("Reduce works with C++ source operations using _ex build", "[reduce]")
       build_info.get_libcudacxx_path(),
       build_info.get_ctk_path()));
 
-  CUstream null_stream      = 0;
+  CUstream null_stream      = nullptr;
   size_t temp_storage_bytes = 0;
   REQUIRE(CUDA_SUCCESS
           == cccl_device_reduce(

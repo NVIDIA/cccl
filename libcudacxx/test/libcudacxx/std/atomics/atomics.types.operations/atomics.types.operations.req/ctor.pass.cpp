@@ -45,7 +45,7 @@ struct TestFunc
   __host__ __device__ void operator()() const
   {
     using Atomic = cuda::atomic<Tp, Scope>;
-    static_assert(cuda::std::is_literal_type<Atomic>::value, "");
+    static_assert(cuda::std::is_literal_type<Atomic>::value);
     constexpr Tp t(42);
     {
       constexpr Atomic a(t);

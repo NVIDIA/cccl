@@ -30,19 +30,19 @@
 template <class T>
 __host__ __device__ void test_is_trivially_copyable_volatile()
 {
-  static_assert(cuda::std::is_trivially_copyable<volatile T>::value, "");
-  static_assert(cuda::std::is_trivially_copyable<const volatile T>::value, "");
-  static_assert(cuda::std::is_trivially_copyable_v<volatile T>, "");
-  static_assert(cuda::std::is_trivially_copyable_v<const volatile T>, "");
+  static_assert(cuda::std::is_trivially_copyable<volatile T>::value);
+  static_assert(cuda::std::is_trivially_copyable<const volatile T>::value);
+  static_assert(cuda::std::is_trivially_copyable_v<volatile T>);
+  static_assert(cuda::std::is_trivially_copyable_v<const volatile T>);
 }
 
 template <class T>
 __host__ __device__ void test_is_not_trivially_copyable_volatile()
 {
-  static_assert(!cuda::std::is_trivially_copyable<volatile T>::value, "");
-  static_assert(!cuda::std::is_trivially_copyable<const volatile T>::value, "");
-  static_assert(!cuda::std::is_trivially_copyable_v<volatile T>, "");
-  static_assert(!cuda::std::is_trivially_copyable_v<const volatile T>, "");
+  static_assert(!cuda::std::is_trivially_copyable<volatile T>::value);
+  static_assert(!cuda::std::is_trivially_copyable<const volatile T>::value);
+  static_assert(!cuda::std::is_trivially_copyable_v<volatile T>);
+  static_assert(!cuda::std::is_trivially_copyable_v<const volatile T>);
 }
 
 struct A

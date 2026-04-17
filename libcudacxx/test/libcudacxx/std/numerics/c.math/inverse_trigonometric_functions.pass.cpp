@@ -25,7 +25,7 @@ template <typename T>
 __host__ __device__ void test_acos(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::acos(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::acos(T{})), ret>);
 
   assert(eq(cuda::std::acos(T(1.0)), val));
   assert(cuda::std::isnan(cuda::std::acos(T(2.0))));
@@ -68,7 +68,7 @@ template <typename T>
 __host__ __device__ void test_asin(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::asin(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::asin(T{})), ret>);
 
   // 0 is returned unmodified
   assert(eq(cuda::std::asin(val), val));
@@ -116,7 +116,7 @@ template <typename T>
 __host__ __device__ void test_atan(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::atan(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::atan(T{})), ret>);
 
   // 0 is returned unmodified
   assert(eq(cuda::std::atan(val), val));
@@ -160,7 +160,7 @@ template <typename T>
 __host__ __device__ void test_atan2(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::atan2(T{}, T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::atan2(T{}, T{})), ret>);
 
   // If y is ±0 and x is positive or +0, ±0 is returned.
   assert(eq(cuda::std::atan2(val, val), val));

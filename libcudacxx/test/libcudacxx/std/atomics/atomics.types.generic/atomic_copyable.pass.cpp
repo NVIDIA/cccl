@@ -24,19 +24,19 @@
 template <class T>
 __host__ __device__ void test_not_copy_constructible()
 {
-  static_assert(!cuda::std::is_constructible<T, T&&>(), "");
-  static_assert(!cuda::std::is_constructible<T, const T&>(), "");
-  static_assert(!cuda::std::is_assignable<T, T&&>(), "");
-  static_assert(!cuda::std::is_assignable<T, const T&>(), "");
+  static_assert(!cuda::std::is_constructible<T, T&&>());
+  static_assert(!cuda::std::is_constructible<T, const T&>());
+  static_assert(!cuda::std::is_assignable<T, T&&>());
+  static_assert(!cuda::std::is_assignable<T, const T&>());
 }
 
 template <class T>
 __host__ __device__ void test_copy_constructible()
 {
-  static_assert(cuda::std::is_constructible<T, T&&>(), "");
-  static_assert(cuda::std::is_constructible<T, const T&>(), "");
-  static_assert(!cuda::std::is_assignable<T, T&&>(), "");
-  static_assert(!cuda::std::is_assignable<T, const T&>(), "");
+  static_assert(cuda::std::is_constructible<T, T&&>());
+  static_assert(cuda::std::is_constructible<T, const T&>());
+  static_assert(!cuda::std::is_assignable<T, T&&>());
+  static_assert(!cuda::std::is_assignable<T, const T&>());
 }
 
 template <class T, class A>

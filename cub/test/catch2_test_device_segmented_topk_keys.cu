@@ -44,7 +44,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t dispatch_batched_topk_keys(
   SelectDirectionParamT select_directions,
   NumSegmentsParameterT num_segments,
   TotalNumItemsGuaranteeT total_num_items_guarantee,
-  cudaStream_t stream = 0)
+  cudaStream_t stream = nullptr)
 {
   using value_it_t = cub::NullType**;
 

@@ -56,20 +56,20 @@ struct device_seg_sort_policy_selector
         tune_sw_threads,
         TUNE_S_ITEMS,
         (TUNE_S_TRANSPOSE == 0) ? cub::WarpLoadAlgorithm::WARP_LOAD_DIRECT : cub::WarpLoadAlgorithm::WARP_LOAD_TRANSPOSE,
-        cub::WARP_STORE_DIRECT,
         (TUNE_S_LOAD == 0)   ? cub::LOAD_DEFAULT
         : (TUNE_S_LOAD == 1) ? cub::LOAD_LDG
                              : cub::LOAD_CA,
+        cub::WARP_STORE_DIRECT,
       },
       sub_warp_merge_sort_policy{
         TUNE_THREADS,
         tune_mw_threads,
         TUNE_M_ITEMS,
         (TUNE_M_TRANSPOSE == 0) ? cub::WarpLoadAlgorithm::WARP_LOAD_DIRECT : cub::WarpLoadAlgorithm::WARP_LOAD_TRANSPOSE,
-        cub::WARP_STORE_DIRECT,
         (TUNE_M_LOAD == 0)   ? cub::LOAD_DEFAULT
         : (TUNE_M_LOAD == 1) ? cub::LOAD_LDG
                              : cub::LOAD_CA,
+        cub::WARP_STORE_DIRECT,
       },
       TUNE_PARTITIONING_THRESHOLD,
     };
@@ -124,7 +124,7 @@ void seg_sort(nvbench::state& state,
     d_begin_offsets,
     d_end_offsets,
     is_overwrite_ok,
-    0
+    nullptr
 #if !TUNE_BASE
     ,
     device_seg_sort_policy_selector<key_t>{}

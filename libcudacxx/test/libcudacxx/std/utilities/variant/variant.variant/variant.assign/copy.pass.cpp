@@ -128,8 +128,8 @@ struct NTCopyAssign
   int value;
 };
 
-static_assert(!cuda::std::is_trivially_copy_assignable<NTCopyAssign>::value, "");
-static_assert(cuda::std::is_copy_assignable<NTCopyAssign>::value, "");
+static_assert(!cuda::std::is_trivially_copy_assignable<NTCopyAssign>::value);
+static_assert(cuda::std::is_copy_assignable<NTCopyAssign>::value);
 
 struct TCopyAssign
 {
@@ -143,7 +143,7 @@ struct TCopyAssign
   int value;
 };
 
-static_assert(cuda::std::is_trivially_copy_assignable<TCopyAssign>::value, "");
+static_assert(cuda::std::is_trivially_copy_assignable<TCopyAssign>::value);
 
 struct TCopyAssignNTMoveAssign
 {
@@ -162,7 +162,7 @@ struct TCopyAssignNTMoveAssign
   int value;
 };
 
-static_assert(cuda::std::is_trivially_copy_assignable_v<TCopyAssignNTMoveAssign>, "");
+static_assert(cuda::std::is_trivially_copy_assignable_v<TCopyAssignNTMoveAssign>);
 
 #if TEST_HAS_EXCEPTIONS()
 struct CopyThrows
@@ -287,11 +287,11 @@ __host__ __device__ void test_copy_assignment_not_noexcept()
 {
   {
     using V = cuda::std::variant<CopyMaybeThrows>;
-    static_assert(!cuda::std::is_nothrow_copy_assignable<V>::value, "");
+    static_assert(!cuda::std::is_nothrow_copy_assignable<V>::value);
   }
   {
     using V = cuda::std::variant<int, CopyDoesThrow>;
-    static_assert(!cuda::std::is_nothrow_copy_assignable<V>::value, "");
+    static_assert(!cuda::std::is_nothrow_copy_assignable<V>::value);
   }
 }
 
@@ -299,46 +299,46 @@ __host__ __device__ void test_copy_assignment_sfinae()
 {
   {
     using V = cuda::std::variant<int, long>;
-    static_assert(cuda::std::is_copy_assignable<V>::value, "");
+    static_assert(cuda::std::is_copy_assignable<V>::value);
   }
   {
     using V = cuda::std::variant<int, CopyOnly>;
-    static_assert(cuda::std::is_copy_assignable<V>::value, "");
+    static_assert(cuda::std::is_copy_assignable<V>::value);
   }
   {
     using V = cuda::std::variant<int, NoCopy>;
-    static_assert(!cuda::std::is_copy_assignable<V>::value, "");
+    static_assert(!cuda::std::is_copy_assignable<V>::value);
   }
   {
     using V = cuda::std::variant<int, MoveOnly>;
-    static_assert(!cuda::std::is_copy_assignable<V>::value, "");
+    static_assert(!cuda::std::is_copy_assignable<V>::value);
   }
   {
     using V = cuda::std::variant<int, MoveOnlyNT>;
-    static_assert(!cuda::std::is_copy_assignable<V>::value, "");
+    static_assert(!cuda::std::is_copy_assignable<V>::value);
   }
 
   // Make sure we properly propagate triviality (see P0602R4).
   {
     using V = cuda::std::variant<int, long>;
-    static_assert(cuda::std::is_trivially_copy_assignable<V>::value, "");
+    static_assert(cuda::std::is_trivially_copy_assignable<V>::value);
   }
   {
     using V = cuda::std::variant<int, NTCopyAssign>;
-    static_assert(!cuda::std::is_trivially_copy_assignable<V>::value, "");
-    static_assert(cuda::std::is_copy_assignable<V>::value, "");
+    static_assert(!cuda::std::is_trivially_copy_assignable<V>::value);
+    static_assert(cuda::std::is_copy_assignable<V>::value);
   }
   {
     using V = cuda::std::variant<int, TCopyAssign>;
-    static_assert(cuda::std::is_trivially_copy_assignable<V>::value, "");
+    static_assert(cuda::std::is_trivially_copy_assignable<V>::value);
   }
   {
     using V = cuda::std::variant<int, TCopyAssignNTMoveAssign>;
-    static_assert(cuda::std::is_trivially_copy_assignable<V>::value, "");
+    static_assert(cuda::std::is_trivially_copy_assignable<V>::value);
   }
   {
     using V = cuda::std::variant<int, CopyOnly>;
-    static_assert(cuda::std::is_trivially_copy_assignable<V>::value, "");
+    static_assert(cuda::std::is_trivially_copy_assignable<V>::value);
   }
 }
 
@@ -496,8 +496,8 @@ __host__ __device__ void test_copy_assignment_same_index()
       }
     } test;
     constexpr auto result = test();
-    static_assert(result.index == 0, "");
-    static_assert(result.value == 42, "");
+    static_assert(result.index == 0);
+    static_assert(result.value == 42);
   }
   {
     struct
@@ -512,8 +512,8 @@ __host__ __device__ void test_copy_assignment_same_index()
       }
     } test;
     constexpr auto result = test();
-    static_assert(result.index == 1, "");
-    static_assert(result.value == 42l, "");
+    static_assert(result.index == 1);
+    static_assert(result.value == 42l);
   }
   {
     struct
@@ -528,8 +528,8 @@ __host__ __device__ void test_copy_assignment_same_index()
       }
     } test;
     constexpr auto result = test();
-    static_assert(result.index == 1, "");
-    static_assert(result.value == 42, "");
+    static_assert(result.index == 1);
+    static_assert(result.value == 42);
   }
   {
     struct
@@ -544,8 +544,8 @@ __host__ __device__ void test_copy_assignment_same_index()
       }
     } test;
     constexpr auto result = test();
-    static_assert(result.index == 1, "");
-    static_assert(result.value == 42, "");
+    static_assert(result.index == 1);
+    static_assert(result.value == 42);
   }
 }
 
@@ -664,8 +664,8 @@ __host__ __device__ void test_copy_assignment_different_index()
       }
     } test;
     constexpr auto result = test();
-    static_assert(result.index == 1, "");
-    static_assert(result.value == 42l, "");
+    static_assert(result.index == 1);
+    static_assert(result.value == 42l);
   }
   {
     struct
@@ -680,8 +680,8 @@ __host__ __device__ void test_copy_assignment_different_index()
       }
     } test;
     constexpr auto result = test();
-    static_assert(result.index == 1, "");
-    static_assert(result.value == 42, "");
+    static_assert(result.index == 1);
+    static_assert(result.value == 42);
   }
 }
 
@@ -698,12 +698,12 @@ __host__ __device__ void test_constexpr_copy_assignment()
 {
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   using V = cuda::std::variant<long, void*, int>;
-  static_assert(cuda::std::is_trivially_copyable<V>::value, "");
-  static_assert(cuda::std::is_trivially_copy_assignable<V>::value, "");
-  static_assert(test_constexpr_assign_imp<0>(V(42l), 101l), "");
-  static_assert(test_constexpr_assign_imp<0>(V(nullptr), 101l), "");
-  static_assert(test_constexpr_assign_imp<1>(V(42l), nullptr), "");
-  static_assert(test_constexpr_assign_imp<2>(V(42l), 101), "");
+  static_assert(cuda::std::is_trivially_copyable<V>::value);
+  static_assert(cuda::std::is_trivially_copy_assignable<V>::value);
+  static_assert(test_constexpr_assign_imp<0>(V(42l), 101l));
+  static_assert(test_constexpr_assign_imp<0>(V(nullptr), 101l));
+  static_assert(test_constexpr_assign_imp<1>(V(42l), nullptr));
+  static_assert(test_constexpr_assign_imp<2>(V(42l), 101));
 }
 
 int main(int, char**)

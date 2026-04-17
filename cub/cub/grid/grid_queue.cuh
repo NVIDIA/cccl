@@ -97,7 +97,7 @@ public:
   /// draining in the next kernel instance. To be called by the host or by a kernel prior to the one
   /// which will be draining.
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
-  FillAndResetDrain(OffsetT fill_size, [[maybe_unused]] cudaStream_t stream = 0)
+  FillAndResetDrain(OffsetT fill_size, [[maybe_unused]] cudaStream_t stream = nullptr)
   {
     cudaError_t result = cudaErrorUnknown;
 
@@ -112,7 +112,7 @@ public:
 
   /// This operation resets the drain so that it may advance to meet the existing fill-size.
   /// To be called by the host or by a kernel prior to the one which will be draining.
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t ResetDrain([[maybe_unused]] cudaStream_t stream = 0)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t ResetDrain([[maybe_unused]] cudaStream_t stream = nullptr)
   {
     cudaError_t result = cudaErrorUnknown;
 
@@ -125,7 +125,7 @@ public:
 
   /// This operation resets the fill counter.
   /// To be called by the host or by a kernel prior to the one which will be filling.
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t ResetFill([[maybe_unused]] cudaStream_t stream = 0)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t ResetFill([[maybe_unused]] cudaStream_t stream = nullptr)
   {
     cudaError_t result = cudaErrorUnknown;
 
@@ -137,7 +137,8 @@ public:
   }
 
   /// Returns the fill-size established by the parent or by the previous kernel.
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t FillSize(OffsetT& fill_size, [[maybe_unused]] cudaStream_t stream = 0)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
+  FillSize(OffsetT& fill_size, [[maybe_unused]] cudaStream_t stream = nullptr)
   {
     cudaError_t result = cudaErrorUnknown;
 

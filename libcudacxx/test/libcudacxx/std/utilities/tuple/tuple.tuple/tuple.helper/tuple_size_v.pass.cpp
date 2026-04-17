@@ -22,11 +22,11 @@
 template <class Tuple, int Expect>
 __host__ __device__ void test()
 {
-  static_assert(cuda::std::tuple_size_v<Tuple> == Expect, "");
-  static_assert(cuda::std::tuple_size_v<Tuple> == cuda::std::tuple_size<Tuple>::value, "");
-  static_assert(cuda::std::tuple_size_v<Tuple const> == cuda::std::tuple_size<Tuple>::value, "");
-  static_assert(cuda::std::tuple_size_v<Tuple volatile> == cuda::std::tuple_size<Tuple>::value, "");
-  static_assert(cuda::std::tuple_size_v<Tuple const volatile> == cuda::std::tuple_size<Tuple>::value, "");
+  static_assert(cuda::std::tuple_size_v<Tuple> == Expect);
+  static_assert(cuda::std::tuple_size_v<Tuple> == cuda::std::tuple_size<Tuple>::value);
+  static_assert(cuda::std::tuple_size_v<Tuple const> == cuda::std::tuple_size<Tuple>::value);
+  static_assert(cuda::std::tuple_size_v<Tuple volatile> == cuda::std::tuple_size<Tuple>::value);
+  static_assert(cuda::std::tuple_size_v<Tuple const volatile> == cuda::std::tuple_size<Tuple>::value);
 }
 
 int main(int, char**)

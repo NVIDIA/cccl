@@ -106,7 +106,7 @@ private:
     ValueIteratorT d_items,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
@@ -228,7 +228,7 @@ public:
     ValueIteratorT d_items,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortPairsNoNVTX(d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, stream);
@@ -438,7 +438,7 @@ public:
     ValueIteratorT d_output_items,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
@@ -567,7 +567,7 @@ private:
     KeyIteratorT d_keys,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
@@ -679,7 +679,7 @@ public:
     KeyIteratorT d_keys,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysNoNVTX(d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
@@ -766,7 +766,7 @@ private:
     KeyIteratorT d_output_keys,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     using ChooseOffsetT = detail::choose_offset_t<OffsetT>;
 
@@ -893,7 +893,7 @@ public:
     KeyIteratorT d_output_keys,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysCopyNoNVTX(
@@ -1088,7 +1088,7 @@ public:
     ValueIteratorT d_items,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
@@ -1265,7 +1265,7 @@ public:
     KeyIteratorT d_keys,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
@@ -1454,7 +1454,7 @@ public:
     KeyIteratorT d_output_keys,
     OffsetT num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysCopyNoNVTX<KeyInputIteratorT, KeyIteratorT, OffsetT, CompareOpT>(

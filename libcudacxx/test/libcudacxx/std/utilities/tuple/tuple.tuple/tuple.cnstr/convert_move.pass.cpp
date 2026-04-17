@@ -64,9 +64,9 @@ struct BonkersBananas
 __host__ __device__ void test_bonkers_bananas_conversion()
 {
   using ReturnType = cuda::std::tuple<int, int>;
-  static_assert(cuda::std::is_convertible<BonkersBananas, ReturnType>(), "");
+  static_assert(cuda::std::is_convertible<BonkersBananas, ReturnType>());
   // TODO: possibly a compiler bug that allows NVCC to think that it can construct a tuple from this type
-  //  static_assert(!cuda::std::is_constructible<ReturnType, BonkersBananas>(), "");
+  //  static_assert(!cuda::std::is_constructible<ReturnType, BonkersBananas>());
 }
 
 int main(int, char**)

@@ -66,10 +66,10 @@ __host__ __device__ void test_emplace_sfinae()
 {
   using V  = cuda::std::variant<int, TestTypes::NoCtors, InitList, InitListArg, long, long>;
   using IL = cuda::std::initializer_list<int>;
-  static_assert(emplace_exists<V, InitList, IL>(), "");
+  static_assert(emplace_exists<V, InitList, IL>());
   static_assert(!emplace_exists<V, InitList, int>(), "args don't match");
   static_assert(!emplace_exists<V, InitList, IL, int>(), "too many args");
-  static_assert(emplace_exists<V, InitListArg, IL, int>(), "");
+  static_assert(emplace_exists<V, InitListArg, IL, int>());
   static_assert(!emplace_exists<V, InitListArg, int>(), "args don't match");
   static_assert(!emplace_exists<V, InitListArg, IL>(), "too few args");
   static_assert(!emplace_exists<V, InitListArg, IL, int, int>(), "too many args");
@@ -80,16 +80,16 @@ __host__ __device__ void test_basic()
   using V = cuda::std::variant<int, InitList, InitListArg, TestTypes::NoCtors>;
   V v;
   auto& ref1 = v.emplace<InitList>({1, 2, 3});
-  static_assert(cuda::std::is_same_v<InitList&, decltype(ref1)>, "");
+  static_assert(cuda::std::is_same_v<InitList&, decltype(ref1)>);
   assert(cuda::std::get<InitList>(v).size == 3);
   assert(&ref1 == &cuda::std::get<InitList>(v));
   auto& ref2 = v.emplace<InitListArg>({1, 2, 3, 4}, 42);
-  static_assert(cuda::std::is_same_v<InitListArg&, decltype(ref2)>, "");
+  static_assert(cuda::std::is_same_v<InitListArg&, decltype(ref2)>);
   assert(cuda::std::get<InitListArg>(v).size == 4);
   assert(cuda::std::get<InitListArg>(v).value == 42);
   assert(&ref2 == &cuda::std::get<InitListArg>(v));
   auto& ref3 = v.emplace<InitList>({1});
-  static_assert(cuda::std::is_same_v<InitList&, decltype(ref3)>, "");
+  static_assert(cuda::std::is_same_v<InitList&, decltype(ref3)>);
   assert(cuda::std::get<InitList>(v).size == 1);
   assert(&ref3 == &cuda::std::get<InitList>(v));
 }

@@ -81,10 +81,10 @@ int main(int, char**)
   {
     int i = 0;
     cuda::std::reference_wrapper ri(i);
-    static_assert((cuda::std::is_same<decltype(ri), cuda::std::reference_wrapper<int>>::value), "");
+    static_assert((cuda::std::is_same<decltype(ri), cuda::std::reference_wrapper<int>>::value));
     const int j = 0;
     cuda::std::reference_wrapper rj(j);
-    static_assert((cuda::std::is_same<decltype(rj), cuda::std::reference_wrapper<const int>>::value), "");
+    static_assert((cuda::std::is_same<decltype(rj), cuda::std::reference_wrapper<const int>>::value));
   }
 #endif // !TEST_COMPILER(GCC, <, 8)
 

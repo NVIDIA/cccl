@@ -64,7 +64,7 @@ public:
   }
 
   // Allow construction from any integral numeric.
-  template <typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
+  template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
   _CCCL_HOST_DEVICE constexpr custom_numeric(const T& i)
   {
     fill(static_cast<int>(i));
@@ -193,9 +193,9 @@ private:
 
   _CCCL_HOST_DEVICE constexpr void fill(int val)
   {
-    for (int i = 0; i < 5; ++i)
+    for (auto& v : value)
     {
-      value[i] = val;
+      v = val;
     }
   }
 };
@@ -564,7 +564,7 @@ public:
       : UnitTest(name)
   {}
 
-  void run()
+  void run() override
   {
     // get the first type in the list
     using first_type = typename unittest::get_type<TypeList, 0>::type;
@@ -588,10 +588,10 @@ public:
       : UnitTest(name)
   {}
 
-  void run()
+  void run() override
   {
     const std::vector<size_t>& sizes = get_test_sizes();
-    for (size_t i = 0; i != sizes.size(); ++i)
+    for (const auto size : sizes)
     {
       // get the first type in the list
       using first_type = typename unittest::get_type<TypeList, 0>::type;
@@ -599,7 +599,7 @@ public:
       unittest::for_each_type<TypeList, TestName, first_type, 0> loop;
 
       // loop over the types
-      loop(sizes[i]);
+      loop(size);
     }
   }
 }; // end VariableUnitTest
@@ -620,7 +620,7 @@ struct VectorUnitTest : public UnitTest
       : UnitTest(name)
   {}
 
-  void run()
+  void run() override
   {
     // zip up the type list with Alloc
     using AllocList = typename unittest::transform1<TypeList, Alloc>::type;

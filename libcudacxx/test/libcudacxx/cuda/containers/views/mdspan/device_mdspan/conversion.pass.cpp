@@ -70,7 +70,7 @@ template <class ToMDS,
           cuda::std::enable_if_t<!constructible, int> = 0>
 __host__ __device__ constexpr void test_conversion_impl(FromMDS)
 {
-  static_assert(!cuda::std::is_constructible<ToMDS, FromMDS>::value, "");
+  static_assert(!cuda::std::is_constructible<ToMDS, FromMDS>::value);
 }
 template <class ToMDS,
           class FromMDS,
@@ -113,20 +113,20 @@ __host__ __device__ constexpr void test_conversion_impl(FromMDS from_mds)
   test_equality_with_handle(to_mds, from_mds);
   test_equality_with_mapping(to_mds, from_mds);
   test_equality_with_accessor(to_mds, from_mds);
-  static_assert(!cuda::std::is_convertible<FromMDS, ToMDS>::value, "");
+  static_assert(!cuda::std::is_convertible<FromMDS, ToMDS>::value);
 }
 
 template <class ToMDS, class FromMDS>
 __host__ __device__ constexpr void test_conversion(FromMDS from_mds)
 {
   // check some requirements, to see we didn't screw up our test layouts/accessors
-  static_assert(cuda::std::copyable<typename ToMDS::mapping_type>, "");
-  static_assert(cuda::std::equality_comparable<typename ToMDS::mapping_type>, "");
-  static_assert(cuda::std::is_nothrow_move_constructible<typename ToMDS::mapping_type>::value, "");
-  static_assert(cuda::std::is_nothrow_move_assignable<typename ToMDS::mapping_type>::value, "");
-  static_assert(cuda::std::is_nothrow_swappable<typename ToMDS::mapping_type>::value, "");
-  static_assert(mapping_requirements<typename ToMDS::mapping_type>, "");
-  static_assert(mapping_requirements<typename FromMDS::mapping_type>, "");
+  static_assert(cuda::std::copyable<typename ToMDS::mapping_type>);
+  static_assert(cuda::std::equality_comparable<typename ToMDS::mapping_type>);
+  static_assert(cuda::std::is_nothrow_move_constructible<typename ToMDS::mapping_type>::value);
+  static_assert(cuda::std::is_nothrow_move_assignable<typename ToMDS::mapping_type>::value);
+  static_assert(cuda::std::is_nothrow_swappable<typename ToMDS::mapping_type>::value);
+  static_assert(mapping_requirements<typename ToMDS::mapping_type>);
+  static_assert(mapping_requirements<typename FromMDS::mapping_type>);
 
   constexpr bool constructible =
     cuda::std::is_constructible<typename ToMDS::mapping_type, const typename FromMDS::mapping_type&>::value
@@ -253,10 +253,10 @@ template <bool constructible_constref_acc,
           class FromA>
 __host__ __device__ constexpr bool test(FromA from_acc)
 {
-  static_assert(cuda::std::copyable<ToA>, "");
-  static_assert(cuda::std::copyable<FromA>, "");
-  static_assert(cuda::std::is_constructible<ToA, const FromA&>::value == constructible_constref_acc, "");
-  static_assert(cuda::std::is_constructible<ToA, FromA>::value == constructible_nonconst_acc, "");
+  static_assert(cuda::std::copyable<ToA>);
+  static_assert(cuda::std::copyable<FromA>);
+  static_assert(cuda::std::is_constructible<ToA, const FromA&>::value == constructible_constref_acc);
+  static_assert(cuda::std::is_constructible<ToA, FromA>::value == constructible_nonconst_acc);
   static_assert(
     cuda::std::is_constructible<typename ToA::data_handle_type, const typename FromA::data_handle_type&>::value
       == constructible_constref_handle,
@@ -264,8 +264,8 @@ __host__ __device__ constexpr bool test(FromA from_acc)
   static_assert(cuda::std::is_constructible<typename ToA::data_handle_type, typename FromA::data_handle_type>::value
                   == constructible_nonconst_handle,
                 "");
-  static_assert(cuda::std::is_convertible<const FromA&, ToA>::value == convertible_constref_acc, "");
-  static_assert(cuda::std::is_convertible<FromA, ToA>::value == convertible_nonconst_acc, "");
+  static_assert(cuda::std::is_convertible<const FromA&, ToA>::value == convertible_constref_acc);
+  static_assert(cuda::std::is_convertible<FromA, ToA>::value == convertible_nonconst_acc);
   static_assert(
     cuda::std::is_convertible<const typename FromA::data_handle_type&, typename ToA::data_handle_type>::value
       == convertible_constref_handle,
@@ -347,11 +347,11 @@ int main(int, char**)
                   cuda::std::default_accessor<MinimalElementType>()),
                 "");
 #  endif // TEST_STD_VER >= 2020
-  static_assert(test<t, t, t, t, t, t, t, t, checked_accessor<int>>(checked_accessor<int>(1024)), "");
-  static_assert(test<t, o, t, o, t, t, t, t, checked_accessor<const int>>(checked_accessor<int>(1024)), "");
-  static_assert(test<t, t, t, t, o, o, o, o, checked_accessor<const unsigned>>(checked_accessor<unsigned>(1024)), "");
-  static_assert(test<t, t, t, t, t, t, t, t, checked_accessor<float>>(checked_accessor<float>(1024)), "");
-  static_assert(test<t, t, t, t, t, t, t, t, checked_accessor<double>>(checked_accessor<double>(1024)), "");
+  static_assert(test<t, t, t, t, t, t, t, t, checked_accessor<int>>(checked_accessor<int>(1024)));
+  static_assert(test<t, o, t, o, t, t, t, t, checked_accessor<const int>>(checked_accessor<int>(1024)));
+  static_assert(test<t, t, t, t, o, o, o, o, checked_accessor<const unsigned>>(checked_accessor<unsigned>(1024)));
+  static_assert(test<t, t, t, t, t, t, t, t, checked_accessor<float>>(checked_accessor<float>(1024)));
+  static_assert(test<t, t, t, t, t, t, t, t, checked_accessor<double>>(checked_accessor<double>(1024)));
 #  if TEST_STD_VER >= 2020
   static_assert(
     test<t, t, t, t, t, t, t, t, checked_accessor<MinimalElementType>>(checked_accessor<MinimalElementType>(1024)), "");
@@ -369,8 +369,8 @@ int main(int, char**)
                 "");
   static_assert(test<o, o, o, o, o, o, o, o, cuda::std::default_accessor<float>>(cuda::std::default_accessor<int>()),
                 "");
-  static_assert(test<o, o, o, o, o, o, o, o, checked_accessor<const double>>(checked_accessor<double>(1024)), "");
-  static_assert(test<o, o, t, t, t, t, t, t, checked_accessor<const float>>(checked_accessor<float>(1024)), "");
+  static_assert(test<o, o, o, o, o, o, o, o, checked_accessor<const double>>(checked_accessor<double>(1024)));
+  static_assert(test<o, o, t, t, t, t, t, t, checked_accessor<const float>>(checked_accessor<float>(1024)));
   static_assert(test<o, o, o, o, t, t, t, t, conv_test_accessor_c<int, o, o, t, t>>(conv_test_accessor_nc<int, o, o>()),
                 "");
   static_assert(test<o, o, t, o, t, t, t, t, conv_test_accessor_c<int, o, t, o, o>>(conv_test_accessor_nc<int, o, t>()),

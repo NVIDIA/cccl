@@ -87,44 +87,44 @@ __host__ __device__ constexpr void test_no_implicit_conversion()
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
   // Sanity check that one static to dynamic conversion works
-  static_assert(cuda::std::is_constructible<ll_mapping_t<int, D>, lr_mapping_t<int, 5>>::value, "");
-  static_assert(cuda::std::is_convertible<lr_mapping_t<int, 5>, ll_mapping_t<int, D>>::value, "");
+  static_assert(cuda::std::is_constructible<ll_mapping_t<int, D>, lr_mapping_t<int, 5>>::value);
+  static_assert(cuda::std::is_convertible<lr_mapping_t<int, 5>, ll_mapping_t<int, D>>::value);
 
   // Check that dynamic to static conversion only works explicitly
-  static_assert(cuda::std::is_constructible<ll_mapping_t<int, 5>, lr_mapping_t<int, D>>::value, "");
-  static_assert(!cuda::std::is_convertible<lr_mapping_t<int, D>, ll_mapping_t<int, 5>>::value, "");
+  static_assert(cuda::std::is_constructible<ll_mapping_t<int, 5>, lr_mapping_t<int, D>>::value);
+  static_assert(!cuda::std::is_convertible<lr_mapping_t<int, D>, ll_mapping_t<int, 5>>::value);
 
   // Sanity check that smaller index_type to larger index_type conversion works
-  static_assert(cuda::std::is_constructible<ll_mapping_t<size_t, 5>, lr_mapping_t<int, 5>>::value, "");
-  static_assert(cuda::std::is_convertible<lr_mapping_t<int, 5>, ll_mapping_t<size_t, 5>>::value, "");
+  static_assert(cuda::std::is_constructible<ll_mapping_t<size_t, 5>, lr_mapping_t<int, 5>>::value);
+  static_assert(cuda::std::is_convertible<lr_mapping_t<int, 5>, ll_mapping_t<size_t, 5>>::value);
 
   // Check that larger index_type to smaller index_type conversion works explicitly only
-  static_assert(cuda::std::is_constructible<ll_mapping_t<int, 5>, lr_mapping_t<size_t, 5>>::value, "");
-  static_assert(!cuda::std::is_convertible<lr_mapping_t<size_t, 5>, ll_mapping_t<int, 5>>::value, "");
+  static_assert(cuda::std::is_constructible<ll_mapping_t<int, 5>, lr_mapping_t<size_t, 5>>::value);
+  static_assert(!cuda::std::is_convertible<lr_mapping_t<size_t, 5>, ll_mapping_t<int, 5>>::value);
 }
 
 __host__ __device__ constexpr void test_rank_mismatch()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
-  static_assert(!cuda::std::is_constructible<lr_mapping_t<int, D>, lr_mapping_t<int>>::value, "");
-  static_assert(!cuda::std::is_constructible<lr_mapping_t<int>, lr_mapping_t<int, D, D>>::value, "");
-  static_assert(!cuda::std::is_constructible<lr_mapping_t<int, D>, lr_mapping_t<int, D, D>>::value, "");
-  static_assert(!cuda::std::is_constructible<lr_mapping_t<int, D, D, D>, lr_mapping_t<int, D, D>>::value, "");
+  static_assert(!cuda::std::is_constructible<lr_mapping_t<int, D>, lr_mapping_t<int>>::value);
+  static_assert(!cuda::std::is_constructible<lr_mapping_t<int>, lr_mapping_t<int, D, D>>::value);
+  static_assert(!cuda::std::is_constructible<lr_mapping_t<int, D>, lr_mapping_t<int, D, D>>::value);
+  static_assert(!cuda::std::is_constructible<lr_mapping_t<int, D, D, D>, lr_mapping_t<int, D, D>>::value);
 }
 
 __host__ __device__ constexpr void test_static_extent_mismatch()
 {
-  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, 5>, lr_mapping_t<int, 4>>::value, "");
+  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, 5>, lr_mapping_t<int, 4>>::value);
 }
 
 __host__ __device__ constexpr void test_rank_greater_one()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
-  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, D, D>, lr_mapping_t<int, D, D>>::value, "");
-  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, 1, 1>, lr_mapping_t<int, 1, 1>>::value, "");
-  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, D, D, D>, lr_mapping_t<int, D, D, D>>::value, "");
+  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, D, D>, lr_mapping_t<int, D, D>>::value);
+  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, 1, 1>, lr_mapping_t<int, 1, 1>>::value);
+  static_assert(!cuda::std::is_constructible<ll_mapping_t<int, D, D, D>, lr_mapping_t<int, D, D, D>>::value);
 }
 
 __host__ __device__ constexpr bool test()
@@ -143,6 +143,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

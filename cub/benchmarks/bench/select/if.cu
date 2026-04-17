@@ -114,7 +114,7 @@ void select(nvbench::state& state, nvbench::type_list<T, OffsetT, InPlace>)
 
   std::size_t temp_size{};
   dispatch_t::Dispatch(
-    nullptr, temp_size, d_in, d_flags, d_out, d_num_selected, select_op, equality_op_t{}, elements, 0);
+    nullptr, temp_size, d_in, d_flags, d_out, d_num_selected, select_op, equality_op_t{}, elements, nullptr);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());

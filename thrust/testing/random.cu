@@ -12,7 +12,7 @@ struct ValidateEngine
       : m_value_10000(value_10000)
   {}
 
-  _CCCL_HOST_DEVICE bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()() const
   {
     Engine e;
     e.discard(9999);
@@ -27,7 +27,7 @@ struct ValidateEngine
 template <typename Engine, bool trivial_min = (Engine::min == 0)>
 struct ValidateEngineMin
 {
-  _CCCL_HOST_DEVICE bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()() const
   {
     Engine e;
 
@@ -45,7 +45,7 @@ struct ValidateEngineMin
 template <typename Engine>
 struct ValidateEngineMin<Engine, true>
 {
-  _CCCL_HOST_DEVICE bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()() const
   {
     return true;
   }
@@ -54,7 +54,7 @@ struct ValidateEngineMin<Engine, true>
 template <typename Engine>
 struct ValidateEngineMax
 {
-  _CCCL_HOST_DEVICE bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()() const
   {
     Engine e;
 
@@ -72,7 +72,7 @@ struct ValidateEngineMax
 template <typename Engine>
 struct ValidateEngineEqual
 {
-  _CCCL_HOST_DEVICE bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()() const
   {
     bool result = true;
 
@@ -104,7 +104,7 @@ struct ValidateEngineEqual
 template <typename Engine>
 struct ValidateEngineUnequal
 {
-  _CCCL_HOST_DEVICE bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()() const
   {
     bool result = true;
 
@@ -148,7 +148,7 @@ struct ValidateDistributionMin
       : d(dd)
   {}
 
-  _CCCL_HOST_DEVICE bool operator()(void)
+  _CCCL_HOST_DEVICE bool operator()()
   {
     Engine e;
 
@@ -174,7 +174,7 @@ struct ValidateDistributionMax
       : d(dd)
   {}
 
-  _CCCL_HOST_DEVICE bool operator()(void)
+  _CCCL_HOST_DEVICE bool operator()()
   {
     Engine e;
 
@@ -194,7 +194,7 @@ struct ValidateDistributionMax
 template <typename Distribution>
 struct ValidateDistributionEqual
 {
-  _CCCL_HOST_DEVICE bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()() const
   {
     return d0 == d1;
   }
@@ -205,7 +205,7 @@ struct ValidateDistributionEqual
 template <typename Distribution>
 struct ValidateDistributionUnqual
 {
-  _CCCL_HOST_DEVICE bool operator()(void) const
+  _CCCL_HOST_DEVICE bool operator()() const
   {
     return d0 != d1;
   }

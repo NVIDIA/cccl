@@ -66,21 +66,21 @@ TEST_GLOBAL_VARIABLE int iArr2[] = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
 int main(int, char**)
 {
-  static_assert(testConstexprSpan(cuda::std::span<int>()), "");
-  static_assert(testConstexprSpan(cuda::std::span<long>()), "");
-  static_assert(testConstexprSpan(cuda::std::span<double>()), "");
-  static_assert(testConstexprSpan(cuda::std::span<A>()), "");
+  static_assert(testConstexprSpan(cuda::std::span<int>()));
+  static_assert(testConstexprSpan(cuda::std::span<long>()));
+  static_assert(testConstexprSpan(cuda::std::span<double>()));
+  static_assert(testConstexprSpan(cuda::std::span<A>()));
 
-  static_assert(testConstexprSpan(cuda::std::span<int, 0>()), "");
-  static_assert(testConstexprSpan(cuda::std::span<long, 0>()), "");
-  static_assert(testConstexprSpan(cuda::std::span<double, 0>()), "");
-  static_assert(testConstexprSpan(cuda::std::span<A, 0>()), "");
+  static_assert(testConstexprSpan(cuda::std::span<int, 0>()));
+  static_assert(testConstexprSpan(cuda::std::span<long, 0>()));
+  static_assert(testConstexprSpan(cuda::std::span<double, 0>()));
+  static_assert(testConstexprSpan(cuda::std::span<A, 0>()));
 
-  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 1)), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 2)), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 3)), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 4)), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 5)), "");
+  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 1)));
+  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 2)));
+  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 3)));
+  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 4)));
+  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 5)));
 
   testRuntimeSpan(cuda::std::span<int>());
   testRuntimeSpan(cuda::std::span<long>());

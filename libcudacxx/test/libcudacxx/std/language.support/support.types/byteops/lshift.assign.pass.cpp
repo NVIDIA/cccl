@@ -26,13 +26,13 @@ int main(int, char**)
   constexpr cuda::std::byte b2{static_cast<cuda::std::byte>(2)};
   constexpr cuda::std::byte b3{static_cast<cuda::std::byte>(3)};
 
-  static_assert(noexcept(b <<= 2), "");
+  static_assert(noexcept(b <<= 2));
 
   assert(cuda::std::to_integer<int>(test(b2)) == 8);
   assert(cuda::std::to_integer<int>(test(b3)) == 12);
 
-  static_assert(cuda::std::to_integer<int>(test(b2)) == 8, "");
-  static_assert(cuda::std::to_integer<int>(test(b3)) == 12, "");
+  static_assert(cuda::std::to_integer<int>(test(b2)) == 8);
+  static_assert(cuda::std::to_integer<int>(test(b3)) == 12);
 
   return 0;
 }

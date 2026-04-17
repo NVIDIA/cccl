@@ -127,7 +127,7 @@ __host__ __device__ constexpr bool test_large()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   // The large test iterates over ~10k loop indices.
   // With assertions enabled this triggered the maximum default limit

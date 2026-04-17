@@ -136,7 +136,7 @@ struct equal_to_value
 };
 
 template <class Buffer>
-bool equal_size_value(const Buffer& buf, const size_t size, const int value)
+bool equal_size_value(const Buffer& buf, const size_t size, const typename Buffer::value_type value)
 {
   if constexpr (Buffer::properties_list::has_property(cuda::mr::host_accessible{}))
   {
@@ -221,11 +221,16 @@ struct extract_properties<cuda::buffer<T, Properties...>>
 };
 
 #if _CCCL_CTK_AT_LEAST(12, 9)
-using test_types = c2h::type_list<cuda::buffer<int, cuda::mr::host_accessible>,
-                                  cuda::buffer<unsigned long long, cuda::mr::device_accessible>,
-                                  cuda::buffer<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
+using test_types =
+  c2h::type_list<cuda::buffer<int, cuda::mr::host_accessible>,
+                 cuda::buffer<unsigned long long, cuda::mr::device_accessible>,
+                 cuda::buffer<short, cuda::mr::device_accessible>,
+                 cuda::buffer<float, cuda::mr::device_accessible>,
+                 cuda::buffer<int, cuda::mr::host_accessible, cuda::mr::device_accessible>>;
 #else // ^^^ _CCCL_CTK_AT_LEAST(12, 9) ^^^ / vvv _CCCL_CTK_BELOW(12, 9) vvv
-using test_types = c2h::type_list<cuda::buffer<int, cuda::mr::device_accessible>>;
+using test_types = c2h::type_list<cuda::buffer<int, cuda::mr::device_accessible>,
+                                  cuda::buffer<short, cuda::mr::device_accessible>,
+                                  cuda::buffer<float, cuda::mr::device_accessible>>;
 #endif // ^^^ _CCCL_CTK_BELOW(12, 9) ^^^
 
 #endif // CUDA_TEST_CONTAINER_VECTOR_HELPER_H

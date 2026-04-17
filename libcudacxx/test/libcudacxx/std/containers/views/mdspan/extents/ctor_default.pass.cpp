@@ -62,7 +62,7 @@ int main(int, char**)
 {
   test_index_type_combo<DefaultCtorTest>();
 #if TEST_STD_VER >= 2017
-  static_assert(test_index_type_combo<DefaultCtorTest>(), "");
+  static_assert(test_index_type_combo<DefaultCtorTest>());
 #endif // TEST_STD_VER >= 2017
   return 0;
 }

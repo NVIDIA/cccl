@@ -3,7 +3,7 @@
 #include <thrust/random.h>
 #include <thrust/sort.h>
 
-#include <assert.h>
+#include <cuda/std/cassert>
 
 #include "include/timer.h"
 
@@ -49,9 +49,9 @@ void initialize_keys(thrust::device_vector<MyStruct>& structures)
 
   thrust::host_vector<MyStruct> h_structures(structures.size());
 
-  for (size_t i = 0; i < h_structures.size(); i++)
+  for (auto& s : h_structures)
   {
-    h_structures[i].key = dist(rng);
+    s.key = dist(rng);
   }
 
   structures = h_structures;

@@ -118,12 +118,12 @@ __host__ __device__ constexpr void test_no_implicit_conversion()
                 "");
 
   // Sanity check that smaller index_type to larger index_type conversion works
-  static_assert(cuda::std::is_constructible<cuda::std::extents<size_t, 5>, cuda::std::extents<int, 5>>::value, "");
-  static_assert(cuda::std::is_convertible<cuda::std::extents<int, 5>, cuda::std::extents<size_t, 5>>::value, "");
+  static_assert(cuda::std::is_constructible<cuda::std::extents<size_t, 5>, cuda::std::extents<int, 5>>::value);
+  static_assert(cuda::std::is_convertible<cuda::std::extents<int, 5>, cuda::std::extents<size_t, 5>>::value);
 
   // Check that larger index_type to smaller index_type conversion works explicitly only
-  static_assert(cuda::std::is_constructible<cuda::std::extents<int, 5>, cuda::std::extents<size_t, 5>>::value, "");
-  static_assert(!cuda::std::is_convertible<cuda::std::extents<size_t, 5>, cuda::std::extents<int, 5>>::value, "");
+  static_assert(cuda::std::is_constructible<cuda::std::extents<int, 5>, cuda::std::extents<size_t, 5>>::value);
+  static_assert(!cuda::std::is_convertible<cuda::std::extents<size_t, 5>, cuda::std::extents<int, 5>>::value);
 }
 
 __host__ __device__ constexpr void test_rank_mismatch()
@@ -151,7 +151,7 @@ __host__ __device__ constexpr void test_static_extent_mismatch()
   static_assert(!cuda::std::is_constructible<cuda::std::extents<int, cuda::std::dynamic_extent, 5>,
                                              cuda::std::extents<int, cuda::std::dynamic_extent, 4>>::value,
                 "");
-  static_assert(!cuda::std::is_constructible<cuda::std::extents<int, 5>, cuda::std::extents<int, 4>>::value, "");
+  static_assert(!cuda::std::is_constructible<cuda::std::extents<int, 5>, cuda::std::extents<int, 4>>::value);
   static_assert(!cuda::std::is_constructible<cuda::std::extents<int, 5, cuda::std::dynamic_extent>,
                                              cuda::std::extents<int, 4, cuda::std::dynamic_extent>>::value,
                 "");
@@ -172,7 +172,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

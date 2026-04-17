@@ -21,8 +21,8 @@ struct PointerTo
   __host__ __device__ T& operator*() const;
 };
 
-static_assert(cuda::std::indirectly_swappable<PointerTo<int>>, "");
-static_assert(cuda::std::indirectly_swappable<PointerTo<int>, PointerTo<int>>, "");
+static_assert(cuda::std::indirectly_swappable<PointerTo<int>>);
+static_assert(cuda::std::indirectly_swappable<PointerTo<int>, PointerTo<int>>);
 
 struct B;
 
@@ -77,11 +77,11 @@ struct G
   __host__ __device__ friend void iter_swap(const PointerTo<G>&, const PointerTo<F>&);
 };
 
-static_assert(cuda::std::indirectly_swappable<PointerTo<A>, PointerTo<B>>, "");
-static_assert(!cuda::std::indirectly_swappable<PointerTo<A>, PointerTo<C>>, "");
-static_assert(!cuda::std::indirectly_swappable<PointerTo<A>, PointerTo<D>>, "");
-static_assert(!cuda::std::indirectly_swappable<PointerTo<A>, PointerTo<E>>, "");
-static_assert(!cuda::std::indirectly_swappable<PointerTo<A>, PointerTo<G>>, "");
+static_assert(cuda::std::indirectly_swappable<PointerTo<A>, PointerTo<B>>);
+static_assert(!cuda::std::indirectly_swappable<PointerTo<A>, PointerTo<C>>);
+static_assert(!cuda::std::indirectly_swappable<PointerTo<A>, PointerTo<D>>);
+static_assert(!cuda::std::indirectly_swappable<PointerTo<A>, PointerTo<E>>);
+static_assert(!cuda::std::indirectly_swappable<PointerTo<A>, PointerTo<G>>);
 
 int main(int, char**)
 {

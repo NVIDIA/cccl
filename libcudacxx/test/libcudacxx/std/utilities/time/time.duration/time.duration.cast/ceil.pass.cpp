@@ -44,10 +44,10 @@ int main(int, char**)
     //  9000000ms is 2 hours and 30 minutes
     constexpr cuda::std::chrono::hours h1 =
       cuda::std::chrono::ceil<cuda::std::chrono::hours>(cuda::std::chrono::milliseconds(9000000));
-    static_assert(h1.count() == 3, "");
+    static_assert(h1.count() == 3);
     constexpr cuda::std::chrono::hours h2 =
       cuda::std::chrono::ceil<cuda::std::chrono::hours>(cuda::std::chrono::milliseconds(-9000000));
-    static_assert(h2.count() == -2, "");
+    static_assert(h2.count() == -2);
   }
 
   return 0;

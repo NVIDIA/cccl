@@ -49,8 +49,8 @@ struct From
   char a;
   char b;
 };
-static_assert(!bit_cast_is_valid<To, From>::value, "");
-static_assert(!bit_cast_is_valid<From&, From>::value, "");
+static_assert(!bit_cast_is_valid<To, From>::value);
+static_assert(!bit_cast_is_valid<From&, From>::value);
 } // namespace ns1
 
 // To is not trivially copyable
@@ -65,7 +65,7 @@ struct From
 {
   char a;
 };
-static_assert(!bit_cast_is_valid<To, From>::value, "");
+static_assert(!bit_cast_is_valid<To, From>::value);
 } // namespace ns2
 
 // From is not trivially copyable
@@ -80,7 +80,7 @@ struct From
   char a;
   __host__ __device__ From(From const&);
 };
-static_assert(!bit_cast_is_valid<To, From>::value, "");
+static_assert(!bit_cast_is_valid<To, From>::value);
 } // namespace ns3
 
 // The return type is ill-formed
@@ -91,8 +91,8 @@ struct From
   char a;
   char b;
 };
-static_assert(!bit_cast_is_valid<char[2], From>::value, "");
-static_assert(!bit_cast_is_valid<int(), From>::value, "");
+static_assert(!bit_cast_is_valid<char[2], From>::value);
+static_assert(!bit_cast_is_valid<int(), From>::value);
 } // namespace ns4
 
 int main(int, char**)

@@ -17,27 +17,27 @@
 template <class T, unsigned A>
 __host__ __device__ void test_extent()
 {
-  static_assert((cuda::std::extent<T>::value == A), "");
-  static_assert((cuda::std::extent<const T>::value == A), "");
-  static_assert((cuda::std::extent<volatile T>::value == A), "");
-  static_assert((cuda::std::extent<const volatile T>::value == A), "");
-  static_assert((cuda::std::extent_v<T> == A), "");
-  static_assert((cuda::std::extent_v<const T> == A), "");
-  static_assert((cuda::std::extent_v<volatile T> == A), "");
-  static_assert((cuda::std::extent_v<const volatile T> == A), "");
+  static_assert((cuda::std::extent<T>::value == A));
+  static_assert((cuda::std::extent<const T>::value == A));
+  static_assert((cuda::std::extent<volatile T>::value == A));
+  static_assert((cuda::std::extent<const volatile T>::value == A));
+  static_assert((cuda::std::extent_v<T> == A));
+  static_assert((cuda::std::extent_v<const T> == A));
+  static_assert((cuda::std::extent_v<volatile T> == A));
+  static_assert((cuda::std::extent_v<const volatile T> == A));
 }
 
 template <class T, unsigned A>
 __host__ __device__ void test_extent1()
 {
-  static_assert((cuda::std::extent<T, 1>::value == A), "");
-  static_assert((cuda::std::extent<const T, 1>::value == A), "");
-  static_assert((cuda::std::extent<volatile T, 1>::value == A), "");
-  static_assert((cuda::std::extent<const volatile T, 1>::value == A), "");
-  static_assert((cuda::std::extent_v<T, 1> == A), "");
-  static_assert((cuda::std::extent_v<const T, 1> == A), "");
-  static_assert((cuda::std::extent_v<volatile T, 1> == A), "");
-  static_assert((cuda::std::extent_v<const volatile T, 1> == A), "");
+  static_assert((cuda::std::extent<T, 1>::value == A));
+  static_assert((cuda::std::extent<const T, 1>::value == A));
+  static_assert((cuda::std::extent<volatile T, 1>::value == A));
+  static_assert((cuda::std::extent<const volatile T, 1>::value == A));
+  static_assert((cuda::std::extent_v<T, 1> == A));
+  static_assert((cuda::std::extent_v<const T, 1> == A));
+  static_assert((cuda::std::extent_v<volatile T, 1> == A));
+  static_assert((cuda::std::extent_v<const volatile T, 1> == A));
 }
 
 class Class

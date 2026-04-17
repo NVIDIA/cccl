@@ -39,12 +39,12 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
 
   // Sanity check for constexpr in C++11
   {
     constexpr cuda::std::array<int, 3> array = {};
-    static_assert(array.max_size() == 3, "");
+    static_assert(array.max_size() == 3);
   }
 
   return 0;

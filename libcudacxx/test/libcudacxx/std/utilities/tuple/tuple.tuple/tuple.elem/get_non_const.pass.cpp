@@ -79,12 +79,12 @@ int main(int, char**)
   }
   */
   { // get on an rvalue tuple
-    static_assert(cuda::std::get<0>(cuda::std::make_tuple(0.0f, 1, 2.0, 3L)) == 0, "");
-    static_assert(cuda::std::get<1>(cuda::std::make_tuple(0.0f, 1, 2.0, 3L)) == 1, "");
-    static_assert(cuda::std::get<2>(cuda::std::make_tuple(0.0f, 1, 2.0, 3L)) == 2, "");
-    static_assert(cuda::std::get<3>(cuda::std::make_tuple(0.0f, 1, 2.0, 3L)) == 3, "");
-    static_assert(S().k == 1, "");
-    static_assert(cuda::std::get<1>(getP()) == 4, "");
+    static_assert(cuda::std::get<0>(cuda::std::make_tuple(0.0f, 1, 2.0, 3L)) == 0);
+    static_assert(cuda::std::get<1>(cuda::std::make_tuple(0.0f, 1, 2.0, 3L)) == 1);
+    static_assert(cuda::std::get<2>(cuda::std::make_tuple(0.0f, 1, 2.0, 3L)) == 2);
+    static_assert(cuda::std::get<3>(cuda::std::make_tuple(0.0f, 1, 2.0, 3L)) == 3);
+    static_assert(S().k == 1);
+    static_assert(cuda::std::get<1>(getP()) == 4);
   }
 
   return 0;

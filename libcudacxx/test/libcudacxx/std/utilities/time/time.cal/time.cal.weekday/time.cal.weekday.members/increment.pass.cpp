@@ -47,7 +47,7 @@ int main(int, char**)
   static_assert(cuda::std::is_same_v<weekday, decltype(cuda::std::declval<weekday&>()++)>);
   static_assert(cuda::std::is_same_v<weekday&, decltype(++cuda::std::declval<weekday&>())>);
 
-  static_assert(testConstexpr<weekday>(), "");
+  static_assert(testConstexpr<weekday>());
 
   for (unsigned i = 0; i <= 6; ++i)
   {

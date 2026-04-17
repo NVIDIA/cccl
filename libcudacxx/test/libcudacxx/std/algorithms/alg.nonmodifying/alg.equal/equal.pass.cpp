@@ -149,7 +149,7 @@ struct Derived : virtual Base
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   types::for_each(types::as_pointers<types::cv_qualified_versions<int>>(),
                   TestIter2<int, types::as_pointers<types::cv_qualified_versions<int>>>());

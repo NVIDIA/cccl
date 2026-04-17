@@ -83,8 +83,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
 {
   using U = cuda::std::unique_ptr<ValueT>;
   { // Ensure unique_ptr is non-copyable
-    static_assert((!cuda::std::is_constructible<U, U const&>::value), "");
-    static_assert((!cuda::std::is_constructible<U, U&>::value), "");
+    static_assert((!cuda::std::is_constructible<U, U const&>::value));
+    static_assert((!cuda::std::is_constructible<U, U&>::value));
   }
 }
 
@@ -176,19 +176,19 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_noexcept()
 {
   {
     using U = cuda::std::unique_ptr<VT>;
-    static_assert(cuda::std::is_nothrow_move_constructible<U>::value, "");
+    static_assert(cuda::std::is_nothrow_move_constructible<U>::value);
   }
   {
     using U = cuda::std::unique_ptr<VT, Deleter<VT>>;
-    static_assert(cuda::std::is_nothrow_move_constructible<U>::value, "");
+    static_assert(cuda::std::is_nothrow_move_constructible<U>::value);
   }
   {
     using U = cuda::std::unique_ptr<VT, NCDeleter<VT>&>;
-    static_assert(cuda::std::is_nothrow_move_constructible<U>::value, "");
+    static_assert(cuda::std::is_nothrow_move_constructible<U>::value);
   }
   {
     using U = cuda::std::unique_ptr<VT, const NCConstDeleter<VT>&>;
-    static_assert(cuda::std::is_nothrow_move_constructible<U>::value, "");
+    static_assert(cuda::std::is_nothrow_move_constructible<U>::value);
   }
 }
 

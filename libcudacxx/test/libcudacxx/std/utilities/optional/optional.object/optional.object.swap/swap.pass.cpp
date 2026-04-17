@@ -94,7 +94,7 @@ __host__ __device__ constexpr bool check_swap()
   {
     optional<T> opt1;
     optional<T> opt2{};
-    static_assert(noexcept(opt1.swap(opt2)) == true, "");
+    static_assert(noexcept(opt1.swap(opt2)) == true);
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == false);
     opt1.swap(opt2);
@@ -104,7 +104,7 @@ __host__ __device__ constexpr bool check_swap()
   {
     optional<T> opt1(1);
     optional<T> opt2{};
-    static_assert(noexcept(opt1.swap(opt2)) == true, "");
+    static_assert(noexcept(opt1.swap(opt2)) == true);
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
     assert(static_cast<bool>(opt2) == false);
@@ -116,7 +116,7 @@ __host__ __device__ constexpr bool check_swap()
   {
     optional<T> opt1;
     optional<T> opt2(2);
-    static_assert(noexcept(opt1.swap(opt2)) == true, "");
+    static_assert(noexcept(opt1.swap(opt2)) == true);
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == true);
     assert(*opt2 == 2);
@@ -128,7 +128,7 @@ __host__ __device__ constexpr bool check_swap()
   {
     optional<T> opt1(1);
     optional<T> opt2(2);
-    static_assert(noexcept(opt1.swap(opt2)) == true, "");
+    static_assert(noexcept(opt1.swap(opt2)) == true);
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
     assert(static_cast<bool>(opt2) == true);
@@ -187,7 +187,7 @@ void test_exceptions()
     optional<Z> opt1;
     opt1.emplace(1);
     optional<Z> opt2{};
-    static_assert(noexcept(opt1.swap(opt2)) == false, "");
+    static_assert(noexcept(opt1.swap(opt2)) == false);
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
     assert(static_cast<bool>(opt2) == false);
@@ -208,7 +208,7 @@ void test_exceptions()
     optional<Z> opt1;
     optional<Z> opt2{};
     opt2.emplace(2);
-    static_assert(noexcept(opt1.swap(opt2)) == false, "");
+    static_assert(noexcept(opt1.swap(opt2)) == false);
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == true);
     assert(*opt2 == 2);
@@ -230,7 +230,7 @@ void test_exceptions()
     opt1.emplace(1);
     optional<Z> opt2{};
     opt2.emplace(2);
-    static_assert(noexcept(opt1.swap(opt2)) == false, "");
+    static_assert(noexcept(opt1.swap(opt2)) == false);
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
     assert(static_cast<bool>(opt2) == true);
@@ -263,7 +263,7 @@ int main(int, char**)
   {
     optional<X> opt1;
     optional<X> opt2{};
-    static_assert(noexcept(opt1.swap(opt2)) == true, "");
+    static_assert(noexcept(opt1.swap(opt2)) == true);
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == false);
     opt1.swap(opt2);
@@ -274,7 +274,7 @@ int main(int, char**)
   {
     optional<X> opt1(1);
     optional<X> opt2{};
-    static_assert(noexcept(opt1.swap(opt2)) == true, "");
+    static_assert(noexcept(opt1.swap(opt2)) == true);
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
     assert(static_cast<bool>(opt2) == false);
@@ -288,7 +288,7 @@ int main(int, char**)
   {
     optional<X> opt1;
     optional<X> opt2(2);
-    static_assert(noexcept(opt1.swap(opt2)) == true, "");
+    static_assert(noexcept(opt1.swap(opt2)) == true);
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == true);
     assert(*opt2 == 2);
@@ -302,7 +302,7 @@ int main(int, char**)
   {
     optional<X> opt1(1);
     optional<X> opt2(2);
-    static_assert(noexcept(opt1.swap(opt2)) == true, "");
+    static_assert(noexcept(opt1.swap(opt2)) == true);
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
     assert(static_cast<bool>(opt2) == true);
@@ -318,7 +318,7 @@ int main(int, char**)
   {
     optional<Y> opt1;
     optional<Y> opt2{};
-    static_assert(noexcept(opt1.swap(opt2)) == false, "");
+    static_assert(noexcept(opt1.swap(opt2)) == false);
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == false);
     opt1.swap(opt2);
@@ -329,7 +329,7 @@ int main(int, char**)
   {
     optional<Y> opt1(1);
     optional<Y> opt2{};
-    static_assert(noexcept(opt1.swap(opt2)) == false, "");
+    static_assert(noexcept(opt1.swap(opt2)) == false);
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
     assert(static_cast<bool>(opt2) == false);
@@ -343,7 +343,7 @@ int main(int, char**)
   {
     optional<Y> opt1;
     optional<Y> opt2(2);
-    static_assert(noexcept(opt1.swap(opt2)) == false, "");
+    static_assert(noexcept(opt1.swap(opt2)) == false);
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == true);
     assert(*opt2 == 2);
@@ -357,7 +357,7 @@ int main(int, char**)
   {
     optional<Y> opt1(1);
     optional<Y> opt2(2);
-    static_assert(noexcept(opt1.swap(opt2)) == false, "");
+    static_assert(noexcept(opt1.swap(opt2)) == false);
     assert(static_cast<bool>(opt1) == true);
     assert(*opt1 == 1);
     assert(static_cast<bool>(opt2) == true);
@@ -373,7 +373,7 @@ int main(int, char**)
   {
     optional<TerminatesOnMoveAssignmentAndSwap> opt1;
     optional<TerminatesOnMoveAssignmentAndSwap> opt2{};
-    static_assert(noexcept(opt1.swap(opt2)) == false, "");
+    static_assert(noexcept(opt1.swap(opt2)) == false);
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == false);
     opt1.swap(opt2);
@@ -386,7 +386,7 @@ int main(int, char**)
     int other_value = 1337;
     optional<int&> opt1(value);
     optional<int&> opt2(other_value);
-    static_assert(noexcept(swap(opt1, opt2)), "");
+    static_assert(noexcept(swap(opt1, opt2)));
     assert(opt1.has_value());
     assert(*opt1 == value);
     assert(opt2.has_value());

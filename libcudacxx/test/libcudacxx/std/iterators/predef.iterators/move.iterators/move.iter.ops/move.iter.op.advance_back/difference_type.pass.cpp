@@ -41,7 +41,7 @@ int main(int, char**)
     constexpr const char* p = "123456789";
     constexpr auto it1      = cuda::std::make_move_iterator(p);
     constexpr auto it2      = cuda::std::make_move_iterator(p + 5) -= 5;
-    static_assert(it1 == it2, "");
+    static_assert(it1 == it2);
   }
 
   return 0;

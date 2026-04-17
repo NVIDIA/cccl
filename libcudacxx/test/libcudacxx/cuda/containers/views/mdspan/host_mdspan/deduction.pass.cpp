@@ -167,7 +167,7 @@ __host__ __device__ constexpr void mixin_accessor()
   // Make sure they actually got the properties we want to test
   // checked_accessor is noexcept copy constructible except for const double
   checked_accessor<T> acc(1024);
-  static_assert(noexcept(checked_accessor<T>(acc)) != cuda::std::is_same<T, const double>::value, "");
+  static_assert(noexcept(checked_accessor<T>(acc)) != cuda::std::is_same<T, const double>::value);
   mixin_layout(typename checked_accessor<T>::data_handle_type(elements.data()), acc);
 }
 
@@ -181,7 +181,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 void mixin_accessor()
   // Make sure they actually got the properties we want to test
   // checked_accessor is noexcept copy constructible except for const double
   checked_accessor<T> acc(1024);
-  static_assert(noexcept(checked_accessor<T>(acc)) != cuda::std::is_same<T, const double>::value, "");
+  static_assert(noexcept(checked_accessor<T>(acc)) != cuda::std::is_same<T, const double>::value);
   mixin_layout(typename checked_accessor<T>::data_handle_type(elements.get_ptr()), acc);
 }
 
@@ -214,8 +214,8 @@ int main(int, char**)
   test_evil();
 
 #if TEST_STD_VER >= 2020
-  static_assert(test(), "");
-  static_assert(test_evil(), "");
+  static_assert(test());
+  static_assert(test_evil());
 #endif // TEST_STD_VER >= 2020
   return 0;
 }

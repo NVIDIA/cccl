@@ -78,9 +78,9 @@ test_mdspan_ctor_array(const H& handle, const M& map, const A&, cuda::std::array
   MDS m(handle, exts);
   test_move_counter<MDS, H>();
 
-  static_assert(!noexcept(MDS(handle, exts)), "");
+  static_assert(!noexcept(MDS(handle, exts)));
 
-  static_assert(check_mdspan_ctor_implicit<MDS, decltype(exts)> == (N == MDS::rank_dynamic()), "");
+  static_assert(check_mdspan_ctor_implicit<MDS, decltype(exts)> == (N == MDS::rank_dynamic()));
 
   assert(m.extents() == map.extents());
   test_equality_handle(m, handle);
@@ -114,8 +114,8 @@ template <bool mec, bool ac, class H, class M, class A, cuda::std::enable_if_t<m
 __host__ __device__ constexpr void test_mdspan_ctor(const H& handle, const M& map, const A& acc)
 {
   using MDS = cuda::restrict_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
-  static_assert(mec == cuda::std::is_constructible<M, typename M::extents_type>::value, "");
-  static_assert(ac == cuda::std::is_default_constructible<A>::value, "");
+  static_assert(mec == cuda::std::is_constructible<M, typename M::extents_type>::value);
+  static_assert(ac == cuda::std::is_default_constructible<A>::value);
   // test from all extents
   const auto exts = array_from_extents(map.extents(), cuda::std::make_index_sequence<MDS::rank()>());
   test_mdspan_ctor_array(handle, map, acc, exts);
@@ -128,8 +128,8 @@ template <bool mec, bool ac, class H, class M, class A, cuda::std::enable_if_t<!
 __host__ __device__ constexpr void test_mdspan_ctor(const H& handle, const M& map, const A& acc)
 {
   using MDS = cuda::restrict_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
-  static_assert(mec == cuda::std::is_constructible<M, typename M::extents_type>::value, "");
-  static_assert(ac == cuda::std::is_default_constructible<A>::value, "");
+  static_assert(mec == cuda::std::is_constructible<M, typename M::extents_type>::value);
+  static_assert(ac == cuda::std::is_default_constructible<A>::value);
   static_assert(
     !cuda::std::is_constructible<MDS, const H&, const cuda::std::array<typename MDS::index_type, MDS::rank()>&>::value,
     "");
@@ -201,35 +201,35 @@ __host__ __device__ constexpr bool test()
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   using mds_t                         = cuda::restrict_mdspan<float, cuda::std::extents<unsigned, 3, D, D>>;
   // sanity check
-  static_assert(cuda::std::is_constructible<mds_t, float*, cuda::std::array<int, 3>>::value, "");
-  static_assert(cuda::std::is_constructible<mds_t, float*, cuda::std::array<int, 2>>::value, "");
+  static_assert(cuda::std::is_constructible<mds_t, float*, cuda::std::array<int, 3>>::value);
+  static_assert(cuda::std::is_constructible<mds_t, float*, cuda::std::array<int, 2>>::value);
   // wrong size
-  static_assert(!cuda::std::is_constructible<mds_t, float*, cuda::std::array<int, 1>>::value, "");
-  static_assert(!cuda::std::is_constructible<mds_t, float*, cuda::std::array<int, 4>>::value, "");
+  static_assert(!cuda::std::is_constructible<mds_t, float*, cuda::std::array<int, 1>>::value);
+  static_assert(!cuda::std::is_constructible<mds_t, float*, cuda::std::array<int, 4>>::value);
   // not convertible to index_type
-  static_assert(cuda::std::is_convertible<const IntType&, int>::value, "");
-  static_assert(!cuda::std::is_convertible<const IntType&, unsigned>::value, "");
-  static_assert(!cuda::std::is_constructible<mds_t, float*, cuda::std::array<IntType, 2>>::value, "");
+  static_assert(cuda::std::is_convertible<const IntType&, int>::value);
+  static_assert(!cuda::std::is_convertible<const IntType&, unsigned>::value);
+  static_assert(!cuda::std::is_constructible<mds_t, float*, cuda::std::array<IntType, 2>>::value);
 
   // index_type is not nothrow constructible
   using mds_uchar_t = cuda::restrict_mdspan<float, cuda::std::extents<unsigned char, 3, D, D>>;
-  static_assert(cuda::std::is_convertible<IntType, unsigned char>::value, "");
-  static_assert(cuda::std::is_convertible<const IntType&, unsigned char>::value, "");
-  static_assert(!cuda::std::is_nothrow_constructible<unsigned char, const IntType&>::value, "");
-  static_assert(!cuda::std::is_constructible<mds_uchar_t, float*, cuda::std::array<IntType, 2>>::value, "");
+  static_assert(cuda::std::is_convertible<IntType, unsigned char>::value);
+  static_assert(cuda::std::is_convertible<const IntType&, unsigned char>::value);
+  static_assert(!cuda::std::is_nothrow_constructible<unsigned char, const IntType&>::value);
+  static_assert(!cuda::std::is_constructible<mds_uchar_t, float*, cuda::std::array<IntType, 2>>::value);
 
   // convertible from non-const to index_type but not  from const
   using mds_int_t = cuda::restrict_mdspan<float, cuda::std::extents<int, 3, D, D>>;
-  static_assert(cuda::std::is_convertible<IntTypeNC, int>::value, "");
-  static_assert(!cuda::std::is_convertible<const IntTypeNC&, int>::value, "");
-  static_assert(cuda::std::is_nothrow_constructible<int, IntTypeNC>::value, "");
-  static_assert(!cuda::std::is_constructible<mds_int_t, float*, cuda::std::array<IntTypeNC, 2>>::value, "");
+  static_assert(cuda::std::is_convertible<IntTypeNC, int>::value);
+  static_assert(!cuda::std::is_convertible<const IntTypeNC&, int>::value);
+  static_assert(cuda::std::is_nothrow_constructible<int, IntTypeNC>::value);
+  static_assert(!cuda::std::is_constructible<mds_int_t, float*, cuda::std::array<IntTypeNC, 2>>::value);
 
   // can't test a combo where cuda::std::is_nothrow_constructible_v<int, const IntTypeNC&> is true,
   // but cuda::std::is_convertible_v<const IntType&, int> is false
 
   // test non-constructibility from wrong handle_type
-  static_assert(!cuda::std::is_constructible<mds_t, const float*, cuda::std::array<int, 2>>::value, "");
+  static_assert(!cuda::std::is_constructible<mds_t, const float*, cuda::std::array<int, 2>>::value);
 
   return true;
 }
@@ -247,8 +247,8 @@ int main(int, char**)
   test_evil();
 
 #if TEST_STD_VER >= 2020
-  static_assert(test(), "");
-  static_assert(test_evil(), "");
+  static_assert(test());
+  static_assert(test_evil());
 #endif // TEST_STD_VER >= 2020
   return 0;
 }

@@ -9,7 +9,7 @@
 
 // UNSUPPORTED: c++17
 // UNSUPPORTED: LIBCUDACXX-has-no-concepts
-// XFAIL: c++20
+// XFAIL: !c++17
 
 // <iterator>
 

@@ -26,7 +26,7 @@ template <class T>
 __host__ __device__ void test()
 {
   using C = cuda::std::complex<T>;
-  static_assert((cuda::std::is_same<typename C::value_type, T>::value), "");
+  static_assert((cuda::std::is_same<typename C::value_type, T>::value));
 }
 
 int main(int, char**)

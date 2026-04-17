@@ -95,7 +95,7 @@ __host__ __device__ constexpr void test_unsigned(int zero_value)
   constexpr auto maxVal = cuda::std::numeric_limits<I>::max();
 
   static_assert(cuda::std::is_same_v<I, decltype(cuda::std::saturating_add(I{}, I{}))>);
-  static_assert(noexcept(cuda::std::saturating_add(I{}, I{})), "");
+  static_assert(noexcept(cuda::std::saturating_add(I{}, I{})));
 
   // Litmit values (0, 1, min, max)
   test<I>(I{0}, I{0}, I{0}, zero_value);

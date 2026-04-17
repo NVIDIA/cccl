@@ -64,14 +64,14 @@ struct ThrowsMove
   __host__ __device__ ThrowsMove(ThrowsMove const&) noexcept(false) {}
   __host__ __device__ ThrowsMove(ThrowsMove&&) noexcept(false) {}
 };
-static_assert(!cuda::std::is_nothrow_move_constructible<optional<ThrowsMove>>::value, "");
+static_assert(!cuda::std::is_nothrow_move_constructible<optional<ThrowsMove>>::value);
 struct NoThrowMove
 {
   __host__ __device__ NoThrowMove() noexcept(false) {}
   __host__ __device__ NoThrowMove(NoThrowMove const&) noexcept(false) {}
   __host__ __device__ NoThrowMove(NoThrowMove&&) noexcept(true) {}
 };
-static_assert(cuda::std::is_nothrow_move_constructible<optional<NoThrowMove>>::value, "");
+static_assert(cuda::std::is_nothrow_move_constructible<optional<NoThrowMove>>::value);
 
 #if TEST_HAS_EXCEPTIONS()
 struct Z
@@ -110,7 +110,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
   {

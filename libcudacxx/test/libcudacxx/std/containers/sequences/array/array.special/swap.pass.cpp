@@ -65,18 +65,18 @@ __host__ __device__ constexpr bool tests()
   {
     using T  = NonSwappable;
     using C0 = cuda::std::array<T, 0>;
-    static_assert(can_swap<C0&>::value, "");
+    static_assert(can_swap<C0&>::value);
     C0 l = {};
     C0 r = {};
     swap(l, r);
-    static_assert(noexcept(swap(l, r)), "");
+    static_assert(noexcept(swap(l, r)));
   }
   {
     // NonSwappable is still considered swappable in C++03 because there
     // is no access control SFINAE.
     using T  = NonSwappable;
     using C1 = cuda::std::array<T, 42>;
-    static_assert(!can_swap<C1&>::value, "");
+    static_assert(!can_swap<C1&>::value);
   }
 
   return true;
@@ -85,6 +85,6 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
   return 0;
 }

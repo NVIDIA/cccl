@@ -24,27 +24,27 @@ union U2 final
 template <class T>
 __host__ __device__ void test_is_final()
 {
-  static_assert(cuda::std::is_final<T>::value, "");
-  static_assert(cuda::std::is_final<const T>::value, "");
-  static_assert(cuda::std::is_final<volatile T>::value, "");
-  static_assert(cuda::std::is_final<const volatile T>::value, "");
-  static_assert(cuda::std::is_final_v<T>, "");
-  static_assert(cuda::std::is_final_v<const T>, "");
-  static_assert(cuda::std::is_final_v<volatile T>, "");
-  static_assert(cuda::std::is_final_v<const volatile T>, "");
+  static_assert(cuda::std::is_final<T>::value);
+  static_assert(cuda::std::is_final<const T>::value);
+  static_assert(cuda::std::is_final<volatile T>::value);
+  static_assert(cuda::std::is_final<const volatile T>::value);
+  static_assert(cuda::std::is_final_v<T>);
+  static_assert(cuda::std::is_final_v<const T>);
+  static_assert(cuda::std::is_final_v<volatile T>);
+  static_assert(cuda::std::is_final_v<const volatile T>);
 }
 
 template <class T>
 __host__ __device__ void test_is_not_final()
 {
-  static_assert(!cuda::std::is_final<T>::value, "");
-  static_assert(!cuda::std::is_final<const T>::value, "");
-  static_assert(!cuda::std::is_final<volatile T>::value, "");
-  static_assert(!cuda::std::is_final<const volatile T>::value, "");
-  static_assert(!cuda::std::is_final_v<T>, "");
-  static_assert(!cuda::std::is_final_v<const T>, "");
-  static_assert(!cuda::std::is_final_v<volatile T>, "");
-  static_assert(!cuda::std::is_final_v<const volatile T>, "");
+  static_assert(!cuda::std::is_final<T>::value);
+  static_assert(!cuda::std::is_final<const T>::value);
+  static_assert(!cuda::std::is_final<volatile T>::value);
+  static_assert(!cuda::std::is_final<const volatile T>::value);
+  static_assert(!cuda::std::is_final_v<T>);
+  static_assert(!cuda::std::is_final_v<const T>);
+  static_assert(!cuda::std::is_final_v<volatile T>);
+  static_assert(!cuda::std::is_final_v<const volatile T>);
 }
 
 int main(int, char**)

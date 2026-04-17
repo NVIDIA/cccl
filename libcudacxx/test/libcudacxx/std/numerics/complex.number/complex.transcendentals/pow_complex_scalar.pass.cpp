@@ -22,7 +22,7 @@
 template <class T, class U = T>
 __host__ __device__ void test(const cuda::std::complex<T>& a, const U& b, cuda::std::complex<T> x)
 {
-  static_assert(cuda::std::is_same<decltype(pow(a, b)), cuda::std::complex<T>>::value, "");
+  static_assert(cuda::std::is_same<decltype(pow(a, b)), cuda::std::complex<T>>::value);
   cuda::std::complex<T> c = pow(a, b);
   is_about(real(c), real(x));
   is_about(imag(c), imag(x));

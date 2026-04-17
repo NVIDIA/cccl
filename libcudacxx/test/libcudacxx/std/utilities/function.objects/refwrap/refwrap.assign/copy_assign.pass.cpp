@@ -75,9 +75,9 @@ int main(int, char**)
 
   {
     using Ref = cuda::std::reference_wrapper<int>;
-    static_assert((cuda::std::is_assignable<Ref&, int&>::value), "");
-    static_assert((!cuda::std::is_assignable<Ref&, int>::value), "");
-    static_assert((!cuda::std::is_assignable<Ref&, int&&>::value), "");
+    static_assert((cuda::std::is_assignable<Ref&, int&>::value));
+    static_assert((!cuda::std::is_assignable<Ref&, int>::value));
+    static_assert((!cuda::std::is_assignable<Ref&, int&&>::value));
   }
 
   return 0;

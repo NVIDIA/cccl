@@ -68,8 +68,8 @@ struct MoveOnlyIterator
   }
 };
 
-static_assert(cuda::std::input_iterator<MoveOnlyIterator>, "");
-static_assert(!cuda::std::is_copy_constructible<MoveOnlyIterator>::value, "");
+static_assert(cuda::std::input_iterator<MoveOnlyIterator>);
+static_assert(!cuda::std::is_copy_constructible<MoveOnlyIterator>::value);
 
 template <class It>
 __host__ __device__ constexpr void test_one()
@@ -124,7 +124,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

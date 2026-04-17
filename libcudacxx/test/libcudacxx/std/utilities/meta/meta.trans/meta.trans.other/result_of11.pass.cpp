@@ -50,8 +50,8 @@ struct test_invoke_result<Fn(Args...), Ret>
 {
   __host__ __device__ static void call()
   {
-    static_assert(cuda::std::is_invocable<Fn, Args...>::value, "");
-    static_assert(cuda::std::is_invocable_r<Ret, Fn, Args...>::value, "");
+    static_assert(cuda::std::is_invocable<Fn, Args...>::value);
+    static_assert(cuda::std::is_invocable_r<Ret, Fn, Args...>::value);
     static_assert(cuda::std::is_same_v<Ret, typename cuda::std::invoke_result<Fn, Args...>::type>);
     static_assert(cuda::std::is_same_v<Ret, cuda::std::invoke_result_t<Fn, Args...>>);
   }

@@ -23,7 +23,11 @@ _CCCL_KERNEL_ATTRIBUTES void write_ptx_version_kernel(int* d_kernel_cuda_arch)
 }
 
 CUB_RUNTIME_FUNCTION static cudaError_t get_cuda_arch_from_kernel(
-  void* d_temp_storage, size_t& temp_storage_bytes, int* d_kernel_cuda_arch, int* ptx_version, cudaStream_t stream = 0)
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  int* d_kernel_cuda_arch,
+  int* ptx_version,
+  cudaStream_t stream = nullptr)
 {
   if (d_temp_storage == nullptr)
   {
@@ -218,7 +222,7 @@ struct check_policy_closure
 
 template <typename PolicyHub, int NumPolicies>
 CUB_RUNTIME_FUNCTION cudaError_t check_chained_policy_selects_correct_policy(
-  void* d_temp_storage, size_t& temp_storage_bytes, cuda::std::array<int, NumPolicies> policies, cudaStream_t = 0)
+  void* d_temp_storage, size_t& temp_storage_bytes, cuda::std::array<int, NumPolicies> policies, cudaStream_t = nullptr)
 {
   if (d_temp_storage == nullptr)
   {

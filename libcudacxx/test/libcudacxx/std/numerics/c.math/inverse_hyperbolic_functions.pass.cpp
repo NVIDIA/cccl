@@ -25,7 +25,7 @@ template <typename T>
 __host__ __device__ void test_acosh(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::acosh(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::acosh(T{})), ret>);
 
   // If the argument is less than 1
   assert(cuda::std::isnan(cuda::std::acosh(val)));
@@ -80,7 +80,7 @@ template <typename T>
 __host__ __device__ void test_asinh(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::asinh(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::asinh(T{})), ret>);
 
   // If  the argument is ±0 or ±∞, it is returned unmodified.
   assert(eq(cuda::std::asinh(val), val));
@@ -157,7 +157,7 @@ template <typename T>
 __host__ __device__ void test_atanh(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::atanh(T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::atanh(T{})), ret>);
 
   // 0 is returned unmodified
   assert(eq(cuda::std::atanh(val), val));

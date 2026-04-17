@@ -26,7 +26,7 @@ template <class T>
 __host__ __device__ constexpr void test_copy()
 {
   // Zero capacity inplace_vector is nothrow_copy_assignable
-  static_assert(cuda::std::is_nothrow_copy_assignable<cuda::std::inplace_vector<T, 0>>::value, "");
+  static_assert(cuda::std::is_nothrow_copy_assignable<cuda::std::inplace_vector<T, 0>>::value);
   static_assert(cuda::std::is_nothrow_copy_assignable<cuda::std::inplace_vector<T, 42>>::value
                   == cuda::std::conjunction<cuda::std::is_nothrow_copy_constructible<T>,
                                             cuda::std::is_nothrow_copy_assignable<T>>::value,
@@ -83,7 +83,7 @@ template <class T>
 __host__ __device__ constexpr void test_move()
 {
   // Zero capacity inplace_vector is nothrow_move_assignable
-  static_assert(cuda::std::is_nothrow_move_assignable<cuda::std::inplace_vector<T, 0>>::value, "");
+  static_assert(cuda::std::is_nothrow_move_assignable<cuda::std::inplace_vector<T, 0>>::value);
   static_assert(cuda::std::is_nothrow_move_assignable<cuda::std::inplace_vector<T, 42>>::value
                   == cuda::std::conjunction<cuda::std::is_nothrow_move_constructible<T>,
                                             cuda::std::is_nothrow_move_assignable<T>>::value,
@@ -263,7 +263,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
 #if TEST_HAS_EXCEPTIONS()

@@ -25,7 +25,7 @@ TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possib
 template <class T, int x, class Target>
 __host__ __device__ void test_nonconstexpr()
 {
-  static_assert((cuda::std::is_same<decltype(cuda::std::real(T(x))), Target>::value), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::real(T(x))), Target>::value));
   assert(cuda::std::real(T(x)) == T(x));
 }
 
@@ -34,12 +34,12 @@ __host__ __device__ void test(typename cuda::std::enable_if<cuda::std::is_integr
 {
   test_nonconstexpr<T, x, double>();
 
-  static_assert((cuda::std::is_same<decltype(cuda::std::real(T(x))), double>::value), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::real(T(x))), double>::value));
   assert(cuda::std::real(x) == x);
   constexpr T val{x};
-  static_assert(cuda::std::real(val) == val, "");
+  static_assert(cuda::std::real(val) == val);
   constexpr cuda::std::complex<T> t{val, val};
-  static_assert(t.real() == x, "");
+  static_assert(t.real() == x);
 }
 
 template <class T, int x>
@@ -47,12 +47,12 @@ __host__ __device__ void test(typename cuda::std::enable_if<!cuda::std::is_integ
 {
   test_nonconstexpr<T, x, T>();
 
-  static_assert((cuda::std::is_same<decltype(cuda::std::real(T(x))), T>::value), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::real(T(x))), T>::value));
   assert(cuda::std::real(x) == x);
   constexpr T val{x};
-  static_assert(cuda::std::real(val) == val, "");
+  static_assert(cuda::std::real(val) == val);
   constexpr cuda::std::complex<T> t{val, val};
-  static_assert(t.real() == x, "");
+  static_assert(t.real() == x);
 }
 
 template <class T>

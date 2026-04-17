@@ -831,6 +831,7 @@ namespace detail
 {
 struct is_primitive_impl;
 
+// case for _CATEGORY = NOT_A_NUMBER, or _PRIMITIVE = false
 template <Category _CATEGORY, bool _PRIMITIVE, typename _UnsignedBits, typename T>
 struct BaseTraits
 {
@@ -843,6 +844,8 @@ private:
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<UNSIGNED_INTEGER, true, _UnsignedBits, T>
 {
+  static_assert(sizeof(_UnsignedBits) == sizeof(T),
+                "The size of the unsigned type holding the bits of T must be the same as T");
   static_assert(::cuda::std::numeric_limits<T>::is_specialized,
                 "Please also specialize cuda::std::numeric_limits for T");
 
@@ -888,6 +891,8 @@ private:
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<SIGNED_INTEGER, true, _UnsignedBits, T>
 {
+  static_assert(sizeof(_UnsignedBits) == sizeof(T),
+                "The size of the unsigned type holding the bits of T must be the same as T");
   static_assert(::cuda::std::numeric_limits<T>::is_specialized,
                 "Please also specialize cuda::std::numeric_limits for T");
 
@@ -931,6 +936,8 @@ private:
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<FLOATING_POINT, true, _UnsignedBits, T>
 {
+  static_assert(sizeof(_UnsignedBits) == sizeof(T),
+                "The size of the unsigned type holding the bits of T must be the same as T");
   static_assert(::cuda::std::numeric_limits<T>::is_specialized,
                 "Please also specialize cuda::std::numeric_limits for T");
   static_assert(::cuda::is_floating_point<T>::value, "Please also specialize cuda::is_floating_point for T");

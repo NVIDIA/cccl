@@ -51,9 +51,9 @@ __host__ __device__ constexpr bool tests()
   test(PC(s + 1), s, -1);
 
   // Test non-subtractable base iterator types
-  static_assert(HasMinus<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<int*>>, "");
-  static_assert(HasMinus<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<const int*>>, "");
-  static_assert(!HasMinus<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<char*>>, "");
+  static_assert(HasMinus<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<int*>>);
+  static_assert(HasMinus<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<const int*>>);
+  static_assert(!HasMinus<cuda::std::reverse_iterator<int*>, cuda::std::reverse_iterator<char*>>);
   static_assert(!HasMinus<cuda::std::reverse_iterator<bidirectional_iterator<int*>>,
                           cuda::std::reverse_iterator<bidirectional_iterator<int*>>>,
                 "");
@@ -64,6 +64,6 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
   return 0;
 }

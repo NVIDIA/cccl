@@ -35,9 +35,9 @@ __host__ __device__ void test()
   using CArrayT  = T[Size == 0 ? 1 : Size];
   using ArrayT   = cuda::std::array<T, Size>;
   using MyArrayT = MyArray<T, Size == 0 ? 1 : Size>;
-  static_assert(sizeof(ArrayT) == sizeof(CArrayT), "");
-  static_assert(sizeof(ArrayT) == sizeof(MyArrayT), "");
-  static_assert(alignof(ArrayT) == alignof(MyArrayT), "");
+  static_assert(sizeof(ArrayT) == sizeof(CArrayT));
+  static_assert(sizeof(ArrayT) == sizeof(MyArrayT));
+  static_assert(alignof(ArrayT) == alignof(MyArrayT));
 }
 
 template <class T>

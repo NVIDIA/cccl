@@ -56,6 +56,6 @@ __host__ __device__ constexpr bool test(bool do_it)
 int main(int, char**)
 {
   test(true);
-  static_assert(test(true), "");
+  static_assert(test(true));
   return 0;
 }

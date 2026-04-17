@@ -48,13 +48,13 @@ __host__ __device__ void testExtents()
   static_assert(cuda::std::is_same_v<typename E::size_type, cuda::std::make_unsigned_t<IndexType>>);
   static_assert(cuda::std::is_same_v<typename E::rank_type, size_t>);
 
-  static_assert(sizeof...(Extents) == E::rank(), "");
+  static_assert(sizeof...(Extents) == E::rank());
   static_assert(count_dynamic_extents<Extents...>() == E::rank_dynamic());
 
-  static_assert(cuda::std::regular<E>, "");
-  static_assert(cuda::std::is_trivially_copyable<E>::value, "");
+  static_assert(cuda::std::regular<E>);
+  static_assert(cuda::std::is_trivially_copyable<E>::value);
 
-  static_assert(cuda::std::is_empty<E>::value == (E::rank_dynamic() == 0), "");
+  static_assert(cuda::std::is_empty<E>::value == (E::rank_dynamic() == 0));
 }
 
 template <class IndexType, size_t... Extents>

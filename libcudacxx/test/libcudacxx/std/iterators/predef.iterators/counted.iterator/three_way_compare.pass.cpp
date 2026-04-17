@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: c++17
-// XFAIL: c++20
+// XFAIL: !c++17
 
 // template<common_with<I> I2>
 //   friend constexpr strong_ordering operator<=>(

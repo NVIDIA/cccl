@@ -68,8 +68,8 @@ __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& m
 {
   using MDS = cuda::host_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
-  static_assert(mec == cuda::std::is_constructible<M, typename M::extents_type>::value, "");
-  static_assert(ac == cuda::std::is_default_constructible<A>::value, "");
+  static_assert(mec == cuda::std::is_constructible<M, typename M::extents_type>::value);
+  static_assert(ac == cuda::std::is_default_constructible<A>::value);
   if (!cuda::std::__cccl_default_is_constant_evaluated())
   {
     move_counted_handle<typename MDS::element_type>::move_counter() = 0;
@@ -81,7 +81,7 @@ __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& m
   static_assert(check_mdspan_ctor_implicit<MDS, H, cuda::std::array<typename MDS::index_type, MDS::rank_dynamic()>>,
                 "");
   // check that the constructor from integral is explicit
-  static_assert(!check_mdspan_ctor_implicit<MDS, H, Idxs...>, "");
+  static_assert(!check_mdspan_ctor_implicit<MDS, H, Idxs...>);
 
   assert(m.extents() == map.extents());
   test_equality_handle(m, handle);
@@ -93,9 +93,9 @@ __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& m
 {
   using MDS = cuda::host_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
-  static_assert(mec == cuda::std::is_constructible<M, typename M::extents_type>::value, "");
-  static_assert(ac == cuda::std::is_default_constructible<A>::value, "");
-  static_assert(!cuda::std::is_constructible<MDS, const H&, Idxs...>::value, "");
+  static_assert(mec == cuda::std::is_constructible<M, typename M::extents_type>::value);
+  static_assert(ac == cuda::std::is_default_constructible<A>::value);
+  static_assert(!cuda::std::is_constructible<MDS, const H&, Idxs...>::value);
 }
 
 template <bool mec, bool ac, class H, class L, class A>
@@ -191,16 +191,16 @@ __host__ __device__ constexpr bool test()
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   using mds_t                         = cuda::host_mdspan<float, cuda::std::extents<int, 3, D, D>>;
   // sanity check
-  static_assert(cuda::std::is_constructible<mds_t, float*, int, int, int>::value, "");
-  static_assert(cuda::std::is_constructible<mds_t, float*, int, int>::value, "");
+  static_assert(cuda::std::is_constructible<mds_t, float*, int, int, int>::value);
+  static_assert(cuda::std::is_constructible<mds_t, float*, int, int>::value);
   // wrong number of arguments
-  static_assert(!cuda::std::is_constructible<mds_t, float*, int>::value, "");
-  static_assert(!cuda::std::is_constructible<mds_t, float*, int, int, int, int>::value, "");
+  static_assert(!cuda::std::is_constructible<mds_t, float*, int>::value);
+  static_assert(!cuda::std::is_constructible<mds_t, float*, int, int, int, int>::value);
   // not convertible to int
-  static_assert(!cuda::std::is_constructible<mds_t, float*, int, int, cuda::std::dextents<int, 1>>::value, "");
+  static_assert(!cuda::std::is_constructible<mds_t, float*, int, int, cuda::std::dextents<int, 1>>::value);
 
   // test non-constructibility from wrong handle_type
-  static_assert(!cuda::std::is_constructible<mds_t, const float*, int, int>::value, "");
+  static_assert(!cuda::std::is_constructible<mds_t, const float*, int, int>::value);
 
   return true;
 }
@@ -218,8 +218,8 @@ int main(int, char**)
   test_evil();
 
 #if TEST_STD_VER >= 2020
-  static_assert(test(), "");
-  static_assert(test_evil(), "");
+  static_assert(test());
+  static_assert(test_evil());
 #endif // TEST_STD_VER >= 2020
   return 0;
 }

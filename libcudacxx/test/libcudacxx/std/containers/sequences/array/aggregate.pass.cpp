@@ -21,11 +21,11 @@
 template <typename T>
 __host__ __device__ void check_aggregate()
 {
-  static_assert(cuda::std::is_aggregate<cuda::std::array<T, 0>>::value, "");
-  static_assert(cuda::std::is_aggregate<cuda::std::array<T, 1>>::value, "");
-  static_assert(cuda::std::is_aggregate<cuda::std::array<T, 2>>::value, "");
-  static_assert(cuda::std::is_aggregate<cuda::std::array<T, 3>>::value, "");
-  static_assert(cuda::std::is_aggregate<cuda::std::array<T, 4>>::value, "");
+  static_assert(cuda::std::is_aggregate<cuda::std::array<T, 0>>::value);
+  static_assert(cuda::std::is_aggregate<cuda::std::array<T, 1>>::value);
+  static_assert(cuda::std::is_aggregate<cuda::std::array<T, 2>>::value);
+  static_assert(cuda::std::is_aggregate<cuda::std::array<T, 3>>::value);
+  static_assert(cuda::std::is_aggregate<cuda::std::array<T, 4>>::value);
 }
 
 struct Empty

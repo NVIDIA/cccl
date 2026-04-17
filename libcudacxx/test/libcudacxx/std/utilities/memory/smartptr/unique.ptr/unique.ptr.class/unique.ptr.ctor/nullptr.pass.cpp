@@ -36,8 +36,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
   {
     using U1 = cuda::std::unique_ptr<VT>;
     using U2 = cuda::std::unique_ptr<VT, Deleter<VT>>;
-    static_assert(cuda::std::is_nothrow_constructible<U1, decltype(nullptr)>::value, "");
-    static_assert(cuda::std::is_nothrow_constructible<U2, decltype(nullptr)>::value, "");
+    static_assert(cuda::std::is_nothrow_constructible<U1, decltype(nullptr)>::value);
+    static_assert(cuda::std::is_nothrow_constructible<U2, decltype(nullptr)>::value);
   }
   {
     cuda::std::unique_ptr<VT> p(nullptr);
@@ -61,7 +61,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
   { // the constructor does not participate in overload resolution when
     // the deleter is a pointer type
     using U = cuda::std::unique_ptr<VT, void (*)(void*)>;
-    static_assert(!cuda::std::is_constructible<U, decltype(nullptr)>::value, "");
+    static_assert(!cuda::std::is_constructible<U, decltype(nullptr)>::value);
   }
   { // the constructor does not participate in overload resolution when
     // the deleter is not default constructible
@@ -69,9 +69,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
     using U1  = cuda::std::unique_ptr<VT, NonDefaultDeleter>;
     using U2  = cuda::std::unique_ptr<VT, Del&>;
     using U3  = cuda::std::unique_ptr<VT, Del const&>;
-    static_assert(!cuda::std::is_constructible<U1, decltype(nullptr)>::value, "");
-    static_assert(!cuda::std::is_constructible<U2, decltype(nullptr)>::value, "");
-    static_assert(!cuda::std::is_constructible<U3, decltype(nullptr)>::value, "");
+    static_assert(!cuda::std::is_constructible<U1, decltype(nullptr)>::value);
+    static_assert(!cuda::std::is_constructible<U2, decltype(nullptr)>::value);
+    static_assert(!cuda::std::is_constructible<U3, decltype(nullptr)>::value);
   }
 }
 

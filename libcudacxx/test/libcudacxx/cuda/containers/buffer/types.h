@@ -85,8 +85,8 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
-static_assert(cuda::std::forward_iterator<forward_iterator<int*>>, "");
-static_assert(!thrust::is_indirectly_trivially_relocatable_to<forward_iterator<int*>, int*>::value, "");
+static_assert(cuda::std::forward_iterator<forward_iterator<int*>>);
+static_assert(!thrust::is_indirectly_trivially_relocatable_to<forward_iterator<int*>, int*>::value);
 
 template <class It>
 class sentinel_wrapper

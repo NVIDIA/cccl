@@ -102,14 +102,14 @@ int main(int, char**)
     using T1 = cuda::std::tuple<A>;
     constexpr T0 t0(2);
     constexpr T1 t1 = t0;
-    static_assert(cuda::std::get<0>(t1) == 2, "");
+    static_assert(cuda::std::get<0>(t1) == 2);
   }
   {
     using T0 = cuda::std::tuple<int>;
     using T1 = cuda::std::tuple<C>;
     constexpr T0 t0(2);
     constexpr T1 t1{t0};
-    static_assert(cuda::std::get<0>(t1) == C(2), "");
+    static_assert(cuda::std::get<0>(t1) == C(2));
   }
   {
     using T0 = cuda::std::tuple<long, char>;
@@ -159,7 +159,7 @@ int main(int, char**)
     assert(cuda::std::get<0>(t2).value == 42);
   }
   {
-    static_assert(cuda::std::is_convertible<ExplicitTwo&&, ExplicitTwo>::value, "");
+    static_assert(cuda::std::is_convertible<ExplicitTwo&&, ExplicitTwo>::value);
     static_assert(
       cuda::std::is_convertible<cuda::std::tuple<ExplicitTwo&&>&&, const cuda::std::tuple<ExplicitTwo>&>::value, "");
 

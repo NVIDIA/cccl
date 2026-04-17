@@ -25,7 +25,7 @@ using cuda::std::optional;
 template <class T>
 __host__ __device__ constexpr void test()
 {
-  static_assert(cuda::std::is_nothrow_constructible<optional<T>, nullopt_t&>::value, "");
+  static_assert(cuda::std::is_nothrow_constructible<optional<T>, nullopt_t&>::value);
   static_assert(
     cuda::std::is_trivially_destructible<optional<T>>::value == cuda::std::is_trivially_destructible<T>::value, "");
   {
@@ -64,7 +64,7 @@ __global__ void test_global_visibility()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }
