@@ -117,6 +117,11 @@
 #  define _CCCL_BUILTIN_EXPECT(_EXPR, _VAL) (_EXPR)
 #endif // ^^^ no __builtin_expect ^^^
 
+#if _CCCL_TILE_COMPILATION() // nvbug6100927:  __builtin_expect is unsupported in tile mode
+#  undef _CCCL_BUILTIN_EXPECT
+#  define _CCCL_BUILTIN_EXPECT(_EXPR, _VAL) (_EXPR)
+#endif // _CCCL_TILE_COMPILATION()
+
 #if _CCCL_CHECK_BUILTIN(builtin_huge_valf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_HUGE_VALF() __builtin_huge_valf()
 #endif // _CCCL_CHECK_BUILTIN(builtin_huge_valf)
