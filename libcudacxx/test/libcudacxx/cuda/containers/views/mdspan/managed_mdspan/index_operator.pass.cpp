@@ -143,7 +143,7 @@ TEST_FUNC constexpr void iterate(MDS mds, Args... args)
   }
 }
 
-__managed__ cuda::std::array<int, 1024> iteration_data{};
+_CCCL_DEVICE __managed__ cuda::std::array<int, 1024> iteration_data{};
 
 template <class Mapping>
 TEST_FUNC constexpr void test_iteration(Mapping m)
