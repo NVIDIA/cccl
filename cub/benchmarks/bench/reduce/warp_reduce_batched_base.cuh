@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
@@ -14,11 +14,6 @@
 #include <device_side_benchmark.cuh>
 #include <nvbench_helper.cuh>
 
-/**
- * @brief Benchmark operator for batched warp reduction
- *
- * Performs Batches reductions of LogicalWarpThreads elements each using WarpReduceBatched
- */
 template <int LogicalWarpThreads>
 struct benchmark_batched_op_t
 {
@@ -42,11 +37,6 @@ struct benchmark_batched_op_t
   }
 };
 
-/**
- * @brief Benchmark operator for sequential warp reductions (baseline)
- *
- * Performs Batches sequential calls to WarpReduce
- */
 template <int LogicalWarpThreads>
 struct benchmark_sequential_op_t
 {
@@ -97,9 +87,6 @@ launch_bounds_mode_t parse_launch_bounds_mode(nvbench::state& state)
 using batches_list              = nvbench::enum_type_list<8, 15, 16, 32, 64>;
 using logical_warp_threads_list = nvbench::enum_type_list<8, 16, 32>;
 
-/**
- * @brief Run batched warp reduction benchmark
- */
 template <typename T, nvbench::int32_t Batches, nvbench::int32_t LogicalWarpThreads>
 void warp_reduce_batched(nvbench::state& state,
                          nvbench::type_list<T, nvbench::enum_type<Batches>, nvbench::enum_type<LogicalWarpThreads>>)
@@ -140,9 +127,6 @@ NVBENCH_BENCH_TYPES(warp_reduce_batched, NVBENCH_TYPE_AXES(value_types, batches_
   .set_type_axes_names({"T{ct}", "Batches", "LogicalWarpThreads"})
   .add_string_axis("LaunchBoundsMode", {"partial", "full"});
 
-/**
- * @brief Run sequential warp reduction benchmark (baseline)
- */
 template <typename T, nvbench::int32_t Batches, nvbench::int32_t LogicalWarpThreads>
 void warp_reduce_sequential(nvbench::state& state,
                             nvbench::type_list<T, nvbench::enum_type<Batches>, nvbench::enum_type<LogicalWarpThreads>>)
@@ -179,9 +163,6 @@ NVBENCH_BENCH_TYPES(warp_reduce_sequential, NVBENCH_TYPE_AXES(value_types, batch
   .set_type_axes_names({"T{ct}", "Batches", "LogicalWarpThreads"})
   .add_string_axis("LaunchBoundsMode", {"partial", "full"});
 
-/**
- * @brief Run batched warp reduction latency benchmark
- */
 template <typename T, nvbench::int32_t Batches, nvbench::int32_t LogicalWarpThreads>
 void warp_reduce_batched_latency(
   nvbench::state& state, nvbench::type_list<T, nvbench::enum_type<Batches>, nvbench::enum_type<LogicalWarpThreads>>)
@@ -210,9 +191,6 @@ NVBENCH_BENCH_TYPES(warp_reduce_batched_latency,
   .set_name("base-latency")
   .set_type_axes_names({"T{ct}", "Batches", "LogicalWarpThreads"});
 
-/**
- * @brief Run sequential warp reduction latency benchmark (baseline)
- */
 template <typename T, nvbench::int32_t Batches, nvbench::int32_t LogicalWarpThreads>
 void warp_reduce_sequential_latency(
   nvbench::state& state, nvbench::type_list<T, nvbench::enum_type<Batches>, nvbench::enum_type<LogicalWarpThreads>>)
