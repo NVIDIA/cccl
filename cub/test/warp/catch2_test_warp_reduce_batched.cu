@@ -195,6 +195,9 @@ warp_reduce_batched_cond_part_kernel(input_2d_mdspan_t<T> input_md, cuda::std::s
   }
 }
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4244) // numeric(33): C: '=': conversion from 'int' to '_Ty', possible loss of data
+
 template <typename T, typename ReductionOp>
 void compute_host_reference(input_2d_mdspan_t<const T> input_md, cuda::std::span<T> output, ReductionOp op)
 {
@@ -210,6 +213,8 @@ void compute_host_reference(input_2d_mdspan_t<const T> input_md, cuda::std::span
     output[batch_idx] = static_cast<T>(std::accumulate(iter, iter + batch_size, identity, op));
   }
 }
+
+_CCCL_DIAG_POP
 
 template <typename T, int N>
 void gen_bounded_input(c2h::seed_t seed, c2h::device_vector<T>& d_input)
