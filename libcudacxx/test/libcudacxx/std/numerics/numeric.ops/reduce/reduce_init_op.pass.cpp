@@ -65,6 +65,13 @@ TEST_FUNC constexpr bool test()
   test<random_access_iterator<const int*>>();
   test<const int*>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   //  Make sure the math is done using the correct type
   {
     auto v       = {1, 2, 3, 4, 5, 6, 7, 8};

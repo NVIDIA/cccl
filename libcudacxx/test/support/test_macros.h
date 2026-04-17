@@ -16,6 +16,7 @@
 // Use the CCCL compiler detection
 #define TEST_COMPILER(...)      _CCCL_COMPILER(__VA_ARGS__)
 #define TEST_CUDA_COMPILER(...) _CCCL_CUDA_COMPILER(__VA_ARGS__)
+#define TEST_CUDA_COMPILATION() _CCCL_CUDA_COMPILATION()
 
 // Use the CCCL diagnostic suppression
 #define TEST_DIAG_SUPPRESS_CLANG(...) _CCCL_DIAG_SUPPRESS_CLANG(__VA_ARGS__)
