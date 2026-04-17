@@ -89,7 +89,7 @@ struct warp_reduce_batched_wspro
     // For 6 or more batches, WSPRO gives significantly better throughput, while latency is onlys lightly better for
     // REDUX. For subwarps both throughput and latency are worse with REDUX independent of the number of batches. This
     // might be a codegen issue.
-    constexpr bool redux_performs_better = is_arch_warp && Batches < 6;
+    constexpr bool redux_performs_better = is_arch_warp && Batches <= 8;
     if constexpr (can_use_redux && redux_performs_better)
     {
       NV_IF_TARGET(NV_PROVIDES_SM_80, (ReduceRedux<ToBlocked>(inputs, outputs, reduction_op); return;))
