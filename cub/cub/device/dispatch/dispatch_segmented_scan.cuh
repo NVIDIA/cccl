@@ -252,16 +252,20 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       switch (selector)
       {
         case worker::block: {
-          const auto bw = make_block_segmented_scan_policy_wrapper(active_policy.block);
-          return {bw.WorkersPerBlock(), bw.BlockThreads()};
+          const auto bw = active_policy.block;
+          return {1, bw.block_threads};
         }
         case worker::warp: {
-          const auto ww = make_warp_segmented_scan_policy_wrapper(active_policy.warp);
-          return {ww.WorkersPerBlock(), ww.BlockThreads()};
+          const auto ww = active_policy.warp;
+          const auto bt = ww.block_threads;
+          _CCCL_ASSERT(0 == bt % detail::warp_threads,
+                       "Warp worker requires block size to be a multiple of native warp-size");
+          return {int(bt >> cub::detail::log2_warp_threads), ww.block_threads};
         }
         case worker::thread: {
-          const auto tw = make_thread_segmented_scan_policy_wrapper(active_policy.thread);
-          return {tw.WorkersPerBlock(), tw.BlockThreads()};
+          const auto tw = active_policy.thread;
+          const auto bt = tw.block_threads;
+          return {bt, bt};
         }
         default:
           _CCCL_UNREACHABLE();
