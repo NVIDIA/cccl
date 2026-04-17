@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 // The CI "Apple back-deployment with assertions enabled" needs a higher value
 // CONSTEXPR_STEPS: 12712420
 

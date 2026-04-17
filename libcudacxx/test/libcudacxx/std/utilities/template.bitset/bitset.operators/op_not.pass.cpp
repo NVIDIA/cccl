@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 // bitset<N> operator^(const bitset<N>& lhs, const bitset<N>& rhs); // constexpr since C++23
 
 #include <cuda/std/bitset>
