@@ -85,6 +85,7 @@ template <class _Full>
 template <class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API _Tp __byteswap_impl_device(_Tp __val) noexcept
 {
+#  if !_CCCL_TILE_COMPILATION() // nvbug6085423: error: "call to non-tile function not supported!"
   if constexpr (sizeof(_Tp) == sizeof(uint16_t))
   {
     return static_cast<uint16_t>(::__byte_perm(static_cast<uint32_t>(__val), 0u, 0x3201u));
@@ -100,6 +101,7 @@ template <class _Tp>
     return (static_cast<uint64_t>(__hi) << 32) | static_cast<uint64_t>(__lo);
   }
   else
+#  endif // !_CCCL_TILE_COMPILATION()
   {
     return ::cuda::std::__byteswap_impl_recursive(__val);
   }
