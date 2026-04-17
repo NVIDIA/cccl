@@ -334,8 +334,7 @@ struct int_pair
 
 // N=M configurations (best performance)
 using equal_nm_configs =
-  // c2h::type_list<int_pair<32, 32>>;
-  c2h::type_list<int_pair<2, 2>, int_pair<4, 4>, int_pair<8, 8>, int_pair<16, 16>, int_pair<32, 32>>;
+  c2h::type_list<int_pair<1, 1>, int_pair<2, 2>, int_pair<4, 4>, int_pair<8, 8>, int_pair<16, 16>, int_pair<32, 32>>;
 
 // N!=M configurations
 using unequal_nm_configs = c2h::type_list<
@@ -352,7 +351,8 @@ using unequal_nm_configs = c2h::type_list<
   int_pair<9, 4>,
   int_pair<10, 4>,
   int_pair<1, 2>,
-  int_pair<7, 2>>;
+  int_pair<7, 2>,
+  int_pair<2, 1>>;
 
 // Sub-warp configurations (LogicalWarpThreads < 32, at least 2 logical warps per physical warp)
 using sub_warp_equal_configs = c2h::type_list<int_pair<2, 2>, int_pair<4, 4>, int_pair<8, 8>, int_pair<16, 16>>;

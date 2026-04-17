@@ -92,10 +92,9 @@ template <typename T, int Batches, int LogicalWarpThreads = detail::warp_threads
 class WarpReduceBatched
 {
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
-  // TODO: Should we allow LogicalWarpThreads = 1? (in which case everything is just no-op/copy)
-  static_assert(LogicalWarpThreads > 1 && LogicalWarpThreads <= detail::warp_threads,
-                "LogicalWarpThreads must be in the range [2, 32]");
-  static_assert(Batches >= 1, "Batches must be >= 1");
+  static_assert(LogicalWarpThreads > 0 && LogicalWarpThreads <= detail::warp_threads,
+                "LogicalWarpThreads must be in the range [1, 32]");
+  static_assert(Batches > 0, "Batches must be > 0");
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
@@ -107,6 +106,23 @@ public:
 
 private:
   static constexpr auto max_out_per_thread = ::cuda::ceil_div(Batches, LogicalWarpThreads);
+
+  template <class InputT, class OutputT, class ReductionOp>
+  struct constraints
+  {
+    static_assert(detail::is_fixed_size_random_access_range_v<InputT>,
+                  "InputT must support the subscript operator[] and have a compile-time size");
+    static_assert(detail::is_fixed_size_random_access_range_v<OutputT>,
+                  "OutputT must support the subscript operator[] and have a compile-time size");
+    static_assert(detail::static_size_v<InputT> == Batches, "Input size must match Batches");
+    static_assert(detail::static_size_v<OutputT> == max_out_per_thread,
+                  "Output size must match ceil_div(Batches, LogicalWarpThreads)");
+    // These restrictions could be relaxed to allow type-conversions
+    static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputT>, T>, "Input element type must match T");
+    static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<OutputT>, T>, "Output element type must match T");
+    static_assert(detail::has_binary_call_operator<ReductionOp, T>::value,
+                  "ReductionOp must have the binary call operator: operator(T, T)");
+  };
 
   //! Shared memory storage layout type for WarpReduceBatched
   using _TempStorage = typename InternalWarpReduceBatched::TempStorage;
@@ -128,7 +144,7 @@ public:
   //! @endrst
   //!
   //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
-  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceBatched(TempStorage& temp_storage)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpReduceBatched(TempStorage& temp_storage)
       : temp_storage{temp_storage.Alias()}
   {}
 
@@ -174,13 +190,8 @@ public:
   //! @return
   //!   The reduction of the input values of the batch corresponding to the logical lane.
   template <typename InputT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputT& inputs, ReductionOp reduction_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(const InputT& inputs, ReductionOp reduction_op)
   {
-    static_assert(detail::is_fixed_size_random_access_range_v<InputT>,
-                  "InputT must support the subscript operator[] and have a compile-time size");
-    static_assert(detail::static_size_v<InputT> == Batches, "Input size must match Batches");
-    // These restrictions could be relaxed to allow type-conversions
-    static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputT>, T>, "Input element type must match T");
     static_assert(max_out_per_thread == 1,
                   "For Batches > LogicalWarpThreads, use ReduceToStriped() or ReduceToBlocked()");
 
@@ -232,19 +243,10 @@ public:
   //! @param[in] reduction_op
   //!   Binary reduction operator
   template <typename InputT, typename OutputT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ReduceToStriped(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ReduceToStriped(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
   {
-    static_assert(detail::is_fixed_size_random_access_range_v<InputT>,
-                  "InputT must support the subscript operator[] and have a compile-time size");
-    static_assert(detail::is_fixed_size_random_access_range_v<OutputT>,
-                  "OutputT must support the subscript operator[] and have a compile-time size");
-    static_assert(detail::static_size_v<InputT> == Batches, "Input size must match Batches");
-    static_assert(detail::static_size_v<OutputT> == max_out_per_thread,
-                  "Output size must match ceil_div(Batches, LogicalWarpThreads)");
-    // These restrictions could be relaxed to allow type-conversions
-    static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputT>, T>, "Input element type must match T");
-    static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<OutputT>, T>, "Output element type must match T");
-
+    (void) constraints<InputT, OutputT, ReductionOp>{};
     InternalWarpReduceBatched{temp_storage}.template Reduce</* ToBlocked = */ false>(inputs, outputs, reduction_op);
   }
 
@@ -291,19 +293,10 @@ public:
   //! @param[in] reduction_op
   //!   Binary reduction operator
   template <typename InputT, typename OutputT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ReduceToBlocked(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  ReduceToBlocked(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
   {
-    static_assert(detail::is_fixed_size_random_access_range_v<InputT>,
-                  "InputT must support the subscript operator[] and have a compile-time size");
-    static_assert(detail::is_fixed_size_random_access_range_v<OutputT>,
-                  "OutputT must support the subscript operator[] and have a compile-time size");
-    static_assert(detail::static_size_v<InputT> == Batches, "Input size must match Batches");
-    static_assert(detail::static_size_v<OutputT> == max_out_per_thread,
-                  "Output size must match ceil_div(Batches, LogicalWarpThreads)");
-    // These restrictions could be relaxed to allow type-conversions
-    static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputT>, T>, "Input element type must match T");
-    static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<OutputT>, T>, "Output element type must match T");
-
+    (void) constraints<InputT, OutputT, ReductionOp>{};
     InternalWarpReduceBatched{temp_storage}.template Reduce</* ToBlocked = */ true>(inputs, outputs, reduction_op);
   }
 
@@ -340,7 +333,7 @@ public:
   //! @return
   //!   The sum of the input values of the batch corresponding to the logical lane.
   template <typename InputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(const InputT& inputs)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(const InputT& inputs)
   {
     return Reduce(inputs, ::cuda::std::plus<>{});
   }
@@ -379,7 +372,7 @@ public:
   //!   Statically-sized array-like container where thread i stores sums sequentially:
   //!   ``outputs[0]`` = sum of array i, ``outputs[1]`` = sum of array (i + LogicalWarpThreads), etc.
   template <typename InputT, typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SumToStriped(const InputT& inputs, OutputT& outputs)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SumToStriped(const InputT& inputs, OutputT& outputs)
   {
     ReduceToStriped(inputs, outputs, ::cuda::std::plus<>{});
   }
@@ -418,7 +411,7 @@ public:
   //!   Statically-sized array-like container where thread i stores sums sequentially:
   //!   ``outputs[0]`` = sum of array i, ``outputs[1]`` = sum of array (i + LogicalWarpThreads), etc.
   template <typename InputT, typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SumToBlocked(const InputT& inputs, OutputT& outputs)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void SumToBlocked(const InputT& inputs, OutputT& outputs)
   {
     ReduceToBlocked(inputs, outputs, ::cuda::std::plus<>{});
   }

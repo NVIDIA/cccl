@@ -19,15 +19,16 @@
 
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
+// For REDUX helper
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__utility/static_for.h>
-#include <cuda/bit>
-#include <cuda/cmath>
+#include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/array>
-#include <cuda/warp>
 
 CUB_NAMESPACE_BEGIN
 
@@ -48,9 +49,9 @@ template <typename T, int Batches, int LogicalWarpThreads, bool SyncPhysicalWarp
 struct warp_reduce_batched_wspro
 {
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
-  static_assert(LogicalWarpThreads > 1 && LogicalWarpThreads <= warp_threads,
-                "LogicalWarpThreads must be in the range [2, 32]");
-  static_assert(Batches >= 1, "Batches must be >= 1");
+  static_assert(LogicalWarpThreads > 0 && LogicalWarpThreads <= warp_threads,
+                "LogicalWarpThreads must be in the range [1, 32]");
+  static_assert(Batches > 0, "Batches must be > 0");
 
   //---------------------------------------------------------------------
   // Constants and type definitions
@@ -70,7 +71,7 @@ struct warp_reduce_batched_wspro
 
   ::cuda::std::uint32_t member_mask;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE warp_reduce_batched_wspro(TempStorage& /*temp_storage*/)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE warp_reduce_batched_wspro(TempStorage& /*temp_storage*/)
       : physical_lane_id(static_cast<int>(::cuda::ptx::get_sreg_laneid()))
       , logical_lane_id(is_arch_warp ? physical_lane_id : physical_lane_id % LogicalWarpThreads)
       , logical_warp_id(is_arch_warp ? 0 : (physical_lane_id / LogicalWarpThreads))
@@ -78,7 +79,7 @@ struct warp_reduce_batched_wspro
   {}
 
   template <bool ToBlocked, typename InputT, typename OutputT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Reduce(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void Reduce(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
   {
     // Dispatch to more efficient intrinsics when applicable
     constexpr bool can_use_redux =
@@ -102,13 +103,15 @@ struct warp_reduce_batched_wspro
       intermediate_outputs[out_idx] = RecurseReductionTree<ToBlocked, first_idx>(inputs, reduction_op);
     });
 
-    ::cuda::static_for<0, max_out_per_thread>([&](auto out_idx) {
-      outputs[out_idx()] = intermediate_outputs[out_idx];
-    });
+#pragma unroll
+    for (int i = 0; i < max_out_per_thread; ++i)
+    {
+      outputs[i] = intermediate_outputs[i];
+    }
   }
 
   template <bool ToBlocked, typename InputT, typename OutputT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ReduceRedux(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void ReduceRedux(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
   {
     // Needed in case of outputs aliasing inputs
     ::cuda::std::array<T, max_out_per_thread> intermediate_outputs;
@@ -131,7 +134,7 @@ struct warp_reduce_batched_wspro
   }
 
   template <bool ToBlocked, int BaseIdxStriped, int PrevStride = LogicalWarpThreads, typename InputT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T RecurseReductionTree(const InputT& inputs, ReductionOp reduction_op)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE T RecurseReductionTree(const InputT& inputs, ReductionOp reduction_op)
   {
     // "Transpose" index
     constexpr auto base_idx_blocked =
@@ -151,7 +154,7 @@ struct warp_reduce_batched_wspro
       // Recursion base case
       return inputs[base_idx];
     }
-    // Explicit "else" branch needed to avoid compiler error on "% 0".
+    // Explicit "else" branch needed to avoid compiler error on "% 0" and improve compile time.
     else
     {
       constexpr auto stride             = PrevStride / 2;
