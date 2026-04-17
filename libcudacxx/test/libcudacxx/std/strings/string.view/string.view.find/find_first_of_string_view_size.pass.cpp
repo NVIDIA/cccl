@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: indirect call is unsupported in tile code
+
 // <cuda/std/string_view>
 
 // size_type find_first_of(const basic_string_view& str, size_type pos = 0) const noexcept;
