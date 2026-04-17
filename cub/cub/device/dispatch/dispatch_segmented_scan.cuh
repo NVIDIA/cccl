@@ -108,10 +108,10 @@ struct device_segmented_scan_kernel_source
       AccumT,
       EnforceInclusive == ForceInclusive::Yes>);
 
-  CUB_RUNTIME_FUNCTION static constexpr size_t AccumSize()
-  {
-    return sizeof(AccumT);
-  }
+  // CUB_RUNTIME_FUNCTION static constexpr size_t AccumSize()
+  // {
+  //   return sizeof(AccumT);
+  // }
 };
 
 // select the accumulator type using an overload set, so __accumulator_t is not instantiated when an overriding
@@ -258,10 +258,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       // fits in int32_t by construction
       const auto segment_count = static_cast<OffsetT>(num_segments_per_invocation);
 
+      cudaError_t doit_error = cudaSuccess;
       switch (worker_choice)
       {
         case worker::block:
-          launcher.doit(
+          doit_error = launcher.doit(
             kernel_source.segmented_scan_kernel(),
             d_in,
             d_out,
@@ -274,7 +275,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
             num_segments_per_worker);
           break;
         case worker::warp:
-          launcher.doit(
+          doit_error = launcher.doit(
             kernel_source.warp_segmented_scan_kernel(),
             d_in,
             d_out,
@@ -287,7 +288,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
             num_segments_per_worker);
           break;
         case worker::thread:
-          launcher.doit(
+          doit_error = launcher.doit(
             kernel_source.thread_segmented_scan_kernel(),
             d_in,
             d_out,
@@ -301,6 +302,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
           break;
         default:
           _CCCL_UNREACHABLE();
+      }
+
+      if (cudaSuccess != doit_error)
+      {
+        return doit_error;
       }
 
       cudaError_t error = CubDebug(cudaPeekAtLastError());
