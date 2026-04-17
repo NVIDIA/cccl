@@ -20,8 +20,8 @@ struct View : cuda::std::ranges::view_base
 {
   int i                     = 42;
   constexpr explicit View() = default;
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 template <>
@@ -29,8 +29,8 @@ struct View<false> : cuda::std::ranges::view_base
 {
   int i  = 42;
   View() = delete;
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 template <bool DefaultInitializable>
@@ -38,14 +38,14 @@ struct Pred
 {
   int i                     = 42;
   constexpr explicit Pred() = default;
-  __host__ __device__ bool operator()(int) const;
+  TEST_FUNC bool operator()(int) const;
 };
 template <>
 struct Pred<false>
 {
   int i  = 42;
   Pred() = delete;
-  __host__ __device__ bool operator()(int) const;
+  TEST_FUNC bool operator()(int) const;
 };
 
 // clang-format off
@@ -55,7 +55,7 @@ static_assert(!cuda::std::is_default_constructible_v<cuda::std::ranges::drop_whi
 static_assert(!cuda::std::is_default_constructible_v<cuda::std::ranges::drop_while_view<View<false>, Pred<false>>>);
 // clang-format on
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::std::ranges::drop_while_view<View<true>, Pred<true>> dwv = {};

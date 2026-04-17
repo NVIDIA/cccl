@@ -17,19 +17,19 @@
 
 struct NonBorrowed : cuda::std::ranges::view_base
 {
-  __host__ __device__ int* begin();
-  __host__ __device__ int* end();
+  TEST_FUNC int* begin();
+  TEST_FUNC int* end();
 };
 
 struct Borrowed : cuda::std::ranges::view_base
 {
-  __host__ __device__ int* begin();
-  __host__ __device__ int* end();
+  TEST_FUNC int* begin();
+  TEST_FUNC int* end();
 };
 
 struct Pred
 {
-  __host__ __device__ bool operator()(int) const;
+  TEST_FUNC bool operator()(int) const;
 };
 
 template <>

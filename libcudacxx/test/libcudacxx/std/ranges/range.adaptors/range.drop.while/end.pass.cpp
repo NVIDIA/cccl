@@ -19,8 +19,8 @@
 
 struct View : cuda::std::ranges::view_base
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 // Test that end is not const
@@ -29,7 +29,7 @@ _CCCL_CONCEPT HasEnd = _CCCL_REQUIRES_EXPR((View), View v)((v.end()));
 
 struct Pred
 {
-  __host__ __device__ constexpr bool operator()(int i) const
+  TEST_FUNC constexpr bool operator()(int i) const
   {
     return i < 3;
   }
@@ -38,7 +38,7 @@ struct Pred
 static_assert(HasEnd<cuda::std::ranges::drop_while_view<View, Pred>>);
 static_assert(!HasEnd<const cuda::std::ranges::drop_while_view<View, Pred>>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // return iterator
   {
