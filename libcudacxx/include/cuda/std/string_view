@@ -290,7 +290,9 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr size_type max_size() const noexcept
   {
-    return numeric_limits<size_type>::max() / sizeof(value_type);
+    // This should be numeric_limits<size_type>::max() / sizeof(value_type), but older gcc + nvcc combinations have some
+    // problems with that, so we do ~size_type{0} instead.
+    return (~size_type{0}) / sizeof(value_type);
   }
 
   [[nodiscard]] _CCCL_API constexpr bool empty() const noexcept

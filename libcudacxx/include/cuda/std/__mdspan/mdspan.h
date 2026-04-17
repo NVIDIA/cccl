@@ -28,6 +28,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__numeric/mul_overflow.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__mdspan/concepts.h>
@@ -447,7 +448,7 @@ public:
       for (size_t __r = 0; __r < extents_type::rank(); ++__r)
       {
         const auto __extent = static_cast<size_t>(mapping().extents().extent(__r));
-        if (__mdspan_detail::__mul_overflow(__prod, __extent, &__prod))
+        if (::cuda::mul_overflow(__prod, __extent, __prod))
         {
           return false;
         }
