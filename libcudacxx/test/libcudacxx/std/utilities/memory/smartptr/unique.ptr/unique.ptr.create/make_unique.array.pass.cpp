@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 #include <cuda/std/__memory_>
 #if defined(_LIBCUDACXX_HAS_STRING)
 #  include <cuda/std/string>

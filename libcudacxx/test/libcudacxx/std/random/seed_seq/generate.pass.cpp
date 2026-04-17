@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 #include <cuda/std/random>
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cstdint>
