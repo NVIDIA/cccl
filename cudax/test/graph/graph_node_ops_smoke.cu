@@ -461,7 +461,7 @@ C2H_TEST("graph make_if_node body executes when handle is non-zero", "[graph][co
   cudax::path_builder pb = cudax::start_path(g);
 
   // Default value 1 → body executes.
-  auto [cond_node, body_graph, handle] = cudax::make_if_node(pb, /*__default_val=*/1u);
+  auto [cond_node, body_graph, handle] = cudax::make_if_node(pb, /*__default_val=*/true);
 
   // Populate the body graph: assign 42 to val.
   {
@@ -486,7 +486,7 @@ C2H_TEST("graph make_if_node body is skipped when handle is zero", "[graph][cond
   cudax::path_builder pb = cudax::start_path(g);
 
   // Default value 0 → body is skipped.
-  auto [cond_node, body_graph, handle] = cudax::make_if_node(pb, /*__default_val=*/0u);
+  auto [cond_node, body_graph, handle] = cudax::make_if_node(pb, /*__default_val=*/false);
 
   {
     cudax::path_builder body_pb = cudax::start_path(body_graph);
