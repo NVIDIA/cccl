@@ -247,7 +247,7 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   thrust::tabulate(input.begin(), input.end(), impl::populate_bicyclic_monoid_input<unsigned int>{});
   c2h::device_vector<pair_t> output(input.size());
 
-  auto inclusive_scan_dispatch = [](auto&&... args) {
+  auto inclusive_scan_dispatch = [](auto&&... args) -> cudaError_t {
     return cub::detail::segmented_scan::dispatch<
       cub::ForceInclusive::No,
       pair_t,
@@ -425,7 +425,7 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
   using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp>;
 
   using d_init_t               = cub::detail::InputValue<value_t>;
-  auto exclusive_scan_dispatch = [](auto&&... args) {
+  auto exclusive_scan_dispatch = [](auto&&... args) -> cudaError_t {
     return cub::detail::segmented_scan::dispatch<
       cub::ForceInclusive::No,
       value_t,
@@ -534,7 +534,7 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
   thrust::tabulate(input.begin(), input.end(), init_op<value_t>{});
   c2h::device_vector<value_t> output(input.size());
 
-  auto inclusive_scan_dispatch = [](auto&&... args) {
+  auto inclusive_scan_dispatch = [](auto&&... args) -> cudaError_t {
     return cub::detail::segmented_scan::dispatch<
       cub::ForceInclusive::No,
       value_t,
@@ -656,7 +656,7 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
   using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp>;
 
   using d_init_t                    = cub::detail::InputValue<value_t>;
-  auto inclusive_init_scan_dispatch = [](auto&&... args) {
+  auto inclusive_init_scan_dispatch = [](auto&&... args) -> cudaError_t {
     return cub::detail::segmented_scan::dispatch<
       cub::ForceInclusive::Yes,
       value_t,
@@ -839,7 +839,7 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
       h_init_v);
   }
 
-  auto inclusive_scan_dispatch = [](auto&&... args) {
+  auto inclusive_scan_dispatch = [](auto&&... args) -> cudaError_t {
     return cub::detail::segmented_scan::dispatch<
       cub::ForceInclusive::No,
       value_t,
