@@ -107,17 +107,12 @@ struct device_segmented_scan_kernel_source
       InitValueT,
       AccumT,
       EnforceInclusive == ForceInclusive::Yes>);
-
-  // CUB_RUNTIME_FUNCTION static constexpr size_t AccumSize()
-  // {
-  //   return sizeof(AccumT);
-  // }
 };
 
 // select the accumulator type using an overload set, so __accumulator_t is not instantiated when an overriding
 // accumulator type is present. This matches the reduce dispatch pattern and is needed by CCCL.C.
 template <typename ScanOpT, typename InitValueT, typename InputValueT>
-_CCCL_API auto select_accum_t(detail::use_default*) -> ::cuda::std::__accumulator_t<
+_CCCL_API auto select_accum_t(use_default*) -> ::cuda::std::__accumulator_t<
   ScanOpT,
   InputValueT,
   ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>, InputValueT, typename InitValueT::value_type>>;
@@ -126,12 +121,12 @@ template <typename ScanOpT,
           typename InitValueT,
           typename InputValueT,
           typename OverrideAccumT,
-          ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OverrideAccumT, detail::use_default>, int> = 0>
+          ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OverrideAccumT, use_default>, int> = 0>
 _CCCL_API auto select_accum_t(OverrideAccumT*) -> OverrideAccumT;
 
 template <
   ForceInclusive EnforceInclusive = ForceInclusive::No,
-  typename OverrideAccumT         = detail::use_default,
+  typename OverrideAccumT         = use_default,
   typename InputIteratorT,
   typename OutputIteratorT,
   typename BeginOffsetIteratorInputT,
@@ -139,12 +134,12 @@ template <
   typename BeginOffsetIteratorOutputT,
   typename ScanOpT,
   typename InitValueT,
-  typename AccumT  = decltype(select_accum_t<ScanOpT, InitValueT, cub::detail::it_value_t<InputIteratorT>>(
-    static_cast<OverrideAccumT*>(nullptr))),
-  typename OffsetT = typename detail::
+  typename AccumT =
+    decltype(select_accum_t<ScanOpT, InitValueT, it_value_t<InputIteratorT>>(static_cast<OverrideAccumT*>(nullptr))),
+  typename OffsetT =
     common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>,
-  typename PolicySelector = detail::segmented_scan::policy_selector_from_types<AccumT>,
-  typename KernelSource   = detail::segmented_scan::device_segmented_scan_kernel_source<
+  typename PolicySelector = policy_selector_from_types<AccumT>,
+  typename KernelSource   = device_segmented_scan_kernel_source<
       PolicySelector,
       InputIteratorT,
       OutputIteratorT,
@@ -183,7 +178,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   if (num_segments <= 0)
   {
-    return cudaSuccess;
+    return cudaErrorUnknown;
   }
 
   ::cuda::arch_id arch_id{};
@@ -192,7 +187,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  return detail::dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
+  return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
     const segmented_scan_policy active_policy = policy_getter();
 
     // Clamp to produce a positive integer
@@ -213,19 +208,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       {
         case worker::block: {
           const auto bw = active_policy.block;
-          return {1, bw.block_threads};
+          return {bw.WorkersPerBlock(), bw.BlockThreads()};
         }
         case worker::warp: {
           const auto ww = active_policy.warp;
-          const auto bt = ww.block_threads;
-          _CCCL_ASSERT(0 == bt % detail::warp_threads,
-                       "Warp worker requires block size to be a multiple of native warp-size");
-          return {int(bt >> cub::detail::log2_warp_threads), ww.block_threads};
+          return {ww.WorkersPerBlock(), ww.BlockThreads()};
         }
         case worker::thread: {
           const auto tw = active_policy.thread;
-          const auto bt = tw.block_threads;
-          return {bt, bt};
+          return {tw.WorkersPerBlock(), tw.BlockThreads()};
         }
         default:
           _CCCL_UNREACHABLE();
@@ -258,11 +249,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       // fits in int32_t by construction
       const auto segment_count = static_cast<OffsetT>(num_segments_per_invocation);
 
-      cudaError_t doit_error = cudaSuccess;
+      cudaError_t error = cudaSuccess;
       switch (worker_choice)
       {
         case worker::block:
-          doit_error = launcher.doit(
+          error = launcher.doit(
             kernel_source.segmented_scan_kernel(),
             d_in,
             d_out,
@@ -275,7 +266,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
             num_segments_per_worker);
           break;
         case worker::warp:
-          doit_error = launcher.doit(
+          error = launcher.doit(
             kernel_source.warp_segmented_scan_kernel(),
             d_in,
             d_out,
@@ -288,7 +279,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
             num_segments_per_worker);
           break;
         case worker::thread:
-          doit_error = launcher.doit(
+          error = launcher.doit(
             kernel_source.thread_segmented_scan_kernel(),
             d_in,
             d_out,
@@ -304,12 +295,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
           _CCCL_UNREACHABLE();
       }
 
-      if (cudaSuccess != doit_error)
+      if (cudaSuccess != error)
       {
-        return doit_error;
+        return error;
       }
 
-      cudaError_t error = CubDebug(cudaPeekAtLastError());
+      error = CubDebug(cudaPeekAtLastError());
       if (cudaSuccess != error)
       {
         return error;
@@ -322,7 +313,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         output_begin_offsets += num_segments_per_invocation;
       }
 
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         return error;

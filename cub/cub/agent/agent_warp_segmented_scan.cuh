@@ -94,12 +94,12 @@ struct agent_warp_segmented_scan
   static constexpr bool is_inclusive         = ForceInclusive || !has_init;
   static constexpr int block_threads         = AgentSegmentedScanPolicyT::block_threads;
   static constexpr int items_per_thread      = AgentSegmentedScanPolicyT::items_per_thread;
-  static constexpr int tile_items            = detail::warp_threads * items_per_thread;
+  static constexpr int tile_items            = warp_threads * items_per_thread;
   static constexpr int max_segments_per_warp = AgentSegmentedScanPolicyT::max_segments_per_warp;
 
-  static_assert(0 == block_threads % detail::warp_threads, "Block size must be a multiple of native warp size");
+  static_assert(0 == block_threads % warp_threads, "Block size must be a multiple of native warp size");
 
-  static constexpr auto warps_in_block = block_threads / detail::warp_threads;
+  static constexpr auto warps_in_block = block_threads / warp_threads;
 
   static constexpr bool multi_segment_enabled = (max_segments_per_warp > 1);
 
@@ -177,8 +177,8 @@ public:
       , d_out(d_out)
       , scan_op(scan_op)
       , initial_value(initial_value)
-      , warp_id(threadIdx.x >> detail::log2_warp_threads)
-      , lane_id(threadIdx.x & (detail::warp_threads - 1))
+      , warp_id(threadIdx.x >> log2_warp_threads)
+      , lane_id(threadIdx.x & (warp_threads - 1))
   {}
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_range(OffsetT inp_idx_begin, OffsetT inp_idx_end, OffsetT out_idx_begin)
@@ -284,7 +284,7 @@ public:
         temp_storage.fixed_size_mask[warp_id] = 1u;
       }
 
-      constexpr unsigned worker_thread_count = cub::detail::warp_threads;
+      constexpr unsigned worker_thread_count = warp_threads;
 
       n_segments        = ::cuda::std::min(n_segments, static_cast<int>(MaxNumSegments));
       unsigned n_chunks = ::cuda::ceil_div(n_segments, worker_thread_count);
@@ -539,11 +539,11 @@ private:
     }
     if constexpr (IsInclusive)
     {
-      detail::ThreadScanInclusive(items, items, scan_op, thread_aggregate, has_init || (lane_id != 0));
+      ThreadScanInclusive(items, items, scan_op, thread_aggregate, has_init || (lane_id != 0));
     }
     else
     {
-      detail::ThreadScanExclusive(items, items, scan_op, thread_aggregate, has_init || (lane_id != 0));
+      ThreadScanExclusive(items, items, scan_op, thread_aggregate, has_init || (lane_id != 0));
     }
   }
 

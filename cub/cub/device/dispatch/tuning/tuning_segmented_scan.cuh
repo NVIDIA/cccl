@@ -25,6 +25,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cmath/round_up.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -112,8 +113,8 @@ struct warp_segmented_scan_policy
 
   CUB_RUNTIME_FUNCTION constexpr int WorkersPerBlock() const
   {
-    _CCCL_ASSERT(0 == (int(block_threads) % cub::detail::warp_threads), "Block size must be divisible by warp size");
-    return (int(block_threads) >> cub::detail::log2_warp_threads);
+    _CCCL_ASSERT(0 == (block_threads % warp_threads), "Block size must be divisible by warp size");
+    return block_threads >> log2_warp_threads;
   }
 
   CUB_RUNTIME_FUNCTION constexpr int MaxSegmentsPerWarp() const
@@ -249,11 +250,11 @@ struct policy_selector
     constexpr int max_segments_per_warp    = 128;
 
     const int align          = accum_size;
-    const int augmented_size = ((accum_size + 1 + align - 1) / align) * align;
+    const int augmented_size = ::cuda::round_up(accum_size, align);
 
-    const auto block_scaled  = detail::scale_mem_bound(nominal_block_threads, nominal_items_per_thread, augmented_size);
-    const auto warp_scaled   = detail::scale_mem_bound(nominal_block_threads, nominal_items_per_thread, augmented_size);
-    const auto thread_scaled = detail::scale_mem_bound(nominal_block_threads, nominal_items_per_thread, accum_size);
+    const auto block_scaled  = scale_mem_bound(nominal_block_threads, nominal_items_per_thread, augmented_size);
+    const auto warp_scaled   = scale_mem_bound(nominal_block_threads, nominal_items_per_thread, augmented_size);
+    const auto thread_scaled = scale_mem_bound(nominal_block_threads, nominal_items_per_thread, accum_size);
 
     return segmented_scan_policy{
       block_segmented_scan_policy{
@@ -279,6 +280,9 @@ struct policy_selector
 static_assert(segmented_scan_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
+template <typename T>
+static constexpr int size_as_int_v = static_cast<int>(sizeof(T));
+
 // stateless version which can be passed to kernels
 template <typename AccumT>
 struct policy_selector_from_types
@@ -302,11 +306,11 @@ struct policy_selector_from_types
     using warp_compute_t  = agent_warp_segmented_scan_compute_t<AccumT, max_segments_per_warp>;
 
     constexpr auto block_scaled =
-      detail::scale_mem_bound(nominal_block_threads, nominal_items_per_thread, int{sizeof(block_compute_t)});
+      scale_mem_bound(nominal_block_threads, nominal_items_per_thread, size_as_int_v<block_compute_t>);
     constexpr auto warp_scaled =
-      detail::scale_mem_bound(nominal_block_threads, nominal_items_per_thread, int{sizeof(warp_compute_t)});
+      scale_mem_bound(nominal_block_threads, nominal_items_per_thread, size_as_int_v<warp_compute_t>);
     constexpr auto thread_scaled =
-      detail::scale_mem_bound(nominal_block_threads, nominal_items_per_thread, int{sizeof(AccumT)});
+      scale_mem_bound(nominal_block_threads, nominal_items_per_thread, size_as_int_v<AccumT>);
 
     return segmented_scan_policy{
       block_segmented_scan_policy{

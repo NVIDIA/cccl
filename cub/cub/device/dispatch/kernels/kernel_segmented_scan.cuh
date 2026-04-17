@@ -54,30 +54,20 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     _CCCL_GRID_CONSTANT const int num_segments_per_worker)
 {
   static constexpr auto policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block;
-  using policy_t               = agent_segmented_scan_policy_t<
-                  policy.block_threads,
-                  policy.items_per_thread,
-                  policy.load_algorithm,
-                  policy.load_modifier,
-                  policy.store_algorithm,
-                  policy.scan_algorithm,
-                  policy.max_segments_per_block>;
-
-  _CCCL_ASSERT(policy.block_threads == policy_t::block_threads, "Block policy threads mismatch");
-  _CCCL_ASSERT(policy.items_per_thread == policy_t::items_per_thread, "Block policy items-per-thread mismatch");
-  _CCCL_ASSERT(policy.max_segments_per_block == policy_t::max_segments_per_block, "Block policy max segments mismatch");
   static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
                 "The memory consistency model does not apply to texture accesses");
 
-  using agent_t = cub::detail::segmented_scan::agent_segmented_scan<
-    policy_t,
-    InputIteratorT,
-    OutputIteratorT,
-    OffsetT,
-    ScanOpT,
-    ActualInitValueT,
-    AccumT,
-    ForceInclusive>;
+  using policy_t = agent_segmented_scan_policy_t<
+    policy.block_threads,
+    policy.items_per_thread,
+    policy.load_algorithm,
+    policy.load_modifier,
+    policy.store_algorithm,
+    policy.scan_algorithm,
+    policy.max_segments_per_block>;
+
+  using agent_t =
+    agent_segmented_scan<policy_t, InputIteratorT, OutputIteratorT, OffsetT, ScanOpT, ActualInitValueT, AccumT, ForceInclusive>;
 
   __shared__ typename agent_t::TempStorage temp_storage;
 
@@ -159,21 +149,18 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warp.
     _CCCL_GRID_CONSTANT const int num_segments_per_worker)
 {
   static constexpr auto policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warp;
-  using policy_t               = agent_warp_segmented_scan_policy_t<
-                  policy.block_threads,
-                  policy.items_per_thread,
-                  policy.load_algorithm,
-                  policy.load_modifier,
-                  policy.store_algorithm,
-                  policy.max_segments_per_warp>;
-
-  _CCCL_ASSERT(policy.block_threads == policy_t::block_threads, "Warp policy threads mismatch");
-  _CCCL_ASSERT(policy.items_per_thread == policy_t::items_per_thread, "Warp policy items-per-thread mismatch");
-  _CCCL_ASSERT(policy.max_segments_per_warp == policy_t::max_segments_per_warp, "Warp policy max segments mismatch");
   static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
                 "The memory consistency model does not apply to texture accesses");
 
-  using agent_t = cub::detail::segmented_scan::agent_warp_segmented_scan<
+  using policy_t = agent_warp_segmented_scan_policy_t<
+    policy.block_threads,
+    policy.items_per_thread,
+    policy.load_algorithm,
+    policy.load_modifier,
+    policy.store_algorithm,
+    policy.max_segments_per_warp>;
+
+  using agent_t = agent_warp_segmented_scan<
     policy_t,
     InputIteratorT,
     OutputIteratorT,
@@ -191,8 +178,8 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warp.
   _CCCL_ASSERT(num_segments_per_worker <= policy.max_segments_per_warp,
                "Requested number of segments to be processed by warp exceeds compile-time maximum");
 
-  static constexpr unsigned int warps_in_block = int(policy.block_threads) >> cub::detail::log2_warp_threads;
-  const unsigned int warp_id                   = threadIdx.x >> cub::detail::log2_warp_threads;
+  static constexpr unsigned int warps_in_block = int(policy.block_threads) >> log2_warp_threads;
+  const unsigned int warp_id                   = threadIdx.x >> log2_warp_threads;
 
   const auto work_id = num_segments_per_worker * (blockIdx.x * warps_in_block) + warp_id;
 
@@ -278,15 +265,13 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).threa
     _CCCL_GRID_CONSTANT const int num_segments_per_worker)
 {
   static constexpr auto policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).thread;
-  using policy_t =
-    agent_thread_segmented_scan_policy_t<policy.block_threads, policy.items_per_thread, policy.load_modifier>;
-
-  _CCCL_ASSERT(policy.block_threads == policy_t::block_threads, "Thread policy threads mismatch");
-  _CCCL_ASSERT(policy.items_per_thread == policy_t::items_per_thread, "Thread policy items-per-thread mismatch");
   static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
                 "The memory consistency model does not apply to texture accesses");
 
-  using agent_t = cub::detail::segmented_scan::agent_thread_segmented_scan<
+  using policy_t =
+    agent_thread_segmented_scan_policy_t<policy.block_threads, policy.items_per_thread, policy.load_modifier>;
+
+  using agent_t = agent_thread_segmented_scan<
     policy_t,
     InputIteratorT,
     OutputIteratorT,

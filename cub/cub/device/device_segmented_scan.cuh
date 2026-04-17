@@ -185,10 +185,10 @@ struct DeviceSegmentedScan
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
 
-    using init_value_t = cub::detail::it_value_t<InputIteratorT>;
+    using init_value_t = detail::it_value_t<InputIteratorT>;
     init_value_t init_value{};
 
-    return cub::detail::segmented_scan::dispatch(
+    return detail::segmented_scan::dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
