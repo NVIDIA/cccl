@@ -114,46 +114,6 @@ struct device_segmented_scan_kernel_source
   }
 };
 
-// TODO(bgruber): remove in CCCL 4.0 when we drop the dispatchers
-template <typename PolicyHub>
-struct policy_selector_from_hub
-{
-  // called in constexpr context via dispatch_arch, so arch is unused
-  _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::arch_id /*arch*/) const -> segmented_scan_policy
-  {
-    using static_policy = typename PolicyHub::MaxPolicy::ActivePolicy;
-    using block_policy  = typename static_policy::block_segmented_scan_policy_t;
-    using warp_policy   = typename static_policy::warp_segmented_scan_policy_t;
-    using thread_policy = typename static_policy::thread_segmented_scan_policy_t;
-
-    constexpr auto block_load  = block_policy::load_algorithm;
-    constexpr auto block_store = block_policy::store_algorithm;
-    constexpr auto block_scan  = block_policy::scan_algorithm;
-
-    constexpr auto warp_load  = warp_policy::load_algorithm;
-    constexpr auto warp_store = warp_policy::store_algorithm;
-
-    return segmented_scan_policy{
-      block_segmented_scan_policy{
-        block_policy::block_threads,
-        block_policy::items_per_thread,
-        block_policy::load_modifier,
-        block_load,
-        block_store,
-        block_scan,
-        block_policy::max_segments_per_block},
-      warp_segmented_scan_policy{
-        warp_policy::block_threads,
-        warp_policy::items_per_thread,
-        warp_policy::load_modifier,
-        warp_load,
-        warp_store,
-        warp_policy::max_segments_per_warp},
-      thread_segmented_scan_policy{
-        thread_policy::block_threads, thread_policy::items_per_thread, thread_policy::load_modifier}};
-  }
-};
-
 // select the accumulator type using an overload set, so __accumulator_t is not instantiated when an overriding
 // accumulator type is present. This matches the reduce dispatch pattern and is needed by CCCL.C.
 template <typename ScanOpT, typename InitValueT, typename InputValueT>
