@@ -1,16 +1,20 @@
-CUDA Parallel Developer Overview
-################################
+``cuda.compute`` Developer Overview
+===================================
 
-This living document serves as a guide to the design of the internal structure of cuda.parallel.
-On a high level, cuda.parallel provides Python bindings to CUDA C++ parallel algorithms.
-These bindings combine CUDA Python compilation, CUDA C++ code generation, and CUDA C++ JIT compilation.
-The binding process might be a bit hard to understand because it involves many moving parts.
-To make it easier to understand, we'll start by covering a simplified version.
-As we discover issues caused by this simplification,
-we'll introduce workarounds along with references to the relevant source code.
+This document provides an overview of the internal structure of
+``cuda.compute``. At a high level, ``cuda.compute`` exposes CUDA C++
+parallel algorithms through a Python API. Internally, it combines
+Python-side operator compilation, CUDA C++ source generation, and
+runtime just-in-time (JIT) compilation and linking.
 
-Let's start with invoking a CUDA C++ kernel from Python.
-Our simplified kernel accepts one integer and prints it.
+We start with a simplified prototype. As we encounter the limitations
+of that simplified model, we introduce the additional mechanisms
+needed by the full implementation, referring to the relevant source
+code where useful.
+
+We begin with a minimal example that invokes a CUDA C++ kernel from
+Python. In this simplified prototype, the kernel takes a single
+integer argument and prints it.
 
 .. code-block:: c++
 
@@ -25,15 +29,14 @@ Our simplified kernel accepts one integer and prints it.
       cudaDeviceSynchronize();
     }
 
-
-We can compile this code using nvcc:
+We can compile this code using ``nvcc``:
 
 .. code-block:: bash
 
     nvcc -Xcompiler=-fPIC -x cu kernel.cu -shared -o libkernel.so
 
-
-We can now call a host function (``launcher``) from Python using ctypes:
+The resulting shared library exports the host function ``launcher``,
+which we can call from Python using ``ctypes``:
 
 .. code-block:: python
 
@@ -43,8 +46,7 @@ We can now call a host function (``launcher``) from Python using ctypes:
     bindings.launcher.argtypes = [ctypes.c_int]
     bindings.launcher(42)
 
-
-This Python program will print the following output:
+Running that Python code produces:
 
 .. code-block:: bash
 
@@ -53,13 +55,25 @@ This Python program will print the following output:
     thread 2: 42
     thread 3: 42
 
+The example above works because all of the behavior is fixed ahead of
+time in the CUDA C++ source. The kernel and the operation it performs
+are both known in advance.
 
-Let's say we are interested in computing parallel reduction.
-If we only needed to support reduction of floating point numbers using the sum operation,
-the code above would be enough.
-However, we want to support reduction of any type using any operation.
-Let's say, a user defines a Python function that we have to invoke on C++ end.
-We can compile Python function to PTX using numba.cuda as follows:
+A library primitive such as reduction is different. Its behavior
+depends not only on the input type, but also on the operator being
+applied. A practical Python API therefore cannot be limited to a
+single built-in case such as summing ``float`` values. It needs to
+support many data types and user-provided operators.
+
+That means the CUDA C++ side must be able to invoke device code that
+originates in Python. Reduction is a useful motivating example, but to
+keep the mechanics simple we will start with a much smaller building
+block: compiling a simple Python function and making it callable from
+CUDA C++. The same technique later applies to user-provided reduction
+operators.
+
+We can compile such a Python function to PTX using
+`Numba-CUDA <https://nvidia.github.io/numba-cuda/>`_ as follows:
 
 .. code-block:: python
 
@@ -85,9 +99,11 @@ That'd give us the following PTX code:
             ret;
     }
 
+At this point, the Python function has been compiled to device code,
+but the CUDA C++ side still needs a way to refer to it.
 
-On the C++ end, we could declare this function as extern one:
-
+Conceptually, we would like to treat the operator as an externally
+defined device function and call it from CUDA C++:
 
 .. code-block:: c++
 
@@ -104,15 +120,27 @@ On the C++ end, we could declare this function as extern one:
       cudaDeviceSynchronize();
     }
 
+This raises the next question: how do we combine device code produced
+from Python with CUDA C++ code that calls it?
 
-But how would we link the PTX code coming from Python with the CUDA C++ code?
-We can't expect presense of nvcc on the user's machine.
-That's one of the resons why we have to switch to using NVRTC compiler instead of nvcc.
+The difficulty is not just that the operator's implementation comes
+from Python. The CUDA C++ side must also declare and call that
+operator with the correct signature.
 
-NVRTC is a runtime compiler for CUDA C++.
-NVRTC provides a C++ function that takes a string with CUDA C++ code and returns a machine code.
-Let's change the launcher signature to accept a PTX string:
+In the code above, the operator has the fixed signature ``int
+op(int)``. A real API cannot assume that. The user might supply an
+operator on ``float``, ``complex``, or some user-defined type, and the
+generated CUDA C++ code has to match that interface exactly. In other
+words, the declaration of ``op`` and the CUDA C++ source that calls it
+depend on the user's types and operator signature.
 
+That means the CUDA C++ side must be generated and compiled at
+runtime. Using ``nvcc`` for that would make the API depend on an
+external compiler toolchain being available on every user machine.
+Instead, we use NVRTC, which is designed for runtime compilation of
+CUDA C++.
+
+Our Python code is now:
 
 .. code-block:: python
 
@@ -128,8 +156,9 @@ Let's change the launcher signature to accept a PTX string:
     bindings.launcher.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int]
     bindings.launcher(42, ptx.encode('utf-8'), len(ptx))
 
-
-The C++ signature of the launcher now would be:
+Correspondingly, the C++ launcher now accepts the operator PTX as an
+additional argument. Inside the launcher, the CUDA C++ kernel is now
+assembled as a source string and compiled with NVRTC:
 
 .. code-block:: c++
 
@@ -147,9 +176,8 @@ The C++ signature of the launcher now would be:
         }
       )XXX";
 
-
-We can compile the CUDA C++ code to PTX using NVRTC:
-
+Once that source string has been assembled, we compile it to PTX with
+NVRTC:
 
 .. code-block:: c++
 
@@ -175,9 +203,9 @@ We can compile the CUDA C++ code to PTX using NVRTC:
       nvrtcGetPTX(prog, ptx.get());
       nvrtcDestroyProgram(&prog);
 
-
-This gives us PTX code that we can link with the operator using nvJitLink:
-
+At this point, we have two PTX inputs: PTX for the generated CUDA C++
+kernel and PTX for the Python-defined operator. We can combine them
+using nvJitLink:
 
 .. code-block:: c++
 
@@ -197,13 +225,11 @@ This gives us PTX code that we can link with the operator using nvJitLink:
       nvJitLinkGetLinkedCubin(handle, cubin.get());
       nvJitLinkDestroy(&handle);
 
-
-Now we have linked codet that can be loaded as a CUDA library.
-As soon as it's loaded, we can find the kernel in it.
-As soon as we have the kernel, we can launch it:
+The result of linking is a cubin containing the generated kernel and
+the Python-defined operator. We can load that cubin as a CUDA
+library, retrieve the kernel from it, and launch it:
 
 .. code-block:: c++
-
 
       // Load cubin
       CUlibrary library;
@@ -217,7 +243,6 @@ As soon as we have the kernel, we can launch it:
       void *kernel_args[] = { &value };
       cuLaunchKernel((CUfunction)kernel, 1, 1, 1, 4, 1, 1, 0, 0, kernel_args, nullptr);
 
-
 Now the output of the Python program would be:
 
 .. code-block:: bash
@@ -227,27 +252,27 @@ Now the output of the Python program would be:
     thread 2 prints value 84
     thread 3 prints value 84
 
+This works, but it is still not optimal from a performance
+perspective. If the operator were compiled as part of the same CUDA
+C++ translation unit as the kernel, the compiler could inline it
+directly. In the PTX-linked version above, however, the generated
+cubin still contains a call to ``op`` instead of the operator body
+itself.
 
-This works, but it's not optimal.
-If you take a look at the resulting cubin, you'll see that it contains a function call.
-But if you'd compile this operator as part of the C++ translation unit, the function would be inlined.
-Apart from presense of function call protocol, linking PTX causes extensive use of local memory.
-Given millions of threads launched by parallel algorithms,
-this leads to significant memory trafic and suboptimal performance.
+To address this, we switch to a different intermediate representation.
+Instead of PTX, we use `LTO-IR
+<https://developer.nvidia.com/blog/cuda-12-0-compiler-support-for-runtime-lto-using-nvjitlink-library/>`_.
+LTO-IR preserves enough information for link-time optimization, which
+allows the operator to be inlined into the generated kernel.
 
-To fix this, we have to use different intermediate representation.
-So instead of PTX, we use `LTO-IR <https://developer.nvidia.com/blog/cuda-12-0-compiler-support-for-runtime-lto-using-nvjitlink-library/>`_.
-It allows us to avoid consts associated with separate compilation.
-
-As of the version 0.60, numba.cuda supports LTO-IR.
-It's sufficient to change our compilation line to:
+On the Python side, switching from PTX to LTO-IR requires only a small
+change:
 
 .. code-block:: python
 
-    ltoir, _ = numba.cuda.compile(op, sig=numba.int32(numba.int32), target='cuda', options={'link': True})
+    ltoir, _ = numba.cuda.compile(op, sig=numba.int32(numba.int32), output="ltoir")
 
-On the C++ end, it's sufficient to replace PTX with LTOIR:
-
+On the C++ side, we make the same switch from PTX to LTO-IR:
 
 .. code-block:: c++
 
@@ -269,18 +294,26 @@ On the C++ end, it's sufficient to replace PTX with LTOIR:
     nvJitLinkAddData(handle, NVJITLINK_INPUT_LTOIR, ltoir.get(), ltoir_size, name);
     nvJitLinkAddData(handle, NVJITLINK_INPUT_LTOIR, op_ltoir, op_ltoir_size, name);
 
+If you inspect the generated cubin now, you will no longer see a call
+to ``op``. Instead, the operator has been inlined into the kernel,
+which improves performance. That is the key benefit of switching from
+PTX to LTO-IR.
 
-If you take a look at the generated cubin now, you'll see a single shuffle instruction instead of a function call.
-In other words, LTO-IR allowed us to inline the operator and achieve better performance.
+At this point, we have a working prototype that can pass
+Python-defined operators into CUDA C++ kernels without sacrificing
+performance. The next problem is user-defined data types. So far, the
+examples have used built-in scalar types, but a practical API also
+needs to support types whose layout is only known on the Python side.
 
-Now we have a working prototype allowing us to pass Python functions to CUDA C++ kernels withour sacrifising performance.
-What remeains to be figured out is how we can support user-defined Python data types.
-Fortunately, we already have our kernel as a string.
-We can compose this string at runtime, adding the necessary type information.
+Fortunately, the kernel source is already being assembled as a string at
+runtime. That means we can also generate the type information needed by
+the CUDA C++ side.
 
-As an example, let's try to pass a ``numba.complex128`` value into our kernel.
-C++ part of our code doesn't see the definition of this type, but that's fine.
-It's sufficient for us to create a storage structure with matching size and alignment and type-erase everything else.
+As a concrete example, suppose we want to pass a ``numba.complex128``
+value into the kernel. The C++ side does not see the original Python
+type definition, but that is not an issue. It only needs a storage
+type with matching size and alignment, and can type-erase everything
+else.
 
 .. code-block:: c++
 
@@ -302,8 +335,10 @@ It's sufficient for us to create a storage structure with matching size and alig
             void *kernel_args[] = { value_ptr };
             cuLaunchKernel((CUfunction)kernel, 1, 1, 1, 4, 1, 1, 0, 0, kernel_args, nullptr);
 
-The operator now takes a type-erased pointer.
-Let's take a look at the Python side:
+In this version, the operator takes a type-erased pointer. On the
+Python side, we therefore pass a pointer to the ``numba.complex128``
+value, together with the size and alignment needed to construct a
+matching storage type on the C++ side:
 
 .. code-block:: python
 
@@ -328,17 +363,19 @@ Let's take a look at the Python side:
         bindings.launcher.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_char_p, ctypes.c_int]
         bindings.launcher(type_erased_value_ptr, size, alignment, ltoir, len(ltoir))
 
+In this example, we obtain the size and alignment of
+``numba.complex128`` from Numba's type system. The remaining detail is
+how to pass the value to ``cuLaunchKernel``. Kernel arguments are
+described to ``cuLaunchKernel`` as pointers to host memory from which
+the launch parameters are copied. In Python, that host-memory pointer
+can be obtained in a few ways, for example with ``ctypes.byref`` or by
+placing the value in a ``numpy.array`` and retrieving the array's
+address with ``value.ctypes.data_as(ctypes.c_void_p)``.
 
-In the code above, we retreive type information (size and alignemnt) from the numba type system.
-One of the problems is that ``cuLaunchKernel`` accepts an array of pointers to CPU memory,
-from which it copies parameters for subsequent kernel launch.
-To get the pointer to CPU memory, we could use ``ctypes.byref``.
-Alternatively,
-we could allocate memory using ``numpy.array`` and later retreive the pointer with ``.ctypes.data_as(ctypes.c_void_p)``.
-
-The only missing part that separates us from cuda.parallel
-is the fact that all the kernels in CUDA C++ Core Compute Libraries are templates.
-Let's make our kernel a template as well.
+One more ingredient is needed to get closer to the full
+``cuda.compute`` implementation. The kernels in the CUDA C++ Core
+Compute Libraries are templates, so our generated kernel must be a
+template as well.
 
 .. code-block:: c++
 
@@ -351,11 +388,9 @@ Let's make our kernel a template as well.
         }
     )XXX";
 
-
-Unfortunately, this is not sufficient.
-We have to instantiate the kernel template.
-To do that, we can use the following NVRTC API:
-
+Defining the kernel as a template is still not enough. We also need to
+instantiate that template for the generated storage type. NVRTC
+provides the necessary API for that:
 
 .. code-block:: c++
 
@@ -363,12 +398,8 @@ To do that, we can use the following NVRTC API:
     const char *name = "test_kernel";
     nvrtcCreateProgram(&prog, kernel_source.c_str(), name, 0, nullptr, nullptr);
 
-    // Get the name of the storage_t type
-    std::string storage_t_name;
-    nvrtcGetTypeName<storage_t>(&storage_t_name);
-
-    // Get the name of the kernel
-    std::string kernel_name = "kernel<" + storage_t_name + ">";
+    // Get the name of the instantiated kernel
+    std::string kernel_name = "kernel<storage_t>";
 
     // Instantiate kernel template
     nvrtcAddNameExpression(prog, kernel_name.c_str());
@@ -382,23 +413,51 @@ To do that, we can use the following NVRTC API:
     // Use it to get kernel pointer
     cuLibraryGetKernel(&kernel, library, kernel_lowered_name);
 
+With these pieces in place, we can connect the simplified prototype back
+to ``cuda.compute``.
 
-Let's see how the steps that we covered map to cuda.parallel.
-On the high level, cuda.parallel API consists of three stages.
-Let's take a look at these stages using the example of parallel reduction:
+At a high level, the ``cuda.compute`` API follows the same overall
+structure, but packages it into three stages. Using parallel reduction
+as an example:
 
-#. First step returns invocable: ``reduce_into = cudax.reduce_into(d_in, d_out, op, h_init)``.
-   Here ``op`` is a Python function that we have to pass to the CUDA kernel.
-   The ``cudax.reduce_into`` call starts by compiling ``op`` to LTO-IR, just like we did above.
-   It then proceeds to the C++ part, which is responsible for composing a string with C++ code,
-   instantiating kernels, and compiling them with NVRTC, just like we did above.
-   Result of this compilation is stored inside ``reduce_info`` object.
-   From the C++ perspective, runtime values of the provided parameters do not matter at this stage.
-   In other words, concrete pointers or shapes of the provided containers can be different on subsequent stages.
-#. Second step returns temporary storage needed for parallel algorithm:
-   ``temp_storage_size = reduce_into(None, d_input, d_output, h_init)``.
-   This storage has to be allocated in device-accessible memory.
-   At this stage, no kernels are invoked.
-#. Third step uses allocated temporary storage and kernels retreived from the cubin stored in the ``reduce_info`` object:
-   ``reduce_into(temp_storage, d_input, d_output, h_init)``.
-   This step launches the kernel and performs the reduction.
+#. In the first stage, ``cuda.compute.make_reduce_into(...)`` constructs
+   a reusable reduction object:
+
+   ``reducer = cuda.compute.make_reduce_into(d_in, d_out, op, h_init)``
+
+   Here ``op`` is a Python function that must be made available to the
+   CUDA kernel. As in the simplified prototype above, this stage
+   compiles ``op`` to LTO-IR, generates the corresponding CUDA C++
+   source, instantiates the necessary kernels, and compiles them with
+   NVRTC. The resulting build state is stored inside the returned
+   reduction object. At this stage, the concrete runtime values of the
+   provided arrays do not matter yet; later calls may use different
+   pointers or sizes, as long as the interface remains compatible.
+
+#. In the second stage, that reduction object is used to query the
+   amount of temporary storage required by the algorithm:
+
+   ``temp_storage_size = reducer(None, d_input, d_output, op, num_items, h_init)``
+
+   This returns the size of the temporary storage buffer, which must be
+   allocated in device-accessible memory. No kernels are launched at
+   this stage.
+
+#. In the third stage, the algorithm is executed using the allocated
+   temporary storage:
+
+   ``reducer(temp_storage, d_input, d_output, op, num_items, h_init)``
+
+   At this point, the kernels stored in the reduction object are
+   launched and the reduction is performed.
+
+
+For readers who want to connect this overview back to the source tree:
+
+* The Python-facing API, operator compilation, and the logic for
+  constructing and invoking reusable algorithm objects live under
+  ``python/cuda_cccl/cuda/compute/``.
+* The lower-level C/C++ runtime compilation and kernel-building
+  machinery lives under ``c/parallel/``.
+* User-facing examples for ``cuda.compute`` live under
+  ``python/cuda_cccl/tests/compute/examples/``.
