@@ -37,6 +37,11 @@
 #define _CCCL_HAS_NVBF16()   0
 #define _CCCL_HAS_FLOAT128() 0
 
+#if _CCCL_TILE_COMPILATION() // TODO(miscco): Fix access to extended floating point types
+#  define CCCL_DISABLE_FP16_SUPPORT
+#  define CCCL_DISABLE_BF16_SUPPORT
+#endif // _CCCL_TILE_COMPILATION()
+
 #if !defined(CCCL_DISABLE_INT128_SUPPORT) && _CCCL_OS(LINUX) \
   && ((_CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_INT128__)) || defined(__SIZEOF_INT128__))
 #  undef _CCCL_HAS_INT128
