@@ -427,14 +427,16 @@ template <class _Tp>
 template <class _Tp>
 _CCCL_API constexpr _Tp* __cccl_memmove(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
 {
+#if !_CCCL_TILE_COMPILATION() // error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-#if defined(_CCCL_BUILTIN_MEMMOVE)
+#  if defined(_CCCL_BUILTIN_MEMMOVE)
     return reinterpret_cast<_Tp*>(_CCCL_BUILTIN_MEMMOVE(__dst, __src, __n * sizeof(_Tp)));
-#else // ^^^ _CCCL_BUILTIN_MEMMOVE ^^^ / vvv !_CCCL_BUILTIN_MEMMOVE vvv
+#  else // ^^^ _CCCL_BUILTIN_MEMMOVE ^^^ / vvv !_CCCL_BUILTIN_MEMMOVE vvv
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_memmove_impl_host(__dst, __src, __n);))
-#endif // ^^^ !_CCCL_BUILTIN_MEMMOVE ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_MEMMOVE ^^^
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return ::cuda::std::__cccl_memmove_impl_constexpr(__dst, __src, __n);
 }
 
@@ -476,14 +478,16 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr int __cccl_memcmp(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
 {
+#if !_CCCL_TILE_COMPILATION() // error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-#if defined(_CCCL_BUILTIN_MEMCMP)
+#  if defined(_CCCL_BUILTIN_MEMCMP)
     return _CCCL_BUILTIN_MEMCMP(__lhs, __rhs, __n * sizeof(_Tp));
-#else // ^^^ _CCCL_BUILTIN_MEMCMP ^^^ / vvv !_CCCL_BUILTIN_MEMCMP vvv
+#  else // ^^^ _CCCL_BUILTIN_MEMCMP ^^^ / vvv !_CCCL_BUILTIN_MEMCMP vvv
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_memcmp_impl_host(__lhs, __rhs, __n);))
-#endif // ^^^ !_CCCL_BUILTIN_MEMCMP ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_MEMCMP ^^^
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return ::cuda::std::__cccl_memcmp_impl_constexpr(__lhs, __rhs, __n);
 }
 
@@ -514,14 +518,16 @@ __cccl_memcpy_impl_host(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __s
 template <class _Tp>
 _CCCL_API constexpr _Tp* __cccl_memcpy(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
+#if !_CCCL_TILE_COMPILATION() // error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-#if defined(_CCCL_BUILTIN_MEMCPY)
+#  if defined(_CCCL_BUILTIN_MEMCPY)
     return reinterpret_cast<_Tp*>(_CCCL_BUILTIN_MEMCPY(__dst, __src, __n * sizeof(_Tp)));
-#else // ^^^ _CCCL_BUILTIN_MEMCPY ^^^ / vvv !_CCCL_BUILTIN_MEMCPY vvv
+#  else // ^^^ _CCCL_BUILTIN_MEMCPY ^^^ / vvv !_CCCL_BUILTIN_MEMCPY vvv
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_memcpy_impl_host(__dst, __src, __n);))
-#endif // ^^^ !_CCCL_BUILTIN_MEMCPY ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_MEMCPY ^^^
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return ::cuda::std::__cccl_memcpy_impl_constexpr(__dst, __src, __n);
 }
 
@@ -557,14 +563,16 @@ template <class _Tp>
 template <class _Tp>
 _CCCL_API constexpr _Tp* __cccl_memset(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
+#if !_CCCL_TILE_COMPILATION() // error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-#if defined(_CCCL_BUILTIN_MEMSET)
+#  if defined(_CCCL_BUILTIN_MEMSET)
     return reinterpret_cast<_Tp*>(_CCCL_BUILTIN_MEMSET(__ptr, __c, __n * sizeof(_Tp)));
-#else // ^^^ _CCCL_BUILTIN_MEMSET ^^^ / vvv !_CCCL_BUILTIN_MEMSET vvv
+#  else // ^^^ _CCCL_BUILTIN_MEMSET ^^^ / vvv !_CCCL_BUILTIN_MEMSET vvv
     NV_IF_TARGET(NV_IS_HOST, (return ::cuda::std::__cccl_memset_impl_host(__ptr, __c, __n);))
-#endif // ^^^ !_CCCL_BUILTIN_MEMSET ^^^
+#  endif // ^^^ !_CCCL_BUILTIN_MEMSET ^^^
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return ::cuda::std::__cccl_memset_impl_constexpr(__ptr, __c, __n);
 }
 
