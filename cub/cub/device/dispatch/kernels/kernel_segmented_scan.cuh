@@ -66,6 +66,8 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
   _CCCL_ASSERT(policy.block_threads == policy_t::block_threads, "Block policy threads mismatch");
   _CCCL_ASSERT(policy.items_per_thread == policy_t::items_per_thread, "Block policy items-per-thread mismatch");
   _CCCL_ASSERT(policy.max_segments_per_block == policy_t::max_segments_per_block, "Block policy max segments mismatch");
+  static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
+                "The memory consistency model does not apply to texture accesses");
 
   using agent_t = cub::detail::segmented_scan::agent_segmented_scan<
     policy_t,
@@ -168,6 +170,8 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warp.
   _CCCL_ASSERT(policy.block_threads == policy_t::block_threads, "Warp policy threads mismatch");
   _CCCL_ASSERT(policy.items_per_thread == policy_t::items_per_thread, "Warp policy items-per-thread mismatch");
   _CCCL_ASSERT(policy.max_segments_per_warp == policy_t::max_segments_per_warp, "Warp policy max segments mismatch");
+  static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
+                "The memory consistency model does not apply to texture accesses");
 
   using agent_t = cub::detail::segmented_scan::agent_warp_segmented_scan<
     policy_t,
@@ -279,6 +283,8 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).threa
 
   _CCCL_ASSERT(policy.block_threads == policy_t::block_threads, "Thread policy threads mismatch");
   _CCCL_ASSERT(policy.items_per_thread == policy_t::items_per_thread, "Thread policy items-per-thread mismatch");
+  static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
+                "The memory consistency model does not apply to texture accesses");
 
   using agent_t = cub::detail::segmented_scan::agent_thread_segmented_scan<
     policy_t,
