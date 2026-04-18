@@ -122,7 +122,7 @@ void run_dispatch_scan(
   ScanOpT scan_op,
   InitValueT init_value,
   int segments_per_worker,
-  cudaStream_t stream = 0)
+  cudaStream_t stream = nullptr)
 {
   const auto n_segments = static_cast<OffsetT>(offsets.size() - 1);
 
@@ -176,7 +176,7 @@ void run_dispatch_scan(
   ScanOpT scan_op,
   InitValueT init_value,
   int segments_per_worker,
-  cudaStream_t stream = 0)
+  cudaStream_t stream = nullptr)
 {
   run_dispatch_scan<OffsetT, InputT, OutputT, ScanOpT, InitValueT>(
     dispatch_fn, worker_choice, offsets, offsets, input, output, scan_op, init_value, segments_per_worker, stream);

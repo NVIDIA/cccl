@@ -186,7 +186,7 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     wrapped_init_t{T{}},
     num_segments_per_worker,
     worker_choice,
-    0 /* stream */);
+    nullptr /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
   nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
