@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___HIERARCHY_CONCEPTS_CUH
-#define _CUDA_EXPERIMENTAL___HIERARCHY_CONCEPTS_CUH
+#ifndef _CUDA_EXPERIMENTAL___GROUP_CONCEPTS_CUH
+#define _CUDA_EXPERIMENTAL___GROUP_CONCEPTS_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -68,4 +68,4 @@ _CCCL_CONCEPT __has_sync_aligned = _CCCL_REQUIRES_EXPR(
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_EXPERIMENTAL___HIERARCHY_CONCEPTS_CUH
+#endif // _CUDA_EXPERIMENTAL___GROUP_CONCEPTS_CUH

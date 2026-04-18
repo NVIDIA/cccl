@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___HIERARCHY_IMPLICIT_HIERARCHY_CUH
-#define _CUDA_EXPERIMENTAL___HIERARCHY_IMPLICIT_HIERARCHY_CUH
+#ifndef _CUDA_EXPERIMENTAL___GROUP_IMPLICIT_HIERARCHY_CUH
+#define _CUDA_EXPERIMENTAL___GROUP_IMPLICIT_HIERARCHY_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -23,7 +23,7 @@
 
 #include <cuda/hierarchy>
 
-#include <cuda/experimental/__hierarchy/fwd.cuh>
+#include <cuda/experimental/__group/fwd.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -45,4 +45,4 @@ namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_EXPERIMENTAL___HIERARCHY_IMPLICIT_HIERARCHY_CUH
+#endif // _CUDA_EXPERIMENTAL___GROUP_IMPLICIT_HIERARCHY_CUH

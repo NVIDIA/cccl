@@ -21,7 +21,7 @@
 #include <cuda/std/utility>
 #include <cuda/stream>
 
-#include <cuda/experimental/hierarchy.cuh>
+#include <cuda/experimental/group.cuh>
 
 #include <cooperative_groups.h>
 

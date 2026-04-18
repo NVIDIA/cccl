@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___THIS_GROUP_CUH
-#define _CUDA_EXPERIMENTAL___THIS_GROUP_CUH
+#ifndef _CUDA_EXPERIMENTAL___GROUP_THIS_GROUP_CUH
+#define _CUDA_EXPERIMENTAL___GROUP_THIS_GROUP_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -27,8 +27,8 @@
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 
-#include <cuda/experimental/__hierarchy/fwd.cuh>
-#include <cuda/experimental/__hierarchy/implicit_hierarchy.cuh>
+#include <cuda/experimental/__group/fwd.cuh>
+#include <cuda/experimental/__group/implicit_hierarchy.cuh>
 
 #if _CCCL_HAS_COOPERATIVE_GROUPS()
 #  include <cooperative_groups.h>
@@ -548,4 +548,4 @@ _CCCL_HOST_DEVICE this_grid(const ::cooperative_groups::grid_group&) -> this_gri
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_EXPERIMENTAL___THIS_GROUP_CUH
+#endif // _CUDA_EXPERIMENTAL___GROUP_THIS_GROUP_CUH

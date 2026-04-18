@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___HIERARCHY_GROUPS_CUH
-#define _CUDA_EXPERIMENTAL___HIERARCHY_GROUPS_CUH
+#ifndef _CUDA_EXPERIMENTAL___GROUP_GROUP_CUH
+#define _CUDA_EXPERIMENTAL___GROUP_GROUP_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -32,11 +32,11 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__hierarchy/concepts.cuh>
-#include <cuda/experimental/__hierarchy/fwd.cuh>
-#include <cuda/experimental/__hierarchy/mappings.cuh>
-#include <cuda/experimental/__hierarchy/synchronizers.cuh>
-#include <cuda/experimental/__hierarchy/this_group.cuh>
+#include <cuda/experimental/__group/concepts.cuh>
+#include <cuda/experimental/__group/fwd.cuh>
+#include <cuda/experimental/__group/mapping/group_by.cuh>
+#include <cuda/experimental/__group/synchronizers.cuh>
+#include <cuda/experimental/__group/this_group.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -154,4 +154,4 @@ _CCCL_HOST_DEVICE thread_group(const _Level&, const group_by<_Np>&, const _Hiera
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_EXPERIMENTAL___HIERARCHY_GROUPS_CUH
+#endif // _CUDA_EXPERIMENTAL___GROUP_GROUP_CUH

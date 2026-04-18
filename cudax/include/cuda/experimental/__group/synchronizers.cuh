@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___HIERARCHY_SYNCHRONIZERS_CUH
-#define _CUDA_EXPERIMENTAL___HIERARCHY_SYNCHRONIZERS_CUH
+#ifndef _CUDA_EXPERIMENTAL___GROUP_SYNCHRONIZERS_CUH
+#define _CUDA_EXPERIMENTAL___GROUP_SYNCHRONIZERS_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -32,8 +32,8 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__hierarchy/concepts.cuh>
-#include <cuda/experimental/__hierarchy/fwd.cuh>
+#include <cuda/experimental/__group/concepts.cuh>
+#include <cuda/experimental/__group/fwd.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 

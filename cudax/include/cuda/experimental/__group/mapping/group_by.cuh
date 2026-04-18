@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___HIERARCHY_MAPPINGS_CUH
-#define _CUDA_EXPERIMENTAL___HIERARCHY_MAPPINGS_CUH
+#ifndef _CUDA_EXPERIMENTAL___GROUP_MAPPING_GROUP_BY_CUH
+#define _CUDA_EXPERIMENTAL___GROUP_MAPPING_GROUP_BY_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -26,7 +26,7 @@
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__utility/cmp.h>
 
-#include <cuda/experimental/__hierarchy/fwd.cuh>
+#include <cuda/experimental/__group/fwd.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -361,4 +361,4 @@ _CCCL_DEVICE_API void __check_mapping_result(const _MappingResult& __mapping_res
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_EXPERIMENTAL___HIERARCHY_MAPPINGS_CUH
+#endif // _CUDA_EXPERIMENTAL___GROUP_MAPPING_GROUP_BY_CUH

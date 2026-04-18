@@ -35,11 +35,11 @@
 #  include <cuda/std/__mdspan/extents.h>
 #  include <cuda/std/__type_traits/is_integer.h>
 
-#  if defined(_CUDAX_HIERARCHY)
-#    include <cuda/experimental/__hierarchy/concepts.cuh>
-#    include <cuda/experimental/__hierarchy/fwd.cuh>
-#    include <cuda/experimental/__hierarchy/queries.cuh>
-#  endif // _CUDAX_HIERARCHY
+#  if defined(_CUDAX_GROUP)
+#    include <cuda/experimental/__group/concepts.cuh>
+#    include <cuda/experimental/__group/fwd.cuh>
+#    include <cuda/experimental/__group/queries.cuh>
+#  endif // _CUDAX_GROUP
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -170,7 +170,7 @@ struct hierarchy_level_base
   }
 #  endif // _CCCL_CUDA_COMPILATION()
 
-#  if defined(_CUDAX_HIERARCHY)
+#  if defined(_CUDAX_GROUP)
 #    if _CCCL_CUDA_COMPILATION()
 
   _CCCL_TEMPLATE(class _Group)
@@ -223,7 +223,7 @@ struct hierarchy_level_base
     return ::cuda::experimental::__is_part_of_group<_Level>(__group);
   }
 #    endif // _CCCL_CUDA_COMPILATION()
-#  endif // _CUDAX_HIERARCHY
+#  endif // _CUDAX_GROUP
 
 private:
   template <class>

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___HIERARCHY_QUERIES_CUH
-#define _CUDA_EXPERIMENTAL___HIERARCHY_QUERIES_CUH
+#ifndef _CUDA_EXPERIMENTAL___GROUP_QUERIES_CUH
+#define _CUDA_EXPERIMENTAL___GROUP_QUERIES_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -120,4 +120,4 @@ template <class _Unit, class _Group>
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_EXPERIMENTAL___HIERARCHY_QUERIES_CUH
+#endif // _CUDA_EXPERIMENTAL___GROUP_QUERIES_CUH

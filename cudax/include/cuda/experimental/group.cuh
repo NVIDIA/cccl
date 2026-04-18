@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL_HIERARCHY
-#define _CUDA_EXPERIMENTAL_HIERARCHY
+#ifndef _CUDA_EXPERIMENTAL_GROUP
+#define _CUDA_EXPERIMENTAL_GROUP
 
 #include <cuda/std/detail/__config>
 
@@ -21,13 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__hierarchy/concepts.cuh>
-#include <cuda/experimental/__hierarchy/fwd.cuh>
-#include <cuda/experimental/__hierarchy/groups.cuh>
-#include <cuda/experimental/__hierarchy/implicit_hierarchy.cuh>
-#include <cuda/experimental/__hierarchy/mappings.cuh>
-#include <cuda/experimental/__hierarchy/queries.cuh>
-#include <cuda/experimental/__hierarchy/synchronizers.cuh>
-#include <cuda/experimental/__hierarchy/this_group.cuh>
+#include <cuda/experimental/__group/concepts.cuh>
+#include <cuda/experimental/__group/fwd.cuh>
+#include <cuda/experimental/__group/group.cuh>
+#include <cuda/experimental/__group/implicit_hierarchy.cuh>
+#include <cuda/experimental/__group/mapping/group_by.cuh>
+#include <cuda/experimental/__group/queries.cuh>
+#include <cuda/experimental/__group/synchronizers.cuh>
+#include <cuda/experimental/__group/this_group.cuh>
 
-#endif // _CUDA_EXPERIMENTAL_HIERARCHY
+#endif // _CUDA_EXPERIMENTAL_GROUP

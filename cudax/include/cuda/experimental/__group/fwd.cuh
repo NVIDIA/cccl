@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___HIERARCHY_FWD_CUH
-#define _CUDA_EXPERIMENTAL___HIERARCHY_FWD_CUH
+#ifndef _CUDA_EXPERIMENTAL___GROUP_FWD_CUH
+#define _CUDA_EXPERIMENTAL___GROUP_FWD_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -108,4 +108,4 @@ inline constexpr bool __is_barrier_synchronizer<__barrier_synchronizer<_Unit, _L
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_EXPERIMENTAL___HIERARCHY_FWD_CUH
+#endif // _CUDA_EXPERIMENTAL___GROUP_FWD_CUH
