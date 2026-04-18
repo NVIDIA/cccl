@@ -219,7 +219,8 @@ struct hierarchy_level_base
   _CCCL_REQUIRES(::cuda::experimental::group<_Group>)
   [[nodiscard]] _CCCL_API static constexpr bool is_part_of(const _Group& __group) noexcept
   {
-    return true;
+    // todo: static_assert that the _Level <= _Group::unit_type
+    return ::cuda::experimental::__is_part_of_group<_Level>(__group);
   }
 #    endif // _CCCL_CUDA_COMPILATION()
 #  endif // _CUDAX_HIERARCHY

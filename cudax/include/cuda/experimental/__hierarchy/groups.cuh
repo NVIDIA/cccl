@@ -63,6 +63,7 @@ public:
   using __mapping_result_type = _MappingResult;
   using hierarchy_type        = _Hierarchy;
 
+  // todo(dabayer): Remove _Level and _HierarchyLike parameters and take a base group instead.
   // todo(dabayer): Do we want default behaviour like this, or do we want some kind of cuda::auto_sync_mechanism{} tag?
   _CCCL_TEMPLATE(class _HierarchyLike)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
@@ -72,7 +73,9 @@ public:
       , __mapping_{__mapping}
       , __mapping_result_{__mapping_.map(thread_level{}, _Level{}, ::cuda::__unpack_hierarchy_if_needed(__hier_like))}
       , __synchronizer_{__mapping_result_}
-  {}
+  {
+    ::cuda::experimental::__check_mapping_result(__mapping_result_);
+  }
 
   _CCCL_TEMPLATE(class _Synchronizer2 = _Synchronizer, class _MappingResult2 = _MappingResult, class _HierarchyLike)
   _CCCL_REQUIRES(__is_barrier_synchronizer<_Synchronizer2>
@@ -86,7 +89,9 @@ public:
       , __mapping_{__mapping}
       , __mapping_result_{__mapping_.map(thread_level{}, _Level{}, ::cuda::__unpack_hierarchy_if_needed(__hier_like))}
       , __synchronizer_{__mapping_result_, __barriers}
-  {}
+  {
+    ::cuda::experimental::__check_mapping_result(__mapping_result_);
+  }
 
   [[nodiscard]] _CCCL_DEVICE_API const _Hierarchy& hierarchy() const noexcept
   {

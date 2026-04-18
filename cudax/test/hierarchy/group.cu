@@ -419,7 +419,7 @@ __device__ void test_queries(const cudax::thread_group<Level, cudax::group_by<N>
   // reference. Can we find a solution that works without copying the group?
   // static_assert(cuda::gpu_thread.static_count(group) == N);
 
-  const auto count_ref = group.mapping().n();
+  const auto count_ref = group.mapping().count();
   const auto rank_ref  = cuda::gpu_thread.rank(Level{}, group.hierarchy()) % count_ref;
 
   CUDAX_REQUIRE(cuda::gpu_thread.count(group) == count_ref);

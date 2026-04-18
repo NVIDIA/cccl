@@ -129,6 +129,7 @@ cudax_add_catch2_test(test_target algorithm
 
 cudax_add_catch2_test(test_target hierarchy_groups
     hierarchy/group.cu
+    hierarchy/mapping/group_by.cu
 )
 target_compile_definitions(${test_target} PUBLIC _CUDAX_HIERARCHY)
 

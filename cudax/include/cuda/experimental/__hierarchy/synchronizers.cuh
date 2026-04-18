@@ -80,8 +80,16 @@ public:
   }
 
   template <class _MappingResult>
-  _CCCL_DEVICE_API void __sync(const _MappingResult&) noexcept
+  _CCCL_DEVICE_API void __sync(const _MappingResult& __mapping_result) noexcept
   {
+    if constexpr (!_MappingResult::is_always_exhaustive())
+    {
+      if (!__mapping_result.is_valid())
+      {
+        return;
+      }
+    }
+
     ::__syncwarp(__lane_mask_);
   }
 };
@@ -153,6 +161,14 @@ public:
   template <class _MappingResult>
   _CCCL_DEVICE_API void __sync(const _MappingResult& __mapping_result) noexcept
   {
+    if constexpr (!_MappingResult::is_always_exhaustive())
+    {
+      if (!__mapping_result.is_valid())
+      {
+        return;
+      }
+    }
+
     __barriers_[__mapping_result.group_rank()].arrive_and_wait();
   }
 };

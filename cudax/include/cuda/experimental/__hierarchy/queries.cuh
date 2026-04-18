@@ -108,6 +108,12 @@ template <class _Tp, class _Unit, class _Group>
     return static_cast<_Tp>(__group_unit_rank * __group_unit_count + __unit_rank);
   }
 }
+
+template <class _Unit, class _Group>
+[[nodiscard]] _CCCL_DEVICE_API bool __is_part_of_group(const _Group& __group) noexcept
+{
+  return __group.__mapping_result().is_valid();
+}
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED

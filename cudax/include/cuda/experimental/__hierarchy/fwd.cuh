@@ -73,7 +73,7 @@ class cluster_group;
 
 // mappings
 
-template <::cuda::std::size_t _Np>
+template <::cuda::std::size_t _Np = ::cuda::std::dynamic_extent, bool _IsExhaustive = true>
 class group_by;
 
 // synchronizers

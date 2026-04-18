@@ -110,6 +110,21 @@ struct __this_mapping_result
     return 0;
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API bool is_valid() const noexcept
+  {
+    return true;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
+  {
+    return true;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
+  {
+    return true;
+  }
+
   // todo(dabayer): add method that determines whether the unit is part of the group or not.
 };
 
