@@ -51,7 +51,7 @@ struct warp_reduce_batched_wspro
   static_assert(::cuda::is_power_of_two(LogicalWarpThreads), "LogicalWarpThreads must be a power of two");
   static_assert(LogicalWarpThreads > 0 && LogicalWarpThreads <= warp_threads,
                 "LogicalWarpThreads must be in the range [1, 32]");
-  static_assert(Batches > 0, "Batches must be > 0");
+  static_assert(Batches >= 0, "Batches must be >= 0");
 
   //---------------------------------------------------------------------
   // Constants and type definitions
@@ -86,7 +86,7 @@ struct warp_reduce_batched_wspro
       ::cuda::std::is_integral_v<T> && sizeof(T) <= sizeof(unsigned)
       && (is_cuda_minimum_maximum_v<ReductionOp, T> || is_cuda_std_plus_v<ReductionOp, T>
           || is_cuda_std_bitwise_v<ReductionOp, T>);
-    // For 6 or more batches, WSPRO gives significantly better throughput, while latency is onlys lightly better for
+    // For more batches, WSPRO gives significantly better throughput, while latency is onlys lightly better for
     // REDUX. For subwarps both throughput and latency are worse with REDUX independent of the number of batches. This
     // might be a codegen issue.
     constexpr bool redux_performs_better = is_arch_warp && Batches <= 8;
@@ -103,7 +103,7 @@ struct warp_reduce_batched_wspro
       intermediate_outputs[out_idx] = RecurseReductionTree<ToBlocked, first_idx>(inputs, reduction_op);
     });
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < max_out_per_thread; ++i)
     {
       outputs[i] = intermediate_outputs[i];
@@ -113,24 +113,32 @@ struct warp_reduce_batched_wspro
   template <bool ToBlocked, typename InputT, typename OutputT, typename ReductionOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void ReduceRedux(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
   {
-    // Needed in case of outputs aliasing inputs
-    ::cuda::std::array<T, max_out_per_thread> intermediate_outputs;
+    // Needed to avoid compiler error on "/ 0" and improve compile time.
+    if constexpr (Batches != 0)
+    {
+      // Needed in case of outputs aliasing inputs
+      ::cuda::std::array<T, max_out_per_thread> intermediate_outputs;
 
-    // Can't use the full member mask given SyncPhysicalWarp==true because it affects the result of the reduction.
-    const auto reduce_mask = cub::WarpMask<LogicalWarpThreads>(logical_warp_id);
-    ::cuda::static_for<0, Batches>([&](auto idx) {
-      auto result             = reduce_op_sync(inputs[idx], reduce_mask, reduction_op);
-      constexpr auto out_lane = ToBlocked ? idx / max_out_per_thread : idx % LogicalWarpThreads;
-      constexpr auto out_idx  = ToBlocked ? idx % max_out_per_thread : idx / LogicalWarpThreads;
-      if (logical_lane_id == out_lane)
+      // Can't use the full member mask given SyncPhysicalWarp==true because it affects the result of the reduction.
+      const auto reduce_mask = cub::WarpMask<LogicalWarpThreads>(logical_warp_id);
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int i = 0; i < Batches; ++i)
       {
-        intermediate_outputs[out_idx] = result;
+        auto result         = reduce_op_sync(inputs[i], reduce_mask, reduction_op);
+        const auto out_lane = ToBlocked ? i / max_out_per_thread : i % LogicalWarpThreads;
+        const auto out_idx  = ToBlocked ? i % max_out_per_thread : i / LogicalWarpThreads;
+        if (logical_lane_id == out_lane)
+        {
+          intermediate_outputs[out_idx] = result;
+        }
       }
-    });
 
-    ::cuda::static_for<0, max_out_per_thread>([&](auto out_idx) {
-      outputs[out_idx()] = intermediate_outputs[out_idx];
-    });
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int i = 0; i < max_out_per_thread; ++i)
+      {
+        outputs[i] = intermediate_outputs[i];
+      }
+    }
   }
 
   template <bool ToBlocked, int BaseIdxStriped, int PrevStride = LogicalWarpThreads, typename InputT, typename ReductionOp>
@@ -164,13 +172,13 @@ struct warp_reduce_batched_wspro
       const auto offset_value = RecurseReductionTree<ToBlocked, offset_idx_striped, stride>(inputs, reduction_op);
 
       // Each left lane exchanges its offset value against a right lane's base value
-      const auto is_left_lane = logical_lane_id % PrevStride < stride;
+      const auto is_left_lane = (logical_lane_id % PrevStride) < stride;
       const auto keep_value   = is_left_lane ? base_value : offset_value;
       auto exch_value         = is_left_lane ? offset_value : base_value;
       exch_value              = ::cuda::device::warp_shuffle_xor(exch_value, stride, member_mask);
       // While the current implementation is possibly faster, another conditional swap here would allow for
       // non-commutative reductions which might be useful for (segmented) scan operations.
-      return reduction_op(exch_value, keep_value);
+      return static_cast<T>(reduction_op(exch_value, keep_value));
     }
   }
 };

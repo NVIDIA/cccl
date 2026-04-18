@@ -55,14 +55,14 @@ warp_reduce_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::span<T> out
   const int logical_warp_id = tid / LogicalWarpThreads;
   const int lane_id         = tid % LogicalWarpThreads;
 
-  T inputs[Batches];
+  auto inputs = cuda::std::array<T, Batches>{};
   for (int batch_idx = 0; batch_idx < Batches; ++batch_idx)
   {
     inputs[batch_idx] = input_md(logical_warp_id * Batches + batch_idx, lane_id);
   }
 
   constexpr int out_per_thread = cuda::ceil_div(Batches, LogicalWarpThreads);
-  T outputs[out_per_thread];
+  auto outputs                 = cuda::std::array<T, out_per_thread>{};
   if constexpr (Mode == WarpReduceBatchedMode::SingleOut)
   {
     outputs[0] = warp_reduce_batched_t{temp_storage[logical_warp_id]}.Reduce(inputs, reduction_op);
@@ -98,14 +98,14 @@ __global__ void sum_batched_kernel(input_2d_mdspan_t<T> input_md, cuda::std::spa
   const int logical_warp_id = tid / LogicalWarpThreads;
   const int lane_id         = tid % LogicalWarpThreads;
 
-  T inputs[Batches];
+  auto inputs = cuda::std::array<T, Batches>{};
   for (int batch_idx = 0; batch_idx < Batches; ++batch_idx)
   {
     inputs[batch_idx] = input_md(logical_warp_id * Batches + batch_idx, lane_id);
   }
 
   constexpr int out_per_thread = cuda::ceil_div(Batches, LogicalWarpThreads);
-  T outputs[out_per_thread];
+  auto outputs                 = cuda::std::array<T, out_per_thread>{};
   if constexpr (Mode == WarpReduceBatchedMode::SingleOut)
   {
     outputs[0] = warp_reduce_batched_t{temp_storage[logical_warp_id]}.Sum(inputs);
@@ -154,14 +154,14 @@ warp_reduce_batched_cond_part_kernel(input_2d_mdspan_t<T> input_md, cuda::std::s
   {
     const int participant_idx = logical_warp_id / 2;
 
-    T inputs[Batches];
+    auto inputs = cuda::std::array<T, Batches>{};
     for (int batch_idx = 0; batch_idx < Batches; ++batch_idx)
     {
       inputs[batch_idx] = input_md(participant_idx * Batches + batch_idx, lane_id);
     }
 
     constexpr int out_per_thread = cuda::ceil_div(Batches, LogicalWarpThreads);
-    T outputs[out_per_thread];
+    auto outputs                 = cuda::std::array<T, out_per_thread>{};
     if constexpr (Mode == WarpReduceBatchedMode::SingleOut)
     {
       outputs[0] = warp_reduce_batched_t{temp_storage[logical_warp_id]}.Reduce(inputs, reduction_op);
@@ -338,6 +338,7 @@ using equal_nm_configs =
 
 // N!=M configurations
 using unequal_nm_configs = c2h::type_list<
+  int_pair<0, 32>,
   int_pair<1, 32>,
   int_pair<3, 32>,
   int_pair<3, 16>,
@@ -352,6 +353,7 @@ using unequal_nm_configs = c2h::type_list<
   int_pair<10, 4>,
   int_pair<1, 2>,
   int_pair<7, 2>,
+  int_pair<0, 1>,
   int_pair<2, 1>>;
 
 // Sub-warp configurations (LogicalWarpThreads < 32, at least 2 logical warps per physical warp)

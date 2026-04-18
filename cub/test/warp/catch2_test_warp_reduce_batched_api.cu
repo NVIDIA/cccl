@@ -16,7 +16,6 @@
 __global__ __launch_bounds__(64) void WarpReduceBatchedOverviewKernel(int* out)
 {
   // example-begin warp-reduce-batched-overview
-  // implicitly 32 threads per logical warp, 3 batches
   using WarpReduceBatched = cub::WarpReduceBatched<int, 3>;
 
   // Assume 64 threads per block, so 64 / 32 = 2 logical warps
@@ -56,7 +55,6 @@ C2H_TEST("WarpReduceBatched overview documentation kernel", "[warp][reduce][batc
 __global__ void WarpReduceBatchedReduceApiKernel(int* out)
 {
   // example-begin warp-reduce-batched-reduce
-  // 16 threads per logical warp, 3 batches
   // Can't allow for physical warp synchronization since only the first logical warp participates due to the
   // conditional. The other threads (assuming there are more than 16 threads per block) can't exit early due to the
   // barrier.
@@ -101,9 +99,8 @@ C2H_TEST("WarpReduceBatched::Reduce documentation kernel", "[warp][reduce][batch
 __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToStripedApiKernel(int* out)
 {
   // example-begin warp-reduce-batched-reduce-to-striped
-  // 2 threads per logical warp, 3 batches
-  // Can't allow for physical warp synchronization since only the first logical warp participates due to the
-  // conditional. The other threads (assuming there are more than 16 threads per block) can't exit early due to the
+  // Can't allow for physical warp synchronization since only every other logical warp participates.
+  // The other threads (assuming there are more than 2 threads per block) can't exit early due to the
   // barrier.
   using WarpReduceBatched = cub::WarpReduceBatched<int, 3, 2>;
 
@@ -158,9 +155,8 @@ C2H_TEST("WarpReduceBatched::ReduceToStriped documentation kernel", "[warp][redu
 __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToBlockedApiKernel(int* out)
 {
   // example-begin warp-reduce-batched-reduce-to-blocked
-  // 2 threads per logical warp, 3 batches
-  // Can't allow for physical warp synchronization since only the first logical warp participates due to the
-  // conditional. The other threads (assuming there are more than 16 threads per block) can't exit early due to the
+  // Can't allow for physical warp synchronization since only every other logical warp participates.
+  // The other threads (assuming there are more than 2 threads per block) can't exit early due to the
   // barrier.
   using WarpReduceBatched = cub::WarpReduceBatched<int, 3, 2>;
 
@@ -214,8 +210,8 @@ C2H_TEST("WarpReduceBatched::ReduceToBlocked documentation kernel", "[warp][redu
 
 __global__ __launch_bounds__(8) void WarpReduceBatchedSumApiKernel(int* out)
 {
-  // example-begin warp-reduce-batched-sum// Implicitly 32 threads per logical warp, 5 batches
-  // We can enable physical warp synchronization since all non-exited lanes do participate in the reduction
+  // example-begin warp-reduce-batched-sum
+  // We can enable physical warp synchronization since all non-exited lanes do participate in the primitive.
   using WarpReduceBatched = cub::WarpReduceBatched<int, 3, 4, true>;
 
   // Assume 8 threads per block, so 8 / 4 = 2 logical warps
@@ -253,8 +249,7 @@ C2H_TEST("WarpReduceBatched::Sum documentation kernel", "[warp][reduce][batched]
 __global__ __launch_bounds__(8) void WarpReduceBatchedSumToStripedApiKernel(int* out)
 {
   // example-begin warp-reduce-batched-sum-to-striped
-  // Implicitly 32 threads per logical warp, 5 batches
-  // We can enable physical warp synchronization since all non-exited lanes do participate in the reduction
+  // We can enable physical warp synchronization since all non-exited lanes do participate in the primitive.
   using WarpReduceBatched = cub::WarpReduceBatched<int, 5, 2, true>;
 
   // Assume 8 threads per block, so 8 / 2 = 4 logical warps
@@ -300,8 +295,7 @@ C2H_TEST("WarpReduceBatched::SumToStriped documentation kernel", "[warp][reduce]
 __global__ __launch_bounds__(8) void WarpReduceBatchedSumToBlockedApiKernel(int* out)
 {
   // example-begin warp-reduce-batched-sum-to-blocked
-  // Implicitly 32 threads per logical warp, 5 batches
-  // We can enable physical warp synchronization since all non-exited lanes do participate in the reduction
+  // We can enable physical warp synchronization since all non-exited lanes do participate in the primitive.
   using WarpReduceBatched = cub::WarpReduceBatched<int, 5, 2, true>;
 
   // Assume 8 threads per block, so 8 / 2 = 4 logical warps
