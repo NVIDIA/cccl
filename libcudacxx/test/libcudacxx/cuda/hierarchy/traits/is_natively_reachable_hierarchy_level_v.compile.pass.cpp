@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo: enable with nvrtc
-// UNSUPPORTED: nvrtc
-
 #include <cuda/hierarchy>
 
 struct MyLevel : cuda::hierarchy_level_base<MyLevel>

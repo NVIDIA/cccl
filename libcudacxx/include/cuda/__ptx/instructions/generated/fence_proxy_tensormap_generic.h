@@ -19,7 +19,7 @@ _CCCL_DEVICE static inline void
 fence_proxy_tensormap_generic(::cuda::ptx::sem_release_t, ::cuda::ptx::scope_t<_Scope> __scope)
 {
   // __sem == sem_release (due to parameter type constraint)
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__scope == scope_cta)
   {
@@ -62,7 +62,7 @@ _CCCL_DEVICE static inline void fence_proxy_tensormap_generic(
   ::cuda::ptx::sem_acquire_t, ::cuda::ptx::scope_t<_Scope> __scope, const void* __addr, ::cuda::ptx::n32_t<_N32> __size)
 {
   // __sem == sem_acquire (due to parameter type constraint)
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   if constexpr (__scope == scope_cta)
   {

@@ -19,39 +19,39 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr ptrdiff_t operator-(int* lhs, random_access_iterator<int*> rhs)
+TEST_FUNC constexpr ptrdiff_t operator-(int* lhs, random_access_iterator<int*> rhs)
 {
   return lhs - base(rhs);
 }
 
-__host__ __device__ constexpr ptrdiff_t operator-(random_access_iterator<int*> lhs, int* rhs)
+TEST_FUNC constexpr ptrdiff_t operator-(random_access_iterator<int*> lhs, int* rhs)
 {
   return base(lhs) - rhs;
 }
 
-__host__ __device__ constexpr bool operator==(int* lhs, random_access_iterator<int*> rhs)
+TEST_FUNC constexpr bool operator==(int* lhs, random_access_iterator<int*> rhs)
 {
   return lhs == base(rhs);
 }
 
-__host__ __device__ constexpr bool operator==(random_access_iterator<int*> lhs, int* rhs)
+TEST_FUNC constexpr bool operator==(random_access_iterator<int*> lhs, int* rhs)
 {
   return base(lhs) == rhs;
 }
 
-__host__ __device__ constexpr bool operator!=(int* lhs, random_access_iterator<int*> rhs)
+TEST_FUNC constexpr bool operator!=(int* lhs, random_access_iterator<int*> rhs)
 {
   return lhs != base(rhs);
 }
 
-__host__ __device__ constexpr bool operator!=(random_access_iterator<int*> lhs, int* rhs)
+TEST_FUNC constexpr bool operator!=(random_access_iterator<int*> lhs, int* rhs)
 {
   return base(lhs) != rhs;
 }
 static_assert(cuda::std::sized_sentinel_for<int*, random_access_iterator<int*>>);
 
 template <class Stride>
-__host__ __device__ constexpr void test(Stride stride)
+TEST_FUNC constexpr void test(Stride stride)
 {
   int buffer[] = {1, 2, 3, 4, 5, 6, 7, 8};
   { // iter - n
@@ -90,7 +90,7 @@ __host__ __device__ constexpr void test(Stride stride)
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test(2);
   test(Stride<2>{});
@@ -101,7 +101,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

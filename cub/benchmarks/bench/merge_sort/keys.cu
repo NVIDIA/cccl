@@ -67,7 +67,7 @@ void keys(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     static_cast<value_t*>(nullptr),
     static_cast<offset_t>(elements),
     compare_op_t{},
-    0 /* stream */
+    nullptr /* stream */
 #if !TUNE_BASE
     ,
     policy_selector<key_t>{}

@@ -22,20 +22,20 @@ using cuda::std::optional;
 struct X
 {
   STATIC_MEMBER_VAR(dtor_called, bool)
-  __host__ __device__ ~X()
+  TEST_FUNC ~X()
   {
     dtor_called() = true;
   }
 };
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   using O = optional<T>;
   cuda::std::remove_reference_t<T> one{1};
   {
     O opt;
-    static_assert(noexcept(opt.reset()) == true, "");
+    static_assert(noexcept(opt.reset()) == true);
     opt.reset();
     assert(static_cast<bool>(opt) == false);
   }
@@ -46,7 +46,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
 #ifdef CCCL_ENABLE_OPTIONAL_REF
@@ -64,7 +64,7 @@ int main(int, char**)
 #endif // TEST_STD_VER >= 2020
   {
     optional<X> opt{};
-    static_assert(noexcept(opt.reset()) == true, "");
+    static_assert(noexcept(opt.reset()) == true);
     assert(X::dtor_called() == false);
     opt.reset();
     assert(X::dtor_called() == false);

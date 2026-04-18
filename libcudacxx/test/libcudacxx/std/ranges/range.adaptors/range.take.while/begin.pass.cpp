@@ -42,7 +42,7 @@ _CCCL_CONCEPT HasOnlyConstBegin = HasConstBegin<T> && !HasConstAndNonConstBegin<
 
 struct Pred
 {
-  __host__ __device__ constexpr bool operator()(int i) const
+  TEST_FUNC constexpr bool operator()(int i) const
   {
     return i > 5;
   }
@@ -56,14 +56,14 @@ static_assert(HasConstAndNonConstBegin<cuda::std::ranges::take_while_view<NonSim
 
 struct NotPredForConst
 {
-  __host__ __device__ constexpr bool operator()(int& i) const
+  TEST_FUNC constexpr bool operator()(int& i) const
   {
     return i > 5;
   }
 };
 static_assert(HasOnlyNonConstBegin<cuda::std::ranges::take_while_view<NonSimple, NotPredForConst>>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // simple-view
   {
@@ -118,6 +118,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

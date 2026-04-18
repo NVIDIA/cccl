@@ -23,7 +23,11 @@
 
 #include <cuda/experimental/__hierarchy/concepts.cuh>
 #include <cuda/experimental/__hierarchy/fwd.cuh>
+#include <cuda/experimental/__hierarchy/groups.cuh>
 #include <cuda/experimental/__hierarchy/implicit_hierarchy.cuh>
+#include <cuda/experimental/__hierarchy/mappings.cuh>
+#include <cuda/experimental/__hierarchy/queries.cuh>
+#include <cuda/experimental/__hierarchy/synchronizers.cuh>
 #include <cuda/experimental/__hierarchy/this_group.cuh>
 
 #endif // _CUDA_EXPERIMENTAL_HIERARCHY

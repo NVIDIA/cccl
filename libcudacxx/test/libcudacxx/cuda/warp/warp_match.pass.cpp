@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <typename T>
-__device__ void test_types(T valueA = T{}, T valueB = T{1})
+TEST_DEVICE_FUNC void test_types(T valueA = T{}, T valueB = T{1})
 {
   for (int i = 1; i < 32; ++i)
   {

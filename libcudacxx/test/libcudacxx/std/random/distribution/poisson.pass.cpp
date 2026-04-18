@@ -26,7 +26,7 @@ struct poisson_cdf
 {
   using P = typename cuda::std::poisson_distribution<T>::param_type;
 
-  __host__ __device__ double operator()(cuda::std::uint64_t x, const P& p) const
+  TEST_FUNC double operator()(cuda::std::uint64_t x, const P& p) const
   {
     double sum  = 0;
     double mean = p.mean();
@@ -44,7 +44,7 @@ struct poisson_cdf
 };
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   [[maybe_unused]] const bool test_constexpr = false;
   using D                                    = cuda::std::poisson_distribution<T>;

@@ -87,7 +87,7 @@ struct __pstl_dispatch<__pstl_algorithm::__partition_copy, __execution_backend::
       static_cast<_OffsetType*>(nullptr),
       __count,
       __pred,
-      0);
+      nullptr);
 
     // Allocate memory for result
     auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);

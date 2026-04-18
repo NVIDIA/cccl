@@ -392,6 +392,7 @@ static_assert(device_scan_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {6},
     ctk_path,
     "-rdc=true",
     "-dlto",
+    "-default-device",
     "-DCUB_DISABLE_CDP",
     "-std=c++20"};
 

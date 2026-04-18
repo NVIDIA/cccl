@@ -21,7 +21,7 @@
 using cuda::std::optional;
 
 template <class T>
-__host__ __device__ constexpr void test() noexcept
+TEST_FUNC constexpr void test() noexcept
 {
   { // move constructed from empty
     optional<T> input{};
@@ -44,7 +44,7 @@ __host__ __device__ constexpr void test() noexcept
   }
 }
 
-__host__ __device__ constexpr bool test() noexcept
+TEST_FUNC constexpr bool test() noexcept
 {
   test<int>();
   test<const int>();
@@ -60,18 +60,18 @@ __host__ __device__ constexpr bool test() noexcept
 
 struct ThrowsMove
 {
-  __host__ __device__ ThrowsMove() noexcept(false) {}
-  __host__ __device__ ThrowsMove(ThrowsMove const&) noexcept(false) {}
-  __host__ __device__ ThrowsMove(ThrowsMove&&) noexcept(false) {}
+  TEST_FUNC ThrowsMove() noexcept(false) {}
+  TEST_FUNC ThrowsMove(ThrowsMove const&) noexcept(false) {}
+  TEST_FUNC ThrowsMove(ThrowsMove&&) noexcept(false) {}
 };
-static_assert(!cuda::std::is_nothrow_move_constructible<optional<ThrowsMove>>::value, "");
+static_assert(!cuda::std::is_nothrow_move_constructible<optional<ThrowsMove>>::value);
 struct NoThrowMove
 {
-  __host__ __device__ NoThrowMove() noexcept(false) {}
-  __host__ __device__ NoThrowMove(NoThrowMove const&) noexcept(false) {}
-  __host__ __device__ NoThrowMove(NoThrowMove&&) noexcept(true) {}
+  TEST_FUNC NoThrowMove() noexcept(false) {}
+  TEST_FUNC NoThrowMove(NoThrowMove const&) noexcept(false) {}
+  TEST_FUNC NoThrowMove(NoThrowMove&&) noexcept(true) {}
 };
-static_assert(cuda::std::is_nothrow_move_constructible<optional<NoThrowMove>>::value, "");
+static_assert(cuda::std::is_nothrow_move_constructible<optional<NoThrowMove>>::value);
 
 #if TEST_HAS_EXCEPTIONS()
 struct Z
@@ -110,7 +110,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
   {

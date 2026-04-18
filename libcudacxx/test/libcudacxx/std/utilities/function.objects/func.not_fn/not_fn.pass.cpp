@@ -27,7 +27,7 @@ TEST_NV_DIAG_SUPPRESS(set_but_not_used)
 //                       CALLABLE TEST TYPES
 ///////////////////////////////////////////////////////////////////////////////
 
-__host__ __device__ bool returns_true()
+TEST_FUNC bool returns_true()
 {
   return true;
 }
@@ -36,19 +36,19 @@ template <class Ret = bool>
 struct MoveOnlyCallable
 {
   MoveOnlyCallable(MoveOnlyCallable const&) = delete;
-  __host__ __device__ MoveOnlyCallable(MoveOnlyCallable&& other)
+  TEST_FUNC MoveOnlyCallable(MoveOnlyCallable&& other)
       : value(other.value)
   {
     other.value = !other.value;
   }
 
   template <class... Args>
-  __host__ __device__ Ret operator()(Args&&...)
+  TEST_FUNC Ret operator()(Args&&...)
   {
     return Ret{value};
   }
 
-  __host__ __device__ explicit MoveOnlyCallable(bool x)
+  TEST_FUNC explicit MoveOnlyCallable(bool x)
       : value(x)
   {}
   Ret value;
@@ -57,23 +57,23 @@ struct MoveOnlyCallable
 template <class Ret = bool>
 struct CopyCallable
 {
-  __host__ __device__ CopyCallable(CopyCallable const& other)
+  TEST_FUNC CopyCallable(CopyCallable const& other)
       : value(other.value)
   {}
 
-  __host__ __device__ CopyCallable(CopyCallable&& other)
+  TEST_FUNC CopyCallable(CopyCallable&& other)
       : value(other.value)
   {
     other.value = !other.value;
   }
 
   template <class... Args>
-  __host__ __device__ Ret operator()(Args&&...)
+  TEST_FUNC Ret operator()(Args&&...)
   {
     return Ret{value};
   }
 
-  __host__ __device__ explicit CopyCallable(bool x)
+  TEST_FUNC explicit CopyCallable(bool x)
       : value(x)
   {}
   Ret value;
@@ -82,23 +82,23 @@ struct CopyCallable
 template <class Ret = bool>
 struct ConstCallable
 {
-  __host__ __device__ ConstCallable(ConstCallable const& other)
+  TEST_FUNC ConstCallable(ConstCallable const& other)
       : value(other.value)
   {}
 
-  __host__ __device__ ConstCallable(ConstCallable&& other)
+  TEST_FUNC ConstCallable(ConstCallable&& other)
       : value(other.value)
   {
     other.value = !other.value;
   }
 
   template <class... Args>
-  __host__ __device__ Ret operator()(Args&&...) const
+  TEST_FUNC Ret operator()(Args&&...) const
   {
     return Ret{value};
   }
 
-  __host__ __device__ explicit ConstCallable(bool x)
+  TEST_FUNC explicit ConstCallable(bool x)
       : value(x)
   {}
   Ret value;
@@ -107,23 +107,23 @@ struct ConstCallable
 template <class Ret = bool>
 struct NoExceptCallable
 {
-  __host__ __device__ NoExceptCallable(NoExceptCallable const& other)
+  TEST_FUNC NoExceptCallable(NoExceptCallable const& other)
       : value(other.value)
   {}
 
   template <class... Args>
-  __host__ __device__ Ret operator()(Args&&...) noexcept
+  TEST_FUNC Ret operator()(Args&&...) noexcept
   {
     return Ret{value};
   }
 
   template <class... Args>
-  __host__ __device__ Ret operator()(Args&&...) const noexcept
+  TEST_FUNC Ret operator()(Args&&...) const noexcept
   {
     return Ret{value};
   }
 
-  __host__ __device__ explicit NoExceptCallable(bool x)
+  TEST_FUNC explicit NoExceptCallable(bool x)
       : value(x)
   {}
   Ret value;
@@ -137,12 +137,12 @@ struct CopyAssignableWrapper
   CopyAssignableWrapper& operator=(CopyAssignableWrapper&&)      = default;
 
   template <class... Args>
-  __host__ __device__ bool operator()(Args&&...)
+  TEST_FUNC bool operator()(Args&&...)
   {
     return value;
   }
 
-  __host__ __device__ explicit CopyAssignableWrapper(bool x)
+  TEST_FUNC explicit CopyAssignableWrapper(bool x)
       : value(x)
   {}
   bool value;
@@ -156,12 +156,12 @@ struct MoveAssignableWrapper
   MoveAssignableWrapper& operator=(MoveAssignableWrapper&&)      = default;
 
   template <class... Args>
-  __host__ __device__ bool operator()(Args&&...)
+  TEST_FUNC bool operator()(Args&&...)
   {
     return value;
   }
 
-  __host__ __device__ explicit MoveAssignableWrapper(bool x)
+  TEST_FUNC explicit MoveAssignableWrapper(bool x)
       : value(x)
   {}
   bool value;
@@ -169,15 +169,15 @@ struct MoveAssignableWrapper
 
 struct MemFunCallable
 {
-  __host__ __device__ explicit MemFunCallable(bool x)
+  TEST_FUNC explicit MemFunCallable(bool x)
       : value(x)
   {}
 
-  __host__ __device__ bool return_value() const
+  TEST_FUNC bool return_value() const
   {
     return value;
   }
-  __host__ __device__ bool return_value_nc()
+  TEST_FUNC bool return_value_nc()
   {
     return value;
   }
@@ -193,7 +193,7 @@ enum CallType : unsigned
   CT_RValue   = 8
 };
 
-__host__ __device__ inline constexpr CallType operator|(CallType LHS, CallType RHS)
+TEST_FUNC inline constexpr CallType operator|(CallType LHS, CallType RHS)
 {
   return static_cast<CallType>(static_cast<unsigned>(LHS) | static_cast<unsigned>(RHS));
 }
@@ -206,14 +206,14 @@ TEST_GLOBAL_VARIABLE TypeID const* ForwardingCallObject_last_call_args = nullptr
 struct ForwardingCallObject {
 
   template <class ...Args>
-  __host__ __device__
+  TEST_FUNC
   bool operator()(Args&&...) & {
       set_call<Args&&...>(CT_NonConst | CT_LValue);
       return true;
   }
 
   template <class ...Args>
-  __host__ __device__
+  TEST_FUNC
   bool operator()(Args&&...) const & {
       set_call<Args&&...>(CT_Const | CT_LValue);
       return true;
@@ -221,21 +221,21 @@ struct ForwardingCallObject {
 
   // Don't allow the call operator to be invoked as an rvalue.
   template <class ...Args>
-  __host__ __device__
+  TEST_FUNC
   bool operator()(Args&&...) && {
       set_call<Args&&...>(CT_NonConst | CT_RValue);
       return true;
   }
 
   template <class ...Args>
-  __host__ __device__
+  TEST_FUNC
   bool operator()(Args&&...) const && {
       set_call<Args&&...>(CT_Const | CT_RValue);
       return true;
   }
 
   template <class ...Args>
-  __host__ __device__
+  TEST_FUNC
   static void set_call(CallType type) {
       assert(ForwardingCallObject_last_call_type == CT_None);
       assert(ForwardingCallObject_last_call_args == nullptr);
@@ -244,7 +244,7 @@ struct ForwardingCallObject {
   }
 
   template <class ...Args>
-  __host__ __device__
+  TEST_FUNC
   static bool check_call(CallType type) {
       bool result =
            ForwardingCallObject_last_call_type == type
@@ -268,7 +268,7 @@ struct EvilBool
   EvilBool(EvilBool const&) = default;
   EvilBool(EvilBool&&)      = default;
 
-  __host__ __device__ friend EvilBool operator!(EvilBool const& other)
+  TEST_FUNC friend EvilBool operator!(EvilBool const& other)
   {
     ++EvilBool_bang_called;
     return EvilBool{!other.value};
@@ -279,7 +279,7 @@ private:
   friend struct CopyCallable<EvilBool>;
   friend struct NoExceptCallable<EvilBool>;
 
-  __host__ __device__ explicit EvilBool(bool x)
+  TEST_FUNC explicit EvilBool(bool x)
       : value(x)
   {}
   EvilBool& operator=(EvilBool const& other) = default;
@@ -293,7 +293,7 @@ struct ExplicitBool
   ExplicitBool(ExplicitBool const&) = default;
   ExplicitBool(ExplicitBool&&)      = default;
 
-  __host__ __device__ explicit operator bool() const
+  TEST_FUNC explicit operator bool() const
   {
     return value;
   }
@@ -302,10 +302,10 @@ private:
   friend struct MoveOnlyCallable<ExplicitBool>;
   friend struct CopyCallable<ExplicitBool>;
 
-  __host__ __device__ explicit ExplicitBool(bool x)
+  TEST_FUNC explicit ExplicitBool(bool x)
       : value(x)
   {}
-  __host__ __device__ ExplicitBool& operator=(bool x)
+  TEST_FUNC ExplicitBool& operator=(bool x)
   {
     value = x;
     return *this;
@@ -320,11 +320,11 @@ struct NoExceptEvilBool
   NoExceptEvilBool(NoExceptEvilBool&&)                       = default;
   NoExceptEvilBool& operator=(NoExceptEvilBool const& other) = default;
 
-  __host__ __device__ explicit NoExceptEvilBool(bool x)
+  TEST_FUNC explicit NoExceptEvilBool(bool x)
       : value(x)
   {}
 
-  __host__ __device__ friend NoExceptEvilBool operator!(NoExceptEvilBool const& other) noexcept
+  TEST_FUNC friend NoExceptEvilBool operator!(NoExceptEvilBool const& other) noexcept
   {
     return NoExceptEvilBool{!other.value};
   }
@@ -332,16 +332,16 @@ struct NoExceptEvilBool
   bool value;
 };
 
-__host__ __device__ void constructor_tests()
+TEST_FUNC void constructor_tests()
 {
   {
     using T = MoveOnlyCallable<bool>;
     T value(true);
     using RetT = decltype(cuda::std::not_fn(cuda::std::move(value)));
-    static_assert(cuda::std::is_move_constructible<RetT>::value, "");
-    static_assert(!cuda::std::is_copy_constructible<RetT>::value, "");
-    static_assert(!cuda::std::is_move_assignable<RetT>::value, "");
-    static_assert(!cuda::std::is_copy_assignable<RetT>::value, "");
+    static_assert(cuda::std::is_move_constructible<RetT>::value);
+    static_assert(!cuda::std::is_copy_constructible<RetT>::value);
+    static_assert(!cuda::std::is_move_assignable<RetT>::value);
+    static_assert(!cuda::std::is_copy_assignable<RetT>::value);
     auto ret = cuda::std::not_fn(cuda::std::move(value));
     // test it was moved from
     assert(value.value == false);
@@ -359,10 +359,10 @@ __host__ __device__ void constructor_tests()
     using T = CopyCallable<bool>;
     T value(false);
     using RetT = decltype(cuda::std::not_fn(value));
-    static_assert(cuda::std::is_move_constructible<RetT>::value, "");
-    static_assert(cuda::std::is_copy_constructible<RetT>::value, "");
-    static_assert(!cuda::std::is_move_assignable<RetT>::value, "");
-    static_assert(!cuda::std::is_copy_assignable<RetT>::value, "");
+    static_assert(cuda::std::is_move_constructible<RetT>::value);
+    static_assert(cuda::std::is_copy_constructible<RetT>::value);
+    static_assert(!cuda::std::is_move_assignable<RetT>::value);
+    static_assert(!cuda::std::is_copy_assignable<RetT>::value);
     auto ret = cuda::std::not_fn(value);
     // test that value is unchanged (copied not moved)
     assert(value.value == false);
@@ -380,10 +380,10 @@ __host__ __device__ void constructor_tests()
     T value(true);
     T value2(false);
     using RetT = decltype(cuda::std::not_fn(value));
-    static_assert(cuda::std::is_move_constructible<RetT>::value, "");
-    static_assert(cuda::std::is_copy_constructible<RetT>::value, "");
-    static_assert(cuda::std::is_move_assignable<RetT>::value, "");
-    static_assert(cuda::std::is_copy_assignable<RetT>::value, "");
+    static_assert(cuda::std::is_move_constructible<RetT>::value);
+    static_assert(cuda::std::is_copy_constructible<RetT>::value);
+    static_assert(cuda::std::is_move_assignable<RetT>::value);
+    static_assert(cuda::std::is_copy_assignable<RetT>::value);
     auto ret = cuda::std::not_fn(value);
     assert(ret() == false);
     auto ret2 = cuda::std::not_fn(value2);
@@ -399,10 +399,10 @@ __host__ __device__ void constructor_tests()
     T value(true);
     T value2(false);
     using RetT = decltype(cuda::std::not_fn(cuda::std::move(value)));
-    static_assert(cuda::std::is_move_constructible<RetT>::value, "");
-    static_assert(!cuda::std::is_copy_constructible<RetT>::value, "");
-    static_assert(cuda::std::is_move_assignable<RetT>::value, "");
-    static_assert(!cuda::std::is_copy_assignable<RetT>::value, "");
+    static_assert(cuda::std::is_move_constructible<RetT>::value);
+    static_assert(!cuda::std::is_copy_constructible<RetT>::value);
+    static_assert(cuda::std::is_move_assignable<RetT>::value);
+    static_assert(!cuda::std::is_copy_assignable<RetT>::value);
     auto ret = cuda::std::not_fn(cuda::std::move(value));
     assert(ret() == false);
     auto ret2 = cuda::std::not_fn(cuda::std::move(value2));
@@ -414,27 +414,27 @@ __host__ __device__ void constructor_tests()
   }
 }
 
-__host__ __device__ void return_type_tests()
+TEST_FUNC void return_type_tests()
 {
   using cuda::std::is_same;
   {
     using T  = CopyCallable<bool>;
     auto ret = cuda::std::not_fn(T{false});
-    static_assert(is_same<decltype(ret()), bool>::value, "");
-    static_assert(is_same<decltype(ret("abc")), bool>::value, "");
+    static_assert(is_same<decltype(ret()), bool>::value);
+    static_assert(is_same<decltype(ret("abc")), bool>::value);
     assert(ret() == true);
   }
   {
     using T  = CopyCallable<ExplicitBool>;
     auto ret = cuda::std::not_fn(T{true});
-    static_assert(is_same<decltype(ret()), bool>::value, "");
-    // static_assert(is_same<decltype(ret(cuda::std::string("abc"))), bool>::value, "");
+    static_assert(is_same<decltype(ret()), bool>::value);
+    // static_assert(is_same<decltype(ret(cuda::std::string("abc"))), bool>::value);
     assert(ret() == false);
   }
   {
     using T  = CopyCallable<EvilBool>;
     auto ret = cuda::std::not_fn(T{false});
-    static_assert(is_same<decltype(ret()), EvilBool>::value, "");
+    static_assert(is_same<decltype(ret()), EvilBool>::value);
     EvilBool_bang_called = 0;
     auto value_ret       = ret();
     assert(EvilBool_bang_called == 1);
@@ -446,7 +446,7 @@ __host__ __device__ void return_type_tests()
 
 // Other tests only test using objects with call operators. Test various
 // other callable types here.
-__host__ __device__ void other_callable_types_test()
+TEST_FUNC void other_callable_types_test()
 {
   { // test with function pointer
     auto ret = cuda::std::not_fn(returns_true);
@@ -496,7 +496,7 @@ void throws_in_constructor_test()
   {
     ThrowsOnCopy() = default;
     // NVCC claims this is a host device function so we need to hack around it
-    __host__ __device__ ThrowsOnCopy(ThrowsOnCopy const&)
+    TEST_FUNC ThrowsOnCopy(ThrowsOnCopy const&)
     {
       NV_IF_TARGET(NV_IS_HOST, throw 42;)
     }
@@ -519,24 +519,24 @@ void throws_in_constructor_test()
 }
 #endif // TEST_HAS_EXCEPTIONS()
 
-__host__ __device__ void call_operator_sfinae_test()
+TEST_FUNC void call_operator_sfinae_test()
 {
   { // wrong number of arguments
     using T = decltype(cuda::std::not_fn(returns_true));
-    static_assert(cuda::std::is_invocable<T>::value, ""); // callable only with no args
-    static_assert(!cuda::std::is_invocable<T, bool>::value, "");
+    static_assert(cuda::std::is_invocable<T>::value); // callable only with no args
+    static_assert(!cuda::std::is_invocable<T, bool>::value);
   }
   { // violates const correctness (member function pointer)
     using T = decltype(cuda::std::not_fn(&MemFunCallable::return_value_nc));
-    static_assert(cuda::std::is_invocable<T, MemFunCallable&>::value, "");
-    static_assert(!cuda::std::is_invocable<T, const MemFunCallable&>::value, "");
+    static_assert(cuda::std::is_invocable<T, MemFunCallable&>::value);
+    static_assert(!cuda::std::is_invocable<T, const MemFunCallable&>::value);
   }
   { // violates const correctness (call object)
     using Obj = CopyCallable<bool>;
     using NCT = decltype(cuda::std::not_fn(Obj{true}));
     using CT  = const NCT;
-    static_assert(cuda::std::is_invocable<NCT>::value, "");
-    static_assert(!cuda::std::is_invocable<CT>::value, "");
+    static_assert(cuda::std::is_invocable<NCT>::value);
+    static_assert(!cuda::std::is_invocable<CT>::value);
   }
   // NVRTC appears to be unhappy about... the lambda?
   // but doesn't let me fix it with annotations
@@ -546,15 +546,15 @@ __host__ __device__ void call_operator_sfinae_test()
       return x;
     };
     using T = decltype(cuda::std::not_fn(fn));
-    static_assert(cuda::std::is_invocable<T, bool>::value, "");
-    // static_assert(!cuda::std::is_invocable<T, cuda::std::string>::value, "");
+    static_assert(cuda::std::is_invocable<T, bool>::value);
+    // static_assert(!cuda::std::is_invocable<T, cuda::std::string>::value);
     unused(fn);
   }
 #endif // TEST_COMPILER(NVRTC)
 }
 
 #if 0
-__host__ __device__
+TEST_FUNC
 void call_operator_forwarding_test()
 {
     using Fn = ForwardingCallObject;
@@ -641,7 +641,7 @@ void call_operator_forwarding_test()
 }
 #endif
 
-__host__ __device__ void call_operator_noexcept_test()
+TEST_FUNC void call_operator_noexcept_test()
 {
   {
     using T = ConstCallable<bool>;
@@ -660,8 +660,8 @@ __host__ __device__ void call_operator_noexcept_test()
     using T = NoExceptCallable<bool>;
     T value(true);
     [[maybe_unused]] auto ret = cuda::std::not_fn(value);
-    static_assert(noexcept(!::cuda::std::__invoke(value)), "");
-    static_assert(noexcept(!cuda::std::invoke(value)), "");
+    static_assert(noexcept(!::cuda::std::__invoke(value)));
+    static_assert(noexcept(!cuda::std::invoke(value)));
 // TODO: nvcc gets this wrong, investigate
 #if !_CCCL_CUDA_COMPILATION()
     static_assert(noexcept(ret()), "call should be noexcept");
@@ -702,20 +702,20 @@ __host__ __device__ void call_operator_noexcept_test()
 }
 
 #if !TEST_CUDA_COMPILER(CLANG) // https://github.com/llvm/llvm-project/issues/67533
-__host__ __device__ void test_lwg2767()
+TEST_FUNC void test_lwg2767()
 {
   // See https://cplusplus.github.io/LWG/lwg-defects.html#2767
   struct Abstract
   {
-    __host__ __device__ virtual void f() const = 0;
+    TEST_FUNC virtual void f() const = 0;
   };
   struct Derived : public Abstract
   {
-    __host__ __device__ void f() const {}
+    TEST_FUNC void f() const {}
   };
   struct F
   {
-    __host__ __device__ bool operator()(Abstract&&)
+    TEST_FUNC bool operator()(Abstract&&)
     {
       return false;
     }

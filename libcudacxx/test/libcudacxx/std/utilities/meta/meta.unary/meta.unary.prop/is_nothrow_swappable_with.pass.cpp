@@ -34,18 +34,18 @@ struct C
 struct D
 {};
 
-__host__ __device__ void swap(A&, A&) {}
+TEST_FUNC void swap(A&, A&) {}
 
-__host__ __device__ void swap(A&, B&) noexcept {}
-__host__ __device__ void swap(B&, A&) noexcept {}
+TEST_FUNC void swap(A&, B&) noexcept {}
+TEST_FUNC void swap(B&, A&) noexcept {}
 
-__host__ __device__ void swap(A&, C&) noexcept {}
-__host__ __device__ void swap(C&, A&) {}
+TEST_FUNC void swap(A&, C&) noexcept {}
+TEST_FUNC void swap(C&, A&) {}
 
 struct M
 {};
 
-__host__ __device__ void swap(M&&, M&&) noexcept {}
+TEST_FUNC void swap(M&&, M&&) noexcept {}
 } // namespace MyNS
 
 int main(int, char**)
@@ -54,30 +54,30 @@ int main(int, char**)
   {
     // Test that is_swappable_with doesn't apply an lvalue reference
     // to the type. Instead it is up to the user.
-    static_assert(!cuda::std::is_nothrow_swappable_with<int, int>::value, "");
-    static_assert(cuda::std::is_nothrow_swappable_with<int&, int&>::value, "");
-    static_assert(cuda::std::is_nothrow_swappable_with<M, M>::value, "");
+    static_assert(!cuda::std::is_nothrow_swappable_with<int, int>::value);
+    static_assert(cuda::std::is_nothrow_swappable_with<int&, int&>::value);
+    static_assert(cuda::std::is_nothrow_swappable_with<M, M>::value);
     static_assert(cuda::std::is_swappable_with<A&, A&>::value && !cuda::std::is_nothrow_swappable_with<A&, A&>::value,
                   "");
   }
   {
     // test that heterogeneous swap is allowed only if both 'swap(A, B)' and
     // 'swap(B, A)' are valid.
-    static_assert(cuda::std::is_nothrow_swappable_with<A&, B&>::value, "");
+    static_assert(cuda::std::is_nothrow_swappable_with<A&, B&>::value);
     static_assert(!cuda::std::is_nothrow_swappable_with<A&, C&>::value && cuda::std::is_swappable_with<A&, C&>::value,
                   "");
-    static_assert(!cuda::std::is_nothrow_swappable_with<D&, C&>::value, "");
+    static_assert(!cuda::std::is_nothrow_swappable_with<D&, C&>::value);
   }
   {
     // test we guard against cv void inputs as required.
-    static_assert(!cuda::std::is_nothrow_swappable_with_v<void, int>, "");
-    static_assert(!cuda::std::is_nothrow_swappable_with_v<int, void>, "");
-    static_assert(!cuda::std::is_nothrow_swappable_with_v<const void, const volatile void>, "");
+    static_assert(!cuda::std::is_nothrow_swappable_with_v<void, int>);
+    static_assert(!cuda::std::is_nothrow_swappable_with_v<int, void>);
+    static_assert(!cuda::std::is_nothrow_swappable_with_v<const void, const volatile void>);
   }
   {
     // test for presence of is_nothrow_swappable_with_v
-    static_assert(cuda::std::is_nothrow_swappable_with_v<int&, int&>, "");
-    static_assert(!cuda::std::is_nothrow_swappable_with_v<int&&, int&&>, "");
+    static_assert(cuda::std::is_nothrow_swappable_with_v<int&, int&>);
+    static_assert(!cuda::std::is_nothrow_swappable_with_v<int&&, int&&>);
   }
 
   return 0;

@@ -84,12 +84,7 @@ function(add_bench target_name bench_name bench_src)
   set(bench_target ${bench_name})
   set(${target_name} ${bench_target} PARENT_SCOPE)
 
-  cccl_add_executable(
-    ${bench_target}
-    NO_METATARGETS
-    DIALECT 17
-    SOURCES "${bench_src}"
-  )
+  cccl_add_executable(${bench_target} NO_METATARGETS SOURCES "${bench_src}")
   target_link_libraries(
     ${bench_target}
     PRIVATE #

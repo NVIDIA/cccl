@@ -22,25 +22,25 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_not_copy_constructible()
+TEST_FUNC void test_not_copy_constructible()
 {
-  static_assert(!cuda::std::is_constructible<T, T&&>(), "");
-  static_assert(!cuda::std::is_constructible<T, const T&>(), "");
-  static_assert(!cuda::std::is_assignable<T, T&&>(), "");
-  static_assert(!cuda::std::is_assignable<T, const T&>(), "");
+  static_assert(!cuda::std::is_constructible<T, T&&>());
+  static_assert(!cuda::std::is_constructible<T, const T&>());
+  static_assert(!cuda::std::is_assignable<T, T&&>());
+  static_assert(!cuda::std::is_assignable<T, const T&>());
 }
 
 template <class T>
-__host__ __device__ void test_copy_constructible()
+TEST_FUNC void test_copy_constructible()
 {
-  static_assert(cuda::std::is_constructible<T, T&&>(), "");
-  static_assert(cuda::std::is_constructible<T, const T&>(), "");
-  static_assert(!cuda::std::is_assignable<T, T&&>(), "");
-  static_assert(!cuda::std::is_assignable<T, const T&>(), "");
+  static_assert(cuda::std::is_constructible<T, T&&>());
+  static_assert(cuda::std::is_constructible<T, const T&>());
+  static_assert(!cuda::std::is_assignable<T, T&&>());
+  static_assert(!cuda::std::is_assignable<T, const T&>());
 }
 
 template <class T, class A>
-__host__ __device__ void test_atomic_ref_copy_ctor()
+TEST_FUNC void test_atomic_ref_copy_ctor()
 {
   SHARED A val;
   val = 0;
@@ -55,7 +55,7 @@ __host__ __device__ void test_atomic_ref_copy_ctor()
 }
 
 template <class T, class A>
-__host__ __device__ void test_atomic_ref_move_ctor()
+TEST_FUNC void test_atomic_ref_move_ctor()
 {
   SHARED A val;
   val = 0;

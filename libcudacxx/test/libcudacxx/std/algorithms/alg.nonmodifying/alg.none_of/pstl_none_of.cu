@@ -21,6 +21,8 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_macros.h"
+
 inline constexpr short size = 1000;
 
 template <class T = int>
@@ -33,7 +35,7 @@ struct less_than_val
   {}
 
   template <class U>
-  __device__ constexpr bool operator()(const U& val) const noexcept
+  TEST_DEVICE_FUNC constexpr bool operator()(const U& val) const noexcept
   {
     return static_cast<T>(val) < val_;
   }

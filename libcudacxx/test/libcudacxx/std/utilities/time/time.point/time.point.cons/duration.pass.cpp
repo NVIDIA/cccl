@@ -18,7 +18,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   using Clock    = cuda::std::chrono::system_clock;
   using Duration = cuda::std::chrono::milliseconds;

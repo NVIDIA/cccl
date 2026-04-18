@@ -21,7 +21,7 @@
 using cuda::std::optional;
 
 template <class T>
-__host__ __device__ constexpr void test() noexcept
+TEST_FUNC constexpr void test() noexcept
 {
   { // copy constructed from empty
     const optional<T> input{};
@@ -44,7 +44,7 @@ __host__ __device__ constexpr void test() noexcept
   }
 }
 
-__host__ __device__ constexpr bool test() noexcept
+TEST_FUNC constexpr bool test() noexcept
 {
   test<int>();
   test<const int>();
@@ -95,7 +95,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
   {

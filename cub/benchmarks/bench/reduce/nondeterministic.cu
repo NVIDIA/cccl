@@ -62,7 +62,7 @@ void nondeterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     static_cast<offset_t>(elements),
     op_t{},
     init_t{},
-    0 /* stream */,
+    nullptr /* stream */,
     transform_op
 #if !TUNE_BASE
     ,

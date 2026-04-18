@@ -59,43 +59,32 @@ template <typename OffsetT>
 struct GridEvenShare
 {
 private:
-  int total_tiles;
-  int big_shares;
-  OffsetT big_share_items;
-  OffsetT normal_share_items;
-  OffsetT normal_base_offset;
+  int total_tiles{0};
+  int big_shares{0};
+  OffsetT big_share_items{0};
+  OffsetT normal_share_items{0};
+  OffsetT normal_base_offset{0};
 
 public:
   /// Total number of input items
-  OffsetT num_items;
+  OffsetT num_items{0};
 
   /// Grid size in thread blocks
-  int grid_size;
+  int grid_size{0};
 
   /// OffsetT into input marking the beginning of the owning thread block's segment of input tiles
-  OffsetT block_offset;
+  OffsetT block_offset{0};
 
   /// OffsetT into input of marking the end (one-past) of the owning thread block's segment of input tiles
-  OffsetT block_end;
+  OffsetT block_end{0};
 
   /// Stride between input tiles
-  OffsetT block_stride;
+  OffsetT block_stride{0};
 
   /**
    * \brief Constructor.
    */
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GridEvenShare()
-      : total_tiles(0)
-      , big_shares(0)
-      , big_share_items(0)
-      , normal_share_items(0)
-      , normal_base_offset(0)
-      , num_items(0)
-      , grid_size(0)
-      , block_offset(0)
-      , block_end(0)
-      , block_stride(0)
-  {}
+  _CCCL_FORCEINLINE GridEvenShare() = default;
 
   /**
    * @brief Dispatch initializer. To be called prior to kernel launch.

@@ -13,7 +13,7 @@
 #include "host_device_types.h"
 #include "test_macros.h"
 
-__device__ void test()
+TEST_DEVICE_FUNC void test()
 {
   using variant = cuda::std::variant<device_only_type>;
   { // default construction

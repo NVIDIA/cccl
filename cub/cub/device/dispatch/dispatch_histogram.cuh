@@ -1261,7 +1261,7 @@ struct DispatchHistogram
   template <typename MaxPolicyT = typename ::cuda::std::_If<
               ::cuda::std::is_void_v<PolicyHub>,
               /* fallback_policy_hub */
-              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 0>,
+              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ false>,
               PolicyHub>::MaxPolicy,
             bool IsByteSample>
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
@@ -1347,7 +1347,7 @@ struct DispatchHistogram
   template <typename MaxPolicyT = typename ::cuda::std::_If<
               ::cuda::std::is_void_v<PolicyHub>,
               /* fallback_policy_hub */
-              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 1>,
+              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ true>,
               PolicyHub>::MaxPolicy,
             bool IsByteSample>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(

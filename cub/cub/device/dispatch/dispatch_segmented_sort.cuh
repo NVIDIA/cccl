@@ -321,15 +321,15 @@ struct policy_selector_from_hub
         sp::WARP_THREADS,
         sp::ITEMS_PER_THREAD,
         sp::LOAD_ALGORITHM,
-        sp::STORE_ALGORITHM,
-        sp::LOAD_MODIFIER},
+        sp::LOAD_MODIFIER,
+        sp::STORE_ALGORITHM},
       sub_warp_merge_sort_policy{
         mp::BLOCK_THREADS,
         mp::WARP_THREADS,
         mp::ITEMS_PER_THREAD,
         mp::LOAD_ALGORITHM,
-        mp::STORE_ALGORITHM,
-        mp::LOAD_MODIFIER},
+        mp::LOAD_MODIFIER,
+        mp::STORE_ALGORITHM},
       ap::PARTITIONING_THRESHOLD};
   }
 };

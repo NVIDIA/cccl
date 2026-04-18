@@ -25,7 +25,7 @@
 
 struct Deleter
 {
-  __host__ __device__ void operator()(int* p) const
+  TEST_FUNC void operator()(int* p) const
   {
     delete p;
   }

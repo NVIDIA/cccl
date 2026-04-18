@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <utility>
 
 namespace unittest
 {
@@ -12,8 +13,8 @@ public:
   std::string message;
 
   UnitTestException() {}
-  UnitTestException(const std::string& msg)
-      : message(msg)
+  UnitTestException(std::string msg)
+      : message(std::move(msg))
   {}
 
   friend std::ostream& operator<<(std::ostream& os, const UnitTestException& e)

@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "meta.h"
+#include "test_macros.h"
 
 #define DEFINE_ASYNC_TRAIT(...)                                             \
   template <typename T, typename = cuda::std::true_type>                    \
@@ -74,13 +75,13 @@ using threadcount_trait = threadcount_trait_impl<T>;
     }                                                                                 \
   } while (false)
 
-__host__ inline std::vector<std::thread>& host_threads()
+inline std::vector<std::thread>& host_threads()
 {
   static std::vector<std::thread> threads;
   return threads;
 }
 
-__host__ inline void sync_host_threads()
+inline void sync_host_threads()
 {
   for (auto&& thread : host_threads())
   {
@@ -89,13 +90,13 @@ __host__ inline void sync_host_threads()
   host_threads().clear();
 }
 
-__host__ inline std::vector<std::thread>& device_threads()
+inline std::vector<std::thread>& device_threads()
 {
   static std::vector<std::thread> threads;
   return threads;
 }
 
-__host__ inline void sync_device_threads()
+inline void sync_device_threads()
 {
   for (auto&& thread : device_threads())
   {
@@ -104,7 +105,7 @@ __host__ inline void sync_device_threads()
   device_threads().clear();
 }
 
-__host__ void sync_all()
+void sync_all()
 {
   sync_host_threads();
   sync_device_threads();
@@ -113,15 +114,15 @@ __host__ void sync_all()
 struct async_tester_fence
 {
   template <typename T>
-  __host__ __device__ static void initialize(T&)
+  TEST_FUNC static void initialize(T&)
   {}
 
   template <typename T>
-  __host__ __device__ static void validate(T&)
+  TEST_FUNC static void validate(T&)
   {}
 
   template <typename T>
-  __host__ __device__ static void perform(T&)
+  TEST_FUNC static void perform(T&)
   {}
 };
 
@@ -129,23 +130,23 @@ template <typename... Testers>
 using tester_list = type_list<Testers...>;
 
 template <typename Tester, typename T>
-__host__ __device__ void initialize(T& object)
+TEST_FUNC void initialize(T& object)
 {
   Tester::initialize(object);
 }
 
 template <typename Tester, typename T>
-__host__ __device__ auto validate_impl(T& object) -> decltype(Tester::validate(object), void())
+TEST_FUNC auto validate_impl(T& object) -> decltype(Tester::validate(object), void())
 {
   Tester::validate(object);
 }
 
 template <typename, typename... Ts>
-__host__ __device__ void validate_impl(Ts&&...)
+TEST_FUNC void validate_impl(Ts&&...)
 {}
 
 template <typename Tester, typename T>
-__host__ __device__ void validate(T& object)
+TEST_FUNC void validate(T& object)
 {
   validate_impl<Tester>(object);
 }
@@ -458,7 +459,7 @@ struct manual_object
 
   union data
   {
-    __host__ __device__ constexpr data() noexcept
+    TEST_FUNC constexpr data() noexcept
         : dummy(){};
     char dummy = {};
     T object;
@@ -571,11 +572,11 @@ bool check_managed_memory_support(bool is_async)
 struct dummy_tester
 {
   template <typename... Ts>
-  __host__ __device__ static void initialize(Ts&&...)
+  TEST_FUNC static void initialize(Ts&&...)
   {}
 
   template <typename... Ts>
-  __host__ __device__ static void validate(Ts&&...)
+  TEST_FUNC static void validate(Ts&&...)
   {}
 };
 
@@ -654,7 +655,7 @@ struct performer_adapter<Performer, performer_side::initialize>
   static constexpr auto threadcount = threadcount_trait<Performer>::value;
 
   template <typename T>
-  __host__ __device__ static void initialize(T& t)
+  TEST_FUNC static void initialize(T& t)
   {
     Performer::perform(t);
   }
@@ -669,11 +670,11 @@ struct performer_adapter<Performer, performer_side::validate>
   static constexpr auto threadcount = threadcount_trait<Performer>::value;
 
   template <typename T>
-  __host__ __device__ static void initialize(T&)
+  TEST_FUNC static void initialize(T&)
   {}
 
   template <typename T>
-  __host__ __device__ static void validate(T& t)
+  TEST_FUNC static void validate(T& t)
   {
     Performer::perform(t);
   }

@@ -23,35 +23,35 @@
 #include "test_macros.h"
 
 template <typename C>
-__host__ __device__ void test_const_container(const C& c)
+TEST_FUNC void test_const_container(const C& c)
 {
   //  Can't say noexcept here because the container might not be
   assert(cuda::std::data(c) == c.data());
 }
 
 template <typename T>
-__host__ __device__ void test_const_container(const cuda::std::initializer_list<T>& c)
+TEST_FUNC void test_const_container(const cuda::std::initializer_list<T>& c)
 {
   static_assert(noexcept(cuda::std::data(c)));
   assert(cuda::std::data(c) == c.begin());
 }
 
 template <typename C>
-__host__ __device__ void test_container(C& c)
+TEST_FUNC void test_container(C& c)
 {
   //  Can't say noexcept here because the container might not be
   assert(cuda::std::data(c) == c.data());
 }
 
 template <typename T>
-__host__ __device__ void test_container(cuda::std::initializer_list<T>& c)
+TEST_FUNC void test_container(cuda::std::initializer_list<T>& c)
 {
   static_assert(noexcept(cuda::std::data(c)));
   assert(cuda::std::data(c) == c.begin());
 }
 
 template <typename T, size_t Sz>
-__host__ __device__ void test_const_array(const T (&array)[Sz])
+TEST_FUNC void test_const_array(const T (&array)[Sz])
 {
   static_assert(noexcept(cuda::std::data(array)));
   assert(cuda::std::data(array) == &array[0]);

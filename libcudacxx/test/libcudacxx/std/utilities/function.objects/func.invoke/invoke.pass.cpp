@@ -49,7 +49,7 @@ TEST_NV_DIAG_SUPPRESS(set_but_not_used)
 
 struct NonCopyable
 {
-  __host__ __device__ NonCopyable() {}
+  TEST_FUNC NonCopyable() {}
 
 private:
   NonCopyable(NonCopyable const&)            = delete;
@@ -58,40 +58,40 @@ private:
 
 struct TestClass
 {
-  __host__ __device__ explicit TestClass(int x)
+  TEST_FUNC explicit TestClass(int x)
       : data(x)
   {}
 
-  __host__ __device__ int& operator()(NonCopyable&&) &
+  TEST_FUNC int& operator()(NonCopyable&&) &
   {
     return data;
   }
-  __host__ __device__ int const& operator()(NonCopyable&&) const&
+  TEST_FUNC int const& operator()(NonCopyable&&) const&
   {
     return data;
   }
-  __host__ __device__ int volatile& operator()(NonCopyable&&) volatile&
+  TEST_FUNC int volatile& operator()(NonCopyable&&) volatile&
   {
     return data;
   }
-  __host__ __device__ int const volatile& operator()(NonCopyable&&) const volatile&
+  TEST_FUNC int const volatile& operator()(NonCopyable&&) const volatile&
   {
     return data;
   }
 
-  __host__ __device__ int&& operator()(NonCopyable&&) &&
+  TEST_FUNC int&& operator()(NonCopyable&&) &&
   {
     return cuda::std::move(data);
   }
-  __host__ __device__ int const&& operator()(NonCopyable&&) const&&
+  TEST_FUNC int const&& operator()(NonCopyable&&) const&&
   {
     return cuda::std::move(data);
   }
-  __host__ __device__ int volatile&& operator()(NonCopyable&&) volatile&&
+  TEST_FUNC int volatile&& operator()(NonCopyable&&) volatile&&
   {
     return cuda::std::move(data);
   }
-  __host__ __device__ int const volatile&& operator()(NonCopyable&&) const volatile&&
+  TEST_FUNC int const volatile&& operator()(NonCopyable&&) const volatile&&
   {
     return cuda::std::move(data);
   }
@@ -105,19 +105,19 @@ private:
 
 struct DerivedFromTestClass : public TestClass
 {
-  __host__ __device__ explicit DerivedFromTestClass(int x)
+  TEST_FUNC explicit DerivedFromTestClass(int x)
       : TestClass(x)
   {}
 };
 
-__host__ __device__ int& foo(NonCopyable&&)
+TEST_FUNC int& foo(NonCopyable&&)
 {
   static int data = 42;
   return data;
 }
 
 template <class Signature, class Expect, class Functor>
-__host__ __device__ void test_b12(Functor&& f)
+TEST_FUNC void test_b12(Functor&& f)
 {
   // Create the callable object.
   using ClassFunc    = Signature TestClass::*;
@@ -128,11 +128,11 @@ __host__ __device__ void test_b12(Functor&& f)
 
   // Check that the deduced return type of invoke is what is expected.
   using DeducedReturnType = decltype(cuda::std::invoke(func_ptr, cuda::std::forward<Functor>(f), cuda::std::move(arg)));
-  static_assert((cuda::std::is_same<DeducedReturnType, Expect>::value), "");
+  static_assert((cuda::std::is_same<DeducedReturnType, Expect>::value));
 
   // Check that result_of_t matches Expect.
   using ResultOfReturnType = typename cuda::std::result_of<ClassFunc && (Functor&&, NonCopyable&&)>::type;
-  static_assert((cuda::std::is_same<ResultOfReturnType, Expect>::value), "");
+  static_assert((cuda::std::is_same<ResultOfReturnType, Expect>::value));
 
   // Run invoke and check the return value.
   DeducedReturnType ret = cuda::std::invoke(func_ptr, cuda::std::forward<Functor>(f), cuda::std::move(arg));
@@ -140,7 +140,7 @@ __host__ __device__ void test_b12(Functor&& f)
 }
 
 template <class Expect, class Functor>
-__host__ __device__ void test_b34(Functor&& f)
+TEST_FUNC void test_b34(Functor&& f)
 {
   // Create the callable object.
   using ClassFunc    = int TestClass::*;
@@ -148,11 +148,11 @@ __host__ __device__ void test_b34(Functor&& f)
 
   // Check that the deduced return type of invoke is what is expected.
   using DeducedReturnType = decltype(cuda::std::invoke(func_ptr, cuda::std::forward<Functor>(f)));
-  static_assert((cuda::std::is_same<DeducedReturnType, Expect>::value), "");
+  static_assert((cuda::std::is_same<DeducedReturnType, Expect>::value));
 
   // Check that result_of_t matches Expect.
   using ResultOfReturnType = typename cuda::std::result_of<ClassFunc && (Functor&&)>::type;
-  static_assert((cuda::std::is_same<ResultOfReturnType, Expect>::value), "");
+  static_assert((cuda::std::is_same<ResultOfReturnType, Expect>::value));
 
   // Run invoke and check the return value.
   DeducedReturnType ret = cuda::std::invoke(func_ptr, cuda::std::forward<Functor>(f));
@@ -160,24 +160,24 @@ __host__ __device__ void test_b34(Functor&& f)
 }
 
 template <class Expect, class Functor>
-__host__ __device__ void test_b5(Functor&& f)
+TEST_FUNC void test_b5(Functor&& f)
 {
   NonCopyable arg;
 
   // Check that the deduced return type of invoke is what is expected.
   using DeducedReturnType = decltype(cuda::std::invoke(cuda::std::forward<Functor>(f), cuda::std::move(arg)));
-  static_assert((cuda::std::is_same<DeducedReturnType, Expect>::value), "");
+  static_assert((cuda::std::is_same<DeducedReturnType, Expect>::value));
 
   // Check that result_of_t matches Expect.
   using ResultOfReturnType = typename cuda::std::result_of<Functor && (NonCopyable&&)>::type;
-  static_assert((cuda::std::is_same<ResultOfReturnType, Expect>::value), "");
+  static_assert((cuda::std::is_same<ResultOfReturnType, Expect>::value));
 
   // Run invoke and check the return value.
   DeducedReturnType ret = cuda::std::invoke(cuda::std::forward<Functor>(f), cuda::std::move(arg));
   assert(ret == 42);
 }
 
-__host__ __device__ void bullet_one_two_tests()
+TEST_FUNC void bullet_one_two_tests()
 {
   {
     TestClass cl(42);
@@ -247,7 +247,7 @@ __host__ __device__ void bullet_one_two_tests()
   }
 }
 
-__host__ __device__ void bullet_three_four_tests()
+TEST_FUNC void bullet_three_four_tests()
 {
   {
     using Fn = TestClass;
@@ -311,7 +311,7 @@ __host__ __device__ void bullet_three_four_tests()
   }
 }
 
-__host__ __device__ void bullet_five_tests()
+TEST_FUNC void bullet_five_tests()
 {
   using FooType = int&(NonCopyable&&);
   {
@@ -339,20 +339,20 @@ __host__ __device__ void bullet_five_tests()
 
 struct CopyThrows
 {
-  __host__ __device__ CopyThrows() {}
-  __host__ __device__ CopyThrows(CopyThrows const&) {}
-  __host__ __device__ CopyThrows(CopyThrows&&) noexcept {}
+  TEST_FUNC CopyThrows() {}
+  TEST_FUNC CopyThrows(CopyThrows const&) {}
+  TEST_FUNC CopyThrows(CopyThrows&&) noexcept {}
 };
 
 struct NoThrowCallable
 {
-  __host__ __device__ void operator()() noexcept {}
-  __host__ __device__ void operator()(CopyThrows) noexcept {}
+  TEST_FUNC void operator()() noexcept {}
+  TEST_FUNC void operator()(CopyThrows) noexcept {}
 };
 
 struct ThrowsCallable
 {
-  __host__ __device__ void operator()() {}
+  TEST_FUNC void operator()() {}
 };
 
 struct MemberObj
@@ -360,30 +360,30 @@ struct MemberObj
   int x;
 };
 
-__host__ __device__ void noexcept_test()
+TEST_FUNC void noexcept_test()
 {
   {
     NoThrowCallable obj;
     unused(obj); // suppress unused warning
     CopyThrows arg;
     unused(arg); // suppress unused warning
-    static_assert(noexcept(cuda::std::invoke(obj)), "");
+    static_assert(noexcept(cuda::std::invoke(obj)));
 #if !TEST_COMPILER(NVHPC)
-    static_assert(!noexcept(cuda::std::invoke(obj, arg)), "");
+    static_assert(!noexcept(cuda::std::invoke(obj, arg)));
 #endif // TEST_COMPILER(NVHPC)
-    static_assert(noexcept(cuda::std::invoke(obj, cuda::std::move(arg))), "");
+    static_assert(noexcept(cuda::std::invoke(obj, cuda::std::move(arg))));
   }
 #if !TEST_COMPILER(NVHPC)
   {
     ThrowsCallable obj;
     unused(obj); // suppress unused warning
-    static_assert(!noexcept(cuda::std::invoke(obj)), "");
+    static_assert(!noexcept(cuda::std::invoke(obj)));
   }
 #endif // TEST_COMPILER(NVHPC)
   {
     MemberObj obj{42};
     unused(obj); // suppress unused warning.
-    static_assert(noexcept(cuda::std::invoke(&MemberObj::x, obj)), "");
+    static_assert(noexcept(cuda::std::invoke(&MemberObj::x, obj)));
   }
 }
 

@@ -19,7 +19,7 @@
 #include "test_macros.h"
 #include "unique_ptr_test_helper.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     cuda::std::unique_ptr<A> p(new A);

@@ -71,7 +71,7 @@ void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
     d_values_buffer_2,
     static_cast<offset_t>(elements),
     compare_op_t{},
-    0 /* stream */
+    nullptr /* stream */
 #if !TUNE_BASE
     ,
     policy_selector<key_t>{}

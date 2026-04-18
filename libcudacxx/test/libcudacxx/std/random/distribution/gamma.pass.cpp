@@ -27,7 +27,7 @@ struct gamma_cdf
 {
   using P = typename cuda::std::gamma_distribution<T>::param_type;
 
-  __host__ __device__ double operator()(double x, const P& p) const
+  TEST_FUNC double operator()(double x, const P& p) const
   {
     if (x <= 0.0)
     {
@@ -45,7 +45,7 @@ struct gamma_cdf
 };
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   [[maybe_unused]] const bool test_constexpr = false;
   using D                                    = cuda::std::gamma_distribution<T>;

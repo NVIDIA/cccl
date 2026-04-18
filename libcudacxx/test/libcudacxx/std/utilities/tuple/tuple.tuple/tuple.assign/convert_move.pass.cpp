@@ -24,16 +24,16 @@ struct B
 {
   int id_;
 
-  __host__ __device__ explicit B(int i = 0)
+  TEST_FUNC explicit B(int i = 0)
       : id_(i)
   {}
 
-  __host__ __device__ virtual ~B() {}
+  TEST_FUNC virtual ~B() {}
 };
 
 struct D : B
 {
-  __host__ __device__ explicit D(int i)
+  TEST_FUNC explicit D(int i)
       : B(i)
   {}
 };
@@ -41,7 +41,7 @@ struct D : B
 struct E
 {
   E() = default;
-  __host__ __device__ E& operator=(int)
+  TEST_FUNC E& operator=(int)
   {
     return *this;
   }

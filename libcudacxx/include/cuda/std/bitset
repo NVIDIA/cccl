@@ -177,9 +177,9 @@ struct __avoid_promotions
 
 _CCCL_DIAG_POP
 
-static_assert(sizeof(__avoid_promotions<uint_least8_t>) == sizeof(uint_least8_t), "");
-static_assert(sizeof(__avoid_promotions<uint_least16_t>) == sizeof(uint_least16_t), "");
-static_assert(sizeof(__avoid_promotions<uint_least32_t>) == sizeof(uint_least32_t), "");
+static_assert(sizeof(__avoid_promotions<uint_least8_t>) == sizeof(uint_least8_t));
+static_assert(sizeof(__avoid_promotions<uint_least16_t>) == sizeof(uint_least16_t));
+static_assert(sizeof(__avoid_promotions<uint_least32_t>) == sizeof(uint_least32_t));
 
 template <size_t _N_words, size_t _Size>
 class __bitset

@@ -8,8 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#define _CUDAX_HIERARCHY
-
 #include <cub/block/block_reduce.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/warp/warp_reduce.cuh>
@@ -31,14 +29,14 @@
 
 __device__ unsigned global_var = 0;
 
-template <class Level, class Hierarchy, class Group>
+template <class Unit, class Level, class Hierarchy, class Group>
 __device__ void test_common_properties(const Hierarchy&, Group& group)
 {
   // Assert that Group satisfies the group concept.
   static_assert(cudax::group<Group>);
 
   // Test types
-  static_assert(cuda::std::is_same_v<Level, typename Group::unit_type>);
+  static_assert(cuda::std::is_same_v<Unit, typename Group::unit_type>);
   static_assert(cuda::std::is_same_v<Level, typename Group::level_type>);
 
   // Test that the group can be queried for it's hierarchy.
@@ -55,7 +53,7 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
     // .sync() method must support calls from different branches. Add some dummy work to make sure the branches are not
     // collided.
     cuda::atomic_ref<unsigned, cuda::thread_scope_device> atomic{global_var};
-    if (cuda::gpu_thread.rank(group) % 2 == 0)
+    if ((threadIdx.x + threadIdx.y + threadIdx.z) % 2 == 0)
     {
       atomic++;
       group.sync();
@@ -193,8 +191,12 @@ __device__ void test_cooperative_algorithm(Group& group)
 }
 
 template <class Hierarchy>
-__device__ void test_queries(cudax::this_thread<Hierarchy>& group)
+__device__ void test_this_queries(const cudax::this_thread<Hierarchy>& group)
 {
+  // todo(dabayer): These queries end up in `error: expression must have a constant value`, when group is taken by
+  // reference. Can we find a solution that works without copying the group?
+  // static_assert(cuda::gpu_thread.static_count(group) == 1);
+
   CUDAX_REQUIRE(cuda::gpu_thread.count(group) == 1);
   CUDAX_REQUIRE(group.count(cuda::warp) == cuda::gpu_thread.count(cuda::warp));
   CUDAX_REQUIRE(group.count(cuda::block) == cuda::gpu_thread.count(cuda::block));
@@ -213,8 +215,13 @@ __device__ void test_queries(cudax::this_thread<Hierarchy>& group)
 }
 
 template <class Hierarchy>
-__device__ void test_queries(cudax::this_warp<Hierarchy>& group)
+__device__ void test_this_queries(const cudax::this_warp<Hierarchy>& group)
 {
+  // todo(dabayer): These queries end up in `error: expression must have a constant value`, when group is taken by
+  // reference. Can we find a solution that works without copying the group?
+  // static_assert(cuda::gpu_thread.static_count(group) == cuda::gpu_thread.static_count(cuda::warp,
+  // group.hierarchy())); static_assert(cuda::warp.static_count(group) == 1);
+
   CUDAX_REQUIRE(cuda::gpu_thread.count(group) == cuda::gpu_thread.count(cuda::warp));
   CUDAX_REQUIRE(cuda::warp.count(group) == 1);
   CUDAX_REQUIRE(group.count(cuda::block) == cuda::warp.count(cuda::block));
@@ -235,8 +242,14 @@ __device__ void test_queries(cudax::this_warp<Hierarchy>& group)
 }
 
 template <class Hierarchy>
-__device__ void test_queries(cudax::this_block<Hierarchy>& group)
+__device__ void test_this_queries(const cudax::this_block<Hierarchy>& group)
 {
+  // todo(dabayer): These queries end up in `error: expression must have a constant value`, when group is taken by
+  // reference. Can we find a solution that works without copying the group?
+  // static_assert(cuda::gpu_thread.static_count(group) == cuda::gpu_thread.static_count(cuda::block,
+  // group.hierarchy())); static_assert(cuda::warp.static_count(group) == cuda::warp.static_count(cuda::block,
+  // group.hierarchy())); static_assert(cuda::block.static_count(group) == 1);
+
   CUDAX_REQUIRE(cuda::gpu_thread.count(group) == cuda::gpu_thread.count(cuda::block));
   CUDAX_REQUIRE(cuda::warp.count(group) == cuda::warp.count(cuda::block));
   CUDAX_REQUIRE(cuda::block.count(group) == 1);
@@ -259,8 +272,15 @@ __device__ void test_queries(cudax::this_block<Hierarchy>& group)
 }
 
 template <class Hierarchy>
-__device__ void test_queries(cudax::this_cluster<Hierarchy>& group)
+__device__ void test_this_queries(const cudax::this_cluster<Hierarchy>& group)
 {
+  // todo(dabayer): These queries end up in `error: expression must have a constant value`, when group is taken by
+  // reference. Can we find a solution that works without copying the group?
+  // static_assert(cuda::gpu_thread.static_count(group) == cuda::gpu_thread.static_count(cuda::cluster,
+  // group.hierarchy())); static_assert(cuda::warp.static_count(group) == cuda::warp.static_count(cuda::cluster,
+  // group.hierarchy())); static_assert(cuda::block.static_count(group) == cuda::block.static_count(cuda::cluster,
+  // group.hierarchy())); static_assert(cuda::cluster.static_count(group) == 1);
+
   CUDAX_REQUIRE(cuda::gpu_thread.count(group) == cuda::gpu_thread.count(cuda::cluster));
   CUDAX_REQUIRE(cuda::warp.count(group) == cuda::warp.count(cuda::cluster));
   CUDAX_REQUIRE(cuda::block.count(group) == cuda::block.count(cuda::cluster));
@@ -285,8 +305,16 @@ __device__ void test_queries(cudax::this_cluster<Hierarchy>& group)
 }
 
 template <class Hierarchy>
-__device__ void test_queries(cudax::this_grid<Hierarchy>& group)
+__device__ void test_this_queries(const cudax::this_grid<Hierarchy>& group)
 {
+  // todo(dabayer): These queries end up in `error: expression must have a constant value`, when group is taken by
+  // reference. Can we find a solution that works without copying the group?
+  // static_assert(cuda::gpu_thread.static_count(group) == cuda::gpu_thread.static_count(cuda::grid,
+  // group.hierarchy())); static_assert(cuda::warp.static_count(group) == cuda::warp.static_count(cuda::grid,
+  // group.hierarchy())); static_assert(cuda::block.static_count(group) == cuda::block.static_count(cuda::grid,
+  // group.hierarchy())); static_assert(cuda::cluster.static_count(group) == cuda::cluster.static_count(cuda::grid,
+  // group.hierarchy())); static_assert(cuda::grid.static_count(group) == 1);
+
   CUDAX_REQUIRE(cuda::gpu_thread.count(group) == cuda::gpu_thread.count(cuda::grid));
   CUDAX_REQUIRE(cuda::warp.count(group) == cuda::warp.count(cuda::grid));
   CUDAX_REQUIRE(cuda::block.count(group) == cuda::block.count(cuda::grid));
@@ -318,31 +346,31 @@ __device__ void test_cg_interop(const Hierarchy& hierarchy)
   if constexpr (cuda::std::is_same_v<Level, cuda::thread_level>)
   {
     cudax::this_thread group{cooperative_groups::this_thread()};
-    test_common_properties<Level>(hierarchy, group);
+    test_common_properties<Level, Level>(hierarchy, group);
   }
   else if constexpr (cuda::std::is_same_v<Level, cuda::warp_level>)
   {
     cudax::this_warp group{cooperative_groups::tiled_partition<32>(cooperative_groups::this_thread_block())};
-    test_common_properties<Level>(hierarchy, group);
+    test_common_properties<Level, Level>(hierarchy, group);
   }
   else if constexpr (cuda::std::is_same_v<Level, cuda::block_level>)
   {
     cudax::this_block group{cooperative_groups::this_thread_block()};
-    test_common_properties<Level>(hierarchy, group);
+    test_common_properties<Level, Level>(hierarchy, group);
   }
   else if constexpr (cuda::std::is_same_v<Level, cuda::cluster_level>)
   {
 #if defined(_CG_HAS_CLUSTER_GROUP)
     NV_IF_TARGET(NV_PROVIDES_SM_90, ({
                    cudax::this_cluster group{cooperative_groups::this_cluster()};
-                   test_common_properties<Level>(hierarchy, group);
+                   test_common_properties<Level, Level>(hierarchy, group);
                  }))
 #endif // _CG_HAS_CLUSTER_GROUP
   }
   else if constexpr (cuda::std::is_same_v<Level, cuda::grid_level>)
   {
     cudax::this_grid group{cooperative_groups::this_grid()};
-    test_common_properties<Level>(hierarchy, group);
+    test_common_properties<Level, Level>(hierarchy, group);
   }
 }
 
@@ -357,10 +385,10 @@ __device__ void test_this_group(const Config& config)
     static_assert(cuda::std::is_same_v<GroupTempl<cudax::__implicit_hierarchy_t>, decltype(group)>);
     static_assert(cuda::std::is_nothrow_default_constructible_v<decltype(group)>);
 
-    test_common_properties<Level>(implicit_hierarchy, group);
+    test_common_properties<Level, Level>(implicit_hierarchy, group);
     // todo: implement cooperative algorithm that supports dynamic extents
     // test_cooperative_algorithm(group);
-    test_queries(group);
+    test_this_queries(group);
   }
 
   // Test construction from kernel_config.
@@ -372,16 +400,105 @@ __device__ void test_this_group(const Config& config)
     static_assert(cuda::std::is_nothrow_constructible_v<decltype(group), const typename Config::hierarchy_type&>);
 #endif // !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
 
-    test_common_properties<Level>(config.hierarchy(), group);
+    test_common_properties<Level, Level>(config.hierarchy(), group);
     if constexpr (!cuda::std::is_same_v<Level, cuda::grid_level>)
     {
       test_cooperative_algorithm(group);
     }
-    test_queries(group);
+    test_this_queries(group);
   }
 
   // Test construction from CG equivalents
   test_cg_interop<Level>(implicit_hierarchy);
+}
+
+template <class Level, cuda::std::size_t N, class Hierarchy, class Sync>
+__device__ void test_queries(const cudax::thread_group<Level, cudax::group_by<N>, Hierarchy, Sync>& group)
+{
+  // todo(dabayer): These queries end up in `error: expression must have a constant value`, when group is taken by
+  // reference. Can we find a solution that works without copying the group?
+  // static_assert(cuda::gpu_thread.static_count(group) == N);
+
+  const auto count_ref = group.mapping().n();
+  const auto rank_ref  = cuda::gpu_thread.rank(Level{}, group.hierarchy()) % count_ref;
+
+  CUDAX_REQUIRE(cuda::gpu_thread.count(group) == count_ref);
+  CUDAX_REQUIRE(cuda::gpu_thread.rank(group) == rank_ref);
+  CUDAX_REQUIRE(cuda::gpu_thread.is_root_rank(group) == (rank_ref == 0));
+  CUDAX_REQUIRE(cuda::gpu_thread.is_part_of(group));
+}
+
+template <class Unit, template <class...> class GroupTempl, class Level, class Config, cuda::std::size_t N>
+__device__ void test_group_by_group(const Config& config)
+{
+  // Test statically known group size
+  {
+    using Mapping = cudax::group_by<N>;
+
+    GroupTempl group{Level{}, Mapping{}, config};
+    static_assert(
+      cuda::std::is_same_v<
+        GroupTempl<Level, Mapping, typename Config::hierarchy_type, cudax::__synchronizer_select_t<Unit, Level, Mapping>>,
+        decltype(group)>);
+
+    test_common_properties<Unit, Level>(config.hierarchy(), group);
+    test_queries<Level>(group);
+  }
+
+  if constexpr (cuda::std::is_same_v<Level, cuda::block_level>)
+  {
+    using Mapping = cudax::group_by<N>;
+    using Barrier = cuda::barrier<cuda::thread_scope_block>;
+
+    constexpr cuda::std::size_t nbarriers = 128 / N;
+
+    struct alignas(Barrier) BarrierStorage
+    {
+      unsigned char bytes[nbarriers * sizeof(Barrier)];
+    };
+    __shared__ BarrierStorage barrier_storage;
+
+    auto& barriers = reinterpret_cast<Barrier(&)[nbarriers]>(barrier_storage);
+
+    GroupTempl group{Level{}, Mapping{}, config, barriers};
+    static_assert(
+      cuda::std::is_same_v<
+        GroupTempl<Level, Mapping, typename Config::hierarchy_type, cudax::__barrier_synchronizer<Unit, Level, Mapping>>,
+        decltype(group)>);
+
+    test_common_properties<Unit, Level>(config.hierarchy(), group);
+  }
+
+  // todo: test also other levels, but those will need barriers
+  // Test dynamically specified group size
+  // if constexpr (cuda::std::is_same_v<Level, cuda::warp_level>)
+  // {
+  //   using Mapping = cudax::group_by<cuda::std::dynamic_extent>;
+
+  //   GroupTempl group{Level{}, Mapping{static_cast<unsigned>(N)}, config};
+  //   static_assert(
+  //     cuda::std::is_same_v<GroupTempl<Level, Mapping, typename Config::hierarchy_type,
+  //     cudax::__syncwarp_synchronizer<Unit, Level, Mapping>>, decltype(group)>);
+
+  //   test_common_properties<Unit, Level>(config.hierarchy(), group);
+  //   test_queries<Level>(group);
+  // }
+}
+
+template <class Unit, template <class...> class GroupTempl, class Level, class Config>
+__device__ void test_group_by_group(const Config& config)
+{
+  // powers of 2
+  test_group_by_group<Unit, GroupTempl, Level, Config, 1>(config);
+  test_group_by_group<Unit, GroupTempl, Level, Config, 4>(config);
+  test_group_by_group<Unit, GroupTempl, Level, Config, 16>(config);
+  test_group_by_group<Unit, GroupTempl, Level, Config, 32>(config);
+
+  if constexpr (cuda::std::is_same_v<Level, cuda::block_level>)
+  {
+    test_group_by_group<Unit, GroupTempl, Level, Config, 64>(config);
+    test_group_by_group<Unit, GroupTempl, Level, Config, 128>(config);
+  }
 }
 
 struct TestKernel
@@ -389,11 +506,22 @@ struct TestKernel
   template <class Config>
   __device__ void operator()(const Config& config)
   {
+    using Hierarchy = typename Config::hierarchy_type;
+
     test_this_group<cuda::thread_level, cudax::this_thread>(config);
     test_this_group<cuda::warp_level, cudax::this_warp>(config);
     test_this_group<cuda::block_level, cudax::this_block>(config);
     test_this_group<cuda::cluster_level, cudax::this_cluster>(config);
     test_this_group<cuda::grid_level, cudax::this_grid>(config);
+
+    // todo: allow this once hierarchy is queryable for missing levels
+    test_group_by_group<cuda::thread_level, cudax::thread_group, cuda::warp_level>(config);
+    test_group_by_group<cuda::thread_level, cudax::thread_group, cuda::block_level>(config);
+    if constexpr (Hierarchy::has_level(cuda::cluster))
+    {
+      test_group_by_group<cuda::thread_level, cudax::thread_group, cuda::cluster_level>(config);
+    }
+    test_group_by_group<cuda::thread_level, cudax::thread_group, cuda::grid_level>(config);
   }
 };
 

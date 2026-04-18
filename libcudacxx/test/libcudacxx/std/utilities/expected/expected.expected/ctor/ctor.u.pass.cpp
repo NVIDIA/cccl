@@ -31,52 +31,52 @@
 #include "test_macros.h"
 
 // Test Constraints:
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<int, int>, int>, "");
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<int, int>, int>);
 
 // is_same_v<remove_cvref_t<U>, in_place_t>
 struct FromJustInplace
 {
-  __host__ __device__ FromJustInplace(cuda::std::in_place_t);
+  TEST_FUNC FromJustInplace(cuda::std::in_place_t);
 };
-static_assert(!cuda::std::is_constructible_v<cuda::std::expected<FromJustInplace, int>, cuda::std::in_place_t>, "");
+static_assert(!cuda::std::is_constructible_v<cuda::std::expected<FromJustInplace, int>, cuda::std::in_place_t>);
 static_assert(!cuda::std::is_constructible_v<cuda::std::expected<FromJustInplace, int>, cuda::std::in_place_t const&>,
               "");
 
 // is_same_v<expected, remove_cvref_t<U>>
 // Note that result is true because it is covered by the constructors that take expected
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<int, int>, cuda::std::expected<int, int>&>, "");
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<int, int>, cuda::std::expected<int, int>&>);
 
 // remove_cvref_t<U> is a specialization of unexpected
 // Note that result is true because it is covered by the constructors that take unexpected
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<int, int>, cuda::std::unexpected<int>&>, "");
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<int, int>, cuda::std::unexpected<int>&>);
 
 // !is_constructible_v<T, U>
 struct foo
 {};
-static_assert(!cuda::std::is_constructible_v<cuda::std::expected<int, int>, foo>, "");
+static_assert(!cuda::std::is_constructible_v<cuda::std::expected<int, int>, foo>);
 
 // test explicit(!is_convertible_v<U, T>)
 struct NotConvertible
 {
-  __host__ __device__ explicit NotConvertible(int);
+  TEST_FUNC explicit NotConvertible(int);
 };
-static_assert(cuda::std::is_convertible_v<int, cuda::std::expected<int, int>>, "");
-static_assert(!cuda::std::is_convertible_v<int, cuda::std::expected<NotConvertible, int>>, "");
+static_assert(cuda::std::is_convertible_v<int, cuda::std::expected<int, int>>);
+static_assert(!cuda::std::is_convertible_v<int, cuda::std::expected<NotConvertible, int>>);
 
 struct CopyOnly
 {
   int i;
-  __host__ __device__ constexpr CopyOnly(int ii)
+  TEST_FUNC constexpr CopyOnly(int ii)
       : i(ii)
   {}
-  CopyOnly(const CopyOnly&)                = default;
-  __host__ __device__ CopyOnly(CopyOnly&&) = delete;
-  __host__ __device__ friend constexpr bool operator==(const CopyOnly& mi, int ii)
+  CopyOnly(const CopyOnly&)      = default;
+  TEST_FUNC CopyOnly(CopyOnly&&) = delete;
+  TEST_FUNC friend constexpr bool operator==(const CopyOnly& mi, int ii)
   {
     return mi.i == ii;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator!=(const CopyOnly& mi, int ii)
+  TEST_FUNC friend constexpr bool operator!=(const CopyOnly& mi, int ii)
   {
     return mi.i != ii;
   }
@@ -84,7 +84,7 @@ struct CopyOnly
 };
 
 template <class T>
-__host__ __device__ constexpr void testInt()
+TEST_FUNC constexpr void testInt()
 {
   cuda::std::expected<T, int> e(5);
   assert(e.has_value());
@@ -92,7 +92,7 @@ __host__ __device__ constexpr void testInt()
 }
 
 template <class T>
-__host__ __device__ constexpr void testLValue()
+TEST_FUNC constexpr void testLValue()
 {
   T t(5);
   cuda::std::expected<T, int> e(t);
@@ -101,14 +101,14 @@ __host__ __device__ constexpr void testLValue()
 }
 
 template <class T>
-__host__ __device__ constexpr void testRValue()
+TEST_FUNC constexpr void testRValue()
 {
   cuda::std::expected<T, int> e(T(5));
   assert(e.has_value());
   assert(e.value() == 5);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   testInt<int>();
   testInt<CopyOnly>();
@@ -125,7 +125,7 @@ __host__ __device__ constexpr bool test()
     {
       int i;
       int j;
-      __host__ __device__ constexpr Bar(int ii, int jj)
+      TEST_FUNC constexpr Bar(int ii, int jj)
           : i(ii)
           , j(jj)
       {}
@@ -181,7 +181,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 #if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

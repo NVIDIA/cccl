@@ -318,7 +318,7 @@ struct DispatchSegmentedReduce
           break;
         }
       }
-    } while (0);
+    } while (false);
 
     return error;
   }
@@ -434,7 +434,7 @@ struct DispatchSegmentedReduce
       {
         break;
       }
-    } while (0);
+    } while (false);
 
     return error;
   }

@@ -25,6 +25,7 @@
 #  include <tuple>
 #endif // !_CCCL_COMPILER(NVRTC)
 
+#include "test_macros.h"
 // vvv MyPair & tuple protocol for MyPair vvv
 
 namespace my_namespace
@@ -37,7 +38,7 @@ struct MyPair
 };
 
 template <cuda::std::size_t I, class A, class B>
-[[nodiscard]] __host__ __device__ constexpr auto& get(MyPair<A, B>& p)
+[[nodiscard]] TEST_FUNC constexpr auto& get(MyPair<A, B>& p)
 {
   if constexpr (I == 0)
   {
@@ -50,7 +51,7 @@ template <cuda::std::size_t I, class A, class B>
 }
 
 template <cuda::std::size_t I, class A, class B>
-[[nodiscard]] __host__ __device__ constexpr auto&& get(MyPair<A, B>&& p)
+[[nodiscard]] TEST_FUNC constexpr auto&& get(MyPair<A, B>&& p)
 {
   if constexpr (I == 0)
   {
@@ -63,7 +64,7 @@ template <cuda::std::size_t I, class A, class B>
 }
 
 template <cuda::std::size_t I, class A, class B>
-[[nodiscard]] __host__ __device__ constexpr const auto& get(const MyPair<A, B>& p)
+[[nodiscard]] TEST_FUNC constexpr const auto& get(const MyPair<A, B>& p)
 {
   if constexpr (I == 0)
   {
@@ -76,7 +77,7 @@ template <cuda::std::size_t I, class A, class B>
 }
 
 template <cuda::std::size_t I, class A, class B>
-[[nodiscard]] __host__ __device__ constexpr const auto&& get(const MyPair<A, B>&& p)
+[[nodiscard]] TEST_FUNC constexpr const auto&& get(const MyPair<A, B>&& p)
 {
   if constexpr (I == 0)
   {
@@ -108,7 +109,7 @@ struct cuda::std::tuple_element<1, my_namespace::MyPair<A, B>>
 // ^^^ MyPair & tuple protocol for MyPair ^^^
 
 template <class T, bool is_noexcept, class TupleLike>
-__host__ __device__ constexpr void test_constructor_from_tuple_like(const TupleLike& tuple_like)
+TEST_FUNC constexpr void test_constructor_from_tuple_like(const TupleLike& tuple_like)
 {
   using C = cuda::complex<T>;
 
@@ -127,7 +128,7 @@ __host__ __device__ constexpr void test_constructor_from_tuple_like(const TupleL
 }
 
 template <class T>
-__host__ __device__ constexpr void test_constructor_from_tuple_like()
+TEST_FUNC constexpr void test_constructor_from_tuple_like()
 {
   T real_part(1);
   T imag_part(2);
@@ -148,7 +149,7 @@ __host__ __device__ constexpr void test_constructor_from_tuple_like()
   test_constructor_from_tuple_like<T, false>(my_namespace::MyPair<T&, T&&>{real_part, T{imag_part}});
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_constructor_from_tuple_like<float>();
   test_constructor_from_tuple_like<double>();

@@ -200,7 +200,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
   -> cuda_expected<
-    ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, 0)), decltype(kernel_source.TransformKernel()), int>>
+    ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, nullptr)), decltype(kernel_source.TransformKernel()), int>>
 {
   CUB_DETAIL_CONSTEXPR_ISH const transform_policy policy = policy_getter();
   CUB_DETAIL_CONSTEXPR_ISH int block_threads             = policy.async_copy.block_threads;

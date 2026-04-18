@@ -25,6 +25,17 @@ DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::Flagged, device_partition_flagged);
 
 namespace stdexec = cuda::std::execution;
 
+template <typename T>
+struct greater_than_t
+{
+  T compare;
+
+  __host__ __device__ bool operator()(const T& a) const
+  {
+    return a > compare;
+  }
+};
+
 #if TEST_LAUNCH == 0
 
 TEST_CASE("Device partition works with default environment", "[partition][device]")
@@ -71,6 +82,38 @@ TEST_CASE("Device partition flagged works with default environment", "[partition
 
   REQUIRE(d_num_selected == expected_num_selected);
   REQUIRE(d_out == expected_output);
+}
+
+TEST_CASE("Device partition three-way works with default environment", "[partition][device]")
+{
+  auto d_in             = c2h::device_vector<int>{0, 2, 3, 9, 5, 2, 81, 8};
+  auto d_small_out      = c2h::device_vector<int>(8);
+  auto d_large_out      = c2h::device_vector<int>(8);
+  auto d_unselected_out = c2h::device_vector<int>(8);
+  auto d_num_selected   = c2h::device_vector<int>(2);
+
+  less_than_t<int> small_selector{7};
+  greater_than_t<int> large_selector{50};
+
+  auto error = cub::DevicePartition::If(
+    d_in.begin(),
+    d_small_out.begin(),
+    d_large_out.begin(),
+    d_unselected_out.begin(),
+    d_num_selected.begin(),
+    static_cast<int>(d_in.size()),
+    small_selector,
+    large_selector);
+  REQUIRE(error == cudaSuccess);
+
+  REQUIRE(d_num_selected[0] == 5);
+  REQUIRE(d_num_selected[1] == 1);
+  d_small_out.resize(d_num_selected[0]);
+  d_large_out.resize(d_num_selected[1]);
+  c2h::device_vector<int> expected_small{0, 2, 3, 5, 2};
+  c2h::device_vector<int> expected_large{81};
+  REQUIRE(d_small_out == expected_small);
+  REQUIRE(d_large_out == expected_large);
 }
 
 #endif
@@ -139,6 +182,55 @@ C2H_TEST("Device partition flagged uses environment", "[partition][device]")
 
   REQUIRE(d_num_selected == expected_num_selected);
   REQUIRE(d_out == expected_output);
+}
+
+C2H_TEST("Device partition three-way uses environment", "[partition][device]")
+{
+  auto d_in             = c2h::device_vector<int>{0, 2, 3, 9, 5, 2, 81, 8};
+  auto d_small_out      = c2h::device_vector<int>(8);
+  auto d_large_out      = c2h::device_vector<int>(8);
+  auto d_unselected_out = c2h::device_vector<int>(8);
+  auto d_num_selected   = c2h::device_vector<int>(2);
+
+  less_than_t<int> small_selector{7};
+  greater_than_t<int> large_selector{50};
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DevicePartition::If(
+      nullptr,
+      expected_bytes_allocated,
+      d_in.begin(),
+      d_small_out.begin(),
+      d_large_out.begin(),
+      d_unselected_out.begin(),
+      d_num_selected.begin(),
+      static_cast<int>(d_in.size()),
+      small_selector,
+      large_selector));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_partition_if(
+    d_in.begin(),
+    d_small_out.begin(),
+    d_large_out.begin(),
+    d_unselected_out.begin(),
+    d_num_selected.begin(),
+    static_cast<int>(d_in.size()),
+    small_selector,
+    large_selector,
+    env);
+
+  REQUIRE(d_num_selected[0] == 5);
+  REQUIRE(d_num_selected[1] == 1);
+  d_small_out.resize(d_num_selected[0]);
+  d_large_out.resize(d_num_selected[1]);
+  c2h::device_vector<int> expected_small{0, 2, 3, 5, 2};
+  c2h::device_vector<int> expected_large{81};
+  REQUIRE(d_small_out == expected_small);
+  REQUIRE(d_large_out == expected_large);
 }
 
 TEST_CASE("Device partition uses custom stream", "[partition][device]")

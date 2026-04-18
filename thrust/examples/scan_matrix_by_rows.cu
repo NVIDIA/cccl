@@ -4,7 +4,7 @@
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
 
-#include <assert.h>
+#include <cuda/std/cassert>
 
 // We have a matrix stored in a `thrust::device_vector`. We want to perform a
 // scan on each row of a matrix.

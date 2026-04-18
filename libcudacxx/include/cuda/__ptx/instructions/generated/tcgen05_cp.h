@@ -19,7 +19,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_128x256b(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -55,7 +55,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_4x256b(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -91,7 +91,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_128x128b(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -128,7 +128,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_02_13(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -165,7 +165,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_01_23(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -202,7 +202,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_32x128b_warpx4(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -239,7 +239,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_128x256b_b8x16_b6x16_p32(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -276,7 +276,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_4x256b_b8x16_b6x16_p32(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -313,7 +313,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_128x128b_b8x16_b6x16_p32(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -350,7 +350,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_02_13_b8x16_b6x16_p32(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -393,7 +393,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_01_23_b8x16_b6x16_p32(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -436,7 +436,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_32x128b_warpx4_b8x16_b6x16_p32(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -473,7 +473,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_128x256b_b8x16_b4x16_p64(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -510,7 +510,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_4x256b_b8x16_b4x16_p64(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -547,7 +547,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_128x128b_b8x16_b4x16_p64(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -584,7 +584,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_02_13_b8x16_b4x16_p64(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -627,7 +627,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_64x128b_warpx2_01_23_b8x16_b4x16_p64(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -670,7 +670,7 @@ template <::cuda::ptx::dot_cta_group _Cta_Group>
 _CCCL_DEVICE static inline void tcgen05_cp_32x128b_warpx4_b8x16_b4x16_p64(
   ::cuda::ptx::cta_group_t<_Cta_Group> __cta_group, ::cuda::std::uint32_t __taddr, ::cuda::std::uint64_t __s_desc)
 {
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)

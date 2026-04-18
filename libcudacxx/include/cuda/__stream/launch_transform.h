@@ -52,7 +52,9 @@ _CCCL_API constexpr auto __ixnay_xvalue(_Tp&& __value) noexcept(::cuda::std::is_
 } // namespace __detail
 
 template <typename _Tp>
-using __remove_rvalue_reference_t = decltype(__detail::__ixnay_xvalue(::cuda::std::declval<_Tp>()));
+using __remove_rvalue_reference_t =
+  decltype(__detail::__ixnay_xvalue(::cuda::std::declval<_Tp>()) // NOLINT(modernize-type-traits)
+  );
 
 namespace __tfx
 {

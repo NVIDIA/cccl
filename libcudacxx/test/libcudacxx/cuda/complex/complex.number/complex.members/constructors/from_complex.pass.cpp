@@ -23,8 +23,10 @@
 #  include <complex>
 #endif // !_CCCL_COMPILER(NVRTC)
 
+#include "test_macros.h"
+
 template <class From, class To>
-__host__ __device__ constexpr bool is_implicit_conversion()
+TEST_FUNC constexpr bool is_implicit_conversion()
 {
   if constexpr (cuda::std::__is_fp_v<From> && cuda::std::__is_fp_v<To>)
   {
@@ -37,7 +39,7 @@ __host__ __device__ constexpr bool is_implicit_conversion()
 }
 
 template <class T, class C>
-__host__ __device__ constexpr void test_constructor_from_complex(const C& other)
+TEST_FUNC constexpr void test_constructor_from_complex(const C& other)
 {
   using U = typename C::value_type;
 
@@ -56,7 +58,7 @@ __host__ __device__ constexpr void test_constructor_from_complex(const C& other)
 }
 
 template <class T, class U>
-__host__ __device__ constexpr bool test_cccl_types()
+TEST_FUNC constexpr bool test_cccl_types()
 {
   if constexpr (!cuda::std::is_same_v<T, U>)
   {
@@ -68,7 +70,7 @@ __host__ __device__ constexpr bool test_cccl_types()
 }
 
 template <class T, class U>
-__host__ __device__ void test_types()
+TEST_FUNC void test_types()
 {
   test_cccl_types<T, U>();
   static_assert(test_cccl_types<T, U>());
@@ -83,7 +85,7 @@ __host__ __device__ void test_types()
 }
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test_types<T, float>();
   test_types<T, double>();
@@ -113,7 +115,7 @@ __host__ __device__ void test()
 #endif // _CCCL_HAS_INT128()
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test<float>();
   test<double>();

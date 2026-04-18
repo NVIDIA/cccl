@@ -25,7 +25,7 @@ using cuda::std::optional;
 struct Y1
 {
   Y1() = default;
-  __host__ __device__ Y1(const int&) {}
+  TEST_FUNC Y1(const int&) {}
   Y1& operator=(const Y1&) = delete;
 };
 
@@ -33,7 +33,7 @@ struct Y2
 {
   Y2()           = default;
   Y2(const int&) = delete;
-  __host__ __device__ Y2& operator=(const int&)
+  TEST_FUNC Y2& operator=(const int&)
   {
     return *this;
   }
@@ -43,7 +43,7 @@ struct B
 {
   int val_;
 
-  __host__ __device__ constexpr bool operator==(const int& other) const noexcept
+  TEST_FUNC constexpr bool operator==(const int& other) const noexcept
   {
     return other == val_;
   }
@@ -57,12 +57,12 @@ struct ConvertibleToReference
 {
   T val_;
 
-  __host__ __device__ constexpr operator const T&() const noexcept
+  TEST_FUNC constexpr operator const T&() const noexcept
   {
     return val_;
   }
 
-  __host__ __device__ friend constexpr bool operator==(const int& lhs, const ConvertibleToReference& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator==(const int& lhs, const ConvertibleToReference& rhs) noexcept
   {
     return lhs == rhs.val_;
   }
@@ -73,12 +73,12 @@ struct ConvertibleToValue
 {
   T val_;
 
-  __host__ __device__ constexpr operator T() const noexcept
+  TEST_FUNC constexpr operator T() const noexcept
   {
     return val_;
   }
 
-  __host__ __device__ friend constexpr bool operator==(const int& lhs, const ConvertibleToValue& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator==(const int& lhs, const ConvertibleToValue& rhs) noexcept
   {
     return lhs == rhs.val_;
   }
@@ -93,7 +93,7 @@ struct AssignableFrom
   STATIC_MEMBER_VAR(int_constructed, int)
   STATIC_MEMBER_VAR(int_assigned, int)
 
-  __host__ __device__ static void reset()
+  TEST_FUNC static void reset()
   {
     type_constructed() = int_constructed() = 0;
     type_assigned() = int_assigned() = 0;
@@ -101,21 +101,21 @@ struct AssignableFrom
 
   AssignableFrom() = default;
 
-  __host__ __device__ explicit AssignableFrom(T)
+  TEST_FUNC explicit AssignableFrom(T)
   {
     ++type_constructed();
   }
-  __host__ __device__ AssignableFrom& operator=(T)
+  TEST_FUNC AssignableFrom& operator=(T)
   {
     ++type_assigned();
     return *this;
   }
 
-  __host__ __device__ AssignableFrom(int)
+  TEST_FUNC AssignableFrom(int)
   {
     ++int_constructed();
   }
-  __host__ __device__ AssignableFrom& operator=(int)
+  TEST_FUNC AssignableFrom& operator=(int)
   {
     ++int_assigned();
     return *this;
@@ -126,7 +126,7 @@ private:
   AssignableFrom& operator=(AssignableFrom const&) = delete;
 };
 
-__host__ __device__ void test_with_test_type()
+TEST_FUNC void test_with_test_type()
 {
   using T = TestTypes::TestType;
   T::reset();
@@ -190,7 +190,7 @@ __host__ __device__ void test_with_test_type()
   assert(T::alive() == 0);
 }
 
-__host__ __device__ __noinline__ void test_ambiguous_assign()
+TEST_FUNC __noinline__ void test_ambiguous_assign()
 {
   using OptInt = cuda::std::optional<int>;
   {
@@ -238,13 +238,13 @@ __host__ __device__ __noinline__ void test_ambiguous_assign()
     }
     {
       using Opt = cuda::std::optional<T>;
-      static_assert(!cuda::std::is_assignable_v<Opt&, OptInt const&>, "");
+      static_assert(!cuda::std::is_assignable_v<Opt&, OptInt const&>);
     }
   }
 }
 
 template <class T, class U>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   { // empty assigned to empty
     optional<T> opt{};
@@ -294,7 +294,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int, short>();
 

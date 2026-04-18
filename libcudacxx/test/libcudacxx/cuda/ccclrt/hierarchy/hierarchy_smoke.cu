@@ -30,7 +30,7 @@ struct basic_test_single_dim
   static constexpr int grid_size  = 512;
 
   template <typename DynDims>
-  __host__ __device__ void operator()(const DynDims& dims) const
+  TEST_FUNC void operator()(const DynDims& dims) const
   {
     // todo: allow this after fixing CCCLRT_REQUIRE with clang-cuda
 #if !_CCCL_CUDA_COMPILER(CLANG)
@@ -75,7 +75,7 @@ struct basic_test_multi_dim
   static constexpr int block_size = 256;
 
   template <typename DynDims>
-  __host__ __device__ void operator()(const DynDims& dims) const
+  TEST_FUNC void operator()(const DynDims& dims) const
   {
     // todo: allow this after fixing CCCLRT_REQUIRE with clang-cuda
 #if !_CCCL_CUDA_COMPILER(CLANG)
@@ -121,7 +121,7 @@ struct basic_test_mixed
   static constexpr int block_size = 256;
 
   template <typename DynDims>
-  __host__ __device__ void operator()(const DynDims& dims) const
+  TEST_FUNC void operator()(const DynDims& dims) const
   {
     // todo: allow this after fixing CCCLRT_REQUIRE with clang-cuda
 #if !_CCCL_CUDA_COMPILER(CLANG)
@@ -160,7 +160,7 @@ C2H_TEST("Basic", "[hierarchy]")
 struct basic_test_cluster
 {
   template <typename DynDims>
-  __host__ __device__ void operator()(const DynDims& dims) const
+  TEST_FUNC void operator()(const DynDims& dims) const
   {
     // todo: allow this after fixing CCCLRT_REQUIRE with clang-cuda
 #if !_CCCL_CUDA_COMPILER(CLANG)

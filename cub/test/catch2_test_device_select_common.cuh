@@ -44,6 +44,15 @@ struct multiply_n
   }
 };
 
+template <typename T>
+struct eq_mod3_t
+{
+  __host__ __device__ bool operator()(const T& a, const T& b) const
+  {
+    return (a % 3) == (b % 3);
+  }
+};
+
 template <typename T, typename TargetT>
 struct modx_and_add_divy
 {

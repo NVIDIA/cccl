@@ -409,7 +409,7 @@ public:
     NumItemsT num_items,
     ReductionOpT reduction_op,
     T init,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Reduce");
 
@@ -700,7 +700,7 @@ public:
       InputIteratorT d_in,
       OutputIteratorT d_out,
       NumItemsT num_items,
-      cudaStream_t stream = 0)
+      cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Sum");
 
@@ -809,7 +809,7 @@ public:
       InputIteratorT d_in,
       OutputIteratorT d_out,
       NumItemsT num_items,
-      cudaStream_t stream = 0)
+      cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Min");
 
@@ -1062,14 +1062,10 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <
-    typename InputIteratorT,
-    typename ExtremumOutIteratorT,
-    typename IndexOutIteratorT,
-    typename CompareOpT,
-    // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-    // ExtremumOutIteratorT, which is wrong IMO
-    ::cuda::std::enable_if_t<::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>, int> = 0>
+  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+  // ExtremumOutIteratorT, which is wrong IMO
+  _CCCL_TEMPLATE(typename InputIteratorT, typename ExtremumOutIteratorT, typename IndexOutIteratorT, typename CompareOpT)
+  _CCCL_REQUIRES((::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>) )
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1078,7 +1074,7 @@ public:
     IndexOutIteratorT d_index_out,
     ::cuda::std::int64_t num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
     return __arg_min(d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out, num_items, compare_op, stream);
@@ -1098,7 +1094,7 @@ public:
     ExtremumOutIteratorT d_min_out,
     IndexOutIteratorT d_index_out,
     ::cuda::std::int64_t num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return ArgMin(
       d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out, num_items, ::cuda::std::less{}, stream);
@@ -1248,15 +1244,14 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <
-    typename InputIteratorT,
-    typename ExtremumOutIteratorT,
-    typename IndexOutIteratorT,
-    typename CompareOpT,
-    typename EnvT = ::cuda::std::execution::env<>,
-    // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-    // ExtremumOutIteratorT, which is wrong IMO
-    ::cuda::std::enable_if_t<::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>, int> = 0>
+  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+  // ExtremumOutIteratorT, which is wrong IMO
+  _CCCL_TEMPLATE(typename InputIteratorT,
+                 typename ExtremumOutIteratorT,
+                 typename IndexOutIteratorT,
+                 typename CompareOpT,
+                 typename EnvT = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES((::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>) )
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
     InputIteratorT d_in,
     ExtremumOutIteratorT d_min_out,
@@ -1271,19 +1266,19 @@ public:
 
   //! @overload
   //! @note Uses ``cuda::std::less`` as comparison operator
-  template <typename InputIteratorT,
-            typename ExtremumOutIteratorT,
-            typename IndexOutIteratorT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-            // ExtremumOutIteratorT, which is wrong IMO
-            ::cuda::std::enable_if_t<!::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, EnvT>, int> = 0>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
-  ArgMin(InputIteratorT d_in,
-         ExtremumOutIteratorT d_min_out,
-         IndexOutIteratorT d_index_out,
-         ::cuda::std::int64_t num_items,
-         EnvT env = {})
+  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+  // ExtremumOutIteratorT, which is wrong IMO
+  _CCCL_TEMPLATE(typename InputIteratorT,
+                 typename ExtremumOutIteratorT,
+                 typename IndexOutIteratorT,
+                 typename EnvT = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES((!::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, EnvT>) )
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
+    InputIteratorT d_in,
+    ExtremumOutIteratorT d_min_out,
+    IndexOutIteratorT d_index_out,
+    ::cuda::std::int64_t num_items,
+    EnvT env = {})
   {
     return ArgMin(d_in, d_min_out, d_index_out, num_items, ::cuda::std::less{}, env);
   }
@@ -1378,7 +1373,7 @@ public:
          InputIteratorT d_in,
          OutputIteratorT d_out,
          int num_items,
-         cudaStream_t stream = 0)
+         cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
 
@@ -1500,7 +1495,7 @@ public:
       InputIteratorT d_in,
       OutputIteratorT d_out,
       NumItemsT num_items,
-      cudaStream_t stream = 0)
+      cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Max");
 
@@ -1727,14 +1722,10 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <
-    typename InputIteratorT,
-    typename ExtremumOutIteratorT,
-    typename IndexOutIteratorT,
-    typename CompareOpT,
-    // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-    // ExtremumOutIteratorT, which is wrong IMO
-    ::cuda::std::enable_if_t<::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>, int> = 0>
+  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+  // ExtremumOutIteratorT, which is wrong IMO
+  _CCCL_TEMPLATE(typename InputIteratorT, typename ExtremumOutIteratorT, typename IndexOutIteratorT, typename CompareOpT)
+  _CCCL_REQUIRES((::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>) )
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1743,7 +1734,7 @@ public:
     IndexOutIteratorT d_index_out,
     ::cuda::std::int64_t num_items,
     CompareOpT compare_op,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
     return __arg_min(
@@ -1771,7 +1762,7 @@ public:
     ExtremumOutIteratorT d_max_out,
     IndexOutIteratorT d_index_out,
     ::cuda::std::int64_t num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return ArgMax(
       d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items, ::cuda::std::less{}, stream);
@@ -1871,7 +1862,7 @@ public:
          InputIteratorT d_in,
          OutputIteratorT d_out,
          int num_items,
-         cudaStream_t stream = 0)
+         cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
 
@@ -1974,15 +1965,14 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <
-    typename InputIteratorT,
-    typename ExtremumOutIteratorT,
-    typename IndexOutIteratorT,
-    typename CompareOpT,
-    typename EnvT = ::cuda::std::execution::env<>,
-    // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-    // ExtremumOutIteratorT, which is wrong IMO
-    ::cuda::std::enable_if_t<::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>, int> = 0>
+  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+  // ExtremumOutIteratorT, which is wrong IMO
+  _CCCL_TEMPLATE(typename InputIteratorT,
+                 typename ExtremumOutIteratorT,
+                 typename IndexOutIteratorT,
+                 typename CompareOpT,
+                 typename EnvT = ::cuda::std::execution::env<>)
+  _CCCL_REQUIRES((::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, CompareOpT>) )
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
     InputIteratorT d_in,
     ExtremumOutIteratorT d_max_out,
@@ -1992,8 +1982,7 @@ public:
     EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceReduce::ArgMax");
-    return __arg_min_env(
-      d_in, d_index_out, num_items, detail::arg_less{detail::swap_args{compare_op}}, ::cuda::std::execution::env{});
+    return __arg_min_env(d_in, d_max_out, d_index_out, num_items, detail::arg_less{detail::swap_args{compare_op}}, env);
   }
 
   //! @overload
@@ -2001,7 +1990,10 @@ public:
   template <typename InputIteratorT,
             typename ExtremumOutIteratorT,
             typename IndexOutIteratorT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
+            // ExtremumOutIteratorT, which is wrong IMO
+            ::cuda::std::enable_if_t<!::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ArgMax(InputIteratorT d_in,
          ExtremumOutIteratorT d_max_out,
@@ -2136,7 +2128,7 @@ public:
     ReductionOpT reduction_op,
     TransformOpT transform_op,
     T init,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::TransformReduce");
 
@@ -2535,7 +2527,7 @@ public:
     NumRunsOutputIteratorT d_num_runs_out,
     ReductionOpT reduction_op,
     NumItemsT num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ReduceByKey");
 

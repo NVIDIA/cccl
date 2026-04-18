@@ -22,27 +22,27 @@ class Deleter
 {
   int state_;
 
-  __host__ __device__ Deleter(Deleter&);
-  __host__ __device__ Deleter& operator=(Deleter&);
+  TEST_FUNC Deleter(Deleter&);
+  TEST_FUNC Deleter& operator=(Deleter&);
 
 public:
-  __host__ __device__ TEST_CONSTEXPR_CXX23 Deleter()
+  TEST_FUNC TEST_CONSTEXPR_CXX23 Deleter()
       : state_(0)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 int state() const
+  TEST_FUNC TEST_CONSTEXPR_CXX23 int state() const
   {
     return state_;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX23 void operator()(void*)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 void operator()(void*)
   {
     ++state_;
   }
 };
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
+TEST_FUNC TEST_CONSTEXPR_CXX23 void test_basic()
 {
   Deleter d;
   assert(d.state() == 0);
@@ -54,7 +54,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
   assert(d.state() == 0);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   test_basic<int>();
   test_basic<int[]>();

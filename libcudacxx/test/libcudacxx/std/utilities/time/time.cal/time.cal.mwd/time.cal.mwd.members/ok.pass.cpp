@@ -30,8 +30,8 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::declval<const month_weekday>().ok()));
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::declval<const month_weekday>().ok())>);
 
-  static_assert(!month_weekday{month{}, weekday_indexed{}}.ok(), "");
-  static_assert(month_weekday{cuda::std::chrono::May, weekday_indexed{Sunday, 2}}.ok(), "");
+  static_assert(!month_weekday{month{}, weekday_indexed{}}.ok());
+  static_assert(month_weekday{cuda::std::chrono::May, weekday_indexed{Sunday, 2}}.ok());
 
   assert(!(month_weekday(cuda::std::chrono::April, weekday_indexed{Sunday, 0}).ok()));
   assert((month_weekday{cuda::std::chrono::March, weekday_indexed{Sunday, 1}}.ok()));

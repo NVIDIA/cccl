@@ -482,7 +482,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
     static constexpr topk_policy active_policy = policy_getter();
     using key_in_t                             = it_value_t<KeyInputIteratorT>;
-    static constexpr bool keys_only            = ::cuda::std::is_same_v<ValueInputIteratorT, NullType*>;
+    using value_in_t                           = it_value_t<ValueInputIteratorT>;
+    static constexpr bool keys_only            = ::cuda::std::is_same_v<value_in_t, NullType>;
 
     // atomicAdd does not implement overloads for all integer types, so we limit OffsetT to uint32_t or unsigned long
     // long

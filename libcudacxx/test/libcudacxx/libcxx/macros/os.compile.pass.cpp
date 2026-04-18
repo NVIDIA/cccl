@@ -29,16 +29,16 @@
 
 int main(int, char**)
 {
-  static_assert(_CCCL_OS(WINDOWS) + _CCCL_OS(LINUX) == 1, "");
+  static_assert(_CCCL_OS(WINDOWS) + _CCCL_OS(LINUX) == 1);
 #if _CCCL_OS(ANDROID) || _CCCL_OS(QNX)
-  static_assert(_CCCL_OS(LINUX) == 1, "");
-  static_assert(_CCCL_OS(ANDROID) + _CCCL_OS(QNX) == 1, "");
+  static_assert(_CCCL_OS(LINUX) == 1);
+  static_assert(_CCCL_OS(ANDROID) + _CCCL_OS(QNX) == 1);
 #endif
 #if _CCCL_OS(LINUX)
-  static_assert(_CCCL_OS(WINDOWS) == 0, "");
+  static_assert(_CCCL_OS(WINDOWS) == 0);
 #endif
 #if _CCCL_OS(WINDOWS)
-  static_assert(_CCCL_OS(ANDROID) + _CCCL_OS(QNX) + _CCCL_OS(LINUX) == 0, "");
+  static_assert(_CCCL_OS(ANDROID) + _CCCL_OS(QNX) + _CCCL_OS(LINUX) == 0);
 #endif
   return 0;
 }

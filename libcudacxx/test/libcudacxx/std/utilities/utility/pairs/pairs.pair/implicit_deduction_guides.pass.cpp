@@ -48,7 +48,7 @@
 int main(int, char**)
 {
   using E = ExplicitTestTypes::TestType;
-  static_assert(!cuda::std::is_convertible<E const&, E>::value, "");
+  static_assert(!cuda::std::is_convertible<E const&, E>::value);
   { // Testing (1)
     int const x = 42;
     cuda::std::pair t1("abc", x);

@@ -685,8 +685,8 @@ public:
   stackable_logical_data(stackable_ctx sctx, int ctx_offset, bool ld_from_shape, logical_data<T> ld, bool can_export)
       : pimpl(::std::make_shared<impl>(sctx, ctx_offset, ld_from_shape, mv(ld), can_export))
   {
-    static_assert(::std::is_move_constructible_v<stackable_logical_data>, "");
-    static_assert(::std::is_move_assignable_v<stackable_logical_data>, "");
+    static_assert(::std::is_move_constructible_v<stackable_logical_data>);
+    static_assert(::std::is_move_assignable_v<stackable_logical_data>);
   }
 
   int get_data_root_offset() const

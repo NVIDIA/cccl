@@ -22,14 +22,14 @@
 
 struct gen_test
 {
-  constexpr __host__ __device__ int operator()() const noexcept
+  constexpr TEST_FUNC int operator()() const noexcept
   {
     return 1;
   }
 };
 
 template <class Iter>
-constexpr __host__ __device__ void test()
+constexpr TEST_FUNC void test()
 {
   constexpr int N = 5;
   int ia[N + 1]   = {0};
@@ -45,7 +45,7 @@ constexpr __host__ __device__ void test()
   }
 }
 
-constexpr __host__ __device__ bool test()
+constexpr TEST_FUNC bool test()
 {
   test<cpp17_input_iterator<int*>>();
   test<forward_iterator<int*>>();
@@ -59,7 +59,7 @@ constexpr __host__ __device__ bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

@@ -12,10 +12,11 @@
 #include <cuda/std/cmath>
 
 #include "host_device_comparison.h"
+#include "test_macros.h"
 
 struct func
 {
-  __host__ __device__ __half operator()(cuda::std::size_t i) const
+  TEST_FUNC __half operator()(cuda::std::size_t i) const
   {
     auto raw = __half_raw();
     raw.x    = (unsigned short) i;

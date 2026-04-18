@@ -15,7 +15,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ void test_memcmp(const char* lhs, const char* rhs, size_t n, int expected)
+TEST_FUNC void test_memcmp(const char* lhs, const char* rhs, size_t n, int expected)
 {
   const auto ret = cuda::std::memcmp(lhs, rhs, n);
 
@@ -33,7 +33,7 @@ __host__ __device__ void test_memcmp(const char* lhs, const char* rhs, size_t n,
   }
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   test_memcmp("abcde", "abcde", 5, 0);
   test_memcmp("abcd1", "abcd0", 5, 1);

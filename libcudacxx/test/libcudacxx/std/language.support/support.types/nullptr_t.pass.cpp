@@ -16,11 +16,11 @@
 
 struct A
 {
-  __host__ __device__ A(cuda::std::nullptr_t) {}
+  TEST_FUNC A(cuda::std::nullptr_t) {}
 };
 
 template <class T>
-__host__ __device__ void test_conversions()
+TEST_FUNC void test_conversions()
 {
   {
     // GCC spuriously claims that p is unused when T is nullptr_t, probably due to optimizations?
@@ -51,7 +51,7 @@ struct has_less<T, typename Voider<decltype(cuda::std::declval<T>() < nullptr)>:
 {};
 
 template <class T>
-__host__ __device__ void test_comparisons()
+TEST_FUNC void test_comparisons()
 {
   // GCC spuriously claims that p is unused, probably due to optimizations?
   [[maybe_unused]] T p = nullptr;
@@ -62,7 +62,7 @@ __host__ __device__ void test_comparisons()
 }
 
 TEST_DIAG_SUPPRESS_CLANG("-Wnull-conversion")
-__host__ __device__ void test_nullptr_conversions()
+TEST_FUNC void test_nullptr_conversions()
 {
 // GCC does not accept this due to CWG Defect #1423
 // http://www.open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#1423
@@ -92,7 +92,7 @@ int main(int, char**)
   }
   {
     // TODO Enable this assertion when all compilers implement core DR 583.
-    // static_assert(!has_less<cuda::std::nullptr_t>::value, "");
+    // static_assert(!has_less<cuda::std::nullptr_t>::value);
     test_comparisons<cuda::std::nullptr_t>();
     test_comparisons<void*>();
     test_comparisons<A*>();

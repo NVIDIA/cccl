@@ -83,8 +83,8 @@ constexpr void test_string_ctor()
   }
 #  endif // TEST_HAS_EXCEPTIONS()
 
-  static_assert(!cuda::std::is_convertible<cuda::std::string, cuda::std::bitset<N>>::value, "");
-  static_assert(cuda::std::is_constructible<cuda::std::bitset<N>, cuda::std::string>::value, "");
+  static_assert(!cuda::std::is_convertible<cuda::std::string, cuda::std::bitset<N>>::value);
+  static_assert(cuda::std::is_constructible<cuda::std::bitset<N>, cuda::std::string>::value);
   {
     cuda::std::string s("1010101010");
     cuda::std::bitset<N> v(s);
@@ -162,7 +162,7 @@ constexpr void test_for_non_eager_instantiation()
   // Ensure we don't accidentally instantiate `cuda::std::basic_string<Nonsense>`
   // since it may not be well formed and can cause an error in the
   // non-immediate context.
-  static_assert(!cuda::std::is_constructible<cuda::std::bitset<3>, Nonsense*>::value, "");
+  static_assert(!cuda::std::is_constructible<cuda::std::bitset<3>, Nonsense*>::value);
   static_assert(
     !cuda::std::is_constructible<cuda::std::bitset<3>, Nonsense*, cuda::std::size_t, Nonsense&, Nonsense&>::value, "");
 }
@@ -187,7 +187,7 @@ int main(int, char**)
 {
   test();
 #  if TEST_STD_VER >= 2023
-  static_assert(test(), "");
+  static_assert(test());
 #  endif
 
   return 0;

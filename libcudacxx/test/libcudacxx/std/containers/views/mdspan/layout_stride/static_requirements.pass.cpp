@@ -88,7 +88,7 @@
 
 // Common requirements of all layout mappings
 template <class M, size_t... Idxs>
-__host__ __device__ void test_mapping_requirements(cuda::std::index_sequence<Idxs...>)
+TEST_FUNC void test_mapping_requirements(cuda::std::index_sequence<Idxs...>)
 {
   using E = typename M::extents_type;
   static_assert(cuda::std::__is_cuda_std_extents_v<E>);
@@ -101,31 +101,31 @@ __host__ __device__ void test_mapping_requirements(cuda::std::index_sequence<Idx
   static_assert(cuda::std::is_same_v<typename M::rank_type, typename E::rank_type>);
   static_assert(cuda::std::is_same_v<typename M::layout_type, cuda::std::layout_stride>);
   static_assert(cuda::std::is_same_v<typename M::layout_type::template mapping<E>, M>);
-  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().extents()), const E&>::value, "");
+  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().extents()), const E&>::value);
   static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().strides()),
                                    cuda::std::array<typename M::index_type, E::rank()>>::value,
                 "");
-  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>()(Idxs...)), typename M::index_type>::value, "");
+  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>()(Idxs...)), typename M::index_type>::value);
   static_assert(
     cuda::std::is_same<decltype(cuda::std::declval<M>().required_span_size()), typename M::index_type>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().is_unique()), bool>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().is_exhaustive()), bool>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().is_strided()), bool>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().stride(0)), typename M::index_type>::value, "");
-  static_assert(cuda::std::is_same<decltype(M::is_always_unique()), bool>::value, "");
-  static_assert(cuda::std::is_same<decltype(M::is_always_exhaustive()), bool>::value, "");
-  static_assert(cuda::std::is_same<decltype(M::is_always_strided()), bool>::value, "");
+  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().is_unique()), bool>::value);
+  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().is_exhaustive()), bool>::value);
+  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().is_strided()), bool>::value);
+  static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().stride(0)), typename M::index_type>::value);
+  static_assert(cuda::std::is_same<decltype(M::is_always_unique()), bool>::value);
+  static_assert(cuda::std::is_same<decltype(M::is_always_exhaustive()), bool>::value);
+  static_assert(cuda::std::is_same<decltype(M::is_always_strided()), bool>::value);
 }
 
 template <class L, class E>
-__host__ __device__ void test_layout_mapping_requirements()
+TEST_FUNC void test_layout_mapping_requirements()
 {
   using M = typename L::template mapping<E>;
   test_mapping_requirements<M>(cuda::std::make_index_sequence<E::rank()>());
 }
 
 template <class E>
-__host__ __device__ void test_layout_mapping_stride()
+TEST_FUNC void test_layout_mapping_stride()
 {
   test_layout_mapping_requirements<cuda::std::layout_stride, E>();
 }
