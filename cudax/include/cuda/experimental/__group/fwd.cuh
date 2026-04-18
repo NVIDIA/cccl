@@ -44,7 +44,7 @@ using __implicit_hierarchy_t =
             hierarchy_level_desc<cluster_level, ::cuda::std::dims<3, unsigned>>,
             hierarchy_level_desc<block_level, ::cuda::std::dims<3, unsigned>>>;
 
-// this groups
+// groups
 
 template <class _Level, class _Hierarchy>
 class __this_group_base;
@@ -60,16 +60,8 @@ class this_cluster;
 template <class _Hierarchy>
 class this_grid;
 
-// other groups
-
-template <class _Level, class _Mapping, class _Hierarchy, class _Synchronizer>
-class thread_group;
-template <class _Level, class _Mapping, class _Hierarchy, class _Synchronizer>
-class warp_group;
-template <class _Level, class _Mapping, class _Hierarchy, class _Synchronizer>
-class block_group;
-template <class _Level, class _Mapping, class _Hierarchy, class _Synchronizer>
-class cluster_group;
+template <class _Unit, class _Level, class _Mapping, class _Hierarchy, class _Synchronizer>
+class group;
 
 // mappings
 
