@@ -22,7 +22,6 @@
 #include <cub/block/block_store.cuh>
 #include <cub/detail/segmented_scan_helpers.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_arch.cuh> // MemBoundScaling
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__functional/invoke.h>
@@ -31,7 +30,6 @@
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/span>
-#include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
 

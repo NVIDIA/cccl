@@ -20,10 +20,6 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_reduce.cuh> // ThreadReduce
 #include <cub/thread/thread_scan.cuh> // detail::ThreadInclusiveScan
-#include <cub/util_arch.cuh> // detail::MemBoundScaling
-#include <cub/warp/warp_load.cuh>
-#include <cub/warp/warp_scan.cuh>
-#include <cub/warp/warp_store.cuh>
 
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__type_traits/conditional.h>

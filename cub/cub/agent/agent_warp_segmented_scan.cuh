@@ -20,7 +20,6 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_reduce.cuh> // ThreadReduce
 #include <cub/thread/thread_scan.cuh> // detail::ThreadInclusiveScan
-#include <cub/util_arch.cuh> // detail::MemBoundScaling
 #include <cub/warp/warp_load.cuh>
 #include <cub/warp/warp_reduce.cuh>
 #include <cub/warp/warp_scan.cuh>
@@ -31,7 +30,6 @@
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/span>
-#include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
 
