@@ -145,7 +145,7 @@ public:
   }
 
 #if _CCCL_STD_VER >= 2023
-  [[nodiscard]] _CCCL_API constexpr allocation_result<_Tp*> allocate_at_least(size_t __n)
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEXPR_CXX20_ALLOCATION allocation_result<_Tp*> allocate_at_least(size_t __n)
   {
     return {allocate(__n), __n};
   }

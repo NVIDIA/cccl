@@ -25,17 +25,26 @@ TEST_GLOBAL_VARIABLE int A_count = 0;
 
 struct A
 {
-  TEST_FUNC A()
+  TEST_FUNC TEST_CONSTEXPR_CXX23 A()
   {
-    ++A_count;
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      ++A_count;
+    }
   }
-  TEST_FUNC A(const A&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 A(const A&)
   {
-    ++A_count;
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      ++A_count;
+    }
   }
-  TEST_FUNC virtual ~A()
+  TEST_FUNC TEST_CONSTEXPR_CXX23 virtual ~A()
   {
-    --A_count;
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      --A_count;
+    }
   }
 };
 
@@ -43,23 +52,33 @@ TEST_GLOBAL_VARIABLE int B_count = 0;
 
 struct B : public A
 {
-  TEST_FUNC B()
+  TEST_FUNC TEST_CONSTEXPR_CXX23 B()
   {
-    ++B_count;
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      ++B_count;
+    }
   }
-  TEST_FUNC B(const B&)
+  TEST_FUNC TEST_CONSTEXPR_CXX23 B(const B&)
       : A()
   {
-    ++B_count;
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      ++B_count;
+    }
   }
-  TEST_FUNC virtual ~B()
+  TEST_FUNC virtual TEST_CONSTEXPR_CXX23 ~B()
   {
-    --B_count;
+    if (!::cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      --B_count;
+    }
   }
 };
 
 template <class T>
-typename cuda::std::enable_if<!cuda::std::is_array<T>::value, T*>::type TEST_FUNC newValue(int num_elements)
+typename cuda::std::enable_if<!cuda::std::is_array<T>::value, T*>::type TEST_FUNC TEST_CONSTEXPR_CXX23
+newValue(int num_elements)
 {
   assert(num_elements == 1);
   return new T;
@@ -67,7 +86,7 @@ typename cuda::std::enable_if<!cuda::std::is_array<T>::value, T*>::type TEST_FUN
 
 template <class T>
 typename cuda::std::enable_if<cuda::std::is_array<T>::value, typename cuda::std::remove_all_extents<T>::type*>::type
-  TEST_FUNC
+  TEST_FUNC TEST_CONSTEXPR_CXX23
   newValue(int num_elements)
 {
   using VT = typename cuda::std::remove_all_extents<T>::type;

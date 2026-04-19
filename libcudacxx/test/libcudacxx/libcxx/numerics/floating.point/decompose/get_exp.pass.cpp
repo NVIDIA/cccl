@@ -70,12 +70,14 @@ TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test_fp_get_exp(T val)
   }
   if constexpr (cuda::std::__fp_has_nan_v<fmt>)
   {
+#if _CCCL_HAS_NVFP8_E4M3()
     if constexpr (cuda::std::is_same_v<T, __nv_fp8_e4m3>)
     {
       // __nv_fp8_e4m3 has only 2 NaNs so more of exponent are valid
       test_fp_get_exp(cuda::std::numeric_limits<T>::quiet_NaN(), cuda::std::__fp_exp_max_v<fmt>);
     }
     else
+#endif // _CCCL_HAS_NVFP8_E4M3()
     {
       test_fp_get_exp(cuda::std::numeric_limits<T>::quiet_NaN(), cuda::std::__fp_exp_max_v<fmt> + 1);
     }

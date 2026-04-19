@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___HIERARCHY_GROUPS_CUH
-#define _CUDA_EXPERIMENTAL___HIERARCHY_GROUPS_CUH
+#ifndef _CUDA_EXPERIMENTAL___GROUP_GROUP_CUH
+#define _CUDA_EXPERIMENTAL___GROUP_GROUP_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -32,11 +32,11 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__hierarchy/concepts.cuh>
-#include <cuda/experimental/__hierarchy/fwd.cuh>
-#include <cuda/experimental/__hierarchy/mappings.cuh>
-#include <cuda/experimental/__hierarchy/synchronizers.cuh>
-#include <cuda/experimental/__hierarchy/this_group.cuh>
+#include <cuda/experimental/__group/concepts.cuh>
+#include <cuda/experimental/__group/fwd.cuh>
+#include <cuda/experimental/__group/mapping/group_by.cuh>
+#include <cuda/experimental/__group/synchronizers.cuh>
+#include <cuda/experimental/__group/this_group.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -63,6 +63,7 @@ public:
   using __mapping_result_type = _MappingResult;
   using hierarchy_type        = _Hierarchy;
 
+  // todo(dabayer): Remove _Level and _HierarchyLike parameters and take a base group instead.
   // todo(dabayer): Do we want default behaviour like this, or do we want some kind of cuda::auto_sync_mechanism{} tag?
   _CCCL_TEMPLATE(class _HierarchyLike)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
@@ -72,7 +73,9 @@ public:
       , __mapping_{__mapping}
       , __mapping_result_{__mapping_.map(thread_level{}, _Level{}, ::cuda::__unpack_hierarchy_if_needed(__hier_like))}
       , __synchronizer_{__mapping_result_}
-  {}
+  {
+    ::cuda::experimental::__check_mapping_result(__mapping_result_);
+  }
 
   _CCCL_TEMPLATE(class _Synchronizer2 = _Synchronizer, class _MappingResult2 = _MappingResult, class _HierarchyLike)
   _CCCL_REQUIRES(__is_barrier_synchronizer<_Synchronizer2>
@@ -86,7 +89,9 @@ public:
       , __mapping_{__mapping}
       , __mapping_result_{__mapping_.map(thread_level{}, _Level{}, ::cuda::__unpack_hierarchy_if_needed(__hier_like))}
       , __synchronizer_{__mapping_result_, __barriers}
-  {}
+  {
+    ::cuda::experimental::__check_mapping_result(__mapping_result_);
+  }
 
   [[nodiscard]] _CCCL_DEVICE_API const _Hierarchy& hierarchy() const noexcept
   {
@@ -149,4 +154,4 @@ _CCCL_HOST_DEVICE thread_group(const _Level&, const group_by<_Np>&, const _Hiera
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_EXPERIMENTAL___HIERARCHY_GROUPS_CUH
+#endif // _CUDA_EXPERIMENTAL___GROUP_GROUP_CUH

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___THIS_GROUP_CUH
-#define _CUDA_EXPERIMENTAL___THIS_GROUP_CUH
+#ifndef _CUDA_EXPERIMENTAL___GROUP_THIS_GROUP_CUH
+#define _CUDA_EXPERIMENTAL___GROUP_THIS_GROUP_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -27,8 +27,8 @@
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 
-#include <cuda/experimental/__hierarchy/fwd.cuh>
-#include <cuda/experimental/__hierarchy/implicit_hierarchy.cuh>
+#include <cuda/experimental/__group/fwd.cuh>
+#include <cuda/experimental/__group/implicit_hierarchy.cuh>
 
 #if _CCCL_HAS_COOPERATIVE_GROUPS()
 #  include <cooperative_groups.h>
@@ -108,6 +108,21 @@ struct __this_mapping_result
   [[nodiscard]] _CCCL_DEVICE_API unsigned rank() const noexcept
   {
     return 0;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API bool is_valid() const noexcept
+  {
+    return true;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
+  {
+    return true;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
+  {
+    return true;
   }
 
   // todo(dabayer): add method that determines whether the unit is part of the group or not.
@@ -533,4 +548,4 @@ _CCCL_HOST_DEVICE this_grid(const ::cooperative_groups::grid_group&) -> this_gri
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_EXPERIMENTAL___THIS_GROUP_CUH
+#endif // _CUDA_EXPERIMENTAL___GROUP_THIS_GROUP_CUH
