@@ -424,7 +424,7 @@ struct DeviceScan
             ::cuda::std::execution::env<>
 #endif
             ,
-            typename = ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>>>
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
   {
@@ -575,7 +575,7 @@ struct DeviceScan
             ::cuda::std::execution::env<>
 #endif
             ,
-            typename = ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>>>
+            ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveSum(IteratorT d_data, NumItemsT num_items, EnvT env = {})
   {
@@ -806,7 +806,7 @@ struct DeviceScan
             ::cuda::std::execution::env<>
 #endif
             ,
-            typename = ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>>>
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -1006,7 +1006,7 @@ struct DeviceScan
             ::cuda::std::execution::env<>
 #endif
             ,
-            typename = ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>>>
+            ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveScan(IteratorT d_data, ScanOpT scan_op, InitValueT init_value, NumItemsT num_items, EnvT env = {})
   {
@@ -1352,7 +1352,7 @@ struct DeviceScan
             ::cuda::std::execution::env<>
 #endif
             ,
-            typename = ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>>>
+            ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     IteratorT d_data,
     ScanOpT scan_op,
@@ -1442,8 +1442,14 @@ struct DeviceScan
             typename InitValueT,
             typename InitValueIterT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            typename      = ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>>>
+            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+            void
+#else
+            ::cuda::std::execution::env<>
+#endif
+            ,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -1705,7 +1711,7 @@ struct DeviceScan
             ::cuda::std::execution::env<>
 #endif
             ,
-            typename = ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>>>
+            ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveSum(IteratorT d_data, NumItemsT num_items, EnvT env = {})
   {
@@ -1769,8 +1775,14 @@ struct DeviceScan
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>,
-            typename      = ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>>>
+            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+            void
+#else
+            ::cuda::std::execution::env<>
+#endif
+            ,
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
   {
@@ -2166,7 +2178,7 @@ struct DeviceScan
             ::cuda::std::execution::env<>
 #endif
             ,
-            typename = ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>>>
+            ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveScan(IteratorT d_data, ScanOpT scan_op, NumItemsT num_items, EnvT env = {})
   {
@@ -2244,7 +2256,7 @@ struct DeviceScan
             ::cuda::std::execution::env<>
 #endif
             ,
-            typename = ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>>>
+            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveScan(InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, NumItemsT num_items, EnvT env = {})
   {
