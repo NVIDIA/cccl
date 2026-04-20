@@ -26,12 +26,9 @@
 #include <cuda/__cmath/round_up.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/void_t.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif
 
 CUB_NAMESPACE_BEGIN
 
