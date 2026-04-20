@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <cub/agent/agent_thread_segmented_scan.cuh>
-#include <cub/agent/agent_warp_segmented_scan.cuh>
 #include <cub/device/device_segmented_scan.cuh>
 
 #include <thrust/tabulate.h>

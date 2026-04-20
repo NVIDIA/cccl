@@ -13,12 +13,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_segmented_scan.cuh>
-#include <cub/agent/agent_thread_segmented_scan.cuh>
-#include <cub/agent/agent_warp_segmented_scan.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/device/dispatch/kernels/segmented_scan_agent_policies.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>

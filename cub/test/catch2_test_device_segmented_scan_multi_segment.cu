@@ -3,9 +3,6 @@
 
 #include "insert_nested_NVTX_range_guard.h"
 
-#include <cub/agent/agent_segmented_scan.cuh>
-#include <cub/agent/agent_thread_segmented_scan.cuh>
-#include <cub/agent/agent_warp_segmented_scan.cuh>
 #include <cub/device/dispatch/dispatch_segmented_scan.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 

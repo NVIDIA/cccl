@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 //! @file
-//! cub::detail::segmented_scan::AgentSegmentedScan implements a stateful abstraction of CUDA thread
-//! blocks for participating in device-wide prefix segmented scan.
+//! Implement kernel for DeviceSegmentedScan with warp-wide workers processing
+//! individual segments.
+
 #pragma once
 
 #include <cub/config.cuh>
@@ -17,15 +18,20 @@
 #endif // no system header
 
 #include <cub/detail/segmented_scan_helpers.cuh>
+#include <cub/device/dispatch/kernels/segmented_scan_agent_policies.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_reduce.cuh> // ThreadReduce
 #include <cub/thread/thread_scan.cuh> // detail::ThreadInclusiveScan
+#include <cub/util_macro.cuh>
+#include <cub/util_type.cuh>
 #include <cub/warp/warp_load.cuh>
 #include <cub/warp/warp_reduce.cuh>
 #include <cub/warp/warp_scan.cuh>
 #include <cub/warp/warp_store.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/iterator>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -35,29 +41,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_scan
 {
-template <int BlockThreads,
-          int ItemsPerThread,
-          WarpLoadAlgorithm LoadAlgorithm,
-          CacheLoadModifier LoadModifier,
-          WarpStoreAlgorithm StoreAlgorithm,
-          int MaxSegmentsPerWarp = 1>
-struct agent_warp_segmented_scan_policy_t
-{
-  static_assert(MaxSegmentsPerWarp > 0, "MaxSegmentsPerWarp template value parameter must be positive");
-
-  static constexpr int block_threads    = BlockThreads;
-  static constexpr int items_per_thread = ItemsPerThread;
-
-  static constexpr WarpLoadAlgorithm load_algorithm   = LoadAlgorithm;
-  static constexpr CacheLoadModifier load_modifier    = LoadModifier;
-  static constexpr WarpStoreAlgorithm store_algorithm = StoreAlgorithm;
-  static constexpr int max_segments_per_warp          = MaxSegmentsPerWarp;
-};
-
-template <typename ComputeT, int NumSegmentsPerWarp>
-using agent_warp_segmented_scan_compute_t =
-  multi_segment_helpers::agent_segmented_scan_compute_t<ComputeT, NumSegmentsPerWarp>;
-
 template <typename AgentSegmentedScanPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -78,9 +61,9 @@ struct agent_warp_segmented_scan
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using wrapped_input_iterator_t =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
-                     CacheModifiedInputIterator<AgentSegmentedScanPolicyT::load_modifier, input_t, OffsetT>,
-                     InputIteratorT>;
+    ::cuda::std::conditional_t<::cuda::std::is_pointer_v<InputIteratorT>,
+                               CacheModifiedInputIterator<AgentSegmentedScanPolicyT::load_modifier, input_t, OffsetT>,
+                               InputIteratorT>;
 
   // Constants
 
@@ -567,6 +550,122 @@ private:
     exclusive_prefix = scan_op(exclusive_prefix, warp_aggregate);
   }
 };
+
+template <typename PolicySelector,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename BeginOffsetIteratorInputT,
+          typename EndOffsetIteratorInputT,
+          typename BeginOffsetIteratorOutputT,
+          typename OffsetT,
+          typename ScanOpT,
+          typename InitValueT,
+          typename AccumT,
+          bool ForceInclusive,
+          typename ActualInitValueT = typename InitValueT::value_type>
+#if _CCCL_HAS_CONCEPTS()
+  requires segmented_scan_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warp.block_threads))
+  _CCCL_KERNEL_ATTRIBUTES void device_warp_segmented_scan_kernel(
+    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
+    _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
+    _CCCL_GRID_CONSTANT const BeginOffsetIteratorInputT begin_offset_d_in,
+    _CCCL_GRID_CONSTANT const EndOffsetIteratorInputT end_offset_d_in,
+    _CCCL_GRID_CONSTANT const BeginOffsetIteratorOutputT begin_offset_d_out,
+    _CCCL_GRID_CONSTANT const OffsetT n_segments,
+    _CCCL_GRID_CONSTANT const ScanOpT scan_op,
+    _CCCL_GRID_CONSTANT const InitValueT init_value,
+    _CCCL_GRID_CONSTANT const int num_segments_per_worker)
+{
+  static constexpr auto policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warp;
+  static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
+                "The memory consistency model does not apply to texture accesses");
+
+  using policy_t = agent_warp_segmented_scan_policy_t<
+    policy.block_threads,
+    policy.items_per_thread,
+    policy.load_algorithm,
+    policy.load_modifier,
+    policy.store_algorithm,
+    policy.max_segments_per_warp>;
+
+  using agent_t = agent_warp_segmented_scan<
+    policy_t,
+    InputIteratorT,
+    OutputIteratorT,
+    OffsetT,
+    ScanOpT,
+    ActualInitValueT,
+    AccumT,
+    ForceInclusive>;
+
+  __shared__ typename agent_t::TempStorage temp_storage;
+
+  const ActualInitValueT _init_value = init_value;
+
+  _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments to be processed by warp must be positive");
+  _CCCL_ASSERT(num_segments_per_worker <= policy.max_segments_per_warp,
+               "Requested number of segments to be processed by warp exceeds compile-time maximum");
+
+  static constexpr unsigned int warps_in_block = int(policy.block_threads) >> log2_warp_threads;
+  const unsigned int warp_id                   = threadIdx.x >> log2_warp_threads;
+
+  const auto work_id = num_segments_per_worker * (blockIdx.x * warps_in_block) + warp_id;
+
+  if (work_id >= n_segments)
+  {
+    return;
+  }
+
+  agent_t agent(temp_storage, d_in, d_out, scan_op, _init_value);
+
+  if constexpr (policy.max_segments_per_warp == 1)
+  {
+    const OffsetT inp_begin_offset = begin_offset_d_in[work_id];
+    const OffsetT inp_end_offset   = end_offset_d_in[work_id];
+    const OffsetT out_begin_offset = begin_offset_d_out[work_id];
+
+    agent.consume_range(inp_begin_offset, inp_end_offset, out_begin_offset);
+  }
+  else
+  {
+    // Agent consumes interleaved segments to improve CTA' memory access locality
+
+    // agent accesses offset iterators with index: thread_work_id = chunk_id * worker_thread_count + lane_id;
+    // for 0 <= chunk_id < ::cuda::ceil_div<unsigned>(n_segments, worker_thread_count)
+    //
+    //  total_offset = num_segments_per_worker * (blockIdx.x * warps_in_block) + warp_id +
+    //      warps_in_block * thread_work_id;
+    //
+    using IdT                = decltype(work_id);
+    const auto segment_count = static_cast<IdT>(n_segments);
+
+    const int n_segments_per_warp =
+      (work_id + (num_segments_per_worker - 1) * warps_in_block < segment_count)
+        ? num_segments_per_worker
+        : ::cuda::ceil_div(segment_count - work_id, warps_in_block);
+
+    if (num_segments_per_worker == 1)
+    {
+      // The branch should be taken by all warps. Otherwise, since consume_range and consume_ranges methods
+      // re-use shared memory using different logic, race condition arises for temporary storage in shared memory.
+
+      if (n_segments_per_warp == 1)
+      {
+        // only those warps that do not read past end of segment iterators do the work
+        agent.consume_range(begin_offset_d_in[work_id], end_offset_d_in[work_id], begin_offset_d_out[work_id]);
+      }
+    }
+    else
+    {
+      const ::cuda::strided_iterator raked_begin_inp{begin_offset_d_in + work_id, warps_in_block};
+      const ::cuda::strided_iterator raked_end_inp{end_offset_d_in + work_id, warps_in_block};
+      const ::cuda::strided_iterator raked_begin_out{begin_offset_d_out + work_id, warps_in_block};
+      agent.consume_ranges(raked_begin_inp, raked_end_inp, raked_begin_out, n_segments_per_warp);
+    }
+  }
+}
 } // namespace detail::segmented_scan
 
 CUB_NAMESPACE_END

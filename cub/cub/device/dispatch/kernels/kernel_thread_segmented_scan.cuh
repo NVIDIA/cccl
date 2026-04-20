@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 //! @file
-//! cub::detail::segmented_scan::AgentSegmentedScan implements a stateful abstraction of CUDA thread
-//! blocks for participating in device-wide prefix segmented scan.
+//! Implement kernel for DeviceSegmentedScan with threads processing individual segments.
+
 #pragma once
 
 #include <cub/config.cuh>
@@ -17,10 +17,15 @@
 #endif // no system header
 
 #include <cub/detail/segmented_scan_helpers.cuh>
+#include <cub/device/dispatch/kernels/segmented_scan_agent_policies.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_reduce.cuh> // ThreadReduce
 #include <cub/thread/thread_scan.cuh> // detail::ThreadInclusiveScan
+#include <cub/util_macro.cuh>
+#include <cub/util_type.cuh>
 
+#include <cuda/iterator>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -31,18 +36,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_scan
 {
-// define policy
-//   Policy contains: CacheLoadModifier, block size, items per thread
-
-template <int BlockThreads, int ItemsPerThread, CacheLoadModifier LoadModifier>
-struct agent_thread_segmented_scan_policy_t
-{
-  static constexpr int block_threads    = BlockThreads;
-  static constexpr int items_per_thread = ItemsPerThread;
-
-  static constexpr CacheLoadModifier load_modifier = LoadModifier;
-};
-
 // helper
 
 template <typename InpBeginOffsetIt, typename InpEndOffsetIt, typename OutBeginOffsetIt, typename OffsetT, typename MapperF>
@@ -182,9 +175,9 @@ struct agent_thread_segmented_scan
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using wrapped_input_iterator_t =
-    ::cuda::std::_If<::cuda::std::is_pointer_v<InputIteratorT>,
-                     CacheModifiedInputIterator<AgentSegmentedScanPolicyT::load_modifier, input_t, OffsetT>,
-                     InputIteratorT>;
+    ::cuda::std::conditional_t<::cuda::std::is_pointer_v<InputIteratorT>,
+                               CacheModifiedInputIterator<AgentSegmentedScanPolicyT::load_modifier, input_t, OffsetT>,
+                               InputIteratorT>;
 
   // Constants
 
@@ -478,6 +471,66 @@ private:
     exclusive_prefix = scan_op(exclusive_prefix, thread_aggregate);
   }
 };
+
+template <typename PolicySelector,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename BeginOffsetIteratorInputT,
+          typename EndOffsetIteratorInputT,
+          typename BeginOffsetIteratorOutputT,
+          typename OffsetT,
+          typename ScanOpT,
+          typename InitValueT,
+          typename AccumT,
+          bool ForceInclusive,
+          typename ActualInitValueT = typename InitValueT::value_type>
+#if _CCCL_HAS_CONCEPTS()
+  requires segmented_scan_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).thread.block_threads))
+  _CCCL_KERNEL_ATTRIBUTES void device_thread_segmented_scan_kernel(
+    _CCCL_GRID_CONSTANT const InputIteratorT d_in,
+    _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
+    _CCCL_GRID_CONSTANT const BeginOffsetIteratorInputT begin_offset_d_in,
+    _CCCL_GRID_CONSTANT const EndOffsetIteratorInputT end_offset_d_in,
+    _CCCL_GRID_CONSTANT const BeginOffsetIteratorOutputT begin_offset_d_out,
+    _CCCL_GRID_CONSTANT const OffsetT n_segments,
+    _CCCL_GRID_CONSTANT const ScanOpT scan_op,
+    _CCCL_GRID_CONSTANT const InitValueT init_value,
+    _CCCL_GRID_CONSTANT const int num_segments_per_worker)
+{
+  static constexpr auto policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).thread;
+  static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
+                "The memory consistency model does not apply to texture accesses");
+
+  using policy_t =
+    agent_thread_segmented_scan_policy_t<policy.block_threads, policy.items_per_thread, policy.load_modifier>;
+
+  using agent_t = agent_thread_segmented_scan<
+    policy_t,
+    InputIteratorT,
+    OutputIteratorT,
+    BeginOffsetIteratorInputT,
+    EndOffsetIteratorInputT,
+    BeginOffsetIteratorOutputT,
+    OffsetT,
+    ScanOpT,
+    ActualInitValueT,
+    AccumT,
+    ForceInclusive>;
+
+  __shared__ typename agent_t::TempStorage temp_storage;
+
+  const ActualInitValueT _init_value = init_value;
+
+  _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments to be processed by thread must be positive");
+
+  // Agent consumes interleaved segments to improve CTA' memory access locality
+
+  agent_t agent(
+    temp_storage, d_in, d_out, begin_offset_d_in, end_offset_d_in, begin_offset_d_out, n_segments, scan_op, _init_value);
+  agent.consume_range(num_segments_per_worker);
+}
 } // namespace detail::segmented_scan
 
 CUB_NAMESPACE_END

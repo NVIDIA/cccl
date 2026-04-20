@@ -21,6 +21,8 @@
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_thread_segmented_scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_warp_segmented_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
