@@ -26,8 +26,6 @@
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
-#include <cub/util_temporary_storage.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
