@@ -36,6 +36,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::unique_by_key_tuning
 {
+// TODO(bgruber): drop this after rewriting to the new tuning API
 struct get_tuning_query_t
 {};
 
