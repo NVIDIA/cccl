@@ -330,7 +330,7 @@ struct TestKernel
   }
 };
 
-C2H_TEST("Hierarchy groups", "[hierarchy]")
+C2H_TEST("Group-by mapping", "[group]")
 {
   const auto device = cuda::devices[0];
 

@@ -431,44 +431,22 @@ __device__ void test_queries(const cudax::group<cuda::thread_level, Level, cudax
 template <class Unit, class Level, class Config, cuda::std::size_t N>
 __device__ void test_group_by_group(const Config& config)
 {
-  // Test statically known group size
-  {
-    using Mapping = cudax::group_by<N>;
-
-    cudax::group group{Unit{}, Level{}, Mapping{}, config};
-    static_assert(
-      cuda::std::is_same_v<cudax::group<Unit,
-                                        Level,
-                                        Mapping,
-                                        typename Config::hierarchy_type,
-                                        cudax::__synchronizer_select_t<Unit, Level, Mapping>>,
-                           decltype(group)>);
-
-    test_common_properties<Unit, Level>(config.hierarchy(), group);
-    test_queries<Level>(group);
-  }
-
   if constexpr (cuda::std::is_same_v<Level, cuda::block_level>)
   {
-    using Mapping = cudax::group_by<N>;
-    using Barrier = cuda::barrier<cuda::thread_scope_block>;
-
     constexpr cuda::std::size_t nbarriers = 128 / N;
 
-    struct alignas(Barrier) BarrierStorage
-    {
-      unsigned char bytes[nbarriers * sizeof(Barrier)];
-    };
-    __shared__ BarrierStorage barrier_storage;
+    using Barrier      = cuda::barrier<cuda::thread_scope_block>;
+    using Mapping      = cudax::group_by<N>;
+    using Synchronizer = cudax::barrier_synchronizer<Barrier, nbarriers>;
 
-    auto& barriers = reinterpret_cast<Barrier(&)[nbarriers]>(barrier_storage);
+    using BarriersStorage = cuda::std::aligned_storage_t<nbarriers * sizeof(Barrier), alignof(Barrier)>;
+    __shared__ BarriersStorage barriers_storage;
+    auto& barriers = reinterpret_cast<Barrier(&)[nbarriers]>(barriers_storage);
 
-    cudax::group group{Unit{}, Level{}, Mapping{}, config, barriers};
+    cudax::group group{Unit{}, Level{}, Mapping{}, config, cudax::barrier_synchronizer{barriers}};
     static_assert(
-      cuda::std::is_same_v<
-        cudax::
-          group<Unit, Level, Mapping, typename Config::hierarchy_type, cudax::__barrier_synchronizer<Unit, Level, Mapping>>,
-        decltype(group)>);
+      cuda::std::is_same_v<cudax::group<Unit, Level, Mapping, typename Config::hierarchy_type, Synchronizer>,
+                           decltype(group)>);
 
     test_common_properties<Unit, Level>(config.hierarchy(), group);
   }

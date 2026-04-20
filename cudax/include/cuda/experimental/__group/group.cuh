@@ -35,8 +35,8 @@
 #include <cuda/experimental/__group/concepts.cuh>
 #include <cuda/experimental/__group/fwd.cuh>
 #include <cuda/experimental/__group/mapping/group_by.cuh>
-#include <cuda/experimental/__group/synchronizers.cuh>
 #include <cuda/experimental/__group/this_group.cuh>
+#include <cuda/experimental/__group/traits.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -47,13 +47,16 @@ namespace cuda::experimental
 template <class _Unit, class _Level, class _Mapping, class _Hierarchy, class _Synchronizer>
 class group
 {
-  using _MappingResult = __group_mapping_result_t<_Mapping, _Unit, _Level, _Hierarchy>;
+  using _MappingResult        = __group_mapping_result_t<_Mapping, _Unit, _Level, _Hierarchy>;
+  using _SynchronizerInstance = __group_synchronizer_instance_t<_Synchronizer, _Unit, _Level, _Mapping, _MappingResult>;
+
   static_assert(__group_mapping_result<_MappingResult>);
 
   _Hierarchy __hier_;
   _Mapping __mapping_;
   _MappingResult __mapping_result_;
   _Synchronizer __synchronizer_;
+  _SynchronizerInstance __synchronizer_instance_;
 
 public:
   using unit_type             = _Unit;
@@ -61,34 +64,22 @@ public:
   using mapping_type          = _Mapping;
   using __mapping_result_type = _MappingResult;
   using hierarchy_type        = _Hierarchy;
+  using synchronizer_type     = _Synchronizer;
 
   // todo(dabayer): Remove _Level and _HierarchyLike parameters and take a base group instead.
-  // todo(dabayer): Do we want default behaviour like this, or do we want some kind of cuda::auto_sync_mechanism{} tag?
   _CCCL_TEMPLATE(class _HierarchyLike)
   _CCCL_REQUIRES(::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
-  _CCCL_DEVICE_API explicit group(
-    const _Unit&, const _Level&, const _Mapping& __mapping, const _HierarchyLike& __hier_like) noexcept
-      : __hier_{::cuda::__unpack_hierarchy_if_needed(__hier_like)}
-      , __mapping_{__mapping}
-      , __mapping_result_{__mapping_.map(_Unit{}, _Level{}, ::cuda::__unpack_hierarchy_if_needed(__hier_like))}
-      , __synchronizer_{__mapping_result_}
-  {
-    ::cuda::experimental::__check_mapping_result(__mapping_result_);
-  }
-
-  _CCCL_TEMPLATE(class _Synchronizer2 = _Synchronizer, class _MappingResult2 = _MappingResult, class _HierarchyLike)
-  _CCCL_REQUIRES(__is_barrier_synchronizer<_Synchronizer2>
-                   _CCCL_AND ::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
   _CCCL_DEVICE_API explicit group(
     const _Unit&,
     const _Level&,
     const _Mapping& __mapping,
     const _HierarchyLike& __hier_like,
-    ::cuda::std::span<typename _Synchronizer2::__barrier_type, _MappingResult::static_group_count()> __barriers) noexcept
+    const _Synchronizer& __synchronizer) noexcept
       : __hier_{::cuda::__unpack_hierarchy_if_needed(__hier_like)}
       , __mapping_{__mapping}
       , __mapping_result_{__mapping_.map(_Unit{}, _Level{}, ::cuda::__unpack_hierarchy_if_needed(__hier_like))}
-      , __synchronizer_{__mapping_result_, __barriers}
+      , __synchronizer_{__synchronizer}
+      , __synchronizer_instance_{__synchronizer_.make_instance(_Unit{}, _Level{}, __mapping_, __mapping_result_)}
   {
     ::cuda::experimental::__check_mapping_result(__mapping_result_);
   }
@@ -110,47 +101,45 @@ public:
     return __mapping_result_;
   }
 
+  // todo(dabayer): Do we want to expose synchronizer getter?
+  [[nodiscard]] _CCCL_DEVICE_API const _Synchronizer& synchronizer() const noexcept
+  {
+    return __synchronizer_;
+  }
+
   // todo(dabayer): Do we want to expose .arrive() and .wait()? Do we want to implement .sync() using them? Do we want
   //                aligned/unaligned variants?
   _CCCL_DEVICE_API void sync() noexcept
   {
-    __synchronizer_.__sync(__mapping_result_);
+    if constexpr (!_MappingResult::is_always_exhaustive())
+    {
+      if (!__mapping_result_.is_valid())
+      {
+        return;
+      }
+    }
+
+    __synchronizer_instance_.do_sync(__mapping_result_, __synchronizer_);
   }
 
   _CCCL_DEVICE_API void sync_aligned() noexcept
   {
-    if constexpr (__has_sync_aligned<_Synchronizer, _MappingResult>)
+    if constexpr (!_MappingResult::is_always_exhaustive())
     {
-      __synchronizer_.__sync_aligned(__mapping_result_);
+      if (!__mapping_result_.is_valid())
+      {
+        return;
+      }
     }
-    else
-    {
-      sync();
-    }
+
+    __synchronizer_instance_.do_sync_aligned(__mapping_result_, __synchronizer_);
   }
 };
 
-_CCCL_TEMPLATE(class _Unit, class _Level, ::cuda::std::size_t _Np, class _HierarchyLike)
+_CCCL_TEMPLATE(class _Unit, class _Level, ::cuda::std::size_t _Np, class _HierarchyLike, class _Synchronizer)
 _CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND __is_hierarchy_level_v<_Level> _CCCL_AND
                  __is_or_has_hierarchy_member_v<_HierarchyLike>)
-_CCCL_DEVICE group(const _Unit&, const _Level&, const group_by<_Np>&, const _HierarchyLike&)
-  -> group<_Unit,
-           _Level,
-           group_by<_Np>,
-           __hierarchy_type_of<_HierarchyLike>,
-           __synchronizer_select_t<_Unit, _Level, group_by<_Np>>>;
-
-_CCCL_TEMPLATE(class _Unit,
-               class _Level,
-               ::cuda::std::size_t _Np,
-               class _HierarchyLike,
-               class _SyncParam,
-               class _Synchronizer = __barrier_synchronizer<_Unit, _Level, group_by<_Np>>)
-_CCCL_REQUIRES(
-  __is_hierarchy_level_v<_Unit> _CCCL_AND __is_hierarchy_level_v<_Level> _CCCL_AND
-    __is_or_has_hierarchy_member_v<_HierarchyLike>
-      _CCCL_AND ::cuda::std::is_constructible_v<::cuda::std::span<typename _Synchronizer::__barrier_type>, _SyncParam>)
-_CCCL_DEVICE group(const _Unit&, const _Level&, const group_by<_Np>&, const _HierarchyLike&, _SyncParam&&)
+_CCCL_DEVICE group(const _Unit&, const _Level&, const group_by<_Np>&, const _HierarchyLike&, const _Synchronizer&)
   -> group<_Unit, _Level, group_by<_Np>, __hierarchy_type_of<_HierarchyLike>, _Synchronizer>;
 } // namespace cuda::experimental
 

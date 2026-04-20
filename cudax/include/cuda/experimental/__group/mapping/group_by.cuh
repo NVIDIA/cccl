@@ -137,7 +137,7 @@ public:
 
   _CCCL_TEMPLATE(bool _IsExhaustive2 = _IsExhaustive)
   _CCCL_REQUIRES((!_IsExhaustive))
-  _CCCL_DEVICE_API constexpr group_by(non_exhaustive_t) noexcept {}
+  _CCCL_DEVICE_API constexpr group_by(const non_exhaustive_t&) noexcept {}
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count() noexcept
   {
@@ -283,7 +283,7 @@ public:
 
   _CCCL_TEMPLATE(bool _IsExhaustive2 = _IsExhaustive)
   _CCCL_REQUIRES((!_IsExhaustive2))
-  _CCCL_DEVICE_API explicit constexpr group_by(unsigned __n, non_exhaustive_t) noexcept
+  _CCCL_DEVICE_API explicit constexpr group_by(unsigned __n, const non_exhaustive_t&) noexcept
       : __n_{__n}
   {
     _CCCL_ASSERT(__n_ > 0, "__n cannot be 0");
@@ -335,11 +335,7 @@ public:
 
 _CCCL_DEVICE group_by(unsigned) -> group_by<::cuda::std::dynamic_extent>;
 
-_CCCL_DEVICE group_by(unsigned, non_exhaustive_t) -> group_by<::cuda::std::dynamic_extent, false>;
-
-template <class _Mapping, class _Unit, class _Level, class _Hierarchy>
-using __group_mapping_result_t =
-  decltype(::cuda::std::declval<_Mapping>().map(_Unit{}, _Level{}, ::cuda::std::declval<_Hierarchy>()));
+_CCCL_DEVICE group_by(unsigned, const non_exhaustive_t&) -> group_by<::cuda::std::dynamic_extent, false>;
 
 template <class _MappingResult>
 _CCCL_DEVICE_API void __check_mapping_result(const _MappingResult& __mapping_result) noexcept
