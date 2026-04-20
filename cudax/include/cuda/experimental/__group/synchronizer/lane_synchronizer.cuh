@@ -67,21 +67,21 @@ public:
 
   // todo(dabayer): Rewrite this function to support groups made from groups. Might need to change the compile-time
   // parameters.
-  template <class _Unit, class _Level, ::cuda::std::size_t _Np, class _MappingResult>
+  template <class _Unit, class _ParentGroup, ::cuda::std::size_t _Np, class _MappingResult>
   [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance make_instance(
-    const _Unit&, const _Level&, const group_by<_Np>&, const _MappingResult& __mapping_result) const noexcept
+    const _Unit&, const _ParentGroup&, const group_by<_Np>&, const _MappingResult& __mapping_result) const noexcept
   {
     static_assert(::cuda::std::is_same_v<_Unit, thread_level>, "_Unit must be cuda::thread_level");
     static_assert(__group_mapping_result<_MappingResult>);
 
     if constexpr (_MappingResult::static_count() != ::cuda::std::dynamic_extent)
     {
-      static_assert(__is_supported_count<_Level>(_MappingResult::static_count()),
+      static_assert(__is_supported_count<typename _ParentGroup::level_type>(_MappingResult::static_count()),
                     "unsupported count for cuda::lane_synchronizer");
     }
     else
     {
-      _CCCL_ASSERT(__is_supported_count<_Level>(__mapping_result.count()),
+      _CCCL_ASSERT(__is_supported_count<typename _ParentGroup::level_type>(__mapping_result.count()),
                    "unsupported count for cuda::lane_synchronizer");
     }
 

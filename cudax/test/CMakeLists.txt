@@ -128,10 +128,13 @@ cudax_add_catch2_test(test_target algorithm
 )
 
 cudax_add_catch2_test(test_target group
-    group/group.cu
     group/mapping/group_by.cu
     group/synchronizer/lane_synchronizer.cu
     group/synchronizer/barrier_synchronizer.cu
+    group/cooperative_algorithm.cu
+    group/group.cu
+    group/make_this_group.cu
+    group/this_group.cu
 )
 target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
 

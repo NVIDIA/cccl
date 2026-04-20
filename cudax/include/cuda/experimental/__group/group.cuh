@@ -44,47 +44,70 @@
 
 namespace cuda::experimental
 {
-template <class _Unit, class _Level, class _Mapping, class _Hierarchy, class _Synchronizer>
+template <class _Unit, class _ParentGroup, class _Mapping, class _Synchronizer>
 class group
 {
-  using _MappingResult        = __group_mapping_result_t<_Mapping, _Unit, _Level, _Hierarchy>;
-  using _SynchronizerInstance = __group_synchronizer_instance_t<_Synchronizer, _Unit, _Level, _Mapping, _MappingResult>;
+  static_assert(__is_hierarchy_level_v<_Unit>);
+  static_assert(is_group<_ParentGroup>);
 
+  // todo(dabayer): Allow groups stacking and remove this.
+  static_assert(__is_this_group_v<_ParentGroup>);
+
+  // todo(dabayer): static_assert that _Unit is (under) typename _ParentGroup::unit_type
+
+  using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
+  using _MappingResult       = __group_mapping_result_t<_Mapping, _Unit, _ParentGroup>;
+  using _SynchronizerInstance =
+    __group_synchronizer_instance_t<_Synchronizer, _Unit, _ParentGroup, _Mapping, _MappingResult>;
   static_assert(__group_mapping_result<_MappingResult>);
 
-  _Hierarchy __hier_;
+  typename _ParentGroup::hierarchy_type __hier_;
   _Mapping __mapping_;
   _MappingResult __mapping_result_;
   _Synchronizer __synchronizer_;
   _SynchronizerInstance __synchronizer_instance_;
 
-public:
-  using unit_type             = _Unit;
-  using level_type            = _Level;
-  using mapping_type          = _Mapping;
-  using __mapping_result_type = _MappingResult;
-  using hierarchy_type        = _Hierarchy;
-  using synchronizer_type     = _Synchronizer;
-
-  // todo(dabayer): Remove _Level and _HierarchyLike parameters and take a base group instead.
-  _CCCL_TEMPLATE(class _HierarchyLike)
-  _CCCL_REQUIRES(::cuda::std::is_same_v<_Hierarchy, __hierarchy_type_of<_HierarchyLike>>)
-  _CCCL_DEVICE_API explicit group(
-    const _Unit&,
-    const _Level&,
-    const _Mapping& __mapping,
-    const _HierarchyLike& __hier_like,
-    const _Synchronizer& __synchronizer) noexcept
-      : __hier_{::cuda::__unpack_hierarchy_if_needed(__hier_like)}
-      , __mapping_{__mapping}
-      , __mapping_result_{__mapping_.map(_Unit{}, _Level{}, ::cuda::__unpack_hierarchy_if_needed(__hier_like))}
-      , __synchronizer_{__synchronizer}
-      , __synchronizer_instance_{__synchronizer_.make_instance(_Unit{}, _Level{}, __mapping_, __mapping_result_)}
+  [[nodiscard]] _CCCL_DEVICE_API static _MappingResult
+  __do_mapping(const _Mapping& __mapping, const _ParentGroup& __parent) noexcept
   {
-    ::cuda::experimental::__check_mapping_result(__mapping_result_);
+    if constexpr (!_ParentMappingResult::is_always_exhaustive())
+    {
+      if (!__parent.__mapping_result().is_valid())
+      {
+        return _MappingResult::invalid();
+      }
+    }
+
+    const auto __mapping_result = __mapping.map(_Unit{}, __parent);
+    if (__mapping_result.is_valid())
+    {
+      _CCCL_ASSERT(__mapping_result.group_rank() < __mapping_result.group_count(), "invalid group rank");
+      _CCCL_ASSERT(__mapping_result.rank() < __mapping_result.count(), "invalid rank");
+    }
+    return __mapping_result;
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API const _Hierarchy& hierarchy() const noexcept
+public:
+  using unit_type             = _Unit;
+  using level_type            = typename _ParentGroup::level_type;
+  using hierarchy_type        = typename _ParentGroup::hierarchy_type;
+  using mapping_type          = _Mapping;
+  using __mapping_result_type = _MappingResult;
+  using synchronizer_type     = _Synchronizer;
+
+  _CCCL_DEVICE_API explicit group(
+    const _Unit& __unit,
+    const _ParentGroup& __parent,
+    const _Mapping& __mapping,
+    const _Synchronizer& __synchronizer) noexcept
+      : __hier_{__parent.hierarchy()}
+      , __mapping_{__mapping}
+      , __mapping_result_{__do_mapping(__mapping_, __parent)}
+      , __synchronizer_{__synchronizer}
+      , __synchronizer_instance_{__synchronizer_.make_instance(__unit, __parent, __mapping_, __mapping_result_)}
+  {}
+
+  [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const noexcept
   {
     return __hier_;
   }
@@ -118,7 +141,6 @@ public:
         return;
       }
     }
-
     __synchronizer_instance_.do_sync(__mapping_result_, __synchronizer_);
   }
 
@@ -131,16 +153,14 @@ public:
         return;
       }
     }
-
     __synchronizer_instance_.do_sync_aligned(__mapping_result_, __synchronizer_);
   }
 };
 
-_CCCL_TEMPLATE(class _Unit, class _Level, ::cuda::std::size_t _Np, class _HierarchyLike, class _Synchronizer)
-_CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND __is_hierarchy_level_v<_Level> _CCCL_AND
-                 __is_or_has_hierarchy_member_v<_HierarchyLike>)
-_CCCL_DEVICE group(const _Unit&, const _Level&, const group_by<_Np>&, const _HierarchyLike&, const _Synchronizer&)
-  -> group<_Unit, _Level, group_by<_Np>, __hierarchy_type_of<_HierarchyLike>, _Synchronizer>;
+_CCCL_TEMPLATE(class _Unit, class _ParentGroup, class _Mapping, class _Synchronizer)
+_CCCL_REQUIRES(__is_hierarchy_level_v<_Unit> _CCCL_AND is_group<_ParentGroup>)
+_CCCL_DEVICE group(const _Unit&, const _ParentGroup&, const _Mapping&, const _Synchronizer&)
+  -> group<_Unit, _ParentGroup, _Mapping, _Synchronizer>;
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED

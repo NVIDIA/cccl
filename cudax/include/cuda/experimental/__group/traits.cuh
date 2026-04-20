@@ -29,13 +29,16 @@
 
 namespace cuda::experimental
 {
-template <class _Mapping, class _Unit, class _Level, class _Hierarchy>
+template <class _Mapping, class _Unit, class _ParentGroup>
 using __group_mapping_result_t =
-  decltype(::cuda::std::declval<_Mapping>().map(_Unit{}, _Level{}, ::cuda::std::declval<const _Hierarchy&>()));
+  decltype(::cuda::std::declval<_Mapping>().map(_Unit{}, ::cuda::std::declval<const _ParentGroup&>()));
 
-template <class _Synchronizer, class _Unit, class _Level, class _Mapping, class _MappingResult>
+template <class _Synchronizer, class _Unit, class _ParentGroup, class _Mapping, class _MappingResult>
 using __group_synchronizer_instance_t = decltype(::cuda::std::declval<_Synchronizer>().make_instance(
-  _Unit{}, _Level{}, ::cuda::std::declval<const _Mapping&>(), ::cuda::std::declval<const _MappingResult&>()));
+  _Unit{},
+  ::cuda::std::declval<const _ParentGroup&>(),
+  ::cuda::std::declval<const _Mapping&>(),
+  ::cuda::std::declval<const _MappingResult&>()));
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED

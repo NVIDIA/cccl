@@ -81,11 +81,15 @@ public:
     return __barriers_;
   }
 
-  template <class _Unit, class _Level, class _Mapping, class _MappingResult>
+  template <class _Unit, class _ParentGroup, class _Mapping, class _MappingResult>
   [[nodiscard]] _CCCL_DEVICE_API __synchronizer_instance make_instance(
-    const _Unit&, const _Level&, const _Mapping& __mapping, const _MappingResult& __mapping_result) const noexcept
+    const _Unit&,
+    const _ParentGroup& __parent,
+    const _Mapping& __mapping,
+    const _MappingResult& __mapping_result) const noexcept
   {
-    static_assert(::cuda::std::is_same_v<_Level, block_level>, "only block_level is currently supported");
+    static_assert(::cuda::std::is_same_v<typename _ParentGroup::level_type, block_level>,
+                  "only block_level is currently supported");
 
     if constexpr (_MappingResult::static_group_count() != ::cuda::std::dynamic_extent
                   && _Np != ::cuda::std::dynamic_extent)
@@ -112,8 +116,8 @@ public:
       init(&__barriers_[__mapping_result.group_rank()], static_cast<::cuda::std::ptrdiff_t>(__mapping_result.count()));
     }
 
-    // todo(dabayer): Do we want aligned or unaligned sync here?
-    ::__syncthreads();
+    // todo(dabayer): How we can expose making this aligned?
+    __parent.sync();
     return {};
   }
 };

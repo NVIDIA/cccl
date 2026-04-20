@@ -20,6 +20,8 @@
 
 #include "testing.cuh"
 
+namespace
+{
 template <class Level, class Config>
 __device__ void test_barrier_synchronizer(const Level& level, Config config)
 {
@@ -79,11 +81,14 @@ __device__ void test_barrier_synchronizer(const Level& level, Config config)
 
   // Test make_instance(...).
   {
+    const auto parent_group = cudax::make_this_group(level, config);
+
     const cudax::group_by mapping{4};
     const cudax::barrier_synchronizer synchronizer{barriers};
 
-    const auto mapping_result        = mapping.map(cuda::gpu_thread, level, config.hierarchy());
-    const auto synchronizer_instance = synchronizer.make_instance(cuda::gpu_thread, level, mapping, mapping_result);
+    const auto mapping_result = mapping.map(cuda::gpu_thread, parent_group);
+    const auto synchronizer_instance =
+      synchronizer.make_instance(cuda::gpu_thread, parent_group, mapping, mapping_result);
 
     // Test do_sync(...).
     static_assert(cuda::std::is_same_v<void, decltype(synchronizer_instance.do_sync(mapping_result, synchronizer))>);
@@ -107,6 +112,7 @@ struct TestKernel
     test_barrier_synchronizer(cuda::block, config);
   }
 };
+} // namespace
 
 C2H_TEST("Barrier synchronizer", "[group]")
 {

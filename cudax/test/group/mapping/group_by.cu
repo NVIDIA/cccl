@@ -20,6 +20,8 @@
 
 #include "testing.cuh"
 
+namespace
+{
 template <cuda::std::size_t N, class Config>
 __device__ void test_group_by(Config config)
 {
@@ -67,13 +69,14 @@ __device__ void test_group_by(Config config)
 
     // Test map(...).
     {
-      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      cuda::gpu_thread, cuda::warp, config.hierarchy()))>);
+      const cudax::this_warp parent_group{config};
+
       static_assert(
-        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, cuda::warp, config.hierarchy())));
+        cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group))>);
+      static_assert(noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group)));
 
       const Mapping mapping;
-      auto result  = mapping.map(cuda::gpu_thread, cuda::warp, config.hierarchy());
+      auto result  = mapping.map(cuda::gpu_thread, parent_group);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == 32 / N);
@@ -135,13 +138,14 @@ __device__ void test_group_by(Config config)
 
     // Test map(...).
     {
-      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      cuda::gpu_thread, cuda::warp, config.hierarchy()))>);
+      const cudax::this_warp parent_group{config};
+
       static_assert(
-        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, cuda::warp, config.hierarchy())));
+        cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group))>);
+      static_assert(noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group)));
 
       const Mapping mapping{N};
-      auto result  = mapping.map(cuda::gpu_thread, cuda::warp, config.hierarchy());
+      auto result  = mapping.map(cuda::gpu_thread, parent_group);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == cuda::std::dynamic_extent);
@@ -206,13 +210,14 @@ __device__ void test_group_by_non_exhaustive(Config config)
 
     // Test map(...).
     {
-      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      cuda::gpu_thread, cuda::warp, config.hierarchy()))>);
+      const cudax::this_warp parent_group{config};
+
       static_assert(
-        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, cuda::warp, config.hierarchy())));
+        cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group))>);
+      static_assert(noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group)));
 
       const Mapping mapping{cudax::non_exhaustive};
-      auto result  = mapping.map(cuda::gpu_thread, cuda::warp, config.hierarchy());
+      auto result  = mapping.map(cuda::gpu_thread, parent_group);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == 32 / N);
@@ -220,7 +225,7 @@ __device__ void test_group_by_non_exhaustive(Config config)
       static_assert(!Result::is_always_exhaustive());
       static_assert(Result::is_always_contiguous());
 
-      const auto is_valid_ref = (cuda::gpu_thread.count(cuda::warp) / N) * N < cuda::gpu_thread.rank(cuda::warp);
+      const auto is_valid_ref = cuda::gpu_thread.rank(cuda::warp) < (cuda::gpu_thread.count(cuda::warp) / N) * N;
       CUDAX_CHECK(result.is_valid() == is_valid_ref);
 
       if (is_valid_ref)
@@ -279,13 +284,14 @@ __device__ void test_group_by_non_exhaustive(Config config)
 
     // Test map(...).
     {
-      static_assert(cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(
-                      cuda::gpu_thread, cuda::warp, config.hierarchy()))>);
+      const cudax::this_warp parent_group{config};
+
       static_assert(
-        noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, cuda::warp, config.hierarchy())));
+        cudax::__group_mapping_result<decltype(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group))>);
+      static_assert(noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group)));
 
       const Mapping mapping{N, cudax::non_exhaustive};
-      auto result  = mapping.map(cuda::gpu_thread, cuda::warp, config.hierarchy());
+      auto result  = mapping.map(cuda::gpu_thread, parent_group);
       using Result = decltype(result);
 
       static_assert(Result::static_group_count() == cuda::std::dynamic_extent);
@@ -293,7 +299,7 @@ __device__ void test_group_by_non_exhaustive(Config config)
       static_assert(!Result::is_always_exhaustive());
       static_assert(Result::is_always_contiguous());
 
-      const auto is_valid_ref = (cuda::gpu_thread.count(cuda::warp) / N) * N < cuda::gpu_thread.rank(cuda::warp);
+      const auto is_valid_ref = cuda::gpu_thread.rank(cuda::warp) < (cuda::gpu_thread.count(cuda::warp) / N) * N;
       CUDAX_CHECK(result.is_valid() == is_valid_ref);
 
       if (is_valid_ref)
@@ -329,6 +335,7 @@ struct TestKernel
     test_group_by_non_exhaustive<32>(config);
   }
 };
+} // namespace
 
 C2H_TEST("Group-by mapping", "[group]")
 {

@@ -19,6 +19,8 @@
 
 #include "testing.cuh"
 
+namespace
+{
 template <class Level, class Config>
 __device__ void test_lane_synchronizer(const Level& level, Config config)
 {
@@ -30,11 +32,14 @@ __device__ void test_lane_synchronizer(const Level& level, Config config)
 
   // Test make_instance(...).
   {
+    const auto parent_group = cudax::make_this_group(level, config);
+
     const cudax::group_by mapping{2};
     const Synchronizer synchronizer{};
 
-    const auto mapping_result        = mapping.map(cuda::gpu_thread, level, config.hierarchy());
-    const auto synchronizer_instance = synchronizer.make_instance(cuda::gpu_thread, level, mapping, mapping_result);
+    const auto mapping_result = mapping.map(cuda::gpu_thread, parent_group);
+    const auto synchronizer_instance =
+      synchronizer.make_instance(cuda::gpu_thread, parent_group, mapping, mapping_result);
 
     const auto this_lane_mask = cuda::ptx::get_sreg_lanemask_eq();
     const auto another_lane_mask =
@@ -65,6 +70,7 @@ struct TestKernel
     test_lane_synchronizer(cuda::grid, config);
   }
 };
+} // namespace
 
 C2H_TEST("Lane synchronizer", "[group]")
 {

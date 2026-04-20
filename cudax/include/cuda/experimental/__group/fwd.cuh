@@ -64,7 +64,7 @@ class this_cluster;
 template <class _Hierarchy>
 class this_grid;
 
-template <class _Unit, class _Level, class _Mapping, class _Hierarchy, class _Synchronizer>
+template <class _Unit, class _ParentGroup, class _Mapping, class _Synchronizer>
 class group;
 
 // mappings
@@ -82,17 +82,17 @@ class barrier_synchronizer;
 // traits
 
 template <class _Tp>
-inline constexpr bool __is_this_hierarchy_group_v = false;
+inline constexpr bool __is_this_group_v = false;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<this_thread<_Hierarchy>> = true;
+inline constexpr bool __is_this_group_v<this_thread<_Hierarchy>> = true;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<this_warp<_Hierarchy>> = true;
+inline constexpr bool __is_this_group_v<this_warp<_Hierarchy>> = true;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<this_block<_Hierarchy>> = true;
+inline constexpr bool __is_this_group_v<this_block<_Hierarchy>> = true;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<this_cluster<_Hierarchy>> = true;
+inline constexpr bool __is_this_group_v<this_cluster<_Hierarchy>> = true;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<this_grid<_Hierarchy>> = true;
+inline constexpr bool __is_this_group_v<this_grid<_Hierarchy>> = true;
 
 // tags
 
