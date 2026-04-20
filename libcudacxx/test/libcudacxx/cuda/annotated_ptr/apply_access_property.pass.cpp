@@ -13,7 +13,7 @@
 constexpr size_t array_size = 128;
 
 template <typename T, typename P>
-__device__ __host__ __noinline__ void test(P ap)
+TEST_FUNC __noinline__ void test(P ap)
 {
   T* arr = global_alloc<T, array_size>();
 
@@ -28,7 +28,7 @@ __device__ __host__ __noinline__ void test(P ap)
 }
 
 template <typename T, typename P>
-__device__ __host__ __noinline__ void test_aligned(P ap)
+TEST_FUNC __noinline__ void test_aligned(P ap)
 {
   T* arr = global_alloc<T, array_size>();
 
@@ -42,7 +42,7 @@ __device__ __host__ __noinline__ void test_aligned(P ap)
   dealloc<T>(arr);
 }
 
-__device__ __host__ __noinline__ void test_all()
+TEST_FUNC __noinline__ void test_all()
 {
   test<int>(cuda::access_property::normal{});
   test<int>(cuda::access_property::persisting{});

@@ -12,7 +12,7 @@
 
 #include "utils.h"
 
-__device__ __host__ static void fails_from_host()
+TEST_FUNC static void fails_from_host()
 {
   int a;
   __nv_associate_access_property(&a, uint64_t{0});

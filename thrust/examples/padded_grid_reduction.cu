@@ -6,10 +6,10 @@
 #include <thrust/random.h>
 #include <thrust/transform_reduce.h>
 
+#include <cfloat>
 #include <cmath>
 #include <iomanip>
-
-#include <float.h>
+#include <iostream>
 
 // This example computes the minimum and maximum values
 // over a padded grid.  The padded values are not considered

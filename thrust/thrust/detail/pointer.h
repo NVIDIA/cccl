@@ -24,6 +24,7 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traversal_tags.h>
 
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -36,10 +37,6 @@
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstddef>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 THRUST_NAMESPACE_BEGIN
 template <typename Element, typename Tag, typename Reference = use_default, typename Derived = use_default>
@@ -405,10 +402,7 @@ struct pointer_traits<Pointer, void_t<typename Pointer::raw_pointer>>
   using difference_type = ptrdiff_t;
 
   template <typename U>
-  struct rebind
-  {
-    using other = typename THRUST_NS_QUALIFIER::detail::rebind_pointer<pointer, U>::type;
-  };
+  using rebind = typename THRUST_NS_QUALIFIER::detail::rebind_pointer<pointer, U>::type;
 
   // Backwards compatibility with thrust::detail::pointer_traits
   using raw_pointer = typename pointer::raw_pointer;

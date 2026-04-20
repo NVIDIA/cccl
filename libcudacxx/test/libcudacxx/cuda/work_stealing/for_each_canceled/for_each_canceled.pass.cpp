@@ -15,7 +15,9 @@
 #include <cuda/std/cmath>
 #include <cuda/work_stealing>
 
-__device__ void vec_add_impl1(int* a, int* b, int* c, int n, dim3 block_idx)
+#include "test_macros.h"
+
+TEST_DEVICE_FUNC void vec_add_impl1(int* a, int* b, int* c, int n, dim3 block_idx)
 {
   int idx = threadIdx.x + block_idx.x * blockDim.x;
   if (idx < n)
@@ -24,7 +26,7 @@ __device__ void vec_add_impl1(int* a, int* b, int* c, int n, dim3 block_idx)
   }
 }
 
-__device__ void vec_add_impl2(int* a, int* b, int* c, int n, dim3 block_idx)
+TEST_DEVICE_FUNC void vec_add_impl2(int* a, int* b, int* c, int n, dim3 block_idx)
 {
   int x_idx = threadIdx.x + (block_idx.x * blockDim.x);
   int y_idx = threadIdx.y + (block_idx.y * blockDim.y);
@@ -35,7 +37,7 @@ __device__ void vec_add_impl2(int* a, int* b, int* c, int n, dim3 block_idx)
   }
 }
 
-__device__ void vec_add_impl3(int* a, int* b, int* c, int n, dim3 block_idx)
+TEST_DEVICE_FUNC void vec_add_impl3(int* a, int* b, int* c, int n, dim3 block_idx)
 {
   int x_idx = threadIdx.x + (block_idx.x * blockDim.x);
   int y_idx = threadIdx.y + (block_idx.y * blockDim.y);

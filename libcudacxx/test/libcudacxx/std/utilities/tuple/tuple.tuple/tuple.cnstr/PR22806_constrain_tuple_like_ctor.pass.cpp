@@ -47,19 +47,19 @@ struct ConstructibleFromTupleAndInt
   };
   State state;
 
-  __host__ __device__ ConstructibleFromTupleAndInt(ConstructibleFromTupleAndInt const&)
+  TEST_FUNC ConstructibleFromTupleAndInt(ConstructibleFromTupleAndInt const&)
       : state(Copied)
   {}
-  __host__ __device__ ConstructibleFromTupleAndInt(ConstructibleFromTupleAndInt&&)
+  TEST_FUNC ConstructibleFromTupleAndInt(ConstructibleFromTupleAndInt&&)
       : state(Moved)
   {}
 
   template <class Tuple, class = typename cuda::std::enable_if<IsTuple<Tuple>::value>::type>
-  __host__ __device__ explicit ConstructibleFromTupleAndInt(Tuple&&)
+  TEST_FUNC explicit ConstructibleFromTupleAndInt(Tuple&&)
       : state(FromTuple)
   {}
 
-  __host__ __device__ explicit ConstructibleFromTupleAndInt(int)
+  TEST_FUNC explicit ConstructibleFromTupleAndInt(int)
       : state(FromInt)
   {}
 };
@@ -75,19 +75,19 @@ struct ConvertibleFromTupleAndInt
   };
   State state;
 
-  __host__ __device__ ConvertibleFromTupleAndInt(ConvertibleFromTupleAndInt const&)
+  TEST_FUNC ConvertibleFromTupleAndInt(ConvertibleFromTupleAndInt const&)
       : state(Copied)
   {}
-  __host__ __device__ ConvertibleFromTupleAndInt(ConvertibleFromTupleAndInt&&)
+  TEST_FUNC ConvertibleFromTupleAndInt(ConvertibleFromTupleAndInt&&)
       : state(Moved)
   {}
 
   template <class Tuple, class = typename cuda::std::enable_if<IsTuple<Tuple>::value>::type>
-  __host__ __device__ ConvertibleFromTupleAndInt(Tuple&&)
+  TEST_FUNC ConvertibleFromTupleAndInt(Tuple&&)
       : state(FromTuple)
   {}
 
-  __host__ __device__ ConvertibleFromTupleAndInt(int)
+  TEST_FUNC ConvertibleFromTupleAndInt(int)
       : state(FromInt)
   {}
 };
@@ -102,14 +102,14 @@ struct ConstructibleFromInt
   };
   State state;
 
-  __host__ __device__ ConstructibleFromInt(ConstructibleFromInt const&)
+  TEST_FUNC ConstructibleFromInt(ConstructibleFromInt const&)
       : state(Copied)
   {}
-  __host__ __device__ ConstructibleFromInt(ConstructibleFromInt&&)
+  TEST_FUNC ConstructibleFromInt(ConstructibleFromInt&&)
       : state(Moved)
   {}
 
-  __host__ __device__ explicit ConstructibleFromInt(int)
+  TEST_FUNC explicit ConstructibleFromInt(int)
       : state(FromInt)
   {}
 };
@@ -124,13 +124,13 @@ struct ConvertibleFromInt
   };
   State state;
 
-  __host__ __device__ ConvertibleFromInt(ConvertibleFromInt const&)
+  TEST_FUNC ConvertibleFromInt(ConvertibleFromInt const&)
       : state(Copied)
   {}
-  __host__ __device__ ConvertibleFromInt(ConvertibleFromInt&&)
+  TEST_FUNC ConvertibleFromInt(ConvertibleFromInt&&)
       : state(Moved)
   {}
-  __host__ __device__ ConvertibleFromInt(int)
+  TEST_FUNC ConvertibleFromInt(int)
       : state(FromInt)
   {}
 };

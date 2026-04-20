@@ -36,7 +36,7 @@ struct BinaryFunction
   using result_type          = long;
 };
 
-static_assert(cuda::std::is_same<cuda::std::reference_wrapper<int (UnaryFunction::*)()>::result_type, int>::value, "");
+static_assert(cuda::std::is_same<cuda::std::reference_wrapper<int (UnaryFunction::*)()>::result_type, int>::value);
 static_assert(
   cuda::std::is_same<cuda::std::reference_wrapper<int (UnaryFunction::*)()>::argument_type, UnaryFunction*>::value, "");
 
@@ -49,7 +49,7 @@ static_assert(
   cuda::std::is_same<cuda::std::reference_wrapper<int (BinaryFunction::*)(char)>::second_argument_type, char>::value,
   "");
 
-static_assert(cuda::std::is_same<cuda::std::reference_wrapper<void (*)()>::result_type, void>::value, "");
+static_assert(cuda::std::is_same<cuda::std::reference_wrapper<void (*)()>::result_type, void>::value);
 
 int main(int, char**)
 {

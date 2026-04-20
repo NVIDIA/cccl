@@ -11,6 +11,8 @@
 
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 cuda::std::iterator<cuda::std::input_iterator_tag, char> it; // expected-warning-re {{'iterator<{{.+}}>' is deprecated}}
 
 int main(int, char**)

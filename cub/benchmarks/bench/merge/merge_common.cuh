@@ -13,13 +13,6 @@
 #include <nvbench_helper.cuh>
 
 #if !TUNE_BASE
-#  define TUNE_THREADS_PER_BLOCK (1 << TUNE_THREADS_PER_BLOCK_POW2)
-#  if TUNE_TRANSPOSE == 0
-#    define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_DIRECT
-#  else // TUNE_TRANSPOSE == 1
-#    define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_WARP_TRANSPOSE
-#  endif // TUNE_TRANSPOSE
-
 #  if TUNE_LOAD == 0
 #    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
 #    define TUNE_USE_BL2SH     false
@@ -35,19 +28,17 @@
 #  endif // TUNE_LOAD
 
 template <typename KeyT>
-struct policy_hub_t
+struct bench_policy_selector
 {
-  struct policy_t : cub::ChainedPolicy<500, policy_t, policy_t>
+  _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> cub::detail::merge::merge_policy
   {
-    using merge_policy =
-      cub::agent_policy_t<TUNE_THREADS_PER_BLOCK,
-                          cub::Nominal4BItemsToItems<KeyT>(TUNE_ITEMS_PER_THREAD),
-                          TUNE_LOAD_MODIFIER,
-                          TUNE_STORE_ALGORITHM,
-                          TUNE_USE_BL2SH>;
-  };
-
-  using MaxPolicy = policy_t;
+    return cub::detail::merge::merge_policy{
+      (1 << TUNE_THREADS_PER_BLOCK_POW2),
+      cub::Nominal4BItemsToItems<KeyT>(TUNE_ITEMS_PER_THREAD),
+      TUNE_LOAD_MODIFIER,
+      TUNE_TRANSPOSE == 0 ? cub::BLOCK_STORE_DIRECT : cub::BLOCK_STORE_WARP_TRANSPOSE,
+      TUNE_USE_BL2SH};
+  }
 };
 #endif // TUNE_BASE
 

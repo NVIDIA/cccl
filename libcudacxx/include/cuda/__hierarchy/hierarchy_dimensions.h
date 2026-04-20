@@ -161,7 +161,7 @@ template <class _LTop, class _LUnit, class... _Levels>
 struct __empty_hierarchy
 {
   template <class _Other>
-  [[nodiscard]] _Other combine(const _Other& __other) const
+  [[nodiscard]] _CCCL_API _Other combine(const _Other& __other) const
   {
     return __other;
   }
@@ -366,7 +366,7 @@ public:
   //!
   //! @return Hierarchy holding the combined levels from both hierarchies
   template <class _OtherUnit, class... _OtherLevels>
-  constexpr auto combine(const hierarchy<_OtherUnit, _OtherLevels...>& __other) const
+  [[nodiscard]] _CCCL_API constexpr auto combine(const hierarchy<_OtherUnit, _OtherLevels...>& __other) const
   {
     using _BottomLevel    = __level_type_of<::cuda::std::__type_index_c<sizeof...(_LevelDescs) - 1, _LevelDescs...>>;
     using _OtherHierarchy = hierarchy<_OtherUnit, _OtherLevels...>;
@@ -417,14 +417,16 @@ public:
   }
 
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  constexpr hierarchy combine([[maybe_unused]] __empty_hierarchy __empty) const
+  [[nodiscard]] _CCCL_API constexpr hierarchy combine([[maybe_unused]] __empty_hierarchy __empty) const
   {
     return *this;
   }
 #  endif // _CCCL_DOXYGEN_INVOKED
 
+#  if !_CCCL_COMPILER(NVRTC)
   template <class _NewLevel, class _Unit, class... _LevelDescs2>
   friend constexpr auto hierarchy_add_level(const hierarchy<_Unit, _LevelDescs2...>& hierarchy, _NewLevel __lnew);
+#  endif // !_CCCL_COMPILER(NVRTC)
 };
 
 _CCCL_TEMPLATE(class... _LevelDescs)
@@ -451,6 +453,8 @@ _CCCL_REQUIRES(
   __is_hierarchy_level_v<_BottomUnit> _CCCL_AND ::cuda::std::__fold_and_v<__is_hierarchy_level_desc_v<_LevelDescs>...>)
 _CCCL_HOST_DEVICE hierarchy(const _BottomUnit&, const ::cuda::std::tuple<_LevelDescs...>&)
   -> hierarchy<_BottomUnit, _LevelDescs...>;
+
+#  if !_CCCL_COMPILER(NVRTC)
 
 // TODO consider having LUnit optional argument for template argument deduction
 /**
@@ -527,6 +531,7 @@ constexpr auto hierarchy_add_level(const hierarchy<_Unit, _LevelDescs...>& __hie
       ::cuda::std::tuple_cat(__hierarchy.__descs_, ::cuda::std::make_tuple(__new_level)));
   }
 }
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 _CCCL_END_NAMESPACE_CUDA
 

@@ -28,11 +28,8 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/arch_id.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/is_empty.h>
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif
 
 CUB_NAMESPACE_BEGIN
 

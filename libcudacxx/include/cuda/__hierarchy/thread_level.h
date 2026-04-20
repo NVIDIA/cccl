@@ -24,15 +24,7 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__fwd/hierarchy.h>
-#  include <cuda/__hierarchy/hierarchy_query_result.h>
 #  include <cuda/__hierarchy/native_hierarchy_level_base.h>
-#  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__mdspan/extents.h>
-#  include <cuda/std/__type_traits/is_integer.h>
-
-#  if _CCCL_CUDA_COMPILATION()
-#    include <cuda/__ptx/instructions/get_sreg.h>
-#  endif // _CCCL_CUDA_COMPILATION()
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -45,21 +37,6 @@ struct _CCCL_DECLSPEC_EMPTY_BASES thread_level : __native_hierarchy_level_base<t
   using __allowed_below = __allowed_levels<>;
 
   using __next_native_level = block_level;
-
-  using __base_type = __native_hierarchy_level_base<thread_level>;
-
-#  if _CCCL_CUDA_COMPILATION()
-  using __base_type::rank_as;
-
-  // interactions with warp level
-
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp>)
-  [[nodiscard]] _CCCL_DEVICE_API static _Tp rank_as(const warp_level&) noexcept
-  {
-    return static_cast<_Tp>(::cuda::ptx::get_sreg_laneid());
-  }
-#  endif // _CCCL_CUDA_COMPILATION()
 };
 
 _CCCL_GLOBAL_CONSTANT thread_level gpu_thread;

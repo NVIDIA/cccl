@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___HIERARCHY_SYNCHRONIZERS_CUH
-#define _CUDA_EXPERIMENTAL___HIERARCHY_SYNCHRONIZERS_CUH
+#ifndef _CUDA_EXPERIMENTAL___GROUP_SYNCHRONIZERS_CUH
+#define _CUDA_EXPERIMENTAL___GROUP_SYNCHRONIZERS_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -32,8 +32,8 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__hierarchy/concepts.cuh>
-#include <cuda/experimental/__hierarchy/fwd.cuh>
+#include <cuda/experimental/__group/concepts.cuh>
+#include <cuda/experimental/__group/fwd.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -80,8 +80,16 @@ public:
   }
 
   template <class _MappingResult>
-  _CCCL_DEVICE_API void __sync(const _MappingResult&) noexcept
+  _CCCL_DEVICE_API void __sync(const _MappingResult& __mapping_result) noexcept
   {
+    if constexpr (!_MappingResult::is_always_exhaustive())
+    {
+      if (!__mapping_result.is_valid())
+      {
+        return;
+      }
+    }
+
     ::__syncwarp(__lane_mask_);
   }
 };
@@ -153,6 +161,14 @@ public:
   template <class _MappingResult>
   _CCCL_DEVICE_API void __sync(const _MappingResult& __mapping_result) noexcept
   {
+    if constexpr (!_MappingResult::is_always_exhaustive())
+    {
+      if (!__mapping_result.is_valid())
+      {
+        return;
+      }
+    }
+
     __barriers_[__mapping_result.group_rank()].arrive_and_wait();
   }
 };

@@ -149,11 +149,11 @@ private:
   {}
 };
 
-static_assert(::cuda::mr::resource_with<managed_memory_pool_ref, ::cuda::mr::device_accessible>, "");
-static_assert(::cuda::mr::resource_with<managed_memory_pool_ref, ::cuda::mr::host_accessible>, "");
+static_assert(::cuda::mr::resource_with<managed_memory_pool_ref, ::cuda::mr::device_accessible>);
+static_assert(::cuda::mr::resource_with<managed_memory_pool_ref, ::cuda::mr::host_accessible>);
 
-static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::device_accessible>, "");
-static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::host_accessible>, "");
+static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::device_accessible>);
+static_assert(::cuda::mr::resource_with<managed_memory_pool, ::cuda::mr::host_accessible>);
 
 _CCCL_DIAG_POP
 

@@ -17,9 +17,8 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 
+#include <cstdio>
 #include <iostream>
-
-#include <stdio.h>
 
 #include "../../test/test_util.h"
 

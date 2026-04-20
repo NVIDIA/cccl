@@ -33,14 +33,11 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored

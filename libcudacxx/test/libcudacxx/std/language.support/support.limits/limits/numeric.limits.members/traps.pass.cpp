@@ -24,7 +24,7 @@ static const bool integral_types_trap = false;
 #endif
 
 template <class T, bool expected>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::numeric_limits<T>::traps == expected, "traps test 1");
   static_assert(cuda::std::numeric_limits<const T>::traps == expected, "traps test 2");

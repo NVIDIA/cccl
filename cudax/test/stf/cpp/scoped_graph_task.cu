@@ -17,6 +17,8 @@
 
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
+#include <iostream>
+
 using namespace cuda::experimental::stf;
 
 int main(int argc, char** argv)

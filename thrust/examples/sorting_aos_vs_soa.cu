@@ -3,7 +3,9 @@
 #include <thrust/random.h>
 #include <thrust/sort.h>
 
-#include <assert.h>
+#include <cuda/std/cassert>
+
+#include <iostream>
 
 #include "include/timer.h"
 

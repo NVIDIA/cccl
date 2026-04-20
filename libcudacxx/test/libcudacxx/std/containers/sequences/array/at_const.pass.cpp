@@ -20,7 +20,7 @@
 #  include <stdexcept>
 #endif // TEST_HAS_EXCEPTIONS()
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   {
     using T                        = double;
@@ -126,6 +126,6 @@ int main(int, char**)
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // TEST_HAS_EXCEPTIONS()
 
-  static_assert(tests(), "");
+  static_assert(tests());
   return 0;
 }

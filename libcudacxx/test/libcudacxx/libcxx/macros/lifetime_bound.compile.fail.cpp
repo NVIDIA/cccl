@@ -22,13 +22,13 @@ struct S
 {
   char data[32];
 
-  __host__ __device__ const char* get() const _CCCL_LIFETIMEBOUND
+  TEST_FUNC const char* get() const _CCCL_LIFETIMEBOUND
   {
     return data;
   }
 };
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   auto sv = S{"abc"}.get();
   return true;

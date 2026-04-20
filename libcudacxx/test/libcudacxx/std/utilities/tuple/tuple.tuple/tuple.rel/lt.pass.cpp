@@ -214,10 +214,10 @@ int main(int, char**)
     using T2 = cuda::std::tuple<double, long, int>;
     constexpr T1 t1(1, 2, 3);
     constexpr T2 t2(1, 2, 4);
-    static_assert((t1 < t2), "");
-    static_assert((t1 <= t2), "");
-    static_assert(!(t1 > t2), "");
-    static_assert(!(t1 >= t2), "");
+    static_assert((t1 < t2));
+    static_assert((t1 <= t2));
+    static_assert(!(t1 > t2));
+    static_assert(!(t1 >= t2));
   }
 
   return 0;

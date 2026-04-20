@@ -77,7 +77,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     elements,
     op_t{},
     init_t{},
-    0 /* stream */,
+    nullptr /* stream */,
     transform_op
 #if !TUNE_BASE
     ,

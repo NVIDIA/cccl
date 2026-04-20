@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <class T, cuda::std::size_t N>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(
     (cuda::std::is_base_of<cuda::std::integral_constant<cuda::std::size_t, N>, cuda::std::tuple_size<T>>::value), "");

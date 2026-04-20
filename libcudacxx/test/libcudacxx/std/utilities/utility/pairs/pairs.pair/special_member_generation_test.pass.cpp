@@ -34,18 +34,18 @@ using namespace ImplicitTypes; // Get implicitly archetypes
 namespace ConstructorTest
 {
 template <class T1, bool CanCopy = true, bool CanMove = CanCopy>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using P1 = cuda::std::pair<T1, int>;
   using P2 = cuda::std::pair<int, T1>;
-  static_assert(cuda::std::is_copy_constructible<P1>::value == CanCopy, "");
-  static_assert(cuda::std::is_move_constructible<P1>::value == CanMove, "");
-  static_assert(cuda::std::is_copy_constructible<P2>::value == CanCopy, "");
-  static_assert(cuda::std::is_move_constructible<P2>::value == CanMove, "");
+  static_assert(cuda::std::is_copy_constructible<P1>::value == CanCopy);
+  static_assert(cuda::std::is_move_constructible<P1>::value == CanMove);
+  static_assert(cuda::std::is_copy_constructible<P2>::value == CanCopy);
+  static_assert(cuda::std::is_move_constructible<P2>::value == CanMove);
 };
 } // namespace ConstructorTest
 
-__host__ __device__ void test_constructors_exist()
+TEST_FUNC void test_constructors_exist()
 {
   using namespace ConstructorTest;
   {
@@ -84,18 +84,18 @@ __host__ __device__ void test_constructors_exist()
 namespace AssignmentOperatorTest
 {
 template <class T1, bool CanCopy = true, bool CanMove = CanCopy>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using P1 = cuda::std::pair<T1, int>;
   using P2 = cuda::std::pair<int, T1>;
-  static_assert(cuda::std::is_copy_assignable<P1>::value == CanCopy, "");
-  static_assert(cuda::std::is_move_assignable<P1>::value == CanMove, "");
-  static_assert(cuda::std::is_copy_assignable<P2>::value == CanCopy, "");
-  static_assert(cuda::std::is_move_assignable<P2>::value == CanMove, "");
+  static_assert(cuda::std::is_copy_assignable<P1>::value == CanCopy);
+  static_assert(cuda::std::is_move_assignable<P1>::value == CanMove);
+  static_assert(cuda::std::is_copy_assignable<P2>::value == CanCopy);
+  static_assert(cuda::std::is_move_assignable<P2>::value == CanMove);
 };
 } // namespace AssignmentOperatorTest
 
-__host__ __device__ void test_assignment_operator_exists()
+TEST_FUNC void test_assignment_operator_exists()
 {
   using namespace AssignmentOperatorTest;
   {

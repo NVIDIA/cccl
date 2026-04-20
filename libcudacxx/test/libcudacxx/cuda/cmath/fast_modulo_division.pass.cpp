@@ -14,9 +14,11 @@
 #include <cuda/std/random>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 // test all power of 2 and maximum values
 template <typename value_t, typename divisor_t>
-__host__ __device__ void test_power_of_2(value_t value)
+TEST_FUNC void test_power_of_2(value_t value)
 {
   constexpr auto max_divisor = cuda::std::numeric_limits<divisor_t>::max();
   constexpr auto max_value   = cuda::std::numeric_limits<value_t>::max();
@@ -36,7 +38,7 @@ __host__ __device__ void test_power_of_2(value_t value)
 }
 
 template <typename value_t, typename divisor_t>
-__host__ __device__ void test_sequence(value_t value)
+TEST_FUNC void test_sequence(value_t value)
 {
   constexpr auto max_value  = cuda::std::numeric_limits<divisor_t>::max();
   constexpr divisor_t range = max_value < 10000 ? max_value : 10000;
@@ -48,7 +50,7 @@ __host__ __device__ void test_sequence(value_t value)
 }
 
 template <typename value_t, typename divisor_t, typename gen_t>
-__host__ __device__ void test_random(value_t value, gen_t& gen)
+TEST_FUNC void test_random(value_t value, gen_t& gen)
 {
   cuda::std::uniform_int_distribution<divisor_t> distrib_div;
   constexpr auto max_value  = cuda::std::numeric_limits<divisor_t>::max();
@@ -62,7 +64,7 @@ __host__ __device__ void test_random(value_t value, gen_t& gen)
 }
 
 template <typename value_t, typename divisor_t>
-__host__ __device__ void test_boundary_divisors(value_t value)
+TEST_FUNC void test_boundary_divisors(value_t value)
 {
   using div_op               = cuda::fast_mod_div<divisor_t>;
   using unsigned_divisor_t   = cuda::std::make_unsigned_t<divisor_t>;
@@ -95,7 +97,7 @@ struct PositiveDistribution
   cuda::std::minstd_rand0 rng;
 
   template <typename T>
-  __host__ __device__ T operator()(cuda::std::uniform_int_distribution<T>& distrib)
+  TEST_FUNC T operator()(cuda::std::uniform_int_distribution<T>& distrib)
   {
     auto value = distrib(rng);
     return cuda::std::max(T{1}, static_cast<T>(cuda::uabs(value)));
@@ -103,7 +105,7 @@ struct PositiveDistribution
 };
 
 template <typename value_t, typename divisor_t>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   auto seed = cuda::std::chrono::system_clock::now().time_since_epoch().count();
   printf("%s: seed: %lld\n", (_CCCL_BUILTIN_PRETTY_FUNCTION()), (long long int) seed);
@@ -118,7 +120,7 @@ __host__ __device__ void test()
 }
 
 #if _CCCL_HAS_INT128()
-__host__ __device__ void test_int128()
+TEST_FUNC void test_int128()
 {
   constexpr __uint128_t unsigned_value = (__uint128_t{1} << 127) + 123456789;
   constexpr __int128_t signed_value    = static_cast<__int128_t>((__uint128_t{1} << 126) + 123456789);
@@ -137,7 +139,7 @@ __host__ __device__ void test_int128()
 }
 #endif // _CCCL_HAS_INT128()
 
-__host__ __device__ void test_cpp_semantic()
+TEST_FUNC void test_cpp_semantic()
 {
   cuda::fast_mod_div<int> div{3};
   assert(div == 3);
@@ -146,7 +148,7 @@ __host__ __device__ void test_cpp_semantic()
   assert(cuda::div(5, div) == (cuda::std::pair<int, int>{1, 2}));
 }
 
-__host__ __device__ void test_divisor_is_never_one()
+TEST_FUNC void test_divisor_is_never_one()
 {
   cuda::fast_mod_div<int, true> div{3};
   assert(div == 3);
@@ -155,7 +157,7 @@ __host__ __device__ void test_divisor_is_never_one()
   assert(cuda::div(5, div) == (cuda::std::pair<int, int>{1, 2}));
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   test<int8_t, int8_t>();
   test<uint8_t, uint8_t>();

@@ -18,14 +18,14 @@
 
 #include "test_macros.h"
 
-// ensure that we allow `__device__` functions too
+// ensure that we allow `TEST_DEVICE_FUNC` functions too
 struct with_device_op
 {
-  __device__ friend constexpr with_device_op operator-(const with_device_op&)
+  TEST_DEVICE_FUNC friend constexpr with_device_op operator-(const with_device_op&)
   {
     return {};
   }
-  __device__ constexpr operator bool() const
+  TEST_DEVICE_FUNC constexpr operator bool() const
   {
     return true;
   }
@@ -42,8 +42,8 @@ int main(int, char**)
   using F   = cuda::std::negate<int>;
   const F f = F();
 #if TEST_STD_VER <= 2017
-  static_assert((cuda::std::is_same<F::argument_type, int>::value), "");
-  static_assert((cuda::std::is_same<F::result_type, int>::value), "");
+  static_assert((cuda::std::is_same<F::argument_type, int>::value));
+  static_assert((cuda::std::is_same<F::result_type, int>::value));
 #endif // TEST_STD_VER <= 2017
   assert(f(36) == -36);
 
@@ -53,10 +53,10 @@ int main(int, char**)
   assert(f2(36L) == -36);
   assert(f2(36.0) == -36);
   constexpr int foo = cuda::std::negate<int>()(3);
-  static_assert(foo == -3, "");
+  static_assert(foo == -3);
 
   constexpr double bar = cuda::std::negate<>()(3.0);
-  static_assert(bar == -3.0, "");
+  static_assert(bar == -3.0);
 
   return 0;
 }

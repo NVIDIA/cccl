@@ -33,7 +33,7 @@ static_assert(HasGet<1, cuda::std::ranges::subrange<int*>>);
 static_assert(!HasGet<2, cuda::std::ranges::subrange<int*>>);
 static_assert(!HasGet<3, cuda::std::ranges::subrange<int*>>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     using It   = int*;

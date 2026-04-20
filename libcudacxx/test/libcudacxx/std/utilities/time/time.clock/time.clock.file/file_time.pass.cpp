@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class Dur>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::is_same_v<cuda::std::chrono::file_time<Dur>,
                                      cuda::std::chrono::time_point<cuda::std::chrono::file_clock, Dur>>);

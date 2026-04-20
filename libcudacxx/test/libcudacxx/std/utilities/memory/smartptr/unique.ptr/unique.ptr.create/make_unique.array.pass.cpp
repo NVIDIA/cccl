@@ -21,10 +21,10 @@
 class foo
 {
 public:
-  __host__ __device__ TEST_CONSTEXPR_CXX23 foo()
+  TEST_FUNC TEST_CONSTEXPR_CXX23 foo()
       : val_(3)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX23 int get() const
+  TEST_FUNC TEST_CONSTEXPR_CXX23 int get() const
   {
     return val_;
   }
@@ -33,7 +33,7 @@ private:
   int val_;
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   {
     auto p1 = cuda::std::make_unique<int[]>(5);

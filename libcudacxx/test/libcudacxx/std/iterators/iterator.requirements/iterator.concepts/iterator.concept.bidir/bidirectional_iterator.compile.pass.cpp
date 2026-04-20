@@ -15,17 +15,17 @@
 
 #include "test_iterators.h"
 
-static_assert(!cuda::std::bidirectional_iterator<cpp17_input_iterator<int*>>, "");
-static_assert(!cuda::std::bidirectional_iterator<cpp20_input_iterator<int*>>, "");
-static_assert(!cuda::std::bidirectional_iterator<forward_iterator<int*>>, "");
-static_assert(cuda::std::bidirectional_iterator<bidirectional_iterator<int*>>, "");
-static_assert(cuda::std::bidirectional_iterator<random_access_iterator<int*>>, "");
-static_assert(cuda::std::bidirectional_iterator<contiguous_iterator<int*>>, "");
+static_assert(!cuda::std::bidirectional_iterator<cpp17_input_iterator<int*>>);
+static_assert(!cuda::std::bidirectional_iterator<cpp20_input_iterator<int*>>);
+static_assert(!cuda::std::bidirectional_iterator<forward_iterator<int*>>);
+static_assert(cuda::std::bidirectional_iterator<bidirectional_iterator<int*>>);
+static_assert(cuda::std::bidirectional_iterator<random_access_iterator<int*>>);
+static_assert(cuda::std::bidirectional_iterator<contiguous_iterator<int*>>);
 
-static_assert(cuda::std::bidirectional_iterator<int*>, "");
-static_assert(cuda::std::bidirectional_iterator<int const*>, "");
-static_assert(cuda::std::bidirectional_iterator<int volatile*>, "");
-static_assert(cuda::std::bidirectional_iterator<int const volatile*>, "");
+static_assert(cuda::std::bidirectional_iterator<int*>);
+static_assert(cuda::std::bidirectional_iterator<int const*>);
+static_assert(cuda::std::bidirectional_iterator<int volatile*>);
+static_assert(cuda::std::bidirectional_iterator<int const volatile*>);
 
 struct not_forward_iterator
 {
@@ -33,13 +33,13 @@ struct not_forward_iterator
   using difference_type  = cuda::std::ptrdiff_t;
   using iterator_concept = cuda::std::bidirectional_iterator_tag;
 
-  __host__ __device__ value_type operator*() const;
+  TEST_FUNC value_type operator*() const;
 
-  __host__ __device__ not_forward_iterator& operator++();
-  __host__ __device__ not_forward_iterator operator++(int);
+  TEST_FUNC not_forward_iterator& operator++();
+  TEST_FUNC not_forward_iterator operator++(int);
 
-  __host__ __device__ not_forward_iterator& operator--();
-  __host__ __device__ not_forward_iterator& operator--(int);
+  TEST_FUNC not_forward_iterator& operator--();
+  TEST_FUNC not_forward_iterator& operator--(int);
 };
 static_assert(cuda::std::input_iterator<not_forward_iterator> && !cuda::std::forward_iterator<not_forward_iterator>
                 && !cuda::std::bidirectional_iterator<not_forward_iterator>,
@@ -51,27 +51,27 @@ struct wrong_iterator_category
   using difference_type   = cuda::std::ptrdiff_t;
   using iterator_category = cuda::std::forward_iterator_tag;
 
-  __host__ __device__ value_type& operator*() const;
+  TEST_FUNC value_type& operator*() const;
 
-  __host__ __device__ wrong_iterator_category& operator++();
-  __host__ __device__ wrong_iterator_category operator++(int);
+  TEST_FUNC wrong_iterator_category& operator++();
+  TEST_FUNC wrong_iterator_category operator++(int);
 
-  __host__ __device__ wrong_iterator_category& operator--();
-  __host__ __device__ wrong_iterator_category operator--(int);
+  TEST_FUNC wrong_iterator_category& operator--();
+  TEST_FUNC wrong_iterator_category operator--(int);
 #if TEST_STD_VER > 2017
   bool operator==(wrong_iterator_category const&) const = default;
 #else
-  __host__ __device__ bool operator==(const wrong_iterator_category&) const
+  TEST_FUNC bool operator==(const wrong_iterator_category&) const
   {
     return true;
   };
-  __host__ __device__ bool operator!=(const wrong_iterator_category&) const
+  TEST_FUNC bool operator!=(const wrong_iterator_category&) const
   {
     return false;
   };
 #endif
 };
-static_assert(!cuda::std::bidirectional_iterator<wrong_iterator_category>, "");
+static_assert(!cuda::std::bidirectional_iterator<wrong_iterator_category>);
 
 struct wrong_iterator_concept
 {
@@ -79,28 +79,28 @@ struct wrong_iterator_concept
   using difference_type  = cuda::std::ptrdiff_t;
   using iterator_concept = cuda::std::forward_iterator_tag;
 
-  __host__ __device__ value_type& operator*() const;
+  TEST_FUNC value_type& operator*() const;
 
-  __host__ __device__ wrong_iterator_concept& operator++();
-  __host__ __device__ wrong_iterator_concept operator++(int);
+  TEST_FUNC wrong_iterator_concept& operator++();
+  TEST_FUNC wrong_iterator_concept operator++(int);
 
-  __host__ __device__ wrong_iterator_concept& operator--();
-  __host__ __device__ wrong_iterator_concept operator--(int);
+  TEST_FUNC wrong_iterator_concept& operator--();
+  TEST_FUNC wrong_iterator_concept operator--(int);
 
 #if TEST_STD_VER > 2017
   bool operator==(wrong_iterator_concept const&) const = default;
 #else
-  __host__ __device__ bool operator==(const wrong_iterator_concept&) const
+  TEST_FUNC bool operator==(const wrong_iterator_concept&) const
   {
     return true;
   };
-  __host__ __device__ bool operator!=(const wrong_iterator_concept&) const
+  TEST_FUNC bool operator!=(const wrong_iterator_concept&) const
   {
     return false;
   };
 #endif
 };
-static_assert(!cuda::std::bidirectional_iterator<wrong_iterator_concept>, "");
+static_assert(!cuda::std::bidirectional_iterator<wrong_iterator_concept>);
 
 struct no_predecrement
 {
@@ -108,27 +108,27 @@ struct no_predecrement
   using difference_type  = cuda::std::ptrdiff_t;
   using iterator_concept = cuda::std::bidirectional_iterator_tag;
 
-  __host__ __device__ value_type& operator*() const;
+  TEST_FUNC value_type& operator*() const;
 
-  __host__ __device__ no_predecrement& operator++();
-  __host__ __device__ no_predecrement operator++(int);
+  TEST_FUNC no_predecrement& operator++();
+  TEST_FUNC no_predecrement operator++(int);
 
-  __host__ __device__ no_predecrement operator--(int);
+  TEST_FUNC no_predecrement operator--(int);
 
 #if TEST_STD_VER > 2017
   bool operator==(no_predecrement const&) const = default;
 #else
-  __host__ __device__ bool operator==(const no_predecrement&) const
+  TEST_FUNC bool operator==(const no_predecrement&) const
   {
     return true;
   };
-  __host__ __device__ bool operator!=(const no_predecrement&) const
+  TEST_FUNC bool operator!=(const no_predecrement&) const
   {
     return false;
   };
 #endif
 };
-static_assert(!cuda::std::bidirectional_iterator<no_predecrement>, "");
+static_assert(!cuda::std::bidirectional_iterator<no_predecrement>);
 
 struct bad_predecrement
 {
@@ -136,28 +136,28 @@ struct bad_predecrement
   using difference_type  = cuda::std::ptrdiff_t;
   using iterator_concept = cuda::std::bidirectional_iterator_tag;
 
-  __host__ __device__ value_type& operator*() const;
+  TEST_FUNC value_type& operator*() const;
 
-  __host__ __device__ bad_predecrement& operator++();
-  __host__ __device__ bad_predecrement operator++(int);
+  TEST_FUNC bad_predecrement& operator++();
+  TEST_FUNC bad_predecrement operator++(int);
 
-  __host__ __device__ bad_predecrement operator--();
-  __host__ __device__ bad_predecrement operator--(int);
+  TEST_FUNC bad_predecrement operator--();
+  TEST_FUNC bad_predecrement operator--(int);
 
 #if TEST_STD_VER > 2017
   bool operator==(bad_predecrement const&) const = default;
 #else
-  __host__ __device__ bool operator==(const bad_predecrement&) const
+  TEST_FUNC bool operator==(const bad_predecrement&) const
   {
     return true;
   };
-  __host__ __device__ bool operator!=(const bad_predecrement&) const
+  TEST_FUNC bool operator!=(const bad_predecrement&) const
   {
     return false;
   };
 #endif
 };
-static_assert(!cuda::std::bidirectional_iterator<bad_predecrement>, "");
+static_assert(!cuda::std::bidirectional_iterator<bad_predecrement>);
 
 struct no_postdecrement
 {
@@ -165,30 +165,30 @@ struct no_postdecrement
   using difference_type  = cuda::std::ptrdiff_t;
   using iterator_concept = cuda::std::bidirectional_iterator_tag;
 
-  __host__ __device__ value_type& operator*() const;
+  TEST_FUNC value_type& operator*() const;
 
-  __host__ __device__ no_postdecrement& operator++();
-  __host__ __device__ no_postdecrement operator++(int);
+  TEST_FUNC no_postdecrement& operator++();
+  TEST_FUNC no_postdecrement operator++(int);
 
-  __host__ __device__ no_postdecrement& operator--();
+  TEST_FUNC no_postdecrement& operator--();
 #if TEST_COMPILER(MSVC) //  single-argument function used for postfix "--" (anachronism)
-  __host__ __device__ no_postdecrement& operator--(int) = delete;
+  TEST_FUNC no_postdecrement& operator--(int) = delete;
 #endif // TEST_COMPILER(MSVC)
 
 #if TEST_STD_VER > 2017
   bool operator==(no_postdecrement const&) const = default;
 #else
-  __host__ __device__ bool operator==(const no_postdecrement&) const
+  TEST_FUNC bool operator==(const no_postdecrement&) const
   {
     return true;
   };
-  __host__ __device__ bool operator!=(const no_postdecrement&) const
+  TEST_FUNC bool operator!=(const no_postdecrement&) const
   {
     return false;
   };
 #endif
 };
-static_assert(!cuda::std::bidirectional_iterator<no_postdecrement>, "");
+static_assert(!cuda::std::bidirectional_iterator<no_postdecrement>);
 
 struct bad_postdecrement
 {
@@ -196,28 +196,28 @@ struct bad_postdecrement
   using difference_type  = cuda::std::ptrdiff_t;
   using iterator_concept = cuda::std::bidirectional_iterator_tag;
 
-  __host__ __device__ value_type& operator*() const;
+  TEST_FUNC value_type& operator*() const;
 
-  __host__ __device__ bad_postdecrement& operator++();
-  __host__ __device__ bad_postdecrement operator++(int);
+  TEST_FUNC bad_postdecrement& operator++();
+  TEST_FUNC bad_postdecrement operator++(int);
 
-  __host__ __device__ bad_postdecrement& operator--();
-  __host__ __device__ bad_postdecrement& operator--(int);
+  TEST_FUNC bad_postdecrement& operator--();
+  TEST_FUNC bad_postdecrement& operator--(int);
 
 #if TEST_STD_VER > 2017
   bool operator==(bad_postdecrement const&) const = default;
 #else
-  __host__ __device__ bool operator==(const bad_postdecrement&) const
+  TEST_FUNC bool operator==(const bad_postdecrement&) const
   {
     return true;
   };
-  __host__ __device__ bool operator!=(const bad_postdecrement&) const
+  TEST_FUNC bool operator!=(const bad_postdecrement&) const
   {
     return false;
   };
 #endif
 };
-static_assert(!cuda::std::bidirectional_iterator<bad_postdecrement>, "");
+static_assert(!cuda::std::bidirectional_iterator<bad_postdecrement>);
 
 int main(int, char**)
 {

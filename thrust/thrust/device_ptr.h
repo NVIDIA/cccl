@@ -237,10 +237,7 @@ struct pointer_traits<THRUST_NS_QUALIFIER::device_ptr<T>>
   using difference_type = ptrdiff_t;
 
   template <typename U>
-  struct rebind
-  {
-    using other = typename THRUST_NS_QUALIFIER::detail::rebind_pointer<pointer, U>::type;
-  };
+  using rebind = typename THRUST_NS_QUALIFIER::detail::rebind_pointer<pointer, U>::type;
 
   // Backwards compatibility with thrust::detail::pointer_traits
   using raw_pointer = typename pointer::raw_pointer;

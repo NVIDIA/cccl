@@ -209,7 +209,7 @@ struct DeviceAdjacentDifference
     OutputIteratorT d_output,
     NumItemsT num_items,
     DifferenceOpT difference_op = {},
-    cudaStream_t stream         = 0)
+    cudaStream_t stream         = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeftCopy");
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -320,7 +320,7 @@ struct DeviceAdjacentDifference
     RandomAccessIteratorT d_input,
     NumItemsT num_items,
     DifferenceOpT difference_op = {},
-    cudaStream_t stream         = 0)
+    cudaStream_t stream         = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeft");
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -450,7 +450,7 @@ struct DeviceAdjacentDifference
     OutputIteratorT d_output,
     NumItemsT num_items,
     DifferenceOpT difference_op = {},
-    cudaStream_t stream         = 0)
+    cudaStream_t stream         = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRightCopy");
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -550,7 +550,7 @@ struct DeviceAdjacentDifference
     RandomAccessIteratorT d_input,
     NumItemsT num_items,
     DifferenceOpT difference_op = {},
-    cudaStream_t stream         = 0)
+    cudaStream_t stream         = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRight");
     using OffsetT = detail::choose_offset_t<NumItemsT>;

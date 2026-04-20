@@ -18,9 +18,9 @@
 
 int main(int, char**)
 {
-  static_assert(cuda::std::latch::max() > 0, "");
-  static_assert(cuda::latch<cuda::thread_scope_system>::max() > 0, "");
-  static_assert(cuda::latch<cuda::thread_scope_device>::max() > 0, "");
-  static_assert(cuda::latch<cuda::thread_scope_block>::max() > 0, "");
+  static_assert(cuda::std::latch::max() > 0);
+  static_assert(cuda::latch<cuda::thread_scope_system>::max() > 0);
+  static_assert(cuda::latch<cuda::thread_scope_device>::max() > 0);
+  static_assert(cuda::latch<cuda::thread_scope_block>::max() > 0);
   return 0;
 }

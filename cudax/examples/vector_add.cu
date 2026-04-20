@@ -33,7 +33,7 @@
  * of the programming guide with some additions like error checking.
  */
 
-#include <stdio.h>
+#include <cstdio>
 
 // For the CUDA runtime routines (prefixed with "cuda_")
 #include <cuda/std/span>

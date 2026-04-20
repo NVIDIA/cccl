@@ -14,7 +14,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   // Size is nearest power of two >= 256
   auto rng = cuda::std::philox4x64{};

@@ -24,12 +24,9 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
 CUB_NAMESPACE_BEGIN
 

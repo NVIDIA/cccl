@@ -20,21 +20,21 @@
 
 struct NonTrivialEmpty
 {
-  __host__ __device__ NonTrivialEmpty() {}
+  TEST_FUNC NonTrivialEmpty() {}
 };
-static_assert(cuda::std::is_trivially_copyable<NonTrivialEmpty>::value, "");
+static_assert(cuda::std::is_trivially_copyable<NonTrivialEmpty>::value);
 
 struct NonTrivialNonEmpty
 {
   int val_ = 0;
-  __host__ __device__ NonTrivialNonEmpty() {}
+  TEST_FUNC NonTrivialNonEmpty() {}
 };
-static_assert(cuda::std::is_trivially_copyable<NonTrivialNonEmpty>::value, "");
+static_assert(cuda::std::is_trivially_copyable<NonTrivialNonEmpty>::value);
 
 struct NonTriviallyCopyAble
 {
   int val_ = 0;
-  __host__ __device__ NonTriviallyCopyAble& operator=(const NonTriviallyCopyAble)
+  TEST_FUNC NonTriviallyCopyAble& operator=(const NonTriviallyCopyAble)
   {
     return *this;
   }
@@ -42,10 +42,10 @@ struct NonTriviallyCopyAble
 
 int main(int, char**)
 {
-  static_assert(cuda::std::is_trivially_copyable<cuda::std::tuple<int, float>>::value, "");
-  static_assert(cuda::std::is_trivially_copyable<cuda::std::tuple<int, NonTrivialEmpty>>::value, "");
-  static_assert(cuda::std::is_trivially_copyable<cuda::std::tuple<int, NonTrivialNonEmpty>>::value, "");
-  static_assert(!cuda::std::is_trivially_copyable<cuda::std::tuple<int, NonTriviallyCopyAble>>::value, "");
+  static_assert(cuda::std::is_trivially_copyable<cuda::std::tuple<int, float>>::value);
+  static_assert(cuda::std::is_trivially_copyable<cuda::std::tuple<int, NonTrivialEmpty>>::value);
+  static_assert(cuda::std::is_trivially_copyable<cuda::std::tuple<int, NonTrivialNonEmpty>>::value);
+  static_assert(!cuda::std::is_trivially_copyable<cuda::std::tuple<int, NonTriviallyCopyAble>>::value);
 
   return 0;
 }

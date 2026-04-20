@@ -23,7 +23,7 @@
 #include "../../rep.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::std::chrono::nanoseconds ns1(15);

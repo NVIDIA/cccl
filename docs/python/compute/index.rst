@@ -3,6 +3,13 @@
 ``cuda.compute``: Parallel Computing Primitives
 ===============================================
 
+.. toctree::
+   :hidden:
+   :maxdepth: 2
+
+   Overview <self>
+   developer_overview
+
 The ``cuda.compute`` library provides composable primitives for building custom
 parallel algorithms on the GPU—without writing CUDA kernels directly.
 
@@ -51,7 +58,7 @@ Full Example
 The following example uses :func:`reduce_into <cuda.compute.algorithms.reduce_into>`
 to compute the sum of a sequence of integers:
 
-.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/reduction/sum_reduction.py
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/reduction/sum_reduction.py
    :language: python
    :start-after: # example-begin
    :caption: Sum reduction example.
@@ -107,7 +114,7 @@ A powerful feature is the ability to use algorithms with user-defined operators.
 For example, to compute the sum of only the even values in a sequence,
 we can use :func:`reduce_into <cuda.compute.algorithms.reduce_into>` with a custom binary operation:
 
-.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/reduction/sum_custom_reduction.py
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/reduction/sum_custom_reduction.py
    :language: python
    :start-after: # example-begin
    :caption: Reduction with a custom binary operation.
@@ -150,7 +157,7 @@ To compute the sum of the first 100 integers, we can pass a
 :func:`reduce_into <cuda.compute.algorithms.reduce_into>`. No memory is allocated
 to store the input sequence—the values are generated as needed.
 
-.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/counting_iterator_basic.py
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/iterator/counting_iterator_basic.py
    :language: python
    :start-after: # example-begin
    :caption: Counting iterator example.
@@ -165,7 +172,7 @@ Because the square is evaluated on demand during the reduction, there is no need
 to create or store an intermediate array of squared values. The transform and the
 reduction are fused into a single pass over the data.
 
-.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/transform_iterator_basic.py
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/iterator/transform_iterator_basic.py
    :language: python
    :start-after: # example-begin
    :caption: Transform iterator example.
@@ -175,7 +182,7 @@ a :func:`TransformOutputIterator <cuda.compute.iterators.TransformOutputIterator
 applies the square-root operation to the result of a reduction before writing
 it into the underlying array.
 
-.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/transform_output_iterator.py
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/iterator/transform_output_iterator.py
    :language: python
    :start-after: # example-begin
    :caption: Transform output iterator example.
@@ -187,7 +194,7 @@ pairs. This combined iterator is then used as the input to
 :func:`reduce_into <cuda.compute.algorithms.reduce_into>` to compute the index of
 the maximum value in the array.
 
-.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/iterator/zip_iterator_counting.py
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/iterator/zip_iterator_counting.py
    :language: python
    :start-after: # example-begin
    :caption: Argmax using a zip iterator.
@@ -204,7 +211,7 @@ The :func:`gpu_struct <cuda.compute.struct.gpu_struct>` decorator defines
 GPU-compatible struct types. These are useful when you have data laid out
 as an "array of structures", similar to `NumPy structured arrays <https://numpy.org/doc/stable/user/basics.rec.html>`_.
 
-.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/struct/struct_reduction.py
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/struct/struct_reduction.py
    :language: python
    :start-after: # example-begin
    :caption: Custom struct type in a reduction.
@@ -301,7 +308,7 @@ to LTO-IR using `cuda.core <https://nvidia.github.io/cuda-python/cuda-core/lates
 
 :func:`reduce_into <cuda.compute.algorithms.reduce_into>`:
 
-.. literalinclude:: ../../python/cuda_cccl/tests/compute/examples/raw_op/cpp_stateless.py
+.. literalinclude:: ../../../python/cuda_cccl/tests/compute/examples/raw_op/cpp_stateless.py
    :language: python
    :start-after: # example-begin
 

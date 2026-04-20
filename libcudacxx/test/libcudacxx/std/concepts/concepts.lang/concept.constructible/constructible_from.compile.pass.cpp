@@ -33,15 +33,15 @@ struct Deleted
 
 struct Noexcept
 {
-  __host__ __device__ ~Noexcept() noexcept;
+  TEST_FUNC ~Noexcept() noexcept;
 };
 struct NoexceptTrue
 {
-  __host__ __device__ ~NoexceptTrue() noexcept(true);
+  TEST_FUNC ~NoexceptTrue() noexcept(true);
 };
 struct NoexceptFalse
 {
-  __host__ __device__ ~NoexceptFalse() noexcept(false);
+  TEST_FUNC ~NoexceptFalse() noexcept(false);
 };
 
 struct Protected
@@ -58,18 +58,18 @@ private:
 template <class T>
 struct NoexceptDependant
 {
-  __host__ __device__ ~NoexceptDependant() noexcept(cuda::std::is_same_v<T, int>);
+  TEST_FUNC ~NoexceptDependant() noexcept(cuda::std::is_same_v<T, int>);
 };
 
 template <class T, class... Args>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::constructible_from<T, Args...>
                   == (cuda::std::destructible<T> && cuda::std::is_constructible_v<T, Args...>),
                 "");
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test<bool>();
   test<bool, bool>();

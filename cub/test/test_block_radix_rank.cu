@@ -13,10 +13,9 @@
 #include <cub/util_vsmem.cuh>
 
 #include <algorithm>
+#include <cstdio>
 #include <iostream>
 #include <memory>
-
-#include <stdio.h>
 
 #include "test_util.h"
 

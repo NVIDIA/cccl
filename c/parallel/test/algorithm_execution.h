@@ -155,7 +155,7 @@ void AlgorithmExecute(std::optional<BuildCache>& cache, const std::optional<KeyT
     REQUIRE(sass.find("STL") == std::string::npos);
   }
 
-  CUstream null_stream = 0;
+  CUstream null_stream = nullptr;
 
   size_t temp_storage_bytes = 0;
   REQUIRE(CUDA_SUCCESS == Run{}(build, nullptr, &temp_storage_bytes, args..., null_stream));

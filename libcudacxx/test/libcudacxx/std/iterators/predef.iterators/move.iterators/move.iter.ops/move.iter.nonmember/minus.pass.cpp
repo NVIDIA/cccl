@@ -26,7 +26,7 @@
 #include "test_macros.h"
 
 template <class It>
-__host__ __device__ void test(It l, It r, typename cuda::std::iterator_traits<It>::difference_type x)
+TEST_FUNC void test(It l, It r, typename cuda::std::iterator_traits<It>::difference_type x)
 {
   const cuda::std::move_iterator<It> r1(l);
   const cuda::std::move_iterator<It> r2(r);
@@ -44,8 +44,8 @@ int main(int, char**)
     using MI                = cuda::std::move_iterator<const char*>;
     constexpr MI it1        = cuda::std::make_move_iterator(p);
     constexpr MI it2        = cuda::std::make_move_iterator(p + 1);
-    static_assert(it1 - it2 == -1, "");
-    static_assert(it2 - it1 == 1, "");
+    static_assert(it1 - it2 == -1);
+    static_assert(it2 - it1 == 1);
   }
 
   return 0;

@@ -40,9 +40,8 @@
 #include <cuda/experimental/memory_resource.cuh>
 
 #include <algorithm>
-
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 namespace cudax = cuda::experimental;
 

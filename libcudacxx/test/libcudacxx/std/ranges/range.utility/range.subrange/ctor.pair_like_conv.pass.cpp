@@ -29,7 +29,7 @@ static_assert(cuda::std::is_convertible_v<ConvertibleForwardSubrange, cuda::std:
 static_assert(!cuda::std::is_convertible_v<SizedIntPtrSubrange, cuda::std::tuple<long*, int*>>);
 static_assert(cuda::std::is_convertible_v<SizedIntPtrSubrange, cuda::std::tuple<int*, int*>>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   ForwardSubrange a(ForwardIter(globalBuff), ForwardIter(globalBuff + 8));
   cuda::std::pair<ForwardIter, ForwardIter> aPair = a;

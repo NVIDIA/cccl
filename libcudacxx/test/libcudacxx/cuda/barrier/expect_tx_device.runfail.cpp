@@ -22,7 +22,7 @@
 // Suppress warning about barrier in shared memory
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 
-__device__ uint64_t bar_storage;
+TEST_GLOBAL_VARIABLE uint64_t bar_storage;
 
 int main(int, char**)
 {

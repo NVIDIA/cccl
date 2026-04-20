@@ -125,8 +125,8 @@ private:
   device_ref __device_{0};
 };
 
-static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::device_accessible>, "");
-static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::host_accessible>, "");
+static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::device_accessible>);
+static_assert(::cuda::mr::synchronous_resource_with<legacy_pinned_memory_resource, ::cuda::mr::host_accessible>);
 
 _CCCL_END_NAMESPACE_CUDA_MR
 

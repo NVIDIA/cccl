@@ -15,6 +15,8 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 static_assert(cuda::std::is_same_v<cuda::std::underlying_type_t<cuda::std::__fmt_arg_t>, cuda::std::uint8_t>);
 
 static_assert(cuda::std::uint8_t(cuda::std::__fmt_arg_t::__none) == 0);

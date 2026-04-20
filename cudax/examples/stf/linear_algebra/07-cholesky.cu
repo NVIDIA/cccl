@@ -19,6 +19,8 @@
 #include <cuda/experimental/__stf/utility/nvtx.cuh>
 #include <cuda/experimental/stf.cuh>
 
+#include <iostream>
+
 #include <cublas_v2.h>
 
 #define TILED

@@ -22,35 +22,35 @@
 #include "test_macros.h"
 
 template <size_t Extent>
-__host__ __device__ constexpr bool test_constructibility()
+TEST_FUNC constexpr bool test_constructibility()
 {
   struct Other
   {};
-  static_assert(cuda::std::is_constructible<cuda::std::span<int, Extent>, int*, size_t>::value, "");
-  static_assert(!cuda::std::is_constructible<cuda::std::span<int, Extent>, const int*, size_t>::value, "");
-  static_assert(cuda::std::is_constructible<cuda::std::span<const int, Extent>, int*, size_t>::value, "");
-  static_assert(cuda::std::is_constructible<cuda::std::span<const int, Extent>, const int*, size_t>::value, "");
-  static_assert(!cuda::std::is_constructible<cuda::std::span<int, Extent>, volatile int*, size_t>::value, "");
-  static_assert(!cuda::std::is_constructible<cuda::std::span<int, Extent>, const volatile int*, size_t>::value, "");
-  static_assert(!cuda::std::is_constructible<cuda::std::span<const int, Extent>, volatile int*, size_t>::value, "");
+  static_assert(cuda::std::is_constructible<cuda::std::span<int, Extent>, int*, size_t>::value);
+  static_assert(!cuda::std::is_constructible<cuda::std::span<int, Extent>, const int*, size_t>::value);
+  static_assert(cuda::std::is_constructible<cuda::std::span<const int, Extent>, int*, size_t>::value);
+  static_assert(cuda::std::is_constructible<cuda::std::span<const int, Extent>, const int*, size_t>::value);
+  static_assert(!cuda::std::is_constructible<cuda::std::span<int, Extent>, volatile int*, size_t>::value);
+  static_assert(!cuda::std::is_constructible<cuda::std::span<int, Extent>, const volatile int*, size_t>::value);
+  static_assert(!cuda::std::is_constructible<cuda::std::span<const int, Extent>, volatile int*, size_t>::value);
   static_assert(!cuda::std::is_constructible<cuda::std::span<const int, Extent>, const volatile int*, size_t>::value,
                 "");
-  static_assert(!cuda::std::is_constructible<cuda::std::span<volatile int, Extent>, const int*, size_t>::value, "");
+  static_assert(!cuda::std::is_constructible<cuda::std::span<volatile int, Extent>, const int*, size_t>::value);
   static_assert(!cuda::std::is_constructible<cuda::std::span<volatile int, Extent>, const volatile int*, size_t>::value,
                 "");
-  static_assert(!cuda::std::is_constructible<cuda::std::span<int, Extent>, double*, size_t>::value, ""); // iterator
-                                                                                                         // type differs
-                                                                                                         // from span
-                                                                                                         // type
-  static_assert(!cuda::std::is_constructible<cuda::std::span<int, Extent>, size_t, size_t>::value, "");
-  static_assert(!cuda::std::is_constructible<cuda::std::span<int, Extent>, Other*, size_t>::value, ""); // unrelated
-                                                                                                        // iterator type
+  static_assert(!cuda::std::is_constructible<cuda::std::span<int, Extent>, double*, size_t>::value); // iterator
+                                                                                                     // type differs
+                                                                                                     // from span
+                                                                                                     // type
+  static_assert(!cuda::std::is_constructible<cuda::std::span<int, Extent>, size_t, size_t>::value);
+  static_assert(!cuda::std::is_constructible<cuda::std::span<int, Extent>, Other*, size_t>::value); // unrelated
+                                                                                                    // iterator type
 
   return true;
 }
 
 template <class T>
-__host__ __device__ constexpr bool test_ctor()
+TEST_FUNC constexpr bool test_ctor()
 {
   T val[2] = {};
   auto s1  = cuda::std::span<T>(val, 2);
@@ -60,7 +60,7 @@ __host__ __device__ constexpr bool test_ctor()
   return true;
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_constructibility<cuda::std::dynamic_extent>();
   test_constructibility<3>();
@@ -76,7 +76,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }
