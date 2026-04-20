@@ -66,7 +66,7 @@ struct __pstl_dispatch<__pstl_algorithm::__generate_n, __execution_backend::__cu
   [[nodiscard]] _CCCL_HOST_API static _OutputIterator
   __par_impl(const _Policy& __policy, _OutputIterator __result, const int64_t __count, _UnaryOp __func)
   {
-    auto __stream    = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
+    auto __stream    = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     const auto __ret = __result + __count;
 
     // We pass the policy as an environment to device_transform

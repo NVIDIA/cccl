@@ -70,7 +70,7 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_n, __execution_backend::__cuda>
   [[nodiscard]] _CCCL_HOST_API static _OutputIterator __par_impl(
     const _Policy& __policy, _InputIterator __first, _Size __count, _OutputIterator __result, _UnaryPred __pred)
   {
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
 
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceTransform::TransformIf,

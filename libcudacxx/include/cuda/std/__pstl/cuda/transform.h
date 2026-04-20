@@ -71,7 +71,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
     _UnaryOp __func,
     _Predicate __pred)
   {
-    auto __stream    = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
+    auto __stream    = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     const auto __ret = __result + __count;
 
     // We pass the policy as an environment to device_transform
