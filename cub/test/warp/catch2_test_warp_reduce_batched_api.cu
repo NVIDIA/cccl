@@ -326,11 +326,11 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumToBlockedApiKernel(int*
   }
 }
 
-C2H_TEST("WarpReduceBatched::SumToStriped documentation kernel", "[warp][reduce][batched]")
+C2H_TEST("WarpReduceBatched::SumToBlocked documentation kernel", "[warp][reduce][batched]")
 {
   c2h::device_vector<int> d_out(20);
 
-  WarpReduceBatchedSumToStripedApiKernel<<<1, 8>>>(thrust::raw_pointer_cast(d_out.data()));
+  WarpReduceBatchedSumToBlockedApiKernel<<<1, 8>>>(thrust::raw_pointer_cast(d_out.data()));
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 

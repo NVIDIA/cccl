@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 //! @file
-//! cub::WarpReduceBatchedWspro provides WSPRO-based batched parallel reduction of items partitioned across a CUDA
+//! cub::warp_reduce_batched_wspro provides WSPRO-based batched parallel reduction of items partitioned across a CUDA
 //! thread warp.
 
 #pragma once
@@ -17,9 +17,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/util_arch.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
-// For REDUX helper
+// Next two for REDUX helpers
+#include <cub/thread/thread_operators.cuh>
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
@@ -27,8 +29,8 @@
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__utility/static_for.h>
 #include <cuda/__warp/warp_shuffle.h>
-#include <cuda/std/__functional/operations.h>
 #include <cuda/std/array>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -120,7 +122,7 @@ struct warp_reduce_batched_wspro
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < Batches; ++i)
       {
-        auto result         = reduce_op_sync(inputs[i], reduce_mask, reduction_op);
+        auto result         = cub::detail::reduce_op_sync(inputs[i], reduce_mask, reduction_op);
         const auto out_lane = ToBlocked ? i / max_out_per_thread : i % LogicalWarpThreads;
         const auto out_idx  = ToBlocked ? i % max_out_per_thread : i / LogicalWarpThreads;
         if (logical_lane_id == out_lane)
