@@ -116,7 +116,7 @@ struct __pstl_dispatch<__pstl_algorithm::__rotate, __execution_backend::__cuda>
         __count,
         CUB_NS_QUALIFIER::detail::transform::always_true_predicate{},
         identity{},
-        __stream.get());
+        __policy);
 
       // Run the kernel, we use the flagged kernel because we know the exact ordering we want
       _CCCL_TRY_CUDA_API(

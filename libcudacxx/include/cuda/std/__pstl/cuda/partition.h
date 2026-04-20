@@ -97,7 +97,7 @@ struct __pstl_dispatch<__pstl_algorithm::__partition, __execution_backend::__cud
         __count,
         CUB_NS_QUALIFIER::detail::transform::always_true_predicate{},
         identity{},
-        __stream.get());
+        __policy);
 
       // Run the kernel, the standard requires that the input and output range do not overlap
       _CCCL_TRY_CUDA_API(
