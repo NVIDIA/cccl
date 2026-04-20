@@ -115,7 +115,7 @@ template <typename ScanOpT, typename InitValueT, typename InputValueT>
 _CCCL_API auto select_accum_t(use_default*) -> ::cuda::std::__accumulator_t<
   ScanOpT,
   InputValueT,
-  ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>, InputValueT, typename InitValueT::value_type>>;
+  ::cuda::std::conditional_t<::cuda::std::is_same_v<InitValueT, NullType>, InputValueT, typename InitValueT::value_type>>;
 
 template <typename ScanOpT,
           typename InitValueT,
@@ -187,141 +187,139 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-  return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
-    const segmented_scan_policy active_policy = policy_getter();
+  const segmented_scan_policy active_policy = policy_selector(arch_id);
 
-    // Clamp to produce a positive integer
-    num_segments_per_worker = (::cuda::std::max) (num_segments_per_worker, 1);
+  // Clamp to produce a positive integer
+  num_segments_per_worker = (::cuda::std::max) (num_segments_per_worker, 1);
 
-    if (d_temp_storage == nullptr)
-    {
-      temp_storage_bytes = 1;
-      return cudaSuccess;
-    }
-
-    active_policy.CheckLoadModifier();
-
-    _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments per worker parameter must be positive");
-
-    const auto [workers_per_block, block_size] = [&](worker selector) -> ::cuda::std::tuple<int, int> {
-      switch (selector)
-      {
-        case worker::block: {
-          const auto bw = active_policy.block;
-          return {bw.WorkersPerBlock(), bw.BlockThreads()};
-        }
-        case worker::warp: {
-          const auto ww = active_policy.warp;
-          return {ww.WorkersPerBlock(), ww.BlockThreads()};
-        }
-        case worker::thread: {
-          const auto tw = active_policy.thread;
-          return {tw.WorkersPerBlock(), tw.BlockThreads()};
-        }
-        default:
-          _CCCL_UNREACHABLE();
-      }
-      _CCCL_UNREACHABLE();
-    }(worker_choice);
-
-    const auto segments_per_block = num_segments_per_worker * workers_per_block;
-    _CCCL_ASSERT(segments_per_block > 0, "Number of segments to be processed by block must be positive");
-
-    static constexpr auto int32_max                       = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
-    static constexpr auto max_num_segments_per_invocation = static_cast<::cuda::std::int64_t>(int32_max);
-
-    const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, max_num_segments_per_invocation);
-
-    for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
-    {
-      const auto current_seg_offset          = invocation_index * max_num_segments_per_invocation;
-      const auto next_seg_offset             = current_seg_offset + max_num_segments_per_invocation;
-      const auto num_segments_per_invocation = ::cuda::std::min(next_seg_offset, num_segments) - current_seg_offset;
-
-      _CCCL_ASSERT(num_segments_per_invocation <= max_num_segments_per_invocation,
-                   "data loss during narrowing: num_segments_per_invocation exceeds int32_t range");
-
-      const auto grid_size = ::cuda::ceil_div(static_cast<int>(num_segments_per_invocation), segments_per_block);
-
-      auto launcher = launcher_factory(grid_size, block_size, 0, stream);
-
-      // Cast is safe, since OffsetT is integral with sizeof(OffsetT) >= 4, and num_segments_per_invocation
-      // fits in int32_t by construction
-      const auto segment_count = static_cast<OffsetT>(num_segments_per_invocation);
-
-      cudaError_t error = cudaSuccess;
-      switch (worker_choice)
-      {
-        case worker::block:
-          error = launcher.doit(
-            kernel_source.segmented_scan_kernel(),
-            d_in,
-            d_out,
-            input_begin_offsets,
-            input_end_offsets,
-            output_begin_offsets,
-            segment_count,
-            scan_op,
-            init_value,
-            num_segments_per_worker);
-          break;
-        case worker::warp:
-          error = launcher.doit(
-            kernel_source.warp_segmented_scan_kernel(),
-            d_in,
-            d_out,
-            input_begin_offsets,
-            input_end_offsets,
-            output_begin_offsets,
-            segment_count,
-            scan_op,
-            init_value,
-            num_segments_per_worker);
-          break;
-        case worker::thread:
-          error = launcher.doit(
-            kernel_source.thread_segmented_scan_kernel(),
-            d_in,
-            d_out,
-            input_begin_offsets,
-            input_end_offsets,
-            output_begin_offsets,
-            segment_count,
-            scan_op,
-            init_value,
-            num_segments_per_worker);
-          break;
-        default:
-          _CCCL_UNREACHABLE();
-      }
-
-      if (cudaSuccess != error)
-      {
-        return error;
-      }
-
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
-      {
-        return error;
-      }
-
-      if (invocation_index + 1 < num_invocations)
-      {
-        input_begin_offsets += num_segments_per_invocation;
-        input_end_offsets += num_segments_per_invocation;
-        output_begin_offsets += num_segments_per_invocation;
-      }
-
-      error = CubDebug(DebugSyncStream(stream));
-      if (cudaSuccess != error)
-      {
-        return error;
-      }
-    }
-
+  if (d_temp_storage == nullptr)
+  {
+    temp_storage_bytes = 1;
     return cudaSuccess;
-  });
+  }
+
+  active_policy.CheckLoadModifier();
+
+  _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments per worker parameter must be positive");
+
+  const auto [workers_per_block, block_size] = [&](worker selector) -> ::cuda::std::tuple<int, int> {
+    switch (selector)
+    {
+      case worker::block: {
+        const auto bw = active_policy.block;
+        return {bw.WorkersPerBlock(), bw.BlockThreads()};
+      }
+      case worker::warp: {
+        const auto ww = active_policy.warp;
+        return {ww.WorkersPerBlock(), ww.BlockThreads()};
+      }
+      case worker::thread: {
+        const auto tw = active_policy.thread;
+        return {tw.WorkersPerBlock(), tw.BlockThreads()};
+      }
+      default:
+        _CCCL_UNREACHABLE();
+    }
+    _CCCL_UNREACHABLE();
+  }(worker_choice);
+
+  const auto segments_per_block = num_segments_per_worker * workers_per_block;
+  _CCCL_ASSERT(segments_per_block > 0, "Number of segments to be processed by block must be positive");
+
+  static constexpr auto int32_max                       = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
+  static constexpr auto max_num_segments_per_invocation = static_cast<::cuda::std::int64_t>(int32_max);
+
+  const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, max_num_segments_per_invocation);
+
+  for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
+  {
+    const auto current_seg_offset          = invocation_index * max_num_segments_per_invocation;
+    const auto next_seg_offset             = current_seg_offset + max_num_segments_per_invocation;
+    const auto num_segments_per_invocation = ::cuda::std::min(next_seg_offset, num_segments) - current_seg_offset;
+
+    _CCCL_ASSERT(num_segments_per_invocation <= max_num_segments_per_invocation,
+                 "data loss during narrowing: num_segments_per_invocation exceeds int32_t range");
+
+    const auto grid_size = ::cuda::ceil_div(static_cast<int>(num_segments_per_invocation), segments_per_block);
+
+    auto launcher = launcher_factory(grid_size, block_size, 0, stream);
+
+    // Cast is safe, since OffsetT is integral with sizeof(OffsetT) >= 4, and num_segments_per_invocation
+    // fits in int32_t by construction
+    const auto segment_count = static_cast<OffsetT>(num_segments_per_invocation);
+
+    cudaError_t error = cudaSuccess;
+    switch (worker_choice)
+    {
+      case worker::block:
+        error = launcher.doit(
+          kernel_source.segmented_scan_kernel(),
+          d_in,
+          d_out,
+          input_begin_offsets,
+          input_end_offsets,
+          output_begin_offsets,
+          segment_count,
+          scan_op,
+          init_value,
+          num_segments_per_worker);
+        break;
+      case worker::warp:
+        error = launcher.doit(
+          kernel_source.warp_segmented_scan_kernel(),
+          d_in,
+          d_out,
+          input_begin_offsets,
+          input_end_offsets,
+          output_begin_offsets,
+          segment_count,
+          scan_op,
+          init_value,
+          num_segments_per_worker);
+        break;
+      case worker::thread:
+        error = launcher.doit(
+          kernel_source.thread_segmented_scan_kernel(),
+          d_in,
+          d_out,
+          input_begin_offsets,
+          input_end_offsets,
+          output_begin_offsets,
+          segment_count,
+          scan_op,
+          init_value,
+          num_segments_per_worker);
+        break;
+      default:
+        _CCCL_UNREACHABLE();
+    }
+
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
+
+    error = CubDebug(cudaPeekAtLastError());
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
+
+    if (invocation_index + 1 < num_invocations)
+    {
+      input_begin_offsets += num_segments_per_invocation;
+      input_end_offsets += num_segments_per_invocation;
+      output_begin_offsets += num_segments_per_invocation;
+    }
+
+    error = CubDebug(DebugSyncStream(stream));
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
+  }
+
+  return cudaSuccess;
 }
 } // namespace detail::segmented_scan
 
