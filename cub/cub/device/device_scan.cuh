@@ -423,7 +423,8 @@ struct DeviceScan
 #else
             ::cuda::std::execution::env<>
 #endif
-            >
+            ,
+            typename = ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
   {
@@ -501,7 +502,7 @@ struct DeviceScan
   //!   Random-access iterator to the sequence of data items
   //!
   //! @param[in] num_items
-  //!   Total number of input items (i.e., the length of `d_in`)
+  //!   Total number of input items (i.e., the length of `d_data`)
   //!
   //! @param[in] stream
   //!   @rst
@@ -527,7 +528,22 @@ struct DeviceScan
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - Supports non-commutative sum operators.
-  //! - Provides determinism based on the environment's determinism requirements.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run. Additional details can be found in
+  //!   the @lookback description.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates an in-place exclusive prefix sum of an
+  //! ``int`` device vector using a stream environment.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-sum-inplace-env
+  //!     :end-before: example-end exclusive-sum-inplace-env
   //!
   //! @endrst
   //!
@@ -550,7 +566,16 @@ struct DeviceScan
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename IteratorT, typename NumItemsT, typename EnvT = ::cuda::std::execution::env<>>
+  template <typename IteratorT,
+            typename NumItemsT,
+            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+            void
+#else
+            ::cuda::std::execution::env<>
+#endif
+            ,
+            typename = ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveSum(IteratorT d_data, NumItemsT num_items, EnvT env = {})
   {
@@ -780,7 +805,8 @@ struct DeviceScan
 #else
             ::cuda::std::execution::env<>
 #endif
-            >
+            ,
+            typename = ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -919,7 +945,22 @@ struct DeviceScan
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - Supports non-commutative scan operators.
-  //! - Provides determinism based on the environment's determinism requirements.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run. Additional details can be found in
+  //!   the @lookback description.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates an in-place exclusive prefix scan of an
+  //! ``int`` device vector with a user-supplied initial value and a stream environment.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-scan-inplace-env
+  //!     :end-before: example-end exclusive-scan-inplace-env
   //!
   //! @endrst
   //!
@@ -927,10 +968,10 @@ struct DeviceScan
   //!   **[inferred]** Random-access iterator type for reading and writing scan data
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
-  //!   **[inferred]** Type of the ``init_value`` used in the scan
+  //!   **[inferred]** Type of the ``init_value``
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -958,7 +999,14 @@ struct DeviceScan
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+            void
+#else
+            ::cuda::std::execution::env<>
+#endif
+            ,
+            typename = ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveScan(IteratorT d_data, ScanOpT scan_op, InitValueT init_value, NumItemsT num_items, EnvT env = {})
   {
@@ -1239,7 +1287,22 @@ struct DeviceScan
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - Supports non-commutative scan operators.
-  //! - Provides determinism based on the environment's determinism requirements.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run. Additional details can be found in
+  //!   the @lookback description.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates an in-place exclusive prefix scan of an
+  //! ``int`` device vector with a future initial value and a stream environment.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin exclusive-scan-future-inplace-env
+  //!     :end-before: example-end exclusive-scan-future-inplace-env
   //!
   //! @endrst
   //!
@@ -1247,10 +1310,10 @@ struct DeviceScan
   //!   **[inferred]** Random-access iterator type for reading and writing scan data
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
-  //!   **[inferred]** Type of the ``init_value`` used in the scan
+  //!   **[inferred]** Type of the ``init_value``
   //!
   //! @tparam InitValueIterT
   //!   **[inferred]** Iterator type for the future value
@@ -1282,7 +1345,14 @@ struct DeviceScan
             typename InitValueT,
             typename InitValueIterT = InitValueT*,
             typename NumItemsT      = int,
-            typename EnvT           = ::cuda::std::execution::env<>>
+            typename EnvT           = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+            void
+#else
+            ::cuda::std::execution::env<>
+#endif
+            ,
+            typename = ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     IteratorT d_data,
     ScanOpT scan_op,
@@ -1372,7 +1442,8 @@ struct DeviceScan
             typename InitValueT,
             typename InitValueIterT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename      = ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -1587,7 +1658,22 @@ struct DeviceScan
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - Supports non-commutative sum operators.
-  //! - Provides determinism based on the environment's determinism requirements.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run. Additional details can be found in
+  //!   the @lookback description.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates an in-place inclusive prefix sum of an
+  //! ``int`` device vector using a stream environment.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-sum-inplace-env
+  //!     :end-before: example-end inclusive-sum-inplace-env
   //!
   //! @endrst
   //!
@@ -1610,7 +1696,16 @@ struct DeviceScan
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename IteratorT, typename NumItemsT, typename EnvT = ::cuda::std::execution::env<>>
+  template <typename IteratorT,
+            typename NumItemsT,
+            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+            void
+#else
+            ::cuda::std::execution::env<>
+#endif
+            ,
+            typename = ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveSum(IteratorT d_data, NumItemsT num_items, EnvT env = {})
   {
@@ -1674,7 +1769,8 @@ struct DeviceScan
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename NumItemsT,
-            typename EnvT = ::cuda::std::execution::env<>>
+            typename EnvT = ::cuda::std::execution::env<>,
+            typename      = ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, EnvT env = {})
   {
@@ -2016,7 +2112,22 @@ struct DeviceScan
   //! - Memory resource: Query via ``cuda::mr::get_memory_resource``
   //!
   //! - Supports non-commutative scan operators.
-  //! - Provides determinism based on the environment's determinism requirements.
+  //! - Results are not deterministic for pseudo-associative operators (e.g.,
+  //!   addition of floating-point types). Results for pseudo-associative
+  //!   operators may vary from run to run. Additional details can be found in
+  //!   the @lookback description.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates an in-place inclusive prefix scan of an
+  //! ``int`` device vector using a stream environment.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_scan_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin inclusive-scan-inplace-env
+  //!     :end-before: example-end inclusive-scan-inplace-env
   //!
   //! @endrst
   //!
@@ -2024,7 +2135,7 @@ struct DeviceScan
   //!   **[inferred]** Random-access iterator type for reading and writing scan data
   //!
   //! @tparam ScanOpT
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
+  //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** An integral type representing the number of input elements
@@ -2045,7 +2156,17 @@ struct DeviceScan
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename IteratorT, typename ScanOpT, typename NumItemsT, typename EnvT = ::cuda::std::execution::env<>>
+  template <typename IteratorT,
+            typename ScanOpT,
+            typename NumItemsT,
+            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+            void
+#else
+            ::cuda::std::execution::env<>
+#endif
+            ,
+            typename = ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<EnvT>>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveScan(IteratorT d_data, ScanOpT scan_op, NumItemsT num_items, EnvT env = {})
   {
@@ -2122,7 +2243,8 @@ struct DeviceScan
 #else
             ::cuda::std::execution::env<>
 #endif
-            >
+            ,
+            typename = ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT>>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveScan(InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, NumItemsT num_items, EnvT env = {})
   {

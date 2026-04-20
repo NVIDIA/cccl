@@ -333,6 +333,21 @@ TEST_CASE("Device scan inclusive scan in-place works with default environment", 
   REQUIRE(d_data == expected);
 }
 
+TEST_CASE("Device scan exclusive scan with FutureValue in-place works with default environment", "[scan][device]")
+{
+  auto d_data = c2h::device_vector<int>{1, 2, 3, 4};
+
+  auto init_value_vec = c2h::device_vector<int>{42};
+  auto future_init    = cub::FutureValue<int>(thrust::raw_pointer_cast(init_value_vec.data()));
+
+  auto error =
+    cub::DeviceScan::ExclusiveScan(d_data.begin(), cuda::std::plus{}, future_init, static_cast<int>(d_data.size()));
+  REQUIRE(error == cudaSuccess);
+
+  auto expected = c2h::device_vector<int>{42, 43, 45, 48};
+  REQUIRE(d_data == expected);
+}
+
 #endif
 
 C2H_TEST("Device scan exclusive-scan uses environment", "[scan][device]")
@@ -514,6 +529,33 @@ C2H_TEST("Device scan exclusive-scan in-place uses environment", "[scan][device]
   device_scan_exclusive(d_data.begin(), cuda::std::plus{}, 42, static_cast<int>(d_data.size()), env);
 
   auto expected = c2h::device_vector<int>{42, 43, 45, 48};
+  REQUIRE(d_data == expected);
+}
+
+C2H_TEST("Device scan exclusive-scan with FutureValue in-place uses environment", "[scan][device]")
+{
+  auto d_data = c2h::device_vector<int>{1, 1, 1, 1};
+
+  auto init_value_vec = c2h::device_vector<int>{42};
+  auto future_init    = cub::FutureValue<int>(thrust::raw_pointer_cast(init_value_vec.data()));
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceScan::ExclusiveScan(
+      nullptr,
+      expected_bytes_allocated,
+      d_data.begin(),
+      d_data.begin(),
+      cuda::std::plus{},
+      future_init,
+      static_cast<int>(d_data.size())));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_scan_exclusive(d_data.begin(), cuda::std::plus{}, future_init, static_cast<int>(d_data.size()), env);
+
+  auto expected = c2h::device_vector<int>{42, 43, 44, 45};
   REQUIRE(d_data == expected);
 }
 
