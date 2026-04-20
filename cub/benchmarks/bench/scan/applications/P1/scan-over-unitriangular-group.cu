@@ -101,10 +101,10 @@ bool validation(const thrust::device_vector<TupleT>& input,
 template <typename T, typename OffsetT>
 void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using value_t = T;
-  using tuple_t = impl::triplet_t<value_t>;
-  using op_t    = impl::unitriangular_dim3_op;
-  using accum_t = tuple_t;
+  using value_t                  = T;
+  using tuple_t                  = impl::triplet_t<value_t>;
+  using op_t                     = impl::unitriangular_dim3_op;
+  [[maybe_unused]] using accum_t = tuple_t;
 
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   cudaStream_t bench_stream = state.get_cuda_stream().get_stream();

@@ -101,11 +101,11 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<FloatingPoi
 {
   static_assert(cuda::std::is_floating_point_v<FloatingPointT>);
 
-  using value_t  = FloatingPointT;
-  using input_t  = const value_t*;
-  using output_t = value_t*;
-  using op_t     = impl::log_add_plus;
-  using accum_t  = value_t;
+  using value_t                  = FloatingPointT;
+  using input_t                  = const value_t*;
+  using output_t                 = value_t*;
+  using op_t                     = impl::log_add_plus;
+  [[maybe_unused]] using accum_t = value_t;
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   auto mu             = static_cast<value_t>(state.get_float64("Mu{io}"));

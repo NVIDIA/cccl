@@ -189,13 +189,13 @@ void validate(const thrust::device_vector<ValueT>& input,
 template <typename T, typename OffsetT>
 void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using value_t     = T;
-  using pair_t      = impl::min_max_t<value_t>;
-  using op_t        = impl::scan_op;
-  using accum_t     = pair_t;
-  using input_raw_t = const value_t*;
-  using input_it_t  = cuda::transform_iterator<impl::embed_op<value_t>, input_raw_t>;
-  using output_it_t = pair_t*;
+  using value_t                  = T;
+  using pair_t                   = impl::min_max_t<value_t>;
+  using op_t                     = impl::scan_op;
+  [[maybe_unused]] using accum_t = pair_t;
+  using input_raw_t              = const value_t*;
+  using input_it_t               = cuda::transform_iterator<impl::embed_op<value_t>, input_raw_t>;
+  using output_it_t              = pair_t*;
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
 

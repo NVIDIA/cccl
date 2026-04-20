@@ -88,9 +88,9 @@ template <typename T, typename OffsetT>
 static void inclusive_scan(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   static_assert(cuda::std::is_integral_v<T> && cuda::std::is_unsigned_v<T>, "Unsigned integral type should be used");
-  using pair_t  = cuda::std::pair<T, T>;
-  using op_t    = impl::bicyclic_monoid_op<T>;
-  using accum_t = pair_t;
+  using pair_t                   = cuda::std::pair<T, T>;
+  using op_t                     = impl::bicyclic_monoid_op<T>;
+  [[maybe_unused]] using accum_t = pair_t;
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
 
