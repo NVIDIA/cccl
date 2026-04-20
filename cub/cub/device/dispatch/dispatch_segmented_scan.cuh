@@ -189,9 +189,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   const segmented_scan_policy active_policy = policy_selector(arch_id);
 
-  // Clamp to produce a positive integer
-  num_segments_per_worker = (::cuda::std::max) (num_segments_per_worker, 1);
-
   if (d_temp_storage == nullptr)
   {
     temp_storage_bytes = 1;
@@ -201,21 +198,31 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   active_policy.CheckLoadModifier();
 
   _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments per worker parameter must be positive");
+  // Clamp to produce a positive integer
+  num_segments_per_worker = (::cuda::std::max) (num_segments_per_worker, 1);
 
-  const auto [workers_per_block, block_size] = [&](worker selector) -> ::cuda::std::tuple<int, int> {
+  const auto [workers_per_block, block_size, normalized_spw] =
+    [&](worker selector) -> ::cuda::std::tuple<int, int, int> {
     switch (selector)
     {
       case worker::block: {
         const auto bw = active_policy.block;
-        return {bw.WorkersPerBlock(), bw.BlockThreads()};
+        _CCCL_ASSERT(num_segments_per_worker <= bw.max_segments_per_block,
+                     "Number of segments per block exceeds maximum value");
+        return {bw.WorkersPerBlock(),
+                bw.BlockThreads(),
+                ::cuda::std::min(num_segments_per_worker, bw.max_segments_per_block)};
       }
       case worker::warp: {
         const auto ww = active_policy.warp;
-        return {ww.WorkersPerBlock(), ww.BlockThreads()};
+        _CCCL_ASSERT(num_segments_per_worker <= ww.max_segments_per_warp,
+                     "Number of segments per warp exceeds maximum value");
+        return {
+          ww.WorkersPerBlock(), ww.BlockThreads(), ::cuda::std::min(num_segments_per_worker, ww.max_segments_per_warp)};
       }
       case worker::thread: {
         const auto tw = active_policy.thread;
-        return {tw.WorkersPerBlock(), tw.BlockThreads()};
+        return {tw.WorkersPerBlock(), tw.BlockThreads(), num_segments_per_worker};
       }
       default:
         _CCCL_UNREACHABLE();
@@ -223,7 +230,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     _CCCL_UNREACHABLE();
   }(worker_choice);
 
-  const auto segments_per_block = num_segments_per_worker * workers_per_block;
+  const auto segments_per_block = normalized_spw * workers_per_block;
   _CCCL_ASSERT(segments_per_block > 0, "Number of segments to be processed by block must be positive");
 
   static constexpr auto int32_max                       = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
@@ -262,7 +269,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
           segment_count,
           scan_op,
           init_value,
-          num_segments_per_worker);
+          normalized_spw);
         break;
       case worker::warp:
         error = launcher.doit(
@@ -275,7 +282,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
           segment_count,
           scan_op,
           init_value,
-          num_segments_per_worker);
+          normalized_spw);
         break;
       case worker::thread:
         error = launcher.doit(
@@ -288,7 +295,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
           segment_count,
           scan_op,
           init_value,
-          num_segments_per_worker);
+          normalized_spw);
         break;
       default:
         _CCCL_UNREACHABLE();
