@@ -288,7 +288,6 @@ class Configuration(object):
         self.configure_use_thread_safety()
         self.configure_no_execute()
         self.configure_execute_external()
-        self.configure_ccache()
         self.configure_compile_flags()
         self.configure_filesystem_compile_flags()
         self.configure_link_flags()
@@ -303,6 +302,7 @@ class Configuration(object):
             self.configure_coroutines()
             self.configure_substitutions()
             self.configure_features()
+        self.configure_ccache()
 
     def print_config_info(self):
         # Print the final compile and link flags.
@@ -640,6 +640,8 @@ class Configuration(object):
     def configure_ccache(self):
         use_ccache_default = os.environ.get("CMAKE_CUDA_COMPILER_LAUNCHER") is not None
         use_ccache = self.get_lit_bool("use_ccache", use_ccache_default)
+        if "enable-tile" in self.config.available_features:
+            return
         if use_ccache and not self.cxx.type == "nvrtcc":
             self.cxx.use_ccache = True
             self.lit_config.note("enabling ccache")
@@ -724,6 +726,9 @@ class Configuration(object):
 
         if self.get_lit_bool("has_libatomic", False):
             self.config.available_features.add("libatomic")
+
+        if self.get_lit_bool("enable_tile", False):
+            self.config.available_features.add("enable-tile")
 
         if "msvc" not in self.config.available_features:
             macros = self._dump_macros_verbose()

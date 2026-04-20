@@ -57,20 +57,13 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
   cudaStream_t stream,
   thrust::detail::integral_constant<bool, false> /* sort_keys */)
 {
-  using ItemsInputIt = cub::NullType*;
-  ItemsInputIt items = nullptr;
-
   cudaError_t status = cudaSuccess;
 
-  using dispatch32_t = cub::DispatchMergeSort<KeysIt, ItemsInputIt, KeysIt, ItemsInputIt, std::uint32_t, CompareOp>;
-  using dispatch64_t = cub::DispatchMergeSort<KeysIt, ItemsInputIt, KeysIt, ItemsInputIt, std::uint64_t, CompareOp>;
-
-  THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+  THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
     status,
-    dispatch32_t::Dispatch,
-    dispatch64_t::Dispatch,
+    cub::DeviceMergeSort::SortKeys,
     keys_count,
-    (d_temp_storage, temp_storage_bytes, keys, items, keys, items, keys_count_fixed, compare_op, stream));
+    (d_temp_storage, temp_storage_bytes, keys, keys_count_fixed, compare_op, stream));
 
   return status;
 }
@@ -88,15 +81,11 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
 {
   cudaError_t status = cudaSuccess;
 
-  using dispatch32_t = cub::DispatchMergeSort<KeysIt, ItemsIt, KeysIt, ItemsIt, std::uint32_t, CompareOp>;
-  using dispatch64_t = cub::DispatchMergeSort<KeysIt, ItemsIt, KeysIt, ItemsIt, std::uint64_t, CompareOp>;
-
-  THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
+  THRUST_UNSIGNED_INDEX_TYPE_DISPATCH(
     status,
-    dispatch32_t::Dispatch,
-    dispatch64_t::Dispatch,
+    cub::DeviceMergeSort::SortPairs,
     keys_count,
-    (d_temp_storage, temp_storage_bytes, keys, items, keys, items, keys_count_fixed, compare_op, stream));
+    (d_temp_storage, temp_storage_bytes, keys, items, keys_count_fixed, compare_op, stream));
 
   return status;
 }

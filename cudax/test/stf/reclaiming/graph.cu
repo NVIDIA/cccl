@@ -10,6 +10,8 @@
 
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
+#include <iostream>
+
 #if !_CCCL_COMPILER(MSVC)
 using namespace cuda::experimental::stf;
 

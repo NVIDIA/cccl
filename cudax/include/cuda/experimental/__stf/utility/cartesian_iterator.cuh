@@ -22,6 +22,8 @@
 
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
+#include <iostream>
+
 namespace cuda::experimental::stf::reserved
 {
 #if 0

@@ -18,10 +18,7 @@
 #include <cub/device/dispatch/tuning/common.cuh>
 
 #include <cuda/__device/arch_id.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
 

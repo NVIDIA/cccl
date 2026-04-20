@@ -210,6 +210,13 @@ TEST_FUNC constexpr bool test()
   test<NonTrivialMove*, NonTrivialMove*>();
   test<NonTrivialDestructor*, NonTrivialDestructor*>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<int*, host_only_iterator<int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<int*, device_only_iterator<int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
 #if defined(_LIBCUDACXX_HAS_MEMORY)
   test1<cpp17_input_iterator<cuda::std::unique_ptr<int>*>, cpp17_output_iterator<cuda::std::unique_ptr<int>*>>();
   test1<cpp17_input_iterator<cuda::std::unique_ptr<int>*>, cpp17_input_iterator<cuda::std::unique_ptr<int>*>>();

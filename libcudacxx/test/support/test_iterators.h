@@ -2154,4 +2154,262 @@ public:
 };
 static_assert(cuda::std::random_access_iterator<advance_only_iterator>);
 
+#if !TEST_COMPILER(NVRTC)
+template <class It>
+class host_only_iterator
+{
+  It it_;
+
+  template <class U>
+  friend class host_only_iterator;
+
+public:
+  using iterator_category = cuda::std::random_access_iterator_tag;
+  using value_type        = typename cuda::std::iterator_traits<It>::value_type;
+  using difference_type   = typename cuda::std::iterator_traits<It>::difference_type;
+  using pointer           = It;
+  using reference         = typename cuda::std::iterator_traits<It>::reference;
+
+  constexpr host_only_iterator()
+      : it_()
+  {}
+  constexpr explicit host_only_iterator(It it)
+      : it_(it)
+  {}
+
+  template <class U>
+  constexpr host_only_iterator(const host_only_iterator<U>& u)
+      : it_(u.it_)
+  {}
+
+  template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
+  constexpr host_only_iterator(host_only_iterator<U>&& u)
+      : it_(u.it_)
+  {
+    u.it_ = U();
+  }
+
+  constexpr reference operator*() const
+  {
+    return *it_;
+  }
+  constexpr reference operator[](difference_type n) const
+  {
+    return it_[n];
+  }
+
+  constexpr host_only_iterator& operator++()
+  {
+    ++it_;
+    return *this;
+  }
+  constexpr host_only_iterator& operator--()
+  {
+    --it_;
+    return *this;
+  }
+  constexpr host_only_iterator operator++(int)
+  {
+    return host_only_iterator(it_++);
+  }
+  constexpr host_only_iterator operator--(int)
+  {
+    return host_only_iterator(it_--);
+  }
+
+  constexpr host_only_iterator& operator+=(difference_type n)
+  {
+    it_ += n;
+    return *this;
+  }
+  constexpr host_only_iterator& operator-=(difference_type n)
+  {
+    it_ -= n;
+    return *this;
+  }
+  friend constexpr host_only_iterator operator+(host_only_iterator x, difference_type n)
+  {
+    x += n;
+    return x;
+  }
+  friend constexpr host_only_iterator operator+(difference_type n, host_only_iterator x)
+  {
+    x += n;
+    return x;
+  }
+  friend constexpr host_only_iterator operator-(host_only_iterator x, difference_type n)
+  {
+    x -= n;
+    return x;
+  }
+  friend constexpr difference_type operator-(host_only_iterator x, host_only_iterator y)
+  {
+    return x.it_ - y.it_;
+  }
+
+  friend constexpr bool operator==(const host_only_iterator& x, const host_only_iterator& y)
+  {
+    return x.it_ == y.it_;
+  }
+  friend constexpr bool operator!=(const host_only_iterator& x, const host_only_iterator& y)
+  {
+    return x.it_ != y.it_;
+  }
+  friend constexpr bool operator<(const host_only_iterator& x, const host_only_iterator& y)
+  {
+    return x.it_ < y.it_;
+  }
+  friend constexpr bool operator<=(const host_only_iterator& x, const host_only_iterator& y)
+  {
+    return x.it_ <= y.it_;
+  }
+  friend constexpr bool operator>(const host_only_iterator& x, const host_only_iterator& y)
+  {
+    return x.it_ > y.it_;
+  }
+  friend constexpr bool operator>=(const host_only_iterator& x, const host_only_iterator& y)
+  {
+    return x.it_ >= y.it_;
+  }
+
+  friend constexpr It base(const host_only_iterator& i)
+  {
+    return i.it_;
+  }
+
+  template <class T>
+  void operator,(T const&) = delete;
+};
+static_assert(cuda::std::random_access_iterator<host_only_iterator<int*>>);
+#endif // !TEST_COMPILER(NVRTC)
+
+#if TEST_CUDA_COMPILATION()
+template <class It>
+class device_only_iterator
+{
+  It it_;
+
+  template <class U>
+  friend class device_only_iterator;
+
+public:
+  using iterator_category = cuda::std::random_access_iterator_tag;
+  using value_type        = typename cuda::std::iterator_traits<It>::value_type;
+  using difference_type   = typename cuda::std::iterator_traits<It>::difference_type;
+  using pointer           = It;
+  using reference         = typename cuda::std::iterator_traits<It>::reference;
+
+  TEST_DEVICE_FUNC constexpr device_only_iterator()
+      : it_()
+  {}
+  TEST_DEVICE_FUNC constexpr explicit device_only_iterator(It it)
+      : it_(it)
+  {}
+
+  template <class U>
+  TEST_DEVICE_FUNC constexpr device_only_iterator(const device_only_iterator<U>& u)
+      : it_(u.it_)
+  {}
+
+  template <class U, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
+  TEST_DEVICE_FUNC constexpr device_only_iterator(device_only_iterator<U>&& u)
+      : it_(u.it_)
+  {
+    u.it_ = U();
+  }
+
+  TEST_DEVICE_FUNC constexpr reference operator*() const
+  {
+    return *it_;
+  }
+  TEST_DEVICE_FUNC constexpr reference operator[](difference_type n) const
+  {
+    return it_[n];
+  }
+
+  TEST_DEVICE_FUNC constexpr device_only_iterator& operator++()
+  {
+    ++it_;
+    return *this;
+  }
+  TEST_DEVICE_FUNC constexpr device_only_iterator& operator--()
+  {
+    --it_;
+    return *this;
+  }
+  TEST_DEVICE_FUNC constexpr device_only_iterator operator++(int)
+  {
+    return device_only_iterator(it_++);
+  }
+  TEST_DEVICE_FUNC constexpr device_only_iterator operator--(int)
+  {
+    return device_only_iterator(it_--);
+  }
+
+  TEST_DEVICE_FUNC constexpr device_only_iterator& operator+=(difference_type n)
+  {
+    it_ += n;
+    return *this;
+  }
+  TEST_DEVICE_FUNC constexpr device_only_iterator& operator-=(difference_type n)
+  {
+    it_ -= n;
+    return *this;
+  }
+  TEST_DEVICE_FUNC friend constexpr device_only_iterator operator+(device_only_iterator x, difference_type n)
+  {
+    x += n;
+    return x;
+  }
+  TEST_DEVICE_FUNC friend constexpr device_only_iterator operator+(difference_type n, device_only_iterator x)
+  {
+    x += n;
+    return x;
+  }
+  TEST_DEVICE_FUNC friend constexpr device_only_iterator operator-(device_only_iterator x, difference_type n)
+  {
+    x -= n;
+    return x;
+  }
+  TEST_DEVICE_FUNC friend constexpr difference_type operator-(device_only_iterator x, device_only_iterator y)
+  {
+    return x.it_ - y.it_;
+  }
+
+  TEST_DEVICE_FUNC friend constexpr bool operator==(const device_only_iterator& x, const device_only_iterator& y)
+  {
+    return x.it_ == y.it_;
+  }
+  TEST_DEVICE_FUNC friend constexpr bool operator!=(const device_only_iterator& x, const device_only_iterator& y)
+  {
+    return x.it_ != y.it_;
+  }
+  TEST_DEVICE_FUNC friend constexpr bool operator<(const device_only_iterator& x, const device_only_iterator& y)
+  {
+    return x.it_ < y.it_;
+  }
+  TEST_DEVICE_FUNC friend constexpr bool operator<=(const device_only_iterator& x, const device_only_iterator& y)
+  {
+    return x.it_ <= y.it_;
+  }
+  TEST_DEVICE_FUNC friend constexpr bool operator>(const device_only_iterator& x, const device_only_iterator& y)
+  {
+    return x.it_ > y.it_;
+  }
+  TEST_DEVICE_FUNC friend constexpr bool operator>=(const device_only_iterator& x, const device_only_iterator& y)
+  {
+    return x.it_ >= y.it_;
+  }
+
+  TEST_DEVICE_FUNC friend constexpr It base(const device_only_iterator& i)
+  {
+    return i.it_;
+  }
+
+  template <class T>
+  void operator,(T const&) = delete;
+};
+static_assert(cuda::std::random_access_iterator<device_only_iterator<int*>>);
+#endif // TEST_CUDA_COMPILATION()
+
 #endif // SUPPORT_TEST_ITERATORS_H

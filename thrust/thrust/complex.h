@@ -21,12 +21,13 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <complex>
-#  include <sstream>
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #define THRUST_STD_COMPLEX_REAL(z) \

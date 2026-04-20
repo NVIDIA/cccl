@@ -84,8 +84,8 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     10,
     1337,
     3000,
-    1 * 31 * 128, // tile size for int64s for lookahead
-    10'000, // a handful of tiles for lookahead
+    1 * 31 * 128, // tile size for int64s for warpspeed scan
+    10'000, // a handful of tiles for warpspeed scan
     take(3, random(min_items, max_items)),
     values({
       min_items,

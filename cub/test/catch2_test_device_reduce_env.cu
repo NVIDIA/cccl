@@ -41,13 +41,14 @@ namespace stdexec = cuda::std::execution;
 #if TEST_LAUNCH == 0
 struct block_size_check_t
 {
-  int* ptr;
+  unsigned int* ptr;
 
   __device__ int operator()(int a, int b)
   {
     if (threadIdx.x == 0)
     {
-      *ptr = blockDim.x;
+      // use an atomic operation to write the block dim in case multiple blocks are launched
+      atomicMax(ptr, blockDim.x);
     }
     return a + b;
   }
@@ -65,12 +66,12 @@ TEST_CASE("Device reduce works with default environment", "[reduce][device]")
   cuda::arch_id arch_id{};
   REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id, current_device));
 
-  int target_block_size =
+  unsigned int target_block_size =
     cub::detail::reduce::policy_selector_from_types<value_t, offset_t, block_size_check_t>{}(arch_id)
       .single_tile.block_threads;
 
   num_items_t num_items = 1;
-  c2h::device_vector<int> d_block_size(1);
+  c2h::device_vector<unsigned int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
   auto d_in  = cuda::constant_iterator(value_t{1});
   auto d_out = thrust::device_vector<value_t>(1);
@@ -126,12 +127,13 @@ struct unrelated_tuning
   }
 };
 
-using block_sizes = c2h::type_list<cuda::std::integral_constant<int, 32>, cuda::std::integral_constant<int, 64>>;
+using block_sizes =
+  c2h::type_list<cuda::std::integral_constant<unsigned int, 32>, cuda::std::integral_constant<unsigned int, 64>>;
 
 C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
 {
-  constexpr int target_block_size = c2h::get<0, TestType>::value;
-  c2h::device_vector<int> d_block_size(1);
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
   block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
   auto num_items = 1;
@@ -148,7 +150,7 @@ C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
 
 C2H_TEST("Device sum can be tuned", "[reduce][device]", block_sizes)
 {
-  constexpr int target_block_size = c2h::get<0, TestType>::value;
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
 
   auto num_items = 1;
   auto d_in      = cuda::constant_iterator(1);

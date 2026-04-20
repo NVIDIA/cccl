@@ -5,6 +5,8 @@
 #include <thrust/random.h>
 #include <thrust/reduce.h>
 
+#include <iostream>
+
 int my_rand()
 {
   static thrust::default_random_engine rng;

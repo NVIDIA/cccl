@@ -9,6 +9,7 @@
 #include <cfloat>
 #include <cmath>
 #include <iomanip>
+#include <iostream>
 
 // This example computes the minimum and maximum values
 // over a padded grid.  The padded values are not considered

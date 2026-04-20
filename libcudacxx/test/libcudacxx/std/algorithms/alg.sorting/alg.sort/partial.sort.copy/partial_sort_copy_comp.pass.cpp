@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// CONSTEXPR_STEPS: 15000000
+
 // <algorithm>
 
 // template<InputIterator InIter, RandomAccessIterator RAIter, class Compare>
@@ -98,6 +100,13 @@ TEST_FUNC constexpr bool test()
     test<MoveOnly, int*, random_access_iterator<MoveOnly*>>();
     test<MoveOnly, int*, MoveOnly*>();
   }
+
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<int, host_only_iterator<int*>, host_only_iterator<int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<int, device_only_iterator<int*>, device_only_iterator<int*>>();))
+#endif // TEST_CUDA_COMPILATION()
 
   return true;
 }

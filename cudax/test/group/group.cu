@@ -21,7 +21,7 @@
 #include <cuda/std/utility>
 #include <cuda/stream>
 
-#include <cuda/experimental/hierarchy.cuh>
+#include <cuda/experimental/group.cuh>
 
 #include <cooperative_groups.h>
 
@@ -33,7 +33,7 @@ template <class Unit, class Level, class Hierarchy, class Group>
 __device__ void test_common_properties(const Hierarchy&, Group& group)
 {
   // Assert that Group satisfies the group concept.
-  static_assert(cudax::group<Group>);
+  static_assert(cudax::is_group<Group>);
 
   // Test types
   static_assert(cuda::std::is_same_v<Unit, typename Group::unit_type>);
@@ -413,13 +413,13 @@ __device__ void test_this_group(const Config& config)
 }
 
 template <class Level, cuda::std::size_t N, class Hierarchy, class Sync>
-__device__ void test_queries(const cudax::thread_group<Level, cudax::group_by<N>, Hierarchy, Sync>& group)
+__device__ void test_queries(const cudax::group<cuda::thread_level, Level, cudax::group_by<N>, Hierarchy, Sync>& group)
 {
   // todo(dabayer): These queries end up in `error: expression must have a constant value`, when group is taken by
   // reference. Can we find a solution that works without copying the group?
   // static_assert(cuda::gpu_thread.static_count(group) == N);
 
-  const auto count_ref = group.mapping().n();
+  const auto count_ref = group.mapping().count();
   const auto rank_ref  = cuda::gpu_thread.rank(Level{}, group.hierarchy()) % count_ref;
 
   CUDAX_REQUIRE(cuda::gpu_thread.count(group) == count_ref);
@@ -428,18 +428,21 @@ __device__ void test_queries(const cudax::thread_group<Level, cudax::group_by<N>
   CUDAX_REQUIRE(cuda::gpu_thread.is_part_of(group));
 }
 
-template <class Unit, template <class...> class GroupTempl, class Level, class Config, cuda::std::size_t N>
+template <class Unit, class Level, class Config, cuda::std::size_t N>
 __device__ void test_group_by_group(const Config& config)
 {
   // Test statically known group size
   {
     using Mapping = cudax::group_by<N>;
 
-    GroupTempl group{Level{}, Mapping{}, config};
+    cudax::group group{Unit{}, Level{}, Mapping{}, config};
     static_assert(
-      cuda::std::is_same_v<
-        GroupTempl<Level, Mapping, typename Config::hierarchy_type, cudax::__synchronizer_select_t<Unit, Level, Mapping>>,
-        decltype(group)>);
+      cuda::std::is_same_v<cudax::group<Unit,
+                                        Level,
+                                        Mapping,
+                                        typename Config::hierarchy_type,
+                                        cudax::__synchronizer_select_t<Unit, Level, Mapping>>,
+                           decltype(group)>);
 
     test_common_properties<Unit, Level>(config.hierarchy(), group);
     test_queries<Level>(group);
@@ -460,10 +463,11 @@ __device__ void test_group_by_group(const Config& config)
 
     auto& barriers = reinterpret_cast<Barrier(&)[nbarriers]>(barrier_storage);
 
-    GroupTempl group{Level{}, Mapping{}, config, barriers};
+    cudax::group group{Unit{}, Level{}, Mapping{}, config, barriers};
     static_assert(
       cuda::std::is_same_v<
-        GroupTempl<Level, Mapping, typename Config::hierarchy_type, cudax::__barrier_synchronizer<Unit, Level, Mapping>>,
+        cudax::
+          group<Unit, Level, Mapping, typename Config::hierarchy_type, cudax::__barrier_synchronizer<Unit, Level, Mapping>>,
         decltype(group)>);
 
     test_common_properties<Unit, Level>(config.hierarchy(), group);
@@ -475,9 +479,9 @@ __device__ void test_group_by_group(const Config& config)
   // {
   //   using Mapping = cudax::group_by<cuda::std::dynamic_extent>;
 
-  //   GroupTempl group{Level{}, Mapping{static_cast<unsigned>(N)}, config};
+  //   cudax::group group{Unit{}, Level{}, Mapping{static_cast<unsigned>(N)}, config};
   //   static_assert(
-  //     cuda::std::is_same_v<GroupTempl<Level, Mapping, typename Config::hierarchy_type,
+  //     cuda::std::is_same_v<cudax::group<Unit, Level, Mapping, typename Config::hierarchy_type,
   //     cudax::__syncwarp_synchronizer<Unit, Level, Mapping>>, decltype(group)>);
 
   //   test_common_properties<Unit, Level>(config.hierarchy(), group);
@@ -485,19 +489,19 @@ __device__ void test_group_by_group(const Config& config)
   // }
 }
 
-template <class Unit, template <class...> class GroupTempl, class Level, class Config>
+template <class Unit, class Level, class Config>
 __device__ void test_group_by_group(const Config& config)
 {
   // powers of 2
-  test_group_by_group<Unit, GroupTempl, Level, Config, 1>(config);
-  test_group_by_group<Unit, GroupTempl, Level, Config, 4>(config);
-  test_group_by_group<Unit, GroupTempl, Level, Config, 16>(config);
-  test_group_by_group<Unit, GroupTempl, Level, Config, 32>(config);
+  test_group_by_group<Unit, Level, Config, 1>(config);
+  test_group_by_group<Unit, Level, Config, 4>(config);
+  test_group_by_group<Unit, Level, Config, 16>(config);
+  test_group_by_group<Unit, Level, Config, 32>(config);
 
   if constexpr (cuda::std::is_same_v<Level, cuda::block_level>)
   {
-    test_group_by_group<Unit, GroupTempl, Level, Config, 64>(config);
-    test_group_by_group<Unit, GroupTempl, Level, Config, 128>(config);
+    test_group_by_group<Unit, Level, Config, 64>(config);
+    test_group_by_group<Unit, Level, Config, 128>(config);
   }
 }
 
@@ -515,13 +519,13 @@ struct TestKernel
     test_this_group<cuda::grid_level, cudax::this_grid>(config);
 
     // todo: allow this once hierarchy is queryable for missing levels
-    test_group_by_group<cuda::thread_level, cudax::thread_group, cuda::warp_level>(config);
-    test_group_by_group<cuda::thread_level, cudax::thread_group, cuda::block_level>(config);
+    test_group_by_group<cuda::thread_level, cuda::warp_level>(config);
+    test_group_by_group<cuda::thread_level, cuda::block_level>(config);
     if constexpr (Hierarchy::has_level(cuda::cluster))
     {
-      test_group_by_group<cuda::thread_level, cudax::thread_group, cuda::cluster_level>(config);
+      test_group_by_group<cuda::thread_level, cuda::cluster_level>(config);
     }
-    test_group_by_group<cuda::thread_level, cudax::thread_group, cuda::grid_level>(config);
+    test_group_by_group<cuda::thread_level, cuda::grid_level>(config);
   }
 };
 

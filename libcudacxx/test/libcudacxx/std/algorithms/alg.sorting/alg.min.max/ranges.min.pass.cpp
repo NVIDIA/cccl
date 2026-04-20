@@ -223,6 +223,13 @@ TEST_FUNC constexpr void test_range()
     test_range_types<bidirectional_iterator<int*>>();
     test_range_types<random_access_iterator<int*>>();
     test_range_types<contiguous_iterator<int*>>();
+
+#if !TEST_COMPILER(NVRTC)
+    NV_IF_TARGET(NV_IS_HOST, (test_range_types<host_only_iterator<int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+    NV_IF_TARGET(NV_IS_DEVICE, (test_range_types<device_only_iterator<int*>>();))
+#endif // TEST_CUDA_COMPILATION()
   }
 
   int a[] = {7, 6, 9, 3, 5, 1, 2, 4};

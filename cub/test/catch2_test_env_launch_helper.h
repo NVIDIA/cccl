@@ -512,8 +512,11 @@ void launch(ActionT action, Args... args)
     REQUIRE(cudaSuccess == cudaStreamDestroy(stream));
   }
 
-  size_t expected_bytes_allocated = fixed_env.query(get_expected_allocation_size_t{});
-  REQUIRE(expected_bytes_allocated == bytes_allocated);
+  if constexpr (cuda::std::execution::__queryable_with<env_t, get_expected_allocation_size_t>)
+  {
+    const size_t expected_bytes_allocated = fixed_env.query(get_expected_allocation_size_t{});
+    REQUIRE(expected_bytes_allocated == bytes_allocated);
+  }
 }
 
 #elif TEST_LAUNCH == 1
@@ -550,7 +553,11 @@ void launch(ActionT action, Args... args)
   tpl_t tuple(args...);
   env_t env = cuda::std::get<env_idx>(tuple);
 
-  size_t expected_bytes_allocated = env.query(get_expected_allocation_size_t{});
+  static_assert(cuda::std::execution::__queryable_with<env_t, get_expected_allocation_size_t>,
+                "Unit tests using env launch wrappers (declared with DECLARE_LAUNCH_WRAPPER) must pass "
+                "expected_allocation_size as property in their env");
+
+  const size_t expected_bytes_allocated = env.query(get_expected_allocation_size_t{});
 
   c2h::device_vector<cudaError_t> d_error(1, cudaErrorInvalidValue);
   c2h::device_vector<std::size_t> d_temp_storage(expected_bytes_allocated);
@@ -659,8 +666,11 @@ void launch(ActionT action, Args... args)
     REQUIRE(cudaSuccess == cudaStreamDestroy(stream));
   }
 
-  size_t expected_bytes_allocated = fixed_env.query(get_expected_allocation_size_t{});
-  REQUIRE(expected_bytes_allocated == bytes_allocated);
+  if constexpr (cuda::std::execution::__queryable_with<env_t, get_expected_allocation_size_t>)
+  {
+    const size_t expected_bytes_allocated = fixed_env.query(get_expected_allocation_size_t{});
+    REQUIRE(expected_bytes_allocated == bytes_allocated);
+  }
 }
 
 #endif // TEST_LAUNCH == 0
