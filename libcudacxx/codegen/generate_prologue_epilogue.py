@@ -151,7 +151,8 @@ _CCCL_NV_DIAG_PUSH()
 // warning C4668: 'meow' is not defined as a preprocessor macro, replacing with '0' for '#if/#elif'
 // warning C4800: 'boo': forcing value to bool 'true' or 'false' (performance warning)
 // warning C4996: 'meow': was declared deprecated
-_CCCL_DIAG_SUPPRESS_MSVC(4100 4127 4180 4197 4296 4324 4455 4503 4522 4668 4800 4996)
+// warning C4848: support for [[foo]] in C++XX and earlier is a vendor extension (e.g. no_unique_address)
+_CCCL_DIAG_SUPPRESS_MSVC(4100 4127 4180 4197 4296 4324 4455 4503 4522 4668 4800 4996 4848)
 
 // disable warnings about using C++23 features in C++20 (needed for if consteval)
 #if _CCCL_HAS_IF_CONSTEVAL_IN_CXX20()
