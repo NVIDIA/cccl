@@ -111,7 +111,7 @@ private:
   static constexpr auto max_out_per_thread = ::cuda::ceil_div(Batches, LogicalWarpThreads);
 
   template <class InputT, class OutputT, class ReductionOp>
-  struct constraints
+  _CCCL_DEVICE _CCCL_FORCEINLINE void check_constraints()
   {
     static_assert(detail::is_fixed_size_random_access_range_v<InputT>,
                   "InputT must support the subscript operator[] and have a compile-time size");
@@ -198,7 +198,7 @@ public:
   //! @return
   //!   The reduction of the input values of the batch corresponding to the logical lane.
   template <typename InputT, typename ReductionOp>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(const InputT& inputs, ReductionOp reduction_op)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Reduce(const InputT& inputs, ReductionOp reduction_op)
   {
     static_assert(max_out_per_thread == 1,
                   "For Batches > LogicalWarpThreads (or Batches == 0), use ReduceToStriped() or ReduceToBlocked()");
@@ -259,7 +259,7 @@ public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ReduceToStriped(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
   {
-    (void) constraints<InputT, OutputT, ReductionOp>{};
+    check_constraints<InputT, OutputT, ReductionOp>();
     InternalWarpReduceBatched{temp_storage}.template Reduce</* ToBlocked = */ false>(inputs, outputs, reduction_op);
   }
 
@@ -314,7 +314,7 @@ public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   ReduceToBlocked(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
   {
-    (void) constraints<InputT, OutputT, ReductionOp>{};
+    check_constraints<InputT, OutputT, ReductionOp>();
     InternalWarpReduceBatched{temp_storage}.template Reduce</* ToBlocked = */ true>(inputs, outputs, reduction_op);
   }
 
@@ -354,7 +354,7 @@ public:
   //! @return
   //!   The sum of the input values of the batch corresponding to the logical lane.
   template <typename InputT>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(const InputT& inputs)
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T Sum(const InputT& inputs)
   {
     return Reduce(inputs, ::cuda::std::plus<>{});
   }

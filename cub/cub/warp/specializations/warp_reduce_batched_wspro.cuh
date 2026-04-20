@@ -82,15 +82,11 @@ struct warp_reduce_batched_wspro
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void Reduce(const InputT& inputs, OutputT& outputs, ReductionOp reduction_op)
   {
     // Dispatch to more efficient intrinsics when applicable
-    constexpr bool can_use_redux =
-      ::cuda::std::is_integral_v<T> && sizeof(T) <= sizeof(unsigned)
-      && (is_cuda_minimum_maximum_v<ReductionOp, T> || is_cuda_std_plus_v<ReductionOp, T>
-          || is_cuda_std_bitwise_v<ReductionOp, T>);
-    // For more batches, WSPRO gives significantly better throughput, while latency is onlys lightly better for
+    // For more batches, WSPRO gives significantly better throughput, while latency is only slightly better for
     // REDUX. For subwarps both throughput and latency are worse with REDUX independent of the number of batches. This
     // might be a codegen issue.
     constexpr bool redux_performs_better = is_arch_warp && Batches <= 8;
-    if constexpr (can_use_redux && redux_performs_better)
+    if constexpr (is_redux_enabled_cuda_operator<ReductionOp, T> && redux_performs_better)
     {
       NV_IF_TARGET(NV_PROVIDES_SM_80, (ReduceRedux<ToBlocked>(inputs, outputs, reduction_op); return;))
     }
