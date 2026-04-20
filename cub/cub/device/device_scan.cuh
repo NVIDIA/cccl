@@ -93,7 +93,7 @@ struct DeviceScan
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
-            ::cuda::execution::determinism::__determinism_t Determinism,
+            bool RunToRunDeterministic      = false,
             ForceInclusive EnforceInclusive = ForceInclusive::No>
   CUB_RUNTIME_FUNCTION static cudaError_t scan_impl_determinism(
     void* d_temp_storage,
@@ -103,7 +103,6 @@ struct DeviceScan
     ScanOpT scan_op,
     InitValueT init,
     NumItemsT num_items,
-    ::cuda::execution::determinism::__determinism_holder_t<Determinism>,
     cudaStream_t stream)
   {
     // Unsigned integer type for global offsets
@@ -122,7 +121,7 @@ struct DeviceScan
     using policy_selector_t =
       ::cuda::std::execution::__query_result_or_t<TuningEnvT, detail::scan::scan_policy, default_policy_selector_t>;
 
-    return detail::scan::dispatch<EnforceInclusive>(
+    return detail::scan::dispatch<EnforceInclusive, RunToRunDeterministic>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -164,24 +163,34 @@ struct DeviceScan
 
     constexpr bool is_determinism_required =
       !::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::not_guaranteed_t>;
+    constexpr bool is_gpu_to_gpu_required =
+      ::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>;
     constexpr bool is_safe_integral_op =
       ::cuda::std::is_integral_v<accum_t> && detail::is_cuda_binary_operator<ScanOpT>;
+    constexpr bool is_fp_plus_op =
+      ::cuda::std::is_floating_point_v<accum_t> && detail::is_cuda_std_plus_v<ScanOpT, accum_t>;
 
-    // Logic: If determinism is required, we must have a safe integral operator.
-    static_assert(!is_determinism_required || is_safe_integral_op,
-                  "run_to_run or gpu_to_gpu is only supported for integral types with known operators");
+    // run_to_run determinism is supported only with integral types with known operators, or floating-point types with
+    // plus operator
+    static_assert(!is_determinism_required || is_safe_integral_op || is_fp_plus_op,
+                  "run_to_run deterministic scan requires either integral types with known operators, "
+                  "or floating-point types with plus operator (requires sm_100+ for warpspeed scan)");
+
+    // gpu_to_gpu determinism is only supported with integral types with known operators
+    static_assert(!is_gpu_to_gpu_required || is_safe_integral_op,
+                  "gpu_to_gpu deterministic scan requires integral types with known operators; "
+                  "floating-point scan can only guarantee run_to_run determinism");
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
       using tuning_t = decltype(tuning);
-      return scan_impl_determinism<
-        tuning_t,
-        InputIteratorT,
-        OutputIteratorT,
-        ScanOpT,
-        InitValueT,
-        NumItemsT,
-        ::cuda::execution::determinism::__determinism_t(requested_determinism_t::value),
-        EnforceInclusive>(storage, bytes, d_in, d_out, scan_op, init, num_items, requested_determinism_t{}, stream);
+      return scan_impl_determinism<tuning_t,
+                                   InputIteratorT,
+                                   OutputIteratorT,
+                                   ScanOpT,
+                                   InitValueT,
+                                   NumItemsT,
+                                   is_determinism_required,
+                                   EnforceInclusive>(storage, bytes, d_in, d_out, scan_op, init, num_items, stream);
     });
   }
   //! @endcond

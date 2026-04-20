@@ -69,10 +69,10 @@ struct alignas(_Alignment) tile_state_t : tile_state_unaligned_t<AccumT>
 
 template <typename AccumT>
 _CCCL_DEVICE_API void
-storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, AccumT sum, int index)
+storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, AccumT sum, int index, int num_tiles)
 {
   _CCCL_ASSERT(::cuda::is_aligned(ptrTileStates, alignof(tile_state_t<AccumT>)), "");
-  _CCCL_ASSERT(index >= 0 && index < gridDim.x, "Reading out of bounds tile state");
+  _CCCL_ASSERT(index >= 0 && index < num_tiles, "Reading out of bounds tile state");
 
   if constexpr (sizeof(tile_state_t<AccumT>) <= cub::detail::warpspeed::max_native_atomic_size()
                 && ::cuda::std::is_trivially_copyable_v<tile_state_t<AccumT>>)
@@ -96,10 +96,10 @@ storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, Ac
 }
 
 template <typename AccumT>
-_CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* ptrTileStates, int index)
+_CCCL_DEVICE_API tile_state_t<AccumT> loadTileAggregate(tile_state_t<AccumT>* ptrTileStates, int index, int num_tiles)
 {
   _CCCL_ASSERT(::cuda::is_aligned(ptrTileStates, alignof(tile_state_t<AccumT>)), "");
-  _CCCL_ASSERT(index >= 0 && index < gridDim.x, "Reading out of bounds tile state");
+  _CCCL_ASSERT(index >= 0 && index < num_tiles, "Reading out of bounds tile state");
 
   tile_state_t<AccumT> res;
   if constexpr (sizeof(tile_state_t<AccumT>) <= cub::detail::warpspeed::max_native_atomic_size()
@@ -146,14 +146,15 @@ _CCCL_DEVICE_API void warpLoadLookback(
   tile_state_t<AccumT> (&outTileStates)[numTileStatesPerThread],
   tile_state_t<AccumT>* ptrTileStates,
   int idxTileCur,
-  int idxTileNext)
+  int idxTileNext,
+  int num_tiles)
 {
   for (int i = 0; i < numTileStatesPerThread; ++i)
   {
     const int idxTileLookback = idxTileCur + 32 * i + laneIdx;
     if (idxTileLookback < idxTileNext)
     {
-      outTileStates[i] = loadTileAggregate(ptrTileStates, idxTileLookback);
+      outTileStates[i] = loadTileAggregate(ptrTileStates, idxTileLookback, num_tiles);
     }
     else
     {
@@ -176,14 +177,15 @@ _CCCL_DEVICE_API void warpLoadLookback(
 // The function must be called from a single warp. All passed arguments must be
 // warp-uniform.
 //
-template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
+template <bool RunToRunDeterministic, int numTileStatesPerThread, typename AccumT, typename ScanOpT>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE AccumT warpIncrementalLookback(
   SpecialRegisters specialRegisters,
   tile_state_t<AccumT>* ptrTileStates,
   const int idxTilePrev,
   const AccumT sumExclusiveCtaPrev,
   const int idxTileNext,
-  ScanOpT& scan_op)
+  ScanOpT& scan_op,
+  int num_tiles)
 {
   const int laneIdx                      = specialRegisters.laneIdx;
   const ::cuda::std::uint32_t lanemaskEq = ::cuda::ptx::get_sreg_lanemask_eq();
@@ -204,7 +206,7 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
   while (idxTileCur < idxTileNext)
   {
     tile_state_t<AccumT> regTmpStates[numTileStatesPerThread];
-    warpLoadLookback(laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext);
+    warpLoadLookback(laneIdx, regTmpStates, ptrTileStates, idxTileCur, idxTileNext, num_tiles);
 
     for (int idx = 0; idx < numTileStatesPerThread; ++idx)
     {
@@ -218,44 +220,72 @@ template <int numTileStatesPerThread, typename AccumT, typename ScanOpT>
       // Bitmask with 1 bits for all rightmost lanes having a tile aggregate
       const ::cuda::std::uint32_t warp_right_aggregates_mask = warp_has_aggregate_mask & (~warp_has_aggregate_mask - 1);
 
-      // Cannot reduce if no rightmost tile aggregates
-      if (warp_right_aggregates_mask == 0)
-      {
-        break;
-      }
-
       const ::cuda::std::uint32_t warp_right_aggregates_count = ::cuda::std::popcount(warp_right_aggregates_mask);
 
-      // Accumulate the rightmost tile aggregates
-      AccumT local_sum;
-      NV_IF_ELSE_TARGET(
-        NV_PROVIDES_SM_80,
-        ({ // NOTE: Inlined from warp_reduce_shfl
-          if constexpr (::cuda::std::is_integral_v<AccumT> && sizeof(AccumT) <= sizeof(unsigned)
-                        && (is_cuda_std_plus_v<ScanOpT, AccumT> || is_cuda_minimum_maximum_v<ScanOpT, AccumT>
-                            || is_cuda_std_bitwise_v<ScanOpT, AccumT>) )
-          {
-            const bool use_value = lanemaskEq & warp_right_aggregates_mask;
-            const AccumT value   = use_value ? regTmpStates[idx].value : cuda::identity_element<ScanOpT, AccumT>();
-            local_sum            = reduce_op_sync(value, ~0, scan_op);
-          }
-          else
-          {
-            // TODO(bgruber): this generates a LOT of SASS. I think it can do better.
-            local_sum =
-              warp_reduce_t{temp_storage}.Reduce(regTmpStates[idx].value, scan_op, warp_right_aggregates_count);
-          }
-        }),
-        (local_sum = warp_reduce_t{temp_storage}.Reduce(regTmpStates[idx].value, scan_op, warp_right_aggregates_count);))
-
-      // We never initialized sumExclusiveCtaCur when starting look ahead at tile 0
-      sumExclusiveCtaCur = idxTileCur == 0 ? local_sum : scan_op(sumExclusiveCtaCur, local_sum);
-      idxTileCur += warp_right_aggregates_count;
-
-      // we can only continue on the next 32 tile states, if we consumed all 32 of this iteration
-      if (warp_right_aggregates_count < 32)
+      if constexpr (RunToRunDeterministic)
       {
-        break;
+        // Expected predecessors in this 32-wide batch (may be < 32 at the tail).
+        const ::cuda::std::uint32_t expected_count =
+          static_cast<::cuda::std::uint32_t>(::cuda::std::min(32, idxTileNext - idxTileCur));
+
+        // wait for 32 tile or min aggregates to be visible, so that a fixed 32 element reduction produces fixed
+        // reduction tree
+        if (warp_right_aggregates_count < expected_count)
+        {
+          break;
+        }
+
+        const bool use_value   = lanemaskEq & warp_right_aggregates_mask;
+        const AccumT value     = use_value ? regTmpStates[idx].value : cuda::identity_element<ScanOpT, AccumT>();
+        const AccumT local_sum = warp_reduce_t{temp_storage}.Reduce(value, scan_op);
+
+        sumExclusiveCtaCur = idxTileCur == 0 ? local_sum : scan_op(sumExclusiveCtaCur, local_sum);
+        idxTileCur += expected_count;
+
+        // Tail batch — no more predecessors in this lookback call.
+        if (expected_count < 32)
+        {
+          break;
+        }
+      }
+      else
+      {
+        if (warp_right_aggregates_mask == 0)
+        {
+          break;
+        }
+
+        AccumT local_sum;
+        NV_IF_ELSE_TARGET(
+          NV_PROVIDES_SM_80,
+          ({ // NOTE: Inlined from warp_reduce_shfl
+            if constexpr (::cuda::std::is_integral_v<AccumT> && sizeof(AccumT) <= sizeof(unsigned)
+                          && (is_cuda_std_plus_v<ScanOpT, AccumT> || is_cuda_minimum_maximum_v<ScanOpT, AccumT>
+                              || is_cuda_std_bitwise_v<ScanOpT, AccumT>) )
+            {
+              const bool use_value = lanemaskEq & warp_right_aggregates_mask;
+              const AccumT value   = use_value ? regTmpStates[idx].value : cuda::identity_element<ScanOpT, AccumT>();
+              local_sum            = reduce_op_sync(value, ~0, scan_op);
+            }
+            else
+            {
+              // TODO(bgruber): this generates a LOT of SASS. I think it can do better.
+              local_sum =
+                warp_reduce_t{temp_storage}.Reduce(regTmpStates[idx].value, scan_op, warp_right_aggregates_count);
+            }
+          }),
+          (local_sum =
+             warp_reduce_t{temp_storage}.Reduce(regTmpStates[idx].value, scan_op, warp_right_aggregates_count);))
+
+        // We never initialized sumExclusiveCtaCur when starting look ahead at tile 0
+        sumExclusiveCtaCur = idxTileCur == 0 ? local_sum : scan_op(sumExclusiveCtaCur, local_sum);
+        idxTileCur += warp_right_aggregates_count;
+
+        // we can only continue on the next 32 tile states, if we consumed all 32 of this iteration
+        if (warp_right_aggregates_count < 32)
+        {
+          break;
+        }
       }
     }
   }
