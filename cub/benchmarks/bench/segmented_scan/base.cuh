@@ -97,8 +97,8 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   const auto elements     = static_cast<offset_t>(state.get_int64("Elements{io}"));
   const auto segment_size = static_cast<offset_t>(state.get_int64("SegmentSize{io}"));
   const auto num_segments = cuda::ceil_div(elements, segment_size);
-  auto& summary           = state.add_summary("NumSegments");
-  summary.set_string("name", "Number of Segments");
+  auto& summary           = state.add_summary("user/derived/segment_count");
+  summary.set_string("name", "#Segments");
   summary.set_int64("value", num_segments);
 
   thrust::device_vector<T> input = generate(elements);
@@ -124,7 +124,7 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     return;
   }
 
-  cub::detail::segmented_scan::worker worker_choice = [](auto token) {
+  auto worker_choice = [](auto token) -> cub::detail::segmented_scan::worker {
     if (token == "block")
     {
       return cub::detail::segmented_scan::worker::block;
@@ -144,7 +144,6 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   }(state.get_string("Worker{io}"));
 
   size_t tmp_size;
-#if !TUNE_BASE
   cub::detail::segmented_scan::dispatch<
     cub::ForceInclusive::No,
     accum_t,
@@ -156,69 +155,12 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     op_t,
     wrapped_init_t,
     accum_t,
-    offset_t,
-    policy_t>(
-#else
-  cub::detail::segmented_scan::dispatch<
-    cub::ForceInclusive::No,
-    accum_t,
-    input_it_t,
-    output_it_t,
-    offset_it,
-    offset_it,
-    offset_it,
-    op_t,
-    wrapped_init_t,
-    accum_t,
-    offset_t>(
-#endif
-    nullptr,
-    tmp_size,
-    d_input,
-    d_output,
-    num_segments,
-    d_offsets,
-    d_offsets + 1,
-    d_offsets,
-    op_t{},
-    wrapped_init_t{T{}},
-    num_segments_per_worker,
-    worker_choice,
-    nullptr /* stream */);
-
-  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
-  nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
-
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    offset_t
 #if !TUNE_BASE
-    cub::detail::segmented_scan::dispatch<
-      cub::ForceInclusive::No,
-      accum_t,
-      input_it_t,
-      output_it_t,
-      offset_it,
-      offset_it,
-      offset_it,
-      op_t,
-      wrapped_init_t,
-      accum_t,
-      offset_t,
-      policy_t>(
-#else
-    cub::detail::segmented_scan::dispatch<
-      cub::ForceInclusive::No,
-      accum_t,
-      input_it_t,
-      output_it_t,
-      offset_it,
-      offset_it,
-      offset_it,
-      op_t,
-      wrapped_init_t,
-      accum_t,
-      offset_t>(
+    ,
+    policy_t
 #endif
-      thrust::raw_pointer_cast(tmp.data()),
+    >(nullptr,
       tmp_size,
       d_input,
       d_output,
@@ -230,7 +172,41 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       wrapped_init_t{T{}},
       num_segments_per_worker,
       worker_choice,
-      launch.get_stream());
+      nullptr /* stream */);
+
+  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
+  nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
+
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    cub::detail::segmented_scan::dispatch<
+      cub::ForceInclusive::No,
+      accum_t,
+      input_it_t,
+      output_it_t,
+      offset_it,
+      offset_it,
+      offset_it,
+      op_t,
+      wrapped_init_t,
+      accum_t,
+      offset_t
+#if !TUNE_BASE
+      ,
+      policy_t
+#endif
+      >(thrust::raw_pointer_cast(tmp.data()),
+        tmp_size,
+        d_input,
+        d_output,
+        num_segments,
+        d_offsets,
+        d_offsets + 1,
+        d_offsets,
+        op_t{},
+        wrapped_init_t{T{}},
+        num_segments_per_worker,
+        worker_choice,
+        launch.get_stream());
   });
 }
 
