@@ -701,8 +701,8 @@ struct KeyValuePair
   using Key   = _Key; ///< Key data type
   using Value = _Value; ///< Value data type
 
-  Key key{}; ///< Item key
-  Value value{}; ///< Item value
+  Key key; ///< Item key
+  Value value; ///< Item value
 
   /// Constructor
   _CCCL_FORCEINLINE KeyValuePair() = default;
