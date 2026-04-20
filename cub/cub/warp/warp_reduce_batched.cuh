@@ -26,7 +26,8 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__iterator/readable_traits.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -38,19 +39,20 @@ CUB_NAMESPACE_BEGIN
 //! ++++++++
 //!
 //! - A `reduction <http://en.wikipedia.org/wiki/Reduce_(higher-order_function)>`__ (or *fold*) uses a binary combining
-//!   operator to compute a single aggregate from a list of input elements.
-//! - Supports "logical" warps smaller than the physical warp size (e.g., logical warps of 8 threads)
+//!   operator to compute a single aggregate from a list of input elements. Parallel reductions are in general only
+//!   deterministic when the reduction operator is both commutative and associative.
+//! - Supports "logical" warps smaller than the physical warp size (e.g., logical warps of 8 threads).
 //! - This primitive performs batched reductions taking one item per batch per thread.
-//! - Results are distributed among the threads (given more batches than logical warp threads, either in a striped or
-//! blocked manner).
+//! - Results are distributed among the threads. When there are more batches than logical warp threads, results can be
+//!   distributed among threads in either striped or blocked manner.
 //! - The number of batches must be non-negative. Compile-time and register pressure increase with the number of
-//! batches.
+//!   batches.
 //!
 //! Performance Characteristics
 //! +++++++++++++++++++++++++++
 //!
-//! - Uses special instructions when applicable (e.g., warp ``SHFL`` instructions)
-//! - Uses synchronization-free communication between warp lanes when applicable
+//! - Uses special instructions when applicable (e.g., warp ``SHFL`` instructions).
+//! - Uses synchronization-free communication between warp lanes when applicable.
 //! - Should generally give much better performance than sequential ``WarpReduce`` calls independent of blocked or
 //! striped output arrangements.
 //! - Achieves peak efficiency when the number of batches is a multiple of the number of logical warp threads.
@@ -58,9 +60,9 @@ CUB_NAMESPACE_BEGIN
 //! performance than ``SyncPhysicalWarp = false``.
 //!   Note that it can cause a deadlock if not all non-exited logical warps from the same physical warp participate in
 //!   the reduction (due to branches).
-//! - Uneven number of batches are less efficient than the next higher even ones.
+//! - Any uneven number of batches is less efficient than the next higher even number.
 //! - For more batches than logical warp threads, the striped output can be slightly more performant than blocked output
-//! depending on the number of batches and the number of logical warp threads.
+//!   depending on the number of batches and the number of logical warp threads.
 //! - Blocked output should generally give much better performance than converting striped output to blocked using e.g.
 //! ``WarpExchange::StripedToBlocked()``.
 //! - For types of less than 4 bytes future optimization might let blocked output outperform striped output.
@@ -87,9 +89,9 @@ CUB_NAMESPACE_BEGIN
 //!   The number of batches to reduce. Also corresponds to the size of the range of inputs for each thread.
 //!
 //! @tparam LogicalWarpThreads
-//!   <b>[optional]</b> The number of threads per "logical" warp (may be less than the number of
+//!   **[optional]** The number of threads per "logical" warp (may be less than the number of
 //!   hardware warp threads but has to be a power of two).  Default is the warp size of the targeted CUDA
-//!   compute-capability (e.g., 32 threads for SM20).
+//!   compute-capability (e.g., 32 threads for SM80).
 //!
 template <typename T, int Batches, int LogicalWarpThreads = detail::warp_threads, bool SyncPhysicalWarp = false>
 class WarpReduceBatched
