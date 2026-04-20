@@ -52,11 +52,6 @@ struct block_segmented_scan_policy
     return block_threads;
   }
 
-  CUB_RUNTIME_FUNCTION constexpr int ItemsPerThread() const
-  {
-    return items_per_thread;
-  }
-
   CUB_RUNTIME_FUNCTION constexpr int WorkersPerBlock() const
   {
     return 1;
@@ -104,20 +99,10 @@ struct warp_segmented_scan_policy
     return block_threads;
   }
 
-  CUB_RUNTIME_FUNCTION constexpr int ItemsPerThreads() const
-  {
-    return items_per_thread;
-  }
-
   CUB_RUNTIME_FUNCTION constexpr int WorkersPerBlock() const
   {
     _CCCL_ASSERT(0 == (block_threads % warp_threads), "Block size must be divisible by warp size");
     return block_threads >> log2_warp_threads;
-  }
-
-  CUB_RUNTIME_FUNCTION constexpr int MaxSegmentsPerWarp() const
-  {
-    return max_segments_per_warp;
   }
 
   [[nodiscard]] _CCCL_API constexpr friend bool
@@ -155,11 +140,6 @@ struct thread_segmented_scan_policy
   CUB_RUNTIME_FUNCTION constexpr int BlockThreads() const
   {
     return block_threads;
-  }
-
-  CUB_RUNTIME_FUNCTION constexpr int ItemsPerThread() const
-  {
-    return items_per_thread;
   }
 
   CUB_RUNTIME_FUNCTION constexpr int WorkersPerBlock() const
