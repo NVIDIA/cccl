@@ -141,7 +141,7 @@ struct DeviceScanKernelSource
   CUB_RUNTIME_FUNCTION static constexpr auto look_ahead_make_tile_state_kernel_arg(void* ts)
   {
     tile_state_kernel_arg_t<ScanTileStateT, AccumT> arg;
-    ::cuda::std::__construct_at(&arg.lookahead, static_cast<warpspeed::tile_state_t<AccumT>*>(ts));
+    ::cuda::std::__construct_at(&arg.warpspeed, static_cast<warpspeed::tile_state_t<AccumT>*>(ts));
     return arg;
   }
 };
@@ -499,7 +499,7 @@ struct DispatchScan
   }
 
   template <typename PolicyGetter>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(PolicyGetter policy_getter)
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_warpspeed_algorithm(PolicyGetter policy_getter)
   {
 #if __cccl_ptx_isa >= 860
     if (num_items == 0)
@@ -808,7 +808,7 @@ struct DispatchScan
   {
     if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == detail::scan::scan_algorithm::warpspeed)
     {
-      return __invoke_lookahead_algorithm(policy_getter);
+      return __invoke_warpspeed_algorithm(policy_getter);
     }
     else
     {
