@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// CONSTEXPR_STEPS: 15000000
+
 // <algorithm>
 
 // template<RandomAccessIterator Iter, StrictWeakOrder<auto, Iter::value_type> Compare>
