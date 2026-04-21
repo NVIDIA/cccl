@@ -937,8 +937,8 @@ struct policy_selector
         switch (input_value_size)
         {
           case 1:
-            // wrps_4.lbi_8.ipt_160 ()  1.264254  1.264254  1.264254  1.264254
-            return scan_warpspeed_policy{4, 8, 160 - 1};
+            // wrps_3.lbi_4.ipt_96 ()  1.454824  1.247212  1.450590  1.560418
+            return scan_warpspeed_policy{3, 4, 96 - 1};
           case 2:
             // wrps_6.lbi_2.ipt_96 ()  1.167633  1.167633  1.167633  1.167633
             return scan_warpspeed_policy{6, 2, 96 - 1};
