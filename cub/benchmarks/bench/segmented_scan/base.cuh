@@ -41,19 +41,19 @@ struct policy_selector_t
       cub::detail::segmented_scan::block_segmented_scan_policy{
         BlockThreads,
         ItemsPerThread,
-        cub::LOAD_DEFAULT,
-        cub::BLOCK_LOAD_WARP_TRANSPOSE,
-        cub::BLOCK_STORE_WARP_TRANSPOSE,
+        TUNE_BLOCK_LOAD_ALGORITHM,
+        TUNE_LOAD_MODIFIER,
+        TUNE_BLOCK_STORE_ALGORITHM,
         cub::BLOCK_SCAN_WARP_SCANS,
         MaxSegmentsPerBlock},
       cub::detail::segmented_scan::warp_segmented_scan_policy{
         BlockThreads,
         ItemsPerThread,
-        cub::LOAD_DEFAULT,
-        cub::WARP_LOAD_TRANSPOSE,
-        cub::WARP_STORE_TRANSPOSE,
+        TUNE_WARP_LOAD_ALGORITHM,
+        TUNE_LOAD_MODIFIER,
+        TUNE_WARP_STORE_ALGORITHM,
         MaxSegmentsPerWarp},
-      cub::detail::segmented_scan::thread_segmented_scan_policy{BlockThreads, ItemsPerThread, cub::LOAD_DEFAULT}};
+      cub::detail::segmented_scan::thread_segmented_scan_policy{BlockThreads, ItemsPerThread, TUNE_LOAD_MODIFIER}};
   }
 };
 #endif // TUNE_BASE

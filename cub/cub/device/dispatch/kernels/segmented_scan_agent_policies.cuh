@@ -50,7 +50,7 @@ struct agent_segmented_scan_policy_t
   static constexpr CacheLoadModifier load_modifier     = LoadModifier;
   static constexpr BlockStoreAlgorithm store_algorithm = StoreAlgorithm;
   static constexpr BlockScanAlgorithm scan_algorithm   = ScanAlgorithm;
-  static constexpr int max_segments_per_block          = MaxSegmentsPerBlock;
+  static constexpr int max_segments                    = MaxSegmentsPerBlock;
 };
 
 template <typename ComputeT, int NumSegmentsPerBlock>
@@ -73,7 +73,7 @@ struct agent_warp_segmented_scan_policy_t
   static constexpr WarpLoadAlgorithm load_algorithm   = LoadAlgorithm;
   static constexpr CacheLoadModifier load_modifier    = LoadModifier;
   static constexpr WarpStoreAlgorithm store_algorithm = StoreAlgorithm;
-  static constexpr int max_segments_per_warp          = MaxSegmentsPerWarp;
+  static constexpr int max_segments                   = MaxSegmentsPerWarp;
 };
 
 template <typename ComputeT, int NumSegmentsPerWarp>

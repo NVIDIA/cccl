@@ -100,14 +100,14 @@ struct agent_segmented_scan
   // We are relying on either initial value being `NullType`
   // or the ForceInclusive tag to be true for inclusive scan
   // to get picked up.
-  static constexpr bool is_inclusive          = ForceInclusive || !has_init;
-  static constexpr int block_threads          = AgentSegmentedScanPolicyT::block_threads;
-  static constexpr int items_per_thread       = AgentSegmentedScanPolicyT::items_per_thread;
-  static constexpr int tile_items             = block_threads * items_per_thread;
-  static constexpr int max_segments_per_block = AgentSegmentedScanPolicyT::max_segments_per_block;
+  static constexpr bool is_inclusive    = ForceInclusive || !has_init;
+  static constexpr int block_threads    = AgentSegmentedScanPolicyT::block_threads;
+  static constexpr int items_per_thread = AgentSegmentedScanPolicyT::items_per_thread;
+  static constexpr int tile_items       = block_threads * items_per_thread;
+  static constexpr int max_segments     = AgentSegmentedScanPolicyT::max_segments;
 
 private:
-  static constexpr bool multi_segment_enabled = (max_segments_per_block > 1);
+  static constexpr bool multi_segment_enabled = (max_segments > 1);
 
   static constexpr auto load_algorithm  = AgentSegmentedScanPolicyT::load_algorithm;
   static constexpr auto store_algorithm = AgentSegmentedScanPolicyT::store_algorithm;
@@ -129,7 +129,7 @@ private:
     _single_segment_algorithms_storage_t reused;
   };
 
-  using augmented_accum_t = agent_block_segmented_scan_compute_t<AccumT, max_segments_per_block>;
+  using augmented_accum_t = agent_block_segmented_scan_compute_t<AccumT, max_segments>;
 
   using block_load_aug_t    = BlockLoad<augmented_accum_t, block_threads, items_per_thread, load_algorithm>;
   using block_store_aug_t   = BlockStore<augmented_accum_t, block_threads, items_per_thread, store_algorithm>;
@@ -151,7 +151,7 @@ private:
 
   struct _multi_segment_temp_storage_t
   {
-    OffsetT logical_segment_offsets[max_segments_per_block];
+    OffsetT logical_segment_offsets[max_segments];
     unsigned int fixed_size_mask;
     _multiple_segment_algorithms_storage_t reused;
   };
@@ -274,7 +274,7 @@ public:
   template <typename InputBeginOffsetIteratorT,
             typename InputEndOffsetIteratorT,
             typename OutputBeginOffsetIteratorT,
-            ::cuda::std::size_t NumSegments = max_segments_per_block,
+            ::cuda::std::size_t NumSegments = max_segments,
             class                           = ::cuda::std::enable_if_t<(NumSegments > 1)>>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_ranges(
     InputBeginOffsetIteratorT inp_idx_begin_it,
@@ -289,7 +289,7 @@ public:
     static_assert(::cuda::std::is_convertible_v<::cuda::std::iter_value_t<OutputBeginOffsetIteratorT>, OffsetT>,
                   "Unexpected iterator type");
 
-    static_assert(NumSegments <= max_segments_per_block,
+    static_assert(NumSegments <= max_segments,
                   "Template value NumSegments of consume_ranges method must not exceed class template value "
                   "controlling size of shared memory array");
 
@@ -633,7 +633,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     policy.load_modifier,
     policy.store_algorithm,
     policy.scan_algorithm,
-    policy.max_segments_per_block>;
+    policy.max_segments>;
 
   using agent_t =
     agent_segmented_scan<policy_t, InputIteratorT, OutputIteratorT, OffsetT, ScanOpT, ActualInitValueT, AccumT, ForceInclusive>;
@@ -643,14 +643,14 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
   const ActualInitValueT _init_value = init_value;
 
   _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments to be processed by block must be positive");
-  _CCCL_ASSERT(num_segments_per_worker <= policy.max_segments_per_block,
+  _CCCL_ASSERT(num_segments_per_worker <= policy.max_segments,
                "Requested number of segments to be processed by block exceeds compile-time maximum");
 
   const auto work_id = num_segments_per_worker * blockIdx.x;
 
   agent_t agent(temp_storage, d_in, d_out, scan_op, _init_value);
 
-  if constexpr (policy.max_segments_per_block == 1)
+  if constexpr (policy.max_segments == 1)
   {
     _CCCL_ASSERT(num_segments_per_worker == 1, "Inconsistent parameters in device_warp_segmented_scan_kernel");
     _CCCL_ASSERT(work_id < n_segments, "device_segmented_scan_kernel launch configuration results in access violation");

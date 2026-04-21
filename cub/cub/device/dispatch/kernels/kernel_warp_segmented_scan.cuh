@@ -72,17 +72,17 @@ struct agent_warp_segmented_scan
   // We are relying on either initial value being `NullType`
   // or the ForceInclusive tag to be true for inclusive scan
   // to get picked up.
-  static constexpr bool is_inclusive         = ForceInclusive || !has_init;
-  static constexpr int block_threads         = AgentSegmentedScanPolicyT::block_threads;
-  static constexpr int items_per_thread      = AgentSegmentedScanPolicyT::items_per_thread;
-  static constexpr int tile_items            = warp_threads * items_per_thread;
-  static constexpr int max_segments_per_warp = AgentSegmentedScanPolicyT::max_segments_per_warp;
+  static constexpr bool is_inclusive    = ForceInclusive || !has_init;
+  static constexpr int block_threads    = AgentSegmentedScanPolicyT::block_threads;
+  static constexpr int items_per_thread = AgentSegmentedScanPolicyT::items_per_thread;
+  static constexpr int tile_items       = warp_threads * items_per_thread;
+  static constexpr int max_segments     = AgentSegmentedScanPolicyT::max_segments;
 
   static_assert(0 == block_threads % warp_threads, "Block size must be a multiple of native warp size");
 
   static constexpr auto warps_in_block = block_threads / warp_threads;
 
-  static constexpr bool multi_segment_enabled = (max_segments_per_warp > 1);
+  static constexpr bool multi_segment_enabled = (max_segments > 1);
 
 private:
   static constexpr auto load_algorithm  = AgentSegmentedScanPolicyT::load_algorithm;
@@ -104,7 +104,7 @@ private:
     _single_segment_algorithms_storage_t reused;
   };
 
-  using augmented_accum_t = agent_warp_segmented_scan_compute_t<AccumT, max_segments_per_warp>;
+  using augmented_accum_t = agent_warp_segmented_scan_compute_t<AccumT, max_segments>;
 
   using warp_load_aug_t  = WarpLoad<augmented_accum_t, items_per_thread, load_algorithm>;
   using warp_store_aug_t = WarpStore<augmented_accum_t, items_per_thread, store_algorithm>;
@@ -129,7 +129,7 @@ private:
 
   struct _multi_segment_temp_storage_t
   {
-    OffsetT logical_segment_offsets[warps_in_block][max_segments_per_warp];
+    OffsetT logical_segment_offsets[warps_in_block][max_segments];
     unsigned int fixed_size_mask[warps_in_block];
     _multiple_segment_algorithms_storage_t reused;
   };
@@ -237,7 +237,7 @@ public:
   template <typename InputBeginOffsetIteratorT,
             typename InputEndOffsetIteratorT,
             typename OutputBeginOffsetIteratorT,
-            ::cuda::std::size_t MaxNumSegments = max_segments_per_warp,
+            ::cuda::std::size_t MaxNumSegments = max_segments,
             class                              = ::cuda::std::enable_if_t<(MaxNumSegments > 1)>>
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_ranges(
     InputBeginOffsetIteratorT inp_idx_begin_it,
@@ -250,12 +250,11 @@ public:
     static_assert(::cuda::std::is_convertible_v<::cuda::std::iter_value_t<OutputBeginOffsetIteratorT>, OffsetT>,
                   "Unexpected iterator type");
 
-    static_assert(MaxNumSegments <= max_segments_per_warp,
+    static_assert(MaxNumSegments <= max_segments,
                   "Template parameter MaxNumSegments must not exceed size of shared array");
 
     _CCCL_ASSERT(n_segments > 0, "Number of segments should be greater than zero");
-    _CCCL_ASSERT(n_segments <= max_segments_per_warp,
-                 "Number of segments should not exceed statically provisioned storage");
+    _CCCL_ASSERT(n_segments <= max_segments, "Number of segments should not exceed statically provisioned storage");
 
     // cooperatively compute inclusive scan of sizes of segments to be processed by this block
     {
@@ -294,7 +293,7 @@ public:
 
         if (work_id < n_segments)
         {
-          _CCCL_ASSERT(work_id < max_segments_per_warp, "Access violation in work_id index");
+          _CCCL_ASSERT(work_id < max_segments, "Access violation in work_id index");
           _CCCL_ASSERT(warp_id < warps_in_block, "Access violation in warp_id index");
           temp_storage.logical_segment_offsets[warp_id][work_id] = warp_prefix + prefix;
         }
@@ -588,7 +587,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warp.
     policy.load_algorithm,
     policy.load_modifier,
     policy.store_algorithm,
-    policy.max_segments_per_warp>;
+    policy.max_segments>;
 
   using agent_t = agent_warp_segmented_scan<
     policy_t,
@@ -605,7 +604,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warp.
   const ActualInitValueT _init_value = init_value;
 
   _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments to be processed by warp must be positive");
-  _CCCL_ASSERT(num_segments_per_worker <= policy.max_segments_per_warp,
+  _CCCL_ASSERT(num_segments_per_worker <= policy.max_segments,
                "Requested number of segments to be processed by warp exceeds compile-time maximum");
 
   static constexpr unsigned int warps_in_block = int(policy.block_threads) >> log2_warp_threads;
@@ -620,7 +619,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warp.
 
   agent_t agent(temp_storage, d_in, d_out, scan_op, _init_value);
 
-  if constexpr (policy.max_segments_per_warp == 1)
+  if constexpr (policy.max_segments == 1)
   {
     const OffsetT inp_begin_offset = begin_offset_d_in[work_id];
     const OffsetT inp_end_offset   = end_offset_d_in[work_id];

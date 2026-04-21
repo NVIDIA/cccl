@@ -214,18 +214,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     {
       case worker::block: {
         const auto bw = active_policy.block;
-        _CCCL_ASSERT(num_segments_per_worker <= bw.max_segments_per_block,
-                     "Number of segments per block exceeds maximum value");
-        return {bw.WorkersPerBlock(),
-                bw.BlockThreads(),
-                ::cuda::std::min(num_segments_per_worker, bw.max_segments_per_block)};
+        _CCCL_ASSERT(num_segments_per_worker <= bw.max_segments, "Number of segments per block exceeds maximum value");
+        return {bw.WorkersPerBlock(), bw.BlockThreads(), ::cuda::std::min(num_segments_per_worker, bw.max_segments)};
       }
       case worker::warp: {
         const auto ww = active_policy.warp;
-        _CCCL_ASSERT(num_segments_per_worker <= ww.max_segments_per_warp,
-                     "Number of segments per warp exceeds maximum value");
-        return {
-          ww.WorkersPerBlock(), ww.BlockThreads(), ::cuda::std::min(num_segments_per_worker, ww.max_segments_per_warp)};
+        _CCCL_ASSERT(num_segments_per_worker <= ww.max_segments, "Number of segments per warp exceeds maximum value");
+        return {ww.WorkersPerBlock(), ww.BlockThreads(), ::cuda::std::min(num_segments_per_worker, ww.max_segments)};
       }
       case worker::thread: {
         const auto tw = active_policy.thread;
