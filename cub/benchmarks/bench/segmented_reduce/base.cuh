@@ -93,7 +93,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
     static_cast<int>(segment_size),
     op_t{},
     init_t{},
-    0 /* stream */
+    nullptr /* stream */
 #if !TUNE_BASE
     ,
     policy_selector{}

@@ -25,59 +25,59 @@ struct NotNoexceptCopy
   using difference_type = int;
 
   int value_;
-  __host__ __device__ constexpr explicit NotNoexceptCopy(int value = 0)
+  TEST_FUNC constexpr explicit NotNoexceptCopy(int value = 0)
       : value_(value)
   {}
-  __host__ __device__ constexpr NotNoexceptCopy(const NotNoexceptCopy& other) noexcept(false)
+  TEST_FUNC constexpr NotNoexceptCopy(const NotNoexceptCopy& other) noexcept(false)
       : value_(other.value_)
   {}
 
 #if TEST_STD_VER >= 2020
   bool operator==(const NotNoexceptCopy&) const = default;
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
-  __host__ __device__ friend constexpr bool operator==(const NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
+  TEST_FUNC friend constexpr bool operator==(const NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
   {
     return lhs.value_ == rhs.value_;
   }
-  __host__ __device__ friend constexpr bool operator!=(const NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
+  TEST_FUNC friend constexpr bool operator!=(const NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
   {
     return lhs.value_ != rhs.value_;
   }
 #endif // TEST_STD_VER <= 2017
 
-  __host__ __device__ friend constexpr NotNoexceptCopy& operator+=(NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
+  TEST_FUNC friend constexpr NotNoexceptCopy& operator+=(NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
   {
     lhs.value_ += rhs.value_;
     return lhs;
   }
-  __host__ __device__ friend constexpr NotNoexceptCopy& operator-=(NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
+  TEST_FUNC friend constexpr NotNoexceptCopy& operator-=(NotNoexceptCopy& lhs, const NotNoexceptCopy& rhs)
   {
     lhs.value_ -= rhs.value_;
     return lhs;
   }
 
-  __host__ __device__ friend constexpr NotNoexceptCopy operator+(NotNoexceptCopy lhs, NotNoexceptCopy rhs)
+  TEST_FUNC friend constexpr NotNoexceptCopy operator+(NotNoexceptCopy lhs, NotNoexceptCopy rhs)
   {
     return NotNoexceptCopy{lhs.value_ + rhs.value_};
   }
-  __host__ __device__ friend constexpr int operator-(NotNoexceptCopy lhs, NotNoexceptCopy rhs)
+  TEST_FUNC friend constexpr int operator-(NotNoexceptCopy lhs, NotNoexceptCopy rhs)
   {
     return lhs.value_ - rhs.value_;
   }
 
-  __host__ __device__ constexpr NotNoexceptCopy& operator++()
+  TEST_FUNC constexpr NotNoexceptCopy& operator++()
   {
     ++value_;
     return *this;
   }
-  __host__ __device__ constexpr void operator++(int)
+  TEST_FUNC constexpr void operator++(int)
   {
     ++value_;
   }
 };
 
 template <class T>
-__host__ __device__ constexpr void testType()
+TEST_FUNC constexpr void testType()
 {
   {
     cuda::counting_iterator<T> iter{T{0}};
@@ -114,7 +114,7 @@ __host__ __device__ constexpr void testType()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   testType<SomeInt>();
   testType<NotNoexceptCopy>();
@@ -131,7 +131,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

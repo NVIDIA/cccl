@@ -16,8 +16,10 @@
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class CharT>
-__host__ __device__ void test_constructor()
+TEST_FUNC void test_constructor()
 {
   using Context = cuda::std::basic_format_context<CharT*, CharT>;
 
@@ -53,7 +55,7 @@ __host__ __device__ void test_constructor()
   }
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test_constructor<char>();
 #if _CCCL_HAS_WCHAR_T()

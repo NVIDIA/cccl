@@ -126,9 +126,9 @@ struct CommandLineArgs
   {
     using namespace std;
 
-    for (std::size_t i = 0; i < keys.size(); ++i)
+    for (const auto& key : keys)
     {
-      if (keys[i] == string(arg_name))
+      if (key == string(arg_name))
       {
         return true;
       }
@@ -324,7 +324,7 @@ struct CommandLineArgs
         fflush(stdout);
       }
 
-    } while (0);
+    } while (false);
 
     return error;
   }
@@ -1409,12 +1409,12 @@ struct GpuTimer
 
   void Start()
   {
-    cudaEventRecord(start, 0);
+    cudaEventRecord(start, nullptr);
   }
 
   void Stop()
   {
-    cudaEventRecord(stop, 0);
+    cudaEventRecord(stop, nullptr);
   }
 
   float ElapsedMillis()

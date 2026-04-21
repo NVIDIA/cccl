@@ -44,17 +44,17 @@ struct CountAssign
 {
   STATIC_MEMBER_VAR(copied, int)
   STATIC_MEMBER_VAR(moved, int)
-  __host__ __device__ static void reset()
+  TEST_FUNC static void reset()
   {
     copied() = moved() = 0;
   }
   CountAssign() = default;
-  __host__ __device__ CountAssign& operator=(CountAssign const&)
+  TEST_FUNC CountAssign& operator=(CountAssign const&)
   {
     ++copied();
     return *this;
   }
-  __host__ __device__ CountAssign& operator=(CountAssign&&)
+  TEST_FUNC CountAssign& operator=(CountAssign&&)
   {
     ++moved();
     return *this;
@@ -87,12 +87,12 @@ int main(int, char**)
   }
   {
     using P = cuda::std::pair<int, NonAssignable>;
-    static_assert(!cuda::std::is_copy_assignable<P>::value, "");
+    static_assert(!cuda::std::is_copy_assignable<P>::value);
   }
   {
     CountAssign::reset();
     using P = cuda::std::pair<CountAssign, CopyAssignable>;
-    static_assert(cuda::std::is_copy_assignable<P>::value, "");
+    static_assert(cuda::std::is_copy_assignable<P>::value);
     P p;
     P p2;
     p = p2;
@@ -101,11 +101,11 @@ int main(int, char**)
   }
   {
     using P = cuda::std::pair<int, MoveAssignable>;
-    static_assert(!cuda::std::is_copy_assignable<P>::value, "");
+    static_assert(!cuda::std::is_copy_assignable<P>::value);
   }
   {
     using P = cuda::std::pair<int, Incomplete&>;
-    static_assert(!cuda::std::is_copy_assignable<P>::value, "");
+    static_assert(!cuda::std::is_copy_assignable<P>::value);
     P p(42, inc_obj);
     unused(p);
     assert(&p.second == &inc_obj);

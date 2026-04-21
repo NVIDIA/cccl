@@ -1,5 +1,5 @@
 ---
-IncludeParentConfig: true
+InheritParentConfig: true
 CheckOptions:
  - key:             modernize-loop-convert.MaxCopySize
    value:           '16'

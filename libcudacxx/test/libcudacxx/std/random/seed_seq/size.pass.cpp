@@ -13,7 +13,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   ::cuda::std::seed_seq seq1{1, 2, 3};
   assert(seq1.size() == 3);

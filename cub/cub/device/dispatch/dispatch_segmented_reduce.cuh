@@ -26,15 +26,12 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif
 
 CUB_NAMESPACE_BEGIN
 
@@ -319,7 +316,7 @@ struct DispatchSegmentedReduce
           break;
         }
       }
-    } while (0);
+    } while (false);
 
     return error;
   }
@@ -435,7 +432,7 @@ struct DispatchSegmentedReduce
       {
         break;
       }
-    } while (0);
+    } while (false);
 
     return error;
   }

@@ -41,7 +41,7 @@ public:
 
   template <typename OtherPointer>
   _CCCL_HOST_DEVICE
-  normal_iterator(const normal_iterator<OtherPointer>& other, enable_if_convertible_t<OtherPointer, Pointer>* = 0)
+  normal_iterator(const normal_iterator<OtherPointer>& other, enable_if_convertible_t<OtherPointer, Pointer>* = nullptr)
       : super_t(other.base())
   {}
 };
@@ -70,10 +70,7 @@ struct pointer_traits<THRUST_NS_QUALIFIER::detail::normal_iterator<Pointer>>
   using difference_type = ptrdiff_t;
 
   template <typename U>
-  struct rebind
-  {
-    using other = typename THRUST_NS_QUALIFIER::detail::rebind_pointer<pointer, U>::type;
-  };
+  using rebind = typename THRUST_NS_QUALIFIER::detail::rebind_pointer<pointer, U>::type;
 
   [[nodiscard]] _CCCL_API inline static pointer pointer_to(Pointer& r) noexcept(noexcept(::cuda::std::addressof(r)))
   {

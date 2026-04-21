@@ -27,7 +27,7 @@ struct A
 // Only check size — the initializer_list temporary is destroyed after construction,
 // so accessing elements through the span would be dangling.
 template <typename T>
-__host__ __device__ constexpr bool testDynamicExtent()
+TEST_FUNC constexpr bool testDynamicExtent()
 {
   cuda::std::span<const T> s1{T{}};
   cuda::std::span<const T> s2{T{}, T{}};
@@ -39,14 +39,14 @@ __host__ __device__ constexpr bool testDynamicExtent()
 // Test static extent construction from braced init list.
 // Only check size — same dangling concern as testDynamicExtent.
 template <typename T>
-__host__ __device__ constexpr bool testStaticExtent()
+TEST_FUNC constexpr bool testStaticExtent()
 {
   cuda::std::span<const T, 3> s{T{}, T{}, T{}};
   return s.size() == 3;
 }
 
 // Test construction from an explicit initializer_list variable
-__host__ __device__ constexpr bool testFromInitializerListVariable()
+TEST_FUNC constexpr bool testFromInitializerListVariable()
 {
   cuda::std::initializer_list<int> il = {1, 2, 3, 4};
   cuda::std::span<const int> s{il};
@@ -54,7 +54,7 @@ __host__ __device__ constexpr bool testFromInitializerListVariable()
 }
 
 // Test construction with static extent from an explicit initializer_list variable
-__host__ __device__ constexpr bool testFromInitializerListVariableStaticExtent()
+TEST_FUNC constexpr bool testFromInitializerListVariableStaticExtent()
 {
   cuda::std::initializer_list<int> il = {10, 20, 30};
   cuda::std::span<const int, 3> s{il};
@@ -62,14 +62,14 @@ __host__ __device__ constexpr bool testFromInitializerListVariableStaticExtent()
 }
 
 // Test empty initializer_list with dynamic extent
-__host__ __device__ constexpr bool testEmptyDynamic()
+TEST_FUNC constexpr bool testEmptyDynamic()
 {
   cuda::std::span<const int> s{cuda::std::initializer_list<int>{}};
   return s.size() == 0;
 }
 
 // Test empty initializer_list with static extent 0
-__host__ __device__ constexpr bool testEmptyStatic()
+TEST_FUNC constexpr bool testEmptyStatic()
 {
   cuda::std::span<const int, 0> s{cuda::std::initializer_list<int>{}};
   return s.size() == 0;
@@ -77,7 +77,7 @@ __host__ __device__ constexpr bool testEmptyStatic()
 
 // Test value integrity: verify size and element values
 // Must use a named initializer_list so the backing storage outlives the span.
-__host__ __device__ constexpr bool testValueIntegrity()
+TEST_FUNC constexpr bool testValueIntegrity()
 {
   cuda::std::initializer_list<int> il = {1, 2, 3, 4, 5};
   cuda::std::span<const int> s{il};
@@ -85,7 +85,7 @@ __host__ __device__ constexpr bool testValueIntegrity()
 }
 
 // Test with bool literals
-__host__ __device__ constexpr bool testBool()
+TEST_FUNC constexpr bool testBool()
 {
   cuda::std::initializer_list<bool> il = {true, false, true};
   cuda::std::span<const bool> s{il};
@@ -93,7 +93,7 @@ __host__ __device__ constexpr bool testBool()
 }
 
 // Test const volatile element type (only check size, volatile reads are not constexpr)
-__host__ __device__ constexpr bool testConstVolatile()
+TEST_FUNC constexpr bool testConstVolatile()
 {
   cuda::std::initializer_list<int> il = {1, 2, 3};
   cuda::std::span<const volatile int> s{il};
@@ -102,7 +102,7 @@ __host__ __device__ constexpr bool testConstVolatile()
 
 // Test const pointer element type: span<int* const> from initializer_list<int*>.
 // is_const_v<int* const> is true (the pointer itself is const), so this should work.
-__host__ __device__ bool testConstPointer()
+TEST_FUNC bool testConstPointer()
 {
   int x                                = 1;
   int y                                = 2;
@@ -111,7 +111,7 @@ __host__ __device__ bool testConstPointer()
   return s.size() == il.size() && s[0] == &x && s[1] == &y;
 }
 
-__host__ __device__ constexpr bool testAll()
+TEST_FUNC constexpr bool testAll()
 {
   // Dynamic extent
   assert(testDynamicExtent<int>());
@@ -142,7 +142,7 @@ __host__ __device__ constexpr bool testAll()
 }
 
 // Separate from testAll because testConstPointer uses address-of, which is not constexpr
-__host__ __device__ bool testRuntime()
+TEST_FUNC bool testRuntime()
 {
   assert(testConstPointer());
   return true;

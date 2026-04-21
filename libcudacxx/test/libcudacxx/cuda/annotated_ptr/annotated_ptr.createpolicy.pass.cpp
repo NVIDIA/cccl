@@ -14,8 +14,10 @@
 #include <cuda/cmath>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <typename Prop>
-__device__ constexpr cuda::__l2_evict_t to_enum()
+TEST_DEVICE_FUNC constexpr cuda::__l2_evict_t to_enum()
 {
   if constexpr (cuda::std::is_same_v<Prop, cuda::access_property::normal>)
   {
@@ -39,7 +41,7 @@ __device__ constexpr cuda::__l2_evict_t to_enum()
 // test range
 
 template <typename Primary, typename Secondary = void, int I = 1>
-__device__ void test_fraction_constexpr()
+TEST_DEVICE_FUNC void test_fraction_constexpr()
 {
   if constexpr (I > 16)
   {

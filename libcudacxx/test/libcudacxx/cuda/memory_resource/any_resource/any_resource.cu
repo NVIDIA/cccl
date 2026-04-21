@@ -11,6 +11,8 @@
 #include <cuda/memory_resource>
 #include <cuda/stream>
 
+#include <iostream>
+
 #include <testing.cuh>
 
 #include "../test_resource.cuh" // IWYU pragma: keep

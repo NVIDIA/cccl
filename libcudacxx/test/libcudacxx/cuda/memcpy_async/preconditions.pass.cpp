@@ -13,7 +13,9 @@
 #include <cuda/__memcpy_async/check_preconditions.h>
 #include <cuda/std/cstddef>
 
-__host__ __device__ void test()
+#include "test_macros.h"
+
+TEST_FUNC void test()
 {
   using T = int;
 

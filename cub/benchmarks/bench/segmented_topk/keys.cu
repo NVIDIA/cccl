@@ -134,7 +134,7 @@ void fixed_seg_size_topk_keys(
     select_directions,
     num_segments,
     total_num_items,
-    0);
+    nullptr);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size, thrust::no_init);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());

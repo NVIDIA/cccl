@@ -29,11 +29,13 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_macros.h"
+
 inline constexpr int size = 10000;
 
 struct is_even
 {
-  __device__ constexpr bool operator()(const int& val) const noexcept
+  TEST_DEVICE_FUNC constexpr bool operator()(const int& val) const noexcept
   {
     return (val % 2) == 0;
   }
@@ -41,7 +43,7 @@ struct is_even
 
 struct check_is_even
 {
-  __device__ void operator()(const cuda::std::ptrdiff_t pos, const int value) const noexcept
+  TEST_DEVICE_FUNC void operator()(const cuda::std::ptrdiff_t pos, const int value) const noexcept
   {
     _CCCL_VERIFY(static_cast<int>(pos * 2) == value, "Invalid position");
     _CCCL_VERIFY(is_even{}(value), "Not even");

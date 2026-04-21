@@ -20,14 +20,14 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   cuda::std::complex<T> z(1, 0);
   assert(arg(z) == T(0));
 }
 
 template <class T>
-__host__ __device__ void test_edges()
+TEST_FUNC void test_edges()
 {
   const T pi       = cuda::std::atan2(+0., -0.);
   auto testcases   = get_testcases<T>();

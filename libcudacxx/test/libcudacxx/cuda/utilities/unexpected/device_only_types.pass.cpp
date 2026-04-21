@@ -13,7 +13,7 @@
 #include "host_device_types.h"
 #include "test_macros.h"
 
-__device__ void test()
+TEST_DEVICE_FUNC void test()
 {
   using unexpected = cuda::std::unexpected<device_only_type>;
   { // in_place zero initialization

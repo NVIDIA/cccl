@@ -172,11 +172,11 @@ private:
   {}
 };
 
-static_assert(::cuda::mr::resource_with<pinned_memory_pool_ref, ::cuda::mr::device_accessible>, "");
-static_assert(::cuda::mr::resource_with<pinned_memory_pool_ref, ::cuda::mr::host_accessible>, "");
+static_assert(::cuda::mr::resource_with<pinned_memory_pool_ref, ::cuda::mr::device_accessible>);
+static_assert(::cuda::mr::resource_with<pinned_memory_pool_ref, ::cuda::mr::host_accessible>);
 
-static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::device_accessible>, "");
-static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_accessible>, "");
+static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::device_accessible>);
+static_assert(::cuda::mr::resource_with<pinned_memory_pool, ::cuda::mr::host_accessible>);
 
 //! @brief Returns the default pinned memory pool.
 //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.

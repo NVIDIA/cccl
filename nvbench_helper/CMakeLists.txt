@@ -12,7 +12,7 @@ cccl_get_nvbench()
 cccl_get_thrust()
 
 add_library(cccl.nvbench_helper OBJECT nvbench_helper/nvbench_helper.cu)
-cccl_configure_target(cccl.nvbench_helper DIALECT 17)
+cccl_configure_target(cccl.nvbench_helper)
 target_link_libraries(
   cccl.nvbench_helper
   PUBLIC
@@ -59,7 +59,6 @@ if (nvbench_helper_ENABLE_TESTING)
       ${nvbench_helper_test_target}
       ADD_CTEST
       NO_METATARGETS
-      DIALECT 17
       SOURCES
         test/gen_seed.cu
         test/gen_range.cu

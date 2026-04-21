@@ -26,7 +26,7 @@ struct S
   int x;
 };
 
-__host__ __device__ void test_decomp_user_type()
+TEST_FUNC void test_decomp_user_type()
 {
   {
     S s{99};
@@ -44,7 +44,7 @@ __host__ __device__ void test_decomp_user_type()
   }
 }
 
-__host__ __device__ void test_decomp_tuple()
+TEST_FUNC void test_decomp_tuple()
 {
   using T = cuda::std::tuple<int>;
   {
@@ -63,7 +63,7 @@ __host__ __device__ void test_decomp_tuple()
   }
 }
 
-__host__ __device__ void test_decomp_pair()
+TEST_FUNC void test_decomp_pair()
 {
   using T = cuda::std::pair<int, double>;
   {
@@ -86,7 +86,7 @@ __host__ __device__ void test_decomp_pair()
   }
 }
 
-__host__ __device__ void test_decomp_array()
+TEST_FUNC void test_decomp_array()
 {
   using T = cuda::std::array<int, 3>;
   {
@@ -119,9 +119,9 @@ struct Test
 };
 
 template <size_t N>
-__host__ __device__ int get(Test const&)
+TEST_FUNC int get(Test const&)
 {
-  static_assert(N == 0, "");
+  static_assert(N == 0);
   return -1;
 }
 
@@ -131,7 +131,7 @@ struct std::tuple_element<0, Test>
   using type = int;
 };
 
-__host__ __device__ void test_before_tuple_size_specialization()
+TEST_FUNC void test_before_tuple_size_specialization()
 {
   Test const t{99};
   auto& [p] = t;
@@ -145,7 +145,7 @@ public:
   static const size_t value = 1;
 };
 
-__host__ __device__ void test_after_tuple_size_specialization()
+TEST_FUNC void test_after_tuple_size_specialization()
 {
   Test const t{99};
   auto& [p] = t;

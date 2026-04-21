@@ -29,7 +29,7 @@
 #include "literal.h"
 
 template <class CharT, class PointerT>
-__host__ __device__ void test_ptr_formatter(
+TEST_FUNC void test_ptr_formatter(
   cuda::std::basic_string_view<CharT> fmt,
   PointerT arg,
   cuda::std::size_t offset,
@@ -61,7 +61,7 @@ __host__ __device__ void test_ptr_formatter(
 }
 
 template <class CharT, class PointerT>
-__host__ __device__ void test_termination_condition(
+TEST_FUNC void test_termination_condition(
   cuda::std::basic_string_view<CharT> fmt, PointerT arg, cuda::std::basic_string_view<CharT> expected)
 {
   // The format-spec is valid if completely consumed or terminates at a '}'.
@@ -76,7 +76,7 @@ __host__ __device__ void test_termination_condition(
 }
 
 template <class CharT>
-__host__ __device__ void test_type()
+TEST_FUNC void test_type()
 {
   // 1. Test for nullptr_t
   test_termination_condition<CharT>(TEST_STRLIT(CharT, "}"), nullptr, TEST_STRLIT(CharT, "0x0"));
@@ -97,7 +97,7 @@ __host__ __device__ void test_type()
     TEST_STRLIT(CharT, "}"), (const void*) (-1), TEST_STRLIT(CharT, "0xffffffffffffffff"));
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   test_type<char>();
 #if _CCCL_HAS_WCHAR_T()

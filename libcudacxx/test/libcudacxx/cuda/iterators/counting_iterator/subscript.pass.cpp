@@ -18,7 +18,7 @@
 #include "types.h"
 
 template <class T>
-__host__ __device__ constexpr void testType()
+TEST_FUNC constexpr void testType()
 {
   {
     cuda::counting_iterator<T> iter{T{0}};
@@ -59,7 +59,7 @@ __host__ __device__ constexpr void testType()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   testType<SomeInt>();
   testType<signed long>();
@@ -75,7 +75,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

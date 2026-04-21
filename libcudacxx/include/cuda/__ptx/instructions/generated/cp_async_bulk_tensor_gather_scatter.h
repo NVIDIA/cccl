@@ -81,7 +81,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_gather4(
 {
   // __space == space_shared (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)
@@ -209,7 +209,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor_tile_gather4(
 {
   // __space == space_cluster (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
-  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2, "");
+  static_assert(__cta_group == cta_group_1 || __cta_group == cta_group_2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1000) || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1030) \
     || (_LIBCUDA_PTX_ARCH_SPECIFIC() == 1100) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(100)                                \
     || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(103) || __CUDA_HAS_ARCH_FAMILY_SPECIFIC(110)

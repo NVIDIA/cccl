@@ -34,8 +34,8 @@
   {                                                             \
     auto seed_val = seed.get();                                 \
     /* Verify assumptions: */                                   \
-    static_assert(sizeof(seed_val) == 8, "");                   \
-    static_assert(sizeof(xor_mask) == 8, "");                   \
+    static_assert(sizeof(seed_val) == 8);                       \
+    static_assert(sizeof(xor_mask) == 8);                       \
     return c2h::seed_t{seed_val ^ xor_mask};                    \
   }
 
@@ -767,7 +767,7 @@ CUB_RUNTIME_FUNCTION cudaError_t call_cub_segmented_sort_api(
   const int* d_begin_offsets,
   const int* d_end_offsets,
 
-  cudaStream_t stream = 0)
+  cudaStream_t stream = nullptr)
 {
   using KeyT                = unwrap_value_t<WrappedKeyT>;
   constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
@@ -1101,14 +1101,13 @@ private:
   bool m_is_descending;
   bool m_double_buffer;
   bool m_stable_sort;
-  int* m_selectors;
+  int* m_selectors{nullptr};
 
 public:
   explicit segmented_sort_launcher_t(bool is_descending, bool double_buffer, bool stable_sort)
       : m_is_descending(is_descending)
       , m_double_buffer(double_buffer)
       , m_stable_sort(stable_sort)
-      , m_selectors(nullptr)
   {}
 
   void initialize()

@@ -77,6 +77,10 @@ done
 
 echo "Merging CUDA wheels..."
 
+# Set up a Python environment for the merge/repair steps.
+source "$ci_dir/pyenv_helper.sh"
+setup_python_env "${py_version}"
+
 # Needed for unpacking and repacking wheels.
 python -m pip install wheel
 

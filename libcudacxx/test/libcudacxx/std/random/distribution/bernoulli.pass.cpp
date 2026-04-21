@@ -23,7 +23,7 @@ struct bernoulli_cdf
 {
   using P = cuda::std::bernoulli_distribution::param_type;
 
-  __host__ __device__ double operator()(cuda::std::int64_t x, const P& p) const
+  TEST_FUNC double operator()(cuda::std::int64_t x, const P& p) const
   {
     if (x < 0)
     {
@@ -37,7 +37,7 @@ struct bernoulli_cdf
   }
 };
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   [[maybe_unused]] const bool test_constexpr = true; // Erroneous compiler warning about unused variable
   using D                                    = cuda::std::bernoulli_distribution;

@@ -10,7 +10,9 @@
 #include <cuda/std/__string_>
 #include <cuda/std/cassert>
 
-__host__ __device__ constexpr bool test()
+#include "test_macros.h"
+
+TEST_FUNC constexpr bool test()
 {
   assert(cuda::std::char_traits<char16_t>::compare(u"", u"", 0) == 0);
   assert(cuda::std::char_traits<char16_t>::compare(NULL, NULL, 0) == 0);

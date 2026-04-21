@@ -14,24 +14,26 @@
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 
+#include "test_macros.h"
+
 struct A
 {
-  __host__ __device__ char test0() const
+  TEST_FUNC char test0() const
   {
     return 'a';
   }
-  __host__ __device__ char test1(int) const
+  TEST_FUNC char test1(int) const
   {
     return 'b';
   }
-  __host__ __device__ char test2(int, double) const
+  TEST_FUNC char test2(int, double) const
   {
     return 'c';
   }
 };
 
 template <class F>
-__host__ __device__ void test0(F f)
+TEST_FUNC void test0(F f)
 {
   {
     A a;
@@ -46,7 +48,7 @@ __host__ __device__ void test0(F f)
 }
 
 template <class F>
-__host__ __device__ void test1(F f)
+TEST_FUNC void test1(F f)
 {
   {
     A a;
@@ -61,7 +63,7 @@ __host__ __device__ void test1(F f)
 }
 
 template <class F>
-__host__ __device__ void test2(F f)
+TEST_FUNC void test2(F f)
 {
   {
     A a;

@@ -16,14 +16,14 @@
 #include "test_macros.h"
 
 template <class T, bool B>
-__host__ __device__ void test_array_imp()
+TEST_FUNC void test_array_imp()
 {
-  static_assert(B == cuda::std::is_unbounded_array<T>::value, "");
-  static_assert(B == cuda::std::is_unbounded_array_v<T>, "");
+  static_assert(B == cuda::std::is_unbounded_array<T>::value);
+  static_assert(B == cuda::std::is_unbounded_array_v<T>);
 }
 
 template <class T, bool B>
-__host__ __device__ void test_array()
+TEST_FUNC void test_array()
 {
   test_array_imp<T, B>();
   test_array_imp<const T, B>();
@@ -43,7 +43,7 @@ union Union
 
 class Abstract
 {
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 enum Enum

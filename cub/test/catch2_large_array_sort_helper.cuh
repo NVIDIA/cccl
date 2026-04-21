@@ -377,7 +377,7 @@ private:
   static std::size_t compute_num_summaries(std::size_t num_items, std::size_t max_summaries)
   {
     constexpr KeyType max_key       = ::cuda::std::numeric_limits<KeyType>::max();
-    const std::size_t num_summaries = std::min(std::min(max_summaries, num_items), static_cast<std::size_t>(max_key));
+    const std::size_t num_summaries = std::min({max_summaries, num_items, static_cast<std::size_t>(max_key)});
     return num_summaries;
   }
 };

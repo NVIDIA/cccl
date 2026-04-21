@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo: enable with nvrtc
-// UNSUPPORTED: nvrtc
-
 #include "hierarchy_queries.h"
 
 #include <cuda/hierarchy>
@@ -18,8 +15,10 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class Hierarchy, class GridExts, class ClusterExts, class BlockExts>
-__device__ void test_block(
+TEST_DEVICE_FUNC void test_block(
   const Hierarchy& hier, const GridExts& grid_exts, const ClusterExts& cluster_exts, const BlockExts& block_exts)
 {
   // 1. Test cuda::block.dims(x, hier)
@@ -84,7 +83,6 @@ __device__ void test_block(
   test_count(cuda::std::size_t{gridDim.z} * gridDim.y * gridDim.x, cuda::block, cuda::grid, hier);
 
   // 6. test cuda::block.index(x, hier)
-  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     uint3 exp{0, 0, 0};
     NV_IF_TARGET(NV_PROVIDES_SM_90, (exp = __clusterRelativeBlockIdx();))
@@ -93,7 +91,6 @@ __device__ void test_block(
   test_index(blockIdx, cuda::block, cuda::grid, hier);
 
   // 7. Test cuda::block.rank(x, hier)
-  if constexpr (Hierarchy::has_level(cuda::cluster))
   {
     cuda::std::size_t exp = 0;
     NV_IF_TARGET(NV_PROVIDES_SM_90, ({
@@ -109,10 +106,12 @@ __device__ void test_block(
   }
 }
 
-__device__ void test_device()
+TEST_DEVICE_FUNC void test_device()
 {
-  // todo: make hierarchy constructible on device
-  // test_thread(cuda::make_hierarchy(cuda::grid_dims(gridDim), cuda::block_dims(blockDim)));
+  test_block(cuda::hierarchy{cuda::gpu_thread, cuda::grid_dims(dim3{gridDim}), cuda::block_dims(dim3{blockDim})},
+             cuda::std::dims<3, unsigned>{gridDim.x, gridDim.y, gridDim.z},
+             cuda::std::extents<unsigned, 1, 1, 1>{},
+             cuda::std::dims<3, unsigned>{blockDim.x, blockDim.y, blockDim.z});
 }
 
 #if !_CCCL_COMPILER(NVRTC)

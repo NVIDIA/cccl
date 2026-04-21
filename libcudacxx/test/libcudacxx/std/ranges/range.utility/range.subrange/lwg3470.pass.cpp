@@ -23,7 +23,7 @@
 
 using gcc_needs_help_type = cuda::std::ranges::subrange<int**>;
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // The example from LWG3470, using implicit conversion.
   int a[3]                                         = {1, 2, 3};

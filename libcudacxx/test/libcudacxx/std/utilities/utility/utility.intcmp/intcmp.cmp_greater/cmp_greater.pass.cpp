@@ -24,11 +24,11 @@ struct Tuple
   T max = cuda::std::numeric_limits<T>::max();
   T mid = cuda::std::is_signed<T>::value ? T(-1) : max >> 1;
 
-  __host__ __device__ constexpr Tuple() noexcept {}
+  TEST_FUNC constexpr Tuple() noexcept {}
 };
 
 template <typename T>
-__host__ __device__ constexpr void test1()
+TEST_FUNC constexpr void test1()
 {
   constexpr Tuple<T> tup{};
   assert(!cuda::std::cmp_greater(T(0), T(1)));
@@ -53,14 +53,14 @@ __host__ __device__ constexpr void test1()
 }
 
 template <typename T, typename U>
-__host__ __device__ constexpr void test2()
+TEST_FUNC constexpr void test2()
 {
   assert(!cuda::std::cmp_greater(T(0), U(1)));
   assert(cuda::std::cmp_greater(T(1), U(0)));
 }
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   test1<T>();
 #if _CCCL_HAS_INT128()
@@ -79,7 +79,7 @@ __host__ __device__ constexpr void test()
   test2<T, signed char>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
 #if _CCCL_HAS_INT128()
   test<__int128_t>();
@@ -102,6 +102,6 @@ int main(int, char**)
 {
   static_assert(noexcept(cuda::std::cmp_greater(1, 0)));
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

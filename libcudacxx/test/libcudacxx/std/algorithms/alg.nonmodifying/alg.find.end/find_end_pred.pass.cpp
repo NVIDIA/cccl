@@ -25,12 +25,12 @@ struct count_equal
 {
   unsigned& count_;
 
-  __host__ __device__ constexpr count_equal(unsigned& count) noexcept
+  TEST_FUNC constexpr count_equal(unsigned& count) noexcept
       : count_(count)
   {}
 
   template <class T>
-  __host__ __device__ constexpr bool operator()(const T& x, const T& y) const noexcept
+  TEST_FUNC constexpr bool operator()(const T& x, const T& y) const noexcept
   {
     ++count_;
     return x == y;
@@ -38,7 +38,7 @@ struct count_equal
 };
 
 template <class Iter1, class Iter2>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   unsigned count_equal_count = 0;
 
@@ -103,15 +103,22 @@ int main(int, char**)
   test<random_access_iterator<const int*>, bidirectional_iterator<const int*>>();
   test<random_access_iterator<const int*>, random_access_iterator<const int*>>();
 
-  static_assert(test<forward_iterator<const int*>, forward_iterator<const int*>>(), "");
-  static_assert(test<forward_iterator<const int*>, bidirectional_iterator<const int*>>(), "");
-  static_assert(test<forward_iterator<const int*>, random_access_iterator<const int*>>(), "");
-  static_assert(test<bidirectional_iterator<const int*>, forward_iterator<const int*>>(), "");
-  static_assert(test<bidirectional_iterator<const int*>, bidirectional_iterator<const int*>>(), "");
-  static_assert(test<bidirectional_iterator<const int*>, random_access_iterator<const int*>>(), "");
-  static_assert(test<random_access_iterator<const int*>, forward_iterator<const int*>>(), "");
-  static_assert(test<random_access_iterator<const int*>, bidirectional_iterator<const int*>>(), "");
-  static_assert(test<random_access_iterator<const int*>, random_access_iterator<const int*>>(), "");
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>, host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>, device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
+  static_assert(test<forward_iterator<const int*>, forward_iterator<const int*>>());
+  static_assert(test<forward_iterator<const int*>, bidirectional_iterator<const int*>>());
+  static_assert(test<forward_iterator<const int*>, random_access_iterator<const int*>>());
+  static_assert(test<bidirectional_iterator<const int*>, forward_iterator<const int*>>());
+  static_assert(test<bidirectional_iterator<const int*>, bidirectional_iterator<const int*>>());
+  static_assert(test<bidirectional_iterator<const int*>, random_access_iterator<const int*>>());
+  static_assert(test<random_access_iterator<const int*>, forward_iterator<const int*>>());
+  static_assert(test<random_access_iterator<const int*>, bidirectional_iterator<const int*>>());
+  static_assert(test<random_access_iterator<const int*>, random_access_iterator<const int*>>());
 
   return 0;
 }

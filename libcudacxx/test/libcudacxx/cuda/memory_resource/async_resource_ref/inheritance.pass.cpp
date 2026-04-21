@@ -86,7 +86,7 @@ struct async_resource_derived_first : public async_resource_base<Properties...>
 
   int _val = 0;
 };
-static_assert(cuda::mr::resource<async_resource_derived_first<cuda::mr::host_accessible>>, "");
+static_assert(cuda::mr::resource<async_resource_derived_first<cuda::mr::host_accessible>>);
 
 struct some_data
 {

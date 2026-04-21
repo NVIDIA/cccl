@@ -116,14 +116,15 @@ template <class... Ts>
 struct tuple_decomposer_t<cuda::std::tuple<Ts...>>
 {
   template <std::size_t... Is>
-  __host__ __device__ cuda::std::tuple<Ts&...> extract(cuda::std::tuple<Ts...>& key, thrust::index_sequence<Is...>) const
+  __host__ __device__ cuda::std::tuple<Ts&...>
+  extract(cuda::std::tuple<Ts...>& key, cuda::std::index_sequence<Is...>) const
   {
     return cuda::std::tie(cuda::std::get<Is>(key)...);
   }
 
   __host__ __device__ cuda::std::tuple<Ts&...> operator()(cuda::std::tuple<Ts...>& key) const
   {
-    return extract(key, thrust::make_index_sequence<sizeof...(Ts)>{});
+    return extract(key, cuda::std::make_index_sequence<sizeof...(Ts)>{});
   }
 };
 

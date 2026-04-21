@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___HIERARCHY_CONCEPTS_CUH
-#define _CUDA_EXPERIMENTAL___HIERARCHY_CONCEPTS_CUH
+#ifndef _CUDA_EXPERIMENTAL___GROUP_CONCEPTS_CUH
+#define _CUDA_EXPERIMENTAL___GROUP_CONCEPTS_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -33,7 +33,7 @@
 namespace cuda::experimental
 {
 template <class _Group>
-_CCCL_CONCEPT group = _CCCL_REQUIRES_EXPR((_Group), _Group&& __g, const _Group&& __cg)(
+_CCCL_CONCEPT is_group = _CCCL_REQUIRES_EXPR((_Group), _Group&& __g, const _Group&& __cg)(
   typename(typename _Group::unit_type),
   requires(__is_hierarchy_level_v<typename _Group::unit_type>),
   typename(typename _Group::level_type),
@@ -49,12 +49,14 @@ _CCCL_CONCEPT group = _CCCL_REQUIRES_EXPR((_Group), _Group&& __g, const _Group&&
 template <class _Tp>
 _CCCL_CONCEPT __group_mapping_result = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __v)(
   requires(::cuda::std::is_copy_constructible_v<_Tp>),
-  _Same_as(::cuda::std::size_t) __v.static_group_count(),
+  _Same_as(::cuda::std::size_t) _Tp::static_group_count(),
   _Same_as(unsigned) __v.group_count(),
   _Same_as(unsigned) __v.group_rank(),
-  _Same_as(::cuda::std::size_t) __v.static_count(),
+  _Same_as(::cuda::std::size_t) _Tp::static_count(),
   _Same_as(unsigned) __v.count(),
-  _Same_as(unsigned) __v.rank());
+  _Same_as(unsigned) __v.rank(),
+  _Same_as(bool) _Tp::is_always_exhaustive(),
+  _Same_as(bool) _Tp::is_always_contiguous());
 
 template <class _Synchronizer, class _MappingResult>
 _CCCL_CONCEPT __has_sync_aligned = _CCCL_REQUIRES_EXPR(
@@ -66,4 +68,4 @@ _CCCL_CONCEPT __has_sync_aligned = _CCCL_REQUIRES_EXPR(
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_EXPERIMENTAL___HIERARCHY_CONCEPTS_CUH
+#endif // _CUDA_EXPERIMENTAL___GROUP_CONCEPTS_CUH

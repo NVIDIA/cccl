@@ -15,6 +15,7 @@
 #include <cuda/std/concepts>
 #include <cuda/std/ranges>
 
+#include "test_macros.h"
 #include "test_range.h"
 
 static_assert(

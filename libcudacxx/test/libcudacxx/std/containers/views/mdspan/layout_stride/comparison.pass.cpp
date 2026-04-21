@@ -39,7 +39,7 @@ _CCCL_CONCEPT layout_mapping_comparable =
     static_cast<void>(e1 == e2));
 
 template <class T1, class T2>
-__host__ __device__ constexpr void test_comparison_different_rank()
+TEST_FUNC constexpr void test_comparison_different_rank()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
@@ -63,7 +63,7 @@ __host__ __device__ constexpr void test_comparison_different_rank()
 }
 
 template <class To, class From>
-__host__ __device__ constexpr void test_comparison(
+TEST_FUNC constexpr void test_comparison(
   bool equal,
   To dest_exts,
   From src_exts,
@@ -78,7 +78,7 @@ __host__ __device__ constexpr void test_comparison(
 }
 
 template <class T1, class T2>
-__host__ __device__ constexpr void test_comparison_same_rank()
+TEST_FUNC constexpr void test_comparison_same_rank()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
@@ -197,7 +197,7 @@ __host__ __device__ constexpr void test_comparison_same_rank()
 }
 
 template <class OtherLayout, class E1, class E2, class... OtherArgs>
-__host__ __device__ constexpr void test_comparison_with(
+TEST_FUNC constexpr void test_comparison_with(
   bool expect_equal,
   E1 e1,
   cuda::std::array<typename E1::index_type, E1::rank()> strides,
@@ -212,7 +212,7 @@ __host__ __device__ constexpr void test_comparison_with(
 
 template <class OtherLayout,
           cuda::std::enable_if_t<cuda::std::is_same<OtherLayout, always_convertible_layout>::value, int> = 0>
-__host__ __device__ constexpr void test_comparison_with_always_convertible()
+TEST_FUNC constexpr void test_comparison_with_always_convertible()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   // test layout with strides not equal to product of extents
@@ -235,11 +235,11 @@ __host__ __device__ constexpr void test_comparison_with_always_convertible()
 
 template <class OtherLayout,
           cuda::std::enable_if_t<!cuda::std::is_same<OtherLayout, always_convertible_layout>::value, int> = 0>
-__host__ __device__ constexpr void test_comparison_with_always_convertible()
+TEST_FUNC constexpr void test_comparison_with_always_convertible()
 {}
 
 template <class OtherLayout>
-__host__ __device__ constexpr void test_comparison_with()
+TEST_FUNC constexpr void test_comparison_with()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   bool is_left_based                  = cuda::std::is_same_v<OtherLayout, cuda::std::layout_left>
@@ -272,7 +272,7 @@ __host__ __device__ constexpr void test_comparison_with()
 }
 
 template <class T1, class T2>
-__host__ __device__ constexpr void test_comparison_index_type()
+TEST_FUNC constexpr void test_comparison_index_type()
 {
   test_comparison_same_rank<T1, T2>();
   test_comparison_different_rank<T1, T2>();
@@ -281,7 +281,7 @@ __host__ __device__ constexpr void test_comparison_index_type()
   test_comparison_with<always_convertible_layout>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_comparison_index_type<int, int>();
   test_comparison_index_type<int, size_t>();
@@ -293,6 +293,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

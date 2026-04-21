@@ -191,6 +191,29 @@ TEST_CASE("Device select unique works with default environment", "[select][devic
   REQUIRE(d_out == expected_output);
 }
 
+TEST_CASE("Device select unique with custom equality_op works with default environment", "[select][device]")
+{
+  using value_t     = int;
+  using num_items_t = int;
+
+  num_items_t num_items = 8;
+  auto d_in             = c2h::device_vector<value_t>{0, 3, 6, 1, 4, 7, 2, 5};
+  auto d_out            = c2h::device_vector<value_t>(num_items);
+  auto d_num_selected   = c2h::device_vector<int>(1);
+
+  eq_mod3_t<value_t> eq_mod3{};
+
+  REQUIRE(
+    cudaSuccess == cub::DeviceSelect::Unique(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, eq_mod3));
+
+  c2h::device_vector<value_t> expected_output{0, 1, 2};
+  c2h::device_vector<int> expected_num_selected{3};
+
+  REQUIRE(d_num_selected == expected_num_selected);
+  d_out.resize(d_num_selected[0]);
+  REQUIRE(d_out == expected_output);
+}
+
 TEST_CASE("Device select unique_by_key works with default environment", "[select][device]")
 {
   using value_t     = int;
@@ -455,6 +478,36 @@ C2H_TEST("Device select unique uses environment", "[select][device]")
 
   c2h::device_vector<value_t> expected_output{1, 2, 3, 4, 5};
   c2h::device_vector<int> expected_num_selected{5};
+
+  REQUIRE(d_num_selected == expected_num_selected);
+  d_out.resize(d_num_selected[0]);
+  REQUIRE(d_out == expected_output);
+}
+
+C2H_TEST("Device select unique with custom equality_op uses environment", "[select][device]")
+{
+  using value_t     = int;
+  using num_items_t = int;
+
+  num_items_t num_items = 8;
+  auto d_in             = c2h::device_vector<value_t>{0, 3, 6, 1, 4, 7, 2, 5};
+  auto d_out            = c2h::device_vector<value_t>(num_items);
+  auto d_num_selected   = c2h::device_vector<int>(1);
+
+  eq_mod3_t<value_t> eq_mod3{};
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSelect::Unique(
+      nullptr, expected_bytes_allocated, d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, eq_mod3));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_select_unique(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items, eq_mod3, env);
+
+  c2h::device_vector<value_t> expected_output{0, 1, 2};
+  c2h::device_vector<int> expected_num_selected{3};
 
   REQUIRE(d_num_selected == expected_num_selected);
   d_out.resize(d_num_selected[0]);

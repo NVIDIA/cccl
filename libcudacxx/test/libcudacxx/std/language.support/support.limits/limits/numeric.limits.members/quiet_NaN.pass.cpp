@@ -23,7 +23,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_impl(cuda::std::true_type)
+TEST_FUNC void test_impl(cuda::std::true_type)
 {
   assert(cuda::std::isnan(cuda::std::numeric_limits<T>::quiet_NaN()));
   assert(cuda::std::isnan(cuda::std::numeric_limits<const T>::quiet_NaN()));
@@ -32,7 +32,7 @@ __host__ __device__ void test_impl(cuda::std::true_type)
 }
 
 template <class T>
-__host__ __device__ void test_impl(cuda::std::false_type)
+TEST_FUNC void test_impl(cuda::std::false_type)
 {
   assert(float_eq(cuda::std::numeric_limits<T>::signaling_NaN(), T()));
   assert(float_eq(cuda::std::numeric_limits<const T>::signaling_NaN(), T()));
@@ -41,7 +41,7 @@ __host__ __device__ void test_impl(cuda::std::false_type)
 }
 
 template <class T>
-__host__ __device__ inline void test()
+TEST_FUNC inline void test()
 {
   test_impl<T>(cuda::std::integral_constant<bool, cuda::std::numeric_limits<T>::has_quiet_NaN>{});
 }

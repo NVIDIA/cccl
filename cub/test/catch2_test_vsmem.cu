@@ -319,7 +319,7 @@ struct dispatch_dummy_algorithm_t
     OffsetT num_items,
     kernel_test_info_t* kernel_test_info,
     launch_config_test_info_t* launch_config_info,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     // Get PTX version
     int ptx_version = 0;
@@ -364,7 +364,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t device_dummy_algorithm(
   OffsetT num_items,
   kernel_test_info_t* kernel_test_info,
   launch_config_test_info_t* launch_config_info,
-  cudaStream_t stream = 0)
+  cudaStream_t stream = nullptr)
 {
   using dispatch_dummy_algorithm_t = dispatch_dummy_algorithm_t<InputIteratorT, OutputIteratorT, OffsetT>;
   return dispatch_dummy_algorithm_t::dispatch(

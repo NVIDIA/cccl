@@ -15,8 +15,8 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-static_assert(cuda::std::input_iterator<cpp17_input_iterator<int*>>, "");
-static_assert(cuda::std::input_iterator<cpp20_input_iterator<int*>>, "");
+static_assert(cuda::std::input_iterator<cpp17_input_iterator<int*>>);
+static_assert(cuda::std::input_iterator<cpp20_input_iterator<int*>>);
 
 struct no_explicit_iter_concept
 {
@@ -31,18 +31,18 @@ struct no_explicit_iter_concept
   no_explicit_iter_concept(no_explicit_iter_concept const&)            = delete;
   no_explicit_iter_concept& operator=(no_explicit_iter_concept const&) = delete;
 
-  __host__ __device__ value_type operator*() const;
+  TEST_FUNC value_type operator*() const;
 
-  __host__ __device__ no_explicit_iter_concept& operator++();
-  __host__ __device__ void operator++(int);
+  TEST_FUNC no_explicit_iter_concept& operator++();
+  TEST_FUNC void operator++(int);
 };
 // ITER-CONCEPT is `random_access_iterator_tag` >:(
-static_assert(cuda::std::input_iterator<no_explicit_iter_concept>, "");
+static_assert(cuda::std::input_iterator<no_explicit_iter_concept>);
 
-static_assert(cuda::std::input_iterator<int*>, "");
-static_assert(cuda::std::input_iterator<int const*>, "");
-static_assert(cuda::std::input_iterator<int volatile*>, "");
-static_assert(cuda::std::input_iterator<int const volatile*>, "");
+static_assert(cuda::std::input_iterator<int*>);
+static_assert(cuda::std::input_iterator<int const*>);
+static_assert(cuda::std::input_iterator<int volatile*>);
+static_assert(cuda::std::input_iterator<int const volatile*>);
 
 struct not_weakly_incrementable
 {
@@ -57,12 +57,12 @@ struct not_weakly_incrementable
   not_weakly_incrementable(not_weakly_incrementable const&)            = delete;
   not_weakly_incrementable& operator=(not_weakly_incrementable const&) = delete;
 
-  __host__ __device__ int operator*() const;
+  TEST_FUNC int operator*() const;
 
 #if TEST_COMPILER(MSVC) // nvbug4119179
-  __host__ __device__ void operator++(int);
+  TEST_FUNC void operator++(int);
 #else
-  __host__ __device__ not_weakly_incrementable& operator++();
+  TEST_FUNC not_weakly_incrementable& operator++();
 #endif // !TEST_COMPILER(MSVC)
 };
 static_assert(!cuda::std::input_or_output_iterator<not_weakly_incrementable>
@@ -82,10 +82,10 @@ struct not_indirectly_readable
   not_indirectly_readable(not_indirectly_readable const&)            = delete;
   not_indirectly_readable& operator=(not_indirectly_readable const&) = delete;
 
-  __host__ __device__ int operator*() const;
+  TEST_FUNC int operator*() const;
 
-  __host__ __device__ not_indirectly_readable& operator++();
-  __host__ __device__ void operator++(int);
+  TEST_FUNC not_indirectly_readable& operator++();
+  TEST_FUNC void operator++(int);
 };
 static_assert(
   !cuda::std::indirectly_readable<not_indirectly_readable> && !cuda::std::input_iterator<not_indirectly_readable>, "");
@@ -104,12 +104,12 @@ struct bad_iterator_category
   bad_iterator_category(bad_iterator_category const&)            = delete;
   bad_iterator_category& operator=(bad_iterator_category const&) = delete;
 
-  __host__ __device__ value_type operator*() const;
+  TEST_FUNC value_type operator*() const;
 
-  __host__ __device__ bad_iterator_category& operator++();
-  __host__ __device__ void operator++(int);
+  TEST_FUNC bad_iterator_category& operator++();
+  TEST_FUNC void operator++(int);
 };
-static_assert(!cuda::std::input_iterator<bad_iterator_category>, "");
+static_assert(!cuda::std::input_iterator<bad_iterator_category>);
 
 struct bad_iterator_concept
 {
@@ -125,12 +125,12 @@ struct bad_iterator_concept
   bad_iterator_concept(bad_iterator_concept const&)            = delete;
   bad_iterator_concept& operator=(bad_iterator_concept const&) = delete;
 
-  __host__ __device__ value_type operator*() const;
+  TEST_FUNC value_type operator*() const;
 
-  __host__ __device__ bad_iterator_concept& operator++();
-  __host__ __device__ void operator++(int);
+  TEST_FUNC bad_iterator_concept& operator++();
+  TEST_FUNC void operator++(int);
 };
-static_assert(!cuda::std::input_iterator<bad_iterator_concept>, "");
+static_assert(!cuda::std::input_iterator<bad_iterator_concept>);
 
 int main(int, char**)
 {

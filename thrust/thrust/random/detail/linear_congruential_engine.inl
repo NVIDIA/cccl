@@ -42,7 +42,7 @@ _CCCL_HOST_DEVICE void linear_congruential_engine<UIntType, a, c, m>::seed(resul
 
 template <typename UIntType, UIntType a, UIntType c, UIntType m>
 _CCCL_HOST_DEVICE typename linear_congruential_engine<UIntType, a, c, m>::result_type
-linear_congruential_engine<UIntType, a, c, m>::operator()(void)
+linear_congruential_engine<UIntType, a, c, m>::operator()()
 {
   m_x = detail::mod<UIntType, a, c, m>(m_x);
   return m_x;

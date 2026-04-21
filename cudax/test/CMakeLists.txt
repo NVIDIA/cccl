@@ -67,6 +67,7 @@ target_compile_options(
 
 cudax_add_catch2_test(test_target graph
     graph/graph_smoke.cu
+    graph/graph_node_ops_smoke.cu
 )
 
 cudax_add_catch2_test(test_target stream
@@ -126,9 +127,11 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/copy.cu
 )
 
-cudax_add_catch2_test(test_target hierarchy_groups
-    hierarchy/group.cu
+cudax_add_catch2_test(test_target group
+    group/group.cu
+    group/mapping/group_by.cu
 )
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
 
 if (cudax_ENABLE_CUFILE)
   cudax_add_catch2_test(test_target cufile.driver_attributes

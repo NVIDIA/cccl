@@ -18,14 +18,14 @@
 
 #include "test_macros.h"
 
-// ensure that we allow `__device__` functions too
+// ensure that we allow `TEST_DEVICE_FUNC` functions too
 struct with_device_op
 {
-  __device__ friend constexpr with_device_op operator%(const with_device_op&, const with_device_op&)
+  TEST_DEVICE_FUNC friend constexpr with_device_op operator%(const with_device_op&, const with_device_op&)
   {
     return {};
   }
-  __device__ constexpr operator bool() const
+  TEST_DEVICE_FUNC constexpr operator bool() const
   {
     return true;
   }
@@ -42,9 +42,9 @@ int main(int, char**)
   using F   = cuda::std::modulus<int>;
   const F f = F();
 #if TEST_STD_VER <= 2017
-  static_assert((cuda::std::is_same<int, F::first_argument_type>::value), "");
-  static_assert((cuda::std::is_same<int, F::second_argument_type>::value), "");
-  static_assert((cuda::std::is_same<int, F::result_type>::value), "");
+  static_assert((cuda::std::is_same<int, F::first_argument_type>::value));
+  static_assert((cuda::std::is_same<int, F::second_argument_type>::value));
+  static_assert((cuda::std::is_same<int, F::result_type>::value));
 #endif // TEST_STD_VER <= 2017
   assert(f(36, 8) == 4);
 
@@ -54,10 +54,10 @@ int main(int, char**)
   assert(f2(36L, 8) == 4);
   assert(f2(36, 8L) == 4);
   constexpr int foo = cuda::std::modulus<int>()(3, 2);
-  static_assert(foo == 1, "");
+  static_assert(foo == 1);
 
   constexpr int bar = cuda::std::modulus<>()(3L, 2);
-  static_assert(bar == 1, "");
+  static_assert(bar == 1);
 
   return 0;
 }

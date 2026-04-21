@@ -23,10 +23,10 @@
 
 struct NonAssignable
 {
-  __host__ __device__ NonAssignable() {}
+  TEST_FUNC NonAssignable() {}
 
 private:
-  __host__ __device__ NonAssignable& operator=(NonAssignable const&);
+  TEST_FUNC NonAssignable& operator=(NonAssignable const&);
 };
 
 struct Incomplete;
@@ -39,11 +39,11 @@ int main(int, char**)
     // Since we don't have access control SFINAE having pair evaluate SFINAE
     // may cause a hard error.
     using P = cuda::std::pair<int, NonAssignable>;
-    static_assert(cuda::std::is_copy_assignable<P>::value, "");
+    static_assert(cuda::std::is_copy_assignable<P>::value);
   }
   {
     using P = cuda::std::pair<int, Incomplete&>;
-    static_assert(cuda::std::is_copy_assignable<P>::value, "");
+    static_assert(cuda::std::is_copy_assignable<P>::value);
     P p(42, inc_obj);
     assert(&p.second == &inc_obj);
   }

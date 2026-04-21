@@ -23,13 +23,13 @@
 #endif // !TEST_COMPILER(NVRTC)
 
 template <class T, class U>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   constexpr auto maxv = cuda::std::numeric_limits<T>::max();
   using CommonType    = cuda::std::common_type_t<T, U>;
   // ensure that we return the right type
-  static_assert(cuda::std::is_same<decltype(cuda::round_up(T(0), U(1))), CommonType>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::round_down(T(0), U(1))), CommonType>::value, "");
+  static_assert(cuda::std::is_same<decltype(cuda::round_up(T(0), U(1))), CommonType>::value);
+  static_assert(cuda::std::is_same<decltype(cuda::round_down(T(0), U(1))), CommonType>::value);
 
   assert(cuda::round_up(T(0), U(1)) == CommonType(0));
   assert(cuda::round_up(T(1), U(1)) == CommonType(1));
@@ -59,14 +59,14 @@ struct relaxed_underlying_type<T, cuda::std::void_t<cuda::std::underlying_type_t
 };
 
 template <class T1, class U1>
-__host__ __device__ constexpr void test_enum()
+TEST_FUNC constexpr void test_enum()
 {
   using T          = typename relaxed_underlying_type<T1>::type;
   using U          = typename relaxed_underlying_type<U1>::type;
   using CommonType = cuda::std::common_type_t<T, U>;
   // ensure that we return the right type
-  static_assert(cuda::std::is_same<decltype(cuda::round_up(T(0), U(1))), CommonType>::value, "");
-  static_assert(cuda::std::is_same<decltype(cuda::round_down(T(0), U(1))), CommonType>::value, "");
+  static_assert(cuda::std::is_same<decltype(cuda::round_up(T(0), U(1))), CommonType>::value);
+  static_assert(cuda::std::is_same<decltype(cuda::round_down(T(0), U(1))), CommonType>::value);
 
   assert(cuda::round_up(T(0), U(1)) == CommonType(0));
   assert(cuda::round_up(T(1), U(1)) == CommonType(1));
@@ -93,7 +93,7 @@ enum class Enum2 : long
 };
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   // Builtin integer types:
   test<T, char>();
@@ -141,7 +141,7 @@ __host__ __device__ constexpr void test()
 #endif // _CCCL_HAS_INT128()
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // Builtin integer types:
   test<char>();
@@ -189,6 +189,6 @@ __host__ __device__ constexpr bool test()
 int main(int arg, char** argv)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

@@ -76,7 +76,7 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OpT>)
     d_out_extremum,
     num_items,
     OpT{},
-    0 /* stream */
+    nullptr /* stream */
 #if !TUNE_BASE
     ,
     tuned_policy_selector{}

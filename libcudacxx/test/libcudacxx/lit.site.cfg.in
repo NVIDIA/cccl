@@ -6,6 +6,7 @@ config.libcudacxx_src_root      = "@libcudacxx_SOURCE_DIR@"
 config.libcudacxx_obj_root      = "@LIBCUDACXX_BINARY_DIR@"
 config.cxx_library_root         = "@LIBCUDACXX_LIBRARY_DIR@"
 config.std                      = "@LIBCUDACXX_TEST_STANDARD_VER@"
+config.enable_tile              = "@LIBCUDACXX_ENABLE_TILE@"
 config.enable_exceptions        = True
 config.enable_experimental      = False
 config.enable_filesystem        = False

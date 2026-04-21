@@ -66,12 +66,12 @@ class generic_error_category : public error_category
 public:
   inline generic_error_category() {}
 
-  inline virtual const char* name() const
+  inline const char* name() const override
   {
     return "generic";
   }
 
-  inline virtual std::string message(int ev) const
+  inline std::string message(int ev) const override
   {
     static const std::string unknown_err("Unknown error");
 
@@ -90,17 +90,17 @@ class system_error_category : public error_category
 public:
   inline system_error_category() {}
 
-  inline virtual const char* name() const
+  inline const char* name() const override
   {
     return "system";
   }
 
-  inline virtual std::string message(int ev) const
+  inline std::string message(int ev) const override
   {
     return generic_category().message(ev);
   }
 
-  inline virtual error_condition default_error_condition(int ev) const
+  inline error_condition default_error_condition(int ev) const override
   {
     using namespace errc;
 

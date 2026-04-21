@@ -138,7 +138,7 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_red
   using AgentReduceT = reduce::AgentReduce<large_agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
 
   // Medium segment agent (one warp per segment)
-  static constexpr agent_warp_reduce_policy med_pol = full_policy.medium_reduce;
+  static constexpr warp_reduce_policy med_pol = full_policy.medium_reduce;
   using medium_agent_policy_t =
     AgentWarpReducePolicy<med_pol.block_threads,
                           med_pol.warp_threads,
@@ -150,7 +150,7 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_red
     reduce::AgentWarpReduce<medium_agent_policy_t, InputIteratorT, OffsetT, ReductionOpT, AccumT>;
 
   // Small segment agent (one thread per segment)
-  static constexpr agent_warp_reduce_policy small_pol = full_policy.small_reduce;
+  static constexpr warp_reduce_policy small_pol = full_policy.small_reduce;
   using small_agent_policy_t =
     AgentWarpReducePolicy<small_pol.block_threads,
                           small_pol.warp_threads,

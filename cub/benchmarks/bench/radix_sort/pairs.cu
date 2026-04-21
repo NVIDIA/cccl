@@ -66,7 +66,7 @@ void radix_sort_values(nvbench::state& state, nvbench::type_list<KeyT, ValueT, O
     begin_bit,
     end_bit,
     is_overwrite_ok,
-    0 /* stream */
+    nullptr /* stream */
 #if !TUNE_BASE
     ,
     cub::detail::identity_decomposer_t{},

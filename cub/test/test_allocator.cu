@@ -62,7 +62,7 @@ struct blocking_kernel
 private:
   cuda::std::int32_t m_host_flag{};
   cuda::std::int32_t* m_device_flag{};
-  cudaStream_t m_stream{0};
+  cudaStream_t m_stream{nullptr};
 };
 
 //---------------------------------------------------------------------
@@ -127,17 +127,17 @@ int main(int argc, char** argv)
   // Allocate 999 bytes on the current gpu in stream0
   char* d_999B_stream0_a;
   char* d_999B_stream0_b;
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_a, 999, 0));
+  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_a, 999, nullptr));
 
   // Run a kernel on stream 0
-  blocking_kernel block_0_a(0);
+  blocking_kernel block_0_a(nullptr);
   block_0_a.block();
 
   // Free d_999B_stream0_a
   CubDebugExit(allocator.DeviceFree(d_999B_stream0_a));
 
   // Allocate another 999 bytes in stream 0
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_b, 999, 0));
+  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_b, 999, nullptr));
 
   // Check that that we have 1 live block on the initial GPU
   AssertEquals(allocator.live_blocks.size(), 1);
@@ -146,7 +146,7 @@ int main(int argc, char** argv)
   AssertEquals(allocator.cached_blocks.size(), 0);
 
   // Launch another kernel on stream 0
-  blocking_kernel block_0_b(0);
+  blocking_kernel block_0_b(nullptr);
   block_0_b.block();
 
   // Free d_999B_stream0_b
@@ -176,8 +176,8 @@ int main(int argc, char** argv)
   block_0_b.unblock();
   block_other.unblock();
   CubDebugExit(cudaDeviceSynchronize());
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_a, 999, 0));
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_b, 999, 0));
+  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_a, 999, nullptr));
+  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_b, 999, nullptr));
 
   // Check that that we have 2 live blocks on the initial GPU
   AssertEquals(allocator.live_blocks.size(), 2);
@@ -212,8 +212,8 @@ int main(int argc, char** argv)
   block_other.unblock();
   CubDebugExit(cudaDeviceSynchronize());
   CubDebugExit(cudaStreamDestroy(other_stream));
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_a, 999, 0));
-  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_b, 999, 0));
+  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_a, 999, nullptr));
+  CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_b, 999, nullptr));
 
   // Check that that we have 2 live blocks on the initial GPU
   AssertEquals(allocator.live_blocks.size(), 2);

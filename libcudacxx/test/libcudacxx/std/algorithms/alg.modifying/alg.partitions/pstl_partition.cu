@@ -27,12 +27,14 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_macros.h"
+
 inline constexpr int size = 1000;
 
 template <class T>
 struct is_even
 {
-  [[nodiscard]] __device__ constexpr bool operator()(T value) const noexcept
+  [[nodiscard]] TEST_DEVICE_FUNC constexpr bool operator()(T value) const noexcept
   {
     return value % 2 == 0;
   }

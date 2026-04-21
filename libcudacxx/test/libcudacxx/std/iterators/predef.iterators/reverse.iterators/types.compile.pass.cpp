@@ -34,7 +34,7 @@
 template <class It>
 struct find_current : private cuda::std::reverse_iterator<It>
 {
-  __host__ __device__ void test()
+  TEST_FUNC void test()
   {
     (void) this->current;
   }
@@ -44,7 +44,7 @@ template <class It,
           cuda::std::enable_if_t<cuda::std::is_same_v<typename cuda::std::iterator_traits<It>::iterator_category,
                                                       cuda::std::contiguous_iterator_tag>,
                                  int> = 0>
-__host__ __device__ constexpr void test_iter_category()
+TEST_FUNC constexpr void test_iter_category()
 {
   static_assert((cuda::std::is_same<typename cuda::std::move_iterator<It>::iterator_category,
                                     cuda::std::random_access_iterator_tag>::value),
@@ -55,7 +55,7 @@ template <class It,
           cuda::std::enable_if_t<!cuda::std::is_same_v<typename cuda::std::iterator_traits<It>::iterator_category,
                                                        cuda::std::contiguous_iterator_tag>,
                                  int> = 0>
-__host__ __device__ constexpr void test_iter_category()
+TEST_FUNC constexpr void test_iter_category()
 {
   static_assert((cuda::std::is_same<typename cuda::std::move_iterator<It>::iterator_category,
                                     typename cuda::std::iterator_traits<It>::iterator_category>::value),
@@ -63,17 +63,17 @@ __host__ __device__ constexpr void test_iter_category()
 }
 
 template <class It>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using R = cuda::std::reverse_iterator<It>;
   using T = cuda::std::iterator_traits<It>;
   find_current<It> q;
   q.test(); // Just test that we can access `.current` from derived classes
-  static_assert((cuda::std::is_same<typename R::iterator_type, It>::value), "");
-  static_assert((cuda::std::is_same<typename R::value_type, typename T::value_type>::value), "");
-  static_assert((cuda::std::is_same<typename R::difference_type, typename T::difference_type>::value), "");
-  static_assert((cuda::std::is_same<typename R::reference, typename T::reference>::value), "");
-  static_assert((cuda::std::is_same<typename R::pointer, typename cuda::std::iterator_traits<It>::pointer>::value), "");
+  static_assert((cuda::std::is_same<typename R::iterator_type, It>::value));
+  static_assert((cuda::std::is_same<typename R::value_type, typename T::value_type>::value));
+  static_assert((cuda::std::is_same<typename R::difference_type, typename T::difference_type>::value));
+  static_assert((cuda::std::is_same<typename R::reference, typename T::reference>::value));
+  static_assert((cuda::std::is_same<typename R::pointer, typename cuda::std::iterator_traits<It>::pointer>::value));
 
   test_iter_category<It>();
 }
@@ -85,11 +85,11 @@ struct FooIter
   using difference_type   = void*;
   using pointer           = void*;
   using reference         = int&;
-  __host__ __device__ int& operator*() const;
-  __host__ __device__ FooIter& operator++();
-  __host__ __device__ FooIter& operator--();
-  __host__ __device__ FooIter operator++(int);
-  __host__ __device__ FooIter operator--(int);
+  TEST_FUNC int& operator*() const;
+  TEST_FUNC FooIter& operator++();
+  TEST_FUNC FooIter& operator--();
+  TEST_FUNC FooIter operator++(int);
+  TEST_FUNC FooIter operator--(int);
 };
 template <>
 struct cuda::std::indirectly_readable_traits<FooIter>
@@ -103,17 +103,17 @@ struct cuda::std::incrementable_traits<FooIter>
 };
 
 // Not using `FooIter::value_type`.
-static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<FooIter>::value_type, int>, "");
+static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<FooIter>::value_type, int>);
 // Not using `FooIter::difference_type`.
-static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<FooIter>::difference_type, char>, "");
+static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<FooIter>::difference_type, char>);
 
 struct BarIter
 {
-  __host__ __device__ bool& operator*() const;
-  __host__ __device__ BarIter& operator++();
-  __host__ __device__ BarIter& operator--();
-  __host__ __device__ BarIter operator++(int);
-  __host__ __device__ BarIter operator--(int);
+  TEST_FUNC bool& operator*() const;
+  TEST_FUNC BarIter& operator++();
+  TEST_FUNC BarIter& operator--();
+  TEST_FUNC BarIter operator++(int);
+  TEST_FUNC BarIter operator--(int);
 };
 template <>
 struct cuda::std::iterator_traits<BarIter>
@@ -125,9 +125,9 @@ struct cuda::std::iterator_traits<BarIter>
   using iterator_category = cuda::std::bidirectional_iterator_tag;
 };
 
-static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<BarIter>::reference, bool&>, "");
+static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<BarIter>::reference, bool&>);
 
-__host__ __device__ void test_all()
+TEST_FUNC void test_all()
 {
   test<bidirectional_iterator<char*>>();
   test<random_access_iterator<char*>>();

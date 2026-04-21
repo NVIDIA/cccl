@@ -18,14 +18,14 @@
 
 #include "test_macros.h"
 
-// ensure that we allow `__device__` functions too
+// ensure that we allow `TEST_DEVICE_FUNC` functions too
 struct with_device_op
 {
-  __device__ friend constexpr with_device_op operator~(const with_device_op&)
+  TEST_DEVICE_FUNC friend constexpr with_device_op operator~(const with_device_op&)
   {
     return {};
   }
-  __device__ constexpr operator bool() const
+  TEST_DEVICE_FUNC constexpr operator bool() const
   {
     return true;
   }
@@ -42,8 +42,8 @@ int main(int, char**)
   using F   = cuda::std::bit_not<int>;
   const F f = F();
 #if TEST_STD_VER <= 2017
-  static_assert((cuda::std::is_same<F::argument_type, int>::value), "");
-  static_assert((cuda::std::is_same<F::result_type, int>::value), "");
+  static_assert((cuda::std::is_same<F::argument_type, int>::value));
+  static_assert((cuda::std::is_same<F::result_type, int>::value));
 #endif // TEST_STD_VER <= 2017
   assert((f(0xEA95) & 0xFFFF) == 0x156A);
   assert((f(0x58D3) & 0xFFFF) == 0xA72C);
@@ -62,10 +62,10 @@ int main(int, char**)
   assert((f2(0xFFFFL) & 0xFFFF) == 0);
 
   constexpr int foo = cuda::std::bit_not<int>()(0xEA95) & 0xFFFF;
-  static_assert(foo == 0x156A, "");
+  static_assert(foo == 0x156A);
 
   constexpr int bar = cuda::std::bit_not<>()(0xEA95) & 0xFFFF;
-  static_assert(bar == 0x156A, "");
+  static_assert(bar == 0x156A);
 
   return 0;
 }

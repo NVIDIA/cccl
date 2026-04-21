@@ -24,16 +24,16 @@ struct B
 {
   int id_;
 
-  __device__ __host__ explicit B(int i = 0)
+  TEST_FUNC explicit B(int i = 0)
       : id_(i)
   {}
 
-  __device__ __host__ virtual ~B() {}
+  TEST_FUNC virtual ~B() {}
 };
 
 struct D : B
 {
-  __device__ __host__ explicit D(int i)
+  TEST_FUNC explicit D(int i)
       : B(i)
   {}
 };

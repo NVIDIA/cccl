@@ -18,29 +18,29 @@
 TEST_DIAG_SUPPRESS_CLANG("-Wdelete-non-virtual-dtor")
 
 template <class T>
-__host__ __device__ void test_is_destructible()
+TEST_FUNC void test_is_destructible()
 {
-  static_assert(cuda::std::is_destructible<T>::value, "");
-  static_assert(cuda::std::is_destructible<const T>::value, "");
-  static_assert(cuda::std::is_destructible<volatile T>::value, "");
-  static_assert(cuda::std::is_destructible<const volatile T>::value, "");
-  static_assert(cuda::std::is_destructible_v<T>, "");
-  static_assert(cuda::std::is_destructible_v<const T>, "");
-  static_assert(cuda::std::is_destructible_v<volatile T>, "");
-  static_assert(cuda::std::is_destructible_v<const volatile T>, "");
+  static_assert(cuda::std::is_destructible<T>::value);
+  static_assert(cuda::std::is_destructible<const T>::value);
+  static_assert(cuda::std::is_destructible<volatile T>::value);
+  static_assert(cuda::std::is_destructible<const volatile T>::value);
+  static_assert(cuda::std::is_destructible_v<T>);
+  static_assert(cuda::std::is_destructible_v<const T>);
+  static_assert(cuda::std::is_destructible_v<volatile T>);
+  static_assert(cuda::std::is_destructible_v<const volatile T>);
 }
 
 template <class T>
-__host__ __device__ void test_is_not_destructible()
+TEST_FUNC void test_is_not_destructible()
 {
-  static_assert(!cuda::std::is_destructible<T>::value, "");
-  static_assert(!cuda::std::is_destructible<const T>::value, "");
-  static_assert(!cuda::std::is_destructible<volatile T>::value, "");
-  static_assert(!cuda::std::is_destructible<const volatile T>::value, "");
-  static_assert(!cuda::std::is_destructible_v<T>, "");
-  static_assert(!cuda::std::is_destructible_v<const T>, "");
-  static_assert(!cuda::std::is_destructible_v<volatile T>, "");
-  static_assert(!cuda::std::is_destructible_v<const volatile T>, "");
+  static_assert(!cuda::std::is_destructible<T>::value);
+  static_assert(!cuda::std::is_destructible<const T>::value);
+  static_assert(!cuda::std::is_destructible<volatile T>::value);
+  static_assert(!cuda::std::is_destructible<const volatile T>::value);
+  static_assert(!cuda::std::is_destructible_v<T>);
+  static_assert(!cuda::std::is_destructible_v<const T>);
+  static_assert(!cuda::std::is_destructible_v<volatile T>);
+  static_assert(!cuda::std::is_destructible_v<const volatile T>);
 }
 
 class Empty
@@ -48,7 +48,7 @@ class Empty
 
 class NotEmpty
 {
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -61,7 +61,7 @@ struct bit_zero
 
 struct A
 {
-  __host__ __device__ ~A();
+  TEST_FUNC ~A();
 };
 
 using Function = void();
@@ -69,97 +69,97 @@ using Function = void();
 struct PublicAbstract
 {
 public:
-  __host__ __device__ virtual void foo() = 0;
+  TEST_FUNC virtual void foo() = 0;
 };
 struct ProtectedAbstract
 {
 protected:
-  __host__ __device__ virtual void foo() = 0;
+  TEST_FUNC virtual void foo() = 0;
 };
 struct PrivateAbstract
 {
 private:
-  __host__ __device__ virtual void foo() = 0;
+  TEST_FUNC virtual void foo() = 0;
 };
 
 struct PublicDestructor
 {
 public:
-  __host__ __device__ ~PublicDestructor() {}
+  TEST_FUNC ~PublicDestructor() {}
 };
 struct ProtectedDestructor
 {
 protected:
-  __host__ __device__ ~ProtectedDestructor() {}
+  TEST_FUNC ~ProtectedDestructor() {}
 };
 struct PrivateDestructor
 {
 private:
-  __host__ __device__ ~PrivateDestructor() {}
+  TEST_FUNC ~PrivateDestructor() {}
 };
 
 struct VirtualPublicDestructor
 {
 public:
-  __host__ __device__ virtual ~VirtualPublicDestructor() {}
+  TEST_FUNC virtual ~VirtualPublicDestructor() {}
 };
 struct VirtualProtectedDestructor
 {
 protected:
-  __host__ __device__ virtual ~VirtualProtectedDestructor() {}
+  TEST_FUNC virtual ~VirtualProtectedDestructor() {}
 };
 struct VirtualPrivateDestructor
 {
 private:
-  __host__ __device__ virtual ~VirtualPrivateDestructor() {}
+  TEST_FUNC virtual ~VirtualPrivateDestructor() {}
 };
 
 struct PurePublicDestructor
 {
 public:
-  __host__ __device__ virtual ~PurePublicDestructor() = 0;
+  TEST_FUNC virtual ~PurePublicDestructor() = 0;
 };
 struct PureProtectedDestructor
 {
 protected:
-  __host__ __device__ virtual ~PureProtectedDestructor() = 0;
+  TEST_FUNC virtual ~PureProtectedDestructor() = 0;
 };
 struct PurePrivateDestructor
 {
 private:
-  __host__ __device__ virtual ~PurePrivateDestructor() = 0;
+  TEST_FUNC virtual ~PurePrivateDestructor() = 0;
 };
 
 struct DeletedPublicDestructor
 {
 public:
-  __host__ __device__ ~DeletedPublicDestructor() = delete;
+  TEST_FUNC ~DeletedPublicDestructor() = delete;
 };
 struct DeletedProtectedDestructor
 {
 protected:
-  __host__ __device__ ~DeletedProtectedDestructor() = delete;
+  TEST_FUNC ~DeletedProtectedDestructor() = delete;
 };
 struct DeletedPrivateDestructor
 {
 private:
-  __host__ __device__ ~DeletedPrivateDestructor() = delete;
+  TEST_FUNC ~DeletedPrivateDestructor() = delete;
 };
 
 struct DeletedVirtualPublicDestructor
 {
 public:
-  __host__ __device__ virtual ~DeletedVirtualPublicDestructor() = delete;
+  TEST_FUNC virtual ~DeletedVirtualPublicDestructor() = delete;
 };
 struct DeletedVirtualProtectedDestructor
 {
 protected:
-  __host__ __device__ virtual ~DeletedVirtualProtectedDestructor() = delete;
+  TEST_FUNC virtual ~DeletedVirtualProtectedDestructor() = delete;
 };
 struct DeletedVirtualPrivateDestructor
 {
 private:
-  __host__ __device__ virtual ~DeletedVirtualPrivateDestructor() = delete;
+  TEST_FUNC virtual ~DeletedVirtualPrivateDestructor() = delete;
 };
 
 int main(int, char**)

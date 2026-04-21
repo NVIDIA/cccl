@@ -32,7 +32,7 @@
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Functor>
-__host__ __device__ bool test_execution_policies(Functor func)
+TEST_FUNC bool test_execution_policies(Functor func)
 {
   func(cuda::std::execution::seq);
   func(cuda::std::execution::unseq);
@@ -46,7 +46,7 @@ template <template <class Iter> class TestClass>
 struct TestIteratorWithPolicies
 {
   template <class Iter>
-  __host__ __device__ void operator()() const
+  TEST_FUNC void operator()() const
   {
     test_execution_policies(TestClass<Iter>{});
   }

@@ -23,7 +23,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test_isnormal(const T pos, bool expected)
+TEST_FUNC constexpr void test_isnormal(const T pos, bool expected)
 {
   assert(cuda::std::isnormal(pos) == expected);
 
@@ -50,7 +50,7 @@ __host__ __device__ constexpr void test_isnormal(const T pos, bool expected)
 }
 
 template <class T>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::isnormal(T{}))>);
 
@@ -86,7 +86,7 @@ __host__ __device__ constexpr void test_type()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_type<float>();
   test_type<double>();

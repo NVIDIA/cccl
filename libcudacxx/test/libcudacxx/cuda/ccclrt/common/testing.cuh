@@ -20,6 +20,7 @@
 #include <exception> // IWYU pragma: keep
 #include <sstream>
 
+#include "test_macros.h"
 #include "utility.cuh"
 #include <c2h/catch2_test_helper.h>
 
@@ -60,7 +61,7 @@
 #define CCCLRT_FAIL_DEVICE(message)          ccclrt_require_impl(false, message, __FILE__, __LINE__, __PRETTY_FUNCTION__);
 #define CCCLRT_CHECK_FALSE_DEVICE(condition) CCCLRT_CHECK_DEVICE(!(condition))
 
-__host__ __device__ constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
+TEST_FUNC constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
 {
   return (lhs.x == rhs.x) && (lhs.y == rhs.y) && (lhs.z == rhs.z);
 }

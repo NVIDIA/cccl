@@ -32,14 +32,14 @@
 template <typename PoolType>
 void pool_static_asserts()
 {
-  static_assert(!cuda::std::is_trivial<PoolType>::value, "");
-  static_assert(!cuda::std::is_trivially_default_constructible<PoolType>::value, "");
-  static_assert(!cuda::std::is_copy_constructible<PoolType>::value, "");
-  static_assert(!cuda::std::is_move_constructible<PoolType>::value, "");
-  static_assert(!cuda::std::is_copy_assignable<PoolType>::value, "");
-  static_assert(!cuda::std::is_move_assignable<PoolType>::value, "");
-  static_assert(!cuda::std::is_trivially_destructible<PoolType>::value, "");
-  static_assert(!cuda::std::is_empty<PoolType>::value, "");
+  static_assert(!cuda::std::is_trivial<PoolType>::value);
+  static_assert(!cuda::std::is_trivially_default_constructible<PoolType>::value);
+  static_assert(!cuda::std::is_copy_constructible<PoolType>::value);
+  static_assert(!cuda::std::is_move_constructible<PoolType>::value);
+  static_assert(!cuda::std::is_copy_assignable<PoolType>::value);
+  static_assert(!cuda::std::is_move_assignable<PoolType>::value);
+  static_assert(!cuda::std::is_trivially_destructible<PoolType>::value);
+  static_assert(!cuda::std::is_empty<PoolType>::value);
 }
 
 #if _CCCL_CTK_AT_LEAST(13, 0)
@@ -51,10 +51,10 @@ template void pool_static_asserts<cuda::pinned_memory_pool>();
 template void pool_static_asserts<cuda::device_memory_pool>();
 
 #if _CCCL_CTK_AT_LEAST(13, 0)
-static_assert(cuda::std::is_default_constructible<cuda::managed_memory_pool>::value, "");
-static_assert(cuda::std::is_default_constructible<cuda::pinned_memory_pool>::value, "");
+static_assert(cuda::std::is_default_constructible<cuda::managed_memory_pool>::value);
+static_assert(cuda::std::is_default_constructible<cuda::pinned_memory_pool>::value);
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
-static_assert(!cuda::std::is_default_constructible<cuda::device_memory_pool>::value, "");
+static_assert(!cuda::std::is_default_constructible<cuda::device_memory_pool>::value);
 
 template <typename PoolType>
 PoolType construct_pool([[maybe_unused]] int device_id, cuda::memory_pool_properties props = {})
@@ -277,7 +277,7 @@ C2H_CCCLRT_TEST_LIST("base_memory_pool construction", "[memory_resource]", TEST_
 
       void* ptr{nullptr};
 
-      ::cudaStream_t stream{0};
+      ::cudaStream_t stream{nullptr};
       // make an allocation smaller than the max pool size
       _CCCL_TRY_CUDA_API(
         ::cudaMallocAsync,
