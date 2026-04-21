@@ -43,7 +43,7 @@ struct AgentSubWarpMergeSortPolicy
   static constexpr cub::WarpStoreAlgorithm STORE_ALGORITHM = StoreAlgorithmArg;
 };
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) // TODO(bgruber): remove
 namespace detail
 {
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
@@ -58,7 +58,7 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
   (STORE_ALGORITHM, StoreAlgorithm, cub::WarpStoreAlgorithm))
 } // namespace detail
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
 namespace detail::sub_warp_merge_sort
 {

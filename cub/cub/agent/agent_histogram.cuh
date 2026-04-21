@@ -113,7 +113,7 @@ struct AgentHistogramPolicy
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) // FIXME(bgruber): remove this
 namespace detail
 {
 // Only define this when needed.

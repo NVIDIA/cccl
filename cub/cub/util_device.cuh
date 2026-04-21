@@ -44,10 +44,6 @@
 #  endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-#  include <cub/detail/ptx-json/json.cuh>
-#endif // defined(CUB_ENABLE_POLICY_PTX_JSON)
-
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
@@ -631,11 +627,11 @@ _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t 
 
 namespace detail
 {
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#if defined(CUB_DEFINE_RUNTIME_POLICIES)
 #  if !_CCCL_HAS_CONCEPTS()
-#    error Generation of runtime policy wrappers and/or policy PTX JSON information requires C++20 concepts.
+#    error Generation of runtime policy wrappers requires C++20 concepts.
 #  endif // !_CCCL_HAS_CONCEPTS()
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
 #define CUB_DETAIL_POLICY_WRAPPER_CONCEPT_TEST(field)     , StaticPolicyT::_CCCL_PP_FIRST field
 #define CUB_DETAIL_POLICY_WRAPPER_REFINE_CONCEPT(concept) concept<StaticPolicyT>&&
@@ -645,21 +641,6 @@ namespace detail
   {                                                                 \
     return StaticPolicyT::_CCCL_PP_FIRST field;                     \
   }
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-#  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_FIELD(field) \
-    key<_CCCL_TO_STRING(_CCCL_PP_FIRST field)>() = value<(int) StaticPolicyT::_CCCL_PP_FIRST field>(),
-
-#  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(...)                                     \
-    _CCCL_DEVICE static constexpr auto EncodedPolicy()                                      \
-    {                                                                                       \
-      using namespace ptx_json;                                                             \
-      return object<_CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_ENCODED_FIELD, __VA_ARGS__) \
-                      key<"__dummy">() = value<0>()>();                                     \
-    }
-#else
-#  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(...)
-#endif // defined(CUB_ENABLE_POLICY_PTX_JSON)
 
 #if defined(CUB_DEFINE_RUNTIME_POLICIES)
 #  define CUB_DETAIL_POLICY_WRAPPER_FIELD(field)                       \
@@ -704,7 +685,6 @@ _CCCL_CONCEPT always_true = true;
         : StaticPolicyT(base)                                                                                          \
     {}                                                                                                                 \
     _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_ACCESSOR, __VA_ARGS__)                                                 \
-    CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(__VA_ARGS__)                                                              \
   };                                                                                                                   \
   _CCCL_TEMPLATE(typename StaticPolicyT)                                                                               \
   _CCCL_REQUIRES(concept_name<StaticPolicyT>)                                                                          \

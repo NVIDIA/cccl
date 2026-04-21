@@ -58,7 +58,7 @@ struct AgentUniqueByKeyPolicy
   };
 };
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) // TOOD(bgruber): remove
 namespace detail
 {
 // Only define this when needed.
@@ -76,7 +76,7 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
   (SCAN_ALGORITHM, ScanAlgorithm, cub::BlockScanAlgorithm))
 } // namespace detail
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
 /******************************************************************************
  * Thread block abstractions
