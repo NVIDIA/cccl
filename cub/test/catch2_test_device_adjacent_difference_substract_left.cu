@@ -39,6 +39,19 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeft can run with empty input", "[de
   adjacent_difference_subtract_left(in.begin(), num_items, cuda::std::minus<>{});
 }
 
+C2H_TEST("DeviceAdjacentDifference::SubtractLeft with two iterators can run with empty input",
+         "[device][adjacent_difference]",
+         types)
+{
+  using type = typename c2h::get<0, TestType>;
+
+  constexpr int num_items = 0;
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
+
+  adjacent_difference_subtract_left(in.begin(), out.begin(), num_items, cuda::std::minus<>{});
+}
+
 C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy can run with empty input", "[device][adjacent_difference]", types)
 {
   using type = typename c2h::get<0, TestType>;
@@ -64,6 +77,22 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy does not change the input",
   REQUIRE(reference == in);
 }
 
+C2H_TEST("DeviceAdjacentDifference::SubtractLeft with two iterators does not change the input",
+         "[device][adjacent_difference]",
+         types)
+{
+  using type = typename c2h::get<0, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  c2h::device_vector<type> in(num_items);
+  c2h::gen(C2H_SEED(2), in);
+
+  c2h::device_vector<type> reference = in;
+  adjacent_difference_subtract_left(in.begin(), cuda::discard_iterator(), num_items, cuda::std::minus<>{});
+
+  REQUIRE(reference == in);
+}
+
 C2H_TEST("DeviceAdjacentDifference::SubtractLeft works with iterators", "[device][adjacent_difference]", types)
 {
   using type = typename c2h::get<0, TestType>;
@@ -79,6 +108,26 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeft works with iterators", "[device
   adjacent_difference_subtract_left(in.begin(), num_items, cuda::std::minus<>{});
 
   REQUIRE(reference == in);
+}
+
+C2H_TEST("DeviceAdjacentDifference::SubtractLeft with two iterators works with iterators",
+         "[device][adjacent_difference]",
+         types)
+{
+  using type = typename c2h::get<0, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
+  c2h::gen(C2H_SEED(2), in);
+
+  c2h::host_vector<type> h_in = in;
+  c2h::host_vector<type> reference(num_items);
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), std::minus<type>{});
+
+  adjacent_difference_subtract_left(in.begin(), out.begin(), num_items, cuda::std::minus<>{});
+
+  REQUIRE(reference == out);
 }
 
 C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with iterators", "[device][adjacent_difference]", types)
@@ -114,6 +163,27 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeft works with pointers", "[device]
   adjacent_difference_subtract_left(thrust::raw_pointer_cast(in.data()), num_items, cuda::std::minus<>{});
 
   REQUIRE(reference == in);
+}
+
+C2H_TEST("DeviceAdjacentDifference::SubtractLeft with two iterators works with pointers",
+         "[device][adjacent_difference]",
+         types)
+{
+  using type = typename c2h::get<0, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
+  c2h::gen(C2H_SEED(2), in);
+
+  c2h::host_vector<type> h_in = in;
+  c2h::host_vector<type> reference(num_items);
+  std::adjacent_difference(h_in.begin(), h_in.end(), reference.begin(), std::minus<type>{});
+
+  adjacent_difference_subtract_left(
+    thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), num_items, cuda::std::minus<>{});
+
+  REQUIRE(reference == out);
 }
 
 C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with pointers", "[device][adjacent_difference]", types)
