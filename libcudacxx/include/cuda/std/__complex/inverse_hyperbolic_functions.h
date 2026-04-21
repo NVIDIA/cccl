@@ -707,21 +707,21 @@ template <class _Tp>
   {
     if (::cuda::std::isnan(__x.imag()))
     {
-      if (::cuda::std::isinf(__x.real()) || __x.real() == _Tp{0.0})
+      if (::cuda::std::isinf(__x.real()) || __x.real() == _Tp{0})
       {
-        return complex<_Tp>(::cuda::std::copysign(_Tp{0.0}, __x.real()), __x.imag());
+        return complex<_Tp>(::cuda::std::copysign(_Tp{0}, __x.real()), __x.imag());
       }
       return complex<_Tp>(__x.imag(), __x.imag());
     }
     if (::cuda::std::isinf(__x.real()) || ::cuda::std::isinf(__x.imag()))
     {
-      return complex<_Tp>(::cuda::std::copysign(_Tp{0.0}, __x.real()),
+      return complex<_Tp>(::cuda::std::copysign(_Tp{0}, __x.real()),
                           ::cuda::std::copysign(_Tp{0.5} * __pi, __x.imag()));
     }
   }
 
   // A case that for various reasons does not pass easily through the algorithm below:
-  if ((__realx == _Tp{1.0}) && (__imagx == _Tp{0.0}))
+  if ((__realx == _Tp{1}) && (__imagx == _Tp{0}))
   {
     return complex<_Tp>(::cuda::std::copysign(numeric_limits<_Tp>::infinity(), __x.real()), __x.imag());
   }
@@ -738,13 +738,10 @@ template <class _Tp>
 
   // Create const powers of 2 for over/underflow scaling:
   constexpr int32_t __small_bound_exp = -(__exp_bias / 2);
-  constexpr __uint_t __small_bound_as_uint =
-    (__uint_t(__small_bound_exp + __exp_bias) << __mant_nbits) | __fp_explicit_bit_mask_of_v<_Tp>;
-  // 2^-65 for float, 2^-511 for double.
-  const _Tp __small_bound = ::cuda::std::__fp_from_storage<_Tp>(__small_bound_as_uint);
+  const _Tp __small_bound             = ::cuda::std::__fp_set_exp<_Tp>(_Tp{1}, __small_bound_exp);
 
   const bool __xBig           = (__realx * __realx + __imagx * __imagx == numeric_limits<_Tp>::infinity());
-  const bool __xReduced_small = (__realx == _Tp{1.0}) && (__imagx <= __small_bound);
+  const bool __xReduced_small = (__realx == _Tp{1}) && (__imagx <= __small_bound);
 
   const _Tp __two_m_x_large_scale_factor = _Tp{_Tp{0.25} * __small_bound};
   if (__xBig)
@@ -766,18 +763,16 @@ template <class _Tp>
   {
     // We want log1p(2.0 / __imagx), however __imagx can be denormal.
     // Multiply by 2^25, and account for it after log1p.
-    __numerator = _Tp{1.0};
+    __numerator = _Tp{1};
+
     // 2^25 for float, 2^54 for double.
     constexpr int32_t __denormal_scale_exp = __mant_nbits + 2;
-
-    constexpr __uint_t __denormal_scale_as_uint =
-      (__uint_t(__denormal_scale_exp + __exp_bias) << __mant_nbits) | __fp_explicit_bit_mask_of_v<_Tp>;
-    const _Tp __denormal_scale = ::cuda::std::__fp_from_storage<_Tp>(__denormal_scale_as_uint);
+    const _Tp __denormal_scale             = ::cuda::std::__fp_set_exp(_Tp(1), __denormal_scale_exp);
 
     __denominator = (__imagx * __denormal_scale);
   }
 
-  _Tp __pre_log1p = __numerator * (_Tp{1.0} / __denominator);
+  _Tp __pre_log1p = __numerator * (_Tp{1} / __denominator);
 
   // Correct for overflow:
   if (__xBig)
@@ -791,14 +786,14 @@ template <class _Tp>
     _Tp{0.5}
     * ::cuda::std::atan2(
       __x.imag(),
-      _Tp{-0.5} * (::cuda::std::fma(__x.imag(), __x.imag(), ::cuda::std::fma(__x.real(), __x.real(), -_Tp{1.0}))));
+      _Tp{-0.5} * (::cuda::std::fma(__x.imag(), __x.imag(), ::cuda::std::fma(__x.real(), __x.real(), -_Tp{1}))));
 
   if (__xReduced_small)
   {
     // Getting (mant_bits + 3) * __ln2 via templated arithmetic gives us one less bit of accuracy than using a single
     // constant alas.
     constexpr _Tp __ans_real_small_correction = _Tp{0.5} * _Tp(__mant_nbits + 3) * (__ln2);
-    __ans_real                                = ::cuda::std::fma(_Tp{2.0}, __ans_real, __ans_real_small_correction);
+    __ans_real                                = ::cuda::std::fma(_Tp{2}, __ans_real, __ans_real_small_correction);
   }
 
   return complex<_Tp>(::cuda::std::copysign(__ans_real, __x.real()), __ans_imag);
