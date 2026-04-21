@@ -56,13 +56,13 @@ struct radix_sort_histogram_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_histogram_policy& p)
   {
     return os << "radix_sort_histogram_policy { .block_threads = " << p.block_threads << ", .items_per_thread = "
               << p.items_per_thread << ", .num_parts = " << p.num_parts << ", .radix_bits = " << p.radix_bits << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct radix_sort_exclusive_sum_policy
@@ -82,13 +82,13 @@ struct radix_sort_exclusive_sum_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_exclusive_sum_policy& p)
   {
     return os << "radix_sort_exclusive_sum_policy { .block_threads = " << p.block_threads
               << ", .radix_bits = " << p.radix_bits << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct radix_sort_onesweep_policy
@@ -116,7 +116,7 @@ struct radix_sort_onesweep_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_onesweep_policy& p)
   {
     return os
@@ -125,7 +125,7 @@ struct radix_sort_onesweep_policy
         << ", .radix_bits = " << p.radix_bits << ", .rank_algorith = " << p.rank_algorith
         << ", .scan_algorithm = " << p.scan_algorithm << ", .store_algorithm = " << p.store_algorithm << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 _CCCL_API constexpr auto make_reg_scaled_radix_sort_onesweep_policy(
@@ -174,7 +174,7 @@ struct radix_sort_downsweep_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_downsweep_policy& p)
   {
     return os
@@ -183,7 +183,7 @@ struct radix_sort_downsweep_policy
         << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
         << ", .rank_algorithm = " << p.rank_algorithm << ", .scan_algorithm = " << p.scan_algorithm << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 _CCCL_API constexpr auto make_reg_scaled_radix_sort_downsweep_policy(
@@ -225,14 +225,14 @@ struct radix_sort_upsweep_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_upsweep_policy& p)
   {
     return os
         << "radix_sort_upsweep_policy { .block_threads = " << p.block_threads << ", .items_per_thread = "
         << p.items_per_thread << ", .radix_bits = " << p.radix_bits << ", .load_modifier = " << p.load_modifier << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 _CCCL_API constexpr auto make_reg_scaled_radix_sort_upsweep_policy(
@@ -277,7 +277,7 @@ struct radix_sort_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const radix_sort_policy& p)
   {
     return os
@@ -288,7 +288,7 @@ struct radix_sort_policy
         << ", .alt_upsweep = " << p.alt_upsweep << ", .single_tile = " << p.single_tile
         << ", .segmented = " << p.segmented << ", .alt_segmented = " << p.alt_segmented << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 // TODO(bgruber): remove for CCCL 4.0 when we drop the public radix sort dispatcher

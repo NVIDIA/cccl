@@ -42,7 +42,7 @@
 #include <cuda/std/__utility/priority_tag.h>
 #include <cuda/std/cstddef>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  if _CCCL_COMPILER(MSVC)
 #    include <xutility> // for ::std::input_iterator_tag
 #  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
@@ -51,7 +51,7 @@
 
 #  ifdef _GLIBCXX_DEBUG
 #    include <debug/safe_iterator.h>
-#  endif
+#  endif // _GLIBCXX_DEBUG
 
 #  if _CCCL_STD_VER >= 2020
 #    include <cuda/std/__cccl/prologue.h>
@@ -73,7 +73,7 @@ struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct
 #    include <cuda/std/__cccl/epilogue.h>
 #  endif // _CCCL_STD_VER >= 2020
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -102,7 +102,7 @@ template <class _Tp>
 using iter_reference_t = enable_if_t<__dereferenceable<_Tp>, decltype(*::cuda::std::declval<_Tp&>())>;
 #endif // _CCCL_HAS_CONCEPTS()
 
-#if _CCCL_COMPILER(NVRTC)
+#if _CCCL_FREESTANDING()
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT input_iterator_tag
 {};
@@ -117,7 +117,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT random_access_iterator_tag : public bidirec
 struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_access_iterator_tag
 {};
 
-#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
+#else // ^^^ _CCCL_FREESTANDING() ^^^ / vvv _CCCL_HOSTED() vvv
 
 using input_iterator_tag         = ::std::input_iterator_tag;
 using output_iterator_tag        = ::std::output_iterator_tag;
@@ -137,7 +137,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_acc
 {};
 #  endif // _CCCL_STD_VER <= 2017
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 template <class _Iter>
 struct __iter_traits_cache
@@ -425,13 +425,13 @@ template <class _Iter>
 template <class _Iter, __iterator_traits_selection = ::cuda::std::__select_iterator_traits_specialization<_Iter>()>
 struct __iterator_traits;
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 // We need to properly accept specializations of `std::iterator_traits`
 template <class _Iter>
 struct __iterator_traits<_Iter, __iterator_traits_selection::__specialized_from_std>
     : public ::std::iterator_traits<_Iter>
 {};
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 // [iterator.traits]#3.1
 // If `I` has valid member types `difference-type`, `value-type`, `reference`, and

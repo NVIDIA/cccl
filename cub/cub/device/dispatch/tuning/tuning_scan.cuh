@@ -569,7 +569,7 @@ struct scan_lookback_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const scan_lookback_policy& p)
   {
     return os
@@ -578,7 +578,7 @@ struct scan_lookback_policy
         << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm
         << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct scan_warpspeed_policy
@@ -604,14 +604,14 @@ struct scan_warpspeed_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const scan_warpspeed_policy& p)
   {
     return os << "scan_warpspeed_policy { .num_reduce_and_scan_warps = " << p.num_reduce_and_scan_warps
               << ", .look_ahead_items_per_thread = " << p.look_ahead_items_per_thread
               << ", .items_per_thread = " << p.items_per_thread << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 enum class scan_algorithm
@@ -620,7 +620,7 @@ enum class scan_algorithm
   warpspeed
 };
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 inline ::std::ostream& operator<<(::std::ostream& os, scan_algorithm algorithm)
 {
   switch (algorithm)
@@ -633,7 +633,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, scan_algorithm algorithm)
       return os << "scan_algorithm::<unknown>";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 struct scan_policy
 {
@@ -651,13 +651,13 @@ struct scan_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const scan_policy& p)
   {
     return os << "scan_policy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback
               << ", .warpspeed = " << p.warpspeed << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()

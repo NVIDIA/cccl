@@ -30,10 +30,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif
+#include <cuda/std/__host_stdlib/sstream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -511,7 +508,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(NV_IS_HOST, ({
                  ::std::stringstream ss;
                  ss << policy_selector(arch_id);
@@ -519,7 +516,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                          static_cast<int>(arch_id),
                          ss.str().c_str());
                }))
-#endif
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   struct fake_policy
   {

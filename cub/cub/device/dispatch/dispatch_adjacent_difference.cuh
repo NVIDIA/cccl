@@ -246,14 +246,15 @@ struct DispatchAdjacentDifference
       error                      = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
           num_tiles, AdjacentDifferencePolicyT::BLOCK_THREADS, 0, stream)
-          .doit(detail::adjacent_difference::DeviceAdjacentDifferenceDifferenceKernel < KernelPolicySelector,
-                InputIteratorT,
-                OutputIteratorT,
-                DifferenceOpT,
-                OffsetT,
-                InputT,
-                AliasOpt == MayAlias::Yes,
-                ReadOpt == ReadOption::Left >,
+          .doit(detail::adjacent_difference::DeviceAdjacentDifferenceDifferenceKernel<
+                                       KernelPolicySelector,
+                                       InputIteratorT,
+                                       OutputIteratorT,
+                                       DifferenceOpT,
+                                       OffsetT,
+                                       InputT,
+                                       AliasOpt == MayAlias::Yes,
+                                       ReadOpt == ReadOption::Left>,
                 d_input,
                 first_tile_previous,
                 d_output,
@@ -345,14 +346,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   const adjacent_difference_policy active_policy = policy_selector(arch_id);
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
     NV_IS_HOST, ({
       ::std::stringstream ss;
       ss << active_policy;
       _CubLog("Dispatching DeviceAdjacentDifference to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
     }))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   const int tile_size = active_policy.block_threads * active_policy.items_per_thread;
   const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
@@ -427,14 +428,15 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   if (const auto error = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_tiles, active_policy.block_threads, 0, stream)
-          .doit(DeviceAdjacentDifferenceDifferenceKernel < PolicySelector,
-                InputIteratorT,
-                OutputIteratorT,
-                DifferenceOpT,
-                OffsetT,
-                InputT,
-                AliasOpt == MayAlias::Yes,
-                ReadOpt == ReadOption::Left >,
+          .doit(DeviceAdjacentDifferenceDifferenceKernel<
+                  PolicySelector,
+                  InputIteratorT,
+                  OutputIteratorT,
+                  DifferenceOpT,
+                  OffsetT,
+                  InputT,
+                  AliasOpt == MayAlias::Yes,
+                  ReadOpt == ReadOption::Left>,
                 d_input,
                 first_tile_previous,
                 d_output,

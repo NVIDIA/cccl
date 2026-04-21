@@ -16,6 +16,7 @@
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/detail/reference_forward_declaration.h>
 
+#include <cuda/std/__tuple_dir/structured_bindings.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
@@ -206,18 +207,17 @@ struct tuple_size<THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts..
 
 template <size_t Id, class... Ts>
 struct tuple_element<Id, THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>>
-    : ::cuda::std::tuple_element<Id, ::cuda::std::tuple<Ts...>>
+    : tuple_element<Id, tuple<Ts...>>
 {};
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
 // structured bindings support
-#if !_CCCL_COMPILER(NVRTC)
 namespace std
 {
 template <class... Ts>
 struct tuple_size<THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>>
-    : integral_constant<size_t, sizeof...(Ts)>
+    : ::cuda::std::integral_constant<size_t, sizeof...(Ts)>
 {};
 
 template <size_t Id, class... Ts>
@@ -225,4 +225,3 @@ struct tuple_element<Id, THRUST_NS_QUALIFIER::detail::tuple_of_iterator_referenc
     : ::cuda::std::tuple_element<Id, ::cuda::std::tuple<Ts...>>
 {};
 } // namespace std
-#endif // !_CCCL_COMPILER(NVRTC)

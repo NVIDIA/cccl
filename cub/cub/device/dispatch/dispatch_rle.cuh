@@ -679,14 +679,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
   }
 
   const non_trivial_runs::rle_non_trivial_runs_policy active_policy = policy_selector(arch_id);
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
     NV_IS_HOST, ({
       ::std::stringstream ss;
       ss << active_policy;
       _CubLog("Dispatching DeviceRle to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());
     }))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   const int block_threads    = active_policy.block_threads;
   const int items_per_thread = active_policy.items_per_thread;

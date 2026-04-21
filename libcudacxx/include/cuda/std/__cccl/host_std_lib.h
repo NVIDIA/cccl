@@ -56,4 +56,15 @@
 #define _CCCL_HAS_HOST_STD_LIB() \
   (_CCCL_HOST_STD_LIB(LIBSTDCXX) || _CCCL_HOST_STD_LIB(LIBCXX) || _CCCL_HOST_STD_LIB(STL))
 
+// Freestanding environment detection
+// NVRTC is treated as freestanding since it has no access to the host standard library
+#if defined(_CCCL_ENABLE_FREESTANDING) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_FREESTANDING() 1
+#  define _CCCL_NO_TYPEID
+#else
+#  define _CCCL_FREESTANDING() 0
+#endif
+
+#define _CCCL_HOSTED() (!_CCCL_FREESTANDING())
+
 #endif // __CCCL_HOST_STD_LIB_H
