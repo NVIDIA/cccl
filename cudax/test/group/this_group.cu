@@ -20,7 +20,7 @@
 
 #include <cooperative_groups.h>
 
-#include "testing.cuh"
+#include "group_testing.cuh"
 
 namespace
 {

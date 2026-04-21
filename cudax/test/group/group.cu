@@ -18,7 +18,7 @@
 
 #include <cuda/experimental/group.cuh>
 
-#include "testing.cuh"
+#include "group_testing.cuh"
 
 namespace
 {
@@ -96,25 +96,17 @@ template <class T>
 __device__ T global_barrier_storage;
 
 template <cuda::std::size_t N, class Unit, class Level, class Config>
-__device__ void test_group_by_group(const Unit& unit, const Level& level, const Config& config)
+__device__ void test_group_by_group(Unit unit, Level level, Config config)
 {
-  constexpr cuda::std::size_t nbarriers = 128 / N;
-  constexpr auto use_global_barrier =
-    (cuda::std::is_same_v<Level, cuda::cluster_level> || cuda::std::is_same_v<Level, cuda::grid_level>);
-  constexpr auto barrier_scope = (use_global_barrier) ? cuda::thread_scope_device : cuda::thread_scope_block;
-
-  using Barrier         = cuda::barrier<barrier_scope>;
-  using BarriersStorage = cuda::std::aligned_storage_t<nbarriers * sizeof(Barrier), alignof(Barrier)>;
-  __shared__ BarriersStorage shared_barriers_storage;
-
-  auto& barriers = reinterpret_cast<Barrier(&)[nbarriers]>(
-    (use_global_barrier) ? global_barrier_storage<BarriersStorage> : shared_barriers_storage);
+  constexpr cuda::std::size_t nbarriers = unit.static_count(level, config) / N;
 
   auto parent_group = cudax::make_this_group(level, config);
-  cudax::barrier_synchronizer synchronizer{barriers};
 
   {
+    auto& barriers = get_barriers<nbarriers, 0>(level);
+
     cudax::group_by<N> mapping{};
+    cudax::barrier_synchronizer synchronizer{barriers};
     cudax::group group{unit, parent_group, mapping, synchronizer};
 
     static_assert(
@@ -124,7 +116,10 @@ __device__ void test_group_by_group(const Unit& unit, const Level& level, const 
     group.sync();
   }
   {
+    auto& barriers = get_barriers<nbarriers, 1>(level);
+
     cudax::group_by mapping{N};
+    cudax::barrier_synchronizer synchronizer{barriers};
     cudax::group group{unit, parent_group, mapping, synchronizer};
 
     static_assert(
@@ -156,10 +151,11 @@ struct TestKernel
   template <class Config>
   __device__ void operator()(const Config& config)
   {
+    // todo(dabayer): Investigate why enabling warp leads to launch failure and cluster deadlocks.
     // test_group_by_group(cuda::gpu_thread, cuda::warp, config);
     test_group_by_group(cuda::gpu_thread, cuda::block, config);
-    // test_group_by_group(cuda::gpu_thread, cuda::warp, config);
-    // test_group_by_group(cuda::gpu_thread, cuda::warp, config);
+    // test_group_by_group(cuda::gpu_thread, cuda::cluster, config);
+    test_group_by_group(cuda::gpu_thread, cuda::grid, config);
   }
 };
 } // namespace
