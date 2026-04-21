@@ -147,10 +147,6 @@ C2H_TEST("DeviceFor::ForEachCopy env uses custom stream", "[for][env]")
   REQUIRE(count == expected_count);
 }
 
-// -----------------------------------------------------------------------
-// Tuning tests
-// -----------------------------------------------------------------------
-
 template <int BlockThreads>
 struct for_each_tuning
 {
