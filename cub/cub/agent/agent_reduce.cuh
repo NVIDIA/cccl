@@ -34,6 +34,7 @@
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -105,11 +106,17 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
  * Parameterizable tuning policy type for AgentWarpReduce
  * @tparam BlockThreads Threads per thread block
  * @tparam WarpThreads Threads per warp
- * @tparam ItemsPerThread Items per thread (per tile of input)
+ * @tparam NominalItemsPerThread4B Items per thread (per tile of input)
+ * @tparam ComputeT Dominant compute type
  * @tparam VectorLoadLength Number of items per vectorized load
  * @tparam LoadModifier Cache load modifier for reading input elements
  */
-template <int BlockThreads, int WarpThreads, int ItemsPerThread, int VectorLoadLength, CacheLoadModifier LoadModifier>
+template <int BlockThreads,
+          int WarpThreads,
+          int NominalItemsPerThread4B,
+          typename ComputeT,
+          int VectorLoadLength,
+          CacheLoadModifier LoadModifier>
 struct AgentWarpReducePolicy
 {
   /// Number of threads per warp
@@ -121,8 +128,12 @@ struct AgentWarpReducePolicy
   /// Number of threads per block
   static constexpr int BLOCK_THREADS = BlockThreads;
 
-  /// Number of items per thread
-  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
+  /// Number of items per thread. When `ComputeT` is `void`, the nominal value is used as-is (no scaling),
+  /// allowing to pass actual items_per_thread to opt out of the legacy 4B scaling.
+  static constexpr int ITEMS_PER_THREAD =
+    ::cuda::std::conditional_t<::cuda::std::is_same_v<ComputeT, void>,
+                               detail::NoScaling<0, NominalItemsPerThread4B>,
+                               detail::MemBoundScaling<0, NominalItemsPerThread4B, ComputeT>>::ITEMS_PER_THREAD;
 
   /// Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;

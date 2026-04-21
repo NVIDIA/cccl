@@ -20,11 +20,13 @@ struct policy_selector
     constexpr int accum_size = int{sizeof(AccumT)};
 
     const auto [l_items, l_threads] =
-      cub::detail::scale_mem_bound(TUNE_L_THREADS_PER_BLOCK, TUNE_L_ITEMS_PER_THREAD, accum_size);
+      cub::detail::scale_mem_bound(TUNE_L_NOMINAL_4B_THREADS_PER_BLOCK, TUNE_L_NOMINAL_4B_ITEMS_PER_THREAD, accum_size);
     const auto s_items =
-      cub::detail::scale_mem_bound(TUNE_L_THREADS_PER_BLOCK, TUNE_S_ITEMS_PER_THREAD, accum_size).items_per_thread;
+      cub::detail::scale_mem_bound(TUNE_L_NOMINAL_4B_THREADS_PER_BLOCK, TUNE_S_NOMINAL_4B_ITEMS_PER_THREAD, accum_size)
+        .items_per_thread;
     const auto m_items =
-      cub::detail::scale_mem_bound(TUNE_L_THREADS_PER_BLOCK, TUNE_M_ITEMS_PER_THREAD, accum_size).items_per_thread;
+      cub::detail::scale_mem_bound(TUNE_L_NOMINAL_4B_THREADS_PER_BLOCK, TUNE_M_NOMINAL_4B_ITEMS_PER_THREAD, accum_size)
+        .items_per_thread;
 
     const auto rp = cub::agent_reduce_policy{
       l_threads, l_items, TUNE_ITEMS_PER_VEC_LOAD, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_LDG};

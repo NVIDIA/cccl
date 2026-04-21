@@ -143,6 +143,7 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_red
     AgentWarpReducePolicy<med_pol.block_threads,
                           med_pol.warp_threads,
                           med_pol.items_per_thread,
+                          void,
                           med_pol.vector_load_length,
                           med_pol.load_modifier>;
   using AgentMediumReduceT =
@@ -154,6 +155,7 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_red
     AgentWarpReducePolicy<small_pol.block_threads,
                           small_pol.warp_threads,
                           small_pol.items_per_thread,
+                          void,
                           small_pol.vector_load_length,
                           small_pol.load_modifier>;
   using AgentSmallReduceT =
@@ -348,6 +350,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
     AgentWarpReducePolicy<med_pol.block_threads,
                           med_pol.warp_threads,
                           med_pol.items_per_thread,
+                          void,
                           med_pol.vector_load_length,
                           med_pol.load_modifier>;
   using AgentMediumReduceT = reduce::AgentWarpReduce<medium_agent_policy_t, InputIteratorT, int, ReductionOpT, AccumT>;
@@ -358,6 +361,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
     AgentWarpReducePolicy<small_pol.block_threads,
                           small_pol.warp_threads,
                           small_pol.items_per_thread,
+                          void,
                           small_pol.vector_load_length,
                           small_pol.load_modifier>;
   using AgentSmallReduceT = reduce::AgentWarpReduce<small_agent_policy_t, InputIteratorT, int, ReductionOpT, AccumT>;
