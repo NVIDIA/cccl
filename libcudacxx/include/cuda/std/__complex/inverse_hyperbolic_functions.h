@@ -754,7 +754,7 @@ template <class _Tp>
     __realx -= _Tp{1.0};
   }
 
-  // Seperately get the top and bottom of:
+  // Separately get the top and bottom of:
   //      4.0 * real / ((1.0 - real)^2 + imag^2)
   _Tp __numerator   = ::cuda::std::fabs(__x.real()); // Move the 4.0 factor below.
   _Tp __denominator = _Tp{0.25} * (__realx * __realx + __imagx * __imagx);
@@ -777,7 +777,7 @@ template <class _Tp>
   // Correct for overflow:
   if (__xBig)
   {
-    // __two_m_x_large_scale_factor ^ 2 is denormal and causes issues, so we multiply seperately twice:
+    // __two_m_x_large_scale_factor ^ 2 is denormal and causes issues, so we multiply separately twice:
     __pre_log1p = (__pre_log1p * __two_m_x_large_scale_factor) * __two_m_x_large_scale_factor;
   }
 
