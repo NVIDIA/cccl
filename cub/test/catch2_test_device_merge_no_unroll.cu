@@ -88,37 +88,7 @@ C2H_TEST("DeviceMerge::MergeKeys large key types", "[merge][device]", c2h::type_
     6346,
     cuda::std::less<key_t>{},
     [](const key_t* k1, offset_t s1, const key_t* k2, offset_t s2, key_t* r, cuda::std::less<key_t> co) {
-      std::size_t temp_storage_bytes = 0;
-      auto value_nullptr             = static_cast<cub::NullType*>(nullptr);
-      cub::detail::merge::dispatch(
-        nullptr,
-        temp_storage_bytes,
-        k1,
-        value_nullptr,
-        s1,
-        k2,
-        value_nullptr,
-        s2,
-        r,
-        value_nullptr,
-        co,
-        cudaStream_t{0},
-        fixed_policy_selector{});
-
-      c2h::device_vector<char> temp_storage(temp_storage_bytes);
-      cub::detail::merge::dispatch(
-        thrust::raw_pointer_cast(temp_storage.data()),
-        temp_storage_bytes,
-        k1,
-        value_nullptr,
-        s1,
-        k2,
-        value_nullptr,
-        s2,
-        r,
-        value_nullptr,
-        co,
-        cudaStream_t{0},
-        fixed_policy_selector{});
+      REQUIRE(cub::DeviceMerge::MergeKeys(k1, s1, k2, s2, r, co, cuda::execution::__tune(fixed_policy_selector{}))
+              == cudaSuccess);
     });
 }

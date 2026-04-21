@@ -9,6 +9,9 @@
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 
+// XFAIL: enable-tile
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <cuda/std/variant>
 // template <class Visitor, class... Variants>
 // constexpr see below visit(Visitor&& vis, Variants&&... vars);
@@ -27,11 +30,11 @@ struct almost_string
 {
   const char* ptr;
 
-  __host__ __device__ almost_string(const char* ptr)
+  TEST_FUNC almost_string(const char* ptr)
       : ptr(ptr)
   {}
 
-  __host__ __device__ friend bool operator==(const almost_string& lhs, const almost_string& rhs)
+  TEST_FUNC friend bool operator==(const almost_string& lhs, const almost_string& rhs)
   {
     return lhs.ptr == rhs.ptr;
   }
@@ -45,7 +48,7 @@ struct MyVariant : cuda::std::variant<short, long, float>
 namespace cuda::std
 {
 template <size_t Index>
-__host__ __device__ void get(const MyVariant&)
+TEST_FUNC void get(const MyVariant&)
 {
   assert(false);
 }
@@ -54,7 +57,7 @@ __host__ __device__ void get(const MyVariant&)
 struct visitor_42
 {
   template <class T>
-  __host__ __device__ constexpr bool operator()(T x) const noexcept
+  TEST_FUNC constexpr bool operator()(T x) const noexcept
   {
     assert(x == 42);
     return true;
@@ -63,7 +66,7 @@ struct visitor_42
 struct visitor_142
 {
   template <class T>
-  __host__ __device__ constexpr bool operator()(T x) const noexcept
+  TEST_FUNC constexpr bool operator()(T x) const noexcept
   {
     assert(x == 142);
     return true;
@@ -72,7 +75,7 @@ struct visitor_142
 struct visitor_float
 {
   template <class T>
-  __host__ __device__ constexpr bool operator()(T x) const noexcept
+  TEST_FUNC constexpr bool operator()(T x) const noexcept
   {
     assert(x == -1.25f);
     return true;
@@ -81,7 +84,7 @@ struct visitor_float
 struct visitor_double
 {
   template <class T>
-  __host__ __device__ constexpr bool operator()(T x) const noexcept
+  TEST_FUNC constexpr bool operator()(T x) const noexcept
   {
     assert(x == 42.3);
     return true;
@@ -108,7 +111,7 @@ struct ImplVariantBase
 {
   struct Callable
   {
-    __host__ __device__ bool operator()() const
+    TEST_FUNC bool operator()() const
     {
       assert(false);
       return false;
@@ -124,7 +127,7 @@ struct EvilVariant2
   using cuda::std::variant<int, long, double>::variant;
 };
 
-__host__ __device__ void test_derived_from_variant()
+TEST_FUNC void test_derived_from_variant()
 {
   auto v1        = MyVariant{short(42)};
   const auto cv1 = MyVariant{long(142)};

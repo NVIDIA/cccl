@@ -273,10 +273,7 @@ public:
   template <typename T>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T operator()(const T& a, const T& b)
   {
-    T _a(a);
-    T _b(b);
-
-    return scan_op(_b, _a);
+    return scan_op(b, a);
   }
 };
 
@@ -555,6 +552,15 @@ inline constexpr bool is_simd_enabled_cuda_operator =
   is_cuda_minimum_maximum_v<Op, T> || //
   is_cuda_std_plus_mul_v<Op, T> || //
   is_cuda_std_bitwise_v<Op, T>;
+
+// TODO: enable FP32 min/max (SM100a/SM100f)
+template <typename Op, typename T, typename UnqualifiedOp = ::cuda::std::remove_cvref_t<Op>>
+inline constexpr bool is_redux_enabled_cuda_operator =
+  ::cuda::std::is_integral_v<T> && //
+  sizeof(T) <= sizeof(unsigned) && //
+  (is_cuda_minimum_maximum_v<UnqualifiedOp, T> || //
+   is_cuda_std_plus_v<UnqualifiedOp, T> || //
+   is_cuda_std_bitwise_v<UnqualifiedOp, T>);
 
 template <typename Op, typename T = void>
 inline constexpr bool is_cuda_binary_operator =

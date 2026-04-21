@@ -9,12 +9,12 @@
 //===----------------------------------------------------------------------===//
 
 #include <algorithm>
+#include <cstdint>
 #include <iostream> // std::cerr
 #include <optional> // std::optional
 #include <string>
 
 #include <cuda_runtime.h>
-#include <stdint.h>
 
 #include "algorithm_execution.h"
 #include "build_result_caching.h"

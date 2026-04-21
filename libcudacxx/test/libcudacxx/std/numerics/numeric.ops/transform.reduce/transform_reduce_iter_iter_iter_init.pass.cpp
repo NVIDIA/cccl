@@ -22,14 +22,14 @@
 #include "test_macros.h"
 
 template <class Iter1, class Iter2, class T>
-__host__ __device__ constexpr void test(Iter1 first1, Iter1 last1, Iter2 first2, T init, T x)
+TEST_FUNC constexpr void test(Iter1 first1, Iter1 last1, Iter2 first2, T init, T x)
 {
-  static_assert(cuda::std::is_same<T, decltype(cuda::std::transform_reduce(first1, last1, first2, init))>::value, "");
+  static_assert(cuda::std::is_same<T, decltype(cuda::std::transform_reduce(first1, last1, first2, init))>::value);
   assert(cuda::std::transform_reduce(first1, last1, first2, init) == x);
 }
 
 template <class SIter, class UIter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   int ia[]          = {1, 2, 3, 4, 5, 6};
   unsigned int ua[] = {2, 4, 6, 8, 10, 12};
@@ -47,14 +47,14 @@ __host__ __device__ constexpr void test()
 }
 
 template <typename T, typename Init>
-__host__ __device__ constexpr void test_return_type()
+TEST_FUNC constexpr void test_return_type()
 {
   T* p = nullptr;
   unused(p);
-  static_assert(cuda::std::is_same<Init, decltype(cuda::std::transform_reduce(p, p, p, Init{}))>::value, "");
+  static_assert(cuda::std::is_same<Init, decltype(cuda::std::transform_reduce(p, p, p, Init{}))>::value);
 }
 
-__host__ __device__ constexpr void test_move_only_types()
+TEST_FUNC constexpr void test_move_only_types()
 {
   MoveOnly ia[] = {{1}, {2}, {3}};
   MoveOnly ib[] = {{1}, {2}, {3}};
@@ -63,7 +63,7 @@ __host__ __device__ constexpr void test_move_only_types()
     == cuda::std::transform_reduce(cuda::std::begin(ia), cuda::std::end(ia), cuda::std::begin(ib), MoveOnly{0}).get());
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_return_type<char, int>();
   test_return_type<int, int>();
@@ -94,6 +94,13 @@ __host__ __device__ constexpr bool test()
   test<random_access_iterator<const int*>, bidirectional_iterator<const unsigned int*>>();
   test<random_access_iterator<const int*>, random_access_iterator<const unsigned int*>>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<const int*, host_only_iterator<const unsigned int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<const int*, device_only_iterator<const unsigned int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   //  just plain pointers (const vs. non-const, too)
   test<const int*, const unsigned int*>();
   test<const int*, unsigned int*>();
@@ -108,6 +115,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

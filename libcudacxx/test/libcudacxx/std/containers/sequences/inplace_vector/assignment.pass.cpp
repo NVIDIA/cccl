@@ -23,10 +23,10 @@
 #endif // TEST_HAS_EXCEPTIONS()
 
 template <class T>
-__host__ __device__ constexpr void test_copy()
+TEST_FUNC constexpr void test_copy()
 {
   // Zero capacity inplace_vector is nothrow_copy_assignable
-  static_assert(cuda::std::is_nothrow_copy_assignable<cuda::std::inplace_vector<T, 0>>::value, "");
+  static_assert(cuda::std::is_nothrow_copy_assignable<cuda::std::inplace_vector<T, 0>>::value);
   static_assert(cuda::std::is_nothrow_copy_assignable<cuda::std::inplace_vector<T, 42>>::value
                   == cuda::std::conjunction<cuda::std::is_nothrow_copy_constructible<T>,
                                             cuda::std::is_nothrow_copy_assignable<T>>::value,
@@ -80,10 +80,10 @@ __host__ __device__ constexpr void test_copy()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_move()
+TEST_FUNC constexpr void test_move()
 {
   // Zero capacity inplace_vector is nothrow_move_assignable
-  static_assert(cuda::std::is_nothrow_move_assignable<cuda::std::inplace_vector<T, 0>>::value, "");
+  static_assert(cuda::std::is_nothrow_move_assignable<cuda::std::inplace_vector<T, 0>>::value);
   static_assert(cuda::std::is_nothrow_move_assignable<cuda::std::inplace_vector<T, 42>>::value
                   == cuda::std::conjunction<cuda::std::is_nothrow_move_constructible<T>,
                                             cuda::std::is_nothrow_move_assignable<T>>::value,
@@ -144,7 +144,7 @@ __host__ __device__ constexpr void test_move()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_move_only()
+TEST_FUNC constexpr void test_move_only()
 {
   using inplace_vector = cuda::std::inplace_vector<T, 42>;
   inplace_vector input;
@@ -163,7 +163,7 @@ __host__ __device__ constexpr void test_move_only()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_init_list()
+TEST_FUNC constexpr void test_init_list()
 {
   { // inplace_vector<T, 0> can be assigned an empty initializer_list
     cuda::std::initializer_list<T> input{};
@@ -210,14 +210,14 @@ __host__ __device__ constexpr void test_init_list()
 }
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   test_copy<T>();
   test_move<T>();
   test_init_list<T>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<Trivial>();
@@ -263,7 +263,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
 #if TEST_HAS_EXCEPTIONS()

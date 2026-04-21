@@ -115,16 +115,16 @@ C2H_TEST("composite data place with grid of places (same device repeated)", "[ta
 {
   const size_t nplaces = 3;
   stf_exec_place_handle places[3];
-  for (size_t i = 0; i < nplaces; i++)
+  for (auto& place : places)
   {
-    places[i] = stf_exec_place_device(0);
+    place = stf_exec_place_device(0);
   }
 
   stf_exec_place_handle grid = stf_exec_place_grid_create(places, nplaces, nullptr);
   REQUIRE(grid != nullptr);
-  for (size_t i = 0; i < nplaces; i++)
+  for (auto& place : places)
   {
-    stf_exec_place_destroy(places[i]);
+    stf_exec_place_destroy(place);
   }
 
   stf_data_place_handle composite_dplace = stf_data_place_composite(grid, blocked_mapper_1d);
@@ -171,29 +171,29 @@ C2H_TEST("composite data place with stf_exec_place_grid_create (vector of places
 {
   const size_t nplaces = 4;
   stf_exec_place_handle places[4];
-  for (size_t i = 0; i < nplaces; i++)
+  for (auto& place : places)
   {
-    places[i] = stf_exec_place_device(0);
+    place = stf_exec_place_device(0);
   }
 
   stf_exec_place_handle grid_linear = stf_exec_place_grid_create(places, nplaces, nullptr);
   REQUIRE(grid_linear != nullptr);
-  for (size_t i = 0; i < nplaces; i++)
+  for (auto& place : places)
   {
-    stf_exec_place_destroy(places[i]);
+    stf_exec_place_destroy(place);
   }
   stf_exec_place_grid_destroy(grid_linear);
 
-  for (size_t i = 0; i < nplaces; i++)
+  for (auto& place : places)
   {
-    places[i] = stf_exec_place_device(0);
+    place = stf_exec_place_device(0);
   }
   stf_dim4 grid_dims         = {2, 2, 1, 1};
   stf_exec_place_handle grid = stf_exec_place_grid_create(places, nplaces, &grid_dims);
   REQUIRE(grid != nullptr);
-  for (size_t i = 0; i < nplaces; i++)
+  for (auto& place : places)
   {
-    stf_exec_place_destroy(places[i]);
+    stf_exec_place_destroy(place);
   }
 
   stf_data_place_handle composite_dplace = stf_data_place_composite(grid, blocked_mapper_1d);

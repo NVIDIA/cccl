@@ -23,14 +23,14 @@ class functor1
 {};
 
 template <class T>
-__host__ __device__ void test(T& t)
+TEST_FUNC void test(T& t)
 {
   cuda::std::reference_wrapper<T> r(t);
   cuda::std::reference_wrapper<T> r2 = r;
   assert(&r2.get() == &t);
 }
 
-__host__ __device__ void f() {}
+TEST_FUNC void f() {}
 
 int main(int, char**)
 {

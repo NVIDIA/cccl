@@ -19,28 +19,28 @@
 
 struct NoDefault
 {
-  __host__ __device__ constexpr NoDefault(int) {}
+  TEST_FUNC constexpr NoDefault(int) {}
 };
 
 struct NonTrivialCopy
 {
-  __host__ __device__ constexpr NonTrivialCopy() {}
-  __host__ __device__ constexpr NonTrivialCopy(NonTrivialCopy const&) {}
-  __host__ __device__ constexpr NonTrivialCopy& operator=(NonTrivialCopy const&)
+  TEST_FUNC constexpr NonTrivialCopy() {}
+  TEST_FUNC constexpr NonTrivialCopy(NonTrivialCopy const&) {}
+  TEST_FUNC constexpr NonTrivialCopy& operator=(NonTrivialCopy const&)
   {
     return *this;
   }
 };
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   {
     using Array = cuda::std::array<double, 3>;
     Array array = {1.1, 2.2, 3.3};
     Array copy  = array;
     copy        = array;
-    static_assert(cuda::std::is_copy_constructible<Array>::value, "");
-    static_assert(cuda::std::is_copy_assignable<Array>::value, "");
+    static_assert(cuda::std::is_copy_constructible<Array>::value);
+    static_assert(cuda::std::is_copy_assignable<Array>::value);
     unused(copy);
   }
   {
@@ -48,8 +48,8 @@ __host__ __device__ constexpr bool tests()
     Array array = {1.1, 2.2, 3.3};
     Array copy  = array;
     unused(copy);
-    static_assert(cuda::std::is_copy_constructible<Array>::value, "");
-    static_assert(!cuda::std::is_copy_assignable<Array>::value, "");
+    static_assert(cuda::std::is_copy_constructible<Array>::value);
+    static_assert(!cuda::std::is_copy_assignable<Array>::value);
     unused(copy);
   }
   {
@@ -57,8 +57,8 @@ __host__ __device__ constexpr bool tests()
     Array array = {};
     Array copy  = array;
     copy        = array;
-    static_assert(cuda::std::is_copy_constructible<Array>::value, "");
-    static_assert(cuda::std::is_copy_assignable<Array>::value, "");
+    static_assert(cuda::std::is_copy_constructible<Array>::value);
+    static_assert(cuda::std::is_copy_assignable<Array>::value);
     unused(copy);
   }
   {
@@ -66,8 +66,8 @@ __host__ __device__ constexpr bool tests()
     using Array = cuda::std::array<double const, 0>;
     Array array = {};
     Array copy  = array;
-    static_assert(cuda::std::is_copy_constructible<Array>::value, "");
-    static_assert(!cuda::std::is_copy_assignable<Array>::value, "");
+    static_assert(cuda::std::is_copy_constructible<Array>::value);
+    static_assert(!cuda::std::is_copy_assignable<Array>::value);
     unused(copy);
   }
   {
@@ -75,16 +75,16 @@ __host__ __device__ constexpr bool tests()
     Array array = {};
     Array copy  = array;
     copy        = array;
-    static_assert(cuda::std::is_copy_constructible<Array>::value, "");
-    static_assert(cuda::std::is_copy_assignable<Array>::value, "");
+    static_assert(cuda::std::is_copy_constructible<Array>::value);
+    static_assert(cuda::std::is_copy_assignable<Array>::value);
     unused(copy);
   }
   {
     using Array = cuda::std::array<NoDefault const, 0>;
     Array array = {};
     Array copy  = array;
-    static_assert(cuda::std::is_copy_constructible<Array>::value, "");
-    static_assert(!cuda::std::is_copy_assignable<Array>::value, "");
+    static_assert(cuda::std::is_copy_constructible<Array>::value);
+    static_assert(!cuda::std::is_copy_assignable<Array>::value);
     unused(copy);
   }
 
@@ -94,7 +94,7 @@ __host__ __device__ constexpr bool tests()
     Array array = {};
     Array copy  = array;
     copy        = array;
-    static_assert(cuda::std::is_copy_constructible<Array>::value, "");
+    static_assert(cuda::std::is_copy_constructible<Array>::value);
     unused(copy);
   }
 
@@ -107,7 +107,7 @@ __host__ __device__ constexpr bool tests()
     Array array = {};
     Array copy  = array;
     copy        = array;
-    static_assert(cuda::std::is_copy_constructible<Array>::value, "");
+    static_assert(cuda::std::is_copy_constructible<Array>::value);
     unused(copy);
   }
 // NVCC believes `copy = array` accesses uninitialized memory
@@ -119,7 +119,7 @@ __host__ __device__ constexpr bool tests()
     Array array = {};
     Array copy  = array;
     copy        = array;
-    static_assert(cuda::std::is_copy_constructible<Array>::value, "");
+    static_assert(cuda::std::is_copy_constructible<Array>::value);
     unused(copy);
   }
 
@@ -130,7 +130,7 @@ int main(int, char**)
 {
   tests();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(tests(), "");
+  static_assert(tests());
 #endif
   return 0;
 }

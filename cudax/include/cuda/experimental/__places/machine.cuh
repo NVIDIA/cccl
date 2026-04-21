@@ -100,7 +100,7 @@ public:
           cudaMemAccessDesc desc = {.location = {.type = cudaMemLocationTypeDevice, .id = peer_d},
                                     .flags    = cudaMemAccessFlagsProtReadWrite};
           cuda_try(cudaMemPoolSetAccess(mempool, &desc, 1 /* numDescs */));
-          // ::std::cout << "[DEV " << d << "] cudaMemPoolSetAccess to peer "<< peer_d << ::std::endl;
+          // ::std::cout << "[DEV " << d << "] cudaMemPoolSetAccess to peer "<< peer_d << ::'\n';
         }
         else
         {

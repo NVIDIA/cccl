@@ -24,7 +24,7 @@
 namespace detail
 {
 template <class D, class URNG, class Param>
-__host__ __device__ constexpr bool test_ctor_assign(Param param)
+TEST_FUNC constexpr bool test_ctor_assign(Param param)
 {
   D d1(param);
   D d2;
@@ -35,7 +35,7 @@ __host__ __device__ constexpr bool test_ctor_assign(Param param)
 }
 
 template <class D, class URNG, class Param>
-__host__ __device__ constexpr bool test_copy(Param param)
+TEST_FUNC constexpr bool test_copy(Param param)
 {
   D d1(param);
   D d2(d1);
@@ -45,7 +45,7 @@ __host__ __device__ constexpr bool test_copy(Param param)
 }
 
 template <class D, class URNG, class Param>
-__host__ __device__ constexpr bool test_eq(Param param)
+TEST_FUNC constexpr bool test_eq(Param param)
 {
   D d1(param);
   D d2(param);
@@ -57,7 +57,7 @@ __host__ __device__ constexpr bool test_eq(Param param)
 }
 
 template <class D, class URNG, class Param>
-__host__ __device__ constexpr bool test_get_param(Param param)
+TEST_FUNC constexpr bool test_get_param(Param param)
 {
   D d1(param);
   assert(d1.param() == param);
@@ -80,7 +80,7 @@ bool test_io(Param param)
 #endif
 
 template <class D, class URNG, class Param>
-__host__ __device__ constexpr bool test_min_max(Param param)
+TEST_FUNC constexpr bool test_min_max(Param param)
 {
   D d1(param);
   static_assert(noexcept(d1.min()));
@@ -90,7 +90,7 @@ __host__ __device__ constexpr bool test_min_max(Param param)
 }
 
 template <class D, class URNG, class Param>
-__host__ __device__ constexpr bool test_set_param(Param param)
+TEST_FUNC constexpr bool test_set_param(Param param)
 {
   D d1;
   d1.param(param);
@@ -99,7 +99,7 @@ __host__ __device__ constexpr bool test_set_param(Param param)
 }
 
 template <class D, class URNG, class Param>
-__host__ __device__ constexpr bool test_types(Param param)
+TEST_FUNC constexpr bool test_types(Param param)
 {
   D d1(param);
   [[maybe_unused]] URNG g{};
@@ -112,7 +112,7 @@ __host__ __device__ constexpr bool test_types(Param param)
 }
 
 template <class D, class URNG, class Param>
-__host__ __device__ constexpr bool test_param(Param param)
+TEST_FUNC constexpr bool test_param(Param param)
 {
   static_assert(cuda::std::is_same_v<typename D::param_type, Param>);
   static_assert(cuda::std::is_same_v<typename Param::distribution_type, D>);
@@ -130,7 +130,7 @@ __host__ __device__ constexpr bool test_param(Param param)
 
 // Compute KS test statistic for continuous distributions
 template <class D, class CDF>
-__host__ __device__ double ks_test_statistic_continuous(
+TEST_FUNC double ks_test_statistic_continuous(
   const typename D::result_type* samples, cuda::std::size_t num_samples, const typename D::param_type& param, CDF cdf)
 {
   double d_max = 0.0;
@@ -148,7 +148,7 @@ __host__ __device__ double ks_test_statistic_continuous(
 
 // Compute KS test statistic for discrete distributions
 template <class D, class CDF>
-__host__ __device__ double ks_test_statistic_discrete(
+TEST_FUNC double ks_test_statistic_discrete(
   const typename D::result_type* samples, cuda::std::size_t num_samples, const typename D::param_type& param, CDF cdf)
 {
   // Compute empirical CDF
@@ -185,7 +185,7 @@ __host__ __device__ double ks_test_statistic_discrete(
 // distribution function from a continuous distribution.
 // Generates a fixed size of 10000 samples
 template <class D, bool continuous, class URNG, bool test_constexpr, class CDF>
-__host__ __device__ bool test_eval(const typename D::param_type param, CDF cdf)
+TEST_FUNC bool test_eval(const typename D::param_type param, CDF cdf)
 {
   // First check the operator with param is equivalent to the constructor param
   {
@@ -197,7 +197,7 @@ __host__ __device__ bool test_eval(const typename D::param_type param, CDF cdf)
     {
       auto dist_val  = d1(g_1, param);
       auto dist2_val = d2(g_2);
-      assert(dist_val == dist2_val);
+      assert((dist_val == dist2_val) || (cuda::std::isnan(dist_val) && cuda::std::isnan(dist2_val)));
     }
   }
 
@@ -233,7 +233,7 @@ __host__ __device__ bool test_eval(const typename D::param_type param, CDF cdf)
   return true;
 }
 template <class D, class URNG>
-__host__ __device__ constexpr bool test_eval_constexpr()
+TEST_FUNC constexpr bool test_eval_constexpr()
 {
   typename D::param_type param;
   D dist(param);
@@ -245,7 +245,7 @@ __host__ __device__ constexpr bool test_eval_constexpr()
 } // namespace detail
 
 template <class D, bool continuous, class URNG, bool test_constexpr, class CDF, cuda::std::size_t N>
-__host__ __device__ void constexpr test_distribution(cuda::std::array<typename D::param_type, N> params, CDF cdf)
+TEST_FUNC void constexpr test_distribution(cuda::std::array<typename D::param_type, N> params, CDF cdf)
 {
   for (cuda::std::size_t i = 0; i < N; ++i)
   {

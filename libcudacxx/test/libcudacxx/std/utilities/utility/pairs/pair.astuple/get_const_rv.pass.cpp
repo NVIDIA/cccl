@@ -34,7 +34,7 @@ int main(int, char**)
   const P p(cuda::std::unique_ptr<int>(new int(3)), static_cast<short>(4));
   static_assert(cuda::std::is_same<const cuda::std::unique_ptr<int>&&,
   decltype(cuda::std::get<0>(cuda::std::move(p)))>::value, "");
-  static_assert(noexcept(cuda::std::get<0>(cuda::std::move(p))), "");
+  static_assert(noexcept(cuda::std::get<0>(cuda::std::move(p))));
   const cuda::std::unique_ptr<int>&& ptr = cuda::std::get<0>(cuda::std::move(p));
   assert(*ptr == 3);
   }
@@ -43,27 +43,27 @@ int main(int, char**)
     int x       = 42;
     int const y = 43;
     cuda::std::pair<int&, int const&> const p(x, y);
-    static_assert(cuda::std::is_same<int&, decltype(cuda::std::get<0>(cuda::std::move(p)))>::value, "");
-    static_assert(noexcept(cuda::std::get<0>(cuda::std::move(p))), "");
-    static_assert(cuda::std::is_same<int const&, decltype(cuda::std::get<1>(cuda::std::move(p)))>::value, "");
-    static_assert(noexcept(cuda::std::get<1>(cuda::std::move(p))), "");
+    static_assert(cuda::std::is_same<int&, decltype(cuda::std::get<0>(cuda::std::move(p)))>::value);
+    static_assert(noexcept(cuda::std::get<0>(cuda::std::move(p))));
+    static_assert(cuda::std::is_same<int const&, decltype(cuda::std::get<1>(cuda::std::move(p)))>::value);
+    static_assert(noexcept(cuda::std::get<1>(cuda::std::move(p))));
   }
 
   {
     int x       = 42;
     int const y = 43;
     cuda::std::pair<int&&, int const&&> const p(cuda::std::move(x), cuda::std::move(y));
-    static_assert(cuda::std::is_same<int&&, decltype(cuda::std::get<0>(cuda::std::move(p)))>::value, "");
-    static_assert(noexcept(cuda::std::get<0>(cuda::std::move(p))), "");
-    static_assert(cuda::std::is_same<int const&&, decltype(cuda::std::get<1>(cuda::std::move(p)))>::value, "");
-    static_assert(noexcept(cuda::std::get<1>(cuda::std::move(p))), "");
+    static_assert(cuda::std::is_same<int&&, decltype(cuda::std::get<0>(cuda::std::move(p)))>::value);
+    static_assert(noexcept(cuda::std::get<0>(cuda::std::move(p))));
+    static_assert(cuda::std::is_same<int const&&, decltype(cuda::std::get<1>(cuda::std::move(p)))>::value);
+    static_assert(noexcept(cuda::std::get<1>(cuda::std::move(p))));
   }
 
   {
     using P = cuda::std::pair<int, short>;
     constexpr const P p1(3, static_cast<short>(4));
-    static_assert(cuda::std::get<0>(cuda::std::move(p1)) == 3, "");
-    static_assert(cuda::std::get<1>(cuda::std::move(p1)) == 4, "");
+    static_assert(cuda::std::get<0>(cuda::std::move(p1)) == 3);
+    static_assert(cuda::std::get<1>(cuda::std::move(p1)) == 4);
   }
 
   return 0;

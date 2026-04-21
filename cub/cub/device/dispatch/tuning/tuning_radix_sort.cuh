@@ -24,17 +24,17 @@
 #include <cub/util_device.cuh>
 
 #include <cuda/__device/arch_id.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/optional>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif
 
 CUB_NAMESPACE_BEGIN
 namespace detail::radix_sort
 {
-using detail::scan::make_mem_scaled_scan_policy;
+using detail::scan::make_mem_scaled_lookback_scan_policy;
+using detail::scan::scan_algorithm;
+using detail::scan::scan_lookback_policy;
 using detail::scan::scan_policy;
+using detail::scan::scan_warpspeed_policy;
 
 struct radix_sort_histogram_policy
 {
@@ -913,13 +913,16 @@ _CCCL_API constexpr auto convert_policy() -> radix_sort_policy
 
   using scan_pol  = typename active_policy::ScanPolicy;
   const auto scan = scan_policy{
-    scan_pol::BLOCK_THREADS,
-    scan_pol::ITEMS_PER_THREAD,
-    scan_pol::LOAD_ALGORITHM,
-    scan_pol::LOAD_MODIFIER,
-    scan_pol::STORE_ALGORITHM,
-    scan_pol::SCAN_ALGORITHM,
-    delay_constructor_policy_from_type<typename scan_pol::detail::delay_constructor_t>};
+    scan_algorithm::lookback,
+    scan_lookback_policy{
+      scan_pol::BLOCK_THREADS,
+      scan_pol::ITEMS_PER_THREAD,
+      scan_pol::LOAD_ALGORITHM,
+      scan_pol::LOAD_MODIFIER,
+      scan_pol::STORE_ALGORITHM,
+      scan_pol::SCAN_ALGORITHM,
+      delay_constructor_policy_from_type<typename scan_pol::detail::delay_constructor_t>},
+    {}};
 
   const auto downsweep     = convert_downsweep_policy(typename active_policy::DownsweepPolicy{});
   const auto alt_downsweep = convert_downsweep_policy(typename active_policy::AltDownsweepPolicy{});
@@ -1758,7 +1761,7 @@ struct policy_selector
     // device compiler pass will also compile all kernels for SM70 **and** SM90, even though only the onesweep kernel is
     // used on SM90.
 
-    const auto scan = make_mem_scaled_scan_policy(
+    const auto scan = make_mem_scaled_lookback_scan_policy(
       512,
       23,
       offset_size,
@@ -1876,7 +1879,7 @@ struct policy_selector
         BLOCK_SCAN_RAKING_MEMOIZE,
         RADIX_SORT_STORE_DIRECT);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -1980,7 +1983,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         RADIX_SORT_STORE_DIRECT);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -2082,7 +2085,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         RADIX_SORT_STORE_DIRECT);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -2171,7 +2174,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         RADIX_SORT_STORE_DIRECT);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -2275,7 +2278,7 @@ struct policy_selector
         BLOCK_SCAN_WARP_SCANS,
         RADIX_SORT_STORE_DIRECT);
 
-      const auto scan = make_mem_scaled_scan_policy(
+      const auto scan = make_mem_scaled_lookback_scan_policy(
         512,
         23,
         offset_size,
@@ -2380,7 +2383,7 @@ struct policy_selector
       BLOCK_SCAN_WARP_SCANS,
       RADIX_SORT_STORE_DIRECT);
 
-    const auto scan = make_mem_scaled_scan_policy(
+    const auto scan = make_mem_scaled_lookback_scan_policy(
       512,
       23,
       offset_size,

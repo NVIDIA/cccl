@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ void test(T obj)
+TEST_FUNC void test(T obj)
 {
   unsigned char buf[sizeof(T)]{};
   assert(cuda::std::memcpy(buf, &obj, sizeof(T)) == buf);

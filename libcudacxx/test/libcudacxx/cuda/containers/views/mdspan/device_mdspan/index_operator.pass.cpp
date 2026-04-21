@@ -40,7 +40,7 @@ TEST_DIAG_SUPPRESS_GCC("-Wcomma-subscript")
 #endif // TEST_COMPILER(GCC, >=, 10)
 
 template <class MDS>
-__device__ constexpr auto& access(MDS mds, int64_t i0)
+TEST_DEVICE_FUNC constexpr auto& access(MDS mds, int64_t i0)
 {
   return mds[i0];
 }
@@ -52,7 +52,7 @@ template <
   class  = cuda::std::enable_if_t<
      cuda::std::is_same_v<decltype(cuda::std::declval<MDS>()[cuda::std::declval<Indices>()...]), typename MDS::reference>,
      int> = 0>
-__device__ constexpr bool check_operator_constraints(MDS m, Indices... idxs)
+TEST_DEVICE_FUNC constexpr bool check_operator_constraints(MDS m, Indices... idxs)
 {
   unused(m[idxs...]);
   return true;
@@ -63,7 +63,7 @@ template <
   class Index,
   class = cuda::std::enable_if_t<cuda::std::is_same<decltype(cuda::std::declval<MDS>()[cuda::std::declval<Index>()]),
                                                     typename MDS::reference>::value>>
-__device__ constexpr bool check_operator_constraints(MDS m, Index idx)
+TEST_DEVICE_FUNC constexpr bool check_operator_constraints(MDS m, Index idx)
 {
   unused(m[idx]);
   return true;
@@ -71,29 +71,29 @@ __device__ constexpr bool check_operator_constraints(MDS m, Index idx)
 #endif // !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
 
 template <class MDS, class... Indices>
-__device__ constexpr bool check_operator_constraints(MDS, Indices...)
+TEST_DEVICE_FUNC constexpr bool check_operator_constraints(MDS, Indices...)
 {
   return false;
 }
 
 #if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
 template <class MDS>
-__device__ constexpr auto& access(MDS mds)
+TEST_DEVICE_FUNC constexpr auto& access(MDS mds)
 {
   return mds[];
 }
 template <class MDS>
-__device__ constexpr auto& access(MDS mds, int64_t i0, int64_t i1)
+TEST_DEVICE_FUNC constexpr auto& access(MDS mds, int64_t i0, int64_t i1)
 {
   return mds[i0, i1];
 }
 template <class MDS>
-__device__ constexpr auto& access(MDS mds, int64_t i0, int64_t i1, int64_t i2)
+TEST_DEVICE_FUNC constexpr auto& access(MDS mds, int64_t i0, int64_t i1, int64_t i2)
 {
   return mds[i0, i1, i2];
 }
 template <class MDS>
-__device__ constexpr auto& access(MDS mds, int64_t i0, int64_t i1, int64_t i2, int64_t i3)
+TEST_DEVICE_FUNC constexpr auto& access(MDS mds, int64_t i0, int64_t i1, int64_t i2, int64_t i3)
 {
   return mds[i0, i1, i2, i3];
 }
@@ -101,7 +101,7 @@ __device__ constexpr auto& access(MDS mds, int64_t i0, int64_t i1, int64_t i2, i
 
 // We must ensure that we do not try to access multiarg accessors
 template <class MDS, class Arg, cuda::std::enable_if_t<(MDS::extents_type::rank() == 1), int> = 0>
-__device__ constexpr void assert_access(MDS mds, Arg arg)
+TEST_DEVICE_FUNC constexpr void assert_access(MDS mds, Arg arg)
 {
   int* ptr1 = &(mds.accessor().access(mds.data_handle(), mds.mapping()(arg)));
   int* ptr2 = &access(mds, arg);
@@ -109,7 +109,7 @@ __device__ constexpr void assert_access(MDS mds, Arg arg)
 }
 
 template <class MDS, class... Args, cuda::std::enable_if_t<(MDS::extents_type::rank() == sizeof...(Args)), int> = 0>
-__device__ constexpr void assert_access(MDS mds, Args... args)
+TEST_DEVICE_FUNC constexpr void assert_access(MDS mds, Args... args)
 {
 #if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
   int* ptr1 = &(mds.accessor().access(mds.data_handle(), mds.mapping()(args...)));
@@ -121,7 +121,7 @@ __device__ constexpr void assert_access(MDS mds, Args... args)
 }
 
 template <class MDS, class... Args, cuda::std::enable_if_t<(MDS::extents_type::rank() == sizeof...(Args)), int> = 0>
-__device__ constexpr void iterate(MDS mds, Args... args)
+TEST_DEVICE_FUNC constexpr void iterate(MDS mds, Args... args)
 {
   int* ptr1 = &(mds.accessor().access(mds.data_handle(), mds.mapping()(args...)));
   assert_access(mds, args...);
@@ -134,7 +134,7 @@ __device__ constexpr void iterate(MDS mds, Args... args)
 }
 
 template <class MDS, class... Args, cuda::std::enable_if_t<(MDS::extents_type::rank() != sizeof...(Args)), int> = 0>
-__device__ constexpr void iterate(MDS mds, Args... args)
+TEST_DEVICE_FUNC constexpr void iterate(MDS mds, Args... args)
 {
   constexpr int r = static_cast<int>(MDS::extents_type::rank()) - 1 - static_cast<int>(sizeof...(Args));
   for (typename MDS::index_type i = 0; i < mds.extents().extent(r); i++)
@@ -144,7 +144,7 @@ __device__ constexpr void iterate(MDS mds, Args... args)
 }
 
 template <class Mapping>
-__device__ constexpr void test_iteration(Mapping m)
+TEST_DEVICE_FUNC constexpr void test_iteration(Mapping m)
 {
   cuda::std::array<int, 1024> data{};
   using MDS = cuda::device_mdspan<int, typename Mapping::extents_type, typename Mapping::layout_type>;
@@ -153,7 +153,7 @@ __device__ constexpr void test_iteration(Mapping m)
 }
 
 template <class Layout>
-__device__ constexpr void test_layout()
+TEST_DEVICE_FUNC constexpr void test_layout()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_iteration(construct_mapping(Layout(), cuda::std::extents<unsigned, D>(1)));
@@ -300,7 +300,7 @@ __device__ constexpr void test_layout()
 }
 
 template <class Layout>
-__device__ constexpr void test_layout_large()
+TEST_DEVICE_FUNC constexpr void test_layout_large()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_iteration(construct_mapping(Layout(), cuda::std::extents<int64_t, D, 4, D, D>(3, 5, 6)));
@@ -309,9 +309,9 @@ __device__ constexpr void test_layout_large()
 
 // mdspan::operator[] casts to index_type before calling mapping
 // mapping requirements only require the index operator to mixed integer types not anything convertible to index_type
-__device__ constexpr void test_index_cast_happens() {}
+TEST_DEVICE_FUNC constexpr void test_index_cast_happens() {}
 
-__device__ constexpr bool test()
+TEST_DEVICE_FUNC constexpr bool test()
 {
   test_layout<cuda::std::layout_left>();
   test_layout<cuda::std::layout_right>();
@@ -319,7 +319,7 @@ __device__ constexpr bool test()
   return true;
 }
 
-__device__ void test_device()
+TEST_DEVICE_FUNC void test_device()
 {
   test();
 }

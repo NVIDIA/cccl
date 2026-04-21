@@ -29,7 +29,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveSumByKey accepts stream environment", "[scan
     keys.begin(), input.begin(), output.begin(), static_cast<int>(input.size()), cuda::std::equal_to<>{}, env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::ExclusiveSumByKey failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceScan::ExclusiveSumByKey failed with status: " << error << '\n';
   }
 
   thrust::device_vector<float> expected{0.0f, 8.0f, 0.0f, 7.0f, 12.0f, 0.0f, 0.0f};
@@ -56,7 +56,7 @@ C2H_TEST("cub::DeviceScan::ExclusiveScanByKey accepts stream environment", "[sca
     keys.begin(), input.begin(), output.begin(), op, init, static_cast<int>(input.size()), cuda::std::equal_to<>{}, env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::ExclusiveScanByKey failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceScan::ExclusiveScanByKey failed with status: " << error << '\n';
   }
 
   thrust::device_vector<float> expected{0.0f, 8.0f, 0.0f, 7.0f, 12.0f, 0.0f, 0.0f};
@@ -81,7 +81,7 @@ C2H_TEST("cub::DeviceScan::InclusiveSumByKey accepts stream environment", "[scan
     keys.begin(), input.begin(), output.begin(), static_cast<int>(input.size()), cuda::std::equal_to<>{}, env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::InclusiveSumByKey failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceScan::InclusiveSumByKey failed with status: " << error << '\n';
   }
 
   thrust::device_vector<float> expected{8.0f, 14.0f, 7.0f, 12.0f, 15.0f, 0.0f, 9.0f};
@@ -107,7 +107,7 @@ C2H_TEST("cub::DeviceScan::InclusiveScanByKey accepts stream environment", "[sca
     keys.begin(), input.begin(), output.begin(), op, static_cast<int>(input.size()), cuda::std::equal_to<>{}, env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceScan::InclusiveScanByKey failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceScan::InclusiveScanByKey failed with status: " << error << '\n';
   }
 
   thrust::device_vector<float> expected{8.0f, 14.0f, 7.0f, 12.0f, 15.0f, 0.0f, 9.0f};

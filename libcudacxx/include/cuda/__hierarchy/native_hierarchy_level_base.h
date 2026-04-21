@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -26,6 +26,10 @@
 #  include <cuda/__fwd/hierarchy.h>
 #  include <cuda/__hierarchy/hierarchy_level_base.h>
 #  include <cuda/__hierarchy/hierarchy_query_result.h>
+#  include <cuda/__hierarchy/queries/count.h>
+#  include <cuda/__hierarchy/queries/extents.h>
+#  include <cuda/__hierarchy/queries/index.h>
+#  include <cuda/__hierarchy/queries/rank.h>
 #  include <cuda/__hierarchy/traits.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cstddef/types.h>
@@ -69,10 +73,10 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_leve
   using __base_type::rank;
   using __base_type::rank_as;
 
-#    if defined(_CUDAX_HIERARCHY)
+#    if defined(_CUDAX_GROUP)
   using __base_type::is_part_of;
   using __base_type::is_root_rank;
-#    endif // _CUDAX_HIERARCHY
+#    endif // _CUDAX_GROUP
 
   _CCCL_TEMPLATE(class _InLevel)
   _CCCL_REQUIRES(__is_native_hierarchy_level_v<_InLevel>)
@@ -132,72 +136,30 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __native_hierarchy_level_base : hierarchy_leve
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)
   _CCCL_REQUIRES(__is_native_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API static auto extents_as(const _InLevel& __level) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static auto extents_as(const _InLevel&) noexcept
   {
-    static_assert(__is_natively_reachable_hierarchy_level_v<_Level, _InLevel>,
-                  "_InLevel must be reachable from _Level");
-
-    using _NextLevel = typename _Level::__next_native_level;
-    auto __next_exts = _NextLevel::template extents_as<_Tp>(__level);
-    auto __curr_exts = _Level::template extents_as<_Tp>(_NextLevel{});
-    return ::cuda::__hierarchy_extents_mul(__curr_exts, __next_exts);
+    return __extents_query_native<_Level, _InLevel>::template __call<_Tp>();
   }
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)
   _CCCL_REQUIRES(__is_native_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API static auto count_as(const _InLevel& __level) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static auto count_as(const _InLevel&) noexcept
   {
-    return __base_type::template __count_as_impl<_Tp>(__level);
+    return __count_query_native<_Level, _InLevel>::template __call<_Tp>();
   }
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)
   _CCCL_REQUIRES(__is_native_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API static auto index_as(const _InLevel& __level) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static auto index_as(const _InLevel&) noexcept
   {
-    static_assert(__is_natively_reachable_hierarchy_level_v<_Level, _InLevel>,
-                  "_InLevel must be reachable from _Level");
-
-    using _NextLevel       = typename _Level::__next_native_level;
-    const auto __curr_exts = _Level::template extents_as<_Tp>(_NextLevel{});
-    const auto __next_idx  = _NextLevel::template index_as<_Tp>(__level);
-    const auto __curr_idx  = _Level::template index_as<_Tp>(_NextLevel{});
-
-    hierarchy_query_result<_Tp> __ret{};
-    for (::cuda::std::size_t __i = 0; __i < 3; ++__i)
-    {
-      __ret[__i] = __curr_idx[__i] + ((__i < __curr_exts.rank()) ? __curr_exts.extent(__i) : 1) * __next_idx[__i];
-    }
-    return __ret;
+    return __index_query_native<_Level, _InLevel>::template __call<_Tp>();
   }
 
   _CCCL_TEMPLATE(class _Tp, class _InLevel)
   _CCCL_REQUIRES(__is_native_hierarchy_level_v<_InLevel>)
-  [[nodiscard]] _CCCL_DEVICE_API static _Tp rank_as(const _InLevel& __level) noexcept
+  [[nodiscard]] _CCCL_DEVICE_API static _Tp rank_as(const _InLevel&) noexcept
   {
-    static_assert(__is_natively_reachable_hierarchy_level_v<_Level, _InLevel>,
-                  "_InLevel must be reachable from _Level");
-
-    using _NextLevel = typename _Level::__next_native_level;
-
-    const auto __curr_exts = _Level::template extents_as<_Tp>(_NextLevel{});
-    const auto __curr_idx  = _Level::template index_as<_Tp>(_NextLevel{});
-
-    _Tp __ret = 0;
-    if constexpr (!::cuda::std::is_same_v<_InLevel, _NextLevel>)
-    {
-      __ret = _NextLevel::template rank_as<_Tp>(__level) * _Level::template count_as<_Tp>(_NextLevel{});
-    }
-
-    for (::cuda::std::size_t __i = __curr_exts.rank(); __i > 0; --__i)
-    {
-      _Tp __inc = __curr_idx[__i - 1];
-      for (::cuda::std::size_t __j = __i - 1; __j > 0; --__j)
-      {
-        __inc *= __curr_exts.extent(__j - 1);
-      }
-      __ret += __inc;
-    }
-    return __ret;
+    return __rank_query_native<_Level, _InLevel>::template __call<_Tp>();
   }
 
 #  endif // _CCCL_CUDA_COMPILATION()

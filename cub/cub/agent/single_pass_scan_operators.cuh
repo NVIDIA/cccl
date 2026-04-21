@@ -690,6 +690,7 @@ struct ScanTileState<T, true>
     StatusWord status;
     T value;
   };
+  static_assert(sizeof(TileDescriptor) <= sizeof(TxnWord), "Tile descriptor must fit into the atomic transaction word");
   static_assert(sizeof(TileDescriptor) <= detail::largest_atomic_message_size);
 
   static constexpr int TILE_STATUS_PADDING = detail::warp_threads;
@@ -884,19 +885,15 @@ struct ScanTileState<T, false>
   static constexpr int TILE_STATUS_PADDING = detail::warp_threads;
 
   // Device storage
-  StatusWord* d_tile_status;
-  T* d_tile_partial;
-  T* d_tile_inclusive;
+  StatusWord* d_tile_status{};
+  T* d_tile_partial{};
+  T* d_tile_inclusive{};
 
   static constexpr size_t description_bytes_per_tile = sizeof(StatusWord);
   static constexpr size_t payload_bytes_per_tile     = sizeof(Uninitialized<T>);
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanTileState()
-      : d_tile_status(nullptr)
-      , d_tile_partial(nullptr)
-      , d_tile_inclusive(nullptr)
-  {}
+  _CCCL_FORCEINLINE ScanTileState() = default;
 
   /**
    * @brief Initializer
@@ -929,7 +926,7 @@ struct ScanTileState<T, false>
       d_tile_status    = reinterpret_cast<StatusWord*>(allocations[0]);
       d_tile_partial   = reinterpret_cast<T*>(allocations[1]);
       d_tile_inclusive = reinterpret_cast<T*>(allocations[2]);
-    } while (0);
+    } while (false);
 
     return error;
   }

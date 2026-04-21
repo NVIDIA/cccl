@@ -23,16 +23,14 @@
 
 #include <cuda/__cmath/mul_hi.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__random/is_seed_sequence.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ios>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -77,7 +75,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 //!      rng3.set_counter({0, 0, 0, 100});
 //!      const int n = 4;
 //!      rng1.discard(100*n); // rng1 is now at the same position as rng3
-//!      std::cout << (rng1() == rng3()) << std::endl; // 1
+//!      std::cout << (rng1() == rng3()) << '\n'; // 1
 //!
 //!      return 0;
 //!    }

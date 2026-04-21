@@ -103,7 +103,7 @@ public:
     cuda_safe_call(cuCtxGetDevice(&s2_dev));
     cuda_safe_call(cuCtxPopCurrent(&ctx));
 
-    // ::std::cout << "STREAM DEVICE = " << s2_dev << ::std::endl;
+    // ::std::cout << "STREAM DEVICE = " << s2_dev << ::'\n';
 
     exec_place::device(s2_dev)->*[&] {
       // Disable timing to avoid implicit barriers

@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -94,8 +94,25 @@ static_assert(sizeof(__rtti_base) == sizeof(uint64_t) + sizeof(void*));
 // Used to map an interface typeid to a pointer to the vtable for that interface.
 struct __base_info
 {
+  using __cast_fn_t = auto(__rtti const*) noexcept -> __base_vptr;
+
   ::cuda::std::__type_info_ptr __typeid_;
-  __base_vptr __vptr_;
+  union
+  {
+    __cast_fn_t* __cast_fn_; // used when __basic_any_version >= 1,
+    __base_vptr __vptr_v0_; // used when __basic_any_version == 0
+  };
+
+  [[nodiscard]] _CCCL_API auto __get_vptr(__rtti const* __rtti_ptr, uint8_t __version) const noexcept -> __base_vptr
+  {
+    return __version >= 1 ? __cast_fn_(__rtti_ptr) : __vptr_v0_;
+  }
+
+  template <class _VTable, class _Interface>
+  [[nodiscard]] _CCCL_API static auto __cast_fn_impl(__rtti const* __rtti_ptr) noexcept -> __base_vptr
+  {
+    return {static_cast<__vptr_for<_Interface>>(static_cast<_VTable const*>(__rtti_ptr))};
+  }
 };
 
 inline constexpr size_t __half_size_t_bits = sizeof(size_t) * CHAR_BIT / 2;
@@ -143,9 +160,13 @@ struct __rtti : __rtti_base
   [[nodiscard]] _CCCL_API auto __query_interface(__iset_<_Interfaces...>) const noexcept
     -> __vptr_for<__iset_<_Interfaces...>>
   {
-    // TODO: find a way to check at runtime that the requested __iset_ is a subset
-    // of the interfaces in the vtable.
-    return static_cast<__vptr_for<__iset_<_Interfaces...>>>(this);
+    // Verify that every sub-interface in the requested set exists in the vtable.
+    // TODO: Can it be done in a more efficient way?
+    if ((__query_interface(_Interfaces{}) && ...))
+    {
+      return static_cast<__vptr_for<__iset_<_Interfaces...>>>(this);
+    }
+    return nullptr;
   }
 
   // Sequentially search the base_vptr_map for the requested interface by
@@ -164,7 +185,7 @@ struct __rtti : __rtti_base
     {
       if (&__id == __base_vptr_map_[__i].__typeid_)
       {
-        return static_cast<__vptr_for<_Interface>>(__base_vptr_map_[__i].__vptr_);
+        return static_cast<__vptr_for<_Interface>>(__base_vptr_map_[__i].__get_vptr(this, __version_));
       }
     }
 
@@ -172,26 +193,26 @@ struct __rtti : __rtti_base
     {
       if (__id == *__base_vptr_map_[__i].__typeid_)
       {
-        return static_cast<__vptr_for<_Interface>>(__base_vptr_map_[__i].__vptr_);
+        return static_cast<__vptr_for<_Interface>>(__base_vptr_map_[__i].__get_vptr(this, __version_));
       }
     }
 
     return nullptr;
   }
 
-  void (*__dtor_)(void*, bool) noexcept;
-  __object_metadata const* __object_info_;
+  void (*__dtor_)(void*, bool) noexcept            = nullptr;
+  __object_metadata const* __object_info_          = nullptr;
   ::cuda::std::__type_info_ptr __interface_typeid_ = nullptr;
-  __base_info const* __base_vptr_map_;
+  __base_info const* __base_vptr_map_              = nullptr;
 };
 
 template <size_t _NbrInterfaces>
 struct __rtti_ex : __rtti
 {
-  template <class _Tp, class _Super, class... _Interfaces, class _VPtr>
-  _CCCL_API constexpr __rtti_ex(__tag<_Tp, _Super> __type, __tag<_Interfaces...> __ibases, _VPtr __self) noexcept
+  template <class _Tp, class _Super, class... _Interfaces, class _VTable>
+  _CCCL_API constexpr __rtti_ex(__tag<_Tp, _Super> __type, __tag<_Interfaces...> __ibases, _VTable const*) noexcept
       : __rtti{__type, __ibases, __base_vptr_array}
-      , __base_vptr_array{{&_CCCL_TYPEID(_Interfaces), static_cast<__vptr_for<_Interfaces>>(__self)}...}
+      , __base_vptr_array{{&_CCCL_TYPEID(_Interfaces), {&__base_info::__cast_fn_impl<_VTable, _Interfaces>}}...}
   {}
 
   __base_info __base_vptr_array[_NbrInterfaces];
@@ -224,8 +245,8 @@ template <class _SrcInterface, class _DstInterface>
   else
   {
     //! Slow down-casts and cross-casts:
-    __rtti const* rtti = __src_vptr->__query_interface(__iunknown());
-    return rtti->__query_interface(_DstInterface());
+    __rtti const* __rtti_ptr = __src_vptr->__query_interface(__iunknown());
+    return __rtti_ptr->__query_interface(_DstInterface());
   }
 }
 

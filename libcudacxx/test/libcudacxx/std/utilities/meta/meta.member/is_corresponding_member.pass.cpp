@@ -20,7 +20,7 @@ struct A
   float m3;
   double m4;
 
-  __host__ __device__ void fn() {}
+  TEST_FUNC void fn() {}
 };
 
 struct B
@@ -30,7 +30,7 @@ struct B
   float m3;
   double m4;
 
-  __host__ __device__ void fn() {}
+  TEST_FUNC void fn() {}
 };
 
 struct NonStandard
@@ -42,7 +42,7 @@ struct NonStandard
   int m;
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
 #if defined(_CCCL_BUILTIN_IS_CORRESPONDING_MEMBER)
   // 1. Test struct A members to be corresponding with itself

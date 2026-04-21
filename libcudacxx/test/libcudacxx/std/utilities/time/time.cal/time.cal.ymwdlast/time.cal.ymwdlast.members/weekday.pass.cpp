@@ -29,7 +29,7 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::declval<const year_month_weekday_last>().weekday()));
   static_assert(cuda::std::is_same_v<weekday, decltype(cuda::std::declval<const year_month_weekday_last>().weekday())>);
 
-  static_assert(year_month_weekday_last{year{}, month{}, weekday_last{weekday{}}}.weekday() == weekday{}, "");
+  static_assert(year_month_weekday_last{year{}, month{}, weekday_last{weekday{}}}.weekday() == weekday{});
 
   for (unsigned i = 1; i <= 50; ++i)
   {

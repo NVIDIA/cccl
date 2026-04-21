@@ -6,6 +6,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
 //
 // REQUIRES: long_tests
 
@@ -25,7 +28,7 @@ struct uniform_int_cdf
 {
   using P = typename cuda::std::uniform_int_distribution<T>::param_type;
 
-  __host__ __device__ double operator()(double x, const P& p) const
+  TEST_FUNC double operator()(double x, const P& p) const
   {
     // CDF: F(x; a, b) = (floor(x) - a + 1) / (b - a + 1) for a <= x <= b
     //                 = 0 for x < a
@@ -45,7 +48,7 @@ struct uniform_int_cdf
 };
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   [[maybe_unused]] const bool test_constexpr = true;
   using D                                    = cuda::std::uniform_int_distribution<T>;

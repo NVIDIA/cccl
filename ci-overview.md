@@ -71,11 +71,11 @@ CCCL's CI uses [`sccache`](https://github.com/mozilla/sccache) to cache compiler
 
 CI jobs employ the build and test scripts in the `ci/` directory to build and run tests. These scripts provide a consistent entry point for building and testing in both local and CI environments. For more information on using these scripts, see the [CONTRIBUTING.md guide](CONTRIBUTING.md#building-and-testing).
 
-#### CUB Benchmark Comparison Workflow
+#### Benchmark Comparison Workflow
 
-The standalone CUB benchmark comparison workflow is implemented in `.github/workflows/bench_cub.yml` and uses:
+The benchmark comparison workflow is implemented in `.github/workflows/bench.yml` and uses:
 
-- `ci/bench/cub.sh`
+- `ci/bench/bench.sh`
 - `ci/bench/compare_git_refs.sh`
 - `ci/bench/compare_paths.sh`
 

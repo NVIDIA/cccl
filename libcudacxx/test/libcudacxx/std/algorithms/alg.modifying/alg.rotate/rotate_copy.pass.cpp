@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <class InIter, class OutIter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   int ia[]          = {0, 1, 2, 3};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -126,7 +126,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<bidirectional_iterator<const int*>, cpp17_output_iterator<int*>>();
   test<bidirectional_iterator<const int*>, forward_iterator<int*>>();
@@ -153,7 +153,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
   return 0;
 }

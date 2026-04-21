@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ void test(int c)
+TEST_FUNC void test(int c)
 {
   T obj{};
   assert(cuda::std::memset(&obj, c, sizeof(T)) == &obj);

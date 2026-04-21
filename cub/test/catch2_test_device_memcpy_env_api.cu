@@ -56,7 +56,7 @@ C2H_TEST("cub::DeviceMemcpy::Batched accepts env with stream", "[memcpy][env]")
     env);
   if (error != cudaSuccess)
   {
-    std::cerr << "cub::DeviceMemcpy::Batched failed with status: " << error << std::endl;
+    std::cerr << "cub::DeviceMemcpy::Batched failed with status: " << error << '\n';
   }
 
   thrust::device_vector<int> expected_a{10, 20, 30, 40, 50};

@@ -41,7 +41,7 @@ constexpr int SMEM_WIDTH  = 32; // Width of shared memory buffer (in # elements)
 constexpr int SMEM_HEIGHT = 8; // Height of shared memory buffer (in # elements)
 
 static constexpr int buf_len = SMEM_HEIGHT * SMEM_WIDTH;
-__device__ int gmem_tensor[gmem_len];
+TEST_GLOBAL_VARIABLE int gmem_tensor[gmem_len];
 
 // We need a type with a size. On NVRTC, cuda.h cannot be imported, so we don't
 // have access to the definition of CUTensorMap (only to the declaration of CUtensorMap inside
@@ -53,7 +53,7 @@ struct fake_cutensormap
 };
 __constant__ fake_cutensormap global_fake_tensor_map;
 
-__device__ void test(int base_i, int base_j)
+TEST_DEVICE_FUNC void test(int base_i, int base_j)
 {
   CUtensorMap* global_tensor_map = reinterpret_cast<CUtensorMap*>(&global_fake_tensor_map);
 

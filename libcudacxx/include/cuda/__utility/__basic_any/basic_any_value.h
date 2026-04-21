@@ -147,7 +147,7 @@ public:
   //! @post `__other.has_value() == false` and `has_value()` is `true` if and
   //! only if `__other.has_value()` was `true`.
   _CCCL_TEMPLATE(class _OtherInterface)
-  _CCCL_REQUIRES((!::cuda::std::same_as<_OtherInterface, _Interface>)
+  _CCCL_REQUIRES((!::cuda::std::same_as<_OtherInterface&, _Interface&>)
                    _CCCL_AND __any_convertible_to<__basic_any<_OtherInterface>, __basic_any>)
   _CCCL_API __basic_any(__basic_any<_OtherInterface>&& __other)
   {
@@ -160,9 +160,29 @@ public:
   //! `__icopyable<>`.
   //! @post `has_value() == __other.has_value()`.
   _CCCL_TEMPLATE(class _OtherInterface)
-  _CCCL_REQUIRES((!::cuda::std::same_as<_OtherInterface, _Interface>)
+  _CCCL_REQUIRES((!::cuda::std::same_as<_OtherInterface&, _Interface&>)
                    _CCCL_AND __any_convertible_to<__basic_any<_OtherInterface> const&, __basic_any>)
   _CCCL_API __basic_any(__basic_any<_OtherInterface> const& __other)
+  {
+    __convert_from(__other);
+  }
+
+  //! @brief Non-template converting constructors from the corresponding
+  //! reference type `__basic_any<_Interface&>`. These enable implicit
+  //! conversion from proxy types (e.g. Cython's __Pyx_FakeReference)
+  //! that wrap a `__basic_any<_Interface&>` and provide
+  //! `operator __basic_any<_Interface&>&()`, since non-template parameters
+  //! participate in implicit conversion sequences.
+  //! @pre `_Interface` must extend `__icopyable<>` (converting a ref to
+  //! a value requires copying the referenced object).
+  template <bool _Copyable = __copyable, ::cuda::std::enable_if_t<_Copyable, int> = 0>
+  _CCCL_API __basic_any(__basic_any<_Interface&> const& __other)
+  {
+    __convert_from(__other);
+  }
+
+  template <bool _Copyable = __copyable, ::cuda::std::enable_if_t<_Copyable, int> = 0>
+  _CCCL_API __basic_any(__basic_any<_Interface&>&& __other)
   {
     __convert_from(__other);
   }

@@ -21,7 +21,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::chrono::duration<double> d(5);
   assert(d.count() == 5);

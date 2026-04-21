@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   static_assert(noexcept(cuda::in_range(cuda::std::declval<T>(), cuda::std::declval<T>(), cuda::std::declval<T>())));
   assert(cuda::in_range(T{5}, T{0}, T{10}));
@@ -70,7 +70,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<unsigned char>();
   test<signed char>();
@@ -94,7 +94,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ bool runtime_test()
+TEST_FUNC bool runtime_test()
 {
 #if _CCCL_HAS_NVFP16() && _CCCL_CTK_AT_LEAST(12, 2)
   test<__half>();

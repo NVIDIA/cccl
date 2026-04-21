@@ -17,44 +17,58 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
+#include <cub/detail/delay_constructor.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/optional>
+
+#if _CCCL_COMPILER(MSVC)
+#  include <ciso646>
+#endif // _CCCL_COMPILER(MSVC)
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::select
 {
+// TODO(bgruber): drop in CCCL 4.0
 enum class may_alias
 {
   no,
   yes
 };
 
+// TODO(bgruber): drop in CCCL 4.0
 enum class flagged
 {
   no,
   yes
 };
+// TODO(bgruber): drop in CCCL 4.0
 enum class keep_rejects
 {
   no,
   yes
 };
+// TODO(bgruber): drop in CCCL 4.0
 enum class primitive
 {
   no,
   yes
 };
+// TODO(bgruber): drop in CCCL 4.0
 enum class offset_size
 {
   _4,
   _8,
   unknown
 };
+// TODO(bgruber): drop in CCCL 4.0
 enum class input_size
 {
   _1,
@@ -64,12 +78,14 @@ enum class input_size
   _16,
   unknown
 };
+// TODO(bgruber): drop in CCCL 4.0
 enum class distinct_partitions
 {
   no,
   yes
 };
 
+// TODO(bgruber): drop in CCCL 4.0
 template <class InputT, flagged, keep_rejects, offset_size OffsetSize, primitive, input_size InputSize>
 struct sm80_tuning;
 
@@ -284,6 +300,7 @@ struct sm80_tuning<__uint128_t, flagged::yes, keep_rejects::yes, offset_size::_4
 {};
 #endif
 
+// TODO(bgruber): drop in CCCL 4.0
 template <class InputT, flagged, keep_rejects, offset_size OffsetSize, primitive, input_size InputSize>
 struct sm90_tuning;
 
@@ -499,6 +516,7 @@ struct sm90_tuning<__uint128_t, flagged::yes, keep_rejects::yes, offset_size::_4
 {};
 #endif
 
+// TODO(bgruber): drop in CCCL 4.0
 template <class InputT,
           flagged,
           keep_rejects,
@@ -1418,24 +1436,28 @@ struct sm100_tuning<Input,
   using delay_constructor                            = exponential_backoff_constructor_t<536, 845>;
 };
 
+// TODO(bgruber): drop in CCCL 4.0
 template <class InputT>
 constexpr primitive is_primitive()
 {
   return detail::is_primitive_v<InputT> ? primitive::yes : primitive::no;
 }
 
+// TODO(bgruber): drop in CCCL 4.0
 template <class FlagT>
 constexpr flagged is_flagged()
 {
   return ::cuda::std::is_same_v<FlagT, NullType> ? flagged::no : flagged::yes;
 }
 
+// TODO(bgruber): drop in CCCL 4.0
 template <bool KeepRejects>
 constexpr keep_rejects are_rejects_kept()
 {
   return KeepRejects ? keep_rejects::yes : keep_rejects::no;
 }
 
+// TODO(bgruber): drop in CCCL 4.0
 template <class InputT>
 constexpr input_size classify_input_size()
 {
@@ -1448,24 +1470,28 @@ constexpr input_size classify_input_size()
          : input_size::unknown;
 }
 
+// TODO(bgruber): drop in CCCL 4.0
 template <class OffsetT>
 constexpr offset_size classify_offset_size()
 {
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }
 
+// TODO(bgruber): drop in CCCL 4.0
 template <bool Alias>
 constexpr may_alias should_alias()
 {
   return Alias ? may_alias::yes : may_alias::no;
 }
 
+// TODO(bgruber): drop in CCCL 4.0
 template <bool DistinctPartitions>
 constexpr distinct_partitions is_distinct_partitions()
 {
   return DistinctPartitions ? distinct_partitions::yes : distinct_partitions::no;
 }
 
+// TODO(bgruber): drop in CCCL 4.0
 template <class InputT, class FlagT, class OffsetT, bool DistinctPartitions, SelectImpl Impl>
 struct policy_hub
 {
@@ -1564,6 +1590,986 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
+
+struct select_if_policy
+{
+  int block_threads;
+  int items_per_thread;
+  BlockLoadAlgorithm load_algorithm;
+  CacheLoadModifier load_modifier;
+  BlockScanAlgorithm scan_algorithm;
+  delay_constructor_policy delay_constructor;
+
+  [[nodiscard]] _CCCL_API constexpr friend bool operator==(const select_if_policy& lhs, const select_if_policy& rhs)
+  {
+    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr friend bool operator!=(const select_if_policy& lhs, const select_if_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const select_if_policy& p)
+  {
+    return os
+        << "select_if_policy { .block_threads = " << p.block_threads << ", .items_per_thread = " << p.items_per_thread
+        << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+};
+
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept select_if_policy_selector = policy_selector<T, select_if_policy>;
+#endif // _CCCL_HAS_CONCEPTS()
+
+struct policy_selector
+{
+  type_t input_type;
+  int input_size_bytes;
+  bool input_is_primitive; // TODO(bgruber): we should include is_trivially_copyable before publishing
+  int flag_size_bytes; // equals 0 when we don't have flags
+  int offset_size_bytes;
+  bool distinct_partitions;
+  SelectImpl selection_impl;
+
+private:
+  [[nodiscard]] _CCCL_API constexpr auto default_policy(CacheLoadModifier load_modifier) const -> select_if_policy
+  {
+    constexpr int nominal_4B_items_per_thread = 10;
+    const int items_per_thread =
+      ::cuda::std::clamp(nominal_4B_items_per_thread * 4 / input_size_bytes, 1, nominal_4B_items_per_thread);
+    return select_if_policy{
+      128,
+      items_per_thread,
+      BLOCK_LOAD_DIRECT,
+      load_modifier,
+      BLOCK_SCAN_WARP_SCANS,
+      delay_constructor_policy{delay_constructor_kind::fixed_delay, 350, 450}};
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto make_scaled_policy(
+    int block_threads,
+    int nominal_4b_items,
+    BlockLoadAlgorithm load_alg,
+    CacheLoadModifier load_mod,
+    delay_constructor_policy delay) const -> select_if_policy
+  {
+    const int items_per_thread = nominal_4B_items_to_items(nominal_4b_items, input_size_bytes);
+    return select_if_policy{block_threads, items_per_thread, load_alg, load_mod, BLOCK_SCAN_WARP_SCANS, delay};
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto get_sm80_tuning(bool has_flags, bool keep_rejects) const -> select_if_policy
+  {
+    // before SM100, we only tuned for int32, but we always take these tunings independently of the offset type size
+
+    if (input_type == type_t::int128 || input_type == type_t::uint128)
+    {
+      if (not has_flags && not keep_rejects)
+      {
+        return select_if_policy{
+          384,
+          4,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1140}};
+      }
+      if (has_flags && not keep_rejects)
+      {
+        return select_if_policy{
+          256,
+          5,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::fixed_delay, 464, 1025}};
+      }
+      if (not has_flags && keep_rejects)
+      {
+        return select_if_policy{
+          256,
+          5,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::fixed_delay, 400, 1090}};
+      }
+      if (has_flags && keep_rejects)
+      {
+        return select_if_policy{
+          256,
+          5,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::fixed_delay, 400, 1090}};
+      }
+    }
+
+    if (not input_is_primitive)
+    {
+      return default_policy(LOAD_DEFAULT);
+    }
+
+    if (not has_flags && not keep_rejects)
+    {
+      switch (input_size_bytes)
+      {
+        case 1:
+          return select_if_policy{
+            992,
+            20,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 395}};
+        case 2:
+          return select_if_policy{
+            576,
+            14,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 870}};
+        case 4:
+          return select_if_policy{
+            256,
+            18,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1130}};
+        case 8:
+          return select_if_policy{
+            192,
+            10,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 832, 1165}};
+        default:
+          break;
+      }
+    }
+    else if (has_flags && not keep_rejects)
+    {
+      switch (input_size_bytes)
+      {
+        case 1:
+          return select_if_policy{
+            224,
+            20,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 735}};
+        case 2:
+          return select_if_policy{
+            256,
+            20,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1155}};
+        case 4:
+          return select_if_policy{
+            320,
+            10,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 124, 1115}};
+        case 8:
+          return select_if_policy{
+            384,
+            6,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1130}};
+        default:
+          break;
+      }
+    }
+    else if (not has_flags && keep_rejects)
+    {
+      switch (input_size_bytes)
+      {
+        case 1:
+          return select_if_policy{
+            512,
+            20,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 510}};
+        case 2:
+          return select_if_policy{
+            224,
+            18,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1045}};
+        case 4:
+          return select_if_policy{
+            192,
+            15,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1040}};
+        case 8:
+          return select_if_policy{
+            192,
+            10,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 68, 1160}};
+        default:
+          break;
+      }
+    }
+    else if (has_flags && keep_rejects)
+    {
+      switch (input_size_bytes)
+      {
+        case 1:
+          return select_if_policy{
+            512,
+            20,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 595}};
+        case 2:
+          return select_if_policy{
+            224,
+            18,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1105}};
+        case 4:
+          return select_if_policy{
+            192,
+            12,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 912, 1025}};
+        case 8:
+          return select_if_policy{
+            192,
+            12,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 884, 1130}};
+        default:
+          break;
+      }
+    }
+    return default_policy(LOAD_DEFAULT);
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto get_sm90_tuning(bool has_flags, bool keep_rejects) const -> select_if_policy
+  {
+    // before SM100, we only tuned for int32, but we always take these tunings independently of the offset type size
+
+    if (input_type == type_t::int128 || input_type == type_t::uint128)
+    {
+      if (not has_flags && not keep_rejects)
+      {
+        return select_if_policy{
+          512,
+          5,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::fixed_delay, 460, 1145}};
+      }
+      if (has_flags && not keep_rejects)
+      {
+        return select_if_policy{
+          512,
+          3,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::fixed_delay, 284, 1130}};
+      }
+      if (not has_flags && keep_rejects)
+      {
+        return select_if_policy{
+          192,
+          5,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::fixed_delay, 1616, 1115}};
+      }
+      if (has_flags && keep_rejects)
+      {
+        return select_if_policy{
+          160,
+          5,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          delay_constructor_policy{delay_constructor_kind::fixed_delay, 720, 1105}};
+      }
+    }
+
+    if (not input_is_primitive)
+    {
+      return default_policy(LOAD_DEFAULT);
+    }
+
+    if (not has_flags && not keep_rejects)
+    {
+      switch (input_size_bytes)
+      {
+        case 1:
+          return select_if_policy{
+            256,
+            22,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 580}};
+        case 2:
+          return select_if_policy{
+            256,
+            22,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 320, 605}};
+        case 4:
+          return select_if_policy{
+            384,
+            17,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 76, 1150}};
+        case 8:
+          return select_if_policy{
+            384,
+            11,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 380, 1140}};
+        default:
+          break;
+      }
+    }
+    else if (has_flags && not keep_rejects)
+    {
+      switch (input_size_bytes)
+      {
+        case 1:
+          return select_if_policy{
+            448,
+            20,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 715}};
+        case 2:
+          return select_if_policy{
+            448,
+            20,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 504, 765}};
+        case 4:
+          return select_if_policy{
+            384,
+            15,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 415, 1125}};
+        case 8:
+          return select_if_policy{
+            384,
+            11,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 360, 1170}};
+        default:
+          break;
+      }
+    }
+    else if (not has_flags && keep_rejects)
+    {
+      switch (input_size_bytes)
+      {
+        case 1:
+          return select_if_policy{
+            384,
+            20,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 908, 995}};
+        case 2:
+          return select_if_policy{
+            320,
+            14,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 500, 560}};
+        case 4:
+          return select_if_policy{
+            256,
+            14,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 536, 1055}};
+        case 8:
+          return select_if_policy{
+            128,
+            12,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 512, 1075}};
+        default:
+          break;
+      }
+    }
+    else if (has_flags && keep_rejects)
+    {
+      switch (input_size_bytes)
+      {
+        case 1:
+          return select_if_policy{
+            256,
+            20,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 580, 850}};
+        case 2:
+          return select_if_policy{
+            512,
+            20,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 388, 1055}};
+        case 4:
+          return select_if_policy{
+            256,
+            20,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 72, 1165}};
+        case 8:
+          return select_if_policy{
+            224,
+            6,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 532, 1180}};
+        default:
+          break;
+      }
+    }
+    return default_policy(LOAD_DEFAULT);
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto get_sm100_tuning(bool has_flags, bool keep_rejects, bool may_alias) const
+    -> ::cuda::std::optional<select_if_policy>
+  {
+    if (not input_is_primitive)
+    {
+      return {}; // fall back to SM90 tunings
+    }
+
+    // select::if
+    if (not has_flags && not keep_rejects && offset_size_bytes == 4)
+    {
+      if (input_size_bytes == 1 && not may_alias)
+      {
+        // trp_0.ld_0.ipt_22.tpb_384.ns_0.dcid_2.l2w_915 1.099232  0.980183  1.096778  1.545455
+        return make_scaled_policy(
+          384,
+          22,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          delay_constructor_policy{delay_constructor_kind::exponential_backoff, 0, 915});
+      }
+      if (input_size_bytes == 1 && may_alias)
+      {
+        // trp_1.ld_0.ipt_20.tpb_448.ns_596.dcid_6.l2w_295  1.214635  1.001421  1.207023  1.307692
+        return make_scaled_policy(
+          448,
+          20,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 596, 295});
+      }
+      if (input_size_bytes == 4 && not may_alias)
+      {
+        // trp_1.ld_0.ipt_15.tpb_384.ns_1508.dcid_5.l2w_585 1.201993  0.920103  1.185134  1.441805
+        return make_scaled_policy(
+          384,
+          15,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1508, 585});
+      }
+    }
+
+    // select::flagged
+    if (has_flags && not keep_rejects && offset_size_bytes == 4)
+    {
+      if (input_size_bytes == 1 && not may_alias)
+      {
+        // trp_0.ld_0.ipt_20.tpb_896.ns_84.dcid_7.l2w_480 1.254262  0.846154  1.222437  1.462665
+        return make_scaled_policy(
+          896,
+          20,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          delay_constructor_policy{delay_constructor_kind::exponential_backon, 84, 480});
+      }
+      if (input_size_bytes == 1 && may_alias)
+      {
+        // trp_0.ld_0.ipt_20.tpb_1024.ns_360.dcid_6.l2w_380 1.274174  0.748441  1.227123  1.610039
+        return make_scaled_policy(
+          1024,
+          20,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 360, 380});
+      }
+      if (input_size_bytes == 2 && not may_alias)
+      {
+        // trp_0.ld_0.ipt_22.tpb_256.ns_1292.dcid_5.l2w_750 1.283400  1.002841  1.267822  1.445913
+        return make_scaled_policy(
+          256,
+          22,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1292, 750});
+      }
+      if (input_size_bytes == 2 && may_alias)
+      {
+        // trp_1.ld_0.ipt_20.tpb_448.ns_136.dcid_2.l2w_760 1.318819  0.994090  1.289173  1.551415
+        return make_scaled_policy(
+          448,
+          20,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          delay_constructor_policy{delay_constructor_kind::exponential_backoff, 136, 760});
+      }
+      if (input_size_bytes == 4 && not may_alias)
+      {
+        // trp_0.ld_0.ipt_14.tpb_512.ns_844.dcid_6.l2w_675 1.207911  1.068001  1.208890  1.455636
+        return make_scaled_policy(
+          512,
+          14,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 844, 675});
+      }
+      if (input_size_bytes == 4 && may_alias)
+      {
+        // trp_1.ld_0.ipt_14.tpb_384.ns_524.dcid_7.l2w_635 1.256212  1.004808  1.241086  1.373337
+        return make_scaled_policy(
+          384,
+          14,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          delay_constructor_policy{delay_constructor_kind::exponential_backon, 524, 635});
+      }
+      if (input_size_bytes == 8 && not may_alias)
+      {
+        // trp_0.ld_1.ipt_22.tpb_320.ns_660.dcid_7.l2w_1030 1.162087  0.997167  1.154955  1.395010
+        return make_scaled_policy(
+          320,
+          22,
+          BLOCK_LOAD_DIRECT,
+          LOAD_CA,
+          delay_constructor_policy{delay_constructor_kind::exponential_backon, 660, 1030});
+      }
+      if (input_size_bytes == 8 && may_alias)
+      {
+        // trp_1.ld_1.ipt_21.tpb_384.ns_1316.dcid_5.l2w_990 1.221365  1.019231  1.213141  1.372951
+        return make_scaled_policy(
+          384,
+          21,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_CA,
+          delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1316, 990});
+      }
+      return {};
+    }
+
+    // partition::if
+    if (not has_flags && keep_rejects && not may_alias)
+    {
+      if (distinct_partitions)
+      {
+        if (offset_size_bytes == 4 && input_size_bytes == 1)
+        {
+          // trp_0.ld_0.ipt_15.tpb_608.ns_676.dcid_7.l2w_500 1.171303  1.042818  1.175890  1.456731
+          return make_scaled_policy(
+            608,
+            15,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon, 676, 500});
+        }
+        if (offset_size_bytes == 4 && input_size_bytes == 2)
+        {
+          // trp_0.ld_0.ipt_22.tpb_320.ns_1756.dcid_6.l2w_615 1.206387  1.079118  1.202408  1.307692
+          return make_scaled_policy(
+            320,
+            22,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 1756, 615});
+        }
+        if (offset_size_bytes == 4 && input_size_bytes == 4)
+        {
+          // trp_1.ld_0.ipt_19.tpb_320.ns_716.dcid_5.l2w_570 1.177521  1.123348  1.177703  1.307692
+          return make_scaled_policy(
+            320,
+            19,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 716, 570});
+        }
+        if (offset_size_bytes == 8 && input_size_bytes == 1)
+        {
+          // trp_0.ld_0.ipt_22.tpb_576.ns_368.dcid_7.l2w_680 1.191750  0.990521  1.175654  1.433174
+          return make_scaled_policy(
+            576,
+            22,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon, 368, 680});
+        }
+        if (offset_size_bytes == 8 && input_size_bytes == 2)
+        {
+          // trp_1.ld_0.ipt_20.tpb_608.ns_516.dcid_7.l2w_635 1.244961  0.848558  1.212567  1.461538
+          return make_scaled_policy(
+            608,
+            20,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 516, 635});
+        }
+        if (offset_size_bytes == 8 && input_size_bytes == 4)
+        {
+          // trp_1.ld_0.ipt_18.tpb_608.ns_1712.dcid_5.l2w_825 1.255078  0.990588  1.231055  1.421176
+          return make_scaled_policy(
+            608,
+            18,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1712, 825});
+        }
+      }
+      else // not distinct_partitions
+      {
+        if (offset_size_bytes == 4 && input_size_bytes == 1)
+        {
+          // trp_0.ld_0.ipt_22.tpb_224.ns_68.dcid_2.l2w_990 1.151989  1.064433  1.146707  1.305288
+          return make_scaled_policy(
+            224,
+            22,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backoff, 68, 990});
+        }
+        if (offset_size_bytes == 4 && input_size_bytes == 2)
+        {
+          // trp_0.ld_0.ipt_22.tpb_320.ns_560.dcid_5.l2w_640 1.205538  1.080520  1.201709  1.307692
+          return make_scaled_policy(
+            320,
+            22,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 560, 640});
+        }
+        if (offset_size_bytes == 4 && input_size_bytes == 4)
+        {
+          // trp_1.ld_0.ipt_19.tpb_608.ns_724.dcid_5.l2w_970 1.196592  0.982227  1.177984  1.310843
+          return make_scaled_policy(
+            608,
+            19,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 724, 970});
+        }
+        if (offset_size_bytes == 8 && input_size_bytes == 1)
+        {
+          // trp_0.ld_0.ipt_20.tpb_608.ns_1016.dcid_6.l2w_545 1.239144  1.002404  1.225460  1.444711
+          return make_scaled_policy(
+            608,
+            20,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 1016, 545});
+        }
+        if (offset_size_bytes == 8 && input_size_bytes == 2)
+        {
+          // trp_1.ld_0.ipt_22.tpb_288.ns_124.dcid_2.l2w_690 1.202783  1.000000  1.183737  1.311755
+          return make_scaled_policy(
+            288,
+            22,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backoff, 124, 690});
+        }
+        if (offset_size_bytes == 8 && input_size_bytes == 4)
+        {
+          // trp_1.ld_0.ipt_19.tpb_608.ns_1884.dcid_6.l2w_950 1.250302  0.988124  1.225191  1.392931
+          return make_scaled_policy(
+            608,
+            19,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 1884, 950});
+        }
+        if (offset_size_bytes == 8 && input_size_bytes == 8)
+        {
+          // trp_1.ld_0.ipt_23.tpb_416.ns_0.dcid_2.l2w_1200 1.156864  1.011990  1.152368  1.266667
+          return make_scaled_policy(
+            416,
+            23,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backoff, 0, 1200});
+        }
+      }
+    }
+
+    // partition::flagged
+    if (has_flags && keep_rejects && not may_alias)
+    {
+      if (distinct_partitions)
+      {
+        if (offset_size_bytes == 4 && input_size_bytes == 1)
+        {
+          // trp_0.ld_0.ipt_20.tpb_448.ns_964.dcid_7.l2w_385 1.111204  1.036205  1.111986  1.275210
+          return make_scaled_policy(
+            448,
+            20,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon, 964, 385});
+        }
+        if (offset_size_bytes == 4 && input_size_bytes == 8)
+        {
+          // trp_0.ld_0.ipt_21.tpb_384.ns_300.dcid_7.l2w_580 1.239128  1.019324  1.238373  1.347458
+          return make_scaled_policy(
+            384,
+            21,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon, 300, 580});
+        }
+        if (offset_size_bytes == 8 && input_size_bytes == 1)
+        {
+          // trp_0.ld_1.ipt_20.tpb_448.ns_240.dcid_6.l2w_845 1.097180  0.990453  1.091667  1.452153
+          return make_scaled_policy(
+            448,
+            20,
+            BLOCK_LOAD_DIRECT,
+            LOAD_CA,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter, 240, 845});
+        }
+        if (offset_size_bytes == 8 && input_size_bytes == 2)
+        {
+          // trp_0.ld_0.ipt_14.tpb_320.ns_1428.dcid_7.l2w_830 1.380164  1.133333  1.367514  1.628793
+          return make_scaled_policy(
+            320,
+            14,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon, 1428, 830});
+        }
+        if (offset_size_bytes == 8 && input_size_bytes == 4)
+        {
+          // trp_0.ld_0.ipt_14.tpb_640.ns_1204.dcid_5.l2w_635 1.155209  1.000000  1.143742  1.380659
+          return make_scaled_policy(
+            640,
+            14,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1204, 635});
+        }
+        if (offset_size_bytes == 8 && input_size_bytes == 8)
+        {
+          // trp_0.ld_0.ipt_19.tpb_384.ns_1016.dcid_7.l2w_875 1.227540  1.181818  1.223936  1.261954
+          return make_scaled_policy(
+            384,
+            19,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon, 1016, 875});
+        }
+      }
+      else // not distinct_partitions
+      {
+        if (offset_size_bytes == 4 && input_size_bytes == 1)
+        {
+          // trp_0.ld_0.ipt_24.tpb_256.ns_2024.dcid_5.l2w_835 1.146782  1.001841  1.149438  1.439904
+          return make_scaled_policy(
+            256,
+            24,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 2024, 835});
+        }
+        if (offset_size_bytes == 4 && input_size_bytes == 4)
+        {
+          // trp_0.ld_0.ipt_11.tpb_448.ns_476.dcid_7.l2w_665 1.173664  1.035556  1.186114  1.393153
+          return make_scaled_policy(
+            448,
+            11,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon, 476, 665});
+        }
+        if (offset_size_bytes == 4 && input_size_bytes == 8)
+        {
+          // trp_0.ld_0.ipt_20.tpb_384.ns_1420.dcid_5.l2w_525 (39_new/2.db)  1.157326  1.110920  1.162458  1.259336
+          return make_scaled_policy(
+            384,
+            20,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1420, 525});
+        }
+        if (offset_size_bytes == 8 && input_size_bytes == 1)
+        {
+          // trp_0.ld_0.ipt_12.tpb_256.ns_0.dcid_5.l2w_850 1.150864  1.005760  1.157687  1.395833
+          return make_scaled_policy(
+            256,
+            12,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 0, 850});
+        }
+        if (offset_size_bytes == 8 && input_size_bytes == 2)
+        {
+          // trp_0.ld_0.ipt_12.tpb_256.ns_1552.dcid_7.l2w_730 1.374892  1.171831  1.360076  1.513390
+          return make_scaled_policy(
+            256,
+            12,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon, 1552, 730});
+        }
+        if (offset_size_bytes == 8 && input_size_bytes == 4)
+        {
+          // trp_0.ld_0.ipt_14.tpb_352.ns_1444.dcid_5.l2w_655 1.183452  1.000000  1.177224  1.402083
+          return make_scaled_policy(
+            352,
+            14,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1444, 655});
+        }
+        if (offset_size_bytes == 8 && input_size_bytes == 8)
+        {
+          // trp_0.ld_0.ipt_11.tpb_512.ns_536.dcid_2.l2w_845 1.248969  1.184659  1.251631  1.360795
+          return make_scaled_policy(
+            512,
+            11,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            delay_constructor_policy{delay_constructor_kind::exponential_backoff, 536, 845});
+        }
+      }
+    }
+
+    return {};
+  }
+
+public:
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> select_if_policy
+  {
+    const bool has_flags    = flag_size_bytes != 0;
+    const bool keep_rejects = selection_impl == SelectImpl::Partition;
+    const bool may_alias    = selection_impl == SelectImpl::SelectPotentiallyInPlace;
+
+    if (arch >= ::cuda::arch_id::sm_100)
+    {
+      if (auto policy_opt = get_sm100_tuning(has_flags, keep_rejects, may_alias))
+      {
+        return *policy_opt;
+      }
+    }
+
+    if (arch >= ::cuda::arch_id::sm_90)
+    {
+      return get_sm90_tuning(has_flags, keep_rejects);
+    }
+
+    if (arch >= ::cuda::arch_id::sm_86)
+    {
+      return default_policy(may_alias ? LOAD_CA : LOAD_LDG);
+    }
+
+    if (arch >= ::cuda::arch_id::sm_80)
+    {
+      return get_sm80_tuning(has_flags, keep_rejects);
+    }
+
+    // fallback policy is for SM50
+    return default_policy(may_alias ? LOAD_CA : LOAD_LDG);
+  }
+};
+
+template <typename InputIteratorT,
+          typename FlagsInputIteratorT,
+          typename SelectedOutputIteratorT,
+          typename OffsetT,
+          SelectImpl SelectionOpt>
+struct policy_selector_from_types
+{
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> select_if_policy
+  {
+    using input_t = it_value_t<InputIteratorT>;
+    using flag_t  = it_value_t<FlagsInputIteratorT>;
+    return policy_selector{
+      classify_type<input_t>,
+      sizeof(input_t),
+      is_primitive_v<input_t>,
+      ::cuda::std::is_same_v<flag_t, NullType> ? 0 : sizeof(flag_t),
+      SelectionOpt == SelectImpl::Partition ? sizeof(OffsetT) : sizeof(::cuda::std::int32_t),
+      is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
+      SelectionOpt}(arch);
+  }
+};
+
+#if _CCCL_HAS_CONCEPTS()
+static_assert(select_if_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
 } // namespace detail::select
 
 CUB_NAMESPACE_END

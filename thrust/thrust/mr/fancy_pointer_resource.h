@@ -33,13 +33,12 @@ public:
       : m_upstream(upstream)
   {}
 
-  [[nodiscard]] virtual Pointer
-  do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  [[nodiscard]] Pointer do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     return static_cast<Pointer>(m_upstream->do_allocate(bytes, alignment));
   }
 
-  virtual void do_deallocate(Pointer p, std::size_t bytes, std::size_t alignment) override
+  void do_deallocate(Pointer p, std::size_t bytes, std::size_t alignment) override
   {
     return m_upstream->do_deallocate(
       static_cast<typename Upstream::pointer>(thrust::detail::pointer_traits<Pointer>::get(p)), bytes, alignment);

@@ -16,10 +16,11 @@
 #ifndef TIME_UTC
 #  error TIME_UTC not defined
 #endif
+#include "test_macros.h"
 
 static_assert(TIME_UTC != 0);
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   // struct timespec
 

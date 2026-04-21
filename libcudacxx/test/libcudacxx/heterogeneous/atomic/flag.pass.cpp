@@ -17,7 +17,7 @@
 struct clear
 {
   template <typename AF>
-  __host__ __device__ static void initialize(AF& af)
+  TEST_FUNC static void initialize(AF& af)
   {
     af.clear();
   }
@@ -26,7 +26,7 @@ struct clear
 struct clear_tester : clear
 {
   template <typename AF>
-  __host__ __device__ static void validate(AF& af)
+  TEST_FUNC static void validate(AF& af)
   {
     assert(af.test_and_set() == false);
   }
@@ -36,13 +36,13 @@ template <bool Previous>
 struct test_and_set_tester
 {
   template <typename AF>
-  __host__ __device__ static void initialize(AF& af)
+  TEST_FUNC static void initialize(AF& af)
   {
     assert(af.test_and_set() == Previous);
   }
 
   template <typename AF>
-  __host__ __device__ static void validate(AF& af)
+  TEST_FUNC static void validate(AF& af)
   {
     assert(af.test_and_set() == true);
   }

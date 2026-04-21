@@ -30,33 +30,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-template <typename Ptr>
-struct pointer_element;
-
-template <template <typename...> class Ptr, typename FirstArg, typename... Args>
-struct pointer_element<Ptr<FirstArg, Args...>>
-{
-  using type = FirstArg;
-};
-
-template <typename T>
-struct pointer_element<T*>
-{
-  using type = T;
-};
-
-template <typename Ptr>
-struct pointer_difference
-{
-  using type = typename Ptr::difference_type;
-};
-
-template <typename T>
-struct pointer_difference<T*>
-{
-  using type = ::cuda::std::ptrdiff_t;
-};
-
 template <typename Ptr, typename T>
 struct rebind_pointer;
 
@@ -161,8 +134,8 @@ struct pointer_traits
 {
   using pointer         = Ptr;
   using reference       = typename Ptr::reference;
-  using element_type    = typename pointer_element<Ptr>::type;
-  using difference_type = typename pointer_difference<Ptr>::type;
+  using element_type    = typename ::cuda::std::pointer_traits<pointer>::element_type;
+  using difference_type = typename ::cuda::std::pointer_traits<pointer>::difference_type;
 
   template <typename U>
   struct rebind
@@ -195,7 +168,7 @@ struct pointer_traits<T*>
   using pointer         = T*;
   using reference       = T&;
   using element_type    = T;
-  using difference_type = typename pointer_difference<T*>::type;
+  using difference_type = typename ::cuda::std::pointer_traits<pointer>::difference_type;
 
   template <typename U>
   struct rebind
@@ -224,7 +197,7 @@ struct pointer_traits<void*>
   using pointer         = void*;
   using reference       = void;
   using element_type    = void;
-  using difference_type = pointer_difference<void*>::type;
+  using difference_type = typename ::cuda::std::pointer_traits<pointer>::difference_type;
 
   template <typename U>
   struct rebind
@@ -252,7 +225,7 @@ struct pointer_traits<const void*>
   using pointer         = const void*;
   using reference       = const void;
   using element_type    = const void;
-  using difference_type = pointer_difference<const void*>::type;
+  using difference_type = typename ::cuda::std::pointer_traits<pointer>::difference_type;
 
   template <typename U>
   struct rebind
@@ -280,12 +253,13 @@ inline constexpr bool is_pointer_system_convertible_v =
 
 template <typename FromPtr, typename ToPtr>
 inline constexpr bool is_pointer_convertible_v =
-  ::cuda::std::is_convertible_v<typename pointer_element<FromPtr>::type*, typename pointer_element<ToPtr>::type*>
+  ::cuda::std::is_convertible_v<typename ::cuda::std::pointer_traits<FromPtr>::element_type*,
+                                typename ::cuda::std::pointer_traits<ToPtr>::element_type*>
   && is_pointer_system_convertible_v<FromPtr, ToPtr>;
 
 template <typename FromPtr, typename ToPtr>
 inline constexpr bool is_void_pointer_system_convertible_v =
-  ::cuda::std::is_void_v<typename pointer_element<FromPtr>::type> //
+  ::cuda::std::is_void_v<typename ::cuda::std::pointer_traits<FromPtr>::element_type> //
   && is_pointer_system_convertible_v<FromPtr, ToPtr>;
 
 // avoid inspecting traits of the arguments if they aren't known to be pointers

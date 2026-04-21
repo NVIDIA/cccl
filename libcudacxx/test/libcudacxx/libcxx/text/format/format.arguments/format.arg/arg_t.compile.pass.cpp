@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: bit field read/write is unsupported in tile code
+
 // <cuda/std/format>
 
 // cuda::std::__fmt_arg_t
@@ -14,6 +17,8 @@
 #include <cuda/std/__format_>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
+
+#include "test_macros.h"
 
 static_assert(cuda::std::is_same_v<cuda::std::underlying_type_t<cuda::std::__fmt_arg_t>, cuda::std::uint8_t>);
 

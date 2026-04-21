@@ -11,17 +11,30 @@ die() {
 
 usage() {
   cat <<EOF
-Usage: $0 <base-path> <test-path> [filter1 [filter2 ...]] \
+Usage: $0 <base-path> <test-path> \
+  [--cub-filter "<regex>"] \
+  [--python-filter "<regex>"] \
   [--arch "<arch>"] \
   [--nvbench-args "<args>"] \
   [--nvbench-compare-args "<args>"]
 
-Compare CUB benchmark performance between two checked-out CCCL trees.
+Compare benchmark performance between two checked-out CCCL trees.
+
+At least one --cub-filter or --python-filter must be provided.
+CUB filters are regex patterns matched against ninja target names.
+Python filters are regex patterns matched against benchmark script paths
+under python/cuda_cccl/benchmarks/ (e.g. compute/reduce/sum.py).
 
 Arguments:
   <base-path>  Path to baseline CCCL source tree.
   <test-path>  Path to comparison CCCL source tree.
-  [filterN]    Optional regex filters matched against benchmark target names.
+
+Options:
+  --cub-filter <regex>      CUB benchmark regex filter (repeatable).
+  --python-filter <regex>   Python benchmark regex filter (repeatable).
+  --arch <arch>             CMAKE_CUDA_ARCHITECTURES for CUB builds.
+  --nvbench-args <args>     Extra args passed to benchmark binaries/scripts.
+  --nvbench-compare-args <args>  Extra args passed to nvbench_compare.
 
 Environment:
   CCCL_BENCH_ARTIFACT_ROOT   Root directory for outputs.
@@ -74,11 +87,13 @@ validate_repo_path() {
   fi
 }
 
-validate_filters() {
+validate_filter_array() {
+  local -n _validate_filters_ref="$1"
+  local label="$2"
   local filter=""
-  for filter in "${FILTERS[@]}"; do
+  for filter in "${_validate_filters_ref[@]}"; do
     grep -Eq -- "${filter}" <<< "" >/dev/null 2>&1 || {
-      [[ "$?" -eq 1 ]] || die "Invalid regex filter: ${filter}"
+      [[ "$?" -eq 1 ]] || die "Invalid ${label} regex filter: ${filter}"
     }
   done
 }
@@ -102,6 +117,10 @@ print_shell_command() {
   done
   printf '\n'
 }
+
+# ============================================================================
+# CUB helpers
+# ============================================================================
 
 configure_build_tree() {
   local src_path="$1"
@@ -165,6 +184,259 @@ resolve_compare_script() {
   return 1
 }
 
+run_target_for_side() {
+  local side="$1"
+  local build_path="$2"
+  local target="$3"
+  local json_path="$4"
+  local md_path="$5"
+  local run_log="$6"
+  local binary_path="${build_path}/bin/${target}"
+  local -a bench_cmd
+
+  if [[ ! -x "${binary_path}" ]]; then
+    echo "Benchmark binary missing: ${binary_path}" >&2
+    return 127
+  fi
+
+  bench_cmd=(
+    "${binary_path}"
+    -d 0
+    "${NVBENCH_RUN_ARGS[@]}"
+    --json "${json_path}"
+    --md "${md_path}"
+  )
+
+  run_grouped_logged_command \
+    "[run:${side}] ${target}" \
+    "${run_log}" \
+    "${bench_cmd[@]}"
+}
+
+select_targets() {
+  local base_build_path="$1"
+  local test_build_path="$2"
+  local -n selected_targets_ref="$3"
+  local -a base_targets
+  local -a test_targets
+  local -a common_targets
+  local target=""
+
+  mapfile -t base_targets < <(list_all_benchmark_targets "${base_build_path}")
+  mapfile -t test_targets < <(list_all_benchmark_targets "${test_build_path}")
+
+  if [[ "${#base_targets[@]}" -eq 0 ]]; then
+    die "No CUB benchmark targets were found in base build tree." 1
+  fi
+  if [[ "${#test_targets[@]}" -eq 0 ]]; then
+    die "No CUB benchmark targets were found in test build tree." 1
+  fi
+
+  mapfile -t common_targets < <(
+    comm -12 \
+      <(printf "%s\n" "${base_targets[@]}" | sort -u) \
+      <(printf "%s\n" "${test_targets[@]}" | sort -u)
+  )
+
+  selected_targets_ref=()
+  for target in "${common_targets[@]}"; do
+    [[ -n "${target}" ]] || continue
+    if target_matches_filters "${target}"; then
+      selected_targets_ref+=("${target}")
+    fi
+  done
+
+  if [[ "${#selected_targets_ref[@]}" -eq 0 ]]; then
+    die "No CUB benchmark targets matched the supplied filters." 1
+  fi
+}
+
+# ============================================================================
+# Python helpers
+# ============================================================================
+
+detect_cuda_major_version() {
+  local cuda_major=""
+  if command -v nvcc >/dev/null 2>&1; then
+    cuda_major="$(nvcc --version 2>/dev/null | sed -n 's/.*release \([0-9]*\)\..*/\1/p')"
+  fi
+  if [[ -z "${cuda_major}" ]]; then
+    cuda_major="12"
+  fi
+  printf "%s" "${cuda_major}"
+}
+
+python_path_to_target_name() {
+  local py_path="$1"
+  # compute/reduce/sum.py -> py.compute.reduce.sum
+  local name="${py_path%.py}"
+  name="${name//\//.}"
+  printf "py.%s" "${name}"
+}
+
+list_all_python_benchmarks() {
+  local benchmarks_path="$1"
+  if [[ ! -d "${benchmarks_path}" ]]; then
+    return 0
+  fi
+  find "${benchmarks_path}" -name '*.py' -type f \
+    ! -name 'utils.py' \
+    ! -name 'run_benchmarks.py' \
+    ! -name 'device_side_benchmark.py' \
+    ! -name '__init__.py' \
+    ! -path '*/__pycache__/*' \
+    -printf '%P\n' \
+    | sort -u
+}
+
+python_target_matches_filters() {
+  local target="$1"
+  local filter=""
+  for filter in "${PYTHON_FILTERS[@]}"; do
+    if grep -Eq -- "${filter}" <<< "${target}"; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+select_python_targets() {
+  local base_bench_path="$1"
+  local test_bench_path="$2"
+  local -n selected_py_targets_ref="$3"
+  local -a base_py_targets
+  local -a test_py_targets
+  local -a common_py_targets
+  local target=""
+
+  mapfile -t base_py_targets < <(list_all_python_benchmarks "${base_bench_path}")
+  mapfile -t test_py_targets < <(list_all_python_benchmarks "${test_bench_path}")
+
+  if [[ "${#base_py_targets[@]}" -eq 0 ]]; then
+    die "No Python benchmark scripts were found in base tree: ${base_bench_path}" 1
+  fi
+  if [[ "${#test_py_targets[@]}" -eq 0 ]]; then
+    die "No Python benchmark scripts were found in test tree: ${test_bench_path}" 1
+  fi
+
+  mapfile -t common_py_targets < <(
+    comm -12 \
+      <(printf "%s\n" "${base_py_targets[@]}" | sort -u) \
+      <(printf "%s\n" "${test_py_targets[@]}" | sort -u)
+  )
+
+  selected_py_targets_ref=()
+  for target in "${common_py_targets[@]}"; do
+    [[ -n "${target}" ]] || continue
+    if python_target_matches_filters "${target}"; then
+      selected_py_targets_ref+=("${target}")
+    fi
+  done
+
+  if [[ "${#selected_py_targets_ref[@]}" -eq 0 ]]; then
+    die "No Python benchmark scripts matched the supplied --python-filter patterns." 1
+  fi
+}
+
+setup_python_venv() {
+  local venv_path="$1"
+  local src_path="$2"
+  local side="$3"
+  local log_path="$4"
+  local cuda_major="$5"
+  local cuda_cccl_dir="${src_path}/python/cuda_cccl"
+
+  if [[ ! -d "${cuda_cccl_dir}" ]]; then
+    die "cuda_cccl source directory not found: ${cuda_cccl_dir}"
+  fi
+
+  local -a setup_cmds
+  setup_cmds=(
+    bash -c "
+      set -euo pipefail
+      python3 -m venv '${venv_path}'
+      '${venv_path}/bin/pip' install --upgrade pip
+      '${venv_path}/bin/pip' install -e '${cuda_cccl_dir}[bench-cu${cuda_major}]'
+      # nvbench-compare runtime deps (until cuda-bench declares them):
+      '${venv_path}/bin/pip' install colorama jsondiff tabulate
+    "
+  )
+
+  run_grouped_logged_command \
+    "[py-venv:${side}]" \
+    "${log_path}" \
+    "${setup_cmds[@]}"
+}
+
+run_python_target_for_side() {
+  local side="$1"
+  local venv_path="$2"
+  local script_path="$3"
+  local json_path="$4"
+  local md_path="$5"
+  local run_log="$6"
+  local -a bench_cmd
+
+  if [[ ! -f "${script_path}" ]]; then
+    echo "Python benchmark script missing: ${script_path}" >&2
+    return 127
+  fi
+
+  bench_cmd=(
+    "${venv_path}/bin/python"
+    "${script_path}"
+    -d 0
+    "${NVBENCH_RUN_ARGS[@]}"
+    --json "${json_path}"
+    --md "${md_path}"
+  )
+
+  run_grouped_logged_command \
+    "[py-run:${side}] ${script_path##*/benchmarks/}" \
+    "${run_log}" \
+    "${bench_cmd[@]}"
+}
+
+run_python_compare_target() {
+  local target_name="$1"
+  local venv_path="$2"
+  local base_json="$3"
+  local test_json="$4"
+  local compare_out="$5"
+  local compare_log="$6"
+
+  local label="[py-compare] ${target_name}"
+  local started_at=0
+  local elapsed_s=0
+  local rc=0
+  local -a compare_cmd
+  compare_cmd=("${venv_path}/bin/nvbench-compare" --no-color "${NVBENCH_COMPARE_ARGS[@]}" "${base_json}" "${test_json}")
+
+  : > "${compare_log}"
+  echo "::group::${label}"
+  print_shell_command "${compare_cmd[@]}"
+  started_at="${SECONDS}"
+  if "${compare_cmd[@]}" \
+    > >(tee "${compare_out}" | tee -a "${compare_log}") \
+    2> >(tee -a "${compare_log}" >&2); then
+    rc=0
+  else
+    rc=$?
+  fi
+  elapsed_s=$((SECONDS - started_at))
+  echo "::endgroup::"
+  if [[ "${rc}" -eq 0 ]]; then
+    echo "${label} completed in ${elapsed_s}s"
+  else
+    echo "${label} failed in ${elapsed_s}s (rc=${rc})"
+  fi
+  return "${rc}"
+}
+
+# ============================================================================
+# Common helpers
+# ============================================================================
+
 run_grouped_logged_command() {
   local label="$1"
   local log_path="$2"
@@ -211,7 +483,7 @@ run_compare_target() {
   local rc=0
   local compare_pythonpath="${compare_script_dir}${PYTHONPATH:+:${PYTHONPATH}}"
   local -a compare_cmd
-  compare_cmd=(python3 "${compare_script}" "${NVBENCH_COMPARE_ARGS[@]}" "${base_json}" "${test_json}")
+  compare_cmd=(python3 "${compare_script}" --no-color "${NVBENCH_COMPARE_ARGS[@]}" "${base_json}" "${test_json}")
 
   : > "${compare_log}"
   echo "::group::${label}"
@@ -278,72 +550,9 @@ parse_quoted_args_to_array() {
   rm -f "${parsed_args_file}"
 }
 
-run_target_for_side() {
-  local side="$1"
-  local build_path="$2"
-  local target="$3"
-  local json_path="$4"
-  local md_path="$5"
-  local run_log="$6"
-  local binary_path="${build_path}/bin/${target}"
-  local -a bench_cmd
-
-  if [[ ! -x "${binary_path}" ]]; then
-    echo "Benchmark binary missing: ${binary_path}" >&2
-    return 127
-  fi
-
-  bench_cmd=(
-    "${binary_path}"
-    -d 0
-    "${NVBENCH_RUN_ARGS[@]}"
-    --json "${json_path}"
-    --md "${md_path}"
-  )
-
-  run_grouped_logged_command \
-    "[run:${side}] ${target}" \
-    "${run_log}" \
-    "${bench_cmd[@]}"
-}
-
-select_targets() {
-  local base_build_path="$1"
-  local test_build_path="$2"
-  local -n selected_targets_ref="$3"
-  local -a base_targets
-  local -a test_targets
-  local -a common_targets
-  local target=""
-
-  mapfile -t base_targets < <(list_all_benchmark_targets "${base_build_path}")
-  mapfile -t test_targets < <(list_all_benchmark_targets "${test_build_path}")
-
-  if [[ "${#base_targets[@]}" -eq 0 ]]; then
-    die "No CUB benchmark targets were found in base build tree." 1
-  fi
-  if [[ "${#test_targets[@]}" -eq 0 ]]; then
-    die "No CUB benchmark targets were found in test build tree." 1
-  fi
-
-  mapfile -t common_targets < <(
-    comm -12 \
-      <(printf "%s\n" "${base_targets[@]}" | sort -u) \
-      <(printf "%s\n" "${test_targets[@]}" | sort -u)
-  )
-
-  selected_targets_ref=()
-  for target in "${common_targets[@]}"; do
-    [[ -n "${target}" ]] || continue
-    if target_matches_filters "${target}"; then
-      selected_targets_ref+=("${target}")
-    fi
-  done
-
-  if [[ "${#selected_targets_ref[@]}" -eq 0 ]]; then
-    die "No benchmark targets matched the supplied filters." 1
-  fi
-}
+# ============================================================================
+# Summary
+# ============================================================================
 
 write_summary() {
   local summary_file="$1"
@@ -352,7 +561,7 @@ write_summary() {
   local reports_emitted=0
 
   {
-    echo "# CUB Benchmark Comparison Summary"
+    echo "# Benchmark Comparison Summary"
     echo
     echo "- Timestamp (UTC): ${timestamp}"
     echo "- GPU name: ${CCCL_BENCH_GPU_NAME:-not specified}"
@@ -360,45 +569,88 @@ write_summary() {
     echo "- Test label: ${test_label_raw}"
     echo "- Base source path: \`${BASE_PATH}\`"
     echo "- Test source path: \`${TEST_PATH}\`"
-    echo "- Base build dir: \`${base_build_dir}\`"
-    echo "- Test build dir: \`${test_build_dir}\`"
-    echo "- Selected targets: ${#selected_targets[@]}"
-    echo "- Comparisons attempted: ${compares_attempted}"
-    echo "- Comparisons succeeded (nvbench_compare exit 0): ${compares_succeeded}"
+    if [[ "${#FILTERS[@]}" -gt 0 ]]; then
+      echo "- Base build dir: \`${base_build_dir}\`"
+      echo "- Test build dir: \`${test_build_dir}\`"
+    fi
+    echo "- CUB targets selected: ${#selected_targets[@]}"
+    echo "- CUB comparisons attempted: ${compares_attempted}"
+    echo "- CUB comparisons succeeded: ${compares_succeeded}"
+    echo "- Python targets selected: ${#selected_py_targets[@]}"
+    echo "- Python comparisons attempted: ${py_compares_attempted}"
+    echo "- Python comparisons succeeded: ${py_compares_succeeded}"
     echo "- Target arch: ${TARGET_ARCH:-preset-default}"
     echo "- Artifact directory: \`${artifact_dir}\`"
     echo
-    echo "## Filters"
+
     if [[ "${#FILTERS[@]}" -gt 0 ]]; then
+      echo "## CUB Filters"
       for filter in "${FILTERS[@]}"; do
         echo "- \`${filter}\`"
       done
-    else
-      echo "- (none)"
+      echo
     fi
-    echo
-    echo "## Compare Reports"
-    for target in "${selected_targets[@]}"; do
-      compare_report_file="${artifact_dir}/compare/${target}.md"
-      if [[ ! -f "${compare_report_file}" ]]; then
-        continue
-      fi
-      reports_emitted=$((reports_emitted + 1))
+
+    if [[ "${#PYTHON_FILTERS[@]}" -gt 0 ]]; then
+      echo "## Python Filters"
+      for filter in "${PYTHON_FILTERS[@]}"; do
+        echo "- \`${filter}\`"
+      done
       echo
-      echo "### \`${target}\`"
+    fi
+
+    if [[ "${#selected_targets[@]}" -gt 0 ]]; then
+      echo "## CUB Compare Reports"
+      for target in "${selected_targets[@]}"; do
+        compare_report_file="${artifact_dir}/compare/${target}.md"
+        if [[ ! -f "${compare_report_file}" ]]; then
+          continue
+        fi
+        reports_emitted=$((reports_emitted + 1))
+        echo
+        echo "### \`${target}\`"
+        echo
+        echo "<details><summary>Expand full compare output for \`${target}\`</summary>"
+        echo
+        cat "${compare_report_file}"
+        echo
+        echo "</details>"
+      done
+    fi
+
+    if [[ "${#selected_py_targets[@]}" -gt 0 ]]; then
       echo
-      echo "<details><summary>Expand full compare output for \`${target}\`</summary>"
-      echo
-      cat "${compare_report_file}"
-      echo
-      echo "</details>"
-    done
+      echo "## Python Compare Reports"
+      local py_target_path=""
+      local py_target_name=""
+      for py_target_path in "${selected_py_targets[@]}"; do
+        py_target_name="$(python_path_to_target_name "${py_target_path}")"
+        compare_report_file="${artifact_dir}/compare/${py_target_name}.md"
+        if [[ ! -f "${compare_report_file}" ]]; then
+          continue
+        fi
+        reports_emitted=$((reports_emitted + 1))
+        echo
+        echo "### \`${py_target_name}\` (\`${py_target_path}\`)"
+        echo
+        echo "<details><summary>Expand full compare output for \`${py_target_name}\`</summary>"
+        echo
+        cat "${compare_report_file}"
+        echo
+        echo "</details>"
+      done
+    fi
+
     if [[ "${reports_emitted}" -eq 0 ]]; then
       echo
       echo "_No per-target compare reports were produced._"
     fi
   } > "${summary_file}"
 }
+
+# ============================================================================
+# CLI parsing
+# ============================================================================
 
 parse_cli_args() {
   if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
@@ -418,6 +670,7 @@ parse_cli_args() {
   NVBENCH_COMPARE_ARGS_STRING=""
   TARGET_ARCH=""
   FILTERS=()
+  PYTHON_FILTERS=()
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
       --arch)
@@ -441,14 +694,26 @@ parse_cli_args() {
         NVBENCH_COMPARE_ARGS_STRING="$2"
         shift 2
         ;;
+      --cub-filter)
+        if [[ "$#" -lt 2 ]]; then
+          die "Missing value for --cub-filter"
+        fi
+        FILTERS+=("$2")
+        shift 2
+        ;;
+      --python-filter)
+        if [[ "$#" -lt 2 ]]; then
+          die "Missing value for --python-filter"
+        fi
+        PYTHON_FILTERS+=("$2")
+        shift 2
+        ;;
       --)
         shift
-        FILTERS+=("$@")
         break
         ;;
       *)
-        FILTERS+=("$1")
-        shift
+        die "Unknown option: $1"
         ;;
     esac
   done
@@ -465,7 +730,12 @@ parse_quoted_args_to_array NVBENCH_COMPARE_ARGS "${NVBENCH_COMPARE_ARGS_STRING}"
 
 validate_repo_path "${BASE_PATH}"
 validate_repo_path "${TEST_PATH}"
-validate_filters
+validate_filter_array FILTERS "CUB"
+validate_filter_array PYTHON_FILTERS "Python"
+
+# ============================================================================
+# Common setup
+# ============================================================================
 
 timestamp="$(date -u +'%Y%m%dT%H%M%SZ')"
 base_label_raw="${CCCL_BENCH_BASE_LABEL:-$(resolve_repo_label "${BASE_PATH}")}"
@@ -484,21 +754,6 @@ build_token="$(sanitize_label "${test_label}-${timestamp}-${base_label}")"
 base_build_dir="${build_root}/base-${build_token}"
 test_build_dir="${build_root}/test-${build_token}"
 
-external_base_build_dir="${CCCL_BENCH_BASE_BUILD_DIR:-}"
-external_test_build_dir="${CCCL_BENCH_TEST_BUILD_DIR:-}"
-if [[ -n "${external_base_build_dir}" || -n "${external_test_build_dir}" ]]; then
-  if [[ -z "${external_base_build_dir}" || -z "${external_test_build_dir}" ]]; then
-    die "Both CCCL_BENCH_BASE_BUILD_DIR and CCCL_BENCH_TEST_BUILD_DIR must be set together."
-  fi
-  base_build_dir="$(realpath "${external_base_build_dir}")"
-  test_build_dir="$(realpath "${external_test_build_dir}")"
-  validate_build_dir "${base_build_dir}" "base"
-  validate_build_dir "${test_build_dir}" "test"
-  if [[ -n "${TARGET_ARCH}" ]]; then
-    echo "Warning: --arch is ignored when using preconfigured build directories." >&2
-  fi
-fi
-
 for subdir in base compare logs meta test; do
   mkdir -p "${artifact_dir}/${subdir}"
 done
@@ -511,12 +766,20 @@ fi
 echo "Base source: ${BASE_PATH}"
 echo "Test source: ${TEST_PATH}"
 if [[ "${#FILTERS[@]}" -gt 0 ]]; then
-  echo "Filters:"
+  echo "CUB filters:"
   for filter in "${FILTERS[@]}"; do
     echo "  - ${filter}"
   done
 else
-  echo "Filters: (none, all benchmark targets)"
+  echo "CUB filters: (none)"
+fi
+if [[ "${#PYTHON_FILTERS[@]}" -gt 0 ]]; then
+  echo "Python filters:"
+  for filter in "${PYTHON_FILTERS[@]}"; do
+    echo "  - ${filter}"
+  done
+else
+  echo "Python filters: (none)"
 fi
 if [[ -n "${TARGET_ARCH}" ]]; then
   echo "Target arch: ${TARGET_ARCH}"
@@ -534,113 +797,239 @@ if [[ "${#NVBENCH_COMPARE_ARGS[@]}" -gt 0 ]]; then
   done
 fi
 
-if [[ -n "${external_base_build_dir}" ]]; then
-  echo "[configure:base] skipped (using existing build tree)"
-  echo "[configure:test] skipped (using existing build tree)"
-else
-  configure_build_tree "${BASE_PATH}" "${base_build_dir}" "base" "${artifact_dir}/logs/configure.base.log" "${TARGET_ARCH}"
-  configure_build_tree "${TEST_PATH}" "${test_build_dir}" "test" "${artifact_dir}/logs/configure.test.log" "${TARGET_ARCH}"
-fi
-
-declare -a selected_targets
-select_targets "${base_build_dir}" "${test_build_dir}" selected_targets
-
-printf "%s\n" "${selected_targets[@]}" > "${artifact_dir}/meta/selected_targets.txt"
-
-compare_script="$(resolve_compare_script "${test_build_dir}" || true)"
-if [[ -z "${compare_script}" ]]; then
-  compare_script="$(resolve_compare_script "${base_build_dir}" || true)"
-fi
-if [[ -z "${compare_script}" ]]; then
-  die "Unable to locate nvbench_compare.py in build dependencies." 1
-fi
-compare_script_dir="$(dirname "${compare_script}")"
-
 any_failures=0
 compares_attempted=0
 compares_succeeded=0
-base_build_all_rc=0
-test_build_all_rc=0
+declare -a selected_targets=()
+py_compares_attempted=0
+py_compares_succeeded=0
+declare -a selected_py_targets=()
 
-if run_grouped_logged_command \
-  "[build:base]" \
-  "${artifact_dir}/logs/build.base.log" \
-  ninja -C "${base_build_dir}" "${selected_targets[@]}"; then
+# ============================================================================
+# CUB benchmark pipeline
+# ============================================================================
+
+if [[ "${#FILTERS[@]}" -gt 0 ]]; then
+  echo
+  echo "=== CUB Benchmark Pipeline ==="
+  echo
+
+  external_base_build_dir="${CCCL_BENCH_BASE_BUILD_DIR:-}"
+  external_test_build_dir="${CCCL_BENCH_TEST_BUILD_DIR:-}"
+  if [[ -n "${external_base_build_dir}" || -n "${external_test_build_dir}" ]]; then
+    if [[ -z "${external_base_build_dir}" || -z "${external_test_build_dir}" ]]; then
+      die "Both CCCL_BENCH_BASE_BUILD_DIR and CCCL_BENCH_TEST_BUILD_DIR must be set together."
+    fi
+    base_build_dir="$(realpath "${external_base_build_dir}")"
+    test_build_dir="$(realpath "${external_test_build_dir}")"
+    validate_build_dir "${base_build_dir}" "base"
+    validate_build_dir "${test_build_dir}" "test"
+    if [[ -n "${TARGET_ARCH}" ]]; then
+      echo "Warning: --arch is ignored when using preconfigured build directories." >&2
+    fi
+  fi
+
+  if [[ -z "${external_base_build_dir:-}" ]]; then
+    configure_build_tree "${BASE_PATH}" "${base_build_dir}" "base" "${artifact_dir}/logs/configure.base.log" "${TARGET_ARCH}"
+    configure_build_tree "${TEST_PATH}" "${test_build_dir}" "test" "${artifact_dir}/logs/configure.test.log" "${TARGET_ARCH}"
+  else
+    echo "[configure:base] skipped (using existing build tree)"
+    echo "[configure:test] skipped (using existing build tree)"
+  fi
+
+  select_targets "${base_build_dir}" "${test_build_dir}" selected_targets
+
+  printf "%s\n" "${selected_targets[@]}" > "${artifact_dir}/meta/selected_targets.txt"
+
+  compare_script="$(resolve_compare_script "${test_build_dir}" || true)"
+  if [[ -z "${compare_script}" ]]; then
+    compare_script="$(resolve_compare_script "${base_build_dir}" || true)"
+  fi
+  if [[ -z "${compare_script}" ]]; then
+    die "Unable to locate nvbench_compare.py in build dependencies." 1
+  fi
+  compare_script_dir="$(dirname "${compare_script}")"
+
   base_build_all_rc=0
-else
-  base_build_all_rc=$?
-  any_failures=1
-fi
-
-if run_grouped_logged_command \
-  "[build:test]" \
-  "${artifact_dir}/logs/build.test.log" \
-  ninja -C "${test_build_dir}" "${selected_targets[@]}"; then
   test_build_all_rc=0
-else
-  test_build_all_rc=$?
-  any_failures=1
+
+  if run_grouped_logged_command \
+    "[build:base]" \
+    "${artifact_dir}/logs/build.base.log" \
+    ninja -C "${base_build_dir}" "${selected_targets[@]}"; then
+    base_build_all_rc=0
+  else
+    base_build_all_rc=$?
+    any_failures=1
+  fi
+
+  if run_grouped_logged_command \
+    "[build:test]" \
+    "${artifact_dir}/logs/build.test.log" \
+    ninja -C "${test_build_dir}" "${selected_targets[@]}"; then
+    test_build_all_rc=0
+  else
+    test_build_all_rc=$?
+    any_failures=1
+  fi
+
+  for target in "${selected_targets[@]}"; do
+    base_target_run_rc=125
+    test_target_run_rc=125
+    base_run_log="${artifact_dir}/logs/run.base.${target}.log"
+    test_run_log="${artifact_dir}/logs/run.test.${target}.log"
+    compare_report_md="${artifact_dir}/compare/${target}.md"
+    compare_report_log="${artifact_dir}/logs/compare.${target}.log"
+
+    base_json="${artifact_dir}/base/${target}.json"
+    base_md="${artifact_dir}/base/${target}.md"
+    test_json="${artifact_dir}/test/${target}.json"
+    test_md="${artifact_dir}/test/${target}.md"
+
+    if [[ "${base_build_all_rc}" -eq 0 ]]; then
+      if run_target_for_side \
+        "base" \
+        "${base_build_dir}" \
+        "${target}" \
+        "${base_json}" \
+        "${base_md}" \
+        "${base_run_log}"; then
+        base_target_run_rc=0
+      else
+        base_target_run_rc=$?
+        any_failures=1
+      fi
+    fi
+
+    if [[ "${test_build_all_rc}" -eq 0 ]]; then
+      if run_target_for_side \
+        "test" \
+        "${test_build_dir}" \
+        "${target}" \
+        "${test_json}" \
+        "${test_md}" \
+        "${test_run_log}"; then
+        test_target_run_rc=0
+      else
+        test_target_run_rc=$?
+        any_failures=1
+      fi
+    fi
+
+    if [[ "${base_target_run_rc}" -eq 0 && "${test_target_run_rc}" -eq 0 ]]; then
+      compares_attempted=$((compares_attempted + 1))
+      if run_compare_target \
+        "${target}" \
+        "${compare_script}" \
+        "${compare_script_dir}" \
+        "${base_json}" \
+        "${test_json}" \
+        "${compare_report_md}" \
+        "${compare_report_log}"; then
+        compares_succeeded=$((compares_succeeded + 1))
+      else
+        any_failures=1
+      fi
+    fi
+  done
 fi
 
-for target in "${selected_targets[@]}"; do
-  base_target_run_rc=125
-  test_target_run_rc=125
-  base_run_log="${artifact_dir}/logs/run.base.${target}.log"
-  test_run_log="${artifact_dir}/logs/run.test.${target}.log"
-  compare_report_md="${artifact_dir}/compare/${target}.md"
-  compare_report_log="${artifact_dir}/logs/compare.${target}.log"
+# ============================================================================
+# Python benchmark pipeline
+# ============================================================================
 
-  base_json="${artifact_dir}/base/${target}.json"
-  base_md="${artifact_dir}/base/${target}.md"
-  test_json="${artifact_dir}/test/${target}.json"
-  test_md="${artifact_dir}/test/${target}.md"
+if [[ "${#PYTHON_FILTERS[@]}" -gt 0 ]]; then
+  echo
+  echo "=== Python Benchmark Pipeline ==="
+  echo
 
-  if [[ "${base_build_all_rc}" -eq 0 ]]; then
-    if run_target_for_side \
+  py_benchmarks_subdir="python/cuda_cccl/benchmarks"
+  base_py_bench_dir="${BASE_PATH}/${py_benchmarks_subdir}"
+  test_py_bench_dir="${TEST_PATH}/${py_benchmarks_subdir}"
+
+  if [[ ! -d "${base_py_bench_dir}" ]]; then
+    die "Python benchmarks directory not found in base tree: ${base_py_bench_dir}"
+  fi
+  if [[ ! -d "${test_py_bench_dir}" ]]; then
+    die "Python benchmarks directory not found in test tree: ${test_py_bench_dir}"
+  fi
+
+  cuda_major="$(detect_cuda_major_version)"
+  echo "Detected CUDA major version: ${cuda_major}"
+
+  base_py_venv="${build_root}/py-base-${build_token}"
+  test_py_venv="${build_root}/py-test-${build_token}"
+
+  setup_python_venv "${base_py_venv}" "${BASE_PATH}" "base" "${artifact_dir}/logs/py.venv.base.log" "${cuda_major}"
+  setup_python_venv "${test_py_venv}" "${TEST_PATH}" "test" "${artifact_dir}/logs/py.venv.test.log" "${cuda_major}"
+
+  select_python_targets "${base_py_bench_dir}" "${test_py_bench_dir}" selected_py_targets
+
+  # Append Python targets to the selected targets metadata file.
+  for py_target_path in "${selected_py_targets[@]}"; do
+    echo "$(python_path_to_target_name "${py_target_path}")" >> "${artifact_dir}/meta/selected_targets.txt"
+  done
+
+  for py_target_path in "${selected_py_targets[@]}"; do
+    py_target_name="$(python_path_to_target_name "${py_target_path}")"
+    base_py_target_run_rc=125
+    test_py_target_run_rc=125
+
+    base_py_json="${artifact_dir}/base/${py_target_name}.json"
+    base_py_md="${artifact_dir}/base/${py_target_name}.md"
+    test_py_json="${artifact_dir}/test/${py_target_name}.json"
+    test_py_md="${artifact_dir}/test/${py_target_name}.md"
+    base_py_run_log="${artifact_dir}/logs/run.base.${py_target_name}.log"
+    test_py_run_log="${artifact_dir}/logs/run.test.${py_target_name}.log"
+    compare_py_report_md="${artifact_dir}/compare/${py_target_name}.md"
+    compare_py_report_log="${artifact_dir}/logs/compare.${py_target_name}.log"
+
+    if run_python_target_for_side \
       "base" \
-      "${base_build_dir}" \
-      "${target}" \
-      "${base_json}" \
-      "${base_md}" \
-      "${base_run_log}"; then
-      base_target_run_rc=0
+      "${base_py_venv}" \
+      "${base_py_bench_dir}/${py_target_path}" \
+      "${base_py_json}" \
+      "${base_py_md}" \
+      "${base_py_run_log}"; then
+      base_py_target_run_rc=0
     else
-      base_target_run_rc=$?
+      base_py_target_run_rc=$?
       any_failures=1
     fi
-  fi
 
-  if [[ "${test_build_all_rc}" -eq 0 ]]; then
-    if run_target_for_side \
+    if run_python_target_for_side \
       "test" \
-      "${test_build_dir}" \
-      "${target}" \
-      "${test_json}" \
-      "${test_md}" \
-      "${test_run_log}"; then
-      test_target_run_rc=0
+      "${test_py_venv}" \
+      "${test_py_bench_dir}/${py_target_path}" \
+      "${test_py_json}" \
+      "${test_py_md}" \
+      "${test_py_run_log}"; then
+      test_py_target_run_rc=0
     else
-      test_target_run_rc=$?
+      test_py_target_run_rc=$?
       any_failures=1
     fi
-  fi
 
-  if [[ "${base_target_run_rc}" -eq 0 && "${test_target_run_rc}" -eq 0 ]]; then
-    compares_attempted=$((compares_attempted + 1))
-    if run_compare_target \
-      "${target}" \
-      "${compare_script}" \
-      "${compare_script_dir}" \
-      "${base_json}" \
-      "${test_json}" \
-      "${compare_report_md}" \
-      "${compare_report_log}"; then
-      compares_succeeded=$((compares_succeeded + 1))
-    else
-      any_failures=1
+    if [[ "${base_py_target_run_rc}" -eq 0 && "${test_py_target_run_rc}" -eq 0 ]]; then
+      py_compares_attempted=$((py_compares_attempted + 1))
+      if run_python_compare_target \
+        "${py_target_name}" \
+        "${test_py_venv}" \
+        "${base_py_json}" \
+        "${test_py_json}" \
+        "${compare_py_report_md}" \
+        "${compare_py_report_log}"; then
+        py_compares_succeeded=$((py_compares_succeeded + 1))
+      else
+        any_failures=1
+      fi
     fi
-  fi
-done
+  done
+fi
+
+# ============================================================================
+# Summary and exit
+# ============================================================================
 
 summary_file="${artifact_dir}/summary.md"
 write_summary "${summary_file}"
