@@ -46,14 +46,14 @@ private:
     }
     else
     {
-      static constexpr agent_batched_topk_policy wp = active_policy.worker_per_segment_policies[I];
-      constexpr auto tile_size                      = ::cuda::std::int64_t{wp.block_threads} * wp.items_per_thread;
+      constexpr agent_batched_topk_policy wp = active_policy.worker_per_segment_policies[I];
+      constexpr auto tile_size               = ::cuda::std::int64_t{wp.block_threads} * wp.items_per_thread;
 
       struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass wp directly
       {
         _CCCL_API constexpr auto operator()() const
         {
-          return wp;
+          return active_policy.worker_per_segment_policies[I];
         }
       };
       using candidate_agent_t  = agent_batched_topk_worker_per_segment<policy_getter_17, AgentParamsT...>;
