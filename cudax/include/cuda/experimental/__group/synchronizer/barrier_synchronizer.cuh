@@ -47,9 +47,37 @@ inline constexpr bool
 template <class _Span>
 using _SpanElementType = typename _Span::element_type;
 
+template <class _Level>
+[[nodiscard]] _CCCL_DEVICE_API _CCCL_CONSTEVAL thread_scope __minimum_required_scope_for() noexcept
+{
+  if constexpr (::cuda::std::is_same_v<_Level, thread_level>)
+  {
+    return thread_scope_thread;
+  }
+  else if constexpr (::cuda::std::is_same_v<_Level, warp_level> || ::cuda::std::is_same_v<_Level, block_level>)
+  {
+    return thread_scope_block;
+  }
+  else if constexpr (::cuda::std::is_same_v<_Level, cluster_level> || ::cuda::std::is_same_v<_Level, grid_level>)
+  {
+    return thread_scope_device;
+  }
+  else
+  {
+    return thread_scope_system;
+  }
+}
+
+template <class _Tp>
+inline constexpr thread_scope __barrier_scope_v = thread_scope_system;
+template <thread_scope _Sco, class _ComplFn>
+inline constexpr thread_scope __barrier_scope_v<barrier<_Sco, _ComplFn>> = _Sco;
+
 template <class _Barrier, ::cuda::std::size_t _Np>
 class barrier_synchronizer
 {
+  static_assert(__is_cuda_barrier_v<_Barrier>, "_Barrier must be cv-unqualified cuda::barrier type");
+
   ::cuda::std::span<_Barrier, _Np> __barriers_;
 
 public:
@@ -88,8 +116,11 @@ public:
     const _Mapping& __mapping,
     const _MappingResult& __mapping_result) const noexcept
   {
-    static_assert(::cuda::std::is_same_v<typename _ParentGroup::level_type, block_level>,
-                  "only block_level is currently supported");
+    using _Level = typename _ParentGroup::level_type;
+
+    // todo(dabayer): Relax this condition if all units in the group are within a level that is smaller than _Level.
+    static_assert(__barrier_scope_v<_Barrier> <= ::cuda::experimental::__minimum_required_scope_for<_Level>(),
+                  "_Barrier's thread scope is insufficient for group synchronization in _Level");
 
     if constexpr (_MappingResult::static_group_count() != ::cuda::std::dynamic_extent
                   && _Np != ::cuda::std::dynamic_extent)
@@ -101,17 +132,7 @@ public:
       _CCCL_ASSERT(__mapping_result.group_count() <= __barriers_.size(), "invalid number of barriers passed");
     }
 
-    // todo(dabayer): Enable this and fix initialization for threads with optional participation.
-    static_assert(_MappingResult::is_always_exhaustive());
-    // if constexpr (!_MappingResult::is_always_exhaustive())
-    // {
-    //   if (!__mapping_result.is_valid())
-    //   {
-    //     return;
-    //   }
-    // }
-
-    if (__mapping_result.rank() == 0)
+    if (__mapping_result.is_valid() && __mapping_result.rank() == 0)
     {
       init(&__barriers_[__mapping_result.group_rank()], static_cast<::cuda::std::ptrdiff_t>(__mapping_result.count()));
     }
