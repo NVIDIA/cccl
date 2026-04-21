@@ -788,7 +788,7 @@ template <class _Tp>
   {
     // Getting (mant_bits + 3) * __ln2 via templated arithmetic gives us one less bit of accuracy than using a single
     // constant alas.
-    constexpr _Tp __ans_real_small_correction = _Tp{0.5} * _Tp(__mant_nbits + 3) * (__ln2);
+    constexpr _Tp __ans_real_small_correction = _Tp{0.5} * _Tp{__mant_nbits + 3} * __ln2;
     __ans_real                                = ::cuda::std::fma(_Tp{2}, __ans_real, __ans_real_small_correction);
   }
 
