@@ -22,52 +22,72 @@
 #include <cub/util_arch.cuh>
 
 #include <cuda/__device/arch_id.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk
 {
-// Finds the smallest policy whose tile size still covers the given max segment size. Returns -1 if none covers.
-[[nodiscard]] _CCCL_API constexpr int
-find_smallest_covering_policy_index(const batched_topk_policy& p, ::cuda::std::int64_t max_segment_size)
-{
-  int result = -1;
-  for (int i = 0; i < static_cast<int>(p.worker_per_segment_policies.size()); ++i)
-  {
-    const auto& wp                       = p.worker_per_segment_policies[i];
-    const ::cuda::std::int64_t tile_size = ::cuda::std::int64_t{wp.block_threads} * wp.items_per_thread;
-    if (tile_size >= max_segment_size)
-    {
-      result = i;
-    }
-  }
-  return result;
-}
-
 // Given a policy_selector and a segment-size parameter, resolves the agent type to be instantiated by the kernel.
+// Selects the smallest policy whose tile size still covers the upper bound on segment size AND whose instantiated
+// agent's shared memory usage fits within the static shared memory limit (max_smem_per_block).
 template <typename PolicySelector, typename SegmentSizeParameterT, typename... AgentParamsT>
 struct find_smallest_covering_policy
 {
 private:
   static constexpr ::cuda::std::int64_t max_segment_size = params::static_max_value_v<SegmentSizeParameterT>;
   static constexpr batched_topk_policy active_policy     = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
-  static constexpr int selected_index = find_smallest_covering_policy_index(active_policy, max_segment_size);
+
+  template <int I>
+  [[nodiscard]] static constexpr int find_index()
+  {
+    if constexpr (I >= active_policy.worker_per_segment_policies.size())
+    {
+      return -1;
+    }
+    else
+    {
+      static constexpr agent_batched_topk_policy wp = active_policy.worker_per_segment_policies[I];
+      constexpr auto tile_size                      = ::cuda::std::int64_t{wp.block_threads} * wp.items_per_thread;
+
+      struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass wp directly
+      {
+        _CCCL_API constexpr auto operator()() const
+        {
+          return wp;
+        }
+      };
+      using candidate_agent_t  = agent_batched_topk_worker_per_segment<policy_getter_17, AgentParamsT...>;
+      constexpr bool covers    = tile_size >= max_segment_size;
+      constexpr bool fits_smem = sizeof(typename candidate_agent_t::TempStorage) <= max_smem_per_block;
+      constexpr int next       = find_index<I + 1>();
+      if constexpr (covers && fits_smem)
+      {
+        return next >= 0 ? next : I;
+      }
+      else
+      {
+        return next;
+      }
+    }
+  }
+
+  static constexpr int selected_index = find_index<0>();
 
 public:
-  static constexpr bool supports_one_worker_per_segment = selected_index >= 0;
+  static_assert(selected_index >= 0, "No valid policy found for one-worker-per-segment approach");
+
   // Use a safe index to avoid out-of-bounds constexpr evaluation when no policy covers. The kernel body's static_assert
   // rejects this case.
-  static constexpr agent_batched_topk_policy policy =
-    active_policy.worker_per_segment_policies[selected_index < 0 ? 0 : selected_index];
+  static constexpr agent_batched_topk_policy policy = active_policy.worker_per_segment_policies[selected_index];
 
-  using agent_t =
-    agent_batched_topk_worker_per_segment<agent_batched_topk_worker_per_segment_policy<policy.block_threads,
-                                                                                       policy.items_per_thread,
-                                                                                       policy.load_algorithm,
-                                                                                       policy.store_algorithm>,
-                                          AgentParamsT...>;
+  struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass policy directly
+  {
+    _CCCL_API constexpr auto operator()() const
+    {
+      return policy;
+    }
+  };
+  using agent_t = agent_batched_topk_worker_per_segment<policy_getter_17, AgentParamsT...>;
 };
 
 // -----------------------------------------------------------------------------
@@ -107,7 +127,7 @@ __launch_bounds__(int(
     SelectDirectionParameterT select_directions,
     NumSegmentsParameterT num_segments)
 {
-  using find_smallest_covering_policy_t = find_smallest_covering_policy<
+  using agent_t = typename find_smallest_covering_policy<
     PolicySelector,
     SegmentSizeParameterT,
     KeyInputItItT,
@@ -117,11 +137,7 @@ __launch_bounds__(int(
     SegmentSizeParameterT,
     KParameterT,
     SelectDirectionParameterT,
-    NumSegmentsParameterT>;
-  static_assert(find_smallest_covering_policy_t::supports_one_worker_per_segment,
-                "No valid policy found for one-worker-per-segment approach");
-
-  using agent_t = typename find_smallest_covering_policy_t::agent_t;
+    NumSegmentsParameterT>::agent_t;
 
   // Static Assertions (Constraints)
   static_assert(agent_t::tile_size >= params::static_max_value_v<SegmentSizeParameterT>,

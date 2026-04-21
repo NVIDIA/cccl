@@ -164,20 +164,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   SelectDirectionParameterT select_directions,
   NumSegmentsParameterT num_segments,
   [[maybe_unused]] TotalNumItemsGuaranteeT total_num_items_guarantee,
-  cudaStream_t stream            = nullptr,
-  PolicySelector policy_selector = {})
+  cudaStream_t stream                             = nullptr,
+  [[maybe_unused]] PolicySelector policy_selector = {})
 {
   // Currently, we only support segments that fit into shared memory
   // TODO (elstehle): extend support for variable-size segments
-  // The batched top-k tuning is arch-independent, so we evaluate the policy selector at compile time with a fixed
-  // placeholder arch to obtain block_threads statically for the kernel launch.
-  constexpr batched_topk_policy active_policy = policy_selector(::cuda::arch_id::sm_90);
-  constexpr int selected_index =
-    find_smallest_covering_policy_index(active_policy, params::static_max_value_v<SegmentSizeParameterT>);
-  static_assert(selected_index >= 0,
-                "Currently only small segments are supported, where each segment can be processed by a single thread "
-                "block.");
-  constexpr agent_batched_topk_policy selected = active_policy.worker_per_segment_policies[selected_index];
+  constexpr agent_batched_topk_policy selected = find_smallest_covering_policy<
+    PolicySelector,
+    SegmentSizeParameterT,
+    KeyInputItItT,
+    KeyOutputItItT,
+    ValueInputItItT,
+    ValueOutputItItT,
+    SegmentSizeParameterT,
+    KParameterT,
+    SelectDirectionParameterT,
+    NumSegmentsParameterT>::policy;
 
   if (d_temp_storage == nullptr)
   {

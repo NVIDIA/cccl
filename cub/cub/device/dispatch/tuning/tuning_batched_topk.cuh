@@ -51,13 +51,11 @@ struct agent_batched_topk_policy
 #endif // !_CCCL_COMPILER(NVRTC)
 };
 
-// The list of per-segment agent policies is ordered by decreasing tile size. At compile time, the smallest policy whose
-// tile size still covers the upper bound of the segment size is selected.
-inline constexpr int num_worker_per_segment_policies = 6;
-
 struct batched_topk_policy
 {
-  ::cuda::std::array<agent_batched_topk_policy, num_worker_per_segment_policies> worker_per_segment_policies;
+  // The list of per-segment agent policies is ordered by decreasing tile size. At compile time, the smallest policy
+  // whose tile size still covers the upper bound of the segment size is selected.
+  ::cuda::std::array<agent_batched_topk_policy, 6> worker_per_segment_policies;
 
   _CCCL_API constexpr friend bool operator==(const batched_topk_policy& lhs, const batched_topk_policy& rhs)
   {
