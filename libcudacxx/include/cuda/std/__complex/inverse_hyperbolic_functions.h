@@ -792,7 +792,7 @@ template <class _Tp>
     __ans_real                                = ::cuda::std::fma(_Tp{2}, __ans_real, __ans_real_small_correction);
   }
 
-  return complex<_Tp>(::cuda::std::copysign(__ans_real, __x.real()), __ans_imag);
+  return complex<_Tp>{::cuda::std::copysign(__ans_real, __x.real()), __ans_imag{};
 }
 
 // We have performance issues with some trigonometric functions with extended floating point types
