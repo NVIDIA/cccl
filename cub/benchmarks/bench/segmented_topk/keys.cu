@@ -109,7 +109,7 @@ void fixed_seg_size_topk_keys(
     segment_sizes,
     k,
     select_directions,
-    num_segments_uniform_t{num_segments},
+    num_segments_uniform_t{static_cast<::cuda::std::int64_t>(num_segments)},
     total_num_items,
     nullptr
 #if !TUNE_BASE
@@ -133,7 +133,7 @@ void fixed_seg_size_topk_keys(
       segment_sizes,
       k,
       select_directions,
-      num_segments_uniform_t{num_segments},
+      num_segments_uniform_t{static_cast<::cuda::std::int64_t>(num_segments)},
       total_num_items,
       launch.get_stream()
 #if !TUNE_BASE
