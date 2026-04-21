@@ -521,7 +521,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                  }))
 #endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
-    const auto tile_size = active_policy.items_per_tile();
+    const auto tile_size = active_policy.block_threads * active_policy.items_per_thread;
     const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
     const auto merge_partitions_size         = static_cast<size_t>(1 + num_tiles) * sizeof(OffsetT);
