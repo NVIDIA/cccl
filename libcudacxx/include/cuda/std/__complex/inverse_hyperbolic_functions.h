@@ -690,9 +690,6 @@ _CCCL_API inline complex<__half> acosh(const complex<__half>& __x)
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> atanh(const complex<_Tp>& __x)
 {
-  // Uint of the same size as our fp type.
-  using __uint_t = __fp_storage_of_t<_Tp>;
-
   constexpr int32_t __mant_nbits = __fp_mant_nbits_v<__fp_format_of_v<_Tp>>;
   constexpr int32_t __exp_bias   = __fp_exp_bias_v<__fp_format_of_v<_Tp>>;
 
