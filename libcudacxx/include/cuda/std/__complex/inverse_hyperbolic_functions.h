@@ -694,7 +694,6 @@ template <class _Tp>
   using __uint_t = __fp_storage_of_t<_Tp>;
 
   constexpr int32_t __mant_nbits = __fp_mant_nbits_v<__fp_format_of_v<_Tp>>;
-  constexpr int32_t __exp_max    = __fp_exp_max_v<__fp_format_of_v<_Tp>>;
   constexpr int32_t __exp_bias   = __fp_exp_bias_v<__fp_format_of_v<_Tp>>;
 
   constexpr _Tp __pi  = __numbers<_Tp>::__pi();
