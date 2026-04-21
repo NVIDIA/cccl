@@ -75,9 +75,6 @@ private:
 
 public:
   static_assert(selected_index >= 0, "No valid policy found for one-worker-per-segment approach");
-
-  // Use a safe index to avoid out-of-bounds constexpr evaluation when no policy covers. The kernel body's static_assert
-  // rejects this case.
   static constexpr worker_policy policy = active_policy.worker_per_segment_policies[selected_index];
 
   struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass policy directly
