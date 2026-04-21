@@ -40,10 +40,9 @@ CUB_NAMESPACE_BEGIN
 
 struct DeviceFor
 {
-private:
-  //! `op_wrapper_t` turns bulk into a for-each operation by wrapping the user-provided unary operator.
+  //! `__op_wrapper_t` turns bulk into a for-each operation by wrapping the user-provided unary operator.
   template <class OffsetT, class OpT, class RandomAccessIteratorT>
-  struct op_wrapper_t
+  struct __op_wrapper_t
   {
     RandomAccessIteratorT input;
     OpT op;
@@ -56,12 +55,12 @@ private:
     }
   };
 
-  //!  `op_wrapper_vectorized_t` turns bulk into a for-each-copy operation.
-  //!  `op_wrapper_vectorized_t` is similar to `op_wrapper_t` but does not provide any guarantees about
+  //!  `__op_wrapper_vectorized_t` turns bulk into a for-each-copy operation.
+  //!  `__op_wrapper_vectorized_t` is similar to `op_wrapper_t` but does not provide any guarantees about
   //!  address of the input parameter. `OpT` might be given a copy of the value or an actual reference
   //!  to the input iterator value (depending on the alignment of input iterator)
   template <class OffsetT, class OpT, class T>
-  struct op_wrapper_vectorized_t
+  struct __op_wrapper_vectorized_t
   {
     const T* input; // Raw pointer to the input data
     OpT op; // User-provided operator
@@ -122,7 +121,7 @@ private:
     if constexpr (allow_vectorization && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorT>)
     {
       auto* unwrapped_first = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(first);
-      using wrapped_op_t    = op_wrapper_vectorized_t<NumItemsT, OpT, detail::it_value_t<RandomAccessIteratorT>>;
+      using wrapped_op_t    = __op_wrapper_vectorized_t<NumItemsT, OpT, detail::it_value_t<RandomAccessIteratorT>>;
 
       if (::cuda::std::is_sufficiently_aligned<alignof(typename wrapped_op_t::vector_t)>(unwrapped_first))
       { // Vectorize loads
@@ -135,7 +134,7 @@ private:
       }
     }
 
-    return __bulk(num_items, op_wrapper_t<NumItemsT, OpT, RandomAccessIteratorT>{first, op}, env);
+    return __bulk(num_items, __op_wrapper_t<NumItemsT, OpT, RandomAccessIteratorT>{first, op}, env);
   }
 
   template <class RandomAccessIteratorT, class NumItemsT, class OpT>
