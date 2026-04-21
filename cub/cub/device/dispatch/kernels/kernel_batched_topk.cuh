@@ -74,6 +74,7 @@ private:
   static constexpr int selected_index = find_index<0>();
 
 public:
+  // TODO (elstehle): extend support for variable-size segments
   static_assert(selected_index >= 0, "No valid policy found for one-worker-per-segment approach");
   static constexpr worker_policy policy = active_policy.worker_per_segment_policies[selected_index];
 

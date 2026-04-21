@@ -136,6 +136,24 @@ struct total_num_items_guarantee
 // -----------------------------------------------------------------------------
 // Segmented Top-K Dispatch
 // -----------------------------------------------------------------------------
+
+//! @param d_temp_storage Device-accessible allocation of temporary storage. When `nullptr`, the required allocation
+//!        size is written to `temp_storage_bytes` and no work is done.
+//! @param temp_storage_bytes Reference to size in bytes of `d_temp_storage` allocation
+//! @param d_key_segments_it d_key_segments_it[segment_index] -> iterator to the input sequence of key data for segment
+//!        `segment_index`
+//! @param d_key_segments_out_it d_key_segments_out_it[segment_index] -> iterator to the output sequence of key data for
+//!        segment `segment_index`
+//! @param d_value_segments_it d_value_segments_it[segment_index] -> iterator to the input sequence of associated value
+//!        items for segment `segment_index`. When cub::NullType**, only keys are provided.
+//! @param d_value_segments_out_it d_value_segments_out_it[segment_index] -> iterator to the output sequence of
+//!        associated value items for segment `segment_index`
+//! @param segment_sizes Parameter providing segment sizes for each segment
+//! @param k Parameter providing K for each segment
+//! @param select_directions Parameter providing the selection direction for each segment
+//! @param num_segments Number of segments
+//! @param total_num_items_guarantee Allows the user to provide a guarantee on the upper bound of the total number of
+//!        items
 template <typename KeyInputItItT,
           typename KeyOutputItItT,
           typename ValueInputItItT,
@@ -167,8 +185,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   cudaStream_t stream                             = nullptr,
   [[maybe_unused]] PolicySelector policy_selector = {})
 {
-  // Currently, we only support segments that fit into shared memory
-  // TODO (elstehle): extend support for variable-size segments
+  // Helper that determines (a) whether there's any one-worker-per-segment policy supporting the range of segment
+  // sizes and k, and (b) if so, which set of one-worker-per-segment policies to use
   constexpr worker_policy selected = find_smallest_covering_policy<
     PolicySelector,
     SegmentSizeParameterT,
