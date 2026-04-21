@@ -97,6 +97,13 @@ TEST_FUNC constexpr bool test()
   test<random_access_iterator<const int*>>();
   test<const int*>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   test_use_move();
 
 #ifdef _LIBCUDACXX_HAS_STRING

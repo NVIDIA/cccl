@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // Test uniformity of shuffle_iterator permutation distribution
 // This test checks that different seeds produce a reasonably uniform
 // distribution across all possible permutations.

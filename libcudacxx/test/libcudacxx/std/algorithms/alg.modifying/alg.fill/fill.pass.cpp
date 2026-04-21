@@ -55,6 +55,13 @@ TEST_FUNC constexpr bool test()
   test_int<random_access_iterator<int*>>();
   test_int<int*>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test_int<host_only_iterator<int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test_int<device_only_iterator<int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   return true;
 }
 

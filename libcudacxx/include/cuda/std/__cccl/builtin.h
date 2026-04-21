@@ -103,6 +103,11 @@
 #  define _CCCL_BUILTIN_ASSUME(...)
 #endif // _CCCL_CHECK_BUILTIN(builtin_assume)
 
+#if _CCCL_TILE_COMPILATION() // nvbug6100910: __builtin_assume is not supported in tile mode
+#  undef _CCCL_BUILTIN_ASSUME
+#  define _CCCL_BUILTIN_ASSUME(...)
+#endif // _CCCL_TILE_COMPILATION()
+
 #if _CCCL_HAS_BUILTIN(__builtin_assume_aligned) || _CCCL_COMPILER(MSVC, >=, 19, 23) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)

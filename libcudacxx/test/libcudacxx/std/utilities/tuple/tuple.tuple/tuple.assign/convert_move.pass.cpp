@@ -20,6 +20,7 @@
 
 #include "test_macros.h"
 
+#if !_CCCL_TILE_COMPILATION() // virtual functions are unsupported in tile code
 struct B
 {
   int id_;
@@ -37,6 +38,7 @@ struct D : B
       : B(i)
   {}
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 struct E
 {
@@ -66,6 +68,7 @@ int main(int, char**)
     assert(cuda::std::get<0>(t1) == 2);
     assert(cuda::std::get<1>(t1) == int('a'));
   }
+#if !_CCCL_TILE_COMPILATION() // virtual functions are unsupported in tile code
   {
     using T0 = cuda::std::tuple<long, char, D>;
     using T1 = cuda::std::tuple<long long, int, B>;
@@ -99,6 +102,7 @@ int main(int, char**)
     assert(cuda::std::get<1>(t1) == int('a'));
     assert(cuda::std::get<2>(t1)->id_ == 3);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   {
     // Test that tuple evaluates correctly applies an lvalue reference

@@ -10,6 +10,9 @@
 //  Tuples of smart pointers; based on bug #18350
 //  auto_ptr doesn't have a copy constructor that takes a const &, but tuple does.
 
+// XFAIL: enable-tile
+// In tile mode dynamic memory allocation is unsupported
+
 #include <cuda/std/__memory_>
 #include <cuda/std/tuple>
 

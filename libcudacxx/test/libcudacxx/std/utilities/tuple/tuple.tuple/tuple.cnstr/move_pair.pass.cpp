@@ -12,6 +12,9 @@
 
 // template <class U1, class U2> tuple(pair<U1, U2>&& u);
 
+// UNSUPPORTED: enable-tile
+// In tile mode virtual functions are unsupported
+
 #include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>

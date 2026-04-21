@@ -71,22 +71,22 @@ struct __pstl_dispatch<__pstl_algorithm::__transform, __execution_backend::__cud
     _UnaryOp __func,
     _Predicate __pred)
   {
-    auto __stream    = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-    const auto __ret = __result + __count;
-
-    // We pass the policy as an environment to device_transform
+    // We pass the policy as an environment to DeviceTransform
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceTransform::TransformIf,
       "cuda::std::transform: failed inside CUDA backend",
       ::cuda::std::move(__first),
-      ::cuda::std::move(__result),
+      __result,
       __count,
       ::cuda::std::move(__pred),
       ::cuda::std::move(__func),
-      __stream.get());
+      __policy);
 
+    // Get the stream for synchronization after the algorithm is run
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     __stream.sync();
-    return __ret;
+
+    return __result + __count;
   }
 
   _CCCL_TEMPLATE(class _Policy,

@@ -5,6 +5,8 @@
 
 #include <cuda/std/cassert>
 
+#include <iostream>
+
 #include "include/timer.h"
 
 // This examples compares sorting performance using Array of Structures (AoS)

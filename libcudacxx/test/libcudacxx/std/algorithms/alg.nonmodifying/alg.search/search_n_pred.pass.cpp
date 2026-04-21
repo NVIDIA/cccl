@@ -190,6 +190,13 @@ TEST_FUNC constexpr bool test()
   test<bidirectional_iterator<const int*>>();
   test<random_access_iterator<const int*>>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   // test bug reported in https://reviews.llvm.org/D124079?#3661721
   {
     A a[]       = {A(1, 2), A(2, 3), A(2, 4)};

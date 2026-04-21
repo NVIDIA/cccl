@@ -1,5 +1,6 @@
 #include <thrust/system/cuda/memory.h>
 
+#include <iostream>
 #include <numeric>
 
 #include <cuda_runtime.h>

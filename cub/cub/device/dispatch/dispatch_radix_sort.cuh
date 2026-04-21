@@ -37,9 +37,7 @@
 // TODO(bgruber): included for backward compatibility, remove in CCCL 4.0
 #include <cub/device/dispatch/dispatch_segmented_radix_sort.cuh>
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif
+#include <cuda/std/__host_stdlib/sstream>
 
 // suppress warnings triggered by #pragma unroll:
 // "warning: loop not unrolled: the optimizer was unable to perform the requested transformation; the transformation

@@ -10,4 +10,9 @@
 
 #include <nv/target>
 
-__host__ __device__ void fn() {}
+#ifdef __CUDACC_TILE__
+__tile__
+#endif // __CUDACC_TILE__
+  __host__ __device__ void
+  fn()
+{}

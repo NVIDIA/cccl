@@ -794,7 +794,7 @@ template <typename PolicySelector,
           typename AccumT,
           typename ScanOpT,
           typename InitValueT>
-_CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
   const scanKernelParams<InputT, OutputT, AccumT> params, ScanOpT scan_op, const InitValueT& init_value)
 {
 #if __cccl_ptx_isa >= 860
@@ -830,7 +830,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
 
 template <typename AccumT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-device_scan_init_lookahead_body(warpspeed::tile_state_t<AccumT>* tile_states, const int num_temp_states)
+device_scan_init_warpspeed_body(warpspeed::tile_state_t<AccumT>* tile_states, const int num_temp_states)
 {
   const int tile_id = blockDim.x * blockIdx.x + threadIdx.x;
   if (tile_id >= num_temp_states)

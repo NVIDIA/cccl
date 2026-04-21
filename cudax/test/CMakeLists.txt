@@ -127,10 +127,16 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/copy.cu
 )
 
-cudax_add_catch2_test(test_target hierarchy_groups
-    hierarchy/group.cu
+cudax_add_catch2_test(test_target group
+    group/mapping/group_by.cu
+    group/synchronizer/lane_synchronizer.cu
+    group/synchronizer/barrier_synchronizer.cu
+    group/cooperative_algorithm.cu
+    group/group.cu
+    group/make_this_group.cu
+    group/this_group.cu
 )
-target_compile_definitions(${test_target} PUBLIC _CUDAX_HIERARCHY)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
 
 if (cudax_ENABLE_CUFILE)
   cudax_add_catch2_test(test_target cufile.driver_attributes

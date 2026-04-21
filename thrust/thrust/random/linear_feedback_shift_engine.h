@@ -28,9 +28,9 @@
 #include <thrust/random/detail/linear_feedback_shift_engine_wordmask.h>
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/cstddef> // for size_t
-
-#include <iostream>
 
 THRUST_NAMESPACE_BEGIN
 
