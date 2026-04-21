@@ -784,7 +784,7 @@ template <class _Tp>
       __x.imag(),
       _Tp{-0.5} * (::cuda::std::fma(__x.imag(), __x.imag(), ::cuda::std::fma(__x.real(), __x.real(), -_Tp{1}))));
 
-  if (__xReduced_small)
+  if (__x_reduced_small)
   {
     // Getting (mant_bits + 3) * __ln2 via templated arithmetic gives us one less bit of accuracy than using a single
     // constant alas.
