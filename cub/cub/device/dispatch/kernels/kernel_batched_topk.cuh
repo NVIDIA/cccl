@@ -37,32 +37,32 @@ private:
   static constexpr ::cuda::std::int64_t max_segment_size = params::static_max_value_v<SegmentSizeParameterT>;
   static constexpr batched_topk_policy active_policy     = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
 
-  template <int I>
+  template <int Index>
   [[nodiscard]] static constexpr int find_index()
   {
-    if constexpr (I >= active_policy.worker_per_segment_policies.size())
+    if constexpr (Index >= active_policy.worker_per_segment_policies.size())
     {
       return -1;
     }
     else
     {
-      constexpr agent_batched_topk_policy wp = active_policy.worker_per_segment_policies[I];
+      constexpr agent_batched_topk_policy wp = active_policy.worker_per_segment_policies[Index];
       constexpr auto tile_size               = ::cuda::std::int64_t{wp.block_threads} * wp.items_per_thread;
 
       struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass wp directly
       {
         _CCCL_API constexpr auto operator()() const
         {
-          return active_policy.worker_per_segment_policies[I];
+          return active_policy.worker_per_segment_policies[Index];
         }
       };
       using candidate_agent_t  = agent_batched_topk_worker_per_segment<policy_getter_17, AgentParamsT...>;
       constexpr bool covers    = tile_size >= max_segment_size;
       constexpr bool fits_smem = sizeof(typename candidate_agent_t::TempStorage) <= max_smem_per_block;
-      constexpr int next       = find_index<I + 1>();
+      constexpr int next       = find_index<Index + 1>();
       if constexpr (covers && fits_smem)
       {
-        return next >= 0 ? next : I;
+        return next >= 0 ? next : Index;
       }
       else
       {
