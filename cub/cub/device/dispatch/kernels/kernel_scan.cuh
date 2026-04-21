@@ -31,7 +31,7 @@ namespace detail::scan
 template <typename ScanTileState, typename AccumT>
 union tile_state_kernel_arg_t
 {
-  warpspeed::tile_state_t<AccumT>* lookahead;
+  warpspeed::tile_state_t<AccumT>* warpspeed;
   ScanTileState lookback;
 
   // ScanTileState<AccumT> is not trivially [default|copy]-constructible, so because of
@@ -68,7 +68,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   constexpr scan_policy policy = PolicySelectorT{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
   if constexpr (policy.algorithm == scan_algorithm::warpspeed)
   {
-    device_scan_init_lookahead_body(tile_state.lookahead, num_tiles);
+    device_scan_init_warpspeed_body(tile_state.warpspeed, num_tiles);
   }
   else
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
@@ -205,8 +205,8 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
     NV_IF_TARGET(
       NV_PROVIDES_SM_100, ({
         auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
-          d_in, d_out, tile_state.lookahead, num_items, num_stages};
-        device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT>(scan_params, scan_op, init_value);
+          d_in, d_out, tile_state.warpspeed, num_items, num_stages};
+        device_scan_warpspeed_body<PolicySelector, ForceInclusive, RealInitValueT>(scan_params, scan_op, init_value);
       }));
 #else
     static_assert(sizeof(d_in) == 0,

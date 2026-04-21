@@ -611,10 +611,10 @@ public:
   }
 
 private:
-  // Internal version without NVTX raNGE
+  // Internal version without NVTX range
   template <class RandomAccessIteratorT, class NumItemsT, class OpT>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachNNoNVTX(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
+  __for_each_n_no_nvtx(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
   {
     using offset_t = NumItemsT;
     // Disable auto-vectorization for now:
@@ -626,6 +626,26 @@ private:
   }
 
 public:
+  //! @cond
+  //! Internal helper without NVTX range, for use by other device algorithms to avoid nested NVTX ranges.
+  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t __for_each_n_no_nvtx(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    RandomAccessIteratorT first,
+    NumItemsT num_items,
+    OpT op,
+    cudaStream_t stream = {})
+  {
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+    return __for_each_n_no_nvtx(first, num_items, op, stream);
+  }
+  //! @endcond
+
   //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -713,7 +733,7 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachN");
     auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
-    return ForEachNNoNVTX(first, num_items, op, stream.get());
+    return __for_each_n_no_nvtx(first, num_items, op, stream.get());
   }
 
   // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
@@ -809,7 +829,7 @@ public:
     auto stream          = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
     const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
-    return ForEachNNoNVTX(first, num_items, op, stream.get());
+    return __for_each_n_no_nvtx(first, num_items, op, stream.get());
   }
 
   // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable

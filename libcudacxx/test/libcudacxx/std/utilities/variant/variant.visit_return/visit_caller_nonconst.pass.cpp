@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 
@@ -29,7 +32,7 @@ struct A
 template <class ReturnType>
 struct Visitor
 {
-  __host__ __device__ auto operator()(A&)
+  TEST_FUNC auto operator()(A&)
   {
     return ReturnType{};
   }
@@ -37,11 +40,11 @@ struct Visitor
 template <>
 struct Visitor<void>
 {
-  __host__ __device__ void operator()(A&) {}
+  TEST_FUNC void operator()(A&) {}
 };
 
 template <typename ReturnType>
-__host__ __device__ void test_caller_accepts_nonconst()
+TEST_FUNC void test_caller_accepts_nonconst()
 {
   cuda::std::variant<A> v;
   cuda::std::visit<ReturnType>(Visitor<ReturnType>{}, v);

@@ -23,13 +23,13 @@
 
 struct NonAssignable
 {
-  __host__ __device__ NonAssignable& operator=(int i);
+  TEST_FUNC NonAssignable& operator=(int i);
 };
 static_assert(cuda::std::semiregular<NonAssignable>);
 static_assert(cuda::std::is_assignable_v<NonAssignable, int>);
 static_assert(!cuda::std::assignable_from<NonAssignable, int>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // Assigning from an lvalue.
   {

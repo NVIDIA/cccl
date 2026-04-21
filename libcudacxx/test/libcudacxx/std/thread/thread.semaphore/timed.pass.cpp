@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <typename Semaphore, template <typename, typename> class Selector, typename Initializer = constructor_initializer>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   Selector<Semaphore, Initializer> sel;
   SHARED Semaphore* s;

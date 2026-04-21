@@ -23,11 +23,13 @@
 
 #include <test_resources.h>
 
+#include "test_macros.h"
+
 // Default data to compare against
 
 inline constexpr ::cuda::std::initializer_list<int> compare_data_initializer_list{1, 42, 1337, 0, 12, -1};
-__device__ constexpr int device_data[] = {1, 42, 1337, 0, 12, -1};
-constexpr int host_data[]              = {1, 42, 1337, 0, 12, -1};
+TEST_GLOBAL_VARIABLE constexpr int device_data[] = {1, 42, 1337, 0, 12, -1};
+constexpr int host_data[]                        = {1, 42, 1337, 0, 12, -1};
 
 template <typename Iter>
 __global__ void check_equal_kernel(Iter ptr)
@@ -129,7 +131,7 @@ struct equal_to_value
       : value_(value)
   {}
 
-  __host__ __device__ bool operator()(const T lhs, const T) const noexcept
+  TEST_FUNC bool operator()(const T lhs, const T) const noexcept
   {
     return lhs == value_;
   }

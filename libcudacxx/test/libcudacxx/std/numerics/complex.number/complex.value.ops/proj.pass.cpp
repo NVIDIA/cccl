@@ -20,13 +20,13 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test(const cuda::std::complex<T>& z, cuda::std::complex<T> x)
+TEST_FUNC void test(const cuda::std::complex<T>& z, cuda::std::complex<T> x)
 {
   assert(proj(z) == x);
 }
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test(cuda::std::complex<T>(1, 2), cuda::std::complex<T>(1, 2));
   test(cuda::std::complex<T>(-1, 2), cuda::std::complex<T>(-1, 2));
@@ -35,7 +35,7 @@ __host__ __device__ void test()
 }
 
 template <class T>
-__host__ __device__ void test_edges()
+TEST_FUNC void test_edges()
 {
   auto testcases   = get_testcases<T>();
   const unsigned N = sizeof(testcases) / sizeof(testcases[0]);

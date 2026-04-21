@@ -13,6 +13,8 @@
 #include <cuda/std/concepts>
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 template <class T>
 _CCCL_CONCEPT has_no_value_type =
   !_CCCL_REQUIRES_EXPR((T))(typename(typename cuda::std::indirectly_readable_traits<T>::value_type));
@@ -23,53 +25,53 @@ _CCCL_CONCEPT value_type_matches = _CCCL_REQUIRES_EXPR(
                  requires(cuda::std::same_as<typename cuda::std::indirectly_readable_traits<T>::value_type, Expected>));
 
 template <class T>
-__host__ __device__ constexpr bool check_pointer()
+TEST_FUNC constexpr bool check_pointer()
 {
   constexpr bool result = value_type_matches<T*, T>;
-  static_assert(value_type_matches<T const*, T> == result, "");
-  static_assert(value_type_matches<T volatile*, T> == result, "");
-  static_assert(value_type_matches<T const volatile*, T> == result, "");
+  static_assert(value_type_matches<T const*, T> == result);
+  static_assert(value_type_matches<T volatile*, T> == result);
+  static_assert(value_type_matches<T const volatile*, T> == result);
 
-  static_assert(value_type_matches<T* const, T> == result, "");
-  static_assert(value_type_matches<T const* const, T> == result, "");
-  static_assert(value_type_matches<T volatile* const, T> == result, "");
-  static_assert(value_type_matches<T const volatile* const, T> == result, "");
+  static_assert(value_type_matches<T* const, T> == result);
+  static_assert(value_type_matches<T const* const, T> == result);
+  static_assert(value_type_matches<T volatile* const, T> == result);
+  static_assert(value_type_matches<T const volatile* const, T> == result);
 
   return result;
 }
 
 template <class T>
-__host__ __device__ constexpr bool check_array()
+TEST_FUNC constexpr bool check_array()
 {
-  static_assert(value_type_matches<T[], T>, "");
-  static_assert(value_type_matches<T const[], T>, "");
-  static_assert(value_type_matches<T volatile[], T>, "");
-  static_assert(value_type_matches<T const volatile[], T>, "");
-  static_assert(value_type_matches<T[10], T>, "");
-  static_assert(value_type_matches<T const[10], T>, "");
-  static_assert(value_type_matches<T volatile[10], T>, "");
-  static_assert(value_type_matches<T const volatile[10], T>, "");
+  static_assert(value_type_matches<T[], T>);
+  static_assert(value_type_matches<T const[], T>);
+  static_assert(value_type_matches<T volatile[], T>);
+  static_assert(value_type_matches<T const volatile[], T>);
+  static_assert(value_type_matches<T[10], T>);
+  static_assert(value_type_matches<T const[10], T>);
+  static_assert(value_type_matches<T volatile[10], T>);
+  static_assert(value_type_matches<T const volatile[10], T>);
   return true;
 }
 
 template <class T, class Expected>
-__host__ __device__ constexpr bool check_member()
+TEST_FUNC constexpr bool check_member()
 {
-  static_assert(value_type_matches<T, Expected>, "");
-  static_assert(value_type_matches<T const, Expected>, "");
-  static_assert(value_type_matches<T volatile, Expected>, "");
+  static_assert(value_type_matches<T, Expected>);
+  static_assert(value_type_matches<T const, Expected>);
+  static_assert(value_type_matches<T volatile, Expected>);
   return true;
 }
 
-static_assert(check_pointer<int>(), "");
-static_assert(check_pointer<int*>(), "");
-static_assert(check_pointer<int[10]>(), "");
-static_assert(!check_pointer<void>(), "");
-static_assert(!check_pointer<int()>(), "");
+static_assert(check_pointer<int>());
+static_assert(check_pointer<int*>());
+static_assert(check_pointer<int[10]>());
+static_assert(!check_pointer<void>());
+static_assert(!check_pointer<int()>());
 
-static_assert(check_array<int>(), "");
-static_assert(check_array<int*>(), "");
-static_assert(check_array<int[10]>(), "");
+static_assert(check_array<int>());
+static_assert(check_array<int*>());
+static_assert(check_array<int[10]>());
 
 template <class T>
 struct ValueOf
@@ -90,41 +92,41 @@ struct TwoTypes
   using element_type = U;
 };
 
-static_assert(check_member<ValueOf<int>, int>(), "");
-static_assert(check_member<ValueOf<int[10]>, int[10]>(), "");
-static_assert(check_member<ValueOf<int[]>, int[]>(), "");
-static_assert(has_no_value_type<ValueOf<void>>, "");
-static_assert(has_no_value_type<ValueOf<int()>>, "");
-static_assert(has_no_value_type<ValueOf<int&>>, "");
-static_assert(has_no_value_type<ValueOf<int&&>>, "");
+static_assert(check_member<ValueOf<int>, int>());
+static_assert(check_member<ValueOf<int[10]>, int[10]>());
+static_assert(check_member<ValueOf<int[]>, int[]>());
+static_assert(has_no_value_type<ValueOf<void>>);
+static_assert(has_no_value_type<ValueOf<int()>>);
+static_assert(has_no_value_type<ValueOf<int&>>);
+static_assert(has_no_value_type<ValueOf<int&&>>);
 
-static_assert(check_member<ElementOf<int>, int>(), "");
-static_assert(check_member<ElementOf<int[10]>, int[10]>(), "");
-static_assert(check_member<ElementOf<int[]>, int[]>(), "");
-static_assert(has_no_value_type<ElementOf<void>>, "");
-static_assert(has_no_value_type<ElementOf<int()>>, "");
-static_assert(has_no_value_type<ElementOf<int&>>, "");
-static_assert(has_no_value_type<ElementOf<int&&>>, "");
+static_assert(check_member<ElementOf<int>, int>());
+static_assert(check_member<ElementOf<int[10]>, int[10]>());
+static_assert(check_member<ElementOf<int[]>, int[]>());
+static_assert(has_no_value_type<ElementOf<void>>);
+static_assert(has_no_value_type<ElementOf<int()>>);
+static_assert(has_no_value_type<ElementOf<int&>>);
+static_assert(has_no_value_type<ElementOf<int&&>>);
 
-static_assert(check_member<TwoTypes<int, int>, int>(), "");
-static_assert(check_member<TwoTypes<int, int const>, int>(), "");
-static_assert(check_member<TwoTypes<int, int volatile>, int>(), "");
-static_assert(check_member<TwoTypes<int, int const volatile>, int>(), "");
-static_assert(check_member<TwoTypes<int const, int>, int>(), "");
-static_assert(check_member<TwoTypes<int const, int const>, int>(), "");
-static_assert(check_member<TwoTypes<int const, int volatile>, int>(), "");
-static_assert(check_member<TwoTypes<int const, int const volatile>, int>(), "");
-static_assert(check_member<TwoTypes<int volatile, int>, int>(), "");
-static_assert(check_member<TwoTypes<int volatile, int const>, int>(), "");
-static_assert(check_member<TwoTypes<int volatile, int volatile>, int>(), "");
-static_assert(check_member<TwoTypes<int volatile, int const volatile>, int>(), "");
-static_assert(check_member<TwoTypes<int const volatile, int>, int>(), "");
-static_assert(check_member<TwoTypes<int const volatile, int const>, int>(), "");
-static_assert(check_member<TwoTypes<int const volatile, int volatile>, int>(), "");
-static_assert(check_member<TwoTypes<int const volatile, int const volatile>, int>(), "");
-static_assert(has_no_value_type<TwoTypes<int, long>>, "");
-static_assert(has_no_value_type<TwoTypes<int, int&>>, "");
-static_assert(has_no_value_type<TwoTypes<int&, int>>, "");
+static_assert(check_member<TwoTypes<int, int>, int>());
+static_assert(check_member<TwoTypes<int, int const>, int>());
+static_assert(check_member<TwoTypes<int, int volatile>, int>());
+static_assert(check_member<TwoTypes<int, int const volatile>, int>());
+static_assert(check_member<TwoTypes<int const, int>, int>());
+static_assert(check_member<TwoTypes<int const, int const>, int>());
+static_assert(check_member<TwoTypes<int const, int volatile>, int>());
+static_assert(check_member<TwoTypes<int const, int const volatile>, int>());
+static_assert(check_member<TwoTypes<int volatile, int>, int>());
+static_assert(check_member<TwoTypes<int volatile, int const>, int>());
+static_assert(check_member<TwoTypes<int volatile, int volatile>, int>());
+static_assert(check_member<TwoTypes<int volatile, int const volatile>, int>());
+static_assert(check_member<TwoTypes<int const volatile, int>, int>());
+static_assert(check_member<TwoTypes<int const volatile, int const>, int>());
+static_assert(check_member<TwoTypes<int const volatile, int volatile>, int>());
+static_assert(check_member<TwoTypes<int const volatile, int const volatile>, int>());
+static_assert(has_no_value_type<TwoTypes<int, long>>);
+static_assert(has_no_value_type<TwoTypes<int, int&>>);
+static_assert(has_no_value_type<TwoTypes<int&, int>>);
 
 struct S2
 {};
@@ -138,16 +140,16 @@ struct indirectly_readable_traits<S2>
 };
 } // namespace cuda::std
 
-static_assert(value_type_matches<S2, int>, "");
-static_assert(value_type_matches<const S2, int>, "");
-static_assert(has_no_value_type<volatile S2>, "");
-static_assert(has_no_value_type<const volatile S2>, "");
-static_assert(has_no_value_type<S2&>, "");
-static_assert(has_no_value_type<const S2&>, "");
+static_assert(value_type_matches<S2, int>);
+static_assert(value_type_matches<const S2, int>);
+static_assert(has_no_value_type<volatile S2>);
+static_assert(has_no_value_type<const volatile S2>);
+static_assert(has_no_value_type<S2&>);
+static_assert(has_no_value_type<const S2&>);
 
-static_assert(has_no_value_type<void>, "");
-static_assert(has_no_value_type<int>, "");
-static_assert(has_no_value_type<cuda::std::nullptr_t>, "");
+static_assert(has_no_value_type<void>);
+static_assert(has_no_value_type<int>);
+static_assert(has_no_value_type<cuda::std::nullptr_t>);
 
 int main(int, char**)
 {

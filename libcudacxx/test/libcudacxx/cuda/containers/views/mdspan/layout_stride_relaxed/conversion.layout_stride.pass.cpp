@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <cuda/mdspan>
 
 // Test conversion operator from layout_stride_relaxed::mapping to layout_stride::mapping:
@@ -21,7 +24,7 @@
 using cuda::std::intptr_t;
 
 template <class E>
-__host__ __device__ constexpr void test_conversion(E ext, cuda::std::array<intptr_t, E::rank()> input_strides)
+TEST_FUNC constexpr void test_conversion(E ext, cuda::std::array<intptr_t, E::rank()> input_strides)
 {
   using RelaxedMapping = cuda::layout_stride_relaxed::template mapping<E>;
   using StrideMapping  = cuda::std::layout_stride::template mapping<E>;
@@ -46,7 +49,7 @@ __host__ __device__ constexpr void test_conversion(E ext, cuda::std::array<intpt
   assert(dest.required_span_size() == src.required_span_size());
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   // Rank-0 case

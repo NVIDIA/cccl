@@ -33,7 +33,7 @@
  * of the programming guide with some additions like error checking.
  */
 
-#include <stdio.h>
+#include <cstdio>
 
 // For the CUDA runtime routines (prefixed with "cuda_")
 #include <cuda/std/span>
@@ -68,7 +68,7 @@ __global__ void vectorAdd(cudax::span<const float> A, cudax::span<const float> B
 /**
  * Host main routine
  */
-int main(void)
+int main()
 try
 {
   // A CUDA stream on which to execute the vector addition kernel

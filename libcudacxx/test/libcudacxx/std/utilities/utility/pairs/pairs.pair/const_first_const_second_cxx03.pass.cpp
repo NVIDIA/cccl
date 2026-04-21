@@ -22,11 +22,11 @@ class A
   int data_;
 
 public:
-  __host__ __device__ A(int data)
+  TEST_FUNC A(int data)
       : data_(data)
   {}
 
-  __host__ __device__ bool operator==(const A& a) const
+  TEST_FUNC bool operator==(const A& a) const
   {
     return data_ == a.data_;
   }

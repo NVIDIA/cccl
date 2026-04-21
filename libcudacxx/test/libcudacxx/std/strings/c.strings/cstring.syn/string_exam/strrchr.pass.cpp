@@ -16,7 +16,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr void test_strrchr(char* str, int c, char* expected_ret)
+TEST_FUNC constexpr void test_strrchr(char* str, int c, char* expected_ret)
 {
   const char* cstr = const_cast<const char*>(str);
 
@@ -33,7 +33,7 @@ __host__ __device__ constexpr void test_strrchr(char* str, int c, char* expected
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   static_assert(cuda::std::is_same_v<char*, decltype(cuda::std::strrchr(cuda::std::declval<char*>(), int{}))>);
   static_assert(

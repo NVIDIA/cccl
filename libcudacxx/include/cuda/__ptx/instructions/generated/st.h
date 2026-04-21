@@ -18,7 +18,7 @@ template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
 _CCCL_DEVICE static inline void st(::cuda::ptx::space_global_t, _B8* __addr, _B8 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B8) == 1, "");
+  static_assert(sizeof(_B8) == 1);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
   asm("st.global.b8 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__b8_as_u32(__src)) : "memory");
 #  else
@@ -43,7 +43,7 @@ template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = tru
 _CCCL_DEVICE static inline void st(::cuda::ptx::space_global_t, _B16* __addr, _B16 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B16) == 2, "");
+  static_assert(sizeof(_B16) == 2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
   asm("st.global.b16 [%0], %1;"
       :
@@ -71,7 +71,7 @@ template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = tru
 _CCCL_DEVICE static inline void st(::cuda::ptx::space_global_t, _B32* __addr, _B32 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
   asm("st.global.b32 [%0], %1;"
       :
@@ -99,7 +99,7 @@ template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = tru
 _CCCL_DEVICE static inline void st(::cuda::ptx::space_global_t, _B64* __addr, _B64 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 500
   asm("st.global.b64 [%0], %1;"
       :
@@ -127,7 +127,7 @@ template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = 
 _CCCL_DEVICE static inline void st(::cuda::ptx::space_global_t, _B128* __addr, _B128 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B128) == 16, "");
+  static_assert(sizeof(_B128) == 16);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
   asm("{\n\t .reg .b128 B128_src; \n\t"
       "mov.b128 B128_src, {%1, %2}; \n"
@@ -160,7 +160,7 @@ template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = 
 _CCCL_DEVICE static inline void st(::cuda::ptx::space_global_t, _B256* __addr, _B256 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B256) == 32, "");
+  static_assert(sizeof(_B256) == 32);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
   asm("st.global.v4.b64 [%0], {%1, %2, %3, %4};"
       :
@@ -194,7 +194,7 @@ _CCCL_DEVICE static inline void
 st_L2_cache_hint(::cuda::ptx::space_global_t, _B8* __addr, _B8 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B8) == 1, "");
+  static_assert(sizeof(_B8) == 1);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("st.global.L2::cache_hint.b8 [%0], %1, %2;"
       :
@@ -224,7 +224,7 @@ _CCCL_DEVICE static inline void
 st_L2_cache_hint(::cuda::ptx::space_global_t, _B16* __addr, _B16 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B16) == 2, "");
+  static_assert(sizeof(_B16) == 2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("st.global.L2::cache_hint.b16 [%0], %1, %2;"
       :
@@ -256,7 +256,7 @@ _CCCL_DEVICE static inline void
 st_L2_cache_hint(::cuda::ptx::space_global_t, _B32* __addr, _B32 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("st.global.L2::cache_hint.b32 [%0], %1, %2;"
       :
@@ -288,7 +288,7 @@ _CCCL_DEVICE static inline void
 st_L2_cache_hint(::cuda::ptx::space_global_t, _B64* __addr, _B64 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("st.global.L2::cache_hint.b64 [%0], %1, %2;"
       :
@@ -320,7 +320,7 @@ _CCCL_DEVICE static inline void
 st_L2_cache_hint(::cuda::ptx::space_global_t, _B128* __addr, _B128 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B128) == 16, "");
+  static_assert(sizeof(_B128) == 16);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("{\n\t .reg .b128 B128_src; \n\t"
       "mov.b128 B128_src, {%1, %2}; \n"
@@ -356,7 +356,7 @@ _CCCL_DEVICE static inline void
 st_L2_cache_hint(::cuda::ptx::space_global_t, _B256* __addr, _B256 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B256) == 32, "");
+  static_assert(sizeof(_B256) == 32);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
   asm("st.global.L2::cache_hint.v4.b64 [%0], {%1, %2, %3, %4}, %5;"
       :
@@ -389,7 +389,7 @@ template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_first(::cuda::ptx::space_global_t, _B8* __addr, _B8 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B8) == 1, "");
+  static_assert(sizeof(_B8) == 1);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
   asm("st.global.L1::evict_first.b8 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__b8_as_u32(__src)) : "memory");
 #  else
@@ -414,7 +414,7 @@ template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = tru
 _CCCL_DEVICE static inline void st_L1_evict_first(::cuda::ptx::space_global_t, _B16* __addr, _B16 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B16) == 2, "");
+  static_assert(sizeof(_B16) == 2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
   asm("st.global.L1::evict_first.b16 [%0], %1;"
       :
@@ -442,7 +442,7 @@ template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = tru
 _CCCL_DEVICE static inline void st_L1_evict_first(::cuda::ptx::space_global_t, _B32* __addr, _B32 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
   asm("st.global.L1::evict_first.b32 [%0], %1;"
       :
@@ -470,7 +470,7 @@ template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = tru
 _CCCL_DEVICE static inline void st_L1_evict_first(::cuda::ptx::space_global_t, _B64* __addr, _B64 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
   asm("st.global.L1::evict_first.b64 [%0], %1;"
       :
@@ -498,7 +498,7 @@ template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = 
 _CCCL_DEVICE static inline void st_L1_evict_first(::cuda::ptx::space_global_t, _B128* __addr, _B128 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B128) == 16, "");
+  static_assert(sizeof(_B128) == 16);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
   asm("{\n\t .reg .b128 B128_src; \n\t"
       "mov.b128 B128_src, {%1, %2}; \n"
@@ -531,7 +531,7 @@ template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = 
 _CCCL_DEVICE static inline void st_L1_evict_first(::cuda::ptx::space_global_t, _B256* __addr, _B256 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B256) == 32, "");
+  static_assert(sizeof(_B256) == 32);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
   asm("st.global.L1::evict_first.v4.b64 [%0], {%1, %2, %3, %4};"
       :
@@ -565,7 +565,7 @@ _CCCL_DEVICE static inline void st_L1_evict_first_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B8* __addr, _B8 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B8) == 1, "");
+  static_assert(sizeof(_B8) == 1);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("st.global.L1::evict_first.L2::cache_hint.b8 [%0], %1, %2;"
       :
@@ -595,7 +595,7 @@ _CCCL_DEVICE static inline void st_L1_evict_first_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B16* __addr, _B16 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B16) == 2, "");
+  static_assert(sizeof(_B16) == 2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("st.global.L1::evict_first.L2::cache_hint.b16 [%0], %1, %2;"
       :
@@ -627,7 +627,7 @@ _CCCL_DEVICE static inline void st_L1_evict_first_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B32* __addr, _B32 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("st.global.L1::evict_first.L2::cache_hint.b32 [%0], %1, %2;"
       :
@@ -659,7 +659,7 @@ _CCCL_DEVICE static inline void st_L1_evict_first_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B64* __addr, _B64 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("st.global.L1::evict_first.L2::cache_hint.b64 [%0], %1, %2;"
       :
@@ -691,7 +691,7 @@ _CCCL_DEVICE static inline void st_L1_evict_first_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B128* __addr, _B128 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B128) == 16, "");
+  static_assert(sizeof(_B128) == 16);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("{\n\t .reg .b128 B128_src; \n\t"
       "mov.b128 B128_src, {%1, %2}; \n"
@@ -727,7 +727,7 @@ _CCCL_DEVICE static inline void st_L1_evict_first_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B256* __addr, _B256 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B256) == 32, "");
+  static_assert(sizeof(_B256) == 32);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
   asm("st.global.L1::evict_first.L2::cache_hint.v4.b64 [%0], {%1, %2, %3, %4}, %5;"
       :
@@ -760,7 +760,7 @@ template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
 _CCCL_DEVICE static inline void st_L1_evict_last(::cuda::ptx::space_global_t, _B8* __addr, _B8 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B8) == 1, "");
+  static_assert(sizeof(_B8) == 1);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
   asm("st.global.L1::evict_last.b8 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__b8_as_u32(__src)) : "memory");
 #  else
@@ -785,7 +785,7 @@ template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = tru
 _CCCL_DEVICE static inline void st_L1_evict_last(::cuda::ptx::space_global_t, _B16* __addr, _B16 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B16) == 2, "");
+  static_assert(sizeof(_B16) == 2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
   asm("st.global.L1::evict_last.b16 [%0], %1;"
       :
@@ -813,7 +813,7 @@ template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = tru
 _CCCL_DEVICE static inline void st_L1_evict_last(::cuda::ptx::space_global_t, _B32* __addr, _B32 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
   asm("st.global.L1::evict_last.b32 [%0], %1;"
       :
@@ -841,7 +841,7 @@ template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = tru
 _CCCL_DEVICE static inline void st_L1_evict_last(::cuda::ptx::space_global_t, _B64* __addr, _B64 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
   asm("st.global.L1::evict_last.b64 [%0], %1;"
       :
@@ -869,7 +869,7 @@ template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = 
 _CCCL_DEVICE static inline void st_L1_evict_last(::cuda::ptx::space_global_t, _B128* __addr, _B128 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B128) == 16, "");
+  static_assert(sizeof(_B128) == 16);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
   asm("{\n\t .reg .b128 B128_src; \n\t"
       "mov.b128 B128_src, {%1, %2}; \n"
@@ -902,7 +902,7 @@ template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = 
 _CCCL_DEVICE static inline void st_L1_evict_last(::cuda::ptx::space_global_t, _B256* __addr, _B256 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B256) == 32, "");
+  static_assert(sizeof(_B256) == 32);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
   asm("st.global.L1::evict_last.v4.b64 [%0], {%1, %2, %3, %4};"
       :
@@ -936,7 +936,7 @@ _CCCL_DEVICE static inline void st_L1_evict_last_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B8* __addr, _B8 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B8) == 1, "");
+  static_assert(sizeof(_B8) == 1);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("st.global.L1::evict_last.L2::cache_hint.b8 [%0], %1, %2;"
       :
@@ -966,7 +966,7 @@ _CCCL_DEVICE static inline void st_L1_evict_last_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B16* __addr, _B16 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B16) == 2, "");
+  static_assert(sizeof(_B16) == 2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("st.global.L1::evict_last.L2::cache_hint.b16 [%0], %1, %2;"
       :
@@ -998,7 +998,7 @@ _CCCL_DEVICE static inline void st_L1_evict_last_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B32* __addr, _B32 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("st.global.L1::evict_last.L2::cache_hint.b32 [%0], %1, %2;"
       :
@@ -1030,7 +1030,7 @@ _CCCL_DEVICE static inline void st_L1_evict_last_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B64* __addr, _B64 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("st.global.L1::evict_last.L2::cache_hint.b64 [%0], %1, %2;"
       :
@@ -1062,7 +1062,7 @@ _CCCL_DEVICE static inline void st_L1_evict_last_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B128* __addr, _B128 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B128) == 16, "");
+  static_assert(sizeof(_B128) == 16);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("{\n\t .reg .b128 B128_src; \n\t"
       "mov.b128 B128_src, {%1, %2}; \n"
@@ -1098,7 +1098,7 @@ _CCCL_DEVICE static inline void st_L1_evict_last_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B256* __addr, _B256 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B256) == 32, "");
+  static_assert(sizeof(_B256) == 32);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
   asm("st.global.L1::evict_last.L2::cache_hint.v4.b64 [%0], {%1, %2, %3, %4}, %5;"
       :
@@ -1131,7 +1131,7 @@ template <typename _B8, ::cuda::std::enable_if_t<sizeof(_B8) == 1, bool> = true>
 _CCCL_DEVICE static inline void st_L1_no_allocate(::cuda::ptx::space_global_t, _B8* __addr, _B8 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B8) == 1, "");
+  static_assert(sizeof(_B8) == 1);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
   asm("st.global.L1::no_allocate.b8 [%0], %1;" : : "l"(__as_ptr_gmem(__addr)), "r"(__b8_as_u32(__src)) : "memory");
 #  else
@@ -1156,7 +1156,7 @@ template <typename _B16, ::cuda::std::enable_if_t<sizeof(_B16) == 2, bool> = tru
 _CCCL_DEVICE static inline void st_L1_no_allocate(::cuda::ptx::space_global_t, _B16* __addr, _B16 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B16) == 2, "");
+  static_assert(sizeof(_B16) == 2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
   asm("st.global.L1::no_allocate.b16 [%0], %1;"
       :
@@ -1184,7 +1184,7 @@ template <typename _B32, ::cuda::std::enable_if_t<sizeof(_B32) == 4, bool> = tru
 _CCCL_DEVICE static inline void st_L1_no_allocate(::cuda::ptx::space_global_t, _B32* __addr, _B32 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
   asm("st.global.L1::no_allocate.b32 [%0], %1;"
       :
@@ -1212,7 +1212,7 @@ template <typename _B64, ::cuda::std::enable_if_t<sizeof(_B64) == 8, bool> = tru
 _CCCL_DEVICE static inline void st_L1_no_allocate(::cuda::ptx::space_global_t, _B64* __addr, _B64 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
   asm("st.global.L1::no_allocate.b64 [%0], %1;"
       :
@@ -1240,7 +1240,7 @@ template <typename _B128, ::cuda::std::enable_if_t<sizeof(_B128) == 16, bool> = 
 _CCCL_DEVICE static inline void st_L1_no_allocate(::cuda::ptx::space_global_t, _B128* __addr, _B128 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B128) == 16, "");
+  static_assert(sizeof(_B128) == 16);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 700
   asm("{\n\t .reg .b128 B128_src; \n\t"
       "mov.b128 B128_src, {%1, %2}; \n"
@@ -1273,7 +1273,7 @@ template <typename _B256, ::cuda::std::enable_if_t<sizeof(_B256) == 32, bool> = 
 _CCCL_DEVICE static inline void st_L1_no_allocate(::cuda::ptx::space_global_t, _B256* __addr, _B256 __src)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B256) == 32, "");
+  static_assert(sizeof(_B256) == 32);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
   asm("st.global.L1::no_allocate.v4.b64 [%0], {%1, %2, %3, %4};"
       :
@@ -1307,7 +1307,7 @@ _CCCL_DEVICE static inline void st_L1_no_allocate_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B8* __addr, _B8 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B8) == 1, "");
+  static_assert(sizeof(_B8) == 1);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("st.global.L1::no_allocate.L2::cache_hint.b8 [%0], %1, %2;"
       :
@@ -1337,7 +1337,7 @@ _CCCL_DEVICE static inline void st_L1_no_allocate_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B16* __addr, _B16 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B16) == 2, "");
+  static_assert(sizeof(_B16) == 2);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("st.global.L1::no_allocate.L2::cache_hint.b16 [%0], %1, %2;"
       :
@@ -1369,7 +1369,7 @@ _CCCL_DEVICE static inline void st_L1_no_allocate_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B32* __addr, _B32 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("st.global.L1::no_allocate.L2::cache_hint.b32 [%0], %1, %2;"
       :
@@ -1401,7 +1401,7 @@ _CCCL_DEVICE static inline void st_L1_no_allocate_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B64* __addr, _B64 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("st.global.L1::no_allocate.L2::cache_hint.b64 [%0], %1, %2;"
       :
@@ -1433,7 +1433,7 @@ _CCCL_DEVICE static inline void st_L1_no_allocate_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B128* __addr, _B128 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B128) == 16, "");
+  static_assert(sizeof(_B128) == 16);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 800
   asm("{\n\t .reg .b128 B128_src; \n\t"
       "mov.b128 B128_src, {%1, %2}; \n"
@@ -1469,7 +1469,7 @@ _CCCL_DEVICE static inline void st_L1_no_allocate_L2_cache_hint(
   ::cuda::ptx::space_global_t, _B256* __addr, _B256 __src, ::cuda::std::uint64_t __cache_policy)
 {
   // __space == space_global (due to parameter type constraint)
-  static_assert(sizeof(_B256) == 32, "");
+  static_assert(sizeof(_B256) == 32);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
   asm("st.global.L1::no_allocate.L2::cache_hint.v4.b64 [%0], {%1, %2, %3, %4}, %5;"
       :

@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <cuda/mdspan>
 
 // constexpr index_type stride(rank_type i) const noexcept;
@@ -32,8 +35,7 @@
 using cuda::std::intptr_t;
 
 template <class E, class... Args>
-__host__ __device__ constexpr void
-test_stride(cuda::std::array<intptr_t, E::rank()> input_strides, intptr_t offset, Args... args)
+TEST_FUNC constexpr void test_stride(cuda::std::array<intptr_t, E::rank()> input_strides, intptr_t offset, Args... args)
 {
   using M            = cuda::layout_stride_relaxed::mapping<E>;
   using strides_type = typename M::strides_type;
@@ -55,7 +57,7 @@ test_stride(cuda::std::array<intptr_t, E::rank()> input_strides, intptr_t offset
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 

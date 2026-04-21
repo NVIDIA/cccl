@@ -27,20 +27,18 @@
 #    define TUNE_LOAD_MODIFIER cub::LOAD_CA
 #  endif // TUNE_LOAD
 
-struct policy_hub
+struct bench_unique_by_key_policy_selector
 {
-  struct Policy500 : cub::ChainedPolicy<500, Policy500, Policy500>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /* arch */) const
+    -> cub::detail::unique_by_key::unique_by_key_policy
   {
-    using UniqueByKeyPolicyT =
-      cub::AgentUniqueByKeyPolicy<TUNE_THREADS,
-                                  TUNE_ITEMS,
-                                  TUNE_LOAD_ALGORITHM,
-                                  TUNE_LOAD_MODIFIER,
-                                  cub::BLOCK_SCAN_WARP_SCANS,
-                                  delay_constructor_t>;
-  };
-
-  using MaxPolicy = Policy500;
+    return {TUNE_THREADS,
+            TUNE_ITEMS,
+            TUNE_LOAD_ALGORITHM,
+            TUNE_LOAD_MODIFIER,
+            cub::BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy};
+  }
 };
 #endif // !TUNE_BASE
 
@@ -55,27 +53,6 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   using equality_op_t              = ::cuda::std::equal_to<>;
   using offset_t                   = OffsetT;
 
-#if !TUNE_BASE
-  using dispatch_t = cub::DispatchUniqueByKey<
-    keys_input_it_t,
-    vals_input_it_t,
-    keys_output_it_t,
-    vals_output_it_t,
-    num_runs_output_iterator_t,
-    equality_op_t,
-    offset_t,
-    policy_hub>;
-#else
-  using dispatch_t =
-    cub::DispatchUniqueByKey<keys_input_it_t,
-                             vals_input_it_t,
-                             keys_output_it_t,
-                             vals_output_it_t,
-                             num_runs_output_iterator_t,
-                             equality_op_t,
-                             offset_t>;
-#endif
-
   const auto elements                    = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   constexpr std::size_t min_segment_size = 1;
   const std::size_t max_segment_size     = static_cast<std::size_t>(state.get_int64("MaxSegSize"));
@@ -86,41 +63,41 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   thrust::device_vector<KeyT> out_keys(elements);
   thrust::device_vector<KeyT> in_keys = generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
 
-  KeyT* d_in_keys         = thrust::raw_pointer_cast(in_keys.data());
+  const KeyT* d_in_keys   = thrust::raw_pointer_cast(in_keys.data());
   KeyT* d_out_keys        = thrust::raw_pointer_cast(out_keys.data());
-  ValueT* d_in_vals       = thrust::raw_pointer_cast(in_vals.data());
+  const ValueT* d_in_vals = thrust::raw_pointer_cast(in_vals.data());
   ValueT* d_out_vals      = thrust::raw_pointer_cast(out_vals.data());
   OffsetT* d_num_runs_out = thrust::raw_pointer_cast(num_runs_out.data());
 
   std::uint8_t* d_temp_storage{};
   std::size_t temp_storage_bytes{};
+  const offset_t num_items = static_cast<offset_t>(elements);
 
-  dispatch_t::Dispatch(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in_keys,
-    d_in_vals,
-    d_out_keys,
-    d_out_vals,
-    d_num_runs_out,
-    equality_op_t{},
-    elements,
-    0);
+  auto dispatch_on_stream = [&](cudaStream_t stream) {
+    return cub::detail::unique_by_key::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in_keys,
+      d_in_vals,
+      d_out_keys,
+      d_out_vals,
+      d_num_runs_out,
+      equality_op_t{},
+      num_items,
+      stream
+#if !TUNE_BASE
+      ,
+      bench_unique_by_key_policy_selector{}
+#endif
+    );
+  };
+
+  dispatch_on_stream(nullptr);
 
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  dispatch_t::Dispatch(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in_keys,
-    d_in_vals,
-    d_out_keys,
-    d_out_vals,
-    d_num_runs_out,
-    equality_op_t{},
-    elements,
-    0);
+  dispatch_on_stream(nullptr);
   cudaDeviceSynchronize();
   const OffsetT num_runs = num_runs_out[0];
 
@@ -132,17 +109,7 @@ static void select(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   state.add_global_memory_writes<OffsetT>(1);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in_keys,
-      d_in_vals,
-      d_out_keys,
-      d_out_vals,
-      d_num_runs_out,
-      equality_op_t{},
-      elements,
-      launch.get_stream());
+    dispatch_on_stream(launch.get_stream());
   });
 }
 

@@ -102,9 +102,9 @@ struct __pstl_dispatch<__pstl_algorithm::__unique, __execution_backend::__cuda>
       CUB_NS_QUALIFIER::NullType{},
       __pred,
       __count,
-      0);
+      nullptr);
 
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
 
     { // Create temporary storage for the return value as well as a copy of the input sequence as Unique is not inplace
       __temporary_storage<_OffsetType> __storage{__policy, __num_bytes, 1};

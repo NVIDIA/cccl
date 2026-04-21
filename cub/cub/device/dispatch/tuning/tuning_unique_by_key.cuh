@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 #pragma once
@@ -17,14 +17,55 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
+#include <cub/detail/delay_constructor.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
+
+#include <cuda/__device/arch_id.h>
+#include <cuda/std/optional>
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::unique_by_key
 {
+struct unique_by_key_policy
+{
+  int block_threads;
+  int items_per_thread;
+  BlockLoadAlgorithm load_algorithm;
+  CacheLoadModifier load_modifier;
+  BlockScanAlgorithm scan_algorithm;
+  delay_constructor_policy delay_constructor;
+
+  _CCCL_API constexpr friend bool operator==(const unique_by_key_policy& lhs, const unique_by_key_policy& rhs)
+  {
+    return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
+        && lhs.scan_algorithm == rhs.scan_algorithm && lhs.delay_constructor == rhs.delay_constructor;
+  }
+
+  _CCCL_API constexpr friend bool operator!=(const unique_by_key_policy& lhs, const unique_by_key_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if !_CCCL_COMPILER(NVRTC)
+  friend ::std::ostream& operator<<(::std::ostream& os, const unique_by_key_policy& p)
+  {
+    return os
+        << "unique_by_key_policy { .block_threads = " << p.block_threads << ", .items_per_thread = "
+        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
+  }
+#endif
+};
+
 enum class primitive_key
 {
   no,
@@ -742,45 +783,6 @@ struct sm100_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_si
 // };
 #endif
 
-template <typename PolicyT, typename = void>
-struct UniqueByKeyPolicyWrapper : PolicyT
-{
-  _CCCL_HOST_DEVICE UniqueByKeyPolicyWrapper(PolicyT base)
-      : PolicyT(base)
-  {}
-};
-
-template <typename StaticPolicyT>
-struct UniqueByKeyPolicyWrapper<StaticPolicyT,
-                                ::cuda::std::void_t<decltype(StaticPolicyT::UniqueByKeyPolicyT::LOAD_MODIFIER)>>
-    : StaticPolicyT
-{
-  _CCCL_HOST_DEVICE UniqueByKeyPolicyWrapper(StaticPolicyT base)
-      : StaticPolicyT(base)
-  {}
-
-  _CCCL_HOST_DEVICE static constexpr auto UniqueByKey()
-  {
-    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::UniqueByKeyPolicyT());
-  }
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedPolicy()
-  {
-    using namespace ptx_json;
-    return object<key<"UniqueByKeyPolicyT">() = UniqueByKey().EncodedPolicy(),
-                  key<"DelayConstructor">() =
-                    StaticPolicyT::UniqueByKeyPolicyT::detail::delay_constructor_t::EncodedConstructor()>();
-  }
-#endif
-};
-
-template <typename PolicyT>
-_CCCL_HOST_DEVICE UniqueByKeyPolicyWrapper<PolicyT> MakeUniqueByKeyPolicyWrapper(PolicyT policy)
-{
-  return UniqueByKeyPolicyWrapper<PolicyT>{policy};
-}
-
 template <class KeyT, class ValueT>
 struct policy_hub
 {
@@ -862,6 +864,680 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
+
+struct policy_selector
+{
+  int key_size;
+  int value_size;
+  bool primitive_key;
+  bool primitive_value;
+
+private:
+  [[nodiscard]] _CCCL_API constexpr auto default_items_per_thread() const -> int
+  {
+    return cub::detail::nominal_4B_items_to_items(11, key_size);
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto get_default_policy() const -> unique_by_key_policy
+  {
+    return {64,
+            default_items_per_thread(),
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_LDG,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 350, 450}};
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto get_sm100_tuning() const -> ::cuda::std::optional<unique_by_key_policy>
+  {
+    if (!primitive_key)
+    {
+      return {};
+    }
+
+    if (primitive_value)
+    {
+      switch (key_size)
+      {
+        case 1:
+          switch (value_size)
+          {
+            case 1:
+              // ipt_12.tpb_512.trp_0.ld_0.ns_948.dcid_5.l2w_955 1.121279  1.000000  1.114566  1.43765
+              return unique_by_key_policy{
+                512,
+                12,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 948, 955}};
+            case 2:
+              // ipt_14.tpb_512.trp_0.ld_0.ns_1228.dcid_7.l2w_320 1.151229  1.007229  1.151131  1.443520
+              return unique_by_key_policy{
+                512,
+                14,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon, 1228, 320}};
+            case 4:
+              // ipt_14.tpb_512.trp_0.ld_0.ns_2016.dcid_7.l2w_620 1.165300  1.095238  1.164478  1.266667
+              return unique_by_key_policy{
+                512,
+                14,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon, 2016, 620}};
+            case 8:
+              // ipt_10.tpb_384.trp_0.ld_0.ns_1728.dcid_5.l2w_980 1.118716  0.997167  1.116537  1.400000
+              return unique_by_key_policy{
+                384,
+                10,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1728, 980}};
+            default:
+              return {};
+          }
+        case 2:
+          switch (value_size)
+          {
+            case 1:
+              // ipt_14.tpb_512.trp_0.ld_0.ns_508.dcid_7.l2w_1020 1.171886  0.906530  1.157128  1.457933
+              return unique_by_key_policy{
+                512,
+                14,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon, 508, 1020}};
+            case 2:
+              // ipt_12.tpb_384.trp_0.ld_0.ns_928.dcid_7.l2w_605 1.166564  0.997579  1.154805  1.406709
+              return unique_by_key_policy{
+                384,
+                12,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon, 928, 605}};
+            case 4:
+              // ipt_11.tpb_384.trp_0.ld_1.ns_1620.dcid_7.l2w_810 1.144483  1.011085  1.152798  1.393750
+              return unique_by_key_policy{
+                384,
+                11,
+                BLOCK_LOAD_DIRECT,
+                LOAD_CA,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon, 1620, 810}};
+            case 8:
+              // ipt_10.tpb_384.trp_0.ld_0.ns_1984.dcid_5.l2w_935 1.605554  1.177083  1.564488  1.946224
+              return unique_by_key_policy{
+                384,
+                10,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1984, 935}};
+            default:
+              return {};
+          }
+        case 4:
+          switch (value_size)
+          {
+            case 1:
+              // ipt_14.tpb_512.trp_0.ld_0.ns_1136.dcid_7.l2w_605 1.148057  0.848558  1.133064  1.451074
+              return unique_by_key_policy{
+                512,
+                14,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon, 1136, 605}};
+            case 2:
+              // ipt_11.tpb_384.trp_0.ld_0.ns_656.dcid_7.l2w_825 1.216312  1.090485  1.211800  1.535714
+              return unique_by_key_policy{
+                384,
+                11,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon, 656, 825}};
+            case 8:
+              // ipt_10.tpb_384.trp_0.ld_0.ns_1012.dcid_5.l2w_800 1.164713  1.014819  1.174307  1.526042
+              return unique_by_key_policy{
+                384,
+                10,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 1012, 800}};
+            default:
+              return {};
+          }
+        case 8:
+          switch (value_size)
+          {
+            case 2:
+              // ipt_10.tpb_384.trp_0.ld_0.ns_864.dcid_5.l2w_1130 1.124095  0.985748  1.120262  1.391304
+              return unique_by_key_policy{
+                384,
+                10,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 864, 1130}};
+            case 4:
+              // ipt_10.tpb_384.trp_0.ld_0.ns_772.dcid_5.l2w_665 1.152243  1.019816  1.166636  1.517526
+              return unique_by_key_policy{
+                384,
+                10,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::exponential_backon_jitter_window, 772, 665}};
+            default:
+              return {};
+          }
+        default:
+          return {};
+      }
+    }
+
+    return {};
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto get_sm90_tuning() const -> ::cuda::std::optional<unique_by_key_policy>
+  {
+    if (!primitive_key)
+    {
+      return {};
+    }
+
+    if (primitive_value)
+    {
+      switch (key_size)
+      {
+        case 1:
+          switch (value_size)
+          {
+            case 1:
+              return unique_by_key_policy{
+                256,
+                12,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 550}};
+            case 2:
+              return unique_by_key_policy{
+                448,
+                14,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 725}};
+            case 4:
+              return unique_by_key_policy{
+                256,
+                12,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1130}};
+            case 8:
+              return unique_by_key_policy{
+                512,
+                10,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1100}};
+            default:
+              return {};
+          }
+        case 2:
+          switch (value_size)
+          {
+            case 1:
+              return unique_by_key_policy{
+                256,
+                12,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 640}};
+            case 2:
+              return unique_by_key_policy{
+                288,
+                14,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 404, 710}};
+            case 4:
+              return unique_by_key_policy{
+                512,
+                12,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 525}};
+            case 8:
+              return unique_by_key_policy{
+                256,
+                23,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1200}};
+            default:
+              return {};
+          }
+        case 4:
+          switch (value_size)
+          {
+            case 1:
+              return unique_by_key_policy{
+                448,
+                12,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 348, 580}};
+            case 2:
+              return unique_by_key_policy{
+                384,
+                9,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1060}};
+            case 4:
+              return unique_by_key_policy{
+                512,
+                14,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1045}};
+            case 8:
+              return unique_by_key_policy{
+                512,
+                11,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1120}};
+            default:
+              return {};
+          }
+        case 8:
+          switch (value_size)
+          {
+            case 1:
+              return unique_by_key_policy{
+                384,
+                9,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1060}};
+            case 2:
+              return unique_by_key_policy{
+                384,
+                9,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 964, 1125}};
+            case 4:
+              return unique_by_key_policy{
+                640,
+                7,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1070}};
+            case 8:
+              return unique_by_key_policy{
+                448,
+                11,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1190}};
+            default:
+              return {};
+          }
+        default:
+          return {};
+      }
+    }
+
+    if (value_size == 16)
+    {
+      switch (key_size)
+      {
+        case 1:
+          return unique_by_key_policy{
+            288,
+            7,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 344, 1165}};
+        case 2:
+          return unique_by_key_policy{
+            224,
+            9,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 424, 1055}};
+        case 4:
+          return unique_by_key_policy{
+            384,
+            7,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1025}};
+        case 8:
+          return unique_by_key_policy{
+            256,
+            9,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1155}};
+        default:
+          return {};
+      }
+    }
+
+    return {};
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto get_sm80_tuning() const -> ::cuda::std::optional<unique_by_key_policy>
+  {
+    if (!primitive_key)
+    {
+      return {};
+    }
+
+    if (primitive_value)
+    {
+      switch (key_size)
+      {
+        case 1:
+          switch (value_size)
+          {
+            case 1:
+              return unique_by_key_policy{
+                256,
+                12,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 835}};
+            case 2:
+              return unique_by_key_policy{
+                256,
+                12,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 765}};
+            case 4:
+              return unique_by_key_policy{
+                256,
+                12,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1155}};
+            case 8:
+              return unique_by_key_policy{
+                224,
+                10,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1065}};
+            default:
+              return {};
+          }
+        case 2:
+          switch (value_size)
+          {
+            case 1:
+              return unique_by_key_policy{
+                320,
+                20,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1020}};
+            case 2:
+              return unique_by_key_policy{
+                192,
+                22,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 328, 1080}};
+            case 4:
+              return unique_by_key_policy{
+                256,
+                14,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 535}};
+            case 8:
+              return unique_by_key_policy{
+                256,
+                10,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1055}};
+            default:
+              return {};
+          }
+        case 4:
+          switch (value_size)
+          {
+            case 1:
+              return unique_by_key_policy{
+                256,
+                12,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1120}};
+            case 2:
+              return unique_by_key_policy{
+                256,
+                14,
+                BLOCK_LOAD_WARP_TRANSPOSE,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1185}};
+            case 4:
+              return unique_by_key_policy{
+                256,
+                11,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::no_delay, 0, 1115}};
+            case 8:
+              return unique_by_key_policy{
+                256,
+                7,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 320, 1115}};
+            default:
+              return {};
+          }
+        case 8:
+          switch (value_size)
+          {
+            case 1:
+              return unique_by_key_policy{
+                256,
+                7,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 24, 555}};
+            case 2:
+              return unique_by_key_policy{
+                256,
+                7,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 324, 1105}};
+            case 4:
+              return unique_by_key_policy{
+                256,
+                7,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 740, 1105}};
+            case 8:
+              return unique_by_key_policy{
+                192,
+                7,
+                BLOCK_LOAD_DIRECT,
+                LOAD_DEFAULT,
+                BLOCK_SCAN_WARP_SCANS,
+                delay_constructor_policy{delay_constructor_kind::fixed_delay, 764, 1155}};
+            default:
+              return {};
+          }
+        default:
+          return {};
+      }
+    }
+
+    if (value_size == 16)
+    {
+      switch (key_size)
+      {
+        case 1:
+          return unique_by_key_policy{
+            128,
+            15,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 248, 1200}};
+        case 8:
+          return unique_by_key_policy{
+            128,
+            7,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            BLOCK_SCAN_WARP_SCANS,
+            delay_constructor_policy{delay_constructor_kind::fixed_delay, 992, 1135}};
+        default:
+          return {};
+      }
+    }
+
+    return {};
+  }
+
+public:
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> unique_by_key_policy
+  {
+    if (arch >= ::cuda::arch_id::sm_100)
+    {
+      if (auto tuning = get_sm100_tuning())
+      {
+        return *tuning;
+      }
+    }
+
+    if (arch >= ::cuda::arch_id::sm_90)
+    {
+      if (auto tuning = get_sm90_tuning())
+      {
+        return *tuning;
+      }
+      return get_default_policy();
+    }
+
+    if (arch >= ::cuda::arch_id::sm_86)
+    {
+      return get_default_policy();
+    }
+
+    if (arch >= ::cuda::arch_id::sm_80)
+    {
+      if (auto tuning = get_sm80_tuning())
+      {
+        return *tuning;
+      }
+    }
+
+    return get_default_policy();
+  }
+};
+
+template <typename KeyT, typename ValueT>
+struct policy_selector_from_types
+{
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> unique_by_key_policy
+  {
+    return policy_selector{
+      static_cast<int>(sizeof(KeyT)),
+      static_cast<int>(sizeof(ValueT)),
+      is_primitive<KeyT>::value && sizeof(KeyT) <= 8,
+      is_primitive<ValueT>::value && sizeof(ValueT) <= 8}(arch);
+  }
+};
+
+template <typename ActivePolicyT>
+_CCCL_API constexpr auto convert_policy() -> unique_by_key_policy
+{
+  using policy_t = typename ActivePolicyT::UniqueByKeyPolicyT;
+  return {policy_t::BLOCK_THREADS,
+          policy_t::ITEMS_PER_THREAD,
+          policy_t::LOAD_ALGORITHM,
+          policy_t::LOAD_MODIFIER,
+          policy_t::SCAN_ALGORITHM,
+          delay_constructor_policy_from_type<typename policy_t::detail::delay_constructor_t>};
+}
+
+template <typename PolicyHub>
+struct policy_selector_from_hub
+{
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> unique_by_key_policy
+  {
+    using UniqueByKeyPolicyT = typename PolicyHub::MaxPolicy::UniqueByKeyPolicyT;
+    return unique_by_key_policy{
+      UniqueByKeyPolicyT::BLOCK_THREADS,
+      UniqueByKeyPolicyT::ITEMS_PER_THREAD,
+      UniqueByKeyPolicyT::LOAD_ALGORITHM,
+      UniqueByKeyPolicyT::LOAD_MODIFIER,
+      UniqueByKeyPolicyT::SCAN_ALGORITHM,
+      delay_constructor_policy_from_type<typename UniqueByKeyPolicyT::detail::delay_constructor_t>};
+  }
+};
+
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept unique_by_key_policy_selector = cub::detail::policy_selector<T, unique_by_key_policy>;
+#endif
 } // namespace detail::unique_by_key
 
 CUB_NAMESPACE_END

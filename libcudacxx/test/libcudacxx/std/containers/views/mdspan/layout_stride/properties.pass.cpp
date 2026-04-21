@@ -45,7 +45,7 @@
 #include "test_macros.h"
 
 template <class E, class M, cuda::std::enable_if_t<(E::rank() > 0), int> = 0>
-__host__ __device__ constexpr void
+TEST_FUNC constexpr void
 test_strides(E ext, M& m, const M& c_m, cuda::std::array<typename E::index_type, E::rank()> strides)
 {
   for (typename E::rank_type r = 0; r < E::rank(); r++)
@@ -72,8 +72,7 @@ test_strides(E ext, M& m, const M& c_m, cuda::std::array<typename E::index_type,
   static_assert(noexcept(c_m.required_span_size()));
 }
 template <class E, class M, cuda::std::enable_if_t<(E::rank() == 0), int> = 0>
-__host__ __device__ constexpr void
-test_strides(E, M& m, const M& c_m, cuda::std::array<typename E::index_type, E::rank()> strides)
+TEST_FUNC constexpr void test_strides(E, M& m, const M& c_m, cuda::std::array<typename E::index_type, E::rank()> strides)
 {
   typename E::index_type expected_size = 1;
   assert(m.required_span_size() == expected_size);
@@ -83,7 +82,7 @@ test_strides(E, M& m, const M& c_m, cuda::std::array<typename E::index_type, E::
 }
 
 template <class E>
-__host__ __device__ constexpr void
+TEST_FUNC constexpr void
 test_layout_mapping_stride(E ext, cuda::std::array<typename E::index_type, E::rank()> strides, bool exhaustive)
 {
   using M = cuda::std::layout_stride::template mapping<E>;
@@ -119,7 +118,7 @@ test_layout_mapping_stride(E ext, cuda::std::array<typename E::index_type, E::ra
   static_assert(cuda::std::regular<M>);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_layout_mapping_stride(cuda::std::extents<int>(), cuda::std::array<int, 0>{}, true);
@@ -134,6 +133,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

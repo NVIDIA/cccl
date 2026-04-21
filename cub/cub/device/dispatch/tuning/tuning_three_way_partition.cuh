@@ -24,11 +24,8 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__device/arch_id.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/concepts>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif
 
 CUB_NAMESPACE_BEGIN
 

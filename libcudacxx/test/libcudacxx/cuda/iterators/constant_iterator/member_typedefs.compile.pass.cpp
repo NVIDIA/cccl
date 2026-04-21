@@ -18,7 +18,7 @@
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using Iter = cuda::constant_iterator<int>;
   static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);

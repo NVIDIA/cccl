@@ -13,6 +13,7 @@
 
 #include <cuda/std/detail/__config>
 
+#include <cuda/__event/event_ref.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/__exception/exception_macros.h>
@@ -116,6 +117,49 @@ struct path_builder
   {
     __nodes_.insert(__nodes_.end(), __other.__nodes_.begin(), __other.__nodes_.end());
   }
+
+  //! \brief Adds an event-wait node and makes it the next dependency.
+  //!
+  //! The new node waits for \p __ev to be recorded before any successor of this node
+  //! executes. This mirrors `stream_ref::wait(event_ref)`.
+  //!
+  //! \param __ev Event that graph execution should wait on.
+  //! \return A `graph_node_ref` for the newly added event-wait node.
+  //! \throws cuda::std::cuda_error if `cudaGraphAddEventWaitNode` fails.
+#if _CCCL_CTK_AT_LEAST(12, 2)
+  _CCCL_HOST_API graph_node_ref wait(::cuda::event_ref __ev)
+  {
+    auto __deps = get_dependencies();
+    ::CUgraphNodeParams __params{};
+    __params.type            = ::CU_GRAPH_NODE_TYPE_WAIT_EVENT;
+    __params.eventWait.event = __ev.get();
+    auto __node = ::cuda::experimental::__driver::__graphAddNode(__graph_, __deps.data(), __deps.size(), &__params);
+
+    __clear_and_set_dependency_node(__node);
+    return graph_node_ref{__node, __graph_};
+  }
+
+  //! \brief Adds an event-record node and makes it the next dependency.
+  //!
+  //! The new node records \p __ev when it executes, signalling any downstream waiters.
+  //! This mirrors `stream_ref::record_event(event_flags)` but takes an existing event
+  //! because graph construction happens before execution.
+  //!
+  //! \param __ev Event to record.
+  //! \return A `graph_node_ref` for the newly added event-record node.
+  //! \throws cuda::std::cuda_error if `cudaGraphAddEventRecordNode` fails.
+  _CCCL_HOST_API graph_node_ref record_event(::cuda::event_ref __ev)
+  {
+    auto __deps = get_dependencies();
+    ::CUgraphNodeParams __params{};
+    __params.type              = ::CU_GRAPH_NODE_TYPE_EVENT_RECORD;
+    __params.eventRecord.event = __ev.get();
+    auto __node = ::cuda::experimental::__driver::__graphAddNode(__graph_, __deps.data(), __deps.size(), &__params);
+
+    __clear_and_set_dependency_node(__node);
+    return graph_node_ref{__node, __graph_};
+  }
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
 
   template <typename... Nodes>
   static constexpr bool __all_dependencies = (graph_dependency<Nodes> && ...);

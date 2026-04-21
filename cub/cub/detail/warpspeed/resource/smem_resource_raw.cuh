@@ -35,7 +35,7 @@ struct SmemResourceRaw
   int mStageCurrent = 0;
 
   int mResourceHandle;
-  ::cuda::std::uint8_t* mPtrBase;
+  ::cuda::std::uint8_t* mPtrBase{};
   int mSizeBytes;
   int mStride;
   int mStageCount;
@@ -47,7 +47,6 @@ struct SmemResourceRaw
   _CCCL_API constexpr SmemResourceRaw(
     SyncHandler& syncHandler, void* ptrBase, int sizeBytes, int strideBytes, int stageCount) noexcept
       : mResourceHandle(syncHandler.registerResource(stageCount))
-      , mPtrBase(nullptr)
       , mSizeBytes(sizeBytes)
       , mStride(strideBytes)
       , mStageCount(stageCount)

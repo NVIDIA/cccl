@@ -29,12 +29,14 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_macros.h"
+
 inline constexpr int size = 1000;
 
 template <class T = int>
 struct minus_five
 {
-  __device__ constexpr T operator()(const T val) const noexcept
+  TEST_DEVICE_FUNC constexpr T operator()(const T val) const noexcept
   {
     return static_cast<T>(val - 5);
   }

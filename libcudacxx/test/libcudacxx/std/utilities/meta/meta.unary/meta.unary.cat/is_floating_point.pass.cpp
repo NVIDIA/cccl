@@ -18,29 +18,29 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_floating_point()
+TEST_FUNC void test_is_floating_point()
 {
-  static_assert(cuda::std::is_floating_point<T>::value, "");
-  static_assert(cuda::std::is_floating_point<const T>::value, "");
-  static_assert(cuda::std::is_floating_point<volatile T>::value, "");
-  static_assert(cuda::std::is_floating_point<const volatile T>::value, "");
-  static_assert(cuda::std::is_floating_point_v<T>, "");
-  static_assert(cuda::std::is_floating_point_v<const T>, "");
-  static_assert(cuda::std::is_floating_point_v<volatile T>, "");
-  static_assert(cuda::std::is_floating_point_v<const volatile T>, "");
+  static_assert(cuda::std::is_floating_point<T>::value);
+  static_assert(cuda::std::is_floating_point<const T>::value);
+  static_assert(cuda::std::is_floating_point<volatile T>::value);
+  static_assert(cuda::std::is_floating_point<const volatile T>::value);
+  static_assert(cuda::std::is_floating_point_v<T>);
+  static_assert(cuda::std::is_floating_point_v<const T>);
+  static_assert(cuda::std::is_floating_point_v<volatile T>);
+  static_assert(cuda::std::is_floating_point_v<const volatile T>);
 }
 
 template <class T>
-__host__ __device__ void test_is_not_floating_point()
+TEST_FUNC void test_is_not_floating_point()
 {
-  static_assert(!cuda::std::is_floating_point<T>::value, "");
-  static_assert(!cuda::std::is_floating_point<const T>::value, "");
-  static_assert(!cuda::std::is_floating_point<volatile T>::value, "");
-  static_assert(!cuda::std::is_floating_point<const volatile T>::value, "");
-  static_assert(!cuda::std::is_floating_point_v<T>, "");
-  static_assert(!cuda::std::is_floating_point_v<const T>, "");
-  static_assert(!cuda::std::is_floating_point_v<volatile T>, "");
-  static_assert(!cuda::std::is_floating_point_v<const volatile T>, "");
+  static_assert(!cuda::std::is_floating_point<T>::value);
+  static_assert(!cuda::std::is_floating_point<const T>::value);
+  static_assert(!cuda::std::is_floating_point<volatile T>::value);
+  static_assert(!cuda::std::is_floating_point<const volatile T>::value);
+  static_assert(!cuda::std::is_floating_point_v<T>);
+  static_assert(!cuda::std::is_floating_point_v<const T>);
+  static_assert(!cuda::std::is_floating_point_v<volatile T>);
+  static_assert(!cuda::std::is_floating_point_v<const volatile T>);
 }
 
 class Empty
@@ -48,7 +48,7 @@ class Empty
 
 class NotEmpty
 {
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -61,7 +61,7 @@ struct bit_zero
 
 class Abstract
 {
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 enum Enum

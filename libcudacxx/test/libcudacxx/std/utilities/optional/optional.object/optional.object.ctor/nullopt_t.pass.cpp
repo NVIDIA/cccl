@@ -23,9 +23,9 @@ using cuda::std::nullopt_t;
 using cuda::std::optional;
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
-  static_assert(cuda::std::is_nothrow_constructible<optional<T>, nullopt_t&>::value, "");
+  static_assert(cuda::std::is_nothrow_constructible<optional<T>, nullopt_t&>::value);
   static_assert(
     cuda::std::is_trivially_destructible<optional<T>>::value == cuda::std::is_trivially_destructible<T>::value, "");
   {
@@ -38,7 +38,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<int*>();
@@ -48,9 +48,7 @@ __host__ __device__ constexpr bool test()
   test<NonTrivialTypes::NoCtors>();
   test<NonConstexprTypes::NoCtors>();
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test<int&>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   return true;
 }
@@ -64,7 +62,7 @@ __global__ void test_global_visibility()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }
