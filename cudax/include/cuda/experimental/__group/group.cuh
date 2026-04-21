@@ -70,6 +70,7 @@ class group
   [[nodiscard]] _CCCL_DEVICE_API static _MappingResult
   __do_mapping(const _Mapping& __mapping, const _ParentGroup& __parent) noexcept
   {
+    // Do not invoke the mapping for threads that are not part of the parent group.
     if constexpr (!_ParentMappingResult::is_always_exhaustive())
     {
       if (!__parent.__mapping_result().is_valid())
@@ -85,6 +86,25 @@ class group
       _CCCL_ASSERT(__mapping_result.rank() < __mapping_result.count(), "invalid rank");
     }
     return __mapping_result;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static _SynchronizerInstance __make_synchronizer_instance(
+    const _Synchronizer& __synchronizer,
+    const _ParentGroup& __parent,
+    const _Mapping& __mapping,
+    const _MappingResult& __mapping_result) noexcept
+  {
+    // Do not invoke the synchronizer instance creation for threads that are not part of the parent group. On the other
+    // hand threads that are not part of this group must create the synchronizer instance, too, because the operation
+    // can synchronize the parent group.
+    if constexpr (!_ParentMappingResult::is_always_exhaustive())
+    {
+      if (!__parent.__mapping_result().is_valid())
+      {
+        return _MappingResult::invalid();
+      }
+    }
+    return __synchronizer.make_instance(_Unit{}, __parent, __mapping, __mapping_result);
   }
 
 public:
@@ -104,7 +124,7 @@ public:
       , __mapping_{__mapping}
       , __mapping_result_{__do_mapping(__mapping_, __parent)}
       , __synchronizer_{__synchronizer}
-      , __synchronizer_instance_{__synchronizer_.make_instance(__unit, __parent, __mapping_, __mapping_result_)}
+      , __synchronizer_instance_{__make_synchronizer_instance(__synchronizer_, __parent, __mapping_, __mapping_result_)}
   {}
 
   [[nodiscard]] _CCCL_DEVICE_API const hierarchy_type& hierarchy() const noexcept
@@ -113,7 +133,7 @@ public:
   }
 
   // todo(dabayer): Do we want to expose mapping getter?
-  [[nodiscard]] _CCCL_DEVICE_API const _Mapping& mapping() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API const mapping_type& mapping() const noexcept
   {
     return __mapping_;
   }
@@ -125,7 +145,7 @@ public:
   }
 
   // todo(dabayer): Do we want to expose synchronizer getter?
-  [[nodiscard]] _CCCL_DEVICE_API const _Synchronizer& synchronizer() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API const synchronizer_type& synchronizer() const noexcept
   {
     return __synchronizer_;
   }
@@ -134,6 +154,7 @@ public:
   //                aligned/unaligned variants?
   _CCCL_DEVICE_API void sync() noexcept
   {
+    // Skip the synchronization for threads that are not part of this group.
     if constexpr (!_MappingResult::is_always_exhaustive())
     {
       if (!__mapping_result_.is_valid())
@@ -146,6 +167,7 @@ public:
 
   _CCCL_DEVICE_API void sync_aligned() noexcept
   {
+    // Skip the synchronization for threads that are not part of this group.
     if constexpr (!_MappingResult::is_always_exhaustive())
     {
       if (!__mapping_result_.is_valid())

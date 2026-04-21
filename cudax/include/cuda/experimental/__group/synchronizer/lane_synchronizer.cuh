@@ -39,10 +39,21 @@ namespace cuda::experimental
 {
 class lane_synchronizer
 {
+  template <class _Level, class _Tp>
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool __is_supported_count(_Tp __n) noexcept
+  {
+    return (::cuda::is_power_of_two(__n) || ::cuda::std::is_same_v<_Level, warp_level>) && __n <= 32;
+  }
+
 public:
   struct __synchronizer_instance
   {
     unsigned __lane_mask_;
+
+    [[nodiscard]] _CCCL_DEVICE_API static __synchronizer_instance invalid() noexcept
+    {
+      return {0u};
+    }
 
     template <class _MappingResult>
     _CCCL_DEVICE_API void do_sync(const _MappingResult&, const lane_synchronizer&) const noexcept
@@ -59,12 +70,6 @@ public:
 
   _CCCL_HIDE_FROM_ABI explicit lane_synchronizer() = default;
 
-  template <class _Level, class _Tp>
-  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool __is_supported_count(_Tp __n) noexcept
-  {
-    return (::cuda::is_power_of_two(__n) || ::cuda::std::is_same_v<_Level, warp_level>) && __n <= 32;
-  }
-
   // todo(dabayer): Rewrite this function to support groups made from groups. Might need to change the compile-time
   // parameters.
   template <class _Unit, class _ParentGroup, ::cuda::std::size_t _Np, class _MappingResult>
@@ -73,6 +78,15 @@ public:
   {
     static_assert(::cuda::std::is_same_v<_Unit, thread_level>, "_Unit must be cuda::thread_level");
     static_assert(__group_mapping_result<_MappingResult>);
+
+    // If the thread is not part of the newly created group, return an invalid instance.
+    if constexpr (!_MappingResult::is_always_exhaustive())
+    {
+      if (!__mapping_result.is_valid())
+      {
+        return __synchronizer_instance::invalid();
+      }
+    }
 
     if constexpr (_MappingResult::static_count() != ::cuda::std::dynamic_extent)
     {

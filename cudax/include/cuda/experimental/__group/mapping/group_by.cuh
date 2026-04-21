@@ -44,6 +44,8 @@ struct non_exhaustive_t
 
 _CCCL_DEVICE constexpr non_exhaustive_t non_exhaustive;
 
+inline constexpr unsigned __invalid_count_or_rank = 0xffff'ffff;
+
 // Requirements on mappings:
 // - must be copyable
 // - must implement `map(_Unit, _Level, _Hierarchy)` method that returns an object that satisfies the
@@ -65,9 +67,9 @@ public:
     unsigned __rank_;
 
     [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result
-    invalid(unsigned __group_count = 0xffff'ffffu) noexcept
+    invalid(unsigned __group_count = __invalid_count_or_rank) noexcept
     {
-      return {__group_count, 0xffff'ffffu, 0xffff'ffffu};
+      return {__group_count, __invalid_count_or_rank, __invalid_count_or_rank};
     }
 
     [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count() noexcept
@@ -77,7 +79,7 @@ public:
 
     [[nodiscard]] _CCCL_DEVICE_API unsigned group_count() const noexcept
     {
-      _CCCL_ASSERT(__group_count_ != 0xffff'ffffu,
+      _CCCL_ASSERT(__group_count_ != __invalid_count_or_rank,
                    "querying group_count() by a thread that was not part of the parent group is not allowed");
       return __group_count_;
     }
@@ -122,7 +124,7 @@ public:
       }
       else
       {
-        return __rank_ != 0xffff'ffffu;
+        return __rank_ != __invalid_count_or_rank;
       }
     }
 
@@ -217,9 +219,9 @@ public:
     unsigned __rank_;
 
     [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result
-    invalid(unsigned __group_count = 0xffff'ffffu) noexcept
+    invalid(unsigned __group_count = __invalid_count_or_rank) noexcept
     {
-      return {__group_count, 0xffff'ffffu, 0xffff'ffffu, 0xffff'ffffu};
+      return {__group_count, __invalid_count_or_rank, __invalid_count_or_rank, __invalid_count_or_rank};
     }
 
     [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count() noexcept
@@ -229,7 +231,7 @@ public:
 
     [[nodiscard]] _CCCL_DEVICE_API unsigned group_count() const noexcept
     {
-      _CCCL_ASSERT(__group_count_ != 0xffff'ffffu,
+      _CCCL_ASSERT(__group_count_ != __invalid_count_or_rank,
                    "querying group_count() by a thread that was not part of the parent group is not allowed");
       return __group_count_;
     }
@@ -274,7 +276,7 @@ public:
       }
       else
       {
-        return __rank_ != 0xffff'ffffu;
+        return __rank_ != __invalid_count_or_rank;
       }
     }
 
