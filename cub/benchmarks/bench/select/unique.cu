@@ -103,14 +103,14 @@ static void unique(nvbench::state& state, nvbench::type_list<T, OffsetT, InPlace
   // Get temporary storage requirements
   std::size_t temp_size{};
   dispatch_t::Dispatch(
-    nullptr, temp_size, d_in, d_flags, d_out, d_num_unique, select_op_t{}, equality_op_t{}, elements, 0);
+    nullptr, temp_size, d_in, d_flags, d_out, d_num_unique, select_op_t{}, equality_op_t{}, elements, nullptr);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   // Get number of unique elements
   dispatch_t::Dispatch(
-    temp_storage, temp_size, d_in, d_flags, d_out, d_num_unique, select_op_t{}, equality_op_t{}, elements, 0);
+    temp_storage, temp_size, d_in, d_flags, d_out, d_num_unique, select_op_t{}, equality_op_t{}, elements, nullptr);
 
   cudaDeviceSynchronize();
   const OffsetT num_unique = num_unique_out[0];

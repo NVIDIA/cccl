@@ -26,20 +26,20 @@
 
 TEST_GLOBAL_VARIABLE int count = 0;
 
-__host__ __device__ void f_void_0()
+TEST_FUNC void f_void_0()
 {
   ++count;
 }
 
 struct A_void_0
 {
-  __host__ __device__ void operator()()
+  TEST_FUNC void operator()()
   {
     ++count;
   }
 };
 
-__host__ __device__ void test_void_0()
+TEST_FUNC void test_void_0()
 {
   int save_count = count;
   // function

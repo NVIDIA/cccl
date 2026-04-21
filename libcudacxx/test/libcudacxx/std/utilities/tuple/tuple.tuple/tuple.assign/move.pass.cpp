@@ -30,7 +30,7 @@ struct CopyAssignable
   CopyAssignable& operator=(CopyAssignable const&) = default;
   CopyAssignable& operator=(CopyAssignable&&)      = delete;
 };
-static_assert(cuda::std::is_copy_assignable<CopyAssignable>::value, "");
+static_assert(cuda::std::is_copy_assignable<CopyAssignable>::value);
 struct MoveAssignable
 {
   MoveAssignable& operator=(MoveAssignable const&) = delete;
@@ -42,17 +42,17 @@ TEST_GLOBAL_VARIABLE int moved  = 0;
 
 struct CountAssign
 {
-  __host__ __device__ static void reset()
+  TEST_FUNC static void reset()
   {
     copied = moved = 0;
   }
   CountAssign() = default;
-  __host__ __device__ CountAssign& operator=(CountAssign const&)
+  TEST_FUNC CountAssign& operator=(CountAssign const&)
   {
     ++copied;
     return *this;
   }
-  __host__ __device__ CountAssign& operator=(CountAssign&&)
+  TEST_FUNC CountAssign& operator=(CountAssign&&)
   {
     ++moved;
     return *this;
@@ -112,23 +112,23 @@ int main(int, char**)
     // test that the implicitly generated move assignment operator
     // is properly deleted
     using T = cuda::std::tuple<cuda::std::unique_ptr<int>>;
-    static_assert(cuda::std::is_move_assignable<T>::value, "");
-    static_assert(!cuda::std::is_copy_assignable<T>::value, "");
+    static_assert(cuda::std::is_move_assignable<T>::value);
+    static_assert(!cuda::std::is_copy_assignable<T>::value);
   }
 
   {
     using T = cuda::std::tuple<int, NonAssignable>;
-    static_assert(!cuda::std::is_move_assignable<T>::value, "");
+    static_assert(!cuda::std::is_move_assignable<T>::value);
   }
   {
     using T = cuda::std::tuple<int, MoveAssignable>;
-    static_assert(cuda::std::is_move_assignable<T>::value, "");
+    static_assert(cuda::std::is_move_assignable<T>::value);
   }
   {
     // The move should decay to a copy.
     CountAssign::reset();
     using T = cuda::std::tuple<CountAssign, CopyAssignable>;
-    static_assert(cuda::std::is_move_assignable<T>::value, "");
+    static_assert(cuda::std::is_move_assignable<T>::value);
     T t1;
     T t2;
     t1 = cuda::std::move(t2);

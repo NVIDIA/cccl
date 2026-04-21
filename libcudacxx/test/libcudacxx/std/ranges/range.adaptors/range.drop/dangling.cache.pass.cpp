@@ -23,24 +23,24 @@ struct ZeroOnDestroy : cuda::std::ranges::view_base
   unsigned count = 0;
   int buff[8]    = {1, 2, 3, 4, 5, 6, 7, 8};
 
-  __host__ __device__ constexpr ForwardIter begin()
+  TEST_FUNC constexpr ForwardIter begin()
   {
     return ForwardIter(buff);
   }
-  __host__ __device__ constexpr ForwardIter begin() const
+  TEST_FUNC constexpr ForwardIter begin() const
   {
     return ForwardIter();
   }
-  __host__ __device__ constexpr ForwardIter end()
+  TEST_FUNC constexpr ForwardIter end()
   {
     return ForwardIter(buff + 8);
   }
-  __host__ __device__ constexpr ForwardIter end() const
+  TEST_FUNC constexpr ForwardIter end() const
   {
     return ForwardIter();
   }
 
-  __host__ __device__ ~ZeroOnDestroy()
+  TEST_FUNC ~ZeroOnDestroy()
   {
     for (unsigned i = 0; i < count; ++i)
     {
@@ -48,7 +48,7 @@ struct ZeroOnDestroy : cuda::std::ranges::view_base
     }
   }
 
-  __host__ __device__ static auto dropFirstFour()
+  TEST_FUNC static auto dropFirstFour()
   {
     ZeroOnDestroy zod;
     cuda::std::ranges::drop_view dv(zod, 4);

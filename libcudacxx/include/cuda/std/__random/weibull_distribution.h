@@ -21,13 +21,11 @@
 #endif // no system header
 
 #include <cuda/std/__cmath/exponential_functions.h>
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/exponential_distribution.h>
 #include <cuda/std/__random/is_valid.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <iosfwd>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -137,8 +135,8 @@ public:
     return __x.__p_ == __y.__p_;
   }
 #if _CCCL_STD_VER <= 2017
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(const weibull_distribution& __x, const weibull_distribution& __y) noexcept
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator!=(const weibull_distribution& __x, const weibull_distribution& __y) noexcept
   {
     return !(__x == __y);
   }

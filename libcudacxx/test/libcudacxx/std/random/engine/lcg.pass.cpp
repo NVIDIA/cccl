@@ -8,11 +8,14 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 #include <cuda/std/random>
 
 #include "random_utilities/test_engine.h"
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test_engine<cuda::std::minstd_rand0, 1043618065u>();
   test_engine<cuda::std::minstd_rand, 399268537ull>();

@@ -274,7 +274,7 @@ struct CustomDeviceRunLengthEncode
     LengthsOutputIteratorT d_lengths_out,
     NumRunsOutputIteratorT d_num_runs_out,
     int num_items, // Signed integer type for global offsets
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return cub::detail::rle::dispatch(
       d_temp_storage,

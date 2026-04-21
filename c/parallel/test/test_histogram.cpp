@@ -103,7 +103,7 @@ void histogram_even(
       num_row_pixels,
       num_rows,
       row_stride_samples,
-      0));
+      nullptr));
 
   pointer_t<uint8_t> temp_storage(temp_storage_bytes);
 
@@ -121,7 +121,7 @@ void histogram_even(
       num_row_pixels,
       num_rows,
       row_stride_samples,
-      0));
+      nullptr));
 
   REQUIRE(CUDA_SUCCESS == cccl_device_histogram_cleanup(&build));
 }
@@ -283,7 +283,7 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
   auto fp_scales = ::cuda::std::array<level_t, active_channels>{}; // only used when LevelT is floating point
   for (size_t c = 0; c < active_channels; ++c)
   {
-    if constexpr (!std::is_integral<level_t>::value)
+    if constexpr (!std::is_integral_v<level_t>)
     {
       fp_scales[c] = static_cast<level_t>(num_levels[c] - 1) / static_cast<level_t>(upper_level[c] - lower_level[c]);
     }

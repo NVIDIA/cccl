@@ -13,7 +13,7 @@
 
 // has weak result type
 
-// UNSUPPORTED: c++20
+// UNSUPPORTED: !c++17
 
 // ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
@@ -72,9 +72,9 @@ private:
     char __;
   };
   template <class U>
-  __host__ __device__ static two test(...);
+  TEST_FUNC static two test(...);
   template <class U>
-  __host__ __device__ static char test(typename U::result_type* = 0);
+  TEST_FUNC static char test(typename U::result_type* = 0);
 
 public:
   static const bool value = sizeof(test<T>(0)) == 1;
@@ -82,24 +82,24 @@ public:
 
 int main(int, char**)
 {
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<functor1>::result_type, char>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<functor2>::result_type, double>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<functor3>::result_type, float>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<void()>::result_type, void>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int*(double*)>::result_type, int*>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<void (*)()>::result_type, void>::value), "");
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int* (*) (double*)>::result_type, int*>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<functor1>::result_type, char>::value));
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<functor2>::result_type, double>::value));
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<functor3>::result_type, float>::value));
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<void()>::result_type, void>::value));
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int*(double*)>::result_type, int*>::value));
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<void (*)()>::result_type, void>::value));
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int* (*) (double*)>::result_type, int*>::value));
   static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int* (C::*) (double*)>::result_type, int*>::value),
                 "");
   static_assert(
     (cuda::std::is_same<cuda::std::reference_wrapper<int (C::*)(double*) const volatile>::result_type, int>::value),
     "");
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<C()>::result_type, C>::value), "");
-  static_assert(has_result_type<cuda::std::reference_wrapper<functor3>>::value, "");
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<C()>::result_type, C>::value));
+  static_assert(has_result_type<cuda::std::reference_wrapper<functor3>>::value);
 #if !TEST_COMPILER(MSVC, >=, 19, 50) // Visual Studio 2026 fails this
-  static_assert(!has_result_type<cuda::std::reference_wrapper<functor4>>::value, "");
+  static_assert(!has_result_type<cuda::std::reference_wrapper<functor4>>::value);
 #endif // !TEST_COMPILER(MSVC, >=, 19, 50)
-  static_assert(!has_result_type<cuda::std::reference_wrapper<C>>::value, "");
+  static_assert(!has_result_type<cuda::std::reference_wrapper<C>>::value);
 
   return 0;
 }

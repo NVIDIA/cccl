@@ -23,18 +23,18 @@ struct X
 {
   int i_;
 
-  __host__ __device__ constexpr X(int i)
+  TEST_FUNC constexpr X(int i)
       : i_(i)
   {}
 };
 
-__host__ __device__ constexpr bool operator!=(const X& lhs, const X& rhs)
+TEST_FUNC constexpr bool operator!=(const X& lhs, const X& rhs)
 {
   return lhs.i_ != rhs.i_;
 }
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   {
     using O = optional<X>;
@@ -73,12 +73,10 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test<int&>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   return true;
 }

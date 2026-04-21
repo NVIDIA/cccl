@@ -156,9 +156,9 @@ private:
   {}
 };
 
-static_assert(::cuda::mr::synchronous_resource_with<device_memory_pool_ref, ::cuda::mr::device_accessible>, "");
+static_assert(::cuda::mr::synchronous_resource_with<device_memory_pool_ref, ::cuda::mr::device_accessible>);
 
-static_assert(::cuda::mr::resource_with<device_memory_pool, ::cuda::mr::device_accessible>, "");
+static_assert(::cuda::mr::resource_with<device_memory_pool, ::cuda::mr::device_accessible>);
 
 _CCCL_DIAG_POP
 

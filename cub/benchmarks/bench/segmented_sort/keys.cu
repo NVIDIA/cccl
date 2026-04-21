@@ -124,7 +124,7 @@ void seg_sort(nvbench::state& state,
     d_begin_offsets,
     d_end_offsets,
     is_overwrite_ok,
-    0
+    nullptr
 #if !TUNE_BASE
     ,
     device_seg_sort_policy_selector<key_t>{}

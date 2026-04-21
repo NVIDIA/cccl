@@ -22,16 +22,16 @@
 #include "test_macros.h"
 
 template <class T, cuda::std::size_t N, class U>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
-  static_assert((cuda::std::is_same<typename cuda::std::tuple_element<N, T>::type, U>::value), "");
-  static_assert((cuda::std::is_same<typename cuda::std::tuple_element<N, const T>::type, const U>::value), "");
-  static_assert((cuda::std::is_same<typename cuda::std::tuple_element<N, volatile T>::type, volatile U>::value), "");
+  static_assert((cuda::std::is_same<typename cuda::std::tuple_element<N, T>::type, U>::value));
+  static_assert((cuda::std::is_same<typename cuda::std::tuple_element<N, const T>::type, const U>::value));
+  static_assert((cuda::std::is_same<typename cuda::std::tuple_element<N, volatile T>::type, volatile U>::value));
   static_assert(
     (cuda::std::is_same<typename cuda::std::tuple_element<N, const volatile T>::type, const volatile U>::value), "");
-  static_assert((cuda::std::is_same<typename cuda::std::tuple_element_t<N, T>, U>::value), "");
-  static_assert((cuda::std::is_same<typename cuda::std::tuple_element_t<N, const T>, const U>::value), "");
-  static_assert((cuda::std::is_same<typename cuda::std::tuple_element_t<N, volatile T>, volatile U>::value), "");
+  static_assert((cuda::std::is_same<typename cuda::std::tuple_element_t<N, T>, U>::value));
+  static_assert((cuda::std::is_same<typename cuda::std::tuple_element_t<N, const T>, const U>::value));
+  static_assert((cuda::std::is_same<typename cuda::std::tuple_element_t<N, volatile T>, volatile U>::value));
   static_assert((cuda::std::is_same<typename cuda::std::tuple_element_t<N, const volatile T>, const volatile U>::value),
                 "");
 }

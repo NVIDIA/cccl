@@ -124,8 +124,8 @@ struct CachingDeviceAllocator
         , bytes(0)
         , bin(INVALID_BIN)
         , device(device)
-        , associated_stream(0)
-        , ready_event(0)
+        , associated_stream(nullptr)
+        , ready_event(nullptr)
     {}
 
     // Constructor (suitable for searching maps for a range of suitable blocks, given a device)
@@ -134,8 +134,8 @@ struct CachingDeviceAllocator
         , bytes(0)
         , bin(INVALID_BIN)
         , device(device)
-        , associated_stream(0)
-        , ready_event(0)
+        , associated_stream(nullptr)
+        , ready_event(nullptr)
     {}
 
     // Comparison functor for comparing device pointers
@@ -388,7 +388,7 @@ struct CachingDeviceAllocator
    * @param[in] active_stream
    *   The stream to be associated with this allocation
    */
-  cudaError_t DeviceAllocate(int device, void** d_ptr, size_t bytes, cudaStream_t active_stream = 0)
+  cudaError_t DeviceAllocate(int device, void** d_ptr, size_t bytes, cudaStream_t active_stream = nullptr)
   {
     *d_ptr                = nullptr;
     int entrypoint_device = INVALID_DEVICE_ORDINAL;
@@ -648,7 +648,7 @@ struct CachingDeviceAllocator
    * @param[in] active_stream
    *   The stream to be associated with this allocation
    */
-  cudaError_t DeviceAllocate(void** d_ptr, size_t bytes, cudaStream_t active_stream = 0)
+  cudaError_t DeviceAllocate(void** d_ptr, size_t bytes, cudaStream_t active_stream = nullptr)
   {
     return DeviceAllocate(INVALID_DEVICE_ORDINAL, d_ptr, bytes, active_stream);
   }

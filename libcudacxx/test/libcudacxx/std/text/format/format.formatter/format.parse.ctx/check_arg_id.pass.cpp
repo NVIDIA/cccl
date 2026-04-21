@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: bit field read/write is unsupported in tile code
+
 // <cuda/std/format>
 
 // constexpr void check_arg_id(size_t id);
@@ -19,7 +22,7 @@
 #include "literal.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::format_parse_context context("", 10);
   for (cuda::std::size_t i = 0; i < 10; ++i)

@@ -34,7 +34,7 @@
 struct indirect_less
 {
   template <class P>
-  __host__ __device__ constexpr bool operator()(const P& x, const P& y) const noexcept
+  TEST_FUNC constexpr bool operator()(const P& x, const P& y) const noexcept
   {
     return *x < *y;
   }
@@ -42,58 +42,58 @@ struct indirect_less
 
 struct S
 {
-  __host__ __device__ S()
+  TEST_FUNC S()
       : i_(0)
   {}
-  __host__ __device__ S(int i)
+  TEST_FUNC S(int i)
       : i_(i)
   {}
 
-  __host__ __device__ S(const S& rhs)
+  TEST_FUNC S(const S& rhs)
       : i_(rhs.i_)
   {}
-  __host__ __device__ S(S&& rhs)
+  TEST_FUNC S(S&& rhs)
       : i_(rhs.i_)
   {
     rhs.i_ = -1;
   }
 
-  __host__ __device__ S& operator=(const S& rhs)
+  TEST_FUNC S& operator=(const S& rhs)
   {
     i_ = rhs.i_;
     return *this;
   }
-  __host__ __device__ S& operator=(S&& rhs)
+  TEST_FUNC S& operator=(S&& rhs)
   {
     i_     = rhs.i_;
     rhs.i_ = -2;
     assert(this != &rhs);
     return *this;
   }
-  __host__ __device__ S& operator=(int i)
+  TEST_FUNC S& operator=(int i)
   {
     i_ = i;
     return *this;
   }
 
-  __host__ __device__ bool operator<(const S& rhs) const
+  TEST_FUNC bool operator<(const S& rhs) const
   {
     return i_ < rhs.i_;
   }
-  __host__ __device__ bool operator>(const S& rhs) const
+  TEST_FUNC bool operator>(const S& rhs) const
   {
     return i_ > rhs.i_;
   }
-  __host__ __device__ bool operator==(const S& rhs) const
+  TEST_FUNC bool operator==(const S& rhs) const
   {
     return i_ == rhs.i_;
   }
-  __host__ __device__ bool operator==(int i) const
+  TEST_FUNC bool operator==(int i) const
   {
     return i_ == i;
   }
 
-  __host__ __device__ void set(int i)
+  TEST_FUNC void set(int i)
   {
     i_ = i;
   }
@@ -102,7 +102,7 @@ struct S
 };
 
 template <class Iter, class value_type = typename cuda::std::iterator_traits<Iter>::value_type*>
-__host__ __device__ void test_one(unsigned N, unsigned M, value_type* ptr, cuda::std::minstd_rand& randomness)
+TEST_FUNC void test_one(unsigned N, unsigned M, value_type* ptr, cuda::std::minstd_rand& randomness)
 {
   assert(M <= N);
   cuda::std::shuffle(ptr, ptr + N, randomness);
@@ -120,7 +120,7 @@ __host__ __device__ void test_one(unsigned N, unsigned M, value_type* ptr, cuda:
 }
 
 template <class Iter, class value_type = typename cuda::std::iterator_traits<Iter>::value_type*>
-__host__ __device__ void test(unsigned N, value_type* ptr, cuda::std::minstd_rand& randomness)
+TEST_FUNC void test(unsigned N, value_type* ptr, cuda::std::minstd_rand& randomness)
 {
   test_one<Iter>(N, 0, ptr, randomness);
   test_one<Iter>(N, N / 4, ptr, randomness);
@@ -130,7 +130,7 @@ __host__ __device__ void test(unsigned N, value_type* ptr, cuda::std::minstd_ran
 }
 
 template <class Iter, class value_type = typename cuda::std::iterator_traits<Iter>::value_type*>
-__host__ __device__ void test(value_type* ptr, cuda::std::minstd_rand& randomness)
+TEST_FUNC void test(value_type* ptr, cuda::std::minstd_rand& randomness)
 {
   test_one<Iter>(1, 0, ptr, randomness);
   test_one<Iter>(1, 1, ptr, randomness);
@@ -150,14 +150,14 @@ __host__ __device__ void test(value_type* ptr, cuda::std::minstd_rand& randomnes
 struct less_by_first
 {
   template <typename Pair>
-  __host__ __device__ bool operator()(const Pair& lhs, const Pair& rhs) const
+  TEST_FUNC bool operator()(const Pair& lhs, const Pair& rhs) const
   {
     return cuda::std::less<typename Pair::first_type>()(lhs.first, rhs.first);
   }
 };
 
 #if defined(_LIBCUDACXX_HAS_VECTOR)
-__host__ __device__ void test_PR31166()
+TEST_FUNC void test_PR31166()
 {
   using P  = cuda::std::pair<int, int>;
   using V  = cuda::std::vector<P>;
@@ -189,6 +189,13 @@ int main(int, char**)
   test<bidirectional_iterator<S*>>(reinterpret_cast<S*>(arr), randomness);
   test<random_access_iterator<S*>>(reinterpret_cast<S*>(arr), randomness);
   test<S*>(reinterpret_cast<S*>(arr), randomness);
+
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<int*>>(arr, randomness);))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<int*>>(arr, randomness);))
+#endif // TEST_CUDA_COMPILATION()
 
 #if defined(_LIBCUDACXX_HAS_VECTOR)
   test_PR31166();

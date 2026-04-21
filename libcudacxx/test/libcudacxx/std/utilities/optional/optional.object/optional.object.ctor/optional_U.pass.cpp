@@ -26,17 +26,17 @@ class X
   int i_;
 
 public:
-  __host__ __device__ TEST_CONSTEXPR_CXX20 X(int i)
+  TEST_FUNC TEST_CONSTEXPR_CXX20 X(int i)
       : i_(i)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX20 X(X&& x)
+  TEST_FUNC TEST_CONSTEXPR_CXX20 X(X&& x)
       : i_(cuda::std::exchange(x.i_, 0))
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ~X()
+  TEST_FUNC TEST_CONSTEXPR_CXX20 ~X()
   {
     i_ = 0;
   }
-  __host__ __device__ friend constexpr bool operator==(const X& x, const X& y)
+  TEST_FUNC friend constexpr bool operator==(const X& x, const X& y)
   {
     return x.i_ == y.i_;
   }
@@ -46,7 +46,7 @@ struct B
 {
   int val_;
 
-  __host__ __device__ constexpr bool operator==(const int& other) const noexcept
+  TEST_FUNC constexpr bool operator==(const int& other) const noexcept
   {
     return other == val_;
   }
@@ -54,21 +54,19 @@ struct B
 class D : public B
 {};
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
 template <class T>
 struct ConvertibleToReference
 {
   T val_;
 
-  __host__ __device__ constexpr operator T&() noexcept
+  TEST_FUNC constexpr operator T&() noexcept
   {
     return val_;
   }
 };
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
 template <class T, class U>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   { // constructed from empty
     optional<U> input{};
@@ -90,22 +88,20 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int, short>();
   test<X, int>();
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test<B&, D&>();
   test<int&, ConvertibleToReference<int>&>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   return true;
 }
 
 struct TerminatesOnConstruction
 {
-  __host__ __device__ TerminatesOnConstruction(int)
+  TEST_FUNC TerminatesOnConstruction(int)
   {
     cuda::std::terminate();
   }
@@ -146,7 +142,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
   {
@@ -161,7 +157,7 @@ int main(int, char**)
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // TEST_HAS_EXCEPTIONS()
 
-  static_assert(!(cuda::std::is_constructible<optional<X>, optional<TerminatesOnConstruction>>::value), "");
+  static_assert(!(cuda::std::is_constructible<optional<X>, optional<TerminatesOnConstruction>>::value));
 
   return 0;
 }

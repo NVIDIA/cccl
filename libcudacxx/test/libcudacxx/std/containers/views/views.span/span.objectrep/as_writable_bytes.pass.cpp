@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <typename Span>
-__host__ __device__ void testRuntimeSpan(Span sp)
+TEST_FUNC void testRuntimeSpan(Span sp)
 {
   static_assert(noexcept(cuda::std::as_writable_bytes(sp)));
 
@@ -45,7 +45,7 @@ __host__ __device__ void testRuntimeSpan(Span sp)
 
 struct A
 {};
-__device__ int iArr2[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+TEST_GLOBAL_VARIABLE int iArr2[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
 int main(int, char**)
 {

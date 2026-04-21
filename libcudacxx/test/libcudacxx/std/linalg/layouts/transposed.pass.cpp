@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 #include <cuda/std/linalg>
@@ -16,7 +19,7 @@
 #include "test_macros.h"
 
 template <typename Layout, typename Map>
-__host__ __device__ void map_test(Map map)
+TEST_FUNC void map_test(Map map)
 {
   using T = int;
   using E = cuda::std::extents<size_t, 2, 3>;

@@ -11,8 +11,10 @@
 #include <cuda/std/cstddef>
 #include <cuda/type_traits>
 
+#include "test_macros.h"
+
 template <class T, cuda::std::size_t Size, class Ref>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   using Vec = cuda::vector_type_t<T, Size>;
   static_assert(cuda::std::is_same_v<Vec, Ref>);
@@ -24,7 +26,7 @@ __host__ __device__ void test()
   }
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   // 1. Test valid combinations
 

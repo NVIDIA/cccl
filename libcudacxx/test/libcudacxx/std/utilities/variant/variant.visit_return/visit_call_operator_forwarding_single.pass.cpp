@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 // UNSUPPORTED: gcc-6
@@ -25,7 +28,7 @@
 #include "variant_test_helpers.h"
 
 template <typename ReturnType>
-__host__ __device__ void test_call_operator_forwarding()
+TEST_FUNC void test_call_operator_forwarding()
 {
   using Fn = ForwardingCallObject;
   Fn obj{};

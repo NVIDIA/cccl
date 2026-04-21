@@ -11,7 +11,7 @@
 
 #include <cuda/std/__format_>
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // [format.parse.ctx]/11
   // Remarks: Call expressions where id >= num_args_ are not

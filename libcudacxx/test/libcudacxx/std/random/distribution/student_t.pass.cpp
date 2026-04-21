@@ -6,6 +6,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
 //
 // REQUIRES: long_tests
 
@@ -27,7 +30,7 @@ struct student_t_cdf
 {
   using P = typename cuda::std::student_t_distribution<T>::param_type;
 
-  __host__ __device__ double operator()(double x, const P& p) const
+  TEST_FUNC double operator()(double x, const P& p) const
   {
     // CDF of Student's t-distribution: F(x) = 0.5 + 0.5 * sgn(x) * I_{t²/(n+t²)}(0.5, n/2)
     // where I is the regularized incomplete beta function and t = x
@@ -48,7 +51,7 @@ struct student_t_cdf
 };
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   [[maybe_unused]] const bool test_constexpr = false;
   using D                                    = cuda::std::student_t_distribution<T>;

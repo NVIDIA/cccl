@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <typename Barrier, template <typename, typename> class Selector, typename Initializer = constructor_initializer>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   Selector<Barrier, Initializer> sel;
   SHARED Barrier* b;

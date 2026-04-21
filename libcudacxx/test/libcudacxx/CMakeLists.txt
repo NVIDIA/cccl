@@ -11,7 +11,7 @@ cccl_get_c2h()
 set(c2h_all_target "libcudacxx.test.c2h_all")
 add_custom_target(${c2h_all_target})
 
-if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
+if (NOT LIBCUDACXX_TEST_WITH_NVRTC AND NOT CCCL_ENABLE_TILE)
   file(
     GLOB_RECURSE test_srcs
     RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
@@ -107,9 +107,6 @@ endif()
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_ASSERTIONS")
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -I ${dlpack_SOURCE_DIR}/include")
 
-# enable optional<T&>
-string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_OPTIONAL_REF")
-
 # Disable dialect deprecation
 string(
   APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
@@ -119,6 +116,14 @@ string(
   APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
   " -DLIBCUDACXX_IGNORE_DEPRECATED_ABI"
 )
+
+# enable tile support
+if (CCCL_ENABLE_TILE)
+  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " --enable-tile")
+  set(LIBCUDACXX_ENABLE_TILE True)
+else()
+  set(LIBCUDACXX_ENABLE_TILE False)
+endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS " -latomic")

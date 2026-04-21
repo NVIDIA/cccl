@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6084444: error: "call to non-tile function not supported!"
+
 // template <class T>
 //   constexpr int countl_zero(T x) noexcept;
 
@@ -35,32 +38,32 @@ enum class E2 : unsigned char
 };
 
 template <typename T>
-__host__ __device__ constexpr bool constexpr_test()
+TEST_FUNC constexpr bool constexpr_test()
 {
-  static_assert(cuda::std::countl_zero(T(0)) == cuda::std::numeric_limits<T>::digits, "");
-  static_assert(cuda::std::countl_zero(T(1)) == cuda::std::numeric_limits<T>::digits - 1, "");
-  static_assert(cuda::std::countl_zero(T(2)) == cuda::std::numeric_limits<T>::digits - 2, "");
-  static_assert(cuda::std::countl_zero(T(3)) == cuda::std::numeric_limits<T>::digits - 2, "");
-  static_assert(cuda::std::countl_zero(T(4)) == cuda::std::numeric_limits<T>::digits - 3, "");
-  static_assert(cuda::std::countl_zero(T(5)) == cuda::std::numeric_limits<T>::digits - 3, "");
-  static_assert(cuda::std::countl_zero(T(6)) == cuda::std::numeric_limits<T>::digits - 3, "");
-  static_assert(cuda::std::countl_zero(T(7)) == cuda::std::numeric_limits<T>::digits - 3, "");
-  static_assert(cuda::std::countl_zero(T(8)) == cuda::std::numeric_limits<T>::digits - 4, "");
-  static_assert(cuda::std::countl_zero(T(9)) == cuda::std::numeric_limits<T>::digits - 4, "");
-  static_assert(cuda::std::countl_zero(cuda::std::numeric_limits<T>::max()) == 0, "");
+  static_assert(cuda::std::countl_zero(T(0)) == cuda::std::numeric_limits<T>::digits);
+  static_assert(cuda::std::countl_zero(T(1)) == cuda::std::numeric_limits<T>::digits - 1);
+  static_assert(cuda::std::countl_zero(T(2)) == cuda::std::numeric_limits<T>::digits - 2);
+  static_assert(cuda::std::countl_zero(T(3)) == cuda::std::numeric_limits<T>::digits - 2);
+  static_assert(cuda::std::countl_zero(T(4)) == cuda::std::numeric_limits<T>::digits - 3);
+  static_assert(cuda::std::countl_zero(T(5)) == cuda::std::numeric_limits<T>::digits - 3);
+  static_assert(cuda::std::countl_zero(T(6)) == cuda::std::numeric_limits<T>::digits - 3);
+  static_assert(cuda::std::countl_zero(T(7)) == cuda::std::numeric_limits<T>::digits - 3);
+  static_assert(cuda::std::countl_zero(T(8)) == cuda::std::numeric_limits<T>::digits - 4);
+  static_assert(cuda::std::countl_zero(T(9)) == cuda::std::numeric_limits<T>::digits - 4);
+  static_assert(cuda::std::countl_zero(cuda::std::numeric_limits<T>::max()) == 0);
 
   return true;
 }
 
 template <typename T>
-__host__ __device__ inline void assert_countl_zero(T val, int expected)
+TEST_FUNC inline void assert_countl_zero(T val, int expected)
 {
   volatile auto v = val;
   assert(cuda::std::countl_zero(v) == expected);
 }
 
 template <typename T>
-__host__ __device__ void runtime_test()
+TEST_FUNC void runtime_test()
 {
   static_assert(cuda::std::is_same_v<int, decltype(cuda::std::countl_zero(T(0)))>);
   static_assert(noexcept(cuda::std::countl_zero(T(0))));

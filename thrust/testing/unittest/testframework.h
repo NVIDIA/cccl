@@ -64,7 +64,7 @@ public:
   }
 
   // Allow construction from any integral numeric.
-  template <typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
+  template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
   _CCCL_HOST_DEVICE constexpr custom_numeric(const T& i)
   {
     fill(static_cast<int>(i));

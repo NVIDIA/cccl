@@ -13,7 +13,7 @@
 #include "test_macros.h"
 
 template <typename Mdspan>
-__host__ __device__ void test_submdspan(int* ptr)
+TEST_FUNC void test_submdspan(int* ptr)
 {
   Mdspan md{ptr, cuda::std::dims<1>{4}};
   auto submd = cuda::std::submdspan(md, cuda::std::pair{1, 3});
@@ -28,9 +28,9 @@ __host__ __device__ void test_submdspan(int* ptr)
   unused(submd);
 }
 
-__device__ __managed__ int managed_array[] = {1, 2, 3, 4};
+_CCCL_DEVICE __managed__ int managed_array[] = {1, 2, 3, 4};
 
-__host__ __device__ void test_submdspan()
+TEST_FUNC void test_submdspan()
 {
   int array[] = {1, 2, 3, 4};
   test_submdspan<cuda::host_mdspan<int, cuda::std::dims<1>>>(array);

@@ -7,16 +7,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo: enable with nvrtc
-// UNSUPPORTED: nvrtc
-
 #include <cuda/hierarchy>
 #include <cuda/std/cstddef>
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class Level, class Hierarchy>
-__device__ void test_query_signatures(const Level& level, const Hierarchy& hier)
+TEST_DEVICE_FUNC void test_query_signatures(const Level& level, const Hierarchy& hier)
 {
   // 1. Test cuda::cluster_level::dims(x, hier) signature.
   static_assert(
@@ -53,7 +52,7 @@ __device__ void test_query_signatures(const Level& level, const Hierarchy& hier)
 }
 
 template <class T, class Level, class Hierarchy>
-__device__ void test_query_as_signatures(const Level& level, const Hierarchy& hier)
+TEST_DEVICE_FUNC void test_query_as_signatures(const Level& level, const Hierarchy& hier)
 {
   // 1. Test cuda::cluster_level::dims_as(x, hier) signature.
   static_assert(
@@ -81,7 +80,7 @@ __device__ void test_query_as_signatures(const Level& level, const Hierarchy& hi
 }
 
 template <class InLevel, class Hierarchy>
-__device__ void test(const InLevel& in_level, const Hierarchy& hier)
+TEST_DEVICE_FUNC void test(const InLevel& in_level, const Hierarchy& hier)
 {
   test_query_signatures(in_level, hier);
   test_query_as_signatures<short>(in_level, hier);
@@ -93,7 +92,7 @@ __device__ void test(const InLevel& in_level, const Hierarchy& hier)
 }
 
 template <class Hierarchy>
-__device__ void test(const Hierarchy& hier)
+TEST_DEVICE_FUNC void test(const Hierarchy& hier)
 {
   test(cuda::grid, hier);
 }
@@ -104,9 +103,9 @@ __global__ void test_kernel(Hierarchy hier)
   test(hier);
 }
 
-#define TEST_KERNEL_INSTANTIATE(...)                                                 \
-  template __global__ void test_kernel<decltype(cuda::make_hierarchy(__VA_ARGS__))>( \
-    decltype(cuda::make_hierarchy(__VA_ARGS__)))
+#define TEST_KERNEL_INSTANTIATE(...)                                                              \
+  template __global__ void test_kernel<decltype(cuda::hierarchy{cuda::gpu_thread, __VA_ARGS__})>( \
+    decltype(cuda::hierarchy{cuda::gpu_thread, __VA_ARGS__}))
 
 TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::block_dims<32>());
 TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::block_dims(dim3{}));

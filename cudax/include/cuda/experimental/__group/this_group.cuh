@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_EXPERIMENTAL___THIS_GROUP_CUH
-#define _CUDA_EXPERIMENTAL___THIS_GROUP_CUH
+#ifndef _CUDA_EXPERIMENTAL___GROUP_THIS_GROUP_CUH
+#define _CUDA_EXPERIMENTAL___GROUP_THIS_GROUP_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -27,8 +27,8 @@
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 
-#include <cuda/experimental/__hierarchy/fwd.cuh>
-#include <cuda/experimental/__hierarchy/implicit_hierarchy.cuh>
+#include <cuda/experimental/__group/fwd.cuh>
+#include <cuda/experimental/__group/implicit_hierarchy.cuh>
 
 #if _CCCL_HAS_COOPERATIVE_GROUPS()
 #  include <cooperative_groups.h>
@@ -78,6 +78,56 @@ _CCCL_DEVICE_API void __cluster_sync() noexcept
 }
 #  endif // _CCCL_CUDA_COMPILATION()
 
+struct __this_mapping_result
+{
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count() noexcept
+  {
+    return 1;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API unsigned group_count() const noexcept
+  {
+    return 1;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API unsigned group_rank() const noexcept
+  {
+    return 0;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count() noexcept
+  {
+    return 1;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API unsigned count() const noexcept
+  {
+    return 1;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API unsigned rank() const noexcept
+  {
+    return 0;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API bool is_valid() const noexcept
+  {
+    return true;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
+  {
+    return true;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
+  {
+    return true;
+  }
+
+  // todo(dabayer): add method that determines whether the unit is part of the group or not.
+};
+
 // todo: use __hier_ in queries
 template <class _Level, class _Hierarchy>
 class __this_group_base
@@ -86,6 +136,8 @@ class __this_group_base
   static_assert(__is_hierarchy_v<_Hierarchy>);
 
 protected:
+  using __mapping_result_type = __this_mapping_result;
+
   _Hierarchy __hier_;
 
 public:
@@ -138,8 +190,10 @@ class this_thread : __this_group_base<thread_level, _Hierarchy>
   using __base_type = __this_group_base<thread_level, _Hierarchy>;
 
 public:
-  using unit_type      = thread_level;
-  using level_type     = thread_level;
+  using unit_type    = thread_level;
+  using level_type   = thread_level;
+  using mapping_type = void;
+  using typename __base_type::__mapping_result_type;
   using hierarchy_type = _Hierarchy;
 
   using __base_type::__base_type;
@@ -155,11 +209,16 @@ public:
   {}
 #    endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
-  _CCCL_DEVICE_API void sync() noexcept {}
+  _CCCL_DEVICE_API void sync() const noexcept {}
 
-  _CCCL_DEVICE_API void sync_aligned() noexcept {}
+  _CCCL_DEVICE_API void sync_aligned() const noexcept {}
 
-  [[nodiscard]] _CCCL_DEVICE_API const _Hierarchy& hierarchy() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr __mapping_result_type __mapping_result() const noexcept
+  {
+    return {};
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API constexpr const _Hierarchy& hierarchy() const noexcept
   {
     return __base_type::__hier_;
   }
@@ -183,8 +242,10 @@ class this_warp : __this_group_base<warp_level, _Hierarchy>
   using __base_type = __this_group_base<warp_level, _Hierarchy>;
 
 public:
-  using unit_type      = warp_level;
-  using level_type     = warp_level;
+  using unit_type    = warp_level;
+  using level_type   = warp_level;
+  using mapping_type = void;
+  using typename __base_type::__mapping_result_type;
   using hierarchy_type = _Hierarchy;
 
   using __base_type::__base_type;
@@ -200,17 +261,22 @@ public:
   {}
 #    endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
-  _CCCL_DEVICE_API void sync() noexcept
+  _CCCL_DEVICE_API void sync() const noexcept
   {
     ::__syncwarp();
   }
 
-  _CCCL_DEVICE_API void sync_aligned() noexcept
+  _CCCL_DEVICE_API void sync_aligned() const noexcept
   {
     ::__syncwarp();
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API const _Hierarchy& hierarchy() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr __mapping_result_type __mapping_result() const noexcept
+  {
+    return {};
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API constexpr const _Hierarchy& hierarchy() const noexcept
   {
     return __base_type::__hier_;
   }
@@ -235,8 +301,10 @@ class this_block : __this_group_base<block_level, _Hierarchy>
   using __base_type = __this_group_base<block_level, _Hierarchy>;
 
 public:
-  using unit_type      = block_level;
-  using level_type     = block_level;
+  using unit_type    = block_level;
+  using level_type   = block_level;
+  using mapping_type = void;
+  using typename __base_type::__mapping_result_type;
   using hierarchy_type = _Hierarchy;
 
   using __base_type::__base_type;
@@ -251,17 +319,22 @@ public:
   _CCCL_DEVICE_API this_block(const ::cooperative_groups::thread_block&) noexcept {}
 #    endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
-  _CCCL_DEVICE_API void sync() noexcept
+  _CCCL_DEVICE_API void sync() const noexcept
   {
     ::cuda::experimental::__block_sync<false>();
   }
 
-  _CCCL_DEVICE_API void sync_aligned() noexcept
+  _CCCL_DEVICE_API void sync_aligned() const noexcept
   {
     ::cuda::experimental::__block_sync<true>();
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API const _Hierarchy& hierarchy() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr __mapping_result_type __mapping_result() const noexcept
+  {
+    return {};
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API constexpr const _Hierarchy& hierarchy() const noexcept
   {
     return __base_type::__hier_;
   }
@@ -284,8 +357,10 @@ class this_cluster : __this_group_base<cluster_level, _Hierarchy>
   using __base_type = __this_group_base<cluster_level, _Hierarchy>;
 
 public:
-  using unit_type      = cluster_level;
-  using level_type     = cluster_level;
+  using unit_type    = cluster_level;
+  using level_type   = cluster_level;
+  using mapping_type = void;
+  using typename __base_type::__mapping_result_type;
   using hierarchy_type = _Hierarchy;
 
   using __base_type::__base_type;
@@ -300,7 +375,7 @@ public:
   _CCCL_DEVICE_API this_cluster(const ::cooperative_groups::cluster_group&) noexcept {}
 #    endif // _CCCL_HAS_COOPERATIVE_GROUPS() && defined(_CG_HAS_CLUSTER_GROUP)
 
-  _CCCL_DEVICE_API void sync() noexcept
+  _CCCL_DEVICE_API void sync() const noexcept
   {
     if constexpr (_Hierarchy::has_level(cluster))
     {
@@ -312,7 +387,7 @@ public:
     }
   }
 
-  _CCCL_DEVICE_API void sync_aligned() noexcept
+  _CCCL_DEVICE_API void sync_aligned() const noexcept
   {
     if constexpr (_Hierarchy::has_level(cluster))
     {
@@ -324,7 +399,12 @@ public:
     }
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API const _Hierarchy& hierarchy() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr __mapping_result_type __mapping_result() const noexcept
+  {
+    return {};
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API constexpr const _Hierarchy& hierarchy() const noexcept
   {
     return __base_type::__hier_;
   }
@@ -368,7 +448,7 @@ class this_grid : __this_group_base<grid_level, _Hierarchy>
 
 #  if _CCCL_CUDA_COMPILATION()
   template <bool _Aligned>
-  _CCCL_DEVICE_API void __sync_impl() noexcept
+  _CCCL_DEVICE_API void __sync_impl() const noexcept
   {
     const auto __barrier_ptr = ::cuda::experimental::__get_grid_barrier_ptr();
 
@@ -418,8 +498,10 @@ class this_grid : __this_group_base<grid_level, _Hierarchy>
 #  endif // _CCCL_CUDA_COMPILATION()
 
 public:
-  using unit_type      = grid_level;
-  using level_type     = grid_level;
+  using unit_type    = grid_level;
+  using level_type   = grid_level;
+  using mapping_type = void;
+  using typename __base_type::__mapping_result_type;
   using hierarchy_type = _Hierarchy;
 
   using __base_type::__base_type;
@@ -429,17 +511,22 @@ public:
   _CCCL_DEVICE_API this_grid(const ::cooperative_groups::grid_group&) noexcept {}
 #    endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
-  _CCCL_DEVICE_API void sync() noexcept
+  _CCCL_DEVICE_API void sync() const noexcept
   {
     __sync_impl<false>();
   }
 
-  _CCCL_DEVICE_API void sync_aligned() noexcept
+  _CCCL_DEVICE_API void sync_aligned() const noexcept
   {
     __sync_impl<true>();
   }
 
-  [[nodiscard]] _CCCL_DEVICE_API const _Hierarchy& hierarchy() const noexcept
+  [[nodiscard]] _CCCL_DEVICE_API constexpr __mapping_result_type __mapping_result() const noexcept
+  {
+    return {};
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API constexpr const _Hierarchy& hierarchy() const noexcept
   {
     return __base_type::__hier_;
   }
@@ -455,10 +542,40 @@ _CCCL_HOST_DEVICE this_grid(const _Hierarchy&) -> this_grid<__hierarchy_type_of<
 #  if _CCCL_HAS_COOPERATIVE_GROUPS()
 _CCCL_HOST_DEVICE this_grid(const ::cooperative_groups::grid_group&) -> this_grid<__implicit_hierarchy_t>;
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
+
+_CCCL_TEMPLATE(class _Level, class... _Args)
+_CCCL_REQUIRES(__is_hierarchy_level_v<_Level>)
+[[nodiscard]] _CCCL_DEVICE_API auto make_this_group(const _Level&, _Args&&... __args) noexcept
+{
+  if constexpr (::cuda::std::is_same_v<_Level, thread_level>)
+  {
+    return this_thread{::cuda::std::forward<_Args>(__args)...};
+  }
+  else if constexpr (::cuda::std::is_same_v<_Level, warp_level>)
+  {
+    return this_warp{::cuda::std::forward<_Args>(__args)...};
+  }
+  else if constexpr (::cuda::std::is_same_v<_Level, block_level>)
+  {
+    return this_block{::cuda::std::forward<_Args>(__args)...};
+  }
+  else if constexpr (::cuda::std::is_same_v<_Level, cluster_level>)
+  {
+    return this_cluster{::cuda::std::forward<_Args>(__args)...};
+  }
+  else if constexpr (::cuda::std::is_same_v<_Level, grid_level>)
+  {
+    return this_grid{::cuda::std::forward<_Args>(__args)...};
+  }
+  else
+  {
+    static_assert(::cuda::std::__always_false_v<_Level>, "unknown _Level");
+  }
+}
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_EXPERIMENTAL___THIS_GROUP_CUH
+#endif // _CUDA_EXPERIMENTAL___GROUP_THIS_GROUP_CUH

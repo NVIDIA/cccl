@@ -30,27 +30,27 @@ public:
   using pointer           = int*;
   using reference         = int&;
 
-  __host__ __device__ constexpr int* base() const
+  TEST_FUNC constexpr int* base() const
   {
     return it_;
   }
 
   HasNoexceptIterMove() = default;
-  __host__ __device__ explicit constexpr HasNoexceptIterMove(int* it)
+  TEST_FUNC explicit constexpr HasNoexceptIterMove(int* it)
       : it_(it)
   {}
 
-  __host__ __device__ constexpr reference operator*() const noexcept(IsNoexcept)
+  TEST_FUNC constexpr reference operator*() const noexcept(IsNoexcept)
   {
     return *it_;
   }
 
-  __host__ __device__ constexpr HasNoexceptIterMove& operator++()
+  TEST_FUNC constexpr HasNoexceptIterMove& operator++()
   {
     ++it_;
     return *this;
   }
-  __host__ __device__ constexpr HasNoexceptIterMove operator++(int)
+  TEST_FUNC constexpr HasNoexceptIterMove operator++(int)
   {
     HasNoexceptIterMove tmp(*this);
     ++(*this);
@@ -58,7 +58,7 @@ public:
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 

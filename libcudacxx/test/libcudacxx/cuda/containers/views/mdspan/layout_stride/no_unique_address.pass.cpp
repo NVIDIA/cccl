@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // UNSUPPORTED: nvrtc
 
 #include <cuda/std/cassert>
@@ -15,7 +18,7 @@
 #include "test_macros.h"
 
 template <class Mapping>
-__host__ __device__ void test([[maybe_unused]] Mapping map, size_t expected_size)
+TEST_FUNC void test([[maybe_unused]] Mapping map, size_t expected_size)
 {
   using extents = typename Mapping::extents_type;
   if constexpr (extents::rank() > 0)
@@ -38,7 +41,7 @@ __global__ void test_kernel(Mapping map, size_t expected_size)
 }
 
 template <class Extent>
-__host__ __device__ constexpr cuda::std::array<int, 3> get_strides(Extent src_exts)
+TEST_FUNC constexpr cuda::std::array<int, 3> get_strides(Extent src_exts)
 {
   cuda::std::array<int, 3> strides{};
   strides[0] = 1;

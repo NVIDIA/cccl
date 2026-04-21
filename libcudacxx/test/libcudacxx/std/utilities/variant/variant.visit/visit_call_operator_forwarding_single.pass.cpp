@@ -9,6 +9,9 @@
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 
+// XFAIL: enable-tile
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <cuda/std/variant>
 // template <class Visitor, class... Variants>
 // constexpr see below visit(Visitor&& vis, Variants&&... vars);
@@ -23,7 +26,7 @@
 #include "test_macros.h"
 #include "variant_test_helpers.h"
 
-__host__ __device__ void test_call_operator_forwarding()
+TEST_FUNC void test_call_operator_forwarding()
 {
   using Fn = ForwardingCallObject;
   Fn obj{};

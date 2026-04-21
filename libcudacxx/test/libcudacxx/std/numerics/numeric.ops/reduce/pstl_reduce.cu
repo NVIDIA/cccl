@@ -161,7 +161,7 @@ C2H_TEST("cuda::std::reduce(Iter, Iter, Tp)", "[parallel algorithm]")
 
 struct plus_two
 {
-  __host__ __device__ constexpr int operator()(const int lhs, const int rhs) const noexcept
+  TEST_FUNC constexpr int operator()(const int lhs, const int rhs) const noexcept
   {
     return lhs + rhs + 2;
   };

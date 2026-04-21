@@ -71,7 +71,7 @@ struct __pstl_dispatch<__pstl_algorithm::__copy_if, __execution_backend::__cuda>
     using _OffsetType = iter_difference_t<_InputIterator>;
     _OffsetType __ret;
 
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
 
     // Determine temporary device storage requirements
     void* __temp_storage = nullptr;

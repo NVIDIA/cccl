@@ -5,6 +5,8 @@
 
 #include <cuda/std/utility>
 
+#include <iostream>
+
 // This example shows how to compute a bounding box
 // for a set of points in two dimensions.
 

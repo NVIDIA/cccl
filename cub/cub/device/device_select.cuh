@@ -29,6 +29,7 @@
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
@@ -40,7 +41,6 @@ namespace detail::unique_by_key_tuning
 struct get_tuning_query_t
 {};
 
-// TODO(bgruber): drop this after rewriting to the new tuning API
 template <class Derived>
 struct tuning
 {
@@ -50,11 +50,10 @@ struct tuning
   }
 };
 
-// TODO(bgruber): drop this after rewriting to the new tuning API
 struct default_tuning : tuning<default_tuning>
 {
   template <class KeyT, class ValueT>
-  using fn = unique_by_key::policy_hub<KeyT, ValueT>;
+  using fn = unique_by_key::policy_selector_from_types<KeyT, ValueT>;
 };
 } // namespace detail::unique_by_key_tuning
 
@@ -147,27 +146,21 @@ private:
                                                   detail::unique_by_key_tuning::get_tuning_query_t,
                                                   detail::unique_by_key_tuning::default_tuning>;
 
-    using policy_t = typename select_tuning_t::template fn<detail::it_value_t<KeyInputIteratorT>,
-                                                           detail::it_value_t<ValueInputIteratorT>>;
+    using policy_selector_t = typename select_tuning_t::template fn<detail::it_value_t<KeyInputIteratorT>,
+                                                                    detail::it_value_t<ValueInputIteratorT>>;
 
-    return DispatchUniqueByKey<
-      KeyInputIteratorT,
-      ValueInputIteratorT,
-      KeyOutputIteratorT,
-      ValueOutputIteratorT,
-      NumSelectedIteratorT,
-      EqualityOpT,
-      OffsetT,
-      policy_t>::Dispatch(d_temp_storage,
-                          temp_storage_bytes,
-                          d_keys_in,
-                          d_values_in,
-                          d_keys_out,
-                          d_values_out,
-                          d_num_selected_out,
-                          equality_op,
-                          num_items,
-                          stream);
+    return detail::unique_by_key::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_values_in,
+      d_keys_out,
+      d_values_out,
+      d_num_selected_out,
+      equality_op,
+      num_items,
+      stream,
+      policy_selector_t{});
   }
 
 public:
@@ -260,7 +253,11 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename FlagIterator, typename OutputIteratorT, typename NumSelectedIteratorT>
+  template <typename InputIteratorT,
+            typename FlagIterator,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<NumSelectedIteratorT>, int> = 0>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -269,7 +266,7 @@ public:
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
     ::cuda::std::int64_t num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Flagged");
 
@@ -772,7 +769,7 @@ public:
     FlagIterator d_flags,
     NumSelectedIteratorT d_num_selected_out,
     ::cuda::std::int64_t num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Flagged");
 
@@ -906,7 +903,7 @@ public:
      NumSelectedIteratorT d_num_selected_out,
      ::cuda::std::int64_t num_items,
      SelectOp select_op,
-     cudaStream_t stream = 0)
+     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::If");
 
@@ -1028,7 +1025,7 @@ public:
      NumSelectedIteratorT d_num_selected_out,
      ::cuda::std::int64_t num_items,
      SelectOp select_op,
-     cudaStream_t stream = 0)
+     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::If");
 
@@ -1142,7 +1139,7 @@ public:
     NumSelectedIteratorT d_num_selected_out,
     ::cuda::std::int64_t num_items,
     SelectOp select_op,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::FlaggedIf");
 
@@ -1243,7 +1240,7 @@ public:
     NumSelectedIteratorT d_num_selected_out,
     ::cuda::std::int64_t num_items,
     SelectOp select_op,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::FlaggedIf");
 
@@ -1919,7 +1916,7 @@ public:
     NumSelectedIteratorT d_num_selected_out,
     ::cuda::std::int64_t num_items,
     EqualityOpT equality_op,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
 
@@ -2031,7 +2028,7 @@ public:
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
     ::cuda::std::int64_t num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
 
@@ -2191,29 +2188,23 @@ public:
       NumSelectedIteratorT d_num_selected_out,
       NumItemsT num_items,
       EqualityOpT equality_op,
-      cudaStream_t stream = 0)
+      cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::UniqueByKey");
 
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return DispatchUniqueByKey<
-      KeyInputIteratorT,
-      ValueInputIteratorT,
-      KeyOutputIteratorT,
-      ValueOutputIteratorT,
-      NumSelectedIteratorT,
-      EqualityOpT,
-      OffsetT>::Dispatch(d_temp_storage,
-                         temp_storage_bytes,
-                         d_keys_in,
-                         d_values_in,
-                         d_keys_out,
-                         d_values_out,
-                         d_num_selected_out,
-                         equality_op,
-                         static_cast<OffsetT>(num_items),
-                         stream);
+    return detail::unique_by_key::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_values_in,
+      d_keys_out,
+      d_values_out,
+      d_num_selected_out,
+      equality_op,
+      static_cast<OffsetT>(num_items),
+      stream);
   }
 
   //! @rst
@@ -2343,7 +2334,7 @@ public:
     ValueOutputIteratorT d_values_out,
     NumSelectedIteratorT d_num_selected_out,
     NumItemsT num_items,
-    cudaStream_t stream = 0)
+    cudaStream_t stream = nullptr)
   {
     return UniqueByKey(
       d_temp_storage,

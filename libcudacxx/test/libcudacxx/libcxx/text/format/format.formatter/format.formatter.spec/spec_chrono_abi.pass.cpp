@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: bit field read/write is unsupported in tile code
+
 // <cuda/std/format>
 
 // cuda::std::__fmt_spec_chrono
@@ -14,6 +17,8 @@
 #include <cuda/std/__format_>
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
+
+#include "test_macros.h"
 
 struct TestSpecChronoValues
 {
@@ -27,7 +32,7 @@ struct TestSpecChronoValues
   bool month_name;
 };
 
-__host__ __device__ TestSpecChronoValues make_test_spec_chrono_values() noexcept
+TEST_FUNC TestSpecChronoValues make_test_spec_chrono_values() noexcept
 {
   TestSpecChronoValues value{};
   value.alignment            = cuda::std::__fmt_spec_alignment::__center;
@@ -41,7 +46,7 @@ __host__ __device__ TestSpecChronoValues make_test_spec_chrono_values() noexcept
   return value;
 }
 
-__host__ __device__ void verify_spec_chrono(const cuda::std::__fmt_spec_chrono& value) noexcept
+TEST_FUNC void verify_spec_chrono(const cuda::std::__fmt_spec_chrono& value) noexcept
 {
   const auto ref = make_test_spec_chrono_values();
   assert(value.__alignment_ == cuda::std::to_underlying(ref.alignment));
@@ -54,7 +59,7 @@ __host__ __device__ void verify_spec_chrono(const cuda::std::__fmt_spec_chrono& 
   assert(value.__month_name_ == ref.month_name);
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(sizeof(cuda::std::__fmt_spec_chrono) == 2);
 

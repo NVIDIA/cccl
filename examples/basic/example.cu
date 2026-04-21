@@ -31,6 +31,7 @@ from Thrust. The sum is then printed to the console.
 #include <cuda/atomic>
 
 #include <cstdio>
+#include <iostream>
 
 constexpr int block_size = 256;
 

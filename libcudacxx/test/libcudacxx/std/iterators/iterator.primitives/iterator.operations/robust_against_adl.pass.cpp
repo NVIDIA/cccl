@@ -23,7 +23,7 @@ struct Holder
 template <class>
 struct Intable
 {
-  __host__ __device__ operator int() const
+  TEST_FUNC operator int() const
   {
     return 1;
   }

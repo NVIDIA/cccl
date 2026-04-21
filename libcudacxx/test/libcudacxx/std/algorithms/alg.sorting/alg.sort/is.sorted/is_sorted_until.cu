@@ -25,11 +25,13 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_macros.h"
+
 inline constexpr int size = 1000;
 
 struct turn_42_into_1337
 {
-  __device__ constexpr int operator()(const int val) const noexcept
+  TEST_DEVICE_FUNC constexpr int operator()(const int val) const noexcept
   {
     return val == 42 ? 1337 : val;
   }

@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <cuda/mdspan>
 
 // Test index operator:
@@ -36,8 +39,7 @@ _CCCL_CONCEPT operator_constraints = _CCCL_REQUIRES_EXPR((Mapping, variadic Indi
   _Same_as(typename Mapping::index_type) m(idxs...));
 
 template <class Mapping, class... Indices>
-__host__ __device__ constexpr bool
-check_operator_constraints([[maybe_unused]] Mapping m, [[maybe_unused]] Indices... idxs)
+TEST_FUNC constexpr bool check_operator_constraints([[maybe_unused]] Mapping m, [[maybe_unused]] Indices... idxs)
 {
   if constexpr (operator_constraints<Mapping, Indices...>)
   {
@@ -51,7 +53,7 @@ check_operator_constraints([[maybe_unused]] Mapping m, [[maybe_unused]] Indices.
 }
 
 template <class M, class... Args, size_t... Pos>
-__host__ __device__ constexpr intptr_t get_expected_index(
+TEST_FUNC constexpr intptr_t get_expected_index(
   const cuda::std::array<intptr_t, M::extents_type::rank()>& strides,
   intptr_t offset,
   cuda::std::index_sequence<Pos...>,
@@ -61,7 +63,7 @@ __host__ __device__ constexpr intptr_t get_expected_index(
 }
 
 template <class M, class... Args>
-__host__ __device__ constexpr void
+TEST_FUNC constexpr void
 iterate_stride(M m, const cuda::std::array<intptr_t, M::extents_type::rank()>& strides, intptr_t offset, Args... args)
 {
   if constexpr (M::extents_type::rank() == sizeof...(Args))
@@ -82,7 +84,7 @@ iterate_stride(M m, const cuda::std::array<intptr_t, M::extents_type::rank()>& s
 }
 
 template <class E, class... Extents>
-__host__ __device__ constexpr void
+TEST_FUNC constexpr void
 test_iteration(cuda::std::array<intptr_t, E::rank()> strides, intptr_t offset, Extents... extents)
 {
   using M            = cuda::layout_stride_relaxed::mapping<E>;
@@ -94,7 +96,7 @@ test_iteration(cuda::std::array<intptr_t, E::rank()> strides, intptr_t offset, E
   iterate_stride(m, strides, offset);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
@@ -143,7 +145,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ constexpr bool test_large()
+TEST_FUNC constexpr bool test_large()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_iteration<cuda::std::extents<int64_t, D, 8, D, D>>(cuda::std::array<intptr_t, 4>{2000, 2, 20, 200}, 0, 7, 9, 10);

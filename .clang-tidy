@@ -24,17 +24,11 @@ Checks:
   - '-performance-enum-size'
   - '-performance-unnecessary-value-param'
   - 'modernize-*'
-  - '-modernize-use-using'
   - '-modernize-use-integer-sign-comparison'
   - '-modernize-use-nodiscard'
-  - '-modernize-use-default-member-init'
   - '-modernize-use-equals-default'
-  - '-modernize-type-traits'
-  - '-modernize-use-nullptr'
   - '-modernize-return-braced-init-list'
   - '-modernize-use-auto'
-  - '-modernize-use-equals-delete'
-  - '-modernize-unary-static-assert'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #

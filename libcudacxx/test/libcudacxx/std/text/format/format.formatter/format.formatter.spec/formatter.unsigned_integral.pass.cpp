@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: bit field read/write is unsupported in tile code
+
 // <cuda/std/format>
 
 // [format.formatter.spec]:
@@ -36,7 +39,7 @@
 #include "literal.h"
 
 template <class CharT, class T>
-__host__ __device__ void test_unsigned_int_formatter(
+TEST_FUNC void test_unsigned_int_formatter(
   cuda::std::basic_string_view<CharT> fmt,
   T value,
   cuda::std::size_t offset,
@@ -68,7 +71,7 @@ __host__ __device__ void test_unsigned_int_formatter(
 }
 
 template <class CharT, class T, class ValueT>
-__host__ __device__ void test_termination_condition(
+TEST_FUNC void test_termination_condition(
   cuda::std::basic_string_view<CharT> fmt, ValueT value, cuda::std::basic_string_view<CharT> expected)
 {
   // Skip the test if the value is out of range for the type.
@@ -89,7 +92,7 @@ __host__ __device__ void test_termination_condition(
 }
 
 template <class CharT, class T>
-__host__ __device__ void test_type()
+TEST_FUNC void test_type()
 {
   test_termination_condition<CharT, T>(TEST_STRLIT(CharT, "}"), 0, TEST_STRLIT(CharT, "0"));
   test_termination_condition<CharT, T>(TEST_STRLIT(CharT, "}"), 255, TEST_STRLIT(CharT, "255"));
@@ -107,7 +110,7 @@ __host__ __device__ void test_type()
 }
 
 template <class CharT>
-__host__ __device__ void test_type()
+TEST_FUNC void test_type()
 {
   test_type<CharT, unsigned char>();
   test_type<CharT, unsigned short>();
@@ -119,7 +122,7 @@ __host__ __device__ void test_type()
 #endif // _CCCL_HAS_INT128()
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   test_type<char>();
 #if _CCCL_HAS_WCHAR_T()

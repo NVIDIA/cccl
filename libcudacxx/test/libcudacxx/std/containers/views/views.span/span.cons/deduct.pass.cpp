@@ -35,7 +35,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ void test_iterator_sentinel()
+TEST_FUNC void test_iterator_sentinel()
 {
   int arr[] = {1, 2, 3};
   {
@@ -60,7 +60,7 @@ __host__ __device__ void test_iterator_sentinel()
   }
 }
 
-__host__ __device__ void test_c_array()
+TEST_FUNC void test_c_array()
 {
   {
     int arr[] = {1, 2, 3};
@@ -79,7 +79,7 @@ __host__ __device__ void test_c_array()
   }
 }
 
-__host__ __device__ void test_std_array()
+TEST_FUNC void test_std_array()
 {
   {
     cuda::std::array<double, 4> arr = {1.0, 2.0, 3.0, 4.0};

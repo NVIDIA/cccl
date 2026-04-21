@@ -27,7 +27,7 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::declval<const year_month>().month()));
   static_assert(cuda::std::is_same_v<month, decltype(cuda::std::declval<const year_month>().month())>);
 
-  static_assert(year_month{}.month() == month{}, "");
+  static_assert(year_month{}.month() == month{});
 
   for (unsigned i = 1; i <= 50; ++i)
   {

@@ -80,6 +80,81 @@ C2H_CCCLRT_TEST("cuda::buffer access and stream", "[container][buffer]", test_ty
     }
   }
 
+  SECTION("cuda::buffer::first")
+  {
+    Buffer buf{stream, resource, {T(1), T(2), T(3), T(4)}};
+    buf.stream().sync();
+
+    auto span = buf.first(2);
+    static_assert(cuda::std::is_same_v<decltype(span), cuda::std::span<T>>);
+    CCCLRT_CHECK(span.size() == 2);
+    CCCLRT_CHECK(span.data() == buf.data());
+
+    auto const_span = cuda::std::as_const(buf).first(2);
+    static_assert(cuda::std::is_same_v<decltype(const_span), cuda::std::span<const T>>);
+    CCCLRT_CHECK(const_span.size() == 2);
+    CCCLRT_CHECK(const_span.data() == buf.data());
+
+    // first(0) is valid
+    auto empty_span = buf.first(0);
+    CCCLRT_CHECK(empty_span.size() == 0);
+
+    // first(size()) returns the whole buffer
+    auto full_span = buf.first(buf.size());
+    CCCLRT_CHECK(full_span.size() == buf.size());
+  }
+
+  SECTION("cuda::buffer::last")
+  {
+    Buffer buf{stream, resource, {T(1), T(2), T(3), T(4)}};
+    buf.stream().sync();
+
+    auto span = buf.last(2);
+    static_assert(cuda::std::is_same_v<decltype(span), cuda::std::span<T>>);
+    CCCLRT_CHECK(span.size() == 2);
+    CCCLRT_CHECK(span.data() == buf.data() + 2);
+
+    auto const_span = cuda::std::as_const(buf).last(2);
+    static_assert(cuda::std::is_same_v<decltype(const_span), cuda::std::span<const T>>);
+    CCCLRT_CHECK(const_span.size() == 2);
+    CCCLRT_CHECK(const_span.data() == buf.data() + 2);
+
+    // last(0) is valid
+    auto empty_span = buf.last(0);
+    CCCLRT_CHECK(empty_span.size() == 0);
+  }
+
+  SECTION("cuda::buffer::subspan")
+  {
+    Buffer buf{stream, resource, {T(1), T(2), T(3), T(4)}};
+    buf.stream().sync();
+
+    // subspan with offset and count
+    auto span = buf.subspan(1, 2);
+    static_assert(cuda::std::is_same_v<decltype(span), cuda::std::span<T>>);
+    CCCLRT_CHECK(span.size() == 2);
+    CCCLRT_CHECK(span.data() == buf.data() + 1);
+
+    auto const_span = cuda::std::as_const(buf).subspan(1, 2);
+    static_assert(cuda::std::is_same_v<decltype(const_span), cuda::std::span<const T>>);
+    CCCLRT_CHECK(const_span.size() == 2);
+    CCCLRT_CHECK(const_span.data() == buf.data() + 1);
+
+    // subspan with offset only (to end)
+    auto tail = buf.subspan(2);
+    CCCLRT_CHECK(tail.size() == 2);
+    CCCLRT_CHECK(tail.data() == buf.data() + 2);
+
+    // subspan(0) returns the whole buffer
+    auto full = buf.subspan(0);
+    CCCLRT_CHECK(full.size() == buf.size());
+    CCCLRT_CHECK(full.data() == buf.data());
+
+    // subspan(size()) returns empty
+    auto empty = buf.subspan(buf.size());
+    CCCLRT_CHECK(empty.size() == 0);
+  }
+
   SECTION("cuda::buffer::memory_resource")
   {
     static_assert(noexcept(cuda::std::declval<const Buffer&>().memory_resource()));

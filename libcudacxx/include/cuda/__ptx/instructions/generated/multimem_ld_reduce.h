@@ -54,8 +54,8 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t multimem_ld_reduce(
   ::cuda::ptx::op_min_t,
   const ::cuda::std::uint32_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_min (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __dest;
@@ -175,8 +175,8 @@ _CCCL_DEVICE static inline ::cuda::std::uint64_t multimem_ld_reduce(
   ::cuda::ptx::op_min_t,
   const ::cuda::std::uint64_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_min (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint64_t __dest;
@@ -296,8 +296,8 @@ _CCCL_DEVICE static inline ::cuda::std::int32_t multimem_ld_reduce(
   ::cuda::ptx::op_min_t,
   const ::cuda::std::int32_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_min (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::int32_t __dest;
@@ -417,8 +417,8 @@ _CCCL_DEVICE static inline ::cuda::std::int64_t multimem_ld_reduce(
   ::cuda::ptx::op_min_t,
   const ::cuda::std::int64_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_min (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::int64_t __dest;
@@ -538,8 +538,8 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t multimem_ld_reduce(
   ::cuda::ptx::op_max_t,
   const ::cuda::std::uint32_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_max (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __dest;
@@ -659,8 +659,8 @@ _CCCL_DEVICE static inline ::cuda::std::uint64_t multimem_ld_reduce(
   ::cuda::ptx::op_max_t,
   const ::cuda::std::uint64_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_max (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint64_t __dest;
@@ -780,8 +780,8 @@ _CCCL_DEVICE static inline ::cuda::std::int32_t multimem_ld_reduce(
   ::cuda::ptx::op_max_t,
   const ::cuda::std::int32_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_max (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::int32_t __dest;
@@ -901,8 +901,8 @@ _CCCL_DEVICE static inline ::cuda::std::int64_t multimem_ld_reduce(
   ::cuda::ptx::op_max_t,
   const ::cuda::std::int64_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_max (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::int64_t __dest;
@@ -1022,8 +1022,8 @@ _CCCL_DEVICE static inline ::cuda::std::uint32_t multimem_ld_reduce(
   ::cuda::ptx::op_add_t,
   const ::cuda::std::uint32_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_add (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __dest;
@@ -1143,8 +1143,8 @@ _CCCL_DEVICE static inline ::cuda::std::uint64_t multimem_ld_reduce(
   ::cuda::ptx::op_add_t,
   const ::cuda::std::uint64_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_add (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint64_t __dest;
@@ -1264,8 +1264,8 @@ _CCCL_DEVICE static inline ::cuda::std::int32_t multimem_ld_reduce(
   ::cuda::ptx::op_add_t,
   const ::cuda::std::int32_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_add (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::int32_t __dest;
@@ -1385,8 +1385,8 @@ _CCCL_DEVICE static inline ::cuda::std::int64_t multimem_ld_reduce(
   ::cuda::ptx::op_add_t,
   const ::cuda::std::int64_t* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
 // __op == op_add (due to parameter type constraint)
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::int64_t __dest;
@@ -1472,7 +1472,7 @@ _CCCL_DEVICE static inline _B32 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cu
 {
   // __sem == sem_weak (due to parameter type constraint)
   // __op == op_and_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __dest;
   asm("multimem.ld_reduce.weak.global.and.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
@@ -1507,10 +1507,10 @@ template <typename _B32,
 _CCCL_DEVICE static inline _B32 multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, ::cuda::ptx::op_and_op_t, const _B32* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
   // __op == op_and_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
@@ -1596,7 +1596,7 @@ _CCCL_DEVICE static inline _B32 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cu
 {
   // __sem == sem_weak (due to parameter type constraint)
   // __op == op_or_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __dest;
   asm("multimem.ld_reduce.weak.global.or.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
@@ -1631,10 +1631,10 @@ template <typename _B32,
 _CCCL_DEVICE static inline _B32 multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, ::cuda::ptx::op_or_op_t, const _B32* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
   // __op == op_or_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
@@ -1720,7 +1720,7 @@ _CCCL_DEVICE static inline _B32 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cu
 {
   // __sem == sem_weak (due to parameter type constraint)
   // __op == op_xor_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __dest;
   asm("multimem.ld_reduce.weak.global.xor.b32 %0, [%1];" : "=r"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
@@ -1755,10 +1755,10 @@ template <typename _B32,
 _CCCL_DEVICE static inline _B32 multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, ::cuda::ptx::op_xor_op_t, const _B32* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
   // __op == op_xor_op (due to parameter type constraint)
-  static_assert(sizeof(_B32) == 4, "");
+  static_assert(sizeof(_B32) == 4);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint32_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
@@ -1844,7 +1844,7 @@ _CCCL_DEVICE static inline _B64 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cu
 {
   // __sem == sem_weak (due to parameter type constraint)
   // __op == op_and_op (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint64_t __dest;
   asm("multimem.ld_reduce.weak.global.and.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
@@ -1879,10 +1879,10 @@ template <typename _B64,
 _CCCL_DEVICE static inline _B64 multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, ::cuda::ptx::op_and_op_t, const _B64* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
   // __op == op_and_op (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint64_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
@@ -1968,7 +1968,7 @@ _CCCL_DEVICE static inline _B64 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cu
 {
   // __sem == sem_weak (due to parameter type constraint)
   // __op == op_or_op (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint64_t __dest;
   asm("multimem.ld_reduce.weak.global.or.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
@@ -2003,10 +2003,10 @@ template <typename _B64,
 _CCCL_DEVICE static inline _B64 multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, ::cuda::ptx::op_or_op_t, const _B64* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
   // __op == op_or_op (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint64_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)
@@ -2092,7 +2092,7 @@ _CCCL_DEVICE static inline _B64 multimem_ld_reduce(::cuda::ptx::sem_weak_t, ::cu
 {
   // __sem == sem_weak (due to parameter type constraint)
   // __op == op_xor_op (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint64_t __dest;
   asm("multimem.ld_reduce.weak.global.xor.b64 %0, [%1];" : "=l"(__dest) : "l"(__as_ptr_gmem(__addr)) : "memory");
@@ -2127,10 +2127,10 @@ template <typename _B64,
 _CCCL_DEVICE static inline _B64 multimem_ld_reduce(
   ::cuda::ptx::sem_t<_Sem> __sem, ::cuda::ptx::scope_t<_Scope> __scope, ::cuda::ptx::op_xor_op_t, const _B64* __addr)
 {
-  static_assert(__sem == sem_relaxed || __sem == sem_acquire, "");
-  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  static_assert(__sem == sem_relaxed || __sem == sem_acquire);
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys);
   // __op == op_xor_op (due to parameter type constraint)
-  static_assert(sizeof(_B64) == 8, "");
+  static_assert(sizeof(_B64) == 8);
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 900
   ::cuda::std::uint64_t __dest;
   if constexpr (__sem == sem_relaxed && __scope == scope_cta)

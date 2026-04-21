@@ -125,12 +125,14 @@ template <typename _Tp>
 {
   static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
 
+#  if !_CCCL_TILE_COMPILATION() // nvbug6081171: error: "call to non-tile function not supported!"
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       (return ::cuda::std::__cccl_popcount_impl_host(__v);),
                       (return ::cuda::std::__cccl_popcount_impl_device(__v);))
   }
+#  endif // !_CCCL_TILE_COMPILATION()
   return ::cuda::std::__cccl_popcount_impl_constexpr(__v);
 }
 

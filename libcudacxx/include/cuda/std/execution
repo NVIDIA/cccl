@@ -70,6 +70,8 @@
 #  include <cuda/std/__pstl/reverse_copy.h>
 #  include <cuda/std/__pstl/rotate.h>
 #  include <cuda/std/__pstl/rotate_copy.h>
+#  include <cuda/std/__pstl/shift_left.h>
+#  include <cuda/std/__pstl/shift_right.h>
 #  include <cuda/std/__pstl/swap_ranges.h>
 #  include <cuda/std/__pstl/transform.h>
 #  include <cuda/std/__pstl/transform_exclusive_scan.h>

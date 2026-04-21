@@ -21,7 +21,7 @@
 #include "test_iterators.h"
 
 template <class PopulationIterator, class SampleIterator>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   int ia[]          = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
   const unsigned is = sizeof(ia) / sizeof(ia[0]);
