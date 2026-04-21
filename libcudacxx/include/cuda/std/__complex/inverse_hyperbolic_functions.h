@@ -711,15 +711,15 @@ template <class _Tp>
     }
     if (::cuda::std::isinf(__x.real()) || ::cuda::std::isinf(__x.imag()))
     {
-      return complex<_Tp>{::cuda::std::copysign(_Tp{0}, __x.real()},
-                          ::cuda::std::copysign(_Tp{0.5} * __pi, __x.imag()));
+      return complex<_Tp>{::cuda::std::copysign(_Tp{0}, __x.real()),
+                          ::cuda::std::copysign(_Tp{0.5} * __pi, __x.imag())};
     }
   }
 
   // A case that for various reasons does not pass easily through the algorithm below:
   if ((__realx == _Tp{1}) && (__imagx == _Tp{0}))
   {
-    return complex<_Tp>{::cuda::std::copysign(numeric_limits<_Tp>::infinity(), __x.real()}, __x.imag());
+    return complex<_Tp>{::cuda::std::copysign(numeric_limits<_Tp>::infinity(), __x.real()), __x.imag()};
   }
 
   // The real part of atanh(__x) is:
@@ -736,11 +736,11 @@ template <class _Tp>
   constexpr int32_t __small_bound_exp = -(__exp_bias / 2);
   const _Tp __small_bound             = ::cuda::std::__fp_set_exp<_Tp>(_Tp{1}, __small_bound_exp);
 
-  const bool __xBig           = (__realx * __realx + __imagx * __imagx == numeric_limits<_Tp>::infinity());
-  const bool __xReduced_small = (__realx == _Tp{1}) && (__imagx <= __small_bound);
+  const bool __x_big           = (__realx * __realx + __imagx * __imagx == numeric_limits<_Tp>::infinity());
+  const bool __x_reduced_small = (__realx == _Tp{1}) && (__imagx <= __small_bound);
 
   const _Tp __two_m_x_large_scale_factor = _Tp{_Tp{0.25} * __small_bound};
-  if (__xBig)
+  if (__x_big)
   {
     __realx *= __two_m_x_large_scale_factor;
     __imagx *= __two_m_x_large_scale_factor;
@@ -755,7 +755,7 @@ template <class _Tp>
   _Tp __numerator   = ::cuda::std::fabs(__x.real()); // Move the 4.0 factor below.
   _Tp __denominator = _Tp{0.25} * (__realx * __realx + __imagx * __imagx);
 
-  if (__xReduced_small)
+  if (__x_reduced_small)
   {
     // We want log1p(2.0 / __imagx), however __imagx can be denormal.
     // Multiply by 2^25, and account for it after log1p.
@@ -771,18 +771,20 @@ template <class _Tp>
   _Tp __pre_log1p = __numerator * (_Tp{1} / __denominator);
 
   // Correct for overflow:
-  if (__xBig)
+  if (__x_big)
   {
     // __two_m_x_large_scale_factor ^ 2 is denormal and causes issues, so we multiply separately twice:
     __pre_log1p = (__pre_log1p * __two_m_x_large_scale_factor) * __two_m_x_large_scale_factor;
   }
 
   _Tp __ans_real = _Tp{0.25} * ::cuda::std::log1p(__pre_log1p);
-  const _Tp __ans_imag =
-    _Tp{0.5}
-    * ::cuda::std::atan2(
-      __x.imag(),
-      _Tp{-0.5} * (::cuda::std::fma(__x.imag(), __x.imag(), ::cuda::std::fma(__x.real(), __x.real(), -_Tp{1}))));
+
+  const _Tp __atan2_input1 = __x.imag();
+  // 0.5 * (real^2 + imag^2 - 1)
+  const _Tp __atan2_input2 =
+    _Tp{-0.5} * (::cuda::std::fma(__x.imag(), __x.imag(), ::cuda::std::fma(__x.real(), __x.real(), -_Tp{1})));
+
+  const _Tp __ans_imag = _Tp{0.5} * ::cuda::std::atan2(__atan2_input1, __atan2_input2);
 
   if (__x_reduced_small)
   {
@@ -792,7 +794,7 @@ template <class _Tp>
     __ans_real                                = ::cuda::std::fma(_Tp{2}, __ans_real, __ans_real_small_correction);
   }
 
-  return complex<_Tp>{::cuda::std::copysign(__ans_real, __x.real()), __ans_imag{};
+  return complex<_Tp>{::cuda::std::copysign(__ans_real, __x.real()), __ans_imag};
 }
 
 // We have performance issues with some trigonometric functions with extended floating point types
