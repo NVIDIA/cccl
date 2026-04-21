@@ -94,7 +94,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
     cudaError_t status;
     THRUST_INDEX_TYPE_DISPATCH(
       status,
-      cub::DeviceAdjacentDifference::SubtractLeftCopy,
+      cub::DeviceAdjacentDifference::SubtractLeft,
       num_items,
       (d_temp_storage, temp_storage_bytes, first, result, num_items_fixed, binary_op, stream));
     return status;
