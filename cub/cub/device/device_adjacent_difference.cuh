@@ -220,6 +220,71 @@ struct DeviceAdjacentDifference
   //! @rst
   //! Subtracts the left element of each adjacent pair of elements residing within device-accessible memory.
   //!
+  //! Overview
+  //! ++++++++++++++++++++++++++
+  //!
+  //! - Calculates the differences of adjacent elements in ``d_input``.
+  //!   That is, ``*d_input`` is assigned to ``*d_output``, and, for each iterator ``i`` in the
+  //!   range ``[d_input + 1, d_input + num_items)``, the result of
+  //!   ``difference_op(*i, *(i - 1))`` is assigned to ``*(d_output + (i - d_input))``.
+  //! - The input and output ranges are allowed to overlap.
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input elements @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing output elements @iterator
+  //!
+  //! @tparam DifferenceOpT
+  //!   Its `result_type` is convertible to a type in `OutputIteratorT`'s set of `value_types`.
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_input
+  //!   Beginning of the input sequence
+  //!
+  //! @param[out] d_output
+  //!   Beginning of the output sequence
+  //!
+  //! @param[in] num_items
+  //!   Number of items in the input sequence
+  //!
+  //! @param[in] difference_op
+  //!   The binary function used to compute differences
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`
+  //!   @endrst
+  template <typename InputIteratorT, typename OutputIteratorT, typename DifferenceOpT, typename NumItemsT>
+  static CUB_RUNTIME_FUNCTION cudaError_t SubtractLeft(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_input,
+    OutputIteratorT d_output,
+    NumItemsT num_items,
+    DifferenceOpT difference_op,
+    cudaStream_t stream = nullptr)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeft");
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
+      d_temp_storage, temp_storage_bytes, d_input, d_output, static_cast<OffsetT>(num_items), difference_op, stream);
+  }
+
+  //! @rst
+  //! Subtracts the left element of each adjacent pair of elements residing within device-accessible memory.
+  //!
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //!
@@ -461,6 +526,73 @@ struct DeviceAdjacentDifference
   //! @rst
   //! Subtracts the right element of each adjacent pair of elements residing within device-accessible memory.
   //!
+  //! Overview
+  //! ++++++++++++++++++++++++++
+  //!
+  //! - Calculates the right differences of adjacent elements in ``d_input``.
+  //!   That is, ``*(d_input + num_items - 1)`` is assigned to
+  //!   ``*(d_output + num_items - 1)``, and, for each iterator ``i`` in the range
+  //!   ``[d_input, d_input + num_items - 1)``, the result of
+  //!   ``difference_op(*i, *(i + 1))`` is assigned to
+  //!   ``*(d_output + (i - d_input))``.
+  //! - The input and output ranges are allowed to overlap.
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input elements @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing output elements @iterator
+  //!
+  //! @tparam DifferenceOpT
+  //!   Its `result_type` is convertible to a type in `OutputIteratorT`'s set of `value_types`.
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_input
+  //!   Beginning of the input sequence
+  //!
+  //! @param[out] d_output
+  //!   Beginning of the output sequence
+  //!
+  //! @param[in] num_items
+  //!   Number of items in the input sequence
+  //!
+  //! @param[in] difference_op
+  //!   The binary function used to compute differences
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
+  template <typename InputIteratorT, typename OutputIteratorT, typename DifferenceOpT, typename NumItemsT>
+  static CUB_RUNTIME_FUNCTION cudaError_t SubtractRight(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_input,
+    OutputIteratorT d_output,
+    NumItemsT num_items,
+    DifferenceOpT difference_op,
+    cudaStream_t stream = nullptr)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRight");
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
+      d_temp_storage, temp_storage_bytes, d_input, d_output, static_cast<OffsetT>(num_items), difference_op, stream);
+  }
+
+  //! @rst
+  //! Subtracts the right element of each adjacent pair of elements residing within device-accessible memory.
+  //!
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //!
@@ -653,6 +785,98 @@ struct DeviceAdjacentDifference
   }
 
   //! @rst
+  //! Subtracts the left element of each adjacent pair of elements residing within device-accessible memory.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //!
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! - Calculates the differences of adjacent elements in ``d_input``.
+  //!   That is, ``*d_input`` is assigned to ``*d_output``, and, for each iterator ``i`` in the
+  //!   range ``[d_input + 1, d_input + num_items)``, the result of
+  //!   ``difference_op(*i, *(i - 1))`` is assigned to ``*(d_output + (i - d_input))``.
+  //! - The input and output ranges are allowed to overlap.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates how to use ``SubtractLeft`` with potentially aliasing
+  //! input and output ranges and a custom stream via an environment.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin subtract-left-two-iter-env-stream
+  //!     :end-before: example-end subtract-left-two-iter-env-stream
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input elements @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing output elements @iterator
+  //!
+  //! @tparam DifferenceOpT
+  //!   **[inferred]** Binary function object type used to compute differences
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of stream via ``cuda::get_stream``.
+  //!
+  //! @param[in] d_input
+  //!   Beginning of the input sequence
+  //!
+  //! @param[out] d_output
+  //!   Beginning of the output sequence
+  //!
+  //! @param[in] num_items
+  //!   Number of items in the input sequence
+  //!
+  //! @param[in] difference_op
+  //!   The binary function used to compute differences
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <
+    typename InputIteratorT,
+    typename OutputIteratorT,
+    typename DifferenceOpT,
+    typename NumItemsT,
+    typename EnvT                 = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*> && ::cuda::std::is_integral_v<NumItemsT>,
+                             int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SubtractLeft(
+    InputIteratorT d_input, OutputIteratorT d_output, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractLeft");
+
+    using OffsetT                 = detail::choose_offset_t<NumItemsT>;
+    using default_policy_selector = detail::adjacent_difference::policy_selector_from_types<InputIteratorT, true>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Left>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_input,
+          d_output,
+          static_cast<OffsetT>(num_items),
+          difference_op,
+          stream,
+          policy_selector);
+      });
+  }
+
+  //! @rst
   //! Subtracts the left element of each adjacent pair of elements in-place.
   //!
   //! .. versionadded:: 3.4.0
@@ -714,7 +938,9 @@ struct DeviceAdjacentDifference
             typename DifferenceOpT,
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<RandomAccessIteratorT, void*>, int> = 0>
+            ::cuda::std::enable_if_t<
+              !::cuda::std::is_same_v<RandomAccessIteratorT, void*> && ::cuda::std::is_integral_v<NumItemsT>,
+              int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   SubtractLeft(RandomAccessIteratorT d_input, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
   {
@@ -835,6 +1061,100 @@ struct DeviceAdjacentDifference
   }
 
   //! @rst
+  //! Subtracts the right element of each adjacent pair of elements residing within device-accessible memory.
+  //!
+  //! This is an environment-based API that allows customization of:
+  //!
+  //! - Stream: Query via ``cuda::get_stream``
+  //!
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! - Calculates the right differences of adjacent elements in ``d_input``.
+  //!   That is, ``*(d_input + num_items - 1)`` is assigned to
+  //!   ``*(d_output + num_items - 1)``, and, for each iterator ``i`` in the range
+  //!   ``[d_input, d_input + num_items - 1)``, the result of
+  //!   ``difference_op(*i, *(i + 1))`` is assigned to
+  //!   ``*(d_output + (i - d_input))``.
+  //! - The input and output ranges are allowed to overlap.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates how to use ``SubtractRight`` with potentially aliasing
+  //! input and output ranges and a custom stream via an environment.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_adjacent_difference_env_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin subtract-right-two-iter-env-stream
+  //!     :end-before: example-end subtract-right-two-iter-env-stream
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input elements @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing output elements @iterator
+  //!
+  //! @tparam DifferenceOpT
+  //!   **[inferred]** Binary function object type used to compute differences
+  //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of stream via ``cuda::get_stream``.
+  //!
+  //! @param[in] d_input
+  //!   Beginning of the input sequence
+  //!
+  //! @param[out] d_output
+  //!   Beginning of the output sequence
+  //!
+  //! @param[in] num_items
+  //!   Number of items in the input sequence
+  //!
+  //! @param[in] difference_op
+  //!   The binary function used to compute differences
+  //!
+  //! @param[in] env
+  //!   @rst
+  //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   @endrst
+  template <
+    typename InputIteratorT,
+    typename OutputIteratorT,
+    typename DifferenceOpT,
+    typename NumItemsT,
+    typename EnvT                 = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<!::cuda::std::is_same_v<InputIteratorT, void*> && ::cuda::std::is_integral_v<NumItemsT>,
+                             int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SubtractRight(
+    InputIteratorT d_input, OutputIteratorT d_output, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceAdjacentDifference::SubtractRight");
+
+    using OffsetT                 = detail::choose_offset_t<NumItemsT>;
+    using default_policy_selector = detail::adjacent_difference::policy_selector_from_types<InputIteratorT, true>;
+
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
+        return detail::adjacent_difference::dispatch<MayAlias::Yes, ReadOption::Right>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_input,
+          d_output,
+          static_cast<OffsetT>(num_items),
+          difference_op,
+          stream,
+          policy_selector);
+      });
+  }
+
+  //! @rst
   //! Subtracts the right element of each adjacent pair of elements in-place.
   //!
   //! .. versionadded:: 3.4.0
@@ -896,7 +1216,9 @@ struct DeviceAdjacentDifference
             typename DifferenceOpT,
             typename NumItemsT,
             typename EnvT = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<RandomAccessIteratorT, void*>, int> = 0>
+            ::cuda::std::enable_if_t<
+              !::cuda::std::is_same_v<RandomAccessIteratorT, void*> && ::cuda::std::is_integral_v<NumItemsT>,
+              int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   SubtractRight(RandomAccessIteratorT d_input, NumItemsT num_items, DifferenceOpT difference_op, EnvT env = {})
   {

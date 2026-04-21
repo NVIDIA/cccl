@@ -59,6 +59,29 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeft accepts stream", "[adjacen
   REQUIRE(data == expected);
 }
 
+C2H_TEST("cub::DeviceAdjacentDifference::SubtractLeft with two iterators accepts stream", "[adjacent_difference][env]")
+{
+  // example-begin subtract-left-two-iter-env-stream
+  auto input  = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
+  auto output = thrust::device_vector<int>(8);
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceAdjacentDifference::SubtractLeft(
+    input.begin(), output.begin(), static_cast<int>(input.size()), cuda::std::minus{}, stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceAdjacentDifference::SubtractLeft failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected{1, 1, -1, 1, -1, 1, -1, 1};
+  // example-end subtract-left-two-iter-env-stream
+  stream.sync();
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
 C2H_TEST("cub::DeviceAdjacentDifference::SubtractRightCopy accepts stream", "[adjacent_difference][env]")
 {
   // example-begin subtract-right-copy-env-stream
@@ -103,4 +126,27 @@ C2H_TEST("cub::DeviceAdjacentDifference::SubtractRight accepts stream", "[adjace
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(data == expected);
+}
+
+C2H_TEST("cub::DeviceAdjacentDifference::SubtractRight with two iterators accepts stream", "[adjacent_difference][env]")
+{
+  // example-begin subtract-right-two-iter-env-stream
+  auto input  = thrust::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
+  auto output = thrust::device_vector<int>(8);
+
+  cuda::stream stream{cuda::devices[0]};
+  cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceAdjacentDifference::SubtractRight(
+    input.begin(), output.begin(), static_cast<int>(input.size()), cuda::std::minus{}, stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceAdjacentDifference::SubtractRight  failed with status: " << error << '\n';
+  }
+
+  thrust::device_vector<int> expected{-1, 1, -1, 1, -1, 1, -1, 2};
+  // example-end subtract-right-two-iter-env-stream
+  stream.sync();
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output == expected);
 }
