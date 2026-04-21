@@ -41,18 +41,14 @@ struct AgentMergeSortPolicy
   static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
 };
 
+//! The tuning policy for all algorithms in @ref DeviceMergeSort.
 struct MergeSortPolicy
 {
-  int threads_per_block;
-  int items_per_thread;
-  BlockLoadAlgorithm load_algorithm;
-  CacheLoadModifier load_modifier;
-  BlockStoreAlgorithm store_algorithm;
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int items_per_tile() const
-  {
-    return threads_per_block * items_per_thread;
-  }
+  int threads_per_block; //!< Number of threads in a CUDA block
+  int items_per_thread; //!< Number of items processed per thread
+  BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading items from global memory
+  CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
+  BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const MergeSortPolicy& lhs, const MergeSortPolicy& rhs)
   {
