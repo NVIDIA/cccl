@@ -158,6 +158,9 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES reverse_view(_Range&&) -> reverse_view<::cuda::
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<reverse_view<_Tp>> = enable_borrowed_range<_Tp>;
 
+template <class _Tp>
+inline constexpr bool __has_dangling_iterator<reverse_view<_Tp>> = __has_dangling_iterator<_Tp>;
+
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS

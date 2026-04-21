@@ -37,6 +37,7 @@
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/all.h>
 #include <cuda/std/__ranges/concepts.h>
+#include <cuda/std/__ranges/enable_borrowed_range.h>
 #include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__ranges/non_propagating_cache.h>
 #include <cuda/std/__ranges/range_adaptor.h>
@@ -356,6 +357,9 @@ template <class _Range, class _Pred>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES filter_view(_Range&&, _Pred) -> filter_view<ranges::views::all_t<_Range>, _Pred>;
 
 _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(filter_view)
+
+template <class _Range, class _Pred>
+inline constexpr bool __has_dangling_iterator<filter_view<_Range, _Pred>> = true;
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 

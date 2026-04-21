@@ -283,6 +283,9 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES take_view(_Range&&, range_difference_t<_Range>)
 template <class _Tp>
 inline constexpr bool enable_borrowed_range<take_view<_Tp>> = enable_borrowed_range<_Tp>;
 
+template <class _Tp>
+inline constexpr bool __has_dangling_iterator<take_view<_Tp>> = __has_dangling_iterator<_Tp>;
+
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
