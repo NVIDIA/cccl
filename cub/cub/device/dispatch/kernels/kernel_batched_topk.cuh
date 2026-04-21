@@ -29,6 +29,23 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk
 {
+// Finds the smallest policy whose tile size still covers the given max segment size. Returns -1 if none covers.
+[[nodiscard]] _CCCL_API constexpr int
+find_smallest_covering_policy_index(const batched_topk_policy& p, ::cuda::std::int64_t max_segment_size)
+{
+  int result = -1;
+  for (int i = 0; i < static_cast<int>(p.worker_per_segment_policies.size()); ++i)
+  {
+    const auto& wp                       = p.worker_per_segment_policies[i];
+    const ::cuda::std::int64_t tile_size = ::cuda::std::int64_t{wp.block_threads} * wp.items_per_thread;
+    if (tile_size >= max_segment_size)
+    {
+      result = i;
+    }
+  }
+  return result;
+}
+
 // Given a policy_selector and a segment-size parameter, resolves the agent type to be instantiated by the kernel.
 template <typename PolicySelector, typename SegmentSizeParameterT, typename... AgentParamsT>
 struct find_smallest_covering_policy

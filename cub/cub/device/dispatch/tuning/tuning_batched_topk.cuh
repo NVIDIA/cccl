@@ -91,23 +91,6 @@ template <typename T>
 concept batched_topk_policy_selector = policy_selector<T, batched_topk_policy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
-// Finds the smallest policy whose tile size still covers the given max segment size. Returns -1 if none covers.
-[[nodiscard]] _CCCL_API constexpr int
-find_smallest_covering_policy_index(const batched_topk_policy& p, ::cuda::std::int64_t max_segment_size)
-{
-  int result = -1;
-  for (int i = 0; i < static_cast<int>(p.worker_per_segment_policies.size()); ++i)
-  {
-    const auto& wp                       = p.worker_per_segment_policies[i];
-    const ::cuda::std::int64_t tile_size = ::cuda::std::int64_t{wp.block_threads} * wp.items_per_thread;
-    if (tile_size >= max_segment_size)
-    {
-      result = i;
-    }
-  }
-  return result;
-}
-
 struct policy_selector
 {
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> batched_topk_policy
