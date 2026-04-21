@@ -26,7 +26,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk
 {
-template <typename PolicyGetter, // TODO(bgruber): pass agent_batched_topk_policy as NTTP in C++20
+template <typename PolicyGetter, // TODO(bgruber): pass worker_policy as NTTP in C++20
           typename KeyInputItItT,
           typename KeyOutputItItT,
           typename ValueInputItItT,
@@ -47,7 +47,7 @@ struct agent_batched_topk_worker_per_segment
   using key_t   = it_value_t<key_it_t>;
   using value_t = it_value_t<value_it_t>;
 
-  static constexpr agent_batched_topk_policy active_policy = PolicyGetter{}();
+  static constexpr worker_policy active_policy = PolicyGetter{}();
 
   static constexpr int block_threads    = active_policy.block_threads;
   static constexpr int items_per_thread = active_policy.items_per_thread;

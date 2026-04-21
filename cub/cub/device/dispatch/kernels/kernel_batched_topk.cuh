@@ -46,8 +46,8 @@ private:
     }
     else
     {
-      constexpr agent_batched_topk_policy wp = active_policy.worker_per_segment_policies[Index];
-      constexpr auto tile_size               = ::cuda::std::int64_t{wp.block_threads} * wp.items_per_thread;
+      constexpr worker_policy wp = active_policy.worker_per_segment_policies[Index];
+      constexpr auto tile_size   = ::cuda::std::int64_t{wp.block_threads} * wp.items_per_thread;
 
       struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass wp directly
       {
@@ -78,7 +78,7 @@ public:
 
   // Use a safe index to avoid out-of-bounds constexpr evaluation when no policy covers. The kernel body's static_assert
   // rejects this case.
-  static constexpr agent_batched_topk_policy policy = active_policy.worker_per_segment_policies[selected_index];
+  static constexpr worker_policy policy = active_policy.worker_per_segment_policies[selected_index];
 
   struct policy_getter_17 // TODO(bgruber): drop this in C++17 and pass policy directly
   {

@@ -169,7 +169,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 {
   // Currently, we only support segments that fit into shared memory
   // TODO (elstehle): extend support for variable-size segments
-  constexpr agent_batched_topk_policy selected = find_smallest_covering_policy<
+  constexpr worker_policy selected = find_smallest_covering_policy<
     PolicySelector,
     SegmentSizeParameterT,
     KeyInputItItT,

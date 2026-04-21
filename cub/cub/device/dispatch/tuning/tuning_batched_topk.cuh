@@ -23,30 +23,30 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::batched_topk
 {
-struct agent_batched_topk_policy
+struct worker_policy
 {
   int block_threads;
   int items_per_thread;
   BlockLoadAlgorithm load_algorithm;
   BlockStoreAlgorithm store_algorithm;
 
-  _CCCL_API constexpr friend bool operator==(const agent_batched_topk_policy& lhs, const agent_batched_topk_policy& rhs)
+  _CCCL_API constexpr friend bool operator==(const worker_policy& lhs, const worker_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.store_algorithm == rhs.store_algorithm;
   }
 
-  _CCCL_API constexpr friend bool operator!=(const agent_batched_topk_policy& lhs, const agent_batched_topk_policy& rhs)
+  _CCCL_API constexpr friend bool operator!=(const worker_policy& lhs, const worker_policy& rhs)
   {
     return !(lhs == rhs);
   }
 
 #if !_CCCL_COMPILER(NVRTC)
-  friend ::std::ostream& operator<<(::std::ostream& os, const agent_batched_topk_policy& p)
+  friend ::std::ostream& operator<<(::std::ostream& os, const worker_policy& p)
   {
-    return os << "agent_batched_topk_policy { .block_threads = " << p.block_threads
-              << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
-              << ", .store_algorithm = " << p.store_algorithm << " }";
+    return os
+        << "worker_policy { .block_threads = " << p.block_threads << ", .items_per_thread = " << p.items_per_thread
+        << ", .load_algorithm = " << p.load_algorithm << ", .store_algorithm = " << p.store_algorithm << " }";
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
@@ -55,7 +55,7 @@ struct batched_topk_policy
 {
   // The list of per-segment agent policies is ordered by decreasing tile size. At compile time, the smallest policy
   // whose tile size still covers the upper bound of the segment size is selected.
-  ::cuda::std::array<agent_batched_topk_policy, 6> worker_per_segment_policies;
+  ::cuda::std::array<worker_policy, 6> worker_per_segment_policies;
 
   _CCCL_API constexpr friend bool operator==(const batched_topk_policy& lhs, const batched_topk_policy& rhs)
   {
@@ -96,12 +96,12 @@ struct policy_selector
     constexpr auto load_alg  = BLOCK_LOAD_WARP_TRANSPOSE;
     constexpr auto store_alg = BLOCK_STORE_WARP_TRANSPOSE;
     return batched_topk_policy{{{
-      agent_batched_topk_policy{256, 64, load_alg, store_alg},
-      agent_batched_topk_policy{256, 32, load_alg, store_alg},
-      agent_batched_topk_policy{256, 16, load_alg, store_alg},
-      agent_batched_topk_policy{256, 8, load_alg, store_alg},
-      agent_batched_topk_policy{256, 4, load_alg, store_alg},
-      agent_batched_topk_policy{128, 2, load_alg, store_alg},
+      worker_policy{256, 64, load_alg, store_alg},
+      worker_policy{256, 32, load_alg, store_alg},
+      worker_policy{256, 16, load_alg, store_alg},
+      worker_policy{256, 8, load_alg, store_alg},
+      worker_policy{256, 4, load_alg, store_alg},
+      worker_policy{128, 2, load_alg, store_alg},
     }}};
   }
 };
