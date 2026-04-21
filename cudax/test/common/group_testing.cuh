@@ -21,7 +21,7 @@
 
 namespace
 {
-template <class T>
+template <class T, cuda::std::size_t Id>
 __device__ T global_barriers_storage;
 
 //! @brief Returns reference to an array of N cuda::barrier objects with suitable thread scope for level allocated in
@@ -41,7 +41,7 @@ __device__ auto& get_barriers(const Level& level) noexcept
   }
   else
   {
-    return reinterpret_cast<Barrier(&)[N]>(global_barriers_storage<BarriersStorage>);
+    return reinterpret_cast<Barrier(&)[N]>(global_barriers_storage<BarriersStorage, Id>);
   }
 }
 } // namespace
