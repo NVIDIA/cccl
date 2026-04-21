@@ -148,6 +148,11 @@ struct policy_hub
     static constexpr int nominal_4b_medium_items_per_thread = 16;
     static constexpr int nominal_4b_large_items_per_thread  = 16;
 
+    static constexpr int small_items_per_thread =
+      detail::MemBoundScaling<0, nominal_4b_small_items_per_thread, AccumT>::ITEMS_PER_THREAD;
+    static constexpr int medium_items_per_thread =
+      detail::MemBoundScaling<0, nominal_4b_medium_items_per_thread, AccumT>::ITEMS_PER_THREAD;
+
   public:
     using ReducePolicy =
       cub::AgentReducePolicy<nominal_4b_large_threads_per_block,
@@ -160,16 +165,14 @@ struct policy_hub
     using SmallReducePolicy =
       cub::AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
                                  small_threads_per_warp,
-                                 nominal_4b_small_items_per_thread,
-                                 AccumT,
+                                 small_items_per_thread,
                                  items_per_vec_load,
                                  cub::LOAD_LDG>;
 
     using MediumReducePolicy =
       cub::AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
                                  medium_threads_per_warp,
-                                 nominal_4b_medium_items_per_thread,
-                                 AccumT,
+                                 medium_items_per_thread,
                                  items_per_vec_load,
                                  cub::LOAD_LDG>;
   };

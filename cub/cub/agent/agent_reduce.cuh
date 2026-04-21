@@ -102,20 +102,14 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
 #endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 
 /**
- * Parameterizable tuning policy type for AgentReduce
+ * Parameterizable tuning policy type for AgentWarpReduce
  * @tparam BlockThreads Threads per thread block
  * @tparam WarpThreads Threads per warp
- * @tparam NominalItemsPerThread4B Items per thread (per tile of input)
- * @tparam ComputeT Dominant compute type
+ * @tparam ItemsPerThread Items per thread (per tile of input)
  * @tparam VectorLoadLength Number of items per vectorized load
  * @tparam LoadModifier Cache load modifier for reading input elements
  */
-template <int BlockThreads,
-          int WarpThreads,
-          int NominalItemsPerThread4B,
-          typename ComputeT,
-          int VectorLoadLength,
-          CacheLoadModifier LoadModifier>
+template <int BlockThreads, int WarpThreads, int ItemsPerThread, int VectorLoadLength, CacheLoadModifier LoadModifier>
 struct AgentWarpReducePolicy
 {
   /// Number of threads per warp
@@ -128,8 +122,7 @@ struct AgentWarpReducePolicy
   static constexpr int BLOCK_THREADS = BlockThreads;
 
   /// Number of items per thread
-  static constexpr int ITEMS_PER_THREAD =
-    detail::MemBoundScaling<0, NominalItemsPerThread4B, ComputeT>::ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
 
   /// Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;

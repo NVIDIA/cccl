@@ -12,28 +12,27 @@
 #endif
 
 #if !TUNE_BASE
+template <typename AccumT>
 struct policy_selector
 {
   _CCCL_API constexpr auto operator()(cuda::arch_id) const -> ::cub::segmented_reduce_policy
   {
-    const auto [items, threads] =
-      cub::detail::scale_mem_bound(TUNE_L_NOMINAL_4B_THREADS_PER_BLOCK, TUNE_L_NOMINAL_4B_ITEMS_PER_THREAD);
+    constexpr int accum_size = int{sizeof(AccumT)};
+
+    const auto [l_items, l_threads] =
+      cub::detail::scale_mem_bound(TUNE_L_THREADS_PER_BLOCK, TUNE_L_ITEMS_PER_THREAD, accum_size);
+    const auto s_items =
+      cub::detail::scale_mem_bound(TUNE_L_THREADS_PER_BLOCK, TUNE_S_ITEMS_PER_THREAD, accum_size).items_per_thread;
+    const auto m_items =
+      cub::detail::scale_mem_bound(TUNE_L_THREADS_PER_BLOCK, TUNE_M_ITEMS_PER_THREAD, accum_size).items_per_thread;
+
     const auto rp = cub::agent_reduce_policy{
-      threads, items, TUNE_ITEMS_PER_VEC_LOAD, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_LDG};
-    return {
-      rp,
-      cub::agent_warp_reduce_policy{
-        rp.block_threads,
-        TUNE_S_THREADS_PER_WARP,
-        TUNE_S_NOMINAL_4B_ITEMS_PER_THREAD,
-        rp.vector_load_length,
-        rp.load_modifier},
-      cub::agent_warp_reduce_policy{
-        rp.block_threads,
-        TUNE_M_THREADS_PER_WARP,
-        TUNE_M_NOMINAL_4B_ITEMS_PER_THREAD,
-        rp.vector_load_length,
-        rp.load_modifier}};
+      l_threads, l_items, TUNE_ITEMS_PER_VEC_LOAD, cub::BLOCK_REDUCE_WARP_REDUCTIONS, cub::LOAD_LDG};
+    return {rp,
+            cub::warp_reduce_policy{
+              rp.block_threads, TUNE_S_THREADS_PER_WARP, s_items, rp.vector_load_length, rp.load_modifier},
+            cub::warp_reduce_policy{
+              rp.block_threads, TUNE_M_THREADS_PER_WARP, m_items, rp.vector_load_length, rp.load_modifier}};
   }
 };
 #endif // !TUNE_BASE
@@ -96,7 +95,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
     nullptr /* stream */
 #if !TUNE_BASE
     ,
-    policy_selector{}
+    policy_selector<accum_t>{}
 #endif
   );
 
@@ -116,7 +115,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
       launch.get_stream()
 #if !TUNE_BASE
         ,
-      policy_selector{}
+      policy_selector<accum_t>{}
 #endif
     );
   });
