@@ -719,7 +719,7 @@ template <class _Tp>
   // A case that for various reasons does not pass easily through the algorithm below:
   if ((__realx == _Tp{1}) && (__imagx == _Tp{0}))
   {
-    return complex<_Tp>(::cuda::std::copysign(numeric_limits<_Tp>::infinity(), __x.real()), __x.imag());
+    return complex<_Tp>{::cuda::std::copysign(numeric_limits<_Tp>::infinity(), __x.real()}, __x.imag());
   }
 
   // The real part of atanh(__x) is:
