@@ -711,7 +711,7 @@ template <class _Tp>
     }
     if (::cuda::std::isinf(__x.real()) || ::cuda::std::isinf(__x.imag()))
     {
-      return complex<_Tp>(::cuda::std::copysign(_Tp{0}, __x.real()),
+      return complex<_Tp>{::cuda::std::copysign(_Tp{0}, __x.real()},
                           ::cuda::std::copysign(_Tp{0.5} * __pi, __x.imag()));
     }
   }
