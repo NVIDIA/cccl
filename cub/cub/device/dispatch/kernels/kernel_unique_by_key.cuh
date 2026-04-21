@@ -33,27 +33,54 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::unique_by_key
 {
-template <typename DefaultPolicyGetter,
-          typename KeyInputIteratorT,
-          typename ValueInputIteratorT,
-          typename KeyOutputIteratorT,
-          typename ValueOutputIteratorT,
-          typename EqualityOpT,
-          typename OffsetT>
-class unique_by_key_vsmem_helper_t
+template <typename PolicyGetter>
+struct host_policy_provider
 {
+  static constexpr unique_by_key_policy selected_policy = PolicyGetter{}();
+
   struct fallback_pol_getter
   {
     _CCCL_API _CCCL_FORCEINLINE constexpr auto operator()() const
     {
-      unique_by_key_policy policy = DefaultPolicyGetter{}();
+      unique_by_key_policy policy = PolicyGetter{}();
       policy.block_threads        = 64;
       policy.items_per_thread     = 1;
       return policy;
     }
   };
 
-  static constexpr unique_by_key_policy selected_policy = DefaultPolicyGetter{}();
+  static constexpr unique_by_key_policy fallback_policy = fallback_pol_getter{}();
+};
+
+template <typename PolicyGetter>
+struct device_policy_provider
+{
+  static constexpr unique_by_key_policy selected_policy = PolicyGetter{}();
+
+  struct fallback_pol_getter
+  {
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
+    {
+      unique_by_key_policy policy = PolicyGetter{}();
+      policy.block_threads        = 64;
+      policy.items_per_thread     = 1;
+      return policy;
+    }
+  };
+
+  static constexpr unique_by_key_policy fallback_policy = fallback_pol_getter{}();
+};
+
+template <typename PolicyProvider,
+          typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueOutputIteratorT,
+          typename EqualityOpT,
+          typename OffsetT>
+class unique_by_key_vsmem_helper_impl
+{
+  static constexpr unique_by_key_policy selected_policy = PolicyProvider::selected_policy;
 
   using selected_policy_t = AgentUniqueByKeyPolicy<
     selected_policy.block_threads,
@@ -65,7 +92,7 @@ class unique_by_key_vsmem_helper_t
                         selected_policy.delay_constructor.delay,
                         selected_policy.delay_constructor.l2_write_latency>>;
 
-  static constexpr unique_by_key_policy fallback_policy = fallback_pol_getter{}();
+  static constexpr unique_by_key_policy fallback_policy = PolicyProvider::fallback_policy;
 
   using fallback_policy_t = AgentUniqueByKeyPolicy<
     fallback_policy.block_threads,
@@ -106,6 +133,38 @@ public:
   using selected_agent_t = default_agent_t;
   using agent_t          = ::cuda::std::_If<uses_fallback_policy, fallback_agent_t, default_agent_t>;
 };
+
+template <typename PolicyGetter,
+          typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueOutputIteratorT,
+          typename EqualityOpT,
+          typename OffsetT>
+using unique_by_key_vsmem_helper_t = unique_by_key_vsmem_helper_impl<
+  host_policy_provider<PolicyGetter>,
+  KeyInputIteratorT,
+  ValueInputIteratorT,
+  KeyOutputIteratorT,
+  ValueOutputIteratorT,
+  EqualityOpT,
+  OffsetT>;
+
+template <typename PolicyGetter,
+          typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueOutputIteratorT,
+          typename EqualityOpT,
+          typename OffsetT>
+using device_unique_by_key_vsmem_helper_t = unique_by_key_vsmem_helper_impl<
+  device_policy_provider<PolicyGetter>,
+  KeyInputIteratorT,
+  ValueInputIteratorT,
+  KeyOutputIteratorT,
+  ValueOutputIteratorT,
+  EqualityOpT,
+  OffsetT>;
 
 /**
  * @brief Unique by key kernel entry point (multi-block)
@@ -176,13 +235,14 @@ template <typename PolicySelector,
           typename EqualityOpT,
           typename OffsetT>
 __launch_bounds__(
-  unique_by_key_vsmem_helper_t<policy_getter<PolicySelector, cuda::arch_id{CUB_PTX_ARCH / 10}>,
-                               KeyInputIteratorT,
-                               ValueInputIteratorT,
-                               KeyOutputIteratorT,
-                               ValueOutputIteratorT,
-                               EqualityOpT,
-                               OffsetT>::policy.block_threads)
+  device_unique_by_key_vsmem_helper_t<
+    device_policy_getter<PolicySelector, cuda::arch_id{CUB_PTX_ARCH / 10}>,
+    KeyInputIteratorT,
+    ValueInputIteratorT,
+    KeyOutputIteratorT,
+    ValueOutputIteratorT,
+    EqualityOpT,
+    OffsetT>::policy.block_threads)
   _CCCL_KERNEL_ATTRIBUTES void DeviceUniqueByKeySweepKernel(
     _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
@@ -195,8 +255,8 @@ __launch_bounds__(
     _CCCL_GRID_CONSTANT const int num_tiles,
     vsmem_t vsmem)
 {
-  using vsmem_adapted_agents = unique_by_key_vsmem_helper_t<
-    policy_getter<PolicySelector, cuda::arch_id{CUB_PTX_ARCH / 10}>,
+  using vsmem_adapted_agents = device_unique_by_key_vsmem_helper_t<
+    device_policy_getter<PolicySelector, cuda::arch_id{CUB_PTX_ARCH / 10}>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,
