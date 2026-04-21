@@ -13,6 +13,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_store.cuh>
+
 #include <cuda/__device/arch_id.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/array>
