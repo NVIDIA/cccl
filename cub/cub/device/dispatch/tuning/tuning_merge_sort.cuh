@@ -41,6 +41,41 @@ struct AgentMergeSortPolicy
   static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
 };
 
+struct MergeSortPolicy
+{
+  int threads_per_block;
+  int items_per_thread;
+  BlockLoadAlgorithm load_algorithm;
+  CacheLoadModifier load_modifier;
+  BlockStoreAlgorithm store_algorithm;
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int items_per_tile() const
+  {
+    return threads_per_block * items_per_thread;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator==(const MergeSortPolicy& lhs, const MergeSortPolicy& rhs)
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
+        && lhs.store_algorithm == rhs.store_algorithm;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool operator!=(const MergeSortPolicy& lhs, const MergeSortPolicy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const MergeSortPolicy& p)
+  {
+    return os << "MergeSortPolicy { .threads_per_block = " << p.threads_per_block
+              << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+              << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
 namespace detail::merge_sort
 {
 // TODO(bgruber): drop in CCCL 4.0 when we remove all public CUB dispatchers
@@ -87,56 +122,19 @@ struct policy_hub
   using MaxPolicy = Policy600;
 };
 
-struct merge_sort_policy
-{
-  int threads_per_block;
-  int items_per_thread;
-  BlockLoadAlgorithm load_algorithm;
-  CacheLoadModifier load_modifier;
-  BlockStoreAlgorithm store_algorithm;
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int items_per_tile() const
-  {
-    return threads_per_block * items_per_thread;
-  }
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator==(const merge_sort_policy& lhs, const merge_sort_policy& rhs)
-  {
-    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
-        && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.store_algorithm == rhs.store_algorithm;
-  }
-
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
-  operator!=(const merge_sort_policy& lhs, const merge_sort_policy& rhs)
-  {
-    return !(lhs == rhs);
-  }
-
-#if _CCCL_HOSTED()
-  friend ::std::ostream& operator<<(::std::ostream& os, const merge_sort_policy& p)
-  {
-    return os << "merge_sort_policy { .threads_per_block = " << p.threads_per_block
-              << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
-              << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm << " }";
-  }
-#endif // _CCCL_HOSTED()
-};
-
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
-concept merge_sort_policy_selector = policy_selector<T, merge_sort_policy>;
+concept merge_sort_policy_selector = policy_selector<T, MergeSortPolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
 struct policy_selector
 {
   int key_size;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> merge_sort_policy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> MergeSortPolicy
   {
     // from SM60
-    return merge_sort_policy{
+    return MergeSortPolicy{
       256,
       detail::nominal_4B_items_to_items(17, key_size),
       BLOCK_LOAD_WARP_TRANSPOSE,
@@ -153,7 +151,7 @@ template <typename KeyIteratorT>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
-    -> merge_sort_policy
+    -> MergeSortPolicy
   {
     return policy_selector{int{sizeof(it_value_t<KeyIteratorT>)}}(cc);
   }
@@ -164,11 +162,11 @@ template <typename PolicyHub>
 struct policy_selector_from_hub
 {
   // this is only called in device code, so we can ignore the cc parameter
-  _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const -> merge_sort_policy
+  _CCCL_DEVICE_API constexpr auto operator()(::cuda::compute_capability /*cc*/) const -> MergeSortPolicy
   {
     using ap = typename PolicyHub::MaxPolicy::ActivePolicy;
     using mp = typename ap::MergeSortPolicy;
-    return merge_sort_policy{
+    return MergeSortPolicy{
       mp::BLOCK_THREADS, mp::ITEMS_PER_THREAD, mp::LOAD_ALGORITHM, mp::LOAD_MODIFIER, mp::STORE_ALGORITHM};
   }
 };

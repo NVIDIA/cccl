@@ -185,7 +185,7 @@ private:
   template <typename ActivePolicyT>
   struct policy_getter
   {
-    _CCCL_HOST_DEVICE_API constexpr auto operator()() -> detail::merge_sort::merge_sort_policy
+    _CCCL_HOST_DEVICE_API constexpr auto operator()() -> MergeSortPolicy
     {
       using mp = typename ActivePolicyT::MergeSortPolicy;
       return {mp::BLOCK_THREADS, mp::ITEMS_PER_THREAD, mp::LOAD_ALGORITHM, mp::LOAD_MODIFIER, mp::STORE_ALGORITHM};
@@ -495,7 +495,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) -> cudaError_t {
 #ifdef CUB_DEFINE_RUNTIME_POLICIES
-    const merge_sort_policy active_policy = policy_getter();
+    const MergeSortPolicy active_policy = policy_getter();
 #else // CUB_DEFINE_RUNTIME_POLICIES
     using vsmem_adapted_agents = merge_sort_vsmem_helper_t<
       decltype(policy_getter),
@@ -507,7 +507,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       CompareOpT,
       KeyT,
       ValueT>;
-  constexpr merge_sort_policy active_policy = vsmem_adapted_agents::policy;
+  constexpr MergeSortPolicy active_policy = vsmem_adapted_agents::policy;
 #endif // CUB_DEFINE_RUNTIME_POLICIES
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)

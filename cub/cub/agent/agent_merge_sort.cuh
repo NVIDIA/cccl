@@ -43,10 +43,10 @@ struct AgentBlockSort
 
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  static constexpr merge_sort_policy policy = PolicyGetter{}();
-  static constexpr int BLOCK_THREADS        = policy.threads_per_block;
-  static constexpr int ITEMS_PER_THREAD     = policy.items_per_thread;
-  static constexpr int ITEMS_PER_TILE       = policy.items_per_tile();
+  static constexpr MergeSortPolicy policy = PolicyGetter{}();
+  static constexpr int BLOCK_THREADS      = policy.threads_per_block;
+  static constexpr int ITEMS_PER_THREAD   = policy.items_per_thread;
+  static constexpr int ITEMS_PER_TILE     = policy.items_per_tile();
 
   using BlockMergeSortT = BlockMergeSort<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, ValueT>;
 
@@ -378,10 +378,10 @@ struct AgentMerge
 
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
-  static constexpr merge_sort_policy policy = PolicyGetter{}();
-  static constexpr int BLOCK_THREADS        = policy.threads_per_block;
-  static constexpr int ITEMS_PER_THREAD     = policy.items_per_thread;
-  static constexpr int ITEMS_PER_TILE       = policy.items_per_tile();
+  static constexpr MergeSortPolicy policy = PolicyGetter{}();
+  static constexpr int BLOCK_THREADS      = policy.threads_per_block;
+  static constexpr int ITEMS_PER_THREAD   = policy.items_per_thread;
+  static constexpr int ITEMS_PER_TILE     = policy.items_per_tile();
 
   using KeysLoadPingIt  = try_make_cache_modified_iterator_t<policy.load_modifier, KeyIteratorT>;
   using ItemsLoadPingIt = try_make_cache_modified_iterator_t<policy.load_modifier, ValueIteratorT>;
