@@ -4,7 +4,7 @@
 //! @file
 //! @rst
 //! The ``cub::WarpReduceBatched`` class provides :ref:`collective <collective-primitives>` methods for
-//! performing batched parallel reductions of multiple arrays partitioned across a CUDA thread warp.
+//! performing batched parallel reductions of multiple arrays partitioned across a CUDA warp.
 //! @endrst
 
 #pragma once
@@ -33,7 +33,7 @@ CUB_NAMESPACE_BEGIN
 
 //! @rst
 //! The ``WarpReduceBatched`` class provides :ref:`collective <collective-primitives>` methods for performing
-//! batched parallel reductions of multiple batches of items partitioned across a CUDA thread warp.
+//! batched parallel reductions of multiple batches of items partitioned across a CUDA warp.
 //!
 //! Overview
 //! ++++++++

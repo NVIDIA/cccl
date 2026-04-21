@@ -3,7 +3,7 @@
 
 //! @file
 //! cub::warp_reduce_batched_wspro provides WSPRO-based batched parallel reduction of items partitioned across a CUDA
-//! thread warp.
+//! warp.
 
 #pragma once
 
@@ -36,8 +36,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-//! @brief WarpReduceBatchedWspro provides WSPRO (Warp Shuffle Parallel Reduction Optimization) based
-//!        batched parallel reduction of items partitioned across a CUDA thread warp.
+//! @brief warp_reduce_batched_wspro provides WSPRO (Warp Shuffle Parallel Reduction Optimization) based
+//!        batched parallel reduction of items partitioned across a CUDA warp.
 //!
 //! @tparam T
 //!   Data type being reduced
