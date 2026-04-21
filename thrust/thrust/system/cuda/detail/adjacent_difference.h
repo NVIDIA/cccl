@@ -77,7 +77,7 @@ cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
         status,
         cub::DeviceAdjacentDifference::SubtractLeft,
         num_items,
-        (d_temp_storage, temp_storage_bytes, first, num_items_fixed, binary_op, stream));
+        (d_temp_storage, temp_storage_bytes, result, num_items_fixed, binary_op, stream));
     }
     else
     {
