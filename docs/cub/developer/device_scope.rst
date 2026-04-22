@@ -35,7 +35,7 @@ These classes then contain static member functions providing corresponding API e
 For example, device-level reduce will look like `cub::DeviceReduce::Sum`.
 Device-scope APIs come in two flavors, two step APIs and environment APIs,
 both return ``cudaError_t`` and take algorithm specific arguments.
-The two step APIs accepts a ``stream`` as the last parameter (``NULL`` stream by default)
+The two step API accepts a ``stream`` as the last parameter (``NULL`` stream by default)
 and the first two parameters are always ``void *d_temp_storage, size_t &temp_storage_bytes``.
 The environment API just takes an environment as the last parameter (empty environment by default).
 The implementation may consist of some minimal argument checking, but should forward as soon as possible to the dispatch layer.
@@ -117,7 +117,7 @@ A more precise description is given later.
       cudaError_t dispatch(..., PolicySelector policy_selector = {}) { // (1)
         cuda::arch_id arch{};
         ptx_arch_id(arch);
-        const[expr] AlgorithmPolicy active_policy = policy_selector(arch); // (2) ????
+        const /*or constexpr*/ AlgorithmPolicy active_policy = policy_selector(arch); // (2)
         // host-side implementation of algorithm, calls kernels
         kernel<PolicySelector><<<grid_size, active_policy.block_threads>>>(...); // calls (3)
       }
@@ -212,7 +212,7 @@ so compile-time branching (i.e. ``if constexpr``) or static assertions using pol
 
 Internally, ``dispatch_arch`` uses ``__CUDA_ARCH_LIST__``/``NV_TARGET_SM_INTEGER_LIST`` (or all known architectures as fallback)
 to create one instantiation of ``f`` per distinct value of ``policy_selector(arch)`` (not per arch).
-This results in several template instantiations of the host side dispatch logic (the lambda).
+This results in one template instantiation of ``f`` per distinct policy value.
 The kernel is then again only instantiated once using the type of the policy selector.
 
 
@@ -238,7 +238,7 @@ which is stateless and the same for all CUDA architectures compiled for.
 
       template <typename PolicySelector>
       constexpr auto current_policy() {
-        return PolicySelector{}(cuda::arch_id{__CUDA_ARCH__ / 10}}); // simplified
+        return PolicySelector{}(cuda::arch_id{__CUDA_ARCH__ / 10}); // simplified
       }
     }
 
@@ -251,8 +251,8 @@ and retrieves a tuning policy from the policy selector.
 The kernel typically uses ``current_policy`` in two places,
 to get the block size to define the launch bounds,
 and inside the kernel to setup various sub algorithms (like agents).
-Since we don't use a policy selector instance, but construct one on the fly from its type,
-we can always retrieve the ``policy`` as a compile-time value.
+Since the policy selector is stateless, we can default-construct it from its type alone
+and always retrieve the ``policy`` as a compile-time value.
 
 Because of C++17 limits, we cannot easily pass the policy around to other functions,
 so it will be converted to the legacy agent policies in many places.
@@ -277,7 +277,7 @@ The default policy selector
 ------------------------------------
 
 CUB contains a default policy selector for each dispatch function.
-Because may dispatch functions are also used by CCCL.C,
+Because many dispatch functions are also used by CCCL.C,
 which compiles them without proper type information,
 we have to provide them in two forms,
 a typeless and a typeful version.
@@ -317,7 +317,7 @@ and is thus suitable to be used in CCCL.C.
 It contains the necessary information on the algorithm's input as data members.
 This policy is only used in the host code of the dispatch function.
 Because it is not stateless anymore, CCCL.C overrides the kernel launcher used by CUB,
-providing the kernel from a JIT-compiled instantiation that uses proper stateless policy selector.
+providing the kernel from a JIT-compiled instantiation that uses a proper stateless policy selector.
 
 So the kernel and the dispatch function when not called from CCCL.C,
 will use the second version of the policy selector, ``policy_selector_from_types``,
@@ -386,7 +386,7 @@ and with designated initializers:
 
       friend constexpr bool operator==(const AlgorithmPolicy& lhs, const AlgorithmPolicy& rhs) { ... }
       friend constexpr bool operator!=(const AlgorithmPolicy& lhs, const AlgorithmPolicy& rhs) { ... }
-      friend std::ostream& operator<<(std::ostream& os, const agent_reduce_policy& p) { ... }
+      friend std::ostream& operator<<(std::ostream& os, const AlgorithmPolicy& p) { ... }
     };
 
 Tuning policies can have various complexities and contain nested structures.
