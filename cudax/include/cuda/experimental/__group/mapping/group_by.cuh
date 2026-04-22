@@ -27,6 +27,7 @@
 #include <cuda/std/__utility/cmp.h>
 
 #include <cuda/experimental/__group/fwd.cuh>
+#include <cuda/experimental/__group/queries.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -43,6 +44,8 @@ struct non_exhaustive_t
 
 _CCCL_DEVICE constexpr non_exhaustive_t non_exhaustive;
 
+inline constexpr unsigned __invalid_count_or_rank = 0xffff'ffff;
+
 // Requirements on mappings:
 // - must be copyable
 // - must implement `map(_Unit, _Level, _Hierarchy)` method that returns an object that satisfies the
@@ -56,16 +59,17 @@ class group_by
   static_assert(::cuda::std::in_range<unsigned>(_Np), "_Np must be within uint32_t range");
 
 public:
-  template <::cuda::std::size_t _NGroups>
+  template <::cuda::std::size_t _NGroups, bool _ParentIsAlwaysExhaustive, bool _ParentIsAlwaysContiguous>
   struct __mapping_result
   {
     unsigned __group_count_;
     unsigned __group_rank_;
     unsigned __rank_;
 
-    [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result __invalid(unsigned __group_count) noexcept
+    [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result
+    invalid(unsigned __group_count = __invalid_count_or_rank) noexcept
     {
-      return {__group_count, 0xffff'ffffu, 0xffff'ffffu};
+      return {__group_count, __invalid_count_or_rank, __invalid_count_or_rank};
     }
 
     [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count() noexcept
@@ -75,12 +79,14 @@ public:
 
     [[nodiscard]] _CCCL_DEVICE_API unsigned group_count() const noexcept
     {
+      _CCCL_ASSERT(__group_count_ != __invalid_count_or_rank,
+                   "querying group_count() by a thread that was not part of the parent group is not allowed");
       return __group_count_;
     }
 
     [[nodiscard]] _CCCL_DEVICE_API unsigned group_rank() const noexcept
     {
-      if constexpr (!_IsExhaustive)
+      if constexpr (!is_always_exhaustive())
       {
         _CCCL_ASSERT(is_valid(), "getting group rank of thread that is not part of the group is UB");
       }
@@ -94,7 +100,7 @@ public:
 
     [[nodiscard]] _CCCL_DEVICE_API unsigned count() const noexcept
     {
-      if constexpr (!_IsExhaustive)
+      if constexpr (!is_always_exhaustive())
       {
         _CCCL_ASSERT(is_valid(), "getting count of thread that is not part of the group is UB");
       }
@@ -103,7 +109,7 @@ public:
 
     [[nodiscard]] _CCCL_DEVICE_API unsigned rank() const noexcept
     {
-      if constexpr (!_IsExhaustive)
+      if constexpr (!is_always_exhaustive())
       {
         _CCCL_ASSERT(is_valid(), "getting rank of thread that is not part of the group is UB");
       }
@@ -112,24 +118,24 @@ public:
 
     [[nodiscard]] _CCCL_DEVICE_API bool is_valid() const noexcept
     {
-      if constexpr (_IsExhaustive)
+      if constexpr (is_always_exhaustive())
       {
         return true;
       }
       else
       {
-        return __rank_ != 0xffff'ffffu;
+        return __rank_ != __invalid_count_or_rank;
       }
     }
 
     [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
     {
-      return _IsExhaustive;
+      return _ParentIsAlwaysExhaustive && _IsExhaustive;
     }
 
     [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
     {
-      return true;
+      return _ParentIsAlwaysContiguous;
     }
   };
 
@@ -154,17 +160,23 @@ public:
     return static_cast<unsigned>(_Np);
   }
 
-  template <class _Unit, class _Level, class _Hierarchy>
-  [[nodiscard]] _CCCL_DEVICE_API auto map(const _Unit& __unit, const _Level&, _Hierarchy __hier) const noexcept
+  template <class _Unit, class _ParentGroup>
+  [[nodiscard]] _CCCL_DEVICE_API auto map(const _Unit& __unit, const _ParentGroup& __parent) const noexcept
   {
-    constexpr auto __static_nunits = _Unit::static_count(_Level{}, __hier);
+    constexpr auto __static_nunits = ::cuda::experimental::__static_count_query_group<_Unit, _ParentGroup>();
     constexpr auto __static_ngroups =
       (__static_nunits != ::cuda::std::dynamic_extent) ? __static_nunits / _Np : ::cuda::std::dynamic_extent;
 
-    const auto __nunits    = _Unit::template count_as<unsigned>(_Level{}, __hier);
-    const auto __unit_rank = _Unit::template rank_as<unsigned>(_Level{}, __hier);
+    using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
+    using _MappingResult =
+      __mapping_result<__static_ngroups,
+                       _ParentMappingResult::is_always_exhaustive(),
+                       _ParentMappingResult::is_always_contiguous()>;
 
-    __mapping_result<__static_ngroups> __ret{};
+    const auto __nunits    = _Unit::template count_as<unsigned>(__parent);
+    const auto __unit_rank = _Unit::template rank_as<unsigned>(__parent);
+
+    _MappingResult __ret{};
     __ret.__group_count_ = __nunits / count();
     __ret.__group_rank_  = __unit_rank / count();
     __ret.__rank_        = __unit_rank % count();
@@ -185,7 +197,7 @@ public:
     {
       if (__ret.__group_rank_ >= __ret.__group_count_)
       {
-        return __mapping_result<__static_ngroups>::__invalid(__ret.__group_count_);
+        return _MappingResult::invalid(__ret.__group_count_);
       }
     }
     return __ret;
@@ -198,6 +210,7 @@ class group_by<::cuda::std::dynamic_extent, _IsExhaustive>
   unsigned __n_;
 
 public:
+  template <bool _ParentIsAlwaysExhaustive, bool _ParentIsAlwaysContiguous>
   struct __mapping_result
   {
     unsigned __group_count_;
@@ -205,9 +218,10 @@ public:
     unsigned __count_;
     unsigned __rank_;
 
-    [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result __invalid(unsigned __group_count) noexcept
+    [[nodiscard]] _CCCL_DEVICE_API static constexpr __mapping_result
+    invalid(unsigned __group_count = __invalid_count_or_rank) noexcept
     {
-      return {__group_count, 0xffff'ffffu, 0xffff'ffffu, 0xffff'ffffu};
+      return {__group_count, __invalid_count_or_rank, __invalid_count_or_rank, __invalid_count_or_rank};
     }
 
     [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_group_count() noexcept
@@ -217,12 +231,14 @@ public:
 
     [[nodiscard]] _CCCL_DEVICE_API unsigned group_count() const noexcept
     {
+      _CCCL_ASSERT(__group_count_ != __invalid_count_or_rank,
+                   "querying group_count() by a thread that was not part of the parent group is not allowed");
       return __group_count_;
     }
 
     [[nodiscard]] _CCCL_DEVICE_API unsigned group_rank() const noexcept
     {
-      if constexpr (!_IsExhaustive)
+      if constexpr (!is_always_exhaustive())
       {
         _CCCL_ASSERT(is_valid(), "getting group rank of thread that is not part of the group is UB");
       }
@@ -236,7 +252,7 @@ public:
 
     [[nodiscard]] _CCCL_DEVICE_API unsigned count() const noexcept
     {
-      if constexpr (!_IsExhaustive)
+      if constexpr (!is_always_exhaustive())
       {
         _CCCL_ASSERT(is_valid(), "getting group rank of thread that is not part of the group is UB");
       }
@@ -245,7 +261,7 @@ public:
 
     [[nodiscard]] _CCCL_DEVICE_API unsigned rank() const noexcept
     {
-      if constexpr (!_IsExhaustive)
+      if constexpr (!is_always_exhaustive())
       {
         _CCCL_ASSERT(is_valid(), "getting rank of thread that is not part of the group is UB");
       }
@@ -254,24 +270,24 @@ public:
 
     [[nodiscard]] _CCCL_DEVICE_API bool is_valid() const noexcept
     {
-      if constexpr (_IsExhaustive)
+      if constexpr (is_always_exhaustive())
       {
         return true;
       }
       else
       {
-        return __rank_ != 0xffff'ffffu;
+        return __rank_ != __invalid_count_or_rank;
       }
     }
 
     [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
     {
-      return _IsExhaustive;
+      return _ParentIsAlwaysExhaustive && _IsExhaustive;
     }
 
     [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_contiguous() noexcept
     {
-      return true;
+      return _ParentIsAlwaysContiguous;
     }
   };
 
@@ -304,14 +320,17 @@ public:
     return __n_;
   }
 
-  template <class _Unit, class _Level, class _Hierarchy>
-  [[nodiscard]] _CCCL_DEVICE_API auto
-  map(const _Unit& __unit, const _Level& __level, const _Hierarchy& __hier) const noexcept
+  template <class _Unit, class _ParentGroup>
+  [[nodiscard]] _CCCL_DEVICE_API auto map(const _Unit& __unit, const _ParentGroup& __parent) const noexcept
   {
-    const auto __nunits    = __unit.template count_as<unsigned>(__level, __hier);
-    const auto __unit_rank = __unit.template rank_as<unsigned>(__level, __hier);
+    using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
+    using _MappingResult =
+      __mapping_result<_ParentMappingResult::is_always_exhaustive(), _ParentMappingResult::is_always_contiguous()>;
 
-    __mapping_result __ret{};
+    const auto __nunits    = __unit.template count_as<unsigned>(__parent);
+    const auto __unit_rank = __unit.template rank_as<unsigned>(__parent);
+
+    _MappingResult __ret{};
     __ret.__group_count_ = __nunits / __n_;
     __ret.__group_rank_  = __unit_rank / __n_;
     __ret.__count_       = __n_;
@@ -326,7 +345,7 @@ public:
     {
       if (__ret.__group_rank_ >= __ret.__group_count_)
       {
-        return __mapping_result::__invalid(__ret.__group_count_);
+        return _MappingResult::invalid(__ret.__group_count_);
       }
     }
     return __ret;

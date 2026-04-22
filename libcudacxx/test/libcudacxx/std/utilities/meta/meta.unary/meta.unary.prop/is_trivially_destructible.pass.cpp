@@ -59,6 +59,7 @@ private:
   TEST_FUNC ~PrivateDestructor() {}
 };
 
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
 struct VirtualPublicDestructor
 {
 public:
@@ -90,6 +91,7 @@ struct PurePrivateDestructor
 private:
   TEST_FUNC virtual ~PurePrivateDestructor() = 0;
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 class Empty
 {};
@@ -102,6 +104,7 @@ struct bit_zero
   int : 0;
 };
 
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
 class Abstract
 {
   TEST_FUNC virtual void foo() = 0;
@@ -111,6 +114,7 @@ class AbstractDestructor
 {
   TEST_FUNC virtual ~AbstractDestructor() = 0;
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 struct A
 {
@@ -122,10 +126,12 @@ int main(int, char**)
   test_is_not_trivially_destructible<void>();
   test_is_not_trivially_destructible<A>();
   test_is_not_trivially_destructible<char[]>();
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
   test_is_not_trivially_destructible<VirtualPublicDestructor>();
   test_is_not_trivially_destructible<PurePublicDestructor>();
 
   test_is_trivially_destructible<Abstract>();
+#endif // !_CCCL_TILE_COMPILATION()
   test_is_trivially_destructible<Union>();
   test_is_trivially_destructible<Empty>();
   test_is_trivially_destructible<int&>();
@@ -139,10 +145,12 @@ int main(int, char**)
   // requires access control sfinae
   test_is_not_trivially_destructible<ProtectedDestructor>();
   test_is_not_trivially_destructible<PrivateDestructor>();
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
   test_is_not_trivially_destructible<VirtualProtectedDestructor>();
   test_is_not_trivially_destructible<VirtualPrivateDestructor>();
   test_is_not_trivially_destructible<PureProtectedDestructor>();
   test_is_not_trivially_destructible<PurePrivateDestructor>();
+#endif // !_CCCL_TILE_COMPILATION()
 
 #if !_CCCL_IS_IDENTIFIER(_Atomic)
   test_is_trivially_destructible<_Atomic int>();

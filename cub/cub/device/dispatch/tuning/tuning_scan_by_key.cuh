@@ -1533,7 +1533,7 @@ struct policy_selector
 
         if (key_size == 16 && primitive_accum)
         {
-          switch (accum_size)
+          switch (value_size)
           {
             case 1:
               return {192,
@@ -1853,7 +1853,7 @@ struct policy_selector
 
         if (key_size == 16 && primitive_accum)
         {
-          switch (accum_size)
+          switch (value_size)
           {
             case 1:
               return {192,

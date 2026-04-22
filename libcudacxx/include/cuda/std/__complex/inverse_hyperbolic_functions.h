@@ -246,7 +246,7 @@ template <class _Tp>
   // lo parts, all needed:
   __inner_most_term_lo += __x_abs_sq_p1_sq_lo - _Tp{4} * __imagx_sq_lo;
 
-  // We can have some slightly bad cases here due to catastrohip cancellation that can't be fixed easily.
+  // We can have some slightly bad cases here due to catastrophic cancellation that can't be fixed easily.
   // We still need to to the extended-sqrt on these values, so we fix them now.
   // It occurs around "real ~= small" and "imag ~= (1 - small)", and imag < 1.
   // Worked out through targeted testing on fp64 and fp32.
@@ -690,34 +690,111 @@ _CCCL_API inline complex<__half> acosh(const complex<__half>& __x)
 template <class _Tp>
 [[nodiscard]] _CCCL_API inline complex<_Tp> atanh(const complex<_Tp>& __x)
 {
-  constexpr _Tp __pi = __numbers<_Tp>::__pi();
-  if (::cuda::std::isinf(__x.imag()))
+  constexpr int32_t __mant_nbits = __fp_mant_nbits_v<__fp_format_of_v<_Tp>>;
+  constexpr int32_t __exp_bias   = __fp_exp_bias_v<__fp_format_of_v<_Tp>>;
+
+  constexpr _Tp __pi  = __numbers<_Tp>::__pi();
+  constexpr _Tp __ln2 = __numbers<_Tp>::__ln2();
+
+  _Tp __realx = ::cuda::std::fabs(__x.real());
+  _Tp __imagx = ::cuda::std::fabs(__x.imag());
+
+  if (!::cuda::std::isfinite(__x.real()) || !::cuda::std::isfinite(__x.imag()))
   {
-    return complex<_Tp>(::cuda::std::copysign(_Tp(0), __x.real()), ::cuda::std::copysign(__pi / _Tp(2), __x.imag()));
-  }
-  if (::cuda::std::isnan(__x.imag()))
-  {
-    if (::cuda::std::isinf(__x.real()) || __x.real() == _Tp(0))
+    if (::cuda::std::isnan(__x.imag()))
     {
-      return complex<_Tp>(::cuda::std::copysign(_Tp(0), __x.real()), __x.imag());
+      if (::cuda::std::isinf(__x.real()) || __x.real() == _Tp{0})
+      {
+        return complex<_Tp>(::cuda::std::copysign(_Tp{0}, __x.real()), __x.imag());
+      }
+      return complex<_Tp>{__x.imag(), __x.imag()};
     }
-    return complex<_Tp>(__x.imag(), __x.imag());
+    if (::cuda::std::isinf(__x.real()) || ::cuda::std::isinf(__x.imag()))
+    {
+      return complex<_Tp>{::cuda::std::copysign(_Tp{0}, __x.real()),
+                          ::cuda::std::copysign(_Tp{0.5} * __pi, __x.imag())};
+    }
   }
-  if (::cuda::std::isnan(__x.real()))
+
+  // A case that for various reasons does not pass easily through the algorithm below:
+  if ((__realx == _Tp{1}) && (__imagx == _Tp{0}))
   {
-    return complex<_Tp>(__x.real(), __x.real());
+    return complex<_Tp>{::cuda::std::copysign(numeric_limits<_Tp>::infinity(), __x.real()), __x.imag()};
   }
-  if (::cuda::std::isinf(__x.real()))
+
+  // The real part of atanh(__x) is:
+  //      0.25 * log1p(4 * real / ((1.0 - real)^2) + imag^2)
+  //
+  // However there are underflow/overflow issues doing it directly.
+  // If (real - 1)^2 + imag^2 overflows we can do some scalar scaling,
+  // and the only time (real - 1)^2 + imag^2 underflows is if
+  // (real == 1.0) and (imag^2 becomes 0).
+  // In this case we estimate with (with an extra fix for denormal imag):
+  //     0.5 * log1p(2 / imag)
+
+  // Create const powers of 2 for over/underflow scaling:
+  constexpr int32_t __small_bound_exp = -(__exp_bias / 2);
+  const _Tp __small_bound             = ::cuda::std::__fp_set_exp<_Tp>(_Tp{1}, __small_bound_exp);
+
+  const bool __x_big           = (__realx * __realx + __imagx * __imagx == numeric_limits<_Tp>::infinity());
+  const bool __x_reduced_small = (__realx == _Tp{1}) && (__imagx <= __small_bound);
+
+  const _Tp __two_m_x_large_scale_factor = _Tp{_Tp{0.25} * __small_bound};
+  if (__x_big)
   {
-    return complex<_Tp>(::cuda::std::copysign(_Tp(0), __x.real()), ::cuda::std::copysign(__pi / _Tp(2), __x.imag()));
+    __realx *= __two_m_x_large_scale_factor;
+    __imagx *= __two_m_x_large_scale_factor;
   }
-  if (::cuda::std::abs(__x.real()) == _Tp(1) && __x.imag() == _Tp(0))
+  else
   {
-    return complex<_Tp>(::cuda::std::copysign(numeric_limits<_Tp>::infinity(), __x.real()),
-                        ::cuda::std::copysign(_Tp(0), __x.imag()));
+    __realx -= _Tp{1.0};
   }
-  complex<_Tp> __z = ::cuda::std::log((_Tp(1) + __x) / (_Tp(1) - __x)) / _Tp(2);
-  return complex<_Tp>(::cuda::std::copysign(__z.real(), __x.real()), ::cuda::std::copysign(__z.imag(), __x.imag()));
+
+  // Separately get the top and bottom of:
+  //      4.0 * real / ((1.0 - real)^2 + imag^2)
+  _Tp __numerator   = ::cuda::std::fabs(__x.real()); // Move the 4.0 factor below.
+  _Tp __denominator = _Tp{0.25} * (__realx * __realx + __imagx * __imagx);
+
+  if (__x_reduced_small)
+  {
+    // We want log1p(2.0 / __imagx), however __imagx can be denormal.
+    // Multiply by 2^25, and account for it after log1p.
+    __numerator = _Tp{1};
+
+    // 2^25 for float, 2^54 for double.
+    constexpr int32_t __denormal_scale_exp = __mant_nbits + 2;
+    const _Tp __denormal_scale             = ::cuda::std::__fp_set_exp(_Tp(1), __denormal_scale_exp);
+
+    __denominator = (__imagx * __denormal_scale);
+  }
+
+  _Tp __pre_log1p = __numerator * (_Tp{1} / __denominator);
+
+  // Correct for overflow:
+  if (__x_big)
+  {
+    // __two_m_x_large_scale_factor ^ 2 is denormal and causes issues, so we multiply separately twice:
+    __pre_log1p = (__pre_log1p * __two_m_x_large_scale_factor) * __two_m_x_large_scale_factor;
+  }
+
+  _Tp __ans_real = _Tp{0.25} * ::cuda::std::log1p(__pre_log1p);
+
+  const _Tp __atan2_input1 = __x.imag();
+  // 0.5 * (real^2 + imag^2 - 1)
+  const _Tp __atan2_input2 =
+    _Tp{-0.5} * (::cuda::std::fma(__x.imag(), __x.imag(), ::cuda::std::fma(__x.real(), __x.real(), -_Tp{1})));
+
+  const _Tp __ans_imag = _Tp{0.5} * ::cuda::std::atan2(__atan2_input1, __atan2_input2);
+
+  if (__x_reduced_small)
+  {
+    // Getting (mant_bits + 3) * __ln2 via templated arithmetic gives us one less bit of accuracy than using a single
+    // constant alas.
+    constexpr _Tp __ans_real_small_correction = _Tp{0.5} * _Tp{__mant_nbits + 3} * __ln2;
+    __ans_real                                = ::cuda::std::fma(_Tp{2}, __ans_real, __ans_real_small_correction);
+  }
+
+  return complex<_Tp>{::cuda::std::copysign(__ans_real, __x.real()), __ans_imag};
 }
 
 // We have performance issues with some trigonometric functions with extended floating point types

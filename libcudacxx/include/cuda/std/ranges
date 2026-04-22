@@ -21,10 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4848)
-
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/all.h>
 #include <cuda/std/__ranges/concepts.h>
@@ -66,7 +62,5 @@ _CCCL_DIAG_SUPPRESS_MSVC(4848)
 // [tuple.helper]
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
-
-_CCCL_DIAG_POP
 
 #endif //_CUDA_STD_RANGES

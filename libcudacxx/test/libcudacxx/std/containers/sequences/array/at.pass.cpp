@@ -103,6 +103,7 @@ void test_exceptions()
     }
   }
 
+#  if !_CCCL_TILE_COMPILATION() // error: Internal Compiler Error: "call to unknown tile builtin function!"
   {
     cuda::std::array<int, 0> array = {};
 
@@ -120,6 +121,7 @@ void test_exceptions()
       assert(false);
     }
   }
+#  endif // !_CCCL_TILE_COMPILATION()
 }
 #endif // TEST_HAS_EXCEPTIONS()
 

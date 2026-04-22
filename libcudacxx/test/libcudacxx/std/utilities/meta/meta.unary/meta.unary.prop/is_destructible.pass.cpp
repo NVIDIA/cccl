@@ -46,10 +46,12 @@ TEST_FUNC void test_is_not_destructible()
 class Empty
 {};
 
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
 class NotEmpty
 {
   TEST_FUNC virtual ~NotEmpty();
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 union Union
 {};
@@ -66,6 +68,7 @@ struct A
 
 using Function = void();
 
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
 struct PublicAbstract
 {
 public:
@@ -81,6 +84,7 @@ struct PrivateAbstract
 private:
   TEST_FUNC virtual void foo() = 0;
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 struct PublicDestructor
 {
@@ -98,6 +102,7 @@ private:
   TEST_FUNC ~PrivateDestructor() {}
 };
 
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
 struct VirtualPublicDestructor
 {
 public:
@@ -129,6 +134,7 @@ struct PurePrivateDestructor
 private:
   TEST_FUNC virtual ~PurePrivateDestructor() = 0;
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 struct DeletedPublicDestructor
 {
@@ -146,6 +152,7 @@ private:
   TEST_FUNC ~DeletedPrivateDestructor() = delete;
 };
 
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
 struct DeletedVirtualPublicDestructor
 {
 public:
@@ -161,6 +168,7 @@ struct DeletedVirtualPrivateDestructor
 private:
   TEST_FUNC virtual ~DeletedVirtualPrivateDestructor() = delete;
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 int main(int, char**)
 {
@@ -175,12 +183,14 @@ int main(int, char**)
   test_is_destructible<char[3]>();
   test_is_destructible<bit_zero>();
   test_is_destructible<int[3]>();
+  test_is_destructible<PublicDestructor>();
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
   test_is_destructible<ProtectedAbstract>();
   test_is_destructible<PublicAbstract>();
   test_is_destructible<PrivateAbstract>();
-  test_is_destructible<PublicDestructor>();
   test_is_destructible<VirtualPublicDestructor>();
   test_is_destructible<PurePublicDestructor>();
+#endif // !_CCCL_TILE_COMPILATION()
 
   test_is_not_destructible<int[]>();
   test_is_not_destructible<void>();
@@ -189,21 +199,26 @@ int main(int, char**)
   // Test access controlled destructors
   test_is_not_destructible<ProtectedDestructor>();
   test_is_not_destructible<PrivateDestructor>();
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
   test_is_not_destructible<VirtualProtectedDestructor>();
   test_is_not_destructible<VirtualPrivateDestructor>();
   test_is_not_destructible<PureProtectedDestructor>();
   test_is_not_destructible<PurePrivateDestructor>();
+#endif // !_CCCL_TILE_COMPILATION()
 
   // Test deleted constructors
   test_is_not_destructible<DeletedPublicDestructor>();
   test_is_not_destructible<DeletedProtectedDestructor>();
   test_is_not_destructible<DeletedPrivateDestructor>();
+
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
   // test_is_not_destructible<DeletedVirtualPublicDestructor>(); // previously failed due to clang bug #20268
   test_is_not_destructible<DeletedVirtualProtectedDestructor>();
   test_is_not_destructible<DeletedVirtualPrivateDestructor>();
 
   // Test private destructors
   test_is_not_destructible<NotEmpty>();
+#endif // !_CCCL_TILE_COMPILATION()
 
   return 0;
 }

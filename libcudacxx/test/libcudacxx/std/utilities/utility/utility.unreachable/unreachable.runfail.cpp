@@ -8,6 +8,9 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: msvc
 
+// XFAIL: enable-tile
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 #include <cuda/std/utility>
 
 int main(int, char**)

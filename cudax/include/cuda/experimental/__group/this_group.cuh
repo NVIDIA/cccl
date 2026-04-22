@@ -209,9 +209,9 @@ public:
   {}
 #    endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
-  _CCCL_DEVICE_API void sync() noexcept {}
+  _CCCL_DEVICE_API void sync() const noexcept {}
 
-  _CCCL_DEVICE_API void sync_aligned() noexcept {}
+  _CCCL_DEVICE_API void sync_aligned() const noexcept {}
 
   [[nodiscard]] _CCCL_DEVICE_API constexpr __mapping_result_type __mapping_result() const noexcept
   {
@@ -261,12 +261,12 @@ public:
   {}
 #    endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
-  _CCCL_DEVICE_API void sync() noexcept
+  _CCCL_DEVICE_API void sync() const noexcept
   {
     ::__syncwarp();
   }
 
-  _CCCL_DEVICE_API void sync_aligned() noexcept
+  _CCCL_DEVICE_API void sync_aligned() const noexcept
   {
     ::__syncwarp();
   }
@@ -319,12 +319,12 @@ public:
   _CCCL_DEVICE_API this_block(const ::cooperative_groups::thread_block&) noexcept {}
 #    endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
-  _CCCL_DEVICE_API void sync() noexcept
+  _CCCL_DEVICE_API void sync() const noexcept
   {
     ::cuda::experimental::__block_sync<false>();
   }
 
-  _CCCL_DEVICE_API void sync_aligned() noexcept
+  _CCCL_DEVICE_API void sync_aligned() const noexcept
   {
     ::cuda::experimental::__block_sync<true>();
   }
@@ -375,7 +375,7 @@ public:
   _CCCL_DEVICE_API this_cluster(const ::cooperative_groups::cluster_group&) noexcept {}
 #    endif // _CCCL_HAS_COOPERATIVE_GROUPS() && defined(_CG_HAS_CLUSTER_GROUP)
 
-  _CCCL_DEVICE_API void sync() noexcept
+  _CCCL_DEVICE_API void sync() const noexcept
   {
     if constexpr (_Hierarchy::has_level(cluster))
     {
@@ -387,7 +387,7 @@ public:
     }
   }
 
-  _CCCL_DEVICE_API void sync_aligned() noexcept
+  _CCCL_DEVICE_API void sync_aligned() const noexcept
   {
     if constexpr (_Hierarchy::has_level(cluster))
     {
@@ -448,7 +448,7 @@ class this_grid : __this_group_base<grid_level, _Hierarchy>
 
 #  if _CCCL_CUDA_COMPILATION()
   template <bool _Aligned>
-  _CCCL_DEVICE_API void __sync_impl() noexcept
+  _CCCL_DEVICE_API void __sync_impl() const noexcept
   {
     const auto __barrier_ptr = ::cuda::experimental::__get_grid_barrier_ptr();
 
@@ -511,12 +511,12 @@ public:
   _CCCL_DEVICE_API this_grid(const ::cooperative_groups::grid_group&) noexcept {}
 #    endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
-  _CCCL_DEVICE_API void sync() noexcept
+  _CCCL_DEVICE_API void sync() const noexcept
   {
     __sync_impl<false>();
   }
 
-  _CCCL_DEVICE_API void sync_aligned() noexcept
+  _CCCL_DEVICE_API void sync_aligned() const noexcept
   {
     __sync_impl<true>();
   }
@@ -542,6 +542,36 @@ _CCCL_HOST_DEVICE this_grid(const _Hierarchy&) -> this_grid<__hierarchy_type_of<
 #  if _CCCL_HAS_COOPERATIVE_GROUPS()
 _CCCL_HOST_DEVICE this_grid(const ::cooperative_groups::grid_group&) -> this_grid<__implicit_hierarchy_t>;
 #  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
+
+_CCCL_TEMPLATE(class _Level, class... _Args)
+_CCCL_REQUIRES(__is_hierarchy_level_v<_Level>)
+[[nodiscard]] _CCCL_DEVICE_API auto make_this_group(const _Level&, _Args&&... __args) noexcept
+{
+  if constexpr (::cuda::std::is_same_v<_Level, thread_level>)
+  {
+    return this_thread{::cuda::std::forward<_Args>(__args)...};
+  }
+  else if constexpr (::cuda::std::is_same_v<_Level, warp_level>)
+  {
+    return this_warp{::cuda::std::forward<_Args>(__args)...};
+  }
+  else if constexpr (::cuda::std::is_same_v<_Level, block_level>)
+  {
+    return this_block{::cuda::std::forward<_Args>(__args)...};
+  }
+  else if constexpr (::cuda::std::is_same_v<_Level, cluster_level>)
+  {
+    return this_cluster{::cuda::std::forward<_Args>(__args)...};
+  }
+  else if constexpr (::cuda::std::is_same_v<_Level, grid_level>)
+  {
+    return this_grid{::cuda::std::forward<_Args>(__args)...};
+  }
+  else
+  {
+    static_assert(::cuda::std::__always_false_v<_Level>, "unknown _Level");
+  }
+}
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED

@@ -39,6 +39,7 @@ TEST_FUNC void test_pair_rv()
   static_assert(test_convertible<P2, UP2>() == CanConvert);
 }
 
+#if !_CCCL_TILE_COMPILATION() // virtual functions are unsupported in tile code
 struct Base
 {
   TEST_FUNC virtual ~Base() {}
@@ -46,6 +47,7 @@ struct Base
 
 struct Derived : public Base
 {};
+#endif // !_CCCL_TILE_COMPILATION()
 
 template <class T, class U>
 struct DPair : public cuda::std::pair<T, U>

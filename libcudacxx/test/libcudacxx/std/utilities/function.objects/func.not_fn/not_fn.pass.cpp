@@ -701,7 +701,8 @@ TEST_FUNC void call_operator_noexcept_test()
   }
 }
 
-#if !TEST_CUDA_COMPILER(CLANG) // https://github.com/llvm/llvm-project/issues/67533
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
+#  if !TEST_CUDA_COMPILER(CLANG) // https://github.com/llvm/llvm-project/issues/67533
 TEST_FUNC void test_lwg2767()
 {
   // See https://cplusplus.github.io/LWG/lwg-defects.html#2767
@@ -727,7 +728,8 @@ TEST_FUNC void test_lwg2767()
     assert(b);
   }
 }
-#endif // TEST_CUDA_COMPILER(CLANG)
+#  endif // TEST_CUDA_COMPILER(CLANG)
+#endif // !_CCCL_TILE_COMPILATION
 
 int main(int, char**)
 {
@@ -740,9 +742,11 @@ int main(int, char**)
   call_operator_sfinae_test(); // somewhat of an extension
   // call_operator_forwarding_test();
   call_operator_noexcept_test();
-#if !TEST_CUDA_COMPILER(CLANG)
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
+#  if !TEST_CUDA_COMPILER(CLANG)
   test_lwg2767();
-#endif // TEST_CUDA_COMPILER(CLANG)
+#  endif // TEST_CUDA_COMPILER(CLANG)
+#endif // !_CCCL_TILE_COMPILATION()
 
   return 0;
 }

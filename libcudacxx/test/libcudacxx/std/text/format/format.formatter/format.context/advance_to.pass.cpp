@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: bit field read/write is unsupported in tile code
+
 // <cuda/std/format>
 
 // void advance_to(iterator it);
