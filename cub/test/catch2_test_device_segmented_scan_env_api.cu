@@ -152,7 +152,7 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit accepts stream", 
 C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum (separate offsets) accepts stream", "[segmented_scan][env]")
 {
   // example-begin exclusive-segmented-sum-separate-env
-  const auto sentinel             = -1;
+  const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
   thrust::device_vector<int> d_in_offsets{0, 3, 5, 8};
   thrust::device_vector<int> d_out_offsets{0, 4, 7};
@@ -182,7 +182,7 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum (separate offsets) acc
 C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan (separate offsets) accepts stream", "[segmented_scan][env]")
 {
   // example-begin exclusive-segmented-scan-separate-env
-  const auto sentinel             = -1;
+  const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
   thrust::device_vector<int> d_in_offsets{0, 3, 5, 8};
   thrust::device_vector<int> d_out_offsets{0, 4, 7};
@@ -209,8 +209,7 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan (separate offsets) ac
     std::cerr << "cub::DeviceSegmentedScan::ExclusiveSegmentedScan failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{
-    100, 101, 103, sentinel, 100, 104, sentinel, 100, 106, 113};
+  thrust::device_vector<int> expected{100, 101, 103, sentinel, 100, 104, sentinel, 100, 106, 113};
   // example-end exclusive-segmented-scan-separate-env
   stream.sync();
 
@@ -221,7 +220,7 @@ C2H_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan (separate offsets) ac
 C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum (separate offsets) accepts stream", "[segmented_scan][env]")
 {
   // example-begin inclusive-segmented-sum-separate-env
-  const auto sentinel             = -1;
+  const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
   thrust::device_vector<int> d_in_offsets{0, 3, 5, 8};
   thrust::device_vector<int> d_out_offsets{0, 4, 7};
@@ -251,7 +250,7 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum (separate offsets) acc
 C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan (separate offsets) accepts stream", "[segmented_scan][env]")
 {
   // example-begin inclusive-segmented-scan-separate-env
-  const auto sentinel             = -1;
+  const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
   thrust::device_vector<int> d_in_offsets{0, 3, 5, 8};
   thrust::device_vector<int> d_out_offsets{0, 4, 7};
@@ -289,7 +288,7 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit (separate offsets
          "[segmented_scan][env]")
 {
   // example-begin inclusive-segmented-scan-init-separate-env
-  const auto sentinel             = -1;
+  const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
   thrust::device_vector<int> d_in_offsets{0, 3, 5, 8};
   thrust::device_vector<int> d_out_offsets{0, 4, 7};
@@ -316,8 +315,7 @@ C2H_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit (separate offsets
     std::cerr << "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{
-    101, 103, 106, sentinel, 104, 109, sentinel, 106, 113, 121};
+  thrust::device_vector<int> expected{101, 103, 106, sentinel, 104, 109, sentinel, 106, 113, 121};
   // example-end inclusive-segmented-scan-init-separate-env
   stream.sync();
 

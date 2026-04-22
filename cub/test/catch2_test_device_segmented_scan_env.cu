@@ -118,7 +118,7 @@ TEST_CASE("Device segmented inclusive scan init works with default environment",
 TEST_CASE("Device segmented exclusive sum with separate offsets works with default environment",
           "[segmented_scan][device]")
 {
-  const auto sentinel             = -1;
+  const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
   thrust::device_vector<int> d_in_offsets{0, 3, 5, 8};
   thrust::device_vector<int> d_out_offsets{0, 4, 7};
@@ -138,7 +138,7 @@ TEST_CASE("Device segmented exclusive sum with separate offsets works with defau
 TEST_CASE("Device segmented exclusive scan with separate offsets works with default environment",
           "[segmented_scan][device]")
 {
-  const auto sentinel             = -1;
+  const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
   thrust::device_vector<int> d_in_offsets{0, 3, 5, 8};
   thrust::device_vector<int> d_out_offsets{0, 4, 7};
@@ -152,15 +152,14 @@ TEST_CASE("Device segmented exclusive scan with separate offsets works with defa
     == cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
       d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}, 100));
 
-  thrust::device_vector<int> expected{
-    100, 101, 103, sentinel, 100, 104, sentinel, 100, 106, 113};
+  thrust::device_vector<int> expected{100, 101, 103, sentinel, 100, 104, sentinel, 100, 106, 113};
   REQUIRE(d_out == expected);
 }
 
 TEST_CASE("Device segmented inclusive sum with separate offsets works with default environment",
           "[segmented_scan][device]")
 {
-  const auto sentinel             = -1;
+  const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
   thrust::device_vector<int> d_in_offsets{0, 3, 5, 8};
   thrust::device_vector<int> d_out_offsets{0, 4, 7};
@@ -180,7 +179,7 @@ TEST_CASE("Device segmented inclusive sum with separate offsets works with defau
 TEST_CASE("Device segmented inclusive scan with separate offsets works with default environment",
           "[segmented_scan][device]")
 {
-  const auto sentinel             = -1;
+  const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
   thrust::device_vector<int> d_in_offsets{0, 3, 5, 8};
   thrust::device_vector<int> d_out_offsets{0, 4, 7};
@@ -201,7 +200,7 @@ TEST_CASE("Device segmented inclusive scan with separate offsets works with defa
 TEST_CASE("Device segmented inclusive scan init with separate offsets works with default environment",
           "[segmented_scan][device]")
 {
-  const auto sentinel             = -1;
+  const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
   thrust::device_vector<int> d_in_offsets{0, 3, 5, 8};
   thrust::device_vector<int> d_out_offsets{0, 4, 7};
@@ -215,8 +214,7 @@ TEST_CASE("Device segmented inclusive scan init with separate offsets works with
     == cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
       d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, ::cuda::std::plus<>{}, 100));
 
-  thrust::device_vector<int> expected{
-    101, 103, 106, sentinel, 104, 109, sentinel, 106, 113, 121};
+  thrust::device_vector<int> expected{101, 103, 106, sentinel, 104, 109, sentinel, 106, 113, 121};
   REQUIRE(d_out == expected);
 }
 
@@ -360,7 +358,7 @@ C2H_TEST("Device segmented inclusive scan init uses environment", "[segmented_sc
 
 C2H_TEST("Device segmented exclusive sum with separate offsets uses environment", "[segmented_scan][device]")
 {
-  const auto sentinel             = -1;
+  const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
   thrust::device_vector<int> d_in_offsets{0, 3, 5, 8};
   thrust::device_vector<int> d_out_offsets{0, 4, 7};
@@ -393,7 +391,7 @@ C2H_TEST("Device segmented exclusive sum with separate offsets uses environment"
 
 C2H_TEST("Device segmented exclusive scan with separate offsets uses environment", "[segmented_scan][device]")
 {
-  const auto sentinel             = -1;
+  const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
   thrust::device_vector<int> d_in_offsets{0, 3, 5, 8};
   thrust::device_vector<int> d_out_offsets{0, 4, 7};
@@ -430,14 +428,13 @@ C2H_TEST("Device segmented exclusive scan with separate offsets uses environment
     100,
     env);
 
-  thrust::device_vector<int> expected{
-    100, 101, 103, sentinel, 100, 104, sentinel, 100, 106, 113};
+  thrust::device_vector<int> expected{100, 101, 103, sentinel, 100, 104, sentinel, 100, 106, 113};
   REQUIRE(d_out == expected);
 }
 
 C2H_TEST("Device segmented inclusive sum with separate offsets uses environment", "[segmented_scan][device]")
 {
-  const auto sentinel             = -1;
+  const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
   thrust::device_vector<int> d_in_offsets{0, 3, 5, 8};
   thrust::device_vector<int> d_out_offsets{0, 4, 7};
@@ -470,7 +467,7 @@ C2H_TEST("Device segmented inclusive sum with separate offsets uses environment"
 
 C2H_TEST("Device segmented inclusive scan with separate offsets uses environment", "[segmented_scan][device]")
 {
-  const auto sentinel             = -1;
+  const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
   thrust::device_vector<int> d_in_offsets{0, 3, 5, 8};
   thrust::device_vector<int> d_out_offsets{0, 4, 7};
@@ -504,7 +501,7 @@ C2H_TEST("Device segmented inclusive scan with separate offsets uses environment
 
 C2H_TEST("Device segmented inclusive scan init with separate offsets uses environment", "[segmented_scan][device]")
 {
-  const auto sentinel             = -1;
+  const auto sentinel               = -1;
   ::cuda::std::int64_t num_segments = 3;
   thrust::device_vector<int> d_in_offsets{0, 3, 5, 8};
   thrust::device_vector<int> d_out_offsets{0, 4, 7};
@@ -541,7 +538,6 @@ C2H_TEST("Device segmented inclusive scan init with separate offsets uses enviro
     100,
     env);
 
-  thrust::device_vector<int> expected{
-    101, 103, 106, sentinel, 104, 109, sentinel, 106, 113, 121};
+  thrust::device_vector<int> expected{101, 103, 106, sentinel, 104, 109, sentinel, 106, 113, 121};
   REQUIRE(d_out == expected);
 }
