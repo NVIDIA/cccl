@@ -22,6 +22,8 @@
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cmath/ceil_div.h>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk
@@ -58,6 +60,11 @@ struct agent_batched_topk_worker_per_segment
   static constexpr int tile_size        = block_threads * items_per_thread;
   static constexpr int epilogue_items_per_thread = active_policy.epilogue_items_per_thread;
   static constexpr int epilogue_tile_size        = block_threads * epilogue_items_per_thread;
+  // TODO (elstehle): This is just a placeholder for now, we will need to specialize this for the large segment agent.
+  static constexpr int large_segment_agent_tile_size = tile_size;
+
+  static constexpr bool any_small_segments  = params::static_min_value_v<SegmentSizeParameterT> <= tile_size;
+  static constexpr bool only_small_segments = params::static_max_value_v<SegmentSizeParameterT> <= tile_size;
 
   // Check if we are dealing with keys-only or key-value pairs
   static constexpr bool is_keys_only = ::cuda::std::is_same_v<value_t, cub::NullType>;
@@ -113,16 +120,12 @@ struct agent_batched_topk_worker_per_segment
   KParameterT k_param;
   SelectDirectionParameterT select_directions;
   NumSegmentsParameterT num_segments;
-  // Currently we use int for segment_id, so int has be enough for these atomic counters.
-  int* d_retirement_count;
-  int* d_large_segment_queue;
-  key_it_t* d_key_large_segments_it;
-  key_it_t* d_key_large_segments_out_it;
-  value_it_t* d_value_large_segments_it;
-  value_it_t* d_value_large_segments_out_it;
-  [[maybe_unused]] segment_size_val_t* d_large_segments_sizes;
-  [[maybe_unused]] k_val_t* d_large_segments_k;
-  [[maybe_unused]] select_direction_val_t* d_large_segments_select_directions;
+  // Currently we use int for segment_id = blockIdx.x, so int has be enough for all three.
+  int* d_large_segments_counter;
+  int* d_retirement_counter;
+  int* d_large_segments_ids;
+  // Assuming the large segment agent will also use int for tile_id = blockIdx.x.
+  int* d_large_segments_tile_offsets;
   // -------------------------------------------------------------------------
   // Constructor
   // -------------------------------------------------------------------------
@@ -136,15 +139,10 @@ struct agent_batched_topk_worker_per_segment
     KParameterT k_param,
     SelectDirectionParameterT select_directions,
     NumSegmentsParameterT num_segments,
-    int* d_retirement_count,
-    int* d_large_segment_queue,
-    key_it_t* d_key_large_segments_it,
-    key_it_t* d_key_large_segments_out_it,
-    value_it_t* d_value_large_segments_it,
-    value_it_t* d_value_large_segments_out_it,
-    segment_size_val_t* d_large_segments_sizes,
-    k_val_t* d_large_segments_k,
-    select_direction_val_t* d_large_segments_select_directions)
+    int* d_large_segments_counter,
+    int* d_retirement_counter,
+    int* d_large_segments_ids,
+    int* d_large_segments_tile_offsets)
       : temp_storage(temp_storage.Alias())
       , d_key_segments_it(d_key_segments_it)
       , d_key_segments_out_it(d_key_segments_out_it)
@@ -154,15 +152,10 @@ struct agent_batched_topk_worker_per_segment
       , k_param(k_param)
       , select_directions(select_directions)
       , num_segments(num_segments)
-      , d_retirement_count(d_retirement_count)
-      , d_large_segment_queue(d_large_segment_queue)
-      , d_key_large_segments_it(d_key_large_segments_it)
-      , d_key_large_segments_out_it(d_key_large_segments_out_it)
-      , d_value_large_segments_it(d_value_large_segments_it)
-      , d_value_large_segments_out_it(d_value_large_segments_out_it)
-      , d_large_segments_sizes(d_large_segments_sizes)
-      , d_large_segments_k(d_large_segments_k)
-      , d_large_segments_select_directions(d_large_segments_select_directions)
+      , d_large_segments_counter(d_large_segments_counter)
+      , d_retirement_counter(d_retirement_counter)
+      , d_large_segments_ids(d_large_segments_ids)
+      , d_large_segments_tile_offsets(d_large_segments_tile_offsets)
   {}
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void Process()
@@ -182,37 +175,19 @@ struct agent_batched_topk_worker_per_segment
 
     // Resolve Segment Parameters
     const auto segment_size = segment_sizes.get_param(segment_id);
-    if (params::static_min_value_v<SegmentSizeParameterT> > tile_size
-        || (params::static_max_value_v<SegmentSizeParameterT> > tile_size && segment_size > tile_size))
+    if (!any_small_segments || (!only_small_segments && segment_size > tile_size))
     {
       // Enqueue large segment
       if (threadIdx.x == 0u)
       {
         // Add to large segment queue
-        const int large_segment_queue_index = atomicAdd(d_large_segment_queue, 1);
-        // TODO (pauleonix): Should we write out the segment_id instead of all these parameters?
-        if constexpr (params::is_per_segment_param_v<SegmentSizeParameterT>)
-        {
-          d_large_segments_sizes[large_segment_queue_index] = segment_size;
-        }
-        if constexpr (params::is_per_segment_param_v<KParameterT>)
-        {
-          d_large_segments_k[large_segment_queue_index] = k_param.get_param(segment_id);
-        }
-        if constexpr (params::is_per_segment_param_v<SelectDirectionParameterT>)
-        {
-          d_large_segments_select_directions[large_segment_queue_index] = select_directions.get_param(segment_id);
-        }
-        d_key_large_segments_it[large_segment_queue_index]     = d_key_segments_it[segment_id];
-        d_key_large_segments_out_it[large_segment_queue_index] = d_key_segments_out_it[segment_id];
-        if constexpr (!is_keys_only)
-        {
-          d_value_large_segments_it[large_segment_queue_index]     = d_value_segments_it[segment_id];
-          d_value_large_segments_out_it[large_segment_queue_index] = d_value_segments_out_it[segment_id];
-        }
+        const auto large_segment_queue_idx            = atomicAdd(d_large_segments_counter, 1);
+        d_large_segments_ids[large_segment_queue_idx] = segment_id;
+        d_large_segments_tile_offsets[large_segment_queue_idx] =
+          ::cuda::narrow<int>(::cuda::std::ceil_div(segment_size, large_segment_agent_tile_size));
       }
     }
-    else if constexpr (params::static_min_value_v<SegmentSizeParameterT> <= tile_size)
+    else if constexpr (any_small_segments)
     {
       // Process small segment
       const auto k         = (::cuda::std::min) (k_param.get_param(segment_id),
@@ -319,42 +294,52 @@ struct agent_batched_topk_worker_per_segment
       }
     }
 
-    bool is_last_block = false;
-    if (threadIdx.x == 0u)
+    // Epilogue: Scan queued large segment sizes (in tiles not elements) for load balancing search in the large segment
+    // agent
+    if constexpr (!only_small_segments)
     {
-      __threadfence();
-      const int retirement_count = atomicAdd(d_retirement_count, 1);
-      is_last_block              = retirement_count == static_cast<int>(gridDim.x) - 1;
-    }
-    // This sync also makes sure that the shared memory can be reused.
-    is_last_block = static_cast<bool>(__syncthreads_or(static_cast<int>(is_last_block)));
-    if (!is_last_block)
-    {
-      return;
-    }
-
-    // Epilogue: Scan large segment sizes for load balancing search in the next kernel launch
-    const auto num_large_segments = *d_large_segment_queue;
-    const auto prefix_callback_op =
-      [running_total = segment_size_val_t{0}](segment_size_val_t block_aggregate) mutable {
-        auto old_running_total = running_total;
-        running_total += block_aggregate;
-        return old_running_total;
-      };
-    _CCCL_PRAGMA_NOUNROLL()
-    for (int large_segment_offset = 0; large_segment_offset < num_large_segments;
-         large_segment_offset += epilogue_tile_size)
-    {
-      segment_size_val_t segment_sizes[epilogue_items_per_thread];
-      block_load_epilogue_t(temp_storage.load_epilogue)
-        .Load(
-          d_large_segments_sizes + large_segment_offset, segment_sizes, num_large_segments - large_segment_offset, 0);
-      __syncthreads();
-      block_scan_epilogue_t(temp_storage.scan_epilogue).ExclusiveSum(segment_sizes, segment_sizes, prefix_callback_op);
-      __syncthreads();
-      block_store_epilogue_t(temp_storage.store_epilogue)
-        .Store(d_large_segments_sizes + large_segment_offset, segment_sizes, num_large_segments - large_segment_offset);
-      __syncthreads();
+      // Determine last block trying to retire.
+      bool is_last_block = false;
+      if (threadIdx.x == 0u)
+      {
+        __threadfence();
+        const auto retirement_count = atomicAdd(d_retirement_counter, 1);
+        is_last_block               = retirement_count == static_cast<int>(gridDim.x) - 1;
+      }
+      // This sync also makes sure that the shared memory can be reused.
+      is_last_block = static_cast<bool>(__syncthreads_or(static_cast<int>(is_last_block)));
+      if (!is_last_block)
+      {
+        return;
+      }
+      const auto num_large_segments = *d_large_segments_counter;
+      // For tracking the running total across tiles (loop iterations).
+      const auto prefix_callback_op =
+        [running_total = segment_size_val_t{0}](segment_size_val_t block_aggregate) mutable {
+          auto old_running_total = running_total;
+          running_total += block_aggregate;
+          return old_running_total;
+        };
+      _CCCL_PRAGMA_NOUNROLL()
+      for (int large_segment_offset = 0; large_segment_offset < num_large_segments;
+           large_segment_offset += epilogue_tile_size)
+      {
+        segment_size_val_t segment_tile_offsets[epilogue_items_per_thread];
+        block_load_epilogue_t(temp_storage.load_epilogue)
+          .Load(d_large_segments_tile_offsets + large_segment_offset,
+                segment_tile_offsets,
+                num_large_segments - large_segment_offset,
+                0);
+        __syncthreads();
+        block_scan_epilogue_t(temp_storage.scan_epilogue)
+          .ExclusiveSum(segment_tile_offsets, segment_tile_offsets, prefix_callback_op);
+        __syncthreads();
+        block_store_epilogue_t(temp_storage.store_epilogue)
+          .Store(d_large_segments_tile_offsets + large_segment_offset,
+                 segment_tile_offsets,
+                 num_large_segments - large_segment_offset);
+        __syncthreads();
+      }
     }
   }
 };
