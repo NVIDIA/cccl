@@ -22,6 +22,9 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedScan::InclusiveSegmentedScanInit, dev
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/require.h>
+
 #include <c2h/catch2_test_helper.h>
 
 namespace stdexec = cuda::std::execution;
