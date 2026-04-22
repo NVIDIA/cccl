@@ -940,8 +940,14 @@ struct policy_selector
             // wrps_3.lbi_4.ipt_96 ()  1.454824  1.247212  1.450590  1.560418
             return scan_warpspeed_policy{3, 4, 96 - 1};
           case 2:
-            // wrps_6.lbi_2.ipt_96 ()  1.167633  1.167633  1.167633  1.167633
-            return scan_warpspeed_policy{6, 2, 96 - 1};
+            // wrps_4.lbi_2.ipt_96 ()  1.082511  0.929516  1.091523  1.264033
+            return scan_warpspeed_policy{4, 2, 96 - 1};
+          case 4:
+            // wrps_4.lbi_3.ipt_80 ()  1.019078  0.999708  1.017346  1.052592
+            return scan_warpspeed_policy{4, 3, 80 - 1};
+          case 8:
+            // wrps_2.lbi_5.ipt_88 ()  1.085781   1.0  1.079245  1.103545
+            return scan_warpspeed_policy{2, 5, 88 - 1};
 
             // TODO(bgruber): tune for more data types
           default:
