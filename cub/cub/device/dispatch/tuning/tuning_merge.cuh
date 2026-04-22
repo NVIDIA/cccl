@@ -78,12 +78,12 @@ struct policy_selector
     const int tune_type_size = key_size + value_size;
     const int ipt_800_plus   = nominal_4b_items_to_items(15, tune_type_size);
 
-    if (arch.provides(::cuda::arch_id::sm_100))
+    if (arch.provides(::cuda::arch::sm_100))
     {
       return merge_policy{512, ipt_800_plus, LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE, true};
     }
 
-    if (arch.provides(::cuda::arch_id::sm_90))
+    if (arch.provides(::cuda::arch::sm_90))
     {
       const bool use_bl2sh_keys = key_size != 8;
       const bool use_bl2sh_pairs =
@@ -94,7 +94,7 @@ struct policy_selector
         512, ipt_800_plus, LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE, value_size == 0 ? use_bl2sh_keys : use_bl2sh_pairs};
     }
 
-    if (arch.provides(::cuda::arch_id::sm_80))
+    if (arch.provides(::cuda::arch::sm_80))
     {
       const bool use_bl2sh_keys = key_size < 4;
       const bool use_bl2sh_pairs =
@@ -103,7 +103,7 @@ struct policy_selector
         512, ipt_800_plus, LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE, value_size == 0 ? use_bl2sh_keys : use_bl2sh_pairs};
     }
 
-    if (arch.provides(::cuda::arch_id::sm_60))
+    if (arch.provides(::cuda::arch::sm_60))
     {
       const int ipt_600 = nominal_4b_items_to_items(15, tune_type_size);
       return merge_policy{512, ipt_600, LOAD_DEFAULT, BLOCK_STORE_WARP_TRANSPOSE, false};
