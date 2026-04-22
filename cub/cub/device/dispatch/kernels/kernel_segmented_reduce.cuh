@@ -17,6 +17,7 @@
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh> // finalize_and_store_aggregate
 #include <cub/device/dispatch/tuning/tuning_segmented_reduce.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
+#include <cub/util_arch.cuh>
 
 #include <cuda/__device/arch_id.h>
 #include <cuda/__utility/in_range.h>
@@ -109,8 +110,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-_CCCL_KERNEL_ATTRIBUTES
-__launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_reduce.block_threads) //
+_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(current_policy<PolicySelector>().large_reduce.block_threads) //
   void DeviceSegmentedReduceKernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
@@ -121,7 +121,7 @@ __launch_bounds__(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_red
     _CCCL_GRID_CONSTANT const InitT init,
     _CCCL_GRID_CONSTANT const size_t max_segment_size)
 {
-  static constexpr segmented_reduce_policy full_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr segmented_reduce_policy full_policy = current_policy<PolicySelector>();
 
   // Large segment agent (one block per segment)
   static constexpr reduce::agent_reduce_policy large_pol = full_policy.large_reduce;

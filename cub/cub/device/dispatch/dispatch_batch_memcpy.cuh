@@ -23,6 +23,7 @@
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_batch_memcpy.cuh>
 #include <cub/thread/thread_search.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_ptx.cuh>
@@ -80,7 +81,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires batch_memcpy_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_buffer.block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().large_buffer.block_threads))
   _CCCL_KERNEL_ATTRIBUTES void MultiBlockBatchMemcpyKernel(
     _CCCL_GRID_CONSTANT const InputBufferIt input_buffer_it,
     _CCCL_GRID_CONSTANT const OutputBufferIt output_buffer_it,
@@ -89,7 +90,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large
     TileT buffer_offset_tile,
     _CCCL_GRID_CONSTANT const TileOffsetT last_tile_offset)
 {
-  static constexpr large_buffer_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).large_buffer;
+  static constexpr large_buffer_policy policy = current_policy<PolicySelector>().large_buffer;
   using StatusWord                            = typename TileT::StatusWord;
   using BufferSizeT                           = it_value_t<BufferSizeIteratorT>;
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
@@ -210,7 +211,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires batch_memcpy_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).small_buffer.block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().small_buffer.block_threads))
   _CCCL_KERNEL_ATTRIBUTES void BatchMemcpyKernel(
     _CCCL_GRID_CONSTANT const InputBufferIt input_buffer_it,
     _CCCL_GRID_CONSTANT const OutputBufferIt output_buffer_it,
@@ -223,7 +224,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).small
     _CCCL_GRID_CONSTANT const BLevBufferOffsetTileState blev_buffer_scan_state,
     _CCCL_GRID_CONSTANT const BLevBlockOffsetTileState blev_block_scan_state)
 {
-  static constexpr small_buffer_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).small_buffer;
+  static constexpr small_buffer_policy policy = current_policy<PolicySelector>().small_buffer;
   // Internal type used for storing a buffer's size
   using BufferSizeT = it_value_t<BufferSizeIteratorT>;
 

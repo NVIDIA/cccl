@@ -18,6 +18,7 @@
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_adjacent_difference.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
@@ -62,7 +63,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
   _CCCL_GRID_CONSTANT const OffsetT num_items)
 {
   static_assert(::cuda::std::is_empty_v<PolicySelector>);
-  static constexpr adjacent_difference_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr adjacent_difference_policy policy = current_policy<PolicySelector>();
   using AdjacentDifferencePolicyT =
     AgentAdjacentDifferencePolicy<policy.block_threads,
                                   policy.items_per_thread,

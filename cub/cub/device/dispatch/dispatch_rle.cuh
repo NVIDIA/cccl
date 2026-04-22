@@ -25,6 +25,7 @@
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_non_trivial_runs.cuh>
 #include <cub/thread/thread_operators.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
@@ -173,7 +174,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires non_trivial_runs::rle_non_trivial_runs_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().block_threads))
   _CCCL_KERNEL_ATTRIBUTES void DeviceRleSweepKernel(
     _CCCL_GRID_CONSTANT const InputIteratorT d_in,
     _CCCL_GRID_CONSTANT const OffsetsOutputIteratorT d_offsets_out,
@@ -185,8 +186,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     _CCCL_GRID_CONSTANT const int num_tiles,
     _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
 {
-  static constexpr non_trivial_runs::rle_non_trivial_runs_policy policy =
-    PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr non_trivial_runs::rle_non_trivial_runs_policy policy = current_policy<PolicySelector>();
   using AgentRlePolicyT =
     AgentRlePolicy<policy.block_threads,
                    policy.items_per_thread,
