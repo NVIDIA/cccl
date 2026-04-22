@@ -45,22 +45,17 @@ _CCCL_CONCEPT check_mdspan_ctor_implicit2 =
   _CCCL_REQUIRES_EXPR((MDS, variadic Args), MDS m, Args... args)((m = {args...}));
 
 template <class MDS>
-TEST_FUNC void check_implicit_construction(MDS);
+TEST_FUNC cuda::std::true_type check_implicit_construction(MDS);
 
 template <class MDS, class... Args>
-TEST_FUNC constexpr bool check_implicit_construction_impl(...)
-{
-  return false;
-}
+TEST_FUNC constexpr auto check_implicit_construction_impl(...) -> cuda::std::false_type;
+
 template <class MDS, class... Args>
 TEST_FUNC constexpr auto check_implicit_construction_impl(int)
-  -> decltype(check_implicit_construction<MDS>({cuda::std::declval<Args>()...}), true)
-{
-  return true;
-}
+  -> decltype(check_implicit_construction<MDS>({cuda::std::declval<Args>()...}));
 
 template <class MDS, class... Args>
-_CCCL_CONCEPT check_mdspan_ctor_implicit = check_implicit_construction_impl<MDS, Args...>(0);
+_CCCL_CONCEPT check_mdspan_ctor_implicit = decltype(check_implicit_construction_impl<MDS, Args...>(0))::value;
 
 template <bool mec, bool ac, class H, class M, class A, class... Idxs, cuda::std::enable_if_t<mec && ac, int> = 0>
 TEST_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const A&, Idxs... idxs)
