@@ -47,35 +47,20 @@ struct InitListArg
 };
 
 template <class Var, class T, class... Args>
-TEST_FUNC constexpr auto test_emplace_exists_imp(int)
-  -> decltype(cuda::std::declval<Var>().template emplace<T>(cuda::std::declval<Args>()...), true)
-{
-  return true;
-}
-
-template <class, class, class...>
-TEST_FUNC constexpr auto test_emplace_exists_imp(long) -> bool
-{
-  return false;
-}
-
-template <class... Args>
-TEST_FUNC constexpr bool emplace_exists()
-{
-  return test_emplace_exists_imp<Args...>(0);
-}
+_CCCL_CONCEPT emplace_exists = _CCCL_REQUIRES_EXPR((Var, T, variadic Args), Var variant, Args&&... args)(
+  (variant.template emplace<T>(cuda::std::forward<Args>(args)...)));
 
 TEST_FUNC void test_emplace_sfinae()
 {
   using V  = cuda::std::variant<int, TestTypes::NoCtors, InitList, InitListArg, long, long>;
   using IL = cuda::std::initializer_list<int>;
-  static_assert(emplace_exists<V, InitList, IL>());
-  static_assert(!emplace_exists<V, InitList, int>(), "args don't match");
-  static_assert(!emplace_exists<V, InitList, IL, int>(), "too many args");
-  static_assert(emplace_exists<V, InitListArg, IL, int>());
-  static_assert(!emplace_exists<V, InitListArg, int>(), "args don't match");
-  static_assert(!emplace_exists<V, InitListArg, IL>(), "too few args");
-  static_assert(!emplace_exists<V, InitListArg, IL, int, int>(), "too many args");
+  static_assert(emplace_exists<V, InitList, IL>);
+  static_assert(!emplace_exists<V, InitList, int>, "args don't match");
+  static_assert(!emplace_exists<V, InitList, IL, int>, "too many args");
+  static_assert(emplace_exists<V, InitListArg, IL, int>);
+  static_assert(!emplace_exists<V, InitListArg, int>, "args don't match");
+  static_assert(!emplace_exists<V, InitListArg, IL>, "too few args");
+  static_assert(!emplace_exists<V, InitListArg, IL, int, int>, "too many args");
 }
 
 TEST_FUNC void test_basic()
