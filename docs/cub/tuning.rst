@@ -132,7 +132,7 @@ If :code:`TUNE_BASE` is not defined, we define a custom policy selector
 that specifies the values for the current variant (i.e. the current set of tuning parameters),
 which are derived from the parameter macros defined in the :code:`%RANGE%` comments, which define the search space.
 This custom policy selector is passed to :code:`cuda::execution::tune`,
-and the returned values is included in the environment passed to the CUB API.
+and the returned value is included in the environment passed to the CUB API.
 
 The following code is included in the benchmark for the policy selector to be enabled
 and the parameters to have effect in execution:
@@ -162,7 +162,7 @@ and the parameters to have effect in execution:
 
 The custom policy selector returns a fixed policy regardless of the CUDA architecture,
 since tuning is usually done on a specific GPU architecture and compiling only for that architecture.
-The policy selectors uses all tuning parameters from the search space to form the policy used by CUB.
+The policy selector uses all tuning parameters from the search space to form the policy used by CUB.
 
 
 +++++++++
@@ -551,6 +551,7 @@ which is passed to the public CUB API through the environment,
 as :ref:`sketched above <cub-tuning-authoring-benchmarks>`:
 
 .. code:: c++
+
   struct policy_selector {
     _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::AlgorithmPolicy {
       return {

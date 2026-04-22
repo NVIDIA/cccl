@@ -13,7 +13,7 @@ e.g. :code:`cub::ReducePolicy`, which must be returned by a policy selector pass
 CUB provides default policy selectors providing tunings for known architectures and workloads,
 which are not publicly accessible to users, but used internally by CUB to select tunings.
 Users can override CUB's policy selector for a given algorithm
-by passing a custom policy selector through the algorithm's environment parameter,
+by passing a custom policy selector through the algorithm's environment parameter.
 
 For a description of how policy selectors are used internally in CUB's dispatch layer and kernels
 see the corresponding :ref:`developer documentation <cub-developer-guide-device-scope>`.
@@ -55,9 +55,9 @@ taking a ``cuda::arch_id`` and returning the algorithm's policy struct:
       }
     };
 
-The policy selector must be stateless (:coda:`std::is_empty_v<T>` must be :coda:`true`),
+The policy selector must be stateless (:code:`std::is_empty_v<T>` must be :code:`true`),
 since only its type will be passed to a kernel and it will be default-constructed in device code.
-It can be a class template, but then only a full specialization can be passed to cub,
+It can be a class template, but then only a full specialization can be passed to CUB,
 e.g., :code:`my_reduce_tuning<float>`.
 The implementation can use branches and helper functions arbitrarily,
 as long as they can be evaluated at compile-time.
@@ -73,7 +73,7 @@ and each algorithm will pick the one with the matching policy struct.
 This is useful if the same environment is reused across several algorithm calls.
 
 The policy structs themselves aim to be simple aggregates without special member functions (constructors, assignment operators, etc.),
-thus supporting C++20 designated initializers (i.e., the syntax :code:`{ .block_threads = 512, ... }`.
+thus supporting C++20 designated initializers (i.e., the syntax :code:`{ .block_threads = 512, ... }`).
 They may occasionally contain member functions that compute derived values from the contained tuning values.
 They support comparison for (in-)equality and serialization using :code:`operator<<`.
 All policy structs are public types and will try to evolve in a non-breaking way,
@@ -104,7 +104,7 @@ Multiple tunings for different algorithms can be combined in a single environmen
     cub::DeviceScan::ExclusiveSum(d_in, d_out, num_items, env);
 
 An environment can carry further properties like a stream or a memory resource.
-Policy selectors can simply by added to those:
+Policy selectors can simply be added to those:
 
 .. code:: c++
 
