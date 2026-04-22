@@ -41,7 +41,6 @@ namespace detail::unique_by_key_tuning
 struct get_tuning_query_t
 {};
 
-// TODO(bgruber): drop this after rewriting to the new tuning API
 template <class Derived>
 struct tuning
 {
@@ -51,11 +50,10 @@ struct tuning
   }
 };
 
-// TODO(bgruber): drop this after rewriting to the new tuning API
 struct default_tuning : tuning<default_tuning>
 {
   template <class KeyT, class ValueT>
-  using fn = unique_by_key::policy_hub<KeyT, ValueT>;
+  using fn = unique_by_key::policy_selector_from_types<KeyT, ValueT>;
 };
 } // namespace detail::unique_by_key_tuning
 
@@ -148,27 +146,21 @@ private:
                                                   detail::unique_by_key_tuning::get_tuning_query_t,
                                                   detail::unique_by_key_tuning::default_tuning>;
 
-    using policy_t = typename select_tuning_t::template fn<detail::it_value_t<KeyInputIteratorT>,
-                                                           detail::it_value_t<ValueInputIteratorT>>;
+    using policy_selector_t = typename select_tuning_t::template fn<detail::it_value_t<KeyInputIteratorT>,
+                                                                    detail::it_value_t<ValueInputIteratorT>>;
 
-    return DispatchUniqueByKey<
-      KeyInputIteratorT,
-      ValueInputIteratorT,
-      KeyOutputIteratorT,
-      ValueOutputIteratorT,
-      NumSelectedIteratorT,
-      EqualityOpT,
-      OffsetT,
-      policy_t>::Dispatch(d_temp_storage,
-                          temp_storage_bytes,
-                          d_keys_in,
-                          d_values_in,
-                          d_keys_out,
-                          d_values_out,
-                          d_num_selected_out,
-                          equality_op,
-                          num_items,
-                          stream);
+    return detail::unique_by_key::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_values_in,
+      d_keys_out,
+      d_values_out,
+      d_num_selected_out,
+      equality_op,
+      num_items,
+      stream,
+      policy_selector_t{});
   }
 
 public:
@@ -2202,23 +2194,17 @@ public:
 
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return DispatchUniqueByKey<
-      KeyInputIteratorT,
-      ValueInputIteratorT,
-      KeyOutputIteratorT,
-      ValueOutputIteratorT,
-      NumSelectedIteratorT,
-      EqualityOpT,
-      OffsetT>::Dispatch(d_temp_storage,
-                         temp_storage_bytes,
-                         d_keys_in,
-                         d_values_in,
-                         d_keys_out,
-                         d_values_out,
-                         d_num_selected_out,
-                         equality_op,
-                         static_cast<OffsetT>(num_items),
-                         stream);
+    return detail::unique_by_key::dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_values_in,
+      d_keys_out,
+      d_values_out,
+      d_num_selected_out,
+      equality_op,
+      static_cast<OffsetT>(num_items),
+      stream);
   }
 
   //! @rst

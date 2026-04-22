@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6084444: error: "call to non-tile function not supported!"
+
 // template <class T>
 //   constexpr int countl_one(T x) noexcept;
 

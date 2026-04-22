@@ -10,6 +10,9 @@
 
 // UNSUPPORTED: nvrtc
 
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <memory>
 
 // unique_ptr

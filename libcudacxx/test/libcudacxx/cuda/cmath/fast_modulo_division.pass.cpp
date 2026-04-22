@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 #include <cuda/cmath>
 #include <cuda/std/chrono>
 #include <cuda/std/cstdint>

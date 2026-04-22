@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // Disable CCCL assertions in this test to test the erroneous behavior
 #undef CCCL_ENABLE_ASSERTIONS
 

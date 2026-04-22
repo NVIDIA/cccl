@@ -13,6 +13,9 @@
 // template <class Alloc, class U1, class U2>
 //   tuple(allocator_arg_t, const Alloc& a, pair<U1, U2>&&);
 
+// UNSUPPORTED: enable-tile
+// In tile mode virtual functions are unsupported
+
 #include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>

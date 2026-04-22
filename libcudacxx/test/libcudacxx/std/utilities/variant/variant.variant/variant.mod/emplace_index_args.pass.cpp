@@ -9,6 +9,9 @@
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 
+// XFAIL: enable-tile
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <cuda/std/variant>
 
 // template <class ...Types> class variant;
@@ -26,60 +29,48 @@
 #include "test_macros.h"
 #include "variant_test_helpers.h"
 
-template <class Var, size_t I, class... Args>
-TEST_FUNC constexpr auto test_emplace_exists_imp(int)
-  -> decltype(cuda::std::declval<Var>().template emplace<I>(cuda::std::declval<Args>()...), true)
-{
-  return true;
-}
+template <class Var, class I, class... Args>
+_CCCL_CONCEPT emplace_exists = _CCCL_REQUIRES_EXPR((Var, I, variadic Args), Var variant, Args&&... args)(
+  (variant.template emplace<I::value>(cuda::std::forward<Args>(args)...)));
 
-template <class, size_t, class...>
-TEST_FUNC constexpr auto test_emplace_exists_imp(long) -> bool
-{
-  return false;
-}
-
-template <class Var, size_t I, class... Args>
-TEST_FUNC constexpr bool emplace_exists()
-{
-  return test_emplace_exists_imp<Var, I, Args...>(0);
-}
+template <size_t Index>
+using ic = cuda::std::integral_constant<size_t, Index>;
 
 TEST_FUNC void test_emplace_sfinae()
 {
   {
     using V = cuda::std::variant<int, void*, const void*, TestTypes::NoCtors>;
-    static_assert(emplace_exists<V, 0>());
-    static_assert(emplace_exists<V, 0, int>());
-    static_assert(!emplace_exists<V, 0, decltype(nullptr)>(), "cannot construct");
-    static_assert(emplace_exists<V, 1, decltype(nullptr)>());
-    static_assert(emplace_exists<V, 1, int*>());
-    static_assert(!emplace_exists<V, 1, const int*>());
-    static_assert(!emplace_exists<V, 1, int>(), "cannot construct");
-    static_assert(emplace_exists<V, 2, const int*>());
-    static_assert(emplace_exists<V, 2, int*>());
-    static_assert(!emplace_exists<V, 3>(), "cannot construct");
+    static_assert(emplace_exists<V, ic<0>>);
+    static_assert(emplace_exists<V, ic<0>, int>);
+    static_assert(!emplace_exists<V, ic<0>, decltype(nullptr)>, "cannot construct");
+    static_assert(emplace_exists<V, ic<1>, decltype(nullptr)>);
+    static_assert(emplace_exists<V, ic<1>, int*>);
+    static_assert(!emplace_exists<V, ic<1>, const int*>);
+    static_assert(!emplace_exists<V, ic<1>, int>, "cannot construct");
+    static_assert(emplace_exists<V, ic<2>, const int*>);
+    static_assert(emplace_exists<V, ic<2>, int*>);
+    static_assert(!emplace_exists<V, ic<3>>, "cannot construct");
   }
 #if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
   {
     using V = cuda::std::variant<int, int&, const int&, int&&, TestTypes::NoCtors>;
-    static_assert(emplace_exists<V, 0>());
-    static_assert(emplace_exists<V, 0, int>());
-    static_assert(emplace_exists<V, 0, long long>());
-    static_assert(!emplace_exists<V, 0, int, int>(), "too many args");
-    static_assert(emplace_exists<V, 1, int&>());
-    static_assert(!emplace_exists<V, 1>(), "cannot default construct ref");
-    static_assert(!emplace_exists<V, 1, const int&>(), "cannot bind ref");
-    static_assert(!emplace_exists<V, 1, int&&>(), "cannot bind ref");
-    static_assert(emplace_exists<V, 2, int&>());
-    static_assert(emplace_exists<V, 2, const int&>());
-    static_assert(emplace_exists<V, 2, int&&>());
-    static_assert(!emplace_exists<V, 2, void*>(), "not constructible from void*");
-    static_assert(emplace_exists<V, 3, int>());
-    static_assert(!emplace_exists<V, 3, int&>(), "cannot bind ref");
-    static_assert(!emplace_exists<V, 3, const int&>(), "cannot bind ref");
-    static_assert(!emplace_exists<V, 3, const int&&>(), "cannot bind ref");
-    static_assert(!emplace_exists<V, 4>(), "no ctors");
+    static_assert(emplace_exists<V, ic<0>>);
+    static_assert(emplace_exists<V, ic<0>, int>);
+    static_assert(emplace_exists<V, ic<0>, long long>);
+    static_assert(!emplace_exists<V, ic<0>, int, int>, "too many args");
+    static_assert(emplace_exists<V, ic<1>, int&>);
+    static_assert(!emplace_exists<V, ic<1>>, "cannot default construct ref");
+    static_assert(!emplace_exists<V, ic<1>, const int&>, "cannot bind ref");
+    static_assert(!emplace_exists<V, ic<1>, int&&>, "cannot bind ref");
+    static_assert(emplace_exists<V, ic<2>, int&>);
+    static_assert(emplace_exists<V, ic<2>, const int&>);
+    static_assert(emplace_exists<V, ic<2>, int&&>);
+    static_assert(!emplace_exists<V, ic<2>, void*>, "not constructible from void*");
+    static_assert(emplace_exists<V, ic<3>, int>);
+    static_assert(!emplace_exists<V, ic<3>, int&>, "cannot bind ref");
+    static_assert(!emplace_exists<V, ic<3>, const int&>, "cannot bind ref");
+    static_assert(!emplace_exists<V, ic<3>, const int&&>, "cannot bind ref");
+    static_assert(!emplace_exists<V, ic<4>>, "no ctors");
   }
 #endif
 }

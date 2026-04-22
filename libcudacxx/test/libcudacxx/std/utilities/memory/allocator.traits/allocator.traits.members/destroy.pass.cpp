@@ -7,7 +7,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 // <memory>
+
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
 
 // template <class Alloc>
 // struct allocator_traits

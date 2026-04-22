@@ -51,16 +51,20 @@ class __this_group_base;
 
 template <class _Hierarchy>
 class this_thread;
+
 template <class _Hierarchy>
 class this_warp;
+
 template <class _Hierarchy>
 class this_block;
+
 template <class _Hierarchy>
 class this_cluster;
+
 template <class _Hierarchy>
 class this_grid;
 
-template <class _Unit, class _Level, class _Mapping, class _Hierarchy, class _Synchronizer>
+template <class _Unit, class _ParentGroup, class _Mapping, class _Synchronizer>
 class group;
 
 // mappings
@@ -70,30 +74,29 @@ class group_by;
 
 // synchronizers
 
-template <class _Unit, class _Level, class _Mapping>
-class __syncwarp_synchronizer;
-template <class _Unit, class _Level, class _Mapping>
-class __barrier_synchronizer;
+class lane_synchronizer;
+
+template <class _Barrier, ::cuda::std::size_t _Np>
+class barrier_synchronizer;
 
 // traits
 
 template <class _Tp>
-inline constexpr bool __is_this_hierarchy_group_v = false;
+inline constexpr bool __is_this_group_v = false;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<this_thread<_Hierarchy>> = true;
+inline constexpr bool __is_this_group_v<this_thread<_Hierarchy>> = true;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<this_warp<_Hierarchy>> = true;
+inline constexpr bool __is_this_group_v<this_warp<_Hierarchy>> = true;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<this_block<_Hierarchy>> = true;
+inline constexpr bool __is_this_group_v<this_block<_Hierarchy>> = true;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<this_cluster<_Hierarchy>> = true;
+inline constexpr bool __is_this_group_v<this_cluster<_Hierarchy>> = true;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<this_grid<_Hierarchy>> = true;
+inline constexpr bool __is_this_group_v<this_grid<_Hierarchy>> = true;
 
-template <class _Tp>
-inline constexpr bool __is_barrier_synchronizer = false;
-template <class _Unit, class _Level, class _Mapping>
-inline constexpr bool __is_barrier_synchronizer<__barrier_synchronizer<_Unit, _Level, _Mapping>> = true;
+// tags
+
+struct non_exhaustive_t;
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED
