@@ -66,11 +66,7 @@ _CCCL_HOST_API _InputIterator stable_partition(
       return __first;
     }
 
-    auto __result = __first;
-    const size_t __num_selected =
-      __dispatch(__policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__pred));
-
-    return __result + static_cast<iter_difference_t<_InputIterator>>(__num_selected);
+    return __dispatch(__policy, ::cuda::std::move(__first), ::cuda::std::move(__last), ::cuda::std::move(__pred));
   }
   else
   {

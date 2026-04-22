@@ -61,13 +61,13 @@ template <>
 struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend::__cuda>
 {
   template <class _Policy, class _InputIterator, class _UnaryPred>
-  [[nodiscard]] _CCCL_HOST_API static size_t
+  [[nodiscard]] _CCCL_HOST_API static _InputIterator
   __par_impl(const _Policy& __policy, _InputIterator __first, _InputIterator __last, _UnaryPred __pred)
   {
     using _OffsetType = size_t;
     using value_type  = iter_value_t<_InputIterator>;
 
-    _OffsetType __ret;
+    _OffsetType __num_selected;
     const auto __count = static_cast<_OffsetType>(::cuda::std::distance(__first, __last));
     auto __stream      = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
 
@@ -116,7 +116,7 @@ struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend
       _CCCL_TRY_CUDA_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_stable_partition: copy of result from device to host failed",
-        ::cuda::std::addressof(__ret),
+        ::cuda::std::addressof(__num_selected),
         __storage.template __get_ptr<0>(),
         sizeof(_OffsetType),
         ::cudaMemcpyDefault,
@@ -126,14 +126,14 @@ struct __pstl_dispatch<__pstl_algorithm::__stable_partition, __execution_backend
     __stream.sync();
 
     // Need to reverse the elements in the second partition
-    const auto __mid = __first + static_cast<iter_difference_t<_InputIterator>>(__ret);
+    const auto __mid = __first + static_cast<iter_difference_t<_InputIterator>>(__num_selected);
     ::cuda::std::reverse(__policy, __mid, __last);
-    return static_cast<size_t>(__ret);
+    return __mid;
   }
 
   _CCCL_TEMPLATE(class _Policy, class _InputIterator, class _UnaryPred)
   _CCCL_REQUIRES(__has_forward_traversal<_InputIterator>)
-  [[nodiscard]] _CCCL_HOST_API size_t operator()(
+  [[nodiscard]] _CCCL_HOST_API _InputIterator operator()(
     [[maybe_unused]] const _Policy& __policy, _InputIterator __first, _InputIterator __last, _UnaryPred __pred) const
   {
     if constexpr (::cuda::std::__has_random_access_traversal<_InputIterator>)
