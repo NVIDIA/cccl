@@ -246,15 +246,14 @@ struct DispatchAdjacentDifference
       error                      = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
           num_tiles, AdjacentDifferencePolicyT::BLOCK_THREADS, 0, stream)
-          .doit(detail::adjacent_difference::DeviceAdjacentDifferenceDifferenceKernel<
-                                       KernelPolicySelector,
-                                       InputIteratorT,
-                                       OutputIteratorT,
-                                       DifferenceOpT,
-                                       OffsetT,
-                                       InputT,
-                                       AliasOpt == MayAlias::Yes,
-                                       ReadOpt == ReadOption::Left>,
+          .doit(detail::adjacent_difference::DeviceAdjacentDifferenceDifferenceKernel < KernelPolicySelector,
+                InputIteratorT,
+                OutputIteratorT,
+                DifferenceOpT,
+                OffsetT,
+                InputT,
+                AliasOpt == MayAlias::Yes,
+                ReadOpt == ReadOption::Left >,
                 d_input,
                 first_tile_previous,
                 d_output,
@@ -428,15 +427,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   if (const auto error = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_tiles, active_policy.block_threads, 0, stream)
-          .doit(DeviceAdjacentDifferenceDifferenceKernel<
-                  PolicySelector,
-                  InputIteratorT,
-                  OutputIteratorT,
-                  DifferenceOpT,
-                  OffsetT,
-                  InputT,
-                  AliasOpt == MayAlias::Yes,
-                  ReadOpt == ReadOption::Left>,
+          .doit(DeviceAdjacentDifferenceDifferenceKernel < PolicySelector,
+                InputIteratorT,
+                OutputIteratorT,
+                DifferenceOpT,
+                OffsetT,
+                InputT,
+                AliasOpt == MayAlias::Yes,
+                ReadOpt == ReadOption::Left >,
                 d_input,
                 first_tile_previous,
                 d_output,

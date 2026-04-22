@@ -153,8 +153,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().large_buffer.block_thread
       {
         if (thread_offset < buffer_sizes[buffer_id])
         {
-          const auto value =
-            read_item<MemcpyOpt == CopyAlg::Memcpy, AliasT, InputBufferT>(input_buffer_it[buffer_id], thread_offset);
+          const auto value = read_item < MemcpyOpt == CopyAlg::Memcpy, AliasT,
+                     InputBufferT > (input_buffer_it[buffer_id], thread_offset);
           write_item<MemcpyOpt == CopyAlg::Memcpy, AliasT, OutputBufferT>(
             output_buffer_it[buffer_id], thread_offset, value);
         }

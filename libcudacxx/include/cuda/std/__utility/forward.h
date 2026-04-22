@@ -38,8 +38,9 @@
 #  define _CCCL_HAS_BUILTIN_STD_FORWARD() 1
 #endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
-// We cannot use host features if the user requires `_CCCL_ENABLE_FREESTANDING`
-#ifdef _CCCL_ENABLE_FREESTANDING
+// We cannot use host features if we are building in freestanding
+// However, NVRTC handles it specially
+#if _CCCL_FREESTANDING() && !_CCCL_COMPILER(NVRTC)
 #  undef _CCCL_HAS_BUILTIN_STD_FORWARD
 #  define _CCCL_HAS_BUILTIN_STD_FORWARD() 0
 #endif // _CCCL_ENABLE_FREESTANDING

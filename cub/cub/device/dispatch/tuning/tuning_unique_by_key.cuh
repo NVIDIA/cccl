@@ -24,7 +24,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__device/arch_id.h>
-#include <cuda/std/__host_stdlib/stream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/optional>
 
 CUB_NAMESPACE_BEGIN
