@@ -127,13 +127,37 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/copy.cu
 )
 
-cudax_add_catch2_test(test_target group
+cudax_add_catch2_test(test_target group.mapping.group_by
     group/mapping/group_by.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.synchronizer.lane_synchronizer
     group/synchronizer/lane_synchronizer.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.synchronizer.barrier_synchronizer
     group/synchronizer/barrier_synchronizer.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.cooperative_algorithm
     group/cooperative_algorithm.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.group
     group/group.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.make_this_group
     group/make_this_group.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.this_group
     group/this_group.cu
 )
 target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)

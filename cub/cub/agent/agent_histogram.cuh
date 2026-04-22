@@ -328,9 +328,9 @@ struct AgentHistogram
         {
           if (bins[pixel] >= 0)
           {
-            NV_IF_TARGET(NV_PROVIDES_SM_60,
-                         (atomicAdd_block(privatized_histograms[ch] + bins[pixel], accumulator);),
-                         (atomicAdd(privatized_histograms[ch] + bins[pixel], accumulator);));
+            NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
+                              (atomicAdd_block(privatized_histograms[ch] + bins[pixel], accumulator);),
+                              (atomicAdd(privatized_histograms[ch] + bins[pixel], accumulator);));
           }
 
           accumulator = 0;
@@ -341,9 +341,9 @@ struct AgentHistogram
       // Last pixel
       if (bins[pixels_per_thread - 1] >= 0)
       {
-        NV_IF_TARGET(NV_PROVIDES_SM_60,
-                     (atomicAdd_block(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);),
-                     (atomicAdd(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);));
+        NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
+                          (atomicAdd_block(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);),
+                          (atomicAdd(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);));
       }
     }
   }
@@ -366,9 +366,9 @@ struct AgentHistogram
         privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
         if (bin >= 0)
         {
-          NV_IF_TARGET(NV_PROVIDES_SM_60,
-                       (atomicAdd_block(privatized_histograms[ch] + bin, 1);),
-                       (atomicAdd(privatized_histograms[ch] + bin, 1);));
+          NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
+                            (atomicAdd_block(privatized_histograms[ch] + bin, 1);),
+                            (atomicAdd(privatized_histograms[ch] + bin, 1);));
         }
       }
     }

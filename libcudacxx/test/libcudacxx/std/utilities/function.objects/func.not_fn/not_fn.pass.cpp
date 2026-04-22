@@ -448,10 +448,12 @@ TEST_FUNC void return_type_tests()
 // other callable types here.
 TEST_FUNC void other_callable_types_test()
 {
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   { // test with function pointer
     auto ret = cuda::std::not_fn(returns_true);
     assert(ret() == false);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   { // test with lambda
     auto returns_value = [](bool value) {
       return value;
@@ -460,6 +462,7 @@ TEST_FUNC void other_callable_types_test()
     assert(ret(true) == false);
     assert(ret(false) == true);
   }
+#if !_CCCL_TILE_COMPILATION() // error: taking address or reference of a function is unsupported in tile mode!"
   { // test with pointer to member function
     MemFunCallable mt(true);
     const MemFunCallable mf(false);
@@ -478,6 +481,7 @@ TEST_FUNC void other_callable_types_test()
     assert(ret(&mt) == false);
     assert(ret(&mf) == true);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   { // test with pointer to member data
     MemFunCallable mt(true);
     const MemFunCallable mf(false);
@@ -521,11 +525,13 @@ void throws_in_constructor_test()
 
 TEST_FUNC void call_operator_sfinae_test()
 {
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   { // wrong number of arguments
     using T = decltype(cuda::std::not_fn(returns_true));
     static_assert(cuda::std::is_invocable<T>::value); // callable only with no args
     static_assert(!cuda::std::is_invocable<T, bool>::value);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   { // violates const correctness (member function pointer)
     using T = decltype(cuda::std::not_fn(&MemFunCallable::return_value_nc));
     static_assert(cuda::std::is_invocable<T, MemFunCallable&>::value);

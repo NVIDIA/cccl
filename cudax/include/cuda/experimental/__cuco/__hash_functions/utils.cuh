@@ -60,7 +60,7 @@ template <typename _Tp, typename _Extent>
   }
   else
   {
-    ::cuda::std::memcpy(&__chunk, __bytes, sizeof(_Tp));
+    ::cuda::std::memcpy(&__chunk, __ptr, sizeof(_Tp));
   }
   return __chunk;
 }

@@ -8,6 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 // UNSUPPORTED: nvrtc
 
 #include <cuda/functional>
