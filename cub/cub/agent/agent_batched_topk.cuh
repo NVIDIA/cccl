@@ -19,26 +19,14 @@
 #include <cub/block/block_topk.cuh>
 #include <cub/detail/segmented_params.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 #include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk
 {
-template <int BlockThreads, int ItemsPerThread, BlockLoadAlgorithm LoadAlgorithm, BlockStoreAlgorithm StoreAlgorithm>
-struct agent_batched_topk_worker_per_segment_policy
-{
-  /// Threads per thread block
-  static constexpr int block_threads = BlockThreads;
-
-  /// Items per thread (per tile of input)
-  static constexpr int items_per_thread = ItemsPerThread;
-
-  static constexpr BlockLoadAlgorithm load_algorithm   = LoadAlgorithm;
-  static constexpr BlockStoreAlgorithm store_algorithm = StoreAlgorithm;
-};
-
-template <typename ActivePolicyT,
+template <typename PolicyGetter, // TODO(bgruber): pass worker_policy as NTTP in C++20
           typename KeyInputItItT,
           typename KeyOutputItItT,
           typename ValueInputItItT,
@@ -59,8 +47,10 @@ struct agent_batched_topk_worker_per_segment
   using key_t   = it_value_t<key_it_t>;
   using value_t = it_value_t<value_it_t>;
 
-  static constexpr int block_threads    = ActivePolicyT::block_threads;
-  static constexpr int items_per_thread = ActivePolicyT::items_per_thread;
+  static constexpr worker_policy active_policy = PolicyGetter{}();
+
+  static constexpr int block_threads    = active_policy.block_threads;
+  static constexpr int items_per_thread = active_policy.items_per_thread;
   static constexpr int tile_size        = block_threads * items_per_thread;
 
   // Check if we are dealing with keys-only or key-value pairs
@@ -69,15 +59,15 @@ struct agent_batched_topk_worker_per_segment
   // -------------------------------------------------------------------------
   // Primitive Types
   // -------------------------------------------------------------------------
-  using block_load_keys_t = BlockLoad<key_t, block_threads, items_per_thread, ActivePolicyT::load_algorithm>;
-  using block_load_vals_t = BlockLoad<value_t, block_threads, items_per_thread, ActivePolicyT::load_algorithm>;
+  using block_load_keys_t = BlockLoad<key_t, block_threads, items_per_thread, active_policy.load_algorithm>;
+  using block_load_vals_t = BlockLoad<value_t, block_threads, items_per_thread, active_policy.load_algorithm>;
 
   using block_topk_t = block_topk<key_t, block_threads, items_per_thread, value_t>;
 
   // TODO (elstehle): Specialize for the case that we statically know k and we can skip passing num_valid_items to
   // Store()
-  using block_store_keys_t = BlockStore<key_t, block_threads, items_per_thread, ActivePolicyT::store_algorithm>;
-  using block_store_vals_t = BlockStore<value_t, block_threads, items_per_thread, ActivePolicyT::store_algorithm>;
+  using block_store_keys_t = BlockStore<key_t, block_threads, items_per_thread, active_policy.store_algorithm>;
+  using block_store_vals_t = BlockStore<value_t, block_threads, items_per_thread, active_policy.store_algorithm>;
 
   // -------------------------------------------------------------------------
   // Shared Memory Storage
