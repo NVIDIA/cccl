@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <class H, class M, class A>
-__device__ constexpr void test_mdspan_types(const H& handle, const M& map, const A& acc)
+TEST_DEVICE_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const A& acc)
 {
   using MDS =
     cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
@@ -45,7 +45,7 @@ __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const
 }
 
 template <class H, class L, class A>
-__device__ constexpr void mixin_extents(const H& handle, const L& layout, const A& acc)
+TEST_DEVICE_FUNC constexpr void mixin_extents(const H& handle, const L& layout, const A& acc)
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_mdspan_types(handle, construct_mapping(layout, cuda::std::extents<int>()), acc);
@@ -57,7 +57,7 @@ __device__ constexpr void mixin_extents(const H& handle, const L& layout, const 
 }
 
 template <class H, class A>
-__device__ constexpr void mixin_layout(const H& handle, const A& acc)
+TEST_DEVICE_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
 {
   // make sure we test a trivially assignable mapping
   static_assert(cuda::std::is_trivially_assignable_v<
@@ -73,7 +73,7 @@ __device__ constexpr void mixin_layout(const H& handle, const A& acc)
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_default_constructible_v<T>, int> = 0>
-__device__ constexpr void mixin_accessor()
+TEST_DEVICE_FUNC constexpr void mixin_accessor()
 {
   cuda::std::array<T, 1024> elements{42};
   // make sure we test trivially constructible accessor and data_handle
@@ -83,7 +83,7 @@ __device__ constexpr void mixin_accessor()
 }
 
 template <class T, cuda::std::enable_if_t<!cuda::std::is_default_constructible_v<T>, int> = 0>
-__device__ void mixin_accessor()
+TEST_DEVICE_FUNC void mixin_accessor()
 {
   ElementPool<T, 1024> elements;
   // make sure we test trivially constructible accessor and data_handle
@@ -92,7 +92,7 @@ __device__ void mixin_accessor()
   mixin_layout(elements.get_ptr(), cuda::std::default_accessor<T>());
 }
 
-__device__ void test()
+TEST_DEVICE_FUNC void test()
 {
   mixin_accessor<int>();
   mixin_accessor<const int>();
@@ -100,7 +100,7 @@ __device__ void test()
   mixin_accessor<const double>();
 }
 
-__device__ void test_evil()
+TEST_DEVICE_FUNC void test_evil()
 {
   mixin_accessor<MinimalElementType>();
   mixin_accessor<const MinimalElementType>();

@@ -22,10 +22,10 @@ TEST_DIAG_SUPPRESS_MSVC(4305) // 'argument': truncation from 'T' to 'float'
 TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
 
 template <typename T>
-__host__ __device__ void test_fmod(T val)
+TEST_FUNC void test_fmod(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::fmod(T{}, T{})), ret>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::fmod(T{}, T{})), ret>);
 
   const T x = T(13.23456789);
   const T y = T(3.456789123);
@@ -191,9 +191,9 @@ __host__ __device__ void test_fmod(T val)
 }
 
 template <typename T>
-__host__ __device__ void test_modf(T val)
+TEST_FUNC void test_modf(T val)
 {
-  static_assert(cuda::std::is_same_v<decltype(cuda::std::modf(T{}, static_cast<T*>(nullptr))), T>, "");
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::modf(T{}, static_cast<T*>(nullptr))), T>);
   {
     // If num is ±0, ±0 is returned, and ±0 is stored in *iptr
     T integral = cuda::std::numeric_limits<T>::infinity();
@@ -295,7 +295,7 @@ __host__ __device__ void test_modf(T val)
 }
 
 template <typename T>
-__host__ __device__ void test(const T val)
+TEST_FUNC void test(const T val)
 {
   test_fmod<T>(val);
   if constexpr (!cuda::std::is_integral_v<T>)
@@ -304,7 +304,7 @@ __host__ __device__ void test(const T val)
   }
 }
 
-__host__ __device__ void test(const float val)
+TEST_FUNC void test(const float val)
 {
   test<float>(val);
   test<double>(val);

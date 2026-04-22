@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && c++17
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <mdspan>
 
 // constexpr mdspan(mdspan&&) = default;
@@ -25,7 +28,7 @@
 #include "test_macros.h"
 
 template <class H, class M, class A>
-__host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& map, const A& acc)
+TEST_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const A& acc)
 {
   using MDS = cuda::std::mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
@@ -43,7 +46,7 @@ __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& m
 }
 
 template <class H, class L, class A>
-__host__ __device__ constexpr void mixin_extents(const H& handle, const L& layout, const A& acc)
+TEST_FUNC constexpr void mixin_extents(const H& handle, const L& layout, const A& acc)
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_mdspan_types(handle, construct_mapping(layout, cuda::std::extents<int>()), acc);
@@ -55,7 +58,7 @@ __host__ __device__ constexpr void mixin_extents(const H& handle, const L& layou
 }
 
 template <class H, class A>
-__host__ __device__ constexpr void mixin_layout(const H& handle, const A& acc)
+TEST_FUNC constexpr void mixin_layout(const H& handle, const A& acc)
 {
   // make sure we test a trivially copyable mapping
   static_assert(cuda::std::is_trivially_move_constructible<
@@ -71,11 +74,11 @@ __host__ __device__ constexpr void mixin_layout(const H& handle, const A& acc)
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_default_constructible<T>::value, int> = 0>
-__host__ __device__ constexpr void mixin_accessor()
+TEST_FUNC constexpr void mixin_accessor()
 {
   cuda::std::array<T, 1024> elements{42};
   // make sure we test trivially constructible accessor and data_handle
-  static_assert(cuda::std::is_trivially_move_constructible<cuda::std::default_accessor<T>>::value, "");
+  static_assert(cuda::std::is_trivially_move_constructible<cuda::std::default_accessor<T>>::value);
   static_assert(
     cuda::std::is_trivially_move_constructible<typename cuda::std::default_accessor<T>::data_handle_type>::value, "");
   mixin_layout(elements.data(), cuda::std::default_accessor<T>());
@@ -91,11 +94,11 @@ __host__ __device__ constexpr void mixin_accessor()
 }
 
 template <class T, cuda::std::enable_if_t<!cuda::std::is_default_constructible<T>::value, int> = 0>
-__host__ __device__ TEST_CONSTEXPR_CXX20 void mixin_accessor()
+TEST_FUNC TEST_CONSTEXPR_CXX20 void mixin_accessor()
 {
   ElementPool<T, 1024> elements;
   // make sure we test trivially constructible accessor and data_handle
-  static_assert(cuda::std::is_trivially_move_constructible<cuda::std::default_accessor<T>>::value, "");
+  static_assert(cuda::std::is_trivially_move_constructible<cuda::std::default_accessor<T>>::value);
   static_assert(
     cuda::std::is_trivially_move_constructible<typename cuda::std::default_accessor<T>::data_handle_type>::value, "");
   mixin_layout(elements.get_ptr(), cuda::std::default_accessor<T>());
@@ -110,7 +113,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 void mixin_accessor()
   mixin_layout(typename checked_accessor<T>::data_handle_type(elements.get_ptr()), acc);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   mixin_accessor<int>();
   mixin_accessor<const int>();
@@ -119,7 +122,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_evil()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_evil()
 {
   mixin_accessor<MinimalElementType>();
   mixin_accessor<const MinimalElementType>();
@@ -132,8 +135,8 @@ int main(int, char**)
   test_evil();
 
 #if TEST_STD_VER >= 2020
-  static_assert(test(), "");
-  static_assert(test_evil(), "");
+  static_assert(test());
+  static_assert(test_evil());
 #endif // TEST_STD_VER >= 2020
   return 0;
 }

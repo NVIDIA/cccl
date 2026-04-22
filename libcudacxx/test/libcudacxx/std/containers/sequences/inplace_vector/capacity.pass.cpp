@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6077640: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
+
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
@@ -19,7 +22,7 @@
 #include "types.h"
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   [[maybe_unused]] constexpr size_t max_capacity = 42ull;
   using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
@@ -27,49 +30,49 @@ __host__ __device__ constexpr void test()
   const inplace_vector const_range{T(0), T(42), T(1337), T(42), T(5), T(-42)};
 
   const auto empty = range.empty();
-  static_assert(cuda::std::is_same<decltype(empty), const bool>::value, "");
+  static_assert(cuda::std::is_same<decltype(empty), const bool>::value);
   assert(!empty);
 
   const auto const_empty = const_range.empty();
-  static_assert(cuda::std::is_same<decltype(const_empty), const bool>::value, "");
+  static_assert(cuda::std::is_same<decltype(const_empty), const bool>::value);
   assert(!const_empty);
 
   const auto size = range.size();
-  static_assert(cuda::std::is_same<decltype(size), const typename inplace_vector::size_type>::value, "");
+  static_assert(cuda::std::is_same<decltype(size), const typename inplace_vector::size_type>::value);
   assert(size == 6);
 
   const auto const_size = const_range.size();
-  static_assert(cuda::std::is_same<decltype(const_size), const typename inplace_vector::size_type>::value, "");
+  static_assert(cuda::std::is_same<decltype(const_size), const typename inplace_vector::size_type>::value);
   assert(const_size == 6);
 
   const auto max_size = range.max_size();
-  static_assert(cuda::std::is_same<decltype(max_size), const typename inplace_vector::size_type>::value, "");
+  static_assert(cuda::std::is_same<decltype(max_size), const typename inplace_vector::size_type>::value);
   assert(max_size == max_capacity);
 
   const auto const_max_size = const_range.max_size();
-  static_assert(cuda::std::is_same<decltype(const_max_size), const typename inplace_vector::size_type>::value, "");
+  static_assert(cuda::std::is_same<decltype(const_max_size), const typename inplace_vector::size_type>::value);
   assert(const_max_size == max_capacity);
 
   // max_size is a static member function, so it should also work through the type
   const auto static_max_size = inplace_vector::max_size();
-  static_assert(cuda::std::is_same<decltype(static_max_size), const typename inplace_vector::size_type>::value, "");
+  static_assert(cuda::std::is_same<decltype(static_max_size), const typename inplace_vector::size_type>::value);
   assert(static_max_size == max_capacity);
 
   const auto capacity = range.capacity();
-  static_assert(cuda::std::is_same<decltype(capacity), const typename inplace_vector::size_type>::value, "");
+  static_assert(cuda::std::is_same<decltype(capacity), const typename inplace_vector::size_type>::value);
   assert(capacity == max_capacity);
 
   const auto const_capacity = const_range.capacity();
-  static_assert(cuda::std::is_same<decltype(const_capacity), const typename inplace_vector::size_type>::value, "");
+  static_assert(cuda::std::is_same<decltype(const_capacity), const typename inplace_vector::size_type>::value);
   assert(const_capacity == max_capacity);
 
   // capacity is a static member function, so it should also work through the type
   const auto static_capacity = inplace_vector::capacity();
-  static_assert(cuda::std::is_same<decltype(static_capacity), const typename inplace_vector::size_type>::value, "");
+  static_assert(cuda::std::is_same<decltype(static_capacity), const typename inplace_vector::size_type>::value);
   assert(static_capacity == max_capacity);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<Trivial>();
@@ -88,7 +91,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
   return 0;

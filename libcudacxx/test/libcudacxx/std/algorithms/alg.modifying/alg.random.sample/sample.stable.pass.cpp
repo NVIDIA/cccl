@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // <algorithm>
 
 // template <class PopulationIterator, class SampleIterator, class Distance,
@@ -25,7 +28,7 @@
 // Stable if and only if PopulationIterator meets the requirements of a
 // ForwardIterator type.
 template <class PopulationIterator, class SampleIterator>
-__host__ __device__ void test_stability(bool expect_stable)
+TEST_FUNC void test_stability(bool expect_stable)
 {
   const unsigned kPopulationSize = 100;
   int ia[kPopulationSize];

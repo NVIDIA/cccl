@@ -206,7 +206,7 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
 
   SECTION("copy construction")
   {
-    static_assert(!cuda::std::is_nothrow_copy_constructible<Buffer>::value, "");
+    static_assert(!cuda::std::is_nothrow_copy_constructible<Buffer>::value);
     { // can be copy constructed from empty input
       const Buffer input{stream, resource, 0, cuda::no_init};
       Buffer buf(input); // NOLINT(performance-unnecessary-copy-initialization)
@@ -240,7 +240,7 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
 
   SECTION("move construction")
   {
-    static_assert(cuda::std::is_nothrow_move_constructible<Buffer>::value, "");
+    static_assert(cuda::std::is_nothrow_move_constructible<Buffer>::value);
 
     { // can be move constructed with empty input
       Buffer input{stream, resource, 0, cuda::no_init};

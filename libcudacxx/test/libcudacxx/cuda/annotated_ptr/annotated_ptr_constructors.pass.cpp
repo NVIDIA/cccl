@@ -11,7 +11,7 @@
 #include "utils.h"
 
 template <typename T, typename P>
-__host__ __device__ __noinline__ void test_ctor(T* ptr)
+TEST_FUNC __noinline__ void test_ctor(T* ptr)
 {
   // default ctor, cpy and cpy assignment
   cuda::annotated_ptr<T, P> def;
@@ -51,7 +51,7 @@ __host__ __device__ __noinline__ void test_ctor(T* ptr)
 }
 
 template <typename T, typename P>
-__host__ __device__ __noinline__ void test_global_ctor()
+TEST_FUNC __noinline__ void test_global_ctor()
 {
   T* rp = nullptr;
   rp++;
@@ -64,7 +64,7 @@ __host__ __device__ __noinline__ void test_global_ctor()
   cuda::annotated_ptr<const volatile T, cuda::access_property> d(rp, p);
 }
 
-__host__ __device__ __noinline__ void test_global_ctors()
+TEST_FUNC __noinline__ void test_global_ctors()
 {
   test_global_ctor<int, cuda::access_property::normal>();
   test_global_ctor<int, cuda::access_property::streaming>();

@@ -23,6 +23,9 @@ endif()
 # Enable CXX so CMake can configure install paths
 project(CCCL LANGUAGES CXX)
 
+# Enable CCCL specific platform files
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
 include(cmake/CCCLInstallRules.cmake)
 
 # Support adding CCCL to a parent project via add_subdirectory.
@@ -57,6 +60,17 @@ if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   set(CCCL_ENABLE_BENCHMARKS OFF)
 else()
   option(CCCL_ENABLE_BENCHMARKS "Enable CUDA C++ Core Library benchmarks." OFF)
+endif()
+
+option(CCCL_ENABLE_TILE "Enable tile support" OFF)
+if (CCCL_ENABLE_TILE) # TODO(miscco) sccache currently does not support tile
+  unset(ENV{CMAKE_C_COMPILER_LAUNCHER})
+  unset(ENV{CMAKE_CXX_COMPILER_LAUNCHER})
+  unset(ENV{CMAKE_CUDA_COMPILER_LAUNCHER})
+
+  unset(CMAKE_C_COMPILER_LAUNCHER CACHE)
+  unset(CMAKE_CXX_COMPILER_LAUNCHER CACHE)
+  unset(CMAKE_CUDA_COMPILER_LAUNCHER CACHE)
 endif()
 
 option(

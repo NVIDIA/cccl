@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 #include <cuda/std/array>
 #include <cuda/std/charconv>
 #include <cuda/std/cstddef>
@@ -29,7 +32,7 @@ struct TestItem
 };
 
 template <int Base>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items();
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items();
 
 // Source code for the generation of the test items
 // #include <iostream>
@@ -70,7 +73,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items();
 //     std::cout <<
 // "\n"
 // "template <>\n"
-// "__host__ __device__ constexpr cuda::std::array<TestItem, " << std::size(list) << "> get_test_items<" << base <<
+// "TEST_FUNC constexpr cuda::std::array<TestItem, " << std::size(list) << "> get_test_items<" << base <<
 // ">()\n" <<
 // "{\n"
 // "  return {{\n";
@@ -102,7 +105,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items();
 // }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<2>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<2>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -130,7 +133,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<2>()
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<3>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<3>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -158,7 +161,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<3>()
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<4>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<4>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -186,7 +189,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<4>()
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<5>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<5>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -214,7 +217,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<5>()
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<6>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<6>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -242,7 +245,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<6>()
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<7>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<7>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -270,7 +273,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<7>()
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<8>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<8>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -298,7 +301,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<8>()
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<9>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<9>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -326,7 +329,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<9>()
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<10>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<10>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -354,7 +357,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<10>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<11>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<11>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -382,7 +385,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<11>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<12>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<12>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -410,7 +413,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<12>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<13>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<13>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -438,7 +441,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<13>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<14>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<14>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -466,7 +469,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<14>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<15>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<15>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -494,7 +497,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<15>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<16>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<16>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -522,7 +525,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<16>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<17>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<17>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -550,7 +553,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<17>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<18>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<18>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -578,7 +581,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<18>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<19>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<19>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -606,7 +609,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<19>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<20>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<20>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -634,7 +637,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<20>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<21>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<21>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -662,7 +665,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<21>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<22>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<22>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -690,7 +693,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<22>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<23>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<23>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -718,7 +721,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<23>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<24>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<24>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -746,7 +749,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<24>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<25>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<25>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -774,7 +777,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<25>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<26>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<26>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -802,7 +805,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<26>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<27>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<27>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -830,7 +833,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<27>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<28>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<28>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -858,7 +861,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<28>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<29>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<29>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -886,7 +889,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<29>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<30>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<30>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -914,7 +917,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<30>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<31>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<31>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -942,7 +945,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<31>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<32>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<32>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -970,7 +973,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<32>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<33>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<33>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -998,7 +1001,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<33>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<34>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<34>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -1026,7 +1029,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<34>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<35>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<35>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -1054,7 +1057,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<35>(
 }
 
 template <>
-__host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<36>()
+TEST_FUNC constexpr cuda::std::array<TestItem, 21> get_test_items<36>()
 {
   return {{
     TestItem{0, "0", "0"},
@@ -1082,7 +1085,7 @@ __host__ __device__ constexpr cuda::std::array<TestItem, 21> get_test_items<36>(
 }
 
 template <class T, int Base>
-__host__ __device__ constexpr void test_to_chars(const TestItem& item)
+TEST_FUNC constexpr void test_to_chars(const TestItem& item)
 {
   constexpr cuda::std::size_t buff_size = 150;
 
@@ -1127,7 +1130,7 @@ __host__ __device__ constexpr void test_to_chars(const TestItem& item)
 }
 
 template <int Base>
-__host__ __device__ constexpr bool test_base()
+TEST_FUNC constexpr bool test_base()
 {
   constexpr auto items = get_test_items<Base>();
 
@@ -1143,14 +1146,14 @@ __host__ __device__ constexpr bool test_base()
 struct TestBaseInvoker
 {
   template <int Base>
-  __host__ __device__ constexpr void operator()(cuda::std::integral_constant<int, Base>) const
+  TEST_FUNC constexpr void operator()(cuda::std::integral_constant<int, Base>) const
   {
     test_base<Base>();
     static_assert(test_base<Base>());
   }
 };
 
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   cuda::static_for<int, first_base, last_base + 1>(TestBaseInvoker{});
 }

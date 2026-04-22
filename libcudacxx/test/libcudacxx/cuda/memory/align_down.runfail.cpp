@@ -14,7 +14,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   uintptr_t ptr_int = 10;
   auto ptr          = reinterpret_cast<int*>(ptr_int);

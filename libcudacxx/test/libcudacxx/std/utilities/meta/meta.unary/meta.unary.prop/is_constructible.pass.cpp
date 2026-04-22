@@ -21,12 +21,12 @@ TEST_NV_DIAG_SUPPRESS(declared_but_not_referenced)
 
 struct A
 {
-  __host__ __device__ explicit A(int);
-  __host__ __device__ A(int, double);
-  __host__ __device__ A(int, long, double);
+  TEST_FUNC explicit A(int);
+  TEST_FUNC A(int, double);
+  TEST_FUNC A(int, long, double);
 
 private:
-  __host__ __device__ A(char);
+  TEST_FUNC A(char);
 };
 
 struct Base
@@ -36,120 +36,120 @@ struct Derived : public Base
 
 class Abstract
 {
-  __host__ __device__ virtual void foo() = 0;
+  TEST_FUNC virtual void foo() = 0;
 };
 
 class AbstractDestructor
 {
-  __host__ __device__ virtual ~AbstractDestructor() = 0;
+  TEST_FUNC virtual ~AbstractDestructor() = 0;
 };
 
 struct PrivateDtor
 {
-  __host__ __device__ PrivateDtor(int) {}
+  TEST_FUNC PrivateDtor(int) {}
 
 private:
-  __host__ __device__ ~PrivateDtor() {}
+  TEST_FUNC ~PrivateDtor() {}
 };
 
 struct S
 {
   template <class T>
-  __host__ __device__ explicit operator T() const;
+  TEST_FUNC explicit operator T() const;
 };
 
 template <class To>
 struct ImplicitTo
 {
-  __host__ __device__ operator To();
+  TEST_FUNC operator To();
 };
 
 template <class To>
 struct ExplicitTo
 {
-  __host__ __device__ explicit operator To();
+  TEST_FUNC explicit operator To();
 };
 
 template <class T>
-__host__ __device__ void test_is_constructible()
+TEST_FUNC void test_is_constructible()
 {
-  static_assert((cuda::std::is_constructible<T>::value), "");
+  static_assert((cuda::std::is_constructible<T>::value));
 #if !TEST_COMPILER(MSVC)
   // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
   // use it, so waive it.
-  static_assert((cuda::std::__cccl_is_constructible<T>::type::value), "");
+  static_assert((cuda::std::__cccl_is_constructible<T>::type::value));
 #endif // !TEST_COMPILER(MSVC)
-  static_assert(cuda::std::is_constructible_v<T>, "");
+  static_assert(cuda::std::is_constructible_v<T>);
 }
 
 template <class T, class A0>
-__host__ __device__ void test_is_constructible()
+TEST_FUNC void test_is_constructible()
 {
-  static_assert((cuda::std::is_constructible<T, A0>::value), "");
+  static_assert((cuda::std::is_constructible<T, A0>::value));
 #if !TEST_COMPILER(MSVC)
   // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
   // use it, so waive it.
-  static_assert((cuda::std::__cccl_is_constructible<T, A0>::type::value), "");
+  static_assert((cuda::std::__cccl_is_constructible<T, A0>::type::value));
 #endif // !TEST_COMPILER(MSVC)
-  static_assert((cuda::std::is_constructible_v<T, A0>), "");
+  static_assert((cuda::std::is_constructible_v<T, A0>) );
 }
 
 template <class T, class A0, class A1>
-__host__ __device__ void test_is_constructible()
+TEST_FUNC void test_is_constructible()
 {
-  static_assert((cuda::std::is_constructible<T, A0, A1>::value), "");
+  static_assert((cuda::std::is_constructible<T, A0, A1>::value));
 #if !TEST_COMPILER(MSVC)
   // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
   // use it, so waive it.
-  static_assert((cuda::std::__cccl_is_constructible<T, A0, A1>::type::value), "");
+  static_assert((cuda::std::__cccl_is_constructible<T, A0, A1>::type::value));
 #endif // !TEST_COMPILER(MSVC)
-  static_assert((cuda::std::is_constructible_v<T, A0, A1>), "");
+  static_assert((cuda::std::is_constructible_v<T, A0, A1>) );
 }
 
 template <class T, class A0, class A1, class A2>
-__host__ __device__ void test_is_constructible()
+TEST_FUNC void test_is_constructible()
 {
-  static_assert((cuda::std::is_constructible<T, A0, A1, A2>::value), "");
+  static_assert((cuda::std::is_constructible<T, A0, A1, A2>::value));
 #if !TEST_COMPILER(MSVC)
   // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
   // use it, so waive it.
-  static_assert((cuda::std::__cccl_is_constructible<T, A0, A1, A2>::type::value), "");
+  static_assert((cuda::std::__cccl_is_constructible<T, A0, A1, A2>::type::value));
 #endif // !TEST_COMPILER(MSVC)
-  static_assert((cuda::std::is_constructible_v<T, A0, A1, A2>), "");
+  static_assert((cuda::std::is_constructible_v<T, A0, A1, A2>) );
 }
 
 template <class T>
-__host__ __device__ void test_is_not_constructible()
+TEST_FUNC void test_is_not_constructible()
 {
-  static_assert((!cuda::std::is_constructible<T>::value), "");
+  static_assert((!cuda::std::is_constructible<T>::value));
 #if !TEST_COMPILER(MSVC)
   // The fallback SFINAE version doesn't work reliable with MSVC, and we don't
   // use it, so waive it.
-  static_assert((!cuda::std::__cccl_is_constructible<T>::type::value), "");
+  static_assert((!cuda::std::__cccl_is_constructible<T>::type::value));
 #endif // !TEST_COMPILER(MSVC)
-  static_assert((!cuda::std::is_constructible_v<T>), "");
+  static_assert((!cuda::std::is_constructible_v<T>) );
 }
 
 template <class T, class A0>
-__host__ __device__ void test_is_not_constructible()
+TEST_FUNC void test_is_not_constructible()
 {
-  static_assert((!cuda::std::is_constructible<T, A0>::value), "");
+  static_assert((!cuda::std::is_constructible<T, A0>::value));
 #if !TEST_COMPILER(MSVC) && !TEST_COMPILER(CLANG) && !TEST_COMPILER(NVRTC) && !TEST_COMPILER(NVHPC)
   // The fallback SFINAE version doesn't work reliable with Clang/MSVC/NVRTC/NVHPC, and we don't
   // use it, so waive it.
-  static_assert((!cuda::std::__cccl_is_constructible<T, A0>::type::value), "");
+  static_assert((!cuda::std::__cccl_is_constructible<T, A0>::type::value));
 #endif // !TEST_COMPILER(MSVC) && !TEST_COMPILER(CLANG) && !TEST_COMPILER(NVRTC) && !TEST_COMPILER(NVHPC)
-  static_assert((!cuda::std::is_constructible_v<T, A0>), "");
+  static_assert((!cuda::std::is_constructible_v<T, A0>) );
 }
 
 #if TEST_COMPILER(CLANG)
 template <class T = int, class = decltype(static_cast<T&&>(cuda::std::declval<double&>()))>
-__host__ __device__ constexpr bool clang_disallows_valid_static_cast_test(int)
+TEST_FUNC constexpr bool clang_disallows_valid_static_cast_test(int)
 {
   return false;
 };
 
-__host__ __device__ constexpr bool clang_disallows_valid_static_cast_test(long)
+TEST_FUNC constexpr bool clang_disallows_valid_static_cast_test(long)
 {
   return true;
 }
@@ -272,12 +272,12 @@ int main(int, char**)
 
   // TODO add nvbug tracking
 #if !TEST_CUDA_COMPILER(NVCC) && !TEST_COMPILER(NVRTC)
-  static_assert(cuda::std::is_constructible<int&&, ExplicitTo<int&&>>::value, "");
+  static_assert(cuda::std::is_constructible<int&&, ExplicitTo<int&&>>::value);
 #endif // !TEST_CUDA_COMPILER(NVCC) && !TEST_COMPILER(NVRTC)
 
 #if TEST_CUDA_COMPILER(CLANG)
-  static_assert(clang_disallows_valid_static_cast_bug == false, "");
-  static_assert(cuda::std::__cccl_is_constructible<int&&, ExplicitTo<int&&>>::value, "");
+  static_assert(clang_disallows_valid_static_cast_bug == false);
+  static_assert(cuda::std::__cccl_is_constructible<int&&, ExplicitTo<int&&>>::value);
 #endif // TEST_CUDA_COMPILER(CLANG)
 
 // FIXME Compilers disagree about the validity of these tests.
@@ -285,7 +285,7 @@ int main(int, char**)
   test_is_constructible<const int&, ExplicitTo<int>>();
   static_assert(
     clang_disallows_valid_static_cast_bug != cuda::std::__cccl_is_constructible<int&&, ExplicitTo<int>>::value, "");
-  static_assert(cuda::std::is_constructible<int&&, ExplicitTo<int>>::value, "");
+  static_assert(cuda::std::is_constructible<int&&, ExplicitTo<int>>::value);
 #elif TEST_COMPILER(MSVC) && TEST_CUDA_COMPILER(NVCC)
   // FIXME NVCC and MSVC disagree about the validity of these tests, and give
   //       different answers in host and device code, which is just wonderful.

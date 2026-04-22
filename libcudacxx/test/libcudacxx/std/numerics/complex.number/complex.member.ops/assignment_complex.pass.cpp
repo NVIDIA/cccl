@@ -20,7 +20,7 @@
 TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possible loss of data
 
 template <class T, class X>
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::complex<T> c;
   assert(c.real() == T(0));
@@ -65,11 +65,11 @@ int main(int, char**)
 #  endif
 #endif
 
-  static_assert(test<float, float>(), "");
-  static_assert(test<float, double>(), "");
+  static_assert(test<float, float>());
+  static_assert(test<float, double>());
 
-  static_assert(test<double, float>(), "");
-  static_assert(test<double, double>(), "");
+  static_assert(test<double, float>());
+  static_assert(test<double, double>());
 
   return 0;
 }

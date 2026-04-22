@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <cuda/mdspan>
 
 // template<class OtherMapping>
@@ -39,7 +42,7 @@ _CCCL_CONCEPT layout_stride_relaxed_mapping_comparable = _CCCL_REQUIRES_EXPR(
   static_cast<void>(e1 == e2));
 
 template <class From, class To>
-__host__ __device__ constexpr void test_comparison_different_rank()
+TEST_FUNC constexpr void test_comparison_different_rank()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
 
@@ -59,7 +62,7 @@ __host__ __device__ constexpr void test_comparison_different_rank()
 }
 
 template <class To, class From>
-__host__ __device__ constexpr void test_comparison(
+TEST_FUNC constexpr void test_comparison(
   bool equal,
   To dest_exts,
   From src_exts,
@@ -84,7 +87,7 @@ __host__ __device__ constexpr void test_comparison(
 }
 
 template <class From, class To>
-__host__ __device__ constexpr void test_comparison_same_rank()
+TEST_FUNC constexpr void test_comparison_same_rank()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   // Rank-0: same extents, default offsets
@@ -197,7 +200,7 @@ __host__ __device__ constexpr void test_comparison_same_rank()
 
 // Test comparison with standard layout mappings
 template <class OtherLayout, class E1, class E2, class... OtherArgs>
-__host__ __device__ constexpr void test_comparison_with(
+TEST_FUNC constexpr void test_comparison_with(
   bool expect_equal,
   E1 e1,
   cuda::std::array<intptr_t, E1::rank()> strides,
@@ -216,7 +219,7 @@ __host__ __device__ constexpr void test_comparison_with(
 }
 
 template <class OtherLayout>
-__host__ __device__ constexpr void test_comparison_with()
+TEST_FUNC constexpr void test_comparison_with()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   constexpr bool is_left_based        = cuda::std::is_same_v<OtherLayout, cuda::std::layout_left>;
@@ -279,7 +282,7 @@ __host__ __device__ constexpr void test_comparison_with()
 }
 
 template <class From, class To>
-__host__ __device__ constexpr void test_comparison_index_type()
+TEST_FUNC constexpr void test_comparison_index_type()
 {
   test_comparison_same_rank<From, To>();
   test_comparison_different_rank<From, To>();
@@ -287,7 +290,7 @@ __host__ __device__ constexpr void test_comparison_index_type()
   test_comparison_with<cuda::std::layout_left>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_comparison_index_type<int, int>();
   test_comparison_index_type<int, size_t>();

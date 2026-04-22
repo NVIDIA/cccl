@@ -12,8 +12,10 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
+#include "test_macros.h"
+
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   // Test default
   assert(cuda::__is_valid_alignment(alignof(T)));
@@ -37,7 +39,7 @@ struct alignas(512) OverAligned
   char data_[512];
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<unsigned char>();
   test<short>();

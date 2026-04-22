@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <class It, class U>
-__host__ __device__ constexpr void test(U u)
+TEST_FUNC constexpr void test(U u)
 {
   const cuda::std::reverse_iterator<U> r2(u);
   cuda::std::reverse_iterator<It> r1;
@@ -43,34 +43,34 @@ struct ToIter
   using value_type        = char;
   using difference_type   = value_type;
 
-  __host__ __device__ explicit constexpr ToIter()
+  TEST_FUNC explicit constexpr ToIter()
       : m_value(0)
   {}
-  __host__ __device__ constexpr ToIter(const ToIter& src)
+  TEST_FUNC constexpr ToIter(const ToIter& src)
       : m_value(src.m_value)
   {}
   // Intentionally not defined, must not be called.
-  __host__ __device__ ToIter(char* src);
-  __host__ __device__ constexpr ToIter& operator=(char* src)
+  TEST_FUNC ToIter(char* src);
+  TEST_FUNC constexpr ToIter& operator=(char* src)
   {
     m_value = src;
     return *this;
   }
-  __host__ __device__ constexpr ToIter& operator=(const ToIter& src)
+  TEST_FUNC constexpr ToIter& operator=(const ToIter& src)
   {
     m_value = src.m_value;
     return *this;
   }
   char* m_value;
 
-  __host__ __device__ reference operator*() const;
-  __host__ __device__ ToIter& operator++();
-  __host__ __device__ ToIter& operator--();
-  __host__ __device__ ToIter operator++(int);
-  __host__ __device__ ToIter operator--(int);
+  TEST_FUNC reference operator*() const;
+  TEST_FUNC ToIter& operator++();
+  TEST_FUNC ToIter& operator--();
+  TEST_FUNC ToIter operator++(int);
+  TEST_FUNC ToIter operator--(int);
 };
 
-__host__ __device__ constexpr bool tests()
+TEST_FUNC constexpr bool tests()
 {
   Derived d{};
   test<bidirectional_iterator<Base*>>(bidirectional_iterator<Derived*>(&d));
@@ -90,6 +90,6 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
-  static_assert(tests(), "");
+  static_assert(tests());
   return 0;
 }

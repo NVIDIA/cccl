@@ -268,11 +268,11 @@ public:
   static constexpr int radix       = 2;
   _CCCL_API static constexpr type epsilon() noexcept
   {
-    return type(0);
+    return false;
   }
   _CCCL_API static constexpr type round_error() noexcept
   {
-    return type(0);
+    return false;
   }
 
   static constexpr int min_exponent   = 0;
@@ -287,19 +287,19 @@ public:
   _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
   _CCCL_API static constexpr type infinity() noexcept
   {
-    return type(0);
+    return false;
   }
   _CCCL_API static constexpr type quiet_NaN() noexcept
   {
-    return type(0);
+    return false;
   }
   _CCCL_API static constexpr type signaling_NaN() noexcept
   {
-    return type(0);
+    return false;
   }
   _CCCL_API static constexpr type denorm_min() noexcept
   {
-    return type(0);
+    return false;
   }
 
   static constexpr bool is_iec559  = false;

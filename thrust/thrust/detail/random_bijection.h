@@ -41,9 +41,9 @@ public:
     R_mask = (1ull << R_bits) - 1;
 
     thrust::uniform_int_distribution<std::uint32_t> dist;
-    for (std::uint32_t i = 0; i < num_rounds; i++)
+    for (auto& k : key)
     {
-      key[i] = dist(g);
+      k = dist(g);
     }
   }
 
@@ -60,11 +60,11 @@ public:
     // (2022): 1-20.
     uint32_t L = static_cast<uint32_t>(val >> R_bits);
     uint32_t R = static_cast<uint32_t>(val & R_mask);
-    for (uint32_t i = 0; i < num_rounds; i++)
+    for (const auto k : key)
     {
       constexpr uint64_t m0  = 0xD2B74407B1CE6E93;
       const uint64_t product = m0 * L;
-      uint32_t F_k           = (product >> 32) ^ key[i];
+      uint32_t F_k           = (product >> 32) ^ k;
       uint32_t B_k           = static_cast<uint32_t>(product);
       uint32_t L_prime       = F_k ^ R;
 

@@ -24,52 +24,52 @@ struct NoDefaultInit
   using reference         = int&;
   using self              = NoDefaultInit;
 
-  __host__ __device__ NoDefaultInit(int*);
+  TEST_FUNC NoDefaultInit(int*);
 
-  __host__ __device__ reference operator*() const;
-  __host__ __device__ pointer operator->() const;
+  TEST_FUNC reference operator*() const;
+  TEST_FUNC pointer operator->() const;
 #if TEST_HAS_SPACESHIP()
-  __host__ __device__ auto operator<=>(const self&) const = default;
+  TEST_FUNC auto operator<=>(const self&) const = default;
 #else // ^^^ TEST_HAS_SPACESHIP() ^^^ / vvv !TEST_HAS_SPACESHIP() vvv
-  __host__ __device__ bool operator<(const self&) const;
-  __host__ __device__ bool operator<=(const self&) const;
-  __host__ __device__ bool operator>(const self&) const;
-  __host__ __device__ bool operator>=(const self&) const;
+  TEST_FUNC bool operator<(const self&) const;
+  TEST_FUNC bool operator<=(const self&) const;
+  TEST_FUNC bool operator>(const self&) const;
+  TEST_FUNC bool operator>=(const self&) const;
 #endif // !TEST_HAS_SPACESHIP()
 
-  __host__ __device__ friend bool operator==(const self&, int*);
+  TEST_FUNC friend bool operator==(const self&, int*);
 #if TEST_STD_VER <= 2017
-  __host__ __device__ friend bool operator==(int*, const self&);
-  __host__ __device__ friend bool operator!=(const self&, int*);
-  __host__ __device__ friend bool operator!=(int*, const self&);
+  TEST_FUNC friend bool operator==(int*, const self&);
+  TEST_FUNC friend bool operator!=(const self&, int*);
+  TEST_FUNC friend bool operator!=(int*, const self&);
 #endif // TEST_STD_VER <= 2017
 
-  __host__ __device__ self& operator++();
-  __host__ __device__ self operator++(int);
+  TEST_FUNC self& operator++();
+  TEST_FUNC self operator++(int);
 
-  __host__ __device__ self& operator--();
-  __host__ __device__ self operator--(int);
+  TEST_FUNC self& operator--();
+  TEST_FUNC self operator--(int);
 
-  __host__ __device__ self& operator+=(difference_type n);
-  __host__ __device__ self operator+(difference_type n) const;
-  __host__ __device__ friend self operator+(difference_type n, self x);
+  TEST_FUNC self& operator+=(difference_type n);
+  TEST_FUNC self operator+(difference_type n) const;
+  TEST_FUNC friend self operator+(difference_type n, self x);
 
-  __host__ __device__ self& operator-=(difference_type n);
-  __host__ __device__ self operator-(difference_type n) const;
-  __host__ __device__ difference_type operator-(const self&) const;
+  TEST_FUNC self& operator-=(difference_type n);
+  TEST_FUNC self operator-(difference_type n) const;
+  TEST_FUNC difference_type operator-(const self&) const;
 
-  __host__ __device__ reference operator[](difference_type n) const;
+  TEST_FUNC reference operator[](difference_type n) const;
 };
 
 struct IterNoDefaultInitView : cuda::std::ranges::view_base
 {
-  __host__ __device__ NoDefaultInit begin() const;
-  __host__ __device__ int* end() const;
-  __host__ __device__ NoDefaultInit begin();
-  __host__ __device__ int* end();
+  TEST_FUNC NoDefaultInit begin() const;
+  TEST_FUNC int* end() const;
+  TEST_FUNC NoDefaultInit begin();
+  TEST_FUNC int* end();
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::ranges::transform_view<MoveOnlyView, PlusOne> transformView{};
   auto iter = cuda::std::move(transformView).begin();
@@ -90,7 +90,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_ADDRESSOF
 
   return 0;

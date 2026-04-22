@@ -477,6 +477,69 @@ public:
     return __buf_.data();
   }
 
+  //! @brief Returns a span over the first \p __count elements.
+  //! @param __count Number of elements in the returned span.
+  //! @pre `__count <= size()`
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<_Tp> first(size_type __count) noexcept
+  {
+    _CCCL_ASSERT(__count <= size(), "cuda::buffer::first(count): count out of range");
+    return {data(), __count};
+  }
+
+  //! @overload
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const _Tp> first(size_type __count) const noexcept
+  {
+    _CCCL_ASSERT(__count <= size(), "cuda::buffer::first(count): count out of range");
+    return {data(), __count};
+  }
+
+  //! @brief Returns a span over the last \p __count elements.
+  //! @param __count Number of elements in the returned span.
+  //! @pre `__count <= size()`
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<_Tp> last(size_type __count) noexcept
+  {
+    _CCCL_ASSERT(__count <= size(), "cuda::buffer::last(count): count out of range");
+    return {data() + size() - __count, __count};
+  }
+
+  //! @overload
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const _Tp> last(size_type __count) const noexcept
+  {
+    _CCCL_ASSERT(__count <= size(), "cuda::buffer::last(count): count out of range");
+    return {data() + size() - __count, __count};
+  }
+
+  //! @brief Returns a span over a subset of the buffer.
+  //! @param __offset Index of the first element in the returned span.
+  //! @param __count Number of elements. Defaults to `dynamic_extent`, meaning
+  //!   all elements from \p __offset to the end.
+  //! @pre `__offset <= size()`
+  //! @pre `__count <= size() - __offset || __count == dynamic_extent`
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<_Tp>
+  subspan(size_type __offset, size_type __count = ::cuda::std::dynamic_extent) noexcept
+  {
+    _CCCL_ASSERT(__offset <= size(), "cuda::buffer::subspan(offset, count): offset out of range");
+    if (__count == ::cuda::std::dynamic_extent)
+    {
+      return {data() + __offset, size() - __offset};
+    }
+    _CCCL_ASSERT(__count <= size() - __offset, "cuda::buffer::subspan(offset, count): count out of range");
+    return {data() + __offset, __count};
+  }
+
+  //! @overload
+  [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const _Tp>
+  subspan(size_type __offset, size_type __count = ::cuda::std::dynamic_extent) const noexcept
+  {
+    _CCCL_ASSERT(__offset <= size(), "cuda::buffer::subspan(offset, count): offset out of range");
+    if (__count == ::cuda::std::dynamic_extent)
+    {
+      return {data() + __offset, size() - __offset};
+    }
+    _CCCL_ASSERT(__count <= size() - __offset, "cuda::buffer::subspan(offset, count): count out of range");
+    return {data() + __offset, __count};
+  }
+
 #  ifndef _CCCL_DOXYGEN_INVOKED
   //! @brief Returns a pointer to the first element of the buffer. If the buffer
   //! is empty, the returned pointer will be null.

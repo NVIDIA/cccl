@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <cuda/mdspan>
 
 // constexpr index_type required_span_size() const noexcept;
@@ -31,7 +34,7 @@
 using cuda::std::intptr_t;
 
 template <class E>
-__host__ __device__ constexpr void test_required_span_size(
+TEST_FUNC constexpr void test_required_span_size(
   E e,
   [[maybe_unused]] cuda::std::array<intptr_t, E::rank()> input_strides,
   intptr_t offset,
@@ -46,7 +49,7 @@ __host__ __device__ constexpr void test_required_span_size(
   assert(cuda::std::cmp_equal(m.required_span_size(), expected_size));
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   // Rank-0 cases: required_span_size = offset + 1

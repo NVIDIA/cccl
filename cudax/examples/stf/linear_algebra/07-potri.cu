@@ -17,6 +17,8 @@
  */
 #include <cuda/experimental/stf.cuh>
 
+#include <iostream>
+
 #include <cusolverDn.h>
 
 #include <cublas_v2.h>

@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: bit field read/write is unsupported in tile code
+
 // <cuda/std/format>
 
 // Class typedefs:
@@ -29,7 +32,7 @@
 #include "test_macros.h"
 
 template <class CharT>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   static_assert(cuda::std::is_same_v<typename cuda::std::basic_format_parse_context<CharT>::char_type, CharT>);
   static_assert(cuda::std::is_same_v<typename cuda::std::basic_format_parse_context<CharT>::const_iterator,
@@ -38,7 +41,7 @@ __host__ __device__ constexpr void test()
                                      typename cuda::std::basic_format_parse_context<CharT>::const_iterator>);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<char>();
 #if _CCCL_HAS_CHAR8_T()

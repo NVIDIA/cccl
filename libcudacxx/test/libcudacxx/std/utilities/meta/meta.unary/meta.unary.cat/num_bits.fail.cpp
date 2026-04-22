@@ -11,7 +11,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_num_bits()
+TEST_FUNC void test_num_bits()
 {
   static_assert(cuda::std::__num_bits_v<T>);
 }

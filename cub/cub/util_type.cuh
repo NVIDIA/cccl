@@ -26,6 +26,7 @@
 
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -37,10 +38,6 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -831,6 +828,7 @@ namespace detail
 {
 struct is_primitive_impl;
 
+// case for _CATEGORY = NOT_A_NUMBER, or _PRIMITIVE = false
 template <Category _CATEGORY, bool _PRIMITIVE, typename _UnsignedBits, typename T>
 struct BaseTraits
 {
@@ -843,6 +841,8 @@ private:
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<UNSIGNED_INTEGER, true, _UnsignedBits, T>
 {
+  static_assert(sizeof(_UnsignedBits) == sizeof(T),
+                "The size of the unsigned type holding the bits of T must be the same as T");
   static_assert(::cuda::std::numeric_limits<T>::is_specialized,
                 "Please also specialize cuda::std::numeric_limits for T");
 
@@ -888,6 +888,8 @@ private:
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<SIGNED_INTEGER, true, _UnsignedBits, T>
 {
+  static_assert(sizeof(_UnsignedBits) == sizeof(T),
+                "The size of the unsigned type holding the bits of T must be the same as T");
   static_assert(::cuda::std::numeric_limits<T>::is_specialized,
                 "Please also specialize cuda::std::numeric_limits for T");
 
@@ -931,6 +933,8 @@ private:
 template <typename _UnsignedBits, typename T>
 struct BaseTraits<FLOATING_POINT, true, _UnsignedBits, T>
 {
+  static_assert(sizeof(_UnsignedBits) == sizeof(T),
+                "The size of the unsigned type holding the bits of T must be the same as T");
   static_assert(::cuda::std::numeric_limits<T>::is_specialized,
                 "Please also specialize cuda::std::numeric_limits for T");
   static_assert(::cuda::is_floating_point<T>::value, "Please also specialize cuda::is_floating_point for T");

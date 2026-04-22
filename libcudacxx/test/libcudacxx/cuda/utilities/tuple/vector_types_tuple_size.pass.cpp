@@ -15,12 +15,12 @@
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class VType, size_t Size>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
-  static_assert(cuda::std::tuple_size<VType>::value == Size, "");
-  static_assert(cuda::std::tuple_size<const VType>::value == Size, "");
-  static_assert(cuda::std::tuple_size<volatile VType>::value == Size, "");
-  static_assert(cuda::std::tuple_size<const volatile VType>::value == Size, "");
+  static_assert(cuda::std::tuple_size<VType>::value == Size);
+  static_assert(cuda::std::tuple_size<const VType>::value == Size);
+  static_assert(cuda::std::tuple_size<volatile VType>::value == Size);
+  static_assert(cuda::std::tuple_size<const volatile VType>::value == Size);
 }
 
 #define EXPAND_VECTOR_TYPE(Type) \
@@ -29,7 +29,7 @@ __host__ __device__ constexpr void test()
   test<Type##3, 3>();            \
   test<Type##4, 4>();
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   EXPAND_VECTOR_TYPE(char);
   EXPAND_VECTOR_TYPE(uchar);

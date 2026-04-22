@@ -34,16 +34,13 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
 #include <nv/target>
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
@@ -774,7 +771,7 @@ struct DispatchSelectIf
         // Prepare streaming context for next partition (swap double buffers, advance number of processed items, etc.)
         streaming_context.advance(current_num_items, (partition_idx + OffsetT{2} == num_partitions));
       }
-    } while (0);
+    } while (false);
 
     return error;
   }

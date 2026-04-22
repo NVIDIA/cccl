@@ -10,6 +10,8 @@
 
 #include <cuda/__execution/tune.h>
 
+#include "test_macros.h"
+
 struct reduce_policy
 {
   int block_threads;
@@ -18,7 +20,7 @@ struct reduce_policy
 template <int BlockThreads, class T>
 struct reduce_policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> reduce_policy
+  TEST_FUNC constexpr auto operator()(cuda::arch_id /*arch*/) const -> reduce_policy
   {
     return {BlockThreads / sizeof(T)};
   }
@@ -31,13 +33,13 @@ struct scan_policy
 
 struct scan_policy_selector
 {
-  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> scan_policy
+  TEST_FUNC constexpr auto operator()(cuda::arch_id /*arch*/) const -> scan_policy
   {
     return {};
   }
 };
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   constexpr int nominal_block_threads = 256;
   constexpr int block_threads         = nominal_block_threads / sizeof(int);

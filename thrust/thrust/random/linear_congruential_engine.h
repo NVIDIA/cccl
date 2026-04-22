@@ -19,9 +19,9 @@
 #include <thrust/random/detail/linear_congruential_engine_discard.h>
 #include <thrust/random/detail/random_core_access.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/cstdint>
-
-#include <iostream>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -165,7 +165,7 @@ public:
   /*! This member function produces a new random value and updates this \p linear_congruential_engine's state.
    *  \return A new random number.
    */
-  _CCCL_HOST_DEVICE result_type operator()(void);
+  _CCCL_HOST_DEVICE result_type operator()();
 
   /*! This member function advances this \p linear_congruential_engine's state a given number of times
    *  and discards the results.

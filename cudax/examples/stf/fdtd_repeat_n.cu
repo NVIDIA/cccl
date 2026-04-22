@@ -19,6 +19,8 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <iostream>
+
 #include <stdlib.h>
 
 using namespace cuda::experimental::stf;

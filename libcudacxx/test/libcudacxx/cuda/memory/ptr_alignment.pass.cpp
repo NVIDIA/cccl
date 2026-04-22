@@ -11,8 +11,10 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
+#include "test_macros.h"
+
 template <typename T, typename U>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   auto ptr1 = reinterpret_cast<T>(uintptr_t{1});
   assert(cuda::__ptr_alignment(ptr1) == 1);
@@ -43,7 +45,7 @@ __host__ __device__ void test()
   assert(cuda::__ptr_alignment(ptr1, 1) == 1);
 }
 
-__host__ __device__ bool test()
+TEST_FUNC bool test()
 {
   test<char*, int*>();
   test<const char*, const int*>();

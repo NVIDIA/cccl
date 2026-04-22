@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__ void test_assignment(cuda::std::complex<U> v = {})
+TEST_FUNC void test_assignment(cuda::std::complex<U> v = {})
 {
   cuda::std::complex<T> converting(v);
 
@@ -25,7 +25,7 @@ __host__ __device__ void test_assignment(cuda::std::complex<U> v = {})
   assigning = v;
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
 #if _LIBCUDACXX_HAS_NVFP16()
   test_assignment<__half, float>();

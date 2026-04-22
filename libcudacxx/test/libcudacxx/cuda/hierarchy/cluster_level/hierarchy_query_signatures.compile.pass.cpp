@@ -7,16 +7,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo: enable with nvrtc
-// UNSUPPORTED: nvrtc
-
 #include <cuda/hierarchy>
 #include <cuda/std/cstddef>
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class Level, class Hierarchy>
-__device__ void test_query_signatures(const Level& level, const Hierarchy& hier)
+TEST_DEVICE_FUNC void test_query_signatures(const Level& level, const Hierarchy& hier)
 {
   // 1. Test cuda::cluster_level::dims(x, hier) signature.
   static_assert(
@@ -42,21 +41,18 @@ __device__ void test_query_signatures(const Level& level, const Hierarchy& hier)
   static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::cluster_level::count(level, hier))>);
   static_assert(noexcept(cuda::cluster_level::count(level, hier)));
 
-  if constexpr (Hierarchy::has_level(cuda::cluster))
-  {
-    // 6. Test cuda::cluster_level::index(x, hier) signature.
-    static_assert(
-      cuda::std::is_same_v<cuda::hierarchy_query_result<unsigned>, decltype(cuda::cluster_level::index(level, hier))>);
-    static_assert(noexcept(cuda::cluster_level::index(level, hier)));
+  // 6. Test cuda::cluster_level::index(x, hier) signature.
+  static_assert(
+    cuda::std::is_same_v<cuda::hierarchy_query_result<unsigned>, decltype(cuda::cluster_level::index(level, hier))>);
+  static_assert(noexcept(cuda::cluster_level::index(level, hier)));
 
-    // 7. Test cuda::cluster_level::rank(x, hier) signature.
-    static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::cluster_level::rank(level, hier))>);
-    static_assert(noexcept(cuda::cluster_level::rank(level, hier)));
-  }
+  // 7. Test cuda::cluster_level::rank(x, hier) signature.
+  static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::cluster_level::rank(level, hier))>);
+  static_assert(noexcept(cuda::cluster_level::rank(level, hier)));
 }
 
 template <class T, class Level, class Hierarchy>
-__device__ void test_query_as_signatures(const Level& level, const Hierarchy& hier)
+TEST_DEVICE_FUNC void test_query_as_signatures(const Level& level, const Hierarchy& hier)
 {
   // 1. Test cuda::cluster_level::dims_as(x, hier) signature.
   static_assert(
@@ -73,21 +69,18 @@ __device__ void test_query_as_signatures(const Level& level, const Hierarchy& hi
   static_assert(cuda::std::is_same_v<T, decltype(cuda::cluster_level::count_as<T>(level, hier))>);
   static_assert(noexcept(cuda::cluster_level::count_as<T>(level, hier)));
 
-  if constexpr (Hierarchy::has_level(cuda::cluster))
-  {
-    // 4. Test cuda::cluster_level::index_as(x, hier) signature.
-    static_assert(
-      cuda::std::is_same_v<cuda::hierarchy_query_result<T>, decltype(cuda::cluster_level::index_as<T>(level, hier))>);
-    static_assert(noexcept(cuda::cluster_level::index_as<T>(level, hier)));
+  // 4. Test cuda::cluster_level::index_as(x, hier) signature.
+  static_assert(
+    cuda::std::is_same_v<cuda::hierarchy_query_result<T>, decltype(cuda::cluster_level::index_as<T>(level, hier))>);
+  static_assert(noexcept(cuda::cluster_level::index_as<T>(level, hier)));
 
-    // 5. Test cuda::cluster_level::rank_as(x, hier) signature.
-    static_assert(cuda::std::is_same_v<T, decltype(cuda::cluster_level::rank_as<T>(level, hier))>);
-    static_assert(noexcept(cuda::cluster_level::rank_as<T>(level, hier)));
-  }
+  // 5. Test cuda::cluster_level::rank_as(x, hier) signature.
+  static_assert(cuda::std::is_same_v<T, decltype(cuda::cluster_level::rank_as<T>(level, hier))>);
+  static_assert(noexcept(cuda::cluster_level::rank_as<T>(level, hier)));
 }
 
 template <class InLevel, class Hierarchy>
-__device__ void test(const InLevel& in_level, const Hierarchy& hier)
+TEST_DEVICE_FUNC void test(const InLevel& in_level, const Hierarchy& hier)
 {
   test_query_signatures(in_level, hier);
   test_query_as_signatures<short>(in_level, hier);
@@ -99,7 +92,7 @@ __device__ void test(const InLevel& in_level, const Hierarchy& hier)
 }
 
 template <class Hierarchy>
-__device__ void test(const Hierarchy& hier)
+TEST_DEVICE_FUNC void test(const Hierarchy& hier)
 {
   test(cuda::grid, hier);
 }
@@ -110,9 +103,9 @@ __global__ void test_kernel(Hierarchy hier)
   test(hier);
 }
 
-#define TEST_KERNEL_INSTANTIATE(...)                                                 \
-  template __global__ void test_kernel<decltype(cuda::make_hierarchy(__VA_ARGS__))>( \
-    decltype(cuda::make_hierarchy(__VA_ARGS__)))
+#define TEST_KERNEL_INSTANTIATE(...)                                                              \
+  template __global__ void test_kernel<decltype(cuda::hierarchy{cuda::gpu_thread, __VA_ARGS__})>( \
+    decltype(cuda::hierarchy{cuda::gpu_thread, __VA_ARGS__}))
 
 TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::block_dims<32>());
 TEST_KERNEL_INSTANTIATE(cuda::grid_dims<1>(), cuda::block_dims(dim3{}));

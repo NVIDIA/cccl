@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo: enable with nvrtc
-// UNSUPPORTED: nvrtc
-
 #include "hierarchy_queries.h"
 
 #include <cuda/hierarchy>
@@ -18,8 +15,10 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 template <class Hierarchy, class GridExts, class ClusterExts, class BlockExts>
-__device__ void test_warp(
+TEST_DEVICE_FUNC void test_warp(
   const Hierarchy& hier, const GridExts& grid_exts, const ClusterExts& cluster_exts, const BlockExts& block_exts)
 {
   constexpr cuda::std::size_t dext = cuda::std::dynamic_extent;
@@ -30,9 +29,9 @@ __device__ void test_warp(
       : dext;
 
   const unsigned count_in_block = (blockDim.x * blockDim.y * blockDim.z + warpSize - 1) / warpSize;
-  // const unsigned rank_in_block  = ((threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x + threadIdx.x) / warpSize;
+  const unsigned rank_in_block  = ((threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x + threadIdx.x) / warpSize;
   const uint3 dims_in_block{count_in_block, 1, 1};
-  // const uint3 index_in_block{rank_in_block, 0, 0};
+  const uint3 index_in_block{rank_in_block, 0, 0};
 
   // 1. Test cuda::warp.dims(x, hier)
   test_dims(dims_in_block, cuda::warp, cuda::block, hier);
@@ -115,50 +114,51 @@ __device__ void test_warp(
   }
 
   // 6. test cuda::warp.index(x, hier)
-  // test_index(index_in_block, cuda::warp, cuda::block, hier);
-  // {
-  //   uint3 exp = index_in_block;
-  //   NV_IF_TARGET(NV_PROVIDES_SM_90, ({
-  //                  exp.x += count_in_block * __clusterRelativeBlockIdx().x;
-  //                  exp.y += __clusterRelativeBlockIdx().y;
-  //                  exp.z += __clusterRelativeBlockIdx().z;
-  //                }))
-  //   test_index(exp, cuda::warp, cuda::cluster, hier);
-  // }
-  // {
-  //   const uint3 exp{
-  //     rank_in_block + count_in_block * blockIdx.x,
-  //     blockIdx.y,
-  //     blockIdx.z,
-  //   };
-  //   test_index(exp, cuda::warp, cuda::grid, hier);
-  // }
+  test_index(index_in_block, cuda::warp, cuda::block, hier);
+  {
+    uint3 exp = index_in_block;
+    NV_IF_TARGET(NV_PROVIDES_SM_90, ({
+                   exp.x += count_in_block * __clusterRelativeBlockIdx().x;
+                   exp.y += __clusterRelativeBlockIdx().y;
+                   exp.z += __clusterRelativeBlockIdx().z;
+                 }))
+    test_index(exp, cuda::warp, cuda::cluster, hier);
+  }
+  {
+    const uint3 exp{
+      rank_in_block + count_in_block * blockIdx.x,
+      blockIdx.y,
+      blockIdx.z,
+    };
+    test_index(exp, cuda::warp, cuda::grid, hier);
+  }
 
   // 7. Test cuda::warp.rank(x, hier)
-  // test_rank(rank_in_block, cuda::warp, cuda::block, hier);
-  // {
-  //   cuda::std::size_t exp = 0;
-  //   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
-  //                     ({
-  //                       exp = (__clusterRelativeBlockIdx().z * __clusterDim().y + __clusterRelativeBlockIdx().y)
-  //                             * __clusterDim().x * count_in_block
-  //                           + __clusterRelativeBlockIdx().x * count_in_block + rank_in_block;
-  //                     }),
-  //                     ({ exp = rank_in_block; }))
-  //   test_rank(exp, cuda::warp, cuda::cluster, hier);
-  // }
-  // {
-  //   const cuda::std::size_t exp =
-  //     (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x * count_in_block + blockIdx.x * count_in_block +
-  //     rank_in_block;
-  //   test_rank(exp, cuda::warp, cuda::grid, hier);
-  // }
+  test_rank(rank_in_block, cuda::warp, cuda::block, hier);
+  {
+    cuda::std::size_t exp = 0;
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                      ({
+                        exp = (__clusterRelativeBlockIdx().z * __clusterDim().y + __clusterRelativeBlockIdx().y)
+                              * __clusterDim().x * count_in_block
+                            + __clusterRelativeBlockIdx().x * count_in_block + rank_in_block;
+                      }),
+                      ({ exp = rank_in_block; }))
+    test_rank(exp, cuda::warp, cuda::cluster, hier);
+  }
+  {
+    const cuda::std::size_t exp =
+      (blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x * count_in_block + blockIdx.x * count_in_block + rank_in_block;
+    test_rank(exp, cuda::warp, cuda::grid, hier);
+  }
 }
 
-__device__ void test_device()
+TEST_DEVICE_FUNC void test_device()
 {
-  // todo: make hierarchy constructible on device
-  // test_thread(cuda::make_hierarchy(cuda::grid_dims(gridDim), cuda::block_dims(blockDim)));
+  test_warp(cuda::hierarchy{cuda::gpu_thread, cuda::grid_dims(dim3{gridDim}), cuda::block_dims(dim3{blockDim})},
+            cuda::std::dims<3, unsigned>{gridDim.x, gridDim.y, gridDim.z},
+            cuda::std::extents<unsigned, 1, 1, 1>{},
+            cuda::std::dims<3, unsigned>{blockDim.x, blockDim.y, blockDim.z});
 }
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -281,6 +281,11 @@ void test()
 
 int main(int, char**)
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (test();), (test_device();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    ({
+                      cuda_thread_count = 32;
+                      test();
+                    }),
+                    (test_device();))
   return 0;
 }

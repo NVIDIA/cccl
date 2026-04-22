@@ -32,7 +32,7 @@ struct mark_present_for_each
   bool* ptr_;
 
   template <typename T>
-  __host__ __device__ void operator()(T val) const noexcept
+  TEST_FUNC void operator()(T val) const noexcept
   {
     ptr_[val] = true;
   }

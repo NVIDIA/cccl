@@ -19,7 +19,7 @@
 TEST_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 
 #if 0 // Wait until terminate handler is available
-__host__ __device__ void f1()
+TEST_FUNC void f1()
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST, (::std::exit(0);),(__trap();))
 }

@@ -10,7 +10,9 @@
 
 #include <cuda/__execution/output_ordering.h>
 
-__host__ __device__ void test()
+#include "test_macros.h"
+
+TEST_FUNC void test()
 {
   namespace exec = cuda::execution;
   static_assert(cuda::std::is_base_of_v<exec::__requirement, exec::output_ordering::sorted_t>);

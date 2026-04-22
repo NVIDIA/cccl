@@ -42,24 +42,22 @@ struct NonMovable
 struct MovableNonTrivial
 {
   int i;
-  __host__ __device__ constexpr MovableNonTrivial(int ii)
+  TEST_FUNC constexpr MovableNonTrivial(int ii)
       : i(ii)
   {}
-  __host__ __device__ constexpr MovableNonTrivial(MovableNonTrivial&& o)
+  TEST_FUNC constexpr MovableNonTrivial(MovableNonTrivial&& o)
       : i(o.i)
   {
     o.i = 0;
   }
 #if TEST_STD_VER > 2017
-  __host__ __device__ friend constexpr bool operator==(const MovableNonTrivial&, const MovableNonTrivial&) = default;
+  TEST_FUNC friend constexpr bool operator==(const MovableNonTrivial&, const MovableNonTrivial&) = default;
 #else
-  __host__ __device__ friend constexpr bool
-  operator==(const MovableNonTrivial& lhs, const MovableNonTrivial& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator==(const MovableNonTrivial& lhs, const MovableNonTrivial& rhs) noexcept
   {
     return lhs.i == rhs.i;
   };
-  __host__ __device__ friend constexpr bool
-  operator!=(const MovableNonTrivial& lhs, const MovableNonTrivial& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator!=(const MovableNonTrivial& lhs, const MovableNonTrivial& rhs) noexcept
   {
     return lhs.i != rhs.i;
   };
@@ -68,37 +66,37 @@ struct MovableNonTrivial
 
 struct MoveMayThrow
 {
-  __host__ __device__ MoveMayThrow(MoveMayThrow&&) {}
+  TEST_FUNC MoveMayThrow(MoveMayThrow&&) {}
 };
 
 // Test Constraints:
 // - is_move_constructible_v<T> is true and
 // - is_move_constructible_v<E> is true.
-static_assert(cuda::std::is_move_constructible_v<cuda::std::expected<int, int>>, "");
-static_assert(cuda::std::is_move_constructible_v<cuda::std::expected<MovableNonTrivial, int>>, "");
-static_assert(cuda::std::is_move_constructible_v<cuda::std::expected<int, MovableNonTrivial>>, "");
-static_assert(cuda::std::is_move_constructible_v<cuda::std::expected<MovableNonTrivial, MovableNonTrivial>>, "");
-static_assert(!cuda::std::is_move_constructible_v<cuda::std::expected<NonMovable, int>>, "");
-static_assert(!cuda::std::is_move_constructible_v<cuda::std::expected<int, NonMovable>>, "");
-static_assert(!cuda::std::is_move_constructible_v<cuda::std::expected<NonMovable, NonMovable>>, "");
+static_assert(cuda::std::is_move_constructible_v<cuda::std::expected<int, int>>);
+static_assert(cuda::std::is_move_constructible_v<cuda::std::expected<MovableNonTrivial, int>>);
+static_assert(cuda::std::is_move_constructible_v<cuda::std::expected<int, MovableNonTrivial>>);
+static_assert(cuda::std::is_move_constructible_v<cuda::std::expected<MovableNonTrivial, MovableNonTrivial>>);
+static_assert(!cuda::std::is_move_constructible_v<cuda::std::expected<NonMovable, int>>);
+static_assert(!cuda::std::is_move_constructible_v<cuda::std::expected<int, NonMovable>>);
+static_assert(!cuda::std::is_move_constructible_v<cuda::std::expected<NonMovable, NonMovable>>);
 
 // Test: This constructor is trivial if
 // - is_trivially_move_constructible_v<T> is true and
 // - is_trivially_move_constructible_v<E> is true.
-static_assert(cuda::std::is_trivially_move_constructible_v<cuda::std::expected<int, int>>, "");
-static_assert(!cuda::std::is_trivially_move_constructible_v<cuda::std::expected<MovableNonTrivial, int>>, "");
-static_assert(!cuda::std::is_trivially_move_constructible_v<cuda::std::expected<int, MovableNonTrivial>>, "");
+static_assert(cuda::std::is_trivially_move_constructible_v<cuda::std::expected<int, int>>);
+static_assert(!cuda::std::is_trivially_move_constructible_v<cuda::std::expected<MovableNonTrivial, int>>);
+static_assert(!cuda::std::is_trivially_move_constructible_v<cuda::std::expected<int, MovableNonTrivial>>);
 static_assert(!cuda::std::is_trivially_move_constructible_v<cuda::std::expected<MovableNonTrivial, MovableNonTrivial>>,
               "");
 
 // Test: The exception specification is equivalent to
 // is_nothrow_move_constructible_v<T> && is_nothrow_move_constructible_v<E>.
-static_assert(cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<int, int>>, "");
-static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<MoveMayThrow, int>>, "");
-static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<int, MoveMayThrow>>, "");
-static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<MoveMayThrow, MoveMayThrow>>, "");
+static_assert(cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<int, int>>);
+static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<MoveMayThrow, int>>);
+static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<int, MoveMayThrow>>);
+static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<MoveMayThrow, MoveMayThrow>>);
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   // move the value non-trivial
   {
@@ -187,7 +185,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 #if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

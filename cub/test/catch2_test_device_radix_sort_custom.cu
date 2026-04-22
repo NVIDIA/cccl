@@ -87,9 +87,9 @@ static c2h::host_vector<key> get_striped_keys(c2h::host_vector<key> keys, int be
 {
   if ((begin_bit > 0) || (end_bit < static_cast<int>(bits_per_pair_t)))
   {
-    for (std::size_t i = 0; i < keys.size(); i++)
+    for (auto& k : keys)
     {
-      from_bitset(to_bitset(keys[i], begin_bit, end_bit), keys[i]);
+      from_bitset(to_bitset(k, begin_bit, end_bit), k);
     }
   }
 

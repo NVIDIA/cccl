@@ -14,35 +14,37 @@
 #include <cuda/memory_resource>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 struct test_resource
 {
-  __host__ __device__ void* allocate_sync(std::size_t, std::size_t)
+  TEST_FUNC void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
 
-  __host__ __device__ void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept
+  TEST_FUNC void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept
   {
     // ensure that we did get the right inputs forwarded
     _val = *static_cast<int*>(ptr);
   }
 
-  __host__ __device__ void* allocate(cuda::stream_ref, std::size_t, std::size_t)
+  TEST_FUNC void* allocate(cuda::stream_ref, std::size_t, std::size_t)
   {
     return &_val;
   }
 
-  __host__ __device__ void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t)
+  TEST_FUNC void deallocate(cuda::stream_ref, void* ptr, std::size_t, std::size_t)
   {
     // ensure that we did get the right inputs forwarded
     _val = *static_cast<int*>(ptr);
   }
 
-  __host__ __device__ bool operator==(const test_resource& other) const
+  TEST_FUNC bool operator==(const test_resource& other) const
   {
     return _val == other._val;
   }
-  __host__ __device__ bool operator!=(const test_resource& other) const
+  TEST_FUNC bool operator!=(const test_resource& other) const
   {
     return _val != other._val;
   }
@@ -50,7 +52,7 @@ struct test_resource
   int _val = 0;
 };
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test_resource invalid_resource{42};
   { // Can call get_memory_resource on a type with a get_memory_resource method that returns a const lvalue
@@ -58,7 +60,7 @@ __host__ __device__ void test()
     {
       test_resource res_{};
 
-      __host__ __device__ const test_resource& get_memory_resource() const noexcept
+      TEST_FUNC const test_resource& get_memory_resource() const noexcept
       {
         return res_;
       }
@@ -77,7 +79,7 @@ __host__ __device__ void test()
     {
       test_resource res_{};
 
-      __host__ __device__ test_resource get_memory_resource() const noexcept
+      TEST_FUNC test_resource get_memory_resource() const noexcept
       {
         return res_;
       }
@@ -96,7 +98,7 @@ __host__ __device__ void test()
     {
       test_resource res_{};
 
-      __host__ __device__ test_resource get_memory_resource() noexcept
+      TEST_FUNC test_resource get_memory_resource() noexcept
       {
         return res_;
       }
@@ -113,7 +115,7 @@ __host__ __device__ void test()
     {
       test_resource res_{};
 
-      __host__ __device__ const test_resource& query(::cuda::mr::get_memory_resource_t) const noexcept
+      TEST_FUNC const test_resource& query(::cuda::mr::get_memory_resource_t) const noexcept
       {
         return res_;
       }
@@ -132,7 +134,7 @@ __host__ __device__ void test()
     {
       test_resource res_{};
 
-      __host__ __device__ test_resource query(::cuda::mr::get_memory_resource_t) const noexcept
+      TEST_FUNC test_resource query(::cuda::mr::get_memory_resource_t) const noexcept
       {
         return res_;
       }
@@ -152,7 +154,7 @@ __host__ __device__ void test()
     {
       test_resource res_{};
 
-      __host__ __device__ const test_resource& query(::cuda::mr::get_memory_resource_t) noexcept
+      TEST_FUNC const test_resource& query(::cuda::mr::get_memory_resource_t) noexcept
       {
         return res_;
       }
@@ -169,12 +171,12 @@ __host__ __device__ void test()
     {
       test_resource res_{};
 
-      __host__ __device__ const test_resource& get_memory_resource() const noexcept
+      TEST_FUNC const test_resource& get_memory_resource() const noexcept
       {
         return res_;
       }
 
-      __host__ __device__ test_resource query(::cuda::mr::get_memory_resource_t) const noexcept
+      TEST_FUNC test_resource query(::cuda::mr::get_memory_resource_t) const noexcept
       {
         return res_;
       }
@@ -194,26 +196,26 @@ __host__ __device__ void test()
     {
       struct resource
       {
-        __host__ __device__ void* allocate_sync(std::size_t, std::size_t)
+        TEST_FUNC void* allocate_sync(std::size_t, std::size_t)
         {
           return nullptr;
         }
 
-        __host__ __device__ void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
+        TEST_FUNC void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
 
-        __host__ __device__ bool operator==(const resource&) const noexcept
+        TEST_FUNC bool operator==(const resource&) const noexcept
         {
           return true;
         }
 
-        __host__ __device__ bool operator!=(const resource&) const noexcept
+        TEST_FUNC bool operator!=(const resource&) const noexcept
         {
           return false;
         }
       };
       resource res_{};
 
-      __host__ __device__ resource get_memory_resource() const noexcept
+      TEST_FUNC resource get_memory_resource() const noexcept
       {
         return res_;
       }

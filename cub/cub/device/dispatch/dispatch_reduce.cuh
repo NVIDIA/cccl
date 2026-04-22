@@ -33,11 +33,8 @@
 
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/cstdint>
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif
 
 // TODO(bgruber): included to not break users when moving DeviceSegmentedReduce to its own file. Remove in CCCL 4.0.
 #include <cub/device/dispatch/dispatch_fixed_size_segmented_reduce.cuh>

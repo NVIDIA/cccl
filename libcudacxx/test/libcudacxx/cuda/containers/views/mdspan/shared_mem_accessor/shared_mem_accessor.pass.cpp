@@ -7,11 +7,14 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 #include <cuda/mdspan>
 
 #include "test_macros.h"
 
-__device__ void basic_mdspan_access_test()
+TEST_DEVICE_FUNC void basic_mdspan_access_test()
 {
   using ext_t = cuda::std::extents<int, 4>;
   __shared__ int smem[4];

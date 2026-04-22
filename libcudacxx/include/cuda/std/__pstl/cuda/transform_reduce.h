@@ -92,7 +92,7 @@ struct __pstl_dispatch<__pstl_algorithm::__transform_reduce, __execution_backend
       __init);
 
     // Allocate memory for result
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
 
     {
       __temporary_storage<_Tp> __storage{__policy, __num_bytes, 1};

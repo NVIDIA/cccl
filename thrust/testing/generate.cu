@@ -17,7 +17,7 @@ struct return_value
       : val(v)
   {}
 
-  _CCCL_HOST_DEVICE T operator()(void)
+  _CCCL_HOST_DEVICE T operator()()
   {
     return val;
   }

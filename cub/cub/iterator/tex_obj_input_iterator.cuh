@@ -25,13 +25,10 @@
 
 #include <thrust/iterator/iterator_facade.h>
 
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/remove_cv.h>
 
 #include <nv/target>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -125,17 +122,13 @@ private:
   static constexpr int TEXTURE_MULTIPLE = sizeof(T) / sizeof(TextureWord);
 
 private:
-  T* ptr;
-  difference_type tex_offset;
-  cudaTextureObject_t tex_obj;
+  T* ptr{nullptr};
+  difference_type tex_offset{0};
+  cudaTextureObject_t tex_obj{0};
 
 public:
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TexObjInputIterator()
-      : ptr(nullptr)
-      , tex_offset(0)
-      , tex_obj(0)
-  {}
+  _CCCL_FORCEINLINE TexObjInputIterator() = default;
 
 #if !_CCCL_COMPILER(NVRTC)
   /**

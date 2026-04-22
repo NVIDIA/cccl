@@ -22,13 +22,15 @@
 #include "archetypes.h"
 #include "test_macros.h"
 
+#if !_CCCL_TILE_COMPILATION() // virtual functions are unsupported in tile code
 struct Base
 {
-  __host__ __device__ virtual ~Base() {}
+  TEST_FUNC virtual ~Base() {}
 };
 
 struct Derived : public Base
 {};
+#endif // !_CCCL_TILE_COMPILATION()
 
 int main(int, char**)
 {

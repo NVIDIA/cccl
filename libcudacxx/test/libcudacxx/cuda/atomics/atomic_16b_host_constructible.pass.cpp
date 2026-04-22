@@ -17,7 +17,7 @@
 
 // Check that atomics on host may be constructed
 template <class T>
-__host__ __device__ void do_test()
+TEST_FUNC void do_test()
 {
   T v(0);
   cuda::atomic_ref<T> a(v);

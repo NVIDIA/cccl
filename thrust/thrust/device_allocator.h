@@ -67,13 +67,13 @@ public:
       : m_upstream(upstream)
   {}
 
-  [[nodiscard]] _CCCL_HOST virtual pointer
+  [[nodiscard]] _CCCL_HOST pointer
   do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     return pointer(m_upstream->do_allocate(bytes, alignment).get());
   }
 
-  _CCCL_HOST virtual void do_deallocate(pointer p, std::size_t bytes, std::size_t alignment) override
+  _CCCL_HOST void do_deallocate(pointer p, std::size_t bytes, std::size_t alignment) override
   {
     m_upstream->do_deallocate(upstream_ptr(p.get()), bytes, alignment);
   }

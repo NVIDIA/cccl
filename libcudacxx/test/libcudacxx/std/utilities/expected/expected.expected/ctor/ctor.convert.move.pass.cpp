@@ -55,86 +55,86 @@ constexpr bool canCstrFromExpected =
 
 struct CtorFromInt
 {
-  __host__ __device__ CtorFromInt(int);
+  TEST_FUNC CtorFromInt(int);
 };
 
-static_assert(canCstrFromExpected<CtorFromInt, int, int, int>, "");
+static_assert(canCstrFromExpected<CtorFromInt, int, int, int>);
 
 struct NoCtorFromInt
 {};
 
 // !is_constructible_v<T, UF>
-static_assert(!canCstrFromExpected<NoCtorFromInt, int, int, int>, "");
+static_assert(!canCstrFromExpected<NoCtorFromInt, int, int, int>);
 
 // !is_constructible_v<E, GF>
-static_assert(!canCstrFromExpected<int, NoCtorFromInt, int, int>, "");
+static_assert(!canCstrFromExpected<int, NoCtorFromInt, int, int>);
 
 template <class T>
 struct CtorFrom
 {
   _CCCL_TEMPLATE(class T2 = T)
   _CCCL_REQUIRES((!cuda::std::same_as<T2, int>) )
-  __host__ __device__ explicit CtorFrom(int);
-  __host__ __device__ explicit CtorFrom(T);
+  TEST_FUNC explicit CtorFrom(int);
+  TEST_FUNC explicit CtorFrom(T);
   template <class U>
-  __host__ __device__ explicit CtorFrom(U&&) = delete;
+  TEST_FUNC explicit CtorFrom(U&&) = delete;
 };
 
 // is_constructible_v<T, expected<U, G>&>
-static_assert(!canCstrFromExpected<CtorFrom<cuda::std::expected<int, int>&>, int, int, int>, "");
+static_assert(!canCstrFromExpected<CtorFrom<cuda::std::expected<int, int>&>, int, int, int>);
 
 // is_constructible_v<T, expected<U, G>>
 // note that this is true because it is covered by the other overload
 //   template<class U = T> constexpr explicit(see below) expected(U&& v);
 // The fact that it is not ambiguous proves that the overload under testing is removed
-static_assert(canCstrFromExpected<CtorFrom<cuda::std::expected<int, int>&&>, int, int, int>, "");
+static_assert(canCstrFromExpected<CtorFrom<cuda::std::expected<int, int>&&>, int, int, int>);
 
 // is_constructible_v<T, expected<U, G>&>
-static_assert(!canCstrFromExpected<CtorFrom<cuda::std::expected<int, int> const&>, int, int, int>, "");
+static_assert(!canCstrFromExpected<CtorFrom<cuda::std::expected<int, int> const&>, int, int, int>);
 
 // is_constructible_v<T, expected<U, G>>
-static_assert(!canCstrFromExpected<CtorFrom<cuda::std::expected<int, int> const&&>, int, int, int>, "");
+static_assert(!canCstrFromExpected<CtorFrom<cuda::std::expected<int, int> const&&>, int, int, int>);
 
 template <class T>
 struct ConvertFrom
 {
   _CCCL_TEMPLATE(class T2 = T)
   _CCCL_REQUIRES((!cuda::std::same_as<T2, int>) )
-  __host__ __device__ ConvertFrom(int);
-  __host__ __device__ ConvertFrom(T);
+  TEST_FUNC ConvertFrom(int);
+  TEST_FUNC ConvertFrom(T);
   template <class U>
-  __host__ __device__ ConvertFrom(U&&) = delete;
+  TEST_FUNC ConvertFrom(U&&) = delete;
 };
 
 // is_convertible_v<expected<U, G>&, T>
-static_assert(!canCstrFromExpected<ConvertFrom<cuda::std::expected<int, int>&>, int, int, int>, "");
+static_assert(!canCstrFromExpected<ConvertFrom<cuda::std::expected<int, int>&>, int, int, int>);
 
 // is_convertible_v<expected<U, G>&&, T>
 // note that this is true because it is covered by the other overload
 //   template<class U = T> constexpr explicit(see below) expected(U&& v);
 // The fact that it is not ambiguous proves that the overload under testing is removed
-static_assert(canCstrFromExpected<ConvertFrom<cuda::std::expected<int, int>&&>, int, int, int>, "");
+static_assert(canCstrFromExpected<ConvertFrom<cuda::std::expected<int, int>&&>, int, int, int>);
 
 // is_convertible_v<const expected<U, G>&, T>
-static_assert(!canCstrFromExpected<ConvertFrom<cuda::std::expected<int, int> const&>, int, int, int>, "");
+static_assert(!canCstrFromExpected<ConvertFrom<cuda::std::expected<int, int> const&>, int, int, int>);
 
 // is_convertible_v<const expected<U, G>&&, T>
-static_assert(!canCstrFromExpected<ConvertFrom<cuda::std::expected<int, int> const&&>, int, int, int>, "");
+static_assert(!canCstrFromExpected<ConvertFrom<cuda::std::expected<int, int> const&&>, int, int, int>);
 
 // is_constructible_v<unexpected<E>, expected<U, G>&>
-static_assert(!canCstrFromExpected<int, CtorFrom<cuda::std::expected<int, int>&>, int, int>, "");
+static_assert(!canCstrFromExpected<int, CtorFrom<cuda::std::expected<int, int>&>, int, int>);
 
 // is_constructible_v<unexpected<E>, expected<U, G>>
-static_assert(!canCstrFromExpected<int, CtorFrom<cuda::std::expected<int, int>&&>, int, int>, "");
+static_assert(!canCstrFromExpected<int, CtorFrom<cuda::std::expected<int, int>&&>, int, int>);
 
 // is_constructible_v<unexpected<E>, const expected<U, G>&> is false
-static_assert(!canCstrFromExpected<int, CtorFrom<cuda::std::expected<int, int> const&>, int, int>, "");
+static_assert(!canCstrFromExpected<int, CtorFrom<cuda::std::expected<int, int> const&>, int, int>);
 
 // is_constructible_v<unexpected<E>, const expected<U, G>>
-static_assert(!canCstrFromExpected<int, CtorFrom<cuda::std::expected<int, int> const&&>, int, int>, "");
+static_assert(!canCstrFromExpected<int, CtorFrom<cuda::std::expected<int, int> const&&>, int, int>);
 
 // test explicit
-static_assert(cuda::std::is_convertible_v<cuda::std::expected<int, int>&&, cuda::std::expected<short, long>>, "");
+static_assert(cuda::std::is_convertible_v<cuda::std::expected<int, int>&&, cuda::std::expected<short, long>>);
 
 // !is_convertible_v<UF, T>
 static_assert(cuda::std::is_constructible_v<cuda::std::expected<CtorFrom<int>, int>, cuda::std::expected<int, int>&&>,
@@ -151,12 +151,12 @@ static_assert(!cuda::std::is_convertible_v<cuda::std::expected<int, int>&&, cuda
 struct Data
 {
   MoveOnly data;
-  __host__ __device__ constexpr Data(MoveOnly&& m)
+  TEST_FUNC constexpr Data(MoveOnly&& m)
       : data(cuda::std::move(m))
   {}
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   // convert the value
   {
@@ -227,7 +227,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 #if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))

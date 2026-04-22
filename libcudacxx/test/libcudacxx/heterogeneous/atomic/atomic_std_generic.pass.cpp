@@ -15,7 +15,7 @@
 
 #include "common.h"
 
-__host__ __device__ void validate_not_lock_free()
+TEST_FUNC void validate_not_lock_free()
 {
   cuda::std::atomic<big_not_lockfree_type> test;
   assert(!test.is_lock_free());

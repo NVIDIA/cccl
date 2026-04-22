@@ -23,10 +23,10 @@
 #include <thrust/random/detail/random_core_access.h>
 #include <thrust/random/detail/xor_combine_engine_max.h>
 
+#include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstddef> // for size_t
-
-#include <iostream>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -145,7 +145,7 @@ public:
   /*! This member function produces a new random value and updates this \p xor_combine_engine's state.
    *  \return A new random number.
    */
-  _CCCL_HOST_DEVICE result_type operator()(void);
+  _CCCL_HOST_DEVICE result_type operator()();
 
   /*! This member function advances this \p xor_combine_engine's state a given number of times
    *  and discards the results.
