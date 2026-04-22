@@ -91,7 +91,8 @@ public:
 
     CUmemAllocationProp prop = {};
     prop.type                = CU_MEM_ALLOCATION_TYPE_PINNED;
-    prop.location            = {.type = CU_MEM_LOCATION_TYPE_DEVICE, .id = dev};
+    prop.location.type       = CU_MEM_LOCATION_TYPE_DEVICE;
+    prop.location.id         = dev;
 
     size_t alloc_granularity_bytes = cuda_try<cuMemGetAllocationGranularity>(&prop, CU_MEM_ALLOC_GRANULARITY_MINIMUM);
 
