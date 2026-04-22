@@ -1083,9 +1083,10 @@ public:
   //! @rst
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
+  //! @endrst
+  //!
   //! @overload
   //! @note Uses ``cuda::std::less`` as comparison operator
-  //! @endrst
   template <typename InputIteratorT, typename ExtremumOutIteratorT, typename IndexOutIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
     void* d_temp_storage,

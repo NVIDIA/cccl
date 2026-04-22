@@ -44,62 +44,51 @@ static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT
   using equality_op_t   = ::cuda::std::equal_to<>;
   using offset_t        = cub::detail::choose_offset_t<OffsetT>;
 
-  using dispatch_t = cub::
-    DispatchScanByKey<key_input_it_t, val_input_it_t, val_output_it_t, equality_op_t, op_t, init_value_t, offset_t, accum_t>;
-
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
 
   thrust::device_vector<ValueT> in_vals(elements);
   thrust::device_vector<ValueT> out_vals(elements);
   thrust::device_vector<KeyT> keys = generate.uniform.key_segments(elements, 0, 5200);
 
-  const KeyT* d_keys      = thrust::raw_pointer_cast(keys.data());
-  const ValueT* d_in_vals = thrust::raw_pointer_cast(in_vals.data());
-  ValueT* d_out_vals      = thrust::raw_pointer_cast(out_vals.data());
+  const KeyT* d_keys       = thrust::raw_pointer_cast(keys.data());
+  const ValueT* d_in_vals  = thrust::raw_pointer_cast(in_vals.data());
+  ValueT* d_out_vals       = thrust::raw_pointer_cast(out_vals.data());
+  const offset_t num_items = static_cast<offset_t>(elements);
 
   state.add_element_count(elements);
   state.add_global_memory_reads<KeyT>(elements);
   state.add_global_memory_reads<ValueT>(elements);
   state.add_global_memory_writes<ValueT>(elements);
 
-  size_t tmp_size;
-  dispatch_t::Dispatch(
-    nullptr,
-    tmp_size,
-    d_keys,
-    d_in_vals,
-    d_out_vals,
-    equality_op_t{},
-    op_t{},
-    init_value_t{},
-    static_cast<int>(elements),
-    nullptr /* stream */
-#if !TUNE_BASE
-    ,
-    bench_scan_by_key_policy_selector{}
-#endif
-  );
-
-  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
-  nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
-
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
-      d_tmp,
-      tmp_size,
-      d_keys,
-      d_in_vals,
-      d_out_vals,
-      equality_op_t{},
-      op_t{},
-      init_value_t{},
-      static_cast<int>(elements),
-      launch.get_stream()
+  size_t tmp_size{};
+  nvbench::uint8_t* d_tmp = nullptr;
+  auto dispatch_on_stream = [&](cudaStream_t stream) {
+    return cub::detail::scan_by_key::
+      dispatch<key_input_it_t, val_input_it_t, val_output_it_t, equality_op_t, op_t, init_value_t, offset_t, accum_t>(
+        d_tmp,
+        tmp_size,
+        d_keys,
+        d_in_vals,
+        d_out_vals,
+        equality_op_t{},
+        op_t{},
+        init_value_t{},
+        num_items,
+        stream
 #if !TUNE_BASE
         ,
-      bench_scan_by_key_policy_selector{}
+        bench_scan_by_key_policy_selector{}
 #endif
-    );
+      );
+  };
+
+  dispatch_on_stream(nullptr /* stream */);
+
+  thrust::device_vector<nvbench::uint8_t> tmp(tmp_size, thrust::no_init);
+  d_tmp = thrust::raw_pointer_cast(tmp.data());
+
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    dispatch_on_stream(launch.get_stream());
   });
 }
 

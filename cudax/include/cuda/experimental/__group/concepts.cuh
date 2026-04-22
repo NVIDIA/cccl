@@ -57,11 +57,6 @@ _CCCL_CONCEPT __group_mapping_result = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __v
   _Same_as(unsigned) __v.rank(),
   _Same_as(bool) _Tp::is_always_exhaustive(),
   _Same_as(bool) _Tp::is_always_contiguous());
-
-template <class _Synchronizer, class _MappingResult>
-_CCCL_CONCEPT __has_sync_aligned = _CCCL_REQUIRES_EXPR(
-  (_Synchronizer, _MappingResult), _Synchronizer& __synchronizer, const _MappingResult& __mapping_result)(
-  __synchronizer.__sync_aligned(__mapping_result));
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED

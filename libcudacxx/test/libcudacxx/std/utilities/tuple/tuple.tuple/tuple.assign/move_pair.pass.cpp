@@ -20,24 +20,6 @@
 #include "MoveOnly.h"
 #include "test_macros.h"
 
-struct B
-{
-  int id_;
-
-  TEST_FUNC explicit B(int i = 0)
-      : id_(i)
-  {}
-
-  TEST_FUNC virtual ~B() {}
-};
-
-struct D : B
-{
-  TEST_FUNC explicit D(int i)
-      : B(i)
-  {}
-};
-
 int main(int, char**)
 {
   {

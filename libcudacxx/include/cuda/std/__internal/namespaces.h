@@ -77,6 +77,10 @@
 #define _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER              _CCCL_BEGIN_NAMESPACE(cuda::__driver)
 #define _CCCL_END_NAMESPACE_CUDA_DRIVER                _CCCL_END_NAMESPACE(cuda::__driver)
 
+// Namespaces related to <simd>
+#define _CCCL_BEGIN_NAMESPACE_CUDA_STD_SIMD _CCCL_BEGIN_NAMESPACE(cuda::std::simd)
+#define _CCCL_END_NAMESPACE_CUDA_STD_SIMD   _CCCL_END_NAMESPACE(cuda::std::simd)
+
 // Namespaces related to <ranges>
 #define _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES _CCCL_BEGIN_NAMESPACE(cuda::std::ranges)
 #define _CCCL_END_NAMESPACE_CUDA_STD_RANGES   _CCCL_END_NAMESPACE(cuda::std::ranges)

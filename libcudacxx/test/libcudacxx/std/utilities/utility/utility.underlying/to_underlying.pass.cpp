@@ -18,7 +18,8 @@
 
 #include "test_macros.h"
 
-#if TEST_COMPILER(GCC, <, 10)
+// error: bit field read/write is unsupported in tile code
+#if TEST_COMPILER(GCC, <, 10) || _CCCL_TILE_COMPILATION()
 #  define OMIT_BITFIELD_ENUMS 1
 #endif // TEST_COMPILER(GCC, <, 10)
 

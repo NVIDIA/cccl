@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && c++17
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <cuda/mdspan>
 
 //  template<class CArray>

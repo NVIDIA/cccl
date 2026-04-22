@@ -11,6 +11,9 @@
 // Self assignment post-conditions are tested.
 // ADDITIONAL_COMPILE_OPTIONS_HOST: -Wno-self-move
 
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // <memory>
 
 // unique_ptr

@@ -52,6 +52,7 @@ int main(int, char**)
     assert(i2 == 2);
   }
 
+#if !_CCCL_TILE_COMPILATION() // dynamic memory allocation with non-placement ::operator new is unsupported in tile code
   {
     using upint = cuda::std::unique_ptr<int>;
     cuda::std::tuple<upint> t(upint(new int(4)));
@@ -67,6 +68,7 @@ int main(int, char**)
     assert(*p == 4);
     assert(cuda::std::get<upint>(t) != nullptr);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   {
     int x = 42;

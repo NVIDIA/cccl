@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: bit field read/write is unsupported in tile code
+
 // <cuda/std/format>
 
 // basic_format_arg<basic_format_context> arg(size_t id) const;

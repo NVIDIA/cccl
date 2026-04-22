@@ -36,6 +36,7 @@ struct nothing
 
 int main(int, char**)
 {
+#if !_CCCL_TILE_COMPILATION() // error: dynamic memory allocation is unsupported in tile code
   {
     int i;
     double d;
@@ -47,6 +48,7 @@ int main(int, char**)
     assert(cuda::std::addressof(*ctp) == tp);
     delete tp;
   }
+#endif // !_CCCL_TILE_COMPILATION()
   {
     union
     {
