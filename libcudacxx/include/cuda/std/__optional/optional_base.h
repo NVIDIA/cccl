@@ -265,8 +265,8 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
 
 template <class _Tp>
 inline constexpr __smf_availability __optional_can_copy_construct =
-  is_trivially_copy_constructible_v<_Tp> ? __smf_availability::__trivial
-  : is_copy_constructible_v<_Tp>
+  (is_trivially_copy_constructible_v<_Tp>) ? __smf_availability::__trivial
+  : (is_copy_constructible_v<_Tp>)
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 
@@ -308,8 +308,8 @@ struct __optional_copy_base<_Tp, __smf_availability::__deleted> : __optional_sto
 
 template <class _Tp>
 inline constexpr __smf_availability __optional_can_move_construct =
-  is_trivially_move_constructible_v<_Tp> ? __smf_availability::__trivial
-  : is_move_constructible_v<_Tp>
+  (is_trivially_move_constructible_v<_Tp>) ? __smf_availability::__trivial
+  : (is_move_constructible_v<_Tp>)
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 
@@ -348,9 +348,9 @@ struct __optional_move_base<_Tp, __smf_availability::__deleted> : __optional_cop
 
 template <class _Tp>
 inline constexpr __smf_availability __optional_can_copy_assign =
-  is_trivially_destructible_v<_Tp> && is_trivially_copy_constructible_v<_Tp> && is_trivially_copy_assignable_v<_Tp>
+  (is_trivially_destructible_v<_Tp> && is_trivially_copy_constructible_v<_Tp> && is_trivially_copy_assignable_v<_Tp>)
     ? __smf_availability::__trivial
-  : is_destructible_v<_Tp> && is_copy_constructible_v<_Tp> && is_copy_assignable_v<_Tp>
+  : (is_destructible_v<_Tp> && is_copy_constructible_v<_Tp> && is_copy_assignable_v<_Tp>)
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 
@@ -390,9 +390,9 @@ struct __optional_copy_assign_base<_Tp, __smf_availability::__deleted> : __optio
 
 template <class _Tp>
 inline constexpr __smf_availability __optional_can_move_assign =
-  is_trivially_destructible_v<_Tp> && is_trivially_move_constructible_v<_Tp> && is_trivially_move_assignable_v<_Tp>
+  (is_trivially_destructible_v<_Tp> && is_trivially_move_constructible_v<_Tp> && is_trivially_move_assignable_v<_Tp>)
     ? __smf_availability::__trivial
-  : is_destructible_v<_Tp> && is_move_constructible_v<_Tp> && is_move_assignable_v<_Tp>
+  : (is_destructible_v<_Tp> && is_move_constructible_v<_Tp> && is_move_assignable_v<_Tp>)
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 

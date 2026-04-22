@@ -51,7 +51,7 @@ template <typename T>
 inline constexpr auto classify_type = type_t::other;
 
 template <>
-inline constexpr auto classify_type<char> = ::cuda::std::is_signed_v<char> ? type_t::int8 : type_t::uint8;
+inline constexpr auto classify_type<char> = (::cuda::std::is_signed_v<char>) ? type_t::int8 : type_t::uint8;
 template <>
 inline constexpr auto classify_type<bool> = type_t::boolean;
 template <>

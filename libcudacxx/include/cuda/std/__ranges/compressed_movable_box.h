@@ -340,7 +340,7 @@ template <class _Tp>
 inline constexpr __smf_availability __compressed_box_copy_construct_available =
   (is_copy_constructible_v<_Tp> && __compressed_box_choose<_Tp>() != __compressed_box_specialization::__with_engaged)
     ? __smf_availability::__trivial
-  : is_copy_constructible_v<_Tp>
+  : (is_copy_constructible_v<_Tp>)
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 
@@ -390,7 +390,7 @@ template <class _Tp>
 inline constexpr __smf_availability __compressed_box_move_construct_available =
   (is_move_constructible_v<_Tp> && __compressed_box_choose<_Tp>() != __compressed_box_specialization::__with_engaged)
     ? __smf_availability::__trivial
-  : is_move_constructible_v<_Tp>
+  : (is_move_constructible_v<_Tp>)
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 
@@ -437,8 +437,8 @@ __compressed_box_move_base<_Index, _Tp, __smf_availability::__deleted> : __compr
 
 template <class _Tp>
 inline constexpr __smf_availability __compressed_box_copy_assign_available =
-  copyable<_Tp> && is_trivially_copy_assignable_v<_Tp> ? __smf_availability::__trivial
-  : copyable<_Tp> || copy_constructible<_Tp>
+  (copyable<_Tp> && is_trivially_copy_assignable_v<_Tp>) ? __smf_availability::__trivial
+  : (copyable<_Tp> || copy_constructible<_Tp>)
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 
@@ -460,8 +460,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_copy_assign_base<_Index, _Tp,
   _CCCL_HIDE_FROM_ABI __compressed_box_copy_assign_base(__compressed_box_copy_assign_base&&)      = default;
 
   static constexpr bool __nothrow_copy_assignable =
-    copyable<_Tp> ? is_nothrow_copy_constructible_v<_Tp> && is_nothrow_copy_assignable_v<_Tp>
-                  : is_nothrow_copy_constructible_v<_Tp>;
+    (copyable<_Tp>) ? (is_nothrow_copy_constructible_v<_Tp> && is_nothrow_copy_assignable_v<_Tp>)
+                    : is_nothrow_copy_constructible_v<_Tp>;
 
   _CCCL_API _CCCL_CONSTEXPR_CXX20 __compressed_box_copy_assign_base&
   operator=(const __compressed_box_copy_assign_base& __other) noexcept(__nothrow_copy_assignable)
@@ -532,8 +532,8 @@ __compressed_box_copy_assign_base<_Index, _Tp, __smf_availability::__deleted> : 
 
 template <class _Tp>
 inline constexpr __smf_availability __compressed_box_move_assign_available =
-  movable<_Tp> && is_trivially_move_assignable_v<_Tp> ? __smf_availability::__trivial
-  : movable<_Tp> || is_move_constructible_v<_Tp>
+  (movable<_Tp> && is_trivially_move_assignable_v<_Tp>) ? __smf_availability::__trivial
+  : (movable<_Tp> || is_move_constructible_v<_Tp>)
     ? __smf_availability::__available
     : __smf_availability::__deleted;
 
@@ -556,8 +556,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __compressed_box_move_assign_base<_Index, _Tp,
   _CCCL_HIDE_FROM_ABI __compressed_box_move_assign_base& operator=(const __compressed_box_move_assign_base&) = default;
 
   static constexpr bool __nothrow_move_assignable =
-    movable<_Tp> ? is_nothrow_move_constructible_v<_Tp> && is_nothrow_move_assignable_v<_Tp>
-                 : is_nothrow_move_constructible_v<_Tp>;
+    (movable<_Tp>) ? (is_nothrow_move_constructible_v<_Tp> && is_nothrow_move_assignable_v<_Tp>)
+                   : is_nothrow_move_constructible_v<_Tp>;
 
   _CCCL_API _CCCL_CONSTEXPR_CXX20 __compressed_box_move_assign_base&
   operator=(__compressed_box_move_assign_base&& __other) noexcept(__nothrow_move_assignable)

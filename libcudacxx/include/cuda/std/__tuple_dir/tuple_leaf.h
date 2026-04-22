@@ -65,8 +65,8 @@ enum class __tuple_leaf_specialization
 template <class _Tp>
 _CCCL_API constexpr __tuple_leaf_specialization __tuple_leaf_choose()
 {
-  return is_empty_v<_Tp> && !is_final_v<_Tp> ? __tuple_leaf_specialization::__empty_non_final
-       : __must_synthesize_assignment_v<_Tp>
+  return (is_empty_v<_Tp> && !is_final_v<_Tp>) ? __tuple_leaf_specialization::__empty_non_final
+       : (__must_synthesize_assignment_v<_Tp>)
          ? __tuple_leaf_specialization::__synthesize_assignment
          : __tuple_leaf_specialization::__default;
 }
