@@ -943,6 +943,11 @@ struct policy_selector
             // wrps_4.lbi_2.ipt_96 ()  1.082511  0.929516  1.091523  1.264033
             return scan_warpspeed_policy{4, 2, 96 - 1};
           case 4:
+            if (input_type == type_t::float32)
+            {
+              // wrps_4.lbi_3.ipt_88 ()  1.047200  1.002119  1.042654  1.081102
+              return scan_warpspeed_policy{4, 3, 88 - 1};
+            }
             // wrps_4.lbi_3.ipt_80 ()  1.019078  0.999708  1.017346  1.052592
             return scan_warpspeed_policy{4, 3, 80 - 1};
           case 8:
