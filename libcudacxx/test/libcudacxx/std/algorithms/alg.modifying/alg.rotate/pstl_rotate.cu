@@ -47,12 +47,14 @@ void test_rotate(const Policy& policy, c2h::device_vector<T>& input, const int s
     CHECK(res == input.begin());
   }
 
+  thrust::sequence(input.begin(), input.end(), 0);
   { // Empty second part
     auto res = cuda::std::rotate(policy, input.begin(), input.end(), input.end());
     CHECK(cuda::std::equal(policy, input.begin(), input.end(), expected_none));
     CHECK(res == input.begin());
   }
 
+  thrust::sequence(input.begin(), input.end(), 0);
   const auto expected_first = cuda::transform_iterator{cuda::counting_iterator{count1}, cast_to<T>{}};
   { // With contiguous iterator
     auto res = cuda::std::rotate(policy, input.begin(), cuda::std::next(input.begin(), count1), input.end());
@@ -61,6 +63,7 @@ void test_rotate(const Policy& policy, c2h::device_vector<T>& input, const int s
     CHECK(res == cuda::std::next(input.begin(), count2));
   }
 
+  thrust::sequence(input.begin(), input.end(), 0);
   T* raw_pointer = thrust::raw_pointer_cast(input.data());
   { // With random access iterator
     auto res = cuda::std::rotate(

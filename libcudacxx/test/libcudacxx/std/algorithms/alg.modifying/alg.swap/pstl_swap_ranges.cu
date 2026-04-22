@@ -86,8 +86,8 @@ C2H_TEST("cuda::std::swap_ranges", "[parallel algorithm]", all_types)
   using T = typename c2h::get<0, TestType>;
   c2h::device_vector<T> input2(size, thrust::no_init);
   c2h::device_vector<T> input1(size, thrust::no_init);
-  thrust::sequence(input1.begin(), input1.end(), static_cast<T>(42));
-  thrust::sequence(input2.begin(), input2.end(), static_cast<T>(1337), static_cast<T>(-1));
+  thrust::sequence(input1.begin(), input1.end(), 42);
+  thrust::sequence(input2.begin(), input2.end(), 1337, -1);
 
   SECTION("with default stream")
   {

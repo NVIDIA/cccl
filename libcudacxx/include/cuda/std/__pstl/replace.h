@@ -92,7 +92,7 @@ _CCCL_HOST_API void replace(
       __policy,
       __first,
       ::cuda::std::move(__last),
-      ::cuda::std::move(__first),
+      __first,
       __replace_return_value{__new_value},
       ::cuda::equal_to_value{__old_value});
   }
