@@ -80,13 +80,13 @@ struct my_allocator_with_custom_destroy
 
   static bool g_state;
 
-  _CCCL_HOST my_allocator_with_custom_destroy();
+  _CCCL_HOST my_allocator_with_custom_destroy() {} // NOLINT(modernize-use-equals-default)
 
   _CCCL_HOST my_allocator_with_custom_destroy(const my_allocator_with_custom_destroy& other)
       : use_me_to_alloc(other.use_me_to_alloc)
   {}
 
-  _CCCL_HOST ~my_allocator_with_custom_destroy();
+  _CCCL_HOST ~my_allocator_with_custom_destroy() {} // NOLINT(modernize-use-equals-default)
 
   _CCCL_HOST_DEVICE void destroy(T*) noexcept
   {
@@ -122,12 +122,6 @@ struct my_allocator_with_custom_destroy
 };
 
 template <typename T>
-my_allocator_with_custom_destroy<T>::my_allocator_with_custom_destroy() = default;
-
-template <typename T>
-my_allocator_with_custom_destroy<T>::~my_allocator_with_custom_destroy() = default;
-
-template <typename T>
 bool my_allocator_with_custom_destroy<T>::g_state = false;
 
 template <typename T>
@@ -155,13 +149,13 @@ struct my_minimal_allocator
   using reference       = T&;
   using const_reference = const T&;
 
-  _CCCL_HOST my_minimal_allocator();
+  _CCCL_HOST my_minimal_allocator() {} // NOLINT(modernize-use-equals-default)
 
   _CCCL_HOST my_minimal_allocator(const my_minimal_allocator& other)
       : use_me_to_alloc(other.use_me_to_alloc)
   {}
 
-  _CCCL_HOST ~my_minimal_allocator();
+  _CCCL_HOST ~my_minimal_allocator() {} // NOLINT(modernize-use-equals-default)
 
   value_type* allocate(std::ptrdiff_t n)
   {
@@ -175,12 +169,6 @@ struct my_minimal_allocator
 
   std::allocator<T> use_me_to_alloc;
 };
-
-template <typename T>
-my_minimal_allocator<T>::my_minimal_allocator() = default;
-
-template <typename T>
-my_minimal_allocator<T>::~my_minimal_allocator() = default;
 
 template <typename T>
 void TestAllocatorMinimal(size_t n)

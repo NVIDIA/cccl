@@ -92,7 +92,7 @@ public:
    *  \endverbatim
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST ~host_vector();
+  _CCCL_HOST ~host_vector() {} // NOLINT(modernize-use-equals-default)
 
   /*! This constructor creates a \p host_vector with the given
    *  size.
@@ -699,9 +699,6 @@ public:
     a.swap(b);
   }
 };
-
-template <typename T, typename Alloc>
-host_vector<T, Alloc>::~host_vector() = default;
 
 /*! \}
  */

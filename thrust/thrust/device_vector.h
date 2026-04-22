@@ -77,7 +77,7 @@ public:
   /*! The destructor erases the elements.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST ~device_vector();
+  _CCCL_HOST ~device_vector() {} // NOLINT(modernize-use-equals-default)
 
   /*! This constructor creates a \p device_vector with the given
    *  size.
@@ -643,9 +643,6 @@ public:
   allocator_type get_allocator() const;
 #endif // end doxygen-only members
 };
-
-template <typename T, typename Alloc>
-device_vector<T, Alloc>::~device_vector() = default;
 
 /*! \} // containres
  */
