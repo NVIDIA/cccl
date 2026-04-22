@@ -36,12 +36,6 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <atomic> // saves 146ms compile-time over <cuda/std/atomic> (CCCL 3.1)
-#  if defined(CUB_DEFINE_RUNTIME_POLICIES)
-#    include <format>
-#    include <string_view>
-
-#    include <nlohmann/json.hpp>
-#  endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #include <nv/target>
