@@ -1063,15 +1063,11 @@ private:
 public:
   _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_by_key_policy
   {
-    NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      ({
-                        const int ptx_version = static_cast<int>(::cuda::compute_capability{arch});
-                        scan_by_key_policy policy{};
-                        extract_policy_dispatch_t dispatch{policy};
-                        PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
-                        return policy;
-                      }),
-                      ({ return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>(); }));
+    const int ptx_version = 10 * static_cast<int>(::cuda::compute_capability{arch});
+    scan_by_key_policy policy{};
+    extract_policy_dispatch_t dispatch{policy};
+    PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
+    return policy;
   }
 };
 
