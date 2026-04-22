@@ -636,35 +636,6 @@ namespace detail
     return StaticPolicyT::_CCCL_PP_FIRST field;                     \
   }
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES)
-#  define CUB_DETAIL_POLICY_WRAPPER_FIELD(field)                       \
-    _CCCL_PP_THIRD field _CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field); \
-    _CCCL_PP_THIRD field _CCCL_PP_SECOND field() const                 \
-    {                                                                  \
-      return _CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field);             \
-    }
-
-#  define CUB_DETAIL_POLICY_WRAPPER_GET_FIELD(field)  \
-    ap._CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field) = \
-      static_cast<_CCCL_PP_THIRD field>(subpolicy[_CCCL_TO_STRING(_CCCL_PP_FIRST field)].get<int>());
-
-#  define CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(concept_name, ...)                                       \
-    struct Runtime##concept_name                                                                          \
-    {                                                                                                     \
-      _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD, __VA_ARGS__)                                     \
-      static Runtime##concept_name from_json(const nlohmann::json& json, std::string_view subpolicy_name) \
-      {                                                                                                   \
-        auto subpolicy = json[subpolicy_name];                                                            \
-        assert(!subpolicy.is_null());                                                                     \
-        Runtime##concept_name ap;                                                                         \
-        _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_GET_FIELD, __VA_ARGS__)                               \
-        return ap;                                                                                        \
-      }                                                                                                   \
-    };
-#else
-#  define CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(...)
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
-
 template <typename T>
 _CCCL_CONCEPT always_true = true;
 
@@ -685,8 +656,7 @@ _CCCL_CONCEPT always_true = true;
   __host__ __device__ constexpr concept_name##Wrapper<StaticPolicyT> MakePolicyWrapper(StaticPolicyT policy)           \
   {                                                                                                                    \
     return concept_name##Wrapper{policy};                                                                              \
-  }                                                                                                                    \
-  CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(concept_name, __VA_ARGS__)
+  }
 
 // Generic agent policy
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
