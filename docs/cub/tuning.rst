@@ -545,8 +545,7 @@ The meaning of these values is specific to the benchmark definition,
 and we have to check the benchmark’s source code for how they are applied.
 Equally named tuning parameters may not translate to different benchmarks (please double check).
 
-As a user of CUB,
-such a new set of tuning parameters (i.e. a variant) is then typically used to define a policy selector,
+As a user of CUB, such a new set of tuning parameters (i.e. a variant) can then be used to define a policy selector,
 which is passed to the public CUB API through the environment,
 as :ref:`sketched above <cub-tuning-authoring-benchmarks>`:
 
