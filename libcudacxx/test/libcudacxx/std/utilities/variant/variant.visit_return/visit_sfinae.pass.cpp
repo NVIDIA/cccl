@@ -35,18 +35,9 @@ struct any_visitor
   }
 };
 
-template <typename T,
-          typename = decltype(cuda::std::visit<bool>(cuda::std::declval<any_visitor&>(), cuda::std::declval<T>()))>
-TEST_FUNC constexpr bool has_visit(int)
-{
-  return true;
-}
-
-template <typename T>
-TEST_FUNC constexpr bool has_visit(...)
-{
-  return false;
-}
+template <class T>
+_CCCL_CONCEPT has_visit =
+  _CCCL_REQUIRES_EXPR((T), T&& t)((cuda::std::visit<bool>(any_visitor{}, cuda::std::forward<T>(t))));
 
 TEST_FUNC void test_sfinae()
 {
@@ -55,9 +46,9 @@ TEST_FUNC void test_sfinae()
       , cuda::std::variant<long, float>
   {};
 
-  static_assert(has_visit<cuda::std::variant<int>>(int()));
+  static_assert(has_visit<cuda::std::variant<int>>);
 #if !TEST_COMPILER(MSVC) // MSVC cannot deal with that even with std::variant
-  static_assert(!has_visit<BadVariant>(int()));
+  static_assert(!has_visit<BadVariant>);
 #endif // !TEST_COMPILER(MSVC)
 }
 

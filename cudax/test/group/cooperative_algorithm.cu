@@ -116,19 +116,57 @@ __device__ cuda::std::optional<T> sum(cudax::this_cluster<Hierarchy> group, T (&
   return (cuda::gpu_thread.is_root_rank(group)) ? cuda::std::optional{result} : cuda::std::nullopt;
 }
 
+// todo(dabayer): Add support for warp and cluster levels.
+template <class Group, class T, cuda::std::size_t N>
+__device__ cuda::std::optional<T> sum(Group group, T (&array)[N])
+{
+  using Unit          = typename Group::unit_type;
+  using MappingResult = typename Group::__mapping_result_type;
+
+  constexpr auto ngroups = MappingResult::static_group_count();
+  static_assert(ngroups != cuda::std::dynamic_extent, "group count must be statically known");
+
+  __shared__ T group_sums[ngroups];
+
+  if (!Unit{}.is_part_of(group))
+  {
+    return cuda::std::nullopt;
+  }
+
+  // todo(dabayer): Replace by group.rank(level) once this query is available.
+  const auto group_rank = group.__mapping_result().group_rank();
+
+  if (cuda::gpu_thread.is_root_rank(group))
+  {
+    group_sums[group_rank] = 0;
+  }
+
+  const auto unit_group  = cudax::make_this_group(Unit{}, group.hierarchy());
+  const auto result_unit = sum(unit_group, array);
+
+  // Wait until group_sums are are filled with 0.
+  group.sync_aligned();
+
+  if (cuda::gpu_thread.is_root_rank(unit_group))
+  {
+    cuda::atomic_ref<T, cuda::thread_scope_block>{group_sums[group_rank]} += result_unit.value();
+  }
+
+  // Wait until all unit_group roots add the intermediate sum to the shared memory.
+  group.sync_aligned();
+
+  return (cuda::gpu_thread.is_root_rank(group)) ? cuda::std::optional{group_sums[group_rank]} : cuda::std::nullopt;
+}
+
 template <class Group>
-__device__ void test_cooperative_algorithm(Group&& group)
+__device__ void test_cooperative_algorithm(Group group)
 {
   using Level = typename Group::level_type;
 
   unsigned array[]{1, 2, 3};
   const auto result = sum(group, array);
 
-  unsigned ref_sum = 6;
-  if constexpr (!cuda::std::is_same_v<Level, cuda::thread_level>)
-  {
-    ref_sum *= cuda::gpu_thread.count(Level{});
-  }
+  const auto ref_sum = static_cast<unsigned>(6 * cuda::gpu_thread.count(group));
 
   // Only the root rank should have the correct result.
   if (cuda::gpu_thread.is_root_rank(group))
@@ -151,6 +189,11 @@ struct TestKernel
     test_cooperative_algorithm(cudax::this_warp{config});
     test_cooperative_algorithm(cudax::this_block{config});
     test_cooperative_algorithm(cudax::this_cluster{config});
+
+    test_cooperative_algorithm(
+      cudax::group{cuda::gpu_thread, cudax::this_block{config}, cudax::group_by<2>{}, cudax::lane_synchronizer{}});
+    test_cooperative_algorithm(
+      cudax::group{cuda::gpu_thread, cudax::this_block{config}, cudax::group_by<16>{}, cudax::lane_synchronizer{}});
   }
 };
 } // namespace
@@ -161,13 +204,13 @@ C2H_TEST("Collective algorithm", "[group]")
 
   const cuda::stream stream{device};
 
-  const auto config = cuda::make_config(cuda::grid_dims<2>(), cuda::block_dims<128>(), cuda::cooperative_launch{});
+  const auto config = cuda::make_config(cuda::grid_dims<2>(), cuda::block_dims<128>());
   cuda::launch(stream, config, TestKernel{});
 
   if (cuda::device_attributes::compute_capability(device) >= cuda::compute_capability{90})
   {
-    const auto config_cluster = cuda::make_config(
-      cuda::grid_dims<2>(), cuda::cluster_dims<3>(), cuda::block_dims<128>(), cuda::cooperative_launch{});
+    const auto config_cluster =
+      cuda::make_config(cuda::grid_dims<2>(), cuda::cluster_dims<3>(), cuda::block_dims<128>());
     cuda::launch(stream, config_cluster, TestKernel{});
   }
 
