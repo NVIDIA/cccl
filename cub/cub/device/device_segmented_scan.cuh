@@ -140,10 +140,20 @@ struct DeviceSegmentedScan
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] d_in_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_in_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_in`` and in ``d_out``.
+  //!   @endrst
   //!
   //! @param[in] d_in_end_offsets
-  //!   Random-access input iterator to the sequence of ending offsets of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_in_end_offsets[i] - 1`` is the last element of
+  //!   the \ *i*\ :sup:`th` data segment in ``d_in``.
+  //!   If ``d_in_end_offsets[i] - 1 <= d_in_begin_offsets[i]``, the \ *i*\ :sup:`th`
+  //!   is considered empty.
+  //!   @endrst
   //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the segmented prefix scan data.
@@ -250,10 +260,20 @@ struct DeviceSegmentedScan
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] d_in_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_in_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_in`` and in ``d_out``.
+  //!   @endrst
   //!
   //! @param[in] d_in_end_offsets
-  //!   Random-access input iterator to the sequence of ending offsets of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_in_end_offsets[i] - 1`` is the last element of
+  //!   the \ *i*\ :sup:`th` data segment in ``d_in``.
+  //!   If ``d_in_end_offsets[i] - 1 <= d_in_begin_offsets[i]``, the \ *i*\ :sup:`th`
+  //!   is considered empty.
+  //!   @endrst
   //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the segmented prefix scan data.
@@ -650,10 +670,20 @@ struct DeviceSegmentedScan
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] d_in_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_in_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_in`` and in ``d_out``.
+  //!   @endrst
   //!
   //! @param[in] d_in_end_offsets
-  //!   Random-access input iterator to the sequence of ending offsets of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_in_end_offsets[i] - 1`` is the last element of
+  //!   the \ *i*\ :sup:`th` data segment in ``d_in``.
+  //!   If ``d_in_end_offsets[i] - 1 <= d_in_begin_offsets[i]``, the \ *i*\ :sup:`th`
+  //!   is considered empty.
+  //!   @endrst
   //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the segmented prefix scan data.
@@ -1029,10 +1059,20 @@ struct DeviceSegmentedScan
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] d_in_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_in_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_in`` and in ``d_out``.
+  //!   @endrst
   //!
   //! @param[in] d_in_end_offsets
-  //!   Random-access input iterator to the sequence of ending offsets of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_in_end_offsets[i] - 1`` is the last element of
+  //!   the \ *i*\ :sup:`th` data segment in ``d_in``.
+  //!   If ``d_in_end_offsets[i] - 1 <= d_in_begin_offsets[i]``, the \ *i*\ :sup:`th`
+  //!   is considered empty.
+  //!   @endrst
   //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the segmented prefix scan data.
@@ -1392,10 +1432,20 @@ struct DeviceSegmentedScan
   //!   Random-access iterator to the output sequence of data items
   //!
   //! @param[in] d_in_begin_offsets
-  //!   Random-access input iterator to the sequence of beginning offsets of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of beginning offsets of
+  //!   length ``num_segments``, such that ``d_in_begin_offsets[i]`` is the first
+  //!   element of the \ *i*\ :sup:`th` data segment in ``d_in`` and in ``d_out``.
+  //!   @endrst
   //!
   //! @param[in] d_in_end_offsets
-  //!   Random-access input iterator to the sequence of ending offsets of length ``num_segments``
+  //!   @rst
+  //!   Random-access input iterator to the sequence of ending offsets of length
+  //!   ``num_segments``, such that ``d_in_end_offsets[i] - 1`` is the last element of
+  //!   the \ *i*\ :sup:`th` data segment in ``d_in``.
+  //!   If ``d_in_end_offsets[i] - 1 <= d_in_begin_offsets[i]``, the \ *i*\ :sup:`th`
+  //!   is considered empty.
+  //!   @endrst
   //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the segmented prefix scan data.
