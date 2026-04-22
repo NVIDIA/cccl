@@ -11,9 +11,14 @@
 #pragma once
 
 #ifndef _CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS
+#  include <cuda/std/array>
 #  include <cuda/std/cstddef>
+#  include <cuda/std/optional>
+#  include <cuda/std/span>
 #  include <cuda/std/type_traits>
 #  include <cuda/std/utility>
+
+#  include <string_view>
 
 #  include <cccl/c/types.h>
 #  include <util/types.h>
@@ -328,7 +333,7 @@ __device__ {1} operator{2}(const {3} & lhs, const {3} & rhs)
         std::string type_names[] = {cccl_type_enum_to_name<RetStorageT>(ret.value.type),
                                     cccl_type_enum_to_name<ArgStorageTs>(arguments.value.type)...};
         auto type_name_views     = [&]<auto... Is>(std::index_sequence<Is...>) {
-          return std::array<std::string_view, sizeof...(Is)>{{type_names[Is]...}};
+          return cuda::std::array<std::string_view, sizeof...(Is)>{{type_names[Is]...}};
         }(std::make_index_sequence<1 + sizeof...(arguments)>());
         aux += builder(cuda::std::span(type_name_views), *entry->symbol, operation.name);
       }
