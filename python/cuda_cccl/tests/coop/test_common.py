@@ -3,8 +3,14 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import numba
+import numba.cuda
 import numpy as np
 import pytest
+
+try:
+    from numba.cuda.vector_types import vector_types as numba_cuda_vector_types
+except Exception:
+    numba_cuda_vector_types = None
 
 from cuda.coop._common import (
     CudaSharedMemConfig,
@@ -28,6 +34,26 @@ class TestNormalizeDtypeParam:
     def test_numba_type(self, dtype):
         """Test that numba types are returned as-is."""
         assert normalize_dtype_param(dtype) is dtype
+
+    @pytest.mark.parametrize(
+        "dtype",
+        [
+            numba.cuda.uint4,
+            numba.cuda.float2,
+            numba.cuda.float3,
+            numba.cuda.float4,
+            numba.cuda.uint32x4,
+            numba.cuda.float32x4,
+        ],
+    )
+    def test_numba_cuda_vector_type(self, dtype):
+        """Test conversion of CUDA vector stubs to Numba CUDA vector types."""
+        result = normalize_dtype_param(dtype)
+        if numba_cuda_vector_types is None:
+            assert result is dtype
+            return
+        assert result is numba_cuda_vector_types[dtype.__name__]
+        assert result.user_facing_object is dtype
 
     @pytest.mark.parametrize(
         "dtype,expected",

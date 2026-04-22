@@ -1,8 +1,7 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# example-begin imports
 import numba
 import numpy as np
 from numba import cuda
@@ -11,22 +10,28 @@ from cuda import coop
 
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
+
+# example-begin imports
 # example-end imports
 
 
-def test_block_reduction():
+def test_block_reduction_api_example():
     # example-begin reduce
+    @cuda.jit(device=True)
     def op(a, b):
         return a if a > b else b
 
     threads_per_block = 128
-    block_reduce = coop.block.make_reduce(numba.int32, threads_per_block, op)
 
-    @cuda.jit(link=block_reduce.files)
+    @cuda.jit
     def kernel(input, output):
-        block_output = block_reduce(input[cuda.threadIdx.x])
-
-        if cuda.threadIdx.x == 0:
+        tid = cuda.threadIdx.x
+        block_output = coop.block.reduce(
+            input[tid],
+            items_per_thread=1,
+            binary_op=op,
+        )
+        if tid == 0:
             output[0] = block_output
 
     # example-end reduce
@@ -35,22 +40,18 @@ def test_block_reduction():
     d_input = cuda.to_device(h_input)
     d_output = cuda.device_array(1, dtype=np.int32)
     kernel[1, threads_per_block](d_input, d_output)
-    h_output = d_output.copy_to_host()
-    h_expected = np.max(h_input)
-
-    assert h_output[0] == h_expected
+    np.testing.assert_array_equal(d_output.copy_to_host(), np.array([np.max(h_input)]))
 
 
-def test_block_sum():
+def test_block_sum_api_example():
     # example-begin sum
     threads_per_block = 128
-    block_sum = coop.block.make_sum(numba.int32, threads_per_block)
 
-    @cuda.jit(link=block_sum.files)
+    @cuda.jit
     def kernel(input, output):
-        block_output = block_sum(input[cuda.threadIdx.x])
-
-        if cuda.threadIdx.x == 0:
+        tid = cuda.threadIdx.x
+        block_output = coop.block.sum(input[tid], items_per_thread=1)
+        if tid == 0:
             output[0] = block_output
 
     # example-end sum
@@ -59,6 +60,6 @@ def test_block_sum():
     d_input = cuda.to_device(h_input)
     d_output = cuda.device_array(1, dtype=np.int32)
     kernel[1, threads_per_block](d_input, d_output)
-    h_output = d_output.copy_to_host()
-
-    assert h_output[0] == threads_per_block
+    np.testing.assert_array_equal(
+        d_output.copy_to_host(), np.array([threads_per_block])
+    )

@@ -39,42 +39,81 @@ CUB_NAMESPACE_BEGIN
 //! The code snippet below illustrates a sort of 64 integer keys that are
 //! partitioned across 16 threads where each thread owns 4 consecutive items.
 //!
-//! .. code-block:: c++
+//! .. tab-set-code::
 //!
-//!    #include <cub/cub.cuh>  // or equivalently <cub/warp/warp_merge_sort.cuh>
+//!    .. code-block:: c++
 //!
-//!    struct CustomLess
-//!    {
-//!      template <typename DataType>
-//!      __device__ bool operator()(const DataType &lhs, const DataType &rhs)
-//!      {
-//!        return lhs < rhs;
-//!      }
-//!    };
+//!        #include <cub/cub.cuh>  // or equivalently <cub/warp/warp_merge_sort.cuh>
 //!
-//!    __global__ void ExampleKernel(...)
-//!    {
-//!        constexpr int warp_threads = 16;
-//!        constexpr int block_threads = 256;
-//!        constexpr int items_per_thread = 4;
-//!        constexpr int warps_per_block = block_threads / warp_threads;
-//!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
+//!        struct CustomLess
+//!        {
+//!          template <typename DataType>
+//!          __device__ bool operator()(const DataType &lhs, const DataType &rhs)
+//!          {
+//!            return lhs < rhs;
+//!          }
+//!        };
 //!
-//!        // Specialize WarpMergeSort for a virtual warp of 16 threads
-//!        // owning 4 integer items each
-//!        using WarpMergeSortT =
-//!          cub::WarpMergeSort<int, items_per_thread, warp_threads>;
+//!        __global__ void ExampleKernel(...)
+//!        {
+//!            constexpr int warp_threads = 16;
+//!            constexpr int block_threads = 256;
+//!            constexpr int items_per_thread = 4;
+//!            constexpr int warps_per_block = block_threads / warp_threads;
+//!            const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
 //!
-//!        // Allocate shared memory for WarpMergeSort
-//!        __shared__ typename WarpMergeSortT::TempStorage temp_storage[warps_per_block];
+//!            // Specialize WarpMergeSort for a virtual warp of 16 threads
+//!            // owning 4 integer items each
+//!            using WarpMergeSortT =
+//!              cub::WarpMergeSort<int, items_per_thread, warp_threads>;
 //!
-//!        // Obtain a segment of consecutive items that are blocked across threads
-//!        int thread_keys[items_per_thread];
-//!        // ...
+//!            // Allocate shared memory for WarpMergeSort
+//!            __shared__ typename WarpMergeSortT::TempStorage temp_storage[warps_per_block];
 //!
-//!        WarpMergeSortT(temp_storage[warp_id]).Sort(thread_keys, CustomLess());
-//!        // ...
-//!    }
+//!            // Obtain a segment of consecutive items that are blocked across threads
+//!            int thread_keys[items_per_thread];
+//!            // ...
+//!
+//!            WarpMergeSortT(temp_storage[warp_id]).Sort(thread_keys, CustomLess());
+//!            // ...
+//!        }
+//!
+//!    .. code-block:: python
+//!
+//!        from numba import cuda
+//!        from cuda import coop
+//!        from cuda.coop import WarpLoadAlgorithm, WarpStoreAlgorithm
+//!
+//!        warp_threads = 16
+//!        items_per_thread = 4
+//!
+//!        @cuda.jit(device=True)
+//!        def compare_op(lhs, rhs):
+//!            return lhs < rhs
+//!
+//!        @cuda.jit
+//!        def kernel(keys):
+//!            temp_storage = coop.TempStorage()
+//!            thread_keys = coop.ThreadData(items_per_thread)
+//!            coop.warp.load(
+//!                keys,
+//!                thread_keys,
+//!                threads_in_warp=warp_threads,
+//!                algorithm=WarpLoadAlgorithm.DIRECT,
+//!            )
+//!            coop.warp.merge_sort_keys[temp_storage](
+//!                thread_keys,
+//!                compare_op=compare_op,
+//!                threads_in_warp=warp_threads,
+//!            )
+//!            coop.warp.store(
+//!                keys,
+//!                thread_keys,
+//!                threads_in_warp=warp_threads,
+//!                algorithm=WarpStoreAlgorithm.DIRECT,
+//!            )
+//!
+//!        # Launch with one logical warp.
 //!
 //! Suppose the set of input ``thread_keys`` across a warp of threads is
 //! ``{ [0,64,1,63], [2,62,3,61], [4,60,5,59], ..., [31,34,32,33] }``.

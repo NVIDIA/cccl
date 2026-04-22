@@ -4,7 +4,7 @@
 
 /**
  * @file
- * The cub::BlockHistogram class provides [<em>collective</em>](../index.html#sec0) methods for
+ * The cub::BlockHistogram class provides `collective <../index.html#sec0>`_ methods for
  * constructing block-wide histograms from data samples partitioned across a CUDA thread block.
  */
 
@@ -95,28 +95,59 @@ enum BlockHistogramAlgorithm
 //! The code snippet below illustrates a 256-bin histogram of 512 integer samples that
 //! are partitioned across 128 threads where each thread owns 4 samples.
 //!
-//! .. code-block:: c++
+//! .. tab-set-code::
 //!
-//!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_histogram.cuh>
+//!    .. code-block:: c++
 //!
-//!    __global__ void ExampleKernel(...)
-//!    {
-//!        // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4 character samples each
-//!        using BlockHistogram = cub::BlockHistogram<unsigned char, 128, 4, 256>;
+//!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_histogram.cuh>
 //!
-//!        // Allocate shared memory for BlockHistogram
-//!        __shared__ typename BlockHistogram::TempStorage temp_storage;
+//!        __global__ void ExampleKernel(...)
+//!        {
+//!            // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4 character samples each
+//!            using BlockHistogram = cub::BlockHistogram<unsigned char, 128, 4, 256>;
 //!
-//!        // Allocate shared memory for block-wide histogram bin counts
-//!        __shared__ unsigned int smem_histogram[256];
+//!            // Allocate shared memory for BlockHistogram
+//!            __shared__ typename BlockHistogram::TempStorage temp_storage;
 //!
-//!        // Obtain input samples per thread
-//!        unsigned char data[4];
-//!        ...
+//!            // Allocate shared memory for block-wide histogram bin counts
+//!            __shared__ unsigned int smem_histogram[256];
 //!
-//!        // Compute the block-wide histogram
-//!        BlockHistogram(temp_storage).Histogram(data, smem_histogram);
-//!    }
+//!            // Obtain input samples per thread
+//!            unsigned char data[4];
+//!            ...
+//!
+//!            // Compute the block-wide histogram
+//!            BlockHistogram(temp_storage).Histogram(data, smem_histogram);
+//!        }
+//!
+//!    .. code-block:: python
+//!
+//!        from numba import cuda
+//!        from cuda import coop
+//!
+//!        threads_per_block = 128
+//!        items_per_thread = 4
+//!        bins = 256
+//!
+//!        @cuda.jit
+//!        def kernel(d_in, d_histogram):
+//!            thread_samples = coop.local.array(items_per_thread, d_in.dtype)
+//!            smem_histogram = coop.shared.array((bins,), d_histogram.dtype)
+//!
+//!            coop.block.load(d_in, thread_samples)
+//!            histo = coop.block.histogram(thread_samples, smem_histogram)
+//!            histo.init()
+//!            cuda.syncthreads()
+//!            histo.composite(thread_samples)
+//!            cuda.syncthreads()
+//!
+//!            if cuda.threadIdx.x < bins:
+//!                d_histogram[cuda.threadIdx.x] = smem_histogram[cuda.threadIdx.x]
+//!
+//!
+//! Suppose the set of input ``thread_samples`` across the block of threads is
+//! ``{ [0,0,1,1], [2,2,3,3], ..., [254,254,255,255] }``.
+//! The resulting output histogram ``d_histogram`` will have value ``2`` in each bin.
 //!
 //! Performance and Usage Considerations
 //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -243,31 +274,64 @@ public:
   //! histogram of 512 integer samples that are partitioned across 128 threads
   //! where each thread owns 4 samples.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_histogram.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!      // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4 character samples each
-  //!      using BlockHistogram = cub::BlockHistogram<unsigned char, 128, 4, 256>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_histogram.cuh>
   //!
-  //!      // Allocate shared memory for BlockHistogram
-  //!      __shared__ typename BlockHistogram::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!          // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4 character samples each
+  //!          using BlockHistogram = cub::BlockHistogram<unsigned char, 128, 4, 256>;
   //!
-  //!      // Allocate shared memory for block-wide histogram bin counts
-  //!      __shared__ unsigned int smem_histogram[256];
+  //!          // Allocate shared memory for BlockHistogram
+  //!          __shared__ typename BlockHistogram::TempStorage temp_storage;
   //!
-  //!      // Obtain input samples per thread
-  //!      unsigned char thread_samples[4];
-  //!      ...
+  //!          // Allocate shared memory for block-wide histogram bin counts
+  //!          __shared__ unsigned int smem_histogram[256];
   //!
-  //!      // Initialize the block-wide histogram
-  //!      BlockHistogram(temp_storage).InitHistogram(smem_histogram);
+  //!          // Obtain input samples per thread
+  //!          unsigned char thread_samples[4];
+  //!          ...
   //!
-  //!      // Update the block-wide histogram
-  //!      BlockHistogram(temp_storage).Composite(thread_samples, smem_histogram);
-  //!    }
+  //!          // Initialize the block-wide histogram
+  //!          BlockHistogram(temp_storage).InitHistogram(smem_histogram);
+  //!
+  //!          // Update the block-wide histogram
+  //!          BlockHistogram(temp_storage).Composite(thread_samples, smem_histogram);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!        bins = 256
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_histogram):
+  //!            thread_samples = coop.local.array(items_per_thread, d_in.dtype)
+  //!            smem_histogram = coop.shared.array((bins,), d_histogram.dtype)
+  //!
+  //!            coop.block.load(d_in, thread_samples)
+  //!            histo = coop.block.histogram(thread_samples, smem_histogram)
+  //!            histo.init()
+  //!            cuda.syncthreads()
+  //!            histo.composite(thread_samples)
+  //!            cuda.syncthreads()
+  //!
+  //!            if cuda.threadIdx.x < bins:
+  //!                d_histogram[cuda.threadIdx.x] = smem_histogram[cuda.threadIdx.x]
+  //!
+  //!
+  //! Suppose ``smem_histogram`` initially contains arbitrary values.
+  //! After ``InitHistogram``, all 256 counters are zero.
+  //! If ``thread_samples`` is
+  //! ``{ [0,0,1,1], [2,2,3,3], ..., [254,254,255,255] }``,
+  //! then after ``Composite`` each histogram bin contains ``2``.
   //! @endrst
   //!
   //! @tparam CounterT
@@ -306,28 +370,59 @@ public:
   //! The code snippet below illustrates a 256-bin histogram of 512 integer samples that
   //! are partitioned across 128 threads where each thread owns 4 samples.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_histogram.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4 character samples each
-  //!        using BlockHistogram = cub::BlockHistogram<unsigned char, 128, 4, 256>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_histogram.cuh>
   //!
-  //!        // Allocate shared memory for BlockHistogram
-  //!        __shared__ typename BlockHistogram::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4 character samples
+  //!            each using BlockHistogram = cub::BlockHistogram<unsigned char, 128, 4, 256>;
   //!
-  //!        // Allocate shared memory for block-wide histogram bin counts
-  //!        __shared__ unsigned int smem_histogram[256];
+  //!            // Allocate shared memory for BlockHistogram
+  //!            __shared__ typename BlockHistogram::TempStorage temp_storage;
   //!
-  //!        // Obtain input samples per thread
-  //!        unsigned char thread_samples[4];
-  //!        ...
+  //!            // Allocate shared memory for block-wide histogram bin counts
+  //!            __shared__ unsigned int smem_histogram[256];
   //!
-  //!        // Compute the block-wide histogram
-  //!        BlockHistogram(temp_storage).Histogram(thread_samples, smem_histogram);
-  //!    }
+  //!            // Obtain input samples per thread
+  //!            unsigned char thread_samples[4];
+  //!            ...
+  //!
+  //!            // Compute the block-wide histogram
+  //!            BlockHistogram(temp_storage).Histogram(thread_samples, smem_histogram);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!        bins = 256
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_histogram):
+  //!            thread_samples = coop.local.array(items_per_thread, d_in.dtype)
+  //!            smem_histogram = coop.shared.array((bins,), d_histogram.dtype)
+  //!
+  //!            coop.block.load(d_in, thread_samples)
+  //!            histo = coop.block.histogram(thread_samples, smem_histogram)
+  //!            histo.init()
+  //!            cuda.syncthreads()
+  //!            histo.composite(thread_samples)
+  //!            cuda.syncthreads()
+  //!
+  //!            if cuda.threadIdx.x < bins:
+  //!                d_histogram[cuda.threadIdx.x] = smem_histogram[cuda.threadIdx.x]
+  //!
+  //!
+  //! Suppose the set of input ``thread_samples`` across the block of threads is
+  //! ``{ [0,0,1,1], [2,2,3,3], ..., [254,254,255,255] }``.
+  //! After ``Histogram`` executes, each counter in ``smem_histogram`` contains ``2``.
   //! @endrst
   //!
   //! @tparam CounterT
@@ -367,31 +462,63 @@ public:
   //! histogram of 512 integer samples that are partitioned across 128 threads
   //! where each thread owns 4 samples.
   //!
-  //! .. code-block:: c++
+  //! .. tab-set-code::
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_histogram.cuh>
+  //!    .. code-block:: c++
   //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4 character samples each
-  //!        using BlockHistogram = cub::BlockHistogram<unsigned char, 128, 4, 256>;
+  //!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_histogram.cuh>
   //!
-  //!        // Allocate shared memory for BlockHistogram
-  //!        __shared__ typename BlockHistogram::TempStorage temp_storage;
+  //!        __global__ void ExampleKernel(...)
+  //!        {
+  //!            // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4 character samples
+  //!            each using BlockHistogram = cub::BlockHistogram<unsigned char, 128, 4, 256>;
   //!
-  //!        // Allocate shared memory for block-wide histogram bin counts
-  //!        __shared__ unsigned int smem_histogram[256];
+  //!            // Allocate shared memory for BlockHistogram
+  //!            __shared__ typename BlockHistogram::TempStorage temp_storage;
   //!
-  //!        // Obtain input samples per thread
-  //!        unsigned char thread_samples[4];
-  //!        ...
+  //!            // Allocate shared memory for block-wide histogram bin counts
+  //!            __shared__ unsigned int smem_histogram[256];
   //!
-  //!        // Initialize the block-wide histogram
-  //!        BlockHistogram(temp_storage).InitHistogram(smem_histogram);
+  //!            // Obtain input samples per thread
+  //!            unsigned char thread_samples[4];
+  //!            ...
   //!
-  //!        // Update the block-wide histogram
-  //!        BlockHistogram(temp_storage).Composite(thread_samples, smem_histogram);
-  //!    }
+  //!            // Initialize the block-wide histogram
+  //!            BlockHistogram(temp_storage).InitHistogram(smem_histogram);
+  //!
+  //!            // Update the block-wide histogram
+  //!            BlockHistogram(temp_storage).Composite(thread_samples, smem_histogram);
+  //!        }
+  //!
+  //!    .. code-block:: python
+  //!
+  //!        from numba import cuda
+  //!        from cuda import coop
+  //!
+  //!        threads_per_block = 128
+  //!        items_per_thread = 4
+  //!        bins = 256
+  //!
+  //!        @cuda.jit
+  //!        def kernel(d_in, d_histogram):
+  //!            thread_samples = coop.local.array(items_per_thread, d_in.dtype)
+  //!            smem_histogram = coop.shared.array((bins,), d_histogram.dtype)
+  //!
+  //!            coop.block.load(d_in, thread_samples)
+  //!            histo = coop.block.histogram(thread_samples, smem_histogram)
+  //!            histo.init()
+  //!            cuda.syncthreads()
+  //!            histo.composite(thread_samples)
+  //!            cuda.syncthreads()
+  //!
+  //!            if cuda.threadIdx.x < bins:
+  //!                d_histogram[cuda.threadIdx.x] = smem_histogram[cuda.threadIdx.x]
+  //!
+  //!
+  //! Suppose ``smem_histogram`` is zero-initialized and ``thread_samples`` is
+  //! ``{ [0,0,1,1], [2,2,3,3], ..., [254,254,255,255] }``.
+  //! After one call to ``Composite``, each counter in ``smem_histogram`` is ``2``.
+  //! A second call with the same inputs increments each counter to ``4``.
   //! @endrst
   //!
   //! @tparam CounterT

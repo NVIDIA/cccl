@@ -35,6 +35,72 @@ CUB_NAMESPACE_BEGIN
 //! (a) up to their successor or
 //! (b) down to their predecessor
 //!
+//! A Simple Example
+//! ++++++++++++++++
+//!
+//! @blockcollective{BlockShuffle}
+//!
+//! The code snippet below illustrates shifting a :ref:`blocked arrangement <flexible-data-arrangement>`
+//! of 512 integer items up by one item across 128 threads where each thread owns
+//! 4 consecutive items.
+//!
+//! .. tab-set-code::
+//!
+//!    .. code-block:: c++
+//!
+//!        #include <cub/cub.cuh>   // or equivalently <cub/block/block_shuffle.cuh>
+//!
+//!        __global__ void ExampleKernel(int* d_data, ...)
+//!        {
+//!            // Specialize BlockShuffle for a 1D block of 128 threads owning 4 integer items each
+//!            using BlockShuffle = cub::BlockShuffle<int, 128>;
+//!
+//!            // Allocate shared memory for BlockShuffle
+//!            __shared__ typename BlockShuffle::TempStorage temp_storage;
+//!
+//!            int block_offset = blockIdx.x * 128 * 4;
+//!
+//!            // Obtain a segment of consecutive items that are blocked across threads
+//!            int thread_data[4];
+//!            cub::LoadDirectBlocked(threadIdx.x, d_data + block_offset, thread_data);
+//!
+//!            // Collectively shift blocked items up by one position
+//!            BlockShuffle(temp_storage).Up(thread_data, thread_data);
+//!
+//!            // Store the shifted segment
+//!            cub::StoreDirectBlocked(threadIdx.x, d_data + block_offset, thread_data);
+//!        }
+//!
+//!    .. code-block:: python
+//!
+//!        from numba import cuda
+//!        from cuda import coop
+//!
+//!        items_per_thread = 4
+//!
+//!        @cuda.jit
+//!        def kernel(d_data):
+//!            temp_storage = coop.TempStorage()
+//!            thread_data = coop.ThreadData(items_per_thread)
+//!
+//!            block_offset = cuda.blockIdx.x * cuda.blockDim.x * items_per_thread
+//!            coop.block.load(d_data[block_offset:], thread_data)
+//!
+//!            coop.block.shuffle[temp_storage](
+//!                thread_data,
+//!                thread_data,
+//!                block_shuffle_type=coop.block.BlockShuffleType.Up,
+//!            )
+//!
+//!            coop.block.store(d_data[block_offset:], thread_data)
+//!
+//!        # Launch with one block of 128 threads.
+//!
+//! Suppose the set of input ``thread_data`` across the block of threads is
+//! ``{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }``.
+//! The corresponding output ``thread_data`` in those threads will be
+//! ``{ [0,0,1,2], [3,4,5,6], [7,8,9,10], ..., [507,508,509,510] }``.
+//!
 //! @endrst
 //!
 //! @tparam T
