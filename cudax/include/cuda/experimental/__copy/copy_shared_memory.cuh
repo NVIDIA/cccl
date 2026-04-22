@@ -278,7 +278,7 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
   {
     __src_perm[__i] = static_cast<int>(__i);
   }
-  ::cuda::std::stable_sort(__src_perm.begin(), __src_perm.begin() + __rank, [&](auto __a, auto __b) {
+  ::cuda::std::stable_sort(__src_perm.begin(), __src_perm.begin() + __rank, [&] __host__ __device__(auto __a, auto __b) {
     return cudax::__abs_integer(__src.__strides[__a]) < cudax::__abs_integer(__src.__strides[__b]);
   });
   //--------------------------------------------------------------------------------------------------------------------
