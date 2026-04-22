@@ -559,26 +559,20 @@ struct DeviceSegmentedScan
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return cub::detail::segmented_scan::dispatch_segmented_scan<
-          InputIteratorT,
-          OutputIteratorT,
-          BeginOffsetIteratorInputT,
-          EndOffsetIteratorInputT,
-          BeginOffsetIteratorOutputT,
-          scan_op_t,
-          detail::InputValue<init_value_t>>::
-          dispatch(
-            d_temp_storage,
-            temp_storage_bytes,
-            d_in,
-            d_out,
-            num_segments,
-            d_in_begin_offsets,
-            d_in_end_offsets,
-            d_out_begin_offsets,
-            scan_op,
-            detail::InputValue<init_value_t>(init_value),
-            stream);
+        return cub::detail::segmented_scan::dispatch(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in,
+          d_out,
+          num_segments,
+          d_in_begin_offsets,
+          d_in_end_offsets,
+          d_out_begin_offsets,
+          scan_op,
+          detail::InputValue<init_value_t>(init_value),
+          1,
+          detail::segmented_scan::worker::block,
+          stream);
       });
   }
 
@@ -1095,26 +1089,20 @@ struct DeviceSegmentedScan
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return cub::detail::segmented_scan::dispatch_segmented_scan<
-          InputIteratorT,
-          OutputIteratorT,
-          BeginOffsetIteratorInputT,
-          EndOffsetIteratorInputT,
-          BeginOffsetIteratorOutputT,
-          ScanOpT,
-          detail::InputValue<InitValueT>>::
-          dispatch(
-            d_temp_storage,
-            temp_storage_bytes,
-            d_in,
-            d_out,
-            num_segments,
-            d_in_begin_offsets,
-            d_in_end_offsets,
-            d_out_begin_offsets,
-            scan_op,
-            detail::InputValue<InitValueT>(init_value),
-            stream);
+        return cub::detail::segmented_scan::dispatch(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in,
+          d_out,
+          num_segments,
+          d_in_begin_offsets,
+          d_in_end_offsets,
+          d_out_begin_offsets,
+          scan_op,
+          detail::InputValue<InitValueT>(init_value),
+          1,
+          detail::segmented_scan::worker::block,
+          stream);
       });
   }
 
@@ -1582,24 +1570,20 @@ struct DeviceSegmentedScan
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return cub::detail::segmented_scan::dispatch_segmented_scan<
-          InputIteratorT,
-          OutputIteratorT,
-          BeginOffsetIteratorInputT,
-          EndOffsetIteratorInputT,
-          BeginOffsetIteratorOutputT,
-          scan_op_t,
-          NullType>::dispatch(d_temp_storage,
-                              temp_storage_bytes,
-                              d_in,
-                              d_out,
-                              num_segments,
-                              d_in_begin_offsets,
-                              d_in_end_offsets,
-                              d_out_begin_offsets,
-                              scan_op,
-                              NullType(),
-                              stream);
+        return cub::detail::segmented_scan::dispatch(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in,
+          d_out,
+          num_segments,
+          d_in_begin_offsets,
+          d_in_end_offsets,
+          d_out_begin_offsets,
+          scan_op,
+          NullType(),
+          1,
+          detail::segmented_scan::worker::block,
+          stream);
       });
   }
 
@@ -2077,24 +2061,20 @@ struct DeviceSegmentedScan
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return cub::detail::segmented_scan::dispatch_segmented_scan<
-          InputIteratorT,
-          OutputIteratorT,
-          BeginOffsetIteratorInputT,
-          EndOffsetIteratorInputT,
-          BeginOffsetIteratorOutputT,
-          ScanOpT,
-          NullType>::dispatch(d_temp_storage,
-                              temp_storage_bytes,
-                              d_in,
-                              d_out,
-                              num_segments,
-                              d_in_begin_offsets,
-                              d_in_end_offsets,
-                              d_out_begin_offsets,
-                              scan_op,
-                              NullType(),
-                              stream);
+        return cub::detail::segmented_scan::dispatch(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in,
+          d_out,
+          num_segments,
+          d_in_begin_offsets,
+          d_in_end_offsets,
+          d_out_begin_offsets,
+          scan_op,
+          NullType(),
+          1,
+          detail::segmented_scan::worker::block,
+          stream);
       });
   }
 
@@ -2616,26 +2596,20 @@ struct DeviceSegmentedScan
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return cub::detail::segmented_scan::dispatch_segmented_scan<
-          InputIteratorT,
-          OutputIteratorT,
-          BeginOffsetIteratorInputT,
-          EndOffsetIteratorInputT,
-          BeginOffsetIteratorOutputT,
-          ScanOpT,
-          detail::InputValue<InitValueT>,
-          accum_t,
-          ForceInclusive::Yes>::dispatch(d_temp_storage,
-                                         temp_storage_bytes,
-                                         d_in,
-                                         d_out,
-                                         num_segments,
-                                         d_in_begin_offsets,
-                                         d_in_end_offsets,
-                                         d_out_begin_offsets,
-                                         scan_op,
-                                         detail::InputValue<InitValueT>(init_value),
-                                         stream);
+        return cub::detail::segmented_scan::dispatch<ForceInclusive::Yes, accum_t>(
+          d_temp_storage,
+          temp_storage_bytes,
+          d_in,
+          d_out,
+          num_segments,
+          d_in_begin_offsets,
+          d_in_end_offsets,
+          d_out_begin_offsets,
+          scan_op,
+          detail::InputValue<InitValueT>(init_value),
+          1,
+          detail::segmented_scan::worker::block,
+          stream);
       });
   }
 };
