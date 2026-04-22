@@ -49,7 +49,7 @@ struct TestParameters
   static constexpr bool m_descending     = descending;
   static constexpr bool m_overwrite_okay = overwrite_okay;
 
-  constexpr TestParameters() {}
+  constexpr TestParameters() = default;
 
   constexpr bool is_descending() const
   {

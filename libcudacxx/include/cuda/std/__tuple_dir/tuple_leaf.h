@@ -105,8 +105,11 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__default>
 #endif // !_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
 public:
+  // The compiler-generated constructor would not value-initialize trivial types, but the
+  // standard requires that we do.
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr __tuple_leaf() noexcept(is_nothrow_default_constructible_v<_Hp>)
+  _CCCL_API constexpr __tuple_leaf() // NOLINT(modernize-use-equals-default)
+    noexcept(is_nothrow_default_constructible_v<_Hp>)
       : __value_()
   {}
 
@@ -227,14 +230,19 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   __tuple_leaf(__tuple_leaf&& __t) = default;
 
+  // Do not use = default here. The value type may be a reference, in which case the defaulted
+  // assignment constructor is implicitly deleted (a quirk in the C++ spec meant).
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr __tuple_leaf& operator=(const __tuple_leaf& __t) noexcept
+  _CCCL_API constexpr __tuple_leaf& operator=(const __tuple_leaf& __t) noexcept // NOLINT(modernize-use-equals-default)
   {
     __value_ = __t.__value_;
     return *this;
   }
+
+  // Do not use = default here. The value type may be a reference, in which case the defaulted
+  // assignment constructor is implicitly deleted (a quirk in the C++ spec meant).
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr __tuple_leaf& operator=(__tuple_leaf&& __t) noexcept
+  _CCCL_API constexpr __tuple_leaf& operator=(__tuple_leaf&& __t) noexcept // NOLINT(modernize-use-equals-default)
   {
     __value_ = ::cuda::std::move(__t.__value_);
     return *this;
@@ -267,8 +275,11 @@ template <size_t _Ip, class _Hp>
 class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__empty_non_final> : private remove_const_t<_Hp>
 {
 public:
+  // The compiler-generated constructor would not value-initialize trivial types, but the
+  // standard requires that we do.
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr __tuple_leaf() noexcept(is_nothrow_default_constructible_v<_Hp>)
+  _CCCL_API constexpr __tuple_leaf() // NOLINT(modernize-use-equals-default)
+    noexcept(is_nothrow_default_constructible_v<_Hp>)
       : _Hp()
   {}
 

@@ -983,13 +983,7 @@ struct NonThrowingIterator
       , current_(rhs.current_)
   {}
 
-  TEST_FUNC NonThrowingIterator& operator=(const NonThrowingIterator& rhs) noexcept
-  {
-    begin_   = rhs.begin_;
-    end_     = rhs.end_;
-    current_ = rhs.current_;
-    return *this;
-  }
+  NonThrowingIterator& operator=(const NonThrowingIterator& rhs) noexcept = default;
 
   TEST_FUNC reference operator*() const noexcept
   {
@@ -2066,7 +2060,7 @@ public:
   using pointer           = int*;
   using reference         = int&;
 
-  TEST_FUNC constexpr advance_only_iterator() {}
+  constexpr advance_only_iterator() = default;
   TEST_FUNC constexpr advance_only_iterator(int* iter)
       : iter_(iter)
   {}

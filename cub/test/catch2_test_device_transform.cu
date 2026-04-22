@@ -521,10 +521,12 @@ struct non_trivial
       : data(data)
   {}
 
+  // NOLINTNEXTLINE(modernize-use-equals-default)
   __host__ __device__ non_trivial(const non_trivial& nt)
       : data(nt.data)
   {}
 
+  // NOLINTNEXTLINE(modernize-use-equals-default)
   __host__ __device__ auto operator=(const non_trivial& nt) -> non_trivial&
   {
     data = nt.data;

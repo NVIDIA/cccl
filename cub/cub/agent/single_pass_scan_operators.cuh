@@ -118,14 +118,17 @@ namespace detail
 template <int Delay, unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay()
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (if (Delay > 0) {
-                 if (gridDim.x < GridThreshold)
+  NV_IF_TARGET(NV_PROVIDES_SM_70, ({
+                 if (Delay > 0)
                  {
-                   __threadfence_block();
-                 }
-                 else
-                 {
-                   __nanosleep(Delay);
+                   if (gridDim.x < GridThreshold)
+                   {
+                     __threadfence_block();
+                   }
+                   else
+                   {
+                     __nanosleep(Delay);
+                   }
                  }
                }));
 }
@@ -133,14 +136,17 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void delay()
 template <unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay(int ns)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (if (ns > 0) {
-                 if (gridDim.x < GridThreshold)
+  NV_IF_TARGET(NV_PROVIDES_SM_70, ({
+                 if (ns > 0)
                  {
-                   __threadfence_block();
-                 }
-                 else
-                 {
-                   __nanosleep(ns);
+                   if (gridDim.x < GridThreshold)
+                   {
+                     __threadfence_block();
+                   }
+                   else
+                   {
+                     __nanosleep(ns);
+                   }
                  }
                }));
 }
@@ -159,24 +165,24 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay([[maybe_unused]] int ns)
 template <unsigned int Delay = 350, unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting()
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (delay<Delay, GridThreshold>();), (__threadfence_block();));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (delay<Delay, GridThreshold>();), (__threadfence_block();));
 }
 
 template <unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting([[maybe_unused]] int ns)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (delay<GridThreshold>(ns);), (__threadfence_block();));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (delay<GridThreshold>(ns);), (__threadfence_block();));
 }
 
 template <unsigned int Delay = 350>
 _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting()
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (always_delay(Delay);), (__threadfence_block();));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (always_delay(Delay);), (__threadfence_block();));
 }
 
 _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting([[maybe_unused]] int ns)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (always_delay(ns);), (__threadfence_block();));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (always_delay(ns);), (__threadfence_block();));
 }
 
 template <unsigned int L2WriteLatency>
@@ -186,7 +192,7 @@ struct no_delay_constructor_t
   {
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_70, (), (__threadfence_block();));
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (), (__threadfence_block();));
     }
   };
 
@@ -787,7 +793,7 @@ private:
   LoadStatus(TxnWord* ptr)
   {
     // For pre-volta we hoist the memory barrier to outside the loop, i.e., after reading a valid state
-    NV_IF_TARGET(NV_PROVIDES_SM_70, (return detail::load_acquire(ptr);), (return detail::load_relaxed(ptr);));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (return detail::load_acquire(ptr);), (return detail::load_relaxed(ptr);));
   }
 
   template <MemoryOrder Order>
@@ -799,7 +805,7 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::acquire_release), void>
   ThreadfenceForLoadAcqPreVolta()
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_70, (), (__threadfence();));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70, (), (__threadfence();));
   }
 
 public:

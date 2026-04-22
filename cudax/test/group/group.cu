@@ -18,7 +18,7 @@
 
 #include <cuda/experimental/group.cuh>
 
-#include "testing.cuh"
+#include "group_testing.cuh"
 
 namespace
 {
@@ -83,54 +83,60 @@ test_queries(const cudax::group<cuda::thread_level, ParentGroup, cudax::group_by
   using Group = cuda::std::remove_cvref_t<decltype(group)>;
   using Level = typename Group::level_type;
 
-  const auto count_ref = group.mapping().count();
+  const auto count_ref = group.__mapping_result().count();
   const auto rank_ref  = cuda::gpu_thread.rank(Level{}, group.hierarchy()) % count_ref;
 
   CUDAX_REQUIRE(cuda::gpu_thread.count(group) == count_ref);
   CUDAX_REQUIRE(cuda::gpu_thread.rank(group) == rank_ref);
   CUDAX_REQUIRE(cuda::gpu_thread.is_root_rank(group) == (rank_ref == 0));
   CUDAX_REQUIRE(cuda::gpu_thread.is_part_of(group));
+
+  auto group_count_ref = group.__mapping_result().group_count();
+  auto group_rank_ref  = group.__mapping_result().group_rank();
+
+  if constexpr (!cuda::std::is_same_v<Level, cuda::grid_level>)
+  {
+    group_count_ref *= Level{}.count(cuda::grid, group.hierarchy());
+    group_rank_ref += group.__mapping_result().group_count() * Level{}.rank(cuda::grid, group.hierarchy());
+  }
+
+  CUDAX_REQUIRE(group.count(cuda::grid) == group_count_ref);
+  CUDAX_REQUIRE(group.rank(cuda::grid) == group_rank_ref);
 }
 
-template <class T>
-__device__ T global_barrier_storage;
-
 template <cuda::std::size_t N, class Unit, class Level, class Config>
-__device__ void test_group_by_group(const Unit& unit, const Level& level, const Config& config)
+__device__ void test_group_by_group(Unit unit, Level level, Config config)
 {
-  constexpr cuda::std::size_t nbarriers = 128 / N;
-  constexpr auto use_global_barrier =
-    (cuda::std::is_same_v<Level, cuda::cluster_level> || cuda::std::is_same_v<Level, cuda::grid_level>);
-  constexpr auto barrier_scope = (use_global_barrier) ? cuda::thread_scope_device : cuda::thread_scope_block;
-
-  using Barrier         = cuda::barrier<barrier_scope>;
-  using BarriersStorage = cuda::std::aligned_storage_t<nbarriers * sizeof(Barrier), alignof(Barrier)>;
-  __shared__ BarriersStorage shared_barriers_storage;
-
-  auto& barriers = reinterpret_cast<Barrier(&)[nbarriers]>(
-    (use_global_barrier) ? global_barrier_storage<BarriersStorage> : shared_barriers_storage);
+  constexpr cuda::std::size_t nbarriers = unit.static_count(level, config) / N;
 
   auto parent_group = cudax::make_this_group(level, config);
-  cudax::barrier_synchronizer synchronizer{barriers};
 
   {
+    auto& barriers = get_barriers<nbarriers, 0>(level);
+
     cudax::group_by<N> mapping{};
+    cudax::barrier_synchronizer synchronizer{barriers};
     cudax::group group{unit, parent_group, mapping, synchronizer};
 
     static_assert(
       cuda::std::is_same_v<cudax::group<Unit, decltype(parent_group), decltype(mapping), decltype(synchronizer)>,
                            decltype(group)>);
     test_common_properties<Unit, Level>(config.hierarchy(), group);
+    test_queries(group);
     group.sync();
   }
   {
+    auto& barriers = get_barriers<nbarriers, 1>(level);
+
     cudax::group_by mapping{N};
+    cudax::barrier_synchronizer synchronizer{barriers};
     cudax::group group{unit, parent_group, mapping, synchronizer};
 
     static_assert(
       cuda::std::is_same_v<cudax::group<Unit, decltype(parent_group), decltype(mapping), decltype(synchronizer)>,
                            decltype(group)>);
     test_common_properties<Unit, Level>(config.hierarchy(), group);
+    test_queries(group);
     group.sync();
   }
 }
@@ -156,10 +162,11 @@ struct TestKernel
   template <class Config>
   __device__ void operator()(const Config& config)
   {
+    // todo(dabayer): Investigate why enabling warp leads to launch failure and cluster deadlocks.
     // test_group_by_group(cuda::gpu_thread, cuda::warp, config);
     test_group_by_group(cuda::gpu_thread, cuda::block, config);
-    // test_group_by_group(cuda::gpu_thread, cuda::warp, config);
-    // test_group_by_group(cuda::gpu_thread, cuda::warp, config);
+    // test_group_by_group(cuda::gpu_thread, cuda::cluster, config);
+    test_group_by_group(cuda::gpu_thread, cuda::grid, config);
   }
 };
 } // namespace

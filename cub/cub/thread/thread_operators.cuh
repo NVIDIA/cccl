@@ -167,7 +167,7 @@ struct ScanBySegmentOp
   ScanOpT op;
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanBySegmentOp() {}
+  _CCCL_FORCEINLINE ScanBySegmentOp() = default;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanBySegmentOp(ScanOpT op)
@@ -301,7 +301,7 @@ struct ReduceBySegmentOp
   ReductionOpT op;
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceBySegmentOp() {}
+  _CCCL_FORCEINLINE ReduceBySegmentOp() = default;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceBySegmentOp(ReductionOpT op)
@@ -362,7 +362,7 @@ struct ReduceByKeyOp
   ReductionOpT op;
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceByKeyOp() {}
+  _CCCL_FORCEINLINE ReduceByKeyOp() = default;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceByKeyOp(ReductionOpT op)

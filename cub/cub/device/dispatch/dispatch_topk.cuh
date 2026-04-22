@@ -21,6 +21,7 @@
 #include <cub/detail/arch_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_topk.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
@@ -247,27 +248,26 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
-  _CCCL_KERNEL_ATTRIBUTES void DeviceTopKKernel(
-    _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
-    _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
-    _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
-    _CCCL_GRID_CONSTANT const ValueOutputIteratorT d_values_out,
-    _CCCL_GRID_CONSTANT KeyInT* const in_buf,
-    _CCCL_GRID_CONSTANT OffsetT* const in_idx_buf,
-    _CCCL_GRID_CONSTANT KeyInT* const out_buf,
-    _CCCL_GRID_CONSTANT OffsetT* const out_idx_buf,
-    Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
-    _CCCL_GRID_CONSTANT OffsetT* const histogram,
-    _CCCL_GRID_CONSTANT const OffsetT num_items,
-    _CCCL_GRID_CONSTANT const OutOffsetT k,
-    _CCCL_GRID_CONSTANT const OffsetT buffer_length,
-    ExtractBinOpT extract_bin_op,
-    IdentifyCandidatesOpT identify_candidates_op,
-    _CCCL_GRID_CONSTANT const int pass,
-    _CCCL_GRID_CONSTANT const bool is_last_pass)
+__launch_bounds__(int(current_policy<PolicySelector>().block_threads)) _CCCL_KERNEL_ATTRIBUTES void DeviceTopKKernel(
+  _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
+  _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
+  _CCCL_GRID_CONSTANT const ValueInputIteratorT d_values_in,
+  _CCCL_GRID_CONSTANT const ValueOutputIteratorT d_values_out,
+  _CCCL_GRID_CONSTANT KeyInT* const in_buf,
+  _CCCL_GRID_CONSTANT OffsetT* const in_idx_buf,
+  _CCCL_GRID_CONSTANT KeyInT* const out_buf,
+  _CCCL_GRID_CONSTANT OffsetT* const out_idx_buf,
+  Counter<it_value_t<KeyInputIteratorT>, OffsetT, OutOffsetT>* counter,
+  _CCCL_GRID_CONSTANT OffsetT* const histogram,
+  _CCCL_GRID_CONSTANT const OffsetT num_items,
+  _CCCL_GRID_CONSTANT const OutOffsetT k,
+  _CCCL_GRID_CONSTANT const OffsetT buffer_length,
+  ExtractBinOpT extract_bin_op,
+  IdentifyCandidatesOpT identify_candidates_op,
+  _CCCL_GRID_CONSTANT const int pass,
+  _CCCL_GRID_CONSTANT const bool is_last_pass)
 {
-  static constexpr topk_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr topk_policy policy = current_policy<PolicySelector>();
   using agent_topk_policy_t =
     AgentTopKPolicy<policy.block_threads,
                     policy.items_per_thread,
@@ -312,7 +312,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().block_threads))
   _CCCL_KERNEL_ATTRIBUTES void DeviceTopKHistogramKernel(
     _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
@@ -327,7 +327,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     _CCCL_GRID_CONSTANT const int pass,
     _CCCL_GRID_CONSTANT const bool is_last_pass)
 {
-  static constexpr topk_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr topk_policy policy = current_policy<PolicySelector>();
   using agent_topk_policy_t =
     AgentTopKPolicy<policy.block_threads,
                     policy.items_per_thread,
@@ -373,7 +373,7 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block_threads))
+__launch_bounds__(int(current_policy<PolicySelector>().block_threads))
   _CCCL_KERNEL_ATTRIBUTES void DeviceTopKLastFilterKernel(
     _CCCL_GRID_CONSTANT const KeyInputIteratorT d_keys_in,
     _CCCL_GRID_CONSTANT const KeyOutputIteratorT d_keys_out,
@@ -388,7 +388,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     IdentifyCandidatesOpT identify_candidates_op,
     _CCCL_GRID_CONSTANT const int pass)
 {
-  static constexpr topk_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr topk_policy policy = current_policy<PolicySelector>();
   using agent_topk_policy_t =
     AgentTopKPolicy<policy.block_threads,
                     policy.items_per_thread,

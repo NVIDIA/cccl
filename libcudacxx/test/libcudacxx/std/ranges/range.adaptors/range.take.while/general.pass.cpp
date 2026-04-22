@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a return statement inside a loop is not currently supported in a tile function
+
 // Some basic examples of how take_while_view might be used in the wild. This is a general
 // collection of sample algorithms and functions that try to mock general usage of
 // this view.

@@ -16,6 +16,7 @@
 #include <cub/agent/agent_scan.cuh>
 #include <cub/detail/warpspeed/look_ahead.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_macro.cuh>
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
@@ -65,7 +66,7 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // beneficial for all problem sizes in cub.bench.scan.exclusive.sum.base
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  constexpr scan_policy policy = PolicySelectorT{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  constexpr scan_policy policy = current_policy<PolicySelectorT>();
   if constexpr (policy.algorithm == scan_algorithm::warpspeed)
   {
     device_scan_init_warpspeed_body(tile_state.warpspeed, num_tiles);
@@ -114,7 +115,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceCompactInitKernel(
 template <typename PolicySelector>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
 {
-  constexpr scan_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  constexpr scan_policy policy = current_policy<PolicySelector>();
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
   if constexpr (policy.algorithm == scan_algorithm::warpspeed)
   {
@@ -198,7 +199,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   _CCCL_GRID_CONSTANT const OffsetT num_items,
   _CCCL_GRID_CONSTANT const int num_stages)
 {
-  static constexpr scan_policy active_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr scan_policy active_policy = current_policy<PolicySelector>();
   if constexpr (active_policy.algorithm == scan_algorithm::warpspeed)
   {
 #if _CCCL_CUDACC_AT_LEAST(12, 8)

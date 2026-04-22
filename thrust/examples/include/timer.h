@@ -77,7 +77,7 @@ struct timer
     restart();
   }
 
-  ~timer() {}
+  ~timer() = default;
 
   void restart()
   {

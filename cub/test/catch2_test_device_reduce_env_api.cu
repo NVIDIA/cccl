@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
 #include "insert_nested_NVTX_range_guard.h"
@@ -10,8 +10,10 @@
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/devices>
+#include <cuda/std/__execution/env.h>
 #include <cuda/stream>
 
+#include "catch2_test_memory_resources.h"
 #include <c2h/catch2_test_helper.h>
 
 C2H_TEST("cub::DeviceReduce::Reduce accepts run_to_run determinism requirements", "[reduce][env]")
@@ -619,4 +621,26 @@ C2H_TEST("cub::DeviceReduce::ReduceByKey accepts stream", "[reduce][env]")
   aggregates_out.resize(5);
   REQUIRE(unique_keys_out == expected_keys);
   REQUIRE(aggregates_out == expected_aggregates);
+}
+
+C2H_TEST("cub::DeviceReduce::Sum queries both stream and resource from composed env", "[reduce][env]")
+{
+  auto input  = thrust::device_vector<int>{1, 2, 3, 4, 5};
+  auto output = thrust::device_vector<int>(1);
+
+  cuda::stream stream{cuda::devices[0]};
+
+  size_t bytes_allocated{};
+  size_t bytes_deallocated{};
+  auto mr = device_memory_resource{stream.get(), &bytes_allocated, &bytes_deallocated};
+
+  auto env = cuda::std::execution::env{cuda::stream_ref{stream}, mr};
+
+  auto error = cub::DeviceReduce::Sum(input.begin(), output.begin(), static_cast<int>(input.size()), env);
+
+  stream.sync();
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(output[0] == 15);
+  REQUIRE(bytes_allocated > 0);
+  REQUIRE(bytes_deallocated == bytes_allocated);
 }

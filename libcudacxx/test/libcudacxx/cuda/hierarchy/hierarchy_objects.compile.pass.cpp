@@ -10,6 +10,8 @@
 #include <cuda/hierarchy>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 static_assert(cuda::std::is_same_v<cuda::thread_level, cuda::std::remove_const_t<decltype(cuda::gpu_thread)>>);
 static_assert(cuda::std::is_same_v<cuda::warp_level, cuda::std::remove_const_t<decltype(cuda::warp)>>);
 static_assert(cuda::std::is_same_v<cuda::block_level, cuda::std::remove_const_t<decltype(cuda::block)>>);

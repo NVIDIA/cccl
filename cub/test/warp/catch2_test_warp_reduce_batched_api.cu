@@ -16,27 +16,29 @@
 __global__ __launch_bounds__(64) void WarpReduceBatchedOverviewKernel(int* out)
 {
   // example-begin warp-reduce-batched-overview
-  using WarpReduceBatched = cub::WarpReduceBatched<int, 3>;
+  constexpr int num_batches = 3;
+  using WarpReduceBatched   = cub::WarpReduceBatched<int, num_batches>;
 
   // Assume 64 threads per block, so 64 / 32 = 2 logical warps
   // Each logical warp has its own TempStorage
   __shared__ typename WarpReduceBatched::TempStorage temp_storage[2];
 
-  const int logical_warp_id = static_cast<int>(threadIdx.x) / 32;
+  const int warp_id = static_cast<int>(threadIdx.x) / 32;
 
-  int thread_data[3];
-  thread_data[0] = static_cast<int>(threadIdx.x) - 1;
-  thread_data[1] = static_cast<int>(threadIdx.x);
-  thread_data[2] = static_cast<int>(threadIdx.x) + 1;
+  const int tid = static_cast<int>(threadIdx.x);
+  int thread_data[num_batches];
+  thread_data[0] = tid - 1;
+  thread_data[1] = tid;
+  thread_data[2] = tid + 1;
 
-  int result = WarpReduceBatched{temp_storage[logical_warp_id]}.Reduce(thread_data, cuda::maximum{});
+  int result = WarpReduceBatched{temp_storage[warp_id]}.Reduce(thread_data, cuda::maximum{});
   // results across threads: [30, 31, 32, ?, ?, ..., ?, 62, 63, 64, ?, ?, ..., ?]
   // example-end warp-reduce-batched-overview
 
-  const int logical_lane_id = static_cast<int>(threadIdx.x) % 32;
-  if (logical_lane_id < 3)
+  const int lane_id = static_cast<int>(threadIdx.x) % 32;
+  if (lane_id < num_batches)
   {
-    out[logical_warp_id * 3 + logical_lane_id] = result;
+    out[warp_id * num_batches + lane_id] = result;
   }
 }
 
@@ -58,29 +60,28 @@ __global__ void WarpReduceBatchedReduceApiKernel(int* out)
   // Can't allow for physical warp synchronization since only the first logical warp participates due to the
   // conditional. The other threads (assuming there are more than 16 threads per block) can't exit early due to the
   // barrier.
-  using WarpReduceBatched = cub::WarpReduceBatched<int, 3, 16>;
+  constexpr int num_batches          = 3;
+  constexpr int logical_warp_threads = 16;
+  using WarpReduceBatched            = cub::WarpReduceBatched<int, num_batches, logical_warp_threads>;
 
   // Only the first logical warp participates, so only a single TempStorage is needed
   __shared__ typename WarpReduceBatched::TempStorage temp_storage;
 
+  const int tid = static_cast<int>(threadIdx.x);
   int result{};
-  if (threadIdx.x < 16)
+  if (threadIdx.x < logical_warp_threads)
   {
-    cuda::std::array<int, 3> inputs{};
-    inputs[0] = static_cast<int>(threadIdx.x) - 1;
-    inputs[1] = static_cast<int>(threadIdx.x);
-    inputs[2] = static_cast<int>(threadIdx.x) + 1;
-
+    const cuda::std::array<int, num_batches> inputs{tid - 1, tid, tid + 1};
     result = WarpReduceBatched{temp_storage}.Reduce(inputs, cuda::maximum{});
   }
   // results across threads: [14, 15, 16, ?, ?, ..., ?, 0, 0, ..., 0]
   __syncthreads();
   // Can reuse TempStorage after the barrier.
   // example-end warp-reduce-batched-reduce
-  _CCCL_ASSERT(threadIdx.x < 16 || result == 0, "");
-  if (threadIdx.x < 3)
+  _CCCL_ASSERT(tid < logical_warp_threads || result == 0, "");
+  if (threadIdx.x < num_batches)
   {
-    out[threadIdx.x] = result;
+    out[tid] = result;
   }
 }
 
@@ -102,24 +103,24 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToStripedApiKernel(i
   // Can't allow for physical warp synchronization since only every other logical warp participates.
   // The other threads (assuming there are more than 2 threads per block) can't exit early due to the
   // barrier.
-  using WarpReduceBatched = cub::WarpReduceBatched<int, 3, 2>;
+  constexpr int num_batches          = 3;
+  constexpr int logical_warp_threads = 2;
+  using WarpReduceBatched            = cub::WarpReduceBatched<int, num_batches, logical_warp_threads>;
 
   // Assume 8 threads per block, so 8 / 2 = 4 logical warps
   // Only every other logical warp participates, so only 2 TempStorage are needed
   __shared__ typename WarpReduceBatched::TempStorage temp_storage[2];
 
-  const int logical_warp_id   = static_cast<int>(threadIdx.x) / 2;
+  const int tid               = static_cast<int>(threadIdx.x);
+  const int logical_warp_id   = tid / logical_warp_threads;
   const bool is_participating = logical_warp_id % 2 == 0;
   const int participant_idx   = logical_warp_id / 2;
 
-  cuda::std::array<int, 2> results{};
+  constexpr int max_out_per_thread = cuda::ceil_div(num_batches, logical_warp_threads);
+  cuda::std::array<int, max_out_per_thread> results{};
   if (is_participating)
   {
-    cuda::std::array<int, 3> inputs{};
-    inputs[0] = static_cast<int>(threadIdx.x) - 1;
-    inputs[1] = static_cast<int>(threadIdx.x);
-    inputs[2] = static_cast<int>(threadIdx.x) + 1;
-
+    const cuda::std::array<int, num_batches> inputs{tid - 1, tid, tid + 1};
     WarpReduceBatched{temp_storage[participant_idx]}.ReduceToStriped(inputs, results, cuda::maximum{});
   }
   // results across threads:
@@ -131,11 +132,15 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToStripedApiKernel(i
   _CCCL_ASSERT(is_participating || (results[0] == 0 && results[1] == 0), "");
   if (is_participating)
   {
-    int const logical_lane_id                  = static_cast<int>(threadIdx.x) % 2;
-    out[participant_idx * 3 + logical_lane_id] = results[0];
-    if (logical_lane_id == 0)
+    int const logical_lane_id = tid % logical_warp_threads;
+    for (int i = 0; i < max_out_per_thread; ++i)
     {
-      out[participant_idx * 3 + 2] = results[1];
+      // Striped
+      const int batch_idx = i * logical_warp_threads + logical_lane_id;
+      if (batch_idx < num_batches)
+      {
+        out[participant_idx * num_batches + batch_idx] = results[i];
+      }
     }
   }
 }
@@ -158,23 +163,24 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToBlockedApiKernel(i
   // Can't allow for physical warp synchronization since only every other logical warp participates.
   // The other threads (assuming there are more than 2 threads per block) can't exit early due to the
   // barrier.
-  using WarpReduceBatched = cub::WarpReduceBatched<int, 3, 2>;
+  constexpr int num_batches          = 3;
+  constexpr int logical_warp_threads = 2;
+  using WarpReduceBatched            = cub::WarpReduceBatched<int, num_batches, logical_warp_threads>;
 
   // Assume 8 threads per block, so 8 / 2 = 4 logical warps
   // Only every other logical warp participates, so only 2 TempStorage are needed
   __shared__ typename WarpReduceBatched::TempStorage temp_storage[2];
 
-  const int logical_warp_id   = static_cast<int>(threadIdx.x) / 2;
+  const int tid               = static_cast<int>(threadIdx.x);
+  const int logical_warp_id   = tid / logical_warp_threads;
   const bool is_participating = logical_warp_id % 2 == 0;
   const int participant_idx   = logical_warp_id / 2;
 
-  cuda::std::array<int, 2> results{};
+  constexpr int max_out_per_thread = cuda::ceil_div(num_batches, logical_warp_threads);
+  cuda::std::array<int, max_out_per_thread> results{};
   if (is_participating)
   {
-    cuda::std::array<int, 3> inputs{};
-    inputs[0] = static_cast<int>(threadIdx.x) - 1;
-    inputs[1] = static_cast<int>(threadIdx.x);
-    inputs[2] = static_cast<int>(threadIdx.x) + 1;
+    const cuda::std::array<int, num_batches> inputs{tid - 1, tid, tid + 1};
 
     WarpReduceBatched{temp_storage[participant_idx]}.ReduceToBlocked(inputs, results, cuda::maximum{});
   }
@@ -187,11 +193,15 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedReduceToBlockedApiKernel(i
   _CCCL_ASSERT(is_participating || (results[0] == 0 && results[1] == 0), "");
   if (is_participating)
   {
-    int const logical_lane_id                      = static_cast<int>(threadIdx.x) % 2;
-    out[participant_idx * 3 + logical_lane_id * 2] = results[0];
-    if (logical_lane_id == 0)
+    int const logical_lane_id = tid % logical_warp_threads;
+    for (int i = 0; i < max_out_per_thread; ++i)
     {
-      out[participant_idx * 3 + 1] = results[1];
+      // Blocked
+      const int batch_idx = logical_lane_id * max_out_per_thread + i;
+      if (batch_idx < num_batches)
+      {
+        out[participant_idx * num_batches + batch_idx] = results[i];
+      }
     }
   }
 }
@@ -211,26 +221,27 @@ C2H_TEST("WarpReduceBatched::ReduceToBlocked documentation kernel", "[warp][redu
 __global__ __launch_bounds__(8) void WarpReduceBatchedSumApiKernel(int* out)
 {
   // example-begin warp-reduce-batched-sum
+  constexpr int num_batches          = 3;
+  constexpr int logical_warp_threads = 4;
   // We can enable physical warp synchronization since all non-exited lanes do participate in the primitive.
-  using WarpReduceBatched = cub::WarpReduceBatched<int, 3, 4, true>;
+  constexpr bool sync_physical_warp = true;
+  using WarpReduceBatched = cub::WarpReduceBatched<int, num_batches, logical_warp_threads, sync_physical_warp>;
 
   // Assume 8 threads per block, so 8 / 4 = 2 logical warps
   __shared__ typename WarpReduceBatched::TempStorage temp_storage[2];
 
-  const int logical_warp_id = static_cast<int>(threadIdx.x) / 4;
+  const int tid             = static_cast<int>(threadIdx.x);
+  const int logical_warp_id = tid / logical_warp_threads;
 
-  cuda::std::array<int, 3> inputs{};
-  inputs[0]  = static_cast<int>(threadIdx.x) - 1;
-  inputs[1]  = static_cast<int>(threadIdx.x);
-  inputs[2]  = static_cast<int>(threadIdx.x) + 1;
+  cuda::std::array<int, num_batches> inputs{tid - 1, tid, tid + 1};
   int result = WarpReduceBatched{temp_storage[logical_warp_id]}.Sum(inputs);
   // results across threads:
   // [2, 6, 10, ?, 18, 22, 26, ?]
   // example-end warp-reduce-batched-sum
-  const int logical_lane_id = static_cast<int>(threadIdx.x) % 4;
-  if (logical_lane_id < 3)
+  const int logical_lane_id = tid % logical_warp_threads;
+  if (logical_lane_id < num_batches)
   {
-    out[logical_warp_id * 3 + logical_lane_id] = result;
+    out[logical_warp_id * num_batches + logical_lane_id] = result;
   }
 }
 
@@ -249,34 +260,36 @@ C2H_TEST("WarpReduceBatched::Sum documentation kernel", "[warp][reduce][batched]
 __global__ __launch_bounds__(8) void WarpReduceBatchedSumToStripedApiKernel(int* out)
 {
   // example-begin warp-reduce-batched-sum-to-striped
+  constexpr int num_batches          = 5;
+  constexpr int logical_warp_threads = 2;
   // We can enable physical warp synchronization since all non-exited lanes do participate in the primitive.
-  using WarpReduceBatched = cub::WarpReduceBatched<int, 5, 2, true>;
+  constexpr bool sync_physical_warp = true;
+  using WarpReduceBatched = cub::WarpReduceBatched<int, num_batches, logical_warp_threads, sync_physical_warp>;
 
   // Assume 8 threads per block, so 8 / 2 = 4 logical warps
   __shared__ typename WarpReduceBatched::TempStorage temp_storage[4];
 
-  const int logical_warp_id = static_cast<int>(threadIdx.x) / 2;
+  const int tid             = static_cast<int>(threadIdx.x);
+  const int logical_warp_id = tid / logical_warp_threads;
 
-  cuda::std::array<int, 5> thread_data{};
-  thread_data[0] = static_cast<int>(threadIdx.x) - 2;
-  thread_data[1] = static_cast<int>(threadIdx.x) - 1;
-  thread_data[2] = static_cast<int>(threadIdx.x);
-  thread_data[3] = static_cast<int>(threadIdx.x) + 1;
-  thread_data[4] = static_cast<int>(threadIdx.x) + 2;
-  // Use a static size spans to pick the first 3 elements as inputs and the last 2 elements as outputs (aliasing inputs)
-  cuda::std::span<int, 5> inputs{cuda::std::begin(thread_data), 5};
-  cuda::std::span<int, 3> results{cuda::std::begin(thread_data) + 2, 3};
+  cuda::std::array<int, num_batches> inputs{tid - 2, tid - 1, tid, tid + 1, tid + 2};
+  constexpr int max_out_per_thread = cuda::ceil_div(num_batches, logical_warp_threads);
+  // Use a static size span to alias the last 3 elements of inputs for results.
+  cuda::std::span<int, max_out_per_thread> results{cuda::std::end(inputs) - max_out_per_thread, max_out_per_thread};
   WarpReduceBatched{temp_storage[logical_warp_id]}.SumToStriped(inputs, results);
   // results across threads:
   // [[-3, 1, 5], [-1, 3, ?], [1, 5, 9], [3, 7, ?], ..., [9, 13, 17], [11, 15, ?]]
   // example-end warp-reduce-batched-sum-to-striped
 
-  const int logical_lane_id                      = static_cast<int>(threadIdx.x) % 2;
-  out[logical_warp_id * 5 + logical_lane_id]     = results[0];
-  out[logical_warp_id * 5 + 2 + logical_lane_id] = results[1];
-  if (logical_lane_id == 0)
+  const int logical_lane_id = tid % logical_warp_threads;
+  for (int i = 0; i < max_out_per_thread; ++i)
   {
-    out[logical_warp_id * 5 + 4] = results[2];
+    // Striped
+    const int batch_idx = i * logical_warp_threads + logical_lane_id;
+    if (batch_idx < num_batches)
+    {
+      out[logical_warp_id * num_batches + batch_idx] = results[i];
+    }
   }
 }
 
@@ -296,33 +309,35 @@ __global__ __launch_bounds__(8) void WarpReduceBatchedSumToBlockedApiKernel(int*
 {
   // example-begin warp-reduce-batched-sum-to-blocked
   // We can enable physical warp synchronization since all non-exited lanes do participate in the primitive.
-  using WarpReduceBatched = cub::WarpReduceBatched<int, 5, 2, true>;
+  constexpr int num_batches          = 5;
+  constexpr int logical_warp_threads = 2;
+  constexpr bool sync_physical_warp  = true;
+  using WarpReduceBatched = cub::WarpReduceBatched<int, num_batches, logical_warp_threads, sync_physical_warp>;
 
   // Assume 8 threads per block, so 8 / 2 = 4 logical warps
   __shared__ typename WarpReduceBatched::TempStorage temp_storage[4];
 
-  const int logical_warp_id = static_cast<int>(threadIdx.x) / 2;
+  const int tid             = static_cast<int>(threadIdx.x);
+  const int logical_warp_id = tid / logical_warp_threads;
 
-  cuda::std::array<int, 5> thread_data{};
-  thread_data[0] = static_cast<int>(threadIdx.x) - 2;
-  thread_data[1] = static_cast<int>(threadIdx.x) - 1;
-  thread_data[2] = static_cast<int>(threadIdx.x);
-  thread_data[3] = static_cast<int>(threadIdx.x) + 1;
-  thread_data[4] = static_cast<int>(threadIdx.x) + 2;
-  // Use a static size spans to pick the first 3 elements as inputs and the last 2 elements as outputs (aliasing inputs)
-  cuda::std::span<int, 5> inputs{cuda::std::begin(thread_data), 5};
-  cuda::std::span<int, 3> results{cuda::std::begin(thread_data) + 2, 3};
+  cuda::std::array<int, num_batches> inputs{tid - 2, tid - 1, tid, tid + 1, tid + 2};
+  constexpr int max_out_per_thread = cuda::ceil_div(num_batches, logical_warp_threads);
+  // Use a static size span to alias the last 3 elements of inputs for results.
+  cuda::std::span<int, max_out_per_thread> results{cuda::std::end(inputs) - max_out_per_thread, max_out_per_thread};
   WarpReduceBatched{temp_storage[logical_warp_id]}.SumToBlocked(inputs, results);
   // results across threads:
   // [[-3, -1, 1], [3, 5, ?], [1, 3, 5], [7, 9, ?], ..., [9, 11, 13], [15, 17, ?]]
   // example-end warp-reduce-batched-sum-to-blocked
 
-  const int logical_lane_id                          = static_cast<int>(threadIdx.x) % 2;
-  out[logical_warp_id * 5 + logical_lane_id * 3]     = results[0];
-  out[logical_warp_id * 5 + logical_lane_id * 3 + 1] = results[1];
-  if (logical_lane_id == 0)
+  const int logical_lane_id = tid % logical_warp_threads;
+  for (int i = 0; i < max_out_per_thread; ++i)
   {
-    out[logical_warp_id * 5 + 2] = results[2];
+    // Blocked
+    const int batch_idx = logical_lane_id * max_out_per_thread + i;
+    if (batch_idx < num_batches)
+    {
+      out[logical_warp_id * num_batches + batch_idx] = results[i];
+    }
   }
 }
 

@@ -24,6 +24,7 @@
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/thread/thread_scan.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/warp/warp_reduce.cuh>
 #include <cub/warp/warp_scan.cuh>
 
@@ -53,7 +54,7 @@ _CCCL_API constexpr int num_total_threads(const scan_warpspeed_policy& policy)
 template <typename PolicySelector>
 _CCCL_DEVICE_API constexpr scan_warpspeed_policy get_warpspeed_policy() noexcept
 {
-  return PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warpspeed;
+  return current_policy<PolicySelector>().warpspeed;
 }
 
 template <typename InputT, typename OutputT, typename AccumT>

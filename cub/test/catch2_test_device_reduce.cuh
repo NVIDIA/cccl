@@ -32,7 +32,7 @@ _CCCL_API inline __half cuda::minimum<void>::operator()<__half, __half>(const __
 #  if defined(__CUDA_NO_HALF_OPERATORS__)
   return ::cuda::std::min(__half2float(a), __half2float(b));
 #  else // ^^^ __CUDA_NO_HALF_OPERATORS__ ^^^ / vvv !__CUDA_NO_HALF_OPERATORS__ vvv
-  NV_IF_TARGET(
+  NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_53, (return ::cuda::std::min(a, b);), (return ::cuda::std::min(__half2float(a), __half2float(b));));
 #  endif // !__CUDA_NO_HALF_OPERATORS__
 }
@@ -43,7 +43,7 @@ _CCCL_API inline __half cuda::maximum<void>::operator()<__half, __half>(const __
 #  if defined(__CUDA_NO_HALF_OPERATORS__)
   return ::cuda::std::max(__half2float(a), __half2float(b));
 #  else // ^^^ __CUDA_NO_HALF_OPERATORS__ ^^^ / vvv !__CUDA_NO_HALF_OPERATORS__ vvv
-  NV_IF_TARGET(
+  NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_53, (return ::cuda::std::max(a, b);), (return ::cuda::std::max(__half2float(a), __half2float(b));));
 #  endif // !__CUDA_NO_HALF_OPERATORS__
 }
