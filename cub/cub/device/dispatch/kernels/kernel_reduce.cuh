@@ -296,10 +296,12 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
                                                                    _CCCL_GRID_CONSTANT const InitT init,
                                                                    TransformOpT transform_op)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_60,
-               (),
-               (static_assert(!cuda::std::is_same_v<AccumT, double>,
-                              "NondeterministicDeviceReduceAtomicKernel is not supported with doubles on PTX < 600");))
+  // todo: This static_assert fails with nvc++ CUDA compilation.
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_60,
+    (),
+    (static_assert(!cuda::std::is_same_v<AccumT, double>,
+                   "NondeterministicDeviceReduceAtomicKernel is not supported with doubles on PTX < 600");))
 
   static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
                 "Only plus is currently supported in nondeterministic reduce");
@@ -340,11 +342,13 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(int(
   if (threadIdx.x == 0)
   {
     // TODO: replace this with other atomic operations when specified
-    NV_IF_TARGET(
-      NV_PROVIDES_SM_60,
-      (::cuda::atomic_ref<AccumT, ::cuda::thread_scope_device> atomic_target(d_out[0]); atomic_target.fetch_add(
-        blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate, ::cuda::memory_order_relaxed);),
-      (atomicAdd(&d_out[0], blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate);));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
+                      ({
+                        ::cuda::atomic_ref<AccumT, ::cuda::thread_scope_device> atomic_target(d_out[0]);
+                        atomic_target.fetch_add(blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate,
+                                                ::cuda::memory_order_relaxed);
+                      }),
+                      (atomicAdd(&d_out[0], blockIdx.x == 0 ? reduction_op(init, block_aggregate) : block_aggregate);));
   }
 }
 } // namespace detail::reduce

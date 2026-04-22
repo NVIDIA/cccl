@@ -134,10 +134,14 @@ private:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void __init_mbarrier()
   {
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_90,
-                   (if (elected) { ::cuda::ptx::mbarrier_init(&temp_storage.mbarrier_handle, 1); }
-                    // TODO The following sync was added to avoid a racecheck posititive. Is it really needed?
-                    __syncthreads();));
+      NV_IF_TARGET(NV_PROVIDES_SM_90, ({
+                     if (elected)
+                     {
+                       ::cuda::ptx::mbarrier_init(&temp_storage.mbarrier_handle, 1);
+                     }
+                     // TODO The following sync was added to avoid a racecheck posititive. Is it really needed?
+                     __syncthreads();
+                   }));
     }
   }
 
@@ -146,25 +150,25 @@ private:
     if (elected)
     {
 #if __cccl_ptx_isa >= 860
-      NV_IF_TARGET(
-        NV_PROVIDES_SM_90,
-        (::cuda::ptx::cp_async_bulk(
-           ::cuda::ptx::space_shared,
-           ::cuda::ptx::space_global,
-           smem_dst,
-           gmem_src,
-           num_bytes,
-           &temp_storage.mbarrier_handle);));
+      NV_IF_TARGET(NV_PROVIDES_SM_90, ({
+                     ::cuda::ptx::cp_async_bulk(
+                       ::cuda::ptx::space_shared,
+                       ::cuda::ptx::space_global,
+                       smem_dst,
+                       gmem_src,
+                       num_bytes,
+                       &temp_storage.mbarrier_handle);
+                   }));
 #else
-      NV_IF_TARGET(
-        NV_PROVIDES_SM_90,
-        (::cuda::ptx::cp_async_bulk(
-           ::cuda::ptx::space_cluster,
-           ::cuda::ptx::space_global,
-           smem_dst,
-           gmem_src,
-           num_bytes,
-           &temp_storage.mbarrier_handle);));
+      NV_IF_TARGET(NV_PROVIDES_SM_90, ({
+                     ::cuda::ptx::cp_async_bulk(
+                       ::cuda::ptx::space_cluster,
+                       ::cuda::ptx::space_global,
+                       smem_dst,
+                       gmem_src,
+                       num_bytes,
+                       &temp_storage.mbarrier_handle);
+                   }));
 #endif // __cccl_ptx_isa >= 800
       // Needed for arrival on mbarrier in Commit()
       num_bytes_bulk_total += num_bytes;
@@ -179,11 +183,14 @@ private:
       [[maybe_unused]] const auto thread_src = gmem_src + offset;
       [[maybe_unused]] const auto thread_dst = smem_dst + offset;
       // LDGSTS borrowed from cuda::memcpy_async, assumes 16 byte alignment to avoid L1 (.cg)
-      NV_IF_TARGET(NV_PROVIDES_SM_80,
-                   (asm volatile("cp.async.cg.shared.global [%0], [%1], %2, %2;" : : "r"(
-                                   static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(thread_dst))),
-                                 "l"(thread_src),
-                                 "n"(16) : "memory");));
+      NV_IF_TARGET(
+        NV_PROVIDES_SM_80, ({
+          asm volatile(
+            "cp.async.cg.shared.global [%0], [%1], %2, %2;"
+            :
+            : "r"(static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(thread_dst))), "l"(thread_src), "n"(16)
+            : "memory");
+        }));
     }
   }
 

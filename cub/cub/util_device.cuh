@@ -150,7 +150,7 @@ CUB_RUNTIME_FUNCTION inline int DeviceCount()
 {
   int result = -1;
 
-  NV_IF_TARGET(NV_IS_HOST, (result = DeviceCountCachedValue();), (result = DeviceCountUncached();));
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (result = DeviceCountCachedValue();), (result = DeviceCountUncached();));
 
   return result;
 }
@@ -354,10 +354,9 @@ CUB_RUNTIME_FUNCTION cudaError_t PtxVersion(int& ptx_version)
   // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
   // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
   cudaError_t result = cudaErrorUnknown;
-  NV_IF_TARGET(NV_IS_HOST,
-               (result = PtxVersion<T>(ptx_version, CurrentDevice());),
-               ( // NV_IS_DEVICE:
-                 result = PtxVersionUncached<T>(ptx_version);));
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (result = PtxVersion<T>(ptx_version, CurrentDevice());),
+                    (result = PtxVersionUncached<T>(ptx_version);));
   return result;
 }
 
@@ -426,20 +425,24 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
 {
   cudaError_t result = cudaErrorUnknown;
 
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (auto const payload = GetPerDeviceAttributeCache<SmVersionCacheTag>()(
-       // If this call fails, then we get the error code back in the payload, which we check with `CubDebug` below.
-       [=](int& pv) {
-         return SmVersionUncached(pv, device);
-       },
-       device);
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    ({
+                      auto const payload = GetPerDeviceAttributeCache<SmVersionCacheTag>()(
+                        // If this call fails, then we get the error code back in the payload, which we check with
+                        // `CubDebug` below.
+                        [=](int& pv) {
+                          return SmVersionUncached(pv, device);
+                        },
+                        device);
 
-     if (!CubDebug(payload.error)) { sm_version = payload.attribute; };
+                      if (!CubDebug(payload.error))
+                      {
+                        sm_version = payload.attribute;
+                      };
 
-     result = payload.error;),
-    ( // NV_IS_DEVICE
-      result = SmVersionUncached(sm_version, device);));
+                      result = payload.error;
+                    }),
+                    (result = SmVersionUncached(sm_version, device);));
 
   return result;
 }
@@ -447,7 +450,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
 //! Synchronize the specified \p stream when called in host code. Otherwise, does nothing.
 CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream([[maybe_unused]] cudaStream_t stream)
 {
-  NV_IF_TARGET(NV_IS_HOST, (return CubDebug(cudaStreamSynchronize(stream));), (return cudaErrorNotSupported;))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (return CubDebug(cudaStreamSynchronize(stream));), (return cudaErrorNotSupported;))
 }
 
 //! @brief Computes the maximum potential dynamic shared memory size per block for kernel @p kernel_ptr taking into
@@ -501,9 +504,9 @@ namespace detail
 CUB_RUNTIME_FUNCTION inline cudaError_t DebugSyncStream([[maybe_unused]] cudaStream_t stream)
 {
 #  ifdef CUB_DEBUG_SYNC
-  NV_IF_TARGET(NV_IS_HOST,
-               (_CubLog("%s", "Synchronizing...\n"); return SyncStream(stream);),
-               (_CubLog("%s", "WARNING: Skipping CUB debug synchronization in device code"); return cudaSuccess;));
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (_CubLog("%s", "Synchronizing...\n"); return SyncStream(stream);),
+                    (_CubLog("%s", "WARNING: Skipping CUB debug synchronization in device code"); return cudaSuccess;));
 #  else // ^^^ CUB_DEBUG_SYNC / !CUB_DEBUG_SYNC vvv
   return cudaSuccess;
 #  endif // ^^^ !CUB_DEBUG_SYNC ^^^

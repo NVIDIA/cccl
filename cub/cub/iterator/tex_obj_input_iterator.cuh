@@ -187,7 +187,7 @@ public:
   /// Indirection
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
   {
-    NV_IF_TARGET(NV_IS_HOST, (return ptr[tex_offset];), (return this->device_deref();));
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (return ptr[tex_offset];), (return this->device_deref();));
   }
 
   /// Addition

@@ -162,10 +162,10 @@ struct Transforms
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels, __half max_level, __half min_level)
     {
       ScaleT result;
-      NV_IF_TARGET(NV_PROVIDES_SM_53,
-                   (result.reciprocal = __hdiv(__float2half(num_levels - 1), __hsub(max_level, min_level));),
-                   (result.reciprocal = __float2half(
-                      static_cast<float>(num_levels - 1) / (__half2float(max_level) - __half2float(min_level)));))
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
+                        (result.reciprocal = __hdiv(__float2half(num_levels - 1), __hsub(max_level, min_level));),
+                        (result.reciprocal = __float2half(
+                           static_cast<float>(num_levels - 1) / (__half2float(max_level) - __half2float(min_level)));))
       return result;
     }
 #endif // _CCCL_HAS_NVFP16()
@@ -175,7 +175,7 @@ struct Transforms
     ComputeScale(int num_levels, __nv_bfloat16 max_level, __nv_bfloat16 min_level)
     {
       ScaleT result;
-      NV_IF_TARGET(
+      NV_IF_ELSE_TARGET(
         NV_PROVIDES_SM_80,
         (result.reciprocal = __hdiv(__float2bfloat16(num_levels - 1), __hsub(max_level, min_level));),
         (result.reciprocal = __float2bfloat16(
@@ -194,7 +194,7 @@ struct Transforms
 #if _CCCL_HAS_NVFP16()
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int SampleIsValid(__half sample, __half max_level, __half min_level) const
     {
-      NV_IF_TARGET(
+      NV_IF_ELSE_TARGET(
         NV_PROVIDES_SM_53,
         (return __hge(sample, min_level) && __hlt(sample, max_level);),
         (return __half2float(sample) >= __half2float(min_level) && __half2float(sample) < __half2float(max_level);));
@@ -205,10 +205,10 @@ struct Transforms
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
     SampleIsValid(__nv_bfloat16 sample, __nv_bfloat16 max_level, __nv_bfloat16 min_level)
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_80,
-                   (return __hge(sample, min_level) && __hlt(sample, max_level);),
-                   (return __bfloat162float(sample) >= __bfloat162float(min_level)
-                          && __bfloat162float(sample) < __bfloat162float(max_level);));
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
+                        (return __hge(sample, min_level) && __hlt(sample, max_level);),
+                        (return __bfloat162float(sample) >= __bfloat162float(min_level)
+                               && __bfloat162float(sample) < __bfloat162float(max_level);));
     }
 #endif // _CCCL_HAS_NVBF16()
 
@@ -246,7 +246,7 @@ struct Transforms
 #if _CCCL_HAS_NVFP16()
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(__half sample, __half min_level, ScaleT scale) const
     {
-      NV_IF_TARGET(
+      NV_IF_ELSE_TARGET(
         NV_PROVIDES_SM_53,
         (return static_cast<int>(__hmul(__hsub(sample, min_level), scale.reciprocal));),
         (return static_cast<int>((__half2float(sample) - __half2float(min_level)) * __half2float(scale.reciprocal));));
@@ -347,10 +347,13 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
                                     // writes/reads to the temp storage, we could omit the sync here
 
   // we trigger the sweep kernel only if we have a small number of remaining writes in this kernel
-  NV_IF_TARGET(
-    NV_PROVIDES_SM_90,
-    (if (::cuda::std::reduce(num_output_bins_wrapper.begin(), num_output_bins_wrapper.end())
-         <= policy.pdl_trigger_next_launch_in_init_kernel_max_bin_count) { _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); }));
+  NV_IF_TARGET(NV_PROVIDES_SM_90, ({
+                 if (::cuda::std::reduce(num_output_bins_wrapper.begin(), num_output_bins_wrapper.end())
+                     <= policy.pdl_trigger_next_launch_in_init_kernel_max_bin_count)
+                 {
+                   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+                 }
+               }));
 
   if ((threadIdx.x == 0) && (blockIdx.x == 0))
   {

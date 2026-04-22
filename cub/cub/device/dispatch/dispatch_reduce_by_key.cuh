@@ -710,10 +710,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
 
   return detail::dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(
-      NV_IS_HOST,
-      (::std::stringstream ss; ss << policy_getter(); _CubLog(
-         "Dispatching DeviceReduceByKey to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());))
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   ::std::stringstream ss;
+                   ss << policy_getter();
+                   _CubLog("Dispatching DeviceReduceByKey to arch %d with tuning: %s\n",
+                           static_cast<int>(arch_id),
+                           ss.str().c_str());
+                 }))
 #endif
 
     const auto [block_threads, items_per_thread, vsmem_per_block] = determine_threads_items_vsmem<
