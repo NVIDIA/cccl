@@ -44,6 +44,7 @@
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
@@ -69,11 +70,6 @@ struct __filter_iterator_category<_View, true>
                                 /* else */ category>>;
 };
 
-#if _CCCL_COMPILER(MSVC)
-namespace __msvc_ambiguous_war
-{
-#endif // _CCCL_COMPILER(MSVC)
-
 _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
 
 #if _CCCL_HAS_CONCEPTS()
@@ -94,9 +90,9 @@ class filter_view : public view_interface<filter_view<_View, _Pred>>
 
   // We cache the result of begin() to allow providing an amortized O(1) begin() whenever
   // the underlying range is at least a forward_range.
-  static constexpr bool _use_cache = forward_range<_View>;
+  static constexpr bool __use_cache = forward_range<_View>;
   using _cache_type _CCCL_NODEBUG =
-    conditional_t<_use_cache, __non_propagating_cache<iterator_t<_View>>, __empty_cache>;
+    conditional_t<__use_cache, __non_propagating_cache<iterator_t<_View>>, __empty_cache>;
   _CCCL_NO_UNIQUE_ADDRESS _cache_type __cached_begin_{};
 
 public:
@@ -337,7 +333,7 @@ public:
                  "filter_view needs to have a valid predicate before calling begin() -- did a previous "
                  "assignment to this filter_view fail?");
 
-    if constexpr (_use_cache)
+    if constexpr (__use_cache)
     {
       if (!__cached_begin_.__has_value())
       {
@@ -366,11 +362,6 @@ public:
 
 template <class _Range, class _Pred>
 _CCCL_HOST_DEVICE filter_view(_Range&&, _Pred) -> filter_view<ranges::views::all_t<_Range>, _Pred>;
-
-#if _CCCL_COMPILER(MSVC)
-} // namespace __msvc_ambiguous_war
-using __msvc_ambiguous_war::filter_view;
-#endif // _CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(filter_view)
 
