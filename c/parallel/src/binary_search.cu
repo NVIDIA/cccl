@@ -255,6 +255,8 @@ extern "C" __device__ void binary_search_transform_op(void* state, const void* v
     ctk_path,
     config));
 
+  build_ptr->cubin              = build_ptr->transform.cubin;
+  build_ptr->cubin_size         = build_ptr->transform.cubin_size;
   build_ptr->op_state_size      = transform_op.size;
   build_ptr->op_state_alignment = transform_op.alignment;
 

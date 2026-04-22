@@ -26,6 +26,8 @@ CCCL_C_EXTERN_C_BEGIN
 
 typedef struct cccl_device_binary_search_build_result_t
 {
+  void* cubin;
+  size_t cubin_size;
   cccl_device_transform_build_result_t transform;
   size_t op_state_size;
   size_t op_state_alignment;
