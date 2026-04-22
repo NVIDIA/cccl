@@ -35,6 +35,13 @@ class arch
   arch_id __id_{};
 
 public:
+#define _CCCL_DECLARE_ARCH(_CC)          static const arch sm_##_CC;
+#define _CCCL_DECLARE_SPECIFIC_ARCH(_CC) static const arch sm_##_CC##a;
+  _CCCL_PP_FOR_EACH(_CCCL_DECLARE_ARCH, _CCCL_KNOWN_CUDA_ARCH_LIST)
+  _CCCL_PP_FOR_EACH(_CCCL_DECLARE_SPECIFIC_ARCH, _CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST)
+#undef _CCCL_DECLARE_ARCH
+#undef _CCCL_DECLARE_SPECIFIC_ARCH
+
   _CCCL_HIDE_FROM_ABI explicit arch() = default;
 
   _CCCL_API constexpr arch(arch_id __id) noexcept
@@ -99,6 +106,13 @@ public:
   }
 };
 
+#define _CCCL_DEFINE_ARCH(_CC)          inline constexpr arch arch::sm_##_CC{::cuda::arch_id::sm_##_CC};
+#define _CCCL_DEFINE_SPECIFIC_ARCH(_CC) inline constexpr arch arch::sm_##_CC##a{::cuda::arch_id::sm_##_CC##a};
+_CCCL_PP_FOR_EACH(_CCCL_DEFINE_ARCH, _CCCL_KNOWN_CUDA_ARCH_LIST)
+_CCCL_PP_FOR_EACH(_CCCL_DEFINE_SPECIFIC_ARCH, _CCCL_KNOWN_CUDA_ARCH_SPECIFIC_LIST)
+#undef _CCCL_DEFINE_ARCH
+#undef _CCCL_DEFINE_SPECIFIC_ARCH
+
 _CCCL_END_NAMESPACE_CUDA
 
 #if _CCCL_CUDA_COMPILATION()
@@ -108,7 +122,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 template <class _Dummy = void>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_TARGET_CONSTEXPR ::cuda::arch current_arch() noexcept
 {
-  return ::cuda::arch{::cuda::device::current_arch_id<_Dummy>()};
+  return {::cuda::device::current_arch_id<_Dummy>()};
 }
 
 _CCCL_END_NAMESPACE_CUDA_DEVICE
