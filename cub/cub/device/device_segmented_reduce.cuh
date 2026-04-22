@@ -205,14 +205,10 @@ private:
     static_assert(!::cuda::std::is_same_v<requested_determinism_t, ::cuda::execution::determinism::gpu_to_gpu_t>,
                   "gpu_to_gpu determinism is not supported for device segmented reductions ");
 
-    return detail::dispatch_with_env(
-      env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        using default_policy_selector_t =
-          detail::segmented_reduce::policy_selector_from_types<AccumT, OffsetT, ReductionOpT>;
-        using policy_selector_t =
-          ::cuda::std::execution::__query_result_or_t<decltype(tuning),
-                                                      detail::segmented_reduce::segmented_reduce_policy,
-                                                      default_policy_selector_t>;
+    using default_policy_selector_t =
+      detail::segmented_reduce::policy_selector_from_types<AccumT, OffsetT, ReductionOpT>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector_t>(
+      env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
         return detail::segmented_reduce::dispatch_fixed_size<AccumT>(
           d_temp_storage,
           temp_storage_bytes,
@@ -223,7 +219,7 @@ private:
           reduction_op,
           initial_value,
           stream,
-          policy_selector_t{});
+          policy_selector);
       });
   }
 
