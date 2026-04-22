@@ -71,37 +71,6 @@ struct AgentReducePolicy : ScalingType
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) // TODO(bgruber): remove
-namespace detail
-{
-// Only define this when needed.
-// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
-// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
-// version is always defined, and that's the only one needed for regular CUB operations.
-//
-// TODO: enable this unconditionally once concepts are always available
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  ReduceAgentPolicy,
-  (GenericAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (VECTOR_LOAD_LENGTH, VectorLoadLength, int),
-  (BLOCK_ALGORITHM, BlockAlgorithm, cub::BlockReduceAlgorithm),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier))
-
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  WarpReduceAgentPolicy,
-  (GenericAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (WARP_THREADS, WarpThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (VECTOR_LOAD_LENGTH, VectorLoadLength, int),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
-  (ITEMS_PER_TILE, ItemsPerTile, int),
-  (SEGMENTS_PER_BLOCK, SegmentsPerBlock, int) )
-} // namespace detail
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
-
 /**
  * Parameterizable tuning policy type for AgentWarpReduce
  * @tparam BlockThreads Threads per thread block

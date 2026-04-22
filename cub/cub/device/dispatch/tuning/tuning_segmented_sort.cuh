@@ -304,21 +304,6 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
       : StaticPolicyT(base)
   {}
 
-  _CCCL_HOST_DEVICE static constexpr auto LargeSegment()
-  {
-    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::LargeSegmentPolicy());
-  }
-
-  _CCCL_HOST_DEVICE static constexpr auto SmallSegment()
-  {
-    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::SmallSegmentPolicy());
-  }
-
-  _CCCL_HOST_DEVICE static constexpr auto MediumSegment()
-  {
-    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::MediumSegmentPolicy());
-  }
-
   _CCCL_HOST_DEVICE static constexpr int PartitioningThreshold()
   {
     return StaticPolicyT::PARTITIONING_THRESHOLD;
