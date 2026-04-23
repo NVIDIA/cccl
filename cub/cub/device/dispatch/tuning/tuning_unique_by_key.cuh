@@ -1523,14 +1523,7 @@ struct policy_selector_from_hub
 {
   [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> unique_by_key_policy
   {
-    using UniqueByKeyPolicyT = typename PolicyHub::MaxPolicy::UniqueByKeyPolicyT;
-    return unique_by_key_policy{
-      UniqueByKeyPolicyT::BLOCK_THREADS,
-      UniqueByKeyPolicyT::ITEMS_PER_THREAD,
-      UniqueByKeyPolicyT::LOAD_ALGORITHM,
-      UniqueByKeyPolicyT::LOAD_MODIFIER,
-      UniqueByKeyPolicyT::SCAN_ALGORITHM,
-      delay_constructor_policy_from_type<typename UniqueByKeyPolicyT::detail::delay_constructor_t>};
+    return convert_policy<typename PolicyHub::MaxPolicy>();
   }
 };
 

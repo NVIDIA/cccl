@@ -212,7 +212,7 @@ template <class PolicySelector>
 
 // Selects the tuning policy for the current_tuning_arch() architecture.
 template <class PolicySelector>
-[[nodiscard]] _CCCL_API constexpr auto current_policy()
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto current_policy()
 {
   return select_policy<PolicySelector>(current_tuning_arch());
 }

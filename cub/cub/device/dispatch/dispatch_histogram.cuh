@@ -750,38 +750,16 @@ _CCCL_API constexpr auto convert_policy() -> histogram_policy
 template <typename MaxPolicy>
 struct policy_selector_from_max_policy
 {
-private:
-  struct extract_policy_dispatch_t
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch_id*/) const -> histogram_policy
   {
-    histogram_policy& policy;
-
-    template <typename ActivePolicyT>
-    _CCCL_API constexpr cudaError_t Invoke()
-    {
-      policy = convert_policy<ActivePolicyT>();
-      return cudaSuccess;
-    }
-  };
-
-public:
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch_id) const -> histogram_policy
-  {
-    NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      ({
-                        const int ptx_version = static_cast<int>(arch_id) * 10;
-                        histogram_policy policy{};
-                        extract_policy_dispatch_t dispatch{policy};
-                        MaxPolicy::Invoke(ptx_version, dispatch);
-                        return policy;
-                      }),
-                      ({ return convert_policy<typename MaxPolicy::ActivePolicy>(); }));
+    return convert_policy<typename MaxPolicy::ActivePolicy>();
   }
 };
 
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::arch_id) const -> histogram_policy
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id) const -> histogram_policy
   {
     return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }

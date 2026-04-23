@@ -336,7 +336,7 @@ template <typename PolicySelectorT,
   requires select_if_policy_selector<PolicySelectorT>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(
-  make_vsmem_helper<policy_getter<PolicySelectorT, current_tuning_arch()>,
+  make_vsmem_helper<device_policy_getter<PolicySelectorT, current_tuning_arch()>,
                     SelectionOpt,
                     InputIteratorT,
                     FlagsInputIteratorT,
@@ -359,7 +359,7 @@ __launch_bounds__(int(
     vsmem_t vsmem)
 {
   using VsmemHelperT = typename make_vsmem_helper<
-    policy_getter<PolicySelectorT, current_tuning_arch()>,
+    device_policy_getter<PolicySelectorT, current_tuning_arch()>,
     SelectionOpt,
     InputIteratorT,
     FlagsInputIteratorT,
@@ -391,7 +391,7 @@ template <typename PolicyHub>
 struct policy_selector_from_hub
 {
   // this is only called in device code
-  [[nodiscard]] _CCCL_DEVICE constexpr auto operator()(::cuda::arch_id /*arch*/) const -> select_if_policy
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> select_if_policy
   {
     using active_policy = typename PolicyHub::MaxPolicy::ActivePolicy::SelectIfPolicyT;
     return select_if_policy{

@@ -21,7 +21,6 @@
 #endif // no system header
 
 #include <cub/agent/agent_rle.cuh>
-#include <cub/detail/arch_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_non_trivial_runs.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -220,7 +219,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().block_threads))
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const
     -> non_trivial_runs::rle_non_trivial_runs_policy
   {
     using RleSweepPolicyT = typename PolicyHub::MaxPolicy::RleSweepPolicyT;

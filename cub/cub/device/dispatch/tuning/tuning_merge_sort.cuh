@@ -161,7 +161,7 @@ template <typename PolicyHub>
 struct policy_selector_from_hub
 {
   // this is only called in device code, so we can ignore the arch parameter
-  _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::arch_id /*arch*/) const -> merge_sort_policy
+  _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> merge_sort_policy
   {
     using ap = typename PolicyHub::MaxPolicy::ActivePolicy;
     using mp = typename ap::MergeSortPolicy;

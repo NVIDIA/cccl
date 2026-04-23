@@ -171,32 +171,9 @@ _CCCL_API constexpr auto convert_policy() -> scan_policy
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-private:
-  struct extract_policy_dispatch_t
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> scan_policy
   {
-    scan_policy& policy;
-
-    template <typename ActivePolicyT>
-    _CCCL_API constexpr cudaError_t Invoke()
-    {
-      policy = convert_policy<ActivePolicyT>();
-      return cudaSuccess;
-    }
-  };
-
-public:
-  // Called from host (compile-time) and device code during dispatch
-  _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_policy
-  {
-    NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      ({
-                        const int ptx_version = static_cast<int>(arch) * 10;
-                        scan_policy policy{};
-                        extract_policy_dispatch_t dispatch{policy};
-                        PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
-                        return policy;
-                      }),
-                      ({ return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>(); }));
+    return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }
 };
 } // namespace detail::scan

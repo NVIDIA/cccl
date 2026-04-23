@@ -1047,27 +1047,9 @@ _CCCL_API constexpr auto convert_policy() -> scan_by_key_policy
 template <typename PolicyHub>
 struct policy_selector_from_hub
 {
-private:
-  struct extract_policy_dispatch_t
+  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> scan_by_key_policy
   {
-    scan_by_key_policy& policy;
-
-    template <typename ActivePolicyT>
-    _CCCL_API constexpr cudaError_t Invoke()
-    {
-      policy = convert_policy<ActivePolicyT>();
-      return cudaSuccess;
-    }
-  };
-
-public:
-  _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> scan_by_key_policy
-  {
-    const int ptx_version = 10 * static_cast<int>(::cuda::compute_capability{arch});
-    scan_by_key_policy policy{};
-    extract_policy_dispatch_t dispatch{policy};
-    PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
-    return policy;
+    return convert_policy<typename PolicyHub::MaxPolicy::ActivePolicy>();
   }
 };
 
