@@ -512,7 +512,20 @@ struct DispatchSegmentedSort
 
       // We call partition through dispatch instead of device because c.parallel needs to be able to call the kernel.
       // This approach propagates the type erasure to partition.
-      using ChooseOffsetT = detail::choose_signed_offset<global_segment_offset_t>;
+      using ChooseOffsetT                = detail::choose_signed_offset<global_segment_offset_t>;
+      using PartitionOffsetT             = typename ChooseOffsetT::type;
+      using DispatchThreeWayPartitionIfT = cub::DispatchThreeWayPartitionIf<
+        THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>,
+        decltype(large_and_medium_segments_indices.get()),
+        decltype(small_segments_indices.get()),
+        decltype(medium_indices_iterator),
+        decltype(group_sizes.get()),
+        decltype(large_segments_selector),
+        decltype(small_segments_selector),
+        PartitionOffsetT,
+        PartitionPolicyHub,
+        PartitionKernelSource,
+        KernelLauncherFactory>;
 
       // Signed integer type for global offsets
       // Check if the number of items exceeds the range covered by the selected signed offset type
@@ -521,7 +534,7 @@ struct DispatchSegmentedSort
         return error;
       }
 
-      detail::three_way_partition::dispatch(
+      DispatchThreeWayPartitionIfT::Dispatch(
         nullptr,
         three_way_partition_temp_storage_bytes,
         THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>(0),
@@ -531,11 +544,11 @@ struct DispatchSegmentedSort
         group_sizes.get(),
         large_segments_selector,
         small_segments_selector,
-        static_cast<ChooseOffsetT::type>(max_num_segments_per_invocation),
+        static_cast<PartitionOffsetT>(max_num_segments_per_invocation),
         stream,
-        detail::three_way_partition::policy_selector_from_hub<PartitionPolicyHub>{},
         partition_kernel_source,
-        launcher_factory);
+        launcher_factory,
+        partition_max_policy);
 
       device_partition_temp_storage.grow(three_way_partition_temp_storage_bytes);
     }
@@ -774,7 +787,20 @@ private:
 
       // We call partition through dispatch instead of device because c.parallel needs to be able to call the kernel.
       // This approach propagates the type erasure to partition.
-      using ChooseOffsetT = detail::choose_signed_offset<global_segment_offset_t>;
+      using ChooseOffsetT                = detail::choose_signed_offset<global_segment_offset_t>;
+      using PartitionOffsetT             = typename ChooseOffsetT::type;
+      using DispatchThreeWayPartitionIfT = cub::DispatchThreeWayPartitionIf<
+        THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>,
+        decltype(large_and_medium_segments_indices.get()),
+        decltype(small_segments_indices.get()),
+        decltype(medium_indices_iterator),
+        decltype(group_sizes.get()),
+        decltype(large_segments_selector),
+        decltype(small_segments_selector),
+        PartitionOffsetT,
+        PartitionPolicyHub,
+        PartitionKernelSource,
+        KernelLauncherFactory>;
 
       // Signed integer type for global offsets
       // Check if the number of items exceeds the range covered by the selected signed offset type
@@ -783,7 +809,7 @@ private:
         return error;
       }
 
-      if (const auto error = detail::three_way_partition::dispatch(
+      if (const auto error = DispatchThreeWayPartitionIfT::Dispatch(
             device_partition_temp_storage.get(),
             three_way_partition_temp_storage_bytes,
             THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>(0),
@@ -793,11 +819,11 @@ private:
             group_sizes.get(),
             large_segments_selector,
             small_segments_selector,
-            static_cast<ChooseOffsetT::type>(current_num_segments),
+            static_cast<PartitionOffsetT>(current_num_segments),
             stream,
-            detail::three_way_partition::policy_selector_from_hub<PartitionPolicyHub>{},
             partition_kernel_source,
-            launcher_factory))
+            launcher_factory,
+            partition_max_policy))
       {
         return error;
       }
