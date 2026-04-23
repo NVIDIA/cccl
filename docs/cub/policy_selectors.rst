@@ -55,8 +55,10 @@ taking a ``cuda::arch_id`` and returning the algorithm's policy struct:
       }
     };
 
-The policy selector must be stateless (:code:`std::is_empty_v<T>` must be :code:`true`),
-since only its type will be passed to a kernel and it will be default-constructed in device code.
+The policy selector must be stateless (:code:`std::is_empty_v<T>` must be :code:`true`)
+since only its type will be passed to a kernel.
+Policy selectors are also freely constructed and copied where needed,
+so they must also be default constructible and copyable (:code:`std::semiregular<T>` must be :code:`true`).
 It can be a class template, but then only a full specialization can be passed to CUB,
 e.g., :code:`my_reduce_tuning<float>`.
 The implementation can use branches and helper functions arbitrarily,
