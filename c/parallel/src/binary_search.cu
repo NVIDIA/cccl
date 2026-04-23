@@ -23,6 +23,8 @@
 #include <cccl/c/types.h>
 #include <jit_templates/templates/input_iterator.h>
 #include <jit_templates/templates/operation.h>
+#include <nvrtc/command_list.h>
+#include <util/build_utils.h>
 #include <util/context.h>
 #include <util/errors.h>
 #include <util/types.h>
@@ -151,10 +153,11 @@ try
     throw std::runtime_error(std::format("Invalid binary search mode ({})", static_cast<int>(mode)));
   }();
 
-  const bool comparator_stateful = op.type == CCCL_STATEFUL;
-  const auto comparator_offset   = binary_search::comparator_state_offset(op);
-  const std::string output_t     = cccl_type_enum_to_name(d_out.value_type.type);
-  const size_t storage_size      = std::max({d_data.value_type.size, d_values.value_type.size, d_out.value_type.size});
+  const bool user_defined_comparator = op.type == CCCL_STATEFUL || op.type == CCCL_STATELESS;
+  const bool comparator_stateful     = op.type == CCCL_STATEFUL;
+  const auto comparator_offset       = binary_search::comparator_state_offset(op);
+  const std::string output_t         = cccl_type_enum_to_name(d_out.value_type.type);
+  const size_t storage_size = std::max({d_data.value_type.size, d_values.value_type.size, d_out.value_type.size});
   const size_t storage_alignment =
     std::max({d_data.value_type.alignment, d_values.value_type.alignment, d_out.value_type.alignment});
 
@@ -219,12 +222,42 @@ extern "C" __device__ void binary_search_transform_op(void* state, const void* v
 
   std::vector<const char*> extra_ltoirs;
   std::vector<size_t> extra_ltoir_sizes;
-  if ((op.type == CCCL_STATEFUL || op.type == CCCL_STATELESS) && op.code_type == CCCL_OP_LTOIR && op.code_size != 0)
+  std::unique_ptr<char[]> comparator_ltoir;
+
+  const std::string arch        = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
+  std::vector<const char*> args = {
+    arch.c_str(),
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    "-rdc=true",
+    "-dlto",
+    "-default-device",
+    "-DCUB_DISABLE_CDP",
+    "-std=c++20"};
+  cccl::detail::extend_args_with_build_config(args, config);
+
+  constexpr size_t num_lto_args   = 2;
+  const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
+
+  if (user_defined_comparator && op.code_type == CCCL_OP_CPP_SOURCE && op.code_size != 0)
+  {
+    auto [lto_size, lto_buf] =
+      begin_linking_nvrtc_program(num_lto_args, lopts)
+        ->add_program(nvrtc_translation_unit{op.code, op.name})
+        ->compile_program({args.data(), args.size()})
+        ->get_program_ltoir();
+    comparator_ltoir = std::move(lto_buf);
+    extra_ltoirs.push_back(comparator_ltoir.get());
+    extra_ltoir_sizes.push_back(lto_size);
+  }
+  else if (user_defined_comparator && op.code_type == CCCL_OP_LTOIR && op.code_size != 0)
   {
     extra_ltoirs.push_back(op.code);
     extra_ltoir_sizes.push_back(op.code_size);
   }
-  for (size_t i = 0; (op.type == CCCL_STATEFUL || op.type == CCCL_STATELESS) && i < op.num_extra_ltoirs; ++i)
+  for (size_t i = 0; user_defined_comparator && i < op.num_extra_ltoirs; ++i)
   {
     extra_ltoirs.push_back(op.extra_ltoirs[i]);
     extra_ltoir_sizes.push_back(op.extra_ltoir_sizes[i]);
