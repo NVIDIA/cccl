@@ -23,10 +23,10 @@
 
 #include <thrust/device_reference.h>
 #include <thrust/execution_policy.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/logical.h>
 #include <thrust/reduce.h>
 
+#include <cuda/__iterator/constant_iterator.h>
 #include <cuda/atomic>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
@@ -398,7 +398,7 @@ public:
         }
         if (__eq_res == ::cuda::experimental::cuco::__detail::__equal_result::__available)
         {
-          const auto __intra_bucket_index = ::cuda::std::distance(__bucket_slots.begin(), &__slot_content);
+          const auto __intra_bucket_index = &__slot_content - __bucket_slots.data();
           switch (__attempt_insert(this->__get_slot_ptr(*__probing_iter, __intra_bucket_index), __slot_content, __val))
           {
             case __insert_result::__duplicate: {
@@ -769,7 +769,7 @@ public:
         // Key __exists, return true if successfully deleted
         if (__eq_res == ::cuda::experimental::cuco::__detail::__equal_result::__equal)
         {
-          const auto __intra_bucket_index = ::cuda::std::distance(__bucket_slots.begin(), &__slot_content);
+          const auto __intra_bucket_index = &__slot_content - __bucket_slots.data();
           switch (__attempt_insert_stable(
             this->__get_slot_ptr(*__probing_iter, __intra_bucket_index), __slot_content, this->__erased_slot_sentinel()))
           {
@@ -1220,7 +1220,7 @@ public:
     constexpr auto is_outer = false;
     const auto __num =
       ::cuda::experimental::cuco::__detail::__distance(__input_probe_begin, __input_probe_end); // TODO include
-    const auto always_true_stencil = thrust::constant_iterator<bool>(true);
+    const auto always_true_stencil = ::cuda::constant_iterator<bool>(true);
     const auto identity_predicate  = ::cuda::std::identity{};
     this->__retrieve_impl<is_outer, BlockSize>(
       __block,
@@ -1275,7 +1275,7 @@ public:
     constexpr auto is_outer = true;
     const auto __num =
       ::cuda::experimental::cuco::__detail::__distance(__input_probe_begin, __input_probe_end); // TODO include
-    const auto always_true_stencil = thrust::constant_iterator<bool>(true);
+    const auto always_true_stencil = ::cuda::constant_iterator<bool>(true);
     const auto identity_predicate  = ::cuda::std::identity{};
     this->__retrieve_impl<is_outer, BlockSize>(
       __block,

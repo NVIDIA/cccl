@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/atomic>
+#include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
@@ -50,6 +51,9 @@ namespace cuda::experimental::cuco
 //! invoking the key comparison predicate, i.e., `__pred(__query_key, __slot_key)`.
 //! @note `_ProbingScheme::cg_size` indicates how many threads are used to handle one independent
 //! device operation. `cg_size == 1` uses the scalar (or non-CG) code paths.
+//! @note `_Capacity` is a span-style `size_t` non-type parameter. Pass `cuda::std::dynamic_extent`
+//! (the default) for runtime-sized maps; any concrete value encodes the slot count at compile
+//! time and is exposed as `capacity_v` (e.g., for static-sized device `__shared__` buffers).
 //!
 //! @tparam _Key Type used for keys
 //! @tparam _Tp Type used for mapped values
@@ -57,7 +61,14 @@ namespace cuda::experimental::cuco
 //! @tparam _KeyEqual Binary callable type used to compare two keys for equality
 //! @tparam _ProbingScheme Probing scheme type
 //! @tparam _BucketSize Number of slots per bucket
-template <class _Key, class _Tp, ::cuda::thread_scope _Scope, class _KeyEqual, class _ProbingScheme, int _BucketSize>
+//! @tparam _Capacity Total slot count, or `cuda::std::dynamic_extent` for runtime sizing
+template <class _Key,
+          class _Tp,
+          ::cuda::thread_scope _Scope,
+          class _KeyEqual,
+          class _ProbingScheme,
+          int _BucketSize,
+          ::cuda::std::size_t _Capacity = ::cuda::std::dynamic_extent>
 class static_map_ref
 {
   static constexpr bool __allows_duplicates = false;
@@ -82,7 +93,6 @@ public:
   using value_type          = ::cuda::std::pair<_Key, _Tp>;
   using probing_scheme_type = _ProbingScheme;
   using hasher              = typename probing_scheme_type::hasher;
-  using extent_type         = typename storage_ref_type::__extent_type;
   using size_type           = typename storage_ref_type::__size_type;
   using key_equal           = _KeyEqual;
   using iterator            = typename storage_ref_type::__iterator;
@@ -96,13 +106,16 @@ public:
   static constexpr auto bucket_size  = _BucketSize;
   static constexpr auto thread_scope = _Scope;
 
-  //! @brief Constructs static_map_ref.
+  //! @brief Compile-time slot count; `cuda::std::dynamic_extent` when `_Capacity` is dynamic.
+  static constexpr size_type capacity_v = _Capacity;
+
+  //! @brief Constructs a ref without erasure support.
   //!
-  //! @param __empty_key_sentinel Sentinel indicating empty key
-  //! @param __empty_value_sentinel Sentinel indicating empty payload
+  //! @param __empty_key_sentinel Sentinel indicating an empty key slot
+  //! @param __empty_value_sentinel Sentinel indicating an empty payload
   //! @param __predicate Key equality binary callable
   //! @param __probing_scheme Probing scheme
-  //! @param __storage_ref Non-owning ref of slot storage
+  //! @param __storage_ref Non-owning reference to the slot storage
   _CCCL_HOST_DEVICE explicit constexpr static_map_ref(
     empty_key __empty_key_sentinel,
     empty_value __empty_value_sentinel,
@@ -115,14 +128,14 @@ public:
                __storage_ref}
   {}
 
-  //! @brief Constructs static_map_ref with erasure support.
+  //! @brief Constructs a ref with erasure support.
   //!
-  //! @param __empty_key_sentinel Sentinel indicating empty key
-  //! @param __empty_value_sentinel Sentinel indicating empty payload
-  //! @param __erased_key_sentinel Sentinel indicating erased key
+  //! @param __empty_key_sentinel Sentinel indicating an empty key slot
+  //! @param __empty_value_sentinel Sentinel indicating an empty payload
+  //! @param __erased_key_sentinel Sentinel indicating an erased key slot
   //! @param __predicate Key equality binary callable
   //! @param __probing_scheme Probing scheme
-  //! @param __storage_ref Non-owning ref of slot storage
+  //! @param __storage_ref Non-owning reference to the slot storage
   _CCCL_HOST_DEVICE explicit constexpr static_map_ref(
     empty_key __empty_key_sentinel,
     empty_value __empty_value_sentinel,
@@ -139,16 +152,10 @@ public:
 
   // ===== Accessors =====
 
-  //! @brief Returns the maximum number of elements the container can hold.
+  //! @brief Returns the total number of slots.
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr size_type capacity() const noexcept
   {
     return __impl.capacity();
-  }
-
-  //! @brief Returns the number of buckets.
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr extent_type extent() const noexcept
-  {
-    return __impl.extent();
   }
 
   //! @brief Returns the empty key sentinel.
@@ -445,10 +452,12 @@ public:
 
   // ===== Block-level retrieve =====
 
-  //! @brief Block-level inner retrieve.
+  //! @brief Block-level retrieve (internal kernel dispatch).
   template <bool _IsOuter,
             int _BlockSize,
             class _InputProbeIt,
+            class _StencilIt,
+            class _Predicate,
             class _OutputProbeIt,
             class _OutputMatchIt,
             class _AtomicCounter>
@@ -456,36 +465,27 @@ public:
     const ::cooperative_groups::thread_block& __block,
     _InputProbeIt __input_probe,
     ::cuda::experimental::cuco::__detail::__index_type __n,
+    _StencilIt __stencil,
+    _Predicate __pred,
     _OutputProbeIt __output_probe,
     _OutputMatchIt __output_match,
     _AtomicCounter __counter) const
   {
-    __impl.template retrieve<_IsOuter, _BlockSize>(
-      __block, __input_probe, __n, __output_probe, __output_match, __counter);
+    __impl.template __retrieve_impl<_IsOuter, _BlockSize>(
+      __block, __input_probe, __n, __stencil, __pred, __output_probe, __output_match, *__counter);
   }
 
   // ===== Shared memory support =====
 
-  //! @brief Copies the container ref to shared memory using the cooperative group.
-  //!
-  //! @note This function synchronizes the group `__tile`.
-  //!
-  //! @tparam _CG The type of the cooperative thread group
-  //! @tparam _NewScope Thread scope for the new ref
-  //!
-  //! @param __tile The cooperative thread group used to copy
-  //! @param __memory_to_use Device memory for the copy (must hold `capacity()` elements)
-  //! @param __scope Thread scope tag
-  //!
-  //! @return A new ref with the given scope and storage
+  //! @brief Copies the ref into `__memory_to_use` using `__tile`. Synchronizes the tile.
   template <::cuda::thread_scope _NewScope = _Scope, class _CG>
   _CCCL_DEVICE constexpr auto make_copy(_CG __tile, value_type* const __memory_to_use) const noexcept
   {
     __impl.make_copy(__tile, __memory_to_use);
     auto __new_storage_ref =
-      typename static_map_ref<_Key, _Tp, _NewScope, _KeyEqual, _ProbingScheme, _BucketSize>::storage_ref_type{
+      typename static_map_ref<_Key, _Tp, _NewScope, _KeyEqual, _ProbingScheme, _BucketSize, _Capacity>::storage_ref_type{
         __memory_to_use, __impl.storage_ref().num_buckets()};
-    return static_map_ref<_Key, _Tp, _NewScope, _KeyEqual, _ProbingScheme, _BucketSize>{
+    return static_map_ref<_Key, _Tp, _NewScope, _KeyEqual, _ProbingScheme, _BucketSize, _Capacity>{
       empty_key{this->empty_key_sentinel()},
       empty_value{this->empty_value_sentinel()},
       this->key_eq(),
@@ -493,28 +493,17 @@ public:
       __new_storage_ref};
   }
 
-  //! @brief Initializes the map storage using the threads in the group `__tile`.
-  //!
-  //! @note This function synchronizes the group `__tile`.
-  //!
-  //! @tparam _CG The type of the cooperative thread group
-  //!
-  //! @param __tile The cooperative thread group used to initialize the map
+  //! @brief Initializes the map storage using `__tile`. Synchronizes the tile.
   template <class _CG>
   _CCCL_DEVICE constexpr void initialize(_CG __tile) noexcept
   {
     __impl.initialize(__tile);
   }
 
-  //! @brief Creates a copy of this ref with a different key equality comparator.
-  //!
-  //! @param __key_equal New key comparator
-  //!
-  //! @return A new ref with the given key comparator
   template <class _NewKeyEqual>
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto rebind_key_eq(_NewKeyEqual const& __key_equal) const noexcept
   {
-    return static_map_ref<_Key, _Tp, _Scope, _NewKeyEqual, _ProbingScheme, _BucketSize>{
+    return static_map_ref<_Key, _Tp, _Scope, _NewKeyEqual, _ProbingScheme, _BucketSize, _Capacity>{
       empty_key{this->empty_key_sentinel()},
       empty_value{this->empty_value_sentinel()},
       __key_equal,
@@ -522,16 +511,11 @@ public:
       __impl.storage_ref()};
   }
 
-  //! @brief Creates a copy of this ref with a different hasher.
-  //!
-  //! @param __hash New hasher
-  //!
-  //! @return A new ref with the given hasher
   template <class _NewHash>
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto rebind_hash_function(_NewHash const& __hash) const
   {
     auto __new_probing = _ProbingScheme{__hash};
-    return static_map_ref<_Key, _Tp, _Scope, _KeyEqual, decltype(__new_probing), _BucketSize>{
+    return static_map_ref<_Key, _Tp, _Scope, _KeyEqual, decltype(__new_probing), _BucketSize, _Capacity>{
       empty_key{this->empty_key_sentinel()},
       empty_value{this->empty_value_sentinel()},
       this->key_eq(),

@@ -122,6 +122,19 @@ template <class _ProbingScheme, int _BucketSize, class _SizeType>
 {
   return __make_valid_extent<_ProbingScheme, _BucketSize, _SizeType, dynamic_extent>(extent<_SizeType>{__size});
 }
+
+//! @brief Compile-time adjusted total slot count for a static extent _N.
+//!
+//! Applies the same prime/stride logic as `__make_valid_extent` but produces
+//! the result as a compile-time constant suitable for use in non-type template
+//! arguments (e.g., `cuda::std::extents<size_t, __valid_extent_v<PS, BS, N>>`).
+//!
+//! @note Requires _N != dynamic_extent.
+//! @note Idempotent: applying twice with the same probing scheme and bucket size
+//! returns the same value, so it is safe to pass an already-adjusted N.
+template <class _ProbingScheme, int _BucketSize, ::cuda::std::size_t _N>
+_CCCL_HIDE_FROM_ABI constexpr ::cuda::std::size_t __valid_extent_v = static_cast<::cuda::std::size_t>(
+  __make_valid_extent<_ProbingScheme, _BucketSize>(extent<::cuda::std::size_t, _N>{}).extent(0));
 } // namespace cuda::experimental::cuco::__detail
 
 #include <cuda/std/__cccl/epilogue.h>

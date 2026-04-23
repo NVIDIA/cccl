@@ -24,11 +24,11 @@
 #include <cub/device/device_for.cuh>
 #include <cub/device/device_select.cuh>
 
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
 #include <cuda/__container/buffer.h>
+#include <cuda/__iterator/constant_iterator.h>
+#include <cuda/__iterator/counting_iterator.h>
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/atomic>
 #include <cuda/std/__exception/exception_macros.h>
@@ -107,7 +107,7 @@ private:
   __key_type __erased_key_sentinel;
   __key_equal __predicate;
   __probing_scheme_type __probing_scheme;
-  _MemoryResource __memory_resource;
+  mutable _MemoryResource __memory_resource;
   __size_type __num_buckets;
   ::cuda::device_buffer<__value_type> __slots;
 
@@ -124,7 +124,8 @@ private:
   [[nodiscard]] _CCCL_HOST static __size_type __compute_num_buckets(__size_type __n, double __load_factor)
   {
     return static_cast<__size_type>(
-      ::cuda::experimental::cuco::__detail::__make_valid_extent<_ProbingScheme, _BucketSize>(__n, __load_factor)
+      ::cuda::experimental::cuco::__detail::__make_valid_extent<_ProbingScheme, _BucketSize>(
+        ::cuda::experimental::cuco::extent<__size_type>{__n}, __load_factor)
         .extent(0));
   }
 
@@ -341,7 +342,7 @@ public:
   template <class _InputIt, class _Ref>
   _CCCL_HOST __size_type insert(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream)
   {
-    const auto __always_true = thrust::constant_iterator<bool>{true};
+    const auto __always_true = ::cuda::constant_iterator<bool>{true};
     return this->insert_if(__first, __last, __always_true, ::cuda::std::identity{}, __container_ref, __stream);
   }
 
@@ -350,7 +351,7 @@ public:
   _CCCL_HOST void
   insert_async(_InputIt __first, _InputIt __last, _Ref __container_ref, ::cuda::stream_ref __stream) noexcept
   {
-    const auto __always_true = thrust::constant_iterator<bool>{true};
+    const auto __always_true = ::cuda::constant_iterator<bool>{true};
     this->insert_if_async(__first, __last, __always_true, ::cuda::std::identity{}, __container_ref, __stream);
   }
 
@@ -455,7 +456,7 @@ public:
     _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref, ::cuda::stream_ref __stream)
     const noexcept
   {
-    const auto __always_true = thrust::constant_iterator<bool>{true};
+    const auto __always_true = ::cuda::constant_iterator<bool>{true};
     this->contains_if_async(
       __first, __last, __always_true, ::cuda::std::identity{}, __output_begin, __container_ref, __stream);
   }
@@ -490,7 +491,7 @@ public:
     _InputIt __first, _InputIt __last, _OutputIt __output_begin, _Ref __container_ref, ::cuda::stream_ref __stream)
     const noexcept
   {
-    const auto __always_true = thrust::constant_iterator<bool>{true};
+    const auto __always_true = ::cuda::constant_iterator<bool>{true};
     this->find_if_async(
       __first, __last, __always_true, ::cuda::std::identity{}, __output_begin, __container_ref, __stream);
   }
@@ -605,7 +606,7 @@ public:
       const auto __num_items = ::cuda::std::min(
         static_cast<::cuda::experimental::cuco::__detail::__index_type>(this->capacity()) - __offset, __stride);
       const auto __begin = thrust::make_transform_iterator(
-        thrust::counting_iterator{static_cast<__size_type>(__offset)},
+        ::cuda::counting_iterator{static_cast<__size_type>(__offset)},
         __open_addressing::__get_slot<__has_payload, __storage_ref_type>(__storage_ref));
       const auto __is_filled = __open_addressing::__slot_is_filled<__has_payload, __key_type>{
         this->empty_key_sentinel(), this->erased_key_sentinel()};
@@ -682,7 +683,7 @@ public:
     _CCCL_TRY_CUDA_API(
       cub::DeviceFor::ForEachCopyN,
       "Failed in DeviceFor::ForEachCopyN",
-      thrust::counting_iterator<__size_type>{0},
+      ::cuda::counting_iterator<__size_type>{0},
       static_cast<__size_type>(__n),
       __op,
       __stream.get());

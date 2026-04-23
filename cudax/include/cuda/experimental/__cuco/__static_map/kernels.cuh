@@ -39,7 +39,7 @@
 namespace cuda::experimental::cuco::__static_map
 {
 template <int _CgSize, int _BlockSize, class _InputIt, class _Ref>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void
+_CCCL_KERNEL_ATTRIBUTES void
 __insert_or_assign(_InputIt __first, ::cuda::experimental::cuco::__detail::__index_type __n, _Ref __ref)
 {
   const auto __loop_stride = ::cuda::experimental::cuco::__detail::__grid_stride() / _CgSize;
@@ -63,7 +63,7 @@ __insert_or_assign(_InputIt __first, ::cuda::experimental::cuco::__detail::__ind
 }
 
 template <bool _HasInit, int _CgSize, int _BlockSize, class _InputIt, class _Init, class _Op, class _Ref>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __insert_or_apply(
+_CCCL_KERNEL_ATTRIBUTES void __insert_or_apply(
   _InputIt __first,
   ::cuda::experimental::cuco::__detail::__index_type __n,
   [[maybe_unused]] _Init __init,
@@ -118,7 +118,7 @@ template <bool _HasInit,
           class _Init,
           class _Op,
           class _Ref>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __insert_or_apply_shmem(
+_CCCL_KERNEL_ATTRIBUTES void __insert_or_apply_shmem(
   _InputIt __first,
   ::cuda::experimental::cuco::__detail::__index_type __n,
   [[maybe_unused]] _Init __init,

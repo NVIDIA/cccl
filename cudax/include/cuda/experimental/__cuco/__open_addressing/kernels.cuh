@@ -44,7 +44,7 @@ namespace cuda::experimental::cuco::__open_addressing
 //! @brief Inserts all elements in the range `[first, first + n)` and returns the number of
 //! successful insertions if `pred` of the corresponding stencil returns true.
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _AtomicT, class _Ref>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __insert_if_n(
+_CCCL_KERNEL_ATTRIBUTES void __insert_if_n(
   _InputIt __first,
   ::cuda::experimental::cuco::__detail::__index_type __n,
   _StencilIt __stencil,
@@ -94,7 +94,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __insert_if_n(
 //! @brief Inserts all elements in the range `[first, first + n)` if `pred` of the corresponding
 //! stencil returns true.
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _Ref>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __insert_if_n(
+_CCCL_KERNEL_ATTRIBUTES void __insert_if_n(
   _InputIt __first,
   ::cuda::experimental::cuco::__detail::__index_type __n,
   _StencilIt __stencil,
@@ -126,7 +126,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __insert_if_n(
 
 //! @brief Erases keys in the range `[first, first + n)` (fire-and-forget, no counting).
 template <int _CgSize, int _BlockSize, class _InputIt, class _Ref>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void
+_CCCL_KERNEL_ATTRIBUTES void
 __erase(_InputIt __first, ::cuda::experimental::cuco::__detail::__index_type __n, _Ref __ref)
 {
   const auto __loop_stride = ::cuda::experimental::cuco::__detail::__grid_stride() / _CgSize;
@@ -151,7 +151,7 @@ __erase(_InputIt __first, ::cuda::experimental::cuco::__detail::__index_type __n
 
 //! @brief Fills a slot array with a given value.
 template <int _BlockSize, class _Value>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void
+_CCCL_KERNEL_ATTRIBUTES void
 __fill(_Value* __slots, ::cuda::experimental::cuco::__detail::__index_type __n, _Value __sentinel)
 {
   const auto __loop_stride = ::cuda::experimental::cuco::__detail::__grid_stride();
@@ -166,7 +166,7 @@ __fill(_Value* __slots, ::cuda::experimental::cuco::__detail::__index_type __n, 
 
 //! @brief Applies a callback to all values in the range `[first, first + n)`.
 template <int _CgSize, int _BlockSize, class _InputIt, class _CallbackOp, class _Ref>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __for_each_n(
+_CCCL_KERNEL_ATTRIBUTES void __for_each_n(
   _InputIt __first, ::cuda::experimental::cuco::__detail::__index_type __n, _CallbackOp __callback_op, _Ref __ref)
 {
   const auto __loop_stride = ::cuda::experimental::cuco::__detail::__grid_stride() / _CgSize;
@@ -191,7 +191,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __for_each_n(
 
 //! @brief Contains test with predicate.
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __contains_if_n(
+_CCCL_KERNEL_ATTRIBUTES void __contains_if_n(
   _InputIt __first,
   ::cuda::experimental::cuco::__detail::__index_type __n,
   _StencilIt __stencil,
@@ -246,7 +246,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __contains_if_n(
 
 //! @brief Finds keys in range.
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __find_if_n(
+_CCCL_KERNEL_ATTRIBUTES void __find_if_n(
   _InputIt __first,
   ::cuda::experimental::cuco::__detail::__index_type __n,
   _StencilIt __stencil,
@@ -303,7 +303,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __find_if_n(
 
 //! @brief Insert and find, outputs to separate found_begin and inserted_begin arrays.
 template <int _CgSize, int _BlockSize, class _InputIt, class _FoundIt, class _InsertedIt, class _Ref>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __insert_and_find(
+_CCCL_KERNEL_ATTRIBUTES void __insert_and_find(
   _InputIt __first,
   ::cuda::experimental::cuco::__detail::__index_type __n,
   _FoundIt __found_begin,
@@ -363,7 +363,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __insert_and_find(
 
 //! @brief Total count of matches for keys in range using block reduce + atomic counter.
 template <bool _IsOuter, int _CgSize, int _BlockSize, class _InputIt, class _AtomicT, class _Ref>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void
+_CCCL_KERNEL_ATTRIBUTES void
 __count(_InputIt __first, ::cuda::experimental::cuco::__detail::__index_type __n, _AtomicT* __counter, _Ref __ref)
 {
   using __block_reduce = cub::BlockReduce<typename _Ref::size_type, _BlockSize>;
@@ -415,7 +415,7 @@ __count(_InputIt __first, ::cuda::experimental::cuco::__detail::__index_type __n
 
 //! @brief Per-key count of matches (no stencil).
 template <bool _IsOuter, int _CgSize, int _BlockSize, class _InputIt, class _OutputIt, class _Ref>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __count_each(
+_CCCL_KERNEL_ATTRIBUTES void __count_each(
   _InputIt __first, ::cuda::experimental::cuco::__detail::__index_type __n, _OutputIt __output_begin, _Ref __ref)
 {
   const auto __loop_stride = ::cuda::experimental::cuco::__detail::__grid_stride() / _CgSize;
@@ -480,7 +480,7 @@ template <bool _IsOuter,
           class _OutputMatchIt,
           class _AtomicCounter,
           class _Ref>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __retrieve(
+_CCCL_KERNEL_ATTRIBUTES void __retrieve(
   _InputProbeIt __input_probe,
   ::cuda::experimental::cuco::__detail::__index_type __n,
   _StencilIt __stencil,
@@ -497,7 +497,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __retrieve(
 
 //! @brief Size kernel.
 template <int _BlockSize, class _StorageRef, class _OutputIt, class _IsFilled>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void __size(_StorageRef __storage, _IsFilled __is_filled, _OutputIt __output)
+_CCCL_KERNEL_ATTRIBUTES void __size(_StorageRef __storage, _IsFilled __is_filled, _OutputIt __output)
 {
   using __block_reduce = cub::BlockReduce<typename _StorageRef::__size_type, _BlockSize>;
   __shared__ typename __block_reduce::TempStorage __temp_storage;
@@ -522,8 +522,7 @@ CCCL_DETAIL_KERNEL_ATTRIBUTES void __size(_StorageRef __storage, _IsFilled __is_
 
 //! @brief Rehash kernel.
 template <int _BlockSize, class _StorageRef, class _ContainerRef, class _Predicate>
-CCCL_DETAIL_KERNEL_ATTRIBUTES void
-__rehash(_StorageRef __storage_ref, _ContainerRef __container_ref, _Predicate __is_filled)
+_CCCL_KERNEL_ATTRIBUTES void __rehash(_StorageRef __storage_ref, _ContainerRef __container_ref, _Predicate __is_filled)
 {
   __shared__ typename _ContainerRef::value_type __buffer[_BlockSize];
   __shared__ unsigned int __buffer_size;

@@ -29,6 +29,7 @@
 #include <cuda/__memory_pool/device_memory_pool.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/utility>
 
@@ -54,18 +55,24 @@ namespace cuda::experimental::cuco
 //! for empty and, optionally, erased keys.
 //!
 //! @note Concurrent modification and lookup is thread-safe.
+//! @note `_Capacity` is a span-style `size_t` non-type parameter. Pass `cuda::std::dynamic_extent`
+//! (the default) for runtime-sized maps; any concrete value encodes the requested slot count at
+//! compile time. The actual allocated capacity is the prime/stride-adjusted value exposed as
+//! `capacity_v` (see `compute_capacity<N>()` / `compute_capacity(size_type)`).
 //!
-//! @tparam _Key Type used for keys. Requires `cuco::is_bitwise_comparable_v<_Key>`
-//! @tparam _Tp Type used for mapped values
-//! @tparam _Scope The scope in which operations will be performed by individual threads
-//! @tparam _KeyEqual Binary callable type used to compare two keys for equality
-//! @tparam _ProbingScheme Probing scheme type (e.g., `linear_probing`, `double_hashing`)
-//! @tparam _BucketSize Number of slots per bucket
-//! @tparam _MemoryResource Type of memory resource used for device storage
+//! @tparam _Key Key type. Requires `cuco::is_bitwise_comparable_v<_Key>`
+//! @tparam _Tp Mapped value type
+//! @tparam _Capacity Requested slot count, or `cuda::std::dynamic_extent` for runtime sizing
+//! @tparam _Scope Thread scope for atomic operations
+//! @tparam _KeyEqual Key equality comparator
+//! @tparam _ProbingScheme Probing scheme type
+//! @tparam _BucketSize Slots per bucket
+//! @tparam _MemoryResource Memory resource for device storage
 template <class _Key,
           class _Tp,
-          ::cuda::thread_scope _Scope = ::cuda::thread_scope_device,
-          class _KeyEqual             = ::cuda::std::equal_to<_Key>,
+          ::cuda::std::size_t _Capacity = ::cuda::std::dynamic_extent,
+          ::cuda::thread_scope _Scope   = ::cuda::thread_scope_device,
+          class _KeyEqual               = ::cuda::std::equal_to<_Key>,
           class _ProbingScheme  = ::cuda::experimental::cuco::linear_probing<1, ::cuda::experimental::cuco::hash<_Key>>,
           int _BucketSize       = 1,
           class _MemoryResource = ::cuda::device_memory_pool_ref>
@@ -88,7 +95,29 @@ public:
   static constexpr auto bucket_size  = _BucketSize;
   static constexpr auto thread_scope = _Scope;
 
-  using ref_type = static_map_ref<_Key, _Tp, _Scope, _KeyEqual, _ProbingScheme, _BucketSize>;
+  //! @brief Compile-time adjusted capacity for a static requested slot count `_N`.
+  template <::cuda::std::size_t _N, ::cuda::std::enable_if_t<_N != ::cuda::std::dynamic_extent, int> = 0>
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr size_type compute_capacity() noexcept
+  {
+    return ::cuda::experimental::cuco::__detail::__valid_extent_v<_ProbingScheme, _BucketSize, _N>;
+  }
+
+  //! @brief Runtime-adjusted capacity for a requested slot count.
+  [[nodiscard]] _CCCL_HOST static size_type compute_capacity(size_type __n)
+  {
+    return static_cast<size_type>(
+      ::cuda::experimental::cuco::__detail::__make_valid_extent<_ProbingScheme, _BucketSize>(
+        ::cuda::experimental::cuco::extent<size_type>{__n})
+        .extent(0));
+  }
+
+  //! @brief Compile-time adjusted capacity; `cuda::std::dynamic_extent` for dynamic maps.
+  static constexpr size_type capacity_v =
+    (_Capacity == ::cuda::std::dynamic_extent)
+      ? ::cuda::std::dynamic_extent
+      : ::cuda::experimental::cuco::__detail::__valid_extent_v<_ProbingScheme, _BucketSize, _Capacity>;
+
+  using ref_type = static_map_ref<_Key, _Tp, _Scope, _KeyEqual, _ProbingScheme, _BucketSize, capacity_v>;
 
 private:
   using __impl_type = ::cuda::experimental::cuco::__open_addressing::
@@ -176,18 +205,42 @@ private:
   }
 
 public:
-  //! @brief Constructs a statically-sized map with the specified number of slots.
+  //! @brief Constructs a map with static capacity (encoded in `_Capacity`) and no erasure.
   //!
-  //! @note The actual map capacity depends on the given number of slots, the probing scheme,
-  //! and the bucket size. The actual capacity is always not smaller than the given `__capacity`.
-  //!
-  //! @param __capacity The desired minimum number of slots
-  //! @param __empty_key_sentinel The reserved key value for empty slots
-  //! @param __empty_value_sentinel The reserved mapped value for empty slots
+  //! @param __empty_key_sentinel Sentinel indicating an empty key slot
+  //! @param __empty_value_sentinel Sentinel indicating an empty payload
   //! @param __pred Key equality binary callable
   //! @param __probing_scheme Probing scheme
-  //! @param __mr Memory resource used for device storage
-  //! @param __stream CUDA stream used for initialization
+  //! @param __mr Memory resource for device storage
+  //! @param __stream Stream used for allocation and initialization
+  template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C != ::cuda::std::dynamic_extent, int> = 0>
+  _CCCL_HOST static_map(
+    empty_key __empty_key_sentinel,
+    empty_value __empty_value_sentinel,
+    const _KeyEqual& __pred                = {},
+    const _ProbingScheme& __probing_scheme = {},
+    _MemoryResource __mr                   = ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
+    ::cuda::stream_ref __stream            = cudaStream_t{nullptr})
+      : __impl{::cuda::std::make_unique<__impl_type>(
+          _Capacity,
+          value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
+          __pred,
+          __probing_scheme,
+          __mr,
+          __stream)}
+      , __empty_value_sentinel{mapped_type(__empty_value_sentinel)}
+  {}
+
+  //! @brief Constructs a map with dynamic capacity and no erasure.
+  //!
+  //! @param __capacity Requested slot count (prime/stride-adjusted internally)
+  //! @param __empty_key_sentinel Sentinel indicating an empty key slot
+  //! @param __empty_value_sentinel Sentinel indicating an empty payload
+  //! @param __pred Key equality binary callable
+  //! @param __probing_scheme Probing scheme
+  //! @param __mr Memory resource for device storage
+  //! @param __stream Stream used for allocation and initialization
+  template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C == ::cuda::std::dynamic_extent, int> = 0>
   _CCCL_HOST static_map(
     size_type __capacity,
     empty_key __empty_key_sentinel,
@@ -206,16 +259,17 @@ public:
       , __empty_value_sentinel{mapped_type(__empty_value_sentinel)}
   {}
 
-  //! @brief Constructs a map with capacity derived from a desired load factor.
+  //! @brief Constructs a map sized by a target load factor (dynamic capacity only).
   //!
-  //! @param __n The number of elements to store
-  //! @param __desired_load_factor The desired load factor (0, 1]
-  //! @param __empty_key_sentinel The reserved key value for empty slots
-  //! @param __empty_value_sentinel The reserved mapped value for empty slots
+  //! @param __n Expected number of keys
+  //! @param __desired_load_factor Target load factor in (0, 1]
+  //! @param __empty_key_sentinel Sentinel indicating an empty key slot
+  //! @param __empty_value_sentinel Sentinel indicating an empty payload
   //! @param __pred Key equality binary callable
   //! @param __probing_scheme Probing scheme
-  //! @param __mr Memory resource used for device storage
-  //! @param __stream CUDA stream used for initialization
+  //! @param __mr Memory resource for device storage
+  //! @param __stream Stream used for allocation and initialization
+  template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C == ::cuda::std::dynamic_extent, int> = 0>
   _CCCL_HOST static_map(
     size_type __n,
     double __desired_load_factor,
@@ -236,16 +290,46 @@ public:
       , __empty_value_sentinel{mapped_type(__empty_value_sentinel)}
   {}
 
-  //! @brief Constructs a map with erasure support.
+  //! @brief Constructs a map with static capacity and erasure support.
   //!
-  //! @param __capacity The desired minimum number of slots
-  //! @param __empty_key_sentinel The reserved key value for empty slots
-  //! @param __empty_value_sentinel The reserved mapped value for empty slots
-  //! @param __erased_key_sentinel The reserved key value for erased slots
+  //! @param __empty_key_sentinel Sentinel indicating an empty key slot
+  //! @param __empty_value_sentinel Sentinel indicating an empty payload
+  //! @param __erased_key_sentinel Sentinel indicating an erased key slot
   //! @param __pred Key equality binary callable
   //! @param __probing_scheme Probing scheme
-  //! @param __mr Memory resource used for device storage
-  //! @param __stream CUDA stream used for initialization
+  //! @param __mr Memory resource for device storage
+  //! @param __stream Stream used for allocation and initialization
+  template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C != ::cuda::std::dynamic_extent, int> = 0>
+  _CCCL_HOST static_map(
+    empty_key __empty_key_sentinel,
+    empty_value __empty_value_sentinel,
+    erased_key __erased_key_sentinel,
+    const _KeyEqual& __pred                = {},
+    const _ProbingScheme& __probing_scheme = {},
+    _MemoryResource __mr                   = ::cuda::device_default_memory_pool(::cuda::device_ref{0}),
+    ::cuda::stream_ref __stream            = cudaStream_t{nullptr})
+      : __impl{::cuda::std::make_unique<__impl_type>(
+          _Capacity,
+          value_type{key_type(__empty_key_sentinel), mapped_type(__empty_value_sentinel)},
+          key_type(__erased_key_sentinel),
+          __pred,
+          __probing_scheme,
+          __mr,
+          __stream)}
+      , __empty_value_sentinel{mapped_type(__empty_value_sentinel)}
+  {}
+
+  //! @brief Constructs a map with dynamic capacity and erasure support.
+  //!
+  //! @param __capacity Requested slot count (prime/stride-adjusted internally)
+  //! @param __empty_key_sentinel Sentinel indicating an empty key slot
+  //! @param __empty_value_sentinel Sentinel indicating an empty payload
+  //! @param __erased_key_sentinel Sentinel indicating an erased key slot
+  //! @param __pred Key equality binary callable
+  //! @param __probing_scheme Probing scheme
+  //! @param __mr Memory resource for device storage
+  //! @param __stream Stream used for allocation and initialization
+  template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C == ::cuda::std::dynamic_extent, int> = 0>
   _CCCL_HOST static_map(
     size_type __capacity,
     empty_key __empty_key_sentinel,
@@ -667,25 +751,29 @@ public:
 
   // ===== Rehash =====
 
-  //! @brief Regenerates the container. Synchronizes.
+  //! @brief Regenerates the container in-place. Synchronizes.
   void rehash(::cuda::stream_ref __stream = cudaStream_t{nullptr})
   {
     __impl->rehash(*this, __stream);
   }
 
   //! @brief Reserves at least `__capacity` slots and regenerates. Synchronizes.
+  //! Only available for dynamic capacity — for static capacity the slot count is fixed.
+  template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C == ::cuda::std::dynamic_extent, int> = 0>
   void rehash(size_type __capacity, ::cuda::stream_ref __stream = cudaStream_t{nullptr})
   {
     __impl->rehash(__capacity, *this, __stream);
   }
 
-  //! @brief Asynchronously regenerates the container.
+  //! @brief Asynchronously regenerates the container in-place.
   void rehash_async(::cuda::stream_ref __stream = cudaStream_t{nullptr})
   {
     __impl->rehash_async(*this, __stream);
   }
 
   //! @brief Asynchronously reserves at least `__capacity` slots and regenerates.
+  //! Only available for dynamic capacity.
+  template <::cuda::std::size_t _C = _Capacity, ::cuda::std::enable_if_t<_C == ::cuda::std::dynamic_extent, int> = 0>
   void rehash_async(size_type __capacity, ::cuda::stream_ref __stream = cudaStream_t{nullptr})
   {
     __impl->rehash_async(__capacity, *this, __stream);
@@ -699,8 +787,8 @@ public:
     return __impl->size(__stream);
   }
 
-  //! @brief Gets the maximum number of elements the hash map can hold.
-  [[nodiscard]] constexpr auto capacity() const noexcept
+  //! @brief Gets the total number of slots allocated (= `compute_capacity(requested)`).
+  [[nodiscard]] constexpr size_type capacity() const noexcept
   {
     return __impl->capacity();
   }
@@ -741,9 +829,6 @@ public:
     return __impl->hash_function();
   }
 
-  //! @brief Get device ref.
-  //!
-  //! @return Device ref of the current `static_map` object
   [[nodiscard]] auto ref() const noexcept -> ref_type
   {
     return ::cuda::experimental::cuco::__detail::__bitwise_compare(
