@@ -959,8 +959,10 @@ struct policy_selector
     // We need `cuda::std::is_constant_evaluated` for the compile-time SMEM computation. And we need PTX ISA 8.6.
     // MSVC + nvcc < 13.1 just fails to compile `cub.test.device.scan.lid_1.types_0` with `Internal error` and nothing
     // else.
+    // The macro `CCCL_DISABLE_WARPSPEED_SCAN` will be left in as a kill-switch for users in case they find any bugs
+    // after we shipped the implementation. TODO(bgruber): remove CCCL_DISABLE_WARPSPEED_SCAN in CCCL 4.0
 #if __cccl_ptx_isa < 860 || !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) \
-  || ((_CCCL_COMPILER(MSVC) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 1)))
+  || ((_CCCL_COMPILER(MSVC) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 1))) || defined(CCCL_DISABLE_WARPSPEED_SCAN)
     return false;
 #else
     if (!input_contiguous || !output_contiguous || !input_trivially_copyable || !output_trivially_copyable
