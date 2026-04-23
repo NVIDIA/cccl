@@ -927,6 +927,18 @@ struct policy_selector
   {
     if (arch >= ::cuda::arch_id::sm_120)
     {
+      // tunings from cub.bench.scan.exclusive.sum.warpspeed[T{ct}=I128, OffsetT{ct}=I64] on B200
+      if (operation_t == op_kind_t::plus && accum_is_primitive_or_trivially_copy_constructible)
+      {
+        switch (input_value_size)
+        {
+          case 16:
+            // wrps_5.lbi_8.ipt_16 (b200-077_i128/3.db)  1.159883  1.000000  1.143709  1.275821
+            return scan_warpspeed_policy{5, 8, 16 - 1};
+          default:
+            break;
+        }
+      }
       return get_sm120_fallback_warpspeed_policy();
     }
     if (arch >= ::cuda::arch_id::sm_100)
@@ -953,7 +965,9 @@ struct policy_selector
           case 8:
             // wrps_2.lbi_5.ipt_88 ()  1.085781   1.0  1.079245  1.103545
             return scan_warpspeed_policy{2, 5, 88 - 1};
-
+          case 16:
+            // wrps_5.lbi_8.ipt_16 ()  1.159883  1.000000  1.143709  1.275821
+            return scan_warpspeed_policy{5, 8, 16 - 1};
             // TODO(bgruber): tune for more data types
           default:
             break;
