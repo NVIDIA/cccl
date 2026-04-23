@@ -22,7 +22,6 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/detail/segmented_scan_helpers.cuh>
-#include <cub/device/dispatch/kernels/segmented_scan_agent_policies.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_macro.cuh>
@@ -48,8 +47,8 @@ namespace detail::segmented_scan
 //! @brief agent_segmented_scan implements a stateful abstraction of CUDA thread blocks for
 //!        participating in device-wide segmented prefix scan.
 //!
-//! @tparam AgentSegmentedScanPolicyT
-//!   Parameterized AgentSegmentedScanPolicyT tuning policy type
+//! @tparam SegmentedScanPolicyGetterT
+//!   Nullary callable type for getting segmented_scan_policy
 //!
 //! @tparam InputIteratorT
 //!   Random-access input iterator type
@@ -69,7 +68,7 @@ namespace detail::segmented_scan
 //! @tparam AccumT
 //!   The type of intermediate accumulator (according to P2322R6)
 //!
-template <typename AgentSegmentedScanPolicyT,
+template <typename SegmentedScanPolicyGetterT,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
@@ -88,10 +87,10 @@ struct agent_segmented_scan
   // Input iterator wrapper type (for applying cache modifier)
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
-  using wrapped_input_iterator_t =
-    ::cuda::std::conditional_t<::cuda::std::is_pointer_v<InputIteratorT>,
-                               CacheModifiedInputIterator<AgentSegmentedScanPolicyT::load_modifier, input_t, OffsetT>,
-                               InputIteratorT>;
+  using wrapped_input_iterator_t = ::cuda::std::conditional_t<
+    ::cuda::std::is_pointer_v<InputIteratorT>,
+    CacheModifiedInputIterator<SegmentedScanPolicyGetterT{}().block.load_modifier, input_t, OffsetT>,
+    InputIteratorT>;
 
   // Constants
 
@@ -101,17 +100,17 @@ struct agent_segmented_scan
   // or the ForceInclusive tag to be true for inclusive scan
   // to get picked up.
   static constexpr bool is_inclusive    = ForceInclusive || !has_init;
-  static constexpr int block_threads    = AgentSegmentedScanPolicyT::block_threads;
-  static constexpr int items_per_thread = AgentSegmentedScanPolicyT::items_per_thread;
+  static constexpr int block_threads    = SegmentedScanPolicyGetterT{}().block.block_threads;
+  static constexpr int items_per_thread = SegmentedScanPolicyGetterT{}().block.items_per_thread;
   static constexpr int tile_items       = block_threads * items_per_thread;
-  static constexpr int max_segments     = AgentSegmentedScanPolicyT::max_segments;
+  static constexpr int max_segments     = SegmentedScanPolicyGetterT{}().block.max_segments;
 
 private:
   static constexpr bool multi_segment_enabled = (max_segments > 1);
 
-  static constexpr auto load_algorithm  = AgentSegmentedScanPolicyT::load_algorithm;
-  static constexpr auto store_algorithm = AgentSegmentedScanPolicyT::store_algorithm;
-  static constexpr auto scan_algorithm  = AgentSegmentedScanPolicyT::scan_algorithm;
+  static constexpr auto load_algorithm  = SegmentedScanPolicyGetterT{}().block.load_algorithm;
+  static constexpr auto store_algorithm = SegmentedScanPolicyGetterT{}().block.store_algorithm;
+  static constexpr auto scan_algorithm  = SegmentedScanPolicyGetterT{}().block.scan_algorithm;
 
   using block_load_t  = BlockLoad<AccumT, block_threads, items_per_thread, load_algorithm>;
   using block_store_t = BlockStore<AccumT, block_threads, items_per_thread, store_algorithm>;
@@ -129,7 +128,7 @@ private:
     _single_segment_algorithms_storage_t reused;
   };
 
-  using augmented_accum_t = agent_block_segmented_scan_compute_t<AccumT, max_segments>;
+  using augmented_accum_t = multi_segment_helpers::agent_segmented_scan_compute_t<AccumT, max_segments>;
 
   using block_load_aug_t    = BlockLoad<augmented_accum_t, block_threads, items_per_thread, load_algorithm>;
   using block_store_aug_t   = BlockStore<augmented_accum_t, block_threads, items_per_thread, store_algorithm>;
@@ -622,35 +621,41 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
     _CCCL_GRID_CONSTANT const InitValueT init_value,
     _CCCL_GRID_CONSTANT const int num_segments_per_worker)
 {
-  static constexpr auto policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block;
-  static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
+  static constexpr auto policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static_assert(policy.block.load_modifier != CacheLoadModifier::LOAD_LDG,
                 "The memory consistency model does not apply to texture accesses");
 
-  using policy_t = agent_segmented_scan_policy_t<
-    policy.block_threads,
-    policy.items_per_thread,
-    policy.load_algorithm,
-    policy.load_modifier,
-    policy.store_algorithm,
-    policy.scan_algorithm,
-    policy.max_segments>;
+  struct policy_getter
+  {
+    constexpr auto operator()() const
+    {
+      return policy;
+    }
+  };
 
   using agent_t =
-    agent_segmented_scan<policy_t, InputIteratorT, OutputIteratorT, OffsetT, ScanOpT, ActualInitValueT, AccumT, ForceInclusive>;
+    agent_segmented_scan<policy_getter,
+                         InputIteratorT,
+                         OutputIteratorT,
+                         OffsetT,
+                         ScanOpT,
+                         ActualInitValueT,
+                         AccumT,
+                         ForceInclusive>;
 
   __shared__ typename agent_t::TempStorage temp_storage;
 
   const ActualInitValueT _init_value = init_value;
 
   _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments to be processed by block must be positive");
-  _CCCL_ASSERT(num_segments_per_worker <= policy.max_segments,
+  _CCCL_ASSERT(num_segments_per_worker <= policy.block.max_segments,
                "Requested number of segments to be processed by block exceeds compile-time maximum");
 
   const auto work_id = num_segments_per_worker * blockIdx.x;
 
   agent_t agent(temp_storage, d_in, d_out, scan_op, _init_value);
 
-  if constexpr (policy.max_segments == 1)
+  if constexpr (policy.block.max_segments == 1)
   {
     _CCCL_ASSERT(num_segments_per_worker == 1, "Inconsistent parameters in device_warp_segmented_scan_kernel");
     _CCCL_ASSERT(work_id < n_segments, "device_segmented_scan_kernel launch configuration results in access violation");

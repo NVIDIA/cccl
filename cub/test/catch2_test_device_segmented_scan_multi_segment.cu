@@ -9,9 +9,10 @@
 #include <thrust/generate.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/std/type_traits> // std::integral_constant
+
 #include <cstdint>
 #include <tuple>
-#include <type_traits> // std::integral_constant
 #include <utility>
 #include <vector>
 
@@ -77,10 +78,10 @@ constexpr unsigned int get_max_elems()
 using integral_types = c2h::type_list<std::int32_t, std::int64_t, std::uint32_t, std::uint64_t>;
 
 using itp_list =
-  c2h::type_list<std::integral_constant<int, 1>,
-                 std::integral_constant<int, 2>,
-                 std::integral_constant<int, 3>,
-                 std::integral_constant<int, 8>>;
+  c2h::type_list<cuda::std::integral_constant<int, 1>,
+                 cuda::std::integral_constant<int, 2>,
+                 cuda::std::integral_constant<int, 3>,
+                 cuda::std::integral_constant<int, 8>>;
 
 template <int BlockThreads, int ItemsPerThread, int MaxSegmentsPerBlock, int MaxSegmentsPerWarp>
 struct policy_selector_t
@@ -144,7 +145,7 @@ void run_dispatch_scan(
     worker_choice,
     stream);
 
-  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes);
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
   cudaError_t code = dispatch_fn(
     temp_storage.data().get(),
     temp_storage_bytes,
@@ -247,7 +248,7 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   auto inclusive_scan_dispatch = [](auto&&... args) -> cudaError_t {
     return cub::detail::segmented_scan::dispatch<
       cub::ForceInclusive::No,
-      pair_t,
+      cub::detail::use_default,
       const pair_t*,
       pair_t*,
       const offset_t*,
@@ -425,7 +426,7 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
   auto exclusive_scan_dispatch = [](auto&&... args) -> cudaError_t {
     return cub::detail::segmented_scan::dispatch<
       cub::ForceInclusive::No,
-      value_t,
+      cub::detail::use_default,
       const value_t*,
       value_t*,
       const offset_t*,
@@ -534,7 +535,7 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
   auto inclusive_scan_dispatch = [](auto&&... args) -> cudaError_t {
     return cub::detail::segmented_scan::dispatch<
       cub::ForceInclusive::No,
-      value_t,
+      cub::detail::use_default,
       const value_t*,
       value_t*,
       const offset_t*,
@@ -656,7 +657,7 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
   auto inclusive_init_scan_dispatch = [](auto&&... args) -> cudaError_t {
     return cub::detail::segmented_scan::dispatch<
       cub::ForceInclusive::Yes,
-      value_t,
+      cub::detail::use_default,
       const value_t*,
       value_t*,
       const offset_t*,
@@ -839,7 +840,7 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
   auto inclusive_scan_dispatch = [](auto&&... args) -> cudaError_t {
     return cub::detail::segmented_scan::dispatch<
       cub::ForceInclusive::No,
-      value_t,
+      cub::detail::use_default,
       const value_t*,
       value_t*,
       const offset_t*,

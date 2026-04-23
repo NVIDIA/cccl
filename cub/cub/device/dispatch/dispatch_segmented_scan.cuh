@@ -110,20 +110,14 @@ struct device_segmented_scan_kernel_source
       EnforceInclusive == ForceInclusive::Yes>);
 };
 
-// select the accumulator type using an overload set, so __accumulator_t is not instantiated when an overriding
-// accumulator type is present. This matches the reduce dispatch pattern and is needed by CCCL.C.
-template <typename ScanOpT, typename InitValueT, typename InputValueT>
-_CCCL_API auto select_accum_t(use_default*) -> ::cuda::std::__accumulator_t<
-  ScanOpT,
-  InputValueT,
-  ::cuda::std::conditional_t<::cuda::std::is_same_v<InitValueT, NullType>, InputValueT, typename InitValueT::value_type>>;
-
-template <typename ScanOpT,
-          typename InitValueT,
-          typename InputValueT,
-          typename OverrideAccumT,
-          ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OverrideAccumT, use_default>, int> = 0>
-_CCCL_API auto select_accum_t(OverrideAccumT*) -> OverrideAccumT;
+template <typename OverrideAccumT, typename ScanOpT, typename InitValueT, typename InputValueT>
+using deduced_accum_t = ::cuda::std::conditional_t<
+  ::cuda::std::is_same_v<OverrideAccumT, use_default>,
+  ::cuda::std::__accumulator_t<
+    ScanOpT,
+    InputValueT,
+    ::cuda::std::conditional_t<::cuda::std::is_same_v<InitValueT, NullType>, InputValueT, typename InitValueT::value_type>>,
+  OverrideAccumT>;
 
 template <
   ForceInclusive EnforceInclusive = ForceInclusive::No,
@@ -135,8 +129,7 @@ template <
   typename BeginOffsetIteratorOutputT,
   typename ScanOpT,
   typename InitValueT,
-  typename AccumT =
-    decltype(select_accum_t<ScanOpT, InitValueT, it_value_t<InputIteratorT>>(static_cast<OverrideAccumT*>(nullptr))),
+  typename AccumT = deduced_accum_t<OverrideAccumT, ScanOpT, InitValueT, it_value_t<InputIteratorT>>,
   typename OffsetT =
     common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>,
   typename PolicySelector = policy_selector_from_types<AccumT>,
@@ -179,7 +172,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   if (num_segments <= 0)
   {
-    return cudaErrorUnknown;
+    return (num_segments == 0) ? cudaSuccess : cudaErrorUnknown;
   }
 
   ::cuda::arch_id arch_id{};
@@ -189,6 +182,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   const segmented_scan_policy active_policy = policy_selector(arch_id);
+
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
     NV_IS_HOST,
@@ -202,11 +196,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return cudaSuccess;
   }
 
-  active_policy.CheckLoadModifier();
+  _CCCL_ASSERT((active_policy.block.load_modifier != CacheLoadModifier::LOAD_LDG)
+                 && (active_policy.warp.load_modifier != CacheLoadModifier::LOAD_LDG)
+                 && (active_policy.thread.load_modifier != CacheLoadModifier::LOAD_LDG),
+               "The memory consistency model does not apply to texture accesses");
 
   _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments per worker parameter must be positive");
-  // Clamp to produce a positive integer
-  num_segments_per_worker = (::cuda::std::max) (num_segments_per_worker, 1);
 
   const auto [workers_per_block, block_size, normalized_spw] =
     [&](worker selector) -> ::cuda::std::tuple<int, int, int> {
@@ -214,17 +209,24 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     {
       case worker::block: {
         const auto bw = active_policy.block;
+        _CCCL_ASSERT(bw.max_segments > 0, "Policy value for max segments is not positive");
         _CCCL_ASSERT(num_segments_per_worker <= bw.max_segments, "Number of segments per block exceeds maximum value");
-        return {bw.WorkersPerBlock(), bw.BlockThreads(), ::cuda::std::min(num_segments_per_worker, bw.max_segments)};
+        constexpr int workers_per_block = 1;
+        return {workers_per_block, bw.block_threads, ::cuda::std::min(num_segments_per_worker, bw.max_segments)};
       }
       case worker::warp: {
         const auto ww = active_policy.warp;
+        _CCCL_ASSERT(ww.max_segments > 0, "Policy value for max segments is not positive");
         _CCCL_ASSERT(num_segments_per_worker <= ww.max_segments, "Number of segments per warp exceeds maximum value");
-        return {ww.WorkersPerBlock(), ww.BlockThreads(), ::cuda::std::min(num_segments_per_worker, ww.max_segments)};
+        const auto block_size = ww.block_threads;
+        _CCCL_ASSERT((block_size % warp_threads) == 0, "Block size must be a multiple of architectural warp-size");
+        const int workers_per_block = block_size / warp_threads;
+        return {workers_per_block, block_size, ::cuda::std::min(num_segments_per_worker, ww.max_segments)};
       }
       case worker::thread: {
-        const auto tw = active_policy.thread;
-        return {tw.WorkersPerBlock(), tw.BlockThreads(), num_segments_per_worker};
+        const auto block_size        = active_policy.thread.block_threads;
+        const auto workers_per_block = block_size;
+        return {workers_per_block, block_size, num_segments_per_worker};
       }
       default:
         _CCCL_UNREACHABLE();
@@ -232,7 +234,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     _CCCL_UNREACHABLE();
   }(worker_choice);
 
-  const auto segments_per_block = normalized_spw * workers_per_block;
+  // Clamp to produce a positive integer
+  num_segments_per_worker = (::cuda::std::max) (normalized_spw, 1);
+
+  const auto segments_per_block = num_segments_per_worker * workers_per_block;
   _CCCL_ASSERT(segments_per_block > 0, "Number of segments to be processed by block must be positive");
 
   static constexpr auto int32_max                       = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
@@ -257,59 +262,64 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     // fits in int32_t by construction
     const auto segment_count = static_cast<OffsetT>(num_segments_per_invocation);
 
-    cudaError_t error = cudaSuccess;
     switch (worker_choice)
     {
       case worker::block:
-        error = launcher.doit(
-          kernel_source.segmented_scan_kernel(),
-          d_in,
-          d_out,
-          input_begin_offsets,
-          input_end_offsets,
-          output_begin_offsets,
-          segment_count,
-          scan_op,
-          init_value,
-          normalized_spw);
+        if (const auto error = CubDebug(launcher.doit(
+              kernel_source.segmented_scan_kernel(),
+              d_in,
+              d_out,
+              input_begin_offsets,
+              input_end_offsets,
+              output_begin_offsets,
+              segment_count,
+              scan_op,
+              init_value,
+              num_segments_per_worker));
+            cudaSuccess != error)
+        {
+          return error;
+        };
         break;
       case worker::warp:
-        error = launcher.doit(
-          kernel_source.warp_segmented_scan_kernel(),
-          d_in,
-          d_out,
-          input_begin_offsets,
-          input_end_offsets,
-          output_begin_offsets,
-          segment_count,
-          scan_op,
-          init_value,
-          normalized_spw);
+        if (const auto error = CubDebug(launcher.doit(
+              kernel_source.warp_segmented_scan_kernel(),
+              d_in,
+              d_out,
+              input_begin_offsets,
+              input_end_offsets,
+              output_begin_offsets,
+              segment_count,
+              scan_op,
+              init_value,
+              num_segments_per_worker));
+            cudaSuccess != error)
+        {
+          return error;
+        };
         break;
       case worker::thread:
-        error = launcher.doit(
-          kernel_source.thread_segmented_scan_kernel(),
-          d_in,
-          d_out,
-          input_begin_offsets,
-          input_end_offsets,
-          output_begin_offsets,
-          segment_count,
-          scan_op,
-          init_value,
-          normalized_spw);
+        if (const auto error = CubDebug(launcher.doit(
+              kernel_source.thread_segmented_scan_kernel(),
+              d_in,
+              d_out,
+              input_begin_offsets,
+              input_end_offsets,
+              output_begin_offsets,
+              segment_count,
+              scan_op,
+              init_value,
+              num_segments_per_worker));
+            cudaSuccess != error)
+        {
+          return error;
+        };
         break;
       default:
         _CCCL_UNREACHABLE();
     }
 
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
-
-    error = CubDebug(cudaPeekAtLastError());
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(cudaPeekAtLastError()); cudaSuccess != error)
     {
       return error;
     }
@@ -321,8 +331,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       output_begin_offsets += num_segments_per_invocation;
     }
 
-    error = CubDebug(DebugSyncStream(stream));
-    if (cudaSuccess != error)
+    if (const auto error = CubDebug(DebugSyncStream(stream)); cudaSuccess != error)
     {
       return error;
     }

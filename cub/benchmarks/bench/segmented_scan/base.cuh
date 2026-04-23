@@ -146,7 +146,7 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   size_t tmp_size;
   cub::detail::segmented_scan::dispatch<
     cub::ForceInclusive::No,
-    accum_t,
+    cub::detail::use_default,
     input_it_t,
     output_it_t,
     offset_it,
@@ -180,7 +180,7 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     cub::detail::segmented_scan::dispatch<
       cub::ForceInclusive::No,
-      accum_t,
+      cub::detail::use_default,
       input_it_t,
       output_it_t,
       offset_it,

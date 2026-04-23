@@ -2195,9 +2195,7 @@ struct DeviceSegmentedScan
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
     static_assert(!::cuda::std::is_same_v<InitValueT, NullType>);
 
-    using accum_t = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
-
-    return cub::detail::segmented_scan::dispatch<ForceInclusive::Yes, accum_t>(
+    return cub::detail::segmented_scan::dispatch<ForceInclusive::Yes>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -2319,11 +2317,9 @@ struct DeviceSegmentedScan
     static_assert(::cuda::std::is_integral_v<offset_t>, "Offset iterator value type should be integral.");
     static_assert(!::cuda::std::is_same_v<InitValueT, NullType>);
 
-    using accum_t = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
-
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return cub::detail::segmented_scan::dispatch<ForceInclusive::Yes, accum_t>(
+        return cub::detail::segmented_scan::dispatch<ForceInclusive::Yes>(
           d_temp_storage,
           temp_storage_bytes,
           d_in,
@@ -2458,9 +2454,7 @@ struct DeviceSegmentedScan
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
     static_assert(!::cuda::std::is_same_v<InitValueT, NullType>);
 
-    using accum_t = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
-
-    return cub::detail::segmented_scan::dispatch<ForceInclusive::Yes, accum_t>(
+    return cub::detail::segmented_scan::dispatch<ForceInclusive::Yes>(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -2596,7 +2590,7 @@ struct DeviceSegmentedScan
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return cub::detail::segmented_scan::dispatch<ForceInclusive::Yes, accum_t>(
+        return cub::detail::segmented_scan::dispatch<ForceInclusive::Yes>(
           d_temp_storage,
           temp_storage_bytes,
           d_in,

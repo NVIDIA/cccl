@@ -17,7 +17,6 @@
 #endif // no system header
 
 #include <cub/detail/segmented_scan_helpers.cuh>
-#include <cub/device/dispatch/kernels/segmented_scan_agent_policies.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_reduce.cuh> // ThreadReduce
@@ -152,7 +151,7 @@ multi_segmented_seq_iterator(int, InpBeginOffsetIt, InpEndOffsetIt, OutBeginOffs
 //    agent consumes a fixed number of segments
 //    for every segment, thread loads IPT elements in memory, does thread scan, writes out
 
-template <typename AgentSegmentedScanPolicyT,
+template <typename SegmentedScanPolicyGetterT,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename BeginOffsetIteratorInputT,
@@ -174,10 +173,10 @@ struct agent_thread_segmented_scan
   // Input iterator wrapper type (for applying cache modifier)
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
-  using wrapped_input_iterator_t =
-    ::cuda::std::conditional_t<::cuda::std::is_pointer_v<InputIteratorT>,
-                               CacheModifiedInputIterator<AgentSegmentedScanPolicyT::load_modifier, input_t, OffsetT>,
-                               InputIteratorT>;
+  using wrapped_input_iterator_t = ::cuda::std::conditional_t<
+    ::cuda::std::is_pointer_v<InputIteratorT>,
+    CacheModifiedInputIterator<SegmentedScanPolicyGetterT{}().thread.load_modifier, input_t, OffsetT>,
+    InputIteratorT>;
 
   // Constants
 
@@ -187,8 +186,8 @@ struct agent_thread_segmented_scan
   // or the ForceInclusive tag to be true for inclusive scan
   // to get picked up.
   static constexpr bool is_inclusive    = ForceInclusive || !has_init;
-  static constexpr int block_threads    = AgentSegmentedScanPolicyT::block_threads;
-  static constexpr int items_per_thread = AgentSegmentedScanPolicyT::items_per_thread;
+  static constexpr int block_threads    = SegmentedScanPolicyGetterT{}().thread.block_threads;
+  static constexpr int items_per_thread = SegmentedScanPolicyGetterT{}().thread.items_per_thread;
   static constexpr int tile_items       = items_per_thread;
 
   using augmented_accum_t = AccumT;
@@ -499,15 +498,20 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).threa
     _CCCL_GRID_CONSTANT const InitValueT init_value,
     _CCCL_GRID_CONSTANT const int num_segments_per_worker)
 {
-  static constexpr auto policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).thread;
-  static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
+  static constexpr auto policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static_assert(policy.thread.load_modifier != CacheLoadModifier::LOAD_LDG,
                 "The memory consistency model does not apply to texture accesses");
 
-  using policy_t =
-    agent_thread_segmented_scan_policy_t<policy.block_threads, policy.items_per_thread, policy.load_modifier>;
+  struct policy_getter
+  {
+    constexpr auto operator()() const
+    {
+      return policy;
+    }
+  };
 
   using agent_t = agent_thread_segmented_scan<
-    policy_t,
+    policy_getter,
     InputIteratorT,
     OutputIteratorT,
     BeginOffsetIteratorInputT,

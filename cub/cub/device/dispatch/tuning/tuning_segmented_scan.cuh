@@ -16,12 +16,13 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
-#include <cub/device/dispatch/kernels/segmented_scan_agent_policies.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
+#include <cub/warp/warp_load.cuh>
+#include <cub/warp/warp_store.cuh>
 
 #include <cuda/__cmath/round_up.h>
 #include <cuda/std/__functional/invoke.h>
@@ -43,16 +44,6 @@ struct block_segmented_scan_policy
   BlockStoreAlgorithm store_algorithm;
   BlockScanAlgorithm scan_algorithm;
   int max_segments;
-
-  CUB_RUNTIME_FUNCTION constexpr int BlockThreads() const
-  {
-    return block_threads;
-  }
-
-  CUB_RUNTIME_FUNCTION constexpr int WorkersPerBlock() const
-  {
-    return 1;
-  }
 
   [[nodiscard]] _CCCL_API constexpr friend bool
   operator==(const block_segmented_scan_policy& lhs, const block_segmented_scan_policy& rhs)
@@ -91,17 +82,6 @@ struct warp_segmented_scan_policy
   WarpStoreAlgorithm store_algorithm;
   int max_segments;
 
-  CUB_RUNTIME_FUNCTION constexpr int BlockThreads() const
-  {
-    return block_threads;
-  }
-
-  CUB_RUNTIME_FUNCTION constexpr int WorkersPerBlock() const
-  {
-    _CCCL_ASSERT(0 == (block_threads % warp_threads), "Block size must be divisible by warp size");
-    return block_threads >> log2_warp_threads;
-  }
-
   [[nodiscard]] _CCCL_API constexpr friend bool
   operator==(const warp_segmented_scan_policy& lhs, const warp_segmented_scan_policy& rhs)
   {
@@ -133,16 +113,6 @@ struct thread_segmented_scan_policy
   int block_threads;
   int items_per_thread;
   CacheLoadModifier load_modifier;
-
-  CUB_RUNTIME_FUNCTION constexpr int BlockThreads() const
-  {
-    return block_threads;
-  }
-
-  CUB_RUNTIME_FUNCTION constexpr int WorkersPerBlock() const
-  {
-    return block_threads;
-  }
 
   [[nodiscard]] _CCCL_API constexpr friend bool
   operator==(const thread_segmented_scan_policy& lhs, const thread_segmented_scan_policy& rhs)
@@ -192,14 +162,6 @@ struct segmented_scan_policy
               << ", .thread = " << policy.thread << " }";
   }
 #endif // !_CCCL_COMPILER(NVRTC)
-
-  _CCCL_API constexpr void CheckLoadModifier() const
-  {
-    _CCCL_ASSERT(
-      (block.load_modifier != CacheLoadModifier::LOAD_LDG) && (warp.load_modifier != CacheLoadModifier::LOAD_LDG)
-        && (thread.load_modifier != CacheLoadModifier::LOAD_LDG),
-      "The memory consistency model does not apply to texture accesses");
-  }
 };
 
 #if _CCCL_HAS_CONCEPTS()
@@ -209,7 +171,9 @@ concept segmented_scan_policy_selector = policy_selector<T, segmented_scan_polic
 
 struct policy_selector
 {
+  // size and alignment of accumulator type, that would be used by non-segmented scan
   int accum_size;
+  int accum_align;
 
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> segmented_scan_policy
   {
@@ -224,8 +188,13 @@ struct policy_selector
     constexpr int max_segments_per_block   = 512;
     constexpr int max_segments_per_warp    = 128;
 
-    const int align          = accum_size;
-    const int augmented_size = ::cuda::round_up(accum_size, align);
+    _CCCL_ASSERT(accum_size > 0, "Accumulator size must be positive");
+    _CCCL_ASSERT(accum_align > 0, "Accumulator alignment must be positive");
+    _CCCL_ASSERT((accum_size % accum_align) == 0, "Size and alignment are not consistent");
+
+    // multi-segment block- and warp- granularity agents use tuple<AccumT, bool>, single segment use AccumT
+    // deduce its size here.
+    const int augmented_size = ::cuda::round_up(accum_size + ((max_segments_per_warp == 1) ? 0 : 1), accum_align);
 
     const auto block_scaled  = scale_mem_bound(nominal_block_threads, nominal_items_per_thread, augmented_size);
     const auto warp_scaled   = scale_mem_bound(nominal_block_threads, nominal_items_per_thread, augmented_size);
@@ -261,8 +230,9 @@ struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id arch) const -> segmented_scan_policy
   {
-    constexpr auto accum_size = static_cast<int>(sizeof(AccumT));
-    return policy_selector{accum_size}(arch);
+    constexpr auto accum_size  = static_cast<int>(sizeof(AccumT));
+    constexpr auto accum_align = static_cast<int>(alignof(AccumT));
+    return policy_selector{accum_size, accum_align}(arch);
   };
 };
 } // namespace detail::segmented_scan

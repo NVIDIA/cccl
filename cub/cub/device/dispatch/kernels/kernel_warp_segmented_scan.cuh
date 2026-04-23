@@ -18,7 +18,6 @@
 #endif // no system header
 
 #include <cub/detail/segmented_scan_helpers.cuh>
-#include <cub/device/dispatch/kernels/segmented_scan_agent_policies.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_reduce.cuh> // ThreadReduce
@@ -41,7 +40,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_scan
 {
-template <typename AgentSegmentedScanPolicyT,
+template <typename SegmentedScanPolicyGetterT,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
@@ -60,10 +59,10 @@ struct agent_warp_segmented_scan
   // Input iterator wrapper type (for applying cache modifier)
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
-  using wrapped_input_iterator_t =
-    ::cuda::std::conditional_t<::cuda::std::is_pointer_v<InputIteratorT>,
-                               CacheModifiedInputIterator<AgentSegmentedScanPolicyT::load_modifier, input_t, OffsetT>,
-                               InputIteratorT>;
+  using wrapped_input_iterator_t = ::cuda::std::conditional_t<
+    ::cuda::std::is_pointer_v<InputIteratorT>,
+    CacheModifiedInputIterator<SegmentedScanPolicyGetterT{}().warp.load_modifier, input_t, OffsetT>,
+    InputIteratorT>;
 
   // Constants
 
@@ -73,10 +72,10 @@ struct agent_warp_segmented_scan
   // or the ForceInclusive tag to be true for inclusive scan
   // to get picked up.
   static constexpr bool is_inclusive    = ForceInclusive || !has_init;
-  static constexpr int block_threads    = AgentSegmentedScanPolicyT::block_threads;
-  static constexpr int items_per_thread = AgentSegmentedScanPolicyT::items_per_thread;
+  static constexpr int block_threads    = SegmentedScanPolicyGetterT{}().warp.block_threads;
+  static constexpr int items_per_thread = SegmentedScanPolicyGetterT{}().warp.items_per_thread;
   static constexpr int tile_items       = warp_threads * items_per_thread;
-  static constexpr int max_segments     = AgentSegmentedScanPolicyT::max_segments;
+  static constexpr int max_segments     = SegmentedScanPolicyGetterT{}().warp.max_segments;
 
   static_assert(0 == block_threads % warp_threads, "Block size must be a multiple of native warp size");
 
@@ -85,8 +84,8 @@ struct agent_warp_segmented_scan
   static constexpr bool multi_segment_enabled = (max_segments > 1);
 
 private:
-  static constexpr auto load_algorithm  = AgentSegmentedScanPolicyT::load_algorithm;
-  static constexpr auto store_algorithm = AgentSegmentedScanPolicyT::store_algorithm;
+  static constexpr auto load_algorithm  = SegmentedScanPolicyGetterT{}().warp.load_algorithm;
+  static constexpr auto store_algorithm = SegmentedScanPolicyGetterT{}().warp.store_algorithm;
 
   using warp_load_t  = WarpLoad<AccumT, items_per_thread, load_algorithm>;
   using warp_store_t = WarpStore<AccumT, items_per_thread, store_algorithm>;
@@ -104,7 +103,7 @@ private:
     _single_segment_algorithms_storage_t reused;
   };
 
-  using augmented_accum_t = agent_warp_segmented_scan_compute_t<AccumT, max_segments>;
+  using augmented_accum_t = multi_segment_helpers::agent_segmented_scan_compute_t<AccumT, max_segments>;
 
   using warp_load_aug_t  = WarpLoad<augmented_accum_t, items_per_thread, load_algorithm>;
   using warp_store_aug_t = WarpStore<augmented_accum_t, items_per_thread, store_algorithm>;
@@ -577,20 +576,20 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warp.
     _CCCL_GRID_CONSTANT const InitValueT init_value,
     _CCCL_GRID_CONSTANT const int num_segments_per_worker)
 {
-  static constexpr auto policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warp;
-  static_assert(policy.load_modifier != CacheLoadModifier::LOAD_LDG,
+  static constexpr auto policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static_assert(policy.warp.load_modifier != CacheLoadModifier::LOAD_LDG,
                 "The memory consistency model does not apply to texture accesses");
 
-  using policy_t = agent_warp_segmented_scan_policy_t<
-    policy.block_threads,
-    policy.items_per_thread,
-    policy.load_algorithm,
-    policy.load_modifier,
-    policy.store_algorithm,
-    policy.max_segments>;
+  struct policy_getter
+  {
+    constexpr auto operator()() const
+    {
+      return policy;
+    }
+  };
 
   using agent_t = agent_warp_segmented_scan<
-    policy_t,
+    policy_getter,
     InputIteratorT,
     OutputIteratorT,
     OffsetT,
@@ -604,10 +603,10 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warp.
   const ActualInitValueT _init_value = init_value;
 
   _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments to be processed by warp must be positive");
-  _CCCL_ASSERT(num_segments_per_worker <= policy.max_segments,
+  _CCCL_ASSERT(num_segments_per_worker <= policy.warp.max_segments,
                "Requested number of segments to be processed by warp exceeds compile-time maximum");
 
-  static constexpr unsigned int warps_in_block = int(policy.block_threads) >> log2_warp_threads;
+  static constexpr unsigned int warps_in_block = int(policy.warp.block_threads) >> log2_warp_threads;
   const unsigned int warp_id                   = threadIdx.x >> log2_warp_threads;
 
   const auto work_id = num_segments_per_worker * (blockIdx.x * warps_in_block) + warp_id;
@@ -619,7 +618,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warp.
 
   agent_t agent(temp_storage, d_in, d_out, scan_op, _init_value);
 
-  if constexpr (policy.max_segments == 1)
+  if constexpr (policy.warp.max_segments == 1)
   {
     const OffsetT inp_begin_offset = begin_offset_d_in[work_id];
     const OffsetT inp_end_offset   = end_offset_d_in[work_id];

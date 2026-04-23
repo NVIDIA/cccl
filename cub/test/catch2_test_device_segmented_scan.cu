@@ -7,7 +7,6 @@
 
 #include <cstdint>
 #include <iostream>
-#include <typeinfo>
 #include <utility>
 
 #include "catch2_test_device_reduce.cuh" // for reference_extended_fp
@@ -149,7 +148,7 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
   auto d_offsets_it           = thrust::raw_pointer_cast(d_segment_offsets.data());
 
   INFO("Num segments: " << num_segments);
-  INFO("Types: " << typeid(input_t).name() << " " << typeid(output_t).name() << " " << typeid(offset_t).name());
+  CAPTURE(c2h::type_name<input_t>(), c2h::type_name<output_t>(), c2h::type_name<offset_t>);
 
   // Generate input data
   c2h::device_vector<input_t> in_items(num_items);
@@ -251,7 +250,7 @@ C2H_TEST("Device segmented_scan works with all device interfaces", "[segmented][
     using accum_t           = cuda::std::__accumulator_t<op_t, unwrapped_input_t, unwrapped_input_t>;
     using h_accum_t         = cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
-    INFO("Unwrapped accum type: " << typeid(accum_t).name() << ", host accum_t: " << typeid(h_accum_t).name());
+    CAPTURE(c2h::type_name<accum_t>(), c2h::type_name<h_accum_t>());
 
     // Scan operator
     auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
