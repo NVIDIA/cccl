@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES
 // SPDX-FileCopyrightText: Copyright (c) Microsoft Corporation.
 //
 //===----------------------------------------------------------------------===//
@@ -392,11 +392,11 @@ public:
   _CCCL_DIAG_POP
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Tp2 = _Tp>
-  _CCCL_API friend constexpr auto swap(__variant_like& __x, __variant_like& __y) noexcept(
+  _CCCL_TEMPLATE(class _Tp2 = _Tp)
+  _CCCL_REQUIRES((!__is_trivially_swappable_v<_Tp2> || !__is_trivially_swappable_v<_Up>) )
+  _CCCL_API friend constexpr void swap(__variant_like& __x, __variant_like& __y) noexcept(
     is_nothrow_move_constructible_v<_Tp2> && is_nothrow_move_constructible_v<_Up> && is_nothrow_swappable_v<_Tp2>
     && is_nothrow_swappable_v<_Up>)
-    _CCCL_TRAILING_REQUIRES(void)((!__is_trivially_swappable_v<_Tp2> || !__is_trivially_swappable_v<_Up>) )
   {
     if (__x.__contains_ == __y.__contains_)
     {
@@ -438,15 +438,15 @@ public:
     this->__contains_ = __variant_like_state::__holds_second;
   }
 
-  _CCCL_API constexpr bool valueless_by_exception() const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool valueless_by_exception() const noexcept
   {
     return this->__contains_ == __variant_like_state::__nothing;
   }
-  _CCCL_API constexpr bool __holds_first() const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool __holds_first() const noexcept
   {
     return this->__contains_ == __variant_like_state::__holds_first;
   }
-  _CCCL_API constexpr bool __holds_second() const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool __holds_second() const noexcept
   {
     return this->__contains_ == __variant_like_state::__holds_second;
   }

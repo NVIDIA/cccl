@@ -101,7 +101,7 @@ class common_iterator
   {
     iter_value_t<_Iter> __value_;
 
-    _CCCL_API constexpr const iter_value_t<_Iter>& operator*() const noexcept
+    [[nodiscard]] _CCCL_API constexpr const iter_value_t<_Iter>& operator*() const noexcept
     {
       return __value_;
     }
@@ -136,7 +136,7 @@ public:
   {}
 
   _CCCL_TEMPLATE(class _I2, class _S2)
-  _CCCL_REQUIRES(convertible_to<const _I2&, _Iter>&& convertible_to<const _S2&, _Sent>)
+  _CCCL_REQUIRES(convertible_to<const _I2&, _Iter> _CCCL_AND convertible_to<const _S2&, _Sent>)
   _CCCL_API constexpr common_iterator(const common_iterator<_I2, _S2>& __other) noexcept(
     is_nothrow_constructible_v<_Iter, const _I2&> && is_nothrow_constructible_v<_Sent, const _S2&>)
       : __hold_{__other.__get_hold()}
@@ -161,7 +161,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _I2 = _Iter)
   _CCCL_REQUIRES(__dereferenceable<const _I2>)
-  _CCCL_API constexpr decltype(auto) operator*() const
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator*() const
   {
     _CCCL_ASSERT(__hold_.__holds_first(), "Attempted to dereference a non-dereferenceable common_iterator");
     return *__hold_.__first_;
@@ -172,7 +172,7 @@ public:
   _CCCL_REQUIRES(indirectly_readable<const _I2> _CCCL_AND(
     __has_const_arrow<_I2> || is_reference_v<iter_reference_t<_I2>>
     || constructible_from<iter_value_t<_I2>, iter_reference_t<_I2>>))
-  _CCCL_API constexpr decltype(auto) operator->() const
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator->() const
   {
     _CCCL_ASSERT(__hold_.__holds_first(), "Attempted to dereference a non-dereferenceable common_iterator");
     if constexpr (__has_const_arrow<_Iter>)
@@ -225,10 +225,11 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _I2, class _S2>
-  _CCCL_API friend constexpr auto operator==(const common_iterator& __x, const common_iterator<_I2, _S2>& __y)
-    _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<_S2, _Iter>&& sentinel_for<_Sent, _I2>
-                                  && (!equality_comparable_with<_Iter, _I2>) )
+  _CCCL_TEMPLATE(class _I2, class _S2)
+  _CCCL_REQUIRES(
+    sentinel_for<_S2, _Iter> _CCCL_AND sentinel_for<_Sent, _I2> _CCCL_AND(!equality_comparable_with<_Iter, _I2>))
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator==(const common_iterator& __x, const common_iterator<_I2, _S2>& __y)
   {
     auto& __y_hold = __y.__get_hold();
 
@@ -253,9 +254,9 @@ public:
 
 #if _CCCL_STD_VER <= 2017
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _I2 = _Iter>
-  _CCCL_API friend constexpr auto operator==(const common_iterator& __x, const common_iterator& __y)
-    _CCCL_TRAILING_REQUIRES(bool)((!equality_comparable<_I2>) )
+  _CCCL_TEMPLATE(class _I2 = _Iter)
+  _CCCL_REQUIRES((!equality_comparable<_I2>) )
+  [[nodiscard]] _CCCL_API friend constexpr bool operator==(const common_iterator& __x, const common_iterator& __y)
   {
     auto& __y_hold = __y.__get_hold();
 
@@ -278,27 +279,29 @@ public:
     return __x.__hold_.__second_ == __y_hold.__first_;
   }
 
-  template <class _I2 = _Iter>
-  _CCCL_API friend constexpr auto operator!=(const common_iterator& __x, const common_iterator& __y)
-    _CCCL_TRAILING_REQUIRES(bool)((!equality_comparable<_I2>) )
+  _CCCL_TEMPLATE(class _I2 = _Iter)
+  _CCCL_REQUIRES((!equality_comparable<_I2>) )
+  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const common_iterator& __x, const common_iterator& __y)
   {
     return !(__x == __y);
   }
 
-  template <class _I2, class _S2>
-  _CCCL_API friend constexpr auto operator!=(const common_iterator& __x, const common_iterator<_I2, _S2>& __y)
-    _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<_S2, _Iter>&& sentinel_for<_Sent, _I2>
-                                  && (!equality_comparable_with<_Iter, _I2>) )
+  _CCCL_TEMPLATE(class _I2, class _S2)
+  _CCCL_REQUIRES(
+    sentinel_for<_S2, _Iter> _CCCL_AND sentinel_for<_Sent, _I2> _CCCL_AND(!equality_comparable_with<_Iter, _I2>))
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator!=(const common_iterator& __x, const common_iterator<_I2, _S2>& __y)
   {
     return !(__x == __y);
   }
 #endif // _CCCL_STD_VER <= 2017
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _I2, class _S2>
-  _CCCL_API friend constexpr auto operator==(const common_iterator& __x, const common_iterator<_I2, _S2>& __y)
-    _CCCL_TRAILING_REQUIRES(bool)(
-      sentinel_for<_S2, _Iter>&& sentinel_for<_Sent, _I2>&& equality_comparable_with<_Iter, _I2>)
+  _CCCL_TEMPLATE(class _I2, class _S2)
+  _CCCL_REQUIRES(
+    sentinel_for<_S2, _Iter> _CCCL_AND sentinel_for<_Sent, _I2> _CCCL_AND equality_comparable_with<_Iter, _I2>)
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator==(const common_iterator& __x, const common_iterator<_I2, _S2>& __y)
   {
     auto& __y_hold = __y.__get_hold();
 
@@ -324,9 +327,9 @@ public:
   }
 #if _CCCL_STD_VER <= 2017
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _I2 = _Iter>
-  _CCCL_API friend constexpr auto operator==(const common_iterator& __x, const common_iterator& __y)
-    _CCCL_TRAILING_REQUIRES(bool)(equality_comparable<_I2>)
+  _CCCL_TEMPLATE(class _I2 = _Iter)
+  _CCCL_REQUIRES(equality_comparable<_I2>)
+  [[nodiscard]] _CCCL_API friend constexpr bool operator==(const common_iterator& __x, const common_iterator& __y)
   {
     auto& __y_hold = __y.__get_hold();
 
@@ -351,27 +354,29 @@ public:
     return __x.__hold_.__second_ == __y_hold.__first_;
   }
 
-  template <class _I2 = _Iter>
-  _CCCL_API friend constexpr auto operator!=(const common_iterator& __x, const common_iterator& __y)
-    _CCCL_TRAILING_REQUIRES(bool)(equality_comparable<_I2>)
+  _CCCL_TEMPLATE(class _I2 = _Iter)
+  _CCCL_REQUIRES(equality_comparable<_I2>)
+  [[nodiscard]] _CCCL_API friend constexpr bool operator!=(const common_iterator& __x, const common_iterator& __y)
   {
     return !(__x == __y);
   }
 
-  template <class _I2, class _S2>
-  _CCCL_API friend constexpr auto operator!=(const common_iterator& __x, const common_iterator<_I2, _S2>& __y)
-    _CCCL_TRAILING_REQUIRES(bool)(
-      sentinel_for<_S2, _Iter>&& sentinel_for<_Sent, _I2>&& equality_comparable_with<_Iter, _I2>)
+  _CCCL_TEMPLATE(class _I2, class _S2)
+  _CCCL_REQUIRES(
+    sentinel_for<_S2, _Iter> _CCCL_AND sentinel_for<_Sent, _I2> _CCCL_AND equality_comparable_with<_Iter, _I2>)
+  [[nodiscard]] _CCCL_API friend constexpr bool
+  operator!=(const common_iterator& __x, const common_iterator<_I2, _S2>& __y)
   {
     return !(__x == __y);
   }
 #endif // _CCCL_STD_VER <= 2017
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _I2, class _S2>
-  _CCCL_API friend constexpr auto operator-(const common_iterator& __x, const common_iterator<_I2, _S2>& __y)
-    _CCCL_TRAILING_REQUIRES(iter_difference_t<_I2>)(
-      sized_sentinel_for<_I2, _Iter>&& sized_sentinel_for<_S2, _Iter>&& sized_sentinel_for<_Sent, _I2>)
+  _CCCL_TEMPLATE(class _I2, class _S2)
+  _CCCL_REQUIRES(
+    sized_sentinel_for<_I2, _Iter> _CCCL_AND sized_sentinel_for<_S2, _Iter> _CCCL_AND sized_sentinel_for<_Sent, _I2>)
+  [[nodiscard]] _CCCL_API friend constexpr iter_difference_t<_I2>
+  operator-(const common_iterator& __x, const common_iterator<_I2, _S2>& __y)
   {
     auto& __y_hold = __y.__get_hold();
 
@@ -396,19 +401,19 @@ public:
     return __x.__hold_.__second_ - __y_hold.__first_;
   }
 
-  template <class _Iter2 = _Iter>
-  _CCCL_API friend constexpr auto
+  _CCCL_TEMPLATE(class _Iter2 = _Iter)
+  _CCCL_REQUIRES(input_iterator<_Iter2>)
+  _CCCL_API friend constexpr iter_rvalue_reference_t<_Iter2>
   iter_move(const common_iterator& __i) noexcept(noexcept(::cuda::std::ranges::iter_move(declval<const _Iter&>())))
-    _CCCL_TRAILING_REQUIRES(iter_rvalue_reference_t<_Iter2>)(input_iterator<_Iter2>)
   {
     _CCCL_ASSERT(__i.__hold_.__holds_first(), "Attempted to iter_move a non-dereferenceable common_iterator");
     return ::cuda::std::ranges::iter_move(__i.__hold_.__first_);
   }
 
-  template <class _I2, class _S2>
-  _CCCL_API friend constexpr auto iter_swap(const common_iterator& __x, const common_iterator<_I2, _S2>& __y) noexcept(
+  _CCCL_TEMPLATE(class _I2, class _S2)
+  _CCCL_REQUIRES(indirectly_swappable<_I2, _Iter>)
+  _CCCL_API friend constexpr void iter_swap(const common_iterator& __x, const common_iterator<_I2, _S2>& __y) noexcept(
     noexcept(::cuda::std::ranges::iter_swap(::cuda::std::declval<const _Iter&>(), ::cuda::std::declval<const _I2&>())))
-    _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_I2, _Iter>)
   {
     auto& __y_hold = __y.__get_hold();
 
@@ -417,11 +422,11 @@ public:
     return ::cuda::std::ranges::iter_swap(__x.__hold_.__first_, __y_hold.__first_);
   }
 
-  _CCCL_API constexpr __variant_like<_Iter, _Sent>& __get_hold() noexcept
+  [[nodiscard]] _CCCL_API constexpr __variant_like<_Iter, _Sent>& __get_hold() noexcept
   {
     return __hold_;
   }
-  _CCCL_API constexpr const __variant_like<_Iter, _Sent>& __get_hold() const noexcept
+  [[nodiscard]] _CCCL_API constexpr const __variant_like<_Iter, _Sent>& __get_hold() const noexcept
   {
     return __hold_;
   }
