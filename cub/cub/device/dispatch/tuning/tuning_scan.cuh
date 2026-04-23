@@ -939,9 +939,9 @@ struct policy_selector
           case 1:
             // wrps_3.lbi_4.ipt_96 ()  1.454824  1.247212  1.450590  1.560418
             return scan_warpspeed_policy{3, 4, 96 - 1};
-            // clang-format off
+          case 2:
+	    // clang-format off
 // TODO(bgruber): we found this tuning but it regresses large problems, we should revisit this
-//         case 2:
 //            // wrps_4.lbi_2.ipt_96 ()  1.082511  0.929516  1.091523  1.264033
 //            return scan_warpspeed_policy{4, 2, 96 - 1};
 //|   I16   |      I64      |      2^16      |  17.304 us |       1.07% |  15.244 us |       0.77% |    -2.060 us | -11.91% |   FAST   |
