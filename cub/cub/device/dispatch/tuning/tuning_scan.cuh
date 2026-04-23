@@ -940,7 +940,7 @@ struct policy_selector
             // wrps_3.lbi_4.ipt_96 ()  1.454824  1.247212  1.450590  1.560418
             return scan_warpspeed_policy{3, 4, 96 - 1};
           case 2:
-	    // clang-format off
+            // clang-format off
 // TODO(bgruber): we found this tuning but it regresses large problems, we should revisit this
 //            // wrps_4.lbi_2.ipt_96 ()  1.082511  0.929516  1.091523  1.264033
 //            return scan_warpspeed_policy{4, 2, 96 - 1};
@@ -950,8 +950,8 @@ struct policy_selector
 //|   I16   |      I64      |      2^28      | 224.318 us |       0.37% | 233.381 us |       0.46% |     9.063 us |   4.04% |   SLOW   |
 //|   I16   |      I64      |      2^32      |   3.238 ms |       0.53% |   3.429 ms |       0.53% |   191.299 us |   5.91% |   SLOW   |
             // clang-format on
-	    // wrps_6.lbi_2.ipt_96 ()  1.167633  1.167633  1.167633  1.167633
-	    return scan_warpspeed_policy{6, 2, 96 - 1};
+            // wrps_6.lbi_2.ipt_96 ()  1.167633  1.167633  1.167633  1.167633
+            return scan_warpspeed_policy{6, 2, 96 - 1};
           case 4:
             if (input_type == type_t::float32)
             {
