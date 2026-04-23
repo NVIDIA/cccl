@@ -115,7 +115,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __launch_transform_t
   struct __optional_with_a_destructor : ::cuda::std::optional<_Tp>
   {
     using ::cuda::std::optional<_Tp>::optional;
-    ~__optional_with_a_destructor() {}
+    // Use of explicit destructor is intentional. Without it, the argument may have a trivial
+    // destructor and hence would be performed by the callee.
+    ~__optional_with_a_destructor() {} // NOLINT(modernize-use-equals-default)
 
     template <class _Fn>
     _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _Tp& __emplace_from_fn(_Fn&& __fn)

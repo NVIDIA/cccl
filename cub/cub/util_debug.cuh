@@ -104,7 +104,7 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
 
   cudaError_t last_error = cudaSuccess;
 
-  NV_IF_TARGET(
+  NV_IF_ELSE_TARGET(
     NV_IS_HOST,
     (last_error = cudaGetLastError();),
     (CUB_TEMP_DEVICE_CODE;)
@@ -121,7 +121,7 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
 #ifdef CUB_STDERR
   if (error)
   {
-    NV_IF_TARGET(
+    NV_IF_ELSE_TARGET(
       NV_IS_HOST,
       (fprintf(stderr, "CUDA error %d [%s, %d]: %s\n", error, filename, line, cudaGetErrorString(error));
        fflush(stderr);),
@@ -166,7 +166,7 @@ Debug(cudaError_t error, [[maybe_unused]] const char* filename, [[maybe_unused]]
 #  define _CubLog(format, ...)                                    \
     do                                                            \
     {                                                             \
-      NV_IF_TARGET(                                               \
+      NV_IF_ELSE_TARGET(                                          \
         NV_IS_HOST,                                               \
         (printf(format, __VA_ARGS__);),                           \
         (printf("[block (%d,%d,%d), thread (%d,%d,%d)]: " format, \

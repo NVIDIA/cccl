@@ -17,6 +17,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_policy_wrapper_t.cuh>
 #include <cub/util_type.cuh>
@@ -36,17 +37,7 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <atomic> // saves 146ms compile-time over <cuda/std/atomic> (CCCL 3.1)
-#  if defined(CUB_DEFINE_RUNTIME_POLICIES)
-#    include <format>
-#    include <string_view>
-
-#    include <nlohmann/json.hpp>
-#  endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 #endif // !_CCCL_COMPILER(NVRTC)
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-#  include <cub/detail/ptx-json/json.cuh>
-#endif // defined(CUB_ENABLE_POLICY_PTX_JSON)
 
 #include <nv/target>
 
@@ -150,7 +141,7 @@ CUB_RUNTIME_FUNCTION inline int DeviceCount()
 {
   int result = -1;
 
-  NV_IF_TARGET(NV_IS_HOST, (result = DeviceCountCachedValue();), (result = DeviceCountUncached();));
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (result = DeviceCountCachedValue();), (result = DeviceCountUncached();));
 
   return result;
 }
@@ -354,10 +345,9 @@ CUB_RUNTIME_FUNCTION cudaError_t PtxVersion(int& ptx_version)
   // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
   // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
   cudaError_t result = cudaErrorUnknown;
-  NV_IF_TARGET(NV_IS_HOST,
-               (result = PtxVersion<T>(ptx_version, CurrentDevice());),
-               ( // NV_IS_DEVICE:
-                 result = PtxVersionUncached<T>(ptx_version);));
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (result = PtxVersion<T>(ptx_version, CurrentDevice());),
+                    (result = PtxVersionUncached<T>(ptx_version);));
   return result;
 }
 
@@ -426,20 +416,24 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
 {
   cudaError_t result = cudaErrorUnknown;
 
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (auto const payload = GetPerDeviceAttributeCache<SmVersionCacheTag>()(
-       // If this call fails, then we get the error code back in the payload, which we check with `CubDebug` below.
-       [=](int& pv) {
-         return SmVersionUncached(pv, device);
-       },
-       device);
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    ({
+                      auto const payload = GetPerDeviceAttributeCache<SmVersionCacheTag>()(
+                        // If this call fails, then we get the error code back in the payload, which we check with
+                        // `CubDebug` below.
+                        [=](int& pv) {
+                          return SmVersionUncached(pv, device);
+                        },
+                        device);
 
-     if (!CubDebug(payload.error)) { sm_version = payload.attribute; };
+                      if (!CubDebug(payload.error))
+                      {
+                        sm_version = payload.attribute;
+                      };
 
-     result = payload.error;),
-    ( // NV_IS_DEVICE
-      result = SmVersionUncached(sm_version, device);));
+                      result = payload.error;
+                    }),
+                    (result = SmVersionUncached(sm_version, device);));
 
   return result;
 }
@@ -447,7 +441,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
 //! Synchronize the specified \p stream when called in host code. Otherwise, does nothing.
 CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream([[maybe_unused]] cudaStream_t stream)
 {
-  NV_IF_TARGET(NV_IS_HOST, (return CubDebug(cudaStreamSynchronize(stream));), (return cudaErrorNotSupported;))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (return CubDebug(cudaStreamSynchronize(stream));), (return cudaErrorNotSupported;))
 }
 
 //! @brief Computes the maximum potential dynamic shared memory size per block for kernel @p kernel_ptr taking into
@@ -501,9 +495,9 @@ namespace detail
 CUB_RUNTIME_FUNCTION inline cudaError_t DebugSyncStream([[maybe_unused]] cudaStream_t stream)
 {
 #  ifdef CUB_DEBUG_SYNC
-  NV_IF_TARGET(NV_IS_HOST,
-               (_CubLog("%s", "Synchronizing...\n"); return SyncStream(stream);),
-               (_CubLog("%s", "WARNING: Skipping CUB debug synchronization in device code"); return cudaSuccess;));
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (_CubLog("%s", "Synchronizing...\n"); return SyncStream(stream);),
+                    (_CubLog("%s", "WARNING: Skipping CUB debug synchronization in device code"); return cudaSuccess;));
 #  else // ^^^ CUB_DEBUG_SYNC / !CUB_DEBUG_SYNC vvv
   return cudaSuccess;
 #  endif // ^^^ !CUB_DEBUG_SYNC ^^^
@@ -631,11 +625,11 @@ _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t 
 
 namespace detail
 {
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#if defined(CUB_DEFINE_RUNTIME_POLICIES)
 #  if !_CCCL_HAS_CONCEPTS()
-#    error Generation of runtime policy wrappers and/or policy PTX JSON information requires C++20 concepts.
+#    error Generation of runtime policy wrappers requires C++20 concepts.
 #  endif // !_CCCL_HAS_CONCEPTS()
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
 #define CUB_DETAIL_POLICY_WRAPPER_CONCEPT_TEST(field)     , StaticPolicyT::_CCCL_PP_FIRST field
 #define CUB_DETAIL_POLICY_WRAPPER_REFINE_CONCEPT(concept) concept<StaticPolicyT>&&
@@ -645,50 +639,6 @@ namespace detail
   {                                                                 \
     return StaticPolicyT::_CCCL_PP_FIRST field;                     \
   }
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-#  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_FIELD(field) \
-    key<_CCCL_TO_STRING(_CCCL_PP_FIRST field)>() = value<(int) StaticPolicyT::_CCCL_PP_FIRST field>(),
-
-#  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(...)                                     \
-    _CCCL_DEVICE static constexpr auto EncodedPolicy()                                      \
-    {                                                                                       \
-      using namespace ptx_json;                                                             \
-      return object<_CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_ENCODED_FIELD, __VA_ARGS__) \
-                      key<"__dummy">() = value<0>()>();                                     \
-    }
-#else
-#  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(...)
-#endif // defined(CUB_ENABLE_POLICY_PTX_JSON)
-
-#if defined(CUB_DEFINE_RUNTIME_POLICIES)
-#  define CUB_DETAIL_POLICY_WRAPPER_FIELD(field)                       \
-    _CCCL_PP_THIRD field _CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field); \
-    _CCCL_PP_THIRD field _CCCL_PP_SECOND field() const                 \
-    {                                                                  \
-      return _CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field);             \
-    }
-
-#  define CUB_DETAIL_POLICY_WRAPPER_GET_FIELD(field)  \
-    ap._CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field) = \
-      static_cast<_CCCL_PP_THIRD field>(subpolicy[_CCCL_TO_STRING(_CCCL_PP_FIRST field)].get<int>());
-
-#  define CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(concept_name, ...)                                       \
-    struct Runtime##concept_name                                                                          \
-    {                                                                                                     \
-      _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_FIELD, __VA_ARGS__)                                     \
-      static Runtime##concept_name from_json(const nlohmann::json& json, std::string_view subpolicy_name) \
-      {                                                                                                   \
-        auto subpolicy = json[subpolicy_name];                                                            \
-        assert(!subpolicy.is_null());                                                                     \
-        Runtime##concept_name ap;                                                                         \
-        _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_GET_FIELD, __VA_ARGS__)                               \
-        return ap;                                                                                        \
-      }                                                                                                   \
-    };
-#else
-#  define CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(...)
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
 template <typename T>
 _CCCL_CONCEPT always_true = true;
@@ -704,15 +654,13 @@ _CCCL_CONCEPT always_true = true;
         : StaticPolicyT(base)                                                                                          \
     {}                                                                                                                 \
     _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_ACCESSOR, __VA_ARGS__)                                                 \
-    CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(__VA_ARGS__)                                                              \
   };                                                                                                                   \
   _CCCL_TEMPLATE(typename StaticPolicyT)                                                                               \
   _CCCL_REQUIRES(concept_name<StaticPolicyT>)                                                                          \
   __host__ __device__ constexpr concept_name##Wrapper<StaticPolicyT> MakePolicyWrapper(StaticPolicyT policy)           \
   {                                                                                                                    \
     return concept_name##Wrapper{policy};                                                                              \
-  }                                                                                                                    \
-  CUB_DETAIL_POLICY_WRAPPER_AGENT_POLICY(concept_name, __VA_ARGS__)
+  }
 
 // Generic agent policy
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(

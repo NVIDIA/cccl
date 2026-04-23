@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+
 // <algorithm>
 
 // template<InputIterator InIter1, InputIterator InIter2, typename OutIter>

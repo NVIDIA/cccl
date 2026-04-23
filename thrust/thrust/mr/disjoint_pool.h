@@ -235,7 +235,11 @@ private:
     _CCCL_EXEC_CHECK_DISABLE
     pool& operator=(const pool&) = default;
 
-    _CCCL_HOST ~pool() {}
+    // If we = default this (even with _CCCL_HOST annotation), then nvcc will synthesize a
+    // different subobject destruction code for the pool vector below. I am not entirely sure
+    // why, but it chooses to instantiate it as host-device instead of host, then complains we
+    // cannot call host-device destructors from host-only
+    _CCCL_HOST ~pool() {} // NOLINT(modernize-use-equals-default)
 
     pointer_vector free_blocks{};
     std::size_t previous_allocated_count{};

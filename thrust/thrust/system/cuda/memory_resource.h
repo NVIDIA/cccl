@@ -26,7 +26,7 @@
 
 THRUST_NAMESPACE_BEGIN
 
-namespace system::cuda
+namespace system::cuda // NOLINT(modernize-concat-nested-namespaces)
 {
 //! \cond
 namespace detail

@@ -243,7 +243,7 @@ public:
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
              ,
-             ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value>* = 0
+             ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value, int> = 0
 #endif // !_CCCL_COMPILER(MSVC)
   );
 
@@ -356,7 +356,7 @@ public:
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
                   ,
-                  ::cuda::std::enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value>* = 0
+                  ::cuda::std::enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value, int> = 0
 #endif // !_CCCL_COMPILER(MSVC)
   );
 

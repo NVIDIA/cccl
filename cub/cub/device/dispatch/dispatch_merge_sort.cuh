@@ -508,10 +508,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 #endif // CUB_DEFINE_RUNTIME_POLICIES
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(
-      NV_IS_HOST,
-      (std::stringstream ss; ss << active_policy;
-       _CubLog("Dispatching DeviceMergeSort to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   std::stringstream ss;
+                   ss << active_policy;
+                   _CubLog("Dispatching DeviceMergeSort to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
+                 }))
 #endif
 
     const auto tile_size = active_policy.items_per_tile();

@@ -471,10 +471,10 @@ try
     cccl_type_enum::CCCL_UINT32};
 
   const auto [large_selector_name, large_selector_src] = get_specialization<segmented_sort_large_selector_tag>(
-    template_id<user_operation_traits>(), large_selector_op, selector_result_t, selector_input_t);
+    template_id<unary_user_operation_traits>(), large_selector_op, selector_result_t, selector_input_t);
 
   const auto [small_selector_name, small_selector_src] = get_specialization<segmented_sort_small_selector_tag>(
-    template_id<user_operation_traits>(), small_selector_op, selector_result_t, selector_input_t);
+    template_id<unary_user_operation_traits>(), small_selector_op, selector_result_t, selector_input_t);
 
   const auto policy_sel = cub::detail::segmented_sort::policy_selector{
     static_cast<int>(keys_in_it.value_type.size),

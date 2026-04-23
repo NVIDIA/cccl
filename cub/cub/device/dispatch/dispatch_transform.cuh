@@ -108,13 +108,13 @@ struct TransformKernelSource<PolicySelector,
   template <class ActionT>
   CUB_RUNTIME_FUNCTION cuda_expected<async_config> CacheAsyncConfiguration(const ActionT& action)
   {
-    NV_IF_TARGET(NV_IS_HOST, (static auto cached_config = action(); return cached_config;), (return action();))
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (static auto cached_config = action(); return cached_config;), (return action();))
   }
 
   template <class ActionT>
   CUB_RUNTIME_FUNCTION cuda_expected<prefetch_config> CachePrefetchConfiguration(const ActionT& action)
   {
-    NV_IF_TARGET(NV_IS_HOST, (static auto cached_config = action(); return cached_config;), (return action();))
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (static auto cached_config = action(); return cached_config;), (return action();))
   }
 
   CUB_RUNTIME_FUNCTION static constexpr int LoadedBytesPerIteration()
@@ -462,10 +462,11 @@ struct invoke_for_arch<::cuda::std::tuple<RandomAccessIteratorsIn...>,
     const auto seq = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(
-      NV_IS_HOST,
-      (std::stringstream ss; ss << active_policy;
-       _CubLog("Dispatching DeviceTransform to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   ::std::stringstream ss;
+                   ss << active_policy;
+                   _CubLog("Dispatching DeviceTransform to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
+                 }))
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
     if CUB_DETAIL_CONSTEXPR_ISH (Algorithm::ublkcp == active_policy.algorithm)

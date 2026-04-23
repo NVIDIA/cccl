@@ -35,7 +35,7 @@ struct find_smallest_covering_policy
 {
 private:
   static constexpr ::cuda::std::int64_t max_segment_size = params::static_max_value_v<SegmentSizeParameterT>;
-  static constexpr batched_topk_policy active_policy     = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr batched_topk_policy active_policy     = current_policy<PolicySelector>();
 
   template <int Index>
   [[nodiscard]] static constexpr int find_index()

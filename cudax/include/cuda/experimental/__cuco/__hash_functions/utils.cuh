@@ -21,9 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory/is_aligned.h>
+#include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__memory/assume_aligned.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/cstring>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -37,30 +38,33 @@ namespace cuda::experimental::cuco
 //! @param __index The index of the chunk to load
 //! @return The loaded chunk of type _Tp
 template <typename _Tp, typename _Extent>
-[[nodiscard]] _CCCL_API constexpr _Tp __load_chunk(::cuda::std::byte const* const __bytes, _Extent __index) noexcept
+[[nodiscard]] _CCCL_API _Tp __load_chunk(::cuda::std::byte const* const __bytes, _Extent __index) noexcept
 {
-  _Tp __chunk;
-
-  auto __ptr     = __bytes + __index * sizeof(_Tp);
-  auto __uintptr = reinterpret_cast<::cuda::std::uintptr_t>(__ptr);
-
   static_assert(sizeof(_Tp) == 4 || sizeof(_Tp) == 8, "__load_chunk must be used with types of size 4 or 8 bytes");
 
-  if (alignof(_Tp) == 8 && ((__uintptr % 8) == 0))
+  const auto __ptr = __bytes + __index * sizeof(_Tp);
+
+  _Tp __chunk;
+  if constexpr (alignof(_Tp) == 8)
   {
-    ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<8>(__ptr), sizeof(_Tp));
+    if (::cuda::is_aligned(__ptr, 8))
+    {
+      ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<8>(__ptr), sizeof(_Tp));
+      return __chunk;
+    }
   }
-  else if ((__uintptr % 4) == 0)
+
+  if (::cuda::is_aligned(__ptr, 4))
   {
     ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<4>(__ptr), sizeof(_Tp));
   }
-  else if ((__uintptr % 2) == 0)
+  else if (::cuda::is_aligned(__ptr, 2))
   {
     ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<2>(__ptr), sizeof(_Tp));
   }
   else
   {
-    ::cuda::std::memcpy(&__chunk, __bytes, sizeof(_Tp));
+    ::cuda::std::memcpy(&__chunk, __ptr, sizeof(_Tp));
   }
   return __chunk;
 }

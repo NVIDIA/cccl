@@ -114,12 +114,7 @@ struct CopyConstructTest
                  (copy_constructed_on_device = false; copy_constructed_on_host = true;));
   }
 
-  _CCCL_HOST_DEVICE CopyConstructTest& operator=(const CopyConstructTest& x)
-  {
-    copy_constructed_on_host   = x.copy_constructed_on_host;
-    copy_constructed_on_device = x.copy_constructed_on_device;
-    return *this;
-  }
+  CopyConstructTest& operator=(const CopyConstructTest&) = default;
 
   bool copy_constructed_on_host{false};
   bool copy_constructed_on_device{false};

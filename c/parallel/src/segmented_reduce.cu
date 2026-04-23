@@ -148,8 +148,8 @@ try
   const auto [end_offset_iterator_name, end_offset_iterator_src] =
     get_specialization<segmented_reduce_end_offset_iterator_tag>(template_id<input_iterator_traits>(), end_offset_it);
 
-  const auto [op_name, op_src] =
-    get_specialization<segmented_reduce_operation_tag>(template_id<binary_user_operation_traits>(), op, accum_t);
+  const auto [op_name, op_src] = get_specialization<segmented_reduce_operation_tag>(
+    template_id<binary_user_operation_traits>(), op, accum_t, accum_t, accum_t);
 
   // OffsetT is checked to match have 64-bit size
   const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);

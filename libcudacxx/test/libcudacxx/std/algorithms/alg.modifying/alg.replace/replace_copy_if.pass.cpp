@@ -22,10 +22,13 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-constexpr TEST_FUNC bool equalToTwo(const int v) noexcept
+struct equalToTwo
 {
-  return v == 2;
-}
+  TEST_FUNC constexpr bool operator()(const int v) const noexcept
+  {
+    return v == 2;
+  }
+};
 
 template <class InIter, class OutIter>
 constexpr TEST_FUNC void test()
@@ -34,7 +37,7 @@ constexpr TEST_FUNC void test()
   constexpr int ia[N]       = {0, 1, 2, 3, 4};
   int ib[N + 1]             = {0};
   constexpr int expected[N] = {0, 1, 5, 3, 4};
-  OutIter r                 = cuda::std::replace_copy_if(InIter(ia), InIter(ia + N), OutIter(ib), equalToTwo, 5);
+  OutIter r                 = cuda::std::replace_copy_if(InIter(ia), InIter(ia + N), OutIter(ib), equalToTwo{}, 5);
   assert(base(r) == ib + N);
   for (int i = 0; i < N; ++i)
   {

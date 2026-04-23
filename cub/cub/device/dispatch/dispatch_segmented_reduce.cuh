@@ -513,9 +513,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   const segmented_reduce_policy active_policy = policy_selector(arch_id);
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
-    NV_IS_HOST,
-    (::std::stringstream ss; ss << active_policy;
-     _CubLog("Dispatching DeviceSegmentedReduce to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
+    NV_IS_HOST, ({
+      ::std::stringstream ss;
+      ss << active_policy;
+      _CubLog("Dispatching DeviceSegmentedReduce to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
+    }))
 #endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
   // Compute segments_per_block based on max_segment_size hint

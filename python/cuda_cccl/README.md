@@ -13,8 +13,23 @@ It provides the following modules:
 Install from PyPI:
 
 ```bash
-pip install cuda-cccl[cu13]  # For CUDA 13.x
-pip install cuda-cccl[cu12]  # For CUDA 12.x
+pip install cuda-cccl[cu13]  # For CUDA 13.x (pip-installed cuda-toolkit)
+pip install cuda-cccl[cu12]  # For CUDA 12.x (pip-installed cuda-toolkit)
+```
+
+If you already have a CUDA toolkit on your system and do not want pip to
+install it, use the `sysctk` variants:
+
+```bash
+pip install cuda-cccl[sysctk13]  # For CUDA 13.x (system CUDA toolkit)
+pip install cuda-cccl[sysctk12]  # For CUDA 12.x (system CUDA toolkit)
+```
+
+For a minimal install without Numba (useful when supplying pre-compiled operators):
+
+```bash
+pip install cuda-cccl[minimal-cu13]      # pip-installed cuda-toolkit
+pip install cuda-cccl[minimal-sysctk13]  # system CUDA toolkit
 ```
 
 Install from conda-forge:
