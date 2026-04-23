@@ -23,6 +23,8 @@
 
 #include <cuda/__bit/bitmask.h>
 #include <cuda/__cmath/pow2.h>
+#include <cuda/__hierarchy/queries/count.h>
+#include <cuda/__hierarchy/queries/rank.h>
 #include <cuda/barrier>
 #include <cuda/hierarchy>
 #include <cuda/std/__concepts/concept_macros.h>
@@ -176,6 +178,45 @@ public:
       }
     }
     __synchronizer_instance_.do_sync_aligned(__mapping_result_, __synchronizer_);
+  }
+
+  _CCCL_TEMPLATE(class _Tp, class _InLevel)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel>)
+  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp count_as(const _InLevel&) const noexcept
+  {
+    _Tp __ret = __mapping_result_.group_count();
+    if constexpr (!::cuda::std::is_same_v<_InLevel, level_type>)
+    {
+      __ret *= __count_query<level_type, _InLevel>::template __call<_Tp>(__hier_);
+    }
+    return __ret;
+  }
+
+  _CCCL_TEMPLATE(class _InLevel)
+  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
+  [[nodiscard]] _CCCL_DEVICE_API constexpr ::cuda::std::size_t count(const _InLevel& __in_level) const noexcept
+  {
+    return count_as<::cuda::std::size_t>(__in_level);
+  }
+
+  _CCCL_TEMPLATE(class _Tp, class _InLevel)
+  _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_Tp> _CCCL_AND __is_hierarchy_level_v<_InLevel>)
+  [[nodiscard]] _CCCL_DEVICE_API _Tp rank_as(const _InLevel&) const noexcept
+  {
+    _Tp __ret = __mapping_result_.group_rank();
+    if constexpr (!::cuda::std::is_same_v<_InLevel, level_type>)
+    {
+      __ret += static_cast<_Tp>(
+        __rank_query<level_type, _InLevel>::template __call<_Tp>(__hier_) * __mapping_result_.group_count());
+    }
+    return __ret;
+  }
+
+  _CCCL_TEMPLATE(class _InLevel)
+  _CCCL_REQUIRES(__is_hierarchy_level_v<_InLevel>)
+  [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::size_t rank(const _InLevel& __in_level) const noexcept
+  {
+    return rank_as<::cuda::std::size_t>(__in_level);
   }
 };
 

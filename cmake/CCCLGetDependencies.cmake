@@ -65,11 +65,6 @@ macro(cccl_get_dlpack)
   CPMAddPackage("gh:dmlc/dlpack#v1.2")
 endmacro()
 
-macro(cccl_get_json)
-  include("${_cccl_cpm_file}")
-  CPMAddPackage("gh:nlohmann/json@3.12.0")
-endmacro()
-
 macro(cccl_get_libcudacxx)
   find_package(
     libcudacxx

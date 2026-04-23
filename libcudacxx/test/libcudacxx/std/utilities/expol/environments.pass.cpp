@@ -9,6 +9,10 @@
 
 // UNSUPPORTED: nvrtc
 
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 #include <cuda/std/execution>
 #include <cuda/std/type_traits>
 #include <cuda/stream>

@@ -17,6 +17,7 @@
 #include <cub/detail/arch_dispatch.cuh>
 #include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_vsmem.cuh>
 
 CUB_NAMESPACE_BEGIN
@@ -86,7 +87,7 @@ template <typename PolicySelectorT,
           typename KeyT,
           typename ValueT>
 __launch_bounds__(
-  merge_sort_vsmem_helper_t<policy_getter<PolicySelectorT, cuda::arch_id{CUB_PTX_ARCH / 10}>,
+  merge_sort_vsmem_helper_t<policy_getter<PolicySelectorT, current_tuning_arch()>,
                             KeyInputIteratorT,
                             ValueInputIteratorT,
                             KeyIteratorT,
@@ -108,7 +109,7 @@ __launch_bounds__(
     vsmem_t vsmem)
 {
   using vsmem_adapted_agents = merge_sort_vsmem_helper_t<
-    policy_getter<PolicySelectorT, cuda::arch_id{CUB_PTX_ARCH / 10}>,
+    policy_getter<PolicySelectorT, current_tuning_arch()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -186,7 +187,7 @@ template <typename PolicySelectorT,
           typename KeyT,
           typename ValueT>
 __launch_bounds__(
-  merge_sort_vsmem_helper_t<policy_getter<PolicySelectorT, cuda::arch_id{CUB_PTX_ARCH / 10}>,
+  merge_sort_vsmem_helper_t<policy_getter<PolicySelectorT, current_tuning_arch()>,
                             KeyInputIteratorT,
                             ValueInputIteratorT,
                             KeyIteratorT,
@@ -208,7 +209,7 @@ __launch_bounds__(
     vsmem_t vsmem)
 {
   using vsmem_adapted_agents = merge_sort_vsmem_helper_t<
-    policy_getter<PolicySelectorT, cuda::arch_id{CUB_PTX_ARCH / 10}>,
+    policy_getter<PolicySelectorT, current_tuning_arch()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,

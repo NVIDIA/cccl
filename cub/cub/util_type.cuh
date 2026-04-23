@@ -705,7 +705,7 @@ struct KeyValuePair
   Value value; ///< Item value
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair() {}
+  _CCCL_FORCEINLINE KeyValuePair() = default;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair(Key const& key, Value const& value)

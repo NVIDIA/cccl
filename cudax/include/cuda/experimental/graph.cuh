@@ -20,6 +20,7 @@
 #include <cuda/experimental/__graph/fwd.cuh>
 #include <cuda/experimental/__graph/graph.cuh>
 #include <cuda/experimental/__graph/graph_builder.cuh>
+#include <cuda/experimental/__graph/graph_memory_resource.cuh>
 #include <cuda/experimental/__graph/graph_node_ref.cuh>
 #include <cuda/experimental/__graph/graph_node_type.cuh>
 #include <cuda/experimental/__graph/host_launch.cuh>

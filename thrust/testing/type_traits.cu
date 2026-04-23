@@ -51,7 +51,7 @@ DECLARE_UNITTEST(TestIsContiguousIterator);
 
 struct NonTriviallyCopyable
 {
-  NonTriviallyCopyable(const NonTriviallyCopyable&) {}
+  NonTriviallyCopyable(const NonTriviallyCopyable&) {} // NOLINT(modernize-use-equals-default)
 };
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(NonTriviallyCopyable);
 

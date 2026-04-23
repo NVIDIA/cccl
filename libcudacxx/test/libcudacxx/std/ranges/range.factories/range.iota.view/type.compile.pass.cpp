@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: variadic function is unsupported in tile code
+
 #include <cuda/std/ranges>
 
 #include "test_macros.h"

@@ -37,11 +37,13 @@ invoke_dynamic_block_size(OffsetT num_items, OpT op, cudaStream_t stream, for_po
 {
   int block_threads = 256;
   auto kernel       = detail::for_each::dynamic_kernel<PolicySelector, OffsetT, OpT>;
-  NV_IF_TARGET(NV_IS_HOST,
-               (int _{}; //
-                if (const auto error = CubDebug(cudaOccupancyMaxPotentialBlockSize(&_, &block_threads, kernel))) {
-                  return error;
-                }));
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 int _{};
+                 if (const auto error = CubDebug(cudaOccupancyMaxPotentialBlockSize(&_, &block_threads, kernel)))
+                 {
+                   return error;
+                 }
+               }));
 
   const auto tile_size = static_cast<OffsetT>(block_threads * active_policy.items_per_thread);
   const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);

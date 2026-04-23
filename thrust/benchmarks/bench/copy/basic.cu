@@ -41,11 +41,13 @@ struct non_trivial
   {}
 
   // the user-defined copy constructor prevents the type from being trivially copyable
+  // NOLINTNEXTLINE(modernize-use-equals-default)
   _CCCL_HOST_DEVICE non_trivial(const non_trivial& nt)
       : a(nt.a)
       , b(nt.b)
   {}
 
+  // NOLINTNEXTLINE(modernize-use-equals-default)
   _CCCL_HOST_DEVICE non_trivial& operator=(const non_trivial& nt)
   {
     a = nt.a;

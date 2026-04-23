@@ -46,37 +46,25 @@ struct InitListArg
   {}
 };
 
-template <class Var, size_t I, class... Args>
-TEST_FUNC constexpr auto test_emplace_exists_imp(int)
-  -> decltype(cuda::std::declval<Var>().template emplace<I>(cuda::std::declval<Args>()...), true)
-{
-  return true;
-}
+template <class Var, class I, class... Args>
+_CCCL_CONCEPT emplace_exists = _CCCL_REQUIRES_EXPR((Var, I, variadic Args), Var variant, Args&&... args)(
+  (variant.template emplace<I::value>(cuda::std::forward<Args>(args)...)));
 
-template <class, size_t, class...>
-TEST_FUNC constexpr auto test_emplace_exists_imp(long) -> bool
-{
-  return false;
-}
-
-template <class Var, size_t I, class... Args>
-TEST_FUNC constexpr bool emplace_exists()
-{
-  return test_emplace_exists_imp<Var, I, Args...>(0);
-}
+template <size_t Index>
+using ic = cuda::std::integral_constant<size_t, Index>;
 
 TEST_FUNC void test_emplace_sfinae()
 {
   using V  = cuda::std::variant<int, TestTypes::NoCtors, InitList, InitListArg, long, long>;
   using IL = cuda::std::initializer_list<int>;
-  static_assert(!emplace_exists<V, 1, IL>(), "no such constructor");
-  static_assert(emplace_exists<V, 2, IL>());
-  static_assert(!emplace_exists<V, 2, int>(), "args don't match");
-  static_assert(!emplace_exists<V, 2, IL, int>(), "too many args");
-  static_assert(emplace_exists<V, 3, IL, int>());
-  static_assert(!emplace_exists<V, 3, int>(), "args don't match");
-  static_assert(!emplace_exists<V, 3, IL>(), "too few args");
-  static_assert(!emplace_exists<V, 3, IL, int, int>(), "too many args");
+  static_assert(!emplace_exists<V, ic<1>, IL>, "no such constructor");
+  static_assert(emplace_exists<V, ic<2>, IL>);
+  static_assert(!emplace_exists<V, ic<2>, int>, "args don't match");
+  static_assert(!emplace_exists<V, ic<2>, IL, int>, "too many args");
+  static_assert(emplace_exists<V, ic<3>, IL, int>);
+  static_assert(!emplace_exists<V, ic<3>, int>, "args don't match");
+  static_assert(!emplace_exists<V, ic<3>, IL>, "too few args");
+  static_assert(!emplace_exists<V, ic<3>, IL, int, int>, "too many args");
 }
 
 TEST_FUNC void test_basic()

@@ -17,6 +17,7 @@
 #include <cub/detail/arch_dispatch.cuh>
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/device/dispatch/tuning/tuning_unique_by_key.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_vsmem.cuh>
 
 #include <cuda/__device/arch_id.h>
@@ -236,7 +237,7 @@ template <typename PolicySelector,
           typename OffsetT>
 __launch_bounds__(
   device_unique_by_key_vsmem_helper_t<
-    device_policy_getter<PolicySelector, cuda::arch_id{CUB_PTX_ARCH / 10}>,
+    device_policy_getter<PolicySelector, current_tuning_arch()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,
@@ -256,7 +257,7 @@ __launch_bounds__(
     vsmem_t vsmem)
 {
   using vsmem_adapted_agents = device_unique_by_key_vsmem_helper_t<
-    device_policy_getter<PolicySelector, cuda::arch_id{CUB_PTX_ARCH / 10}>,
+    device_policy_getter<PolicySelector, current_tuning_arch()>,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyOutputIteratorT,

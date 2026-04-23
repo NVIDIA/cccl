@@ -30,7 +30,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#if defined(CUB_DEFINE_RUNTIME_POLICIES)
 #  include <cub/agent/agent_radix_sort_upsweep.cuh>
 #  include <cub/agent/agent_unique_by_key.cuh>
 #endif
@@ -97,7 +97,7 @@ struct AgentRadixSortDownsweepPolicy : ScalingType
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
 };
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) // FIXME(bgruber): remove
 namespace detail
 {
 // Only define this when needed.
@@ -117,7 +117,7 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   (RANK_ALGORITHM, RankAlgorithm, cub::RadixRankAlgorithm),
   (SCAN_ALGORITHM, ScanAlgorithm, cub::BlockScanAlgorithm))
 } // namespace detail
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
 /******************************************************************************
  * Thread block abstractions

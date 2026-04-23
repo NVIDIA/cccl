@@ -83,17 +83,26 @@ test_queries(const cudax::group<cuda::thread_level, ParentGroup, cudax::group_by
   using Group = cuda::std::remove_cvref_t<decltype(group)>;
   using Level = typename Group::level_type;
 
-  const auto count_ref = group.mapping().count();
+  const auto count_ref = group.__mapping_result().count();
   const auto rank_ref  = cuda::gpu_thread.rank(Level{}, group.hierarchy()) % count_ref;
 
   CUDAX_REQUIRE(cuda::gpu_thread.count(group) == count_ref);
   CUDAX_REQUIRE(cuda::gpu_thread.rank(group) == rank_ref);
   CUDAX_REQUIRE(cuda::gpu_thread.is_root_rank(group) == (rank_ref == 0));
   CUDAX_REQUIRE(cuda::gpu_thread.is_part_of(group));
-}
 
-template <class T>
-__device__ T global_barrier_storage;
+  auto group_count_ref = group.__mapping_result().group_count();
+  auto group_rank_ref  = group.__mapping_result().group_rank();
+
+  if constexpr (!cuda::std::is_same_v<Level, cuda::grid_level>)
+  {
+    group_count_ref *= Level{}.count(cuda::grid, group.hierarchy());
+    group_rank_ref += group.__mapping_result().group_count() * Level{}.rank(cuda::grid, group.hierarchy());
+  }
+
+  CUDAX_REQUIRE(group.count(cuda::grid) == group_count_ref);
+  CUDAX_REQUIRE(group.rank(cuda::grid) == group_rank_ref);
+}
 
 template <cuda::std::size_t N, class Unit, class Level, class Config>
 __device__ void test_group_by_group(Unit unit, Level level, Config config)
@@ -113,6 +122,7 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
       cuda::std::is_same_v<cudax::group<Unit, decltype(parent_group), decltype(mapping), decltype(synchronizer)>,
                            decltype(group)>);
     test_common_properties<Unit, Level>(config.hierarchy(), group);
+    test_queries(group);
     group.sync();
   }
   {
@@ -126,6 +136,7 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
       cuda::std::is_same_v<cudax::group<Unit, decltype(parent_group), decltype(mapping), decltype(synchronizer)>,
                            decltype(group)>);
     test_common_properties<Unit, Level>(config.hierarchy(), group);
+    test_queries(group);
     group.sync();
   }
 }
