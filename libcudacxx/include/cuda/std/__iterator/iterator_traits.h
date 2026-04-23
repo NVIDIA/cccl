@@ -237,9 +237,9 @@ namespace __iterator_traits_detail
 template <class _Iter>
 _CCCL_CONCEPT __cpp17_iterator = _CCCL_REQUIRES_EXPR((_Iter), _Iter __i)(
   requires(copyable<_Iter>),
-  requires(__can_reference<decltype(*__i)>),
-  requires(same_as<decltype(++__i), _Iter&>),
-  requires(__can_reference<decltype(*__i++)>));
+  _Satisfies(__can_reference)(*__i),
+  _Same_as(_Iter&)(++__i),
+  _Satisfies(__can_reference)(*__i++));
 
 // [iterator.traits#concept:cpp17-input-iterator]
 template <class _Iter>
@@ -260,27 +260,27 @@ _CCCL_CONCEPT __cpp17_forward_iterator = _CCCL_REQUIRES_EXPR((_Iter), _Iter __i)
   requires(is_lvalue_reference_v<iter_reference_t<_Iter>>),
   requires(same_as<remove_cvref_t<iter_reference_t<_Iter>>, typename indirectly_readable_traits<_Iter>::value_type>),
   requires(convertible_to<decltype(__i++), _Iter const&>),
-  requires(same_as<decltype(*__i++), iter_reference_t<_Iter>>));
+  _Same_as(iter_reference_t<_Iter>)(*__i++));
 
 // [iterator.traits#concept:cpp17-bidirectional-iterator]
 template <class _Iter>
 _CCCL_CONCEPT __cpp17_bidirectional_iterator = _CCCL_REQUIRES_EXPR((_Iter), _Iter __i)(
   requires(__cpp17_forward_iterator<_Iter>),
-  requires(same_as<decltype(--__i), _Iter&>),
+  _Same_as(_Iter&)(--__i),
   requires(convertible_to<decltype(__i--), _Iter const&>),
-  requires(same_as<decltype(*__i--), iter_reference_t<_Iter>>));
+  _Same_as(iter_reference_t<_Iter>)(*__i--));
 
 // [iterator.traits#concept:cpp17-random-access-iterator]
 // Needs to be its own concept, because we need `typename incrementable_traits<_Iter>::difference_type` to be valid
 template <class _Iter>
 _CCCL_CONCEPT __cpp17_random_access_iterator_operations =
   _CCCL_REQUIRES_EXPR((_Iter), _Iter __i, typename incrementable_traits<_Iter>::difference_type __n)(
-    requires(same_as<_Iter&, decltype(__i += __n)>),
-    requires(same_as<_Iter&, decltype(__i -= __n)>),
-    requires(same_as<_Iter, decltype(__i + __n)>),
-    requires(same_as<_Iter, decltype(__n + __i)>),
-    requires(same_as<_Iter, decltype(__i - __n)>),
-    requires(same_as<decltype(__n), decltype(__i - __i)>),
+    _Same_as(_Iter&)(__i += __n),
+    _Same_as(_Iter&)(__i -= __n),
+    _Same_as(_Iter)(__i + __n),
+    _Same_as(_Iter)(__n + __i),
+    _Same_as(_Iter)(__i - __n),
+    _Same_as(decltype(__n))(__i - __i),
     requires(convertible_to<decltype(__i[__n]), iter_reference_t<_Iter>>));
 
 template <class _Iter>
