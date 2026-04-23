@@ -96,12 +96,6 @@ struct object_with_non_trivial_ctor
 C2H_TEST("DeviceCopy::Batched works", "[copy]")
 try
 {
-  // todo: Re-enable this test with sm_120. See #8644.
-  if (cuda::device_attributes::compute_capability(cuda::device_ref{0}) == cuda::compute_capability{12, 0})
-  {
-    return;
-  }
-
   // Type used for indexing into the array of ranges
   using range_offset_t = uint32_t;
 
@@ -190,12 +184,6 @@ C2H_TEST("DeviceCopy::Batched works for a very large range",
          "[copy][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
-  // todo: Re-enable this test with sm_120. See #8644.
-  if (cuda::device_attributes::compute_capability(cuda::device_ref{0}) == cuda::compute_capability{12, 0})
-  {
-    return;
-  }
-
   using data_t        = uint64_t;
   using byte_offset_t = uint64_t;
   using buffer_size_t = uint64_t;
@@ -227,12 +215,6 @@ catch (std::bad_alloc& e)
 
 C2H_TEST("DeviceCopy::Batched works for non-trivial ctors", "[copy]")
 {
-  // todo: Re-enable this test with sm_120. See #8644.
-  if (cuda::device_attributes::compute_capability(cuda::device_ref{0}) == cuda::compute_capability{12, 0})
-  {
-    return;
-  }
-
   using iterator = c2h::device_vector<object_with_non_trivial_ctor>::iterator;
 
   constexpr std::int32_t num_buffers = 3;
@@ -253,12 +235,6 @@ C2H_TEST("DeviceMemcpy::Batched works for a very large number of ranges",
          "[copy][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
-  // todo: Re-enable this test with sm_120. See #8644.
-  if (cuda::device_attributes::compute_capability(cuda::device_ref{0}) == cuda::compute_capability{12, 0})
-  {
-    return;
-  }
-
   using item_t         = uint8_t;
   using item_offset_t  = uint64_t;
   using range_offset_t = uint64_t;
