@@ -950,6 +950,7 @@ struct policy_selector
 //|   I16   |      I64      |      2^28      | 224.318 us |       0.37% | 233.381 us |       0.46% |     9.063 us |   4.04% |   SLOW   |
 //|   I16   |      I64      |      2^32      |   3.238 ms |       0.53% |   3.429 ms |       0.53% |   191.299 us |   5.91% |   SLOW   |
             // clang-format on
+	    return scan_warpspeed_policy{6, 2, 96 - 1};
           case 4:
             if (input_type == type_t::float32)
             {
