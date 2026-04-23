@@ -94,9 +94,9 @@ void test_launch_kernel_on_picked_stream()
   cuda_try(cudaMemcpyAsync(h_data, d_data, N * sizeof(int), cudaMemcpyDeviceToHost, stream));
   cuda_try(cudaStreamSynchronize(stream));
 
-  for (int i = 0; i < N; i++)
+  for (const auto& v : h_data)
   {
-    _CCCL_ASSERT(h_data[i] == 1, "kernel result mismatch");
+    _CCCL_ASSERT(v == 1, "kernel result mismatch");
   }
 
   cuda_try(cudaFreeAsync(d_data, stream));

@@ -918,7 +918,7 @@ auto exec_place::operator->*(Fun&& fun) const
 inline decorated_stream stream_pool::next(const exec_place& place)
 {
   _CCCL_ASSERT(pimpl, "stream_pool::next called on empty pool");
-  ::std::lock_guard<::std::mutex> locker(pimpl->mtx);
+  ::std::lock_guard<::std::mutex> locker(pimpl->mtx); // NOLINT(modernize-use-scoped-lock)
   _CCCL_ASSERT(pimpl->index < pimpl->payload.size(), "stream_pool::next index out of range");
 
   auto& result = pimpl->payload.at(pimpl->index);

@@ -16,7 +16,7 @@ template <typename KeyT>
 struct fundamental_extractor_t
 {
   std::uint32_t bit_start;
-  std::uint32_t mask;
+  std::uint32_t mask; // NOLINT(modernize-use-default-member-init)
 
   __host__ __device__ fundamental_extractor_t(std::uint32_t bit_start = 0, std::uint32_t num_bits = 0)
       : bit_start(bit_start)

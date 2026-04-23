@@ -13,9 +13,9 @@ on:
         default: "rtxa6000"
         type: string
       launch_args:
-        description: "'.devcontainer/launch.sh -d' additional args. Ex: '--cuda 13.1 --host gcc14'"
+        description: "'.devcontainer/launch.sh -d' additional args. Ex: '--cuda 13.2 --host gcc14'"
         required: false
-        default: "--cuda 13.1 --host gcc14"
+        default: "--cuda 13.2 --host gcc14"
         type: string
       arch:
         description: "CMAKE_CUDA_ARCHITECTURES value passed as ci/bench/bench.sh --arch"
@@ -65,9 +65,9 @@ on:
         default: "rtxa6000"
         type: string
       launch_args:
-        description: "'.devcontainer/launch.sh -d' additional args. Ex: '--cuda 13.1 --host gcc14'"
+        description: "'.devcontainer/launch.sh -d' additional args. Ex: '--cuda 13.2 --host gcc14'"
         required: false
-        default: "--cuda 13.1 --host gcc14"
+        default: "--cuda 13.2 --host gcc14"
         type: string
       arch:
         description: "CMAKE_CUDA_ARCHITECTURES value passed as ci/bench/bench.sh --arch"
