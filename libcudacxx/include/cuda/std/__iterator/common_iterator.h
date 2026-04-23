@@ -47,33 +47,15 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
 
-#if _CCCL_HAS_CONCEPTS()
 template <class _Iter>
-concept __use_postfix_proxy =
-  !requires(_Iter& __it) {
-    { *__it++ } -> __can_reference;
-  } && indirectly_readable<_Iter> && constructible_from<iter_value_t<_Iter>, iter_reference_t<_Iter>>
-  && move_constructible<iter_value_t<_Iter>>;
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
-template <class _Iter>
-_CCCL_CONCEPT_FRAGMENT(
-  __postfix_can_reference_,
-  requires(_Iter& __it)(requires(__dereferenceable<decltype(__it++)>), requires(__can_reference<decltype(*__it++)>)));
+_CCCL_CONCEPT __postfix_can_reference = _CCCL_REQUIRES_EXPR((_Iter), _Iter& __it)(_Satisfies(__can_reference) * __it++);
 
 template <class _Iter>
-_CCCL_CONCEPT __postfix_can_reference = _CCCL_FRAGMENT(__postfix_can_reference_, _Iter);
-
-template <class _Iter>
-_CCCL_CONCEPT_FRAGMENT(
-  __use_postfix_proxy_,
-  requires()(requires(!__postfix_can_reference<_Iter>),
-             requires(indirectly_readable<_Iter>),
-             requires(constructible_from<iter_value_t<_Iter>, iter_reference_t<_Iter>>),
-             requires(move_constructible<iter_value_t<_Iter>>)));
-
-template <class _Iter>
-_CCCL_CONCEPT __use_postfix_proxy = _CCCL_FRAGMENT(__use_postfix_proxy_, _Iter);
-#endif // !_CCCL_HAS_CONCEPTS()
+_CCCL_CONCEPT __use_postfix_proxy = _CCCL_REQUIRES_EXPR((_Iter), )(
+  requires(!__postfix_can_reference<_Iter>),
+  requires(indirectly_readable<_Iter>),
+  requires(constructible_from<iter_value_t<_Iter>, iter_reference_t<_Iter>>),
+  requires(move_constructible<iter_value_t<_Iter>>));
 
 #if _CCCL_HAS_CONCEPTS()
 template <input_or_output_iterator _Iter, sentinel_for<_Iter> _Sent>
@@ -440,31 +422,13 @@ struct incrementable_traits<common_iterator<_Iter, _Sent>>
   using difference_type = iter_difference_t<_Iter>;
 };
 
-#if _CCCL_HAS_CONCEPTS()
 template <class _Iter>
-concept __denotes_forward_iter = requires {
-  typename iterator_traits<_Iter>::iterator_category;
-} && derived_from<typename iterator_traits<_Iter>::iterator_category, forward_iterator_tag>;
+_CCCL_CONCEPT __denotes_forward_iter = _CCCL_REQUIRES_EXPR((_Iter), )(
+  typename(typename iterator_traits<_Iter>::iterator_category),
+  requires(derived_from<typename iterator_traits<_Iter>::iterator_category, forward_iterator_tag>));
 
 template <class _Iter, class _Sent>
-concept __common_iter_has_ptr_op = requires(const common_iterator<_Iter, _Sent>& __a) { __a.operator->(); };
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
-template <class _Iter>
-_CCCL_CONCEPT_FRAGMENT(
-  __denotes_forward_iter_,
-  requires()(typename(typename iterator_traits<_Iter>::iterator_category),
-             requires(derived_from<typename iterator_traits<_Iter>::iterator_category, forward_iterator_tag>)));
-
-template <class _Iter>
-_CCCL_CONCEPT __denotes_forward_iter = _CCCL_FRAGMENT(__denotes_forward_iter_, _Iter);
-
-template <class _Iter, class _Sent>
-_CCCL_CONCEPT_FRAGMENT(__common_iter_has_ptr_op_,
-                       requires(const common_iterator<_Iter, _Sent>& __i)((__i.operator->())));
-
-template <class _Iter, class _Sent>
-_CCCL_CONCEPT __common_iter_has_ptr_op = _CCCL_FRAGMENT(__common_iter_has_ptr_op_, _Iter, _Sent);
-#endif // !_CCCL_HAS_CONCEPTS()
+_CCCL_CONCEPT __common_iter_has_ptr_op = __has_const_arrow<common_iterator<_Iter, _Sent>>;
 
 template <class, class, class = void>
 struct __arrow_type_or_void
