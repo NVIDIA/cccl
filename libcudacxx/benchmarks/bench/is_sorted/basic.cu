@@ -63,14 +63,14 @@ static void with_predicate(nvbench::state& state, nvbench::type_list<T>)
 
   caching_allocator_t alloc{};
 
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
-             [&](nvbench::launch& launch) {
-               do_not_optimize(
-                 cuda::std::is_sorted(cuda_policy(alloc, launch), dinput.begin(), dinput.end(), cuda::std::less<>{}));
-             });
+  state.exec(
+    nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+      do_not_optimize(
+        cuda::std::is_sorted(cuda_policy(alloc, launch), dinput.begin(), dinput.end(), cuda::std::greater<>{}));
+    });
 }
 
-NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))
-  .set_name("base")
+NVBENCH_BENCH_TYPES(with_predicate, NVBENCH_TYPE_AXES(fundamental_types))
+  .set_name("with_predicate")
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4))
   .add_float64_axis("MismatchAt", std::vector{1.0, 0.5, 0.01});

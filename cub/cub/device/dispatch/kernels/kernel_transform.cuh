@@ -138,7 +138,7 @@ _CCCL_DEVICE void transform_kernel_prefetch(
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
-    (..., (ins += offset));
+    (..., (void) (ins += offset));
     out += offset;
   }
 
@@ -263,7 +263,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
-    (..., (ins += offset));
+    (..., (void) (ins += offset));
     out += offset;
   }
 

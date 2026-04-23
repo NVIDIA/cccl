@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// template<class ExecutionPolicy, ForwardIterator Iter>
-// bool is_sorted_until(ExecutionPolicy&& policy, Iter first, Iter last);
+// template<class ExecutionPolicy, ForwardIterator Iter, BinaryPredicate>
+// bool is_sorted_until(ExecutionPolicy&& policy, Iter first, Iter last, BinaryPredicate pred);
 
 #include <thrust/device_vector.h>
 #include <thrust/sequence.h>
@@ -25,56 +25,54 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_iterators.h"
 #include "test_macros.h"
+#include "test_pstl.h"
 
 inline constexpr int size = 1000;
 
-struct turn_42_into_1337
-{
-  TEST_DEVICE_FUNC constexpr int operator()(const int val) const noexcept
-  {
-    return val == 42 ? 1337 : val;
-  }
-};
-
-template <class Policy>
-void test_is_sorted_until(const Policy& policy, thrust::device_vector<int>& input)
+template <class Policy, class T>
+void test_is_sorted_until(const Policy& policy, c2h::device_vector<T>& input)
 {
   { // empty should not access anything
-    const auto res = cuda::std::is_sorted_until(policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr));
+    const auto res =
+      cuda::std::is_sorted_until(policy, static_cast<T*>(nullptr), static_cast<T*>(nullptr), cuda::std::greater<>{});
     CHECK(res == nullptr);
   }
 
-  thrust::sequence(input.begin(), input.end(), 0);
+  thrust::sequence(input.begin(), input.end(), static_cast<T>(size), static_cast<T>(-1));
   { // sorted contiguous range
-    const auto res = cuda::std::is_sorted_until(policy, input.begin(), input.end());
+    const auto res = cuda::std::is_sorted_until(policy, input.begin(), input.end(), cuda::std::greater<>{});
     CHECK(res == input.end());
   }
 
+  T* raw_pointer = thrust::raw_pointer_cast(input.data());
   { // sorted random access range
-    const auto res = cuda::std::is_sorted_until(policy, cuda::counting_iterator{0}, cuda::counting_iterator{size});
-    CHECK(res == cuda::counting_iterator{size});
+    const auto res = cuda::std::is_sorted_until(
+      policy, random_access_iterator{raw_pointer}, random_access_iterator{raw_pointer + size}, cuda::std::greater<>{});
+    CHECK(res == random_access_iterator{raw_pointer + size});
   }
 
+  input[42] = static_cast<T>(1337);
   { // unsorted contiguous range
-    input[42]      = 1337;
-    const auto res = cuda::std::is_sorted_until(policy, input.begin(), input.end());
-    // 43 < 1337
-    CHECK(res == cuda::std::next(input.begin(), 43));
-    CHECK(cuda::std::is_sorted(policy, input.begin(), res));
+    const auto res = cuda::std::is_sorted_until(policy, input.begin(), input.end(), cuda::std::greater<>{});
+    // 969 < 1337
+    CHECK(res == cuda::std::next(input.begin(), 42));
+    CHECK(cuda::std::is_sorted(policy, input.begin(), res, cuda::std::greater<>{}));
   }
 
   { // unsorted random access range
-    auto iter      = cuda::transform_iterator{cuda::counting_iterator{0}, turn_42_into_1337{}};
-    const auto res = cuda::std::is_sorted_until(policy, iter, iter + size);
-    CHECK(cuda::std::is_sorted(policy, iter, res));
-    CHECK(res == cuda::std::next(iter, 43));
+    const auto res = cuda::std::is_sorted_until(
+      policy, random_access_iterator{raw_pointer}, random_access_iterator{raw_pointer + size}, cuda::std::greater<>{});
+    CHECK(res == random_access_iterator{raw_pointer + 42});
+    CHECK(cuda::std::is_sorted(policy, random_access_iterator{raw_pointer}, res, cuda::std::greater<>{}));
   }
 }
 
-C2H_TEST("cuda::std::is_sorted_until(iter, iter)", "[parallel algorithm]")
+C2H_TEST("cuda::std::is_sorted_until(iter, iter)", "[parallel algorithm]", all_types)
 {
-  thrust::device_vector<int> input(size, thrust::no_init);
+  using T = typename c2h::get<0, TestType>;
+  c2h::device_vector<T> input(size, thrust::no_init);
 
   SECTION("with default stream")
   {

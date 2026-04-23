@@ -73,19 +73,13 @@ _CCCL_HOST_API pair<_OutputIterator1, _OutputIterator2> partition_copy(
       return pair{__result_true, __result_false};
     }
 
-    const auto __count          = ::cuda::std::distance(__first, __last);
-    const size_t __num_selected = __dispatch(
+    return __dispatch(
       __policy,
       ::cuda::std::move(__first),
       ::cuda::std::move(__last),
       __result_true,
       __result_false,
       ::cuda::std::move(__pred));
-
-    const auto __num_not_selected = __count - static_cast<iter_difference_t<_InputIterator>>(__num_selected);
-
-    return pair{__result_true + static_cast<iter_difference_t<_OutputIterator1>>(__num_selected),
-                __result_false + static_cast<iter_difference_t<_OutputIterator2>>(__num_not_selected)};
   }
   else
   {
