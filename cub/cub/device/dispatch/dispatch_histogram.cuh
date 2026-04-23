@@ -750,7 +750,7 @@ _CCCL_API constexpr auto convert_policy() -> histogram_policy
 template <typename MaxPolicy>
 struct policy_selector_from_max_policy
 {
-  [[nodiscard]] _CCCL_DEVICE_API constexpr auto operator()(::cuda::arch_id /*arch_id*/) const -> histogram_policy
+  [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch_id*/) const -> histogram_policy
   {
     return convert_policy<typename MaxPolicy::ActivePolicy>();
   }
