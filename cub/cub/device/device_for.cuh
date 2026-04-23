@@ -131,10 +131,7 @@ struct DeviceFor
       { // Vectorize loads
         const NumItemsT num_vec_items = ::cuda::ceil_div(num_items, wrapped_op_t::vec_size);
         return __bulk(
-          num_vec_items,
-          wrapped_op_t{
-            unwrapped_first, op, num_items % wrapped_op_t::vec_size ? num_vec_items - 1 : num_vec_items, num_items},
-          env);
+          num_vec_items, wrapped_op_t{unwrapped_first, op, num_items / wrapped_op_t::vec_size, num_items}, env);
       }
     }
 
