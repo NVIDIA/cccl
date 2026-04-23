@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+
+# Do not enable `eo pipefail`
+# read relies on a quirk of unterminated/unquoted heredoc to capture input.
+# TODO: rewrite using printf if we can keep nice formatting.
 set -u
 
 path="$(realpath $1)"
