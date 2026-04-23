@@ -62,7 +62,7 @@ static void with_predicate(nvbench::state& state, nvbench::type_list<T>)
              });
 }
 
-NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))
-  .set_name("base")
+NVBENCH_BENCH_TYPES(with_predicate, NVBENCH_TYPE_AXES(fundamental_types))
+  .set_name("with_predicate")
   .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4))
   .add_float64_axis("MismatchAt", std::vector{1.0, 0.5, 0.01});

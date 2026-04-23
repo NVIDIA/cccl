@@ -73,9 +73,9 @@ _CCCL_HOST_API void replace_if(
       __policy,
       __first,
       ::cuda::std::move(__last),
-      ::cuda::std::move(__first),
+      __first,
       __replace_return_value{__new_value},
-      __pred);
+      ::cuda::std::move(__pred));
   }
   else
   {

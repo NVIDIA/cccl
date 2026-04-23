@@ -1,8 +1,6 @@
-# Runtime policy extraction from CUB
+FIXME(bgruber): This entire guide is out of date and needs to be updated
 
-> [!NOTE]
-> This document assumes familiarity with the `cub/detail/ptx-json` library. Please see [the `ptx-json`
-> readme](/cub/cub/detail/ptx-json/README.md) for more information.
+# Runtime policy extraction from CUB
 
 To avoid duplicating the definitions of runtime policies between CUB and c.parallel, we use the `ptx-json` library to
 transmit well-structured policy information from device TUs to the c.parallel build functions. This document describes

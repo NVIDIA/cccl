@@ -70,7 +70,7 @@ struct AgentReducePolicy : ScalingType
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) // TODO(bgruber): remove
 namespace detail
 {
 // Only define this when needed.
@@ -99,7 +99,7 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   (ITEMS_PER_TILE, ItemsPerTile, int),
   (SEGMENTS_PER_BLOCK, SegmentsPerBlock, int) )
 } // namespace detail
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
 /**
  * Parameterizable tuning policy type for AgentReduce

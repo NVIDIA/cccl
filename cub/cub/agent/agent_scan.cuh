@@ -28,7 +28,7 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_device.cuh>
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#if defined(CUB_DEFINE_RUNTIME_POLICIES)
 #  include <cub/agent/agent_unique_by_key.cuh> // for UniqueByKeyAgentPolicy
 #endif
 
@@ -92,7 +92,7 @@ struct AgentScanPolicy : ScalingType
   };
 };
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) // TODO(bgruber)
 namespace detail
 {
 // Only define this when needed.
@@ -111,7 +111,7 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   (STORE_ALGORITHM, StoreAlgorithm, cub::BlockStoreAlgorithm),
   (SCAN_ALGORITHM, ScanAlgorithm, cub::BlockScanAlgorithm))
 } // namespace detail
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
 /******************************************************************************
  * Thread block abstractions

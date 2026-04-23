@@ -9,6 +9,7 @@
 
 #include <cuda/std/optional>
 
+#include "catch2_test_memory_resources.h"
 #include <c2h/catch2_test_helper.h>
 
 //! @file
@@ -236,169 +237,6 @@ struct kernel_scope
   }
 };
 
-struct device_memory_resource : cub::detail::device_memory_resource
-{
-  cudaStream_t target_stream = nullptr;
-  size_t* bytes_allocated    = nullptr;
-  size_t* bytes_deallocated  = nullptr;
-
-  void* allocate_sync(size_t /* bytes */, size_t /* alignment */)
-  {
-    FAIL("CUB shouldn't use synchronous allocation");
-    return nullptr;
-  }
-
-  void deallocate_sync(void* /* ptr */, size_t /* bytes */, size_t /* alignment */)
-  {
-    FAIL("CUB shouldn't use synchronous deallocation");
-  }
-
-  void* allocate(cuda::stream_ref stream, size_t bytes, size_t /* alignment */)
-  {
-    return allocate(stream, bytes);
-  }
-
-  void* allocate(cuda::stream_ref stream, size_t bytes)
-  {
-    REQUIRE(target_stream == stream.get());
-
-    if (bytes_allocated)
-    {
-      *bytes_allocated += bytes;
-    }
-    return cub::detail::device_memory_resource::allocate(stream, bytes);
-  }
-
-  void deallocate(const cuda::stream_ref stream, void* ptr, size_t bytes, size_t /* alignment */)
-  {
-    deallocate(stream, ptr, bytes);
-  }
-
-  void deallocate(const cuda::stream_ref stream, void* ptr, size_t bytes)
-  {
-    REQUIRE(target_stream == stream.get());
-
-    if (bytes_deallocated)
-    {
-      *bytes_deallocated += bytes;
-    }
-    cub::detail::device_memory_resource::deallocate(stream, ptr, bytes);
-  }
-
-  bool operator==(const device_memory_resource& rhs) const
-  {
-    return target_stream == rhs.target_stream && bytes_allocated == rhs.bytes_allocated
-        && bytes_deallocated == rhs.bytes_deallocated;
-  }
-  bool operator!=(const device_memory_resource& rhs) const
-  {
-    return !(*this == rhs);
-  }
-};
-static_assert(::cuda::mr::resource<device_memory_resource>);
-
-struct throwing_memory_resource
-{
-  void* allocate_sync(size_t /* bytes */, size_t /* alignment */)
-  {
-    FAIL("CUB shouldn't use synchronous allocation");
-    return nullptr;
-  }
-
-  void deallocate_sync(void* /* ptr */, size_t /* bytes */, size_t /* alignment */)
-  {
-    FAIL("CUB shouldn't use synchronous deallocation");
-  }
-
-  void* allocate(cuda::stream_ref /* stream */, size_t /* bytes */, size_t /* alignment */)
-  {
-    throw "test";
-  }
-
-  void* allocate(cuda::stream_ref /* stream */, size_t /* bytes */)
-  {
-    throw "test";
-  }
-
-  void deallocate(cuda::stream_ref /* stream */, void* /* ptr */, size_t /* bytes */, size_t /* alignment*/)
-  {
-    throw "test";
-  }
-
-  void deallocate(cuda::stream_ref /* stream */, void* /* ptr */, size_t /* bytes */)
-  {
-    throw "test";
-  }
-
-  bool operator==(const throwing_memory_resource&) const
-  {
-    return true;
-  }
-  bool operator!=(const throwing_memory_resource&) const
-  {
-    return false;
-  }
-};
-static_assert(::cuda::mr::resource<throwing_memory_resource>);
-
-struct device_side_memory_resource
-{
-  void* ptr{};
-  size_t* bytes_allocated   = nullptr;
-  size_t* bytes_deallocated = nullptr;
-
-  __host__ __device__ void* allocate_sync(size_t /* bytes */, size_t /* alignment */)
-  {
-    cuda::std::terminate();
-  }
-
-  __host__ __device__ void deallocate_sync(void* /* ptr */, size_t /* bytes */, size_t /* alignment */)
-  {
-    cuda::std::terminate();
-  }
-
-  __host__ __device__ void* allocate(cuda::stream_ref stream, size_t bytes, size_t /* alignment */)
-  {
-    return allocate(stream, bytes);
-  }
-
-  __host__ __device__ void* allocate(cuda::stream_ref /* stream */, size_t bytes)
-  {
-    if (bytes_allocated)
-    {
-      *bytes_allocated += bytes;
-    }
-    return static_cast<void*>(static_cast<char*>(ptr) + *bytes_allocated);
-  }
-
-  __host__ __device__ void deallocate(const cuda::stream_ref /* stream */, void* /* ptr */, size_t bytes)
-  {
-    if (bytes_deallocated)
-    {
-      *bytes_deallocated += bytes;
-    }
-  }
-
-  __host__ __device__ void
-  deallocate(const cuda::stream_ref /* stream */, void* /* ptr */, size_t bytes, size_t /* alignment */)
-  {
-    if (bytes_deallocated)
-    {
-      *bytes_deallocated += bytes;
-    }
-  }
-
-  bool operator==(const device_side_memory_resource& rhs) const
-  {
-    return ptr == rhs.ptr && bytes_allocated == rhs.bytes_allocated && bytes_deallocated == rhs.bytes_deallocated;
-  }
-  bool operator!=(const device_side_memory_resource& rhs) const
-  {
-    return !(*this == rhs);
-  }
-};
-static_assert(::cuda::mr::resource<device_side_memory_resource>);
-
 template <size_t... Is, class TplT, class EnvT>
 auto replace_back(cuda::std::integer_sequence<size_t, Is...>, TplT tpl, EnvT env)
 {
@@ -475,7 +313,7 @@ void launch(ActionT action, Args... args)
 
   static_assert(!cuda::std::execution::__queryable_with<env_t, cuda::mr::__get_memory_resource_t>,
                 "Don't specify memory resource for launch tests.");
-  auto mr         = device_memory_resource{{}, stream, &bytes_allocated, &bytes_deallocated};
+  auto mr         = device_memory_resource{stream, &bytes_allocated, &bytes_deallocated};
   auto mr_env     = cuda::std::execution::prop{cuda::mr::__get_memory_resource_t{}, mr};
   auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
   auto fixed_env  = cuda::std::execution::env{mr_env, stream_env, env};
@@ -641,7 +479,7 @@ void launch(ActionT action, Args... args)
       fixed_args);
   }
 
-  auto mr         = device_memory_resource{{}, stream, &bytes_allocated, &bytes_deallocated};
+  auto mr         = device_memory_resource{stream, &bytes_allocated, &bytes_deallocated};
   auto mr_env     = cuda::std::execution::prop{cuda::mr::__get_memory_resource_t{}, mr};
   auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
   auto fixed_env  = cuda::std::execution::env{mr_env, stream_env, env};

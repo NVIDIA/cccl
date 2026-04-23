@@ -44,7 +44,6 @@ endif()
 
 cccl_get_cub()
 cccl_get_cudatoolkit()
-cccl_get_json()
 cccl_get_thrust()
 
 add_subdirectory(src/jit_templates)
@@ -61,7 +60,6 @@ target_link_libraries(
     cccl.c.parallel.jit_template
     CUB::CUB
     Thrust::Thrust
-    nlohmann_json::nlohmann_json
 )
 
 if (WIN32)

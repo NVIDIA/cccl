@@ -378,17 +378,6 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
   {
     return StaticPolicyT::SmallSegmentPolicy::STORE_ALGORITHM;
   }
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedPolicy()
-  {
-    using namespace ptx_json;
-    return object<key<"LargeSegmentPolicy">()    = LargeSegment().EncodedPolicy(),
-                  key<"SmallSegmentPolicy">()    = SmallSegment().EncodedPolicy(),
-                  key<"MediumSegmentPolicy">()   = MediumSegment().EncodedPolicy(),
-                  key<"PartitioningThreshold">() = value<StaticPolicyT::PARTITIONING_THRESHOLD>()>();
-  }
-#endif
 };
 
 // TODO(bgruber): remove when we drop the CUB dispatchers in CCCL 4.0

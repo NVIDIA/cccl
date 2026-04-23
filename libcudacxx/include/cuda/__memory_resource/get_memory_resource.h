@@ -37,18 +37,34 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_MR
 
 template <class _Tp>
+_CCCL_CONCEPT __has_get_memory_resource_method = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __t)(__t.get_memory_resource());
+
+template <class _Tp>
+_CCCL_CONCEPT __is_synchronous_resource_env = synchronous_resource<_Tp> && !__has_get_memory_resource_method<_Tp>;
+
+template <class _Tp>
 _CCCL_CONCEPT __has_member_get_resource = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __t)(
+  requires(!__is_synchronous_resource_env<_Tp>),
   requires(resource<::cuda::std::remove_cvref_t<decltype(__t.get_memory_resource())>>));
 
 template <class _Env>
-_CCCL_CONCEPT __has_query_get_memory_resource = _CCCL_REQUIRES_EXPR(
-  (_Env))(requires(!__has_member_get_resource<_Env>),
-          requires(::cuda::std::execution::__queryable_with<const _Env&, __get_memory_resource_t>));
+_CCCL_CONCEPT __has_query_get_memory_resource = _CCCL_REQUIRES_EXPR((_Env))(
+  requires(!__is_synchronous_resource_env<_Env>),
+  requires(!__has_member_get_resource<_Env>),
+  requires(::cuda::std::execution::__queryable_with<const _Env&, __get_memory_resource_t>));
 
 //! @brief `__get_memory_resource_t` is a customization point object that queries a type `T` for an associated memory
 //! resource
 struct __get_memory_resource_t
 {
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__is_synchronous_resource_env<_Tp>)
+  [[nodiscard]] _CCCL_API constexpr _Tp& operator()(_Tp& __t) const noexcept
+  {
+    return __t;
+  }
+
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__has_member_get_resource<_Tp>)

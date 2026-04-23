@@ -29,7 +29,7 @@
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#if defined(CUB_DEFINE_RUNTIME_POLICIES)
 #  include <cub/agent/agent_radix_sort_histogram.cuh>
 #endif
 
@@ -77,7 +77,7 @@ struct AgentRadixSortUpsweepPolicy : ScalingType
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) // FIXME(Bgruber): remove
 namespace detail::radix_sort_runtime_policies
 {
 // Only define this when needed.
@@ -94,7 +94,7 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   (RADIX_BITS, RadixBits, int),
   (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier))
 } // namespace detail::radix_sort_runtime_policies
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
 /******************************************************************************
  * Thread block abstractions

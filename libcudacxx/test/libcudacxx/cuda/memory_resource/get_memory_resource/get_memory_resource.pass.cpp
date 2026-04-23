@@ -195,6 +195,89 @@ TEST_FUNC void test()
     assert(val.res_ == res_query);
   }
 
+  { // Can call get_memory_resource directly on a synchronous_resource (returns ref to itself)
+    struct sync_only_resource
+    {
+      __host__ __device__ void* allocate_sync(std::size_t, std::size_t)
+      {
+        return nullptr;
+      }
+
+      __host__ __device__ void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
+
+      __host__ __device__ bool operator==(const sync_only_resource&) const noexcept
+      {
+        return true;
+      }
+
+      __host__ __device__ bool operator!=(const sync_only_resource&) const noexcept
+      {
+        return false;
+      }
+    };
+    static_assert(::cuda::mr::synchronous_resource<sync_only_resource>);
+    static_assert(::cuda::std::is_invocable_v<::cuda::mr::get_memory_resource_t, sync_only_resource&>);
+
+    sync_only_resource val{};
+    auto&& res = ::cuda::mr::get_memory_resource(val);
+    static_assert(cuda::std::is_same_v<decltype(res), sync_only_resource&>);
+    assert(&res == &val);
+  }
+
+  { // Can call get_memory_resource directly on a full async resource (returns ref to itself)
+    static_assert(::cuda::mr::resource<test_resource>);
+    static_assert(::cuda::std::is_invocable_v<::cuda::mr::get_memory_resource_t, test_resource&>);
+
+    test_resource val{};
+    auto&& res = ::cuda::mr::get_memory_resource(val);
+    static_assert(cuda::std::is_same_v<decltype(res), test_resource&>);
+    assert(&res == &val);
+  }
+
+  { // A resource with get_memory_resource method uses the method, not the direct path
+    struct resource_with_method
+    {
+      test_resource inner_{};
+
+      __host__ __device__ void* allocate_sync(std::size_t, std::size_t)
+      {
+        return nullptr;
+      }
+
+      __host__ __device__ void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
+
+      __host__ __device__ void* allocate(cuda::stream_ref, std::size_t, std::size_t)
+      {
+        return nullptr;
+      }
+
+      __host__ __device__ void deallocate(cuda::stream_ref, void*, std::size_t, std::size_t) noexcept {}
+
+      __host__ __device__ bool operator==(const resource_with_method&) const noexcept
+      {
+        return true;
+      }
+
+      __host__ __device__ bool operator!=(const resource_with_method&) const noexcept
+      {
+        return false;
+      }
+
+      __host__ __device__ const test_resource& get_memory_resource() const noexcept
+      {
+        return inner_;
+      }
+    };
+    static_assert(::cuda::mr::resource<resource_with_method>);
+    static_assert(::cuda::std::is_invocable_v<::cuda::mr::get_memory_resource_t, const resource_with_method&>);
+
+    resource_with_method val{};
+    auto&& res = ::cuda::mr::get_memory_resource(val);
+    // Should return the inner resource via get_memory_resource(), not val itself
+    static_assert(cuda::std::is_same_v<decltype(res), const test_resource&>);
+    assert(&res == &val.inner_);
+  }
+
   { // Cannot call get_memory_resource on an env with a non-async resource
     struct with_get_resource_non_async
     {

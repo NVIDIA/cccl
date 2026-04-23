@@ -27,27 +27,39 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
+#include "test_iterators.h"
+#include "test_macros.h"
+#include "test_pstl.h"
+
 inline constexpr int size = 1000;
 
-template <class Policy>
-void test_reverse(const Policy& policy, thrust::device_vector<int>& input)
+template <class Policy, class T>
+void test_reverse(const Policy& policy, c2h::device_vector<T>& input)
 {
   { // empty should not access anything
-    cuda::std::reverse(policy, static_cast<int*>(nullptr), static_cast<int*>(nullptr));
+    cuda::std::reverse(policy, static_cast<T*>(nullptr), static_cast<T*>(nullptr));
   }
 
-  { // same type
-    cuda::std::reverse(policy, input.begin(), input.end());
+  auto expected = cuda::transform_iterator{cuda::strided_iterator{cuda::counting_iterator{size - 1}, -1}, cast_to<T>{}};
 
-    cuda::strided_iterator expected{cuda::counting_iterator{1000 - 1}, -1};
+  thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+  { // contiguous
+    cuda::std::reverse(policy, input.begin(), input.end());
+    CHECK(cuda::std::equal(policy, input.begin(), input.end(), expected));
+  }
+
+  thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+  T* raw_pointer = thrust::raw_pointer_cast(input.data());
+  { // random access
+    cuda::std::reverse(policy, random_access_iterator{raw_pointer}, random_access_iterator{raw_pointer + size});
     CHECK(cuda::std::equal(policy, input.begin(), input.end(), expected));
   }
 }
 
-C2H_TEST("cuda::std::reverse", "[parallel algorithm]")
+C2H_TEST("cuda::std::reverse", "[parallel algorithm]", all_types)
 {
-  thrust::device_vector<int> input(size, thrust::no_init);
-  thrust::sequence(input.begin(), input.end(), 0);
+  using T = typename c2h::get<0, TestType>;
+  c2h::device_vector<T> input(size, thrust::no_init);
 
   SECTION("with default stream")
   {
