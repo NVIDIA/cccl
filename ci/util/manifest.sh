@@ -23,5 +23,5 @@ split(.,"\n")
   | $manifest + { "files" : . }
 EOF
 
-find "$path" -wholename "*include/*" -type f -printf "%P\n" \
+find "$path" -wholename '*include/*' -type f -printf '%P\n' \
   | jq -s --raw-input --argjson manifest "$manifest" "$prog" > $2
