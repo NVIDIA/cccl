@@ -44,6 +44,8 @@ struct DeviceFor
   template <class OffsetT, class OpT, class RandomAccessIteratorT>
   struct __op_wrapper_t
   {
+    static_assert(::cuda::std::is_integral_v<OffsetT>);
+
     RandomAccessIteratorT input;
     OpT op;
 
@@ -62,6 +64,8 @@ struct DeviceFor
   template <class OffsetT, class OpT, class T>
   struct __op_wrapper_vectorized_t
   {
+    static_assert(::cuda::std::is_integral_v<OffsetT>);
+
     const T* input; // Raw pointer to the input data
     OpT op; // User-provided operator
     OffsetT partially_filled_vector_id; // Index of the vector that doesn't have all elements
