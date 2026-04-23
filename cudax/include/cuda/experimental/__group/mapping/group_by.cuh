@@ -44,8 +44,6 @@ struct non_exhaustive_t
 
 _CCCL_DEVICE constexpr non_exhaustive_t non_exhaustive;
 
-inline constexpr unsigned __invalid_count_or_rank = 0xffff'ffff;
-
 // Requirements on mappings:
 // - must be copyable
 // - must implement `map(_Unit, _Level, _Hierarchy)` method that returns an object that satisfies the
