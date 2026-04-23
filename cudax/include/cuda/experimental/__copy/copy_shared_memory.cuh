@@ -34,7 +34,7 @@
 
 #include <cuda/experimental/__copy/copy_shared_memory_utils.cuh>
 #include <cuda/experimental/__copy/tensor_iterator.cuh>
-#include <cuda/experimental/__copy_bytes/abs_integer.cuh>
+#include <cuda/experimental/__copy_bytes/tensor_query.cuh>
 #include <cuda/experimental/__copy_bytes/types.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -271,16 +271,17 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
   {
     __grid_tile_sizes[__i] = 1;
   }
+
   //--------------------------------------------------------------------------------------------------------------------
   // source-coalesced permutation: sort modes by ascending |src_stride|
-  ::cuda::std::array<int, _MaxRank> __src_perm{};
+  ::cuda::std::array<size_t, _MaxRank> __src_perm{};
   for (size_t __i = 0; __i < _MaxRank; ++__i)
   {
-    __src_perm[__i] = static_cast<int>(__i);
+    __src_perm[__i] = __i;
   }
-  ::cuda::std::stable_sort(__src_perm.begin(), __src_perm.begin() + __rank, [&] __host__ __device__(auto __a, auto __b) {
-    return cudax::__abs_integer(__src.__strides[__a]) < cudax::__abs_integer(__src.__strides[__b]);
-  });
+  ::cuda::std::stable_sort(
+    __src_perm.begin(), __src_perm.begin() + __rank, __stride_compare<_StrideTIn, _MaxRank>{__src.__strides});
+
   //--------------------------------------------------------------------------------------------------------------------
   // Reordered arrays for loading src to shared memory based on the source-coalesced permutation
   ::cuda::std::array<_StrideTIn, _MaxRank> __src_perm_src_strides{};
@@ -303,12 +304,14 @@ _CCCL_HOST_API void __launch_copy_shared_mem_kernel(
   {
     __tile_perm_sizes[__i] = 1;
   }
+
   //--------------------------------------------------------------------------------------------------------------------
   // Construct coordinate iterators on the host (precomputed fast modulo/division)
   // namely, given a linear index, compute the multi-dimensional coordinates
   const __tensor_coord_iterator<_ExtentT, _MaxRank> __grid_iter{__grid_tile_sizes}; // grid tile index
   const __tensor_coord_iterator<__tile_extent_t, _MaxRank> __tile_perm_iter{__tile_perm_sizes}; // src -> shared memory
   const __tensor_coord_iterator<__tile_extent_t, _MaxRank> __tile_natural_iter{__tile_sizes}; // shared memory -> dst
+
   //--------------------------------------------------------------------------------------------------------------------
   // Launch the kernel
   using __value_type            = ::cuda::std::remove_cv_t<_TpIn>;
