@@ -137,8 +137,8 @@ try
 
   auto [d_data_it_name, d_data_it_src] =
     get_specialization<binary_search_data_iterator_tag>(template_id<input_iterator_traits>(), d_data);
-  auto [op_name, op_src] =
-    get_specialization<binary_search_op_tag>(template_id<binary_user_predicate_traits>(), op, d_data.value_type);
+  auto [op_name, op_src] = get_specialization<binary_search_op_tag>(
+    template_id<binary_user_predicate_traits>(), op, d_data.value_type, d_data.value_type);
 
   const std::string mode_t = [&] {
     switch (mode)
@@ -151,15 +151,10 @@ try
     throw std::runtime_error(std::format("Invalid binary search mode ({})", static_cast<int>(mode)));
   }();
 
-  const bool user_defined_comparator = op.type == CCCL_STATEFUL || op.type == CCCL_STATELESS;
-  const bool comparator_stateful     = op.type == CCCL_STATEFUL;
-  const auto comparator_offset       = binary_search::comparator_state_offset(op);
-  const std::string output_t         = cccl_type_enum_to_name(d_out.value_type.type);
-  const std::string comparator_src =
-    user_defined_comparator && op.code_type == CCCL_OP_CPP_SOURCE && op.code != nullptr && op.code_size != 0
-      ? std::string{op.code, op.code_size}
-      : std::string{};
-  const size_t storage_size = std::max({d_data.value_type.size, d_values.value_type.size, d_out.value_type.size});
+  const bool comparator_stateful = op.type == CCCL_STATEFUL;
+  const auto comparator_offset   = binary_search::comparator_state_offset(op);
+  const std::string output_t     = cccl_type_enum_to_name(d_out.value_type.type);
+  const size_t storage_size      = std::max({d_data.value_type.size, d_values.value_type.size, d_out.value_type.size});
   const size_t storage_alignment =
     std::max({d_data.value_type.alignment, d_values.value_type.alignment, d_out.value_type.alignment});
 
@@ -169,12 +164,9 @@ try
 #include <cuda/std/__cstring/memcpy.h>
 
 {8}
-
 struct __align__({7}) storage_t {{
   char data[{6}];
 }};
-
-{12}
 
 {0}
 {2}
@@ -214,8 +206,7 @@ extern "C" __device__ void binary_search_transform_op(void* state, const void* v
     jit_template_header_contents,
     comparator_stateful ? "true" : "false",
     comparator_offset,
-    mode_t,
-    comparator_src);
+    mode_t);
 
   cccl_op_t transform_op = op;
   transform_op.type      = CCCL_STATEFUL;
@@ -228,12 +219,12 @@ extern "C" __device__ void binary_search_transform_op(void* state, const void* v
 
   std::vector<const char*> extra_ltoirs;
   std::vector<size_t> extra_ltoir_sizes;
-  if (user_defined_comparator && op.code_type == CCCL_OP_LTOIR && op.code_size != 0)
+  if ((op.type == CCCL_STATEFUL || op.type == CCCL_STATELESS) && op.code_type == CCCL_OP_LTOIR && op.code_size != 0)
   {
     extra_ltoirs.push_back(op.code);
     extra_ltoir_sizes.push_back(op.code_size);
   }
-  for (size_t i = 0; user_defined_comparator && i < op.num_extra_ltoirs; ++i)
+  for (size_t i = 0; (op.type == CCCL_STATEFUL || op.type == CCCL_STATELESS) && i < op.num_extra_ltoirs; ++i)
   {
     extra_ltoirs.push_back(op.extra_ltoirs[i]);
     extra_ltoir_sizes.push_back(op.extra_ltoir_sizes[i]);
@@ -255,8 +246,6 @@ extern "C" __device__ void binary_search_transform_op(void* state, const void* v
     ctk_path,
     config));
 
-  build_ptr->cubin              = build_ptr->transform.cubin;
-  build_ptr->cubin_size         = build_ptr->transform.cubin_size;
   build_ptr->op_state_size      = transform_op.size;
   build_ptr->op_state_alignment = transform_op.alignment;
 
