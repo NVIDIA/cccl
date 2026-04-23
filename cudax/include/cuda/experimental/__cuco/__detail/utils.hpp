@@ -27,8 +27,6 @@
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/cstdint>
 
-#include <iterator>
-
 #include <cooperative_groups.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -118,37 +116,6 @@ _CCCL_HOST_DEVICE constexpr __index_type __distance(_Iterator __begin, _Iterator
   static_assert(::cuda::std::is_base_of_v<::cuda::std::random_access_iterator_tag, __category>,
                 "Input iterator should be a random access iterator.");
   return static_cast<__index_type>(::cuda::std::distance(__begin, __end));
-}
-
-//! @brief C++17 constexpr backport of std::lower_bound.
-
-template <class _ForwardIt, class _Tp>
-constexpr _ForwardIt __lower_bound(_ForwardIt __first, _ForwardIt __last, const _Tp& __value)
-{
-  using __diff_type = typename std::iterator_traits<_ForwardIt>::difference_type;
-
-  _ForwardIt __it{};
-  __diff_type __count = std::distance(__first, __last);
-  __diff_type __step{};
-
-  while (__count > 0)
-  {
-    __it   = __first;
-    __step = __count / 2;
-    std::advance(__it, __step);
-
-    if (static_cast<_Tp>(*__it) < __value)
-    {
-      __first = ++__it;
-      __count -= __step + 1;
-    }
-    else
-    {
-      __count = __step;
-    }
-  }
-
-  return __first;
 }
 } // namespace cuda::experimental::cuco::__detail
 

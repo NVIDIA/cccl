@@ -48,22 +48,17 @@ using __valid_extent = extent<_SizeType, dynamic_extent>;
 template <int _CgSize, int _BucketSize, class _SizeType, ::cuda::std::size_t _Extent>
 [[nodiscard]] _CCCL_API constexpr auto __make_valid_extent_double_hash(extent<_SizeType, _Extent> __ext)
 {
-  constexpr auto __stride    = _CgSize * _BucketSize;
-  constexpr auto __max_prime = ::cuda::experimental::cuco::__detail::__last_prime;
-  constexpr auto __max_value =
-    (static_cast<::cuda::std::uint64_t>(::cuda::std::numeric_limits<_SizeType>::max()) < __max_prime)
-      ? ::cuda::std::numeric_limits<_SizeType>::max()
-      : static_cast<_SizeType>(__max_prime);
+  constexpr auto __stride = _CgSize * _BucketSize;
 
   const auto __size =
     ::cuda::ceil_div(::cuda::std::max(static_cast<_SizeType>(__ext.extent(0)), static_cast<_SizeType>(1)), __stride);
-  if (__size > __max_value)
+  if (__size > ::cuda::std::numeric_limits<_SizeType>::max() / static_cast<_SizeType>(__stride))
   {
     _CCCL_THROW(::std::logic_error, "Invalid input extent");
   }
 
   return __valid_extent<_SizeType>{static_cast<_SizeType>(
-    *__lower_bound(__primes, __primes + __num_primes, static_cast<::cuda::std::uint64_t>(__size)) * __stride)};
+    ::cuda::experimental::cuco::__detail::__next_prime(static_cast<::cuda::std::uint64_t>(__size)) * __stride)};
 }
 
 //! @brief Computes a valid storage extent for a given probing scheme.
