@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES
 //
 //===----------------------------------------------------------------------===//
 
@@ -91,7 +91,7 @@ class common_iterator
   {
     iter_value_t<_Iter> __value_;
 
-    _CCCL_API constexpr const iter_value_t<_Iter>* operator->() const noexcept
+    [[nodiscard]] _CCCL_API constexpr const iter_value_t<_Iter>* operator->() const noexcept
     {
       return ::cuda::std::addressof(__value_);
     }
@@ -152,7 +152,7 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API constexpr decltype(auto) operator*()
+  [[nodiscard]] _CCCL_API constexpr decltype(auto) operator*()
   {
     _CCCL_ASSERT(__hold_.__holds_first(), "Attempted to dereference a non-dereferenceable common_iterator");
     return *__hold_.__first_;
