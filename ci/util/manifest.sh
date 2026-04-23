@@ -24,4 +24,4 @@ split(.,"\n")
 EOF
 
 find "$path" -wholename '*include/*' -type f -printf '%P\n' \
-  | jq -s --raw-input --argjson manifest "$manifest" "$prog" > $2
+  | jq -s --raw-input --argjson manifest "$manifest" "$prog" > "${outfile}"
