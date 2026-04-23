@@ -112,6 +112,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceCompactInitKernel(
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
 {

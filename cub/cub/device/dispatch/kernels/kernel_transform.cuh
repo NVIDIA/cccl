@@ -991,8 +991,9 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr_kernel_arg(It ptr, int alignment) -
   return arg;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector>
-_CCCL_API constexpr int get_block_threads_helper()
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL int get_block_threads_helper() noexcept
 {
   constexpr transform_policy policy = current_policy<PolicySelector>();
   if constexpr (policy.algorithm == Algorithm::prefetch)

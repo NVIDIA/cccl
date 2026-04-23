@@ -31,7 +31,7 @@ namespace detail::radix_sort
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector, bool AltDigitBits>
-_CCCL_API constexpr int segmented_radix_sort_kernel_launch_bounds()
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL int segmented_radix_sort_kernel_launch_bounds() noexcept
 {
   constexpr auto policy = current_policy<PolicySelector>();
   return AltDigitBits ? policy.alt_segmented.block_threads : policy.segmented.block_threads;
