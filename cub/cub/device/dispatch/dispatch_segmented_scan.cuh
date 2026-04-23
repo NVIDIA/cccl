@@ -21,7 +21,6 @@
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_scan.cuh>
-#include <cub/device/dispatch/kernels/kernel_warp_segmented_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
@@ -43,8 +42,7 @@ namespace detail::segmented_scan
 {
 enum class worker
 {
-  block,
-  warp
+  block
 };
 
 template <typename PolicySelector,
@@ -65,21 +63,6 @@ struct device_segmented_scan_kernel_source
   CUB_DEFINE_KERNEL_GETTER(
     segmented_scan_kernel,
     device_segmented_scan_kernel<
-      PolicySelector,
-      InputIteratorT,
-      OutputIteratorT,
-      BeginOffsetIteratorInputT,
-      EndOffsetIteratorInputT,
-      BeginOffsetIteratorOutputT,
-      OffsetT,
-      ScanOpT,
-      InitValueT,
-      AccumT,
-      EnforceInclusive == ForceInclusive::Yes>);
-
-  CUB_DEFINE_KERNEL_GETTER(
-    warp_segmented_scan_kernel,
-    device_warp_segmented_scan_kernel<
       PolicySelector,
       InputIteratorT,
       OutputIteratorT,
@@ -175,8 +158,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return cudaSuccess;
   }
 
-  _CCCL_ASSERT((active_policy.block.load_modifier != CacheLoadModifier::LOAD_LDG)
-                 && (active_policy.warp.load_modifier != CacheLoadModifier::LOAD_LDG),
+  _CCCL_ASSERT((active_policy.block.load_modifier != CacheLoadModifier::LOAD_LDG),
                "The memory consistency model does not apply to texture accesses");
 
   _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments per worker parameter must be positive");
@@ -191,15 +173,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         const auto block_threads        = active_policy.block.block_threads;
         _CCCL_ASSERT(max_segments > 0, "Policy value for max segments is not positive");
         _CCCL_ASSERT(num_segments_per_worker <= max_segments, "Number of segments per block exceeds maximum value");
-        return {workers_per_block, block_threads, ::cuda::std::min(num_segments_per_worker, max_segments)};
-      }
-      case worker::warp: {
-        const auto block_threads = active_policy.warp.block_threads;
-        const auto max_segments  = active_policy.warp.max_segments;
-        _CCCL_ASSERT(max_segments > 0, "Policy value for max segments is not positive");
-        _CCCL_ASSERT(num_segments_per_worker <= max_segments, "Number of segments per warp exceeds maximum value");
-        _CCCL_ASSERT((block_threads % warp_threads) == 0, "Block size must be a multiple of architectural warp-size");
-        const int workers_per_block = block_threads / warp_threads;
         return {workers_per_block, block_threads, ::cuda::std::min(num_segments_per_worker, max_segments)};
       }
       default:
@@ -241,23 +214,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       case worker::block:
         if (const auto error = CubDebug(launcher.doit(
               kernel_source.segmented_scan_kernel(),
-              d_in,
-              d_out,
-              input_begin_offsets,
-              input_end_offsets,
-              output_begin_offsets,
-              segment_count,
-              scan_op,
-              init_value,
-              num_segments_per_worker));
-            cudaSuccess != error)
-        {
-          return error;
-        };
-        break;
-      case worker::warp:
-        if (const auto error = CubDebug(launcher.doit(
-              kernel_source.warp_segmented_scan_kernel(),
               d_in,
               d_out,
               input_begin_offsets,

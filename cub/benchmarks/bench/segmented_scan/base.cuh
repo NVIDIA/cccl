@@ -16,13 +16,9 @@
 #  if TUNE_TRANSPOSE == 0
 #    define TUNE_BLOCK_LOAD_ALGORITHM  cub::BLOCK_LOAD_DIRECT
 #    define TUNE_BLOCK_STORE_ALGORITHM cub::BLOCK_STORE_DIRECT
-#    define TUNE_WARP_LOAD_ALGORITHM   cub::WARP_LOAD_DIRECT
-#    define TUNE_WARP_STORE_ALGORITHM  cub::WARP_STORE_DIRECT
 #  else // TUNE_TRANSPOSE == 1
 #    define TUNE_BLOCK_LOAD_ALGORITHM  cub::BLOCK_LOAD_WARP_TRANSPOSE
 #    define TUNE_BLOCK_STORE_ALGORITHM cub::BLOCK_STORE_WARP_TRANSPOSE
-#    define TUNE_WARP_LOAD_ALGORITHM   cub::WARP_LOAD_TRANSPOSE
-#    define TUNE_WARP_STORE_ALGORITHM  cub::WARP_STORE_TRANSPOSE
 #  endif // TUNE_TRANSPOSE
 
 #  if TUNE_LOAD == 0
@@ -31,28 +27,20 @@
 #    define TUNE_LOAD_MODIFIER cub::LOAD_CA
 #  endif // TUNE_LOAD
 
-template <int BlockThreads, int ItemsPerThread, int MaxSegmentsPerBlock, int MaxSegmentsPerWarp>
+template <int BlockThreads, int ItemsPerThread, int MaxSegmentsPerBlock>
 struct policy_selector_t
 {
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id) const
     -> cub::detail::segmented_scan::segmented_scan_policy
   {
-    return cub::detail::segmented_scan::segmented_scan_policy{
-      cub::detail::segmented_scan::block_segmented_scan_policy{
-        BlockThreads,
-        ItemsPerThread,
-        TUNE_BLOCK_LOAD_ALGORITHM,
-        TUNE_LOAD_MODIFIER,
-        TUNE_BLOCK_STORE_ALGORITHM,
-        cub::BLOCK_SCAN_WARP_SCANS,
-        MaxSegmentsPerBlock},
-      cub::detail::segmented_scan::warp_segmented_scan_policy{
-        BlockThreads,
-        ItemsPerThread,
-        TUNE_WARP_LOAD_ALGORITHM,
-        TUNE_LOAD_MODIFIER,
-        TUNE_WARP_STORE_ALGORITHM,
-        MaxSegmentsPerWarp}};
+    return cub::detail::segmented_scan::segmented_scan_policy{cub::detail::segmented_scan::block_segmented_scan_policy{
+      BlockThreads,
+      ItemsPerThread,
+      TUNE_BLOCK_LOAD_ALGORITHM,
+      TUNE_LOAD_MODIFIER,
+      TUNE_BLOCK_STORE_ALGORITHM,
+      cub::BLOCK_SCAN_WARP_SCANS,
+      MaxSegmentsPerBlock}};
   }
 };
 #endif // TUNE_BASE
@@ -85,12 +73,7 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using offset_it      = const offset_t*;
 
 #if !TUNE_BASE
-  // IMPORTANT: Make sure not to hurt occupancy
-  // since shared memory is allocated per warp, scale it down so that total amount of shared memory
-  // per CTA is the same as in block-level segmented scan
-  constexpr auto max_segments_per_warp =
-    ::cuda::ceil_div(TUNE_MAX_SEGMENTS_PER_BLOCK * cub::detail::warp_threads, TUNE_THREADS);
-  using policy_t = policy_selector_t<TUNE_THREADS, TUNE_ITEMS, TUNE_MAX_SEGMENTS_PER_BLOCK, max_segments_per_warp>;
+  using policy_t = policy_selector_t<TUNE_THREADS, TUNE_ITEMS, TUNE_MAX_SEGMENTS_PER_BLOCK>;
 #endif
 
   const auto elements     = static_cast<offset_t>(state.get_int64("Elements{io}"));
@@ -128,13 +111,9 @@ static void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     {
       return cub::detail::segmented_scan::worker::block;
     }
-    else if (token == "warp")
-    {
-      return cub::detail::segmented_scan::worker::warp;
-    }
     else
     {
-      throw std::runtime_error("Unrecognized value of Worker{io} axis value. Expected 'block' or 'warp'.");
+      throw std::runtime_error("Unrecognized value of Worker{io} axis value. Expected 'block'");
     }
   }(state.get_string("Worker{io}"));
 
