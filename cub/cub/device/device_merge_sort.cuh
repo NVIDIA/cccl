@@ -87,12 +87,10 @@ CUB_NAMESPACE_BEGIN
  * @endcode
  *
  * @par Tuning
- * @par
- * All algorithms in DeviceMergeSort that accept an environment can be tuned by passing a custom policy selector (TODO:
- * link to common tuning page) that returns a @ref MergeSortPolicy, as shown in the example below:
- * @par
- *
  * @rst
+ * All algorithms in DeviceMergeSort that accept an environment can be tuned by passing a custom :ref:`policy selector
+ * <cub-policy-selectors>` that returns a @ref MergeSortPolicy, as shown in the example below:
+ *
  *  .. literalinclude:: ../../../cub/test/catch2_test_device_merge_sort_env_api.cu
  *      :language: c++
  *      :dedent:
@@ -105,7 +103,6 @@ CUB_NAMESPACE_BEGIN
  *      :start-after: example-begin sort-pairs-tuning
  *      :end-before: example-end sort-pairs-tuning
  * @endrst
- *
  *
  * [LessThan Comparable]: https://en.cppreference.com/w/cpp/named_req/LessThanComparable
  */
