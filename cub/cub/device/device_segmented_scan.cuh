@@ -54,6 +54,15 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceSegmentedScan
 {
+private:
+  template <typename... It>
+  CUB_RUNTIME_FUNCTION static void check_common_iterator_value_is_integral()
+  {
+    using offset_t = detail::common_iterator_value_t<It...>;
+    static_assert(::cuda::std::is_integral_v<offset_t>, "Offset iterator value type should be integral.");
+  }
+
+public:
   //! @rst
   //! Computes a device-wide segmented exclusive prefix sum.
   //!
@@ -178,10 +187,7 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::ExclusiveSegmentedSum");
 
-    using offset_t              = detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>;
-    using integral_offset_check = ::cuda::std::is_integral<offset_t>;
-
-    static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
 
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
@@ -303,8 +309,7 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedSum");
 
-    using offset_t = detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>;
-    static_assert(::cuda::std::is_integral_v<offset_t>, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
 
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
@@ -440,11 +445,9 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::ExclusiveSegmentedSum");
 
-    using offset_t =
-      detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>;
-    using integral_offset_check = ::cuda::std::is_integral<offset_t>;
-
-    static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT,
+                                            EndOffsetIteratorInputT,
+                                            BeginOffsetIteratorOutputT>();
 
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
@@ -564,9 +567,9 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedSum");
 
-    using offset_t =
-      detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>;
-    static_assert(::cuda::std::is_integral_v<offset_t>, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT,
+                                            EndOffsetIteratorInputT,
+                                            BeginOffsetIteratorOutputT>();
 
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
@@ -709,10 +712,7 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::ExclusiveSegmentedScan");
 
-    using offset_t              = detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>;
-    using integral_offset_check = ::cuda::std::is_integral<offset_t>;
-
-    static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
 
     return cub::detail::segmented_scan::dispatch_segmented_scan<
       InputIteratorT,
@@ -848,8 +848,7 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedScan");
 
-    using offset_t = detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>;
-    static_assert(::cuda::std::is_integral_v<offset_t>, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
@@ -986,11 +985,9 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::ExclusiveSegmentedScan");
 
-    using offset_t =
-      detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>;
-    using integral_offset_check = ::cuda::std::is_integral<offset_t>;
-
-    static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT,
+                                            EndOffsetIteratorInputT,
+                                            BeginOffsetIteratorOutputT>();
 
     return cub::detail::segmented_scan::dispatch_segmented_scan<
       InputIteratorT,
@@ -1124,9 +1121,9 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedScan");
 
-    using offset_t =
-      detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>;
-    static_assert(::cuda::std::is_integral_v<offset_t>, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT,
+                                            EndOffsetIteratorInputT,
+                                            BeginOffsetIteratorOutputT>();
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
@@ -1246,10 +1243,7 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedSum");
 
-    using offset_t              = detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>;
-    using integral_offset_check = ::cuda::std::is_integral<offset_t>;
-
-    static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
 
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
@@ -1366,8 +1360,7 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedSum");
 
-    using offset_t = detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>;
-    static_assert(::cuda::std::is_integral_v<offset_t>, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
 
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
@@ -1501,11 +1494,9 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedSum");
 
-    using offset_t =
-      detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>;
-    using integral_offset_check = ::cuda::std::is_integral<offset_t>;
-
-    static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT,
+                                            EndOffsetIteratorInputT,
+                                            BeginOffsetIteratorOutputT>();
 
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
@@ -1620,9 +1611,9 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedSum");
 
-    using offset_t =
-      detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>;
-    static_assert(::cuda::std::is_integral_v<offset_t>, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT,
+                                            EndOffsetIteratorInputT,
+                                            BeginOffsetIteratorOutputT>();
 
     using scan_op_t = ::cuda::std::plus<>;
     scan_op_t scan_op{};
@@ -1737,10 +1728,7 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedScan");
 
-    using offset_t              = detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>;
-    using integral_offset_check = ::cuda::std::is_integral<offset_t>;
-
-    static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
 
     return cub::detail::segmented_scan::dispatch_segmented_scan<
       InputIteratorT,
@@ -1864,8 +1852,7 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedScan");
 
-    using offset_t = detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>;
-    static_assert(::cuda::std::is_integral_v<offset_t>, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
@@ -2003,11 +1990,9 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedScan");
 
-    using offset_t =
-      detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>;
-    using integral_offset_check = ::cuda::std::is_integral<offset_t>;
-
-    static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT,
+                                            EndOffsetIteratorInputT,
+                                            BeginOffsetIteratorOutputT>();
 
     return cub::detail::segmented_scan::dispatch_segmented_scan<
       InputIteratorT,
@@ -2130,9 +2115,9 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedScan");
 
-    using offset_t =
-      detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>;
-    static_assert(::cuda::std::is_integral_v<offset_t>, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT,
+                                            EndOffsetIteratorInputT,
+                                            BeginOffsetIteratorOutputT>();
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
@@ -2268,10 +2253,7 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit");
 
-    using offset_t              = detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>;
-    using integral_offset_check = ::cuda::std::is_integral<offset_t>;
-
-    static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
     static_assert(!::cuda::std::is_same_v<InitValueT, NullType>);
 
     using accum_t = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
@@ -2400,8 +2382,7 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit");
 
-    using offset_t = detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>;
-    static_assert(::cuda::std::is_integral_v<offset_t>, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>();
     static_assert(!::cuda::std::is_same_v<InitValueT, NullType>);
 
     using accum_t = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
@@ -2542,11 +2523,9 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit");
 
-    using offset_t =
-      detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>;
-    using integral_offset_check = ::cuda::std::is_integral<offset_t>;
-
-    static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT,
+                                            EndOffsetIteratorInputT,
+                                            BeginOffsetIteratorOutputT>();
     static_assert(!::cuda::std::is_same_v<InitValueT, NullType>);
 
     using accum_t = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
@@ -2684,9 +2663,9 @@ struct DeviceSegmentedScan
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit");
 
-    using offset_t =
-      detail::common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>;
-    static_assert(::cuda::std::is_integral_v<offset_t>, "Offset iterator value type should be integral.");
+    check_common_iterator_value_is_integral<BeginOffsetIteratorInputT,
+                                            EndOffsetIteratorInputT,
+                                            BeginOffsetIteratorOutputT>();
     static_assert(!::cuda::std::is_same_v<InitValueT, NullType>);
 
     using accum_t = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
