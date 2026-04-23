@@ -248,7 +248,6 @@ C2H_TEST("segmented inclusive scan works correctly for pairs with noncommutative
   auto inclusive_scan_dispatch = [](auto&&... args) -> cudaError_t {
     return cub::detail::segmented_scan::dispatch<
       cub::ForceInclusive::No,
-      cub::detail::use_default,
       const pair_t*,
       pair_t*,
       const offset_t*,
@@ -426,7 +425,6 @@ C2H_TEST("segmented exclusive scan works for integer types", "[multi_segment][se
   auto exclusive_scan_dispatch = [](auto&&... args) -> cudaError_t {
     return cub::detail::segmented_scan::dispatch<
       cub::ForceInclusive::No,
-      cub::detail::use_default,
       const value_t*,
       value_t*,
       const offset_t*,
@@ -535,7 +533,6 @@ C2H_TEST("Segmented inclusive scan works correctly for integer types",
   auto inclusive_scan_dispatch = [](auto&&... args) -> cudaError_t {
     return cub::detail::segmented_scan::dispatch<
       cub::ForceInclusive::No,
-      cub::detail::use_default,
       const value_t*,
       value_t*,
       const offset_t*,
@@ -657,7 +654,6 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
   auto inclusive_init_scan_dispatch = [](auto&&... args) -> cudaError_t {
     return cub::detail::segmented_scan::dispatch<
       cub::ForceInclusive::Yes,
-      cub::detail::use_default,
       const value_t*,
       value_t*,
       const offset_t*,
@@ -840,7 +836,6 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
   auto inclusive_scan_dispatch = [](auto&&... args) -> cudaError_t {
     return cub::detail::segmented_scan::dispatch<
       cub::ForceInclusive::No,
-      cub::detail::use_default,
       const value_t*,
       value_t*,
       const offset_t*,

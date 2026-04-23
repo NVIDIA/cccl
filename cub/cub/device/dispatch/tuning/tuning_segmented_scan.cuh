@@ -194,10 +194,12 @@ struct policy_selector
 
     // multi-segment block- and warp- granularity agents use tuple<AccumT, bool>, single segment use AccumT
     // deduce its size here.
-    const int augmented_size = ::cuda::round_up(accum_size + ((max_segments_per_warp == 1) ? 0 : 1), accum_align);
+    const int augmented_size_block =
+      ::cuda::round_up(accum_size + ((max_segments_per_block == 1) ? 0 : 1), accum_align);
+    const int augmented_size_warp = ::cuda::round_up(accum_size + ((max_segments_per_warp == 1) ? 0 : 1), accum_align);
 
-    const auto block_scaled  = scale_mem_bound(nominal_block_threads, nominal_items_per_thread, augmented_size);
-    const auto warp_scaled   = scale_mem_bound(nominal_block_threads, nominal_items_per_thread, augmented_size);
+    const auto block_scaled  = scale_mem_bound(nominal_block_threads, nominal_items_per_thread, augmented_size_block);
+    const auto warp_scaled   = scale_mem_bound(nominal_block_threads, nominal_items_per_thread, augmented_size_warp);
     const auto thread_scaled = scale_mem_bound(nominal_block_threads, nominal_items_per_thread, accum_size);
 
     return segmented_scan_policy{

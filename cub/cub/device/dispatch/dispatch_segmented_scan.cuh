@@ -110,18 +110,14 @@ struct device_segmented_scan_kernel_source
       EnforceInclusive == ForceInclusive::Yes>);
 };
 
-template <typename OverrideAccumT, typename ScanOpT, typename InitValueT, typename InputValueT>
-using deduced_accum_t = ::cuda::std::conditional_t<
-  ::cuda::std::is_same_v<OverrideAccumT, use_default>,
-  ::cuda::std::__accumulator_t<
-    ScanOpT,
-    InputValueT,
-    ::cuda::std::conditional_t<::cuda::std::is_same_v<InitValueT, NullType>, InputValueT, typename InitValueT::value_type>>,
-  OverrideAccumT>;
+template <typename ScanOpT, typename InitValueT, typename InputValueT>
+using deduced_accum_t = ::cuda::std::__accumulator_t<
+  ScanOpT,
+  InputValueT,
+  ::cuda::std::conditional_t<::cuda::std::is_same_v<InitValueT, NullType>, InputValueT, typename InitValueT::value_type>>;
 
 template <
   ForceInclusive EnforceInclusive = ForceInclusive::No,
-  typename OverrideAccumT         = use_default,
   typename InputIteratorT,
   typename OutputIteratorT,
   typename BeginOffsetIteratorInputT,
@@ -129,7 +125,7 @@ template <
   typename BeginOffsetIteratorOutputT,
   typename ScanOpT,
   typename InitValueT,
-  typename AccumT = deduced_accum_t<OverrideAccumT, ScanOpT, InitValueT, it_value_t<InputIteratorT>>,
+  typename AccumT = deduced_accum_t<ScanOpT, InitValueT, it_value_t<InputIteratorT>>,
   typename OffsetT =
     common_iterator_value_t<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>,
   typename PolicySelector = policy_selector_from_types<AccumT>,
