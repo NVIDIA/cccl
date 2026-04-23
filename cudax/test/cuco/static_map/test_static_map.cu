@@ -8,17 +8,17 @@
 //
 //===----------------------------------------------------------------------===//
 
+// Temporary nvcc workaround __host__ __device__ dtor conflict in cuda::buffer
 #if defined(__CUDACC__)
 #  pragma nv_diag_suppress 20011
 #endif
 
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 #include <thrust/sequence.h>
 #include <thrust/tuple.h>
 
+#include <cuda/iterator>
 #include <cuda/std/cstddef>
 #include <cuda/std/tuple>
 
@@ -154,7 +154,7 @@ C2H_TEST("static_map device ref APIs", "[container]")
 
     thrust::device_vector<::cuda::std::pair<int, int>> pairs(num_keys);
     thrust::transform(
-      thrust::counting_iterator<int>{0}, thrust::counting_iterator<int>{num_keys}, pairs.begin(), [] __device__(int i) {
+      cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{num_keys}, pairs.begin(), [] __device__(int i) {
         return ::cuda::std::pair<int, int>{i, i};
       });
 
@@ -235,7 +235,7 @@ C2H_TEST("static_map static extent — device insert and contains", "[extent][st
 
   thrust::device_vector<::cuda::std::pair<int, int>> pairs(num_keys);
   thrust::transform(
-    thrust::counting_iterator<int>{0}, thrust::counting_iterator<int>{num_keys}, pairs.begin(), [] __device__(int i) {
+    cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{num_keys}, pairs.begin(), [] __device__(int i) {
       return ::cuda::std::pair<int, int>{i, i * 10};
     });
 
@@ -268,7 +268,7 @@ C2H_TEST("static_map static extent — shared memory sizing via capacity_v", "[e
 
   thrust::device_vector<::cuda::std::pair<int, int>> pairs(num_keys);
   thrust::transform(
-    thrust::counting_iterator<int>{0}, thrust::counting_iterator<int>{num_keys}, pairs.begin(), [] __device__(int i) {
+    cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{num_keys}, pairs.begin(), [] __device__(int i) {
       return ::cuda::std::pair<int, int>{i, i};
     });
 
@@ -311,7 +311,7 @@ C2H_TEST("static_map static extent — erasure support", "[extent][static][erase
 
   thrust::device_vector<::cuda::std::pair<int, int>> pairs(num_keys);
   thrust::transform(
-    thrust::counting_iterator<int>{0}, thrust::counting_iterator<int>{num_keys}, pairs.begin(), [] __device__(int i) {
+    cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{num_keys}, pairs.begin(), [] __device__(int i) {
       return ::cuda::std::pair<int, int>{i, i};
     });
 
@@ -322,8 +322,8 @@ C2H_TEST("static_map static extent — erasure support", "[extent][static][erase
   // Erase even keys
   thrust::device_vector<int> even_keys(num_keys / 2);
   thrust::transform(
-    thrust::counting_iterator<int>{0},
-    thrust::counting_iterator<int>{num_keys / 2},
+    cuda::counting_iterator<int>{0},
+    cuda::counting_iterator<int>{num_keys / 2},
     even_keys.begin(),
     [] __device__(int i) {
       return i * 2;
@@ -343,8 +343,8 @@ C2H_TEST("static_map static extent — erasure support", "[extent][static][erase
   REQUIRE(cudaDeviceSynchronize() == cudaSuccess);
 
   const auto correct = thrust::all_of(
-    thrust::make_zip_iterator(thrust::make_tuple(results.begin(), thrust::counting_iterator<int>{0})),
-    thrust::make_zip_iterator(thrust::make_tuple(results.end(), thrust::counting_iterator<int>{num_keys})),
+    thrust::make_zip_iterator(thrust::make_tuple(results.begin(), cuda::counting_iterator<int>{0})),
+    thrust::make_zip_iterator(thrust::make_tuple(results.end(), cuda::counting_iterator<int>{num_keys})),
     [] __device__(const thrust::tuple<int, int>& t) {
       const auto found = thrust::get<0>(t);
       const auto key   = thrust::get<1>(t);

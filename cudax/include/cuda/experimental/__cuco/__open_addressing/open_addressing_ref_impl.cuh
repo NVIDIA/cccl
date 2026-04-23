@@ -137,10 +137,6 @@ private:
   /// Flag indicating whether duplicate keys are allowed or not
   static constexpr auto __allows_duplicates = _AllowsDuplicates;
 
-  // TODO: how to re-enable this check?
-  // static_assert(is_bucket_extent_v<typename StorageRef::extent_type>,
-  // "Extent is not a valid ::cuda::experimental::cuco::bucket_extent");
-
   __value_type __empty_slot_sentinel; ///< Sentinel value indicating an empty slot
   ::cuda::experimental::cuco::__detail::__equal_wrapper<__key_type, __key_equal, __allows_duplicates>
     __predicate; ///< Key equality

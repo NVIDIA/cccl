@@ -88,23 +88,23 @@ class static_map_ref
                 "bitwise comparison via specialization of cuco::is_bitwise_comparable_v<Key>.");
 
 public:
-  using key_type            = _Key;
-  using mapped_type         = _Tp;
-  using value_type          = ::cuda::std::pair<_Key, _Tp>;
-  using probing_scheme_type = _ProbingScheme;
-  using hasher              = typename probing_scheme_type::hasher;
-  using size_type           = typename storage_ref_type::__size_type;
-  using key_equal           = _KeyEqual;
-  using iterator            = typename storage_ref_type::__iterator;
-  using const_iterator      = typename storage_ref_type::__const_iterator;
+  using key_type            = _Key; ///< Key type
+  using mapped_type         = _Tp; ///< Payload (mapped value) type
+  using value_type          = ::cuda::std::pair<_Key, _Tp>; ///< Key-payload pair type
+  using probing_scheme_type = _ProbingScheme; ///< Probing scheme type
+  using hasher              = typename probing_scheme_type::hasher; ///< Hash function type
+  using size_type           = typename storage_ref_type::__size_type; ///< Size type
+  using key_equal           = _KeyEqual; ///< Key equality comparator type
+  using iterator            = typename storage_ref_type::__iterator; ///< Slot iterator
+  using const_iterator      = typename storage_ref_type::__const_iterator; ///< Const slot iterator
 
-  using empty_key   = ::cuda::experimental::cuco::__open_addressing::__empty_key<_Key>;
-  using empty_value = ::cuda::experimental::cuco::__open_addressing::__empty_value<_Tp>;
-  using erased_key  = ::cuda::experimental::cuco::__open_addressing::__erased_key<_Key>;
+  using empty_key   = ::cuda::experimental::cuco::__open_addressing::__empty_key<_Key>; ///< Empty-key sentinel tag
+  using empty_value = ::cuda::experimental::cuco::__open_addressing::__empty_value<_Tp>; ///< Empty-payload sentinel tag
+  using erased_key  = ::cuda::experimental::cuco::__open_addressing::__erased_key<_Key>; ///< Erased-key sentinel tag
 
-  static constexpr auto cg_size      = probing_scheme_type::cg_size;
-  static constexpr auto bucket_size  = _BucketSize;
-  static constexpr auto thread_scope = _Scope;
+  static constexpr auto cg_size      = probing_scheme_type::cg_size; ///< Cooperative-group size for probing
+  static constexpr auto bucket_size  = _BucketSize; ///< Number of slots per bucket
+  static constexpr auto thread_scope = _Scope; ///< CUDA thread scope for atomic operations
 
   //! @brief Compile-time slot count; `cuda::std::dynamic_extent` when `_Capacity` is dynamic.
   static constexpr size_type capacity_v = _Capacity;
@@ -153,60 +153,80 @@ public:
   // ===== Accessors =====
 
   //! @brief Returns the total number of slots.
+  //!
+  //! @return Total slot count (equal to the owning map's `capacity()`)
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr size_type capacity() const noexcept
   {
     return __impl.capacity();
   }
 
-  //! @brief Returns the empty key sentinel.
+  //! @brief Returns the sentinel value used to represent an empty key slot.
+  //!
+  //! @return The sentinel value used to represent an empty key slot
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr key_type empty_key_sentinel() const noexcept
   {
     return __impl.empty_key_sentinel();
   }
 
-  //! @brief Returns the empty value sentinel.
+  //! @brief Returns the sentinel value used to represent an empty payload slot.
+  //!
+  //! @return The sentinel value used to represent an empty payload slot
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr mapped_type empty_value_sentinel() const noexcept
   {
     return __impl.empty_value_sentinel();
   }
 
-  //! @brief Returns the erased key sentinel.
+  //! @brief Returns the sentinel value used to represent an erased key slot.
+  //!
+  //! @return The sentinel value used to represent an erased key slot
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr key_type erased_key_sentinel() const noexcept
   {
     return __impl.erased_key_sentinel();
   }
 
-  //! @brief Returns the key comparator.
+  //! @brief Returns the function used to compare keys for equality.
+  //!
+  //! @return The key equality comparator
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr key_equal key_eq() const noexcept
   {
     return __impl.key_eq();
   }
 
-  //! @brief Returns the hash function.
+  //! @brief Returns the function(s) used to hash keys.
+  //!
+  //! @return The hasher used by this ref's probing scheme
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr hasher hash_function() const noexcept
   {
     return __impl.hash_function();
   }
 
-  //! @brief Returns the probing scheme.
+  //! @brief Returns the probing scheme used to resolve hash collisions.
+  //!
+  //! @return The probing scheme object
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr probing_scheme_type probing_scheme() const noexcept
   {
     return __impl.probing_scheme();
   }
 
-  //! @brief Returns a const_iterator to one past the last slot.
+  //! @brief Returns a const iterator to one past the last slot (the end sentinel).
+  //!
+  //! @return Past-the-end const iterator
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr const_iterator end() const noexcept
   {
     return __impl.end();
   }
 
-  //! @brief Returns an iterator to one past the last slot.
+  //! @brief Returns an iterator to one past the last slot (the end sentinel).
+  //!
+  //! @return Past-the-end iterator
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr iterator end() noexcept
   {
     return __impl.end();
   }
 
-  //! @brief Returns the non-owning storage ref.
+  //! @brief Returns the non-owning storage reference backing this ref.
+  //!
+  //! @return Non-owning reference to slot storage
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr storage_ref_type storage_ref() const noexcept
   {
     return __impl.storage_ref();
@@ -250,7 +270,15 @@ public:
     return __impl.insert_and_find(__value);
   }
 
-  //! @brief Inserts a key-value pair and returns an iterator, using a cooperative group.
+  //! @brief Cooperative-group variant of `insert_and_find`.
+  //!
+  //! @tparam _ParentCG Parent cooperative group type
+  //!
+  //! @param __group Cooperative group of size `cg_size` performing this insert
+  //! @param __value The key-value pair to insert
+  //!
+  //! @return Pair of (iterator-to-slot, inserted-flag). On a duplicate key the iterator points to
+  //! the existing slot and `inserted` is `false`.
   template <class _ParentCG>
   _CCCL_DEVICE ::cuda::std::pair<iterator, bool>
   insert_and_find(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, value_type __value) noexcept
@@ -272,8 +300,12 @@ public:
     }
   }
 
-  //! @brief If the key already exists, assigns the new value; otherwise inserts the pair.
-  //! Cooperative group version.
+  //! @brief Cooperative-group variant of `insert_or_assign`.
+  //!
+  //! @tparam _ParentCG Parent cooperative group type
+  //!
+  //! @param __group Cooperative group of size `cg_size` performing this operation
+  //! @param __value The key-value pair to insert or assign
   template <class _ParentCG>
   _CCCL_DEVICE void
   insert_or_assign(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, value_type __value) noexcept
@@ -321,7 +353,16 @@ public:
     return __inserted;
   }
 
-  //! @brief Cooperative group version of insert_or_apply.
+  //! @brief Cooperative-group variant of `insert_or_apply` (without init).
+  //!
+  //! @tparam _Op Binary callable applied as `__op(existing_value, __value.second)` on collision
+  //! @tparam _ParentCG Parent cooperative group type
+  //!
+  //! @param __group Cooperative group of size `cg_size` performing this operation
+  //! @param __value The key-value pair
+  //! @param __op Callable applied to the mapped value on collision
+  //!
+  //! @return `true` if a new key was inserted, `false` if `__op` was applied to an existing slot
   template <class _Op, class _ParentCG>
   _CCCL_DEVICE bool insert_or_apply(
     ::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, value_type __value, _Op __op) noexcept
@@ -334,7 +375,18 @@ public:
     return __inserted;
   }
 
-  //! @brief Cooperative group version of insert_or_apply with init.
+  //! @brief Cooperative-group variant of `insert_or_apply` with an explicit init value.
+  //!
+  //! @tparam _Init Type convertible to `mapped_type` used as the initial value on first insertion
+  //! @tparam _Op Binary callable applied as `__op(existing_value, __value.second)` on collision
+  //! @tparam _ParentCG Parent cooperative group type
+  //!
+  //! @param __group Cooperative group of size `cg_size` performing this operation
+  //! @param __value The key-value pair (`__value.second` is used as the operand for `__op`)
+  //! @param __init The initial mapped value used on first insertion
+  //! @param __op Callable applied to the mapped value on collision
+  //!
+  //! @return `true` if a new key was inserted, `false` if `__op` was applied to an existing slot
   template <class _Init, class _Op, class _ParentCG>
   _CCCL_DEVICE bool insert_or_apply(
     ::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
@@ -363,7 +415,16 @@ public:
     return __impl.erase(__key);
   }
 
-  //! @brief Erases the element with the given key using a cooperative group.
+  //! @brief Cooperative-group variant of `erase`.
+  //!
+  //! @tparam _ParentCG Parent cooperative group type
+  //! @tparam _ProbeKey Probe key type (defaults to `key_type`); must be equality-comparable with
+  //! `key_type`
+  //!
+  //! @param __group Cooperative group of size `cg_size` performing this operation
+  //! @param __key The key to erase
+  //!
+  //! @return `true` if the key was found and erased
   template <class _ParentCG, class _ProbeKey = key_type>
   _CCCL_DEVICE bool erase(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) noexcept
   {
@@ -383,7 +444,15 @@ public:
     return __impl.contains(__key);
   }
 
-  //! @brief Checks if a key exists using a cooperative group.
+  //! @brief Cooperative-group variant of `contains`.
+  //!
+  //! @tparam _ParentCG Parent cooperative group type
+  //! @tparam _ProbeKey Probe key type (defaults to `key_type`)
+  //!
+  //! @param __group Cooperative group of size `cg_size` performing this lookup
+  //! @param __key The key to search for
+  //!
+  //! @return `true` if the key is found
   template <class _ParentCG, class _ProbeKey = key_type>
   [[nodiscard]] _CCCL_DEVICE bool
   contains(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
@@ -402,7 +471,15 @@ public:
     return __impl.find(__key);
   }
 
-  //! @brief Finds the slot containing the given key using a cooperative group.
+  //! @brief Cooperative-group variant of `find`.
+  //!
+  //! @tparam _ParentCG Parent cooperative group type
+  //! @tparam _ProbeKey Probe key type (defaults to `key_type`)
+  //!
+  //! @param __group Cooperative group of size `cg_size` performing this lookup
+  //! @param __key The key to search for
+  //!
+  //! @return An iterator to the matched slot, or `end()` if not found
   template <class _ParentCG, class _ProbeKey = key_type>
   [[nodiscard]] _CCCL_DEVICE iterator
   find(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
@@ -421,7 +498,15 @@ public:
     return __impl.__count(__key);
   }
 
-  //! @brief Counts occurrences of the given key using a cooperative group.
+  //! @brief Cooperative-group variant of `count`.
+  //!
+  //! @tparam _ParentCG Parent cooperative group type
+  //! @tparam _ProbeKey Probe key type (defaults to `key_type`)
+  //!
+  //! @param __group Cooperative group of size `cg_size` performing this count
+  //! @param __key The key to count
+  //!
+  //! @return Number of matches (0 or 1 for a map without duplicates)
   template <class _ParentCG, class _ProbeKey = key_type>
   [[nodiscard]] _CCCL_DEVICE size_type
   count(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __key) const noexcept
@@ -441,7 +526,15 @@ public:
     __impl.for_each(__key, ::cuda::std::forward<_CallbackOp>(__callback_op));
   }
 
-  //! @brief Applies a callback to matching values using a cooperative group.
+  //! @brief Cooperative-group variant of `for_each`.
+  //!
+  //! @tparam _ParentCG Parent cooperative group type
+  //! @tparam _ProbeKey Probe key type (defaults to `key_type`)
+  //! @tparam _CallbackOp Type of unary callback function object
+  //!
+  //! @param __group Cooperative group of size `cg_size` performing this lookup
+  //! @param __key The key to look up
+  //! @param __callback_op The callback applied to the matched slot value (return value ignored)
   template <class _ParentCG, class _ProbeKey = key_type, class _CallbackOp>
   _CCCL_DEVICE void for_each(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
                              _ProbeKey __key,
