@@ -190,13 +190,21 @@ static std::unordered_set<cudaGraphNode_t> transitive_dependencies(cudaGraphNode
     cudaGraphNode_t n = stack.back();
     stack.pop_back();
     size_t ndeps = 0;
+#if _CCCL_CTK_AT_LEAST(13, 0)
     cuda_safe_call(cudaGraphNodeGetDependencies(n, nullptr, nullptr, &ndeps));
+#else
+    cuda_safe_call(cudaGraphNodeGetDependencies(n, nullptr, &ndeps));
+#endif
     if (ndeps == 0)
     {
       continue;
     }
     std::vector<cudaGraphNode_t> deps(ndeps);
+#if _CCCL_CTK_AT_LEAST(13, 0)
     cuda_safe_call(cudaGraphNodeGetDependencies(n, deps.data(), nullptr, &ndeps));
+#else
+    cuda_safe_call(cudaGraphNodeGetDependencies(n, deps.data(), &ndeps));
+#endif
     for (cudaGraphNode_t d : deps)
     {
       if (visited.insert(d).second)
