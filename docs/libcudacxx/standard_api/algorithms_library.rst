@@ -49,7 +49,6 @@ The use of any other execution policy is currently not supported and results in 
 
 The following algorithms are supported:
 
-  * ``adjacent_difference``
   * ``adjacent_find``
   * ``all_of``
   * ``any_of``
@@ -59,7 +58,6 @@ The following algorithms are supported:
   * ``count``
   * ``count_if``
   * ``equal``
-  * ``exclusive_scan``
   * ``fill``
   * ``fill_n``
   * ``find``
@@ -69,14 +67,12 @@ The following algorithms are supported:
   * ``for_each_n``
   * ``generate``
   * ``generate_n``
-  * ``inclusive_scan``
   * ``is_partitioned``
   * ``is_sorted``
   * ``is_sorted_until``
   * ``merge``
   * ``mismatch``
   * ``none_of``
-  * ``reduce``
   * ``remove``
   * ``remove_copy``
   * ``remove_copy_if``
@@ -94,9 +90,6 @@ The following algorithms are supported:
   * ``stable_partition``
   * ``swap_ranges``
   * ``transform``
-  * ``transform_exclusive_scan``
-  * ``transform_inclusive_scan``
-  * ``transform_reduce``
   * ``unique``
   * ``unique_copy``
 
