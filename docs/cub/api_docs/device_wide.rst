@@ -17,10 +17,10 @@ Almost all of CUB's device-wide APIs come in two flavors:
 
 Some APIs that do not require any temporary storage may have a traditional single-phase overload in addition to an newer environment one.
 
+.. _device-temp-storage:
+
 Two-Phase API (explicit temporary storage management)
 +++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-.. _device-temp-storage:
 
 Traditional two-phase APIs can be recognized by taking ``void* d_temp_storage, size_t& temp_storage_bytes`` as their first two parameters.
 They follow a two-phase usage pattern that requires three steps:
