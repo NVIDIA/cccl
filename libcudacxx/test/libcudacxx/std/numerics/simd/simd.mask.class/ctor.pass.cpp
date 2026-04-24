@@ -123,9 +123,9 @@ template <int Bytes, int N>
 TEST_FUNC constexpr void test_generator()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
-#if _CCCL_COMPILER(GCC, !=, 7)
+#if !_CCCL_COMPILER(GCC, <, 9)
   static_assert(!noexcept(Mask(is_even{})));
-#endif
+#endif // !_CCCL_COMPILER(GCC, <, 9)
 
   Mask mask(is_even{});
   for (int i = 0; i < N; ++i)
