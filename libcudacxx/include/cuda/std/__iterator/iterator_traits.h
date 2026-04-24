@@ -85,6 +85,18 @@ using __with_reference = _Tp&;
 template <class _Tp>
 _CCCL_CONCEPT __can_reference = _CCCL_REQUIRES_EXPR((_Tp))(typename(__with_reference<_Tp>));
 
+// [iterator.traits]
+#if _CCCL_HAS_CONCEPTS()
+template <class _Tp>
+concept __dereferenceable = requires(_Tp& __t) {
+  { *__t } -> __can_reference; // not required to be equality-preserving
+};
+
+template <__dereferenceable _Tp>
+using iter_reference_t = decltype(*::cuda::std::declval<_Tp&>());
+
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ // vvv _CCCL_HAS_CONCEPTS() vvv
+
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wvoid-ptr-dereference")
 
@@ -93,11 +105,6 @@ _CCCL_CONCEPT __dereferenceable = _CCCL_REQUIRES_EXPR((_Tp), _Tp& __t)(requires(
 
 _CCCL_DIAG_POP
 
-// [iterator.traits]
-#if _CCCL_HAS_CONCEPTS()
-template <__dereferenceable _Tp>
-using iter_reference_t = decltype(*::cuda::std::declval<_Tp&>());
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ // vvv _CCCL_HAS_CONCEPTS() vvv
 template <class _Tp>
 using iter_reference_t = enable_if_t<__dereferenceable<_Tp>, decltype(*::cuda::std::declval<_Tp&>())>;
 #endif // _CCCL_HAS_CONCEPTS()
