@@ -212,7 +212,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
         return {workers_per_block, block_threads, ::cuda::std::min(num_segments_per_worker, max_segments)};
       }
       case worker::warp: {
-        const auto worker_policy = active_policy.warp;
         const auto block_threads = active_policy.warp.block_threads;
         const auto max_segments  = active_policy.warp.max_segments;
         _CCCL_ASSERT(max_segments > 0, "Policy value for max segments is not positive");

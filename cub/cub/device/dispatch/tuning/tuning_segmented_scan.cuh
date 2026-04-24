@@ -177,12 +177,6 @@ struct policy_selector
 
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id) const -> segmented_scan_policy
   {
-    const bool large_values = accum_size > 128;
-    const auto scan_transposed_blockload =
-      large_values ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : BLOCK_LOAD_WARP_TRANSPOSE;
-    const auto scan_transposed_blockstore =
-      large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
-
     constexpr int nominal_block_threads    = 128;
     constexpr int nominal_items_per_thread = 9;
     constexpr int max_segments_per_block   = 512;
@@ -201,6 +195,12 @@ struct policy_selector
     const auto block_scaled  = scale_mem_bound(nominal_block_threads, nominal_items_per_thread, augmented_size_block);
     const auto warp_scaled   = scale_mem_bound(nominal_block_threads, nominal_items_per_thread, augmented_size_warp);
     const auto thread_scaled = scale_mem_bound(nominal_block_threads, nominal_items_per_thread, accum_size);
+
+    const bool large_values = augmented_size_block > 128;
+    const auto scan_transposed_blockload =
+      large_values ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : BLOCK_LOAD_WARP_TRANSPOSE;
+    const auto scan_transposed_blockstore =
+      large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
 
     return segmented_scan_policy{
       block_segmented_scan_policy{

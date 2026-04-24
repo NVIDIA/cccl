@@ -319,7 +319,7 @@ public:
         // TODO: use BlockLoad to load
         const OffsetT input_segment_begin = (work_id < n_segments) ? inp_idx_begin_it[work_id] : 0;
         const OffsetT input_segment_end   = (work_id < n_segments) ? inp_idx_end_it[work_id] : 0;
-        const OffsetT segment_size        = input_segment_end - input_segment_begin;
+        const OffsetT segment_size = ::cuda::std::max(input_segment_end, input_segment_begin) - input_segment_begin;
 
         block_offset_scan_t offset_scanner(temp_storage.reused.offset_scan);
 
@@ -420,8 +420,6 @@ private:
     const OffsetT n_chunks = ::cuda::ceil_div(items_per_block, tile_items);
 
     using augmented_scan_op_t = multi_segment_helpers::schwarz_scan_op<ScanOpT, AccumT>;
-    using augmented_init_value_t =
-      ::cuda::std::conditional_t<has_init, augmented_accum_t, multi_segment_helpers::augmented_value_t<InitValueT>>;
 
     augmented_scan_op_t augmented_scan_op{scan_op};
 
