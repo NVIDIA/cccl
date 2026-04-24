@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES
 //
 //===----------------------------------------------------------------------===//
 
@@ -29,6 +29,9 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
     auto commonSent1 =
       cuda::std::common_iterator<decltype(iter1), sentinel_type<int*>>(sentinel_type<int*>{buffer + 8});
 
+    static_assert(cuda::std::same_as<decltype(commonIter1++), decltype(iter1)>);
+    static_assert(cuda::std::same_as<decltype(++commonIter1), decltype(commonIter1)&>);
+
     assert(*(commonIter1++) == 1);
     assert(*commonIter1 == 2);
     assert(*(++commonIter1) == 3);
@@ -48,6 +51,9 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
     auto commonIter1 = cuda::std::common_iterator<decltype(iter1), sentinel_type<int*>>(iter1);
     auto commonSent1 =
       cuda::std::common_iterator<decltype(iter1), sentinel_type<int*>>(sentinel_type<int*>{buffer + 8});
+
+    static_assert(cuda::std::same_as<decltype(commonIter1++), decltype(iter1)>);
+    static_assert(cuda::std::same_as<decltype(++commonIter1), decltype(commonIter1)&>);
 
     assert(*(commonIter1++) == 1);
     assert(*commonIter1 == 2);
@@ -69,6 +75,10 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
     auto commonSent1 =
       cuda::std::common_iterator<decltype(iter1), sentinel_type<int*>>(sentinel_type<int*>{buffer + 8});
 
+    // postfix-proxy is private
+    static_assert(!cuda::std::same_as<decltype(commonIter1++), decltype(iter1)>);
+    static_assert(cuda::std::same_as<decltype(++commonIter1), decltype(commonIter1)&>);
+
     assert(*(commonIter1++) == 1);
     assert(*commonIter1 == 2);
     assert(*(++commonIter1) == 3);
@@ -88,6 +98,8 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
     auto commonIter1 = cuda::std::common_iterator<decltype(iter1), sentinel_type<int*>>(iter1);
     auto commonSent1 =
       cuda::std::common_iterator<decltype(iter1), sentinel_type<int*>>(sentinel_type<int*>{buffer + 8});
+
+    static_assert(cuda::std::same_as<decltype(++commonIter1), decltype(commonIter1)&>);
 
     commonIter1++;
     static_assert(cuda::std::is_same_v<decltype(commonIter1++), void>);
@@ -111,6 +123,9 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
     auto commonSent1 =
       cuda::std::common_iterator<decltype(iter1), sentinel_type<int*>>(sentinel_type<int*>{buffer + 8});
 
+    static_assert(cuda::std::same_as<decltype(commonIter1++), decltype(iter1)>);
+    static_assert(cuda::std::same_as<decltype(++commonIter1), decltype(commonIter1)&>);
+
     assert(*(commonIter1++) == 1);
     assert(*commonIter1 == 2);
     assert(*(++commonIter1) == 3);
@@ -130,6 +145,9 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
     auto commonIter1 = cuda::std::common_iterator<decltype(iter1), sentinel_type<int*>>(iter1);
     auto commonSent1 =
       cuda::std::common_iterator<decltype(iter1), sentinel_type<int*>>(sentinel_type<int*>{buffer + 8});
+
+    static_assert(cuda::std::same_as<decltype(commonIter1++), decltype(commonIter1)>);
+    static_assert(cuda::std::same_as<decltype(++commonIter1), decltype(commonIter1)&>);
 
     assert(*(commonIter1++) == 1);
     assert(*commonIter1 == 2);
@@ -151,6 +169,9 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
     auto commonSent1 =
       cuda::std::common_iterator<decltype(iter1), sentinel_type<int*>>(sentinel_type<int*>{buffer + 8});
 
+    static_assert(cuda::std::same_as<decltype(commonIter1++), decltype(commonIter1)>);
+    static_assert(cuda::std::same_as<decltype(++commonIter1), decltype(commonIter1)&>);
+
     assert(*(commonIter1++) == 1);
     assert(*commonIter1 == 2);
     assert(*(++commonIter1) == 3);
@@ -171,6 +192,9 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
     using Common = cuda::std::common_iterator<cpp17_output_iterator<int*>, sentinel_type<int*>>;
     auto iter    = Common(cpp17_output_iterator<int*>(buffer));
     auto sent    = Common(sentinel_type<int*>{buffer + 5});
+
+    static_assert(cuda::std::same_as<decltype(iter++), cpp17_output_iterator<int*>>);
+    static_assert(cuda::std::same_as<decltype(++iter), decltype(iter)&>);
 
     *iter++ = 90;
     assert(buffer[0] == 90);

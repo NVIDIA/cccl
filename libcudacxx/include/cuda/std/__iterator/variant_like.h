@@ -104,11 +104,12 @@ struct __vl_destruct_base
       , __contains_{__variant_like_state::__holds_second}
   {}
 
-  _CCCL_API _CCCL_CONSTEXPR_CXX20 ~__vl_destruct_base()
+  _CCCL_API _CCCL_CONSTEXPR_CXX20 ~__vl_destruct_base() noexcept
   {
     __clear();
   }
 
+protected:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API _CCCL_CONSTEXPR_CXX20 void __clear() noexcept
   {
@@ -166,6 +167,7 @@ struct __vl_destruct_base<_Tp, _Up, true>
       , __contains_{__variant_like_state::__holds_second}
   {}
 
+protected:
   _CCCL_API constexpr void __clear() noexcept
   {
     __contains_ = __variant_like_state::__nothing;
@@ -178,11 +180,11 @@ class __variant_like : public __vl_destruct_base<_Tp, _Up>
 public:
   _CCCL_DELEGATE_CONSTRUCTORS(__variant_like, __vl_destruct_base, _Tp, _Up)
 
-#if _CCCL_STD_VER >= 2020
+#if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI constexpr __variant_like(const __variant_like&)
     requires is_trivially_copy_constructible_v<_Tp> && is_trivially_copy_constructible_v<_Up>
   = default;
-#endif // _CCCL_STD_VER >= 2020
+#endif // _CCCL_HAS_CONCEPTS()
 
   _CCCL_API _CCCL_CONSTEXPR_CXX20 __variant_like(const __variant_like& __other) noexcept(
     is_nothrow_copy_constructible_v<_Tp> && is_nothrow_copy_constructible_v<_Up>)
@@ -220,11 +222,11 @@ public:
     }
   }
 
-#if _CCCL_STD_VER >= 2020
+#if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI constexpr __variant_like(__variant_like&&)
     requires is_trivially_move_constructible_v<_Tp> && is_trivially_move_constructible_v<_Up>
   = default;
-#endif // _CCCL_STD_VER >= 2020
+#endif // _CCCL_HAS_CONCEPTS()
 
   _CCCL_API _CCCL_CONSTEXPR_CXX20 __variant_like(__variant_like&& __other) noexcept(
     is_nothrow_move_constructible_v<_Tp> && is_nothrow_move_constructible_v<_Up>)
@@ -243,13 +245,13 @@ public:
     }
   }
 
-#if _CCCL_STD_VER >= 2020
+#if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI constexpr __variant_like& operator=(const __variant_like&)
     requires is_trivially_destructible_v<_Tp> && is_trivially_destructible_v<_Up>
             && is_trivially_copy_constructible_v<_Tp> && is_trivially_copy_constructible_v<_Up>
             && is_trivially_copy_assignable_v<_Tp> && is_trivially_copy_assignable_v<_Up>
   = default;
-#endif // _CCCL_STD_VER >= 2020
+#endif // _CCCL_HAS_CONCEPTS()
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API _CCCL_CONSTEXPR_CXX20 __variant_like& operator=(const __variant_like& __other) noexcept(
@@ -292,13 +294,13 @@ public:
     return *this;
   }
 
-#if _CCCL_STD_VER >= 2020
+#if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI constexpr __variant_like& operator=(__variant_like&&)
     requires is_trivially_destructible_v<_Tp> && is_trivially_destructible_v<_Up>
             && is_trivially_move_constructible_v<_Tp> && is_trivially_move_constructible_v<_Up>
             && is_trivially_move_assignable_v<_Tp> && is_trivially_move_assignable_v<_Up>
   = default;
-#endif // _CCCL_STD_VER >= 2020
+#endif // _CCCL_HAS_CONCEPTS()
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API _CCCL_CONSTEXPR_CXX20 __variant_like& operator=(__variant_like&& __other) noexcept(
@@ -438,7 +440,7 @@ public:
     this->__contains_ = __variant_like_state::__holds_second;
   }
 
-  [[nodiscard]] _CCCL_API constexpr bool valueless_by_exception() const noexcept
+  [[nodiscard]] _CCCL_API constexpr bool __valueless_by_exception() const noexcept
   {
     return this->__contains_ == __variant_like_state::__nothing;
   }

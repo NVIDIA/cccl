@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES
 //
 //===----------------------------------------------------------------------===//
 
@@ -13,6 +13,7 @@
 //   const common_iterator& x, const common_iterator<I2, S2>& y);
 
 #include <cuda/std/cassert>
+#include <cuda/std/concepts>
 #include <cuda/std/iterator>
 
 #include "test_macros.h"
@@ -27,6 +28,16 @@ TEST_FUNC constexpr bool test()
     auto commonIter1 = cuda::std::common_iterator<decltype(iter1), sized_sentinel_type<int*>>(iter1);
     auto commonSent1 =
       cuda::std::common_iterator<decltype(iter1), sized_sentinel_type<int*>>(sized_sentinel_type<int*>{buffer + 8});
+
+    static_assert(
+      cuda::std::same_as<decltype(commonIter1 - commonSent1), cuda::std::iter_difference_t<decltype(iter1)>>);
+    static_assert(
+      cuda::std::same_as<decltype(commonSent1 - commonIter1), cuda::std::iter_difference_t<decltype(iter1)>>);
+    static_assert(
+      cuda::std::same_as<decltype(commonIter1 - commonIter1), cuda::std::iter_difference_t<decltype(iter1)>>);
+    static_assert(
+      cuda::std::same_as<decltype(commonSent1 - commonSent1), cuda::std::iter_difference_t<decltype(iter1)>>);
+
     assert(commonIter1 - commonSent1 == -8);
     assert(commonSent1 - commonIter1 == 8);
     assert(commonIter1 - commonIter1 == 0);
@@ -38,6 +49,9 @@ TEST_FUNC constexpr bool test()
     auto commonIter1 = cuda::std::common_iterator<decltype(iter1), sized_sentinel_type<int*>>(iter1);
     auto commonIter2 = cuda::std::common_iterator<decltype(iter2), sized_sentinel_type<int*>>(iter2);
 
+    static_assert(
+      cuda::std::same_as<decltype(commonIter1 - commonIter2), cuda::std::iter_difference_t<decltype(iter1)>>);
+
     assert(commonIter1 - commonIter2 == 0);
   }
   {
@@ -45,6 +59,16 @@ TEST_FUNC constexpr bool test()
     const auto commonIter1 = cuda::std::common_iterator<decltype(iter1), sized_sentinel_type<int*>>(iter1);
     const auto commonSent1 =
       cuda::std::common_iterator<decltype(iter1), sized_sentinel_type<int*>>(sized_sentinel_type<int*>{buffer + 8});
+
+    static_assert(
+      cuda::std::same_as<decltype(commonIter1 - commonSent1), cuda::std::iter_difference_t<decltype(iter1)>>);
+    static_assert(
+      cuda::std::same_as<decltype(commonSent1 - commonIter1), cuda::std::iter_difference_t<decltype(iter1)>>);
+    static_assert(
+      cuda::std::same_as<decltype(commonIter1 - commonIter1), cuda::std::iter_difference_t<decltype(iter1)>>);
+    static_assert(
+      cuda::std::same_as<decltype(commonSent1 - commonSent1), cuda::std::iter_difference_t<decltype(iter1)>>);
+
     assert(commonIter1 - commonSent1 == -8);
     assert(commonSent1 - commonIter1 == 8);
     assert(commonIter1 - commonIter1 == 0);
@@ -55,6 +79,9 @@ TEST_FUNC constexpr bool test()
     auto iter2             = comparable_iterator<int*>(buffer);
     const auto commonIter1 = cuda::std::common_iterator<decltype(iter1), sized_sentinel_type<int*>>(iter1);
     const auto commonIter2 = cuda::std::common_iterator<decltype(iter2), sized_sentinel_type<int*>>(iter2);
+
+    static_assert(
+      cuda::std::same_as<decltype(commonIter1 - commonIter2), cuda::std::iter_difference_t<decltype(iter1)>>);
 
     assert(commonIter1 - commonIter2 == 0);
   }

@@ -25,9 +25,9 @@
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/copyable.h>
-#include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/common_iterator.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/iter_move.h>
@@ -63,12 +63,15 @@ template <input_or_output_iterator _Iter, sentinel_for<_Iter> _Sent>
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Iter,
           class _Sent,
-          enable_if_t<input_or_output_iterator<_Iter>, int>             = 0,
-          enable_if_t<sentinel_for<_Sent, _Iter>, int>                  = 0,
-          enable_if_t<(!same_as<_Iter, _Sent> && copyable<_Iter>), int> = 0>
+          enable_if_t<input_or_output_iterator<_Iter>, int>,
+          enable_if_t<sentinel_for<_Sent, _Iter>, int>,
+          enable_if_t<(!same_as<_Iter, _Sent> && copyable<_Iter>), int>>
 #endif // !_CCCL_HAS_CONCEPTS()
-class common_iterator
+class _CCCL_TYPE_VISIBILITY_DEFAULT common_iterator
 {
+public:
+  // These should be private but older compilers (gcc-7 and clang-14) complain about implicitly
+  // naming private types in decltype or auto expressions.
   struct __proxy
   {
     iter_value_t<_Iter> __value_;
@@ -89,11 +92,10 @@ class common_iterator
     }
   };
 
-public:
   __variant_like<_Iter, _Sent> __hold_;
 
 #if _CCCL_HAS_CONCEPTS()
-  _CCCL_HIDE_FROM_ABI constexpr common_iterator()
+  _CCCL_HIDE_FROM_ABI constexpr common_iterator() noexcept(is_nothrow_default_constructible_v<_Iter>)
     requires default_initializable<_Iter>
   = default;
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
@@ -213,13 +215,13 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const common_iterator& __x, const common_iterator<_I2, _S2>& __y)
   {
-    auto& __y_hold = __y.__get_hold();
+    const auto& __y_hold = __y.__get_hold();
 
-    _CCCL_ASSERT(!__x.__hold_.valueless_by_exception(), "Attempted to compare a valueless common_iterator");
-    _CCCL_ASSERT(!__y_hold.valueless_by_exception(), "Attempted to compare a valueless common_iterator");
+    _CCCL_ASSERT(!__x.__hold_.__valueless_by_exception(), "Attempted to compare a valueless common_iterator");
+    _CCCL_ASSERT(!__y_hold.__valueless_by_exception(), "Attempted to compare a valueless common_iterator");
 
-    auto __x_contains = __x.__hold_.__contains_;
-    auto __y_contains = __y_hold.__contains_;
+    const auto __x_contains = __x.__hold_.__contains_;
+    const auto __y_contains = __y_hold.__contains_;
 
     if (__x_contains == __y_contains)
     {
@@ -240,13 +242,13 @@ public:
   _CCCL_REQUIRES((!equality_comparable<_I2>) )
   [[nodiscard]] _CCCL_API friend constexpr bool operator==(const common_iterator& __x, const common_iterator& __y)
   {
-    auto& __y_hold = __y.__get_hold();
+    const auto& __y_hold = __y.__get_hold();
 
-    _CCCL_ASSERT(!__x.__hold_.valueless_by_exception(), "Attempted to compare a valueless common_iterator");
-    _CCCL_ASSERT(!__y_hold.valueless_by_exception(), "Attempted to compare a valueless common_iterator");
+    _CCCL_ASSERT(!__x.__hold_.__valueless_by_exception(), "Attempted to compare a valueless common_iterator");
+    _CCCL_ASSERT(!__y_hold.__valueless_by_exception(), "Attempted to compare a valueless common_iterator");
 
-    auto __x_contains = __x.__hold_.__contains_;
-    auto __y_contains = __y_hold.__contains_;
+    const auto __x_contains = __x.__hold_.__contains_;
+    const auto __y_contains = __y_hold.__contains_;
 
     if (__x_contains == __y_contains)
     {
@@ -285,10 +287,10 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const common_iterator& __x, const common_iterator<_I2, _S2>& __y)
   {
-    auto& __y_hold = __y.__get_hold();
+    const auto& __y_hold = __y.__get_hold();
 
-    _CCCL_ASSERT(!__x.__hold_.valueless_by_exception(), "Attempted to compare a valueless common_iterator");
-    _CCCL_ASSERT(!__y_hold.valueless_by_exception(), "Attempted to compare a valueless common_iterator");
+    _CCCL_ASSERT(!__x.__hold_.__valueless_by_exception(), "Attempted to compare a valueless common_iterator");
+    _CCCL_ASSERT(!__y_hold.__valueless_by_exception(), "Attempted to compare a valueless common_iterator");
 
     if (__x.__hold_.__holds_second() && __y_hold.__holds_second())
     {
@@ -313,10 +315,10 @@ public:
   _CCCL_REQUIRES(equality_comparable<_I2>)
   [[nodiscard]] _CCCL_API friend constexpr bool operator==(const common_iterator& __x, const common_iterator& __y)
   {
-    auto& __y_hold = __y.__get_hold();
+    const auto& __y_hold = __y.__get_hold();
 
-    _CCCL_ASSERT(!__x.__hold_.valueless_by_exception(), "Attempted to compare a valueless common_iterator");
-    _CCCL_ASSERT(!__y_hold.valueless_by_exception(), "Attempted to compare a valueless common_iterator");
+    _CCCL_ASSERT(!__x.__hold_.__valueless_by_exception(), "Attempted to compare a valueless common_iterator");
+    _CCCL_ASSERT(!__y_hold.__valueless_by_exception(), "Attempted to compare a valueless common_iterator");
 
     if (__x.__hold_.__holds_second() && __y_hold.__holds_second())
     {
@@ -360,10 +362,10 @@ public:
   [[nodiscard]] _CCCL_API friend constexpr iter_difference_t<_I2>
   operator-(const common_iterator& __x, const common_iterator<_I2, _S2>& __y)
   {
-    auto& __y_hold = __y.__get_hold();
+    const auto& __y_hold = __y.__get_hold();
 
-    _CCCL_ASSERT(!__x.__hold_.valueless_by_exception(), "Attempted to subtract from a valueless common_iterator");
-    _CCCL_ASSERT(!__y_hold.valueless_by_exception(), "Attempted to subtract a valueless common_iterator");
+    _CCCL_ASSERT(!__x.__hold_.__valueless_by_exception(), "Attempted to subtract from a valueless common_iterator");
+    _CCCL_ASSERT(!__y_hold.__valueless_by_exception(), "Attempted to subtract a valueless common_iterator");
 
     if (__x.__hold_.__holds_second() && __y_hold.__holds_second())
     {
@@ -397,7 +399,7 @@ public:
   _CCCL_API friend constexpr void iter_swap(const common_iterator& __x, const common_iterator<_I2, _S2>& __y) noexcept(
     noexcept(::cuda::std::ranges::iter_swap(::cuda::std::declval<const _Iter&>(), ::cuda::std::declval<const _I2&>())))
   {
-    auto& __y_hold = __y.__get_hold();
+    const auto& __y_hold = __y.__get_hold();
 
     _CCCL_ASSERT(__x.__hold_.__holds_first(), "Attempted to iter_swap a non-dereferenceable common_iterator");
     _CCCL_ASSERT(__y_hold.__holds_first(), "Attempted to iter_swap a non-dereferenceable common_iterator");
@@ -422,46 +424,24 @@ struct incrementable_traits<common_iterator<_Iter, _Sent>>
   using difference_type = iter_difference_t<_Iter>;
 };
 
-template <class _Iter>
-_CCCL_CONCEPT __denotes_forward_iter = _CCCL_REQUIRES_EXPR((_Iter), )(
-  typename(typename iterator_traits<_Iter>::iterator_category),
-  requires(derived_from<typename iterator_traits<_Iter>::iterator_category, forward_iterator_tag>));
-
-template <class _Iter, class _Sent>
-_CCCL_CONCEPT __common_iter_has_ptr_op = __has_const_arrow<common_iterator<_Iter, _Sent>>;
-
-template <class, class, class = void>
-struct __arrow_type_or_void
-{
-  using type _CCCL_NODEBUG = void;
-};
-
-template <class _Iter, class _Sent>
-struct __arrow_type_or_void<_Iter, _Sent, enable_if_t<__common_iter_has_ptr_op<_Iter, _Sent>>>
-{
-  using type _CCCL_NODEBUG = decltype(::cuda::std::declval<const common_iterator<_Iter, _Sent>&>().operator->());
-};
-
 #if _CCCL_COMPILER(GCC) // GCC breaks with a circular definition here
 template <class _Iter, class _Sent>
 struct __is_primary_std_template<common_iterator<_Iter, _Sent>> : true_type
 {};
 #endif // _CCCL_COMPILER(GCC)
 
-#if _CCCL_HAS_CONCEPTS()
-template <input_iterator _Iter, class _Sent>
-struct iterator_traits<common_iterator<_Iter, _Sent>>
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Iter, class _Sent>
 struct iterator_traits<common_iterator<_Iter, _Sent>, enable_if_t<input_iterator<_Iter>>>
-#endif // !_CCCL_HAS_CONCEPTS()
 {
-  using iterator_concept  = conditional_t<forward_iterator<_Iter>, forward_iterator_tag, input_iterator_tag>;
-  using iterator_category = conditional_t<__denotes_forward_iter<_Iter>, forward_iterator_tag, input_iterator_tag>;
-  using pointer           = typename __arrow_type_or_void<_Iter, _Sent>::type;
-  using value_type        = iter_value_t<_Iter>;
-  using difference_type   = iter_difference_t<_Iter>;
-  using reference         = iter_reference_t<_Iter>;
+  using iterator_concept = conditional_t<forward_iterator<_Iter>, forward_iterator_tag, input_iterator_tag>;
+  using iterator_category =
+    conditional_t<__has_iterator_category_convertible_to<_Iter, forward_iterator_tag>,
+                  forward_iterator_tag,
+                  input_iterator_tag>;
+  using pointer         = __iterator_traits_member_pointer_or_arrow_or_void<common_iterator<_Iter, _Sent>>;
+  using value_type      = iter_value_t<_Iter>;
+  using difference_type = iter_difference_t<_Iter>;
+  using reference       = iter_reference_t<_Iter>;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
