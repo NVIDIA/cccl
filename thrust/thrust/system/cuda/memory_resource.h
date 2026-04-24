@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2018-2020, NVIDIA Corporation. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2018-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 /*! \file cuda/memory_resource.h

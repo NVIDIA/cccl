@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION.
 ci:
     autofix_commit_msg: |
       [pre-commit.ci] auto code formatting
@@ -86,6 +86,22 @@ repos:
                "python/cuda_cccl/cuda/compute/"]
         pass_filenames: false
 
+
+  - repo: local
+    hooks:
+      - id: copyright-year
+        name: copyright-year
+        description: 'Check that year is correct for copyright notices'
+        entry: ./ci/util/pre-commit/copyright_year.py
+        language: python
+        exclude: |
+          (?x)^(
+            ^.*\.png$|
+            ^.*\.pdf$|
+            ^.*\.output$|
+            .*libcudacxx/cmake/config\.guess$
+          )
+        types_or: [file, text]
 
 default_language_version:
   python: python3

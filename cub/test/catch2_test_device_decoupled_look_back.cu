@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 #include "insert_nested_NVTX_range_guard.h"

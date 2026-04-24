@@ -11,7 +11,7 @@
 // Part of Kokkos, under the Apache License v2.0 with LLVM Exceptions.
 // See https://kokkos.org/LICENSE for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES.
 //
 // ************************************************************************
 //@HEADER

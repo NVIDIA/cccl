@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2011-2023, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 // This benchmark uses a custom reduction operation, max_t, which is not known to CUB, so no operator specific

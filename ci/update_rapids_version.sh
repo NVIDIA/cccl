@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2024-2025, NVIDIA CORPORATION.
+# Copyright (c) 2024-2026, NVIDIA CORPORATION.
 ##########################
 # RAPIDS Version Updater #
 ##########################

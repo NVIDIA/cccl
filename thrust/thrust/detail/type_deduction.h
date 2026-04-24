@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2018, NVIDIA Corporation
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION
 // SPDX-FileCopyrightText: Copyright (c) 2013-2018, Eric Niebler (`THRUST_RETURNS`, etc)
 // SPDX-FileCopyrightText: Copyright (c) 2016-2018, Casey Carter (`THRUST_RETURNS`, etc)
 // SPDX-License-Identifier: BSL-1.0

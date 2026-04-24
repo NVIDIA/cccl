@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
-// SPDX-FileCopyrightText: Copyright (c) 2011-2022, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 // FIXME(bgruber): I found no way to suppress the deprecations for the _lid_1 build

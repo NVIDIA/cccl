@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 
 // This benchmark is only used for regression testing and not tuning

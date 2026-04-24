@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-20120, NVIDIA Corporation. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2008-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 #include <thrust/detail/config.h>

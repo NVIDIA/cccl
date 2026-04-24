@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2008-2018, NVIDIA Corporation. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2008-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 //! \file thrust/iterator/transform_output_iterator.h
