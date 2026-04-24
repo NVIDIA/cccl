@@ -30,6 +30,12 @@ struct worker_policy
   BlockLoadAlgorithm load_algorithm;
   BlockStoreAlgorithm store_algorithm;
 
+  int epilogue_items_per_thread;
+  // TODO(pauleonix): Do we want to reuse the same load and store algorithms for the epilogue?
+  BlockLoadAlgorithm epilogue_load_algorithm;
+  BlockScanAlgorithm epilogue_scan_algorithm;
+  BlockStoreAlgorithm epilogue_store_algorithm;
+
   _CCCL_API constexpr friend bool operator==(const worker_policy& lhs, const worker_policy& rhs)
   {
     return lhs.block_threads == rhs.block_threads && lhs.items_per_thread == rhs.items_per_thread
@@ -93,15 +99,17 @@ struct policy_selector
 {
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> batched_topk_policy
   {
-    constexpr auto load_alg  = BLOCK_LOAD_WARP_TRANSPOSE;
-    constexpr auto store_alg = BLOCK_STORE_WARP_TRANSPOSE;
+    constexpr auto load_alg                 = BLOCK_LOAD_WARP_TRANSPOSE;
+    constexpr auto store_alg                = BLOCK_STORE_WARP_TRANSPOSE;
+    constexpr auto epilogue_scan_alg        = BLOCK_SCAN_WARP_SCANS;
+    constexpr int epilogue_items_per_thread = 16;
     return batched_topk_policy{{{
-      worker_policy{256, 64, load_alg, store_alg},
-      worker_policy{256, 32, load_alg, store_alg},
-      worker_policy{256, 16, load_alg, store_alg},
-      worker_policy{256, 8, load_alg, store_alg},
-      worker_policy{256, 4, load_alg, store_alg},
-      worker_policy{128, 2, load_alg, store_alg},
+      worker_policy{256, 64, load_alg, store_alg, epilogue_items_per_thread, load_alg, epilogue_scan_alg, store_alg},
+      worker_policy{256, 32, load_alg, store_alg, epilogue_items_per_thread, load_alg, epilogue_scan_alg, store_alg},
+      worker_policy{256, 16, load_alg, store_alg, epilogue_items_per_thread, load_alg, epilogue_scan_alg, store_alg},
+      worker_policy{256, 8, load_alg, store_alg, epilogue_items_per_thread, load_alg, epilogue_scan_alg, store_alg},
+      worker_policy{256, 4, load_alg, store_alg, epilogue_items_per_thread, load_alg, epilogue_scan_alg, store_alg},
+      worker_policy{128, 2, load_alg, store_alg, epilogue_items_per_thread, load_alg, epilogue_scan_alg, store_alg},
     }}};
   }
 };

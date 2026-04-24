@@ -198,10 +198,32 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     KParameterT,
     SelectDirectionParameterT,
     NumSegmentsParameterT>::policy;
+  static constexpr int worker_per_segment_tile_size = selected.block_threads * selected.items_per_thread;
+  static constexpr bool any_small_segments =
+    params::static_min_value_v<SegmentSizeParameterT> <= worker_per_segment_tile_size;
+  static constexpr bool only_small_segments =
+    params::static_max_value_v<SegmentSizeParameterT> <= worker_per_segment_tile_size;
+  constexpr int allocations_array_size            = !only_small_segments ? 4 : 1;
+  size_t allocation_sizes[allocations_array_size] = {1};
+  if constexpr (!only_small_segments)
+  {
+    const auto num_segments_val = num_segments.get_param(0);
+    allocation_sizes[0]         = sizeof(typename NumSegmentsParameterT::value_type);
+    allocation_sizes[1]         = sizeof(::cuda::std::uint32_t);
+    allocation_sizes[2]         = num_segments_val * sizeof(typename NumSegmentsParameterT::value_type);
+    allocation_sizes[3]         = num_segments_val * sizeof(::cuda::std::int64_t);
+  }
+
+  // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
+  void* allocations[allocations_array_size] = {};
+  if (const auto error =
+        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+  {
+    return error;
+  }
 
   if (d_temp_storage == nullptr)
   {
-    temp_storage_bytes = 1;
     return cudaSuccess;
   }
 
@@ -214,29 +236,45 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   const int grid_dim      = static_cast<int>(num_segments.get_param(0));
   constexpr int block_dim = selected.block_threads;
 
-  if (const auto error = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)
-          .doit(device_segmented_topk_kernel<PolicySelector,
-                                             KeyInputItItT,
-                                             KeyOutputItItT,
-                                             ValueInputItItT,
-                                             ValueOutputItItT,
-                                             SegmentSizeParameterT,
-                                             KParameterT,
-                                             SelectDirectionParameterT,
-                                             NumSegmentsParameterT>,
-                d_key_segments_it,
-                d_key_segments_out_it,
-                d_value_segments_it,
-                d_value_segments_out_it,
-                segment_sizes,
-                k,
-                select_directions,
-                num_segments)))
+  if constexpr (any_small_segments)
   {
-    return error;
+    if (const auto error = CubDebug(
+          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)
+            .doit(
+              device_segmented_topk_kernel<PolicySelector,
+                                           KeyInputItItT,
+                                           KeyOutputItItT,
+                                           ValueInputItItT,
+                                           ValueOutputItItT,
+                                           SegmentSizeParameterT,
+                                           KParameterT,
+                                           SelectDirectionParameterT,
+                                           NumSegmentsParameterT>,
+              d_key_segments_it,
+              d_key_segments_out_it,
+              d_value_segments_it,
+              d_value_segments_out_it,
+              segment_sizes,
+              k,
+              select_directions,
+              num_segments,
+              only_small_segments ? nullptr : static_cast<typename NumSegmentsParameterT::value_type*>(allocations[0]),
+              only_small_segments ? nullptr : static_cast<::cuda::std::uint32_t*>(allocations[1]),
+              only_small_segments ? nullptr : static_cast<typename NumSegmentsParameterT::value_type*>(allocations[2]),
+              only_small_segments ? nullptr : static_cast<::cuda::std::int64_t*>(allocations[3]))))
+    {
+      return error;
+    }
+  }
+  else
+  {
+    // TODO (pauleonix): Transform-Scan over all segments for tile offsets.
   }
 
+  if constexpr (!only_small_segments)
+  {
+    // TODO (pauleonix): Segmented sort as a placeholder for the large segment agent.
+  }
   return CubDebug(detail::DebugSyncStream(stream));
 }
 } // namespace detail::batched_topk

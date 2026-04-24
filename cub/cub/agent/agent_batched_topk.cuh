@@ -49,21 +49,19 @@ struct agent_batched_topk_worker_per_segment
   using key_t   = it_value_t<key_it_t>;
   using value_t = it_value_t<value_it_t>;
 
-  using segment_size_val_t     = typename SegmentSizeParameterT::value_type;
-  using k_val_t                = typename KParameterT::value_type;
-  using select_direction_val_t = typename SelectDirectionParameterT::value_type;
+  using segment_size_val_t = typename SegmentSizeParameterT::value_type;
+  using num_segments_val_t = typename NumSegmentsParameterT::value_type;
 
   static constexpr worker_policy active_policy = PolicyGetter{}();
 
-  static constexpr int block_threads    = active_policy.block_threads;
-  static constexpr int items_per_thread = active_policy.items_per_thread;
-  static constexpr int tile_size        = block_threads * items_per_thread;
+  static constexpr int block_threads             = active_policy.block_threads;
+  static constexpr int items_per_thread          = active_policy.items_per_thread;
+  static constexpr int tile_size                 = block_threads * items_per_thread;
   static constexpr int epilogue_items_per_thread = active_policy.epilogue_items_per_thread;
   static constexpr int epilogue_tile_size        = block_threads * epilogue_items_per_thread;
   // TODO (elstehle): This is just a placeholder for now, we will need to specialize this for the large segment agent.
   static constexpr int large_segment_agent_tile_size = tile_size;
 
-  static constexpr bool any_small_segments  = params::static_min_value_v<SegmentSizeParameterT> <= tile_size;
   static constexpr bool only_small_segments = params::static_max_value_v<SegmentSizeParameterT> <= tile_size;
 
   // Check if we are dealing with keys-only or key-value pairs
@@ -120,12 +118,12 @@ struct agent_batched_topk_worker_per_segment
   KParameterT k_param;
   SelectDirectionParameterT select_directions;
   NumSegmentsParameterT num_segments;
-  // Currently we use int for segment_id = blockIdx.x, so int has be enough for all three.
-  int* d_large_segments_counter;
-  int* d_retirement_counter;
-  int* d_large_segments_ids;
+  num_segments_val_t* d_large_segments_counter;
+  // Currently we use int for segment_id = blockIdx.x, so int has be enough.
+  ::cuda::std::uint32_t* d_retirement_counter;
+  num_segments_val_t* d_large_segments_ids;
   // Assuming the large segment agent will also use int for tile_id = blockIdx.x.
-  int* d_large_segments_tile_offsets;
+  ::cuda::std::int64_t* d_large_segments_tile_offsets;
   // -------------------------------------------------------------------------
   // Constructor
   // -------------------------------------------------------------------------
@@ -139,10 +137,10 @@ struct agent_batched_topk_worker_per_segment
     KParameterT k_param,
     SelectDirectionParameterT select_directions,
     NumSegmentsParameterT num_segments,
-    int* d_large_segments_counter,
-    int* d_retirement_counter,
-    int* d_large_segments_ids,
-    int* d_large_segments_tile_offsets)
+    num_segments_val_t* d_large_segments_counter,
+    ::cuda::std::uint32_t* d_retirement_counter,
+    num_segments_val_t* d_large_segments_ids,
+    ::cuda::std::int64_t* d_large_segments_tile_offsets)
       : temp_storage(temp_storage.Alias())
       , d_key_segments_it(d_key_segments_it)
       , d_key_segments_out_it(d_key_segments_out_it)
@@ -175,19 +173,19 @@ struct agent_batched_topk_worker_per_segment
 
     // Resolve Segment Parameters
     const auto segment_size = segment_sizes.get_param(segment_id);
-    if (!any_small_segments || (!only_small_segments && segment_size > tile_size))
+    if (!only_small_segments && segment_size > tile_size)
     {
       // Enqueue large segment
       if (threadIdx.x == 0u)
       {
         // Add to large segment queue
-        const auto large_segment_queue_idx            = atomicAdd(d_large_segments_counter, 1);
-        d_large_segments_ids[large_segment_queue_idx] = segment_id;
+        const auto large_segment_queue_idx            = atomicAdd(d_large_segments_counter, num_segments_val_t{1});
+        d_large_segments_ids[large_segment_queue_idx] = static_cast<num_segments_val_t>(segment_id);
         d_large_segments_tile_offsets[large_segment_queue_idx] =
-          ::cuda::narrow<int>(::cuda::std::ceil_div(segment_size, large_segment_agent_tile_size));
+          static_cast<::cuda::std::int64_t>(::cuda::std::ceil_div(segment_size, large_segment_agent_tile_size));
       }
     }
-    else if constexpr (any_small_segments)
+    else
     {
       // Process small segment
       const auto k         = (::cuda::std::min) (k_param.get_param(segment_id),
@@ -303,8 +301,8 @@ struct agent_batched_topk_worker_per_segment
       if (threadIdx.x == 0u)
       {
         __threadfence();
-        const auto retirement_count = atomicAdd(d_retirement_counter, 1);
-        is_last_block               = retirement_count == static_cast<int>(gridDim.x) - 1;
+        const auto retirement_count = atomicAdd(d_retirement_counter, 1u);
+        is_last_block               = retirement_count == (gridDim.x - 1u);
       }
       // This sync also makes sure that the shared memory can be reused.
       is_last_block = static_cast<bool>(__syncthreads_or(static_cast<int>(is_last_block)));

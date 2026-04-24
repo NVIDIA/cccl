@@ -123,7 +123,11 @@ __launch_bounds__(int(
     SegmentSizeParameterT segment_sizes,
     KParameterT k,
     SelectDirectionParameterT select_directions,
-    NumSegmentsParameterT num_segments)
+    NumSegmentsParameterT num_segments,
+    typename NumSegmentsParameterT::value_type* d_large_segments_counter,
+    ::cuda::std::uint32_t* d_retirement_counter,
+    typename NumSegmentsParameterT::value_type* d_large_segments_ids,
+    ::cuda::std::int64_t* d_large_segments_tile_offsets)
 {
   using agent_t = typename find_smallest_covering_policy<
     PolicySelector,
@@ -156,7 +160,11 @@ __launch_bounds__(int(
     segment_sizes,
     k,
     select_directions,
-    num_segments);
+    num_segments,
+    d_large_segments_counter,
+    d_retirement_counter,
+    d_large_segments_ids,
+    d_large_segments_tile_offsets);
 
   // Process segments
   agent.Process();
