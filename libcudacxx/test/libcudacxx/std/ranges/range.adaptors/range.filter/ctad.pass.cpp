@@ -51,10 +51,11 @@ TEST_FUNC constexpr bool test()
     static_assert(cuda::std::is_same_v<decltype(view), cuda::std::ranges::filter_view<View, Pred>>);
   }
 
-  // (clang-14 || gcc-12 || msvc-19.39) in C++20 tries to erroneously instantiate a bunch of
+  // (clang-14 || gcc-8 through gcc-12 || msvc-19.39) in C++20 tries to erroneously instantiate a bunch of
   // default constructors that don't exist because it evaluates the class initializers before
   // considering the default constructors requirements clause.
-#if !((TEST_COMPILER(CLANG, ==, 14) || TEST_COMPILER(GCC, ==, 12) || TEST_COMPILER(MSVC, <, 19, 44)) \
+#if !((TEST_COMPILER(CLANG, ==, 14) || (TEST_COMPILER(GCC, >=, 8) && TEST_COMPILER(GCC, <=, 12)) \
+       || TEST_COMPILER(MSVC, <, 19, 44))                                                        \
       && (TEST_STD_VER == 2020))
   {
     // Test with a range that isn't a view, to make sure we properly use views::all_t in the
@@ -66,7 +67,7 @@ TEST_FUNC constexpr bool test()
     static_assert(
       cuda::std::is_same_v<decltype(view), cuda::std::ranges::filter_view<cuda::std::ranges::ref_view<Range>, Pred>>);
   }
-#endif // !((TEST_COMPILER(CLANG, ==, 14) || TEST_COMPILER(GCC, ==, 12)
+#endif // !((TEST_COMPILER(CLANG, ==, 14) || (TEST_COMPILER(GCC, >=, 8) && TEST_COMPILER(GCC, <=, 12))
        //     || TEST_COMPILER(MSVC, <, 19, 44)) && (TEST_STD_VER == 2020))
 
   return true;

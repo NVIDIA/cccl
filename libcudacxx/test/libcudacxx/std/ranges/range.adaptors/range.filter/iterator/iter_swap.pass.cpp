@@ -7,12 +7,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-// (clang-14 || gcc-12 || msvc-19.39) in C++20 tries to erroneously instantiate a bunch of
+// (clang-14 || gcc-8 through gcc-12 || msvc-19.39) in C++20 tries to erroneously instantiate a bunch of
 // default constructors that don't exist because it evaluates the class initializers before
 // considering the default constructors requirements clause. It's not possible to selectively
 // disable them in this file like the others, so we just disable the compiler entirely.
 
-// UNSUPPORTED: (clang-14 || gcc-12 || msvc-19.39) && c++20
+// UNSUPPORTED: (clang-14 || gcc-8 || gcc-9 || gcc-10 || gcc-11 || gcc-12 || msvc-19.39) && c++20
 
 // friend constexpr void iter_swap(iterator const& x, iterator const& y)
 //  noexcept(noexcept(ranges::iter_swap(x.current_, y.current_)))

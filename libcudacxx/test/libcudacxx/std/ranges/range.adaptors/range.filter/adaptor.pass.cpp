@@ -40,15 +40,16 @@ struct Range : cuda::std::ranges::view_base
   using Iterator = forward_iterator<int*>;
   using Sentinel = sentinel_wrapper<Iterator>;
 
-  // (clang-14 || gcc-12 || msvc-19.39) in C++20 tries to erroneously instantiate a bunch of
+  // (clang-14 || gcc-8 through gcc-12 || msvc-19.39) in C++20 tries to erroneously instantiate a bunch of
   // default constructors that don't exist because it evaluates the class initializers before
   // considering the default constructors requirements clause.
-#if (TEST_COMPILER(CLANG, ==, 14) || TEST_COMPILER(GCC, ==, 12) || TEST_COMPILER(MSVC, <, 19, 44)) \
+#if (TEST_COMPILER(CLANG, ==, 14) || (TEST_COMPILER(GCC, >=, 8) && TEST_COMPILER(GCC, <=, 12)) \
+     || TEST_COMPILER(MSVC, <, 19, 44))                                                        \
   && (TEST_STD_VER == 2020)
   TEST_FUNC constexpr explicit Range()
       : Range{nullptr, nullptr}
   {}
-#endif // (TEST_COMPILER(CLANG, ==, 14) || TEST_COMPILER(GCC, ==, 12)
+#endif // (TEST_COMPILER(CLANG, ==, 14) || (TEST_COMPILER(GCC, >=, 8) && TEST_COMPILER(GCC, <=, 12))
        // || TEST_COMPILER(MSVC, <, 19, 44)) && (TEST_STD_VER == 2020)
 
   TEST_FUNC constexpr explicit Range(int* b, int* e)

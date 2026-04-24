@@ -7,12 +7,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-// (clang-14 || gcc-12 || msvc-19.39) in C++20 tries to erroneously instantiate a bunch of
+// (clang-14 || gcc-8 through gcc-12 || msvc-19.39) in C++20 tries to erroneously instantiate a bunch of
 // default constructors that don't exist because it evaluates the class initializers before
 // considering the default constructors requirements clause. It's not possible to selectively
 // disable them in this file like the others, so we just disable the compiler entirely.
 
-// UNSUPPORTED: (clang-14 || gcc-12 || msvc-19.39) && c++20
+// UNSUPPORTED: (clang-14 || gcc-8 || gcc-9 || gcc-10 || gcc-11 || gcc-12 || msvc-19.39) && c++20
 
 // cuda::std::ranges::filter_view<V>::<iterator>() requires default_initializable<iterator_t<V>> = default;
 
@@ -34,11 +34,11 @@ TEST_FUNC constexpr void test_default_constructible()
   FilterIterator iter1{};
   FilterIterator iter2;
   assert(iter1 == iter2);
-  // GCC 7 simply gives the wrong answer here. No amount of cajoling, pleading, or
+  // GCC 7 and 8 simply give the wrong answer here. No amount of cajoling, pleading, or
   // massaging the code ever got it to pass this static_assert()
-#if !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 8, 0)
+#if !TEST_COMPILER(GCC) || TEST_COMPILER(GCC, >=, 9, 0)
   static_assert(cuda::std::is_nothrow_default_constructible_v<FilterIterator> == IsNoexcept);
-#endif
+#endif // !TEST_COMPILER(GCC) || TEST_COMPILER(GCC, >=, 9, 0)
 }
 
 template <class Iterator>
