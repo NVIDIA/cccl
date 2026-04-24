@@ -65,10 +65,10 @@ struct block_segmented_scan_policy
   {
     return os
         << "block_segmented_scan_policy { .block_threads = " << policy.block_threads
-        << ", .items_per_thread = " << policy.items_per_thread << ", .load_algorithm = "
-        << ", .load_modifier = " << policy.load_modifier << policy.load_algorithm
-        << ", .store_algorithm = " << policy.store_algorithm << ", .scan_algorithm = " << policy.scan_algorithm
-        << ", .max_segments_per_block = " << policy.max_segments << " }";
+        << ", .items_per_thread = " << policy.items_per_thread << ", .load_algorithm = " << policy.load_algorithm
+        << ", .load_modifier = " << policy.load_modifier << ", .store_algorithm = " << policy.store_algorithm
+        << ", .scan_algorithm = " << policy.scan_algorithm << ", .max_segments_per_block = " << policy.max_segments
+        << " }";
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 };
