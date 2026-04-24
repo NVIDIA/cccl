@@ -114,7 +114,7 @@ private:
       d_indexed_in,
       d_out,
       num_segments,
-      segment_size,
+      static_cast<offset_t>(segment_size),
       ReductionOpT(),
       initial_value,
       stream);
@@ -562,8 +562,20 @@ public:
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Reduce");
 
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using offset_t = int;
+
     return detail::segmented_reduce::dispatch_fixed_size(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, reduction_op, initial_value, stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      static_cast<offset_t>(segment_size),
+      reduction_op,
+      initial_value,
+      stream);
   }
 
   //! @rst
@@ -661,8 +673,8 @@ public:
     using offset_t = int;
     using accum_t  = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::it_value_t<InputIteratorT>, T>;
 
-    return fixed_size_segmented_reduce_impl<accum_t, offset_t>(
-      d_in, d_out, num_segments, segment_size, reduction_op, initial_value, env);
+    return fixed_size_segmented_reduce_impl<accum_t>(
+      d_in, d_out, num_segments, static_cast<offset_t>(segment_size), reduction_op, initial_value, env);
   }
 
   //! @rst
@@ -951,13 +963,17 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Sum");
     using output_t = detail::non_void_value_t<OutputIteratorT, detail::it_value_t<InputIteratorT>>;
 
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using offset_t = int;
+
     return detail::segmented_reduce::dispatch_fixed_size(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       num_segments,
-      segment_size,
+      static_cast<offset_t>(segment_size),
       ::cuda::std::plus{},
       output_t{},
       stream);
@@ -1034,8 +1050,8 @@ public:
     using op_t     = ::cuda::std::plus<>;
     using accum_t  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, output_t>;
 
-    return fixed_size_segmented_reduce_impl<accum_t, offset_t>(
-      d_in, d_out, num_segments, segment_size, op_t{}, output_t{}, env);
+    return fixed_size_segmented_reduce_impl<accum_t>(
+      d_in, d_out, num_segments, static_cast<offset_t>(segment_size), op_t{}, output_t{}, env);
   }
 
   //! @rst
@@ -1338,6 +1354,10 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Min");
     using input_t = detail::it_value_t<InputIteratorT>;
 
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using offset_t = int;
+
     static_assert(::cuda::std::numeric_limits<input_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
 
@@ -1347,7 +1367,7 @@ public:
       d_in,
       d_out,
       num_segments,
-      segment_size,
+      static_cast<offset_t>(segment_size),
       ::cuda::minimum<>{},
       ::cuda::std::numeric_limits<input_t>::max(),
       stream);
@@ -1427,8 +1447,14 @@ public:
     using op_t     = ::cuda::minimum<>;
     using accum_t  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, input_t>;
 
-    return fixed_size_segmented_reduce_impl<accum_t, offset_t>(
-      d_in, d_out, num_segments, segment_size, op_t{}, ::cuda::std::numeric_limits<input_t>::max(), env);
+    return fixed_size_segmented_reduce_impl<accum_t>(
+      d_in,
+      d_out,
+      num_segments,
+      static_cast<offset_t>(segment_size),
+      op_t{},
+      ::cuda::std::numeric_limits<input_t>::max(),
+      env);
   }
 
   //! @rst
@@ -2150,6 +2176,10 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Max");
     using input_t = detail::it_value_t<InputIteratorT>;
 
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using offset_t = int;
+
     static_assert(::cuda::std::numeric_limits<input_t>::is_specialized,
                   "numeric_limits must be specialized for the input value type");
 
@@ -2159,7 +2189,7 @@ public:
       d_in,
       d_out,
       num_segments,
-      segment_size,
+      static_cast<offset_t>(segment_size),
       ::cuda::maximum<>{},
       ::cuda::std::numeric_limits<input_t>::lowest(),
       stream);
@@ -2237,9 +2267,14 @@ public:
     using offset_t = int;
     using op_t     = ::cuda::maximum<>;
     using accum_t  = ::cuda::std::__accumulator_t<op_t, cub::detail::it_value_t<InputIteratorT>, input_t>;
-
-    return fixed_size_segmented_reduce_impl<accum_t, offset_t>(
-      d_in, d_out, num_segments, segment_size, op_t{}, ::cuda::std::numeric_limits<input_t>::lowest(), env);
+    return fixed_size_segmented_reduce_impl<accum_t>(
+      d_in,
+      d_out,
+      num_segments,
+      static_cast<offset_t>(segment_size),
+      op_t{},
+      ::cuda::std::numeric_limits<input_t>::lowest(),
+      env);
   }
 
   //! @rst
