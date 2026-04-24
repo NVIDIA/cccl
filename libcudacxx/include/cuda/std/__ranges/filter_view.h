@@ -85,7 +85,7 @@ template <class _View,
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class filter_view : public view_interface<filter_view<_View, _Pred>>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _View __base_{};
+  _CCCL_NO_UNIQUE_ADDRESS _View __base_ = _View();
   _CCCL_NO_UNIQUE_ADDRESS __movable_box<_Pred> __pred_;
 
   // We cache the result of begin() to allow providing an amortized O(1) begin() whenever
@@ -290,8 +290,9 @@ public:
   };
 
 #if _CCCL_HAS_CONCEPTS()
-  _CCCL_HIDE_FROM_ABI constexpr filter_view() noexcept(
-    is_nothrow_default_constructible_v<_View> && is_nothrow_default_constructible_v<_Pred>)
+  _CCCL_HIDE_FROM_ABI constexpr filter_view() // noexcept(
+                                              // is_nothrow_default_constructible_v<_View> &&
+                                              // is_nothrow_default_constructible_v<_Pred>)
     requires default_initializable<_View> && default_initializable<_Pred>
   = default;
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
