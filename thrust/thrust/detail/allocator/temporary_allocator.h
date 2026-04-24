@@ -27,8 +27,7 @@
 
 #include <nv/target>
 
-#include <exception>
-#include <iostream>
+#include <cstdio>
 
 #if _CCCL_CUDA_COMPILATION() && _CCCL_DEVICE_COMPILATION()
 #  include <thrust/system/cuda/detail/terminate.h>
@@ -101,7 +100,9 @@ public:
     _CCCL_CATCH (std::exception & e)
     {
       // if we have some context about the thrown exception, log it
-      std::cerr << "Exception thrown in thrust::detail::temporary_allocator::deallocate: " << e.what() << '\n';
+      NV_IF_TARGET(NV_IS_HOST, {
+        ::fprintf(stderr, "Exception thrown in thrust::detail::temporary_allocator::deallocate: %s\n", e.what());
+      })
       _CCCL_ASSERT(false, "Exception thrown in thrust::detail::temporary_allocator::deallocate");
 #if _CCCL_CUDA_COMPILATION()
       NV_IF_TARGET(NV_IS_HOST, cudaGetLastError();)
