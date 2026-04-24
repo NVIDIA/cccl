@@ -85,15 +85,15 @@ template <class _View,
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class filter_view : public view_interface<filter_view<_View, _Pred>>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _View __base_;
-  _CCCL_NO_UNIQUE_ADDRESS __movable_box<_Pred> __pred_;
+  _View __base_;
+  __movable_box<_Pred> __pred_;
 
   // We cache the result of begin() to allow providing an amortized O(1) begin() whenever
   // the underlying range is at least a forward_range.
   static constexpr bool __use_cache = forward_range<_View>;
   using _cache_type _CCCL_NODEBUG =
     conditional_t<__use_cache, __non_propagating_cache<iterator_t<_View>>, __empty_cache>;
-  _CCCL_NO_UNIQUE_ADDRESS _cache_type __cached_begin_;
+  _cache_type __cached_begin_;
 
 public:
   // __iterator and __sentinel should be private, but several compilers (clang-14, gcc-12,
@@ -104,8 +104,8 @@ public:
   class __iterator : public __filter_iterator_category<_View>
   {
   public:
-    _CCCL_NO_UNIQUE_ADDRESS iterator_t<_View> __current_;
-    _CCCL_NO_UNIQUE_ADDRESS filter_view* __parent_ = nullptr;
+    iterator_t<_View> __current_;
+    filter_view* __parent_ = nullptr;
 
     using iterator_concept =
       conditional_t<bidirectional_range<_View>,

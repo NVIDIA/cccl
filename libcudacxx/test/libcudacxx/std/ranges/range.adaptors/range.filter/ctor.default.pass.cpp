@@ -20,7 +20,7 @@ _CCCL_GLOBAL_CONSTANT int buff[] = {1, 2, 3, 4, 5, 6, 7, 8};
 
 struct DefaultConstructibleView : cuda::std::ranges::view_base
 {
-  TEST_FUNC constexpr DefaultConstructibleView() noexcept(false)
+  TEST_FUNC constexpr DefaultConstructibleView()
       : begin_(buff)
       , end_(buff + 8)
   {}
@@ -137,9 +137,9 @@ TEST_FUNC constexpr bool test()
       using View = cuda::std::ranges::filter_view<DefaultConstructibleView, DefaultConstructiblePredicate>;
       // GCC 7 simply gives the wrong answer here. No amount of cajoling, pleading, or
       // massaging the code ever got it to pass this static_assert()
-#if !TEST_COMPILER(GCC) || TEST_COMPILER(GCC, >=, 8, 0)
+#if !TEST_COMPILER(GCC)
       static_assert(!cuda::std::is_nothrow_default_constructible_v<View>);
-#endif // !TEST_COMPILER(GCC) || TEST_COMPILER(GCC, >=, 8, 0)
+#endif // !TEST_COMPILER(GCC)
     }
     {
       using View = cuda::std::ranges::filter_view<NoexceptView, NoexceptPredicate>;
