@@ -204,20 +204,22 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     switch (selector)
     {
       case worker::block: {
-        const auto bw = active_policy.block;
-        _CCCL_ASSERT(bw.max_segments > 0, "Policy value for max segments is not positive");
-        _CCCL_ASSERT(num_segments_per_worker <= bw.max_segments, "Number of segments per block exceeds maximum value");
         constexpr int workers_per_block = 1;
-        return {workers_per_block, bw.block_threads, ::cuda::std::min(num_segments_per_worker, bw.max_segments)};
+        const auto max_segments         = active_policy.block.max_segments;
+        const auto block_threads        = active_policy.block.block_threads;
+        _CCCL_ASSERT(max_segments > 0, "Policy value for max segments is not positive");
+        _CCCL_ASSERT(num_segments_per_worker <= max_segments, "Number of segments per block exceeds maximum value");
+        return {workers_per_block, block_threads, ::cuda::std::min(num_segments_per_worker, max_segments)};
       }
       case worker::warp: {
-        const auto ww = active_policy.warp;
-        _CCCL_ASSERT(ww.max_segments > 0, "Policy value for max segments is not positive");
-        _CCCL_ASSERT(num_segments_per_worker <= ww.max_segments, "Number of segments per warp exceeds maximum value");
-        const auto block_size = ww.block_threads;
-        _CCCL_ASSERT((block_size % warp_threads) == 0, "Block size must be a multiple of architectural warp-size");
-        const int workers_per_block = block_size / warp_threads;
-        return {workers_per_block, block_size, ::cuda::std::min(num_segments_per_worker, ww.max_segments)};
+        const auto worker_policy = active_policy.warp;
+        const auto block_threads = active_policy.warp.block_threads;
+        const auto max_segments  = active_policy.warp.max_segments;
+        _CCCL_ASSERT(max_segments > 0, "Policy value for max segments is not positive");
+        _CCCL_ASSERT(num_segments_per_worker <= max_segments, "Number of segments per warp exceeds maximum value");
+        _CCCL_ASSERT((block_threads % warp_threads) == 0, "Block size must be a multiple of architectural warp-size");
+        const int workers_per_block = block_threads / warp_threads;
+        return {workers_per_block, block_threads, ::cuda::std::min(num_segments_per_worker, max_segments)};
       }
       case worker::thread: {
         const auto block_size        = active_policy.thread.block_threads;
