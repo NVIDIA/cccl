@@ -4,6 +4,8 @@
 #include <thrust/host_vector.h>
 #include <thrust/transform_reduce.h>
 
+#include <cuda/std/iterator>
+
 #include <cmath>
 #include <iostream>
 #include <limits>
