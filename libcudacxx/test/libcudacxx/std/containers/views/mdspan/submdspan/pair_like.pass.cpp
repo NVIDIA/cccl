@@ -114,6 +114,7 @@ __host__ __device__ constexpr void test()
     assert(md.size() == 6);
     assert(equal_to(md, {"HPE", "OPR"}));
 
+#if !TEST_COMPILER(MSVC) // error C3546: '...': there are no parameter packs available to expand
     { // full extent, then slice of elements from start 0:2
       // ['H', 'P', 'E'] [ x ] [ x    x      ]
       // ['O', 'P', 'R'] [ x ] [ x    x      ]
@@ -133,6 +134,7 @@ __host__ __device__ constexpr void test()
       assert(sub.size() == 4);
       assert(equal_to(sub, {"HP", "OP"}));
     }
+#endif // !TEST_COMPILER(MSVC)
 
     { // Slice of elements from start 0:1, then full extent
       // ['H', 'P', 'E'] [ x ] [ x    x    x ]
