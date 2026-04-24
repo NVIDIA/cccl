@@ -33,7 +33,7 @@ workflows:
     - {jobs: ['build'], project: 'cudax', ctk: '13.0', std: 'minmax', cxx: ['gcc11', 'gcc',   'clang15', 'clang20', 'msvc']}
     # Current CTK build-only:
     - {jobs: ['build'], std: 'minmax', cxx: ['gcc11', 'clang15', 'msvc2019'] } # Oldest
-    - {jobs: ['build'], std: 'max',    cxx: ['gcc12', 'gcc13'] }
+    - {jobs: ['build'], std: 'max',    cxx: ['gcc12', 'gcc13', 'gcc14'] }
     - {jobs: ['build'], std: 'max',    cxx: ['clang16', 'clang17', 'clang18', 'clang19', 'clang20'] }
     - {jobs: ['build'], std: 'all',    cxx: ['gcc', 'clang', 'msvc']} # Latest
     # Current CTK build-only: cudax has a different support matrix:
@@ -145,11 +145,11 @@ workflows:
     - {jobs: ['build'], std: 'all', ctk: '12.X', cxx: ['clang14', 'clang15', 'clang16', 'clang17', 'clang18', 'clang19']}
     - {jobs: ['build'], std: 'all', ctk: '12.X', cxx: ['msvc2019', 'msvc2022']}
     # CTK 13.0 full matrix build: default projects
-    - {jobs: ['build'], std: 'all', ctk: '13.0', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14']}
+    - {jobs: ['build'], std: 'all', ctk: '13.0', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14', 'gcc15']}
     - {jobs: ['build'], std: 'all', ctk: '13.0', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20']}
     - {jobs: ['build'], std: 'all', ctk: '13.0', cxx: ['msvc2019', 'msvc2022']}
     # CTK '13.X' full matrix build: default projects
-    - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14']}
+    - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14', 'gcc15']}
     - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21']}
     - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['msvc2019', 'msvc2022']}
     # CTK 12.0 full matrix build: cudax
