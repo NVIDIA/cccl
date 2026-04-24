@@ -357,7 +357,7 @@ workflows:
 devcontainer_version: '26.06'
 
 # Compiler versions used for the cuda99.X internal builds:
-cuda99_gcc_version: 14
+cuda99_gcc_version: 15
 cuda99_clang_version: 21
 
 # All supported C++ standards:
