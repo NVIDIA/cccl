@@ -70,6 +70,9 @@ The following algorithms are supported:
   * ``generate``
   * ``generate_n``
   * ``inclusive_scan``
+  * ``is_partitioned``
+  * ``is_sorted``
+  * ``is_sorted_until``
   * ``merge``
   * ``mismatch``
   * ``none_of``
@@ -84,7 +87,17 @@ The following algorithms are supported:
   * ``replace_if``
   * ``reverse``
   * ``reverse_copy``
+  * ``rotate``
+  * ``rotate_copy``
+  * ``shift_left``
+  * ``shift_right``
+  * ``stable_partition``
+  * ``swap_ranges``
   * ``transform``
+  * ``transform_exclusive_scan``
+  * ``transform_inclusive_scan``
   * ``transform_reduce``
   * ``unique``
   * ``unique_copy``
+
+The current implementation status is tracked in this `Github Issue <https://github.com/NVIDIA/cccl/issues/5592>`_
