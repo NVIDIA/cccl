@@ -32,7 +32,7 @@ public:
     m_what += w;
   } // end bad_alloc()
 
-  inline ~bad_alloc() noexcept override {}
+  inline ~bad_alloc() noexcept override = default;
 
   inline const char* what() const noexcept override
   {

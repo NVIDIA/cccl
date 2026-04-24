@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6077402: error: "call to non-tile function not supported!"
+
 #include <cuda/functional>
 #include <cuda/std/cassert>
 #include <cuda/type_traits>

@@ -64,9 +64,14 @@ struct cub_api_example_t
     }
 
 #if TEST_LAUNCH == 2
-    NV_IF_TARGET(NV_IS_HOST,
-                 (cudaStreamCaptureStatus status{}; cudaStreamIsCapturing(stream, &status);
-                  if (status != cudaStreamCaptureStatusActive) { return cudaErrorLaunchFailure; }));
+    NV_IF_TARGET(NV_IS_HOST, ({
+                   cudaStreamCaptureStatus status{};
+                   cudaStreamIsCapturing(stream, &status);
+                   if (status != cudaStreamCaptureStatusActive)
+                   {
+                     return cudaErrorLaunchFailure;
+                   }
+                 }));
 #endif
 
     const int blocks_in_grid = (num_items + threads_in_block - 1) / threads_in_block;

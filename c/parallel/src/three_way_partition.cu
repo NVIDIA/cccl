@@ -155,10 +155,10 @@ try
 
   const auto [select_first_part_op_name, select_first_part_op_src] =
     get_specialization<three_way_partition_select_first_part_operation_tag>(
-      template_id<user_operation_traits>(), select_first_part_op, selector_result_t, d_in.value_type);
+      template_id<unary_user_operation_traits>(), select_first_part_op, selector_result_t, d_in.value_type);
   const auto [select_second_part_op_name, select_second_part_op_src] =
     get_specialization<three_way_partition_select_second_part_operation_tag>(
-      template_id<user_operation_traits>(), select_second_part_op, selector_result_t, d_in.value_type);
+      template_id<unary_user_operation_traits>(), select_second_part_op, selector_result_t, d_in.value_type);
 
   const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
 

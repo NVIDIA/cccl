@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a return statement inside a loop is not currently supported in a tile function
+
 // The way we currently compile nvrtc is not working with that test
 // UNSUPPORTED: nvrtc && !c++20
 

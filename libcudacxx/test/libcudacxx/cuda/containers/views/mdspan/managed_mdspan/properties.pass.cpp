@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a return statement inside a loop is not currently supported in a tile function
+
 // <mdspan>
 
 // template<class ElementType, class Extents, class LayoutPolicy = layout_right,

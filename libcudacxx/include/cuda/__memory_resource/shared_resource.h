@@ -23,6 +23,7 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__memory_resource/memory_resource_base.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/std/__new_>
@@ -55,6 +56,7 @@ template <class _Resource>
 struct shared_resource
     : ::cuda::mr::__copy_default_queries<_Resource>
     , ::cuda::forward_property<shared_resource<_Resource>, _Resource>
+    , ::cuda::mr::memory_resource_base<shared_resource<_Resource>>
 {
   static_assert(::cuda::mr::synchronous_resource<_Resource>);
 

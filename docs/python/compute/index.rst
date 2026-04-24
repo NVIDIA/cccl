@@ -294,6 +294,8 @@ To clear all caches and free memory:
 This forces recompilation on the next algorithm invocation—useful for benchmarking
 compilation time or reclaiming memory.
 
+.. _cuda.compute.externally_compiled_operators:
+
 Externally Compiled Operators
 -----------------------------
 
@@ -339,7 +341,9 @@ minimal version of the `cuda-cccl` package that ships without Numba/Numba CUDA d
 
 .. code-block:: bash
 
-   pip install cuda-cccl[minimal-cu13]  # or minimal-cu12
+   pip install cuda-cccl[minimal-cu13]      # or minimal-cu12  (pip-installed cuda-toolkit)
+   pip install cuda-cccl[minimal-sysctk13]  # or minimal-sysctk12  (system CUDA toolkit)
+
 
 
 Examples

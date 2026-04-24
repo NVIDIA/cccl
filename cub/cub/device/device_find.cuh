@@ -17,6 +17,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/device/device_for.cuh>
+#include <cub/device/device_transform.cuh>
 #include <cub/device/dispatch/dispatch_find.cuh>
 #include <cub/thread/thread_operators.cuh>
 
@@ -212,14 +213,20 @@ struct DeviceFind
     using RangeOffsetT  = detail::choose_offset_t<RangeNumItemsT>;
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
 
-    return DeviceFor::__for_each_n_no_nvtx(
-      d_temp_storage,
-      temp_storage_bytes,
-      ::cuda::make_zip_iterator(d_values, d_output),
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+
+    return DeviceTransform::__transform_internal(
+      ::cuda::std::make_tuple(d_values),
+      d_output,
       static_cast<ValuesOffsetT>(values_num_items),
-      detail::find::make_comp_wrapper<detail::find::lower_bound>(
+      detail::transform::always_true_predicate{},
+      detail::find::make_binary_search_transform_op<detail::find::lower_bound>(
         d_range, static_cast<RangeOffsetT>(range_num_items), comp),
-      stream);
+      ::cuda::stream_ref{stream});
   }
 
   //! @rst
@@ -326,14 +333,20 @@ struct DeviceFind
     using RangeOffsetT  = detail::choose_offset_t<RangeNumItemsT>;
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
 
-    return DeviceFor::__for_each_n_no_nvtx(
-      d_temp_storage,
-      temp_storage_bytes,
-      ::cuda::make_zip_iterator(d_values, d_output),
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+
+    return DeviceTransform::__transform_internal(
+      ::cuda::std::make_tuple(d_values),
+      d_output,
       static_cast<ValuesOffsetT>(values_num_items),
-      detail::find::make_comp_wrapper<detail::find::upper_bound>(
+      detail::transform::always_true_predicate{},
+      detail::find::make_binary_search_transform_op<detail::find::upper_bound>(
         d_range, static_cast<RangeOffsetT>(range_num_items), comp),
-      stream);
+      ::cuda::stream_ref{stream});
   }
   //! @rst
   //! Finds the first element in the input sequence that satisfies the given predicate.
@@ -520,14 +533,20 @@ struct DeviceFind
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return DeviceFor::__for_each_n_no_nvtx(
-        storage,
-        bytes,
-        ::cuda::make_zip_iterator(d_values, d_output),
+      if (storage == nullptr)
+      {
+        bytes = 1;
+        return cudaSuccess;
+      }
+
+      return DeviceTransform::__transform_internal(
+        ::cuda::std::make_tuple(d_values),
+        d_output,
         static_cast<ValuesOffsetT>(values_num_items),
-        detail::find::make_comp_wrapper<detail::find::lower_bound>(
+        detail::transform::always_true_predicate{},
+        detail::find::make_binary_search_transform_op<detail::find::lower_bound>(
           d_range, static_cast<RangeOffsetT>(range_num_items), comp),
-        stream);
+        ::cuda::stream_ref{stream});
     });
   }
 
@@ -634,14 +653,20 @@ struct DeviceFind
     using ValuesOffsetT = detail::choose_offset_t<ValuesNumItemsT>;
 
     return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      return DeviceFor::__for_each_n_no_nvtx(
-        storage,
-        bytes,
-        ::cuda::make_zip_iterator(d_values, d_output),
+      if (storage == nullptr)
+      {
+        bytes = 1;
+        return cudaSuccess;
+      }
+
+      return DeviceTransform::__transform_internal(
+        ::cuda::std::make_tuple(d_values),
+        d_output,
         static_cast<ValuesOffsetT>(values_num_items),
-        detail::find::make_comp_wrapper<detail::find::upper_bound>(
+        detail::transform::always_true_predicate{},
+        detail::find::make_binary_search_transform_op<detail::find::upper_bound>(
           d_range, static_cast<RangeOffsetT>(range_num_items), comp),
-        stream);
+        ::cuda::stream_ref{stream});
     });
   }
 };

@@ -19,6 +19,9 @@ CMAKE_OPTIONS+=("-DCMAKE_CUDA_FLAGS=")
 CMAKE_OPTIONS+=("-Dcudax_ENABLE_CUDASTF=OFF")
 CMAKE_OPTIONS+=("-Dcudax_ENABLE_PLACES=OFF")
 
+# todo(dabayer): Re-enable OpenMP thrust builds for clang-tidy.
+CMAKE_OPTIONS+=("-DTHRUST_MULTICONFIG_ENABLE_SYSTEM_OMP=OFF")
+
 # Cannot use configure_and_build_preset because that does not allow us to pass additional
 # arguments to the build command.
 configure_preset "${BUILD_NAME}" "${PRESET}" "${CMAKE_OPTIONS[@]}"

@@ -302,9 +302,7 @@ struct __type_info_ref_ : __type_info
       : __type_info(__other)
   {}
 
-  _CCCL_API constexpr __type_info_ref_(__type_info_ref_ const& __other) noexcept
-      : __type_info(__other)
-  {}
+  _CCCL_HIDE_FROM_ABI constexpr __type_info_ref_(__type_info_ref_ const& __other) noexcept = default;
 };
 
 [[nodiscard]] _CCCL_API constexpr __type_info_ref_ __type_info_ptr_::operator*() const noexcept

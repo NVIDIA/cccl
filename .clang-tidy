@@ -26,7 +26,6 @@ Checks:
   - 'modernize-*'
   - '-modernize-use-integer-sign-comparison'
   - '-modernize-use-nodiscard'
-  - '-modernize-use-equals-default'
   - '-modernize-return-braced-init-list'
   - '-modernize-use-auto'
   # END REMOVE ME

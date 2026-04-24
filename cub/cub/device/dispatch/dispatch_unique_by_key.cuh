@@ -512,11 +512,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
 #if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST,
-               (::std::stringstream ss; ss << policy_selector(arch_id);
-                _CubLog("Dispatching DeviceSelect::UniqueByKey to arch %d with tuning: %s\n",
-                        static_cast<int>(arch_id),
-                        ss.str().c_str());))
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 ::std::stringstream ss;
+                 ss << policy_selector(arch_id);
+                 _CubLog("Dispatching DeviceSelect::UniqueByKey to arch %d with tuning: %s\n",
+                         static_cast<int>(arch_id),
+                         ss.str().c_str());
+               }))
 #endif
 
   struct fake_policy

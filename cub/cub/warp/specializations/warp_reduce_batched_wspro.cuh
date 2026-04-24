@@ -3,7 +3,7 @@
 
 //! @file
 //! cub::warp_reduce_batched_wspro provides WSPRO-based batched parallel reduction of items partitioned across a CUDA
-//! thread warp.
+//! warp.
 
 #pragma once
 
@@ -36,8 +36,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-//! @brief WarpReduceBatchedWspro provides WSPRO (Warp Shuffle Parallel Reduction Optimization) based
-//!        batched parallel reduction of items partitioned across a CUDA thread warp.
+//! @brief warp_reduce_batched_wspro provides WSPRO (Warp Shuffle Parallel Reduction Optimization) based
+//!        batched parallel reduction of items partitioned across a CUDA warp.
 //!
 //! @tparam T
 //!   Data type being reduced
@@ -90,7 +90,10 @@ struct warp_reduce_batched_wspro
     constexpr bool redux_performs_better = is_arch_warp && Batches <= 8;
     if constexpr (is_redux_enabled_cuda_operator<ReductionOp, T> && redux_performs_better)
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_80, (ReduceRedux<ToBlocked>(inputs, outputs, reduction_op); return;))
+      NV_IF_TARGET(NV_PROVIDES_SM_80, ({
+                     ReduceRedux<ToBlocked>(inputs, outputs, reduction_op);
+                     return;
+                   }))
     }
 
     // Needed in case of outputs aliasing inputs

@@ -65,17 +65,22 @@ struct TestData
 template <class T>
 TEST_FUNC constexpr TestData<T> get_test_data()
 {
-  switch (sizeof(T))
+  if constexpr (sizeof(T) == 2)
   {
-    case 2:
-      return {static_cast<T>(0x1234), static_cast<T>(0x3412)};
-    case 4:
-      return {static_cast<T>(0x60AF8503), static_cast<T>(0x0385AF60)};
-    case 8:
-      return {static_cast<T>(0xABCDFE9477936406), static_cast<T>(0x0664937794FECDAB)};
-    default:
-      assert(false);
-      cuda::std::unreachable();
+    return {static_cast<T>(0x1234), static_cast<T>(0x3412)};
+  }
+  else if constexpr (sizeof(T) == 4)
+  {
+    return {static_cast<T>(0x60AF8503), static_cast<T>(0x0385AF60)};
+  }
+  else if constexpr (sizeof(T) == 8)
+  {
+    return {static_cast<T>(0xABCDFE9477936406), static_cast<T>(0x0664937794FECDAB)};
+  }
+  else
+  {
+    assert(false);
+    cuda::std::unreachable();
   }
 }
 

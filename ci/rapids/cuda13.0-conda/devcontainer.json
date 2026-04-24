@@ -1,10 +1,10 @@
 {
-  "image": "rapidsai/devcontainers:26.04-cpp-mambaforge",
+  "image": "rapidsai/devcontainers:26.06-cpp-mambaforge",
   "runArgs": [
     "--init",
     "--rm",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-26.04-cuda13.0-conda",
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-26.06-cuda13.0-conda",
     "--ulimit",
     "nofile=500000"
   ],

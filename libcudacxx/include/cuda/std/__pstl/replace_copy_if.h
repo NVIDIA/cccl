@@ -31,8 +31,10 @@
 #  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__pstl/dispatch.h>
+#  include <cuda/std/__pstl/replace.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
+#  include <cuda/std/__type_traits/is_nothrow_convertible.h>
 #  include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #  include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #  include <cuda/std/__utility/move.h>
@@ -44,25 +46,6 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-template <class _UnaryPred, class _Tp>
-struct __replace_copy_if_select
-{
-  _UnaryPred __pred_;
-  _Tp __new_value_;
-
-  _CCCL_HOST_API constexpr __replace_copy_if_select(_UnaryPred __pred, const _Tp& __new_value) noexcept(
-    is_nothrow_move_constructible_v<_UnaryPred> && is_nothrow_copy_constructible_v<_Tp>)
-      : __pred_(__pred)
-      , __new_value_(__new_value)
-  {}
-
-  template <class _Up>
-  [[nodiscard]] _CCCL_DEVICE_API constexpr _Tp operator()(const _Up& __val) const
-    noexcept(is_nothrow_invocable_v<const _UnaryPred&, const _Up&> && is_nothrow_copy_constructible_v<_Tp>)
-  {
-    return ::cuda::std::invoke(__pred_, __val) ? __new_value_ : static_cast<_Tp>(__val);
-  }
-};
 
 _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
@@ -97,7 +80,8 @@ _CCCL_HOST_API _OutputIterator replace_copy_if(
       ::cuda::std::move(__first),
       ::cuda::std::move(__last),
       ::cuda::std::move(__result),
-      __replace_copy_if_select{::cuda::std::move(__pred), __new_value});
+      __replace_return_value{__new_value},
+      ::cuda::std::move(__pred));
   }
   else
   {

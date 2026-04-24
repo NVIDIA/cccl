@@ -219,8 +219,8 @@ try
       template_id<output_iterator_traits>(),
       tagged_arg<output_storage_t, cccl_iterator_t>{output_it},
       tagged_arg<output_storage_t, cccl_type_info>{output_it.value_type});
-  const auto [op_name, op_src] = get_specialization<unary_transform_operation_tag, user_operation_traits>(
-    template_id<user_operation_traits>(),
+  const auto [op_name, op_src] = get_specialization<unary_transform_operation_tag, unary_user_operation_traits>(
+    template_id<unary_user_operation_traits>(),
     op,
     tagged_arg<output_storage_t, cccl_type_info>{output_it.value_type},
     tagged_arg<input_storage_t, cccl_type_info>{input_it.value_type});
@@ -411,8 +411,8 @@ try
       template_id<output_iterator_traits>(),
       tagged_arg<output_storage_t, cccl_iterator_t>{output_it},
       tagged_arg<output_storage_t, cccl_type_info>{output_it.value_type});
-  const auto [op_name, op_src] = get_specialization<binary_transform_operation_tag, user_operation_traits>(
-    template_id<user_operation_traits>(),
+  const auto [op_name, op_src] = get_specialization<binary_transform_operation_tag, binary_user_operation_traits>(
+    template_id<binary_user_operation_traits>(),
     op,
     tagged_arg<output_storage_t, cccl_type_info>{output_it.value_type},
     tagged_arg<input1_storage_t, cccl_type_info>{input1_it.value_type},

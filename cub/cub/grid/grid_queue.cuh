@@ -101,11 +101,19 @@ public:
   {
     cudaError_t result = cudaErrorUnknown;
 
-    NV_IF_TARGET(
+    NV_IF_ELSE_TARGET(
       NV_IS_DEVICE,
-      (d_counters[FILL] = fill_size; d_counters[DRAIN] = 0; result = cudaSuccess;),
-      (OffsetT counters[2]; counters[FILL] = fill_size; counters[DRAIN] = 0;
-       result = CubDebug(cudaMemcpyAsync(d_counters, counters, sizeof(OffsetT) * 2, cudaMemcpyHostToDevice, stream));));
+      ({
+        d_counters[FILL]  = fill_size;
+        d_counters[DRAIN] = 0;
+        result            = cudaSuccess;
+      }),
+      ({
+        OffsetT counters[2];
+        counters[FILL]  = fill_size;
+        counters[DRAIN] = 0;
+        result = CubDebug(cudaMemcpyAsync(d_counters, counters, sizeof(OffsetT) * 2, cudaMemcpyHostToDevice, stream));
+      }));
 
     return result;
   }
@@ -116,9 +124,12 @@ public:
   {
     cudaError_t result = cudaErrorUnknown;
 
-    NV_IF_TARGET(NV_IS_DEVICE,
-                 (d_counters[DRAIN] = 0; result = cudaSuccess;),
-                 (result = CubDebug(cudaMemsetAsync(d_counters + DRAIN, 0, sizeof(OffsetT), stream));));
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      ({
+                        d_counters[DRAIN] = 0;
+                        result            = cudaSuccess;
+                      }),
+                      ({ result = CubDebug(cudaMemsetAsync(d_counters + DRAIN, 0, sizeof(OffsetT), stream)); }));
 
     return result;
   }
@@ -129,9 +140,12 @@ public:
   {
     cudaError_t result = cudaErrorUnknown;
 
-    NV_IF_TARGET(NV_IS_DEVICE,
-                 (d_counters[FILL] = 0; result = cudaSuccess;),
-                 (result = CubDebug(cudaMemsetAsync(d_counters + FILL, 0, sizeof(OffsetT), stream));));
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      ({
+                        d_counters[FILL] = 0;
+                        result           = cudaSuccess;
+                      }),
+                      ({ result = CubDebug(cudaMemsetAsync(d_counters + FILL, 0, sizeof(OffsetT), stream)); }));
 
     return result;
   }
@@ -142,10 +156,16 @@ public:
   {
     cudaError_t result = cudaErrorUnknown;
 
-    NV_IF_TARGET(NV_IS_DEVICE,
-                 (fill_size = d_counters[FILL]; result = cudaSuccess;),
-                 (result = CubDebug(
-                    cudaMemcpyAsync(&fill_size, d_counters + FILL, sizeof(OffsetT), cudaMemcpyDeviceToHost, stream));));
+    NV_IF_ELSE_TARGET(
+      NV_IS_DEVICE,
+      ({
+        fill_size = d_counters[FILL];
+        result    = cudaSuccess;
+      }),
+      ({
+        result =
+          CubDebug(cudaMemcpyAsync(&fill_size, d_counters + FILL, sizeof(OffsetT), cudaMemcpyDeviceToHost, stream));
+      }));
 
     return result;
   }

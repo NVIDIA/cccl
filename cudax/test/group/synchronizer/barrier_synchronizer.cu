@@ -18,7 +18,7 @@
 
 #include <cuda/experimental/group.cuh>
 
-#include "testing.cuh"
+#include "group_testing.cuh"
 
 namespace
 {
@@ -27,13 +27,11 @@ __device__ void test_barrier_synchronizer(const Level& level, Config config)
 {
   constexpr cuda::std::size_t nbarriers = 8;
 
-  using Barrier         = cuda::barrier<cuda::thread_scope_block>;
-  using BarriersStorage = cuda::std::aligned_storage_t<8 * sizeof(Barrier), alignof(Barrier)>;
-  __shared__ BarriersStorage barriers_storage;
-  auto& barriers = reinterpret_cast<Barrier(&)[nbarriers]>(barriers_storage);
-
   // Test constructor from static span of barriers.
   {
+    auto& barriers = get_barriers<nbarriers, 0>(level);
+    using Barrier  = cuda::std::remove_all_extents_t<cuda::std::remove_reference_t<decltype(barriers)>>;
+
     cuda::std::span<Barrier, nbarriers> barriers_span{barriers, nbarriers};
     cudax::barrier_synchronizer synchronizer{barriers_span};
 
@@ -46,6 +44,9 @@ __device__ void test_barrier_synchronizer(const Level& level, Config config)
 
   // Test constructor from dynamic span of barriers.
   {
+    auto& barriers = get_barriers<nbarriers, 1>(level);
+    using Barrier  = cuda::std::remove_all_extents_t<cuda::std::remove_reference_t<decltype(barriers)>>;
+
     cuda::std::span<Barrier> barriers_span{barriers, nbarriers};
     cudax::barrier_synchronizer synchronizer{barriers_span};
 
@@ -59,6 +60,9 @@ __device__ void test_barrier_synchronizer(const Level& level, Config config)
 
   // Test constructor from array of barriers.
   {
+    auto& barriers = get_barriers<nbarriers, 2>(level);
+    using Barrier  = cuda::std::remove_all_extents_t<cuda::std::remove_reference_t<decltype(barriers)>>;
+
     cudax::barrier_synchronizer synchronizer{barriers};
 
     static_assert(cuda::std::is_same_v<cudax::barrier_synchronizer<Barrier, nbarriers>, decltype(synchronizer)>);
@@ -70,6 +74,9 @@ __device__ void test_barrier_synchronizer(const Level& level, Config config)
 
   // Test barriers().
   {
+    auto& barriers = get_barriers<nbarriers, 3>(level);
+    using Barrier  = cuda::std::remove_all_extents_t<cuda::std::remove_reference_t<decltype(barriers)>>;
+
     const cudax::barrier_synchronizer synchronizer{barriers};
 
     static_assert(cuda::std::is_same_v<cuda::std::span<Barrier, nbarriers>, decltype(synchronizer.barriers())>);
@@ -81,6 +88,9 @@ __device__ void test_barrier_synchronizer(const Level& level, Config config)
 
   // Test make_instance(...).
   {
+    auto& barriers = get_barriers<nbarriers, 4>(level);
+    using Barrier  = cuda::std::remove_all_extents_t<cuda::std::remove_reference_t<decltype(barriers)>>;
+
     const auto parent_group = cudax::make_this_group(level, config);
 
     const cudax::group_by mapping{4};
@@ -108,8 +118,10 @@ struct TestKernel
   template <class Config>
   __device__ void operator()(const Config& config)
   {
-    // todo(dabayer): Test other levels once supported.
+    test_barrier_synchronizer(cuda::warp, config);
     test_barrier_synchronizer(cuda::block, config);
+    test_barrier_synchronizer(cuda::cluster, config);
+    test_barrier_synchronizer(cuda::grid, config);
   }
 };
 } // namespace
@@ -121,11 +133,12 @@ C2H_TEST("Barrier synchronizer", "[group]")
   const cuda::stream stream{device};
 
   {
-    const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<8, 4>());
+    const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<8, 4>(), cuda::cooperative_launch{});
     cuda::launch(stream, config, TestKernel{});
   }
   {
-    const auto config = cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims(dim3{8, 4}));
+    const auto config =
+      cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims(dim3{8, 4}), cuda::cooperative_launch{});
     cuda::launch(stream, config, TestKernel{});
   }
 

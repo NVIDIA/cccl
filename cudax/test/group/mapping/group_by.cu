@@ -18,7 +18,7 @@
 
 #include <cuda/experimental/group.cuh>
 
-#include "testing.cuh"
+#include "group_testing.cuh"
 
 namespace
 {
