@@ -34,11 +34,11 @@ TEST_FUNC constexpr void test_default_constructible()
   FilterIterator iter1{};
   FilterIterator iter2;
   assert(iter1 == iter2);
-  // GCC 7 simply gives the wrong answer here. No amount of cajoling, pleading, or
+  // GCC < 9 simply gives the wrong answer here. No amount of cajoling, pleading, or
   // massaging the code ever got it to pass this static_assert()
-#if !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 8, 0)
+#if !_CCCL_COMPILER(GCC, <, 9)
   static_assert(cuda::std::is_nothrow_default_constructible_v<FilterIterator> == IsNoexcept);
-#endif
+#endif // !_CCCL_COMPILER(GCC, <, 9)
 }
 
 template <class Iterator>

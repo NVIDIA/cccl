@@ -152,11 +152,11 @@ TEST_FUNC constexpr bool test()
   {
     {
       using View = cuda::std::ranges::filter_view<DefaultConstructibleView, DefaultConstructiblePredicate>;
-      // GCC 7 simply gives the wrong answer here. No amount of cajoling, pleading, or
+      // GCC < 9 simply gives the wrong answer here. No amount of cajoling, pleading, or
       // massaging the code ever got it to pass this static_assert()
-#if !TEST_COMPILER(GCC) || TEST_COMPILER(GCC, >=, 8, 0)
+#if !TEST_COMPILER(GCC, <, 9)
       static_assert(!cuda::std::is_nothrow_default_constructible_v<View>);
-#endif // !TEST_COMPILER(GCC) || TEST_COMPILER(GCC, >=, 8, 0)
+#endif // !TEST_COMPILER(GCC, <, 9)
     }
     {
       using View = cuda::std::ranges::filter_view<NoexceptView, NoexceptPredicate>;

@@ -128,7 +128,7 @@ public:
 
   _CCCL_TEMPLATE(typename _Generator)
   _CCCL_REQUIRES(__can_generate_v<bool, _Generator, __size>)
-  _CCCL_API constexpr explicit basic_mask(_Generator&& __g)
+  _CCCL_API constexpr explicit basic_mask(_Generator&& __g) noexcept(false)
       : __s_{_Impl::__generate(__g)}
   {}
 
