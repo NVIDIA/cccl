@@ -21,8 +21,24 @@ TEST_FUNC void test()
   test_engine<cuda::std::minstd_rand, 399268537ull>();
 }
 
+// P4037R1: linear_congruential_engine must accept the unsigned char UIntType.
+// Stream I/O for 1-byte UIntType is not exercised here (operator<</>> treat
+// 1-byte integers as characters, same as libc++); see valid_types.pass.cpp
+// for runtime coverage of the small-type path.
+TEST_FUNC void test_p4037r1_small_uinttype()
+{
+  using E = cuda::std::linear_congruential_engine<unsigned char, 5u, 1u, 13u>;
+  static_assert(cuda::std::is_same_v<E::result_type, unsigned char>);
+  static_assert(E::min() == 0u);
+  static_assert(E::max() == 12u);
+  static_assert(E::multiplier == 5u);
+  static_assert(E::increment == 1u);
+  static_assert(E::modulus == 13u);
+}
+
 int main(int, char**)
 {
   test();
+  test_p4037r1_small_uinttype();
   return 0;
 }
