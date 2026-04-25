@@ -360,7 +360,13 @@ public:
     typename OutputIteratorT,
     typename NumSelectedIteratorT,
     typename NumItemsT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
+    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+    void
+#else
+    ::cuda::std::execution::env<>
+#endif
+    ,
     ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
                                && !::cuda::std::is_same_v<FlagIterator, size_t&>,
                              int> = 0>
@@ -458,7 +464,13 @@ public:
             typename FlagIterator,
             typename NumSelectedIteratorT,
             typename NumItemsT,
-            typename EnvT                 = ::cuda::std::execution::env<>,
+            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+            void
+#else
+            ::cuda::std::execution::env<>
+#endif
+            ,
             ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<IteratorT, void*>
                                        && !::cuda::std::is_same_v<FlagIterator, size_t&>,
                                      int> = 0>
@@ -559,7 +571,13 @@ public:
     typename NumSelectedIteratorT,
     typename SelectOp,
     typename NumItemsT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
+    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+    void
+#else
+    ::cuda::std::execution::env<>
+#endif
+    ,
     ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>,
                              int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
@@ -649,13 +667,19 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <typename IteratorT,
-            typename NumSelectedIteratorT,
-            typename SelectOp,
-            typename NumItemsT,
-            typename EnvT                 = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<IteratorT, void*>,
-                                     int> = 0>
+  template <
+    typename IteratorT,
+    typename NumSelectedIteratorT,
+    typename SelectOp,
+    typename NumItemsT,
+    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+    void
+#else
+    ::cuda::std::execution::env<>
+#endif
+    ,
+    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<IteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(IteratorT d_data, NumSelectedIteratorT d_num_selected_out, NumItemsT num_items, SelectOp select_op, EnvT env = {})
   {
@@ -1344,7 +1368,13 @@ public:
     typename NumSelectedIteratorT,
     typename SelectOp,
     typename NumItemsT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
+    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+    void
+#else
+    ::cuda::std::execution::env<>
+#endif
+    ,
     ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>,
                              int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t FlaggedIf(
@@ -1451,7 +1481,13 @@ public:
     typename NumSelectedIteratorT,
     typename SelectOp,
     typename NumItemsT,
-    typename EnvT = ::cuda::std::execution::env<>,
+    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+    void
+#else
+    ::cuda::std::execution::env<>
+#endif
+    ,
     ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<IteratorT, void*>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t FlaggedIf(
     IteratorT d_data,
@@ -1549,7 +1585,13 @@ public:
     typename OutputIteratorT,
     typename NumSelectedIteratorT,
     typename NumItemsT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
+    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+    void
+#else
+    ::cuda::std::execution::env<>
+#endif
+    ,
     ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
                                && !::cuda::std::indirect_binary_predicate<EnvT, InputIteratorT, InputIteratorT>,
                              int> = 0>
@@ -1656,7 +1698,13 @@ public:
     typename NumSelectedIteratorT,
     typename NumItemsT,
     typename EqualityOpT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
+    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+    void
+#else
+    ::cuda::std::execution::env<>
+#endif
+    ,
     ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<InputIteratorT, void*>
                                && ::cuda::std::indirect_binary_predicate<EqualityOpT, InputIteratorT, InputIteratorT>,
                              int> = 0>
@@ -1778,7 +1826,13 @@ public:
     typename NumSelectedIteratorT,
     typename NumItemsT,
     typename EqualityOpT,
-    typename EnvT                 = ::cuda::std::execution::env<>,
+    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+    void
+#else
+    ::cuda::std::execution::env<>
+#endif
+    ,
     ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<EqualityOpT, KeyInputIteratorT, KeyInputIteratorT>,
                              int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UniqueByKey(
@@ -1894,7 +1948,13 @@ public:
     typename ValueOutputIteratorT,
     typename NumSelectedIteratorT,
     typename NumItemsT,
-    typename EnvT = ::cuda::std::execution::env<>,
+    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+#ifdef _CCCL_DOXYGEN_INVOKED
+    void
+#else
+    ::cuda::std::execution::env<>
+#endif
+    ,
     ::cuda::std::enable_if_t<!::cuda::std::indirect_binary_predicate<EnvT, KeyInputIteratorT, KeyInputIteratorT>, int> =
       0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UniqueByKey(
