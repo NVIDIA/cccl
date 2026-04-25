@@ -23,6 +23,18 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::batched_topk
 {
+struct epilogue_policy
+{
+  int items_per_thread;
+  // TODO (elstehle): worker-agent needs to know tile size of multi-worker agent but it isn't a tuning parameter for the
+  // worker-agent. Depending on how the tuning for the multi-worker agent is implemented, the way this is passed to the
+  // worker-agent might need to be changed.
+  int multi_worker_tile_size;
+  BlockLoadAlgorithm load_algorithm;
+  BlockScanAlgorithm scan_algorithm;
+  BlockStoreAlgorithm store_algorithm;
+};
+
 struct worker_policy
 {
   int block_threads;
@@ -30,11 +42,7 @@ struct worker_policy
   BlockLoadAlgorithm load_algorithm;
   BlockStoreAlgorithm store_algorithm;
 
-  int epilogue_items_per_thread;
-  // TODO(pauleonix): Do we want to reuse the same load and store algorithms for the epilogue?
-  BlockLoadAlgorithm epilogue_load_algorithm;
-  BlockScanAlgorithm epilogue_scan_algorithm;
-  BlockStoreAlgorithm epilogue_store_algorithm;
+  epilogue_policy epilogue;
 
   _CCCL_API constexpr friend bool operator==(const worker_policy& lhs, const worker_policy& rhs)
   {
@@ -99,17 +107,20 @@ struct policy_selector
 {
   [[nodiscard]] _CCCL_API constexpr auto operator()(::cuda::arch_id /*arch*/) const -> batched_topk_policy
   {
-    constexpr auto load_alg                 = BLOCK_LOAD_WARP_TRANSPOSE;
-    constexpr auto store_alg                = BLOCK_STORE_WARP_TRANSPOSE;
-    constexpr auto epilogue_scan_alg        = BLOCK_SCAN_WARP_SCANS;
-    constexpr int epilogue_items_per_thread = 16;
+    constexpr auto load_alg                  = BLOCK_LOAD_WARP_TRANSPOSE;
+    constexpr auto store_alg                 = BLOCK_STORE_WARP_TRANSPOSE;
+    constexpr auto scan_alg                  = BLOCK_SCAN_WARP_SCANS;
+    constexpr auto epilogue_items_per_thread = 16;
+    constexpr auto multi_worker_tile_size    = 256 * 64;
+    constexpr auto epilogue =
+      epilogue_policy{epilogue_items_per_thread, multi_worker_tile_size, load_alg, scan_alg, store_alg};
     return batched_topk_policy{{{
-      worker_policy{256, 64, load_alg, store_alg, epilogue_items_per_thread, load_alg, epilogue_scan_alg, store_alg},
-      worker_policy{256, 32, load_alg, store_alg, epilogue_items_per_thread, load_alg, epilogue_scan_alg, store_alg},
-      worker_policy{256, 16, load_alg, store_alg, epilogue_items_per_thread, load_alg, epilogue_scan_alg, store_alg},
-      worker_policy{256, 8, load_alg, store_alg, epilogue_items_per_thread, load_alg, epilogue_scan_alg, store_alg},
-      worker_policy{256, 4, load_alg, store_alg, epilogue_items_per_thread, load_alg, epilogue_scan_alg, store_alg},
-      worker_policy{128, 2, load_alg, store_alg, epilogue_items_per_thread, load_alg, epilogue_scan_alg, store_alg},
+      worker_policy{256, 64, load_alg, store_alg, epilogue},
+      worker_policy{256, 32, load_alg, store_alg, epilogue},
+      worker_policy{256, 16, load_alg, store_alg, epilogue},
+      worker_policy{256, 8, load_alg, store_alg, epilogue},
+      worker_policy{256, 4, load_alg, store_alg, epilogue},
+      worker_policy{128, 2, load_alg, store_alg, epilogue},
     }}};
   }
 };

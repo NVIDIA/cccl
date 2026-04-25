@@ -23,11 +23,26 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk
 {
+// Atomic counters used by the small-segment kernel to (a) enqueue large segments into the large-segment work queue
+// and (b) elect the last block to run the epilogue scan over the queued tile counts. `alignas(128)` isolates each
+// counter on its own cache line for performance.
+struct alignas(128) batched_topk_counters
+{
+  // Number of segments enqueued in the large-segment work queue. Atomically incremented (by 1) by the first thread
+  // of each block that decides its segment is large.
+  unsigned long long large_segments_count;
+
+  // Block retirement counter. Each block atomically increments by 1 when it has finished processing its segment, and
+  // the block that observes `gridDim.x - 1` runs the epilogue on the queued large segments tile counts.
+  alignas(128) unsigned retirement_count;
+};
+
 template <typename PolicyGetter, // TODO(bgruber): pass worker_policy as NTTP in C++20
           typename KeyInputItItT,
           typename KeyOutputItItT,
@@ -54,13 +69,12 @@ struct agent_batched_topk_worker_per_segment
 
   static constexpr worker_policy active_policy = PolicyGetter{}();
 
-  static constexpr int block_threads             = active_policy.block_threads;
-  static constexpr int items_per_thread          = active_policy.items_per_thread;
-  static constexpr int tile_size                 = block_threads * items_per_thread;
-  static constexpr int epilogue_items_per_thread = active_policy.epilogue_items_per_thread;
-  static constexpr int epilogue_tile_size        = block_threads * epilogue_items_per_thread;
-  // TODO (elstehle): This is just a placeholder for now, we will need to specialize this for the large segment agent.
-  static constexpr int large_segment_agent_tile_size = tile_size;
+  static constexpr int block_threads                 = active_policy.block_threads;
+  static constexpr int items_per_thread              = active_policy.items_per_thread;
+  static constexpr int tile_size                     = block_threads * items_per_thread;
+  static constexpr int epilogue_items_per_thread     = active_policy.epilogue.items_per_thread;
+  static constexpr int epilogue_tile_size            = block_threads * epilogue_items_per_thread;
+  static constexpr int large_segment_agent_tile_size = active_policy.epilogue.multi_worker_tile_size;
 
   static constexpr bool only_small_segments = params::static_max_value_v<SegmentSizeParameterT> <= tile_size;
 
@@ -81,10 +95,10 @@ struct agent_batched_topk_worker_per_segment
   using block_store_vals_t = BlockStore<value_t, block_threads, items_per_thread, active_policy.store_algorithm>;
 
   using block_load_epilogue_t =
-    BlockLoad<segment_size_val_t, block_threads, epilogue_items_per_thread, active_policy.epilogue_load_algorithm>;
-  using block_scan_epilogue_t = BlockScan<int, block_threads, active_policy.epilogue_scan_algorithm>;
+    BlockLoad<segment_size_val_t, block_threads, epilogue_items_per_thread, active_policy.epilogue.load_algorithm>;
+  using block_scan_epilogue_t = BlockScan<int, block_threads, active_policy.epilogue.scan_algorithm>;
   using block_store_epilogue_t =
-    BlockStore<segment_size_val_t, block_threads, epilogue_items_per_thread, active_policy.epilogue_store_algorithm>;
+    BlockStore<segment_size_val_t, block_threads, epilogue_items_per_thread, active_policy.epilogue.store_algorithm>;
 
   // -------------------------------------------------------------------------
   // Shared Memory Storage
@@ -118,9 +132,7 @@ struct agent_batched_topk_worker_per_segment
   KParameterT k_param;
   SelectDirectionParameterT select_directions;
   NumSegmentsParameterT num_segments;
-  num_segments_val_t* d_large_segments_counter;
-  // Currently we use int for segment_id = blockIdx.x, so int has be enough.
-  ::cuda::std::uint32_t* d_retirement_counter;
+  batched_topk_counters* d_counters;
   num_segments_val_t* d_large_segments_ids;
   // Assuming the large segment agent will also use int for tile_id = blockIdx.x.
   ::cuda::std::int64_t* d_large_segments_tile_offsets;
@@ -137,8 +149,7 @@ struct agent_batched_topk_worker_per_segment
     KParameterT k_param,
     SelectDirectionParameterT select_directions,
     NumSegmentsParameterT num_segments,
-    num_segments_val_t* d_large_segments_counter,
-    ::cuda::std::uint32_t* d_retirement_counter,
+    batched_topk_counters* d_counters,
     num_segments_val_t* d_large_segments_ids,
     ::cuda::std::int64_t* d_large_segments_tile_offsets)
       : temp_storage(temp_storage.Alias())
@@ -150,8 +161,7 @@ struct agent_batched_topk_worker_per_segment
       , k_param(k_param)
       , select_directions(select_directions)
       , num_segments(num_segments)
-      , d_large_segments_counter(d_large_segments_counter)
-      , d_retirement_counter(d_retirement_counter)
+      , d_counters(d_counters)
       , d_large_segments_ids(d_large_segments_ids)
       , d_large_segments_tile_offsets(d_large_segments_tile_offsets)
   {}
@@ -179,10 +189,10 @@ struct agent_batched_topk_worker_per_segment
       if (threadIdx.x == 0u)
       {
         // Add to large segment queue
-        const auto large_segment_queue_idx            = atomicAdd(d_large_segments_counter, num_segments_val_t{1});
+        const auto large_segment_queue_idx            = atomicAdd(&d_counters->large_segments_count, 1ull);
         d_large_segments_ids[large_segment_queue_idx] = static_cast<num_segments_val_t>(segment_id);
         d_large_segments_tile_offsets[large_segment_queue_idx] =
-          static_cast<::cuda::std::int64_t>(::cuda::std::ceil_div(segment_size, large_segment_agent_tile_size));
+          static_cast<::cuda::std::int64_t>(::cuda::ceil_div(segment_size, large_segment_agent_tile_size));
       }
     }
     else
@@ -301,7 +311,7 @@ struct agent_batched_topk_worker_per_segment
       if (threadIdx.x == 0u)
       {
         __threadfence();
-        const auto retirement_count = atomicAdd(d_retirement_counter, 1u);
+        const auto retirement_count = atomicAdd(&d_counters->retirement_count, 1u);
         is_last_block               = retirement_count == (gridDim.x - 1u);
       }
       // This sync also makes sure that the shared memory can be reused.
@@ -310,7 +320,7 @@ struct agent_batched_topk_worker_per_segment
       {
         return;
       }
-      const auto num_large_segments = *d_large_segments_counter;
+      const auto num_large_segments = d_counters->large_segments_count;
       // For tracking the running total across tiles (loop iterations).
       const auto prefix_callback_op =
         [running_total = segment_size_val_t{0}](segment_size_val_t block_aggregate) mutable {

@@ -124,8 +124,7 @@ __launch_bounds__(int(
     KParameterT k,
     SelectDirectionParameterT select_directions,
     NumSegmentsParameterT num_segments,
-    typename NumSegmentsParameterT::value_type* d_large_segments_counter,
-    ::cuda::std::uint32_t* d_retirement_counter,
+    batched_topk_counters* d_counters,
     typename NumSegmentsParameterT::value_type* d_large_segments_ids,
     ::cuda::std::int64_t* d_large_segments_tile_offsets)
 {
@@ -161,8 +160,7 @@ __launch_bounds__(int(
     k,
     select_directions,
     num_segments,
-    d_large_segments_counter,
-    d_retirement_counter,
+    d_counters,
     d_large_segments_ids,
     d_large_segments_tile_offsets);
 

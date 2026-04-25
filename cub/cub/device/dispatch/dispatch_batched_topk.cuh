@@ -17,16 +17,23 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/choose_offset.cuh>
 #include <cub/detail/segmented_params.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_batched_topk.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
+#include <cub/util_type.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__iterator/counting_iterator.h>
+#include <cuda/__iterator/transform_iterator.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -134,6 +141,26 @@ struct total_num_items_guarantee
 };
 
 // -----------------------------------------------------------------------------
+// Helper: turn a segment ID into the number of large-segment-agent tiles needed
+// to cover that segment. Wrapped in a transform_iterator, this produces the
+// per-segment tile counts that we exclusive-scan to obtain per-segment tile
+// offsets.
+// -----------------------------------------------------------------------------
+template <typename SegmentSizeParameterT>
+struct segment_size_to_tile_count_op
+{
+  SegmentSizeParameterT segment_sizes;
+  ::cuda::std::int32_t large_segment_agent_tile_size;
+
+  template <typename SegmentIndexT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::int64_t operator()(SegmentIndexT segment_id) const
+  {
+    return static_cast<::cuda::std::int64_t>(
+      ::cuda::ceil_div(segment_sizes.get_param(segment_id), large_segment_agent_tile_size));
+  }
+};
+
+// -----------------------------------------------------------------------------
 // Segmented Top-K Dispatch
 // -----------------------------------------------------------------------------
 
@@ -203,15 +230,50 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     params::static_min_value_v<SegmentSizeParameterT> <= worker_per_segment_tile_size;
   static constexpr bool only_small_segments =
     params::static_max_value_v<SegmentSizeParameterT> <= worker_per_segment_tile_size;
-  constexpr int allocations_array_size            = !only_small_segments ? 4 : 1;
+
+  static constexpr auto large_segment_agent_tile_size = selected.epilogue.multi_worker_tile_size;
+
+  // Allocation layout:
+  //   only_small_segments: [0] dummy.
+  //   any_small_segments && !only_small_segments (mixed): [0] tile offsets, [1] counters struct,
+  //                                                       [2] large-segment ids.
+  //   !any_small_segments (large-only): [0] tile offsets, [1] segment-size transform-scan temp storage.
+  static constexpr int allocations_array_size     = only_small_segments ? 1 : (any_small_segments ? 3 : 2);
   size_t allocation_sizes[allocations_array_size] = {1};
+  using num_segments_val_t                        = typename NumSegmentsParameterT::value_type;
+  using segment_size_scan_offset_t                = detail::choose_offset_t<num_segments_val_t>;
+  using segment_size_scan_input_op_t              = segment_size_to_tile_count_op<SegmentSizeParameterT>;
+  const segment_size_scan_input_op_t segment_size_scan_input_op{segment_sizes, large_segment_agent_tile_size};
+  // Transform iterator over [0, num_segments) producing the tile-count for each segment.
+  [[maybe_unused]] const auto segment_size_scan_input_it = ::cuda::transform_iterator(
+    ::cuda::counting_iterator<num_segments_val_t>{num_segments_val_t{0}}, segment_size_scan_input_op);
+
   if constexpr (!only_small_segments)
   {
     const auto num_segments_val = num_segments.get_param(0);
-    allocation_sizes[0]         = sizeof(typename NumSegmentsParameterT::value_type);
-    allocation_sizes[1]         = sizeof(::cuda::std::uint32_t);
-    allocation_sizes[2]         = num_segments_val * sizeof(typename NumSegmentsParameterT::value_type);
-    allocation_sizes[3]         = num_segments_val * sizeof(::cuda::std::int64_t);
+    // For large segments size tile offsets.
+    allocation_sizes[0] = num_segments_val * sizeof(::cuda::std::int64_t);
+    if constexpr (any_small_segments)
+    {
+      allocation_sizes[1] = sizeof(batched_topk_counters);
+      allocation_sizes[2] = num_segments_val * sizeof(num_segments_val_t);
+    }
+    else
+    {
+      // Query the temporary storage requirement of the segment-size transform-scan.
+      if (const auto error = CubDebug(detail::scan::dispatch(
+            nullptr,
+            allocation_sizes[1],
+            segment_size_scan_input_it,
+            static_cast<::cuda::std::int64_t*>(nullptr),
+            ::cuda::std::plus<>{},
+            detail::InputValue<::cuda::std::int64_t>(::cuda::std::int64_t{0}),
+            static_cast<segment_size_scan_offset_t>(num_segments_val),
+            stream)))
+      {
+        return error;
+      }
+    }
   }
 
   // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
@@ -238,42 +300,68 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   if constexpr (any_small_segments)
   {
+    if constexpr (!only_small_segments)
+    {
+      // Zero-initialize the counters struct that holds the large-segment queue length and the block retirement
+      // counter; both are read by the agent's atomic operations and must start at 0.
+      if (const auto error = CubDebug(cudaMemsetAsync(allocations[1], 0, sizeof(batched_topk_counters), stream)))
+      {
+        return error;
+      }
+    }
+
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)
-            .doit(
-              device_segmented_topk_kernel<PolicySelector,
-                                           KeyInputItItT,
-                                           KeyOutputItItT,
-                                           ValueInputItItT,
-                                           ValueOutputItItT,
-                                           SegmentSizeParameterT,
-                                           KParameterT,
-                                           SelectDirectionParameterT,
-                                           NumSegmentsParameterT>,
-              d_key_segments_it,
-              d_key_segments_out_it,
-              d_value_segments_it,
-              d_value_segments_out_it,
-              segment_sizes,
-              k,
-              select_directions,
-              num_segments,
-              only_small_segments ? nullptr : static_cast<typename NumSegmentsParameterT::value_type*>(allocations[0]),
-              only_small_segments ? nullptr : static_cast<::cuda::std::uint32_t*>(allocations[1]),
-              only_small_segments ? nullptr : static_cast<typename NumSegmentsParameterT::value_type*>(allocations[2]),
-              only_small_segments ? nullptr : static_cast<::cuda::std::int64_t*>(allocations[3]))))
+            .doit(device_segmented_topk_kernel<PolicySelector,
+                                               KeyInputItItT,
+                                               KeyOutputItItT,
+                                               ValueInputItItT,
+                                               ValueOutputItItT,
+                                               SegmentSizeParameterT,
+                                               KParameterT,
+                                               SelectDirectionParameterT,
+                                               NumSegmentsParameterT>,
+                  d_key_segments_it,
+                  d_key_segments_out_it,
+                  d_value_segments_it,
+                  d_value_segments_out_it,
+                  segment_sizes,
+                  k,
+                  select_directions,
+                  num_segments,
+                  only_small_segments ? nullptr : static_cast<batched_topk_counters*>(allocations[1]),
+                  only_small_segments ? nullptr : static_cast<num_segments_val_t*>(allocations[2]),
+                  only_small_segments ? nullptr : static_cast<::cuda::std::int64_t*>(allocations[0]))))
     {
       return error;
     }
   }
   else
   {
-    // TODO (pauleonix): Transform-Scan over all segments for tile offsets.
+    // No small segments: the small-kernel epilogue (which would otherwise produce the per-segment tile offsets) does
+    // not run. Compute the per-segment tile offsets directly via a transform-scan over all segment sizes.
+    // The large segment agent will either consume these offsets directly (segment_id -> tile offset) or, when going
+    // through the large-segment queue, via a transform iterator over `d_large_segments_ids` (level of indirection).
+    if (const auto error = CubDebug(detail::scan::dispatch(
+          allocations[1],
+          allocation_sizes[1],
+          segment_size_scan_input_it,
+          static_cast<::cuda::std::int64_t*>(allocations[0]),
+          ::cuda::std::plus<>{},
+          detail::InputValue<::cuda::std::int64_t>(::cuda::std::int64_t{0}),
+          static_cast<segment_size_scan_offset_t>(num_segments.get_param(0)),
+          stream)))
+    {
+      return error;
+    }
   }
 
   if constexpr (!only_small_segments)
   {
-    // TODO (pauleonix): Segmented sort as a placeholder for the large segment agent.
+    // TODO (elstehle): Implement the large segment agent.
+    // Depending on any_small_segments, we need to either:
+    // - Indirectly get the large segment parameters via the queued large segment IDs
+    // - Directly take the segment parameters since all segments are large
   }
   return CubDebug(detail::DebugSyncStream(stream));
 }
