@@ -24,9 +24,9 @@
 #include <cuda/std/__host_stdlib/istream>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__random/is_seed_sequence.h>
+#include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/climits>
 #include <cuda/std/cstdint>
 
@@ -189,6 +189,17 @@ struct __lce_ta<__A, __C, __M, static_cast<uint16_t>(~0), __b>
   }
 };
 
+// 8
+template <uint64_t __A, uint64_t __C, uint64_t __M, bool __b>
+struct __lce_ta<__A, __C, __M, static_cast<uint8_t>(~0), __b>
+{
+  using result_type = uint8_t;
+  [[nodiscard]] _CCCL_API static constexpr result_type next(result_type __x) noexcept
+  {
+    return static_cast<result_type>(__lce_ta<__A, __C, __M, ~uint32_t{0}>::next(__x));
+  }
+};
+
 template <class _UIntType, _UIntType __A, _UIntType __C, _UIntType __M>
 class _CCCL_TYPE_VISIBILITY_DEFAULT linear_congruential_engine;
 
@@ -206,7 +217,8 @@ private:
 
   static_assert(__M == 0 || __A < __M, "linear_congruential_engine invalid parameters");
   static_assert(__M == 0 || __C < __M, "linear_congruential_engine invalid parameters");
-  static_assert(is_unsigned_v<_UIntType>, "_UIntType must be uint32_t type");
+  static_assert(__cccl_random_is_valid_uinttype<_UIntType>,
+                "linear_congruential_engine: UIntType must be a supported unsigned integer type");
 
 public:
   static constexpr const result_type _Min = __C == 0u ? 1u : 0u;
