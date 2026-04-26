@@ -655,7 +655,7 @@ __launch_bounds__(int(PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).block
 
   if constexpr (policy.block.max_segments == 1)
   {
-    _CCCL_ASSERT(num_segments_per_worker == 1, "Inconsistent parameters in device_warp_segmented_scan_kernel");
+    _CCCL_ASSERT(num_segments_per_worker == 1, "Inconsistent parameters in device_segmented_scan_kernel");
     _CCCL_ASSERT(work_id < n_segments, "device_segmented_scan_kernel launch configuration results in access violation");
 
     const OffsetT inp_begin_offset = begin_offset_d_in[work_id];
