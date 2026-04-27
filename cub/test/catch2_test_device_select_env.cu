@@ -290,7 +290,7 @@ TEST_CASE("Device select unique_by_key default tuning chooses target block size"
   REQUIRE(d_num_selected[0] == 1);
   REQUIRE(d_keys_out[0] == key_t{0});
   REQUIRE(d_values_out[0] == value_t{1});
-  REQUIRE(d_block_size[0] == target_block_size);
+  REQUIRE(d_block_size[0] == static_cast<unsigned int>(target_block_size));
 }
 
 #endif
