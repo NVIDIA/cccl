@@ -278,7 +278,7 @@ mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, Bin
  * Iterator</a>.
  *
  *  \verbatim embed:rst:leading-asterisk
- *     .. versionadded:: 2.8.0
+ *     .. versionadded:: 3.4.0
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
@@ -306,7 +306,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
  * Iterator</a>.
  *
  *  \verbatim embed:rst:leading-asterisk
- *     .. versionadded:: 2.8.0
+ *     .. versionadded:: 3.4.0
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2>
@@ -335,7 +335,7 @@ mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, Inp
  * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
  *
  *  \verbatim embed:rst:leading-asterisk
- *     .. versionadded:: 2.8.0
+ *     .. versionadded:: 3.4.0
  *  \endverbatim
  */
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
@@ -365,7 +365,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
  * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
  *
  *  \verbatim embed:rst:leading-asterisk
- *     .. versionadded:: 2.8.0
+ *     .. versionadded:: 3.4.0
  *  \endverbatim
  */
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
