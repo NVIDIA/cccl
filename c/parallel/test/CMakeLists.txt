@@ -51,6 +51,23 @@ file(
   *.cpp
 )
 
+# test_freestanding_compiler is built separately (links hostjit_lib, not cccl.c.parallel)
+list(REMOVE_ITEM test_srcs "test_freestanding_compiler.cpp")
+
 foreach (test_src IN LISTS test_srcs)
   cccl_c_parallel_add_test(test_target "${test_src}")
 endforeach()
+
+if (CCCL_C_Parallel_ENABLE_HOSTJIT AND TARGET hostjit_lib)
+  cccl_add_executable(
+    cccl.c.parallel.test.freestanding_compiler
+    ADD_CTEST
+    NO_METATARGETS
+    DIALECT 20
+    SOURCES test_freestanding_compiler.cpp
+  )
+  target_link_libraries(
+    cccl.c.parallel.test.freestanding_compiler
+    PRIVATE hostjit_lib CUDA::cudart
+  )
+endif()

@@ -7,13 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// (clang-14 || gcc-12 || msvc-19.39) in C++20 tries to erroneously instantiate a bunch of
-// default constructors that don't exist because it evaluates the class initializers before
-// considering the default constructors requirements clause. It's not possible to selectively
-// disable them in this file like the others, so we just disable the compiler entirely.
-
-// UNSUPPORTED: (clang-14 || gcc-12 || msvc-19.39) && c++20
-
 // constexpr sentinel_t<V> base() const;
 
 #include <cuda/std/array>

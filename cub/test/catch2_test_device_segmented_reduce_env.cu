@@ -398,7 +398,7 @@ C2H_TEST("Device segmented sum can be tuned", "[segmented_reduce][device]", bloc
   thrust::device_vector<int> d_out(3);
 
   // We are expecting that `unrelated_tuning` is ignored
-  auto env = cuda::execution::__tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
+  auto env = cuda::execution::tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
 
   auto error =
     cub::DeviceSegmentedReduce::Sum(d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1, env);

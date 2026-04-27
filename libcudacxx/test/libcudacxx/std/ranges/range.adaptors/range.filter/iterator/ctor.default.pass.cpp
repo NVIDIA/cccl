@@ -7,13 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// (clang-14 || gcc-12 || msvc-19.39) in C++20 tries to erroneously instantiate a bunch of
-// default constructors that don't exist because it evaluates the class initializers before
-// considering the default constructors requirements clause. It's not possible to selectively
-// disable them in this file like the others, so we just disable the compiler entirely.
-
-// UNSUPPORTED: (clang-14 || gcc-12 || msvc-19.39) && c++20
-
 // cuda::std::ranges::filter_view<V>::<iterator>() requires default_initializable<iterator_t<V>> = default;
 
 #include <cuda/std/cassert>
@@ -24,7 +17,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-template <class Iterator, bool IsNoexcept>
+template <class Iterator>
 TEST_FUNC constexpr void test_default_constructible()
 {
   // Make sure the iterator is default constructible when the underlying iterator is.
@@ -37,7 +30,8 @@ TEST_FUNC constexpr void test_default_constructible()
   // GCC 7 simply gives the wrong answer here. No amount of cajoling, pleading, or
   // massaging the code ever got it to pass this static_assert()
 #if !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 8, 0)
-  static_assert(cuda::std::is_nothrow_default_constructible_v<FilterIterator> == IsNoexcept);
+  static_assert(cuda::std::is_nothrow_default_constructible_v<FilterIterator>
+                == cuda::std::is_nothrow_default_constructible_v<Iterator>);
 #endif
 }
 
@@ -55,11 +49,11 @@ TEST_FUNC constexpr bool tests()
 {
   test_not_default_constructible<cpp17_input_iterator<int*>>();
   test_not_default_constructible<cpp20_input_iterator<int*>>();
-  test_default_constructible<forward_iterator<int*>, /* noexcept */ false>();
-  test_default_constructible<bidirectional_iterator<int*>, /* noexcept */ false>();
-  test_default_constructible<random_access_iterator<int*>, /* noexcept */ false>();
-  test_default_constructible<contiguous_iterator<int*>, /* noexcept */ false>();
-  test_default_constructible<int*, /* noexcept */ true>();
+  test_default_constructible<forward_iterator<int*>>();
+  test_default_constructible<bidirectional_iterator<int*>>();
+  test_default_constructible<random_access_iterator<int*>>();
+  test_default_constructible<contiguous_iterator<int*>>();
+  test_default_constructible<int*>();
   return true;
 }
 

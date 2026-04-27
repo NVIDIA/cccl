@@ -106,7 +106,7 @@ C2H_TEST("DeviceMerge::MergeKeys can be tuned", "[merge][device]", block_sizes)
 
   block_size_extracting_less_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
-  auto env = cuda::execution::__tune(merge_tuning<target_block_size>{});
+  auto env = cuda::execution::tune(merge_tuning<target_block_size>{});
 
   REQUIRE(
     cudaSuccess
@@ -137,7 +137,7 @@ C2H_TEST("DeviceMerge::MergePairs can be tuned", "[merge][device]", block_sizes)
 
   block_size_extracting_less_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
-  auto env = cuda::execution::__tune(merge_tuning<target_block_size>{});
+  auto env = cuda::execution::tune(merge_tuning<target_block_size>{});
 
   REQUIRE(
     cudaSuccess
