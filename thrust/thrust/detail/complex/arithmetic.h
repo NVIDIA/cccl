@@ -66,11 +66,11 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator-(const T0
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const complex<T0>& x, const complex<T1>& y)
 {
-  using T  = ::cuda::std::common_type_t<T0, T1>;
-  T xr     = static_cast<T>(x.real());
-  T xi     = static_cast<T>(x.imag());
-  T yr     = static_cast<T>(y.real());
-  T yi     = static_cast<T>(y.imag());
+  using T = ::cuda::std::common_type_t<T0, T1>;
+  T xr    = static_cast<T>(x.real());
+  T xi    = static_cast<T>(x.imag());
+  T yr    = static_cast<T>(y.real());
+  T yi    = static_cast<T>(y.imag());
   return complex<T>(xr * yr - xi * yi, xr * yi + xi * yr);
 }
 
@@ -78,16 +78,14 @@ template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const complex<T0>& x, const T1& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-  return complex<T>(static_cast<T>(x.real()) * static_cast<T>(y),
-                    static_cast<T>(x.imag()) * static_cast<T>(y));
+  return complex<T>(static_cast<T>(x.real()) * static_cast<T>(y), static_cast<T>(x.imag()) * static_cast<T>(y));
 }
 
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const T0& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-  return complex<T>(static_cast<T>(x) * static_cast<T>(y.real()),
-                    static_cast<T>(x) * static_cast<T>(y.imag()));
+  return complex<T>(static_cast<T>(x) * static_cast<T>(y.real()), static_cast<T>(x) * static_cast<T>(y.imag()));
 }
 
 template <typename T0, typename T1>
@@ -115,8 +113,7 @@ template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const complex<T0>& x, const T1& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-  return complex<T>(static_cast<T>(x.real()) / static_cast<T>(y),
-                    static_cast<T>(x.imag()) / static_cast<T>(y));
+  return complex<T>(static_cast<T>(x.real()) / static_cast<T>(y), static_cast<T>(x.imag()) / static_cast<T>(y));
 }
 
 template <typename T0, typename T1>

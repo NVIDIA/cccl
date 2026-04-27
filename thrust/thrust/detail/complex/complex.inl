@@ -164,8 +164,7 @@ template <typename T0, typename T1>
 _CCCL_HOST_DEVICE bool operator==(const complex<T0>& x, const complex<T1>& y)
 {
   using T = ::cuda::std::common_type_t<T0, T1>;
-  return static_cast<T>(x.real()) == static_cast<T>(y.real())
-      && static_cast<T>(x.imag()) == static_cast<T>(y.imag());
+  return static_cast<T>(x.real()) == static_cast<T>(y.real()) && static_cast<T>(x.imag()) == static_cast<T>(y.imag());
 }
 
 #if !_CCCL_COMPILER(NVRTC)

@@ -29,7 +29,8 @@ bool is_uniform(thrust::host_vector<T> data, T min, T max)
 
   for (T val : data)
   {
-    int bin_index = exact_binning ? static_cast<int>(val - min) : static_cast<int>((static_cast<double>(val) - static_cast<double>(min)) / interval);
+    int bin_index = exact_binning ? static_cast<int>(val - min)
+                                  : static_cast<int>((static_cast<double>(val) - static_cast<double>(min)) / interval);
 
     if (bin_index >= 0 && bin_index < number_of_bins)
     {

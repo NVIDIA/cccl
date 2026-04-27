@@ -279,5 +279,7 @@ int main(int argc, char** argv)
   // rough approximation !
   double FLOP_COUNT = 21.0 * (1.0 * BODY_CNT) * (1.0 * BODY_CNT) * NITER;
 
-  printf("NBODY: elapsed %f ms, %f GFLOPS\n", static_cast<double>(elapsed), FLOP_COUNT / static_cast<double>(elapsed) / 1000000.0);
+  printf("NBODY: elapsed %f ms, %f GFLOPS\n",
+         static_cast<double>(elapsed),
+         FLOP_COUNT / static_cast<double>(elapsed) / 1000000.0);
 }
