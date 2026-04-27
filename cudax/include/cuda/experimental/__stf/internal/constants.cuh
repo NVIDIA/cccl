@@ -68,10 +68,9 @@ inline access_mode operator|(access_mode lhs, access_mode rhs)
       break;
     case access_mode::relaxed:
     default:
-      EXPECT(
-        false,
-        "Unsupported access_mode merge for the same logical data in one task: bitwise OR produced a "
-        "value that is not one of none, read, write, rw, reduce, or reduce_no_init (e.g. read+write -> rw).");
+      EXPECT(false,
+             "Unsupported access_mode merge for the same logical data in one task: bitwise OR produced a "
+             "value that is not one of none, read, write, rw, reduce, or reduce_no_init (e.g. read+write -> rw).");
       break;
   }
   return merged;

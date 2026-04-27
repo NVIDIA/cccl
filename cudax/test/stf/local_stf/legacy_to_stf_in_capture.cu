@@ -201,7 +201,11 @@ static std::unordered_set<cudaGraphNode_t> transitive_dependencies(cudaGraphNode
     }
     std::vector<cudaGraphNode_t> deps(ndeps);
 #if _CCCL_CTK_AT_LEAST(13, 0)
-    cuda_safe_call(cudaGraphNodeGetDependencies(n, deps.data(), nullptr, &ndeps));
+    // CTK 13+: dependency edges may carry cudaGraphEdgeData. Querying into
+    // pDependencies with edgeData == nullptr returns cudaErrorLossyQuery when
+    // any edge has non-default data (e.g. port annotations from capture).
+    std::vector<cudaGraphEdgeData> edge_data(ndeps);
+    cuda_safe_call(cudaGraphNodeGetDependencies(n, deps.data(), edge_data.data(), &ndeps));
 #else
     cuda_safe_call(cudaGraphNodeGetDependencies(n, deps.data(), &ndeps));
 #endif
