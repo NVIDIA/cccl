@@ -10,8 +10,19 @@ intent, not from an isolated diff.
 Quick Start
 -----------
 
-Start from the checked-out PR branch in the repository root. The first pass is
-for context only, not review comments:
+Start from the checked-out PR branch in the repository root. Use the repo-local
+``review-cccl`` skill with an explicit mode:
+
+.. code-block:: text
+
+   /review-cccl context
+   /review-cccl feedback
+   /review-cccl adversarial
+
+If no mode is provided, the workflow defaults to ``context``.
+
+Context mode is the first pass. It gathers PR context and explains the change,
+but does not produce review comments:
 
 .. code-block:: bash
 
@@ -33,23 +44,9 @@ Use an explicit PR or issue when the local branch cannot reveal it:
    ci/util/pr_review_context.sh --pr 1234
    ci/util/pr_review_context.sh --issue 1234
 
-After the human reviewer has inspected the PR, run the Codex review pass. If
-``codex-plugin-cc`` is available, use:
-
-.. code-block:: text
-
-   /codex:review --base upstream/main --background
-
-For high-risk changes, consider an additional adversarial review after the
-normal review pass:
-
-.. code-block:: text
-
-   /codex:adversarial-review --base upstream/main --background
-
-The plugin invocation is preferred for the review pass because it handles review
-target selection and background execution. The review should still follow the
-review focus in this document.
+After the human reviewer has inspected the PR, use ``/review-cccl feedback`` to
+request a normal review pass. For high-risk changes, use
+``/review-cccl adversarial`` after the PR context is understood.
 
 Review Protocol
 ---------------
@@ -95,27 +92,3 @@ special attention to CCCL-specific contracts such as CUDA/device behavior,
 iterator and aliasing semantics, overload constraints, API compatibility,
 temporary storage, streams, tuning/env propagation, and test coverage when they
 are relevant.
-
-Local Skill Wrapper
--------------------
-
-The source of truth for CCCL PR review lives in this repository. A local Codex
-skill can be useful as a convenience wrapper, but it should point back to these
-repo-owned instructions instead of duplicating them.
-
-Example ``SKILL.md``:
-
-.. code-block:: markdown
-
-   ---
-   name: cccl-pr-review
-   description: Use when reviewing a CCCL pull request, PR branch, commit range, or local diff for correctness, performance, API compatibility, and test coverage.
-   ---
-
-   # CCCL PR Review
-
-   1. Read `AGENTS.md`.
-   2. Read `docs/cccl/development/pr_review.rst`.
-   3. Run or inspect `ci/util/pr_review_context.sh` if available.
-   4. Summarize the linked issue, PR intent, and implementation strategy before making review comments.
-   5. Report findings first, ordered by severity, with file and line references.
