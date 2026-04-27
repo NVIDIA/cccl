@@ -361,7 +361,7 @@ using namespace cub;
 using namespace cub::detail::scan;
 using cub::detail::delay_constructor_policy;
 using cub::detail::delay_constructor_kind;
-static_assert(device_scan_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {6}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_scan_policy()(detail::current_tuning_arch()) == {6}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     input_it.value_type.size, // 0
     input_it.value_type.alignment, // 1

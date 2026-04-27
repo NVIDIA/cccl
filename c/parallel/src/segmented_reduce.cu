@@ -190,7 +190,7 @@ using namespace cub;
 using namespace cub::detail::reduce;
 using namespace cub::detail::segmented_reduce;
 static_assert(
-  device_segmented_reduce_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {9},
+  device_segmented_reduce_policy()(detail::current_tuning_arch()) == {9},
   "Host generated and JIT compiled policy mismatch");
 )XXX",
     jit_template_header_contents, // 0
