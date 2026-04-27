@@ -437,6 +437,14 @@ private:
   }
 };
 
+template <typename IterT, typename OffsetT, typename SearcherT, typename BeginOffsetIterT, typename ReadTransformT>
+multi_segmented_input_iterator(IterT, OffsetT, SearcherT, BeginOffsetIterT, ReadTransformT)
+  -> multi_segmented_input_iterator<IterT,
+                                    ::cuda::std::remove_cv_t<OffsetT>,
+                                    SearcherT,
+                                    BeginOffsetIterT,
+                                    ::cuda::std::remove_cv_t<ReadTransformT>>;
+
 template <typename IterT,
           typename OffsetT,
           typename SearcherT,
@@ -502,6 +510,14 @@ private:
     return {m_it, offset, head_flag, m_write_transform_fn};
   }
 };
+
+template <typename IterT, typename OffsetT, typename SearcherT, typename BeginOffsetIterT, typename WriteTransformT>
+multi_segmented_output_iterator(IterT, OffsetT, SearcherT, BeginOffsetIterT, WriteTransformT)
+  -> multi_segmented_output_iterator<IterT,
+                                     ::cuda::std::remove_cv_t<OffsetT>,
+                                     SearcherT,
+                                     BeginOffsetIterT,
+                                     ::cuda::std::remove_cv_t<WriteTransformT>>;
 } // namespace multi_segment_helpers
 
 template <typename PrefixT, typename BinaryOpT>
