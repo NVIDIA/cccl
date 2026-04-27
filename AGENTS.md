@@ -35,6 +35,21 @@ For a given task, you should:
 
 ---
 
+## PR Review Workflow
+
+When helping with a pull request review, separate context gathering from review comments. First use
+`ci/util/pr_review_context.sh` to collect the standard PR context by computing the merge base against `upstream/main`,
+inspecting the commits and diff from the merge base to `HEAD`, and fetching linked GitHub issue or PR metadata with `gh`
+when available. Explain the issue, PR intent, implementation strategy, and suggested file review order, but do not produce
+review findings until the user explicitly asks for a review. If no issue or PR context is discoverable, explicitly flag
+that the review is missing required context before proceeding.
+
+When the user asks for the Codex review pass, use the `codex-plugin-cc` review command when available, with
+`upstream/main` as the base. Follow `docs/cccl/development/pr_review.rst` for the full review workflow and
+CCCL-specific review focus.
+
+---
+
 ## Known Agent Limitations
 
 ### OpenAI Codex
