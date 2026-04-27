@@ -315,20 +315,19 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_reduce_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-_CCCL_KERNEL_ATTRIBUTES __launch_bounds__(
-  PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10})
-    .large_reduce
-    .block_threads) void DeviceFixedSizeSegmentedReduceKernel(_CCCL_GRID_CONSTANT const InputIteratorT d_in,
-                                                              _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
-                                                              _CCCL_GRID_CONSTANT const OffsetT segment_size,
-                                                              _CCCL_GRID_CONSTANT const int num_segments,
-                                                              ReductionOpT reduction_op,
-                                                              _CCCL_GRID_CONSTANT const InitT init,
-                                                              _CCCL_GRID_CONSTANT AccumT* const d_partial_out,
-                                                              _CCCL_GRID_CONSTANT const int full_chunk_size,
-                                                              _CCCL_GRID_CONSTANT const int blocks_per_segment)
+_CCCL_KERNEL_ATTRIBUTES
+__launch_bounds__(current_policy<PolicySelector>().large_reduce.block_threads) void DeviceFixedSizeSegmentedReduceKernel(
+  _CCCL_GRID_CONSTANT const InputIteratorT d_in,
+  _CCCL_GRID_CONSTANT const OutputIteratorT d_out,
+  _CCCL_GRID_CONSTANT const OffsetT segment_size,
+  _CCCL_GRID_CONSTANT const int num_segments,
+  ReductionOpT reduction_op,
+  _CCCL_GRID_CONSTANT const InitT init,
+  _CCCL_GRID_CONSTANT AccumT* const d_partial_out,
+  _CCCL_GRID_CONSTANT const int full_chunk_size,
+  _CCCL_GRID_CONSTANT const int blocks_per_segment)
 {
-  static constexpr segmented_reduce_policy full_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr segmented_reduce_policy full_policy = current_policy<PolicySelector>();
 
   // Large segment agent (one block per segment)
   static constexpr reduce::agent_reduce_policy large_pol = full_policy.large_reduce;

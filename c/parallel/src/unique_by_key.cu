@@ -259,10 +259,10 @@ using namespace cub;
 using namespace cub::detail::unique_by_key;
 using cub::detail::delay_constructor_policy;
 using cub::detail::delay_constructor_kind;
-static_assert(device_unique_by_key_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {13}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_unique_by_key_policy()(detail::current_tuning_arch()) == {13}, "Host generated and JIT compiled policy mismatch");
 static_assert(
   cub::detail::unique_by_key::unique_by_key_vsmem_helper_t<
-    cub::detail::policy_getter<device_unique_by_key_policy, ::cuda::arch_id{{CUB_PTX_ARCH / 10}}>,
+    cub::detail::policy_getter<device_unique_by_key_policy, detail::current_tuning_arch()>,
     {14},
     {15},
     {16},
@@ -271,7 +271,7 @@ static_assert(
     {18}>::selected_policy_fits_smem,
   "CCCL.C DeviceSelect::UniqueByKey does not support VSMEM-backed kernels");
 using device_unique_by_key_vsmem = cub::detail::unique_by_key::unique_by_key_vsmem_helper_t<
-  cub::detail::policy_getter<device_unique_by_key_policy, ::cuda::arch_id{{CUB_PTX_ARCH / 10}}>,
+  cub::detail::policy_getter<device_unique_by_key_policy, detail::current_tuning_arch()>,
   {14},
   {15},
   {16},

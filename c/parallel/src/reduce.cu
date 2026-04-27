@@ -251,7 +251,7 @@ struct __align__({2}) storage_t {{
 using device_reduce_policy = {6};
 using namespace cub;
 using namespace cub::detail::reduce;
-static_assert(device_reduce_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {7}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_reduce_policy()(detail::current_tuning_arch()) == {7}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     jit_template_header_contents, // 0
     input_it.value_type.size, // 1
