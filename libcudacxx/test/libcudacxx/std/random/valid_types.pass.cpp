@@ -198,7 +198,7 @@ int main(int, char**)
   static_assert(test_uniform_int_small_type<signed char>());
   static_assert(test_uniform_int_small_type<unsigned char>());
   static_assert(test_small_lce());
-#endif
+#endif // TEST_STD_VER >= 2020
 
   return 0;
 }
