@@ -350,16 +350,14 @@ template <typename IterT,
           typename SearcherT,
           typename BeginOffsetIterT,
           typename ReadTransformT,
-          typename WriteTransformT,
           unsigned int LinearBinarySearchThreshold = 18>
-struct multi_segmented_iterator
+struct multi_segmented_input_iterator
 {
   IterT m_it;
   OffsetT m_start;
   SearcherT m_searcher;
   BeginOffsetIterT m_it_idx_begin;
-  ReadTransformT m_read_transform_fn;
-  WriteTransformT m_write_transform_fn;
+  mutable ReadTransformT m_read_transform_fn;
 
   using iterator_concept      = ::cuda::std::random_access_iterator_tag;
   using iterator_category     = ::cuda::std::random_access_iterator_tag;
@@ -369,9 +367,6 @@ struct multi_segmented_iterator
   using reference             = void;
   using pointer               = void;
 
-  static_assert(::cuda::std::is_convertible_v<::cuda::std::invoke_result_t<WriteTransformT, underlying_value_type, bool>,
-                                              underlying_value_type>,
-                "Write transform function return value must be convertible to underlying iterator value type");
   static_assert(::cuda::std::is_same_v<difference_type, typename SearcherT::logical_offset_t>,
                 "offset types are inconsistent");
 
@@ -381,37 +376,10 @@ struct multi_segmented_iterator
     OffsetT m_offset;
     bool m_head_flag;
     ReadTransformT m_read_fn;
-    WriteTransformT m_write_fn;
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE explicit __mapping_proxy(
-      IterT it, OffsetT offset, bool head_flag, ReadTransformT read_fn, WriteTransformT write_fn)
-        : m_it(it)
-        , m_offset(offset)
-        , m_head_flag(head_flag)
-        , m_read_fn(read_fn)
-        , m_write_fn(write_fn)
-    {}
-
-    template <typename Op = ReadTransformT,
-              cuda::std::enable_if_t<::cuda::std::is_invocable_v<const Op&, const underlying_value_type&, bool>, int> = 0>
     _CCCL_DEVICE _CCCL_FORCEINLINE operator value_type() const
     {
       return m_read_fn(m_it[m_offset], m_head_flag);
-    }
-
-    template <
-      typename Op = ReadTransformT,
-      cuda::std::enable_if_t<!::cuda::std::is_invocable_v<const Op&, const underlying_value_type&, bool>, int> = 0>
-    _CCCL_DEVICE _CCCL_FORCEINLINE operator value_type()
-    {
-      return m_read_fn(m_it[m_offset], m_head_flag);
-    }
-
-    template <typename V, typename F>
-    _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy& operator=(::cuda::std::tuple<V, F> new_value)
-    {
-      m_it[m_offset] = m_write_fn(get_value(new_value), m_head_flag);
-      return *this;
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy& operator=(const __mapping_proxy& other)
@@ -419,21 +387,6 @@ struct multi_segmented_iterator
       return (*this = static_cast<value_type>(other));
     }
   };
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE multi_segmented_iterator(
-    IterT it,
-    OffsetT start,
-    SearcherT searcher,
-    BeginOffsetIterT it_idx_begin,
-    ReadTransformT read_fn,
-    WriteTransformT write_fn)
-      : m_it{it}
-      , m_start{start}
-      , m_searcher{searcher}
-      , m_it_idx_begin{it_idx_begin}
-      , m_read_transform_fn{read_fn}
-      , m_write_transform_fn{write_fn}
-  {}
 
   _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy operator*() const
   {
@@ -445,15 +398,10 @@ struct multi_segmented_iterator
     return make_proxy(n);
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE friend multi_segmented_iterator
-  operator+(const multi_segmented_iterator& iter, difference_type n)
+  _CCCL_DEVICE _CCCL_FORCEINLINE friend multi_segmented_input_iterator
+  operator+(const multi_segmented_input_iterator& iter, difference_type n)
   {
-    return {iter.m_it,
-            iter.m_start + n,
-            iter.m_searcher,
-            iter.m_it_idx_begin,
-            iter.m_read_transform_fn,
-            iter.m_write_transform_fn};
+    return {iter.m_it, iter.m_start + n, iter.m_searcher, iter.m_it_idx_begin, iter.m_read_transform_fn};
   }
 
 private:
@@ -464,7 +412,73 @@ private:
     const auto offset    = m_it_idx_begin[segment_id] + rel_offset;
     const bool head_flag = (rel_offset == 0);
 
-    return __mapping_proxy(m_it, offset, head_flag, m_read_transform_fn, m_write_transform_fn);
+    return {m_it, offset, head_flag, m_read_transform_fn};
+  }
+};
+
+template <typename IterT,
+          typename OffsetT,
+          typename SearcherT,
+          typename BeginOffsetIterT,
+          typename WriteTransformT,
+          unsigned int LinearBinarySearchThreshold = 18>
+struct multi_segmented_output_iterator
+{
+  IterT m_it;
+  OffsetT m_start;
+  SearcherT m_searcher;
+  BeginOffsetIterT m_it_idx_begin;
+  mutable WriteTransformT m_write_transform_fn;
+
+  using iterator_concept  = ::cuda::std::random_access_iterator_tag;
+  using iterator_category = ::cuda::std::random_access_iterator_tag;
+  using difference_type   = ::cuda::std::remove_cv_t<OffsetT>;
+  using reference         = void;
+  using pointer           = void;
+
+  static_assert(::cuda::std::is_same_v<difference_type, typename SearcherT::logical_offset_t>,
+                "offset types are inconsistent");
+
+  struct __mapping_proxy
+  {
+    IterT m_it;
+    OffsetT m_offset;
+    bool m_head_flag;
+    WriteTransformT m_write_fn;
+
+    template <typename V, typename F>
+    _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy& operator=(::cuda::std::tuple<V, F> new_value)
+    {
+      m_it[m_offset] = m_write_fn(get_value(new_value), m_head_flag);
+      return *this;
+    }
+  };
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy operator*() const
+  {
+    return make_proxy(0);
+  }
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy operator[](difference_type n) const
+  {
+    return make_proxy(n);
+  }
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE friend multi_segmented_output_iterator
+  operator+(const multi_segmented_output_iterator& iter, difference_type n)
+  {
+    return {iter.m_it, iter.m_start + n, iter.m_searcher, iter.m_it_idx_begin, iter.m_write_transform_fn};
+  }
+
+private:
+  _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy make_proxy(difference_type n) const
+  {
+    const auto [segment_id, rel_offset] = m_searcher.find(m_start + n);
+
+    const auto offset    = m_it_idx_begin[segment_id] + rel_offset;
+    const bool head_flag = (rel_offset == 0);
+
+    return {m_it, offset, head_flag, m_write_transform_fn};
   }
 };
 } // namespace multi_segment_helpers

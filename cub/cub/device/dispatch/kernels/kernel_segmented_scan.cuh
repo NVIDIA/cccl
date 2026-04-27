@@ -426,7 +426,8 @@ private:
     augmented_accum_t exclusive_prefix{};
     worker_prefix_callback_t prefix_op{exclusive_prefix, augmented_scan_op};
 
-    using multi_segment_helpers::multi_segmented_iterator;
+    using multi_segment_helpers::multi_segmented_input_iterator;
+    using multi_segment_helpers::multi_segmented_output_iterator;
     using multi_segment_helpers::packer;
     using multi_segment_helpers::packer_iv;
     using multi_segment_helpers::projector;
@@ -444,13 +445,12 @@ private:
       // load values, and pack them into head_flag-value pairs
       {
         constexpr auto oob_default = multi_segment_helpers::make_value_flag(AccumT{}, false);
-        constexpr projector<AccumT> projection_op{};
 
         block_load_aug_t loader(temp_storage.reused.load_aug);
         if constexpr (has_init)
         {
           const packer_iv<ScanOpT, AccumT> packer_op{scan_op, initial_value};
-          multi_segmented_iterator it_in{d_in, chunk_begin, searcher, inp_idx_begin_it, packer_op, projection_op};
+          multi_segmented_input_iterator it_in{d_in, chunk_begin, searcher, inp_idx_begin_it, packer_op};
 
           if (chunk_size == tile_items)
           {
@@ -464,7 +464,7 @@ private:
         else
         {
           constexpr packer<AccumT> packer_op{};
-          multi_segmented_iterator it_in{d_in, chunk_begin, searcher, inp_idx_begin_it, packer_op, projection_op};
+          multi_segmented_input_iterator it_in{d_in, chunk_begin, searcher, inp_idx_begin_it, packer_op};
 
           if (chunk_size == tile_items)
           {
@@ -504,14 +504,13 @@ private:
 
       // store prefix-scan values, discarding head flags
       {
-        constexpr packer<AccumT> packer_op{};
         const OffsetT out_offset = chunk_id * tile_items;
 
         block_store_aug_t storer(temp_storage.reused.store_aug);
         if constexpr (is_inclusive)
         {
           constexpr projector<AccumT> projector_op{};
-          multi_segmented_iterator it_out{d_out, out_offset, searcher, out_idx_begin_it, packer_op, projector_op};
+          multi_segmented_output_iterator it_out{d_out, out_offset, searcher, out_idx_begin_it, projector_op};
 
           if (chunk_size == tile_items)
           {
@@ -525,7 +524,7 @@ private:
         else
         {
           const projector_iv<AccumT> projector_op{initial_value};
-          multi_segmented_iterator it_out{d_out, out_offset, searcher, out_idx_begin_it, packer_op, projector_op};
+          multi_segmented_output_iterator it_out{d_out, out_offset, searcher, out_idx_begin_it, projector_op};
           if (chunk_size == tile_items)
           {
             storer.Store(it_out, thread_flag_values);
