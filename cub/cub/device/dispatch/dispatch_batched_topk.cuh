@@ -136,6 +136,24 @@ struct total_num_items_guarantee
 // -----------------------------------------------------------------------------
 // Segmented Top-K Dispatch
 // -----------------------------------------------------------------------------
+
+//! @param d_temp_storage Device-accessible allocation of temporary storage. When `nullptr`, the required allocation
+//!        size is written to `temp_storage_bytes` and no work is done.
+//! @param temp_storage_bytes Reference to size in bytes of `d_temp_storage` allocation
+//! @param d_key_segments_it d_key_segments_it[segment_index] -> iterator to the input sequence of key data for segment
+//!        `segment_index`
+//! @param d_key_segments_out_it d_key_segments_out_it[segment_index] -> iterator to the output sequence of key data for
+//!        segment `segment_index`
+//! @param d_value_segments_it d_value_segments_it[segment_index] -> iterator to the input sequence of associated value
+//!        items for segment `segment_index`. When cub::NullType**, only keys are provided.
+//! @param d_value_segments_out_it d_value_segments_out_it[segment_index] -> iterator to the output sequence of
+//!        associated value items for segment `segment_index`
+//! @param segment_sizes Parameter providing segment sizes for each segment
+//! @param k Parameter providing K for each segment
+//! @param select_directions Parameter providing the selection direction for each segment
+//! @param num_segments Number of segments
+//! @param total_num_items_guarantee Allows the user to provide a guarantee on the upper bound of the total number of
+//!        items
 template <typename KeyInputItItT,
           typename KeyOutputItItT,
           typename ValueInputItItT,
@@ -145,193 +163,82 @@ template <typename KeyInputItItT,
           typename SelectDirectionParameterT,
           typename NumSegmentsParameterT,
           typename TotalNumItemsGuaranteeT,
-          typename SelectedPolicy = policy_hub<it_value_t<it_value_t<KeyInputItItT>>,
-                                               it_value_t<it_value_t<ValueInputItItT>>,
-                                               ::cuda::std::int64_t,
-                                               params::static_max_value_v<KParameterT>>>
-struct dispatch_batched_topk
+          typename PolicySelector = policy_selector_from_types<it_value_t<it_value_t<KeyInputItItT>>,
+                                                               it_value_t<it_value_t<ValueInputItItT>>,
+                                                               ::cuda::std::int64_t,
+                                                               params::static_max_value_v<KParameterT>>>
+#if _CCCL_HAS_CONCEPTS()
+  requires batched_topk_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  KeyInputItItT d_key_segments_it,
+  KeyOutputItItT d_key_segments_out_it,
+  ValueInputItItT d_value_segments_it,
+  ValueOutputItItT d_value_segments_out_it,
+  SegmentSizeParameterT segment_sizes,
+  KParameterT k,
+  SelectDirectionParameterT select_directions,
+  NumSegmentsParameterT num_segments,
+  [[maybe_unused]] TotalNumItemsGuaranteeT total_num_items_guarantee,
+  cudaStream_t stream                             = nullptr,
+  [[maybe_unused]] PolicySelector policy_selector = {})
 {
-  using offset_t = ::cuda::std::int64_t;
+  // Helper that determines (a) whether there's any one-worker-per-segment policy supporting the range of segment
+  // sizes and k, and (b) if so, which set of one-worker-per-segment policies to use
+  constexpr worker_policy selected = find_smallest_covering_policy<
+    PolicySelector,
+    SegmentSizeParameterT,
+    KeyInputItItT,
+    KeyOutputItItT,
+    ValueInputItItT,
+    ValueOutputItItT,
+    SegmentSizeParameterT,
+    KParameterT,
+    SelectDirectionParameterT,
+    NumSegmentsParameterT>::policy;
 
-  /// Device-accessible allocation of temporary storage.
-  /// When `nullptr`, the required allocation size is written to `temp_storage_bytes` and no work is done.
-  void* d_temp_storage;
-
-  /// Reference to size in bytes of `d_temp_storage` allocation
-  size_t& temp_storage_bytes;
-
-  /// d_key_segments_it[segment_index] -> iterator to the input sequence of key data for segment `segment_index`
-  KeyInputItItT d_key_segments_it;
-
-  /// d_key_segments_out_it[segment_index] -> iterator to the output sequence of key data for segment `segment_index`
-  KeyOutputItItT d_key_segments_out_it;
-
-  /// d_value_segments_it[segment_index] -> iterator to the input sequence of associated value items for segment
-  /// `segment_index`
-  ValueInputItItT d_value_segments_it;
-
-  /// d_value_segments_out_it[segment_index] -> iterator to the output sequence of associated value items for segment
-  /// `segment_index`
-  ValueOutputItItT d_value_segments_out_it;
-
-  /// Parameter providing segment sizes for each segment
-  SegmentSizeParameterT segment_sizes;
-
-  /// Parameter providing K for each segment
-  KParameterT k;
-
-  /// Parameter providing the selection direction for each segment
-  SelectDirectionParameterT select_directions;
-
-  /// Number of segments
-  NumSegmentsParameterT num_segments;
-
-  // Allows the user to provide a guarantee on the upper bound of the total number of items
-  TotalNumItemsGuaranteeT total_num_items_guarantee;
-
-  /// CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
-  cudaStream_t stream;
-
-  int ptx_version;
-
-  // We pass ValueInputItItT itself as cub::NullType** when only keys are processed
-  static constexpr bool keys_only = ::cuda::std::is_same_v<ValueInputItItT, NullType**>;
-
-  template <typename ActiveWorkerPerSegmentPolicyTPolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_one_worker_per_segment()
+  if (d_temp_storage == nullptr)
   {
-    using max_policy_t = typename SelectedPolicy::max_policy;
-
-    // Instantiate the kernel with the selected policy and check shared memory requirements
-    using topk_policy_t = ActiveWorkerPerSegmentPolicyTPolicyT;
-
-    constexpr int block_dim = topk_policy_t::block_threads;
-
-    if (d_temp_storage == nullptr)
-    {
-      temp_storage_bytes = 1;
-      return cudaSuccess;
-    }
-
-    // TODO (elstehle): support number of segments provided by device-accessible iterator
-    // Only uniform number of segments are supported (i.e., we  need to resolve the number of segments on the host)
-    static_assert(!params::is_per_segment_param_v<NumSegmentsParameterT>,
-                  "Only uniform segment sizes are currently supported.");
-
-    // TODO (elstehle): support larger number of segments through multiple kernel launches
-    int grid_dim = static_cast<int>(num_segments.get_param(0));
-
-    cudaError_t error = CubDebug(
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)
-        .doit(device_segmented_topk_kernel<max_policy_t,
-                                           KeyInputItItT,
-                                           KeyOutputItItT,
-                                           ValueInputItItT,
-                                           ValueOutputItItT,
-                                           SegmentSizeParameterT,
-                                           KParameterT,
-                                           SelectDirectionParameterT,
-                                           NumSegmentsParameterT>,
-              d_key_segments_it,
-              d_key_segments_out_it,
-              d_value_segments_it,
-              d_value_segments_out_it,
-              segment_sizes,
-              k,
-              select_directions,
-              num_segments));
-
-    // Check for failure to launch
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
-
-    // Sync the stream if specified to flush runtime errors
-    error = CubDebug(detail::DebugSyncStream(stream));
-
-    // Check for failure to launch
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
-
+    temp_storage_bytes = 1;
     return cudaSuccess;
   }
 
-  template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
-  {
-    // Helper that determines (a) whether there's any one-worker-per-segment policy supporting the range of segment
-    // sizes and k, and (b) if so, which set of one-worker-per-segment policies to use
-    using find_smallest_covering_policy_t = find_smallest_covering_policy<
-      ActivePolicyT,
-      SegmentSizeParameterT,
-      agent_batched_topk_worker_per_segment,
-      KeyInputItItT,
-      KeyOutputItItT,
-      ValueInputItItT,
-      ValueOutputItItT,
-      SegmentSizeParameterT,
-      KParameterT,
-      SelectDirectionParameterT,
-      NumSegmentsParameterT>;
+  // TODO (elstehle): support number of segments provided by device-accessible iterator
+  // Only uniform number of segments are supported (i.e., we need to resolve the number of segments on the host)
+  static_assert(!params::is_per_segment_param_v<NumSegmentsParameterT>,
+                "Only uniform segment sizes are currently supported.");
 
-    // Currently, we only support segments that fit into shared memory
-    // TODO (elstehle): extend support for variable-size segments
-    static_assert(find_smallest_covering_policy_t::supports_one_worker_per_segment,
-                  "Currently only small segments are supported, where each segment can be processed by a single thread "
-                  "block.");
-    if constexpr (find_smallest_covering_policy_t::supports_one_worker_per_segment)
-    {
-      return invoke_one_worker_per_segment<typename find_smallest_covering_policy_t::worker_per_segment_policy_t>();
-    }
-    else
-    {
-      return cudaErrorNotSupported;
-    }
+  // TODO (elstehle): support larger number of segments through multiple kernel launches
+  const int grid_dim      = static_cast<int>(num_segments.get_param(0));
+  constexpr int block_dim = selected.block_threads;
+
+  if (const auto error = CubDebug(
+        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid_dim, block_dim, 0, stream)
+          .doit(device_segmented_topk_kernel<PolicySelector,
+                                             KeyInputItItT,
+                                             KeyOutputItItT,
+                                             ValueInputItItT,
+                                             ValueOutputItItT,
+                                             SegmentSizeParameterT,
+                                             KParameterT,
+                                             SelectDirectionParameterT,
+                                             NumSegmentsParameterT>,
+                d_key_segments_it,
+                d_key_segments_out_it,
+                d_value_segments_it,
+                d_value_segments_out_it,
+                segment_sizes,
+                k,
+                select_directions,
+                num_segments)))
+  {
+    return error;
   }
 
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    KeyInputItItT d_key_segments_it,
-    KeyOutputItItT d_key_segments_out_it,
-    ValueInputItItT d_value_segments_it,
-    ValueOutputItItT d_value_segments_out_it,
-    SegmentSizeParameterT segment_sizes,
-    KParameterT k,
-    SelectDirectionParameterT select_directions,
-    NumSegmentsParameterT num_segments,
-    TotalNumItemsGuaranteeT total_num_items_guarantee,
-    cudaStream_t stream)
-  {
-    using max_policy_t = typename SelectedPolicy::max_policy;
-
-    int ptx_version = 0;
-    if (cudaError_t error = CubDebug(PtxVersion(ptx_version)))
-    {
-      return error;
-    }
-
-    dispatch_batched_topk dispatch{
-      d_temp_storage,
-      temp_storage_bytes,
-      d_key_segments_it,
-      d_key_segments_out_it,
-      d_value_segments_it,
-      d_value_segments_out_it,
-      segment_sizes,
-      k,
-      select_directions,
-      num_segments,
-      total_num_items_guarantee,
-      stream,
-      ptx_version};
-
-    return CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
-  }
-};
+  return CubDebug(detail::DebugSyncStream(stream));
+}
 } // namespace detail::batched_topk
 
 CUB_NAMESPACE_END

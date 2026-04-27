@@ -111,6 +111,13 @@ TEST_FUNC constexpr bool test()
   test<random_access_iterator<const int*>, bidirectional_iterator<const unsigned int*>>();
   test<random_access_iterator<const int*>, random_access_iterator<const unsigned int*>>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>, host_only_iterator<const unsigned int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>, device_only_iterator<const unsigned int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   //  just plain pointers (const vs. non-const, too)
   test<const int*, const unsigned int*>();
   test<const int*, unsigned int*>();

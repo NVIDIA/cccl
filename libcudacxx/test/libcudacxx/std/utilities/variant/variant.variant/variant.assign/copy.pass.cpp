@@ -9,6 +9,9 @@
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 
+// XFAIL: enable-tile
+// nvbug6067464: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!
+
 // <cuda/std/variant>
 
 // template <class ...Types> class variant;
@@ -450,7 +453,7 @@ TEST_FUNC void test_copy_assignment_same_index()
     assert(&vref == &v1);
     assert(v1.index() == 1);
     assert(cuda::std::get<1>(v1).value == 42);
-#if !TEST_COMPILER(MSVC)
+#if !TEST_COMPILER(MSVC) && !_CCCL_TILE_COMPILATION()
     assert(CopyAssign::copy_construct() == 0);
     assert(CopyAssign::move_construct() == 0);
     // FIXME(mdominiak): try to narrow down what in the compiler makes it emit an invalid PTX call instruction without
@@ -459,7 +462,7 @@ TEST_FUNC void test_copy_assignment_same_index()
     // interactions of many weird things these tests are doing.
     asm volatile("" ::: "memory");
     assert(CopyAssign::copy_assign() == 1);
-#endif // !TEST_COMPILER(MSVC)
+#endif // !TEST_COMPILER(MSVC) && !_CCCL_TILE_COMPILATION()
   }
 #if TEST_HAS_EXCEPTIONS()
 #  if defined(_LIBCUDACXX_HAS_STRING)
@@ -572,7 +575,7 @@ TEST_FUNC void test_copy_assignment_different_index()
     assert(&vref == &v1);
     assert(v1.index() == 1);
     assert(cuda::std::get<1>(v1).value == 42);
-#if !TEST_COMPILER(MSVC)
+#if !TEST_COMPILER(MSVC) && !_CCCL_TILE_COMPILATION()
     assert(CopyAssign::alive() == 2);
     assert(CopyAssign::copy_construct() == 1);
     assert(CopyAssign::move_construct() == 1);
@@ -582,7 +585,7 @@ TEST_FUNC void test_copy_assignment_different_index()
     // interactions of many weird things these tests are doing.
     asm volatile("" ::: "memory");
     assert(CopyAssign::copy_assign() == 0);
-#endif // !TEST_COMPILER(MSVC)
+#endif // !TEST_COMPILER(MSVC) && !_CCCL_TILE_COMPILATION()
   }
 #if TEST_HAS_EXCEPTIONS()
 #  if defined(_LIBCUDACXX_HAS_STRING)

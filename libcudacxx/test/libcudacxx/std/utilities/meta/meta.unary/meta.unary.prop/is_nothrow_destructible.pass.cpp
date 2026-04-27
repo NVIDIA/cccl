@@ -59,6 +59,7 @@ private:
   TEST_FUNC ~PrivateDestructor() {}
 };
 
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
 struct VirtualPublicDestructor
 {
 public:
@@ -90,6 +91,7 @@ struct PurePrivateDestructor
 private:
   TEST_FUNC virtual ~PurePrivateDestructor() = 0;
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 class Empty
 {};
@@ -102,10 +104,12 @@ struct bit_zero
   int : 0;
 };
 
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
 class Abstract
 {
   TEST_FUNC virtual void foo() = 0;
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 int main(int, char**)
 {
@@ -122,20 +126,24 @@ int main(int, char**)
 
   // requires noexcept. These are all destructible.
   test_is_nothrow_destructible<PublicDestructor>();
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
   test_is_nothrow_destructible<VirtualPublicDestructor>();
   test_is_nothrow_destructible<PurePublicDestructor>();
-  test_is_nothrow_destructible<bit_zero>();
   test_is_nothrow_destructible<Abstract>();
+#endif // !_CCCL_TILE_COMPILATION()
+  test_is_nothrow_destructible<bit_zero>();
   test_is_nothrow_destructible<Empty>();
   test_is_nothrow_destructible<Union>();
 
   // requires access control
   test_is_not_nothrow_destructible<ProtectedDestructor>();
   test_is_not_nothrow_destructible<PrivateDestructor>();
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
   test_is_not_nothrow_destructible<VirtualProtectedDestructor>();
   test_is_not_nothrow_destructible<VirtualPrivateDestructor>();
   test_is_not_nothrow_destructible<PureProtectedDestructor>();
   test_is_not_nothrow_destructible<PurePrivateDestructor>();
+#endif // !_CCCL_TILE_COMPILATION()
 
   return 0;
 }

@@ -167,7 +167,7 @@ struct ScanBySegmentOp
   ScanOpT op;
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanBySegmentOp() {}
+  _CCCL_FORCEINLINE ScanBySegmentOp() = default;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanBySegmentOp(ScanOpT op)
@@ -301,7 +301,7 @@ struct ReduceBySegmentOp
   ReductionOpT op;
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceBySegmentOp() {}
+  _CCCL_FORCEINLINE ReduceBySegmentOp() = default;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceBySegmentOp(ReductionOpT op)
@@ -362,7 +362,7 @@ struct ReduceByKeyOp
   ReductionOpT op;
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceByKeyOp() {}
+  _CCCL_FORCEINLINE ReduceByKeyOp() = default;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceByKeyOp(ReductionOpT op)
@@ -552,6 +552,15 @@ inline constexpr bool is_simd_enabled_cuda_operator =
   is_cuda_minimum_maximum_v<Op, T> || //
   is_cuda_std_plus_mul_v<Op, T> || //
   is_cuda_std_bitwise_v<Op, T>;
+
+// TODO: enable FP32 min/max (SM100a/SM100f)
+template <typename Op, typename T, typename UnqualifiedOp = ::cuda::std::remove_cvref_t<Op>>
+inline constexpr bool is_redux_enabled_cuda_operator =
+  ::cuda::std::is_integral_v<T> && //
+  sizeof(T) <= sizeof(unsigned) && //
+  (is_cuda_minimum_maximum_v<UnqualifiedOp, T> || //
+   is_cuda_std_plus_v<UnqualifiedOp, T> || //
+   is_cuda_std_bitwise_v<UnqualifiedOp, T>);
 
 template <typename Op, typename T = void>
 inline constexpr bool is_cuda_binary_operator =

@@ -26,6 +26,7 @@
 
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -37,10 +38,6 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -708,7 +705,7 @@ struct KeyValuePair
   Value value; ///< Item value
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair() {}
+  _CCCL_FORCEINLINE KeyValuePair() = default;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair(Key const& key, Value const& value)
@@ -728,12 +725,12 @@ struct KeyValuePair
     return (value != b.value) || (key != b.key);
   }
 
-#  if !_CCCL_COMPILER(NVRTC)
+#  if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const KeyValuePair& pair)
   {
     return os << '(' << pair.key << ',' << pair.value << ')';
   }
-#  endif // !_CCCL_COMPILER(NVRTC)
+#  endif // _CCCL_HOSTED()
 };
 
 /**

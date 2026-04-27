@@ -41,12 +41,6 @@
 #include "../MinimalElementType.h"
 #include "test_macros.h"
 
-#if _CCCL_CUDA_COMPILER(NVRTC)
-#  define _CCCL_NVRTC_CONCEPT_DECORATOR() TEST_DEVICE_FUNC
-#else
-#  define _CCCL_NVRTC_CONCEPT_DECORATOR()
-#endif // _CCCL_CUDA_COMPILER(NVRTC)
-
 template <class Extents, size_t... Idxs>
 TEST_DEVICE_FUNC constexpr auto array_from_extents(const Extents& exts, cuda::std::index_sequence<Idxs...>)
 {
@@ -54,26 +48,16 @@ TEST_DEVICE_FUNC constexpr auto array_from_extents(const Extents& exts, cuda::st
 }
 
 template <class MDS>
-TEST_DEVICE_FUNC void check_implicit_construction(MDS);
+TEST_FUNC cuda::std::true_type check_implicit_construction(MDS);
 
 template <class MDS, class Exts>
-_CCCL_NVRTC_CONCEPT_DECORATOR()
-constexpr bool check_implicit_construction_impl(...)
-{
-  return false;
-}
+TEST_FUNC constexpr auto check_implicit_construction_impl(...) -> cuda::std::false_type;
 template <class MDS, class Exts>
-_CCCL_NVRTC_CONCEPT_DECORATOR()
-constexpr auto check_implicit_construction_impl(int)
-  -> decltype(check_implicit_construction<MDS>({cuda::std::declval<typename MDS::data_handle_type>(),
-                                                cuda::std::declval<const Exts&>()}),
-              true)
-{
-  return true;
-}
+TEST_FUNC constexpr auto check_implicit_construction_impl(int) -> decltype(check_implicit_construction<MDS>(
+  {cuda::std::declval<typename MDS::data_handle_type>(), cuda::std::declval<const Exts&>()}));
 
 template <class MDS, class Exts>
-_CCCL_CONCEPT check_mdspan_ctor_implicit = check_implicit_construction_impl<MDS, Exts>(0);
+_CCCL_CONCEPT check_mdspan_ctor_implicit = decltype(check_implicit_construction_impl<MDS, Exts>(0))::value;
 
 template <class H, class M, class A, size_t N>
 TEST_DEVICE_FUNC constexpr void
@@ -81,10 +65,7 @@ test_mdspan_ctor_array(const H& handle, const M& map, const A&, cuda::std::array
 {
   using MDS =
     cuda::shared_memory_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    move_counted_handle<typename MDS::element_type>::move_counter() = 0;
-  }
+  move_counted_handle<typename MDS::element_type>::reset();
   MDS m(handle, exts);
   test_move_counter<MDS, H>();
 

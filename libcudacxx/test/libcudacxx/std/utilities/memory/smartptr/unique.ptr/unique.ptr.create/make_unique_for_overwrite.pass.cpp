@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: dynamic memory allocation is unsupported in tile code
+
 // template<class T>
 //   constexpr unique_ptr<T> make_unique_for_overwrite(); // T is not array
 //

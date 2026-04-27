@@ -33,6 +33,16 @@ struct policy_getter : PolicySelector
   }
 };
 
+// Device-only variant for kernel-side compile-time policy queries.
+template <typename PolicySelector, ::cuda::arch_id ArchId>
+struct device_policy_getter : PolicySelector
+{
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
+  {
+    return PolicySelector::operator()(ArchId);
+  }
+};
+
 #if !defined(CUB_DEFINE_RUNTIME_POLICIES) && !_CCCL_COMPILER(NVRTC)
 #  if _CCCL_STD_VER < 2020
 template <typename PolicySelector, size_t N>

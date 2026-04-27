@@ -33,7 +33,7 @@
 namespace cuda::experimental
 {
 template <class _Group>
-_CCCL_CONCEPT group = _CCCL_REQUIRES_EXPR((_Group), _Group&& __g, const _Group&& __cg)(
+_CCCL_CONCEPT is_group = _CCCL_REQUIRES_EXPR((_Group), _Group&& __g, const _Group&& __cg)(
   typename(typename _Group::unit_type),
   requires(__is_hierarchy_level_v<typename _Group::unit_type>),
   typename(typename _Group::level_type),
@@ -57,11 +57,6 @@ _CCCL_CONCEPT __group_mapping_result = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __v
   _Same_as(unsigned) __v.rank(),
   _Same_as(bool) _Tp::is_always_exhaustive(),
   _Same_as(bool) _Tp::is_always_contiguous());
-
-template <class _Synchronizer, class _MappingResult>
-_CCCL_CONCEPT __has_sync_aligned = _CCCL_REQUIRES_EXPR(
-  (_Synchronizer, _MappingResult), _Synchronizer& __synchronizer, const _MappingResult& __mapping_result)(
-  __synchronizer.__sync_aligned(__mapping_result));
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED

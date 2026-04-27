@@ -116,6 +116,7 @@ TEST_FUNC int& foo(NonCopyable&&)
   return data;
 }
 
+#if !_CCCL_TILE_COMPILATION() // error: taking address or reference of a function is unsupported in tile mode!
 template <class Signature, class Expect, class Functor>
 TEST_FUNC void test_b12(Functor&& f)
 {
@@ -158,6 +159,7 @@ TEST_FUNC void test_b34(Functor&& f)
   DeducedReturnType ret = cuda::std::invoke(func_ptr, cuda::std::forward<Functor>(f));
   assert(ret == 42);
 }
+#endif // !_CCCL_TILE_COMPILATION()
 
 template <class Expect, class Functor>
 TEST_FUNC void test_b5(Functor&& f)
@@ -177,6 +179,7 @@ TEST_FUNC void test_b5(Functor&& f)
   assert(ret == 42);
 }
 
+#if !_CCCL_TILE_COMPILATION() // error: taking address or reference of a function is unsupported in tile mode!
 TEST_FUNC void bullet_one_two_tests()
 {
   {
@@ -310,18 +313,23 @@ TEST_FUNC void bullet_three_four_tests()
     test_b34<int const volatile&>(static_cast<Fn const volatile*>(cl));
   }
 }
+#endif // !_CCCL_TILE_COMPILATION()
 
 TEST_FUNC void bullet_five_tests()
 {
+#if !_CCCL_TILE_COMPILATION() //  error: taking address or reference of a function is unsupported in tile mode!
   using FooType = int&(NonCopyable&&);
   {
     FooType& fn = foo;
     test_b5<int&>(fn);
   }
+#endif // !_CCCL_TILE_COMPILATION()
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   {
     FooType* fn = foo;
     test_b5<int&>(fn);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   {
     using Fn = TestClass;
     Fn cl(42);
@@ -389,8 +397,10 @@ TEST_FUNC void noexcept_test()
 
 int main(int, char**)
 {
+#if !_CCCL_TILE_COMPILATION() // error: taking address or reference of a function is unsupported in tile mode!
   bullet_one_two_tests();
   bullet_three_four_tests();
+#endif // !_CCCL_TILE_COMPILATION()
   bullet_five_tests();
   noexcept_test();
 

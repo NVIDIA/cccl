@@ -18,11 +18,11 @@
 #include "test_macros.h"
 #include "types.h"
 
-template <typename T>
+template <typename CountingIteratorType, typename OtherIteratorType = CountingIteratorType>
 TEST_FUNC constexpr void test()
 {
-  cuda::counting_iterator<T> iter1{T{42}};
-  const auto iter2 = iter1 + 1;
+  CountingIteratorType iter1{42};
+  const auto iter2 = OtherIteratorType{iter1 + 1};
 
   assert(!(iter1 < iter1));
   assert(iter1 < iter2);
@@ -44,7 +44,7 @@ TEST_FUNC constexpr void test()
   assert(!(iter2 != iter2));
 
 #if TEST_HAS_SPACESHIP()
-  static_assert(cuda::std::three_way_comparable<cuda::counting_iterator<T>>);
+  static_assert(cuda::std::three_way_comparable<CountingIteratorType>);
   assert((iter1 <=> iter2) == cuda::std::strong_ordering::less);
   assert((iter1 <=> iter1) == cuda::std::strong_ordering::equal);
   assert((iter2 <=> iter1) == cuda::std::strong_ordering::greater);
@@ -53,13 +53,11 @@ TEST_FUNC constexpr void test()
 
 TEST_FUNC constexpr bool test()
 {
-  test<SomeInt>();
-  test<cuda::std::int8_t>();
-  test<cuda::std::uint8_t>();
-  test<int>();
-  test<cuda::std::int64_t>();
-  test<cuda::std::uint64_t>();
-
+  test<cuda::counting_iterator<int>>();
+  test<cuda::counting_iterator<int, int>>();
+  test<cuda::counting_iterator<int, cuda::std::int16_t>>();
+  test<cuda::counting_iterator<int>, cuda::counting_iterator<int, int>>();
+  test<cuda::counting_iterator<int, int>, cuda::counting_iterator<int, cuda::std::int16_t>>();
   return true;
 }
 

@@ -51,7 +51,7 @@ benchmarks:
     # - "rtxpro6000" # sm_120
 
   # Extra .devcontainer/launch.sh -d args
-  # launch_args: "--cuda 13.1 --host gcc14"
+  # launch_args: "--cuda 13.2 --host gcc14"
   launch_args: "" # Latest nvcc + gcc
 
   # Advanced:

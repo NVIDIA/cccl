@@ -241,7 +241,7 @@ private:
   {
     if (::cuda::device::is_object_from(__barrier, ::cuda::device::address_space::shared))
     {
-      bool __ready = 0;
+      bool __ready = false;
       ::cuda::std::chrono::high_resolution_clock::time_point const __start =
         ::cuda::std::chrono::high_resolution_clock::now();
       ::cuda::std::chrono::nanoseconds __elapsed(0);
@@ -371,7 +371,7 @@ private:
         ::cuda::std::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);
     }
 
-    bool __ready = 0;
+    bool __ready = false;
     ::cuda::std::chrono::high_resolution_clock::time_point const __start =
       ::cuda::std::chrono::high_resolution_clock::now();
     do

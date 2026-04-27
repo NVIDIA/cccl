@@ -15,7 +15,7 @@ public:
       : state(i)
   {}
 
-  ~stateful_allocator() {}
+  _CCCL_HOST ~stateful_allocator() {} // NOLINT(modernize-use-equals-default)
 
   stateful_allocator(const stateful_allocator& other)
       : BaseAlloc(other)

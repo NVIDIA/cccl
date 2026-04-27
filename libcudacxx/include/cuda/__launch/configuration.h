@@ -270,10 +270,12 @@ public:
   {
     if constexpr (::cuda::std::is_unbounded_array_v<_Tp>)
     {
+#  if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
       _CCCL_IF_NOT_CONSTEVAL_DEFAULT
       {
         NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::ptx::get_sreg_dynamic_smem_size();))
       }
+#  endif // !_CCCL_TILE_COMPILATION()
       return __base_type::__n_ * sizeof(value_type);
     }
     else

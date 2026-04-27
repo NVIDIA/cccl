@@ -33,7 +33,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename PolicySelector, bool AltDigitBits>
 _CCCL_API constexpr int segmented_radix_sort_kernel_launch_bounds()
 {
-  constexpr auto policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  constexpr auto policy = current_policy<PolicySelector>();
   return AltDigitBits ? policy.alt_segmented.block_threads : policy.segmented.block_threads;
 }
 
@@ -125,7 +125,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
   // Constants
   //
 
-  static constexpr radix_sort_policy policy                  = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr radix_sort_policy policy                  = current_policy<PolicySelector>();
   static constexpr radix_sort_downsweep_policy active_policy = AltDigitBits ? policy.alt_segmented : policy.segmented;
 
   static constexpr int block_threads = active_policy.block_threads;

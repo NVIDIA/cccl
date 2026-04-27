@@ -262,6 +262,7 @@ struct ForwardingCallObject {
 //                        BOOL TEST TYPES
 ///////////////////////////////////////////////////////////////////////////////
 
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable ("EvilBool_bang_called") cannot be used in tile code
 TEST_GLOBAL_VARIABLE int EvilBool_bang_called = 0;
 struct EvilBool
 {
@@ -287,6 +288,7 @@ private:
 public:
   bool value;
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 struct ExplicitBool
 {
@@ -431,6 +433,7 @@ TEST_FUNC void return_type_tests()
     // static_assert(is_same<decltype(ret(cuda::std::string("abc"))), bool>::value);
     assert(ret() == false);
   }
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable ("EvilBool_bang_called") cannot be used in tile code
   {
     using T  = CopyCallable<EvilBool>;
     auto ret = cuda::std::not_fn(T{false});
@@ -442,16 +445,19 @@ TEST_FUNC void return_type_tests()
     ret();
     assert(EvilBool_bang_called == 2);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 }
 
 // Other tests only test using objects with call operators. Test various
 // other callable types here.
 TEST_FUNC void other_callable_types_test()
 {
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   { // test with function pointer
     auto ret = cuda::std::not_fn(returns_true);
     assert(ret() == false);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   { // test with lambda
     auto returns_value = [](bool value) {
       return value;
@@ -460,6 +466,7 @@ TEST_FUNC void other_callable_types_test()
     assert(ret(true) == false);
     assert(ret(false) == true);
   }
+#if !_CCCL_TILE_COMPILATION() // error: taking address or reference of a function is unsupported in tile mode!"
   { // test with pointer to member function
     MemFunCallable mt(true);
     const MemFunCallable mf(false);
@@ -478,6 +485,7 @@ TEST_FUNC void other_callable_types_test()
     assert(ret(&mt) == false);
     assert(ret(&mf) == true);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   { // test with pointer to member data
     MemFunCallable mt(true);
     const MemFunCallable mf(false);
@@ -521,11 +529,13 @@ void throws_in_constructor_test()
 
 TEST_FUNC void call_operator_sfinae_test()
 {
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   { // wrong number of arguments
     using T = decltype(cuda::std::not_fn(returns_true));
     static_assert(cuda::std::is_invocable<T>::value); // callable only with no args
     static_assert(!cuda::std::is_invocable<T, bool>::value);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   { // violates const correctness (member function pointer)
     using T = decltype(cuda::std::not_fn(&MemFunCallable::return_value_nc));
     static_assert(cuda::std::is_invocable<T, MemFunCallable&>::value);
@@ -686,22 +696,25 @@ TEST_FUNC void call_operator_noexcept_test()
 #endif // !_CCCL_CUDA_COMPILATION()
     unused(cret);
   }
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable ("EvilBool_bang_called") cannot be used in tile code
   {
     using T = NoExceptCallable<EvilBool>;
     T value(true);
     auto ret = cuda::std::not_fn(value);
-#if !TEST_COMPILER(NVHPC)
+#  if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(ret()), "call should not be noexcept");
-#endif // TEST_COMPILER(NVHPC)
+#  endif // TEST_COMPILER(NVHPC)
     auto const& cret = ret;
-#if !TEST_COMPILER(NVHPC)
+#  if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cret()), "call should not be noexcept");
-#endif // TEST_COMPILER(NVHPC)
+#  endif // TEST_COMPILER(NVHPC)
     unused(cret);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 }
 
-#if !TEST_CUDA_COMPILER(CLANG) // https://github.com/llvm/llvm-project/issues/67533
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
+#  if !TEST_CUDA_COMPILER(CLANG) // https://github.com/llvm/llvm-project/issues/67533
 TEST_FUNC void test_lwg2767()
 {
   // See https://cplusplus.github.io/LWG/lwg-defects.html#2767
@@ -727,7 +740,8 @@ TEST_FUNC void test_lwg2767()
     assert(b);
   }
 }
-#endif // TEST_CUDA_COMPILER(CLANG)
+#  endif // TEST_CUDA_COMPILER(CLANG)
+#endif // !_CCCL_TILE_COMPILATION
 
 int main(int, char**)
 {
@@ -740,9 +754,11 @@ int main(int, char**)
   call_operator_sfinae_test(); // somewhat of an extension
   // call_operator_forwarding_test();
   call_operator_noexcept_test();
-#if !TEST_CUDA_COMPILER(CLANG)
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
+#  if !TEST_CUDA_COMPILER(CLANG)
   test_lwg2767();
-#endif // TEST_CUDA_COMPILER(CLANG)
+#  endif // TEST_CUDA_COMPILER(CLANG)
+#endif // !_CCCL_TILE_COMPILATION()
 
   return 0;
 }

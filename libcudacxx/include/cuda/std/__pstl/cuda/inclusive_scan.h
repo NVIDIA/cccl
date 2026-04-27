@@ -69,43 +69,22 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
     _BinaryOp __binary_op,
     _Tp __init)
   {
-    _OutputIterator __ret = __result + iter_difference_t<_OutputIterator>(__count);
-
-    // Determine temporary device storage requirements for reduce
-    size_t __num_bytes = 0;
+    // We pass the policy as an environment to DeviceScan
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceScan::InclusiveScanInit,
-      "__pstl_cuda_inclusive_scan: determination of device storage for cub::DeviceScan::InclusiveScanInit failed",
-      static_cast<void*>(nullptr),
-      __num_bytes,
-      __first,
+      "__pstl_cuda_exclusive_scan: kernel launch of cub::DeviceScan::InclusiveScanInit failed",
+      ::cuda::std::move(__first),
       __result,
-      __binary_op,
+      ::cuda::std::move(__binary_op),
       __init,
-      __count);
+      __count,
+      __policy);
 
-    // Allocate memory for result
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-
-    {
-      __temporary_storage<> __storage{__policy, __num_bytes};
-
-      // Run the scan
-      _CCCL_TRY_CUDA_API(
-        CUB_NS_QUALIFIER::DeviceScan::InclusiveScanInit,
-        "__pstl_cuda_exclusive_scan: kernel launch of cub::DeviceScan::InclusiveScanInit failed",
-        __storage.__get_temp_storage(),
-        __num_bytes,
-        ::cuda::std::move(__first),
-        ::cuda::std::move(__result),
-        ::cuda::std::move(__binary_op),
-        __init,
-        __count,
-        __stream.get());
-    }
-
+    // Get the stream for synchronization after the algorithm is run
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     __stream.sync();
-    return __ret;
+
+    return __result + iter_difference_t<_OutputIterator>(__count);
   }
 
   template <class _Policy, class _InputIterator, class _OutputIterator, class _BinaryOp>
@@ -118,37 +97,18 @@ struct __pstl_dispatch<__pstl_algorithm::__inclusive_scan, __execution_backend::
   {
     _OutputIterator __ret = __result + iter_difference_t<_OutputIterator>(__count);
 
-    // Determine temporary device storage requirements for reduce
-    size_t __num_bytes = 0;
+    // We pass the policy as an environment to DeviceScan
     _CCCL_TRY_CUDA_API(
       CUB_NS_QUALIFIER::DeviceScan::InclusiveScan,
-      "__pstl_cuda_inclusive_scan: determination of device storage for cub::DeviceScan::InclusiveScan failed",
-      static_cast<void*>(nullptr),
-      __num_bytes,
-      __first,
+      "__pstl_cuda_exclusive_scan: kernel launch of cub::DeviceScan::InclusiveScan failed",
+      ::cuda::std::move(__first),
       __result,
-      __binary_op,
-      __count);
+      ::cuda::std::move(__binary_op),
+      __count,
+      __policy);
 
-    // Allocate memory for result
-    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStreamPerThread}, __policy);
-
-    {
-      __temporary_storage<> __storage{__policy, __num_bytes};
-
-      // Run the scan
-      _CCCL_TRY_CUDA_API(
-        CUB_NS_QUALIFIER::DeviceScan::InclusiveScan,
-        "__pstl_cuda_exclusive_scan: kernel launch of cub::DeviceScan::InclusiveScan failed",
-        __storage.__get_temp_storage(),
-        __num_bytes,
-        ::cuda::std::move(__first),
-        ::cuda::std::move(__result),
-        ::cuda::std::move(__binary_op),
-        __count,
-        __stream.get());
-    }
-
+    // Get the stream for synchronization after the algorithm is run
+    auto __stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, __policy);
     __stream.sync();
     return __ret;
   }

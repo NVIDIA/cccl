@@ -62,6 +62,7 @@ TEST_FUNC constexpr bool throws_invocable_r()
 
 TEST_FUNC void test_noexcept_function_pointers()
 {
+#if !_CCCL_TILE_COMPILATION() // error: taking address of a function is unsupported in tile code
   struct Dummy
   {
     TEST_FUNC void foo() noexcept {}
@@ -72,6 +73,7 @@ TEST_FUNC void test_noexcept_function_pointers()
   // pointers.
   static_assert(cuda::std::is_nothrow_invocable<decltype(&Dummy::foo), Dummy&>::value);
   static_assert(cuda::std::is_nothrow_invocable<decltype(&Dummy::bar)>::value);
+#endif // !_CCCL_TILE_COMPILATION()
 }
 
 int main(int, char**)

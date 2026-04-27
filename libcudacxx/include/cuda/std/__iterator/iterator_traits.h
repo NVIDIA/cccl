@@ -42,7 +42,7 @@
 #include <cuda/std/__utility/priority_tag.h>
 #include <cuda/std/cstddef>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  if _CCCL_COMPILER(MSVC)
 #    include <xutility> // for ::std::input_iterator_tag
 #  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
@@ -51,7 +51,7 @@
 
 #  ifdef _GLIBCXX_DEBUG
 #    include <debug/safe_iterator.h>
-#  endif
+#  endif // _GLIBCXX_DEBUG
 
 #  if _CCCL_STD_VER >= 2020
 #    include <cuda/std/__cccl/prologue.h>
@@ -73,56 +73,43 @@ struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct
 #    include <cuda/std/__cccl/epilogue.h>
 #  endif // _CCCL_STD_VER >= 2020
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-#if _CCCL_HAS_CONCEPTS()
-
 template <class _Tp>
 using __with_reference = _Tp&;
 
 template <class _Tp>
-concept __can_reference = requires { typename __with_reference<_Tp>; };
+_CCCL_CONCEPT __can_reference = _CCCL_REQUIRES_EXPR((_Tp))(typename(__with_reference<_Tp>));
 
+// [iterator.traits]
+#if _CCCL_HAS_CONCEPTS()
 template <class _Tp>
 concept __dereferenceable = requires(_Tp& __t) {
   { *__t } -> __can_reference; // not required to be equality-preserving
 };
 
-// [iterator.traits]
 template <__dereferenceable _Tp>
-using iter_reference_t = decltype(*declval<_Tp&>());
+using iter_reference_t = decltype(*::cuda::std::declval<_Tp&>());
 
 #else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ // vvv _CCCL_HAS_CONCEPTS() vvv
 
-template <class _Tp>
-using __with_reference = _Tp&;
-
-template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(__can_reference_, requires()(typename(__with_reference<_Tp>)));
-
-template <class _Tp>
-_CCCL_CONCEPT __can_reference = _CCCL_FRAGMENT(__can_reference_, _Tp);
-
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wvoid-ptr-dereference")
+
 template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(__dereferenceable_, requires(_Tp& __t)(requires(__can_reference<decltype(*__t)>)));
+_CCCL_CONCEPT __dereferenceable = _CCCL_REQUIRES_EXPR((_Tp), _Tp& __t)(requires(__can_reference<decltype(*__t)>));
+
 _CCCL_DIAG_POP
 
 template <class _Tp>
-_CCCL_CONCEPT __dereferenceable = _CCCL_FRAGMENT(__dereferenceable_, _Tp);
-
-// [iterator.traits]
-template <class _Tp>
-using iter_reference_t = enable_if_t<__dereferenceable<_Tp>, decltype(*declval<_Tp&>())>;
-
+using iter_reference_t = enable_if_t<__dereferenceable<_Tp>, decltype(*::cuda::std::declval<_Tp&>())>;
 #endif // _CCCL_HAS_CONCEPTS()
 
-#if _CCCL_COMPILER(NVRTC)
+#if _CCCL_FREESTANDING()
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT input_iterator_tag
 {};
@@ -137,7 +124,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT random_access_iterator_tag : public bidirec
 struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_access_iterator_tag
 {};
 
-#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
+#else // ^^^ _CCCL_FREESTANDING() ^^^ / vvv _CCCL_HOSTED() vvv
 
 using input_iterator_tag         = ::std::input_iterator_tag;
 using output_iterator_tag        = ::std::output_iterator_tag;
@@ -157,7 +144,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_acc
 {};
 #  endif // _CCCL_STD_VER <= 2017
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 template <class _Iter>
 struct __iter_traits_cache
@@ -223,7 +210,8 @@ _CCCL_API inline auto __iter_concept_fn(_Iter, __priority_tag<0>)
                  random_access_iterator_tag>;
 
 template <class _Iter>
-using __iter_concept_t = decltype(::cuda::std::__iter_concept_fn<_Iter>(declval<_Iter>(), __priority_tag<3>{}));
+using __iter_concept_t =
+  decltype(::cuda::std::__iter_concept_fn<_Iter>(::cuda::std::declval<_Iter>(), __priority_tag<3>{}));
 
 template <class _Iter, class = void>
 struct __iter_concept_cache
@@ -247,525 +235,263 @@ _CCCL_CONCEPT __has_member_pointer = _CCCL_REQUIRES_EXPR((_Tp))(typename(typenam
 template <class _Tp>
 _CCCL_CONCEPT __has_member_iterator_category = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::iterator_category));
 
-#if _CCCL_HAS_CONCEPTS()
-
 // The `cpp17-*-iterator` exposition-only concepts have very similar names to the `Cpp17*Iterator` named requirements
 // from `[iterator.cpp17]`. To avoid confusion between the two, the exposition-only concepts have been banished to
 // a "detail" namespace indicating they have a niche use-case.
 namespace __iterator_traits_detail
 {
-template <class _Ip>
-concept __cpp17_iterator = requires(_Ip __i) {
-  { *__i } -> __can_reference;
-  { ++__i } -> same_as<_Ip&>;
-  { *__i++ } -> __can_reference;
-} && copyable<_Ip>;
+// [iterator.traits#concept:cpp17-iterator]
+template <class _Iter>
+_CCCL_CONCEPT __cpp17_iterator = _CCCL_REQUIRES_EXPR((_Iter), _Iter __i)(
+  requires(copyable<_Iter>),
+  _Satisfies(__can_reference)(*__i),
+  _Same_as(_Iter&)(++__i),
+  _Satisfies(__can_reference)(*__i++));
 
-template <class _Ip>
-concept __cpp17_input_iterator = __cpp17_iterator<_Ip> && equality_comparable<_Ip> && requires(_Ip __i) {
-  typename incrementable_traits<_Ip>::difference_type;
-  typename indirectly_readable_traits<_Ip>::value_type;
-  typename common_reference_t<iter_reference_t<_Ip>&&, typename indirectly_readable_traits<_Ip>::value_type&>;
-  typename common_reference_t<decltype(*__i++)&&, typename indirectly_readable_traits<_Ip>::value_type&>;
-  requires signed_integral<typename incrementable_traits<_Ip>::difference_type>;
-};
+// [iterator.traits#concept:cpp17-input-iterator]
+template <class _Iter>
+_CCCL_CONCEPT __cpp17_input_iterator = _CCCL_REQUIRES_EXPR((_Iter), _Iter __i)(
+  requires(__cpp17_iterator<_Iter>),
+  requires(equality_comparable<_Iter>),
+  typename(typename incrementable_traits<_Iter>::difference_type),
+  typename(typename indirectly_readable_traits<_Iter>::value_type),
+  typename(common_reference_t<iter_reference_t<_Iter>&&, typename indirectly_readable_traits<_Iter>::value_type&>),
+  typename(common_reference_t<decltype(*__i++)&&, typename indirectly_readable_traits<_Iter>::value_type&>),
+  requires(signed_integral<typename incrementable_traits<_Iter>::difference_type>));
 
-template <class _Ip>
-concept __cpp17_forward_iterator =
-  __cpp17_input_iterator<_Ip> && constructible_from<_Ip> && is_lvalue_reference_v<iter_reference_t<_Ip>>
-  && same_as<remove_cvref_t<iter_reference_t<_Ip>>, typename indirectly_readable_traits<_Ip>::value_type>
-  && requires(_Ip __i) {
-       { __i++ } -> convertible_to<_Ip const&>;
-       { *__i++ } -> same_as<iter_reference_t<_Ip>>;
-     };
+// [iterator.traits#concept:cpp17-forward-iterator]
+template <class _Iter>
+_CCCL_CONCEPT __cpp17_forward_iterator = _CCCL_REQUIRES_EXPR((_Iter), _Iter __i)(
+  requires(__cpp17_input_iterator<_Iter>),
+  requires(constructible_from<_Iter>),
+  requires(is_lvalue_reference_v<iter_reference_t<_Iter>>),
+  requires(same_as<remove_cvref_t<iter_reference_t<_Iter>>, typename indirectly_readable_traits<_Iter>::value_type>),
+  requires(convertible_to<decltype(__i++), _Iter const&>),
+  _Same_as(iter_reference_t<_Iter>)(*__i++));
 
-template <class _Ip>
-concept __cpp17_bidirectional_iterator = __cpp17_forward_iterator<_Ip> && requires(_Ip __i) {
-  { --__i } -> same_as<_Ip&>;
-  { __i-- } -> convertible_to<_Ip const&>;
-  { *__i-- } -> same_as<iter_reference_t<_Ip>>;
-};
+// [iterator.traits#concept:cpp17-bidirectional-iterator]
+template <class _Iter>
+_CCCL_CONCEPT __cpp17_bidirectional_iterator = _CCCL_REQUIRES_EXPR((_Iter), _Iter __i)(
+  requires(__cpp17_forward_iterator<_Iter>),
+  _Same_as(_Iter&)(--__i),
+  requires(convertible_to<decltype(__i--), _Iter const&>),
+  _Same_as(iter_reference_t<_Iter>)(*__i--));
 
-template <class _Ip>
-concept __cpp17_random_access_iterator =
-  __cpp17_bidirectional_iterator<_Ip> && totally_ordered<_Ip>
-  && requires(_Ip __i, typename incrementable_traits<_Ip>::difference_type __n) {
-       { __i += __n } -> same_as<_Ip&>;
-       { __i -= __n } -> same_as<_Ip&>;
-       { __i + __n } -> same_as<_Ip>;
-       { __n + __i } -> same_as<_Ip>;
-       { __i - __n } -> same_as<_Ip>;
-       { __i - __i } -> same_as<decltype(__n)>; // NOLINT(misc-redundant-expression) ; This is llvm.org/PR54114
-       { __i[__n] } -> convertible_to<iter_reference_t<_Ip>>;
-     };
+// [iterator.traits#concept:cpp17-random-access-iterator]
+// Needs to be its own concept, because we need `typename incrementable_traits<_Iter>::difference_type` to be valid
+template <class _Iter>
+_CCCL_CONCEPT __cpp17_random_access_iterator_operations =
+  _CCCL_REQUIRES_EXPR((_Iter), _Iter __i, typename incrementable_traits<_Iter>::difference_type __n)(
+    _Same_as(_Iter&)(__i += __n),
+    _Same_as(_Iter&)(__i -= __n),
+    _Same_as(_Iter)(__i + __n),
+    _Same_as(_Iter)(__n + __i),
+    _Same_as(_Iter)(__i - __n),
+    _Same_as(decltype(__n))(__i - __i),
+    requires(convertible_to<decltype(__i[__n]), iter_reference_t<_Iter>>));
+
+template <class _Iter>
+_CCCL_CONCEPT __cpp17_random_access_iterator = _CCCL_REQUIRES_EXPR((_Iter))(
+  requires(__cpp17_bidirectional_iterator<_Iter>),
+  requires(totally_ordered<_Iter>),
+  requires(__cpp17_random_access_iterator_operations<_Iter>));
 } // namespace __iterator_traits_detail
 
-// We need to consider if a user has specialized std::iterator_traits
-template <class _Ip>
-concept __specialized_from_std = !__is_primary_std_template<remove_cvref_t<_Ip>>::value;
+// [iterator.traits]#3.1
+// If the qualified-id I​::​pointer is valid and denotes a type, then ​pointer names that type;
+template <class _Iter>
+_CCCL_API auto __iterator_traits_deduce_member_pointer_or_void(int) -> typename _Iter::pointer;
+// Otherwise, it names void.
+template <class _Iter>
+_CCCL_API auto __iterator_traits_deduce_member_pointer_or_void(...) -> void;
 
-template <class _Ip>
-concept __specifies_members = !__specialized_from_std<_Ip> && requires {
-  typename _Ip::value_type;
-  typename _Ip::difference_type;
-  requires __has_member_reference<_Ip>;
-  requires __has_member_iterator_category<_Ip>;
-};
+template <class _Iter>
+using __iterator_traits_member_pointer_or_void =
+  decltype(::cuda::std::__iterator_traits_deduce_member_pointer_or_void<_Iter>(0));
 
-template <class>
-struct __iterator_traits_member_pointer_or_void
-{
-  using type = void;
-};
+// [iterator.traits]#3.2
+// [iterator.traits]#3.2.1
+// If the qualified-id I​::​pointer is valid and denotes a type, then pointer names that type.
+template <class _Iter>
+_CCCL_API auto __iterator_traits_deduce_member_pointer_or_arrow_or_void(int, __priority_tag<1>) ->
+  typename _Iter::pointer;
 
-template <__has_member_pointer _Tp>
-struct __iterator_traits_member_pointer_or_void<_Tp>
-{
-  using type = typename _Tp::pointer;
-};
+// Otherwise, if decltype(​declval<I&>().operator->()) is well-formed, then pointer names that type.
+template <class _Iter>
+_CCCL_API auto __iterator_traits_deduce_member_pointer_or_arrow_or_void(int, __priority_tag<0>)
+  -> decltype(::cuda::std::declval<_Iter&>().operator->());
 
-template <class _Tp>
-concept __cpp17_iterator_missing_members =
-  !__specialized_from_std<_Tp> && !__specifies_members<_Tp> && __iterator_traits_detail::__cpp17_iterator<_Tp>;
+// Otherwise, pointer names void.
+template <class _Iter>
+_CCCL_API auto __iterator_traits_deduce_member_pointer_or_arrow_or_void(...) -> void;
 
-template <class _Tp>
-concept __cpp17_input_iterator_missing_members =
-  __cpp17_iterator_missing_members<_Tp> && __iterator_traits_detail::__cpp17_input_iterator<_Tp>;
+template <class _Iter>
+using __iterator_traits_member_pointer_or_arrow_or_void =
+  decltype(::cuda::std::__iterator_traits_deduce_member_pointer_or_arrow_or_void<_Iter>(0, __priority_tag<1>{}));
 
-// Otherwise, `pointer` names `void`.
-template <class>
-struct __iterator_traits_member_pointer_or_arrow_or_void
-{
-  using type = void;
-};
-
-// [iterator.traits]/3.2.1
-// If the qualified-id `I::pointer` is valid and denotes a type, `pointer` names that type.
-template <__has_member_pointer _Ip>
-struct __iterator_traits_member_pointer_or_arrow_or_void<_Ip>
-{
-  using type = typename _Ip::pointer;
-};
-
-// Otherwise, if `decltype(declval<I&>().operator->())` is well-formed, then `pointer` names that
-// type.
-template <class _Ip>
-  requires requires(_Ip& __i) { __i.operator->(); } && (!__has_member_pointer<_Ip>)
-struct __iterator_traits_member_pointer_or_arrow_or_void<_Ip>
-{
-  using type = decltype(declval<_Ip&>().operator->());
-};
-
-// Otherwise, `reference` names `iter-reference-t<I>`.
-template <class _Ip>
-struct __iterator_traits_member_reference
-{
-  using type = iter_reference_t<_Ip>;
-};
-
-// [iterator.traits]/3.2.2
+// [iterator.traits]#3.2.2
 // If the qualified-id `I::reference` is valid and denotes a type, `reference` names that type.
-template <__has_member_reference _Ip>
-struct __iterator_traits_member_reference<_Ip>
+template <class _Iter>
+_CCCL_API auto __iterator_traits_deduce_member_reference(int) -> typename _Iter::reference;
+// Otherwise, `reference` names `iter-reference-t<I>`.
+template <class _Iter>
+_CCCL_API auto __iterator_traits_deduce_member_reference(...) -> iter_reference_t<_Iter>;
+
+template <class _Iter>
+using __iterator_traits_member_reference = decltype(::cuda::std::__iterator_traits_deduce_member_reference<_Iter>(0));
+
+// [iterator.traits]#3.2.3
+template <class _Iter>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __iterator_traits_deduce_iterator_category() noexcept
 {
-  using type = typename _Ip::reference;
-};
+  if constexpr (__has_member_iterator_category<_Iter>)
+  { // If the qualified-id `I::iterator-category` is valid and denotes a type, `iterator-category` names that type.
+    return typename _Iter::iterator_category{};
+  }
+  else if constexpr (__iterator_traits_detail::__cpp17_random_access_iterator<_Iter>)
+  { // Otherwise `random_access_iterator_tag` if `I` satisfies `cpp17-random-access-iterator`,
+    return random_access_iterator_tag{};
+  }
+  else if constexpr (__iterator_traits_detail::__cpp17_bidirectional_iterator<_Iter>)
+  { // or otherwise `bidirectional_iterator_tag` if `I` satisfies `cpp17-bidirectional-iterator`,
+    return bidirectional_iterator_tag{};
+  }
+  else if constexpr (__iterator_traits_detail::__cpp17_forward_iterator<_Iter>)
+  { // or otherwise `forward_iterator_tag` if `I` satisfies `cpp17-forward-iterator`,
+    return forward_iterator_tag{};
+  }
+  else
+  { // or otherwise input_iterator_tag
+    return input_iterator_tag{};
+  }
+}
 
-// [iterator.traits]/3.2.3.4
-// input_iterator_tag
-template <class _Ip>
-struct __deduce_iterator_category
-{
-  using type = input_iterator_tag;
-};
+template <class _Iter>
+using __iterator_traits_iterator_category = decltype(::cuda::std::__iterator_traits_deduce_iterator_category<_Iter>());
 
-// [iterator.traits]/3.2.3.1
-// `random_access_iterator_tag` if `I` satisfies `cpp17-random-access-iterator`, or otherwise
-template <__iterator_traits_detail::__cpp17_random_access_iterator _Ip>
-struct __deduce_iterator_category<_Ip>
-{
-  using type = random_access_iterator_tag;
-};
-
-// [iterator.traits]/3.2.3.2
-// `bidirectional_iterator_tag` if `I` satisfies `cpp17-bidirectional-iterator`, or otherwise
-template <__iterator_traits_detail::__cpp17_bidirectional_iterator _Ip>
-  requires(!__iterator_traits_detail::__cpp17_random_access_iterator<_Ip>) // nvbug 3885350
-struct __deduce_iterator_category<_Ip>
-{
-  using type = bidirectional_iterator_tag;
-};
-
-// [iterator.traits]/3.2.3.3
-// `forward_iterator_tag` if `I` satisfies `cpp17-forward-iterator`, or otherwise
-template <__iterator_traits_detail::__cpp17_forward_iterator _Ip>
-  requires(!__iterator_traits_detail::__cpp17_bidirectional_iterator<_Ip>) // nvbug 3885350
-struct __deduce_iterator_category<_Ip>
-{
-  using type = forward_iterator_tag;
-};
-
-template <class _Ip>
-struct __iterator_traits_iterator_category : __deduce_iterator_category<_Ip>
-{};
-
-// [iterator.traits]/3.2.3
-// If the qualified-id `I::iterator-category` is valid and denotes a type, `iterator-category` names
-// that type.
-template <__has_member_iterator_category _Ip>
-struct __iterator_traits_iterator_category<_Ip>
-{
-  using type = typename _Ip::iterator_category;
-};
-
-// otherwise, it names void.
-template <class>
-struct __iterator_traits_difference_type
-{
-  using type = void;
-};
-
+// [iterator.traits]#3.3
 // If the qualified-id `incrementable_traits<I>::difference_type` is valid and denotes a type, then
 // `difference_type` names that type;
-template <class _Ip>
-  requires requires { typename incrementable_traits<_Ip>::difference_type; }
-struct __iterator_traits_difference_type<_Ip>
+template <class _Iter>
+_CCCL_API auto __iterator_traits_deduce_member_difference(int) -> typename incrementable_traits<_Iter>::difference_type;
+// Otherwise, it names void.
+template <class _Iter>
+_CCCL_API auto __iterator_traits_deduce_member_difference(...) -> void;
+
+template <class _Iter>
+using __iterator_traits_difference_type = decltype(::cuda::std::__iterator_traits_deduce_member_difference<_Iter>(0));
+
+enum class __iterator_traits_selection
 {
-  using type = typename incrementable_traits<_Ip>::difference_type;
+  __specialized_from_std,
+  __specifies_members,
+  __cpp17_input_iterator,
+  __cpp17_iterator,
+  __no_members,
 };
 
-// [iterator.traits]/3.4
-// Otherwise, `iterator_traits<I>` has no members by any of the above names.
-template <class>
-struct __iterator_traits
-{};
+// We need to consider if a user has specialized std::iterator_traits
+template <class _Iter>
+_CCCL_CONCEPT __specialized_from_std = !__is_primary_std_template<remove_cvref_t<_Iter>>::value;
 
-#  if !_CCCL_COMPILER(NVRTC)
+// If I has valid member types difference_type, value_type, reference, and iterator_category,
+template <class _Iter>
+_CCCL_CONCEPT __specifies_members = _CCCL_REQUIRES_EXPR((_Iter))(
+  typename(typename _Iter::value_type),
+  typename(typename _Iter::difference_type),
+  typename(typename _Iter::reference),
+  typename(typename _Iter::iterator_category));
+
+// [iterator.traits]#3.2.3
+template <class _Iter>
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __iterator_traits_selection __select_iterator_traits_specialization() noexcept
+{
+  if constexpr (__specialized_from_std<_Iter>)
+  { // We need to consider if a user has specialized std::iterator_traits
+    return __iterator_traits_selection::__specialized_from_std;
+  }
+  if constexpr (__specifies_members<_Iter>)
+  { // If I has valid member types difference_type, value_type, reference, and iterator_category,
+    return __iterator_traits_selection::__specifies_members;
+  }
+  else if constexpr (__iterator_traits_detail::__cpp17_input_iterator<_Iter>)
+  { // Otherwise, if I satisfies the exposition-only concept cpp17-input-iterator,
+    return __iterator_traits_selection::__cpp17_input_iterator;
+  }
+  else if constexpr (__iterator_traits_detail::__cpp17_iterator<_Iter>)
+  { // Otherwise, if I satisfies the exposition-only concept cpp17-iterator,
+    return __iterator_traits_selection::__cpp17_iterator;
+  }
+  else
+  { // Otherwise, iterator_traits<I> has no members by any of the above names.
+    return __iterator_traits_selection::__no_members;
+  }
+}
+
+// [iterator.traits]#3
+template <class _Iter, __iterator_traits_selection = ::cuda::std::__select_iterator_traits_specialization<_Iter>()>
+struct __iterator_traits;
+
+#if _CCCL_HOSTED()
 // We need to properly accept specializations of `std::iterator_traits`
-template <__specialized_from_std _Ip>
-struct __iterator_traits<_Ip> : public ::std::iterator_traits<_Ip>
+template <class _Iter>
+struct __iterator_traits<_Iter, __iterator_traits_selection::__specialized_from_std>
+    : public ::std::iterator_traits<_Iter>
 {};
-#  endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
-// [iterator.traits]/3.1
-// If `I` has valid ([temp.deduct]) member types `difference-type`, `value-type`, `reference`, and
+// [iterator.traits]#3.1
+// If `I` has valid member types `difference-type`, `value-type`, `reference`, and
 // `iterator-category`, then `iterator-traits<I>` has the following publicly accessible members:
-template <__specifies_members _Ip>
-struct __iterator_traits<_Ip>
+template <class _Iter>
+struct __iterator_traits<_Iter, __iterator_traits_selection::__specifies_members>
 {
-  using iterator_category = typename _Ip::iterator_category;
-  using value_type        = typename _Ip::value_type;
-  using difference_type   = typename _Ip::difference_type;
-  using pointer           = typename __iterator_traits_member_pointer_or_void<_Ip>::type;
-  using reference         = typename _Ip::reference;
+  using iterator_category = typename _Iter::iterator_category;
+  using value_type        = typename _Iter::value_type;
+  using difference_type   = typename _Iter::difference_type;
+  using pointer           = __iterator_traits_member_pointer_or_void<_Iter>;
+  using reference         = typename _Iter::reference;
 };
 
-// [iterator.traits]/3.2
+// [iterator.traits]#3.2
 // Otherwise, if `I` satisfies the exposition-only concept `cpp17-input-iterator`,
 // `iterator-traits<I>` has the following publicly accessible members:
-template <__cpp17_input_iterator_missing_members _Ip>
-struct __iterator_traits<_Ip>
+template <class _Iter>
+struct __iterator_traits<_Iter, __iterator_traits_selection::__cpp17_input_iterator>
 {
-  using iterator_category = typename __iterator_traits_iterator_category<_Ip>::type;
-  using value_type        = typename indirectly_readable_traits<_Ip>::value_type;
-  using difference_type   = typename incrementable_traits<_Ip>::difference_type;
-  using pointer           = typename __iterator_traits_member_pointer_or_arrow_or_void<_Ip>::type;
-  using reference         = typename __iterator_traits_member_reference<_Ip>::type;
+  using iterator_category = __iterator_traits_iterator_category<_Iter>;
+  using value_type        = typename indirectly_readable_traits<_Iter>::value_type;
+  using difference_type   = typename incrementable_traits<_Iter>::difference_type;
+  using pointer           = __iterator_traits_member_pointer_or_arrow_or_void<_Iter>;
+  using reference         = __iterator_traits_member_reference<_Iter>;
 };
 
+// [iterator.traits]#3.3
 // Otherwise, if `I` satisfies the exposition-only concept `cpp17-iterator`, then
 // `iterator_traits<I>` has the following publicly accessible members:
-template <__cpp17_iterator_missing_members _Ip>
-  requires(!__cpp17_input_iterator_missing_members<_Ip>) // nvbug 3885350
-struct __iterator_traits<_Ip>
+template <class _Iter>
+struct __iterator_traits<_Iter, __iterator_traits_selection::__cpp17_iterator>
 {
   using iterator_category = output_iterator_tag;
   using value_type        = void;
-  using difference_type   = typename __iterator_traits_difference_type<_Ip>::type;
+  using difference_type   = __iterator_traits_difference_type<_Iter>;
   using pointer           = void;
   using reference         = void;
 };
 
-template <class _Ip>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Ip>
-{
-  using __cccl_primary_template = iterator_traits;
-};
-
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
-
-// The `cpp17-*-iterator` exposition-only concepts have very similar names to the `Cpp17*Iterator` named requirements
-// from `[iterator.cpp17]`. To avoid confusion between the two, the exposition-only concepts have been banished to
-// a "detail" namespace indicating they have a niche use-case.
-namespace __iterator_traits_detail
-{
-template <class _Ip>
-_CCCL_CONCEPT_FRAGMENT(
-  __cpp17_iterator_,
-  requires(_Ip __i)(requires(__can_reference<decltype(*__i)>),
-                    requires(same_as<_Ip&, decltype(++__i)>),
-                    requires(__can_reference<decltype(*__i++)>),
-                    requires(copyable<_Ip>)));
-
-template <class _Ip>
-_CCCL_CONCEPT __cpp17_iterator = _CCCL_FRAGMENT(__cpp17_iterator_, _Ip);
-
-template <class _Ip>
-_CCCL_CONCEPT_FRAGMENT(
-  __cpp17_input_iterator_,
-  requires(_Ip __i)(
-    typename(common_reference_t<iter_reference_t<_Ip>&&, typename indirectly_readable_traits<_Ip>::value_type&>),
-    typename(common_reference_t<decltype(*__i++)&&, typename indirectly_readable_traits<_Ip>::value_type&>),
-    requires(__cpp17_iterator<_Ip>),
-    requires(equality_comparable<_Ip>),
-    requires(__has_member_difference_type<incrementable_traits<_Ip>>),
-    requires(__has_member_value_type<indirectly_readable_traits<_Ip>>),
-    requires(signed_integral<typename incrementable_traits<_Ip>::difference_type>)));
-
-template <class _Ip>
-_CCCL_CONCEPT __cpp17_input_iterator = _CCCL_FRAGMENT(__cpp17_input_iterator_, _Ip);
-
-template <class _Ip>
-_CCCL_CONCEPT_FRAGMENT(
-  __cpp17_forward_iterator_,
-  requires(_Ip __i)(
-    requires(__cpp17_input_iterator<_Ip>),
-    requires(convertible_to<decltype(__i++), _Ip const&>),
-    requires(same_as<iter_reference_t<_Ip>, decltype(*__i++)>),
-    requires(constructible_from<_Ip>),
-    requires(is_lvalue_reference_v<iter_reference_t<_Ip>>),
-    requires(same_as<remove_cvref_t<iter_reference_t<_Ip>>, typename indirectly_readable_traits<_Ip>::value_type>)));
-
-template <class _Ip>
-_CCCL_CONCEPT __cpp17_forward_iterator = _CCCL_FRAGMENT(__cpp17_forward_iterator_, _Ip);
-
-template <class _Ip>
-_CCCL_CONCEPT_FRAGMENT(
-  __cpp17_bidirectional_iterator_,
-  requires(_Ip __i)(requires(__cpp17_forward_iterator<_Ip>),
-                    requires(same_as<_Ip&, decltype(--__i)>),
-                    requires(convertible_to<decltype(__i--), _Ip const&>),
-                    requires(same_as<iter_reference_t<_Ip>, decltype(*__i--)>)));
-
-template <class _Ip>
-_CCCL_CONCEPT __cpp17_bidirectional_iterator = _CCCL_FRAGMENT(__cpp17_bidirectional_iterator_, _Ip);
-
-template <class _Ip>
-_CCCL_CONCEPT_FRAGMENT(
-  __cpp17_random_access_iterator_,
-  requires(_Ip __i, typename incrementable_traits<_Ip>::difference_type __n)(
-    requires(same_as<_Ip&, decltype(__i += __n)>),
-    requires(same_as<_Ip&, decltype(__i -= __n)>),
-    requires(same_as<_Ip, decltype(__i + __n)>),
-    requires(same_as<_Ip, decltype(__n + __i)>),
-    requires(same_as<_Ip, decltype(__i - __n)>),
-    requires(same_as<decltype(__n), decltype(__i - __i)>),
-    requires(convertible_to<decltype(__i[__n]), iter_reference_t<_Ip>>)));
-
-template <class _Ip>
-_CCCL_CONCEPT __cpp17_random_access_iterator =
-  __cpp17_bidirectional_iterator<_Ip> && totally_ordered<_Ip> && _CCCL_FRAGMENT(__cpp17_random_access_iterator_, _Ip);
-} // namespace __iterator_traits_detail
-
-// We need to consider if a user has specialized std::iterator_traits
-template <class _Ip>
-inline constexpr bool __specialized_from_std = !__is_primary_std_template<remove_cvref_t<_Ip>>::value;
-
-template <class _Ip>
-_CCCL_CONCEPT __specifies_members =
-  !__specialized_from_std<_Ip> && __has_member_value_type<_Ip> && __has_member_difference_type<_Ip>
-  && __has_member_reference<_Ip> && __has_member_iterator_category<_Ip>;
-
-template <class, class = void>
-struct __iterator_traits_member_pointer_or_void
-{
-  using type = void;
-};
-
-template <class _Tp>
-struct __iterator_traits_member_pointer_or_void<_Tp, enable_if_t<__has_member_pointer<_Tp>>>
-{
-  using type = typename _Tp::pointer;
-};
-
-template <class _Tp>
-_CCCL_CONCEPT __cpp17_iterator_missing_members =
-  !__specialized_from_std<_Tp> && !__specifies_members<_Tp> && __iterator_traits_detail::__cpp17_iterator<_Tp>;
-
-template <class _Tp>
-_CCCL_CONCEPT __cpp17_input_iterator_missing_members =
-  __cpp17_iterator_missing_members<_Tp> && __iterator_traits_detail::__cpp17_input_iterator<_Tp>;
-
-// Otherwise, `pointer` names `void`.
-template <class, class = void>
-struct __iterator_traits_member_pointer_or_arrow_or_void
-{
-  using type = void;
-};
-
-// [iterator.traits]/3.2.1
-// If the qualified-id `I::pointer` is valid and denotes a type, `pointer` names that type.
-template <class _Ip>
-struct __iterator_traits_member_pointer_or_arrow_or_void<_Ip, enable_if_t<__has_member_pointer<_Ip>>>
-{
-  using type = typename _Ip::pointer;
-};
-
-template <class _Ip, class = void>
-inline constexpr bool __has_operator_arrow = false;
-
-template <class _Ip>
-inline constexpr bool __has_operator_arrow<_Ip, decltype((void) ::cuda::std::declval<_Ip&>().operator->())> = true;
-
-// Otherwise, if `decltype(declval<I&>().operator->())` is well-formed, then `pointer` names that
-// type.
-template <class _Ip>
-struct __iterator_traits_member_pointer_or_arrow_or_void<
-  _Ip,
-  enable_if_t<__has_operator_arrow<_Ip> && !__has_member_pointer<_Ip>>>
-{
-  using type = decltype(declval<_Ip&>().operator->());
-};
-
-// Otherwise, `reference` names `iter-reference-t<I>`.
-template <class _Ip, class = void>
-struct __iterator_traits_member_reference
-{
-  using type = iter_reference_t<_Ip>;
-};
-
-// [iterator.traits]/3.2.2
-// If the qualified-id `I::reference` is valid and denotes a type, `reference` names that type.
-template <class _Ip>
-struct __iterator_traits_member_reference<_Ip, enable_if_t<__has_member_reference<_Ip>>>
-{
-  using type = typename _Ip::reference;
-};
-
-// [iterator.traits]/3.2.3.4
-// input_iterator_tag
-template <class _Ip, class = void>
-struct __deduce_iterator_category
-{
-  using type = input_iterator_tag;
-};
-
-// [iterator.traits]/3.2.3.1
-// `random_access_iterator_tag` if `I` satisfies `cpp17-random-access-iterator`, or otherwise
-template <class _Ip>
-struct __deduce_iterator_category<_Ip, enable_if_t<__iterator_traits_detail::__cpp17_random_access_iterator<_Ip>>>
-{
-  using type = random_access_iterator_tag;
-};
-
-// [iterator.traits]/3.2.3.2
-// `bidirectional_iterator_tag` if `I` satisfies `cpp17-bidirectional-iterator`, or otherwise
-template <class _Ip>
-struct __deduce_iterator_category<_Ip,
-                                  enable_if_t<!__iterator_traits_detail::__cpp17_random_access_iterator<_Ip>
-                                              && __iterator_traits_detail::__cpp17_bidirectional_iterator<_Ip>>>
-{
-  using type = bidirectional_iterator_tag;
-};
-
-// [iterator.traits]/3.2.3.3
-// `forward_iterator_tag` if `I` satisfies `cpp17-forward-iterator`, or otherwise
-template <class _Ip>
-struct __deduce_iterator_category<_Ip,
-                                  enable_if_t<!__iterator_traits_detail::__cpp17_bidirectional_iterator<_Ip>
-                                              && __iterator_traits_detail::__cpp17_forward_iterator<_Ip>>>
-{
-  using type = forward_iterator_tag;
-};
-
-template <class _Ip, class = void>
-struct __iterator_traits_iterator_category : __deduce_iterator_category<_Ip>
-{};
-
-// [iterator.traits]/3.2.3
-// If the qualified-id `I::iterator-category` is valid and denotes a type, `iterator-category` names
-// that type.
-template <class _Ip>
-struct __iterator_traits_iterator_category<_Ip, enable_if_t<__has_member_iterator_category<_Ip>>>
-{
-  using type = typename _Ip::iterator_category;
-};
-
-// otherwise, it names void.
-template <class, class = void>
-struct __iterator_traits_difference_type
-{
-  using type = void;
-};
-
-// If the qualified-id `incrementable_traits<I>::difference_type` is valid and denotes a type, then
-// `difference_type` names that type;
-template <class _Ip>
-struct __iterator_traits_difference_type<_Ip, void_t<typename incrementable_traits<_Ip>::difference_type>>
-{
-  using type = typename incrementable_traits<_Ip>::difference_type;
-};
-
-// [iterator.traits]/3.4
+// [iterator.traits]#3.4
 // Otherwise, `iterator_traits<I>` has no members by any of the above names.
-template <class, class = void>
-struct __iterator_traits
+template <class _Iter>
+struct __iterator_traits<_Iter, __iterator_traits_selection::__no_members>
 {};
 
-#  if !_CCCL_COMPILER(NVRTC)
-template <class _Ip>
-struct __iterator_traits<_Ip, enable_if_t<__specialized_from_std<_Ip>>> : public ::std::iterator_traits<_Ip>
-{};
-#  endif // !_CCCL_COMPILER(NVRTC)
-
-// [iterator.traits]/3.1
-// If `I` has valid ([temp.deduct]) member types `difference-type`, `value-type`, `reference`, and
-// `iterator-category`, then `iterator-traits<I>` has the following publicly accessible members:
-template <class _Ip>
-struct __iterator_traits<_Ip, enable_if_t<__specifies_members<_Ip>>>
-{
-  using iterator_category = typename _Ip::iterator_category;
-  using value_type        = typename _Ip::value_type;
-  using difference_type   = typename _Ip::difference_type;
-  using pointer           = typename __iterator_traits_member_pointer_or_void<_Ip>::type;
-  using reference         = typename _Ip::reference;
-};
-
-// [iterator.traits]/3.2
-// Otherwise, if `I` satisfies the exposition-only concept `cpp17-input-iterator`,
-// `iterator-traits<I>` has the following publicly accessible members:
-template <class _Ip>
-struct __iterator_traits<_Ip, enable_if_t<!__specifies_members<_Ip> && __cpp17_input_iterator_missing_members<_Ip>>>
-{
-  using iterator_category = typename __iterator_traits_iterator_category<_Ip>::type;
-  using value_type        = typename indirectly_readable_traits<_Ip>::value_type;
-  using difference_type   = typename incrementable_traits<_Ip>::difference_type;
-  using pointer           = typename __iterator_traits_member_pointer_or_arrow_or_void<_Ip>::type;
-  using reference         = typename __iterator_traits_member_reference<_Ip>::type;
-};
-
-// Otherwise, if `I` satisfies the exposition-only concept `cpp17-iterator`, then
-// `iterator_traits<I>` has the following publicly accessible members:
-template <class _Ip>
-struct __iterator_traits<_Ip,
-                         enable_if_t<!__specifies_members<_Ip> && !__cpp17_input_iterator_missing_members<_Ip>
-                                     && __cpp17_iterator_missing_members<_Ip>>>
-{
-  using iterator_category = output_iterator_tag;
-  using value_type        = void;
-  using difference_type   = typename __iterator_traits_difference_type<_Ip>::type;
-  using pointer           = void;
-  using reference         = void;
-};
-
-template <class _Ip, class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Ip>
+template <class _Iter, class>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Iter>
 {
   using __cccl_primary_template = iterator_traits;
 };
 
-#endif // _CCCL_HAS_CONCEPTS()
-
+// [iterator.traits]#5
 template <class _Tp>
 #if _CCCL_HAS_CONCEPTS()
   requires is_object_v<_Tp>
@@ -775,7 +501,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits<_Tp*>
   using difference_type   = ptrdiff_t;
   using value_type        = remove_cv_t<_Tp>;
   using pointer           = _Tp*;
-  using reference         = typename add_lvalue_reference<_Tp>::type;
+  using reference         = add_lvalue_reference_t<_Tp>;
   using iterator_category = random_access_iterator_tag;
   using iterator_concept  = contiguous_iterator_tag;
 };

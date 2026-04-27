@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 // <cuda/std/optional>
 
 // template <class U> optional<T>& operator=(U&& v);
@@ -62,14 +65,12 @@ struct FromOptionalType
   }
 };
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
 struct Base
 {
   int val_;
 };
 struct Derived : Base
 {};
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
 TEST_FUNC void test_sfinae()
 {
@@ -79,11 +80,9 @@ TEST_FUNC void test_sfinae()
   assert_assignable<int, int&>();
   assert_assignable<int, int const&>();
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   assert_assignable<int&, int&>();
   assert_assignable<const int&, int&>();
   assert_assignable<const int&, const int&>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   // Implicit test type
   assert_assignable<I, I const&>();
@@ -91,11 +90,9 @@ TEST_FUNC void test_sfinae()
   assert_assignable<I, int>();
   assert_assignable<I, void*, false>();
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   assert_assignable<I&, I&>();
   assert_assignable<const I&, I&>();
   assert_assignable<const I&, const I&>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   // Explicit test type
   assert_assignable<E, E const&>();
@@ -103,11 +100,9 @@ TEST_FUNC void test_sfinae()
   assert_assignable<E, int>();
   assert_assignable<E, void*, false>();
 
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   assert_assignable<E&, E&>();
   assert_assignable<const E&, E&>();
   assert_assignable<const E&, const E&>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 
   // Mismatch type
   assert_assignable<MismatchType, int>();
@@ -117,11 +112,9 @@ TEST_FUNC void test_sfinae()
   assert_assignable<FromOptionalType, cuda::std::optional<FromOptionalType>&, false>();
 
   // Convertible references
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   assert_assignable<Base&, Derived&>();
   assert_assignable<const Base&, Derived&>();
   assert_assignable<const Base&, const Derived&>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 }
 
 TEST_FUNC void test_with_test_type()

@@ -29,16 +29,13 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
 #include <nv/target>
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
 CUB_NAMESPACE_BEGIN
 
@@ -1079,55 +1076,56 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t sort_
       return cudaSuccess;
     };
 
-    NV_IF_TARGET(NV_IS_HOST,
-                 ({
-                   local_segment_index_t h_group_sizes[num_selected_groups];
-                   if (const auto error = CubDebug(launcher_factory.MemcpyAsync(
-                         h_group_sizes,
-                         group_sizes.get(),
-                         num_selected_groups * sizeof(local_segment_index_t),
-                         cudaMemcpyDeviceToHost,
-                         stream)))
-                   {
-                     return error;
-                   }
+    NV_IF_ELSE_TARGET(
+      NV_IS_HOST,
+      ({
+        local_segment_index_t h_group_sizes[num_selected_groups];
+        if (const auto error = CubDebug(launcher_factory.MemcpyAsync(
+              h_group_sizes,
+              group_sizes.get(),
+              num_selected_groups * sizeof(local_segment_index_t),
+              cudaMemcpyDeviceToHost,
+              stream)))
+        {
+          return error;
+        }
 
-                   if (const auto error = CubDebug(SyncStream(stream)))
-                   {
-                     return error;
-                   }
+        if (const auto error = CubDebug(SyncStream(stream)))
+        {
+          return error;
+        }
 
-                   if (const auto error = detail::segmented_sort::device_segmented_sort_continuation(
-                         large_kernel,
-                         small_kernel,
-                         current_num_segments,
-                         d_keys.Current(),
-                         get_final_output(d_keys, active_policy.large_segment.radix_bits),
-                         d_keys_double_buffer,
-                         d_values.Current(),
-                         get_final_output(d_values, active_policy.large_segment.radix_bits),
-                         d_values_double_buffer,
-                         current_begin_offset,
-                         current_end_offset,
-                         h_group_sizes,
-                         large_and_medium_segments_indices.get(),
-                         small_segments_indices.get(),
-                         stream,
-                         launcher_factory,
-                         active_policy.large_segment.block_threads,
-                         active_policy.small_segment.block_threads,
-                         active_policy.medium_segment.segments_per_block(),
-                         active_policy.small_segment.segments_per_block()))
-                   {
-                     return error;
-                   }
-                 }),
-                 ({
-                   if (const auto error = device_path())
-                   {
-                     return error;
-                   }
-                 }));
+        if (const auto error = detail::segmented_sort::device_segmented_sort_continuation(
+              large_kernel,
+              small_kernel,
+              current_num_segments,
+              d_keys.Current(),
+              get_final_output(d_keys, active_policy.large_segment.radix_bits),
+              d_keys_double_buffer,
+              d_values.Current(),
+              get_final_output(d_values, active_policy.large_segment.radix_bits),
+              d_values_double_buffer,
+              current_begin_offset,
+              current_end_offset,
+              h_group_sizes,
+              large_and_medium_segments_indices.get(),
+              small_segments_indices.get(),
+              stream,
+              launcher_factory,
+              active_policy.large_segment.block_threads,
+              active_policy.small_segment.block_threads,
+              active_policy.medium_segment.segments_per_block(),
+              active_policy.small_segment.segments_per_block()))
+        {
+          return error;
+        }
+      }),
+      ({
+        if (const auto error = device_path())
+        {
+          return error;
+        }
+      }));
   }
 
   return cudaSuccess;
@@ -1289,12 +1287,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                                             // a function
     CUB_DETAIL_CONSTEXPR_ISH const segmented_sort_policy active_policy = policy_getter();
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(
-      NV_IS_HOST,
-      (::std::stringstream ss; ss << active_policy;
-       _CubLog("Dispatching DeviceSegmentedSort to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+      NV_IS_HOST, ({
+        ::std::stringstream ss;
+        ss << active_policy;
+        _CubLog("Dispatching DeviceSegmentedSort to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
+      }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     const int radix_bits = active_policy.large_segment.radix_bits;
 

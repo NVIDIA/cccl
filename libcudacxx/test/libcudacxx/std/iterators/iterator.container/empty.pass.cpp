@@ -90,7 +90,9 @@ int main(int, char**)
   test_container(sv);
   test_const_container(sv);
 
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable ("arrA") cannot be used in tile code
   test_const_array(arrA);
+#endif // !_CCCL_TILE_COMPILATION()
 
   return 0;
 }

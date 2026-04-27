@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // #include <memory>
 
 // void* align(size_t alignment, size_t size, void*& ptr, size_t& space);

@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile && !c++17
+// nvbug6085768: compiler hangs
+
 // CONSTEXPR_STEPS: 15000000
 
 #include <cuda/std/array>

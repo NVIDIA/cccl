@@ -27,11 +27,8 @@
 
 #include <cuda/__device/arch_id.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -60,7 +57,7 @@ struct scan_by_key_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const scan_by_key_policy& p)
   {
     return os
@@ -69,7 +66,7 @@ struct scan_by_key_policy
         << ", .store_algorithm = " << p.store_algorithm << ", .scan_algorithm = " << p.scan_algorithm
         << ", .delay_constructor = " << p.delay_constructor << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 enum class primitive_accum
 {
@@ -1536,7 +1533,7 @@ struct policy_selector
 
         if (key_size == 16 && primitive_accum)
         {
-          switch (accum_size)
+          switch (value_size)
           {
             case 1:
               return {192,
@@ -1856,7 +1853,7 @@ struct policy_selector
 
         if (key_size == 16 && primitive_accum)
         {
-          switch (accum_size)
+          switch (value_size)
           {
             case 1:
               return {192,

@@ -16,9 +16,7 @@
 #include <cub/agent/agent_for.cuh>
 #include <cub/util_device.cuh>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif
+#include <cuda/std/__host_stdlib/ostream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -39,13 +37,13 @@ struct for_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const for_policy& policy)
   {
     return os << "for_policy { .block_threads = " << policy.block_threads
               << ", .items_per_thread = " << policy.items_per_thread << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()

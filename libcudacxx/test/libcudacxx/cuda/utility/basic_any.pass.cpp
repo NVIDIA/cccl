@@ -7,6 +7,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: function-to-pointer decay is unsupported in tile code
+// error: taking address of a function is unsupported in tile code
+
 #include <cuda/__utility/basic_any.h>
 #include <cuda/__utility/immovable.h>
 #include <cuda/std/__utility/as_const.h>

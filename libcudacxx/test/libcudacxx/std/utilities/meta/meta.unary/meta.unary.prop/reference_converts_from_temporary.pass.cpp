@@ -22,13 +22,21 @@ struct SimpleClass
 };
 struct ConvertsToRvalue
 {
-  constexpr operator int();
-  explicit constexpr operator int&&();
+  TEST_FUNC constexpr operator int()
+  {
+    return 0;
+  }
+
+  TEST_FUNC explicit constexpr operator int&&();
 };
 struct ConvertsToConstReference
 {
-  constexpr operator int();
-  explicit constexpr operator int&();
+  TEST_FUNC constexpr operator int()
+  {
+    return 0;
+  }
+
+  TEST_FUNC explicit constexpr operator int&();
 };
 
 // not references

@@ -72,6 +72,13 @@ TEST_FUNC constexpr bool test()
   test<const int*>();
   test<int*>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   //  Make sure that the calculations are done using the init typedef
   {
     cuda::std::array<unsigned char, 10> v{};

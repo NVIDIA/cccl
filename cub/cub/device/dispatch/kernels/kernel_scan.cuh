@@ -16,6 +16,7 @@
 #include <cub/agent/agent_scan.cuh>
 #include <cub/detail/warpspeed/look_ahead.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_macro.cuh>
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
@@ -31,7 +32,7 @@ namespace detail::scan
 template <typename ScanTileState, typename AccumT>
 union tile_state_kernel_arg_t
 {
-  warpspeed::tile_state_t<AccumT>* lookahead;
+  warpspeed::tile_state_t<AccumT>* warpspeed;
   ScanTileState lookback;
 
   // ScanTileState<AccumT> is not trivially [default|copy]-constructible, so because of
@@ -65,10 +66,10 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // beneficial for all problem sizes in cub.bench.scan.exclusive.sum.base
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
-  constexpr scan_policy policy = PolicySelectorT{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  constexpr scan_policy policy = current_policy<PolicySelectorT>();
   if constexpr (policy.algorithm == scan_algorithm::warpspeed)
   {
-    device_scan_init_lookahead_body(tile_state.lookahead, num_tiles);
+    device_scan_init_warpspeed_body(tile_state.warpspeed, num_tiles);
   }
   else
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
@@ -114,7 +115,7 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceCompactInitKernel(
 template <typename PolicySelector>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL int get_device_scan_launch_bounds() noexcept
 {
-  constexpr scan_policy policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  constexpr scan_policy policy = current_policy<PolicySelector>();
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
   if constexpr (policy.algorithm == scan_algorithm::warpspeed)
   {
@@ -198,15 +199,15 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   _CCCL_GRID_CONSTANT const OffsetT num_items,
   _CCCL_GRID_CONSTANT const int num_stages)
 {
-  static constexpr scan_policy active_policy = PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10});
+  static constexpr scan_policy active_policy = current_policy<PolicySelector>();
   if constexpr (active_policy.algorithm == scan_algorithm::warpspeed)
   {
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
     NV_IF_TARGET(
       NV_PROVIDES_SM_100, ({
         auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
-          d_in, d_out, tile_state.lookahead, num_items, num_stages};
-        device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT>(scan_params, scan_op, init_value);
+          d_in, d_out, tile_state.warpspeed, num_items, num_stages};
+        device_scan_warpspeed_body<PolicySelector, ForceInclusive, RealInitValueT>(scan_params, scan_op, init_value);
       }));
 #else
     static_assert(sizeof(d_in) == 0,

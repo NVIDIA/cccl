@@ -44,64 +44,64 @@ using __implicit_hierarchy_t =
             hierarchy_level_desc<cluster_level, ::cuda::std::dims<3, unsigned>>,
             hierarchy_level_desc<block_level, ::cuda::std::dims<3, unsigned>>>;
 
-// this groups
+// groups
 
 template <class _Level, class _Hierarchy>
 class __this_group_base;
 
 template <class _Hierarchy>
 class this_thread;
+
 template <class _Hierarchy>
 class this_warp;
+
 template <class _Hierarchy>
 class this_block;
+
 template <class _Hierarchy>
 class this_cluster;
+
 template <class _Hierarchy>
 class this_grid;
 
-// other groups
-
-template <class _Level, class _Mapping, class _Hierarchy, class _Synchronizer>
-class thread_group;
-template <class _Level, class _Mapping, class _Hierarchy, class _Synchronizer>
-class warp_group;
-template <class _Level, class _Mapping, class _Hierarchy, class _Synchronizer>
-class block_group;
-template <class _Level, class _Mapping, class _Hierarchy, class _Synchronizer>
-class cluster_group;
+template <class _Unit, class _ParentGroup, class _Mapping, class _Synchronizer>
+class group;
 
 // mappings
 
 template <::cuda::std::size_t _Np = ::cuda::std::dynamic_extent, bool _IsExhaustive = true>
 class group_by;
 
+template <class _Data, bool _IsExahustive>
+class group_as;
+
 // synchronizers
 
-template <class _Unit, class _Level, class _Mapping>
-class __syncwarp_synchronizer;
-template <class _Unit, class _Level, class _Mapping>
-class __barrier_synchronizer;
+class lane_synchronizer;
+
+template <class _Barrier, ::cuda::std::size_t _Np>
+class barrier_synchronizer;
 
 // traits
 
 template <class _Tp>
-inline constexpr bool __is_this_hierarchy_group_v = false;
+inline constexpr bool __is_this_group_v = false;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<this_thread<_Hierarchy>> = true;
+inline constexpr bool __is_this_group_v<this_thread<_Hierarchy>> = true;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<this_warp<_Hierarchy>> = true;
+inline constexpr bool __is_this_group_v<this_warp<_Hierarchy>> = true;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<this_block<_Hierarchy>> = true;
+inline constexpr bool __is_this_group_v<this_block<_Hierarchy>> = true;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<this_cluster<_Hierarchy>> = true;
+inline constexpr bool __is_this_group_v<this_cluster<_Hierarchy>> = true;
 template <class _Hierarchy>
-inline constexpr bool __is_this_hierarchy_group_v<this_grid<_Hierarchy>> = true;
+inline constexpr bool __is_this_group_v<this_grid<_Hierarchy>> = true;
 
-template <class _Tp>
-inline constexpr bool __is_barrier_synchronizer = false;
-template <class _Unit, class _Level, class _Mapping>
-inline constexpr bool __is_barrier_synchronizer<__barrier_synchronizer<_Unit, _Level, _Mapping>> = true;
+// tags
+
+struct non_exhaustive_t;
+
+inline constexpr unsigned __invalid_count_or_rank = 0xffff'ffff;
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED

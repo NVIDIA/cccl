@@ -45,10 +45,11 @@ TEST_FUNC void testRuntimeSpan(Span sp)
 
 struct A
 {};
-TEST_GLOBAL_VARIABLE int iArr2[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
 int main(int, char**)
 {
+  int iArr2[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
   testRuntimeSpan(cuda::std::span<int>());
   testRuntimeSpan(cuda::std::span<long>());
   testRuntimeSpan(cuda::std::span<double>());

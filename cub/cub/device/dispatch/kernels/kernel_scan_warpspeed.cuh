@@ -24,6 +24,7 @@
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/thread/thread_scan.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/warp/warp_reduce.cuh>
 #include <cub/warp/warp_scan.cuh>
 
@@ -53,7 +54,7 @@ _CCCL_API constexpr int num_total_threads(const scan_warpspeed_policy& policy)
 template <typename PolicySelector>
 _CCCL_DEVICE_API constexpr scan_warpspeed_policy get_warpspeed_policy() noexcept
 {
-  return PolicySelector{}(::cuda::arch_id{CUB_PTX_ARCH / 10}).warpspeed;
+  return current_policy<PolicySelector>().warpspeed;
 }
 
 template <typename InputT, typename OutputT, typename AccumT>
@@ -794,7 +795,7 @@ template <typename PolicySelector,
           typename AccumT,
           typename ScanOpT,
           typename InitValueT>
-_CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
+_CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_warpspeed_body(
   const scanKernelParams<InputT, OutputT, AccumT> params, ScanOpT scan_op, const InitValueT& init_value)
 {
 #if __cccl_ptx_isa >= 860
@@ -830,7 +831,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
 
 template <typename AccumT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-device_scan_init_lookahead_body(warpspeed::tile_state_t<AccumT>* tile_states, const int num_temp_states)
+device_scan_init_warpspeed_body(warpspeed::tile_state_t<AccumT>* tile_states, const int num_temp_states)
 {
   const int tile_id = blockDim.x * blockIdx.x + threadIdx.x;
   if (tile_id >= num_temp_states)

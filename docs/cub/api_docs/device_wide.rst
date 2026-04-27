@@ -1,7 +1,7 @@
 .. _device-module:
 
 Device-Wide Primitives
-==================================================
+======================
 
 .. toctree::
    :glob:
@@ -10,24 +10,36 @@ Device-Wide Primitives
 
    ../api/device
 
+Almost all of CUB's device-wide APIs come in two flavors:
+
+* the traditional two-phase style that requires calling the API twice and managing temporary storage explicitly,
+* and the newer single-phase style where temporary storage is obtained from a memory resource in the execution environment.
+
+Some APIs that do not require any temporary storage may have a traditional single-phase overload in addition to an newer environment one.
 
 .. _device-temp-storage:
 
-Determining Temporary Storage Requirements
-++++++++++++++++++++++++++++++++++++++++++++++++
+Two-Phase API (explicit temporary storage management)
++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-**Two-Phase API** (Traditional)
+Traditional two-phase APIs can be recognized by taking ``void* d_temp_storage, size_t& temp_storage_bytes`` as their first two parameters.
+They follow a two-phase usage pattern that requires three steps:
 
-Most CUB device-wide algorithms follow a two-phase usage pattern:
+1. **Query Phase**: The algorithm is called the first time with ``d_temp_storage = nullptr`` to determine the required temporary storage size.
+   The needed size in bytes is written to the parameter ``temp_storage_bytes``.
+2. **Temporary storage allocation**: The user is responsible to allocate device memory of at least ``temp_storage_bytes`` bytes.
+3. **Execution Phase**: The algorithm is called the second time with ``d_temp_storage`` pointing to the allocated device memory, performing the actual operation.
 
-1. **Query Phase**: Call the algorithm with ``d_temp_storage = nullptr`` to determine the required temporary storage size
-2. **Execution Phase**: Allocate storage and call the algorithm again to perform the actual operation
+In principle, the query phase and execution phase must call the same CUB API.
+This means in detail:
 
-**What arguments are needed during the query phase?**
-
-* **Template instantiation**: The query call must use the same template arguments as the execution call.
-* **Argument access**: Aside from ``d_temp_storage``, ``temp_storage_bytes``, and the problem-size arguments, no parameters are accessed during the query phase, so their values may be indeterminate. The dispatch layer returns before launching kernels or touching user storage.
-* **Current device**: The computed temporary storage size is valid only when the execution call runs on the same current CUDA device as the query. Re-run the query if the current device changes between phases.
+* **Template arguments**: The query call must use the same template arguments as the execution call, so they share the same template instantiation.
+* **Argument values**: Regarding function parameters, only the values of the ``d_temp_storage``, ``temp_storage_bytes``,
+  and problem-size related arguments (like number of elements, number of segments, segment sizes, etc.) may be read during the query phase.
+  No other parameters (like input/output iterators, initial values, etc.) are accessed during the query phase, so their values may be indeterminate.
+  During the query phase, the API will return before launching any kernels or touching user storage.
+* **Current device**: The computed temporary storage size is valid only when the execution phase runs on the same current CUDA device as the query.
+  Re-run the query if the current device changes between phases.
 
 Example pattern:
 
@@ -37,45 +49,43 @@ Example pattern:
    :start-after: example-begin temp-storage-query
    :end-before: example-end temp-storage-query
 
-**Single-Phase API** (Environment-Based)
 
-Environment-based overloads are rolling out across CUB device-wide primitives. They remove the manual query/execute split by obtaining the temporary storage from a memory resource queried from the execution environment argument.
+Environment API (single phase)
+++++++++++++++++++++++++++++++
+
+Environment-based overloads are available for all CUB device-wide algorithms.
+They remove the split of query/execute phase and manually obtaining the temporary storage.
+Instead, the temporary storage is automatically requested from a memory resource queried from the execution environment argument.
+The environment supports further properties like passing a stream or an execution requirement in addition to a memory resource.
 
 Key properties of the environment argument:
 
-- It is defaulted and appears as the last argument.
-- Streams can be specified with ``cuda::get_stream`` properties.
+- It is a defaulted parameter and appears as the last argument.
+- Streams like `cudaStream_t` or `cuda::stream_ref` can be passed as environments directly, or added to the environment.
 - You can select the memory resource (CCCL-provided or custom) used for internal allocations.
 - Supported algorithms accept determinism requirements (for example, ``cuda::execution::determinism::gpu_to_gpu``).
-- Multiple properties compose into a single centralized argument.
+- Multiple properties compose into a single centralized argument by wrapping them into a ``cuda::execution::env`` object.
 
-Example (centralized control via a single environment argument):
+Example pattern:
 
-.. code-block:: c++
+.. literalinclude:: ../../../cub/examples/device/example_device_reduce_env.cu
+   :language: c++
+   :dedent:
+   :start-after: example-begin env-overload-setup
+   :end-before: example-end env-overload-setup
 
-   #include <cub/device/device_reduce.cuh>
-   #include <cuda/std/execution>
-   #include <cuda/stream_ref>
-   #include <cuda/__memory_resource/get_memory_resource.h>
-   #include <cuda/__execution/determinism.h>
+.. literalinclude:: ../../../cub/examples/device/example_device_reduce_env.cu
+   :language: c++
+   :dedent:
+   :start-after: example-begin env-overload-run
+   :end-before: example-end env-overload-run
 
-   // Build an execution environment with stream, memory resource, and determinism
-   cudaStream_t stream = /* ... */;
-   auto stream_env = cuda::std::execution::prop{cuda::get_stream_t{}, cuda::stream_ref{stream}};
 
-   auto mr = /* CCCL-provided or user-defined device_memory_resource */;
-   auto mr_env = cuda::std::execution::prop{cuda::mr::__get_memory_resource_t{}, mr};
+API overview
+++++++++++++
 
-   auto det_env = cuda::execution::require(cuda::execution::determinism::gpu_to_gpu);
-
-   auto env = cuda::std::execution::env{stream_env, mr_env, det_env};
-
-   // Single-phase API (no explicit temp storage, environment last and defaulted)
-   cub::DeviceReduce::Reduce(d_in, d_out, num_items, cuda::std::plus<>{}, init, env);
-
-The remainder of this page focuses on the traditional two-phase pattern; see individual algorithm documentation for the
-availability and specifics of single-phase overloads.
-
+In the following, the various groups of CUB device-wide algorithms are listed,
+linking to their respective documentation.
 
 CUB device-level single-problem parallel algorithms:
 

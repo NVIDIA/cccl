@@ -41,6 +41,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -52,10 +53,6 @@
 
 #include <cuda_runtime_api.h>
 #include <cudaTypedefs.h>
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif
 
 CUB_NAMESPACE_BEGIN
 
@@ -144,7 +141,7 @@ struct DeviceScanKernelSource
   CUB_RUNTIME_FUNCTION static constexpr auto look_ahead_make_tile_state_kernel_arg(void* ts)
   {
     tile_state_kernel_arg_t<ScanTileStateT, AccumT> arg;
-    ::cuda::std::__construct_at(&arg.lookahead, static_cast<warpspeed::tile_state_t<AccumT>*>(ts));
+    ::cuda::std::__construct_at(&arg.warpspeed, static_cast<warpspeed::tile_state_t<AccumT>*>(ts));
     return arg;
   }
 };
@@ -502,7 +499,7 @@ struct DispatchScan
   }
 
   template <typename PolicyGetter>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_lookahead_algorithm(PolicyGetter policy_getter)
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t __invoke_warpspeed_algorithm(PolicyGetter policy_getter)
   {
 #if __cccl_ptx_isa >= 860
     if (num_items == 0)
@@ -811,7 +808,7 @@ struct DispatchScan
   {
     if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == detail::scan::scan_algorithm::warpspeed)
     {
-      return __invoke_lookahead_algorithm(policy_getter);
+      return __invoke_warpspeed_algorithm(policy_getter);
     }
     else
     {
@@ -964,11 +961,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST,
-               (std::stringstream ss; ss << policy_selector(arch_id);
-                _CubLog("Dispatching DeviceScan to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 std::stringstream ss;
+                 ss << policy_selector(arch_id);
+                 _CubLog("Dispatching DeviceScan to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
+               }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   struct fake_policy
   {

@@ -10,6 +10,9 @@
 
 // UNSUPPORTED: nvrtc
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
 
 #include <cuda/std/cmath>

@@ -56,16 +56,11 @@ midpoint(_Tp __a, _Tp __b) noexcept
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, enable_if_t<is_object_v<_Tp> && !is_void_v<_Tp> && (sizeof(_Tp) > 0), int> = 0>
 [[nodiscard]] _CCCL_API constexpr _Tp* midpoint(_Tp* __a, _Tp* __b) noexcept
 {
   return __a + ::cuda::std::midpoint(ptrdiff_t(0), __b - __a);
-}
-
-template <typename _Tp>
-[[nodiscard]] _CCCL_API constexpr int __sign(_Tp __val)
-{
-  return (_Tp(0) < __val) - (__val < _Tp(0));
 }
 
 template <typename _Fp>

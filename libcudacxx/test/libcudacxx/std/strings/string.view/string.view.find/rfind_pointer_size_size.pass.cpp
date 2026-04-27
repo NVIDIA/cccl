@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: indirect call is unsupported in tile code
+
 // <cuda/std/string_view>
 
 // constexpr size_type rfind(const charT* s, size_type pos, size_type n) const;

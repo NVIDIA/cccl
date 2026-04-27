@@ -76,12 +76,8 @@ struct lazy_trait
 //! at compile-time. You can specialize cuda::std::iterator_traits for your own iterator types if needed.
 //! deprecated [Since 3.0]
 template <typename T>
-using iterator_traits CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits instead") =
-// FIXME(bgruber): switching to ::cuda::std::iterator_traits<T> breaks some tests, e.g. cub.test.device_merge_sort.lid_1
-#if _CCCL_COMPILER(NVRTC)
-  ::cuda
-#endif // _CCCL_COMPILER(NVRTC)
-  ::std::iterator_traits<T>;
+using iterator_traits
+  CCCL_DEPRECATED_BECAUSE("Use cuda::std::iterator_traits instead") = ::cuda::std::iterator_traits<T>;
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 

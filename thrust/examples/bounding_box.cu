@@ -5,6 +5,8 @@
 
 #include <cuda/std/utility>
 
+#include <iostream>
+
 // This example shows how to compute a bounding box
 // for a set of points in two dimensions.
 
@@ -27,7 +29,7 @@ struct point2d
 struct bbox
 {
   // construct an empty box
-  __host__ __device__ bbox() {}
+  bbox() = default;
 
   // construct a box from a single point
   __host__ __device__ bbox(const point2d& point)

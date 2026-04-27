@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: indirect call is unsupported in tile code
+
 // ADDITIONAL_COMPILE_FLAGS: --extended-lambda
 // UNSUPPORTED: nvrtc
 

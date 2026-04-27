@@ -190,6 +190,13 @@ int main(int, char**)
   test<random_access_iterator<S*>>(reinterpret_cast<S*>(arr), randomness);
   test<S*>(reinterpret_cast<S*>(arr), randomness);
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<int*>>(arr, randomness);))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<int*>>(arr, randomness);))
+#endif // TEST_CUDA_COMPILATION()
+
 #if defined(_LIBCUDACXX_HAS_VECTOR)
   test_PR31166();
 #endif // _LIBCUDACXX_HAS_VECTOR

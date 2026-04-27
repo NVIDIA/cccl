@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // <span>
 
 //  constexpr span& operator=(const span& other) noexcept = default;
@@ -34,7 +37,7 @@ struct A
 TEST_GLOBAL_VARIABLE constexpr int carr1[] = {1, 2, 3, 4};
 TEST_GLOBAL_VARIABLE constexpr int carr2[] = {3, 4, 5};
 TEST_GLOBAL_VARIABLE constexpr int carr3[] = {7, 8};
-TEST_GLOBAL_VARIABLE int arr[]             = {5, 6, 7, 9};
+_CCCL_DEVICE int arr[]                     = {5, 6, 7, 9};
 
 int main(int, char**)
 {

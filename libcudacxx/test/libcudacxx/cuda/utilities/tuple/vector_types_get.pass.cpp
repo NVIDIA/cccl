@@ -7,6 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
@@ -77,11 +79,20 @@ TEST_FUNC constexpr BaseType get_expected()
 template <class T>
 TEST_FUNC constexpr bool test_eq(const T& lhs, const T& rhs)
 {
-  if constexpr (cuda::std::is_same_v<T, __half> || cuda::std::is_same_v<T, __nv_bfloat16>)
+#if _CCCL_HAS_NVFP16()
+  if constexpr (cuda::std::is_same_v<T, __half>)
   {
     return cuda::std::__fp_get_storage(lhs) == cuda::std::__fp_get_storage(rhs);
   }
   else
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+    if constexpr (cuda::std::is_same_v<T, __nv_bfloat16>)
+  {
+    return cuda::std::__fp_get_storage(lhs) == cuda::std::__fp_get_storage(rhs);
+  }
+  else
+#endif // _CCCL_HAS_NVBF16()
   {
     return lhs == rhs;
   }

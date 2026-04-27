@@ -4,8 +4,9 @@
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/reduce.h>
 
+#include <cuda/std/iterator>
+
 #include <iostream>
-#include <iterator>
 #include <string>
 
 // this functor clamps a value to the range [lo, hi]
@@ -48,7 +49,7 @@ struct simple_negate
 template <typename Iterator>
 void print_range(const std::string& name, Iterator first, Iterator last)
 {
-  using T = typename std::iterator_traits<Iterator>::value_type;
+  using T = cuda::std::iter_value_t<Iterator>;
 
   std::cout << name << ": ";
   thrust::copy(first, last, std::ostream_iterator<T>(std::cout, " "));

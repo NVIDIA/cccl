@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// error: a non-__tile__ variable cannot be used in tile code
+
 // cuda::std::views::take
 
 #include <cuda/std/cassert>
@@ -252,8 +255,9 @@ TEST_FUNC constexpr bool test()
     unused(partial);
   }
 
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
 // Test when `subrange<Iter>` is not well formed
-#if TEST_STD_VER > 2017 || !defined(__clang__) // clang crashes here checking the constraints
+#  if TEST_STD_VER > 2017 || !defined(__clang__) // clang crashes here checking the constraints
   {
     int input[] = {1, 2, 3};
     using Iter  = cpp20_input_iterator<int*>;
@@ -265,7 +269,8 @@ TEST_FUNC constexpr bool test()
     ++it;
     assert(it == tv.end());
   }
-#endif
+#  endif // TEST_STD_VER > 2017 || !defined(__clang__) // clang crashes here checking the constraints
+#endif // !_CCCL_TILE_COMPILATION()
 
   return true;
 }

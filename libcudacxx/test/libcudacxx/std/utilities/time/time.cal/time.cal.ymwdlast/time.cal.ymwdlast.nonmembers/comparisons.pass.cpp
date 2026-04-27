@@ -13,6 +13,9 @@
 //   Returns: x.year() == y.year() && x.month() == y.month() && x.weekday_last() == y.weekday_last()
 //
 
+// XFAIL: enable-tile
+// Segmentation fault, see nvbug6072674
+
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>

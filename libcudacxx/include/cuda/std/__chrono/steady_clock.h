@@ -26,9 +26,9 @@
 #  include <cuda/std/__chrono/duration.h>
 #  include <cuda/std/__chrono/time_point.h>
 
-#  if !_CCCL_COMPILER(NVRTC)
+#  if _CCCL_HOSTED()
 #    include <chrono>
-#  endif // !_CCCL_COMPILER(NVRTC)
+#  endif // _CCCL_HOSTED()
 
 #  include <cuda/std/__cccl/prologue.h>
 

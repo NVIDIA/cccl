@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 // <algorithm>
 
 // template<BidirectionalIterator Iter>
@@ -68,6 +71,13 @@ TEST_FUNC constexpr bool test()
   test<bidirectional_iterator<int*>>();
   test<random_access_iterator<int*>>();
   test<int*>();
+
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<int*>>();))
+#endif // TEST_CUDA_COMPILATION()
 
   return true;
 }

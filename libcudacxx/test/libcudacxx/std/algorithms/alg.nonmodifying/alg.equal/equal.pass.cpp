@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 // <algorithm>
 
 // template<InputIterator Iter1, InputIterator Iter2>
@@ -156,6 +159,7 @@ int main(int, char**)
   types::for_each(types::as_pointers<types::cv_qualified_versions<char>>(),
                   TestIter2<char, types::as_pointers<types::cv_qualified_versions<char>>>());
 
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
   {
     Derived d;
     Derived* a[] = {&d, nullptr};
@@ -164,6 +168,7 @@ int main(int, char**)
     assert(cuda::std::equal(a, a + 2, b));
     assert(cuda::std::equal(a, a + 2, b, b + 2));
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   return 0;
 }

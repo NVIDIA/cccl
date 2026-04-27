@@ -261,6 +261,10 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
       // (hopefully) hide all the arithmetic behind this instruction.
       if (::cuda::ptx::elect_sync(~0))
       {
+        // need to work around another optimizer bug, see: https://github.com/NVIDIA/cccl/issues/8644
+#  if _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
+        asm volatile("" : "+l"(cpAsyncOobInfo.ptrGmemStartAlignUp));
+#  endif // _CCCL_CUDA_COMPILER(NVCC, <, 13, 3)
         ::cuda::ptx::cp_async_bulk(
           ::cuda::ptx::space_global,
           ::cuda::ptx::space_shared,

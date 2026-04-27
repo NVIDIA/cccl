@@ -11,6 +11,8 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
+#include <cuda/__device/arch_id.h>
+#include <cuda/__iterator/constant_iterator.h>
 #include <cuda/iterator>
 
 #include "catch2_test_device_select_common.cuh"
@@ -31,6 +33,17 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::UniqueByKey, device_select_unique_by_k
 namespace stdexec = cuda::std::execution;
 
 #if TEST_LAUNCH == 0
+
+struct block_size_check_t
+{
+  int* ptr;
+
+  __device__ bool operator()(int lhs, int rhs)
+  {
+    *ptr = blockDim.x;
+    return lhs == rhs;
+  }
+};
 
 TEST_CASE("Device select works with default environment", "[select][device]")
 {
@@ -245,6 +258,48 @@ TEST_CASE("Device select unique_by_key works with default environment", "[select
   d_values_out.resize(d_num_selected[0]);
   REQUIRE(d_keys_out == expected_keys);
   REQUIRE(d_values_out == expected_values);
+}
+
+TEST_CASE("Device select unique_by_key default tuning chooses target block size", "[select][device]")
+{
+  using num_items_t = int;
+  using key_t       = int;
+  using value_t     = int;
+
+  using selector_t = cub::detail::unique_by_key::policy_selector_from_types<key_t, value_t>;
+
+  int current_device{};
+  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
+
+  cuda::arch_id arch_id{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_arch_id(arch_id, current_device));
+
+  const auto target_block_size = selector_t{}(arch_id).block_threads;
+
+  num_items_t num_items = 1;
+  auto d_keys_in        = c2h::device_vector<key_t>{0};
+  auto d_keys_out       = c2h::device_vector<key_t>(1);
+  auto d_values_out     = c2h::device_vector<value_t>(1);
+  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_block_size     = c2h::device_vector<int>(1);
+  block_size_check_t equality_op{thrust::raw_pointer_cast(d_block_size.data())};
+  auto d_values_in = cuda::constant_iterator(value_t{1});
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSelect::UniqueByKey(
+      d_keys_in.begin(),
+      d_values_in,
+      d_keys_out.begin(),
+      d_values_out.begin(),
+      d_num_selected.begin(),
+      num_items,
+      equality_op));
+
+  REQUIRE(d_num_selected[0] == 1);
+  REQUIRE(d_keys_out[0] == key_t{0});
+  REQUIRE(d_values_out[0] == value_t{1});
+  REQUIRE(d_block_size[0] == target_block_size);
 }
 
 #endif

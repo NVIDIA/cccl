@@ -23,14 +23,10 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
-#  include <cuda/__utility/in_range.h>
-#  include <cuda/std/__algorithm/all_of.h>
-#  include <cuda/std/__algorithm/is_sorted.h>
 #  include <cuda/std/__algorithm/stable_sort.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__mdspan/mdspan.h>
 #  include <cuda/std/array>
-#  include <cuda/std/tuple>
 
 #  include <cuda/experimental/__copy_bytes/abs_integer.cuh>
 #  include <cuda/experimental/__copy_bytes/mdspan_to_raw_tensor.cuh>
@@ -73,51 +69,17 @@ __same_extents(const __raw_tensor<_ExtentTIn, _StrideTIn, _TpIn, _MaxRankIn>& __
   return true;
 }
 
-//! @brief Check whether every active mode has shape strictly greater than 1.
-//!
-//! @pre `__tensor.__rank` is in [0, _MaxRank].
-//!
-//! @param[in] __tensor Raw tensor to inspect
-//! @return true if all shapes in [0, rank) are > 1; true for rank 0
-template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
-[[nodiscard]] _CCCL_HOST_API bool __has_no_extent1_modes(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor) noexcept
-{
-  _CCCL_ASSERT(::cuda::in_range(__tensor.__rank, ::cuda::std::size_t{0}, _MaxRank),
-               "cudax::has_no_extent1_modes: Invalid tensor rank");
-  // clang-format off
-  return ::cuda::std::all_of(__tensor.__extents.cbegin(), __tensor.__extents.cbegin() + __tensor.__rank,
-    [](auto __extent) {
-      return __extent > 1;
-    }
-  ); // clang-format on
-}
-
-//! @brief Check whether the first `__rank` strides are in ascending order.
-//!
-//! @pre `__tensor.__rank` is in [0, _MaxRank].
-//!
-//! @param[in] __tensor Raw tensor to inspect
-//! @return true if strides[0..rank) are non-descending
-template <typename _Ep, typename _Sp, typename _Tp, ::cuda::std::size_t _MaxRank>
-[[nodiscard]] _CCCL_HOST_API bool __has_sorted_strides(const __raw_tensor<_Ep, _Sp, _Tp, _MaxRank>& __tensor) noexcept
-{
-  namespace cudax = ::cuda::experimental;
-  _CCCL_ASSERT(::cuda::in_range(__tensor.__rank, ::cuda::std::size_t{0}, _MaxRank), "Invalid tensor rank");
-  return ::cuda::std::is_sorted(
-    __tensor.__strides.cbegin(), __tensor.__strides.cbegin() + __tensor.__rank, [](auto __a, auto __b) {
-      return cudax::__abs_integer(__a) < cudax::__abs_integer(__b);
-    });
-}
-
 // lambdas are painful without --extended-lambda and when used with __host__ __device__ functions
-struct __mode_compare
+template <typename _StrideT, ::cuda::std::size_t _MaxRank>
+struct __stride_compare
 {
-  template <typename _ExtentT, typename _StrideT>
-  [[nodiscard]] _CCCL_API bool operator()(const ::cuda::std::tuple<_ExtentT, _StrideT>& __lhs,
-                                          const ::cuda::std::tuple<_ExtentT, _StrideT>& __rhs) const noexcept
+  const ::cuda::std::array<_StrideT, _MaxRank>& __strides;
+
+  template <typename _Idx>
+  [[nodiscard]] _CCCL_API bool operator()(const _Idx __lhs, const _Idx __rhs) const noexcept
   {
-    return ::cuda::experimental::__abs_integer(::cuda::std::get<1>(__lhs))
-         < ::cuda::experimental::__abs_integer(::cuda::std::get<1>(__rhs));
+    return ::cuda::experimental::__abs_integer(__strides[__lhs])
+         < ::cuda::experimental::__abs_integer(__strides[__rhs]);
   }
 };
 
@@ -133,18 +95,20 @@ __sort_by_stride(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor
 {
   using __raw_tensor_t = __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>;
   using __rank_t       = typename __raw_tensor_t::__rank_t;
-  using __mode_t       = ::cuda::std::tuple<_ExtentT, _StrideT>;
   const auto __rank    = __tensor.__rank;
-  ::cuda::std::array<__mode_t, _MaxRank> __modes{};
+  ::cuda::std::array<__rank_t, _MaxRank> __perm{};
   for (__rank_t __i = 0; __i < __rank; ++__i)
   {
-    __modes[__i] = {__tensor.__extents[__i], __tensor.__strides[__i]};
+    __perm[__i] = __i;
   }
-  ::cuda::std::stable_sort(__modes.begin(), __modes.begin() + __rank, __mode_compare{});
+  ::cuda::std::stable_sort(
+    __perm.begin(), __perm.begin() + __rank, __stride_compare<_StrideT, _MaxRank>{__tensor.__strides});
+
   __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank> __result{__tensor.__data, __rank};
   for (__rank_t __i = 0; __i < __rank; ++__i)
   {
-    ::cuda::std::tie(__result.__extents[__i], __result.__strides[__i]) = __modes[__i];
+    __result.__extents[__i] = __tensor.__extents[__perm[__i]];
+    __result.__strides[__i] = __tensor.__strides[__perm[__i]];
   }
   return __result;
 }

@@ -25,6 +25,8 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/round_up.h>
+#include <cuda/__device/arch_id.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
@@ -175,6 +177,45 @@ struct NoScaling
   static constexpr int ITEMS_PER_THREAD = Nominal4ByteItemsPerThread;
   static constexpr int BLOCK_THREADS    = Nominal4ByteBlockThreads;
 };
+
+// Gets the current tuning architecture. Compared to CUB_PTX_ARCH, it can result in arch-specific architecture id. When
+// compiling with nvc++, it always results in ordinary arch id for __NVCOMPILER_CUDA_ARCH__.
+[[nodiscard]] _CCCL_API constexpr ::cuda::arch_id current_tuning_arch() noexcept
+{
+#  if _CCCL_CUDA_COMPILER(NVHPC)
+  return ::cuda::to_arch_id(::cuda::compute_capability(__NVCOMPILER_CUDA_ARCH__ / 10));
+#  elif _CCCL_DEVICE_COMPILATION()
+  return ::cuda::device::current_arch_id();
+#  else // _CCCL_HOST_COMPILATION()
+  return ::cuda::arch_id{};
+#  endif
+}
+
+// Selects the tuning policy for a given architecture id.
+_CCCL_EXEC_CHECK_DISABLE
+template <class PolicySelector>
+[[nodiscard]] _CCCL_API constexpr auto select_policy(::cuda::arch_id arch_id)
+{
+  // todo(dabayer): enable this once current policies are rewritten to work with cuda::compute_capability
+  // if constexpr (::cuda::std::is_invocable_v<PolicySelector, ::cuda::arch_id>)
+  // {
+  //   return PolicySelector{}(arch_id);
+  // }
+  // else
+  // {
+  //   return PolicySelector{}(::cuda::compute_capability{arch_id});
+  // }
+  //
+  // Just convert arch-specific architectures to ordinary archs for now.
+  return PolicySelector{}(::cuda::arch_id{::cuda::compute_capability{arch_id}.get()});
+}
+
+// Selects the tuning policy for the current_tuning_arch() architecture.
+template <class PolicySelector>
+[[nodiscard]] _CCCL_API constexpr auto current_policy()
+{
+  return select_policy<PolicySelector>(current_tuning_arch());
+}
 } // namespace detail
 #endif // Do not document
 

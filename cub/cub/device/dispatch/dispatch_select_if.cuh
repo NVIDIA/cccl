@@ -26,6 +26,7 @@
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_select_if.cuh>
 #include <cub/thread/thread_operators.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_vsmem.cuh>
@@ -34,16 +35,13 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
 #include <nv/target>
-
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
-#  include <sstream>
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes") // __visibility__ attribute ignored
@@ -338,7 +336,7 @@ template <typename PolicySelectorT,
   requires select_if_policy_selector<PolicySelectorT>
 #endif // _CCCL_HAS_CONCEPTS()
 __launch_bounds__(int(
-  make_vsmem_helper<policy_getter<PolicySelectorT, ::cuda::arch_id{CUB_PTX_ARCH / 10}>,
+  make_vsmem_helper<policy_getter<PolicySelectorT, current_tuning_arch()>,
                     SelectionOpt,
                     InputIteratorT,
                     FlagsInputIteratorT,
@@ -361,7 +359,7 @@ __launch_bounds__(int(
     vsmem_t vsmem)
 {
   using VsmemHelperT = typename make_vsmem_helper<
-    policy_getter<PolicySelectorT, ::cuda::arch_id{CUB_PTX_ARCH / 10}>,
+    policy_getter<PolicySelectorT, current_tuning_arch()>,
     SelectionOpt,
     InputIteratorT,
     FlagsInputIteratorT,
@@ -1109,12 +1107,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
-    NV_IS_HOST,
-    (std::stringstream ss; ss << PolicySelector{}(arch_id);
-     _CubLog("Dispatching DeviceSelectIf to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+    NV_IS_HOST, ({
+      ::std::stringstream ss;
+      ss << PolicySelector{}(arch_id);
+      _CubLog("Dispatching DeviceSelectIf to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());
+    }))
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
     return dispatch_policy<SelectionOpt, decltype(policy_getter)>(

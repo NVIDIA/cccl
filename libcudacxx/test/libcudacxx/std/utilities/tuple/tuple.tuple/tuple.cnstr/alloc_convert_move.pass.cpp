@@ -22,6 +22,7 @@
 #include "allocators.h"
 #include "test_macros.h"
 
+#if !_CCCL_TILE_COMPILATION() // virtual functions are unsupported in tile code
 struct B
 {
   int id_;
@@ -39,6 +40,7 @@ struct D : B
       : B(i)
   {}
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 struct Explicit
 {
@@ -68,6 +70,7 @@ int main(int, char**)
     assert(cuda::std::get<0>(t1) == 2);
   }
 
+#if !_CCCL_TILE_COMPILATION() // virtual functions are unsupported in tile code
   {
     using T0 = cuda::std::tuple<cuda::std::unique_ptr<D>>;
     using T1 = cuda::std::tuple<cuda::std::unique_ptr<B>>;
@@ -98,6 +101,7 @@ int main(int, char**)
     assert(cuda::std::get<1>(t1) == 2);
     assert(cuda::std::get<2>(t1)->id_ == 3);
   }
+#endif // !_CCCL_TILE_COMPILATION()
   {
     cuda::std::tuple<int> t1(42);
     cuda::std::tuple<Explicit> t2{cuda::std::allocator_arg, cuda::std::allocator<void>{}, cuda::std::move(t1)};

@@ -25,18 +25,15 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#if defined(CUB_DEFINE_RUNTIME_POLICIES)
 #  include <cub/agent/agent_radix_sort_histogram.cuh>
 #endif
 
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -58,7 +55,7 @@ enum RadixSortStoreAlgorithm
   RADIX_SORT_STORE_ALIGNED
 };
 
-#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
+#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm algo)
 {
   switch (algo)
@@ -71,7 +68,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm al
       return os << "<unknown RadixSortStoreAlgorithm: " << static_cast<int>(algo) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
 template <int NominalBlockThreads4B,
           int NominalItemsPerThread4B,
@@ -95,7 +92,7 @@ struct AgentRadixSortOnesweepPolicy : ScalingType
   static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
 };
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) // FIXME(bgruber): remove
 namespace detail::radix_sort_runtime_policies
 {
 // Only define this when needed.
@@ -115,7 +112,7 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   (SCAN_ALGORITHM, ScanAlgorithm, cub::BlockScanAlgorithm),
   (STORE_ALGORITHM, StoreAlgorithm, cub::RadixSortStoreAlgorithm))
 } // namespace detail::radix_sort_runtime_policies
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
 namespace detail::radix_sort
 {

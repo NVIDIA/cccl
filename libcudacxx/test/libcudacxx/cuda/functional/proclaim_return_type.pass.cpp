@@ -8,8 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: gcc-4
-
 #include <cuda/functional>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
@@ -20,10 +18,16 @@
 template <typename ReturnT>
 TEST_FUNC void test_lambda_return_type()
 {
-  // Ensure type can be queried from cuda::std::invoke_result_t
+// Ensure type can be queried from cuda::std::invoke_result_t
+#  if _CCCL_TILE_COMPILATION()
+  auto d_lm = [] _CCCL_TILE() -> ReturnT {
+    return ReturnT{};
+  };
+#  else // ^^^ _CCCL_TILE_COMPILATION() ^^^ / vvv !_CCCL_TILE_COMPILATION() vvv
   auto d_lm = [] TEST_DEVICE_FUNC() -> ReturnT {
     return ReturnT{};
   };
+#  endif // !_CCCL_TILE_COMPILATION()
   auto hd_lm = [] TEST_FUNC() -> ReturnT {
     return ReturnT{};
   };

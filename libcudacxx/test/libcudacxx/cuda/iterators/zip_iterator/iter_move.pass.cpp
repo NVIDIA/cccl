@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && c++17
+// error: a non-__tile__ variable cannot be used in tile code
+
 // friend constexpr auto iter_move(const iterator& i) noexcept(see below);
 
 #include <cuda/iterator>

@@ -68,6 +68,7 @@ target_compile_options(
 cudax_add_catch2_test(test_target graph
     graph/graph_smoke.cu
     graph/graph_node_ops_smoke.cu
+    graph/graph_buffer_smoke.cu
 )
 
 cudax_add_catch2_test(test_target stream
@@ -96,6 +97,7 @@ cudax_add_catch2_test(test_target copy
     copy/copy_llm.cu
     copy/copy_nvmath.cu
     copy/copy_nvmath_transpose.cu
+    copy/copy_shared_memory.cu
 )
 
 cudax_add_catch2_test(test_target cuco
@@ -127,9 +129,43 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/copy.cu
 )
 
-cudax_add_catch2_test(test_target group
-    group/group.cu
+cudax_add_catch2_test(test_target group.mapping.group_as
+    group/mapping/group_as.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.mapping.group_by
     group/mapping/group_by.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.synchronizer.lane_synchronizer
+    group/synchronizer/lane_synchronizer.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.synchronizer.barrier_synchronizer
+    group/synchronizer/barrier_synchronizer.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.cooperative_algorithm
+    group/cooperative_algorithm.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.group
+    group/group.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.make_this_group
+    group/make_this_group.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
+
+cudax_add_catch2_test(test_target group.this_group
+    group/this_group.cu
 )
 target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
 

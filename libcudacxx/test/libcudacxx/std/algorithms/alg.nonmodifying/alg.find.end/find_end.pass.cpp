@@ -56,6 +56,13 @@ int main(int, char**)
   test<random_access_iterator<const int*>, bidirectional_iterator<const int*>>();
   test<random_access_iterator<const int*>, random_access_iterator<const int*>>();
 
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>, host_only_iterator<const int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION()
+  NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>, device_only_iterator<const int*>>();))
+#endif // TEST_CUDA_COMPILATION()
+
   static_assert(test<forward_iterator<const int*>, forward_iterator<const int*>>());
   static_assert(test<forward_iterator<const int*>, bidirectional_iterator<const int*>>());
   static_assert(test<forward_iterator<const int*>, random_access_iterator<const int*>>());

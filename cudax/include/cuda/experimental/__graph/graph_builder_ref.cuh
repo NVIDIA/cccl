@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__runtime/api_wrapper.h>
+#include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
@@ -253,6 +254,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder_ref
   _CCCL_HOST_API auto instantiate() -> graph
   {
     _CCCL_ASSERT(__graph_ != nullptr, "cannot instantiate a NULL graph");
+    ::cuda::__ensure_current_context __ctx_guard{__dev_};
     return graph{::cuda::experimental::__driver::__graphInstantiate(__graph_)};
   }
 
