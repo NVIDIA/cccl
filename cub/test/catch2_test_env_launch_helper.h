@@ -526,7 +526,7 @@ struct block_size_extracting_op
   unsigned int* ptr;
 
   template <typename... Ts>
-  __device__ decltype(auto) operator()(Ts&&... args) const
+  __device__ auto operator()(Ts&&... args) const -> decltype(InnerOp{}(::cuda::std::forward<Ts>(args)...))
   {
     if (threadIdx.x == 0)
     {
