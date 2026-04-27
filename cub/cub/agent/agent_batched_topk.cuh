@@ -32,11 +32,11 @@ namespace detail::batched_topk
 // Atomic counters used by the small-segment kernel to (a) enqueue large segments into the large-segment work queue
 // and (b) elect the last block to run the epilogue scan over the queued tile counts. `alignas(128)` isolates each
 // counter on its own cache line for performance.
-struct alignas(128) batched_topk_counters
+struct batched_topk_counters
 {
   // Number of segments enqueued in the large-segment work queue. Atomically incremented (by 1) by the first thread
   // of each block that decides its segment is large.
-  unsigned long long large_segments_count;
+  alignas(128) unsigned long long large_segments_count;
 
   // Block retirement counter. Each block atomically increments by 1 when it has finished processing its segment, and
   // the block that observes `gridDim.x - 1` runs the epilogue on the queued large segments tile counts.

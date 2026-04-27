@@ -32,8 +32,8 @@ struct epilogue_policy
   // worker-agent might need to be changed.
   int multi_worker_tile_size;
   BlockLoadAlgorithm load_algorithm;
-  BlockScanAlgorithm scan_algorithm;
   BlockStoreAlgorithm store_algorithm;
+  BlockScanAlgorithm scan_algorithm;
 };
 
 struct worker_policy
@@ -114,7 +114,8 @@ struct policy_selector
     constexpr auto epilogue_items_per_thread = 16;
     constexpr auto multi_worker_tile_size    = 256 * 64;
     constexpr auto epilogue =
-      epilogue_policy{epilogue_items_per_thread, multi_worker_tile_size, load_alg, scan_alg, store_alg};
+      epilogue_policy{epilogue_items_per_thread, multi_worker_tile_size, load_alg, store_alg, scan_alg};
+    // Only the first policy actually needs an epilogue policy.
     return batched_topk_policy{{{
       worker_policy{256, 64, load_alg, store_alg, epilogue},
       worker_policy{256, 32, load_alg, store_alg, epilogue},
