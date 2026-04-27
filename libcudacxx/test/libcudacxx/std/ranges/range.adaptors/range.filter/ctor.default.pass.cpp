@@ -94,17 +94,6 @@ struct NoexceptPredicate
 
 TEST_FUNC constexpr bool test()
 {
-  // The following program is so powerful that cicc 12.9 simply crashes with
-  //
-  // Segmentation fault (core dumped)
-  // # --error 0x8b --
-  //
-  // The cause of this is the View constructor, so nothing we can do except disable this.
-  //
-  // (gcc-12 || msvc-19.39) claims that View is not default constructible. It is unclear how
-  // they arrive at this conclusion.
-#if !_CCCL_CUDACC_EQUAL(12, 9) \
-  && !((TEST_COMPILER(GCC, ==, 12) || TEST_COMPILER(MSVC, <, 19, 44)) && (TEST_STD_VER == 2020))
   {
     using View = cuda::std::ranges::filter_view<DefaultConstructibleView, DefaultConstructiblePredicate>;
 
@@ -129,23 +118,17 @@ TEST_FUNC constexpr bool test()
     assert(*it++ == 8);
     assert(it == end);
   }
-#endif // !_CCCL_CUDACC_EQUAL(12, 9)
-       // && !((TEST_COMPILER(GCC, ==, 12) || TEST_COMPILER(MSVC, <, 19, 44))
-       //      && (TEST_STD_VER == 2020))
 
   // Check cases where the default constructor isn't provided
   {
     static_assert(!cuda::std::is_default_constructible_v<
                   cuda::std::ranges::filter_view<DefaultConstructibleView, NoDefaultPredicate>>);
-    // (clang-14 || gcc-12 || msvc-19.39) tries to actually instantiate the default ctors
-#if !((TEST_COMPILER(CLANG, ==, 14) || TEST_COMPILER(GCC, ==, 12) || TEST_COMPILER(MSVC, <, 19, 44)) \
-      && (TEST_STD_VER == 2020))
+
     static_assert(!cuda::std::is_default_constructible_v<
                   cuda::std::ranges::filter_view<NoDefaultView, DefaultConstructiblePredicate>>);
     static_assert(
       !cuda::std::is_default_constructible_v<cuda::std::ranges::filter_view<NoDefaultView, NoDefaultPredicate>>);
-#endif // !((TEST_COMPILER(CLANG, ==, 14) || TEST_COMPILER(GCC, ==, 12)
-       //     || TEST_COMPILER(MSVC, <, 19, 44)) && (TEST_STD_VER == 2020))
+    //     || TEST_COMPILER(MSVC, <, 19, 44)) && (TEST_STD_VER == 2020))
   }
 
   // Check noexcept-ness
@@ -154,9 +137,9 @@ TEST_FUNC constexpr bool test()
       using View = cuda::std::ranges::filter_view<DefaultConstructibleView, DefaultConstructiblePredicate>;
       // GCC 7 simply gives the wrong answer here. No amount of cajoling, pleading, or
       // massaging the code ever got it to pass this static_assert()
-#if !TEST_COMPILER(GCC) || TEST_COMPILER(GCC, >=, 8, 0)
+#if !TEST_COMPILER(GCC)
       static_assert(!cuda::std::is_nothrow_default_constructible_v<View>);
-#endif // !TEST_COMPILER(GCC) || TEST_COMPILER(GCC, >=, 8, 0)
+#endif // !TEST_COMPILER(GCC)
     }
     {
       using View = cuda::std::ranges::filter_view<NoexceptView, NoexceptPredicate>;

@@ -299,7 +299,7 @@ struct __align__({1}) storage_t {{
 using device_histogram_policy = {3};
 using namespace cub;
 using namespace cub::detail::histogram;
-static_assert(device_histogram_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {4}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_histogram_policy()(detail::current_tuning_arch()) == {4}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     d_samples.value_type.size, // 0
     d_samples.value_type.alignment, // 1

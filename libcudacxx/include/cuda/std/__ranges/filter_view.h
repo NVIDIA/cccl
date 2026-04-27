@@ -85,15 +85,15 @@ template <class _View,
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class filter_view : public view_interface<filter_view<_View, _Pred>>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _View __base_{};
-  _CCCL_NO_UNIQUE_ADDRESS __movable_box<_Pred> __pred_;
+  _View __base_;
+  __movable_box<_Pred> __pred_;
 
   // We cache the result of begin() to allow providing an amortized O(1) begin() whenever
   // the underlying range is at least a forward_range.
   static constexpr bool __use_cache = forward_range<_View>;
   using _cache_type _CCCL_NODEBUG =
     conditional_t<__use_cache, __non_propagating_cache<iterator_t<_View>>, __empty_cache>;
-  _CCCL_NO_UNIQUE_ADDRESS _cache_type __cached_begin_{};
+  _cache_type __cached_begin_;
 
 public:
   // __iterator and __sentinel should be private, but several compilers (clang-14, gcc-12,
@@ -104,8 +104,8 @@ public:
   class __iterator : public __filter_iterator_category<_View>
   {
   public:
-    _CCCL_NO_UNIQUE_ADDRESS iterator_t<_View> __current_{};
-    _CCCL_NO_UNIQUE_ADDRESS filter_view* __parent_ = nullptr;
+    iterator_t<_View> __current_;
+    filter_view* __parent_ = nullptr;
 
     using iterator_concept =
       conditional_t<bidirectional_range<_View>,
@@ -118,15 +118,11 @@ public:
     using value_type      = range_value_t<_View>;
     using difference_type = range_difference_t<_View>;
 
-#if _CCCL_HAS_CONCEPTS()
-    _CCCL_HIDE_FROM_ABI __iterator() noexcept(is_nothrow_default_constructible_v<iterator_t<_View>>)
-      requires default_initializable<iterator_t<_View>>
-    = default;
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
     _CCCL_TEMPLATE(class _View2 = _View)
     _CCCL_REQUIRES(default_initializable<iterator_t<_View2>>)
-    _CCCL_API constexpr __iterator() noexcept(is_nothrow_default_constructible_v<iterator_t<_View2>>) {}
-#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
+    _CCCL_API constexpr __iterator() noexcept(is_nothrow_default_constructible_v<iterator_t<_View2>>)
+        : __current_()
+    {}
 
     _CCCL_API constexpr __iterator(filter_view& __parent, iterator_t<_View> __current) noexcept(
       is_nothrow_move_constructible_v<iterator_t<_View>>)
@@ -286,22 +282,18 @@ public:
     {
       return !(__x == __y);
     }
-#endif
+#endif // _CCCL_STD_VER <= 2017
   };
 
-#if _CCCL_HAS_CONCEPTS()
-  _CCCL_HIDE_FROM_ABI constexpr filter_view() noexcept(
-    is_nothrow_default_constructible_v<_View> && is_nothrow_default_constructible_v<_Pred>)
-    requires default_initializable<_View> && default_initializable<_Pred>
-  = default;
-#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _View2 = _View, class _Pred2 = _Pred)
   _CCCL_REQUIRES(default_initializable<_View2> _CCCL_AND default_initializable<_Pred2>)
   _CCCL_API constexpr filter_view() noexcept(is_nothrow_default_constructible_v<_View2>
                                              && is_nothrow_default_constructible_v<_Pred2>)
       : view_interface<filter_view<_View, _Pred>>{}
+      , __base_()
+      , __pred_()
+      , __cached_begin_()
   {}
-#endif // !_CCCL_HAS_CONCEPTS()
 
   _CCCL_API constexpr explicit filter_view(_View __base, _Pred __pred) noexcept(
     is_nothrow_move_constructible_v<_View>
