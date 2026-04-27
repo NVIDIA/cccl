@@ -689,18 +689,18 @@ template <typename OverrideAccumT = use_default,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT  = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
-          typename AccumT = decltype(select_segmented_accum_t<InputIteratorT, InitT, ReductionOpT>(
+          typename InitT          = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>,
+          typename AccumT         = decltype(select_segmented_accum_t<InputIteratorT, InitT, ReductionOpT>(
             static_cast<OverrideAccumT*>(nullptr))),
-          typename PolicySelector,
-          typename KernelSource = DeviceFixedSizeSegmentedReduceKernelSource<
-            PolicySelector,
-            InputIteratorT,
-            OutputIteratorT,
-            OffsetT,
-            ReductionOpT,
-            InitT,
-            AccumT>,
+          typename PolicySelector = policy_selector_from_types<AccumT, OffsetT, ReductionOpT>,
+          typename KernelSource   = DeviceFixedSizeSegmentedReduceKernelSource<
+              PolicySelector,
+              InputIteratorT,
+              OutputIteratorT,
+              OffsetT,
+              ReductionOpT,
+              InitT,
+              AccumT>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY,
           ::cuda::std::enable_if_t<::cuda::std::is_arithmetic_v<OffsetT>, int> = 0>
 #if _CCCL_HAS_CONCEPTS()
@@ -716,7 +716,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_fixed_size(
   ReductionOpT reduction_op,
   InitT init,
   cudaStream_t stream,
-  PolicySelector policy_selector,
+  PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
