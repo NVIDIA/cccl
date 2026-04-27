@@ -24,19 +24,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceMerge::MergePairs, merge_pairs);
 
 namespace stdexec = cuda::std::execution;
 
-struct block_size_extracting_less_t
-{
-  int* ptr;
-
-  __device__ bool operator()(const int& lhs, const int& rhs) const
-  {
-    if (threadIdx.x == 0)
-    {
-      atomicMin(ptr, blockDim.x);
-    }
-    return lhs < rhs;
-  }
-};
+using block_size_extracting_less_t = block_size_extracting_op<cuda::std::less<>>;
 
 template <int BlockThreads>
 struct merge_tuning
@@ -102,7 +90,7 @@ C2H_TEST("DeviceMerge::MergeKeys can be tuned", "[merge][device]", block_sizes)
   auto keys1                      = c2h::device_vector<int>{0, 2, 5};
   auto keys2                      = c2h::device_vector<int>{0, 3, 3, 4};
   auto result                     = c2h::device_vector<int>(7);
-  auto d_block_size               = c2h::device_vector<int>(1, 2048);
+  auto d_block_size               = c2h::device_vector<unsigned int>(1);
 
   block_size_extracting_less_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 
@@ -133,7 +121,7 @@ C2H_TEST("DeviceMerge::MergePairs can be tuned", "[merge][device]", block_sizes)
   auto values2                    = c2h::device_vector<char>{'A', 'B', 'C', 'D'};
   auto result_keys                = c2h::device_vector<int>(7);
   auto result_values              = c2h::device_vector<char>(7);
-  auto d_block_size               = c2h::device_vector<int>(1, 2048);
+  auto d_block_size               = c2h::device_vector<unsigned int>(1);
 
   block_size_extracting_less_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
 

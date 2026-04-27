@@ -39,20 +39,7 @@ namespace stdexec = cuda::std::execution;
 // We need a test of simple use to check if default environment works.
 // ifdef it out not to spend time compiling and running it twice.
 #if TEST_LAUNCH == 0
-struct block_size_check_t
-{
-  unsigned int* ptr;
-
-  __device__ int operator()(int a, int b)
-  {
-    if (threadIdx.x == 0)
-    {
-      // use an atomic operation to write the block dim in case multiple blocks are launched
-      atomicMax(ptr, blockDim.x);
-    }
-    return a + b;
-  }
-};
+using block_size_check_t = block_size_extracting_op<cuda::std::plus<>>;
 
 TEST_CASE("Device reduce works with default environment", "[reduce][device]")
 {

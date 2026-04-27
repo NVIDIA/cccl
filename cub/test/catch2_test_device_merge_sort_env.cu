@@ -446,20 +446,7 @@ TEST_CASE("DeviceMergeSort::StableSortKeysCopy uses custom stream", "[merge_sort
   REQUIRE(d_keys_out == expected_keys);
 }
 
-struct block_size_compare_t
-{
-  unsigned int* block_size;
-
-  __device__ bool operator()(int lhs, int rhs) const
-  {
-    if (threadIdx.x == 0)
-    {
-      // use an atomic operation to write the block dim in case multiple blocks are launched
-      atomicMax(block_size, blockDim.x);
-    }
-    return lhs < rhs;
-  }
-};
+using block_size_compare_t = block_size_extracting_op<cuda::std::less<>>;
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
