@@ -56,11 +56,9 @@ template <typename BinaryOpT, typename ValueT, typename FlagT = bool>
 struct schwarz_scan_op
 {
   using fv_t = augmented_value_t<ValueT, FlagT>;
-  BinaryOpT scan_op;
+  mutable BinaryOpT scan_op;
 
-private:
-  template <typename OpRef>
-  _CCCL_DEVICE _CCCL_FORCEINLINE fv_t call_impl(OpRef binary_op, fv_t o1, fv_t o2) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE fv_t operator()(fv_t o1, fv_t o2) const
   {
     if (get_flag(o2))
     {
@@ -68,26 +66,9 @@ private:
     }
     const auto o2_value    = get_value(o2);
     const auto o1_value    = get_value(o1);
-    const ValueT res_value = binary_op(o1_value, o2_value);
+    const ValueT res_value = scan_op(o1_value, o2_value);
 
     return make_value_flag(res_value, get_flag(o1));
-  }
-
-public:
-  template <typename Op                                                                                  = BinaryOpT,
-            ::cuda::std::enable_if_t<::cuda::std::is_invocable_v<const Op&, const ValueT&, ValueT>, int> = 0>
-  _CCCL_DEVICE _CCCL_FORCEINLINE fv_t operator()(fv_t o1, fv_t o2) const
-  {
-    return call_impl(scan_op, o1, o2);
-  }
-
-  template <typename Op                   = BinaryOpT,
-            ::cuda::std::enable_if_t<!::cuda::std::is_invocable_v<const Op&, const ValueT&, ValueT>
-                                       && ::cuda::std::is_invocable_v<Op&, const ValueT&, ValueT>,
-                                     int> = 0>
-  _CCCL_DEVICE _CCCL_FORCEINLINE fv_t operator()(fv_t o1, fv_t o2)
-  {
-    return call_impl(scan_op, o1, o2);
   }
 };
 
@@ -103,7 +84,7 @@ struct packer
 template <typename ScanOp, typename V, typename F = bool>
 struct packer_iv
 {
-  ScanOp op;
+  mutable ScanOp op;
   V init_v;
 
 private:
@@ -119,19 +100,14 @@ private:
   }
 
 public:
-  template <typename Op = ScanOp, ::cuda::std::enable_if_t<::cuda::std::is_invocable_v<const Op&, const V&, V>, int> = 0>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f) const
   {
-    return impl(op, v, f);
-  }
-
-  template <typename Op = ScanOp,
-            ::cuda::std::enable_if_t<
-              !::cuda::std::is_invocable_v<const Op&, const V&, V> && ::cuda::std::is_invocable_v<Op&, const V&, V>,
-              int> = 0>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto operator()(V v, F f)
-  {
-    return impl(op, v, f);
+    V res = v;
+    if (f)
+    {
+      res = op(init_v, v);
+    }
+    return make_value_flag(res, f);
   }
 };
 
