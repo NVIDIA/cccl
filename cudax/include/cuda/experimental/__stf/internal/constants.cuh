@@ -45,6 +45,31 @@ enum class access_mode : unsigned int
 };
 
 /**
+ * @brief True iff `mode` may appear as the result of merging two non-relaxed
+ *        access modes with `operator|` (duplicate logical data in one task).
+ *
+ * Bitwise OR can otherwise yield values that are not handled by the MSI
+ * protocol (for example `read | reduce`). Such combinations are rejected by
+ * `operator|`.
+ */
+inline constexpr bool access_mode_merge_result_is_well_formed(access_mode mode) noexcept
+{
+  switch (mode)
+  {
+    case access_mode::none:
+    case access_mode::read:
+    case access_mode::write:
+    case access_mode::rw:
+    case access_mode::reduce:
+    case access_mode::reduce_no_init:
+      return true;
+    case access_mode::relaxed:
+    default:
+      return false;
+  }
+}
+
+/**
  * @brief Combines two access mode into a compatible access mode for both
  *         accesses (eg. read+write = rw, read+read = read)
  */
@@ -54,7 +79,12 @@ inline access_mode operator|(access_mode lhs, access_mode rhs)
   assert(as_underlying(rhs) < 16);
   EXPECT(lhs != access_mode::relaxed);
   EXPECT(rhs != access_mode::relaxed);
-  return access_mode(as_underlying(lhs) | as_underlying(rhs));
+  const access_mode merged = static_cast<access_mode>(as_underlying(lhs) | as_underlying(rhs));
+  EXPECT(
+    access_mode_merge_result_is_well_formed(merged),
+    "Unsupported access_mode merge for the same logical data in one task: bitwise OR produced a "
+    "value that is not one of none, read, write, rw, reduce, or reduce_no_init (e.g. read+write -> rw).");
+  return merged;
 }
 
 //! @brief In-place version of `operator|`
