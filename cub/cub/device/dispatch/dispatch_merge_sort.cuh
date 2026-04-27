@@ -195,7 +195,7 @@ private:
 public:
   // Invocation
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke([[maybe_unused]] ActivePolicyT policy = {})
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke([[maybe_unused]] ActivePolicyT = {})
   {
     if (num_items == 0)
     {
@@ -206,18 +206,18 @@ public:
       return cudaSuccess;
     }
 
-    constexpr auto tile_size =
-      detail::merge_sort::merge_sort_vsmem_helper_t<
-        policy_getter<ActivePolicyT>,
-        KeyInputIteratorT,
-        ValueInputIteratorT,
-        KeyIteratorT,
-        ValueIteratorT,
-        OffsetT,
-        CompareOpT,
-        KeyT,
-        ValueT>::policy.items_per_tile();
-    const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
+    static constexpr auto policy = detail::merge_sort::merge_sort_vsmem_helper_t<
+      policy_getter<ActivePolicyT>,
+      KeyInputIteratorT,
+      ValueInputIteratorT,
+      KeyIteratorT,
+      ValueIteratorT,
+      OffsetT,
+      CompareOpT,
+      KeyT,
+      ValueT>::policy;
+    constexpr auto tile_size = policy.block_threads * policy.items_per_thread;
+    const auto num_tiles     = ::cuda::ceil_div(num_items, tile_size);
 
     const auto merge_partitions_size         = static_cast<size_t>(1 + num_tiles) * sizeof(OffsetT);
     const auto temporary_keys_storage_size   = static_cast<size_t>(num_items * kernel_source.KeySize());
@@ -279,17 +279,7 @@ public:
     auto keys_buffer      = static_cast<KeyT*>(allocations[1]);
     auto items_buffer     = static_cast<ValueT*>(allocations[2]);
 
-    const int threads_per_block =
-      detail::merge_sort::merge_sort_vsmem_helper_t<
-        policy_getter<ActivePolicyT>,
-        KeyInputIteratorT,
-        ValueInputIteratorT,
-        KeyIteratorT,
-        ValueIteratorT,
-        OffsetT,
-        CompareOpT,
-        KeyT,
-        ValueT>::policy.threads_per_block;
+    const int threads_per_block = policy.threads_per_block;
 
     // Invoke DeviceMergeSortBlockSortKernel
     launcher_factory(
