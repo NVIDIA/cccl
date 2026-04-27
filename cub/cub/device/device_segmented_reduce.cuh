@@ -73,7 +73,10 @@ CUB_NAMESPACE_BEGIN
 struct DeviceSegmentedReduce
 {
 private:
-  template <typename ReductionOpT, typename InputIteratorT, typename OutputIteratorT>
+  template <typename ReductionOpT,
+            typename TuningEnvT = ::cuda::std::execution::env,
+            typename InputIteratorT,
+            typename OutputIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_arg_dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -108,6 +111,11 @@ private:
       is_min ? ::cuda::std::numeric_limits<input_value_t>::max() : ::cuda::std::numeric_limits<input_value_t>::lowest();
     init_t initial_value{accum_t(1, sentinel)};
 
+    using default_policy_selector_t =
+      detail::segmented_reduce::policy_selector_from_types<accum_t, offset_t, ReductionOpT>;
+    using policy_selector_t = ::cuda::std::execution::
+      __query_result_or_t<TuningEnvT, detail::segmented_reduce::segmented_reduce_policy, default_policy_selector_t>;
+
     return detail::segmented_reduce::dispatch_fixed_size<accum_t>(
       d_temp_storage,
       temp_storage_bytes,
@@ -117,7 +125,8 @@ private:
       static_cast<offset_t>(segment_size),
       ReductionOpT(),
       initial_value,
-      stream);
+      stream,
+      policy_selector_t{});
   }
 
   template <typename ReductionOpT, typename InputIteratorT, typename OutputIteratorT, typename EnvT>
@@ -136,7 +145,7 @@ private:
 
     return detail::dispatch_with_env(
       env, [&]([[maybe_unused]] auto tuning, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return fixed_size_arg_dispatch<ReductionOpT>(
+        return fixed_size_arg_dispatch<ReductionOpT, decltype(tuning)>(
           d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, stream);
       });
   }
