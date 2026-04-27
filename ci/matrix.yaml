@@ -21,6 +21,8 @@ workflows:
   #       args: '--preset libcudacxx --lit-tests "cuda/utility/basic_any.pass.cpp"' }
   #
   override:
+    - {jobs: ['test'], project: 'libcudacxx', ctk: '12.X', std: 'max', gpu: 'h100', sm: '90a' }
+    - {jobs: ['test'], project: 'libcudacxx', ctk: '13.X', std: 'max', gpu: 'h100', sm: '90a' }
 
   pull_request:
     # Old CTK: Oldest/newest supported host compilers:
@@ -180,13 +182,15 @@ workflows:
     - {jobs: ['test'], project: 'cub',        ctk: '12.X', std: 'max', cxx: ['gcc', 'clang19', 'msvc'], gpu: 'rtxa6000'}
     - {jobs: ['test'], project: 'thrust',     ctk: '12.X', std: 'max', cxx: ['gcc', 'clang19', 'msvc'], gpu: 'rtx4090'}
     - {jobs: ['test'], project: 'cudax',      ctk: '12.X', std: 'max', cxx: ['gcc', 'clang19', 'msvc'], gpu: 'rtx2080'}
-    - {jobs: ['test'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '12.X', std: 'max', gpu: 'h100' }
+    - {jobs: ['test'], project: ['cub', 'thrust', 'cudax'], ctk: '12.X', std: 'max', gpu: 'h100' }
+    - {jobs: ['test'], project: 'libcudacxx', ctk: '12.X', std: 'max', gpu: 'h100', sm: '90a' }
     # CTK '13.X' testing:
     - {jobs: ['test'], project: 'libcudacxx', ctk: '13.X', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080'}
     - {jobs: ['test'], project: 'cub',        ctk: '13.X', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtxa6000'}
     - {jobs: ['test'], project: 'thrust',     ctk: '13.X', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx4090'}
     - {jobs: ['test'], project: 'cudax',      ctk: '13.X', std: 'max', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080'}
-    - {jobs: ['test'], project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: 'max', gpu: 'h100' }
+    - {jobs: ['test'], project: ['cub', 'thrust', 'cudax'], ctk: '13.X', std: 'max', gpu: 'h100' }
+    - {jobs: ['test'], project: 'libcudacxx', ctk: '13.X', std: 'max', gpu: 'h100', sm: '90a' }
       # RTX PRO 6000 coverage (limited due to small number of runners):
     - {jobs: ['test_nolid', 'test_lid0'], project: 'cub', std: 'max', cxx: 'gcc', gpu: 'rtxpro6000'}
     # Misc:

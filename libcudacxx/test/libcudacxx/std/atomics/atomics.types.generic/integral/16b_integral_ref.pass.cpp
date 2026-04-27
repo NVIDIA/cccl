@@ -190,14 +190,18 @@ int main(int, char**)
     test_for_all_types<cuda_atomic_ref, cuda::thread_scope_system, local_memory_selector>();),
     */
     NV_PROVIDES_SM_90,
-    (test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_system, local_memory_selector>();
-     test_for_all_types<cuda_atomic_ref, cuda::thread_scope_system, local_memory_selector>();
+    (
+// There is a detection issue with `__is_local` and 128b integers.
+#  if _CCCL_CUDACC_AT_LEAST(13, 1)
+      test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_system, local_memory_selector>();
+      test_for_all_types<cuda_atomic_ref, cuda::thread_scope_system, local_memory_selector>();
+#  endif
 
-     test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_block, shared_memory_selector>();
-     test_for_all_types<cuda_atomic_ref, cuda::thread_scope_block, shared_memory_selector>();
+      test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_block, shared_memory_selector>();
+      test_for_all_types<cuda_atomic_ref, cuda::thread_scope_block, shared_memory_selector>();
 
-     test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_device, global_memory_selector>();
-     test_for_all_types<cuda_atomic_ref, cuda::thread_scope_device, global_memory_selector>();))
+      test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_device, global_memory_selector>();
+      test_for_all_types<cuda_atomic_ref, cuda::thread_scope_device, global_memory_selector>();))
 #endif
 
   return 0;
