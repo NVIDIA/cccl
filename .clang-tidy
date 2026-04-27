@@ -28,6 +28,7 @@ Checks:
   - '-modernize-use-nodiscard'
   - '-modernize-return-braced-init-list'
   - '-modernize-use-auto'
+  - 'clang-analyzer-*'
   # END REMOVE ME
   # TODO(jfaibussowit):
   #
@@ -218,6 +219,10 @@ ImplementationFileExtensions:
   - cu
 SystemHeaders: false
 HeaderFilterRegex: '.*/(thrust|cub|cuda|nv|cccl|c2h|cudastf|test)/.*'
+# Exclude external dependencies downloaded through FetchContent (which by default always
+# places them in a _deps folder). This should already be being handled by virtue of
+# including them with -isystem, but some checks (like clang-analyzer) don't respect this.
+ExcludeHeaderFilterRegex: '.*/_deps/.*'
 ExtraArgsBefore:
   # To match _CCCL_DOXYGEN_INVOKED
   - '-D_CCCL_CLANG_TIDY_INVOKED=1'
