@@ -81,7 +81,14 @@ struct DeviceFor
     {
       // Surrounding `Bulk` call doesn't invoke this operator on invalid indices, so we don't need to
       // check for out-of-bounds access here.
-      if (i != partially_filled_vector_id)
+      if (i == partially_filled_vector_id)
+      { // Case of partially filled vector
+        for (OffsetT j = i * vec_size; j < num_items; j++)
+        {
+          (void) op(input[j]);
+        }
+      }
+      else
       { // Case of fully filled vector
         const vector_t vec = *reinterpret_cast<const vector_t*>(input + vec_size * i);
 
@@ -91,18 +98,11 @@ struct DeviceFor
           (void) op(*(reinterpret_cast<const T*>(&vec) + j));
         }
       }
-      else
-      { // Case of partially filled vector
-        for (OffsetT j = i * vec_size; j < num_items; j++)
-        {
-          (void) op(input[j]);
-        }
-      }
     }
   };
 
   template <class OffsetT, class OpT, class EnvT>
-  CUB_RUNTIME_FUNCTION static cudaError_t __bulk(OffsetT num_items, OpT op, EnvT env = {})
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __bulk(OffsetT num_items, OpT op, EnvT env = {})
   {
     auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
     [[maybe_unused]] const auto tuning_env =
@@ -114,7 +114,7 @@ struct DeviceFor
   }
 
   template <bool AllowCopy = false, class RandomAccessIteratorT, class NumItemsT, class OpT, class EnvT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   __for_each_n(RandomAccessIteratorT first, NumItemsT num_items, OpT op, EnvT env)
   {
     // We tried to detect if we can still use vectorization from the non-Copy CUB APIs, but it's disabled for now:
@@ -139,7 +139,7 @@ struct DeviceFor
   }
 
   template <class RandomAccessIteratorT, class NumItemsT, class OpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t __for_each_n(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __for_each_n(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     RandomAccessIteratorT first,
