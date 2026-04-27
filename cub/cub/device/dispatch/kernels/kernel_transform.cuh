@@ -276,10 +276,9 @@ _CCCL_DEVICE void transform_kernel_vectorized(
                                     && THRUST_NS_QUALIFIER::is_trivially_relocatable_v<output_t>;
 
   // if we can vectorize, we convert f's return type to the output type right away, so we can reinterpret later
-  using ::cuda::__uninitialized_array;
   using output_array_t                  = ::cuda::std::conditional_t<can_vectorize_store, output_t, result_t>;
   constexpr auto output_array_alignment = can_vectorize_store ? sizeof(output_t) * vec_size : alignof(result_t);
-  __uninitialized_array<output_array_t, items_per_thread, output_array_alignment> output;
+  ::cuda::__uninitialized_array<output_array_t, items_per_thread, output_array_alignment> output;
 
   auto provide_array = [&](auto... inputs) {
     // load inputs
@@ -326,9 +325,9 @@ _CCCL_DEVICE void transform_kernel_vectorized(
       output[i] = f(inputs[i]...);
     }
   };
-  provide_array(__uninitialized_array<it_value_t<RandomAccessIteratorsIn>,
-                                      items_per_thread,
-                                      sizeof(it_value_t<RandomAccessIteratorsIn>) * vec_size>{}...);
+  provide_array(::cuda::__uninitialized_array<it_value_t<RandomAccessIteratorsIn>,
+                                              items_per_thread,
+                                              sizeof(it_value_t<RandomAccessIteratorsIn>) * vec_size>{}...);
 
   // write output
   if constexpr (can_vectorize_store)
