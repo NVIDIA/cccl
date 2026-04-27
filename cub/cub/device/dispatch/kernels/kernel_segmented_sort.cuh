@@ -45,7 +45,7 @@ struct LargeSegmentsSelectorT
       , d_offset_begin(d_offset_begin)
       , d_offset_end(d_offset_end)
   {}
-#endif
+#endif // !_CCCL_COMPILER(NVRTC)
 
   _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
   {
@@ -70,7 +70,7 @@ struct SmallSegmentsSelectorT
       , d_offset_begin(d_offset_begin)
       , d_offset_end(d_offset_end)
   {}
-#endif
+#endif // !_CCCL_COMPILER(NVRTC)
 
   _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(local_segment_index_t segment_id) const
   {

@@ -179,6 +179,77 @@ static_assert(cuda::std::same_as<LegacyInputTraits::reference, LegacyInput::refe
 static_assert(cuda::std::same_as<LegacyInputTraits::pointer, void>);
 static_assert(!has_iterator_concept_v<LegacyInputTraits>);
 
+struct LegacyInputArrow
+{
+  struct iterator_category
+  {};
+  struct value_type
+  {};
+  struct reference
+  {
+    TEST_FUNC operator value_type() const;
+  };
+
+  TEST_FUNC friend bool operator==(LegacyInputArrow, LegacyInputArrow);
+#if TEST_STD_VER < 2020
+  TEST_FUNC friend bool operator!=(LegacyInputArrow, LegacyInputArrow);
+#endif
+  // Otherwise, if decltype(​declval<I&>().operator->()) is well-formed, then pointer names that type.
+  TEST_FUNC int* operator->();
+  TEST_FUNC reference operator*() const;
+  TEST_FUNC LegacyInputArrow& operator++();
+  TEST_FUNC LegacyInputArrow operator++(int);
+};
+template <>
+struct cuda::std::incrementable_traits<LegacyInputArrow>
+{
+  using difference_type = short;
+};
+using LegacyInputArrowTraits = cuda::std::iterator_traits<LegacyInputArrow>;
+static_assert(cuda::std::same_as<LegacyInputArrowTraits::iterator_category, LegacyInputArrow::iterator_category>);
+static_assert(cuda::std::same_as<LegacyInputArrowTraits::value_type, LegacyInputArrow::value_type>);
+static_assert(cuda::std::same_as<LegacyInputArrowTraits::difference_type, short>);
+static_assert(cuda::std::same_as<LegacyInputArrowTraits::reference, LegacyInputArrow::reference>);
+static_assert(cuda::std::same_as<LegacyInputArrowTraits::pointer, int*>);
+static_assert(!has_iterator_concept_v<LegacyInputArrowTraits>);
+
+struct LegacyInputPointer
+{
+  struct iterator_category
+  {};
+  struct value_type
+  {};
+  struct reference
+  {
+    TEST_FUNC operator value_type() const;
+  };
+  // If the qualified-id I​::​pointer is valid and denotes a type, then pointer names that type.
+  struct pointer
+  {};
+
+  TEST_FUNC friend bool operator==(LegacyInputPointer, LegacyInputPointer);
+#if TEST_STD_VER < 2020
+  TEST_FUNC friend bool operator!=(LegacyInputPointer, LegacyInputPointer);
+#endif
+  // Otherwise, if decltype(​declval<I&>().operator->()) is well-formed, then pointer names that type.
+  TEST_FUNC int* operator->();
+  TEST_FUNC reference operator*() const;
+  TEST_FUNC LegacyInputPointer& operator++();
+  TEST_FUNC LegacyInputPointer operator++(int);
+};
+template <>
+struct cuda::std::incrementable_traits<LegacyInputPointer>
+{
+  using difference_type = short;
+};
+using LegacyInputPointerTraits = cuda::std::iterator_traits<LegacyInputPointer>;
+static_assert(cuda::std::same_as<LegacyInputPointerTraits::iterator_category, LegacyInputPointer::iterator_category>);
+static_assert(cuda::std::same_as<LegacyInputPointerTraits::value_type, LegacyInputPointer::value_type>);
+static_assert(cuda::std::same_as<LegacyInputPointerTraits::difference_type, short>);
+static_assert(cuda::std::same_as<LegacyInputPointerTraits::reference, LegacyInputPointer::reference>);
+static_assert(cuda::std::same_as<LegacyInputPointerTraits::pointer, LegacyInputPointer::pointer>);
+static_assert(!has_iterator_concept_v<LegacyInputPointerTraits>);
+
 struct LegacyInputNoValueType
 {
   struct not_value_type

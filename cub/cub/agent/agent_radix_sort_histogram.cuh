@@ -149,7 +149,7 @@ struct AgentRadixSortHistogram
   int begin_bit, end_bit;
 
   // number of sorting passes
-  int num_passes;
+  int num_passes; // NOLINT(modernize-use-default-member-init)
 
   DecomposerT decomposer;
 

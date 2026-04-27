@@ -9,6 +9,9 @@
 // UNSUPPORTED: pre-sm-70
 // UNSUPPORTED: windows
 
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // <cuda/atomic>
 
 #include <cuda/atomic>

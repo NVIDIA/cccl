@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: nvrtc, pre-sm-70
 
 // uncomment for a really verbose output detailing what test steps are being launched

@@ -184,7 +184,7 @@ public:
    */
   size_t size() const
   {
-    ::std::lock_guard<::std::mutex> locker(pimpl->mtx);
+    ::std::lock_guard<::std::mutex> locker(pimpl->mtx); // NOLINT(modernize-use-scoped-lock)
     return pimpl->payload.size();
   }
 

@@ -103,6 +103,7 @@ int main(int, char**)
     using P = cuda::std::pair<int, MoveAssignable>;
     static_assert(!cuda::std::is_copy_assignable<P>::value);
   }
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
   {
     using P = cuda::std::pair<int, Incomplete&>;
     static_assert(!cuda::std::is_copy_assignable<P>::value);
@@ -110,6 +111,7 @@ int main(int, char**)
     unused(p);
     assert(&p.second == &inc_obj);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   return 0;
 }

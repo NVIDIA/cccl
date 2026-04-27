@@ -175,12 +175,14 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__cccl_is_integer_v<_Tp>)
 [[nodiscard]] _CCCL_API constexpr _Tp saturating_sub(_Tp __x, _Tp __y) noexcept
 {
+#if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       (return ::cuda::std::__saturating_sub_impl_host(__x, __y);),
                       (return ::cuda::std::__saturating_sub_impl_device(__x, __y);))
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return ::cuda::saturating_sub_overflow(__x, __y).value;
 }
 

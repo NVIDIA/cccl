@@ -29,27 +29,23 @@ struct alloc_id
   }
 };
 
-THRUST_NAMESPACE_BEGIN
-namespace detail
-{
 template <>
-struct pointer_traits<alloc_id>
+struct cuda::std::pointer_traits<alloc_id>
 {
   template <typename>
-  struct rebind
-  {
-    using other = alloc_id;
-  };
+  using rebind = alloc_id;
 
   // implemented for the purposes of alignment test in disjoint pool's do_deallocate
   static void* get(const alloc_id& id)
   {
     return reinterpret_cast<void*>(id.alignment); // NOLINT(performance-no-int-to-ptr)
   }
-};
-} // end namespace detail
 
-THRUST_NAMESPACE_END
+  [[nodiscard]] static void* to_address(const alloc_id& id) noexcept
+  {
+    return reinterpret_cast<void*>(id.alignment); // NOLINT(performance-no-int-to-ptr)
+  }
+};
 
 class dummy_resource final : public thrust::mr::memory_resource<alloc_id>
 {

@@ -9,74 +9,111 @@
 //===----------------------------------------------------------------------===//
 
 #include <cub/detail/choose_offset.cuh>
-#include <cub/grid/grid_even_share.cuh>
-#include <cub/util_device.cuh>
 
+#include <algorithm>
+#include <cstring>
 #include <format>
+#include <memory>
+#include <string>
 #include <type_traits>
 #include <vector>
 
 #include <cccl/c/binary_search.h>
+#include <cccl/c/transform.h>
 #include <cccl/c/types.h>
-#include <for/for_op_helper.h>
 #include <jit_templates/templates/input_iterator.h>
 #include <jit_templates/templates/operation.h>
-#include <jit_templates/templates/output_iterator.h>
 #include <nvrtc/command_list.h>
-#include <nvrtc/ltoir_list_appender.h>
 #include <util/build_utils.h>
 #include <util/context.h>
 #include <util/errors.h>
-#include <util/indirect_arg.h>
 #include <util/types.h>
-
-struct op_wrapper;
-struct device_reduce_policy;
 
 using OffsetT = unsigned long long;
 static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be size_t");
 
-static cudaError_t Invoke(
-  indirect_arg_t d_in,
-  size_t num_items,
-  indirect_arg_t d_values,
-  size_t num_values,
-  indirect_arg_t d_out,
+namespace binary_search
+{
+struct op_state_header_t
+{
+  void* data;
+  OffsetT num_data;
+};
+
+struct op_state_t
+{
+  std::unique_ptr<char[]> storage;
+
+  void* get()
+  {
+    return storage.get();
+  }
+};
+
+static size_t align_up(size_t offset, size_t alignment)
+{
+  const size_t remainder = offset % alignment;
+  return remainder == 0 ? offset : offset + alignment - remainder;
+}
+
+static size_t comparator_state_offset(cccl_op_t op)
+{
+  return op.type == CCCL_STATEFUL ? align_up(sizeof(op_state_header_t), op.alignment) : sizeof(op_state_header_t);
+}
+
+static size_t op_state_alignment(cccl_op_t op)
+{
+  return op.type == CCCL_STATEFUL ? std::max(alignof(op_state_header_t), op.alignment) : alignof(op_state_header_t);
+}
+
+static size_t op_state_size(cccl_op_t op)
+{
+  const size_t unaligned_size =
+    op.type == CCCL_STATEFUL ? comparator_state_offset(op) + op.size : sizeof(op_state_header_t);
+  return align_up(unaligned_size, op_state_alignment(op));
+}
+
+static op_state_t make_op_state(cccl_iterator_t data, OffsetT num_data, cccl_op_t op)
+{
+  op_state_t result{std::make_unique<char[]>(op_state_size(op))};
+  char* raw = static_cast<char*>(result.get());
+
+  auto* header     = reinterpret_cast<op_state_header_t*>(raw);
+  header->data     = data.state;
+  header->num_data = num_data;
+
+  if (op.type == CCCL_STATEFUL)
+  {
+    std::memcpy(raw + comparator_state_offset(op), op.state, op.size);
+  }
+
+  return result;
+}
+} // namespace binary_search
+
+static CUresult Invoke(
+  cccl_iterator_t d_in,
+  uint64_t num_items,
+  cccl_iterator_t d_values,
+  uint64_t num_values,
+  cccl_iterator_t d_out,
   cccl_op_t op,
-  int /*cc*/,
-  CUfunction kernel,
+  cccl_device_binary_search_build_result_t build,
   CUstream stream)
 {
-  cudaError error = cudaSuccess;
+  auto state = binary_search::make_op_state(d_in, static_cast<OffsetT>(num_items), op);
 
-  if (num_values == 0)
-  {
-    return error;
-  }
+  cccl_op_t transform_op = op;
+  transform_op.type      = CCCL_STATEFUL;
+  transform_op.state     = state.get();
+  transform_op.size      = build.op_state_size;
+  transform_op.alignment = build.op_state_alignment;
 
-  void* args[] = {&d_in, &num_items, &d_values, &num_values, &d_out, &op};
-
-  const unsigned int thread_count = 256;
-  const size_t items_per_block    = 512;
-  const size_t block_sz           = cuda::ceil_div(num_values, items_per_block);
-
-  if (block_sz > std::numeric_limits<unsigned int>::max())
-  {
-    return cudaErrorInvalidValue;
-  }
-  const unsigned int block_count = static_cast<unsigned int>(block_sz);
-
-  check(cuLaunchKernel(kernel, block_count, 1, 1, thread_count, 1, 1, 0, stream, args, 0));
-
-  // Check for failure to launch
-  error = CubDebug(cudaPeekAtLastError());
-
-  return error;
+  return cccl_device_unary_transform(build.transform, d_values, d_out, num_values, transform_op, stream);
 }
 
 struct binary_search_data_iterator_tag;
 struct binary_search_values_iterator_tag;
-struct binary_search_output_iterator_tag;
 struct binary_search_op_tag;
 
 CUresult cccl_device_binary_search_build_ex(
@@ -100,18 +137,10 @@ try
     throw std::runtime_error(std::string("Iterators are unsupported in for_each currently"));
   }
 
-  const char* name = "test";
-
-  const int cc = cc_major * 10 + cc_minor;
-
   auto [d_data_it_name, d_data_it_src] =
     get_specialization<binary_search_data_iterator_tag>(template_id<input_iterator_traits>(), d_data);
-  auto [d_values_it_name, d_values_it_src] =
-    get_specialization<binary_search_values_iterator_tag>(template_id<input_iterator_traits>(), d_values);
-  auto [d_out_it_name, d_out_it_src] = get_specialization<binary_search_output_iterator_tag>(
-    template_id<output_iterator_traits>(), d_out, d_out.value_type);
-  auto [op_name, op_src] =
-    get_specialization<binary_search_op_tag>(template_id<binary_user_predicate_traits>(), op, d_data.value_type);
+  auto [op_name, op_src] = get_specialization<binary_search_op_tag>(
+    template_id<binary_user_predicate_traits>(), op, d_data.value_type, d_data.value_type);
 
   const std::string mode_t = [&] {
     switch (mode)
@@ -124,129 +153,134 @@ try
     throw std::runtime_error(std::format("Invalid binary search mode ({})", static_cast<int>(mode)));
   }();
 
-  const std::string src = std::format(
+  const bool user_defined_comparator = op.type == CCCL_STATEFUL || op.type == CCCL_STATELESS;
+  const bool comparator_stateful     = op.type == CCCL_STATEFUL;
+  const auto comparator_offset       = binary_search::comparator_state_offset(op);
+  const std::string output_t         = cccl_type_enum_to_name(d_out.value_type.type);
+  const size_t storage_size = std::max({d_data.value_type.size, d_values.value_type.size, d_out.value_type.size});
+  const size_t storage_alignment =
+    std::max({d_data.value_type.alignment, d_values.value_type.alignment, d_out.value_type.alignment});
+
+  const std::string transform_op_src = std::format(
     R"XXX(
-#include <cub/agent/agent_for.cuh>
 #include <cub/detail/binary_search_helpers.cuh>
-#include <cuda/__iterator/zip_iterator.h>
+#include <cuda/std/__cstring/memcpy.h>
 
-{11}
-
-struct __align__({10}) storage_t {{
-  char data[{9}];
+{8}
+struct __align__({7}) storage_t {{
+  char data[{6}];
 }};
 
 {0}
 {2}
-{4}
-{6}
-
-using policy_dim_t = cub::detail::for_each::policy_t<256, 2>;
 using OffsetT = cuda::std::size_t;
 
-struct device_for_policy
+struct binary_search_op_state
 {{
-  struct ActivePolicy
-  {{
-    using for_policy_t = policy_dim_t;
-  }};
+  {1} data;
+  OffsetT num_data;
 }};
 
-_CCCL_KERNEL_ATTRIBUTES
-__launch_bounds__(device_for_policy::ActivePolicy::for_policy_t::block_threads)
-void binary_search_kernel({1} d_data, OffsetT num_data, {3} d_values, OffsetT num_values, {5} d_out, {7} op)
+extern "C" __device__ void binary_search_transform_op(void* state, const void* value, void* result)
 {{
-  auto input_it     = cuda::make_zip_iterator(d_values, d_out);
-  auto comp_wrapper = cub::detail::find::make_comp_wrapper<{8}>(d_data, num_data, op);
-  auto agent_op     = [&comp_wrapper, &input_it](OffsetT index) {{
-    comp_wrapper(input_it[index]);
-  }};
+  auto* header     = static_cast<binary_search_op_state*>(state);
+  const auto& item = *static_cast<const {3}*>(value);
 
-  using active_policy_t = device_for_policy::ActivePolicy::for_policy_t;
-  using agent_t         = cub::detail::for_each::agent_block_striped_t<active_policy_t, OffsetT, decltype(agent_op)>;
-
-  constexpr auto block_threads  = active_policy_t::block_threads;
-  constexpr auto items_per_tile = active_policy_t::items_per_thread * block_threads;
-
-  const auto tile_base     = static_cast<OffsetT>(blockIdx.x) * items_per_tile;
-  const auto num_remaining = num_values - tile_base;
-  const auto items_in_tile = static_cast<OffsetT>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
-
-  if (items_in_tile == items_per_tile)
+  {4} comparator{{}};
+  if constexpr ({9})
   {{
-    agent_t{{tile_base, agent_op}}.template consume_tile<true>(items_per_tile, block_threads);
+    ::cuda::std::memcpy(&comparator, static_cast<char*>(state) + {10}, sizeof(comparator));
   }}
-  else
-  {{
-    agent_t{{tile_base, agent_op}}.template consume_tile<false>(items_in_tile, block_threads);
-  }}
+
+  const auto search_op =
+    cub::detail::find::make_binary_search_transform_op<{11}>(header->data, header->num_data, comparator);
+  *static_cast<{5}*>(result) =
+    static_cast<{5}>(search_op(item));
 }}
 )XXX",
     d_data_it_src,
     d_data_it_name,
-    d_values_it_src,
-    d_values_it_name,
-    d_out_it_src,
-    d_out_it_name,
     op_src,
+    cccl_type_enum_to_name(d_values.value_type.type),
     op_name,
-    mode_t,
-    d_out.value_type.size,
-    d_out.value_type.alignment,
-    jit_template_header_contents);
+    output_t,
+    storage_size,
+    storage_alignment,
+    jit_template_header_contents,
+    comparator_stateful ? "true" : "false",
+    comparator_offset,
+    mode_t);
 
-  const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
+  cccl_op_t transform_op = op;
+  transform_op.type      = CCCL_STATEFUL;
+  transform_op.name      = "binary_search_transform_op";
+  transform_op.code      = transform_op_src.c_str();
+  transform_op.code_size = transform_op_src.size();
+  transform_op.code_type = CCCL_OP_CPP_SOURCE;
+  transform_op.size      = binary_search::op_state_size(op);
+  transform_op.alignment = binary_search::op_state_alignment(op);
 
+  std::vector<const char*> extra_ltoirs;
+  std::vector<size_t> extra_ltoir_sizes;
+  std::unique_ptr<char[]> comparator_ltoir;
+
+  const std::string arch        = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
   std::vector<const char*> args = {
     arch.c_str(),
     cub_path,
     thrust_path,
     libcudacxx_path,
     ctk_path,
-    "-std=c++20",
     "-rdc=true",
     "-dlto",
-    "-DCUB_DISABLE_CDP"};
-
+    "-default-device",
+    "-DCUB_DISABLE_CDP",
+    "-std=c++20"};
   cccl::detail::extend_args_with_build_config(args, config);
 
   constexpr size_t num_lto_args   = 2;
   const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-  std::string lowered_name;
-
-  // Collect all LTO-IRs to be linked
-  nvrtc_linkable_list linkable_list;
-  nvrtc_linkable_list_appender appender{linkable_list};
-
-  appender.append_operation(op);
-
-  // Add iterator definitions if present
-  for (const auto& it_type : {d_data, d_values, d_out})
+  if (user_defined_comparator && op.code_type == CCCL_OP_CPP_SOURCE && op.code_size != 0)
   {
-    if (cccl_iterator_kind_t::CCCL_ITERATOR == it_type.type)
-    {
-      appender.append_operation(it_type.advance);
-      appender.append_operation(it_type.dereference);
-    }
+    auto [lto_size, lto_buf] =
+      begin_linking_nvrtc_program(num_lto_args, lopts)
+        ->add_program(nvrtc_translation_unit{op.code, op.name})
+        ->compile_program({args.data(), args.size()})
+        ->get_program_ltoir();
+    comparator_ltoir = std::move(lto_buf);
+    extra_ltoirs.push_back(comparator_ltoir.get());
+    extra_ltoir_sizes.push_back(lto_size);
   }
+  else if (user_defined_comparator && op.code_type == CCCL_OP_LTOIR && op.code_size != 0)
+  {
+    extra_ltoirs.push_back(op.code);
+    extra_ltoir_sizes.push_back(op.code_size);
+  }
+  for (size_t i = 0; user_defined_comparator && i < op.num_extra_ltoirs; ++i)
+  {
+    extra_ltoirs.push_back(op.extra_ltoirs[i]);
+    extra_ltoir_sizes.push_back(op.extra_ltoir_sizes[i]);
+  }
+  transform_op.extra_ltoirs      = extra_ltoirs.data();
+  transform_op.extra_ltoir_sizes = extra_ltoir_sizes.data();
+  transform_op.num_extra_ltoirs  = extra_ltoirs.size();
 
-  nvrtc_link_result result =
-    begin_linking_nvrtc_program(num_lto_args, lopts)
-      ->add_program(nvrtc_translation_unit{src, name})
-      ->add_expression({"binary_search_kernel"})
-      ->compile_program({args.data(), args.size()})
-      ->get_name({"binary_search_kernel", lowered_name})
-      ->link_program()
-      ->add_link_list(linkable_list)
-      ->finalize_program();
+  check(cccl_device_unary_transform_build_ex(
+    &build_ptr->transform,
+    d_values,
+    d_out,
+    transform_op,
+    cc_major,
+    cc_minor,
+    cub_path,
+    thrust_path,
+    libcudacxx_path,
+    ctk_path,
+    config));
 
-  cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-  check(cuLibraryGetKernel(&build_ptr->kernel, build_ptr->library, lowered_name.c_str()));
-
-  build_ptr->cc         = cc;
-  build_ptr->cubin      = (void*) result.data.release();
-  build_ptr->cubin_size = result.size;
+  build_ptr->op_state_size      = transform_op.size;
+  build_ptr->op_state_alignment = transform_op.alignment;
 
   return CUDA_SUCCESS;
 }
@@ -271,9 +305,7 @@ CUresult cccl_device_binary_search(
   try
   {
     pushed = try_push_context();
-    auto exec_status =
-      Invoke(d_data, num_items, d_values, num_values, d_out, op, build.cc, (CUfunction) build.kernel, stream);
-    error = static_cast<CUresult>(exec_status);
+    error  = Invoke(d_data, num_items, d_values, num_values, d_out, op, build, stream);
   }
   catch (...)
   {
@@ -327,10 +359,7 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
-  check(cuLibraryUnload(build_ptr->library));
-
-  return CUDA_SUCCESS;
+  return cccl_device_transform_cleanup(&build_ptr->transform);
 }
 catch (...)
 {

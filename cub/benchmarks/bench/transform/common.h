@@ -91,7 +91,7 @@ void bench_transform(nvbench::state& state,
       cuda::std::execution::env{::cuda::stream_ref{launch.get_stream().get_stream()}
 #if !TUNE_BASE
                                 ,
-                                cuda::execution::__tune(policy_selector{})
+                                cuda::execution::tune(policy_selector{})
 #endif // !TUNE_BASE
       });
   });

@@ -269,7 +269,7 @@ C2H_TEST("DeviceTransform::Transform can be tuned", "[reduce][device]")
 {
   c2h::device_vector<unsigned> result(3 * 8, thrust::no_init);
 
-  auto env = cuda::execution::__tune(my_policy_selector{});
+  auto env = cuda::execution::tune(my_policy_selector{});
   REQUIRE(cudaSuccess
           == cub::DeviceTransform::Transform(cuda::std::tuple{}, result.data(), result.size(), get_thread_id{}, env));
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
@@ -283,7 +283,7 @@ C2H_TEST("DeviceTransform::Transform can be tuned with custom stream", "[reduce]
   c2h::device_vector<unsigned> result(3 * 8, thrust::no_init);
 
   cuda::stream stream{cuda::devices[0]};
-  auto env = cuda::std::execution::env{cuda::stream_ref{stream}, cuda::execution::__tune(my_policy_selector{})};
+  auto env = cuda::std::execution::env{cuda::stream_ref{stream}, cuda::execution::tune(my_policy_selector{})};
   REQUIRE(cudaSuccess
           == cub::DeviceTransform::Transform(cuda::std::tuple{}, result.data(), result.size(), get_thread_id{}, env));
   stream.sync();

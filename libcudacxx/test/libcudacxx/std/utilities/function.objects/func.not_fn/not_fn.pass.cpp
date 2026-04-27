@@ -262,6 +262,7 @@ struct ForwardingCallObject {
 //                        BOOL TEST TYPES
 ///////////////////////////////////////////////////////////////////////////////
 
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable ("EvilBool_bang_called") cannot be used in tile code
 TEST_GLOBAL_VARIABLE int EvilBool_bang_called = 0;
 struct EvilBool
 {
@@ -287,6 +288,7 @@ private:
 public:
   bool value;
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 struct ExplicitBool
 {
@@ -431,6 +433,7 @@ TEST_FUNC void return_type_tests()
     // static_assert(is_same<decltype(ret(cuda::std::string("abc"))), bool>::value);
     assert(ret() == false);
   }
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable ("EvilBool_bang_called") cannot be used in tile code
   {
     using T  = CopyCallable<EvilBool>;
     auto ret = cuda::std::not_fn(T{false});
@@ -442,6 +445,7 @@ TEST_FUNC void return_type_tests()
     ret();
     assert(EvilBool_bang_called == 2);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 }
 
 // Other tests only test using objects with call operators. Test various
@@ -692,19 +696,21 @@ TEST_FUNC void call_operator_noexcept_test()
 #endif // !_CCCL_CUDA_COMPILATION()
     unused(cret);
   }
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable ("EvilBool_bang_called") cannot be used in tile code
   {
     using T = NoExceptCallable<EvilBool>;
     T value(true);
     auto ret = cuda::std::not_fn(value);
-#if !TEST_COMPILER(NVHPC)
+#  if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(ret()), "call should not be noexcept");
-#endif // TEST_COMPILER(NVHPC)
+#  endif // TEST_COMPILER(NVHPC)
     auto const& cret = ret;
-#if !TEST_COMPILER(NVHPC)
+#  if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cret()), "call should not be noexcept");
-#endif // TEST_COMPILER(NVHPC)
+#  endif // TEST_COMPILER(NVHPC)
     unused(cret);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 }
 
 #if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code

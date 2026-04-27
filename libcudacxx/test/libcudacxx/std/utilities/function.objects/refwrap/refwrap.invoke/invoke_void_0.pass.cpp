@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable ("count") cannot be used in tile code
+
 // <functional>
 
 // reference_wrapper
@@ -49,6 +52,7 @@ TEST_FUNC void test_void_0()
     assert(count == save_count + 1);
     save_count = count;
   }
+#if !_CCCL_TILE_COMPILATION() // error: function-to-pointer decay is unsupported in tile code
   // function pointer
   {
     void (*fp)() = f_void_0;
@@ -57,6 +61,7 @@ TEST_FUNC void test_void_0()
     assert(count == save_count + 1);
     save_count = count;
   }
+#endif // !_CCCL_TILE_COMPILATION()
   // functor
   {
     A_void_0 a0;

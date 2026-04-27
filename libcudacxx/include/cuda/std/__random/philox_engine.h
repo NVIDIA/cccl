@@ -321,7 +321,7 @@ public:
   }
 #endif
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   //! This function streams a philox_engine to a std::basic_ostream.
   //! @param os The basic_ostream to stream out to.
   //! @param e The philox_engine to stream out.
@@ -425,7 +425,7 @@ public:
 
     return __is;
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 private:
   _CCCL_API constexpr void __increment_counter() noexcept

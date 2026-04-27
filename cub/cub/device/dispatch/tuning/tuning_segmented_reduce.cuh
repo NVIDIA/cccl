@@ -51,14 +51,14 @@ struct warp_reduce_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const warp_reduce_policy& p)
   {
     return os << "warp_reduce_policy { .block_threads = " << p.block_threads << ", .warp_threads = " << p.warp_threads
               << ", .items_per_thread = " << p.items_per_thread << ", .vector_load_length = " << p.vector_load_length
               << ", .load_modifier = " << p.load_modifier << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct segmented_reduce_policy
@@ -78,13 +78,13 @@ struct segmented_reduce_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const segmented_reduce_policy& p)
   {
     return os << "segmented_reduce_policy { .large_reduce = " << p.large_reduce
               << ", .small_reduce = " << p.small_reduce << ", .medium_reduce = " << p.medium_reduce << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()

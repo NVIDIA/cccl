@@ -53,7 +53,7 @@ struct segmented_radix_sort_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const segmented_radix_sort_policy& p)
   {
     return os
@@ -62,7 +62,7 @@ struct segmented_radix_sort_policy
         << ", .load_modifier = " << p.load_modifier << ", .rank_algorithm = " << p.rank_algorithm
         << ", .scan_algorithm = " << p.scan_algorithm << ", .radix_bits = " << p.radix_bits << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct sub_warp_merge_sort_policy
@@ -98,7 +98,7 @@ struct sub_warp_merge_sort_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const sub_warp_merge_sort_policy& p)
   {
     return os
@@ -106,7 +106,7 @@ struct sub_warp_merge_sort_policy
         << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
         << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct segmented_sort_policy
@@ -129,14 +129,14 @@ struct segmented_sort_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const segmented_sort_policy& p)
   {
     return os << "segmented_sort_policy { .large_segment = " << p.large_segment
               << ", .small_segment = " << p.small_segment << ", .medium_segment = " << p.medium_segment
               << ", .partitioning_threshold = " << p.partitioning_threshold << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()

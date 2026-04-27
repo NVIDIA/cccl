@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // constexpr drop_view(V base, range_difference_t<V> count);
 
 #include <cuda/std/ranges>

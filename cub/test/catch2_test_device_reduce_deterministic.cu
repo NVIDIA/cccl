@@ -149,10 +149,10 @@ C2H_TEST("Deterministic Device reduce works with float and double and is determi
   c2h::device_vector<type> d_output_p2(1);
 
   auto env1 = cuda::std::execution::env{cuda::execution::require(cuda::execution::determinism::gpu_to_gpu),
-                                        cuda::execution::__tune(custom_policy_selector<1, 128>{})};
+                                        cuda::execution::tune(custom_policy_selector<1, 128>{})};
 
   auto env2 = cuda::std::execution::env{cuda::execution::require(cuda::execution::determinism::gpu_to_gpu),
-                                        cuda::execution::__tune(custom_policy_selector<2, 256>{})};
+                                        cuda::execution::tune(custom_policy_selector<2, 256>{})};
 
   auto error1 =
     cub::DeviceReduce::Reduce(d_input.begin(), d_output_p1.begin(), num_items, cuda::std::plus<type>{}, type{}, env1);

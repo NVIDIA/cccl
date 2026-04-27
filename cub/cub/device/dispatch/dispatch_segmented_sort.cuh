@@ -1287,14 +1287,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
                                             // a function
     CUB_DETAIL_CONSTEXPR_ISH const segmented_sort_policy active_policy = policy_getter();
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(
       NV_IS_HOST, ({
         ::std::stringstream ss;
         ss << active_policy;
         _CubLog("Dispatching DeviceSegmentedSort to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
       }))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     const int radix_bits = active_policy.large_segment.radix_bits;
 

@@ -44,12 +44,16 @@ struct CountAssign
 {
   TEST_FUNC static void reset()
   {
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
     copied = moved = 0;
+#endif // !_CCCL_TILE_COMPILATION()
   }
   CountAssign() = default;
   TEST_FUNC CountAssign& operator=(CountAssign const&)
   {
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
     ++copied;
+#endif // !_CCCL_TILE_COMPILATION()
     return *this;
   }
   TEST_FUNC CountAssign& operator=(CountAssign&&)
@@ -132,8 +136,10 @@ int main(int, char**)
     T t1;
     T t2;
     t1 = cuda::std::move(t2);
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
     assert(copied == 1);
     assert(moved == 0);
+#endif // !_CCCL_TILE_COMPILATION()
   }
 
   return 0;

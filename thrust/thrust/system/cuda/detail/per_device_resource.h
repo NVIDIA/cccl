@@ -36,7 +36,7 @@ _CCCL_HOST MR* get_per_device_resource(execution_policy<DerivedPolicy>&)
   int device_id;
   thrust::cuda_cub::throw_on_error(cudaGetDevice(&device_id));
 
-  std::lock_guard<std::mutex> lock{map_lock};
+  std::lock_guard<std::mutex> lock{map_lock}; // NOLINT(modernize-use-scoped-lock)
   return &device_id_to_resource[device_id];
 }
 } // namespace cuda_cub

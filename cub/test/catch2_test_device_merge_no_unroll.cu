@@ -88,7 +88,7 @@ C2H_TEST("DeviceMerge::MergeKeys large key types", "[merge][device]", c2h::type_
     6346,
     cuda::std::less<key_t>{},
     [](const key_t* k1, offset_t s1, const key_t* k2, offset_t s2, key_t* r, cuda::std::less<key_t> co) {
-      REQUIRE(cub::DeviceMerge::MergeKeys(k1, s1, k2, s2, r, co, cuda::execution::__tune(fixed_policy_selector{}))
+      REQUIRE(cub::DeviceMerge::MergeKeys(k1, s1, k2, s2, r, co, cuda::execution::tune(fixed_policy_selector{}))
               == cudaSuccess);
     });
 }

@@ -151,7 +151,7 @@ TEST_FUNC void test_after_tuple_size_specialization()
   auto& [p] = t;
 #if !_CCCL_COMPILER(NVRTC) // nvbug4053842
   assert(p == -1);
-#endif
+#endif // !_CCCL_COMPILER(NVRTC)
 }
 
 int main(int, char**)

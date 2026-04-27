@@ -21,11 +21,13 @@ using cuda::std::optional;
 
 struct X
 {
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
   STATIC_MEMBER_VAR(dtor_called, bool)
   TEST_FUNC ~X()
   {
     dtor_called() = true;
   }
+#endif // !_CCCL_TILE_COMPILATION()
 };
 
 template <class T>
@@ -60,6 +62,8 @@ int main(int, char**)
 #if TEST_STD_VER >= 2020
   static_assert(test());
 #endif // TEST_STD_VER >= 2020
+
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
   {
     optional<X> opt{};
     static_assert(noexcept(opt.reset()) == true);
@@ -76,6 +80,7 @@ int main(int, char**)
     assert(static_cast<bool>(opt) == false);
     X::dtor_called() = false;
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   return 0;
 }

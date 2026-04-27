@@ -297,15 +297,26 @@ public:
   TEST_FUNC friend constexpr void swap(mapping& x, mapping& y) noexcept
   {
     swap(x.extents_, y.extents_);
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
     if (!cuda::std::__cccl_default_is_constant_evaluated())
     {
       layout_wrapping_integral_swap_counter++;
     }
+#endif // !_CCCL_TILE_COMPILATION()
   }
 
-  TEST_FUNC static int& swap_counter()
+  TEST_FUNC static constexpr bool valid()
   {
-    return layout_wrapping_integral_swap_counter;
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
+    if (!cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      return layout_wrapping_integral_swap_counter > 0;
+    }
+    else
+#endif // !_CCCL_TILE_COMPILATION()
+    {
+      return true;
+    }
   }
 
 private:
@@ -317,10 +328,7 @@ template <
   cuda::std::enable_if_t<cuda::std::is_same<typename MDS::layout_type, layout_wrapping_integral<4>>::value, int> = 0>
 TEST_FUNC constexpr void test_swap_counter()
 {
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    assert(MDS::mapping_type::swap_counter() > 0);
-  }
+  assert(MDS::mapping_type::valid());
 }
 template <
   class MDS,

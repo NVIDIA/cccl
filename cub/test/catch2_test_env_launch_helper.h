@@ -76,9 +76,9 @@ static CUB_RUNTIME_FUNCTION stream_registry_factory_state_t* get_stream_registry
 
 struct kernel_launcher_t : thrust::cuda_cub::detail::triple_chevron
 {
-  template <class... Args>
-  CUB_RUNTIME_FUNCTION kernel_launcher_t(Args... args)
-      : thrust::cuda_cub::detail::triple_chevron(args...)
+  CUB_RUNTIME_FUNCTION kernel_launcher_t(
+    dim3 grid, dim3 block, size_t shared_mem = 0, cudaStream_t stream = nullptr, bool dependent_launch = false)
+      : thrust::cuda_cub::detail::triple_chevron(grid, block, shared_mem, stream, dependent_launch)
   {}
 
   template <class K, class... Args>

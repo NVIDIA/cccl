@@ -64,12 +64,7 @@ TEST_FUNC constexpr void
 test_mdspan_ctor_span(const H& handle, const M& map, const A&, cuda::std::span<const typename M::index_type, N> exts)
 {
   using MDS = cuda::std::mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
-#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    move_counted_handle<typename MDS::element_type>::move_counter() = 0;
-  }
-#endif // !_CCCL_TILE_COMPILATION()
+  move_counted_handle<typename MDS::element_type>::reset();
   MDS m(handle, exts);
   test_move_counter<MDS, H>();
 

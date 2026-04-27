@@ -9,6 +9,10 @@
 
 // UNSUPPORTED: gcc-6
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+// error: virtual function is unsupported in tile code
+
 // <memory>
 
 // template <class T>
@@ -36,6 +40,7 @@ struct Counted
   TEST_FUNC friend void operator&(Counted) = delete;
 };
 
+#if !_CCCL_TILE_COMPILATION() // error: virtual function is unsupported in tile code
 struct VirtualCounted
 {
   int* counter_;
@@ -58,6 +63,7 @@ struct DerivedCounted : VirtualCounted
   {}
   TEST_FUNC TEST_CONSTEXPR_CXX20 ~DerivedCounted() override {}
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_arrays()
 {

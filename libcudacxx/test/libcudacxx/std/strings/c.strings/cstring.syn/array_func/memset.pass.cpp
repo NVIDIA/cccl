@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: Calling a __device__ function in tile code
+
 // void* memset(void* s, int c, size_t n);
 
 #include <cuda/std/cassert>

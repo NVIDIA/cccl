@@ -7,13 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// (clang-14 || gcc-12 || msvc-19.39) in C++20 tries to erroneously instantiate a bunch of
-// default constructors that don't exist because it evaluates the class initializers before
-// considering the default constructors requirements clause. It's not possible to selectively
-// disable them in this file like the others, so we just disable the compiler entirely.
-
-// UNSUPPORTED: (clang-14 || gcc-12 || msvc-19.39) && c++20
-
 // constexpr iterator begin();
 
 #include <cuda/std/cassert>
@@ -27,17 +20,6 @@ struct Range : cuda::std::ranges::view_base
 {
   using Iterator = forward_iterator<int*>;
   using Sentinel = sentinel_wrapper<Iterator>;
-
-  // (clang-14 || gcc-12 || msvc-19.39) in C++20 tries to erroneously instantiate a bunch of
-  // default constructors that don't exist because it evaluates the class initializers before
-  // considering the default constructors requirements clause.
-#if (TEST_COMPILER(CLANG, ==, 14) || TEST_COMPILER(GCC, ==, 12) || TEST_COMPILER(MSVC, <, 19, 44)) \
-  && (TEST_STD_VER == 2020)
-  TEST_FUNC constexpr explicit Range()
-      : Range{nullptr, nullptr}
-  {}
-#endif // (TEST_COMPILER(CLANG, ==, 14) || TEST_COMPILER(GCC, ==, 12)
-       // || TEST_COMPILER(MSVC, <, 19, 44)) && (TEST_STD_VER == 2020)
 
   TEST_FUNC constexpr explicit Range(int* b, int* e)
       : begin_(b)
@@ -64,16 +46,9 @@ struct InputRange : cuda::std::ranges::view_base
   using Iterator = cpp17_input_iterator<int*>;
   using Sentinel = sentinel_wrapper<Iterator>;
 
-  // (clang-14 || gcc-12 || msvc-19.39) in C++20 tries to erroneously instantiate a bunch of
-  // default constructors that don't exist because it evaluates the class initializers before
-  // considering the default constructors requirements clause.
-#if (TEST_COMPILER(CLANG, ==, 14) || TEST_COMPILER(GCC, ==, 12) || TEST_COMPILER(MSVC, <, 19, 44)) \
-  && (TEST_STD_VER == 2020)
   TEST_FUNC constexpr explicit InputRange()
       : InputRange{nullptr, nullptr}
   {}
-#endif // (TEST_COMPILER(CLANG, ==, 14) || TEST_COMPILER(GCC, ==, 12)
-       // || TEST_COMPILER(MSVC, <, 19, 44)) && (TEST_STD_VER == 2020)
 
   TEST_FUNC constexpr explicit InputRange(int* b, int* e)
       : begin_(b)
