@@ -559,6 +559,7 @@ C2H_TEST("DeviceMergeSort::StableSortKeysCopy can be tuned", "[merge_sort][devic
 
 #endif // TEST_LAUNCH != 1
 
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
 C2H_TEST("MergeSortPolicy", "[merge_sort][device]")
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::MergeSortPolicy>);
@@ -572,7 +573,7 @@ C2H_TEST("MergeSortPolicy", "[merge_sort][device]")
     cub::CacheLoadModifier::LOAD_DEFAULT,
     cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT};
 
-#if _CCCL_STD_VER >= 2020
+#  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::MergeSortPolicy{
     .block_threads    = 256,
@@ -580,11 +581,12 @@ C2H_TEST("MergeSortPolicy", "[merge_sort][device]")
     .load_algorithm   = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
     .load_modifier    = cub::CacheLoadModifier::LOAD_DEFAULT,
     .store_algorithm  = cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT};
-#else // _CCCL_STD_VER >= 2020
+#  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
-#endif // _CCCL_STD_VER >= 2020
+#  endif // _CCCL_STD_VER >= 2020
 
   // comparison
   STATIC_REQUIRE(p1 == p2);
   STATIC_REQUIRE_FALSE(p1 != p2);
 }
+#endif // _CCCL_COMPILER(GCC, >=, 8)
