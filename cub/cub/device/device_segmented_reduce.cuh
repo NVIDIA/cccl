@@ -74,7 +74,7 @@ struct DeviceSegmentedReduce
 {
 private:
   template <typename ReductionOpT,
-            typename TuningEnvT = ::cuda::std::execution::env,
+            typename TuningEnvT = ::cuda::std::execution::env<>,
             typename InputIteratorT,
             typename OutputIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t fixed_size_arg_dispatch(
