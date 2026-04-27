@@ -84,13 +84,15 @@ struct agent_segmented_scan
 
   using input_t = cub::detail::it_value_t<InputIteratorT>;
 
+  static constexpr auto agent_policy = SegmentedScanPolicyGetterT{}().block;
+
   // Input iterator wrapper type (for applying cache modifier)
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
-  using wrapped_input_iterator_t = ::cuda::std::conditional_t<
-    ::cuda::std::is_pointer_v<InputIteratorT>,
-    CacheModifiedInputIterator<SegmentedScanPolicyGetterT{}().block.load_modifier, input_t, OffsetT>,
-    InputIteratorT>;
+  using wrapped_input_iterator_t =
+    ::cuda::std::conditional_t<::cuda::std::is_pointer_v<InputIteratorT>,
+                               CacheModifiedInputIterator<agent_policy.load_modifier, input_t, OffsetT>,
+                               InputIteratorT>;
 
   // Constants
 
@@ -100,17 +102,17 @@ struct agent_segmented_scan
   // or the ForceInclusive tag to be true for inclusive scan
   // to get picked up.
   static constexpr bool is_inclusive    = ForceInclusive || !has_init;
-  static constexpr int block_threads    = SegmentedScanPolicyGetterT{}().block.block_threads;
-  static constexpr int items_per_thread = SegmentedScanPolicyGetterT{}().block.items_per_thread;
+  static constexpr int block_threads    = agent_policy.block_threads;
+  static constexpr int items_per_thread = agent_policy.items_per_thread;
   static constexpr int tile_items       = block_threads * items_per_thread;
-  static constexpr int max_segments     = SegmentedScanPolicyGetterT{}().block.max_segments;
+  static constexpr int max_segments     = agent_policy.max_segments;
 
 private:
   static constexpr bool multi_segment_enabled = (max_segments > 1);
 
-  static constexpr auto load_algorithm  = SegmentedScanPolicyGetterT{}().block.load_algorithm;
-  static constexpr auto store_algorithm = SegmentedScanPolicyGetterT{}().block.store_algorithm;
-  static constexpr auto scan_algorithm  = SegmentedScanPolicyGetterT{}().block.scan_algorithm;
+  static constexpr auto load_algorithm  = agent_policy.load_algorithm;
+  static constexpr auto store_algorithm = agent_policy.store_algorithm;
+  static constexpr auto scan_algorithm  = agent_policy.scan_algorithm;
 
   using block_load_t  = BlockLoad<AccumT, block_threads, items_per_thread, load_algorithm>;
   using block_store_t = BlockStore<AccumT, block_threads, items_per_thread, store_algorithm>;
@@ -559,15 +561,16 @@ private:
   {
     if constexpr (HasInit)
     {
+      const ItemTy converted_init_value = multi_segment_helpers::convert_initial_value<ItemTy>(init_value);
       if constexpr (IsInclusive)
       {
-        scanner.InclusiveScan(items, items, init_value, scan_op, block_aggregate);
+        scanner.InclusiveScan(items, items, converted_init_value, scan_op, block_aggregate);
       }
       else
       {
-        scanner.ExclusiveScan(items, items, init_value, scan_op, block_aggregate);
+        scanner.ExclusiveScan(items, items, converted_init_value, scan_op, block_aggregate);
       }
-      block_aggregate = scan_op(init_value, block_aggregate);
+      block_aggregate = scan_op(converted_init_value, block_aggregate);
     }
     else
     {

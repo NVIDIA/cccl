@@ -56,13 +56,15 @@ struct agent_warp_segmented_scan
 
   using input_t = cub::detail::it_value_t<InputIteratorT>;
 
+  static constexpr auto agent_policy = SegmentedScanPolicyGetterT{}().warp;
+
   // Input iterator wrapper type (for applying cache modifier)
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
-  using wrapped_input_iterator_t = ::cuda::std::conditional_t<
-    ::cuda::std::is_pointer_v<InputIteratorT>,
-    CacheModifiedInputIterator<SegmentedScanPolicyGetterT{}().warp.load_modifier, input_t, OffsetT>,
-    InputIteratorT>;
+  using wrapped_input_iterator_t =
+    ::cuda::std::conditional_t<::cuda::std::is_pointer_v<InputIteratorT>,
+                               CacheModifiedInputIterator<agent_policy.load_modifier, input_t, OffsetT>,
+                               InputIteratorT>;
 
   // Constants
 
@@ -72,10 +74,10 @@ struct agent_warp_segmented_scan
   // or the ForceInclusive tag to be true for inclusive scan
   // to get picked up.
   static constexpr bool is_inclusive    = ForceInclusive || !has_init;
-  static constexpr int block_threads    = SegmentedScanPolicyGetterT{}().warp.block_threads;
-  static constexpr int items_per_thread = SegmentedScanPolicyGetterT{}().warp.items_per_thread;
+  static constexpr int block_threads    = agent_policy.block_threads;
+  static constexpr int items_per_thread = agent_policy.items_per_thread;
   static constexpr int tile_items       = warp_threads * items_per_thread;
-  static constexpr int max_segments     = SegmentedScanPolicyGetterT{}().warp.max_segments;
+  static constexpr int max_segments     = agent_policy.max_segments;
 
   static_assert(0 == block_threads % warp_threads, "Block size must be a multiple of native warp size");
 
@@ -84,8 +86,8 @@ struct agent_warp_segmented_scan
   static constexpr bool multi_segment_enabled = (max_segments > 1);
 
 private:
-  static constexpr auto load_algorithm  = SegmentedScanPolicyGetterT{}().warp.load_algorithm;
-  static constexpr auto store_algorithm = SegmentedScanPolicyGetterT{}().warp.store_algorithm;
+  static constexpr auto load_algorithm  = agent_policy.load_algorithm;
+  static constexpr auto store_algorithm = agent_policy.store_algorithm;
 
   using warp_load_t  = WarpLoad<AccumT, items_per_thread, load_algorithm>;
   using warp_store_t = WarpStore<AccumT, items_per_thread, store_algorithm>;
@@ -505,8 +507,9 @@ private:
     ItemTy thread_aggregate = cub::ThreadReduce(items, scan_op);
     if constexpr (HasInit)
     {
-      scanner.ExclusiveScan(thread_aggregate, thread_aggregate, init_value, scan_op, warp_aggregate);
-      warp_aggregate = scan_op(init_value, warp_aggregate);
+      const ItemTy converted_init_value = multi_segment_helpers::convert_initial_value<ItemTy>(init_value);
+      scanner.ExclusiveScan(thread_aggregate, thread_aggregate, converted_init_value, scan_op, warp_aggregate);
+      warp_aggregate = scan_op(converted_init_value, warp_aggregate);
     }
     else
     {

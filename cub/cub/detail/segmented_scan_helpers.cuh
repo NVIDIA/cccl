@@ -18,7 +18,6 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/span>
-#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -28,7 +27,11 @@ namespace detail::segmented_scan
 namespace multi_segment_helpers
 {
 template <typename ValueT, typename FlagT = bool>
-using augmented_value_t = ::cuda::std::tuple<ValueT, FlagT>;
+struct augmented_value_t
+{
+  ValueT value;
+  FlagT flag;
+};
 
 template <typename ComputeT, int MaxSegmentsPerWorker>
 using agent_segmented_scan_compute_t =
@@ -37,19 +40,46 @@ using agent_segmented_scan_compute_t =
 template <typename ValueT, typename FlagT>
 _CCCL_DEVICE _CCCL_FORCEINLINE constexpr FlagT get_flag(augmented_value_t<ValueT, FlagT> fv) noexcept
 {
-  return ::cuda::std::get<1>(fv);
+  return fv.flag;
 }
 
 template <typename ValueT, typename FlagT>
 _CCCL_DEVICE _CCCL_FORCEINLINE constexpr ValueT get_value(augmented_value_t<ValueT, FlagT> fv) noexcept
 {
-  return ::cuda::std::get<0>(fv);
+  return fv.value;
 }
 
 template <typename ValueT, typename FlagT>
 _CCCL_DEVICE _CCCL_FORCEINLINE constexpr augmented_value_t<ValueT, FlagT> make_value_flag(ValueT v, FlagT f) noexcept
 {
   return {v, f};
+}
+
+template <typename ToT>
+struct initial_value_converter
+{
+  template <typename FromT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE static constexpr ToT cast(FromT v) noexcept
+  {
+    return static_cast<ToT>(v);
+  }
+};
+
+template <typename ToValueT, typename ToFlagT>
+struct initial_value_converter<augmented_value_t<ToValueT, ToFlagT>>
+{
+  template <typename FromValueT, typename FromFlagT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE static constexpr augmented_value_t<ToValueT, ToFlagT>
+  cast(augmented_value_t<FromValueT, FromFlagT> fv) noexcept
+  {
+    return {static_cast<ToValueT>(get_value(fv)), static_cast<ToFlagT>(get_flag(fv))};
+  }
+};
+
+template <typename ToT, typename FromT>
+_CCCL_DEVICE _CCCL_FORCEINLINE constexpr ToT convert_initial_value(FromT v) noexcept
+{
+  return initial_value_converter<ToT>::cast(v);
 }
 
 template <typename BinaryOpT, typename ValueT, typename FlagT = bool>
@@ -146,7 +176,12 @@ private:
 public:
   using logical_offset_t = ValueT;
   using segment_id_t     = ::cuda::std::size_t;
-  using search_data_t    = ::cuda::std::tuple<segment_id_t, logical_offset_t>;
+
+  struct search_data_t
+  {
+    segment_id_t segment_id;
+    logical_offset_t logical_offset;
+  };
 
   _CCCL_DEVICE _CCCL_FORCEINLINE bag_of_segments(::cuda::std::span<ValueT> cum_sizes)
       : m_offsets(cum_sizes)
@@ -215,7 +250,12 @@ private:
 public:
   using logical_offset_t = ValueT;
   using segment_id_t     = ::cuda::std::size_t;
-  using search_data_t    = ::cuda::std::tuple<segment_id_t, logical_offset_t>;
+
+  struct search_data_t
+  {
+    segment_id_t segment_id;
+    logical_offset_t logical_offset;
+  };
 
   static constexpr segment_id_t max_offset_size = MaxBagSize;
 
@@ -306,7 +346,12 @@ private:
 public:
   using logical_offset_t = SizeT;
   using segment_id_t     = SizeT;
-  using search_data_t    = ::cuda::std::tuple<SizeT, SizeT>;
+
+  struct search_data_t
+  {
+    SizeT segment_id;
+    SizeT logical_offset;
+  };
 
   _CCCL_DEVICE _CCCL_FORCEINLINE bag_of_fixed_size_segments(SizeT segment_size)
       : m_segment_size(segment_size)
@@ -423,7 +468,7 @@ struct multi_segmented_output_iterator
     WriteTransformT m_write_fn;
 
     template <typename V, typename F>
-    _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy& operator=(::cuda::std::tuple<V, F> new_value)
+    _CCCL_DEVICE _CCCL_FORCEINLINE __mapping_proxy& operator=(augmented_value_t<V, F> new_value)
     {
       m_it[m_offset] = m_write_fn(get_value(new_value), m_head_flag);
       return *this;

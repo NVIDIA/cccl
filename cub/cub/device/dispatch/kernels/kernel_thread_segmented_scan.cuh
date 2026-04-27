@@ -170,13 +170,15 @@ struct agent_thread_segmented_scan
 
   using input_t = cub::detail::it_value_t<InputIteratorT>;
 
+  static constexpr auto agent_policy = SegmentedScanPolicyGetterT{}().thread;
+
   // Input iterator wrapper type (for applying cache modifier)
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
-  using wrapped_input_iterator_t = ::cuda::std::conditional_t<
-    ::cuda::std::is_pointer_v<InputIteratorT>,
-    CacheModifiedInputIterator<SegmentedScanPolicyGetterT{}().thread.load_modifier, input_t, OffsetT>,
-    InputIteratorT>;
+  using wrapped_input_iterator_t =
+    ::cuda::std::conditional_t<::cuda::std::is_pointer_v<InputIteratorT>,
+                               CacheModifiedInputIterator<agent_policy.load_modifier, input_t, OffsetT>,
+                               InputIteratorT>;
 
   // Constants
 
@@ -186,8 +188,8 @@ struct agent_thread_segmented_scan
   // or the ForceInclusive tag to be true for inclusive scan
   // to get picked up.
   static constexpr bool is_inclusive    = ForceInclusive || !has_init;
-  static constexpr int block_threads    = SegmentedScanPolicyGetterT{}().thread.block_threads;
-  static constexpr int items_per_thread = SegmentedScanPolicyGetterT{}().thread.items_per_thread;
+  static constexpr int block_threads    = agent_policy.block_threads;
+  static constexpr int items_per_thread = agent_policy.items_per_thread;
   static constexpr int tile_items       = items_per_thread;
 
   using augmented_accum_t = AccumT;
@@ -355,7 +357,7 @@ struct agent_thread_segmented_scan
         {
           const OffsetT inp_offset = it.get_input_offset();
           flags[k]                 = it.get_head_flag();
-          const auto v             = d_in[inp_offset];
+          const AccumT v           = d_in[inp_offset];
           if constexpr (has_init)
           {
             items[k] = make_value_flag((flags[k]) ? scan_op(initial_value, v) : v, flags[k]);
@@ -435,7 +437,7 @@ private:
     aggregate = cub::ThreadReduce(items, scan_op);
     if constexpr (HasInit)
     {
-      init_v    = static_cast<ItemTy>(init_value);
+      init_v    = multi_segment_helpers::convert_initial_value<ItemTy>(init_value);
       aggregate = scan_op(init_v, aggregate);
     }
     else
