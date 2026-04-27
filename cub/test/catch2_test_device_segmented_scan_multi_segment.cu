@@ -740,10 +740,11 @@ C2H_TEST("Segmented inclusive scan with init works for integer types",
 
 // Given vector of segment sizes (s1, s2, ..., sn), compute input offsets
 // (0, s1, s1 + s2, ..., s1 + s2 + ... + sn)
-// Similar for out-offsets, except every 0 in segment sizes is replaced with
-// `gap`.
+// Similar for out-offsets, except every non-positive element in segment sizes
+// is replaced with `gap`.
 template <typename OffsetT>
-std::tuple<std::vector<OffsetT>, std::vector<OffsetT>> make_in_out_offsets(const std::vector<OffsetT> sizes, OffsetT gap)
+std::tuple<std::vector<OffsetT>, std::vector<OffsetT>>
+make_in_out_offsets(const std::vector<OffsetT>& sizes, OffsetT gap)
 {
   std::vector<OffsetT> offsets;
 
@@ -763,7 +764,7 @@ std::tuple<std::vector<OffsetT>, std::vector<OffsetT>> make_in_out_offsets(const
   for (std::size_t i = 0; i < segment_count; ++i)
   {
     const auto s       = sizes[i];
-    sizes_with_gaps[i] = (s == 0) ? gap : s;
+    sizes_with_gaps[i] = (s > 0) ? s : gap;
   }
 
   std::vector<OffsetT> offsets_with_gaps;
@@ -798,10 +799,10 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
   c2h::device_vector<offset_t> offsets{in_offsets_v.begin(), in_offsets_v.end()};
   c2h::device_vector<offset_t> out_offsets{out_offsets_v.begin(), out_offsets_v.end()};
 
-  const size_t num_segments = offsets.size() - 1;
-  const unsigned num_items  = offsets.back();
+  const auto num_segments = static_cast<cuda::std::size_t>(segment_sizes.size());
+  const auto num_items    = static_cast<cuda::std::size_t>(in_offsets_v.back());
 
-  const auto num_output = out_offsets.back();
+  const auto num_output = static_cast<cuda::std::size_t>(out_offsets_v.back());
 
   c2h::device_vector<value_t> input(num_items, thrust::default_init);
   c2h::device_vector<value_t> output(num_output, thrust::default_init);
@@ -820,9 +821,154 @@ C2H_TEST("Segmented inclusive scan skips empty segments", "[multi_segment][segme
 
   c2h::host_vector<value_t> h_expected(output.size(), canary);
 
-  for (offset_t segment_id = 0; segment_id < num_segments; ++segment_id)
+  for (cuda::std::size_t segment_id = 0; segment_id < num_segments; ++segment_id)
   {
-    if (h_offsets[segment_id] == h_offsets[segment_id + 1])
+    if (h_offsets[segment_id] >= h_offsets[segment_id + 1])
+    {
+      continue;
+    }
+    compute_inclusive_scan_reference(
+      h_input.begin() + h_offsets[segment_id],
+      h_input.begin() + h_offsets[segment_id + 1],
+      h_expected.begin() + h_out_offsets[segment_id],
+      op,
+      h_init_v);
+  }
+
+  auto inclusive_scan_dispatch = [](auto&&... args) -> cudaError_t {
+    return cub::detail::segmented_scan::dispatch<
+      cub::ForceInclusive::No,
+      const value_t*,
+      value_t*,
+      const offset_t*,
+      const offset_t*,
+      const offset_t*,
+      op_t,
+      cub::NullType,
+      value_t,
+      offset_t,
+      policy_t>(std::forward<decltype(args)>(args)...);
+  };
+
+  SECTION("worker block")
+  {
+    thrust::generate(output.begin(), output.end(), constant_value_op<value_t>{canary});
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::block,
+      offsets,
+      out_offsets,
+      input,
+      output,
+      op,
+      d_no_init,
+      segments_per_worker);
+
+    const c2h::host_vector<value_t> h_output(output);
+    REQUIRE(h_output == h_expected);
+  }
+
+  SECTION("worker warp")
+  {
+    thrust::generate(output.begin(), output.end(), constant_value_op<value_t>{canary});
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::warp,
+      offsets,
+      out_offsets,
+      input,
+      output,
+      op,
+      d_no_init,
+      segments_per_worker);
+
+    const c2h::host_vector<value_t> h_output(output);
+    REQUIRE(h_output == h_expected);
+  }
+
+  SECTION("worker thread")
+  {
+    thrust::generate(output.begin(), output.end(), constant_value_op<value_t>{canary});
+    run_dispatch_scan(
+      inclusive_scan_dispatch,
+      cub::detail::segmented_scan::worker::thread,
+      offsets,
+      out_offsets,
+      input,
+      output,
+      op,
+      d_no_init,
+      segments_per_worker);
+
+    const c2h::host_vector<value_t> h_output(output);
+    REQUIRE(h_output == h_expected);
+  }
+}
+
+C2H_TEST("Segmented inclusive scan handles end_offset < begin_offset", "[multi_segment][segmented][scan]")
+{
+  using op_t     = cuda::std::plus<>;
+  using value_t  = unsigned int;
+  using offset_t = int;
+
+  [[maybe_unused]] static constexpr int items_per_thread       = 7;
+  [[maybe_unused]] static constexpr int block_size             = 128;
+  [[maybe_unused]] static constexpr int max_segments_per_block = 256;
+
+  [[maybe_unused]] static constexpr int warps_in_block        = block_size / 32;
+  [[maybe_unused]] static constexpr int max_segments_per_warp = max_segments_per_block / warps_in_block;
+
+  using policy_t = policy_selector_t<block_size, items_per_thread, max_segments_per_block, max_segments_per_warp>;
+
+  static constexpr auto canary = value_t{0xDEADBEEF};
+
+  const offset_t gap                        = 4;
+  const std::vector<offset_t> segment_sizes = {4, 13, -2, 46, -4, 33, 28, -2, 6, 17, 0, -4, 1, 0, 7};
+
+  CAPTURE(segment_sizes, gap);
+
+  const auto [in_offsets_v, out_offsets_v] = make_in_out_offsets(segment_sizes, gap);
+
+  CAPTURE(in_offsets_v, out_offsets_v);
+
+  for (const auto offset : in_offsets_v)
+  {
+    REQUIRE(offset >= offset_t{0});
+  }
+
+  for (const auto offset : out_offsets_v)
+  {
+    REQUIRE(offset >= offset_t{0});
+  }
+
+  c2h::device_vector<offset_t> offsets{in_offsets_v.begin(), in_offsets_v.end()};
+  c2h::device_vector<offset_t> out_offsets{out_offsets_v.begin(), out_offsets_v.end()};
+
+  const auto num_segments = segment_sizes.size();
+  const auto num_items    = static_cast<cuda::std::size_t>(in_offsets_v.back());
+
+  const auto num_output = static_cast<cuda::std::size_t>(out_offsets_v.back());
+
+  c2h::device_vector<value_t> input(num_items, thrust::default_init);
+  c2h::device_vector<value_t> output(num_output, thrust::default_init);
+
+  thrust::tabulate(input.begin(), input.end(), cuda::std::identity{});
+
+  constexpr int segments_per_worker = 2;
+
+  op_t op{};
+  value_t h_init_v{0};
+  cub::NullType d_no_init{};
+
+  c2h::host_vector<value_t> h_input(input);
+  c2h::host_vector<offset_t> h_offsets(offsets);
+  c2h::host_vector<offset_t> h_out_offsets(out_offsets);
+
+  c2h::host_vector<value_t> h_expected(output.size(), canary);
+
+  for (cuda::std::size_t segment_id = 0; segment_id < num_segments; ++segment_id)
+  {
+    if (h_offsets[segment_id] >= h_offsets[segment_id + 1])
     {
       continue;
     }
