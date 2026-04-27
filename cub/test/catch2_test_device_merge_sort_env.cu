@@ -572,6 +572,7 @@ C2H_TEST("MergeSortPolicy", "[merge_sort][device]")
     cub::CacheLoadModifier::LOAD_DEFAULT,
     cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT};
 
+#if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::MergeSortPolicy{
     .block_threads    = 256,
@@ -579,6 +580,9 @@ C2H_TEST("MergeSortPolicy", "[merge_sort][device]")
     .load_algorithm   = cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
     .load_modifier    = cub::CacheLoadModifier::LOAD_DEFAULT,
     .store_algorithm  = cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT};
+#else // _CCCL_STD_VER >= 2020
+  constexpr auto p2 = p1;
+#endif // _CCCL_STD_VER >= 2020
 
   // comparison
   STATIC_REQUIRE(p1 == p2);
