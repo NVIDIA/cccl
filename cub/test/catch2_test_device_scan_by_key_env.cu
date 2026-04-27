@@ -74,7 +74,7 @@ TEST_CASE("Device scan exclusive-scan-by-key works with default environment", "[
     == cub::DeviceScan::ExclusiveScanByKey(d_keys.begin(), d_in, d_out.begin(), block_size_check, init, num_items));
 
   REQUIRE(d_out[0] == init);
-  REQUIRE(d_block_size[0] == target_block_size);
+  REQUIRE(d_block_size[0] == static_cast<unsigned int>(target_block_size));
 }
 
 TEST_CASE("Device scan inclusive-sum-by-key works with default environment", "[scan][by_key][device]")
@@ -119,7 +119,7 @@ TEST_CASE("Device scan inclusive-scan-by-key works with default environment", "[
           == cub::DeviceScan::InclusiveScanByKey(d_keys.begin(), d_in, d_out.begin(), block_size_check, num_items));
 
   REQUIRE(d_out[0] == value_t{1});
-  REQUIRE(d_block_size[0] == target_block_size);
+  REQUIRE(d_block_size[0] == static_cast<unsigned int>(target_block_size));
 }
 
 #endif
