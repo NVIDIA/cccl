@@ -29,7 +29,6 @@ workflows:
     - {jobs: ['build'], std: 'minmax', ctk: '13.0', cxx: ['gcc11', 'gcc',   'clang15', 'clang20', 'msvc2019', 'msvc'     ]}
     # Old CTK: cudax has a different support matrix:
     - {jobs: ['build'], project: 'cudax', ctk: '12.0', std: 'minmax', cxx: ['gcc9',  'gcc12', 'clang14',            'msvc14.39']}
-    - {jobs: ['build'], project: 'cudax', ctk: '12.X', std: 'minmax', cxx: ['gcc9',  'gcc',   'clang14', 'clang19', 'msvc']}
     - {jobs: ['build'], std: 'minmax', ctk: '12.X', cxx: ['gcc7',  'gcc14',   'clang14', 'clang19', 'msvc2019', 'msvc'     ]}
     - {jobs: ['build'], std: 'minmax', ctk: '13.0', cxx: ['gcc11', 'gcc14',   'clang15', 'clang20', 'msvc2019', 'msvc'     ]}
     # Old CTK: cudax has a different support matrix:
