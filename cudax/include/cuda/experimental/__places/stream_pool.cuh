@@ -49,6 +49,25 @@ class exec_place;
  */
 inline int get_device_from_stream(cudaStream_t stream)
 {
+  if (stream == nullptr)
+  {
+    int device = 0;
+    cuda_try(cudaGetDevice(&device));
+    return device;
+  }
+
+  cudaStreamCaptureStatus capture_status = cudaStreamCaptureStatusNone;
+  const cudaError_t cap_err              = cudaStreamIsCapturing(stream, &capture_status);
+  if (cap_err == cudaSuccess && capture_status != cudaStreamCaptureStatusNone)
+  {
+    // cudaStreamGetDevice/cuStreamGetCtx are not permitted while the stream is
+    // participating in capture. Use the active device, which is the device on
+    // which the capture is being constructed.
+    int device = 0;
+    cuda_try(cudaGetDevice(&device));
+    return device;
+  }
+
 #if _CCCL_CTK_AT_LEAST(12, 8)
   int device = 0;
   cuda_try(cudaStreamGetDevice(stream, &device));
