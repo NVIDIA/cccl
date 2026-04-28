@@ -122,7 +122,12 @@ struct string
 
   _CCCL_HOST_DEVICE /*implicit*/ string(char const* c)
       : len(cuda::std::char_traits<char>::length(c))
-      , str(cuda::std::char_traits<char>::copy(new char[len + 1], c, len + 1))
+      // clang analyzer seemingly does not realize that the pointer is passed through copy()
+      // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
+      , str(cuda::std::char_traits<char>::copy(
+          new char[len + 1], // NOLINT(clang-analyzer-unix.MismatchedDeallocator)
+          c,
+          len + 1))
   {}
 
   _CCCL_HOST_DEVICE string(string&& other) noexcept
@@ -136,7 +141,9 @@ struct string
 
   _CCCL_HOST_DEVICE ~string()
   {
-    delete[] str;
+    // clang-analyzer doesn't realize that the new char[len + 1] above is assigned to our str
+    // member. It then loses the plot and thinks that we are free()-ing elsewhere.
+    delete[] str; // NOLINT(clang-analyzer-unix.MismatchedDeallocator)
   }
 
   _CCCL_HOST_DEVICE void swap(string& other) noexcept
