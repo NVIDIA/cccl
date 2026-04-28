@@ -24,8 +24,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_scan
 {
-namespace multi_segment_helpers
-{
 template <typename ValueT, typename FlagT = bool>
 struct augmented_value_t
 {
@@ -483,7 +481,6 @@ _CCCL_HOST_DEVICE multi_segmented_output_iterator(IterT, OffsetT, SearcherT, Beg
                                      SearcherT,
                                      BeginOffsetIterT,
                                      ::cuda::std::remove_cv_t<WriteTransformT>>;
-} // namespace multi_segment_helpers
 
 template <typename PrefixT, typename BinaryOpT>
 struct worker_prefix_callback_t

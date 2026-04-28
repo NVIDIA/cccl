@@ -74,6 +74,7 @@ template <typename SegmentedScanPolicyGetterT,
           bool ForceInclusive = false>
 struct agent_segmented_scan
 {
+private:
   //---------------------------------------------------------------------
   // Types and constants
   //---------------------------------------------------------------------
@@ -90,7 +91,6 @@ struct agent_segmented_scan
                                CacheModifiedInputIterator<agent_policy.load_modifier, input_t, OffsetT>,
                                InputIteratorT>;
 
-private:
   // Using cub::NullType means no initial value is provided
   static constexpr bool has_init = !::cuda::std::is_same_v<InitValueT, NullType>;
   // We are relying on either initial value being `NullType`
@@ -124,7 +124,7 @@ private:
     _single_segment_algorithms_storage_t reused;
   };
 
-  using augmented_accum_t = multi_segment_helpers::agent_segmented_scan_compute_t<AccumT, max_segments>;
+  using augmented_accum_t = agent_segmented_scan_compute_t<AccumT, max_segments>;
 
   using block_load_aug_t    = BlockLoad<augmented_accum_t, block_threads, items_per_thread, load_algorithm>;
   using block_store_aug_t   = BlockStore<augmented_accum_t, block_threads, items_per_thread, store_algorithm>;
@@ -342,7 +342,7 @@ public:
       _CCCL_ASSERT((segment_size > 0) && ((items_per_block % segment_size) == 0),
                    "Precondition violated, likely due to a race condition");
 
-      const multi_segment_helpers::bag_of_fixed_size_segments searcher{segment_size};
+      const bag_of_fixed_size_segments searcher{segment_size};
       scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_block);
     }
     else
@@ -365,7 +365,7 @@ public:
 |   I64 |         I32 |    2^27      |       57 |              18 |       warp |    784x | 86.95% |
          */
         // searcher locates segment_id using branchless linear/binary search in cum_sizes
-        const auto searcher = multi_segment_helpers::make_statically_bound_bag_of_segments<NumSegments>(cum_sizes);
+        const auto searcher = make_statically_bound_bag_of_segments<NumSegments>(cum_sizes);
         scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_block);
       }
       else
@@ -385,7 +385,7 @@ public:
 
         // searcher locates segment_id using linear/binary search in cum_sizes
         // binary search is using while-loop based cub::std::upper_bound
-        multi_segment_helpers::bag_of_segments searcher{cum_sizes};
+        bag_of_segments searcher{cum_sizes};
         scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_block);
       }
     }
@@ -401,19 +401,12 @@ private:
   {
     const OffsetT n_chunks = ::cuda::ceil_div(items_per_block, tile_items);
 
-    using augmented_scan_op_t = multi_segment_helpers::schwarz_scan_op<ScanOpT, AccumT>;
+    using augmented_scan_op_t = schwarz_scan_op<ScanOpT, AccumT>;
 
     augmented_scan_op_t augmented_scan_op{scan_op};
 
     augmented_accum_t exclusive_prefix{};
     worker_prefix_callback_t prefix_op{exclusive_prefix, augmented_scan_op};
-
-    using multi_segment_helpers::multi_segmented_input_iterator;
-    using multi_segment_helpers::multi_segmented_output_iterator;
-    using multi_segment_helpers::packer;
-    using multi_segment_helpers::packer_iv;
-    using multi_segment_helpers::projector;
-    using multi_segment_helpers::projector_iv;
 
     augmented_accum_t thread_flag_values[items_per_thread];
     for (OffsetT chunk_id = 0; chunk_id < n_chunks;)
@@ -426,7 +419,7 @@ private:
 
       // load values, and pack them into head_flag-value pairs
       {
-        constexpr auto oob_default = multi_segment_helpers::augmented_value_t{AccumT{}, false};
+        constexpr auto oob_default = augmented_value_t{AccumT{}, false};
 
         block_load_aug_t loader(temp_storage.reused.load_aug);
         if constexpr (has_init)
@@ -467,11 +460,11 @@ private:
           const auto augmented_init_value = [&]() {
             if constexpr (has_init)
             {
-              return multi_segment_helpers::augmented_value_t{initial_value, false};
+              return augmented_value_t{initial_value, false};
             }
             else
             {
-              return multi_segment_helpers::augmented_value_t{AccumT{}, false};
+              return augmented_value_t{AccumT{}, false};
             }
           }();
           // Initialize exclusive_prefix, referenced from prefix_op
@@ -541,7 +534,7 @@ private:
   {
     if constexpr (HasInit)
     {
-      const ItemTy converted_init_value = multi_segment_helpers::convert_initial_value<ItemTy>(init_value);
+      const ItemTy converted_init_value = convert_initial_value<ItemTy>(init_value);
       if constexpr (IsInclusive)
       {
         scanner.InclusiveScan(items, items, converted_init_value, scan_op, block_aggregate);
