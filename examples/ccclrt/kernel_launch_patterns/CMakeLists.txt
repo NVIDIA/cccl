@@ -14,9 +14,9 @@
 # limitations under the License.
 
 add_executable(cccl.examples.ccclrt.kernel_launch_patterns.kernel kernel.cu)
-target_compile_features(
+set_target_properties(
   cccl.examples.ccclrt.kernel_launch_patterns.kernel
-  PRIVATE cuda_std_17
+  PROPERTIES CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON
 )
 target_link_libraries(
   cccl.examples.ccclrt.kernel_launch_patterns.kernel
@@ -27,9 +27,9 @@ add_executable(
   cccl.examples.ccclrt.kernel_launch_patterns.kernel_functor
   kernel_functor.cu
 )
-target_compile_features(
+set_target_properties(
   cccl.examples.ccclrt.kernel_launch_patterns.kernel_functor
-  PRIVATE cuda_std_17
+  PROPERTIES CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON
 )
 target_link_libraries(
   cccl.examples.ccclrt.kernel_launch_patterns.kernel_functor
@@ -42,9 +42,9 @@ if ("${CMAKE_CUDA_COMPILER}" STREQUAL NVIDIA)
     cccl.examples.ccclrt.kernel_launch_patterns.kernel_lambda
     kernel_lambda.cu
   )
-  target_compile_features(
+  set_target_properties(
     cccl.examples.ccclrt.kernel_launch_patterns.kernel_lambda
-    PRIVATE cuda_std_17
+    PROPERTIES CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON
   )
   target_compile_options(
     cccl.examples.ccclrt.kernel_launch_patterns.kernel_lambda
