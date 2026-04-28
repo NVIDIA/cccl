@@ -218,7 +218,7 @@ void benchmark_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       launch
 #if !TUNE_BASE
       ,
-      cuda::execution::__tune(policy_selector<accum_t>{})
+      cuda::execution::tune(policy_selector<accum_t>{})
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(

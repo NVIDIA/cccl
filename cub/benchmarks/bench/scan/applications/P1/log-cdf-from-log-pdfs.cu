@@ -140,7 +140,7 @@ static void inclusive_scan(nvbench::state& state, nvbench::type_list<FloatingPoi
       launch
 #if !TUNE_BASE
       ,
-      cuda::execution::__tune(policy_selector<accum_t>{})
+      cuda::execution::tune(policy_selector<accum_t>{})
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(
