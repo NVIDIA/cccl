@@ -20,6 +20,7 @@
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__device/arch_id.h>
 #include <cuda/__functional/address_stability.h>
+#include <cuda/__functional/always_true_false.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__host_stdlib/ostream>
@@ -31,21 +32,12 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::transform
 {
-struct always_true_predicate
-{
-  template <typename... Ts>
-  _CCCL_HOST_DEVICE constexpr bool operator()(Ts&&...) const
-  {
-    return true;
-  }
-};
+// Use the unified always_true_t from libcu++. The type alias preserves backward compatibility.
+using always_true_predicate = ::cuda::always_true_t;
 } // namespace detail::transform
 CUB_NAMESPACE_END
-
-template <>
-struct ::cuda::proclaims_copyable_arguments<CUB_NS_QUALIFIER::detail::transform::always_true_predicate>
-    : ::cuda::std::true_type
-{};
+// proclaims_copyable_arguments for cuda::always_true_t is already specialized in
+// <cuda/__functional/address_stability.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::transform

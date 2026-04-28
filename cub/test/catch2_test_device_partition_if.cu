@@ -19,28 +19,14 @@
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
+#include <cuda/__functional/always_true_false.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition_if);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-struct always_false_t
-{
-  template <typename T>
-  __device__ bool operator()(const T&) const
-  {
-    return false;
-  }
-};
-
-struct always_true_t
-{
-  template <typename T>
-  __device__ bool operator()(const T&) const
-  {
-    return true;
-  }
-};
+using always_false_t = ::cuda::always_false_t;
+using always_true_t  = ::cuda::always_true_t;
 
 using all_types =
   c2h::type_list<std::uint8_t,

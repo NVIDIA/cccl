@@ -28,6 +28,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class...>
 inline constexpr bool __always_false_v = false;
 
+template <class...>
+inline constexpr bool __always_true_v = true;
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
