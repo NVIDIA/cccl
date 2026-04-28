@@ -24,7 +24,6 @@
 #if !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__iterator/counting_iterator.h>
-#  include <cuda/__iterator/transform_iterator.h>
 #  include <cuda/__iterator/zip_function.h>
 #  include <cuda/__iterator/zip_iterator.h>
 #  include <cuda/__nvtx/nvtx.h>
@@ -48,23 +47,23 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-// Maps a child-relative index k (0 <= k < n - 1) to the value of its parent
-// in the heap, i.e. base[(k + 1 - 1) / 2] == base[k / 2]. Used as the unary
-// functor of a transform_iterator to expose parent loads to the find_if
-// dispatch alongside the (sequential) child loads.
-template <class _RandomAccessIterator>
-struct __is_heap_parent_at_fn
+// Returns true at the first child index `i` (1 <= i < n) where the parent-child
+// max-heap invariant is broken, i.e. comp(base[(i-1)/2], base[i]) holds.
+template <class _RandomAccessIterator, class _Compare>
+struct __is_heap_until_fn
 {
   _RandomAccessIterator __base_;
+  _Compare __comp_;
 
-  _CCCL_HOST_DEVICE explicit __is_heap_parent_at_fn(_RandomAccessIterator __base)
+  _CCCL_HOST_DEVICE explicit __is_heap_parent_at_fn(_RandomAccessIterator __base, _Compare __comp)
       : __base_(::cuda::std::move(__base))
+      , __comp_(::cuda::std::move(__comp))
   {}
 
-  template <class _Diff>
-  [[nodiscard]] _CCCL_DEVICE_API constexpr iter_reference_t<_RandomAccessIterator> operator()(const _Diff& __k) const
+  template <class _Diff, class _Tp>
+  [[nodiscard]] _CCCL_DEVICE_API constexpr bool operator()(const _Diff& __i, const _Tp& __current) const
   {
-    return __base_[__k / _Diff(2)];
+    return __comp_(__base_[(__i - _Diff(1)) / _Diff(2)], __current);
   }
 };
 
@@ -95,17 +94,15 @@ _CCCL_REQUIRES(__has_random_access_traversal<_RandomAccessIterator> _CCCL_AND is
       return __last;
     }
 
-    // Pair each child (at indices [1, n)) with its parent value, exposing both
-    // loads to the find_if dispatch. comp(parent, child) holds at the first
-    // heap-property violation.
-    auto __parent_at = ::cuda::transform_iterator{
-      ::cuda::counting_iterator{__diff_t(0)}, __is_heap_parent_at_fn<_RandomAccessIterator>{__first}};
-
-    auto __result = __dispatch(
+    // Find the first heap-property violation in the index range [1, n).
+    // The result's dereferenced value is the violating child index, or n
+    // if the range is a heap. `::cuda::std::get<1>(__result.__iterators())`
+    // returns __last in the latter case.
+    const auto __result = __dispatch(
       __policy,
-      ::cuda::zip_iterator{__parent_at, __first + 1},
-      ::cuda::zip_iterator{__parent_at + (__n - 1), __last},
-      ::cuda::zip_function{::cuda::std::move(__comp)});
+      ::cuda::zip_iterator{::cuda::counting_iterator{__diff_t(1)}, __first + 1},
+      ::cuda::zip_iterator{::cuda::counting_iterator{__n}, __last},
+      ::cuda::zip_function{__is_heap_until_fn<_RandomAccessIterator, _Compare>{__first, ::cuda::std::move(__comp)}});
     return ::cuda::std::get<1>(__result.__iterators());
   }
   else

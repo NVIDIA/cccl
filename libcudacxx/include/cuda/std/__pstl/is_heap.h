@@ -24,7 +24,6 @@
 #if !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__iterator/counting_iterator.h>
-#  include <cuda/__iterator/transform_iterator.h>
 #  include <cuda/__iterator/zip_function.h>
 #  include <cuda/__iterator/zip_iterator.h>
 #  include <cuda/__nvtx/nvtx.h>
@@ -36,7 +35,7 @@
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__pstl/dispatch.h>
-#  include <cuda/std/__pstl/is_heap_until.h> // for __is_heap_parent_at_fn
+#  include <cuda/std/__pstl/is_heap_until.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
 #  include <cuda/std/__utility/move.h>
@@ -76,14 +75,15 @@ _CCCL_REQUIRES(__has_random_access_traversal<_RandomAccessIterator> _CCCL_AND is
       return true;
     }
 
-    auto __parent_at = ::cuda::transform_iterator{
-      ::cuda::counting_iterator{__diff_t(0)}, __is_heap_parent_at_fn<_RandomAccessIterator>{__first}};
-
-    auto __result = __dispatch(
+    // Find the first heap-property violation in the index range [1, n).
+    // The result's dereferenced value is the violating child index, or n
+    // if the range is a heap. `::cuda::std::get<1>(__result.__iterators())`
+    // returns __last in the latter case.
+    const auto __result = __dispatch(
       __policy,
-      ::cuda::zip_iterator{__parent_at, __first + 1},
-      ::cuda::zip_iterator{__parent_at + (__n - 1), __last},
-      ::cuda::zip_function{::cuda::std::move(__comp)});
+      ::cuda::zip_iterator{::cuda::counting_iterator{__diff_t(1)}, __first + 1},
+      ::cuda::zip_iterator{::cuda::counting_iterator{__n}, __last},
+      ::cuda::zip_function{__is_heap_until_fn<_RandomAccessIterator, _Compare>{__first, ::cuda::std::move(__comp)}});
     return ::cuda::std::get<1>(__result.__iterators()) == __last;
   }
   else
