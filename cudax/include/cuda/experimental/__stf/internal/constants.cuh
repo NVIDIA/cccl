@@ -34,13 +34,12 @@ namespace cuda::experimental::stf
  */
 enum class access_mode : unsigned int
 {
-  none    = 0,
-  read    = 1,
-  write   = 2,
-  rw      = 3, // READ + WRITE
-  relaxed = 4, /* operator ? */
-  reduce  = 8, // overwrite the content of the logical data (if any) with the result of the reduction (equivalent to
-              // write)
+  none           = 0,
+  read           = 1,
+  write          = 2,
+  rw             = 3, // READ + WRITE
+  relaxed        = 4, /* operator ? */
+  reduce         = 9, // READ + reduction; overwrite the content of the logical data (if any) with the reduction result
   reduce_no_init = 16, // special case where the reduction will accumulate into the existing content (equivalent to rw)
 };
 
@@ -48,7 +47,7 @@ enum class access_mode : unsigned int
  * @brief Combines two access mode into a compatible access mode for both
  *         accesses (eg. read+write = rw, read+read = read)
  *
- * Bitwise OR must yield a single mode handled by the MSI path (not e.g. `read | reduce`).
+ * Bitwise OR must yield a single mode handled by the MSI path (not e.g. `write | reduce`).
  */
 inline access_mode operator|(access_mode lhs, access_mode rhs)
 {
@@ -69,8 +68,14 @@ inline access_mode operator|(access_mode lhs, access_mode rhs)
     case access_mode::relaxed:
     default:
       EXPECT(false,
-             "Unsupported access_mode merge for the same logical data in one task: bitwise OR produced a "
-             "value that is not one of none, read, write, rw, reduce, or reduce_no_init (e.g. read+write -> rw).");
+             "Unsupported access_mode merge for the same logical data in one task: bitwise OR produced value ",
+             as_underlying(merged),
+             ", which is not one of none, read, write, rw, reduce, or reduce_no_init (e.g. read+write -> rw).",
+             " The input values were ",
+             as_underlying(lhs),
+             " and ",
+             as_underlying(rhs),
+             ".");
       break;
   }
   return merged;
