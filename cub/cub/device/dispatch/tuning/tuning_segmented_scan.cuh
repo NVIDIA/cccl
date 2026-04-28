@@ -101,16 +101,47 @@ struct SegmentedScanWarpPolicy
 #endif // _CCCL_HOSTED()
 };
 
+struct SegmentedScanThreadPolicy
+{
+  int threads_per_block;
+  int items_per_thread;
+  CacheLoadModifier load_modifier;
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator==(const SegmentedScanThreadPolicy& lhs, const SegmentedScanThreadPolicy& rhs)
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_modifier == rhs.load_modifier;
+  }
+
+  [[nodiscard]] _CCCL_API constexpr friend bool
+  operator!=(const SegmentedScanThreadPolicy& lhs, const SegmentedScanThreadPolicy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedScanThreadPolicy& policy)
+  {
+    return os
+        << "SegmentedScanThreadPolicy { .threads_per_block = " << policy.threads_per_block
+        << ", .items_per_thread = " << policy.items_per_thread << ", .load_modifier = " << policy.load_modifier << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
+
 //! The tuning policy for all algorithms in @ref DeviceSegmentedScan.
 struct SegmentedScanPolicy
 {
   SegmentedScanBlockPolicy block; //!< Policy for the block-level segmented scan kernel
   SegmentedScanWarpPolicy warp;
+  SegmentedScanThreadPolicy thread;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
   operator==(const SegmentedScanPolicy& lhs, const SegmentedScanPolicy& rhs) noexcept
   {
-    return lhs.block == rhs.block && lhs.warp == rhs.warp;
+    return lhs.block == rhs.block && lhs.warp == rhs.warp && lhs.thread == rhs.thread;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr friend bool
@@ -122,7 +153,8 @@ struct SegmentedScanPolicy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const SegmentedScanPolicy& policy)
   {
-    return os << "SegmentedScanPolicy { .block = " << policy.block << ", .warp = " << policy.warp << " }";
+    return os << "SegmentedScanPolicy { .block = " << policy.block << ", .warp = " << policy.warp 
+	      << ", .thread = " << policy.thread << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -160,6 +192,7 @@ struct policy_selector
     const auto block_scaled =
       scale_mem_bound(nominal_threads_per_block, nominal_items_per_thread, augmented_size_block);
     const auto warp_scaled = scale_mem_bound(nominal_threads_per_block, nominal_items_per_thread, augmented_size_warp);
+    const auto thread_scaled = scale_mem_bound(nominal_threads_per_block, nominal_items_per_thread, accum_size);
 
     const bool large_values = augmented_size_block > 128;
     const auto scan_transposed_blockload =
@@ -182,7 +215,11 @@ struct policy_selector
         WARP_LOAD_TRANSPOSE,
         LOAD_DEFAULT,
         WARP_STORE_TRANSPOSE,
-        max_segments_per_warp}};
+        max_segments_per_warp},
+      SegmentedScanThreadPolicy{
+	thread_scaled.threads_per_block,
+	thread_scaled.items_per_thread,
+	LOAD_DEFAULT}};
   }
 };
 

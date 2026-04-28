@@ -552,9 +552,10 @@ struct segmented_scan_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> cub::SegmentedScanPolicy
   {
+    constexpr auto threads_per_block = static_cast<int>(BlockThreads);
     return cub::SegmentedScanPolicy{
       cub::SegmentedScanBlockPolicy{
-        static_cast<int>(BlockThreads),
+        threads_per_block,
         1,
         cub::BLOCK_LOAD_DIRECT,
         cub::LOAD_DEFAULT,
@@ -562,7 +563,8 @@ struct segmented_scan_tuning
         cub::BLOCK_SCAN_WARP_SCANS,
         512},
       cub::SegmentedScanWarpPolicy{
-        static_cast<int>(BlockThreads), 1, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT, 64}};
+        threads_per_block, 1, cub::WARP_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::WARP_STORE_DIRECT, 64},
+      cub::SegmentedScanThreadPolicy{threads_per_block, 1, cub::LOAD_DEFAULT}};
   }
 };
 
@@ -684,7 +686,9 @@ C2H_TEST("SegmentedScanPolicy", "[segmented_scan][device]")
     512};
   constexpr auto warp1 =
     cub::SegmentedScanWarpPolicy{128, 7, cub::WARP_LOAD_TRANSPOSE, cub::LOAD_DEFAULT, cub::WARP_STORE_TRANSPOSE, 64};
-  constexpr auto p1 = cub::SegmentedScanPolicy{block1, warp1};
+  constexpr auto thread1 =
+    cub::SegmentedScanThreadPolicy{128, 5, cub::LOAD_DEFAULT};
+  constexpr auto p1 = cub::SegmentedScanPolicy{block1, warp1, thread1};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
@@ -703,7 +707,12 @@ C2H_TEST("SegmentedScanPolicy", "[segmented_scan][device]")
     .load_modifier     = cub::LOAD_DEFAULT,
     .store_algorithm   = cub::WARP_STORE_TRANSPOSE,
     .max_segments      = 64};
-  constexpr auto p2 = cub::SegmentedScanPolicy{.block = block2, .warp = warp2};
+  constexpr auto thread2 = cub::SegmentedScanThreadPolicy{
+    .threads_per_block = 128,
+    .items_per_thread  = 5,
+    .load_modifier     = cub::LOAD_DEFAULT
+  };
+  constexpr auto p2 = cub::SegmentedScanPolicy{.block = block2, .warp = warp2, .thread = thread2};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020

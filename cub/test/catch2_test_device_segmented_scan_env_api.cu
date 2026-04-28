@@ -338,7 +338,10 @@ struct SegmentedScanPolicySelector
                 .load_algorithm    = cub::WARP_LOAD_TRANSPOSE,
                 .load_modifier     = cub::LOAD_DEFAULT,
                 .store_algorithm   = cub::WARP_STORE_TRANSPOSE,
-                .max_segments      = 128}};
+                .max_segments      = 128},
+     .thread = {.threads_per_block = 128,
+                .items_per_thread  = 5,
+                .load_modifier     = cub::LOAD_DEFAULT}};
   }
 };
 // example-end segmented-scan-policy-selector

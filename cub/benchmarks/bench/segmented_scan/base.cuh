@@ -51,7 +51,8 @@ struct policy_selector_t
         TUNE_WARP_LOAD_ALGORITHM,
         TUNE_LOAD_MODIFIER,
         TUNE_WARP_STORE_ALGORITHM,
-        MaxSegmentsPerWarp}};
+        MaxSegmentsPerWarp},
+      cub::detail::segmented_scan::thread_segmented_scan_policy{ThreadsPerBlock, ItemsPerThread, TUNE_LOAD_MODIFIER}};
   }
 };
 #endif // TUNE_BASE
