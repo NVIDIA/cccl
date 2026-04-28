@@ -16,17 +16,11 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
-#include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/round_up.h>
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/void_t.h>
 
 CUB_NAMESPACE_BEGIN
 
