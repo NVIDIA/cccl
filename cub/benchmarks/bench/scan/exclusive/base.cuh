@@ -49,8 +49,6 @@ try
       cuda::execution::__tune(policy_selector<accum_t>{})
 #endif // !TUNE_BASE
     );
-    // FIXME(bgruber): using cuda::std::plus<> as op_t is a breaking change, since we previously overrode the
-    // accumulator type to be T.
     _CCCL_TRY_CUDA_API(
       cub::DeviceScan::ExclusiveScan,
       "ExclusiveScan failed",
