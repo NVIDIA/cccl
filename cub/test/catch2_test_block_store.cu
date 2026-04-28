@@ -40,7 +40,7 @@ __global__ void kernel(std::integral_constant<bool, true>, InputIteratorT input,
   __shared__ storage_t storage;
   block_store_t block_store(storage);
 
-  input_t data[ItemsPerThread];
+  input_t data[ItemsPerThread] = {};
 
   for (int i = 0; i < ItemsPerThread; i++)
   {
