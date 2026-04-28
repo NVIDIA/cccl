@@ -1968,24 +1968,8 @@ public:
     NumItemsT num_items,
     EnvT env = {})
   {
-    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSelect::UniqueByKey");
-
-    using offset_t = detail::choose_offset_t<NumItemsT>;
-
-    return detail::dispatch_with_env(env, [&]([[maybe_unused]] auto tuning, void* storage, size_t& bytes, auto stream) {
-      using tuning_t = decltype(tuning);
-      return unique_by_key_impl<tuning_t>(
-        storage,
-        bytes,
-        d_keys_in,
-        d_values_in,
-        d_keys_out,
-        d_values_out,
-        d_num_selected_out,
-        ::cuda::std::equal_to<>{},
-        static_cast<offset_t>(num_items),
-        stream);
-    });
+    return UniqueByKey(
+      d_keys_in, d_values_in, d_keys_out, d_values_out, d_num_selected_out, num_items, ::cuda::std::equal_to<>{}, env);
   }
 
   //! @rst
