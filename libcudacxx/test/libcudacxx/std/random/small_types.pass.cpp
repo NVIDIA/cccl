@@ -58,8 +58,8 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_uniform_int_small_type()
   using G = cuda::std::philox4x64;
 
   // Construct over the full domain of the small type.
-  const IntType lo = cuda::std::numeric_limits<IntType>::min();
-  const IntType hi = cuda::std::numeric_limits<IntType>::max();
+  IntType lo = cuda::std::numeric_limits<IntType>::min();
+  IntType hi = cuda::std::numeric_limits<IntType>::max();
   D d(lo, hi);
   assert(d.a() == lo);
   assert(d.b() == hi);
@@ -69,7 +69,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_uniform_int_small_type()
   G g(42);
   for (int i = 0; i < 32; ++i)
   {
-    const IntType v = d(g);
+    IntType v = d(g);
     assert(static_cast<int>(v) >= static_cast<int>(lo));
     assert(static_cast<int>(v) <= static_cast<int>(hi));
   }
@@ -78,7 +78,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_uniform_int_small_type()
   D d2(P(IntType{0}, IntType{10}));
   for (int i = 0; i < 32; ++i)
   {
-    const IntType v = d2(g);
+    IntType v = d2(g);
     assert(static_cast<int>(v) >= 0);
     assert(static_cast<int>(v) <= 10);
   }
@@ -104,7 +104,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 bool test_small_lce()
   // All generated values stay in [min(), max()].
   for (int i = 0; i < 32; ++i)
   {
-    const unsigned char v = e();
+    unsigned char v = e();
     assert(v <= Engine::max());
   }
   return true;
