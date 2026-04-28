@@ -13,6 +13,7 @@
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
+#include <cuda/__functional/always_true_false.h>
 #include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/limits>
@@ -22,7 +23,6 @@
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
-#include <cuda/__functional/always_true_false.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, select_if);
 

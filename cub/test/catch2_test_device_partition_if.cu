@@ -9,6 +9,7 @@
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
+#include <cuda/__functional/always_true_false.h>
 #include <cuda/cmath>
 #include <cuda/iterator>
 #include <cuda/std/iterator>
@@ -19,7 +20,6 @@
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
-#include <cuda/__functional/always_true_false.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition_if);
 
