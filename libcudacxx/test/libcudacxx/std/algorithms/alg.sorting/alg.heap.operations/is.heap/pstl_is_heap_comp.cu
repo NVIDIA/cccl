@@ -39,8 +39,14 @@ void test_is_heap(const Policy& policy, c2h::device_vector<T>& input)
     CHECK(res);
   }
 
+  { // size-1 should not access anything; using a host pointer would segfault on device
+    T host_value{};
+    const auto res = cuda::std::is_heap(policy, &host_value, &host_value + 1, cuda::std::greater<>{});
+    CHECK(res);
+  }
+
   // Strictly increasing range is a valid min-heap under greater<>.
-  thrust::sequence(input.begin(), input.end(), static_cast<T>(0));
+  thrust::sequence(input.begin(), input.end(), 0);
   { // valid min-heap, contiguous range
     const auto res = cuda::std::is_heap(policy, input.begin(), input.end(), cuda::std::greater<>{});
     CHECK(res);

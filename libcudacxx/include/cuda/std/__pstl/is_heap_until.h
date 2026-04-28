@@ -57,6 +57,10 @@ struct __is_heap_parent_at_fn
 {
   _RandomAccessIterator __base_;
 
+  _CCCL_HOST_DEVICE explicit __is_heap_parent_at_fn(_RandomAccessIterator __base)
+      : __base_(::cuda::std::move(__base))
+  {}
+
   template <class _Diff>
   [[nodiscard]] _CCCL_DEVICE_API constexpr iter_reference_t<_RandomAccessIterator> operator()(const _Diff& __k) const
   {

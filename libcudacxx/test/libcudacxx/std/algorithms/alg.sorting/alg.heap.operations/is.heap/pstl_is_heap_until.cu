@@ -38,8 +38,14 @@ void test_is_heap_until(const Policy& policy, c2h::device_vector<T>& input)
     CHECK(res == nullptr);
   }
 
+  { // size-1 should not access anything; using a host pointer would segfault on device
+    T host_value{};
+    const auto res = cuda::std::is_heap_until(policy, &host_value, &host_value + 1);
+    CHECK(res == &host_value + 1);
+  }
+
   // Strictly decreasing range is a valid max-heap (parent always > child)
-  thrust::sequence(input.begin(), input.end(), static_cast<T>(size), static_cast<T>(-1));
+  thrust::sequence(input.begin(), input.end(), size, -1);
   { // valid max-heap, contiguous range
     const auto res = cuda::std::is_heap_until(policy, input.begin(), input.end());
     CHECK(res == input.end());
