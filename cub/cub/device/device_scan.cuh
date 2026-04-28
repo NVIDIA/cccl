@@ -103,12 +103,10 @@ struct DeviceScan
     ScanOpT scan_op,
     InitValueT init,
     NumItemsT num_items,
-    Determinism determinism,
+    Determinism /*determinism*/,
     cudaStream_t stream,
     PolicySelectorT policy_selector)
   {
-    (void) determinism;
-
     // Unsigned integer type for global offsets
     using offset_t = detail::choose_offset_t<NumItemsT>;
     return detail::scan::dispatch<EnforceInclusive>(
