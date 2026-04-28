@@ -25,21 +25,10 @@ CUB_NAMESPACE_BEGIN
 namespace detail::merge_sort
 {
 template <typename DefaultPolicyGetter>
-struct host_fallback_policy_getter
+struct fallback_policy_getter
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API _CCCL_FORCEINLINE constexpr auto operator()() const
-  {
-    merge_sort_policy policy = DefaultPolicyGetter{}();
-    policy.block_threads     = 64;
-    policy.items_per_thread  = 1;
-    return policy;
-  }
-};
-
-template <typename DefaultPolicyGetter>
-struct device_fallback_policy_getter
-{
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()() const
   {
     merge_sort_policy policy = DefaultPolicyGetter{}();
     policy.block_threads     = 64;
@@ -103,7 +92,7 @@ template <typename PolicyGetter,
           typename ValueT>
 using merge_sort_vsmem_helper_t = merge_sort_vsmem_helper_impl<
   PolicyGetter,
-  host_fallback_policy_getter<PolicyGetter>,
+  fallback_policy_getter<PolicyGetter>,
   KeyInIt,
   ValInIt,
   KeyOutIt,
@@ -124,7 +113,7 @@ template <typename PolicyGetter,
           typename ValueT>
 using device_merge_sort_vsmem_helper_t = merge_sort_vsmem_helper_impl<
   PolicyGetter,
-  device_fallback_policy_getter<PolicyGetter>,
+  fallback_policy_getter<PolicyGetter>,
   KeyInIt,
   ValInIt,
   KeyOutIt,
