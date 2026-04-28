@@ -36,7 +36,6 @@ struct KernelFunctorWithData
 {
   KernelName kernel_name_;
 
-  template <class Config>
   __device__ void operator()() const
   {
     say_hello(cuda::gpu_thread.index(cuda::block), kernel_name_);
