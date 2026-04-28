@@ -183,7 +183,7 @@ public:
     [[noreturn]]
     _CCCL_API void operator()(_Error __err) const
     {
-      NV_IF_TARGET(NV_IS_HOST, (__do_throw(static_cast<_Error&&>(__err));), (::cuda::std::terminate();))
+      NV_IF_ELSE_TARGET(NV_IS_HOST, (__do_throw(static_cast<_Error&&>(__err));), (::cuda::std::terminate();))
     }
 
     template <class _Error>
