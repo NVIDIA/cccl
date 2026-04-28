@@ -438,7 +438,7 @@ private:
 };
 
 template <typename IterT, typename OffsetT, typename SearcherT, typename BeginOffsetIterT, typename ReadTransformT>
-multi_segmented_input_iterator(IterT, OffsetT, SearcherT, BeginOffsetIterT, ReadTransformT)
+_CCCL_HOST_DEVICE multi_segmented_input_iterator(IterT, OffsetT, SearcherT, BeginOffsetIterT, ReadTransformT)
   -> multi_segmented_input_iterator<IterT,
                                     ::cuda::std::remove_cv_t<OffsetT>,
                                     SearcherT,
@@ -512,7 +512,7 @@ private:
 };
 
 template <typename IterT, typename OffsetT, typename SearcherT, typename BeginOffsetIterT, typename WriteTransformT>
-multi_segmented_output_iterator(IterT, OffsetT, SearcherT, BeginOffsetIterT, WriteTransformT)
+_CCCL_HOST_DEVICE multi_segmented_output_iterator(IterT, OffsetT, SearcherT, BeginOffsetIterT, WriteTransformT)
   -> multi_segmented_output_iterator<IterT,
                                      ::cuda::std::remove_cv_t<OffsetT>,
                                      SearcherT,
