@@ -1818,23 +1818,24 @@ public:
   //!
   //! @param[in] env
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
-  template <
-    typename KeyInputIteratorT,
-    typename ValueInputIteratorT,
-    typename KeyOutputIteratorT,
-    typename ValueOutputIteratorT,
-    typename NumSelectedIteratorT,
-    typename NumItemsT,
-    typename EqualityOpT,
-    typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
+  template <typename KeyInputIteratorT,
+            typename ValueInputIteratorT,
+            typename KeyOutputIteratorT,
+            typename ValueOutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename NumItemsT,
+            typename EqualityOpT,
+            typename EnvT = // Doxygen cannot resolve ::cuda::std::execution::env
 #ifdef _CCCL_DOXYGEN_INVOKED
-    void
+            void
 #else
-    ::cuda::std::execution::env<>
+            ::cuda::std::execution::env<>
 #endif
-    ,
-    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<EqualityOpT, KeyInputIteratorT, KeyInputIteratorT>,
-                             int> = 0>
+            ,
+            ::cuda::std::enable_if_t<
+              ::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<KeyInputIteratorT, void*>
+                && ::cuda::std::indirect_binary_predicate<EqualityOpT, KeyInputIteratorT, KeyInputIteratorT>,
+              int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UniqueByKey(
     KeyInputIteratorT d_keys_in,
     ValueInputIteratorT d_values_in,
@@ -1955,8 +1956,9 @@ public:
     ::cuda::std::execution::env<>
 #endif
     ,
-    ::cuda::std::enable_if_t<!::cuda::std::indirect_binary_predicate<EnvT, KeyInputIteratorT, KeyInputIteratorT>, int> =
-      0>
+    ::cuda::std::enable_if_t<::cuda::std::is_integral_v<NumItemsT> && !::cuda::std::is_same_v<KeyInputIteratorT, void*>
+                               && !::cuda::std::indirect_binary_predicate<EnvT, KeyInputIteratorT, KeyInputIteratorT>,
+                             int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t UniqueByKey(
     KeyInputIteratorT d_keys_in,
     ValueInputIteratorT d_values_in,
