@@ -55,7 +55,7 @@ struct __is_heap_until_fn
   _RandomAccessIterator __base_;
   _Compare __comp_;
 
-  _CCCL_HOST_DEVICE explicit __is_heap_until_fn(_RandomAccessIterator __base, _Compare __comp)
+  _CCCL_API explicit constexpr __is_heap_until_fn(_RandomAccessIterator __base, _Compare __comp)
       : __base_(::cuda::std::move(__base))
       , __comp_(::cuda::std::move(__comp))
   {}
