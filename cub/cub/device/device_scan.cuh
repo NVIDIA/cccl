@@ -95,7 +95,7 @@ struct DeviceScan
             typename InitValueT,
             typename NumItemsT,
             typename Determinism>
-  CUB_RUNTIME_FUNCTION static cudaError_t scan_impl_determinism(
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t scan_impl_determinism(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
