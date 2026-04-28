@@ -46,7 +46,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
              [&](nvbench::launch& launch) {
-               do_not_optimize(cuda::std::is_heap_until(cuda_policy(alloc, launch), dinput.begin(), dinput.end()));
+               do_not_optimize(cuda::std::is_heap(cuda_policy(alloc, launch), dinput.begin(), dinput.end()));
              });
 }
 
@@ -70,11 +70,11 @@ static void with_predicate(nvbench::state& state, nvbench::type_list<T>)
 
   caching_allocator_t alloc{};
 
-  state.exec(
-    nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-      do_not_optimize(
-        cuda::std::is_heap_until(cuda_policy(alloc, launch), dinput.begin(), dinput.end(), cuda::std::less<>{}));
-    });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               do_not_optimize(
+                 cuda::std::is_heap(cuda_policy(alloc, launch), dinput.begin(), dinput.end(), cuda::std::less<>{}));
+             });
 }
 
 NVBENCH_BENCH_TYPES(with_predicate, NVBENCH_TYPE_AXES(fundamental_types))
