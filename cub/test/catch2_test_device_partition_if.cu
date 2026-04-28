@@ -25,8 +25,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition_if);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-using always_false_t = ::cuda::always_false_t;
-using always_true_t  = ::cuda::always_true_t;
+using always_false_t = cuda::always_false;
+using always_true_t  = cuda::always_true;
 
 using all_types =
   c2h::type_list<std::uint8_t,

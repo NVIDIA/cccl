@@ -71,7 +71,7 @@ get_kernel_name(std::string_view input_iterator_t, std::string_view output_itera
   check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   return std::format(
-    "cub::detail::transform::transform_kernel<{0}, {1}, cuda::always_true_t, {2}, {3}, {4}>",
+    "cub::detail::transform::transform_kernel<{0}, {1}, cuda::always_true, {2}, {3}, {4}>",
     chained_policy_t, // 0
     offset_t, // 1
     transform_op_t, // 2
@@ -91,7 +91,7 @@ std::string get_kernel_name(std::string_view input1_iterator_t,
   check(cccl_type_name_from_nvrtc<OffsetT>(&offset_t));
 
   return std::format(
-    "cub::detail::transform::transform_kernel<{0}, {1}, cuda::always_true_t, {2}, {3}, {4}, "
+    "cub::detail::transform::transform_kernel<{0}, {1}, cuda::always_true, {2}, {3}, {4}, "
     "{5}>",
     chained_policy_t, // 0
     offset_t, // 1

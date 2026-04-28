@@ -32,12 +32,9 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::transform
 {
-// Use the unified always_true_t from libcu++. The type alias preserves backward compatibility.
-using always_true_predicate = ::cuda::always_true_t;
+using always_true_predicate = ::cuda::always_true;
 } // namespace detail::transform
 CUB_NAMESPACE_END
-// proclaims_copyable_arguments for cuda::always_true_t is already specialized in
-// <cuda/__functional/address_stability.h>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::transform

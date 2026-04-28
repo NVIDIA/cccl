@@ -136,12 +136,12 @@ _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(::cuda::std::ranges::greater_e
 
 #undef _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS
 
-// always_true_t and always_false_t never inspect the addresses of their arguments
+// always_true and always_false never inspect the addresses of their arguments
 template <>
-struct proclaims_copyable_arguments<::cuda::always_true_t> : ::cuda::std::true_type
+struct proclaims_copyable_arguments<::cuda::always_true> : ::cuda::std::true_type
 {};
 template <>
-struct proclaims_copyable_arguments<::cuda::always_false_t> : ::cuda::std::true_type
+struct proclaims_copyable_arguments<::cuda::always_false> : ::cuda::std::true_type
 {};
 
 _CCCL_END_NAMESPACE_CUDA
