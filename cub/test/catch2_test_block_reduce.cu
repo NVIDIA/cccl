@@ -31,7 +31,7 @@ __launch_bounds__(BlockDimX* BlockDimY* BlockDimZ) __global__
   for (int item = 0; item < ItemsPerThread; item++)
   {
     const int idx     = thread_offset + item;
-    thread_data[item] = idx < valid_items ? in[idx] : T();
+    thread_data[item] = idx < valid_items ? in[idx] : T{};
   }
   __syncthreads();
 

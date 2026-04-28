@@ -21,7 +21,7 @@ __global__ void block_scan_kernel(T* in, T* out, ActionT action)
 
   __shared__ storage_t storage;
 
-  T thread_data[ItemsPerThread];
+  T thread_data[ItemsPerThread] = {};
 
   const int tid           = static_cast<int>(cub::RowMajorTid(BlockDimX, BlockDimY, BlockDimZ));
   const int thread_offset = tid * ItemsPerThread;
