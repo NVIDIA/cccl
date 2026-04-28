@@ -16,7 +16,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 try
 {
   using init_t                   = T;
-  [[maybe_unused]] using accum_t = ::cuda::std::__accumulator_t<op_t, init_t, T>;
+  using accum_t [[maybe_unused]] = ::cuda::std::__accumulator_t<op_t, init_t, T>;
   using offset_t                 = cub::detail::choose_offset_t<OffsetT>;
 #if USES_WARPSPEED()
   static_assert(sizeof(offset_t) == sizeof(size_t)); // warpspeed scan uses size_t internally
