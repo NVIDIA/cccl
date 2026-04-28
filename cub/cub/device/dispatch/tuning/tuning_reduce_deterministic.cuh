@@ -17,7 +17,7 @@
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_arch.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__arch/arch_id.h>
 
 CUB_NAMESPACE_BEGIN
 

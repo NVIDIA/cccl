@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/arch.h>
 #include <cuda/__fwd/devices.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__type_traits/always_false.h>

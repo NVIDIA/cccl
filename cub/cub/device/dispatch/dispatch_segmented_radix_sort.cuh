@@ -27,8 +27,8 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__arch/arch_id.h>
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__device/arch_id.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/is_same.h>

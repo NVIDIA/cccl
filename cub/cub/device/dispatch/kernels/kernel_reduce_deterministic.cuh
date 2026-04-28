@@ -20,7 +20,7 @@
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__arch/arch_id.h>
 
 CUB_NAMESPACE_BEGIN
 

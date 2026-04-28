@@ -18,7 +18,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__arch/arch_id.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/concepts>
 #include <cuda/std/optional>

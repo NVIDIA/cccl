@@ -18,7 +18,7 @@
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/util_arch.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__arch/arch_id.h>
 #include <cuda/atomic>
 
 CUB_NAMESPACE_BEGIN

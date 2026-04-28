@@ -16,9 +16,9 @@
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__arch/arch_id.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_up.h>
-#include <cuda/__device/arch_id.h>
 #include <cuda/__functional/address_stability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/execution_space.h>

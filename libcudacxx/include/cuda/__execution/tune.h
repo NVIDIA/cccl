@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__arch/arch_id.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/semiregular.h>
 #include <cuda/std/__execution/env.h>

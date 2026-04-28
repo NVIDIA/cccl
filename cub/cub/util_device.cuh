@@ -24,7 +24,7 @@
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
-#include <cuda/__device/arch_id.h>
+#include <cuda/__arch/arch_id.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__concepts/regular.h>
