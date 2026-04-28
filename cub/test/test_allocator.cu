@@ -127,7 +127,10 @@ int main(int argc, char** argv)
   // Allocate 999 bytes on the current gpu in stream0
   char* d_999B_stream0_a;
   char* d_999B_stream0_b;
+  // The analyzer reports CUDA builtin register reads inside the allocator lock through clang CUDA wrapper headers.
+  // NOLINTBEGIN(clang-analyzer-unix.BlockInCriticalSection)
   CubDebugExit(allocator.DeviceAllocate((void**) &d_999B_stream0_a, 999, nullptr));
+  // NOLINTEND(clang-analyzer-unix.BlockInCriticalSection)
 
   // Run a kernel on stream 0
   blocking_kernel block_0_a(nullptr);
