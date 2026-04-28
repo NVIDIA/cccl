@@ -92,3 +92,5 @@ special attention to CCCL-specific contracts such as CUDA/device behavior,
 iterator and aliasing semantics, overload constraints, API compatibility,
 temporary storage, streams, tuning/env propagation, and test coverage when they
 are relevant.
+
+TODO: Refer to skills in .agent (not .agents)
