@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile && !c++17
+// nvbug6085905: Segmentation fault (core dumped) tileiras
+
 // bitset<N>& operator^=(const bitset<N>& rhs); // constexpr since C++23
 
 #include <cuda/std/bitset>

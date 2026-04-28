@@ -18,9 +18,9 @@
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <complex>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include "test_macros.h"
 
@@ -52,7 +52,7 @@ TEST_FUNC void test_deduction()
   }
 
   // 5. Test cuda::complex(std::complex)
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   // std::complex is not required to support other than standard floating-point types
   if constexpr (cuda::std::__is_std_fp_v<T>)
   {
@@ -60,7 +60,7 @@ TEST_FUNC void test_deduction()
                  ([[maybe_unused]] cuda::complex c{std::complex<T>{}}; //
                   assert((cuda::std::is_same_v<T, typename decltype(c)::value_type>) );))
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
   // 6. Test cuda::complex(tuple-like)
 #if _CCCL_STD_VER >= 2020

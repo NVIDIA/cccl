@@ -19,3 +19,4 @@ __pycache__
 *.log
 wheelhouse/
 bench-artifacts/
+CLAUDE.local.md

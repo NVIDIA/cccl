@@ -399,7 +399,7 @@ struct __movable_box<_Tp, true> : __movable_box_base<_Tp>
       : __base(in_place, ::cuda::std::forward<_Args>(__args)...)
   {}
 
-  _CCCL_HIDE_FROM_ABI constexpr __movable_box() = default;
+  _CCCL_HIDE_FROM_ABI constexpr __movable_box() noexcept(is_nothrow_default_constructible_v<_Tp>) = default;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD_RANGES

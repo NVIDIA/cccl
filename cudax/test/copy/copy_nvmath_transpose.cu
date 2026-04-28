@@ -158,3 +158,17 @@ TEST_CASE("copy d2d nvmath transpose_inbalanced", "[copy][d2d][nvmath][transpose
   cuda::std::array<int, 2> dst_strides{1000033, 1};
   test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
 }
+
+// src: (4,4,4,4,4,4,16,8):(1,4,...,65536), column-major
+// dst: (4,4,4,4,4,4,16,8):(131072,...,8,1), row-major
+// Rank 8 == __max_shared_mem_kernel_rank, verifying the shared-memory kernel is still instantiated at the maximum
+// allowed rank. The first 6 dimensions fit in one tile (4^6 = 4096 elements); the last 2 dimensions (16x8 = 128 tiles)
+// provide sufficient grid utilization.
+TEST_CASE("copy d2d nvmath transpose_max_shared_mem_rank", "[copy][d2d][nvmath][transpose]")
+{
+  constexpr int alloc = 4 * 4 * 4 * 4 * 4 * 4 * 16 * 8; // 524288
+  cuda::std::array<int, 8> shape{4, 4, 4, 4, 4, 4, 16, 8};
+  cuda::std::array<int, 8> src_strides{1, 4, 16, 64, 256, 1024, 4096, 65536};
+  cuda::std::array<int, 8> dst_strides{131072, 32768, 8192, 2048, 512, 128, 8, 1};
+  test_copy_stride_relaxed<data_t>(alloc, 0, shape, src_strides, alloc, 0, dst_strides);
+}

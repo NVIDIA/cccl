@@ -34,16 +34,7 @@ namespace stdexec = cuda::std::execution;
 
 #if TEST_LAUNCH == 0
 
-struct block_size_check_t
-{
-  int* ptr;
-
-  __device__ bool operator()(int lhs, int rhs)
-  {
-    *ptr = blockDim.x;
-    return lhs == rhs;
-  }
-};
+using block_size_check_t = block_size_extracting_op<cuda::std::equal_to<>>;
 
 TEST_CASE("Device select works with default environment", "[select][device]")
 {
@@ -53,7 +44,7 @@ TEST_CASE("Device select works with default environment", "[select][device]")
   num_items_t num_items = 8;
   auto d_in             = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8};
   auto d_out            = c2h::device_vector<value_t>(num_items);
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   less_than_t<value_t> select_op{5};
 
@@ -78,7 +69,7 @@ TEST_CASE("Device select flagged works with default environment", "[select][devi
   auto d_in             = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8};
   auto d_flags          = c2h::device_vector<char>{1, 0, 0, 1, 0, 1, 1, 0};
   auto d_out            = c2h::device_vector<value_t>(num_items);
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   // launch wrapper always assumes the last argument is the environment
   REQUIRE(
@@ -102,7 +93,7 @@ TEST_CASE("Device select flagged_if works with default environment", "[select][d
   auto d_in             = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8};
   auto d_flags          = c2h::device_vector<int>{2, 1, 1, 4, 1, 6, 6, 1};
   auto d_out            = c2h::device_vector<value_t>(num_items);
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   mod_n<int> select_op{2};
 
@@ -126,7 +117,7 @@ TEST_CASE("Device select flagged in-place works with default environment", "[sel
   num_items_t num_items = 8;
   auto d_data           = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8};
   auto d_flags          = c2h::device_vector<char>{1, 0, 0, 1, 0, 1, 1, 0};
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   REQUIRE(
     cudaSuccess == cub::DeviceSelect::Flagged(d_data.begin(), d_flags.begin(), d_num_selected.begin(), num_items));
@@ -146,7 +137,7 @@ TEST_CASE("Device select if in-place works with default environment", "[select][
 
   num_items_t num_items = 8;
   auto d_data           = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8};
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   less_than_t<value_t> select_op{5};
 
@@ -168,7 +159,7 @@ TEST_CASE("Device select flagged_if in-place works with default environment", "[
   num_items_t num_items = 8;
   auto d_data           = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8};
   auto d_flags          = c2h::device_vector<int>{2, 1, 1, 4, 1, 6, 6, 1};
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   mod_n<int> select_op{2};
 
@@ -192,7 +183,7 @@ TEST_CASE("Device select unique works with default environment", "[select][devic
   num_items_t num_items = 8;
   auto d_in             = c2h::device_vector<value_t>{0, 2, 2, 9, 5, 5, 5, 8};
   auto d_out            = c2h::device_vector<value_t>(num_items);
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   REQUIRE(cudaSuccess == cub::DeviceSelect::Unique(d_in.begin(), d_out.begin(), d_num_selected.begin(), num_items));
 
@@ -212,7 +203,7 @@ TEST_CASE("Device select unique with custom equality_op works with default envir
   num_items_t num_items = 8;
   auto d_in             = c2h::device_vector<value_t>{0, 3, 6, 1, 4, 7, 2, 5};
   auto d_out            = c2h::device_vector<value_t>(num_items);
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   eq_mod3_t<value_t> eq_mod3{};
 
@@ -237,7 +228,7 @@ TEST_CASE("Device select unique_by_key works with default environment", "[select
   auto d_values_in      = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8};
   auto d_keys_out       = c2h::device_vector<value_t>(num_items);
   auto d_values_out     = c2h::device_vector<value_t>(num_items);
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   REQUIRE(
     cudaSuccess
@@ -248,6 +239,42 @@ TEST_CASE("Device select unique_by_key works with default environment", "[select
       d_values_out.begin(),
       d_num_selected.begin(),
       num_items));
+
+  c2h::device_vector<value_t> expected_keys{0, 2, 9, 5, 8};
+  c2h::device_vector<value_t> expected_values{1, 2, 4, 5, 8};
+  c2h::device_vector<int> expected_num_selected{5};
+
+  REQUIRE(d_num_selected == expected_num_selected);
+  d_keys_out.resize(d_num_selected[0]);
+  d_values_out.resize(d_num_selected[0]);
+  REQUIRE(d_keys_out == expected_keys);
+  REQUIRE(d_values_out == expected_values);
+}
+
+TEST_CASE("Device select unique_by_key works with default environment and explicit env", "[select][device]")
+{
+  using value_t     = int;
+  using num_items_t = int;
+
+  num_items_t num_items = 8;
+  auto d_keys_in        = c2h::device_vector<value_t>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto d_values_in      = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8};
+  auto d_keys_out       = c2h::device_vector<value_t>(num_items);
+  auto d_values_out     = c2h::device_vector<value_t>(num_items);
+  auto d_num_selected   = c2h::device_vector<int>(1);
+
+  auto env = stdexec::env{};
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSelect::UniqueByKey(
+      d_keys_in.begin(),
+      d_values_in.begin(),
+      d_keys_out.begin(),
+      d_values_out.begin(),
+      d_num_selected.begin(),
+      num_items,
+      env));
 
   c2h::device_vector<value_t> expected_keys{0, 2, 9, 5, 8};
   c2h::device_vector<value_t> expected_values{1, 2, 4, 5, 8};
@@ -280,8 +307,8 @@ TEST_CASE("Device select unique_by_key default tuning chooses target block size"
   auto d_keys_in        = c2h::device_vector<key_t>{0};
   auto d_keys_out       = c2h::device_vector<key_t>(1);
   auto d_values_out     = c2h::device_vector<value_t>(1);
-  auto d_num_selected   = c2h::device_vector<int>(1);
-  auto d_block_size     = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
+  auto d_block_size     = c2h::device_vector<unsigned int>(1);
   block_size_check_t equality_op{thrust::raw_pointer_cast(d_block_size.data())};
   auto d_values_in = cuda::constant_iterator(value_t{1});
 
@@ -299,7 +326,7 @@ TEST_CASE("Device select unique_by_key default tuning chooses target block size"
   REQUIRE(d_num_selected[0] == 1);
   REQUIRE(d_keys_out[0] == key_t{0});
   REQUIRE(d_values_out[0] == value_t{1});
-  REQUIRE(d_block_size[0] == target_block_size);
+  REQUIRE(d_block_size[0] == static_cast<unsigned int>(target_block_size));
 }
 
 #endif
@@ -312,7 +339,7 @@ C2H_TEST("Device select uses environment", "[select][device]")
   num_items_t num_items = 10;
   auto d_in             = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
   auto d_out            = c2h::device_vector<value_t>(num_items);
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   less_than_t<value_t> select_op{6};
 
@@ -344,7 +371,7 @@ C2H_TEST("Device select flagged uses environment", "[select][device]")
   auto d_in             = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
   auto d_flags          = c2h::device_vector<char>{1, 0, 1, 0, 1, 0, 1, 0, 1, 0};
   auto d_out            = c2h::device_vector<value_t>(num_items);
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -379,7 +406,7 @@ C2H_TEST("Device select flagged_if uses environment", "[select][device]")
   auto d_in             = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
   auto d_flags          = c2h::device_vector<int>{2, 1, 2, 1, 2, 1, 2, 1, 2, 1};
   auto d_out            = c2h::device_vector<value_t>(num_items);
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   mod_n<int> select_op{2};
 
@@ -417,7 +444,7 @@ C2H_TEST("Device select flagged in-place uses environment", "[select][device]")
   num_items_t num_items = 10;
   auto d_data           = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
   auto d_flags          = c2h::device_vector<char>{1, 0, 1, 0, 1, 0, 1, 0, 1, 0};
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -451,7 +478,7 @@ C2H_TEST("Device select if in-place uses environment", "[select][device]")
 
   num_items_t num_items = 10;
   auto d_data           = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   less_than_t<value_t> select_op{6};
 
@@ -481,7 +508,7 @@ C2H_TEST("Device select flagged_if in-place uses environment", "[select][device]
   num_items_t num_items = 10;
   auto d_data           = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
   auto d_flags          = c2h::device_vector<int>{2, 1, 2, 1, 2, 1, 2, 1, 2, 1};
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   mod_n<int> select_op{2};
 
@@ -520,7 +547,7 @@ C2H_TEST("Device select unique uses environment", "[select][device]")
   num_items_t num_items = 10;
   auto d_in             = c2h::device_vector<value_t>{1, 1, 2, 2, 3, 3, 4, 4, 5, 5};
   auto d_out            = c2h::device_vector<value_t>(num_items);
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   size_t expected_bytes_allocated{};
   REQUIRE(cudaSuccess
@@ -547,7 +574,7 @@ C2H_TEST("Device select unique with custom equality_op uses environment", "[sele
   num_items_t num_items = 8;
   auto d_in             = c2h::device_vector<value_t>{0, 3, 6, 1, 4, 7, 2, 5};
   auto d_out            = c2h::device_vector<value_t>(num_items);
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   eq_mod3_t<value_t> eq_mod3{};
 
@@ -579,7 +606,7 @@ C2H_TEST("Device select unique_by_key uses environment", "[select][device]")
   auto d_values_in      = c2h::device_vector<value_t>{10, 11, 20, 21, 30, 31, 40, 41, 50, 51};
   auto d_keys_out       = c2h::device_vector<value_t>(num_items);
   auto d_values_out     = c2h::device_vector<value_t>(num_items);
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -617,6 +644,53 @@ C2H_TEST("Device select unique_by_key uses environment", "[select][device]")
   REQUIRE(d_values_out == expected_values);
 }
 
+C2H_TEST("Device select unique_by_key uses environment without equality_op", "[select][device]")
+{
+  using value_t     = int;
+  using num_items_t = int;
+
+  num_items_t num_items = 10;
+  auto d_keys_in        = c2h::device_vector<value_t>{1, 1, 2, 2, 3, 3, 4, 4, 5, 5};
+  auto d_values_in      = c2h::device_vector<value_t>{10, 11, 20, 21, 30, 31, 40, 41, 50, 51};
+  auto d_keys_out       = c2h::device_vector<value_t>(num_items);
+  auto d_values_out     = c2h::device_vector<value_t>(num_items);
+  auto d_num_selected   = c2h::device_vector<int>(1);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSelect::UniqueByKey(
+      nullptr,
+      expected_bytes_allocated,
+      d_keys_in.begin(),
+      d_values_in.begin(),
+      d_keys_out.begin(),
+      d_values_out.begin(),
+      d_num_selected.begin(),
+      num_items));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_select_unique_by_key(
+    d_keys_in.begin(),
+    d_values_in.begin(),
+    d_keys_out.begin(),
+    d_values_out.begin(),
+    d_num_selected.begin(),
+    num_items,
+    env);
+
+  c2h::device_vector<value_t> expected_keys{1, 2, 3, 4, 5};
+  c2h::device_vector<value_t> expected_values{10, 20, 30, 40, 50};
+  c2h::device_vector<int> expected_num_selected{5};
+
+  REQUIRE(d_num_selected == expected_num_selected);
+  d_keys_out.resize(d_num_selected[0]);
+  d_values_out.resize(d_num_selected[0]);
+  REQUIRE(d_keys_out == expected_keys);
+  REQUIRE(d_values_out == expected_values);
+}
+
 TEST_CASE("Device select uses custom stream", "[select][device]")
 {
   using value_t     = int;
@@ -625,7 +699,7 @@ TEST_CASE("Device select uses custom stream", "[select][device]")
   num_items_t num_items = 8;
   auto d_in             = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8};
   auto d_out            = c2h::device_vector<value_t>(num_items);
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   less_than_t<value_t> select_op{5};
 
@@ -664,7 +738,7 @@ TEST_CASE("Device select flagged uses custom stream", "[select][device]")
   auto d_in             = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8};
   auto d_flags          = c2h::device_vector<char>{1, 0, 0, 1, 0, 1, 1, 0};
   auto d_out            = c2h::device_vector<value_t>(num_items);
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   cudaStream_t custom_stream;
   REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
@@ -707,7 +781,7 @@ TEST_CASE("Device select flagged_if uses custom stream", "[select][device]")
   auto d_in             = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8};
   auto d_flags          = c2h::device_vector<int>{2, 1, 1, 4, 1, 6, 6, 1};
   auto d_out            = c2h::device_vector<value_t>(num_items);
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   mod_n<int> select_op{2};
 
@@ -753,7 +827,7 @@ TEST_CASE("Device select unique uses custom stream", "[select][device]")
   num_items_t num_items = 8;
   auto d_in             = c2h::device_vector<value_t>{0, 2, 2, 9, 5, 5, 5, 8};
   auto d_out            = c2h::device_vector<value_t>(num_items);
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   cudaStream_t custom_stream;
   REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
@@ -790,7 +864,7 @@ TEST_CASE("Device select unique_by_key uses custom stream", "[select][device]")
   auto d_values_in      = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8};
   auto d_keys_out       = c2h::device_vector<value_t>(num_items);
   auto d_values_out     = c2h::device_vector<value_t>(num_items);
-  auto d_num_selected   = c2h::device_vector<int>(1);
+  auto d_num_selected   = c2h::device_vector<unsigned int>(1);
 
   cudaStream_t custom_stream;
   REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));

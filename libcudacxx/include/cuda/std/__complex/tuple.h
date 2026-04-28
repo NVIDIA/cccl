@@ -33,11 +33,11 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-struct tuple_size<complex<_Tp>> : ::cuda::std::integral_constant<size_t, 2>
+struct tuple_size<complex<_Tp>> : integral_constant<size_t, 2>
 {};
 
 template <size_t _Index, class _Tp>
-  struct tuple_element<_Index, complex<_Tp>> : ::cuda::std::enable_if < _Index<2, _Tp>
+struct tuple_element<_Index, complex<_Tp>> : enable_if<(_Index < 2), _Tp>
 {};
 
 template <class _Tp>

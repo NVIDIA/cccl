@@ -372,8 +372,8 @@ struct DeviceFind
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_find_env_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin find-if-env-predicate
-  //!     :end-before: example-end find-if-env-predicate
+  //!     :start-after: example-begin find-if-predicate
+  //!     :end-before: example-end find-if-predicate
   //!
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_find_env_api.cu
   //!     :language: c++

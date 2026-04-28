@@ -66,7 +66,7 @@ void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
       launch
 #if !TUNE_BASE
       ,
-      cuda::execution::__tune(policy_selector<key_t>{})
+      cuda::execution::tune(policy_selector<key_t>{})
 #endif // !TUNE_BASE
     );
     _CCCL_TRY_CUDA_API(

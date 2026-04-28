@@ -72,6 +72,9 @@ class group;
 template <::cuda::std::size_t _Np = ::cuda::std::dynamic_extent, bool _IsExhaustive = true>
 class group_by;
 
+template <class _Data, bool _IsExahustive>
+class group_as;
+
 // synchronizers
 
 class lane_synchronizer;
@@ -97,6 +100,8 @@ inline constexpr bool __is_this_group_v<this_grid<_Hierarchy>> = true;
 // tags
 
 struct non_exhaustive_t;
+
+inline constexpr unsigned __invalid_count_or_rank = 0xffff'ffff;
 } // namespace cuda::experimental
 
 #endif // !_CCCL_DOXYGEN_INVOKED

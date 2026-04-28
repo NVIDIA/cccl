@@ -39,20 +39,7 @@ namespace stdexec = cuda::std::execution;
 // We need a test of simple use to check if default environment works.
 // ifdef it out not to spend time compiling and running it twice.
 #if TEST_LAUNCH == 0
-struct block_size_check_t
-{
-  unsigned int* ptr;
-
-  __device__ int operator()(int a, int b)
-  {
-    if (threadIdx.x == 0)
-    {
-      // use an atomic operation to write the block dim in case multiple blocks are launched
-      atomicMax(ptr, blockDim.x);
-    }
-    return a + b;
-  }
-};
+using block_size_check_t = block_size_extracting_op<cuda::std::plus<>>;
 
 TEST_CASE("Device reduce works with default environment", "[reduce][device]")
 {
@@ -141,7 +128,7 @@ C2H_TEST("Device reduce can be tuned", "[reduce][device]", block_sizes)
   auto d_out     = thrust::device_vector<int>(1);
 
   // We are expecting that `unrelated_tuning` is ignored
-  auto env = cuda::execution::__tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
+  auto env = cuda::execution::tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
 
   REQUIRE(cudaSuccess == cub::DeviceReduce::Reduce(d_in, d_out.begin(), num_items, block_size_check, 0, env));
   REQUIRE(d_out[0] == num_items);
@@ -157,7 +144,7 @@ C2H_TEST("Device sum can be tuned", "[reduce][device]", block_sizes)
   auto d_out     = thrust::device_vector<int>(1);
 
   // We are expecting that `unrelated_tuning` is ignored
-  auto env = cuda::execution::__tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
+  auto env = cuda::execution::tune(reduce_tuning<target_block_size>{}, unrelated_tuning{});
 
   REQUIRE(cudaSuccess == cub::DeviceReduce::Sum(d_in, d_out.begin(), num_items, env));
   REQUIRE(d_out[0] == num_items);

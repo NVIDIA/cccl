@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile && !c++17
+// nvbug6085905: Segmentation fault (core dumped) tileiras
+
 // CONSTEXPR_STEPS: 15000000
 
 // bitset<N>& operator|=(const bitset<N>& rhs); // constexpr since C++23

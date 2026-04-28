@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // gcc does not support deduction guides until gcc-7 and that is buggy
 // UNSUPPORTED: gcc-6, gcc-7
 

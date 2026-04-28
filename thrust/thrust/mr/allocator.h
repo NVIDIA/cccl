@@ -20,11 +20,11 @@
 #include <thrust/detail/config.h>
 
 #include <thrust/detail/config/memory_resource.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/mr/polymorphic_adaptor.h>
 #include <thrust/mr/validator.h>
 
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
@@ -54,9 +54,9 @@ public:
   /*! The value type allocated by this allocator. Equivalent to \p T. */
   using value_type = T;
   /*! The pointer type allocated by this allocator. Equivaled to the pointer type of \p MR rebound to \p T. */
-  using pointer = typename thrust::detail::pointer_traits<void_pointer>::template rebind<T>::other;
+  using pointer = typename ::cuda::std::pointer_traits<void_pointer>::template rebind<T>;
   /*! The pointer to const type. Equivalent to a pointer type of \p MR rebound to <tt>const T</tt>. */
-  using const_pointer = typename thrust::detail::pointer_traits<void_pointer>::template rebind<const T>::other;
+  using const_pointer = typename ::cuda::std::pointer_traits<void_pointer>::template rebind<const T>;
   /*! The reference to the type allocated by this allocator. Supports smart references. */
   using reference = typename ::cuda::std::iterator_traits<pointer>::reference;
   /*! The const reference to the type allocated by this allocator. Supports smart references. */
@@ -64,14 +64,14 @@ public:
   /*! The size type of this allocator. Always \p std::size_t. */
   using size_type = std::size_t;
   /*! The difference type between pointers allocated by this allocator. */
-  using difference_type = typename thrust::detail::pointer_traits<pointer>::difference_type;
+  using difference_type = typename ::cuda::std::pointer_traits<pointer>::difference_type;
 
   /*! Specifies that the allocator shall be propagated on container copy assignment. */
-  using propagate_on_container_copy_assignment = detail::true_type;
+  using propagate_on_container_copy_assignment = ::cuda::std::true_type;
   /*! Specifies that the allocator shall be propagated on container move assignment. */
-  using propagate_on_container_move_assignment = detail::true_type;
+  using propagate_on_container_move_assignment = ::cuda::std::true_type;
   /*! Specifies that the allocator shall be propagated on container swap. */
-  using propagate_on_container_swap = detail::true_type;
+  using propagate_on_container_swap = ::cuda::std::true_type;
 
   /*! The \p rebind metafunction provides the type of an \p allocator instantiated with another type.
    *

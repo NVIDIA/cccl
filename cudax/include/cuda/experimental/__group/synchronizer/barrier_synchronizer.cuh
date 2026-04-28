@@ -25,12 +25,12 @@
 #include <cuda/hierarchy>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/span>
 
 #include <cuda/experimental/__group/concepts.cuh>
 #include <cuda/experimental/__group/fwd.cuh>
+#include <cuda/experimental/__group/traits.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -38,15 +38,6 @@
 
 namespace cuda::experimental
 {
-template <class _Tp, class = void>
-inline constexpr bool __is_spannable = false;
-template <class _Tp>
-inline constexpr bool
-  __is_spannable<_Tp, ::cuda::std::void_t<decltype(::cuda::std::span(::cuda::std::declval<_Tp>()))>> = true;
-
-template <class _Span>
-using _SpanElementType = typename _Span::element_type;
-
 template <class _Level>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_CONSTEVAL thread_scope __minimum_required_scope_for() noexcept
 {

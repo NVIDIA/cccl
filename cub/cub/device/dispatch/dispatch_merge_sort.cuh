@@ -507,13 +507,13 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   constexpr merge_sort_policy active_policy = vsmem_adapted_agents::policy;
 #endif // CUB_DEFINE_RUNTIME_POLICIES
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(NV_IS_HOST, ({
                    std::stringstream ss;
                    ss << active_policy;
                    _CubLog("Dispatching DeviceMergeSort to arch %d with tuning: %s\n", (int) arch_id, ss.str().c_str());
                  }))
-#endif
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     const auto tile_size = active_policy.items_per_tile();
     const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);

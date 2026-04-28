@@ -97,6 +97,7 @@ cudax_add_catch2_test(test_target copy
     copy/copy_llm.cu
     copy/copy_nvmath.cu
     copy/copy_nvmath_transpose.cu
+    copy/copy_shared_memory.cu
 )
 
 cudax_add_catch2_test(test_target cuco
@@ -127,6 +128,11 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/fill.cu
     algorithm/copy.cu
 )
+
+cudax_add_catch2_test(test_target group.mapping.group_as
+    group/mapping/group_as.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
 
 cudax_add_catch2_test(test_target group.mapping.group_by
     group/mapping/group_by.cu

@@ -15,9 +15,9 @@
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <sstream>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include "test_macros.h"
 
@@ -65,7 +65,7 @@ TEST_FUNC constexpr bool test_get_param(Param param)
   return true;
 }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 template <class D, class URNG, class Param>
 bool test_io(Param param)
 {

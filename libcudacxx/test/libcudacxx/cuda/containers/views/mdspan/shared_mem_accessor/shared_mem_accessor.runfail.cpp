@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: Calling a __device__ function in tile code
+
 #include <cuda/mdspan>
 
 #include "test_macros.h"

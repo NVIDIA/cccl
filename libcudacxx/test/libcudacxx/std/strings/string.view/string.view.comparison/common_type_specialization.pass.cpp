@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 // During the review D130295 it was noticed libc++'s implementation uses
 // cuda::std::common_type. When users specialize this template for their own types the
 // comparisons would fail. This tests with a specialized cuda::std::common_type.

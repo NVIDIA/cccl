@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// nvbug6076227: ICE when validating tile MLIR
+
 // test:
 
 // bool operator==(const bitset<N>& rhs) const; // constexpr since C++23

@@ -55,7 +55,7 @@ enum RadixSortStoreAlgorithm
   RADIX_SORT_STORE_ALIGNED
 };
 
-#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
+#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm algo)
 {
   switch (algo)
@@ -68,7 +68,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, RadixSortStoreAlgorithm al
       return os << "<unknown RadixSortStoreAlgorithm: " << static_cast<int>(algo) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
 
 template <int NominalBlockThreads4B,
           int NominalItemsPerThread4B,

@@ -196,6 +196,10 @@ _CCCL_HOST_API void __coalesce_paired(__raw_tensor<_ExtentT, _SrcStrideT, _TpSrc
     __dst.__strides[__out_r] = __dst.__strides[__i];
     ++__out_r;
   }
+  for (__rank_t __i = __out_r; __i < _MaxRank; ++__i)
+  {
+    __src.__extents[__i] = _ExtentT{1};
+  }
   __src.__rank    = __out_r;
   __dst.__rank    = __out_r;
   __dst.__extents = __src.__extents;

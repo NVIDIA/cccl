@@ -35,9 +35,9 @@
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <atomic> // saves 146ms compile-time over <cuda/std/atomic> (CCCL 3.1)
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <nv/target>
 

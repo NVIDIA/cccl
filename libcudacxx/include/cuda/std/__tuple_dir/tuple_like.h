@@ -50,11 +50,26 @@ inline constexpr bool __tuple_like_impl<const volatile _Tp> = __tuple_like_impl<
 template <class... _Tp>
 inline constexpr bool __tuple_like_impl<tuple<_Tp...>> = true;
 
+#if _CCCL_HAS_HOST_STD_LIB()
+template <class... _Tp>
+inline constexpr bool __tuple_like_impl<::std::tuple<_Tp...>> = true;
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
 template <class _T1, class _T2>
 inline constexpr bool __tuple_like_impl<pair<_T1, _T2>> = true;
 
+#if _CCCL_HAS_HOST_STD_LIB()
+template <class _T1, class _T2>
+inline constexpr bool __tuple_like_impl<::std::pair<_T1, _T2>> = true;
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
 template <class _Tp, size_t _Size>
 inline constexpr bool __tuple_like_impl<array<_Tp, _Size>> = true;
+
+#if _CCCL_HAS_HOST_STD_LIB()
+template <class _Tp, size_t _Size>
+inline constexpr bool __tuple_like_impl<::std::array<_Tp, _Size>> = true;
+#endif // _CCCL_HAS_HOST_STD_LIB()
 
 template <class _Tp>
 inline constexpr bool __tuple_like_impl<complex<_Tp>> = true;

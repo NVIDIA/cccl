@@ -64,10 +64,7 @@ TEST_FUNC constexpr void
 test_mdspan_ctor_array(const H& handle, const M& map, const A&, cuda::std::array<typename M::index_type, N> exts)
 {
   using MDS = cuda::managed_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    move_counted_handle<typename MDS::element_type>::move_counter() = 0;
-  }
+  move_counted_handle<typename MDS::element_type>::reset();
   MDS m(handle, exts);
   test_move_counter<MDS, H>();
 

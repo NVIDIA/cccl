@@ -44,19 +44,17 @@ struct non_exhaustive_t
 
 _CCCL_DEVICE constexpr non_exhaustive_t non_exhaustive;
 
-inline constexpr unsigned __invalid_count_or_rank = 0xffff'ffff;
-
 // Requirements on mappings:
 // - must be copyable
 // - must implement `map(_Unit, _Level, _Hierarchy)` method that returns an object that satisfies the
 //   `__group_mapping_result` concept
 
 // todo(dabayer): do we want to add stride parameter?
-template <::cuda::std::size_t _Np, bool _IsExhaustive>
+template <::cuda::std::size_t _Count, bool _IsExhaustive>
 class group_by
 {
-  static_assert(_Np != 0, "_Np must not be zero");
-  static_assert(::cuda::std::in_range<unsigned>(_Np), "_Np must be within uint32_t range");
+  static_assert(_Count != 0, "_Count must not be zero");
+  static_assert(::cuda::std::in_range<unsigned>(_Count), "_Count must be within uint32_t range");
 
 public:
   template <::cuda::std::size_t _NGroups, bool _ParentIsAlwaysExhaustive, bool _ParentIsAlwaysContiguous>
@@ -95,7 +93,7 @@ public:
 
     [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count() noexcept
     {
-      return _Np;
+      return _Count;
     }
 
     [[nodiscard]] _CCCL_DEVICE_API unsigned count() const noexcept
@@ -104,7 +102,7 @@ public:
       {
         _CCCL_ASSERT(is_valid(), "getting count of thread that is not part of the group is UB");
       }
-      return static_cast<unsigned>(_Np);
+      return static_cast<unsigned>(_Count);
     }
 
     [[nodiscard]] _CCCL_DEVICE_API unsigned rank() const noexcept
@@ -147,7 +145,7 @@ public:
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count() noexcept
   {
-    return _Np;
+    return _Count;
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr bool is_always_exhaustive() noexcept
@@ -157,7 +155,7 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr unsigned count() const noexcept
   {
-    return static_cast<unsigned>(_Np);
+    return static_cast<unsigned>(_Count);
   }
 
   template <class _Unit, class _ParentGroup>
@@ -165,7 +163,7 @@ public:
   {
     constexpr auto __static_nunits = ::cuda::experimental::__static_count_query_group<_Unit, _ParentGroup>();
     constexpr auto __static_ngroups =
-      (__static_nunits != ::cuda::std::dynamic_extent) ? __static_nunits / _Np : ::cuda::std::dynamic_extent;
+      (__static_nunits != ::cuda::std::dynamic_extent) ? __static_nunits / _Count : ::cuda::std::dynamic_extent;
 
     using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
     using _MappingResult =
@@ -186,7 +184,7 @@ public:
     {
       if constexpr (__static_nunits != ::cuda::std::dynamic_extent)
       {
-        static_assert(__static_nunits % _Np == 0, "group_by mapping _IsExhaustive precondition violation");
+        static_assert(__static_nunits % _Count == 0, "group_by mapping _IsExhaustive precondition violation");
       }
       else
       {
@@ -207,7 +205,7 @@ public:
 template <bool _IsExhaustive>
 class group_by<::cuda::std::dynamic_extent, _IsExhaustive>
 {
-  unsigned __n_;
+  unsigned __count_;
 
 public:
   template <bool _ParentIsAlwaysExhaustive, bool _ParentIsAlwaysContiguous>
@@ -291,18 +289,18 @@ public:
     }
   };
 
-  _CCCL_DEVICE_API explicit constexpr group_by(unsigned __n) noexcept
-      : __n_{__n}
+  _CCCL_DEVICE_API explicit constexpr group_by(unsigned __count) noexcept
+      : __count_{__count}
   {
-    _CCCL_ASSERT(__n_ > 0, "__n cannot be 0");
+    _CCCL_ASSERT(__count > 0, "__count cannot be 0");
   }
 
   _CCCL_TEMPLATE(bool _IsExhaustive2 = _IsExhaustive)
   _CCCL_REQUIRES((!_IsExhaustive2))
-  _CCCL_DEVICE_API explicit constexpr group_by(unsigned __n, const non_exhaustive_t&) noexcept
-      : __n_{__n}
+  _CCCL_DEVICE_API explicit constexpr group_by(unsigned __count, const non_exhaustive_t&) noexcept
+      : __count_{__count}
   {
-    _CCCL_ASSERT(__n_ > 0, "__n cannot be 0");
+    _CCCL_ASSERT(__count > 0, "__count cannot be 0");
   }
 
   [[nodiscard]] _CCCL_DEVICE_API static constexpr ::cuda::std::size_t static_count() noexcept
@@ -317,7 +315,7 @@ public:
 
   [[nodiscard]] _CCCL_DEVICE_API constexpr unsigned count() const noexcept
   {
-    return __n_;
+    return __count_;
   }
 
   template <class _Unit, class _ParentGroup>
@@ -331,17 +329,17 @@ public:
     const auto __unit_rank = __unit.template rank_as<unsigned>(__parent);
 
     _MappingResult __ret{};
-    __ret.__group_count_ = __nunits / __n_;
-    __ret.__group_rank_  = __unit_rank / __n_;
-    __ret.__count_       = __n_;
-    __ret.__rank_        = __unit_rank % __n_;
+    __ret.__group_count_ = __nunits / __count_;
+    __ret.__group_rank_  = __unit_rank / __count_;
+    __ret.__count_       = __count_;
+    __ret.__rank_        = __unit_rank % __count_;
 
     // If the mapping is exhaustive, check the preconditions, otherwise remove the last partial group.
     if constexpr (_IsExhaustive)
     {
-      _CCCL_ASSERT(__nunits % __n_ == 0, "group_by mapping _IsExhaustive precondition violation");
+      _CCCL_ASSERT(__nunits % __count_ == 0, "group_by mapping _IsExhaustive precondition violation");
     }
-    else if (__nunits % __n_ != 0)
+    else if (__nunits % __count_ != 0)
     {
       if (__ret.__group_rank_ >= __ret.__group_count_)
       {

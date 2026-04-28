@@ -38,10 +38,7 @@ TEST_FUNC constexpr void test_mdspan_types(const H& handle, const M& map, const 
   using MDS = cuda::device_mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
   static_assert(ac == cuda::std::is_default_constructible<A>::value);
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    move_counted_handle<typename MDS::element_type>::move_counter() = 0;
-  }
+  move_counted_handle<typename MDS::element_type>::reset();
   // use formulation of constructor which tests that it is not explicit
   MDS m = {handle, map};
   test_move_counter<MDS, H>();
@@ -92,7 +89,7 @@ TEST_FUNC constexpr void mixin_accessor()
   // Make sure they actually got the properties we want to test
   // checked_accessor is not default constructible except for const double, where it is not noexcept
   static_assert(
-    cuda::std::is_default_constructible<checked_accessor<T>>::value == cuda::std::is_same<T, const double>::value, "");
+    cuda::std::is_default_constructible<checked_accessor<T>>::value == cuda::std::is_same<T, const double>::value);
   mixin_layout<cuda::std::is_same<T, const double>::value>(
     typename checked_accessor<T>::data_handle_type(elements.data()), checked_accessor<T>(1024));
 }
@@ -107,7 +104,7 @@ TEST_FUNC TEST_CONSTEXPR_CXX20 void mixin_accessor()
   // Make sure they actually got the properties we want to test
   // checked_accessor is not default constructible except for const double, where it is not noexcept
   static_assert(
-    cuda::std::is_default_constructible<checked_accessor<T>>::value == cuda::std::is_same<T, const double>::value, "");
+    cuda::std::is_default_constructible<checked_accessor<T>>::value == cuda::std::is_same<T, const double>::value);
   mixin_layout<cuda::std::is_same<T, const double>::value>(
     typename checked_accessor<T>::data_handle_type(elements.get_ptr()), checked_accessor<T>(1024));
 }

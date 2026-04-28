@@ -10,7 +10,6 @@
 
 #include <cub/detail/choose_offset.cuh> // cub::detail::choose_offset_t
 #include <cub/detail/launcher/cuda_driver.cuh> // cub::detail::CudaDriverLauncherFactory
-#include <cub/device/dispatch/dispatch_fixed_size_segmented_reduce.cuh>
 #include <cub/device/dispatch/dispatch_segmented_reduce.cuh> // cub::DispatchSegmentedReduce
 #include <cub/thread/thread_load.cuh> // cub::LoadModifier
 
@@ -191,7 +190,7 @@ using namespace cub;
 using namespace cub::detail::reduce;
 using namespace cub::detail::segmented_reduce;
 static_assert(
-  device_segmented_reduce_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {9},
+  device_segmented_reduce_policy()(detail::current_tuning_arch()) == {9},
   "Host generated and JIT compiled policy mismatch");
 )XXX",
     jit_template_header_contents, // 0

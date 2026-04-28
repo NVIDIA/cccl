@@ -213,16 +213,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   _CCCL_API constexpr explicit __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _GetStream __get_stream)
       : __stream_{__get_stream(__sndr, execution::get_env(__rcvr))}
   {
-    NV_IF_TARGET(NV_IS_HOST,
-                 (__host_make_state(static_cast<_CvSndr&&>(__sndr), static_cast<_Rcvr&&>(__rcvr));),
-                 (__device_make_state(static_cast<_CvSndr&&>(__sndr), static_cast<_Rcvr&&>(__rcvr));));
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      (__host_make_state(static_cast<_CvSndr&&>(__sndr), static_cast<_Rcvr&&>(__rcvr));),
+                      (__device_make_state(static_cast<_CvSndr&&>(__sndr), static_cast<_Rcvr&&>(__rcvr));));
   }
 
   _CCCL_IMMOVABLE(__opstate_t);
 
   _CCCL_API constexpr void start() noexcept
   {
-    NV_IF_TARGET(NV_IS_HOST, ({ __host_start(); }), ({ __device_start(); }));
+    NV_IF_ELSE_TARGET(NV_IS_HOST, ({ __host_start(); }), ({ __device_start(); }));
   }
 
   // This is called by the continues_on adaptor after it has sync'ed the stream.

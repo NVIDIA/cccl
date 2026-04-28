@@ -407,6 +407,14 @@
       }
     },
     {
+      "name": "cccl-c-parallel-hostjit",
+      "displayName": "CCCL C Parallel Library (HostJIT)",
+      "inherits": "cccl-c-parallel",
+      "cacheVariables": {
+        "CCCL_C_Parallel_ENABLE_HOSTJIT": true
+      }
+    },
+    {
       "name": "cccl-c-stf",
       "displayName": "CCCL C CUDASTF Library",
       "inherits": "base",
@@ -637,6 +645,10 @@
     {
       "name": "cccl-c-parallel",
       "configurePreset": "cccl-c-parallel"
+    },
+    {
+      "name": "cccl-c-parallel-hostjit",
+      "configurePreset": "cccl-c-parallel-hostjit"
     },
     {
       "name": "cccl-c-stf",
@@ -915,6 +927,11 @@
     {
       "name": "cccl-c-parallel",
       "configurePreset": "cccl-c-parallel",
+      "inherits": "base"
+    },
+    {
+      "name": "cccl-c-parallel-hostjit",
+      "configurePreset": "cccl-c-parallel-hostjit",
       "inherits": "base"
     },
     {

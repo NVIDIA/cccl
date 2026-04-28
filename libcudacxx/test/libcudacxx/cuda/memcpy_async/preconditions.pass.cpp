@@ -10,6 +10,10 @@
 
 #define _LIBCUDACXX_MEMCPY_ASYNC_PRE_TESTING
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
+
 #include <cuda/__memcpy_async/check_preconditions.h>
 #include <cuda/std/cstddef>
 

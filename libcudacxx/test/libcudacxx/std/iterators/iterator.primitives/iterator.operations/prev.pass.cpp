@@ -21,11 +21,13 @@
 template <class It>
 TEST_FUNC constexpr void check_prev_n(It it, typename cuda::std::iterator_traits<It>::difference_type n, It result)
 {
+#if !_CCCL_TILE_COMPILATION() // error: indirect call is unsupported in tile code
   static_assert(cuda::std::is_same<decltype(cuda::std::prev(it, n)), It>::value);
   assert(cuda::std::prev(it, n) == result);
 
   It (*prev_ptr)(It, typename cuda::std::iterator_traits<It>::difference_type) = cuda::std::prev;
   assert(prev_ptr(it, n) == result);
+#endif // !_CCCL_TILE_COMPILATION()
 }
 
 template <class It>

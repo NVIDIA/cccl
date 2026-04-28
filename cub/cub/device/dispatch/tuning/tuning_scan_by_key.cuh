@@ -57,7 +57,7 @@ struct scan_by_key_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const scan_by_key_policy& p)
   {
     return os
@@ -66,7 +66,7 @@ struct scan_by_key_policy
         << ", .store_algorithm = " << p.store_algorithm << ", .scan_algorithm = " << p.scan_algorithm
         << ", .delay_constructor = " << p.delay_constructor << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 enum class primitive_accum
 {
