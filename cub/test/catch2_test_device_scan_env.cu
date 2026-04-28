@@ -36,11 +36,12 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_scan_inclusive
 
 namespace stdexec = cuda::std::execution;
 
+using block_size_check_t = block_size_extracting_op<cuda::std::plus<>>;
+
 // Launcher helper always passes an environment.
 // We need a test of simple use to check if default environment works.
 // ifdef it out not to spend time compiling and running it twice.
 #if TEST_LAUNCH == 0
-using block_size_check_t = block_size_extracting_op<cuda::std::plus<>>;
 
 TEST_CASE("Device scan exclusive scan works with default environment", "[scan][device]")
 {
