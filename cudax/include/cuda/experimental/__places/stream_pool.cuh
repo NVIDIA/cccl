@@ -74,9 +74,24 @@ inline constexpr unsigned long long k_no_stream_id = static_cast<unsigned long l
  * @brief Returns the unique stream ID from the CUDA driver (cuStreamGetId).
  * @param stream A valid CUDA stream, or nullptr.
  * @return The stream's unique ID, or k_no_stream_id if stream is nullptr.
+ *
+ * When @p stream is participating in CUDA graph capture, querying the driver
+ * stream ID is not permitted (CUDA_ERROR_STREAM_CAPTURE_UNSUPPORTED). In that case
+ * this returns k_no_stream_id; callers that cache syncs treat unknown ids as
+ * ``never skip cudaStreamWaitEvent`` (see async_resources_handle).
  */
 inline unsigned long long get_stream_id(cudaStream_t stream)
 {
+  if (stream == nullptr)
+  {
+    return k_no_stream_id;
+  }
+  cudaStreamCaptureStatus capture_status = cudaStreamCaptureStatusNone;
+  const cudaError_t cap_err              = cudaStreamIsCapturing(stream, &capture_status);
+  if (cap_err == cudaSuccess && capture_status != cudaStreamCaptureStatusNone)
+  {
+    return k_no_stream_id;
+  }
   unsigned long long id = 0;
   cuda_try(cuStreamGetId(reinterpret_cast<CUstream>(stream), &id));
   _CCCL_ASSERT(id != k_no_stream_id, "Internal error: cuStreamGetId returned k_no_stream_id");
