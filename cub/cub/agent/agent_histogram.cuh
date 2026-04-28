@@ -37,7 +37,7 @@ enum BlockHistogramMemoryPreference
   BLEND
 };
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 inline ::std::ostream& operator<<(::std::ostream& os, BlockHistogramMemoryPreference mempref)
 {
   switch (mempref)
@@ -52,7 +52,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, BlockHistogramMemoryPrefer
       return os << "<unknown BlockHistogramMemoryPreference: " << static_cast<int>(mempref) << ">";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 //! Parameterizable tuning policy type for AgentHistogram
 //!
@@ -113,7 +113,7 @@ struct AgentHistogramPolicy
   static constexpr CacheLoadModifier LOAD_MODIFIER = LoadModifier;
 };
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+#if defined(CUB_DEFINE_RUNTIME_POLICIES) // FIXME(bgruber): remove this
 namespace detail
 {
 // Only define this when needed.

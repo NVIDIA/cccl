@@ -227,12 +227,14 @@ template <class _Tp>
 template <typename _Tp>
 [[nodiscard]] _CCCL_API constexpr overflow_result<_Tp> __add_overflow_uniform_type(_Tp __lhs, _Tp __rhs) noexcept
 {
+#if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
     NV_IF_TARGET(NV_IS_DEVICE,
                  (return ::cuda::__add_overflow_device(__lhs, __rhs);),
                  (return ::cuda::__add_overflow_host(__lhs, __rhs);))
   }
+#endif // !_CCCL_TILE_COMPILATION()
   return ::cuda::__add_overflow_generic_impl(__lhs, __rhs);
 }
 

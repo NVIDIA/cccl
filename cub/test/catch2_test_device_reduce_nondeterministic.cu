@@ -138,10 +138,10 @@ C2H_TEST("Nondeterministic Device reduce works with float and double on gpu with
   c2h::device_vector<type> d_output_p2(1);
 
   auto env1 = cuda::std::execution::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
-                                        cuda::execution::__tune(custom_policy_selector<1, 128>{})};
+                                        cuda::execution::tune(custom_policy_selector<1, 128>{})};
 
   auto env2 = cuda::std::execution::env{cuda::execution::require(cuda::execution::determinism::not_guaranteed),
-                                        cuda::execution::__tune(custom_policy_selector<2, 256>{})};
+                                        cuda::execution::tune(custom_policy_selector<2, 256>{})};
 
   REQUIRE(
     cudaSuccess == cub::DeviceReduce::Reduce(d_input.begin(), d_output_p1.begin(), num_items, min_op, init, env1));

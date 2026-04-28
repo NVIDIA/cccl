@@ -219,8 +219,8 @@ try
       template_id<output_iterator_traits>(),
       tagged_arg<output_storage_t, cccl_iterator_t>{output_it},
       tagged_arg<output_storage_t, cccl_type_info>{output_it.value_type});
-  const auto [op_name, op_src] = get_specialization<unary_transform_operation_tag, user_operation_traits>(
-    template_id<user_operation_traits>(),
+  const auto [op_name, op_src] = get_specialization<unary_transform_operation_tag, unary_user_operation_traits>(
+    template_id<unary_user_operation_traits>(),
     op,
     tagged_arg<output_storage_t, cccl_type_info>{output_it.value_type},
     tagged_arg<input_storage_t, cccl_type_info>{input_it.value_type});
@@ -255,7 +255,7 @@ struct __align__({4}) output_storage_t {{
 using device_transform_policy = {8};
 using namespace cub;
 using namespace cub::detail::transform;
-static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {9}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_transform_policy()(detail::current_tuning_arch()) == {9}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     jit_template_header_contents, // 0
     input_it.value_type.size, // 1
@@ -411,8 +411,8 @@ try
       template_id<output_iterator_traits>(),
       tagged_arg<output_storage_t, cccl_iterator_t>{output_it},
       tagged_arg<output_storage_t, cccl_type_info>{output_it.value_type});
-  const auto [op_name, op_src] = get_specialization<binary_transform_operation_tag, user_operation_traits>(
-    template_id<user_operation_traits>(),
+  const auto [op_name, op_src] = get_specialization<binary_transform_operation_tag, binary_user_operation_traits>(
+    template_id<binary_user_operation_traits>(),
     op,
     tagged_arg<output_storage_t, cccl_type_info>{output_it.value_type},
     tagged_arg<input1_storage_t, cccl_type_info>{input1_it.value_type},
@@ -454,7 +454,7 @@ struct __align__({6}) output_storage_t {{
 using device_transform_policy = {11};
 using namespace cub;
 using namespace cub::detail::transform;
-static_assert(device_transform_policy()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {12}, "Host generated and JIT compiled policy mismatch");
+static_assert(device_transform_policy()(detail::current_tuning_arch()) == {12}, "Host generated and JIT compiled policy mismatch");
 )XXX",
     jit_template_header_contents, // 0
     input1_it.value_type.size, // 1

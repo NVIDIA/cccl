@@ -22,6 +22,8 @@ Extensions
 
   - All supported algorithms are available from C++17 onwards.
   - All supported algorithms are constexpr, except the allocating ones.
+  - Because `<cuda/std/algorithm>` is a huge header with a considerable compile-time cost, we provide each algorithm
+    through a minimal subheader named e.g `<cuda/std/algorithm.find.h>`
 
 Restrictions
 ------------
@@ -32,7 +34,7 @@ Restrictions
     * ``inplace_merge``
     * ``nth_element``
     * ``sort``
-    * ``stable_partiin``
+    * ``stable_partition``
     * ``stable_sort``
 
 Parallel standard algorithms
@@ -49,7 +51,6 @@ The use of any other execution policy is currently not supported and results in 
 
 The following algorithms are supported:
 
-  * ``adjacent_difference``
   * ``adjacent_find``
   * ``all_of``
   * ``any_of``
@@ -59,7 +60,6 @@ The following algorithms are supported:
   * ``count``
   * ``count_if``
   * ``equal``
-  * ``exclusive_scan``
   * ``fill``
   * ``fill_n``
   * ``find``
@@ -69,11 +69,12 @@ The following algorithms are supported:
   * ``for_each_n``
   * ``generate``
   * ``generate_n``
-  * ``inclusive_scan``
+  * ``is_partitioned``
+  * ``is_sorted``
+  * ``is_sorted_until``
   * ``merge``
   * ``mismatch``
   * ``none_of``
-  * ``reduce``
   * ``remove``
   * ``remove_copy``
   * ``remove_copy_if``
@@ -84,7 +85,14 @@ The following algorithms are supported:
   * ``replace_if``
   * ``reverse``
   * ``reverse_copy``
+  * ``rotate``
+  * ``rotate_copy``
+  * ``shift_left``
+  * ``shift_right``
+  * ``stable_partition``
+  * ``swap_ranges``
   * ``transform``
-  * ``transform_reduce``
   * ``unique``
   * ``unique_copy``
+
+The current implementation status is tracked in this `Github Issue <https://github.com/NVIDIA/cccl/issues/5592>`_

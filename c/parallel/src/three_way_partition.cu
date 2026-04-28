@@ -155,10 +155,10 @@ try
 
   const auto [select_first_part_op_name, select_first_part_op_src] =
     get_specialization<three_way_partition_select_first_part_operation_tag>(
-      template_id<user_operation_traits>(), select_first_part_op, selector_result_t, d_in.value_type);
+      template_id<unary_user_operation_traits>(), select_first_part_op, selector_result_t, d_in.value_type);
   const auto [select_second_part_op_name, select_second_part_op_src] =
     get_specialization<three_way_partition_select_second_part_operation_tag>(
-      template_id<user_operation_traits>(), select_second_part_op, selector_result_t, d_in.value_type);
+      template_id<unary_user_operation_traits>(), select_second_part_op, selector_result_t, d_in.value_type);
 
   const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_INT64);
 
@@ -196,7 +196,7 @@ using namespace cub;
 using namespace cub::detail;
 using namespace cub::detail::three_way_partition;
 static_assert(
-  device_three_way_partition_policy_selector()(::cuda::arch_id{{CUB_PTX_ARCH / 10}}) == {11},
+  device_three_way_partition_policy_selector()(current_tuning_arch()) == {11},
   "Host generated and JIT compiled policy mismatch");
 )XXX",
     jit_template_header_contents, // 0

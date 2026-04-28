@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: pre-sm-70
 
 #include <cooperative_groups.h>

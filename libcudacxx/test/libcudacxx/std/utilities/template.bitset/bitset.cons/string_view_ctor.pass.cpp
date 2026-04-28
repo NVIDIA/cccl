@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile && !c++17
+// nvbug6085905: Segmentation fault (core dumped) tileiras
+
 //    template<class charT, class traits>
 //        explicit bitset(
 //            const basic_string_view<charT,traits>& str,

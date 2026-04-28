@@ -68,6 +68,7 @@ target_compile_options(
 cudax_add_catch2_test(test_target graph
     graph/graph_smoke.cu
     graph/graph_node_ops_smoke.cu
+    graph/graph_buffer_smoke.cu
 )
 
 cudax_add_catch2_test(test_target stream
@@ -96,6 +97,7 @@ cudax_add_catch2_test(test_target copy
     copy/copy_llm.cu
     copy/copy_nvmath.cu
     copy/copy_nvmath_transpose.cu
+    copy/copy_shared_memory.cu
 )
 
 cudax_add_catch2_test(test_target cuco
@@ -126,6 +128,11 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/fill.cu
     algorithm/copy.cu
 )
+
+cudax_add_catch2_test(test_target group.mapping.group_as
+    group/mapping/group_as.cu
+)
+target_compile_definitions(${test_target} PUBLIC _CUDAX_GROUP)
 
 cudax_add_catch2_test(test_target group.mapping.group_by
     group/mapping/group_by.cu

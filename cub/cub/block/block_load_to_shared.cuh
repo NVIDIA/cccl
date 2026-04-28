@@ -234,7 +234,8 @@ private:
   class token_impl
   {
     friend struct BlockLoadToShared;
-    _CCCL_DEVICE_API _CCCL_FORCEINLINE token_impl() {} // ctor must have a body to avoid token_impl{} to compile
+    _CCCL_DEVICE_API _CCCL_FORCEINLINE token_impl() {} // NOLINT(modernize-use-equals-default) ctor must have a body to
+                                                       // avoid token_impl{} to compile
 
     // NOLINTBEGIN(modernize-use-equals-delete)
     token_impl(const token_impl&)            = delete;

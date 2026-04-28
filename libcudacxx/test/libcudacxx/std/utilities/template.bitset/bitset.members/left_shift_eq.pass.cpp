@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// nvbug6076227: ICE when validating tile MLIR
+
 // bitset<N>& operator<<=(size_t pos); // constexpr since C++23
 
 #include <cuda/std/bitset>

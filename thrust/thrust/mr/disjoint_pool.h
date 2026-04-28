@@ -156,7 +156,7 @@ public:
 
 private:
   using void_ptr = typename Upstream::pointer;
-  using char_ptr = typename thrust::detail::pointer_traits<void_ptr>::template rebind<char>::other;
+  using char_ptr = typename ::cuda::std::pointer_traits<void_ptr>::template rebind<char>;
 
   struct chunk_descriptor
   {
@@ -235,7 +235,11 @@ private:
     _CCCL_EXEC_CHECK_DISABLE
     pool& operator=(const pool&) = default;
 
-    _CCCL_HOST ~pool() {}
+    // If we = default this (even with _CCCL_HOST annotation), then nvcc will synthesize a
+    // different subobject destruction code for the pool vector below. I am not entirely sure
+    // why, but it chooses to instantiate it as host-device instead of host, then complains we
+    // cannot call host-device destructors from host-only
+    _CCCL_HOST ~pool() {} // NOLINT(modernize-use-equals-default)
 
     pointer_vector free_blocks{};
     std::size_t previous_allocated_count{};
@@ -471,7 +475,7 @@ public:
     assert(::cuda::__is_valid_alignment(alignment));
 
     // verify that the pointer is at least as aligned as claimed
-    assert(reinterpret_cast<::cuda::std::intmax_t>(detail::pointer_traits<void_ptr>::get(p)) % alignment == 0);
+    assert(reinterpret_cast<::cuda::std::intmax_t>(::cuda::std::to_address(p)) % alignment == 0);
 
     // the deallocated block is oversized and/or overaligned
     if (n > m_options.largest_block_size || alignment > m_options.alignment)

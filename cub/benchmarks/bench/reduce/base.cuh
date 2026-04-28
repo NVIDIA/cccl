@@ -57,7 +57,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       mr
 #  if !TUNE_BASE
       ,
-      ::cuda::execution::__tune(policy_selector{})
+      ::cuda::execution::tune(policy_selector{})
 #  endif
     };
     static_assert(::cuda::std::execution::__queryable_with<decltype(env), ::cuda::mr::__get_memory_resource_t>);

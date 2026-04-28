@@ -185,7 +185,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeftCopy can be tuned", "[adjacent_d
   auto output                              = c2h::device_vector<int>(8);
   auto d_block_size                        = c2h::device_vector<unsigned int>{0};
   auto op  = block_size_extracting_minus_t{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env = cuda::execution::__tune(adj_diff_tuning<target_block_size>{});
+  auto env = cuda::execution::tune(adj_diff_tuning<target_block_size>{});
 
   device_adjacent_difference_subtract_left_copy(input.begin(), output.begin(), input.size(), op, env);
 
@@ -200,7 +200,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractLeft can be tuned", "[adjacent_diffe
   auto data                                = c2h::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
   auto d_block_size                        = c2h::device_vector<unsigned int>{0};
   auto op  = block_size_extracting_minus_t{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env = cuda::execution::__tune(adj_diff_tuning<target_block_size>{});
+  auto env = cuda::execution::tune(adj_diff_tuning<target_block_size>{});
 
   device_adjacent_difference_subtract_left(data.begin(), data.size(), op, env);
 
@@ -216,7 +216,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy can be tuned", "[adjacent_
   auto output                              = c2h::device_vector<int>(8);
   auto d_block_size                        = c2h::device_vector<unsigned int>{0};
   auto op  = block_size_extracting_minus_t{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env = cuda::execution::__tune(adj_diff_tuning<target_block_size>{});
+  auto env = cuda::execution::tune(adj_diff_tuning<target_block_size>{});
 
   device_adjacent_difference_subtract_right_copy(input.begin(), output.begin(), input.size(), op, env);
 
@@ -231,7 +231,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRight can be tuned", "[adjacent_diff
   auto data                                = c2h::device_vector<int>{1, 2, 1, 2, 1, 2, 1, 2};
   auto d_block_size                        = c2h::device_vector<unsigned int>{0};
   auto op  = block_size_extracting_minus_t{thrust::raw_pointer_cast(d_block_size.data())};
-  auto env = cuda::execution::__tune(adj_diff_tuning<target_block_size>{});
+  auto env = cuda::execution::tune(adj_diff_tuning<target_block_size>{});
 
   device_adjacent_difference_subtract_right(data.begin(), data.size(), op, env);
 

@@ -112,14 +112,14 @@ struct merge_sort_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const merge_sort_policy& p)
   {
     return os << "merge_sort_policy { .block_threads = " << p.block_threads
               << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
               << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm << " }";
   }
-#endif
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()

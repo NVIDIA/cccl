@@ -8,6 +8,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 
+#include <cuda/__execution/tune.h>
 #include <cuda/devices>
 #include <cuda/stream>
 
@@ -144,4 +145,88 @@ C2H_TEST("DeviceFor::ForEachCopy env uses custom stream", "[for][env]")
 
   c2h::device_vector<int> expected_count{2};
   REQUIRE(count == expected_count);
+}
+
+template <int BlockThreads>
+struct for_each_tuning
+{
+  _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::detail::for_each::for_policy
+  {
+    return {BlockThreads, 2};
+  }
+};
+
+struct block_size_extracting_op
+{
+  unsigned int* block_size;
+
+  __device__ void operator()(int) const
+  {
+    if (threadIdx.x == 0)
+    {
+      atomicMax(block_size, blockDim.x);
+    }
+  }
+};
+
+using block_sizes =
+  c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
+
+C2H_TEST("DeviceFor::Bulk can be tuned", "[for][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
+  block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
+
+  REQUIRE(cudaSuccess == cub::DeviceFor::Bulk(4, op, env));
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceFor::ForEachN can be tuned", "[for][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<int> d_data{1, 2, 3, 4};
+  c2h::device_vector<unsigned int> d_block_size(1);
+  block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
+
+  REQUIRE(cudaSuccess == cub::DeviceFor::ForEachN(d_data.begin(), static_cast<int>(d_data.size()), op, env));
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceFor::ForEach can be tuned", "[for][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<int> d_data{1, 2, 3, 4};
+  c2h::device_vector<unsigned int> d_block_size(1);
+  block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
+
+  REQUIRE(cudaSuccess == cub::DeviceFor::ForEach(d_data.begin(), d_data.end(), op, env));
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceFor::ForEachCopyN can be tuned", "[for][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<int> d_data{1, 2, 3, 4};
+  c2h::device_vector<unsigned int> d_block_size(1);
+  block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
+
+  REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopyN(d_data.begin(), static_cast<int>(d_data.size()), op, env));
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+C2H_TEST("DeviceFor::ForEachCopy can be tuned", "[for][device]", block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<int> d_data{1, 2, 3, 4};
+  c2h::device_vector<unsigned int> d_block_size(1);
+  block_size_extracting_op op{thrust::raw_pointer_cast(d_block_size.data())};
+  auto env = cuda::execution::tune(for_each_tuning<target_block_size>{});
+
+  REQUIRE(cudaSuccess == cub::DeviceFor::ForEachCopy(d_data.begin(), d_data.end(), op, env));
+  REQUIRE(d_block_size[0] == target_block_size);
 }

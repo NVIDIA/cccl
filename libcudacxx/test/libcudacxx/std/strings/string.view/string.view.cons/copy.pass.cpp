@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && !c++17
+// error: a non-__tile__ variable cannot be used in tile code
+
 // <cuda/std/string_view>
 
 // constexpr basic_string_view(const basic_string_view&) noexcept = default;

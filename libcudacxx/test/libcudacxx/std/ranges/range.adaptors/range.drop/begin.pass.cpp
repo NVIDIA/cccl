@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // constexpr auto begin()
 //   requires (!(simple-view<V> &&
 //               random_access_range<const V> && sized_range<const V>));

@@ -9,6 +9,7 @@
 #include <thrust/scan.h>
 #include <thrust/transform.h>
 
+#include <cuda/devices>
 #include <cuda/iterator>
 
 #include <cstdint>

@@ -42,13 +42,13 @@ struct find_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const find_policy& p)
   {
     return os << "find_policy { .block_threads = " << p.block_threads << ", .items_per_thread = " << p.items_per_thread
               << ", .vector_load_length = " << p.vector_load_length << ", .load_modifier = " << p.load_modifier << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()

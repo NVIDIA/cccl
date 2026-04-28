@@ -253,6 +253,15 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
   ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to query the name of a device", __name_out, __len, __dev);
 }
 
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t __deviceTotalMem(int __ordinal)
+{
+  static auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceTotalMem);
+  ::std::size_t __result;
+  ::CUdevice __dev = __deviceGet(__ordinal);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to query total memory of a device", &__result, __dev);
+  return static_cast<::cuda::std::size_t>(__result);
+}
+
 // Primary context management
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUcontext __primaryCtxRetain(::CUdevice __dev)

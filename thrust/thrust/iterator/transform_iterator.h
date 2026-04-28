@@ -250,8 +250,8 @@ public:
   template <typename OtherAdaptableUnaryFunction, typename OtherIterator, typename OtherReference, typename OtherValue>
   _CCCL_HOST_DEVICE transform_iterator(
     const transform_iterator<OtherAdaptableUnaryFunction, OtherIterator, OtherReference, OtherValue>& other,
-    detail::enable_if_convertible_t<OtherIterator, Iterator>*                             = 0,
-    detail::enable_if_convertible_t<OtherAdaptableUnaryFunction, AdaptableUnaryFunction>* = 0)
+    detail::enable_if_convertible_t<OtherIterator, Iterator, int>                             = 0,
+    detail::enable_if_convertible_t<OtherAdaptableUnaryFunction, AdaptableUnaryFunction, int> = 0)
       : super_t(other.base())
       , m_f(other.functor())
   {}

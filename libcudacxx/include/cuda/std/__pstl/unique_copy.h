@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 
 #  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/unique_copy.h>
@@ -99,6 +99,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #endif // _CUDA_STD___PSTL_UNIQUE_COPY_H

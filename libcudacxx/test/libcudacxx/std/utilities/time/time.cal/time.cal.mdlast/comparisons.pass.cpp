@@ -15,6 +15,9 @@
 // constexpr bool operator< (const month_day& x, const month_day& y) noexcept;
 //   Returns: x.month() < y.month()
 
+// XFAIL: enable-tile
+// Segmentation fault, see nvbug6072674
+
 #include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>

@@ -338,21 +338,3 @@ inline _CCCL_HOST_DEVICE zip_iterator<::cuda::std::tuple<Iterators...>> make_zip
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
-
-// libcu++ iterator traits fail for complex zip_iterators in C++17, see e.g.: https://godbolt.org/z/7jb4qG3bb
-// The reason is that libcu++ backported the C++20 range iterator machinery to C++17, but C++17 has slightly different
-// language rules, especially regarding `void`. We deemed to it too hard to work around the issues.
-#if _CCCL_STD_VER < 2020
-_CCCL_BEGIN_NAMESPACE_CUDA_STD
-template <typename IteratorTuple>
-struct iterator_traits<THRUST_NS_QUALIFIER::zip_iterator<IteratorTuple>>
-{
-  using It                = THRUST_NS_QUALIFIER::zip_iterator<IteratorTuple>;
-  using value_type        = typename It::value_type;
-  using reference         = typename It::reference;
-  using pointer           = void;
-  using iterator_category = typename It::iterator_category;
-  using difference_type   = typename It::difference_type;
-};
-_CCCL_END_NAMESPACE_CUDA_STD
-#endif // _CCCL_STD_VER < 2020

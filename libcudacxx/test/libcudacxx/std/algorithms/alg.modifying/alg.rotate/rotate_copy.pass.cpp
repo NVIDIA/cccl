@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // <algorithm>
 
 // template<ForwardIterator InIter, OutputIterator<auto, InIter::reference> OutIter>

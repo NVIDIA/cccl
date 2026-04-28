@@ -134,7 +134,7 @@ public:
 
   /*! Destructor does not throw.
    */
-  inline ~system_error() noexcept override {}
+  inline ~system_error() noexcept override = default;
 
   /*! Returns an object encoding the error.
    *  \return <tt>ec</tt> or <tt>error_code(ev, ecat)</tt>, from the

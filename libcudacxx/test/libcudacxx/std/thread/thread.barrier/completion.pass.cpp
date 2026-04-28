@@ -5,7 +5,11 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
+
+// XFAIL: enable-tile
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-70
 // XFAIL: msvc-19.36 && c++20

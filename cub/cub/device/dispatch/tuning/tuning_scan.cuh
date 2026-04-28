@@ -569,7 +569,7 @@ struct scan_lookback_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const scan_lookback_policy& p)
   {
     return os
@@ -578,7 +578,7 @@ struct scan_lookback_policy
         << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm
         << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 struct scan_warpspeed_policy
@@ -604,14 +604,14 @@ struct scan_warpspeed_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const scan_warpspeed_policy& p)
   {
     return os << "scan_warpspeed_policy { .num_reduce_and_scan_warps = " << p.num_reduce_and_scan_warps
               << ", .look_ahead_items_per_thread = " << p.look_ahead_items_per_thread
               << ", .items_per_thread = " << p.items_per_thread << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 enum class scan_algorithm
@@ -620,7 +620,7 @@ enum class scan_algorithm
   warpspeed
 };
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 inline ::std::ostream& operator<<(::std::ostream& os, scan_algorithm algorithm)
 {
   switch (algorithm)
@@ -633,7 +633,7 @@ inline ::std::ostream& operator<<(::std::ostream& os, scan_algorithm algorithm)
       return os << "scan_algorithm::<unknown>";
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 struct scan_policy
 {
@@ -651,13 +651,13 @@ struct scan_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const scan_policy& p)
   {
     return os << "scan_policy { .algorithm = " << p.algorithm << ", .lookback = " << p.lookback
               << ", .warpspeed = " << p.warpspeed << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()
@@ -939,10 +939,36 @@ struct policy_selector
           case 1:
             // wrps_4.lbi_8.ipt_160 ()  1.264254  1.264254  1.264254  1.264254
             return scan_warpspeed_policy{4, 8, 160 - 1};
+            // TODO(gonidelis): we found this tuning but it regressed:
+            // wrps_3.lbi_4.ipt_96 ()  1.454824  1.247212  1.450590  1.560418
+            // return scan_warpspeed_policy{3, 4, 96 - 1};
           case 2:
+            // TODO(gonidelis): we found this tuning but it regresses large problems, we should revisit this
+            // // wrps_4.lbi_2.ipt_96 ()  1.082511  0.929516  1.091523  1.264033
+            // return scan_warpspeed_policy{4, 2, 96 - 1};
+            // clang-format off
+            //|   I16   |      I64      |      2^16      |  17.304 us |       1.07% |  15.244 us |       0.77% |    -2.060 us | -11.91% |   FAST   |
+            //|   I16   |      I64      |      2^20      |  19.466 us |       1.21% |  17.266 us |       2.93% |    -2.200 us | -11.30% |   FAST   |
+            //|   I16   |      I64      |      2^24      |  39.565 us |       2.46% |  35.835 us |       4.25% |    -3.730 us |  -9.43% |   FAST   |
+            //|   I16   |      I64      |      2^28      | 224.318 us |       0.37% | 233.381 us |       0.46% |     9.063 us |   4.04% |   SLOW   |
+            //|   I16   |      I64      |      2^32      |   3.238 ms |       0.53% |   3.429 ms |       0.53% |   191.299 us |   5.91% |   SLOW   |
+            // clang-format on
             // wrps_6.lbi_2.ipt_96 ()  1.167633  1.167633  1.167633  1.167633
             return scan_warpspeed_policy{6, 2, 96 - 1};
-
+          case 4:
+            if (input_type == type_t::float32)
+            {
+              // wrps_4.lbi_3.ipt_88 ()  1.047200  1.002119  1.042654  1.081102
+              return scan_warpspeed_policy{4, 3, 88 - 1};
+            }
+            // wrps_4.lbi_3.ipt_80 ()  1.019078  0.999708  1.017346  1.052592
+            return scan_warpspeed_policy{4, 3, 80 - 1};
+          case 8:
+            // wrps_2.lbi_5.ipt_88 ()  1.085781   1.0  1.079245  1.103545
+            return scan_warpspeed_policy{2, 5, 88 - 1};
+          case 16:
+            // wrps_5.lbi_8.ipt_16 ()  1.159883  1.000000  1.143709  1.275821
+            return scan_warpspeed_policy{5, 8, 16 - 1};
             // TODO(bgruber): tune for more data types
           default:
             break;
@@ -959,8 +985,10 @@ struct policy_selector
     // We need `cuda::std::is_constant_evaluated` for the compile-time SMEM computation. And we need PTX ISA 8.6.
     // MSVC + nvcc < 13.1 just fails to compile `cub.test.device.scan.lid_1.types_0` with `Internal error` and nothing
     // else.
+    // The macro `CCCL_DISABLE_WARPSPEED_SCAN` will be left in as a kill-switch for users in case they find any bugs
+    // after we shipped the implementation. TODO(bgruber): remove CCCL_DISABLE_WARPSPEED_SCAN in CCCL 4.0
 #if __cccl_ptx_isa < 860 || !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) \
-  || ((_CCCL_COMPILER(MSVC) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 1)))
+  || ((_CCCL_COMPILER(MSVC) && _CCCL_CUDA_COMPILER(NVCC, <, 13, 1))) || defined(CCCL_DISABLE_WARPSPEED_SCAN)
     return false;
 #else
     if (!input_contiguous || !output_contiguous || !input_trivially_copyable || !output_trivially_copyable

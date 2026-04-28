@@ -965,7 +965,7 @@ struct reduce_by_key_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const reduce_by_key_policy& p)
   {
     return os
@@ -973,7 +973,7 @@ struct reduce_by_key_policy
         << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
         << ", .scan_algorithm = " << p.scan_algorithm << ", .delay_constructor = " << p.delay_constructor << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()

@@ -40,17 +40,6 @@ struct Range : cuda::std::ranges::view_base
   using Iterator = forward_iterator<int*>;
   using Sentinel = sentinel_wrapper<Iterator>;
 
-  // (clang-14 || gcc-12 || msvc-19.39) in C++20 tries to erroneously instantiate a bunch of
-  // default constructors that don't exist because it evaluates the class initializers before
-  // considering the default constructors requirements clause.
-#if (TEST_COMPILER(CLANG, ==, 14) || TEST_COMPILER(GCC, ==, 12) || TEST_COMPILER(MSVC, <, 19, 44)) \
-  && (TEST_STD_VER == 2020)
-  TEST_FUNC constexpr explicit Range()
-      : Range{nullptr, nullptr}
-  {}
-#endif // (TEST_COMPILER(CLANG, ==, 14) || TEST_COMPILER(GCC, ==, 12)
-       // || TEST_COMPILER(MSVC, <, 19, 44)) && (TEST_STD_VER == 2020)
-
   TEST_FUNC constexpr explicit Range(int* b, int* e)
       : begin_(b)
       , end_(e)
@@ -155,14 +144,6 @@ TEST_FUNC constexpr bool test()
     [[maybe_unused]] auto partial = cuda::std::views::filter(X{});
   }
 
-  // nvcc 12.0 commits harakiri by way of
-  //
-  // libcudacxx/include/cuda/std/__ranges/filter_view.h(85): error: Internal Compiler Error
-  // (codegen): "internal error during structure layout!"
-  //
-  // You can fix the ICE by making the predicates constexpr, but then the static_assert()s fail
-  // (but also only for nvcc 12.0).
-#if !TEST_CUDA_COMPILER(NVCC) || TEST_CUDA_COMPILER(NVCC, >=, 12, 1)
   {
     // Test `adaptor | views::filter(pred)`
     Range const range(buff, buff + 8);
@@ -195,7 +176,6 @@ TEST_FUNC constexpr bool test()
       compareViews(result, {0, 6});
     }
   }
-#endif // !TEST_CUDA_COMPILER(NVCC) || TEST_CUDA_COMPILER(NVCC, >=, 12, 1)
 
   // Test SFINAE friendliness
   {

@@ -10,6 +10,9 @@
 
 // UNSUPPORTED: pre-sm-70
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 #include <cuda/barrier>
 
 #include "cuda_space_selector.h"

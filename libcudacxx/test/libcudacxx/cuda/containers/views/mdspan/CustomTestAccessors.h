@@ -70,10 +70,12 @@ struct move_counted_handle
   TEST_FUNC constexpr move_counted_handle(move_counted_handle&& other)
       : ptr(other.ptr)
   {
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
     if (!cuda::std::__cccl_default_is_constant_evaluated())
     {
       move_counted_handle_c++;
     }
+#endif // !_CCCL_TILE_COMPILATION()
   }
 
   constexpr move_counted_handle& operator=(const move_counted_handle&) = default;
@@ -87,9 +89,29 @@ struct move_counted_handle
     return ptr[i];
   }
 
-  TEST_FUNC static constexpr int& move_counter() noexcept
+  TEST_FUNC static constexpr void reset() noexcept
   {
-    return move_counted_handle_c;
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
+    if (!cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      move_counted_handle_c = 0;
+    }
+#endif // !_CCCL_TILE_COMPILATION()
+  }
+
+  TEST_FUNC static constexpr bool valid() noexcept
+  {
+#if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable cannot be used in tile code
+    if (!cuda::std::__cccl_default_is_constant_evaluated())
+    {
+      // We also move into the host / device / managed accessor
+      return move_counted_handle_c == 1 || move_counted_handle_c == 2;
+    }
+    else
+#endif // !_CCCL_TILE_COMPILATION()
+    {
+      return true;
+    }
   }
 };
 
@@ -98,11 +120,7 @@ template <class MDS,
           cuda::std::enable_if_t<cuda::std::is_same<H, move_counted_handle<typename MDS::element_type>>::value, int> = 0>
 TEST_FUNC constexpr void test_move_counter()
 {
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    // We also move into the host / device / managed accessor
-    assert((H::move_counter() == 1) || (H::move_counter() == 2));
-  }
+  assert(H::valid());
 }
 template <class MDS,
           class H,

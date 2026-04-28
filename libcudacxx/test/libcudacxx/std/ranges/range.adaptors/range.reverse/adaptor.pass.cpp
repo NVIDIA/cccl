@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && c++17
+// error: a non-__tile__ variable cannot be used in tile code
+
 // cuda::std::views::reverse
 
 #include <cuda/std/cassert>

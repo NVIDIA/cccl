@@ -642,7 +642,7 @@ struct DispatchScanByKey
       return error;
     }
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
     NV_IF_TARGET(NV_IS_HOST, ({
                    ::std::stringstream ss;
                    ss << policy_selector(arch_id);
@@ -650,7 +650,7 @@ struct DispatchScanByKey
                            static_cast<int>(arch_id),
                            ss.str().c_str());
                  }))
-#endif
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     const detail::scan_by_key::scan_by_key_policy active_policy = policy_selector(arch_id);
 
@@ -737,14 +737,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
     NV_IS_HOST, ({
       ::std::stringstream ss;
       ss << policy_selector(arch_id);
       _CubLog("Dispatching DeviceScanByKey to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());
     }))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   struct fake_policy
   {

@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: nvrtc
 
 #include <cuda/__functional/call_or.h>

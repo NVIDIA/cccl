@@ -191,10 +191,6 @@ struct __partial_tensor
     return __accessor.access(const_cast<::cuda::std::remove_const_t<_Tp>*>(__ptr), __offset);
   }
 };
-
-template <typename _Tp, typename _StrideT, ::cuda::std::size_t _Rank, typename _Accessor>
-__partial_tensor(_Tp*, ::cuda::std::array<_StrideT, _Rank>, _Accessor)
-  -> __partial_tensor<_Tp, _StrideT, _Rank, _Accessor>;
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>

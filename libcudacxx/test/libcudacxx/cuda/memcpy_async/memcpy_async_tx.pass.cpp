@@ -7,7 +7,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-//
+
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+// error: accessing gridDim/blockDim/blockIdx/threadIdx/warpSize is unsupported in tile code
+
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-90
 

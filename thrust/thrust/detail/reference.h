@@ -18,7 +18,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/reference_forward_declaration.h>
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/memory.h>
 #include <thrust/system/detail/generic/select_system.h>

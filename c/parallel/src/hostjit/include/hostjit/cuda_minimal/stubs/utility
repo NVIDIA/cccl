@@ -1,0 +1,34 @@
+// Minimal <utility> stub for hostjit device compilation.
+//
+// cuda_runtime.h includes <utility> for std::forward/std::move.  In the
+// hostjit device-compilation include path, <utility> resolves to
+// libcudacxx/include/cuda/std/utility, which cascades into the full CCCL
+// utility/iterator/concepts hierarchy — incompatible with freestanding mode.
+//
+// This stub (found first on -internal-isystem) stops that cascade.
+// Only std::forward and std::move are provided because that is all
+// cuda_runtime.h actually uses at the top level; the full CCCL hierarchy
+// is not required for a simple host+device kernel.
+#pragma once
+
+namespace std {
+
+template <typename _Tp> struct remove_reference       { using type = _Tp; };
+template <typename _Tp> struct remove_reference<_Tp&> { using type = _Tp; };
+template <typename _Tp> struct remove_reference<_Tp&&>{ using type = _Tp; };
+template <typename _Tp>
+using remove_reference_t = typename remove_reference<_Tp>::type;
+
+template <typename _Tp>
+__host__ __device__ constexpr _Tp&&
+forward(remove_reference_t<_Tp>& __t) noexcept { return static_cast<_Tp&&>(__t); }
+
+template <typename _Tp>
+__host__ __device__ constexpr _Tp&&
+forward(remove_reference_t<_Tp>&& __t) noexcept { return static_cast<_Tp&&>(__t); }
+
+template <typename _Tp>
+__host__ __device__ constexpr remove_reference_t<_Tp>&&
+move(_Tp&& __t) noexcept { return static_cast<remove_reference_t<_Tp>&&>(__t); }
+
+} // namespace std

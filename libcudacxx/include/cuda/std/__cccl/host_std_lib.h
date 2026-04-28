@@ -34,24 +34,37 @@
 #  include <ciso646>
 #endif // ^^^ __has_include(<ciso646>) ^^^
 
+// Freestanding environment detection
+// NVRTC is treated as freestanding since it has no access to the host standard library
+#if defined(_CCCL_ENABLE_FREESTANDING) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_FREESTANDING() 1
+#  define _CCCL_NO_TYPEID
+#else
+#  define _CCCL_FREESTANDING() 0
+#endif
+
+#define _CCCL_HOSTED() (!_CCCL_FREESTANDING())
+
 #define _CCCL_HOST_STD_LIB_MAKE_VERSION(_MAJOR, _MINOR) ((_MAJOR) * 100 + (_MINOR))
 #define _CCCL_HOST_STD_LIB(...)                         _CCCL_VERSION_COMPARE(_CCCL_HOST_STD_LIB_, _CCCL_HOST_STD_LIB_##__VA_ARGS__)
 
-#if defined(_MSVC_STL_VERSION)
-#  undef _CCCL_HOST_STD_LIB_STL
-#  define _CCCL_HOST_STD_LIB_STL() (_MSVC_STL_VERSION, 0)
-#elif defined(__GLIBCXX__)
-#  undef _CCCL_HOST_STD_LIB_LIBSTDCXX
-#  define _CCCL_HOST_STD_LIB_LIBSTDCXX() (_GLIBCXX_RELEASE, 0)
-#elif defined(_LIBCPP_VERSION)
-#  undef _CCCL_HOST_STD_LIB_LIBCXX
+#if _CCCL_HOSTED()
+#  if defined(_MSVC_STL_VERSION)
+#    undef _CCCL_HOST_STD_LIB_STL
+#    define _CCCL_HOST_STD_LIB_STL() (_MSVC_STL_VERSION, 0)
+#  elif defined(__GLIBCXX__)
+#    undef _CCCL_HOST_STD_LIB_LIBSTDCXX
+#    define _CCCL_HOST_STD_LIB_LIBSTDCXX() (_GLIBCXX_RELEASE, 0)
+#  elif defined(_LIBCPP_VERSION)
+#    undef _CCCL_HOST_STD_LIB_LIBCXX
 // since llvm-16, the version scheme has been changed from MMppp to MMmmpp
-#  if _LIBCPP_VERSION / 10000 < 2
-#    define _CCCL_HOST_STD_LIB_LIBCXX() (_LIBCPP_VERSION / 1000, 0)
-#  else
-#    define _CCCL_HOST_STD_LIB_LIBCXX() (_LIBCPP_VERSION / 10000, (_LIBCPP_VERSION / 100) % 100)
-#  endif
-#endif // ^^^ _LIBCPP_VERSION ^^^
+#    if _LIBCPP_VERSION / 10000 < 2
+#      define _CCCL_HOST_STD_LIB_LIBCXX() (_LIBCPP_VERSION / 1000, 0)
+#    else
+#      define _CCCL_HOST_STD_LIB_LIBCXX() (_LIBCPP_VERSION / 10000, (_LIBCPP_VERSION / 100) % 100)
+#    endif
+#  endif // ^^^ _LIBCPP_VERSION ^^^
+#endif // _CCCL_HOSTED()
 
 #define _CCCL_HAS_HOST_STD_LIB() \
   (_CCCL_HOST_STD_LIB(LIBSTDCXX) || _CCCL_HOST_STD_LIB(LIBCXX) || _CCCL_HOST_STD_LIB(STL))

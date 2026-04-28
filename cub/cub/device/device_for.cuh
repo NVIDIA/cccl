@@ -21,6 +21,7 @@
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__execution/tune.h>
 #include <cuda/__functional/call_or.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__concepts/concept_macros.h>
@@ -37,102 +38,121 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::for_each
-{
-/**
- * `op_wrapper_t` turns bulk into a for-each operation by wrapping the user-provided unary operator.
- */
-template <class OffsetT, class OpT, class RandomAccessIteratorT>
-struct op_wrapper_t
-{
-  RandomAccessIteratorT input;
-  OpT op;
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
-  {
-    // Dereferencing `thrust::device_vector<T>` iterators returns a `thrust::device_reference<T>`
-    // instead of `T`. Since user-provided operator expects `T` as an argument, we need to unwrap.
-    (void) op(THRUST_NS_QUALIFIER::raw_reference_cast(*(input + i)));
-  }
-};
-
-/**
- * `op_wrapper_vectorized_t` turns bulk into a for-each-copy operation.
- * `op_wrapper_vectorized_t` is similar to `op_wrapper_t` but does not provide any guarantees about
- * address of the input parameter. `OpT` might be given a copy of the value or an actual reference
- * to the input iterator value (depending on the alignment of input iterator)
- */
-template <class OffsetT, class OpT, class T>
-struct op_wrapper_vectorized_t
-{
-  const T* input; // Raw pointer to the input data
-  OpT op; // User-provided operator
-  OffsetT partially_filled_vector_id; // Index of the vector that doesn't have all elements
-  OffsetT num_items; // Total number of non-vectorized items
-
-  // TODO Can be extracted into tuning
-  constexpr static int vec_size = 4;
-
-  // Type of the vector that is used to load the input data
-  using vector_t = typename CubVector<T, vec_size>::Type;
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
-  {
-    // Surrounding `Bulk` call doesn't invoke this operator on invalid indices, so we don't need to
-    // check for out-of-bounds access here.
-    if (i != partially_filled_vector_id)
-    { // Case of fully filled vector
-      const vector_t vec = *reinterpret_cast<const vector_t*>(input + vec_size * i);
-
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int j = 0; j < vec_size; j++)
-      {
-        (void) op(*(reinterpret_cast<const T*>(&vec) + j));
-      }
-    }
-    else
-    { // Case of partially filled vector
-      for (OffsetT j = i * vec_size; j < num_items; j++)
-      {
-        (void) op(input[j]);
-      }
-    }
-  }
-};
-} // namespace detail::for_each
-
 struct DeviceFor
 {
-private:
-  template <bool UseVectorization, class RandomAccessOrContiguousIteratorT, class OffsetT, class OpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  for_each_n(RandomAccessOrContiguousIteratorT first, OffsetT num_items, OpT op, cudaStream_t stream)
+  //! `__op_wrapper_t` turns bulk into a for-each operation by wrapping the user-provided unary operator.
+  template <class OffsetT, class OpT, class RandomAccessIteratorT>
+  struct __op_wrapper_t
   {
-    if constexpr (UseVectorization)
+    static_assert(::cuda::std::is_integral_v<OffsetT>);
+
+    RandomAccessIteratorT input;
+    OpT op;
+
+    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
+    {
+      // Dereferencing `thrust::device_vector<T>` iterators returns a `thrust::device_reference<T>`
+      // instead of `T`. Since user-provided operator expects `T` as an argument, we need to unwrap.
+      (void) op(THRUST_NS_QUALIFIER::raw_reference_cast(*(input + i)));
+    }
+  };
+
+  //!  `__op_wrapper_vectorized_t` turns bulk into a for-each-copy operation.
+  //!  `__op_wrapper_vectorized_t` is similar to `op_wrapper_t` but does not provide any guarantees about
+  //!  address of the input parameter. `OpT` might be given a copy of the value or an actual reference
+  //!  to the input iterator value (depending on the alignment of input iterator)
+  template <class OffsetT, class OpT, class T>
+  struct __op_wrapper_vectorized_t
+  {
+    static_assert(::cuda::std::is_integral_v<OffsetT>);
+
+    const T* input; // Raw pointer to the input data
+    OpT op; // User-provided operator
+    OffsetT partially_filled_vector_id; // Index of the vector that doesn't have all elements
+    OffsetT num_items; // Total number of non-vectorized items
+
+    // TODO Can be extracted into tuning
+    constexpr static int vec_size = 4;
+
+    // Type of the vector that is used to load the input data
+    using vector_t = typename CubVector<T, vec_size>::Type;
+
+    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
+    {
+      // Surrounding `Bulk` call doesn't invoke this operator on invalid indices, so we don't need to
+      // check for out-of-bounds access here.
+      if (i == partially_filled_vector_id)
+      { // Case of partially filled vector
+        for (OffsetT j = i * vec_size; j < num_items; j++)
+        {
+          (void) op(input[j]);
+        }
+      }
+      else
+      { // Case of fully filled vector
+        const vector_t vec = *reinterpret_cast<const vector_t*>(input + vec_size * i);
+
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int j = 0; j < vec_size; j++)
+        {
+          (void) op(*(reinterpret_cast<const T*>(&vec) + j));
+        }
+      }
+    }
+  };
+
+  template <class OffsetT, class OpT, class EnvT>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __bulk(OffsetT num_items, OpT op, EnvT env = {})
+  {
+    auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
+    [[maybe_unused]] const auto tuning_env =
+      ::cuda::__call_or(::cuda::execution::__get_tuning, ::cuda::std::execution::env<>{}, env);
+    using default_policy_selector = detail::for_each::policy_selector;
+    using policy_selector         = ::cuda::std::execution::
+      __query_result_or_t<decltype(tuning_env), detail::for_each::for_policy, default_policy_selector>;
+    return detail::for_each::dispatch(num_items, op, stream.get(), policy_selector{});
+  }
+
+  template <bool AllowCopy = false, class RandomAccessIteratorT, class NumItemsT, class OpT, class EnvT>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  __for_each_n(RandomAccessIteratorT first, NumItemsT num_items, OpT op, EnvT env)
+  {
+    // We tried to detect if we can still use vectorization from the non-Copy CUB APIs, but it's disabled for now:
+    constexpr bool allow_vectorization =
+      (AllowCopy
+       /*|| detail::for_each::can_regain_copy_freedom<detail::it_value_t<RandomAccessIteratorT>, OpT>::value*/);
+
+    if constexpr (allow_vectorization && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorT>)
     {
       auto* unwrapped_first = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(first);
-      using wrapped_op_t =
-        detail::for_each::op_wrapper_vectorized_t<OffsetT, OpT, detail::it_value_t<RandomAccessOrContiguousIteratorT>>;
+      using wrapped_op_t    = __op_wrapper_vectorized_t<NumItemsT, OpT, detail::it_value_t<RandomAccessIteratorT>>;
 
       if (::cuda::std::is_sufficiently_aligned<alignof(typename wrapped_op_t::vector_t)>(unwrapped_first))
       { // Vectorize loads
-        const OffsetT num_vec_items = ::cuda::ceil_div(num_items, wrapped_op_t::vec_size);
-
-        return detail::for_each::dispatch<OffsetT, wrapped_op_t>(
-          num_vec_items,
-          wrapped_op_t{
-            unwrapped_first, op, num_items % wrapped_op_t::vec_size ? num_vec_items - 1 : num_vec_items, num_items},
-          stream);
+        const NumItemsT num_vec_items = ::cuda::ceil_div(num_items, wrapped_op_t::vec_size);
+        return __bulk(
+          num_vec_items, wrapped_op_t{unwrapped_first, op, num_items / wrapped_op_t::vec_size, num_items}, env);
       }
+    }
 
-      // Fallback to non-vectorized version
-      return for_each_n<false>(first, num_items, op, stream);
-    }
-    else
+    return __bulk(num_items, __op_wrapper_t<NumItemsT, OpT, RandomAccessIteratorT>{first, op}, env);
+  }
+
+  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t __for_each_n(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    RandomAccessIteratorT first,
+    NumItemsT num_items,
+    OpT op,
+    cudaStream_t stream = {})
+  {
+    if (d_temp_storage == nullptr)
     {
-      using wrapped_op_t = detail::for_each::op_wrapper_t<OffsetT, OpT, RandomAccessOrContiguousIteratorT>;
-      return detail::for_each::dispatch<OffsetT, wrapped_op_t>(num_items, wrapped_op_t{first, op}, stream);
+      temp_storage_bytes = 1;
+      return cudaSuccess;
     }
+    return __for_each_n(first, num_items, op, stream);
   }
 
 public:
@@ -596,8 +616,7 @@ public:
     {
       return cudaSuccess;
     }
-    auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
-    return detail::for_each::dispatch</* OffsetT */ ShapeT, OpT>(shape, op, stream.get());
+    return __bulk(shape, op, env);
   }
 
   // we need this so the previous overload is not ambiguous with the next one
@@ -609,42 +628,6 @@ public:
   {
     return Bulk(shape, op, ::cuda::stream_ref{stream});
   }
-
-private:
-  // Internal version without NVTX range
-  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  __for_each_n_no_nvtx(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
-  {
-    using offset_t = NumItemsT;
-    // Disable auto-vectorization for now:
-    // constexpr bool use_vectorization =
-    //   detail::for_each::can_regain_copy_freedom<detail::it_value_t<RandomAccessIteratorT>, OpT>::value
-    //   && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorT>;
-    constexpr bool use_vectorization = false;
-    return for_each_n<use_vectorization, RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream);
-  }
-
-public:
-  //! @cond
-  //! Internal helper without NVTX range, for use by other device algorithms to avoid nested NVTX ranges.
-  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t __for_each_n_no_nvtx(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    RandomAccessIteratorT first,
-    NumItemsT num_items,
-    OpT op,
-    cudaStream_t stream = {})
-  {
-    if (d_temp_storage == nullptr)
-    {
-      temp_storage_bytes = 1;
-      return cudaSuccess;
-    }
-    return __for_each_n_no_nvtx(first, num_items, op, stream);
-  }
-  //! @endcond
 
   //! @rst
   //! Overview
@@ -732,8 +715,7 @@ public:
   ForEachN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachN");
-    auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
-    return __for_each_n_no_nvtx(first, num_items, op, stream.get());
+    return __for_each_n(first, num_items, op, env);
   }
 
   // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
@@ -826,10 +808,9 @@ public:
   ForEach(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEach");
-    auto stream          = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
     const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
-    return __for_each_n_no_nvtx(first, num_items, op, stream.get());
+    return __for_each_n(first, num_items, op, env);
   }
 
   // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
@@ -840,18 +821,6 @@ public:
     return ForEach(first, last, op, ::cuda::stream_ref{stream});
   }
 
-private:
-  // Internal version without NVTX range
-  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachCopyNNoNVTX(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
-  {
-    using offset_t                   = NumItemsT;
-    constexpr bool use_vectorization = THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorT>;
-    return for_each_n<use_vectorization, RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream);
-  }
-
-public:
   //! @rst
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -941,8 +910,7 @@ public:
   ForEachCopyN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopyN");
-    auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
-    return ForEachCopyNNoNVTX(first, num_items, op, stream.get());
+    return __for_each_n<true>(first, num_items, op, env);
   }
 
   // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
@@ -1038,10 +1006,9 @@ public:
   ForEachCopy(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, EnvT env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopy");
-    auto stream          = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
     const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
-    return ForEachCopyNNoNVTX(first, num_items, op, stream.get());
+    return __for_each_n<true>(first, num_items, op, env);
   }
 
   // We keep this overload around to support types that are convertible to `cudaStream_t` but not copyable
@@ -1347,8 +1314,7 @@ public:
     {
       return cudaSuccess;
     }
-    auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
-    return detail::for_each::dispatch<ShapeT>(shape, op_wrapper, stream.get());
+    return __bulk(shape, op_wrapper, env);
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED

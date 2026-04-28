@@ -50,16 +50,6 @@ struct ThreeWayPartitionPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<typenam
   {}
 
   CUB_DEFINE_SUB_POLICY_GETTER(ThreeWayPartition)
-
-#if defined(CUB_ENABLE_POLICY_PTX_JSON)
-  _CCCL_DEVICE static constexpr auto EncodedPolicy()
-  {
-    using namespace ptx_json;
-    return object<key<"ThreeWayPartitionPolicy">() = ThreeWayPartition().EncodedPolicy(),
-                  key<"DelayConstructor">() =
-                    StaticPolicyT::ThreeWayPartitionPolicy::detail::delay_constructor_t::EncodedConstructor()>();
-  }
-#endif
 };
 
 // TODO(bgruber): drop in CCCL 4.0
@@ -449,7 +439,7 @@ struct three_way_partition_policy
     return !(lhs == rhs);
   }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const three_way_partition_policy& policy)
   {
     return os
@@ -458,7 +448,7 @@ struct three_way_partition_policy
         << ", .load_modifier = " << policy.load_modifier << ", .block_scan_algorithm = " << policy.block_scan_algorithm
         << ", .delay_constructor = " << policy.delay_constructor << " }";
   }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 };
 
 #if _CCCL_HAS_CONCEPTS()

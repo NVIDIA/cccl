@@ -1107,14 +1107,14 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-#if !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
   NV_IF_TARGET(
     NV_IS_HOST, ({
       ::std::stringstream ss;
       ss << PolicySelector{}(arch_id);
       _CubLog("Dispatching DeviceSelectIf to arch %d with tuning: %s\n", static_cast<int>(arch_id), ss.str().c_str());
     }))
-#endif // !_CCCL_COMPILER(NVRTC) && defined(CUB_DEBUG_LOG)
+#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
   return dispatch_arch(policy_selector, arch_id, [&](auto policy_getter) {
     return dispatch_policy<SelectionOpt, decltype(policy_getter)>(

@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// XFAIL: enable-tile && c++17
+// error: a non-__tile__ variable cannot be used in tile code
+
 // friend constexpr void iter_swap(const iterator& l, const iterator& r) noexcept(see below)
 //   requires (indirectly_swappable<iterator_t<maybe-const<Const, Views>>> && ...);
 

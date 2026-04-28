@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: enable-tile
+// error: asm statement is unsupported in tile code
+
 // void* memcpy(void* dst, const void* src, size_t count);
 
 #include <cuda/atomic>
