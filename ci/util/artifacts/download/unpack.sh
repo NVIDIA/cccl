@@ -2,10 +2,11 @@
 
 set -euo pipefail
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../" && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../" && pwd)"
+readonly ci_dir
 source "$ci_dir/util/artifacts/common.sh"
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0 <artifact_name> <artifact_path>
 
 Unpacks a fetched packed artifact's tar.zst archive into the specified directory.
@@ -15,6 +16,7 @@ Example Usages:
   - $0 /path/to/archive.tar.zst /path/to/extract/
 EOF
 )
+readonly usage
 
 if [ "$#" -lt 2 ]; then
   echo "Error: Missing arguments." >&2

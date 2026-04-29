@@ -2,10 +2,11 @@
 
 set -euo pipefail
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../" && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../" && pwd)"
+readonly ci_dir
 source "$ci_dir/util/artifacts/common.sh"
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0 <artifact_name>
 
 Packs a staged artifact (created using artifact/stage.sh) into a tar.zst archive.
@@ -17,6 +18,7 @@ Example Usages:
   - $0 test_artifact
 EOF
 )
+readonly usage
 
 if [ "$#" -ne 1 ]; then
   echo "Error: Invalid number of arguments." >&2

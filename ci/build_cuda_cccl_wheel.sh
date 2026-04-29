@@ -23,7 +23,7 @@ python --version
 echo "Done setting up python env"
 
 # Figure out the version to use for the package, we need repo history
-if $(git rev-parse --is-shallow-repository); then
+if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
   git fetch --unshallow
 fi
 export PACKAGE_VERSION_PREFIX="0.1."
@@ -39,9 +39,12 @@ cuda_version=$(nvcc --version | grep -oP 'release \K[0-9]+\.[0-9]+' | cut -d. -f
 echo "Detected CUDA version: ${cuda_version}"
 
 # Configure compilers:
-export CXX="$(which g++)"
-export CUDACXX="$(which nvcc)"
-export CUDAHOSTCXX="$(which g++)"
+CXX="$(which g++)"
+export CXX
+CUDACXX="$(which nvcc)"
+export CUDACXX
+CUDAHOSTCXX="$(which g++)"
+export CUDAHOSTCXX
 
 # Build the wheel
 python -m pip wheel --no-deps --verbose --wheel-dir dist .

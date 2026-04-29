@@ -56,8 +56,8 @@ else
   GPU_REQUIRED=true
 fi
 
-for PRESET in ${PRESETS[@]}; do
-  test_preset "Thrust (${PRESET})" ${PRESET} ${GPU_REQUIRED}
+for PRESET in "${PRESETS[@]}"; do
+  test_preset "Thrust (${PRESET})" "${PRESET}" "${GPU_REQUIRED}"
 done
 
 print_time_summary

@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0 <run id> <job_id>
 
 Allows the scripts in ci/util/workflow and ci/util/artifacts to run as though they are running in a CI environment.
@@ -24,6 +24,7 @@ Caches and previously downloaded artifacts in /tmp are deleted to ensure a clean
        This is usually fine, but be might overwrite files in-use by other mock environments.
 EOF
 )
+readonly usage
 
 if [ "$#" -ne 2 ]; then
   echo "Error: Invalid number of arguments." >&2

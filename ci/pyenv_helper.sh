@@ -2,7 +2,8 @@ setup_python_env() {
     local py_version=$1
 
     # Source pretty_printing.sh for begin_group/end_group helpers
-    local script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    local script_dir
+    script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     source "${script_dir}/pretty_printing.sh"
 
     begin_group "🐍 Setting up Python ${py_version} (uv)"

@@ -2,9 +2,10 @@
 
 set -euo pipefail
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+readonly ci_dir
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0 [job_id]
 
 Returns the name of the project built by the specified job id.
@@ -12,6 +13,7 @@ If no job ID is provided, the \$JOB_ID environment variable is used.
 If the job ID does not exist in the workflow an error is raised.
 EOF
 )
+readonly usage
 
 if [ "$#" -gt 1 ]; then
   echo "Error: Too many arguments." >&2

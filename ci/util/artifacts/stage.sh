@@ -2,10 +2,11 @@
 
 set -euo pipefail
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+readonly ci_dir
 source "$ci_dir/util/artifacts/common.sh"
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0 <artifact_name> <regex> [<regex> ...]
 
 Stages files matching the provided regexes path for upload under the specified artifact.
@@ -24,6 +25,7 @@ Stage built binaries and .cmake files in \${ARTIFACT_UPLOAD_STAGE}/test_artifact
   $0 test_artifacts 'bin/.*' 'lib/.*' '.*cmake$'
 EOF
 )
+readonly usage
 
 if [ "$#" -lt 2 ]; then
   echo "Error: Missing arguments." >&2

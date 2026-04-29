@@ -2,10 +2,11 @@
 
 set -euo pipefail
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../" && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../" && pwd)"
+readonly ci_dir
 source "$ci_dir/util/artifacts/common.sh"
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0 <artifact_name> <compression_level>
 
 Sets the compression level for an artifact registered for upload.
@@ -15,6 +16,7 @@ Example Usage:
   $0 some_many_small_uncompressed_files 10
 EOF
 )
+readonly usage
 
 if [ "$#" -lt 2 ]; then
   echo "Error: Missing arguments." >&2

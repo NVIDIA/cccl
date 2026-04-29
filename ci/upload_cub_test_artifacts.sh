@@ -7,8 +7,10 @@ if [ -z "${GITHUB_ACTIONS:-}" ]; then
   exit 1
 fi
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly repo_root="$(cd "${ci_dir}/.." && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly ci_dir
+repo_root="$(cd "${ci_dir}/.." && pwd)"
+readonly repo_root
 
 cd "$repo_root"
 
@@ -42,7 +44,7 @@ else
 fi
 
 # Remove duplicates:
-preset_variants=($(echo "${preset_variants[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+mapfile -t preset_variants < <(printf '%s\n' "${preset_variants[@]}" | sort -u)
 
 artifact_prefix=z_cub-test-artifacts-$DEVCONTAINER_NAME-${JOB_ID}
 
@@ -50,7 +52,7 @@ artifact_prefix=z_cub-test-artifacts-$DEVCONTAINER_NAME-${JOB_ID}
 build_dir_regex="build${CCCL_BUILD_INFIX:+/$CCCL_BUILD_INFIX}/cub[^/]*"
 
 # Just collect the minimum set of files needed for running each ctest preset:
-for preset_variant in ${preset_variants[@]}; do
+for preset_variant in "${preset_variants[@]}"; do
 
   # Shared across all presets:
   ci/util/artifacts/stage.sh "$artifact_prefix-$preset_variant" \
@@ -75,7 +77,7 @@ for preset_variant in ${preset_variants[@]}; do
   fi
 done
 
-if [[ " ${preset_variants[@]} " =~ " no_lid " ]]; then
+if [[ " ${preset_variants[*]} " =~ " no_lid " ]]; then
   # Initially add all binaries to no_lid, then remove the lid variants in later passes:
   ci/util/artifacts/stage.sh \
       "$artifact_prefix-no_lid" \

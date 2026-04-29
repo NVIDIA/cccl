@@ -2,10 +2,11 @@
 
 set -euo pipefail
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+readonly ci_dir
 source "$ci_dir/util/artifacts/common.sh"
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0 <name> [<path>]
 
 Download artifacts uploaded by other jobs in this CI run.
@@ -18,6 +19,7 @@ Example Usage:
     $0 job-\$ID-products some/path/
 EOF
 )
+readonly usage
 
 if [ "$#" -lt 1 ]; then
   echo "Error: Missing artifact name." >&2

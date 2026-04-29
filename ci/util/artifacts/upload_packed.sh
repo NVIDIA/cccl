@@ -2,10 +2,11 @@
 
 set -euo pipefail
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+readonly ci_dir
 source "$ci_dir/util/artifacts/common.sh"
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0 <name> <regex> [<regex> ...]
 
 Create a compressed artifact, suitable for large, temporary files such as build products or test binaries
@@ -37,6 +38,7 @@ Example Usage:
        'lib/.*'
 EOF
 )
+readonly usage
 
 if [ "$#" -lt 2 ]; then
   echo "Error: Invalid number of arguments." >&2
