@@ -251,6 +251,42 @@ TEST_CASE("Device select unique_by_key works with default environment", "[select
   REQUIRE(d_values_out == expected_values);
 }
 
+TEST_CASE("Device select unique_by_key works with default environment and explicit env", "[select][device]")
+{
+  using value_t     = int;
+  using num_items_t = int;
+
+  num_items_t num_items = 8;
+  auto d_keys_in        = c2h::device_vector<value_t>{0, 2, 2, 9, 5, 5, 5, 8};
+  auto d_values_in      = c2h::device_vector<value_t>{1, 2, 3, 4, 5, 6, 7, 8};
+  auto d_keys_out       = c2h::device_vector<value_t>(num_items);
+  auto d_values_out     = c2h::device_vector<value_t>(num_items);
+  auto d_num_selected   = c2h::device_vector<int>(1);
+
+  auto env = stdexec::env{};
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSelect::UniqueByKey(
+      d_keys_in.begin(),
+      d_values_in.begin(),
+      d_keys_out.begin(),
+      d_values_out.begin(),
+      d_num_selected.begin(),
+      num_items,
+      env));
+
+  c2h::device_vector<value_t> expected_keys{0, 2, 9, 5, 8};
+  c2h::device_vector<value_t> expected_values{1, 2, 4, 5, 8};
+  c2h::device_vector<int> expected_num_selected{5};
+
+  REQUIRE(d_num_selected == expected_num_selected);
+  d_keys_out.resize(d_num_selected[0]);
+  d_values_out.resize(d_num_selected[0]);
+  REQUIRE(d_keys_out == expected_keys);
+  REQUIRE(d_values_out == expected_values);
+}
+
 TEST_CASE("Device select unique_by_key default tuning chooses target block size", "[select][device]")
 {
   using num_items_t = int;
@@ -595,6 +631,53 @@ C2H_TEST("Device select unique_by_key uses environment", "[select][device]")
     d_num_selected.begin(),
     num_items,
     ::cuda::std::equal_to<>{},
+    env);
+
+  c2h::device_vector<value_t> expected_keys{1, 2, 3, 4, 5};
+  c2h::device_vector<value_t> expected_values{10, 20, 30, 40, 50};
+  c2h::device_vector<int> expected_num_selected{5};
+
+  REQUIRE(d_num_selected == expected_num_selected);
+  d_keys_out.resize(d_num_selected[0]);
+  d_values_out.resize(d_num_selected[0]);
+  REQUIRE(d_keys_out == expected_keys);
+  REQUIRE(d_values_out == expected_values);
+}
+
+C2H_TEST("Device select unique_by_key uses environment without equality_op", "[select][device]")
+{
+  using value_t     = int;
+  using num_items_t = int;
+
+  num_items_t num_items = 10;
+  auto d_keys_in        = c2h::device_vector<value_t>{1, 1, 2, 2, 3, 3, 4, 4, 5, 5};
+  auto d_values_in      = c2h::device_vector<value_t>{10, 11, 20, 21, 30, 31, 40, 41, 50, 51};
+  auto d_keys_out       = c2h::device_vector<value_t>(num_items);
+  auto d_values_out     = c2h::device_vector<value_t>(num_items);
+  auto d_num_selected   = c2h::device_vector<int>(1);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceSelect::UniqueByKey(
+      nullptr,
+      expected_bytes_allocated,
+      d_keys_in.begin(),
+      d_values_in.begin(),
+      d_keys_out.begin(),
+      d_values_out.begin(),
+      d_num_selected.begin(),
+      num_items));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_select_unique_by_key(
+    d_keys_in.begin(),
+    d_values_in.begin(),
+    d_keys_out.begin(),
+    d_values_out.begin(),
+    d_num_selected.begin(),
+    num_items,
     env);
 
   c2h::device_vector<value_t> expected_keys{1, 2, 3, 4, 5};

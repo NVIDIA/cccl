@@ -304,21 +304,6 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
       : StaticPolicyT(base)
   {}
 
-  _CCCL_HOST_DEVICE static constexpr auto LargeSegment()
-  {
-    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::LargeSegmentPolicy());
-  }
-
-  _CCCL_HOST_DEVICE static constexpr auto SmallSegment()
-  {
-    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::SmallSegmentPolicy());
-  }
-
-  _CCCL_HOST_DEVICE static constexpr auto MediumSegment()
-  {
-    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::MediumSegmentPolicy());
-  }
-
   _CCCL_HOST_DEVICE static constexpr int PartitioningThreshold()
   {
     return StaticPolicyT::PARTITIONING_THRESHOLD;
@@ -327,6 +312,21 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
   _CCCL_HOST_DEVICE static constexpr int LargeSegmentRadixBits()
   {
     return StaticPolicyT::LargeSegmentPolicy::RADIX_BITS;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int LargeSegmentBlockThreads()
+  {
+    return StaticPolicyT::LargeSegmentPolicy::BLOCK_THREADS;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int LargeSegmentItemsPerThread()
+  {
+    return StaticPolicyT::LargeSegmentPolicy::ITEMS_PER_THREAD;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int SmallSegmentBlockThreads()
+  {
+    return StaticPolicyT::SmallSegmentPolicy::BLOCK_THREADS;
   }
 
   _CCCL_HOST_DEVICE static constexpr int SegmentsPerSmallBlock()

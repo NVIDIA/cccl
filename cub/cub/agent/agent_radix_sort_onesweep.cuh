@@ -25,10 +25,6 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES)
-#  include <cub/agent/agent_radix_sort_histogram.cuh>
-#endif
-
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
@@ -91,28 +87,6 @@ struct AgentRadixSortOnesweepPolicy : ScalingType
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM       = ScanAlgorithm;
   static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM = StoreAlgorithm;
 };
-
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) // FIXME(bgruber): remove
-namespace detail::radix_sort_runtime_policies
-{
-// Only define this when needed.
-// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
-// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
-// version is always defined, and that's the only one needed for regular CUB operations.
-//
-// TODO: enable this unconditionally once concepts are always available
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  RadixSortOnesweepAgentPolicy,
-  (GenericAgentPolicy, RadixSortExclusiveSumAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (RANK_NUM_PARTS, RankNumParts, int),
-  (RADIX_BITS, RadixBits, int),
-  (RANK_ALGORITHM, RankAlgorithm, cub::RadixRankAlgorithm),
-  (SCAN_ALGORITHM, ScanAlgorithm, cub::BlockScanAlgorithm),
-  (STORE_ALGORITHM, StoreAlgorithm, cub::RadixSortStoreAlgorithm))
-} // namespace detail::radix_sort_runtime_policies
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
 namespace detail::radix_sort
 {
