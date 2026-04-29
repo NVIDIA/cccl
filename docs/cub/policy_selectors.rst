@@ -74,9 +74,9 @@ Multiple policy selectors returning different policy structs can be passed as pa
 and each algorithm will pick the one with the matching policy struct.
 This is useful if the same environment is reused across several algorithm calls.
 
-The policy structs themselves are simple aggregates without special member functions (no constructors, assignment operators, etc.).
+The policy structs themselves are simple semiregular aggregates.
 They support C++20 designated initializers (i.e., the syntax :code:`{ .block_threads = 512, ... }`),
-support comparison for (in-)equality and serialization using :code:`operator<<`.
+comparison for (in-)equality, and serialization using :code:`operator<<`.
 They may occasionally contain member functions that compute derived values from the contained tuning values.
 All policy structs are public types and will evolve in a non-breaking way, at least during minor releases,
 by only adding new data members at the end of the struct.
