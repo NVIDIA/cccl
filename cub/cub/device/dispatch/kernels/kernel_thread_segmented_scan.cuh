@@ -87,7 +87,7 @@ private:
   }
 
 public:
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE multi_segmented_seq_iterator(
+  _CCCL_DEVICE _CCCL_FORCEINLINE multi_segmented_seq_iterator(
     int max_segment_counter,
     const InpBeginOffsetIt& input_begin_idx_it,
     const InpEndOffsetIt& input_end_idx_it,
@@ -122,17 +122,17 @@ public:
     return *this;
   }
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator bool() const
+  _CCCL_DEVICE _CCCL_FORCEINLINE operator bool() const
   {
     return (m_segment_counter < m_max_segment_counter) && (m_segment_id < m_num_segments);
   }
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool get_head_flag() const
+  _CCCL_DEVICE _CCCL_FORCEINLINE bool get_head_flag() const
   {
     return m_is_head;
   }
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT get_input_offset() const
+  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT get_input_offset() const
   {
     return m_input_idx;
   }
@@ -144,8 +144,7 @@ public:
 };
 
 template <typename InpBeginOffsetIt, typename InpEndOffsetIt, typename OutBeginOffsetIt, typename OffsetTy, typename MapperF>
-_CCCL_HOST_DEVICE
-multi_segmented_seq_iterator(int, InpBeginOffsetIt, InpEndOffsetIt, OutBeginOffsetIt, OffsetTy, MapperF)
+_CCCL_DEVICE multi_segmented_seq_iterator(int, InpBeginOffsetIt, InpEndOffsetIt, OutBeginOffsetIt, OffsetTy, MapperF)
   -> multi_segmented_seq_iterator<InpBeginOffsetIt, InpEndOffsetIt, OutBeginOffsetIt, OffsetTy, MapperF>;
 
 // define agent code
