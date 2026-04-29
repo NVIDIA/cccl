@@ -174,7 +174,7 @@ struct BlockScanWarpScans
     __syncthreads();
 
     // Accumulate block aggregates and save the one that is our warp's prefix
-    T warp_prefix;
+    T warp_prefix{};
     block_aggregate = temp_storage.warp_aggregates[0];
 
     // Use template unrolling (since the PTX backend can't handle unrolling it for SM1x)
