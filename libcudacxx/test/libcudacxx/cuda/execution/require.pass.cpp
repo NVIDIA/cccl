@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/__execution/determinism.h>
-#include <cuda/__execution/output_ordering.h>
+#include <cuda/execution.determinism.h>
+#include <cuda/execution.output_ordering.h>
 
 #include "test_macros.h"
 

@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/__execution/determinism.h>
+#include <cuda/execution.determinism.h>
 
 [[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct query_t
 {

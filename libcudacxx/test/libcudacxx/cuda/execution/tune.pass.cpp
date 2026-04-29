@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/__execution/tune.h>
+#include <cuda/execution.tune.h>
 
 #include "test_macros.h"
 
