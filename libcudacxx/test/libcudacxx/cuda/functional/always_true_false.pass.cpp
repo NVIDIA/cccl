@@ -14,10 +14,8 @@
 
 #include "test_macros.h"
 
-TEST_FUNC constexpr bool test()
+TEST_FUNC constexpr bool test_always_true()
 {
-  // --- always_true ---
-
   // Default-constructible
   cuda::always_true at{};
 
@@ -47,8 +45,15 @@ TEST_FUNC constexpr bool test()
   static_assert(cuda::always_true{}() == true, "Must be constexpr");
   static_assert(cuda::always_true{}(1, 2, 3) == true, "Must be constexpr");
 
-  // --- always_false ---
+  // Type properties
+  static_assert(cuda::std::is_empty_v<cuda::always_true>, "always_true must be empty");
+  static_assert(cuda::std::is_trivially_copyable_v<cuda::always_true>, "always_true must be trivially copyable");
 
+  return true;
+}
+
+TEST_FUNC constexpr bool test_always_false()
+{
   // Default-constructible
   cuda::always_false af{};
 
@@ -78,25 +83,23 @@ TEST_FUNC constexpr bool test()
   static_assert(cuda::always_false{}() == false, "Must be constexpr");
   static_assert(cuda::always_false{}(1, 2, 3) == false, "Must be constexpr");
 
-  // --- Type properties ---
-
-  // Both types are empty
-  static_assert(cuda::std::is_empty_v<cuda::always_true>, "always_true must be empty");
+  // Type properties
   static_assert(cuda::std::is_empty_v<cuda::always_false>, "always_false must be empty");
-
-  // Both types are trivially copyable
-  static_assert(cuda::std::is_trivially_copyable_v<cuda::always_true>, "always_true must be trivially copyable");
   static_assert(cuda::std::is_trivially_copyable_v<cuda::always_false>, "always_false must be trivially copyable");
-
-  // Types are distinct
-  static_assert(!cuda::std::is_same_v<cuda::always_true, cuda::always_false>, "Types must be distinct");
 
   return true;
 }
 
 int main(int, char**)
 {
-  assert(test());
-  static_assert(test());
+  // Types are distinct
+  static_assert(!cuda::std::is_same_v<cuda::always_true, cuda::always_false>, "Types must be distinct");
+
+  assert(test_always_true());
+  static_assert(test_always_true());
+
+  assert(test_always_false());
+  static_assert(test_always_false());
+
   return 0;
 }
