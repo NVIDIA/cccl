@@ -1,12 +1,33 @@
 # ShellCheck Analysis
 
 **Tool:** shellcheck 0.11.0
-**Total findings:** 255
+**Total findings:** 255 (97 fixed — see below)
 **Scan scope:** Shell scripts (bash dialect)
 
 ## Summary
 
 ShellCheck identifies bugs, pitfalls, and style issues in shell scripts. All findings are in CI scripts under `ci/`.
+
+## Fixes Applied
+
+97 findings were fixed in commit `bf5958863` ([PR #8739](https://github.com/NVIDIA/cccl/pull/8739)):
+
+| Fix | Findings | ShellCheck Codes |
+|-----|----------|-----------------|
+| Quote array expansions in `for` loops | 4 | SC2068 |
+| Use `[*]` for explicit concatenation in `[[ ]]` | 3 | SC2199 |
+| Use `[*]` in string context | 1 | SC2145 |
+| Fix accidental command execution | 1 | SC2091 |
+| Separate declaration from command substitution | 76 | SC2155 |
+| Fix ambiguous quoting | 2 | SC2140 |
+| Use `mapfile` for array deduplication | 1 | SC2207 |
+| Quote variables in array assignment | 4 | SC2206 |
+| Add `cd` error handling | 1 | SC2164 |
+| Use `printf` for escape sequences | 1 | SC2028 |
+| Quote command substitution | 1 | SC2046 |
+| Fix companion quoting issues | 2 | SC1078, SC1079 |
+
+**Remaining after fix:** 158 findings (69 SC1091 sourced-file-not-found, 59 SC2086 intentional word splitting, 12 SC2034 cross-script variables, 6 SC2154 sourced variables, and other intentional patterns).
 
 ## Findings by Severity
 

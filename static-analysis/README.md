@@ -10,7 +10,7 @@ Static analysis of the CUDA C++ Core Libraries (CCCL) repository using 17 automa
 | [cpplint](cpplint.md) | 9,001 | C/C++ Style | done |
 | [cppcheck](cppcheck.md) | 209 | C/C++ Deep Analysis | done |
 | [ruff](ruff.md) | 9,173 | Python Linting | done |
-| [shellcheck](shellcheck.md) | 255 | Shell Script | done |
+| [shellcheck](shellcheck.md) | 255 → 158 | Shell Script | **97 fixed** ([PR #8739](https://github.com/NVIDIA/cccl/pull/8739)) |
 | [yamllint](yamllint.md) | 527 | YAML Validation | done |
 | [cmake-lint](cmake-lint.md) | 0 | CMake Formatting | done |
 | [clang-tidy](clang-tidy.md) | 88,838 | C/C++ Modernization | done (noisy — see report) |
@@ -27,7 +27,7 @@ Static analysis of the CUDA C++ Core Libraries (CCCL) repository using 17 automa
 ## Priority Findings
 
 ### Security-Relevant
-- **shellcheck:** 8 errors — unquoted array expansions in CI scripts (SC2068, SC2199)
+- **shellcheck:** ~~8 errors~~ **Fixed** — unquoted array expansions in CI scripts (SC2068, SC2199) — [PR #8739](https://github.com/NVIDIA/cccl/pull/8739)
 - **cppcheck:** 14 errors — including uninitialized variables
 - **flawfinder:** `getenv` (65), `system` (305) usage in production code
 - **bandit:** 25 subprocess-related findings in CI/build scripts (B602, B603, B607)
@@ -48,6 +48,14 @@ Static analysis of the CUDA C++ Core Libraries (CCCL) repository using 17 automa
 - **ruff:** 4,000+ missing type annotations — project doesn't enforce strict typing
 - **bandit:** 609 `assert_used` — appropriate in test code
 - **cpplint:** Style differences with Google guide (CCCL has its own style)
+
+## Filed Issues & PRs
+
+| Issue | PR | Status |
+|-------|-----|--------|
+| [#8736](https://github.com/NVIDIA/cccl/issues/8736) — Unquoted array expansions (SC2068/SC2199/SC2145/SC2091) | [#8739](https://github.com/NVIDIA/cccl/pull/8739) | Filed |
+| [#8737](https://github.com/NVIDIA/cccl/issues/8737) — Masked return values (SC2155) | [#8739](https://github.com/NVIDIA/cccl/pull/8739) | Filed |
+| [#8738](https://github.com/NVIDIA/cccl/issues/8738) — Shell robustness (SC2140/SC2207/SC2206/etc) | [#8739](https://github.com/NVIDIA/cccl/pull/8739) | Filed |
 
 ## Running Analysis
 
