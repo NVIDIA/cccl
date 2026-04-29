@@ -63,10 +63,25 @@ TEST_FUNC void test()
   test_distribution<D, false, G, test_constexpr>(params, uniform_int_cdf<T>{});
 }
 
+// P4037R1: made signed char / unsigned char valid IntType template arguments.
+
+TEST_FUNC void test_p4037r1_small_types()
+{
+  using D_s = cuda::std::uniform_int_distribution<signed char>;
+  using D_u = cuda::std::uniform_int_distribution<unsigned char>;
+  static_assert(cuda::std::is_same_v<D_s::result_type, signed char>);
+  static_assert(cuda::std::is_same_v<D_u::result_type, unsigned char>);
+  static_assert(D_s().min() == 0);
+  static_assert(D_s().max() == cuda::std::numeric_limits<signed char>::max());
+  static_assert(D_u().min() == 0);
+  static_assert(D_u().max() == cuda::std::numeric_limits<unsigned char>::max());
+}
+
 int main(int, char**)
 {
   test<int>();
   test<long>();
   test<short>();
+  test_p4037r1_small_types();
   return 0;
 }

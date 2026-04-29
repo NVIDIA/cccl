@@ -24,6 +24,6 @@
 #include <cub/util_macro.cuh> // IWYU pragma: export
 #include <cub/util_namespace.cuh> // IWYU pragma: export
 
-#if _CCCL_HOSTED()
+#if !_CCCL_COMPILER(NVRTC)
 #  include <cuda/__nvtx/nvtx.h>
-#endif // _CCCL_HOSTED()
+#endif // !_CCCL_COMPILER(NVRTC)

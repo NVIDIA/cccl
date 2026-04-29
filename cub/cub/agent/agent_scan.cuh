@@ -28,10 +28,6 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_device.cuh>
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES)
-#  include <cub/agent/agent_unique_by_key.cuh> // for UniqueByKeyAgentPolicy
-#endif
-
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -91,27 +87,6 @@ struct AgentScanPolicy : ScalingType
     using delay_constructor_t = DelayConstructorT;
   };
 };
-
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) // TODO(bgruber)
-namespace detail
-{
-// Only define this when needed.
-// Because of overload woes, this depends on C++20 concepts. util_device.h checks that concepts are available when
-// either runtime policies or PTX JSON information are enabled, so if they are, this is always valid. The generic
-// version is always defined, and that's the only one needed for regular CUB operations.
-//
-// TODO: enable this unconditionally once concepts are always available
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  ScanAgentPolicy,
-  (UniqueByKeyAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
-  (STORE_ALGORITHM, StoreAlgorithm, cub::BlockStoreAlgorithm),
-  (SCAN_ALGORITHM, ScanAlgorithm, cub::BlockScanAlgorithm))
-} // namespace detail
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
 /******************************************************************************
  * Thread block abstractions

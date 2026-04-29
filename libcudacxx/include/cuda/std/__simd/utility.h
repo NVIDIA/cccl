@@ -102,9 +102,13 @@ template <typename _Range>
   {
     return __simd_size_type{tuple_size_v<__range_t>};
   }
-  else
+  else if constexpr (__has_static_extent_v<_Range>)
   {
     return __simd_size_type{__range_t::extent};
+  }
+  else
+  {
+    return 0;
   }
 }
 

@@ -618,22 +618,22 @@ _CCCL_HOST_DEVICE constexpr int LoadToSharedBufferSizeBytes(::cuda::std::size_t 
 }
 } // namespace detail
 
-/******************************************************************************
- * Policy management
- ******************************************************************************/
-// PolicyWrapper
-
 namespace detail
 {
 #if defined(CUB_DEFINE_RUNTIME_POLICIES)
+// TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 #  if !_CCCL_HAS_CONCEPTS()
 #    error Generation of runtime policy wrappers requires C++20 concepts.
 #  endif // !_CCCL_HAS_CONCEPTS()
 #endif // defined(CUB_DEFINE_RUNTIME_POLICIES)
 
-#define CUB_DETAIL_POLICY_WRAPPER_CONCEPT_TEST(field)     , StaticPolicyT::_CCCL_PP_FIRST field
+// TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
+#define CUB_DETAIL_POLICY_WRAPPER_CONCEPT_TEST(field) , StaticPolicyT::_CCCL_PP_FIRST field
+
+// TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 #define CUB_DETAIL_POLICY_WRAPPER_REFINE_CONCEPT(concept) concept<StaticPolicyT>&&
 
+// TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 #define CUB_DETAIL_POLICY_WRAPPER_ACCESSOR(field)                   \
   __host__ __device__ static constexpr auto _CCCL_PP_SECOND field() \
   {                                                                 \
@@ -643,6 +643,7 @@ namespace detail
 template <typename T>
 _CCCL_CONCEPT always_true = true;
 
+// TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 #define CUB_DETAIL_POLICY_WRAPPER_DEFINE(concept_name, refines, ...)                                                   \
   template <typename StaticPolicyT>                                                                                    \
   _CCCL_CONCEPT concept_name = _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_REFINE_CONCEPT, _CCCL_PP_EXPAND refines)    \
@@ -662,10 +663,12 @@ _CCCL_CONCEPT always_true = true;
     return concept_name##Wrapper{policy};                                                                              \
   }
 
+// TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 // Generic agent policy
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   GenericAgentPolicy, (always_true), (BLOCK_THREADS, BlockThreads, int), (ITEMS_PER_THREAD, ItemsPerThread, int) )
 
+// TODO(bgruber): drop in CCCL 4.0 when we drop the dispatchers
 _CCCL_TEMPLATE(typename PolicyT)
 #if _CCCL_STD_VER < 2020
 _CCCL_REQUIRES((!GenericAgentPolicy<PolicyT>) ) // in C++20+ we get this by preferring constrained functions
@@ -705,8 +708,7 @@ struct KernelConfig
   int tile_size{0};
   int sm_occupancy{0};
 
-  // TODO(bgruber): remove this function once all reduce and radix sort (segmented) algorithms have been ported to the
-  // new tuning API
+  // TODO(bgruber): remove this overload in CCCL 4.0 when we drop the public dispatchers
   template <typename AgentPolicyT,
             typename KernelPtrT,
             typename LauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
