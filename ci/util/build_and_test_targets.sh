@@ -86,7 +86,7 @@ cmlog_file="$(mktemp /tmp/cmake-config-XXXXXX.log)"
 if [[ -n "${CONFIGURE_OVERRIDE}" ]]; then
   if ! (set -x; eval "${CONFIGURE_OVERRIDE}") 2>&1 | tee "${cmlog_file}"; then
     echo "::endgroup::"
-    echo "🔴📝 Configuration override failed ($(elapsed_time)):\n\t${CONFIGURE_OVERRIDE}"
+    printf '🔴📝 Configuration override failed (%s):\n\t%s\n' "$(elapsed_time)" "${CONFIGURE_OVERRIDE}"
     exit 1
   fi
 else

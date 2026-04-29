@@ -38,7 +38,8 @@ else
     cccl_sha="$(git -C "${cccl_repo}" rev-parse HEAD)";
 fi
 
-readonly cccl_repo_version="$(git -C "${cccl_repo}" describe ${cccl_sha}| grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')"
+cccl_repo_version="$(git -C "${cccl_repo}" describe ${cccl_sha}| grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')"
+readonly cccl_repo_version
 
 # Define CCCL_VERSION to override the version used by rapids-cmake to patch CCCL.
 echo "CCCL_VERSION (override): ${CCCL_VERSION-}";
@@ -50,7 +51,8 @@ fi
 
 # If the current version is less than 2.8.0, use 2.8.0 for the rapids-cmake version.
 # This is to allow rapids-cmake to correctly patch the CCCL install rules on current `main`.
-readonly cccl_version=$(version_max "${cccl_repo_version}" "2.8.0")
+cccl_version=$(version_max "${cccl_repo_version}" "2.8.0")
+readonly cccl_version
 
 readonly workdir="${cccl_repo}/build/${CCCL_BUILD_INFIX:-}/matx"
 readonly version_file="${workdir}/MatX/cmake/versions.json"

@@ -11,7 +11,7 @@ parse_python_args "$@"
 # Check if py_version was provided (this script requires it)
 require_py_version "$usage" || exit 1
 
-echo "Docker socket: " $(ls /var/run/docker.sock)
+echo "Docker socket: $(ls /var/run/docker.sock)"
 
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
   # Prepare mount points etc for getting artifacts in/out of the container.

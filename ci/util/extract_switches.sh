@@ -64,4 +64,4 @@ for arg in "$@"; do
   other_args+=("\"$arg\"")
 done
 
-echo "${found_switches[@]} -- ${other_args[@]}"
+echo "${found_switches[*]} -- ${other_args[*]}"

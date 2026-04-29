@@ -133,8 +133,8 @@ if $COMPUTE_SANITIZER; then
   export C2H_SEED_COUNT_OVERRIDE=1
 fi
 
-for PRESET in ${PRESETS[@]}; do
-  test_preset "CUB (${PRESET})" ${PRESET}
+for PRESET in "${PRESETS[@]}"; do
+  test_preset "CUB (${PRESET})" "${PRESET}"
 done
 
 print_time_summary

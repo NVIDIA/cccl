@@ -2,15 +2,17 @@
 
 set -euo pipefail
 
-readonly ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../" && pwd)"
+readonly ci_dir
 source "$ci_dir/util/workflow/common.sh"
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0
 
 Downloads the workflow artifact and unpacks it to \$WORKFLOW_DIR, but only if it doesn't already exist.
 EOF
 )
+readonly usage
 
 if [ "$#" -ne 0 ]; then
   echo "Error: This script does not take any arguments." >&2

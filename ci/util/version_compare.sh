@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-readonly usage=$(cat <<EOF
+usage=$(cat <<EOF
 Usage: $0 X.Y[.Z[.W[...]]] <compare_op> A.B[.C[.D[...]]]
 
 Compares two version strings with the specified operator.
@@ -16,6 +16,7 @@ compare_ops:
   gt - greater than
 EOF
 )
+readonly usage
 
 if [ "$#" -ne 3 ]; then
   echo "Error: Invalid arguments: $*" >&2

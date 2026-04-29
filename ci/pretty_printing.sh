@@ -71,7 +71,8 @@ function run_command() {
     echo "Working directory: $(pwd)"
     echo "Running command: ${command[*]}"
     set +e
-    local start_time=$(date +%s)
+    local start_time
+    start_time=$(date +%s)
     # If RUN_COMMAND_RETRY_PARAMS is set to "<retries> <sleep_time>", use retry.sh to run the command:
     if [[ -n "${RUN_COMMAND_RETRY_PARAMS:-}" ]]; then
         status=0
@@ -80,7 +81,8 @@ function run_command() {
         status=0
         "${command[@]}" || status=$?
     fi
-    local end_time=$(date +%s)
+    local end_time
+    end_time=$(date +%s)
     set -e
     local duration=$((end_time - start_time))
     end_group "$group_name" $status $duration
@@ -99,7 +101,8 @@ function print_time_summary() {
 
     # Find the longest group name for formatting
     for group in "${!command_durations[@]}"; do
-        local group_length=$(echo "$group" | awk '{print length}')
+        local group_length
+        group_length=$(echo "$group" | awk '{print length}')
         if [ "$group_length" -gt "$max_length" ]; then
             max_length=$group_length
         fi
