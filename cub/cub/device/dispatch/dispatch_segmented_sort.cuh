@@ -918,7 +918,7 @@ private:
             blocks_in_grid,
             threads_in_block,
             (long long) stream,
-            wrapped_policy.LargeSegment().ItemsPerThread(),
+            wrapped_policy.LargeSegmentItemsPerThread(),
             wrapped_policy.LargeSegmentRadixBits());
 #endif // CUB_DEBUG_LOG
 

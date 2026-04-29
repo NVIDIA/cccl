@@ -319,6 +319,11 @@ struct SegmentedSortPolicyWrapper<StaticPolicyT,
     return StaticPolicyT::LargeSegmentPolicy::BLOCK_THREADS;
   }
 
+  _CCCL_HOST_DEVICE static constexpr int LargeSegmentItemsPerThread()
+  {
+    return StaticPolicyT::LargeSegmentPolicy::ITEMS_PER_THREAD;
+  }
+
   _CCCL_HOST_DEVICE static constexpr int SmallSegmentBlockThreads()
   {
     return StaticPolicyT::SmallSegmentPolicy::BLOCK_THREADS;
