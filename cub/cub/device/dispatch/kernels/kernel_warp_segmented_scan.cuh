@@ -272,6 +272,21 @@ private:
     }
   };
 
+  struct segment_scan_searcher_scope
+  {
+    agent_warp_segmented_scan& agent;
+
+    template <typename SearcherT, typename InputBeginOffsetIteratorT, typename OutputBeginOffsetIteratorT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments_chunked(
+      const SearcherT& searcher,
+      InputBeginOffsetIteratorT input_begin_idx_it,
+      OutputBeginOffsetIteratorT output_begin_idx_it,
+      OffsetT items_per_warp)
+    {
+      agent.scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_warp);
+    }
+  };
+
 public:
   // Alias wrapper allowing storage to be unioned
   using TempStorage = Uninitialized<_TempStorage>;
@@ -336,37 +351,13 @@ public:
     const auto cum_sizes_count = static_cast<::cuda::std::size_t>(n_segments);
     const ::cuda::std::span<OffsetT> cum_sizes{temp_storage.logical_segment_offsets[warp_id], cum_sizes_count};
 
-    const OffsetT items_per_warp = cum_sizes[n_segments - 1];
-
-    if (temp_storage.fixed_size_mask[warp_id] && items_per_warp > 0)
-    {
-      // fast path: assumes all segments have identical size (checked via fixed_size_mask)
-      // fixed-size searcher can cheaply identify which segment an element belongs to
-      // using segment_id = elem_id / segment_size;
-      const auto segment_size = cum_sizes[0];
-      _CCCL_ASSERT((segment_size > 0) && ((items_per_warp % segment_size) == 0),
-                   "Precondition violated, likely due to a race condition");
-
-      const bag_of_fixed_size_segments searcher{cum_sizes[0]};
-      scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_warp);
-    }
-    else
-    {
-      constexpr bool use_branchless = true;
-
-      if constexpr (use_branchless)
-      {
-        // searcher locates segment_id using branchless linear/binary search in cum_sizes
-        const auto searcher = make_statically_bound_bag_of_segments<MaxNumSegments>(cum_sizes);
-        scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_warp);
-      }
-      else
-      {
-        // searcher locates segment_id using linear/binary search in cum_sizes
-        const bag_of_segments searcher{cum_sizes};
-        scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_warp);
-      }
-    }
+    select_segment_scan_searcher<MaxNumSegments, OffsetT>(
+      segment_scan_searcher_scope{*this},
+      cum_sizes,
+      n_segments,
+      temp_storage.fixed_size_mask[warp_id],
+      input_begin_idx_it,
+      output_begin_idx_it);
   }
 
 private:

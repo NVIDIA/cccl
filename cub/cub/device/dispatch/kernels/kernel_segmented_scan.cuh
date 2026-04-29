@@ -278,6 +278,21 @@ private:
     }
   };
 
+  struct segment_scan_searcher_scope
+  {
+    agent_segmented_scan& agent;
+
+    template <typename SearcherT, typename InputBeginOffsetIteratorT, typename OutputBeginOffsetIteratorT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments_chunked(
+      const SearcherT& searcher,
+      InputBeginOffsetIteratorT input_begin_idx_it,
+      OutputBeginOffsetIteratorT output_begin_idx_it,
+      OffsetT items_per_block)
+    {
+      agent.scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_block);
+    }
+  };
+
 public:
   // Alias wrapper allowing storage to be unioned
   using TempStorage = Uninitialized<_TempStorage>;
@@ -352,64 +367,13 @@ public:
     const ::cuda::std::span<OffsetT> cum_sizes{
       temp_storage.logical_segment_offsets, static_cast<::cuda::std::size_t>(n_segments)};
 
-    const OffsetT items_per_block = cum_sizes[n_segments - 1];
-
-    if (temp_storage.fixed_size_mask && (items_per_block > 0))
-    {
-      // fast path: assumes all segments have identical size (checked via fixed_size_mask)
-      // fixed-size searcher can cheaply identify which segment an element belongs to
-      // using segment_id = elem_id / segment_size;
-      const auto segment_size = cum_sizes[0];
-      _CCCL_ASSERT((segment_size > 0) && ((items_per_block % segment_size) == 0),
-                   "Precondition violated, likely due to a race condition");
-
-      const bag_of_fixed_size_segments searcher{segment_size};
-      scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_block);
-    }
-    else
-    {
-      // Branchless search is faster
-      constexpr bool use_branchless = true;
-
-      if constexpr (use_branchless)
-      {
-        /*
-## varying_size_segments
-
-### [0] NVIDIA RTX A6000
-
-| T{ct} | OffsetT{ct} | Elements{io} | #Seg{io} | $Seg/Worker{io} | Worker{io} | Samples | BWUtil |
-|-------|-------------|--------------|----------|-----------------|------------|---------|--------|
-|   I32 |         I32 |    2^27      |       57 |             216 |      block |    672x | 51.97% |
-|   I32 |         I32 |    2^27      |       57 |              18 |       warp |   2832x | 86.45% |
-|   I64 |         I32 |    2^27      |       57 |             216 |      block |    720x | 76.07% |
-|   I64 |         I32 |    2^27      |       57 |              18 |       warp |    784x | 86.95% |
-         */
-        // searcher locates segment_id using branchless linear/binary search in cum_sizes
-        const auto searcher = make_statically_bound_bag_of_segments<NumSegments>(cum_sizes);
-        scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_block);
-      }
-      else
-      {
-        /*
-## varying_size_segments
-
-### [0] NVIDIA RTX A6000
-
-| T{ct} | OffsetT{ct} | Elements{io} | #Seg{io} | #Seg/Worker{io} | Worker{io} | Samples | BWUtil |
-|-------|-------------|--------------|----------|-----------------|------------|---------|--------|
-|   I32 |         I32 |     2^27     |       57 |             117 |      block |    944x | 39.85% |
-|   I32 |         I32 |     2^27     |       57 |              18 |       warp |   2821x | 86.41% |
-|   I64 |         I32 |     2^27     |       57 |             117 |      block |    544x | 53.11% |
-|   I64 |         I32 |     2^27     |       57 |              18 |       warp |    752x | 86.90% |
-         */
-
-        // searcher locates segment_id using linear/binary search in cum_sizes
-        // binary search is using while-loop based cub::std::upper_bound
-        bag_of_segments searcher{cum_sizes};
-        scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_block);
-      }
-    }
+    select_segment_scan_searcher<NumSegments, OffsetT>(
+      segment_scan_searcher_scope{*this},
+      cum_sizes,
+      n_segments,
+      temp_storage.fixed_size_mask,
+      input_begin_idx_it,
+      output_begin_idx_it);
   }
 
 private:
