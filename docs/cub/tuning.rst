@@ -145,7 +145,7 @@ and the parameters to have effect in execution:
   #if !TUNE_BASE
   template <typename T>
   struct policy_selector {
-    _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::ReducePolicy {
+    _CCCL_API constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::ReducePolicy {
       const auto [items, threads] = cub::detail::scale_mem_bound(
                                      TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, sizeof(T));
       const auto policy = cub::detail::agent_reduce_policy{
@@ -160,8 +160,8 @@ and the parameters to have effect in execution:
   };
   #endif
 
-The custom policy selector returns a fixed policy regardless of the CUDA architecture,
-since tuning is usually done on a specific GPU architecture and compiling only for that architecture.
+The custom policy selector returns a fixed policy regardless of the compute capability,
+since tuning is usually done on a specific GPU and compiling only for that GPU's compute capability.
 The policy selector uses all tuning parameters from the search space to form the policy used by CUB.
 
 
@@ -552,7 +552,7 @@ as :ref:`sketched above <cub-tuning-authoring-benchmarks>`:
 .. code:: c++
 
   struct policy_selector {
-    _CCCL_API constexpr auto operator()(cuda::arch_id /*arch*/) const -> cub::AlgorithmPolicy {
+    _CCCL_API constexpr auto operator()(cuda::compute_capability /*cc*/) const -> cub::AlgorithmPolicy {
       return {
         .block_threads = 512,
         .items_per_thread = 19,
@@ -566,7 +566,7 @@ but should only be changed and extended by the CCCL maintainers.
 All default tunings are found in the :code:`cub/device/detail/tuning/tuning_*.cuh` headers, organized by algorithm.
 CUB's policy selectors are highly parameterized on type information and traits of the input arguments to CUB algorithms
 (like accumulator type, offset size, and operation kind),
-which they turn into a policy for a given architecture.
+which they turn into a policy for a given compute capability.
 
 The way tuning values are selected is different for each CUB algorithm and requires studying the corresponding code.
 The general principles of policy selectors and tunings are documented :ref:`here <cub-policy-selectors>`.
@@ -592,9 +592,9 @@ For example, an existing tuning selection function may contain code like:
 Since we have found that 512 threads per block and 19 items per thread are better, we can update the value in place.
 
 A different case is when we tune beyond what's currently supported by CUB's existing tunings.
-This may be because we tune for a new CUDA architecture,
-in which case a new branch based on the :code:`cuda::arch_id` passed to the :code:`policy_selector::operator()`
-should be introduced, handling this architecture.
+This may be because we tune for a new GPU architecture,
+in which case a new branch based on the :code:`cuda::compute_capability` passed to the :code:`policy_selector::operator()`
+should be introduced, handling this new GPU's compute capability.
 Or we tune for new key, value or offset types, etc.,
 in which case the existing tuning functions may need additional branches.
 There is no general rule on how this extension is done, though.
@@ -612,8 +612,8 @@ Once we have selected tunings and implemented them in CUB, we need to verify the
 This process consists of two steps.
 
 Firstly, we need to ensure that adding new tunings and policies did not break existing tunings.
-This is most relevant when tunings for new PTX versions have been added.
-To verify this, compile the corresponding benchmarks for the previous architecture
+This is most relevant when tunings for new compute capabilities have been added.
+To verify this, compile the corresponding benchmarks for the previous compute capabilities
 (excluding the new tunings) before and after modifying any tunings,
 and compare the generated SASS :code:(`cuobjdump -sass`).
 It should not have changed.

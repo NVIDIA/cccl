@@ -4,13 +4,13 @@ CUB Tuning Policy Selectors
 ================================================================================
 
 Policy selectors are the mechanism by which CUB's device algorithms and kernels select
-tuning parameters for a given GPU architecture and workload.
-A policy selector is a stateless callable that maps a :code:`cuda::arch_id` to a policy struct
-containing the tuning values for that architecture.
+tuning parameters for a given workload and GPU compute capability.
+A policy selector is a stateless callable that maps a :code:`cuda::compute_capability` to a policy struct
+containing the tuning values for that compute capability.
 Each set of CUB algorithms using a common underlying implementation defines a common policy struct,
 e.g. :code:`cub::ReducePolicy`, which must be returned by a policy selector passed to those algorithms.
 
-CUB employs internal default policy selectors providing tunings for known architectures and workloads,
+CUB employs internal default policy selectors providing tunings for known compute capabilities and workloads,
 which are not publicly accessible to users.
 Users can override CUB's policy selector for a given algorithm
 by passing a custom policy selector through the algorithm's environment parameter.
@@ -22,7 +22,7 @@ Defining a policy selector
 --------------------------------------------------------------------------------
 
 A policy selector is any type with a :code:`__host__`,  :code:`__device__`, :code:`constexpr`, and :code:`const` call operator
-taking a ``cuda::arch_id`` and returning the algorithm's policy struct:
+taking a ``cuda::compute_capability`` and returning the algorithm's policy struct:
 
 ..
     TODO(bgruber): we have to update this example again after the reduce tuning API has been actually released
@@ -31,9 +31,9 @@ taking a ``cuda::arch_id`` and returning the algorithm's policy struct:
 
     template <typename T>
     struct my_reduce_tuning {
-      __host__ __device__ constexpr auto operator()(cuda::arch_id arch) const -> cub::ReducePolicy {
+      __host__ __device__ constexpr auto operator()(cuda::compute_capability cc) const -> cub::ReducePolicy {
         // tuning for Hopper and later
-        if (arch >= cuda::arch_id::sm_90) {
+        if (cc >= cuda::compute_capability(9, 0)) {
           const auto policy = cub::detail::agent_reduce_policy{
             .block_threads = 512,
             .items_per_thread = 64 / sizeof(T), // 8 double, 16 float, 32 half_t, ...
@@ -43,7 +43,7 @@ taking a ``cuda::arch_id`` and returning the algorithm's policy struct:
           };
           return {policy, policy, policy, policy};
         }
-        // fallback for older architectures
+        // fallback for older GPUs
         const auto policy = cub::detail::agent_reduce_policy{
           .block_threads = 256,
           .items_per_thread = 12,
@@ -63,7 +63,7 @@ It can be a class template, but then only a full specialization can be passed to
 e.g., :code:`my_reduce_tuning<float>`.
 The implementation can use branches and helper functions arbitrarily,
 as long as they can be evaluated at compile-time.
-The returned tuning policy can, and probably should, contain different values for different CUDA architectures or workloads.
+The returned tuning policy can, and probably should, contain different values for different compute capabilities or workloads.
 
 Each CUB algorithm with an environment parameter searches the environment for a policy selector returning a matching policy struct.
 If one is found, the policy selector will be used to determine the tuning values for host-side dispatch and kernel compilation.
