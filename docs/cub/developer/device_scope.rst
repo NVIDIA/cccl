@@ -115,9 +115,9 @@ A more precise description is given later.
 
     namespace detail::algorithm {
       cudaError_t dispatch(..., PolicySelector policy_selector = {}) { // (1)
-        cuda::arch_id arch{};
-        ptx_arch_id(arch);
-        const /*or constexpr*/ AlgorithmPolicy active_policy = policy_selector(arch); // (2)
+        cuda::compute_capability cc{};
+        ptx_cc(cc);
+        const /*or constexpr*/ AlgorithmPolicy active_policy = policy_selector(cc); // (2)
         // host-side implementation of algorithm, calls kernels
         kernel<PolicySelector><<<grid_size, active_policy.block_threads>>>(...); // calls (3)
       }
@@ -148,7 +148,7 @@ The dispatch function is typically a simple function template called ``dispatch`
 It basically receives the same parameters as the public API entry point,
 but they may have already been modified, extended, or generalized (to map many public APIs to the same dispatch function).
 The goal of the dispatch function is to setup the execution of the algorithm on the device
-by selecting the appropriate policy for the current GPU architecture,
+by selecting the appropriate policy for the current GPU's compute capability,
 preparing temporary storage and shared memory, configuring kernel launches, launching kernels, etc.
 
 There are two style of dispatch functions, depending on whether the policy is needed as runtime or compile-time value:
@@ -158,21 +158,21 @@ There are two style of dispatch functions, depending on whether the policy is ne
     namespace detail::algorithm {
       // Dispatch version A - runtime policy
       cudaError_t dispatch(..., PolicySelector policy_selector = {}) { // (1)
-        cuda::arch_id arch{};
-        ptx_arch_id(arch);
-        const auto active_policy = policy_selector(arch); // runtime-time policy
+        cuda::compute_capability cc{};
+        ptx_cc(cc);
+        const auto active_policy = policy_selector(cc); // runtime-time policy
         // host-side implementation of algorithm, calls kernels
         kernel<PolicySelector><<<grid_size, active_policy.block_threads>>>(...); // calls (3)
       }
     }
 
-The dispatch function starts by querying the target architecture for which compiled GPU code (PTX or SASS) is available,
-by calling ``ptx_arch_id``.
-If the host code does not require the policy for this architecture at compile-time (version A),
-we can just pass the target architecture to the :ref:`policy selector <cub-policy-selectors>` to obtain the tuning policy at runtime.
+The dispatch function starts by querying the target compute capability for which compiled GPU code (PTX or SASS) is available,
+by calling ``ptx_cc``.
+If the host code does not require the policy for this compute capability at compile-time (version A),
+we can just pass the compute capability to the :ref:`policy selector <cub-policy-selectors>` to obtain the tuning policy at runtime.
 The values from the policy are then used to setup resources and the kernel.
 The kernel is then instantiated using only the type of the policy selector (not a concrete tuning policy),
-so there is only one kernel instantiation across all CUDA architectures.
+so there is only one kernel instantiation across all target architectures compiled for.
 More on that later.
 
 If the host code needs the policy as a compile-time value (version B), we have to use ``dispatch_arch``.
@@ -180,19 +180,19 @@ If the host code needs the policy as a compile-time value (version B), we have t
 dispatch_arch
 ------------------------------------
 
-``dispatch_arch`` maps a runtime ``cuda::arch_id`` to a compile-time policy value
+``dispatch_arch`` maps a runtime ``cuda::compute_capability`` to a compile-time policy value
 and calls the user-provided functor ``f`` with a nullary callable (a ``policy_getter``)
 that returns the policy as a compile-time constant.
-The policy getter is necessary to workaround a C++17 limitation.
+The policy getter is necessary to work around a C++17 limitation.
 
 .. code-block:: c++
 
     namespace detail::algorithm {
       // Dispatch version B - compile-time policy
       cudaError_t dispatch(..., PolicySelector policy_selector = {}) { // (1)
-        cuda::arch_id arch{};
-        ptx_arch_id(arch);
-        return dispatch_arch(policy_selector, arch, [&](auto policy_getter) { // calls (2)
+        cuda::compute_capability cc{};
+        ptx_cc(cc);
+        return dispatch_arch(policy_selector, cc, [&](auto policy_getter) { // calls (2)
           constexpr auto active_policy = policy_getter(); // compile-time policy
           static_assert(active_policy.tile_size() * sizeof(T) <= 48 * 1024, "Not enough SMEM");
           // host-side implementation of algorithm, calls kernels
@@ -201,7 +201,7 @@ The policy getter is necessary to workaround a C++17 limitation.
       }
 
       template <typename PolicySelector, typename F>
-      cudaError_t dispatch_arch(PolicySelector, cuda::arch_id device_arch, F&& f) { // (2)
+      cudaError_t dispatch_arch(PolicySelector, cuda::compute_capability cc, F&& f) { // (2)
         // fold over __CUDA_ARCH_LIST__, calling f with a policy_getter
         // that returns the policy for the matching arch as a compile-time value
       }
@@ -210,8 +210,8 @@ The policy getter is necessary to workaround a C++17 limitation.
 Inside the lambda, ``policy_getter()`` returns the selected policy as a constant expression,
 so compile-time branching (i.e. ``if constexpr``) or static assertions using policy values is possible.
 
-Internally, ``dispatch_arch`` uses ``__CUDA_ARCH_LIST__``/``NV_TARGET_SM_INTEGER_LIST`` (or all known architectures as fallback)
-to create one instantiation of ``f`` per distinct value of ``policy_selector(arch)`` (not per arch).
+Internally, ``dispatch_arch`` uses ``__CUDA_ARCH_LIST__``/``NV_TARGET_SM_INTEGER_LIST`` (or all known compute capabilities as fallback)
+to create one instantiation of ``f`` per distinct value of ``policy_selector(cc)`` (not per compute capability).
 This results in one template instantiation of ``f`` per distinct policy value.
 The kernel is then again only instantiated once using the type of the policy selector.
 
@@ -220,7 +220,7 @@ Kernels
 ------------------------------------
 
 Kernels are templated on the ``PolicySelector`` type,
-which is stateless and the same for all CUDA architectures compiled for.
+which is stateless and the same for all target architectures compiled for.
 
 .. code-block:: c++
 
@@ -238,14 +238,14 @@ which is stateless and the same for all CUDA architectures compiled for.
 
       template <typename PolicySelector>
       constexpr auto current_policy() {
-        return PolicySelector{}(cuda::arch_id{__CUDA_ARCH__ / 10}); // simplified
+        return PolicySelector{}(cuda::compute_capability{__CUDA_ARCH__ / 10}); // simplified
       }
     }
 
 ``PolicySelector`` must be stateless (``is_empty_v<PolicySelector>`` is ``true``),
 so it can be default-constructed in device code.
 The utility function ``current_policy`` should only be called in device code.
-It selects the target architecture based on compiler macros of the current device compilation pass
+It selects the target compute capability based on compiler macros of the current device compilation pass
 and retrieves a tuning policy from the policy selector.
 
 The kernel typically uses ``current_policy`` in two places,
@@ -293,21 +293,21 @@ a typeless and a typeful version.
         int offset_size;
         int accum_size;
 
-        constexpr auto operator()(::cuda::arch_id arch) const -> AlgorithmPolicy {
-          // parameter selection across target architectures and input characteristics (possibly HUGE logic)
+        constexpr auto operator()(::cuda::compute_capability cc) const -> AlgorithmPolicy {
+          // parameter selection across target compute capabilities and input characteristics (possibly HUGE logic)
         }
       };
 
       template <typename AccumT, typename OffsetT, typename ReductionOpT>
       struct policy_selector_from_types {
-        constexpr auto operator()(cuda::arch_id arch) const -> AlgorithmPolicy {
+        constexpr auto operator()(cuda::compute_capability cc) const -> AlgorithmPolicy {
           constexpr auto ps = policy_selector{
             classify_type<AccumT>(),
             classify_op<ReductionOpT>(),
             int{sizeof(OffsetT)},
             int{sizeof(AccumT)}
           };
-          return ps(arch);
+          return ps(cc);
         }
       };
     }
@@ -332,15 +332,15 @@ Each dispatch function also has an associated concept for the policy selector it
 .. code-block:: c++
 
     template <typename T, typename Policy>
-    concept policy_selector = requires(T pol_sel, ::cuda::arch_id arch) {
-      requires ::cuda::std::regular<Policy>;
-      { pol_sel(arch) } -> std::same_as<Policy>;
+    concept policy_selector = requires(T pol_sel, cuda::compute_capability cc) {
+      requires std::regular<Policy>;
+      { pol_sel(cc) } -> std::same_as<Policy>;
     };
 
     template <typename T>
     concept algorithm_policy_selector = policy_selector<T, AlgorithmPolicy>;
 
-The concept basically checks whether the policy selector can be called with a ``cuda::arch_id``
+The concept basically checks whether the policy selector can be called with a ``cuda::compute_capability``
 and returns the expected policy struct.
 The default policy selectors and related concept are defined in ``cub/device/dispatch/tuning/tuning_<algorithm>.cuh``.
 
@@ -356,7 +356,7 @@ via a ``policy_selector_from_hub`` adapter:
 
     template <typename PolicyHub>
     struct policy_selector_from_hub {
-      constexpr auto operator()(cuda::arch_id) const -> AlgorithmPolicy {
+      constexpr auto operator()(cuda::compute_capability cc) const -> AlgorithmPolicy {
         // conversion logic
       }
     };
@@ -373,7 +373,7 @@ They must not change functional behavior, but affect how work is mapped to the h
 by defining certain parameters (items per thread, block size, etc.),
 or choosing between algorithms.
 
-Policies must be plain regular aggregates to allow using them during constant evaluation,
+Policies must be plain semiregular aggregates to allow using them during constant evaluation,
 and with designated initializers:
 
 .. code-block:: c++
@@ -405,7 +405,7 @@ Tunings are expressed as logic and values inside the ``constexpr operator()`` of
 Because of the complexity of some policy selectors, nested functions are sometimes used.
 Many policy selectors also implement a fallback logic,
 where they try to find a matching tuning based on the input characteristics (policy selector data members),
-but if no match is found, they fall back to an older target architecture.
+but if no match is found, they fall back to an older target compute capability.
 
 .. code-block:: c++
 
@@ -433,14 +433,14 @@ but if no match is found, they fall back to an older target architecture.
       int offset_size;
       int accum_size;
 
-      constexpr auto operator()(cuda::arch_id arch) const -> reduce_policy {
-        if (arch >= cuda::arch_id::sm_90) {
+      constexpr auto operator()(cuda::compute_capability cc) const -> reduce_policy {
+        if (cc >= cuda::compute_capability{9, 0}) {
           if (auto tuning = get_sm90_tuning(accum_t, operation_t, offset_size, accum_size)) {
             return *tuning; // found a tuning, use it
           }
           // fall through to sm_80 if no matching tuning found
         }
-        if (arch >= cuda::arch_id::sm_80) {
+        if (cc >= cuda::compute_capability{8, 0}) {
           return { /* sm_80 default policy */ };
         }
         return { /* default policy for everything else */ };
@@ -448,10 +448,10 @@ but if no match is found, they fall back to an older target architecture.
     };
 
 In general, tunings are not exhaustive and usually only apply for specific combinations
-of parameter values and a single target architecture.
+of parameter values and a single compute capability.
 This is because they originate from tuning benchmarks running for specific workloads on specific target architectures.
 Generic fallbacks are often just retained from earlier days of CUB to not risk regressions,
-or are based on heuristics trying provide reasonable performance based on a model of the architecture or algorithm.
+or are based on heuristics trying provide reasonable performance based on a model of the GPU architecture or algorithm.
 
 Tunings for CUB algorithms reside in ``cub/device/dispatch/tuning/tuning_<algorithm>.cuh``.
 
