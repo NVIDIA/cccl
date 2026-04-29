@@ -21,7 +21,6 @@
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
@@ -560,6 +559,64 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int preprocess_segment_sizes(
   }
 
   return n_segments;
+}
+
+template <int ItemsPerThread,
+          int TileItems,
+          typename OffsetT,
+          typename AccumT,
+          typename ScopeT,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename ScanOpT,
+          typename InitValueT>
+_CCCL_DEVICE _CCCL_FORCEINLINE void single_segment_scan_chunked(
+  ScopeT scope,
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  OffsetT input_begin_idx,
+  OffsetT input_end_idx,
+  OffsetT output_begin_idx,
+  ScanOpT scan_op,
+  InitValueT initial_value)
+{
+  const OffsetT segment_items = (::cuda::std::max) (input_end_idx, input_begin_idx) - input_begin_idx;
+  const OffsetT n_chunks      = ::cuda::ceil_div(segment_items, TileItems);
+
+  AccumT exclusive_prefix{};
+  worker_prefix_callback_t prefix_op{exclusive_prefix, scan_op};
+
+  AccumT thread_values[ItemsPerThread];
+  for (OffsetT chunk_id = 0; chunk_id < n_chunks;)
+  {
+    const OffsetT chunk_begin = input_begin_idx + chunk_id * TileItems;
+    const OffsetT chunk_end   = (::cuda::std::min) (chunk_begin + TileItems, input_end_idx);
+
+    // chunk_size <= TileItems, casting to int is safe
+    const int chunk_size = static_cast<int>(chunk_end - chunk_begin);
+
+    scope.load(d_in + chunk_begin, thread_values, chunk_size, AccumT{});
+    scope.sync();
+
+    if (chunk_id == 0)
+    {
+      // Initialize exclusive_prefix, referenced from prefix_op
+      scope.scan_first_tile(thread_values, initial_value, scan_op, exclusive_prefix);
+    }
+    else
+    {
+      scope.scan_later_tile(thread_values, scan_op, prefix_op);
+    }
+    scope.sync();
+
+    scope.store(d_out + output_begin_idx + chunk_id * TileItems, thread_values, chunk_size);
+
+    // Avoiding synchronization at the end of last chunk could save up to 10% of performance for very short segments
+    if (++chunk_id < n_chunks)
+    {
+      scope.sync();
+    }
+  }
 }
 
 template <bool HasInit,
